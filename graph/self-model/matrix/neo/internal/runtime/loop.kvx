@@ -1,0 +1,2156 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:8087349d214ea6556bd1e327d9b1cfe401192e02e5c71997ca02544fd4c21fca
+
+NODE id=matrix/neo/internal/runtime/loop kind=package
+  digest=b3:10aae110381ec4931398470d45877d1ec7de6ce935e0036316039ab3d56a1066 file=neo/internal/runtime/loop range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/neo/internal/runtime/loop/completion.go,matrix/neo/internal/runtime/loop/cortex.go,matrix/neo/internal/runtime/loop/delivery.go,matrix/neo/internal/runtime/loop/effect_store.go,matrix/neo/internal/runtime/loop/evidence.go,matrix/neo/internal/runtime/loop/final_answer.go,matrix/neo/internal/runtime/loop/interfaces.go,matrix/neo/internal/runtime/loop/loop.go,matrix/neo/internal/runtime/loop/o1_replay.go,matrix/neo/internal/runtime/loop/observer.go,matrix/neo/internal/runtime/loop/premises.go,matrix/neo/internal/runtime/loop/reconcile.go,matrix/neo/internal/runtime/loop/tool_manager.go,matrix/neo/internal/runtime/loop/tool_markup.go
+  ^contains=mod:matrix/neo
+
+NODE id=matrix/neo/internal/runtime/loop.ActivationRequest kind=type
+  digest=b3:36bdf501c8c987acf1ce7fddb96623007dfee47c3f21ecf1f19e184957243ebe file=neo/internal/runtime/loop/interfaces.go range=76:80 lang=go exported=true byte_range=1857:1961
+  sig=type ActivationRequest struct {\n	ConversationID	string\n	Query		string\n	Premises	[]string\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.ActivationRequest#ConversationID,matrix/neo/internal/runtime/loop.ActivationRequest#Premises,matrix/neo/internal/runtime/loop.ActivationRequest#Query
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.ActivationRequest#ConversationID kind=field
+  digest=b3:8c9158400640a4f77298ffe850a81ec0bb1423de67eeed2c5d18f0eaeed56478 file=neo/internal/runtime/loop/interfaces.go range=77:77 lang=go exported=true byte_range=1890:1911
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ActivationRequest
+
+NODE id=matrix/neo/internal/runtime/loop.ActivationRequest#Premises kind=field
+  digest=b3:1aae737d6745fa38ff998a77db08c920e84f230a24af4ac09f5f2ce102aed5a3 file=neo/internal/runtime/loop/interfaces.go range=79:79 lang=go exported=true byte_range=1936:1959
+  sig=[]string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ActivationRequest
+
+NODE id=matrix/neo/internal/runtime/loop.ActivationRequest#Query kind=field
+  digest=b3:92e55188271f9a3e07afa454cde40ef0b093570ea7f955284f44c75497523e42 file=neo/internal/runtime/loop/interfaces.go range=78:78 lang=go exported=true byte_range=1913:1934
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ActivationRequest
+
+NODE id=matrix/neo/internal/runtime/loop.ActivationSource kind=interface
+  digest=b3:baf9288477693ad97abc7e53cfd0d34a54feff08c75ace11f5cb3e0c2430e51f file=neo/internal/runtime/loop/interfaces.go range=82:84 lang=go exported=true byte_range=1963:2060
+  sig=type ActivationSource interface {\n	Activate(context.Context, ActivationRequest) (string, error)\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/loop.CortexAdapter
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.BootReconcileResult kind=type
+  digest=b3:34ed9afa2a9ba315ae4192b696ee229518391348ac6b64dead71374af4c4e85a file=neo/internal/runtime/loop/reconcile.go range=19:25 lang=go exported=true byte_range=377:492
+  sig=type BootReconcileResult struct {\n	Examined	int\n	Resumed		int\n	Completed	int\n	Incomplete	int\n	Surfaced	int\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.BootReconcileResult#Completed,matrix/neo/internal/runtime/loop.BootReconcileResult#Examined,matrix/neo/internal/runtime/loop.BootReconcileResult#Incomplete,matrix/neo/internal/runtime/loop.BootReconcileResult#Resumed,matrix/neo/internal/runtime/loop.BootReconcileResult#Surfaced
+  ^defines=matrix/neo/internal/runtime/loop/reconcile.go
+
+NODE id=matrix/neo/internal/runtime/loop.BootReconcileResult#Completed kind=field
+  digest=b3:698c427d741be40dc9e4c6ea0ad5faab0c2c45568f4d19ced0e3f03f0bf18e23 file=neo/internal/runtime/loop/reconcile.go range=22:22 lang=go exported=true byte_range=444:458
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.BootReconcileResult
+
+NODE id=matrix/neo/internal/runtime/loop.BootReconcileResult#Examined kind=field
+  digest=b3:7a49b5ebb2778465acda2518f2dcb12a007802e329c6791b8b4998cdaf69eba5 file=neo/internal/runtime/loop/reconcile.go range=20:20 lang=go exported=true byte_range=412:426
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.BootReconcileResult
+
+NODE id=matrix/neo/internal/runtime/loop.BootReconcileResult#Incomplete kind=field
+  digest=b3:c1117398fb79c184a9f0d0eb64a493e4c69a335c44009bec2fe88f04c312e845 file=neo/internal/runtime/loop/reconcile.go range=23:23 lang=go exported=true byte_range=460:474
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.BootReconcileResult
+
+NODE id=matrix/neo/internal/runtime/loop.BootReconcileResult#Resumed kind=field
+  digest=b3:61156b70f26b935003dca72d36e29d633f0954da837a1a3b224c08ba02862b1f file=neo/internal/runtime/loop/reconcile.go range=21:21 lang=go exported=true byte_range=428:442
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.BootReconcileResult
+
+NODE id=matrix/neo/internal/runtime/loop.BootReconcileResult#Surfaced kind=field
+  digest=b3:accfa72fa5b9e6afc77105ec3a2300e0836d7bb792a429641d66a507af78569c file=neo/internal/runtime/loop/reconcile.go range=24:24 lang=go exported=true byte_range=476:490
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.BootReconcileResult
+
+NODE id=matrix/neo/internal/runtime/loop.CheckpointStore kind=interface
+  digest=b3:b529db56d601c1e9c85eaca859f64a79b8a0a4cabd208bd9cd73bdf4ae01d38f file=neo/internal/runtime/loop/interfaces.go range=65:74 lang=go exported=true byte_range=1586:1855
+  sig=type CheckpointStore interface {\n	SaveTurnCheckpoint(context.Context, string, turnstate.Checkpoint) error\n	SetTurnRecovery(\n		context.Context,\n		string,\n		turnstate.Status,\n		turnstate.Recovery,\n	) error\n	SetTurnStatus(context.Context, string, turnstate.Status) error\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.CompletionDecision kind=type
+  digest=b3:d4448cc3776baacf5c01cd12d40b9d34d51f4880196266f2158f5c9c4f4f6731 file=neo/internal/runtime/loop/interfaces.go range=157:162 lang=go exported=true byte_range=4001:4107
+  sig=type CompletionDecision struct {\n	Ready		bool\n	Stop		bool\n	Reason		string\n	NextAction	string\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.CompletionDecision#NextAction,matrix/neo/internal/runtime/loop.CompletionDecision#Ready,matrix/neo/internal/runtime/loop.CompletionDecision#Reason,matrix/neo/internal/runtime/loop.CompletionDecision#Stop
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.CompletionDecision#NextAction kind=field
+  digest=b3:500ae52cfab445c7cd9190c40818c02469465e0f6e60b7b9b932c5ce6b2af19b file=neo/internal/runtime/loop/interfaces.go range=161:161 lang=go exported=true byte_range=4088:4105
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CompletionDecision
+
+NODE id=matrix/neo/internal/runtime/loop.CompletionDecision#Ready kind=field
+  digest=b3:5d69dab89acca1efa8a1eb3267ad7c715309124678c1282395ad83c68185c583 file=neo/internal/runtime/loop/interfaces.go range=158:158 lang=go exported=true byte_range=4035:4050
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CompletionDecision
+
+NODE id=matrix/neo/internal/runtime/loop.CompletionDecision#Reason kind=field
+  digest=b3:5c62d29154d1d63140f7fa605224729afe9c6b1551292269c5175eb92ac6ebb3 file=neo/internal/runtime/loop/interfaces.go range=160:160 lang=go exported=true byte_range=4069:4086
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CompletionDecision
+
+NODE id=matrix/neo/internal/runtime/loop.CompletionDecision#Stop kind=field
+  digest=b3:7a6ae550e924b863045232089f63a8ede4a4dc18bda3ae09d6d26d1e49c15c7e file=neo/internal/runtime/loop/interfaces.go range=159:159 lang=go exported=true byte_range=4052:4067
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CompletionDecision
+
+NODE id=matrix/neo/internal/runtime/loop.CompletionGate kind=interface
+  digest=b3:4a9c5f939f918c54323122fe24f6c92309622fd36ac8f3fd5bf2bb2d9ba197e4 file=neo/internal/runtime/loop/interfaces.go range=164:166 lang=go exported=true byte_range=4109:4204
+  sig=type CompletionGate interface {\n	CheckCompletion(context.Context) (CompletionDecision, error)\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/loop.StateCompletionGate
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.Config kind=type
+  digest=b3:779021a9667958827ae1acc8cc5a08c3d23f6cf646912fcc75e2f2085d146a93 file=neo/internal/runtime/loop/loop.go range=63:78 lang=go exported=true byte_range=3257:3712
+  sig=type Config struct {\n	TurnID			string\n	ConversationID		string\n	Model			string\n	SystemPrompt		string\n	MaxOutputTokens		int\n	MaxToolCalls		int\n	IdleTimeout		time.Duration\n	TextualRepairLimit	int\n	ExpectationRepairLimit	int\n	EmptyRepairLimit	int\n	FinalAnswerRepairLimit	int\n	CompletionDeferrals	int\n	MaxTurnTokens		int\n	Breaker			liveness.BreakerConfig\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.Config#Breaker,matrix/neo/internal/runtime/loop.Config#CompletionDeferrals,matrix/neo/internal/runtime/loop.Config#ConversationID,matrix/neo/internal/runtime/loop.Config#EmptyRepairLimit,matrix/neo/internal/runtime/loop.Config#ExpectationRepairLimit,matrix/neo/internal/runtime/loop.Config#FinalAnswerRepairLimit,matrix/neo/internal/runtime/loop.Config#IdleTimeout,matrix/neo/internal/runtime/loop.Config#MaxOutputTokens,matrix/neo/internal/runtime/loop.Config#MaxToolCalls,matrix/neo/internal/runtime/loop.Config#MaxTurnTokens,matrix/neo/internal/runtime/loop.Config#Model,matrix/neo/internal/runtime/loop.Config#SystemPrompt,matrix/neo/internal/runtime/loop.Config#TextualRepairLimit,matrix/neo/internal/runtime/loop.Config#TurnID
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Config#Breaker kind=field
+  digest=b3:e841ad606fed33c4effbdfdf55842a64088b57255f871b3b6b955c5af9ed4eda file=neo/internal/runtime/loop/loop.go range=77:77 lang=go exported=true byte_range=3665:3710
+  sig=liveness.BreakerConfig
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#CompletionDeferrals kind=field
+  digest=b3:11820d6eef5aa968de35232323b4a029de6fee45b945d2c44f7a1a9ef1cb0223 file=neo/internal/runtime/loop/loop.go range=75:75 lang=go exported=true byte_range=3609:3635
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#ConversationID kind=field
+  digest=b3:6eeb0209200f8728b0794333bdf610e6a8d8364d57393cf333b49992c970aef6 file=neo/internal/runtime/loop/loop.go range=65:65 lang=go exported=true byte_range=3310:3339
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#EmptyRepairLimit kind=field
+  digest=b3:e023b9ee5425e2960f53e993871daf86004a1c5a4b000848ecc6f2b0d2a5d7a3 file=neo/internal/runtime/loop/loop.go range=73:73 lang=go exported=true byte_range=3553:3579
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#ExpectationRepairLimit kind=field
+  digest=b3:f16a98fcae829c6a1458061b47dd33eadd7796a701ff15cf8f0aeb4d89be44eb file=neo/internal/runtime/loop/loop.go range=72:72 lang=go exported=true byte_range=3525:3551
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#FinalAnswerRepairLimit kind=field
+  digest=b3:44292819291d54b9b63acd69c148eed4561ed19719a84cebb3fd9f0732178bdf file=neo/internal/runtime/loop/loop.go range=74:74 lang=go exported=true byte_range=3581:3607
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#IdleTimeout kind=field
+  digest=b3:562d56a2aaf53151d05474e9522265e609c0470fa1d71e84b9ad36d6c5ddb526 file=neo/internal/runtime/loop/loop.go range=70:70 lang=go exported=true byte_range=3459:3495
+  sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#MaxOutputTokens kind=field
+  digest=b3:ca0f03ff094fb2b6d696c6cb19b92a6e813287175f94229577d25707e76d12b9 file=neo/internal/runtime/loop/loop.go range=68:68 lang=go exported=true byte_range=3403:3429
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#MaxToolCalls kind=field
+  digest=b3:70caeae4c7cd6a2ae11bbe3c46951bf3c619cd49175993d1d88fc7270a4e6ec6 file=neo/internal/runtime/loop/loop.go range=69:69 lang=go exported=true byte_range=3431:3457
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#MaxTurnTokens kind=field
+  digest=b3:dda5b7fa4f3c258a47140f8b2f1eb1b2b3c4d86c6693118d19db5b9e437a8f44 file=neo/internal/runtime/loop/loop.go range=76:76 lang=go exported=true byte_range=3637:3663
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#Model kind=field
+  digest=b3:40470d9a2adfb0e36d44954a0497478300dfaadd176a0940726964f54ccc5d83 file=neo/internal/runtime/loop/loop.go range=66:66 lang=go exported=true byte_range=3341:3370
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#SystemPrompt kind=field
+  digest=b3:46a3cb5377d60c6469e16d51059fb7d57ca0c2b78ad36e8259324660c79f9acc file=neo/internal/runtime/loop/loop.go range=67:67 lang=go exported=true byte_range=3372:3401
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#TextualRepairLimit kind=field
+  digest=b3:a54e2552768b64e6e669457161a8a20d11d245b941f0ddc6399bdf837d631e8d file=neo/internal/runtime/loop/loop.go range=71:71 lang=go exported=true byte_range=3497:3523
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Config#TurnID kind=field
+  digest=b3:211e168cf895d5f3fc57eecc013a5a778838f0de840589e1415a95fd5d9e03f9 file=neo/internal/runtime/loop/loop.go range=64:64 lang=go exported=true byte_range=3279:3308
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Config
+
+NODE id=matrix/neo/internal/runtime/loop.Consolidator kind=interface
+  digest=b3:3f04f649cedf1254c627166b8804d913f28ff57ef126ae39413c1225a39ab7af file=neo/internal/runtime/loop/interfaces.go range=110:112 lang=go exported=true byte_range=2494:2570
+  sig=type Consolidator interface {\n	Consolidate(string, string, uint64, uint64)\n}
+EDGES
+  ^implements=matrix/neo/internal/writeback.Consolidator
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter kind=type
+  digest=b3:f5f12d8c75be37525489c3fe8a979cf185b1b055cb14239146adf10af0d605f0 file=neo/internal/runtime/loop/cortex.go range=19:29 lang=go exported=true byte_range=379:568
+  sig=type CortexAdapter struct {\n	pager		*memory.Pager\n	conversationID	string\n	budgetTokens	int\n	retrievalTopK	int\n\n	mu	sync.Mutex\n	haveSeq	bool\n	seqLo	uint64\n	seqHi	uint64\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.CortexAdapter#budgetTokens,matrix/neo/internal/runtime/loop.CortexAdapter#conversationID,matrix/neo/internal/runtime/loop.CortexAdapter#haveSeq,matrix/neo/internal/runtime/loop.CortexAdapter#mu,matrix/neo/internal/runtime/loop.CortexAdapter#pager,matrix/neo/internal/runtime/loop.CortexAdapter#retrievalTopK,matrix/neo/internal/runtime/loop.CortexAdapter#seqHi,matrix/neo/internal/runtime/loop.CortexAdapter#seqLo,matrix/neo/internal/runtime/loop.CortexAdapter.Activate,matrix/neo/internal/runtime/loop.CortexAdapter.ProvenanceRange,matrix/neo/internal/runtime/loop.CortexAdapter.RecordAssistant,matrix/neo/internal/runtime/loop.CortexAdapter.RecordDelivery,matrix/neo/internal/runtime/loop.CortexAdapter.RecordTool,matrix/neo/internal/runtime/loop.CortexAdapter.RecordUser,matrix/neo/internal/runtime/loop.CortexAdapter.append
+  implements=matrix/neo/internal/runtime/loop.ActivationSource,matrix/neo/internal/runtime/loop.TurnRecorder
+  ^defines=matrix/neo/internal/runtime/loop/cortex.go
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter#budgetTokens kind=field
+  digest=b3:13e87f82993282a6a226096259413e65186a0c1efc9a3fa90561f43ba41bafaa file=neo/internal/runtime/loop/cortex.go range=22:22 lang=go exported=false byte_range=461:479
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter#conversationID kind=field
+  digest=b3:028e2ad445412e6c4ebe9b000a3b1667d122b11984f928af46c8a2f2c8d742bf file=neo/internal/runtime/loop/cortex.go range=21:21 lang=go exported=false byte_range=438:459
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter#haveSeq kind=field
+  digest=b3:93975409c768feba95ed0e821cfa0a207d5367eaee104e47a0e8fa0bea01e216 file=neo/internal/runtime/loop/cortex.go range=26:26 lang=go exported=false byte_range=522:534
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter#mu kind=field
+  digest=b3:8fb472e3c101ddbe82de3f6e4339791010616cf667662d8f80f5b138ddbd790f file=neo/internal/runtime/loop/cortex.go range=25:25 lang=go exported=false byte_range=502:520
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter#pager kind=field
+  digest=b3:b6d38486be76095d843c756083c54afd48f72d8973fdc57ab06af6089aafc71a file=neo/internal/runtime/loop/cortex.go range=20:20 lang=go exported=false byte_range=408:436
+  sig=*memory.Pager
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter#retrievalTopK kind=field
+  digest=b3:ac25674ecde55fa73c6600f8476d53984a84c09fd0607b506de9aeeeb38d3272 file=neo/internal/runtime/loop/cortex.go range=23:23 lang=go exported=false byte_range=481:499
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter#seqHi kind=field
+  digest=b3:9bc5bbc9a6dd9b0b8403b8c90902fb415ebd97ff54e7120fc79a48cfdf1a63e9 file=neo/internal/runtime/loop/cortex.go range=28:28 lang=go exported=false byte_range=552:566
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter#seqLo kind=field
+  digest=b3:812370b72c9c2ee2d747402f33353593d3803cb6fecf1f932199bdae98e5a5d2 file=neo/internal/runtime/loop/cortex.go range=27:27 lang=go exported=false byte_range=536:550
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter.Activate kind=method
+  digest=b3:b77a8f441a5fcb453f4f158656ad0cf7a1fd30e0d595588b02fad95d52d74b55 file=neo/internal/runtime/loop/cortex.go range=48:83 lang=go exported=true byte_range=1027:2006
+  sig=func (adapter *CortexAdapter) Activate(\n	ctx context.Context,\n	request ActivationRequest,\n) (string, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+  ^defines=matrix/neo/internal/runtime/loop/cortex.go
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter.ProvenanceRange kind=method
+  digest=b3:6dec11e24608f5ec38e2fa91c0a7b9c7dfbcc4adcc4ffbd0ad168edc7c86cdbc file=neo/internal/runtime/loop/cortex.go range=136:147 lang=go exported=true byte_range=3375:3608
+  sig=func (adapter *CortexAdapter) ProvenanceRange() (\n	string,\n	uint64,\n	uint64,\n)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+  ^defines=matrix/neo/internal/runtime/loop/cortex.go
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter.RecordAssistant kind=method
+  digest=b3:95389c78e507295292688a0589ccc4450d021aa335f17b32e5973d44037708bf file=neo/internal/runtime/loop/cortex.go range=96:112 lang=go exported=true byte_range=2271:2800
+  sig=func (adapter *CortexAdapter) RecordAssistant(\n	message protocol.Message,\n)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+  ^defines=matrix/neo/internal/runtime/loop/cortex.go
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter.RecordDelivery kind=method
+  digest=b3:6a9f8ba0328d3b939304abaab699157416e6dd9d80d2b8760e7371ed426ed018 file=neo/internal/runtime/loop/cortex.go range=125:134 lang=go exported=true byte_range=3103:3373
+  sig=func (adapter *CortexAdapter) RecordDelivery(content string)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+  ^defines=matrix/neo/internal/runtime/loop/cortex.go
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter.RecordTool kind=method
+  digest=b3:1bc8eaa62e6b8f8c2c6da9775a013103bdb2f01b5185e31b92f8b4c3adef834b file=neo/internal/runtime/loop/cortex.go range=114:123 lang=go exported=true byte_range=2802:3101
+  sig=func (adapter *CortexAdapter) RecordTool(message protocol.Message)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+  ^defines=matrix/neo/internal/runtime/loop/cortex.go
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter.RecordUser kind=method
+  digest=b3:4783d557e2d33935f578399ac9ce7181abe2561816520444ffd8db6481af9767 file=neo/internal/runtime/loop/cortex.go range=85:94 lang=go exported=true byte_range=2008:2269
+  sig=func (adapter *CortexAdapter) RecordUser(content string)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+  ^defines=matrix/neo/internal/runtime/loop/cortex.go
+
+NODE id=matrix/neo/internal/runtime/loop.CortexAdapter.append kind=method
+  digest=b3:cf23e96da67026d54e36995326ef4ab8b9511f2fe9fa1af4390c3f1a5f12048b file=neo/internal/runtime/loop/cortex.go range=149:167 lang=go exported=false byte_range=3610:4055
+  sig=func (adapter *CortexAdapter) append(message cortex.Message)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexAdapter
+  ^defines=matrix/neo/internal/runtime/loop/cortex.go
+
+NODE id=matrix/neo/internal/runtime/loop.CortexToolJournal kind=type
+  digest=b3:4f29cf1967a9e41fcbc29ddadb65fcec6fcea5d969b91cd43eadb8ae3e24f681 file=neo/internal/runtime/loop/evidence.go range=20:23 lang=go exported=true byte_range=369:446
+  sig=type CortexToolJournal struct {\n	Cortex		*cortex.Cortex\n	CreatedBy	string\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.CortexToolJournal#Cortex,matrix/neo/internal/runtime/loop.CortexToolJournal#CreatedBy,matrix/neo/internal/runtime/loop.CortexToolJournal.CommitToolExecution
+  implements=matrix/neo/internal/runtime/loop.EvidenceJournal
+  ^defines=matrix/neo/internal/runtime/loop/evidence.go
+
+NODE id=matrix/neo/internal/runtime/loop.CortexToolJournal#Cortex kind=field
+  digest=b3:b84bf6eb1d03ec66d76dbfced723ac3368feb995aa00b34d6b5d1909086fe3cb file=neo/internal/runtime/loop/evidence.go range=21:21 lang=go exported=true byte_range=402:426
+  sig=*cortex.Cortex
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexToolJournal
+
+NODE id=matrix/neo/internal/runtime/loop.CortexToolJournal#CreatedBy kind=field
+  digest=b3:ac83ad1e1b44f6e6d7de642fd04695aabf1bc35a7ab4b795aa5137a48a91fbf9 file=neo/internal/runtime/loop/evidence.go range=22:22 lang=go exported=true byte_range=428:444
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexToolJournal
+
+NODE id=matrix/neo/internal/runtime/loop.CortexToolJournal.CommitToolExecution kind=method
+  digest=b3:aa8f0f9b8da3361c587bf9f04686d32631c74c63e966a8124b8034ad77441194 file=neo/internal/runtime/loop/evidence.go range=25:49 lang=go exported=true byte_range=448:1273
+  sig=func (journal *CortexToolJournal) CommitToolExecution(\n	ctx context.Context,\n	execution ToolExecution,\n) (cortex.ToolEventCitation, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.CortexToolJournal
+  ^defines=matrix/neo/internal/runtime/loop/evidence.go
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryChoke kind=type
+  digest=b3:546c1779913be1480b423665d1644f1918876c7c4a8477b7d1715d842520d4e3 file=neo/internal/runtime/loop/delivery.go range=28:34 lang=go exported=true byte_range=611:795
+  sig=type DeliveryChoke struct {\n	AgentName		string\n	Reporter		DeliveryReporter\n	Recorder		TurnRecorder\n	Consolidator		Consolidator\n	SuppressIncomplete	bool\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.DeliveryChoke#AgentName,matrix/neo/internal/runtime/loop.DeliveryChoke#Consolidator,matrix/neo/internal/runtime/loop.DeliveryChoke#Recorder,matrix/neo/internal/runtime/loop.DeliveryChoke#Reporter,matrix/neo/internal/runtime/loop.DeliveryChoke#SuppressIncomplete,matrix/neo/internal/runtime/loop.DeliveryChoke.Deliver,matrix/neo/internal/runtime/loop.DeliveryChoke.FinalizeIncomplete,matrix/neo/internal/runtime/loop.DeliveryChoke.consolidate
+  ^defines=matrix/neo/internal/runtime/loop/delivery.go
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryChoke#AgentName kind=field
+  digest=b3:e1a3ebca595015355168e4ed40326d17fafcf6988dd37e40df4b89b346aeec32 file=neo/internal/runtime/loop/delivery.go range=29:29 lang=go exported=true byte_range=640:665
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DeliveryChoke
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryChoke#Consolidator kind=field
+  digest=b3:aa7f737686bc81121b8abcd0bafadbaeb700e577ea6a83fbae45ca71d62e408d file=neo/internal/runtime/loop/delivery.go range=32:32 lang=go exported=true byte_range=737:768
+  sig=loop.Consolidator
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DeliveryChoke
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryChoke#Recorder kind=field
+  digest=b3:5491efe8261c6ca51e937446c1d27bf3b1d97174ff54f41b2d84dc2c6d0ba598 file=neo/internal/runtime/loop/delivery.go range=31:31 lang=go exported=true byte_range=704:735
+  sig=loop.TurnRecorder
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DeliveryChoke
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryChoke#Reporter kind=field
+  digest=b3:14dafe9f974692e53c212718a159d794c005df4b0516dc1a8f04e91662a3cc22 file=neo/internal/runtime/loop/delivery.go range=30:30 lang=go exported=true byte_range=667:702
+  sig=loop.DeliveryReporter
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DeliveryChoke
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryChoke#SuppressIncomplete kind=field
+  digest=b3:c21cd8cac477e30049cd24edca2188699c44e7ee3fa51c59cb604d4312e13172 file=neo/internal/runtime/loop/delivery.go range=33:33 lang=go exported=true byte_range=770:793
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DeliveryChoke
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryChoke.Deliver kind=method
+  digest=b3:0d3a7024ec17e3125f786a83850d5e0907aaf9953c507e99424830d7ed27a9a0 file=neo/internal/runtime/loop/delivery.go range=36:68 lang=go exported=true byte_range=797:1656
+  sig=func (choke *DeliveryChoke) Deliver(\n	_ context.Context,\n	userInput string,\n	checkpoint turnstate.Checkpoint,\n	content string,\n	honestPartial bool,\n) DeliveryResult
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DeliveryChoke
+  ^defines=matrix/neo/internal/runtime/loop/delivery.go
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryChoke.FinalizeIncomplete kind=method
+  digest=b3:a97d8546c7ffc17c73320fd444fc36e8a26621182114fac02b4aafa7e07b4d9d file=neo/internal/runtime/loop/delivery.go range=70:83 lang=go exported=true byte_range=1658:2039
+  sig=func (choke *DeliveryChoke) FinalizeIncomplete(\n	_ context.Context,\n	checkpoint turnstate.Checkpoint,\n	incomplete *Incomplete,\n)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DeliveryChoke
+  ^defines=matrix/neo/internal/runtime/loop/delivery.go
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryChoke.consolidate kind=method
+  digest=b3:6f0509b225539904ef77faa0e7b6ce3f7a48a4158e1ab22786e335f71282e247 file=neo/internal/runtime/loop/delivery.go range=96:122 lang=go exported=false byte_range=2525:3182
+  sig=func (choke *DeliveryChoke) consolidate(\n	checkpoint turnstate.Checkpoint,\n	finalContent string,\n)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DeliveryChoke
+  ^defines=matrix/neo/internal/runtime/loop/delivery.go
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryReporter kind=interface
+  digest=b3:226d69b93c1fb2f4f2667008fa2a8a638816cc45bbd4ca87e44bd8a4a4961103 file=neo/internal/runtime/loop/interfaces.go range=102:104 lang=go exported=true byte_range=2370:2424
+  sig=type DeliveryReporter interface {\n	Say(string, bool)\n}
+EDGES
+  ^implements=matrix/neo/cmd/neo.stdoutReporter,matrix/neo/internal/agent.nopReporter,matrix/neo/internal/server.automatrixReporter,matrix/neo/internal/server.captureReporter,matrix/neo/internal/server.sseReporter
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryResult kind=type
+  digest=b3:d32972a731e69283a745f35b762814a1be3f5546c16ea86e0f8de815967f210b file=neo/internal/runtime/loop/delivery.go range=22:26 lang=go exported=true byte_range=508:609
+  sig=type DeliveryResult struct {\n	Content			string\n	Suppressed		bool\n	IdentityScrubbed	bool\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.DeliveryResult#Content,matrix/neo/internal/runtime/loop.DeliveryResult#IdentityScrubbed,matrix/neo/internal/runtime/loop.DeliveryResult#Suppressed
+  ^defines=matrix/neo/internal/runtime/loop/delivery.go
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryResult#Content kind=field
+  digest=b3:9458be894bbd602fa2c3ca0d0d3206c7350b4cfa0963ee977a689fd56db6fe8b file=neo/internal/runtime/loop/delivery.go range=23:23 lang=go exported=true byte_range=538:561
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DeliveryResult
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryResult#IdentityScrubbed kind=field
+  digest=b3:c135e2353007e0af5687121f1a7cee747fe31774749199b8382fb2f7aab87453 file=neo/internal/runtime/loop/delivery.go range=25:25 lang=go exported=true byte_range=586:607
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DeliveryResult
+
+NODE id=matrix/neo/internal/runtime/loop.DeliveryResult#Suppressed kind=field
+  digest=b3:66a0d9f9f041d5f0581ff73205254b96ef012992f5604efef85f6d62a2dc4995 file=neo/internal/runtime/loop/delivery.go range=24:24 lang=go exported=true byte_range=563:584
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DeliveryResult
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies kind=type
+  digest=b3:2a7c83d6e88cd2e9d50f824c81600de2a3faec01165711caaabbb089834ecb75 file=neo/internal/runtime/loop/loop.go range=80:94 lang=go exported=true byte_range=3714:4183
+  sig=type Dependencies struct {\n	Observer		GenerationObserver\n	CompletionGate		CompletionGate\n	Activation		ActivationSource\n	Premises		PremiseSource\n	Recorder		TurnRecorder\n	Incompletes		IncompleteRecorder\n	EvidenceJournal		EvidenceJournal\n	EvidenceObserver	EvidenceObserver\n	Subgoals		SubgoalResolver\n	Doubt			DoubtController\n	Liveness		LivenessSource\n	Guidance		GuidanceSource\n	Delivery		*DeliveryChoke\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.Dependencies#Activation,matrix/neo/internal/runtime/loop.Dependencies#CompletionGate,matrix/neo/internal/runtime/loop.Dependencies#Delivery,matrix/neo/internal/runtime/loop.Dependencies#Doubt,matrix/neo/internal/runtime/loop.Dependencies#EvidenceJournal,matrix/neo/internal/runtime/loop.Dependencies#EvidenceObserver,matrix/neo/internal/runtime/loop.Dependencies#Guidance,matrix/neo/internal/runtime/loop.Dependencies#Incompletes,matrix/neo/internal/runtime/loop.Dependencies#Liveness,matrix/neo/internal/runtime/loop.Dependencies#Observer,matrix/neo/internal/runtime/loop.Dependencies#Premises,matrix/neo/internal/runtime/loop.Dependencies#Recorder,matrix/neo/internal/runtime/loop.Dependencies#Subgoals
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#Activation kind=field
+  digest=b3:a8d152bf6a03cf513946878475f73720c134ce9fb35082a28c3773676fff586d file=neo/internal/runtime/loop/loop.go range=83:83 lang=go exported=true byte_range=3812:3845
+  sig=loop.ActivationSource
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#CompletionGate kind=field
+  digest=b3:9ae8b282cdc255fc88f2f8ce91a46284df099a07dfe692dd27836204720cb7db file=neo/internal/runtime/loop/loop.go range=82:82 lang=go exported=true byte_range=3779:3810
+  sig=loop.CompletionGate
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#Delivery kind=field
+  digest=b3:38a4cb50c851c4c669d9f2b8388ea092bc6af0dfb0461cb1874977972ba1120e file=neo/internal/runtime/loop/loop.go range=93:93 lang=go exported=true byte_range=4150:4181
+  sig=*loop.DeliveryChoke
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#Doubt kind=field
+  digest=b3:32bdaaff109c18b18c639b1a63c0df8edee8d39e114ffad74793fdf191ae0879 file=neo/internal/runtime/loop/loop.go range=90:90 lang=go exported=true byte_range=4050:4082
+  sig=loop.DoubtController
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#EvidenceJournal kind=field
+  digest=b3:cc8fba22d96e6ec263758ebb0b8b9ec2b17b456b119f09f2c0ef492caf1504be file=neo/internal/runtime/loop/loop.go range=87:87 lang=go exported=true byte_range=3947:3979
+  sig=loop.EvidenceJournal
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#EvidenceObserver kind=field
+  digest=b3:80b9eb02a20ac48e487f38aaf9ec8a137a2cf7000de0e0ab85968d55cda2e3d1 file=neo/internal/runtime/loop/loop.go range=88:88 lang=go exported=true byte_range=3981:4014
+  sig=loop.EvidenceObserver
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#Guidance kind=field
+  digest=b3:c349affa4bc84516b1338be74616c779cb820215e3903ee68365491714f855d9 file=neo/internal/runtime/loop/loop.go range=92:92 lang=go exported=true byte_range=4117:4148
+  sig=loop.GuidanceSource
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#Incompletes kind=field
+  digest=b3:8b12fbd0a7eb263fcf4fe944769c1e29b56093a1644d3feafd552bc53d6861ab file=neo/internal/runtime/loop/loop.go range=86:86 lang=go exported=true byte_range=3910:3945
+  sig=loop.IncompleteRecorder
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#Liveness kind=field
+  digest=b3:3d287e8df098fd89771a439af6ab984cbd1be18a445919ce2671e8a6e2013a71 file=neo/internal/runtime/loop/loop.go range=91:91 lang=go exported=true byte_range=4084:4115
+  sig=loop.LivenessSource
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#Observer kind=field
+  digest=b3:a6eea9f2a525949714a98f45b836cea40bfcad16868efa1f395b5318b3ab2967 file=neo/internal/runtime/loop/loop.go range=81:81 lang=go exported=true byte_range=3742:3777
+  sig=loop.GenerationObserver
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#Premises kind=field
+  digest=b3:2f2bf2648e22e59b908628e3bb877a170c880895e3dbb4c28e663f3ed42de915 file=neo/internal/runtime/loop/loop.go range=84:84 lang=go exported=true byte_range=3847:3877
+  sig=loop.PremiseSource
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#Recorder kind=field
+  digest=b3:3760d8d6e20004eaec9c48d698170cd738a4c5093566874db3592e11f819897a file=neo/internal/runtime/loop/loop.go range=85:85 lang=go exported=true byte_range=3879:3908
+  sig=loop.TurnRecorder
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.Dependencies#Subgoals kind=field
+  digest=b3:c518813fe3a64e5bcf0a865c015d1c089fc9a663bf4a82e112e5cb0890c34938 file=neo/internal/runtime/loop/loop.go range=89:89 lang=go exported=true byte_range=4016:4048
+  sig=loop.SubgoalResolver
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Dependencies
+
+NODE id=matrix/neo/internal/runtime/loop.DoubtController kind=interface
+  digest=b3:3d4092607de6c520c375acbaf1be39917dd354f6bba6924850375b70d2a27a09 file=neo/internal/runtime/loop/interfaces.go range=141:148 lang=go exported=true byte_range=3338:3800
+  sig=type DoubtController interface {\n	ObserveMismatch(context.Context, int, ToolExecution) (string, bool)\n}
+  doc=DoubtController is the silent voice. The loop hands it every committed tool\nexecution; when the controller decides the step warrants doubt it returns\nthe first-person line to fold into the NEXT request-time clone. The line is\nnever appended to durable state, so controller guidance cannot reach the\ndurable transcript or the cortex transcript.
+EDGES
+  ^implements=matrix/neo/internal/runtime/controller.Controller
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.DurableEffectJournal kind=type
+  digest=b3:8cce4f5848f57dc2d792b07eb5a3ca41ded107ca96ab5633da225dcbe025e37d file=neo/internal/runtime/loop/effect_store.go range=28:30 lang=go exported=true byte_range=564:624
+  sig=type DurableEffectJournal struct {\n	Store EffectStateStore\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.DurableEffectJournal#Store,matrix/neo/internal/runtime/loop.DurableEffectJournal.BeginEffect,matrix/neo/internal/runtime/loop.DurableEffectJournal.CompleteEffect,matrix/neo/internal/runtime/loop.DurableEffectJournal.ReconcileEffect
+  implements=matrix/neo/internal/runtime/loop.EffectLifecycle,matrix/neo/internal/runtime/loop.EffectReconciler,matrix/neo/internal/runtime/work.EffectReconciler
+  ^defines=matrix/neo/internal/runtime/loop/effect_store.go
+
+NODE id=matrix/neo/internal/runtime/loop.DurableEffectJournal#Store kind=field
+  digest=b3:774c19436e4cb390ffc9eb76f94182fb9650880e1fe51541e29eabdef96bdbcf file=neo/internal/runtime/loop/effect_store.go range=29:29 lang=go exported=true byte_range=600:622
+  sig=loop.EffectStateStore
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DurableEffectJournal
+
+NODE id=matrix/neo/internal/runtime/loop.DurableEffectJournal.BeginEffect kind=method
+  digest=b3:edb7a36d5caf95a6387470128a5373e6b813b46b2f2d7b57be1c13b0a842ce5c file=neo/internal/runtime/loop/effect_store.go range=32:45 lang=go exported=true byte_range=626:999
+  sig=func (journal *DurableEffectJournal) BeginEffect(\n	ctx context.Context,\n	idempotencyKey string,\n	toolName string,\n	arguments json.RawMessage,\n	retrySafe bool,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DurableEffectJournal
+  ^defines=matrix/neo/internal/runtime/loop/effect_store.go
+
+NODE id=matrix/neo/internal/runtime/loop.DurableEffectJournal.CompleteEffect kind=method
+  digest=b3:542e3b97b754362c1bbef109efdcdfb71943ff5d25229d017f2d8aae403f4150 file=neo/internal/runtime/loop/effect_store.go range=47:66 lang=go exported=true byte_range=1001:1560
+  sig=func (journal *DurableEffectJournal) CompleteEffect(\n	ctx context.Context,\n	idempotencyKey string,\n	result ToolResult,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DurableEffectJournal
+  ^defines=matrix/neo/internal/runtime/loop/effect_store.go
+
+NODE id=matrix/neo/internal/runtime/loop.DurableEffectJournal.ReconcileEffect kind=method
+  digest=b3:310bf3f765ea3507a00390e30eb2ce94ec9301ef4473719c3eacca4ab6ea9f6a file=neo/internal/runtime/loop/effect_store.go range=68:105 lang=go exported=true byte_range=1562:2716
+  sig=func (journal *DurableEffectJournal) ReconcileEffect(\n	ctx context.Context,\n	idempotencyKey string,\n) (ReconcileResult, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.DurableEffectJournal
+  ^defines=matrix/neo/internal/runtime/loop/effect_store.go
+
+NODE id=matrix/neo/internal/runtime/loop.EffectLifecycle kind=interface
+  digest=b3:98444c960a360220f97e3a0259505043504a593c654685e52d300d048b3a7f3a file=neo/internal/runtime/loop/tool_manager.go range=20:30 lang=go exported=true byte_range=415:615
+  sig=type EffectLifecycle interface {\n	EffectReconciler\n	BeginEffect(\n		context.Context,\n		string,\n		string,\n		json.RawMessage,\n		bool,\n	) error\n	CompleteEffect(context.Context, string, ToolResult) error\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/loop.DurableEffectJournal
+  ^defines=matrix/neo/internal/runtime/loop/tool_manager.go
+
+NODE id=matrix/neo/internal/runtime/loop.EffectReconciler kind=interface
+  digest=b3:ca6ae6e6213bbcb857bc038c9b264b5f43a7ed6bb70bb767c595199df9e3d233 file=neo/internal/runtime/loop/tool_manager.go range=16:18 lang=go exported=true byte_range=311:413
+  sig=type EffectReconciler interface {\n	ReconcileEffect(context.Context, string) (ReconcileResult, error)\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/loop.DurableEffectJournal
+  ^defines=matrix/neo/internal/runtime/loop/tool_manager.go
+
+NODE id=matrix/neo/internal/runtime/loop.EffectStateStore kind=interface
+  digest=b3:857dcae05e9e69acd0a8ea03f100ee66a9d984cb31108fb2177da98073aca733 file=neo/internal/runtime/loop/effect_store.go range=16:26 lang=go exported=true byte_range=298:562
+  sig=type EffectStateStore interface {\n	BeginEffect(\n		context.Context,\n		string,\n		string,\n		json.RawMessage,\n		bool,\n	) error\n	CompleteEffect(context.Context, string, turnstate.EffectResult) error\n	LoadEffect(context.Context, string) (turnstate.EffectRecord, error)\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/loop/effect_store.go
+
+NODE id=matrix/neo/internal/runtime/loop.ErrTextualToolMarkup kind=var
+  digest=b3:ec5af7349c32df636479b4a4e6d686fbe9e201ec4a039011df969c4fde54d975 file=neo/internal/runtime/loop/tool_markup.go range=12:14 lang=go exported=true byte_range=227:317
+  sig=error
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/tool_markup.go
+
+NODE id=matrix/neo/internal/runtime/loop.EvidenceJournal kind=interface
+  digest=b3:204033551bb6f09545b25778fcdde20ff8e3f5fa0bc4d3991cf420743491d870 file=neo/internal/runtime/loop/interfaces.go range=118:123 lang=go exported=true byte_range=2664:2793
+  sig=type EvidenceJournal interface {\n	CommitToolExecution(\n		context.Context,\n		ToolExecution,\n	) (cortex.ToolEventCitation, error)\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/loop.CortexToolJournal
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.EvidenceObserver kind=interface
+  digest=b3:53785ad1a89ae6ff54c417d98c44781e842ad1e4bce3a42976b8bdca4f24c891 file=neo/internal/runtime/loop/interfaces.go range=125:127 lang=go exported=true byte_range=2795:2890
+  sig=type EvidenceObserver interface {\n	ObserveToolExecution(context.Context, ToolExecution) error\n}
+EDGES
+  ^implements=matrix/neo/internal/agent.runtimeToolObserver,matrix/neo/internal/runtime/belief.State
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.GenerationObserver kind=interface
+  digest=b3:c863223ca2edc87c214d28b07d694e058e8f670da6118145690e386f72675a95 file=neo/internal/runtime/loop/interfaces.go range=150:155 lang=go exported=true byte_range=3802:3999
+  sig=type GenerationObserver interface {\n	ContentDelta(context.Context, string) error\n	ReasoningDelta(context.Context, string) error\n	Reset(context.Context) error\n	CommitAttempt(context.Context) error\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/loop.ReporterObserver
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.Generator kind=interface
+  digest=b3:9fe465170dc695fd34d028bbb1c030bd16ec3a786b55a6205c2aed3133df09c9 file=neo/internal/runtime/loop/interfaces.go range=17:23 lang=go exported=true byte_range=402:555
+  sig=type Generator interface {\n	Generate(\n		context.Context,\n		protocol.GenerationRequest,\n		*provider.TurnUsage,\n	) (protocol.NormalizedGeneration, error)\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/provider.Client,matrix/neo/internal/runtime/provider.MiMoGenerator
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.GuidanceSource kind=interface
+  digest=b3:14c9ddb753554f548fc17c5a514c0039d4cbbc1644f97b30641900e0a98aa7f2 file=neo/internal/runtime/loop/interfaces.go range=90:92 lang=go exported=true byte_range=2123:2182
+  sig=type GuidanceSource interface {\n	DrainGuidance() []string\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/work.steeringGuidance
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.HonestPartialReporter kind=interface
+  digest=b3:dd2a1857896e860f36f3d9cd902130094dcdf5afd8c30ffe66f09f36b51578a9 file=neo/internal/runtime/loop/interfaces.go range=106:108 lang=go exported=true byte_range=2426:2492
+  sig=type HonestPartialReporter interface {\n	SayHonestPartial(string)\n}
+EDGES
+  ^implements=matrix/neo/internal/server.sseReporter
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.Incomplete kind=type
+  digest=b3:888aa5e18c263a5bade5076a55c6a83514c07f0ee4074ce95f3b7460badc0e10 file=neo/internal/runtime/loop/loop.go range=138:146 lang=go exported=true byte_range=5823:6274
+  sig=type Incomplete struct {\n	Phase			string			`json:"phase"`\n	LastToolEvidence	json.RawMessage		`json:"last_tool_evidence,omitempty"`\n	StartedAt		time.Time		`json:"started_at"`\n	AttemptCount		int			`json:"attempt_count"`\n	RecoveryAdvice		string			`json:"recovery_advice"`\n	Checkpoint		turnstate.Checkpoint	`json:"checkpoint"`\n	Cause			error			`json:"-"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.Incomplete#AttemptCount,matrix/neo/internal/runtime/loop.Incomplete#Cause,matrix/neo/internal/runtime/loop.Incomplete#Checkpoint,matrix/neo/internal/runtime/loop.Incomplete#LastToolEvidence,matrix/neo/internal/runtime/loop.Incomplete#Phase,matrix/neo/internal/runtime/loop.Incomplete#RecoveryAdvice,matrix/neo/internal/runtime/loop.Incomplete#StartedAt,matrix/neo/internal/runtime/loop.Incomplete.Error,matrix/neo/internal/runtime/loop.Incomplete.Unwrap
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Incomplete#AttemptCount kind=field
+  digest=b3:e11f9f30ed8091d7be8d9dd85bc561c2e81466647984f3c69454f7e7cb15125e file=neo/internal/runtime/loop/loop.go range=142:142 lang=go exported=true byte_range=6039:6099
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Incomplete
+
+NODE id=matrix/neo/internal/runtime/loop.Incomplete#Cause kind=field
+  digest=b3:475a38e984a91f9d16588d088d42ec58009fa0619ca21f2e2a1655ebbed3b36c file=neo/internal/runtime/loop/loop.go range=145:145 lang=go exported=true byte_range=6224:6272
+  sig=error
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Incomplete
+
+NODE id=matrix/neo/internal/runtime/loop.Incomplete#Checkpoint kind=field
+  digest=b3:2840046cbe46c4b027e1defd5160db5c807b630622c1da2fcd99864dbca00f21 file=neo/internal/runtime/loop/loop.go range=144:144 lang=go exported=true byte_range=6165:6222
+  sig=turnstate.Checkpoint
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Incomplete
+
+NODE id=matrix/neo/internal/runtime/loop.Incomplete#LastToolEvidence kind=field
+  digest=b3:8aa7a5b75328689f96eb6e244f846ffc0216fa4a173afb252e31147b8e27f840 file=neo/internal/runtime/loop/loop.go range=140:140 lang=go exported=true byte_range=5903:5978
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Incomplete
+
+NODE id=matrix/neo/internal/runtime/loop.Incomplete#Phase kind=field
+  digest=b3:e2e53c20bd74ad8a99fced9d52468ae1a9daa31de3dc88692fb18f32128eb455 file=neo/internal/runtime/loop/loop.go range=139:139 lang=go exported=true byte_range=5849:5901
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Incomplete
+
+NODE id=matrix/neo/internal/runtime/loop.Incomplete#RecoveryAdvice kind=field
+  digest=b3:8e7a0bab6e187b4b16744120aedceb2c45b439c1bf3a64408cc587ceeb1af1bd file=neo/internal/runtime/loop/loop.go range=143:143 lang=go exported=true byte_range=6101:6163
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Incomplete
+
+NODE id=matrix/neo/internal/runtime/loop.Incomplete#StartedAt kind=field
+  digest=b3:b080ed6112a9fcf11b14c86ec543099002911c5614567221fbaa818912dd0c7d file=neo/internal/runtime/loop/loop.go range=141:141 lang=go exported=true byte_range=5980:6037
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Incomplete
+
+NODE id=matrix/neo/internal/runtime/loop.Incomplete.Error kind=method
+  digest=b3:d853ebfb4dbd6baa4c4a34d88d97e285995755e3190fd8037b4e5747d0d4ae98 file=neo/internal/runtime/loop/loop.go range=158:168 lang=go exported=true byte_range=6721:6972
+  sig=func (incomplete *Incomplete) Error() string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Incomplete
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Incomplete.Unwrap kind=method
+  digest=b3:5996ad35883c7e9169fcd7c53044b5d880afd214b3611d67b77aae7c29dde95e file=neo/internal/runtime/loop/loop.go range=170:175 lang=go exported=true byte_range=6974:7087
+  sig=func (incomplete *Incomplete) Unwrap() error
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Incomplete
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.IncompleteRecord kind=type
+  digest=b3:f27d35391ba1b10b2bdea2c529210e1533fd7718351474eba5721c38498d07ad file=neo/internal/runtime/loop/loop.go range=148:156 lang=go exported=true byte_range=6276:6719
+  sig=type IncompleteRecord struct {\n	TurnID			string		`json:"turn_id"`\n	ConversationID		string		`json:"conversation_id,omitempty"`\n	Phase			string		`json:"phase"`\n	LastToolEvidence	json.RawMessage	`json:"last_tool_evidence,omitempty"`\n	StartedAt		time.Time	`json:"started_at"`\n	AttemptCount		int		`json:"attempt_count"`\n	RecoveryAdvice		string		`json:"recovery_advice"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.IncompleteRecord#AttemptCount,matrix/neo/internal/runtime/loop.IncompleteRecord#ConversationID,matrix/neo/internal/runtime/loop.IncompleteRecord#LastToolEvidence,matrix/neo/internal/runtime/loop.IncompleteRecord#Phase,matrix/neo/internal/runtime/loop.IncompleteRecord#RecoveryAdvice,matrix/neo/internal/runtime/loop.IncompleteRecord#StartedAt,matrix/neo/internal/runtime/loop.IncompleteRecord#TurnID
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.IncompleteRecord#AttemptCount kind=field
+  digest=b3:b7c121936378f9407d61189f2fa076b9c2c734e06ad505e8c7984fb476231989 file=neo/internal/runtime/loop/loop.go range=154:154 lang=go exported=true byte_range=6603:6658
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.IncompleteRecord
+
+NODE id=matrix/neo/internal/runtime/loop.IncompleteRecord#ConversationID kind=field
+  digest=b3:989da291bf4fe023b9301da6f78eb302a25bd0b4c367fc372edb9c9f2bb41c9f file=neo/internal/runtime/loop/loop.go range=150:150 lang=go exported=true byte_range=6359:6426
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.IncompleteRecord
+
+NODE id=matrix/neo/internal/runtime/loop.IncompleteRecord#LastToolEvidence kind=field
+  digest=b3:0cb78ea0d11a7e527e828db71d61c13e52c8e8a9e773c8d685a0cabb9b5d653a file=neo/internal/runtime/loop/loop.go range=152:152 lang=go exported=true byte_range=6477:6547
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.IncompleteRecord
+
+NODE id=matrix/neo/internal/runtime/loop.IncompleteRecord#Phase kind=field
+  digest=b3:696c1df2fab3a1d9546f8bfab22309ff431c110655e156b638eef155880a11db file=neo/internal/runtime/loop/loop.go range=151:151 lang=go exported=true byte_range=6428:6475
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.IncompleteRecord
+
+NODE id=matrix/neo/internal/runtime/loop.IncompleteRecord#RecoveryAdvice kind=field
+  digest=b3:6c561498b3bddf6c43414025839f89ed6f2db681d9be4f6ce72e59ec3defcfda file=neo/internal/runtime/loop/loop.go range=155:155 lang=go exported=true byte_range=6660:6717
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.IncompleteRecord
+
+NODE id=matrix/neo/internal/runtime/loop.IncompleteRecord#StartedAt kind=field
+  digest=b3:fd5539751434477ac9ee2891e04c4faebcafb53743a34f79e2d2008a7b6ccb63 file=neo/internal/runtime/loop/loop.go range=153:153 lang=go exported=true byte_range=6549:6601
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.IncompleteRecord
+
+NODE id=matrix/neo/internal/runtime/loop.IncompleteRecord#TurnID kind=field
+  digest=b3:0c9232208a14810c5a08ed73b9977e060f3664e81d485c26b27515414240ee09 file=neo/internal/runtime/loop/loop.go range=149:149 lang=go exported=true byte_range=6308:6357
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.IncompleteRecord
+
+NODE id=matrix/neo/internal/runtime/loop.IncompleteRecorder kind=interface
+  digest=b3:6ceb9b4f4e0186860de69b62bd429a1cdf92510c48dd09cf0deb1bc647ee8977 file=neo/internal/runtime/loop/interfaces.go range=114:116 lang=go exported=true byte_range=2572:2662
+  sig=type IncompleteRecorder interface {\n	RecordIncomplete(context.Context, IncompleteRecord)\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/loop.O1FailureReplayLane
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.LivenessEnforcement kind=type
+  digest=b3:2abbecf412688a517c9f6f62b0f7cca0f64d14718453a958bebe917bcacaf7fb file=neo/internal/runtime/loop/loop.go range=130:136 lang=go exported=true byte_range=5582:5821
+  sig=type LivenessEnforcement struct {\n	Bound		string	`json:"bound"`\n	Tool		string	`json:"tool,omitempty"`\n	CallID		string	`json:"call_id,omitempty"`\n	Observed	int	`json:"observed,omitempty"`\n	Limit		int	`json:"limit,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.LivenessEnforcement#Bound,matrix/neo/internal/runtime/loop.LivenessEnforcement#CallID,matrix/neo/internal/runtime/loop.LivenessEnforcement#Limit,matrix/neo/internal/runtime/loop.LivenessEnforcement#Observed,matrix/neo/internal/runtime/loop.LivenessEnforcement#Tool
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.LivenessEnforcement#Bound kind=field
+  digest=b3:5a289de0cde3e845d4cd8d52e96a0eb4e9c33e7a745aa5c91165058e5bfecbe9 file=neo/internal/runtime/loop/loop.go range=131:131 lang=go exported=true byte_range=5617:5647
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.LivenessEnforcement
+
+NODE id=matrix/neo/internal/runtime/loop.LivenessEnforcement#CallID kind=field
+  digest=b3:8fccdb2e1a305ad04f7c7295b50680004bcf502db2aa140b4078373313a43c02 file=neo/internal/runtime/loop/loop.go range=133:133 lang=go exported=true byte_range=5690:5732
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.LivenessEnforcement
+
+NODE id=matrix/neo/internal/runtime/loop.LivenessEnforcement#Limit kind=field
+  digest=b3:9399acacacd39d724199e2e61580e3291929ae3308bcb840304ea295018f0dca file=neo/internal/runtime/loop/loop.go range=135:135 lang=go exported=true byte_range=5779:5819
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.LivenessEnforcement
+
+NODE id=matrix/neo/internal/runtime/loop.LivenessEnforcement#Observed kind=field
+  digest=b3:fc0ecd5a5df4f01060241b79d672ee5f9656e84a5677d8ff8f2d1d5f27ae8324 file=neo/internal/runtime/loop/loop.go range=134:134 lang=go exported=true byte_range=5734:5777
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.LivenessEnforcement
+
+NODE id=matrix/neo/internal/runtime/loop.LivenessEnforcement#Tool kind=field
+  digest=b3:e65782be0ba9018a3c1b41fdd29521892d1c38e2424a9b5d5f3a65f43ddf18a8 file=neo/internal/runtime/loop/loop.go range=132:132 lang=go exported=true byte_range=5649:5688
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.LivenessEnforcement
+
+NODE id=matrix/neo/internal/runtime/loop.LivenessSource kind=interface
+  digest=b3:bade677cbb40d47ea9b4ba5c3b0932d6ab81c0af9ed6f3c5d560cca74ccaf190 file=neo/internal/runtime/loop/interfaces.go range=133:139 lang=go exported=true byte_range=2976:3336
+  sig=type LivenessSource interface {\n	MeasuredContext() liveness.MeasuredContext\n}
+  doc=LivenessSource supplies the measured epistemic counters the per-turn liveness\npolicy is derived from. It is optional: with no source the loop derives from\nthe zero context, which is the healthy baseline. It carries counters only —\nnever premise text or memory content.
+EDGES
+  ^implements=matrix/neo/internal/runtime/belief.State
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.LivenessTrace kind=type
+  digest=b3:04a70991edf60a2c41b20ab877c1dc201b84b0f7c0dc0a201f81bd225b43a88e file=neo/internal/runtime/loop/loop.go range=120:128 lang=go exported=true byte_range=5089:5580
+  sig=type LivenessTrace struct {\n	Policy		liveness.Policy		`json:"policy"`\n	TokenBudget	int			`json:"token_budget"`\n	TokensSpent	int			`json:"tokens_spent"`\n	Enforcements	[]LivenessEnforcement	`json:"enforcements,omitempty"`\n}
+  doc=LivenessTrace is the observability surface for the enforced policy: the\npolicy the turn was actually run under and every bound the runtime enforced.\nA healthy turn carries a derived policy and no enforcements at all.
+EDGES
+  contains=matrix/neo/internal/runtime/loop.LivenessTrace#Enforcements,matrix/neo/internal/runtime/loop.LivenessTrace#Policy,matrix/neo/internal/runtime/loop.LivenessTrace#TokenBudget,matrix/neo/internal/runtime/loop.LivenessTrace#TokensSpent
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.LivenessTrace#Enforcements kind=field
+  digest=b3:6804e5772e8e2820c04d9dabd37c66715e191961efae4011e270ac6d4b1ee0fb file=neo/internal/runtime/loop/loop.go range=127:127 lang=go exported=true byte_range=5512:5578
+  sig=[]loop.LivenessEnforcement
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.LivenessTrace
+
+NODE id=matrix/neo/internal/runtime/loop.LivenessTrace#Policy kind=field
+  digest=b3:307711586598ed5bae9de009df8ff2fda85fd1afea3a5ac438249066ca31af7a file=neo/internal/runtime/loop/loop.go range=124:124 lang=go exported=true byte_range=5344:5394
+  sig=liveness.Policy
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.LivenessTrace
+
+NODE id=matrix/neo/internal/runtime/loop.LivenessTrace#TokenBudget kind=field
+  digest=b3:6dee84bf4d323e697bf2a8849921dee264a640ebf72326931b45807e508032fa file=neo/internal/runtime/loop/loop.go range=125:125 lang=go exported=true byte_range=5396:5452
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.LivenessTrace
+
+NODE id=matrix/neo/internal/runtime/loop.LivenessTrace#TokensSpent kind=field
+  digest=b3:f2aea3705c506a869f3f5628c26e2255491ceee7ff568a24bc83005d297f3d93 file=neo/internal/runtime/loop/loop.go range=126:126 lang=go exported=true byte_range=5454:5510
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.LivenessTrace
+
+NODE id=matrix/neo/internal/runtime/loop.Loop kind=type
+  digest=b3:32d6e00507d016b699655f03f478af1b39b12237ff5df271b1a10889323afbfc file=neo/internal/runtime/loop/loop.go range=196:217 lang=go exported=true byte_range=8046:8686
+  sig=type Loop struct {\n	provider		Generator\n	tools			ToolManager\n	store			CheckpointStore\n	config			Config\n	observer		GenerationObserver\n	gate			CompletionGate\n	activation		ActivationSource\n	premises		PremiseSource\n	recorder		TurnRecorder\n	incompletes		IncompleteRecorder\n	evidenceJournal		EvidenceJournal\n	evidenceObserver	EvidenceObserver\n	subgoals		SubgoalResolver\n	doubt			DoubtController\n	liveness		LivenessSource\n	guidance		GuidanceSource\n	delivery		*DeliveryChoke\n	usage			provider.TurnUsage\n\n	terminalOnce	sync.Once\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.Loop#activation,matrix/neo/internal/runtime/loop.Loop#config,matrix/neo/internal/runtime/loop.Loop#delivery,matrix/neo/internal/runtime/loop.Loop#doubt,matrix/neo/internal/runtime/loop.Loop#evidenceJournal,matrix/neo/internal/runtime/loop.Loop#evidenceObserver,matrix/neo/internal/runtime/loop.Loop#gate,matrix/neo/internal/runtime/loop.Loop#guidance,matrix/neo/internal/runtime/loop.Loop#incompletes,matrix/neo/internal/runtime/loop.Loop#liveness,matrix/neo/internal/runtime/loop.Loop#observer,matrix/neo/internal/runtime/loop.Loop#premises,matrix/neo/internal/runtime/loop.Loop#provider,matrix/neo/internal/runtime/loop.Loop#recorder,matrix/neo/internal/runtime/loop.Loop#store,matrix/neo/internal/runtime/loop.Loop#subgoals,matrix/neo/internal/runtime/loop.Loop#terminalOnce,matrix/neo/internal/runtime/loop.Loop#tools,matrix/neo/internal/runtime/loop.Loop#usage,matrix/neo/internal/runtime/loop.Loop.Resume,matrix/neo/internal/runtime/loop.Loop.Turn,matrix/neo/internal/runtime/loop.Loop.commitEvidence,matrix/neo/internal/runtime/loop.Loop.deliverAccepted,matrix/neo/internal/runtime/loop.Loop.deliverHonestPartial,matrix/neo/internal/runtime/loop.Loop.derivePolicy,matrix/neo/internal/runtime/loop.Loop.execute,matrix/neo/internal/runtime/loop.Loop.generate,matrix/neo/internal/runtime/loop.Loop.incomplete,matrix/neo/internal/runtime/loop.Loop.injectToolResult,matrix/neo/internal/runtime/loop.Loop.observeDoubt,matrix/neo/internal/runtime/loop.Loop.reconcilePending,matrix/neo/internal/runtime/loop.Loop.runTurn,matrix/neo/internal/runtime/loop.Loop.save,matrix/neo/internal/runtime/loop.Loop.subgoalFor
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#activation kind=field
+  digest=b3:fdaf1dbf9da9619ac9b8f23ec3de91ec98e720ec41084bc82ea9ea6323cf10fe file=neo/internal/runtime/loop/loop.go range=203:203 lang=go exported=false byte_range=8253:8286
+  sig=loop.ActivationSource
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#config kind=field
+  digest=b3:e4f319e382f75bdf96b4885002044a5b7aad2a1b8497529257fc4af2db5fd1da file=neo/internal/runtime/loop/loop.go range=200:200 lang=go exported=false byte_range=8158:8181
+  sig=loop.Config
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#delivery kind=field
+  digest=b3:b3302d2115f8793ce175126738c421542b82c35c29fb69981f58a81ef80165f3 file=neo/internal/runtime/loop/loop.go range=213:213 lang=go exported=false byte_range=8591:8622
+  sig=*loop.DeliveryChoke
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#doubt kind=field
+  digest=b3:23e95a2e46642b048c805030c38225e694b3cd26c854e80e54f63ce65f88e291 file=neo/internal/runtime/loop/loop.go range=210:210 lang=go exported=false byte_range=8491:8523
+  sig=loop.DoubtController
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#evidenceJournal kind=field
+  digest=b3:d3b4915ff13c7b6911b48e6aa7e4e1ca5e97c694501ccc089aa9fa0e35276a8f file=neo/internal/runtime/loop/loop.go range=207:207 lang=go exported=false byte_range=8388:8420
+  sig=loop.EvidenceJournal
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#evidenceObserver kind=field
+  digest=b3:e430acfdc86b1a6f5a51eecb69f086ea44e60c68ba59f98019a9846cd4b041b8 file=neo/internal/runtime/loop/loop.go range=208:208 lang=go exported=false byte_range=8422:8455
+  sig=loop.EvidenceObserver
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#gate kind=field
+  digest=b3:20b4717f88677f74e902db7e0a94aec1acb10888196143eab0aeb01389040358 file=neo/internal/runtime/loop/loop.go range=202:202 lang=go exported=false byte_range=8220:8251
+  sig=loop.CompletionGate
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#guidance kind=field
+  digest=b3:1b5c18034aef2bb7cb7314497ef39d646f759b0604ea624a629c300db2ace1dc file=neo/internal/runtime/loop/loop.go range=212:212 lang=go exported=false byte_range=8558:8589
+  sig=loop.GuidanceSource
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#incompletes kind=field
+  digest=b3:d5bbb2c6f6b616c1a24a12ce915d2f5827c9437f3a6371223e91d73eb1041e5f file=neo/internal/runtime/loop/loop.go range=206:206 lang=go exported=false byte_range=8351:8386
+  sig=loop.IncompleteRecorder
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#liveness kind=field
+  digest=b3:ba63558c7f87f594e359c398d2dd73e0bf1c5e769fc08edf642dc6b1a38307c7 file=neo/internal/runtime/loop/loop.go range=211:211 lang=go exported=false byte_range=8525:8556
+  sig=loop.LivenessSource
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#observer kind=field
+  digest=b3:521dc75232760a2c4b58ff57011ccb365ee2710ad76285d177b4bc8ad6a93b79 file=neo/internal/runtime/loop/loop.go range=201:201 lang=go exported=false byte_range=8183:8218
+  sig=loop.GenerationObserver
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#premises kind=field
+  digest=b3:91cf16ea0bf8a28d4624f9f920dcfcddc231caf20769f49a95d8a1712c442af2 file=neo/internal/runtime/loop/loop.go range=204:204 lang=go exported=false byte_range=8288:8318
+  sig=loop.PremiseSource
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#provider kind=field
+  digest=b3:09bc4db86306069162c1263820a9766e4d414ec12d00ab386fb484f757914c15 file=neo/internal/runtime/loop/loop.go range=197:197 lang=go exported=false byte_range=8066:8092
+  sig=loop.Generator
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#recorder kind=field
+  digest=b3:92581fe6107988bb0dd9088412ba5aa56d6d7cf8d9fa16ebc6f9ddbb92d633b0 file=neo/internal/runtime/loop/loop.go range=205:205 lang=go exported=false byte_range=8320:8349
+  sig=loop.TurnRecorder
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#store kind=field
+  digest=b3:50a4d8b13af6b2a1d0aec4c0e3a5bb5c9617a5c1a2d04952c7d931c158f1a750 file=neo/internal/runtime/loop/loop.go range=199:199 lang=go exported=false byte_range=8124:8156
+  sig=loop.CheckpointStore
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#subgoals kind=field
+  digest=b3:79bf504dcd82ce41d534be6bb4ba339b18c0ce0a49755ed3b0386cc4646019d0 file=neo/internal/runtime/loop/loop.go range=209:209 lang=go exported=false byte_range=8457:8489
+  sig=loop.SubgoalResolver
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#terminalOnce kind=field
+  digest=b3:362b662bccf8e47316937e68cf2c1924163e627b0620262e4f3a39ef626d5b3f file=neo/internal/runtime/loop/loop.go range=216:216 lang=go exported=false byte_range=8662:8684
+  sig=sync.Once
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#tools kind=field
+  digest=b3:44a0719639f07f290cda45a284cc59b8f0e2ebc9c556a6db1351ebf76d361465 file=neo/internal/runtime/loop/loop.go range=198:198 lang=go exported=false byte_range=8094:8122
+  sig=loop.ToolManager
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop#usage kind=field
+  digest=b3:f53642215b4befbc73be84849a186f819b19b42e4d7e96c578f1574f5bfd2f78 file=neo/internal/runtime/loop/loop.go range=214:214 lang=go exported=false byte_range=8624:8659
+  sig=provider.TurnUsage
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.Resume kind=method
+  digest=b3:740a10cc033d562372c4937d96eed5ac5c5b5fa935d263416833bb12698bb0dd file=neo/internal/runtime/loop/loop.go range=318:336 lang=go exported=true byte_range=11805:12354
+  sig=func (loop *Loop) Resume(\n	ctx context.Context,\n	userContent string,\n	checkpoint turnstate.Checkpoint,\n) (Response, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.Turn kind=method
+  digest=b3:c1ea4b0f9559b118ffef8fb1e52700099f5441524c9a1750a3593def4e11bb89 file=neo/internal/runtime/loop/loop.go range=296:316 lang=go exported=true byte_range=11215:11803
+  sig=func (loop *Loop) Turn(\n	ctx context.Context,\n	userContent string,\n) (Response, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.commitEvidence kind=method
+  digest=b3:5e4267308a7ccab7373665426701626f20e5dc86af9345d8dfb2fbe4eb646a87 file=neo/internal/runtime/loop/evidence.go range=51:83 lang=go exported=false byte_range=1275:2106
+  sig=func (loop *Loop) commitEvidence(\n	ctx context.Context,\n	execution *ToolExecution,\n	checkpoint turnstate.Checkpoint,\n	response Response,\n	started time.Time,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/evidence.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.deliverAccepted kind=method
+  digest=b3:ce64c2540af7d9e2be1ccb709bbbd96edb938d24320108d5e781caac15580f94 file=neo/internal/runtime/loop/loop.go range=1093:1149 lang=go exported=false byte_range=34888:36503
+  sig=func (loop *Loop) deliverAccepted(\n	ctx context.Context,\n	userContent string,\n	checkpoint turnstate.Checkpoint,\n	response Response,\n	state cursor,\n	generation protocol.NormalizedGeneration,\n	streamed bool,\n) (Response, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.deliverHonestPartial kind=method
+  digest=b3:781643b05caff06a2b1bff7910d74d4879d448e850e7b0ecc2857c268f65ae2d file=neo/internal/runtime/loop/loop.go range=1151:1173 lang=go exported=false byte_range=36505:37202
+  sig=func (loop *Loop) deliverHonestPartial(\n	ctx context.Context,\n	userContent string,\n	checkpoint turnstate.Checkpoint,\n	response Response,\n	state cursor,\n	boundary string,\n) (Response, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.derivePolicy kind=method
+  digest=b3:284f4681037b7fa1b8dc2e447d2a40f3f6ffcae60faadf59fc0786f4ff467e2f file=neo/internal/runtime/loop/loop.go range=915:931 lang=go exported=false byte_range=30088:30682
+  sig=func (loop *Loop) derivePolicy(\n	userContent string,\n	state cursor,\n) (liveness.Policy, error)
+  doc=derivePolicy reads the measured epistemic counters once per turn and derives\nthe bounds the turn runs under. It fails closed: an unvalidatable policy is a\ntyped incomplete over the checkpoint, never an unbounded turn.
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.execute kind=method
+  digest=b3:825910e0d27e856aac823b168c32b366ae86f2a89ade101ce3c3a6395c859fee file=neo/internal/runtime/loop/loop.go range=996:1017 lang=go exported=false byte_range=32287:32853
+  sig=func (loop *Loop) execute(\n	ctx context.Context,\n	call protocol.NormalizedToolCall,\n	idempotencyKey string,\n	started time.Time,\n) (ToolResult, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.generate kind=method
+  digest=b3:7a608c688b0147d2dd317a0131706bfe1dfa0a46d3513fc6bc1fa48d120959fb file=neo/internal/runtime/loop/loop.go range=933:994 lang=go exported=false byte_range=30684:32285
+  sig=func (loop *Loop) generate(\n	ctx context.Context,\n	request protocol.GenerationRequest,\n) (protocol.NormalizedGeneration, bool, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.incomplete kind=method
+  digest=b3:33a437ea8039b6b89b20557653dce14eeab1aacb6af35585c8681f637232ede7 file=neo/internal/runtime/loop/loop.go range=1194:1248 lang=go exported=false byte_range=37686:39147
+  sig=func (loop *Loop) incomplete(\n	ctx context.Context,\n	phase string,\n	checkpoint turnstate.Checkpoint,\n	response Response,\n	started time.Time,\n	advice string,\n	cause error,\n) *Incomplete
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.injectToolResult kind=method
+  digest=b3:2b2d74d300f6c3c641727f137ae29e02f116d6e22073a501953fdb5470a727a7 file=neo/internal/runtime/loop/loop.go range=878:913 lang=go exported=false byte_range=28819:30086
+  sig=func (loop *Loop) injectToolResult(\n	checkpoint *turnstate.Checkpoint,\n	response *Response,\n	call protocol.NormalizedToolCall,\n	result json.RawMessage,\n	failure string,\n)
+  doc=injectToolResult lands a runtime-authored result for a call the enforced\npolicy refused to dispatch. The marker is a TOOL RESULT, so it belongs in the\ndurable window: the model emitted that call ID and must see a real result for\nit. No tool ran, so nothing is committed to the evidence journal, the belief\nstate, or the silent voice — recording an execution that did not happen would\nbe exactly the false-evidence class the runtime exists to prevent.
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.observeDoubt kind=method
+  digest=b3:30772a735095c99ddb1785f55ca8db1756acff73cb1ee99c0d7b16b6101c573e file=neo/internal/runtime/loop/evidence.go range=85:98 lang=go exported=false byte_range=2108:2579
+  sig=func (loop *Loop) observeDoubt(\n	ctx context.Context,\n	step int,\n	execution ToolExecution,\n) (string, bool)
+  doc=observeDoubt hands one committed execution to the silent voice and returns\nthe line to fold into the next request-time clone. Silence when healthy:\nno controller, or no trigger, means the next request is byte-identical to\nthe controller absent.
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/evidence.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.reconcilePending kind=method
+  digest=b3:5b6a5395997fc2866cdae115a4d8f3eabf8df24328d54da142829447b3b4a262 file=neo/internal/runtime/loop/loop.go range=1019:1091 lang=go exported=false byte_range=32855:34886
+  sig=func (loop *Loop) reconcilePending(\n	ctx context.Context,\n	checkpoint *turnstate.Checkpoint,\n	response *Response,\n	state cursor,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.runTurn kind=method
+  digest=b3:e3939b4ef8d4f6404aa513e3560cfab4eb854e2849012712c0d6f1b329db4b05 file=neo/internal/runtime/loop/loop.go range=338:876 lang=go exported=false byte_range=12356:28817
+  sig=func (loop *Loop) runTurn(\n	ctx context.Context,\n	userContent string,\n	checkpoint turnstate.Checkpoint,\n	state cursor,\n) (Response, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.save kind=method
+  digest=b3:7307441f4eefb8ad55fa7d8ad092ee12d097f3bce3fa25c062a7c55a3f3664ce file=neo/internal/runtime/loop/loop.go range=1175:1192 lang=go exported=false byte_range=37204:37684
+  sig=func (loop *Loop) save(\n	ctx context.Context,\n	checkpoint *turnstate.Checkpoint,\n	state cursor,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Loop.subgoalFor kind=method
+  digest=b3:50297ce030fbad094af57a0f7cc4c6f3c10433d2e2518cf2fba80449ac3b7934 file=neo/internal/runtime/loop/evidence.go range=129:138 lang=go exported=false byte_range=3501:3713
+  sig=func (loop *Loop) subgoalFor(\n	call protocol.NormalizedToolCall,\n) string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Loop
+  ^defines=matrix/neo/internal/runtime/loop/evidence.go
+
+NODE id=matrix/neo/internal/runtime/loop.New kind=func
+  digest=b3:ff5154f836ccbd9cf7878560e79ecd2402d64e2aa739b92d90b02569d793c9c9 file=neo/internal/runtime/loop/loop.go range=219:294 lang=go exported=true byte_range=8688:11213
+  sig=func New(\n	generator Generator,\n	toolManager ToolManager,\n	store CheckpointStore,\n	config Config,\n	dependencies Dependencies,\n) (*Loop, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.NewCortexAdapter kind=func
+  digest=b3:02f6bbe69cbad2bc8393a15c2b98f81337603cf02cc611785dc3719cedc52262 file=neo/internal/runtime/loop/cortex.go range=31:46 lang=go exported=true byte_range=570:1025
+  sig=func NewCortexAdapter(\n	pager *memory.Pager,\n	cfg config.Config,\n	conversationID string,\n) (*CortexAdapter, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/cortex.go
+
+NODE id=matrix/neo/internal/runtime/loop.NewReporterObserver kind=func
+  digest=b3:b1882562232a476225a567647c286a742146c9e606ac08886f028338e440d026 file=neo/internal/runtime/loop/observer.go range=21:23 lang=go exported=true byte_range=370:506
+  sig=func NewReporterObserver(reporter Reporter, turn int) *ReporterObserver
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/observer.go
+
+NODE id=matrix/neo/internal/runtime/loop.NewStateCompletionGate kind=func
+  digest=b3:8bc0f413ec8ad259318695ce43ec88e9523e4591389ec588df34cff3cfbe16f9 file=neo/internal/runtime/loop/completion.go range=16:18 lang=go exported=true byte_range=303:433
+  sig=func NewStateCompletionGate(decision CompletionDecision) *StateCompletionGate
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/completion.go
+
+NODE id=matrix/neo/internal/runtime/loop.NewToolManagerAdapter kind=func
+  digest=b3:35c73a65a7dde71c0ed5d563ea3d2cd4ec058efd974b8e6972bacebf0e1833fb file=neo/internal/runtime/loop/tool_manager.go range=37:47 lang=go exported=true byte_range=709:998
+  sig=func NewToolManagerAdapter(\n	manager *tools.Manager,\n	reconciler EffectReconciler,\n) (*ToolManagerAdapter, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/tool_manager.go
+
+NODE id=matrix/neo/internal/runtime/loop.O1FailureReplayLane kind=type
+  digest=b3:d3ad325395133666e8c191287a47957f07612da1b8e895dfea7e203700c10974 file=neo/internal/runtime/loop/o1_replay.go range=14:17 lang=go exported=true byte_range=248:335
+  sig=type O1FailureReplayLane struct {\n	mu	sync.Mutex\n	records	[]o1.FailureReplayCase\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.O1FailureReplayLane#mu,matrix/neo/internal/runtime/loop.O1FailureReplayLane#records,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete,matrix/neo/internal/runtime/loop.O1FailureReplayLane.Records
+  implements=matrix/neo/internal/runtime/loop.IncompleteRecorder
+  ^defines=matrix/neo/internal/runtime/loop/o1_replay.go
+
+NODE id=matrix/neo/internal/runtime/loop.O1FailureReplayLane#mu kind=field
+  digest=b3:8fb472e3c101ddbe82de3f6e4339791010616cf667662d8f80f5b138ddbd790f file=neo/internal/runtime/loop/o1_replay.go range=15:15 lang=go exported=false byte_range=283:301
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.O1FailureReplayLane
+
+NODE id=matrix/neo/internal/runtime/loop.O1FailureReplayLane#records kind=field
+  digest=b3:8ebca870a0d4443a917e30ab174c15acf001c66ad33de6b463d0d6e713e41689 file=neo/internal/runtime/loop/o1_replay.go range=16:16 lang=go exported=false byte_range=303:333
+  sig=[]o1.FailureReplayCase
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.O1FailureReplayLane
+
+NODE id=matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete kind=method
+  digest=b3:c55c22282748c063ac1f4e9bd44d7bdffbb0175275d8761c2ed419cdef28558a file=neo/internal/runtime/loop/o1_replay.go range=19:51 lang=go exported=true byte_range=337:1274
+  sig=func (lane *O1FailureReplayLane) RecordIncomplete(\n	_ context.Context,\n	record IncompleteRecord,\n)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.O1FailureReplayLane
+  ^defines=matrix/neo/internal/runtime/loop/o1_replay.go
+
+NODE id=matrix/neo/internal/runtime/loop.O1FailureReplayLane.Records kind=method
+  digest=b3:a82b56e66a50c23ace021d5eefb0bca0da51b7af088e9df00f396ac1b814166b file=neo/internal/runtime/loop/o1_replay.go range=53:60 lang=go exported=true byte_range=1276:1480
+  sig=func (lane *O1FailureReplayLane) Records() []o1.FailureReplayCase
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.O1FailureReplayLane
+  ^defines=matrix/neo/internal/runtime/loop/o1_replay.go
+
+NODE id=matrix/neo/internal/runtime/loop.PremiseSet kind=type
+  digest=b3:c410efaa6e3242bd6f1161ab4c32e45dcb39ee0be4c5f9b7191112a3106fbed8 file=neo/internal/runtime/loop/premises.go range=11:14 lang=go exported=true byte_range=214:282
+  sig=type PremiseSet struct {\n	mu		sync.RWMutex\n	premises	[]string\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.PremiseSet#mu,matrix/neo/internal/runtime/loop.PremiseSet#premises,matrix/neo/internal/runtime/loop.PremiseSet.ActivePremises,matrix/neo/internal/runtime/loop.PremiseSet.Replace
+  implements=matrix/neo/internal/runtime/loop.PremiseSource
+  ^defines=matrix/neo/internal/runtime/loop/premises.go
+
+NODE id=matrix/neo/internal/runtime/loop.PremiseSet#mu kind=field
+  digest=b3:a7c75c859cdd604b83fb395d202b56fc3870dbbd2c92a3ee325dbad234358b51 file=neo/internal/runtime/loop/premises.go range=12:12 lang=go exported=false byte_range=240:261
+  sig=sync.RWMutex
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.PremiseSet
+
+NODE id=matrix/neo/internal/runtime/loop.PremiseSet#premises kind=field
+  digest=b3:4ab302192b56dcfefb912b27f25eb6061020126ce939225c07ffc3993c2cfad7 file=neo/internal/runtime/loop/premises.go range=13:13 lang=go exported=false byte_range=263:280
+  sig=[]string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.PremiseSet
+
+NODE id=matrix/neo/internal/runtime/loop.PremiseSet.ActivePremises kind=method
+  digest=b3:2d955e725efc98b92aa1998670d0bbf9ec29f80dd4381b822f782fc302b3ff5c file=neo/internal/runtime/loop/premises.go range=28:35 lang=go exported=true byte_range=592:764
+  sig=func (set *PremiseSet) ActivePremises() []string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.PremiseSet
+  ^defines=matrix/neo/internal/runtime/loop/premises.go
+
+NODE id=matrix/neo/internal/runtime/loop.PremiseSet.Replace kind=method
+  digest=b3:0bd2963576848cfe8eeb188800ab91ab35345d5ae96f624c51c12ffb9420b5f3 file=neo/internal/runtime/loop/premises.go range=16:26 lang=go exported=true byte_range=284:590
+  sig=func (set *PremiseSet) Replace(premises []string)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.PremiseSet
+  ^defines=matrix/neo/internal/runtime/loop/premises.go
+
+NODE id=matrix/neo/internal/runtime/loop.PremiseSource kind=interface
+  digest=b3:80b536fc6d47af411042b353cbaadeb8f5bacfdcf48eb2be8ca24790a3cbd793 file=neo/internal/runtime/loop/interfaces.go range=86:88 lang=go exported=true byte_range=2062:2121
+  sig=type PremiseSource interface {\n	ActivePremises() []string\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/loop.PremiseSet
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.ReconcileCompleted kind=const
+  digest=b3:9b90ff573e527f865904ae4a01d74df66f9f8c90b63f0aa8dc9ff59195d25680 file=neo/internal/runtime/loop/interfaces.go range=45:45 lang=go exported=true byte_range=1121:1169
+  sig=loop.ReconcileStatus
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.ReconcileResult kind=type
+  digest=b3:52562592173de348dd205e745e111dd7903d3cf0ebd545f264333b496cf015b4 file=neo/internal/runtime/loop/interfaces.go range=50:53 lang=go exported=true byte_range=1272:1346
+  sig=type ReconcileResult struct {\n	Status	ReconcileStatus\n	Result	ToolResult\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.ReconcileResult#Result,matrix/neo/internal/runtime/loop.ReconcileResult#Status
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.ReconcileResult#Result kind=field
+  digest=b3:d4c16449327abd2d1128db9a8c5600465cee545cbddd12b1701d569286501b16 file=neo/internal/runtime/loop/interfaces.go range=52:52 lang=go exported=true byte_range=1327:1344
+  sig=loop.ToolResult
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ReconcileResult
+
+NODE id=matrix/neo/internal/runtime/loop.ReconcileResult#Status kind=field
+  digest=b3:f2a29ad08bc8ab299149234590128bf4e967c5e810b8303ffc03cf41909cb9db file=neo/internal/runtime/loop/interfaces.go range=51:51 lang=go exported=true byte_range=1303:1325
+  sig=loop.ReconcileStatus
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ReconcileResult
+
+NODE id=matrix/neo/internal/runtime/loop.ReconcileRetrySafe kind=const
+  digest=b3:a6b23eae72ff6da23b175c1bdce96a8acc4021c6cae2f9fd60653abc341cf0c9 file=neo/internal/runtime/loop/interfaces.go range=46:46 lang=go exported=true byte_range=1171:1220
+  sig=loop.ReconcileStatus
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.ReconcileStatus kind=type
+  digest=b3:6057d99dca0c690685e86fb18a82272cc0d024aa7b87a277ae4d6603ad34bec6 file=neo/internal/runtime/loop/interfaces.go range=42:42 lang=go exported=true byte_range=1083:1110
+  sig=type ReconcileStatus string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.ReconcileUnknown kind=const
+  digest=b3:f4fd6959111dda41e95d24893e8ae7d8b7cfa9d34d97c862396a0fed2cc0e9a8 file=neo/internal/runtime/loop/interfaces.go range=47:47 lang=go exported=true byte_range=1222:1268
+  sig=loop.ReconcileStatus
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.Reporter kind=interface
+  digest=b3:be55b010d90a22d85ee42703881f09dc5b533eeda821adcc654c4fb60fb2d269 file=neo/internal/runtime/loop/observer.go range=11:13 lang=go exported=true byte_range=214:280
+  sig=type Reporter interface {\n	Delta(turn int, channel, text string)\n}
+EDGES
+  ^implements=matrix/neo/cmd/neo.stdoutReporter,matrix/neo/internal/agent.nopReporter,matrix/neo/internal/server.automatrixReporter,matrix/neo/internal/server.captureReporter,matrix/neo/internal/server.sseReporter
+  ^defines=matrix/neo/internal/runtime/loop/observer.go
+
+NODE id=matrix/neo/internal/runtime/loop.ReporterObserver kind=type
+  digest=b3:efe22b3047ef037c584f25f4d1c5cef466612b1350fd0649eb9fdcdee6599a2e file=neo/internal/runtime/loop/observer.go range=15:19 lang=go exported=true byte_range=282:368
+  sig=type ReporterObserver struct {\n	mu		sync.Mutex\n	reporter	Reporter\n	attempt		int\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.ReporterObserver#attempt,matrix/neo/internal/runtime/loop.ReporterObserver#mu,matrix/neo/internal/runtime/loop.ReporterObserver#reporter,matrix/neo/internal/runtime/loop.ReporterObserver.CommitAttempt,matrix/neo/internal/runtime/loop.ReporterObserver.ContentDelta,matrix/neo/internal/runtime/loop.ReporterObserver.ReasoningDelta,matrix/neo/internal/runtime/loop.ReporterObserver.Reset,matrix/neo/internal/runtime/loop.ReporterObserver.emit
+  implements=matrix/neo/internal/runtime/loop.GenerationObserver
+  ^defines=matrix/neo/internal/runtime/loop/observer.go
+
+NODE id=matrix/neo/internal/runtime/loop.ReporterObserver#attempt kind=field
+  digest=b3:47b02f4f902ae82e5ed211be4a9b4a6acbcf772585f510c719246641810f1c01 file=neo/internal/runtime/loop/observer.go range=18:18 lang=go exported=false byte_range=354:366
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ReporterObserver
+
+NODE id=matrix/neo/internal/runtime/loop.ReporterObserver#mu kind=field
+  digest=b3:5aedaaf462c3fae4f7947c3a76aea8d11d8fd86e187f728847e2ba5590be0e2d file=neo/internal/runtime/loop/observer.go range=16:16 lang=go exported=false byte_range=314:333
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ReporterObserver
+
+NODE id=matrix/neo/internal/runtime/loop.ReporterObserver#reporter kind=field
+  digest=b3:ed82dc7f2c1f1a25c7196e3f252ec0467902a2ff0ae9975814e87575575505eb file=neo/internal/runtime/loop/observer.go range=17:17 lang=go exported=false byte_range=335:352
+  sig=loop.Reporter
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ReporterObserver
+
+NODE id=matrix/neo/internal/runtime/loop.ReporterObserver.CommitAttempt kind=method
+  digest=b3:e82de7fdc7a00ec396f3a6457a39e8a75e710c2185394ad06cebc8d711a90765 file=neo/internal/runtime/loop/observer.go range=51:59 lang=go exported=true byte_range=1046:1292
+  sig=func (observer *ReporterObserver) CommitAttempt(context.Context) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ReporterObserver
+  ^defines=matrix/neo/internal/runtime/loop/observer.go
+
+NODE id=matrix/neo/internal/runtime/loop.ReporterObserver.ContentDelta kind=method
+  digest=b3:20217c1cc5b6e1b77d768aad61e9f21bed720c7e4ed1ccc4d6d8f6014e54b5b2 file=neo/internal/runtime/loop/observer.go range=25:31 lang=go exported=true byte_range=508:651
+  sig=func (observer *ReporterObserver) ContentDelta(\n	_ context.Context,\n	content string,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ReporterObserver
+  ^defines=matrix/neo/internal/runtime/loop/observer.go
+
+NODE id=matrix/neo/internal/runtime/loop.ReporterObserver.ReasoningDelta kind=method
+  digest=b3:b392c7ef90789408d9eb55ee168b55a1e5c3a59f9f5bf6f9e6c5ad56973c4248 file=neo/internal/runtime/loop/observer.go range=33:39 lang=go exported=true byte_range=653:800
+  sig=func (observer *ReporterObserver) ReasoningDelta(\n	_ context.Context,\n	content string,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ReporterObserver
+  ^defines=matrix/neo/internal/runtime/loop/observer.go
+
+NODE id=matrix/neo/internal/runtime/loop.ReporterObserver.Reset kind=method
+  digest=b3:4629f66037a417a74aad562b72a2949842a934c1e6ba20193f10940a1588559a file=neo/internal/runtime/loop/observer.go range=41:49 lang=go exported=true byte_range=802:1044
+  sig=func (observer *ReporterObserver) Reset(context.Context) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ReporterObserver
+  ^defines=matrix/neo/internal/runtime/loop/observer.go
+
+NODE id=matrix/neo/internal/runtime/loop.ReporterObserver.emit kind=method
+  digest=b3:acd6edaad30c424f50e65365d9b0fb2a8abafe22064ff89918993041784d2f85 file=neo/internal/runtime/loop/observer.go range=61:67 lang=go exported=false byte_range=1294:1522
+  sig=func (observer *ReporterObserver) emit(channel, content string)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ReporterObserver
+  ^defines=matrix/neo/internal/runtime/loop/observer.go
+
+NODE id=matrix/neo/internal/runtime/loop.Response kind=type
+  digest=b3:1f76a20958ec0e61da48c2b4e9e7c6174eacce16a403c2d2e1456b994ba0700b file=neo/internal/runtime/loop/loop.go range=107:118 lang=go exported=true byte_range=4745:5087
+  sig=type Response struct {\n	Content			string\n	Generation		protocol.NormalizedGeneration\n	ToolEvents		[]ToolExecution\n	ProviderCalls		int\n	Usage			protocol.TokenUsage\n	Checkpoint		*turnstate.Checkpoint\n	ContentStreamed		bool\n	ReasoningStreamed	bool\n	HonestPartial		bool\n	Liveness		LivenessTrace\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.Response#Checkpoint,matrix/neo/internal/runtime/loop.Response#Content,matrix/neo/internal/runtime/loop.Response#ContentStreamed,matrix/neo/internal/runtime/loop.Response#Generation,matrix/neo/internal/runtime/loop.Response#HonestPartial,matrix/neo/internal/runtime/loop.Response#Liveness,matrix/neo/internal/runtime/loop.Response#ProviderCalls,matrix/neo/internal/runtime/loop.Response#ReasoningStreamed,matrix/neo/internal/runtime/loop.Response#ToolEvents,matrix/neo/internal/runtime/loop.Response#Usage
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.Response#Checkpoint kind=field
+  digest=b3:ebee135077950575c70a9f496e13ed92209eecd4bd81edbb9c7aa5bfd4b88ee2 file=neo/internal/runtime/loop/loop.go range=113:113 lang=go exported=true byte_range=4941:4980
+  sig=*turnstate.Checkpoint
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Response
+
+NODE id=matrix/neo/internal/runtime/loop.Response#Content kind=field
+  digest=b3:f3e83aa78e387e2196d5bfe4d10ec253a25927d9ba61beff506404147503f806 file=neo/internal/runtime/loop/loop.go range=108:108 lang=go exported=true byte_range=4769:4793
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Response
+
+NODE id=matrix/neo/internal/runtime/loop.Response#ContentStreamed kind=field
+  digest=b3:edd7ee608c2efe24c42f3677424e88b47303e0b817566171d70f594c3f959b35 file=neo/internal/runtime/loop/loop.go range=114:114 lang=go exported=true byte_range=4982:5004
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Response
+
+NODE id=matrix/neo/internal/runtime/loop.Response#Generation kind=field
+  digest=b3:ecbceee6091f405fc8faa5560a11f591cc37ea17604f6bd7608afb5b3ea56be7 file=neo/internal/runtime/loop/loop.go range=109:109 lang=go exported=true byte_range=4795:4842
+  sig=protocol.NormalizedGeneration
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Response
+
+NODE id=matrix/neo/internal/runtime/loop.Response#HonestPartial kind=field
+  digest=b3:0916e10062ac6702c8f3dc8e8b0bb936a8d21fa5fc517e32f41db80746756d59 file=neo/internal/runtime/loop/loop.go range=116:116 lang=go exported=true byte_range=5030:5052
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Response
+
+NODE id=matrix/neo/internal/runtime/loop.Response#Liveness kind=field
+  digest=b3:28f0342ebebf3e05574fa9bb49eab059c338aa9106515caea0b72436bf4bd111 file=neo/internal/runtime/loop/loop.go range=117:117 lang=go exported=true byte_range=5054:5085
+  sig=loop.LivenessTrace
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Response
+
+NODE id=matrix/neo/internal/runtime/loop.Response#ProviderCalls kind=field
+  digest=b3:266e75adfe925b133c095f26d3726ee8252bce9b4df247b617edfea9c37d246a file=neo/internal/runtime/loop/loop.go range=111:111 lang=go exported=true byte_range=4879:4900
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Response
+
+NODE id=matrix/neo/internal/runtime/loop.Response#ReasoningStreamed kind=field
+  digest=b3:a1464d8dcf0c8fd74df98b4e9dd5ba6383501224df9e070e637a7f1b6532caef file=neo/internal/runtime/loop/loop.go range=115:115 lang=go exported=true byte_range=5006:5028
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Response
+
+NODE id=matrix/neo/internal/runtime/loop.Response#ToolEvents kind=field
+  digest=b3:68dd4f6b8a495d8a60bc3bda497ad9108d4e36a7e5119caab821d8e9a00256a1 file=neo/internal/runtime/loop/loop.go range=110:110 lang=go exported=true byte_range=4844:4877
+  sig=[]loop.ToolExecution
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Response
+
+NODE id=matrix/neo/internal/runtime/loop.Response#Usage kind=field
+  digest=b3:259995e14b108c78640a5c32105fa203ddd34bf0dfc717cf045f428e195784ca file=neo/internal/runtime/loop/loop.go range=112:112 lang=go exported=true byte_range=4902:4939
+  sig=protocol.TokenUsage
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.Response
+
+NODE id=matrix/neo/internal/runtime/loop.ResumeIncomplete kind=func
+  digest=b3:626942a81852a132119e868ec16b4007065ca3c103749750bae5a812d5cf26f4 file=neo/internal/runtime/loop/reconcile.go range=34:53 lang=go exported=true byte_range=636:1176
+  sig=func ResumeIncomplete(\n	ctx context.Context,\n	userContent string,\n	incomplete *Incomplete,\n	next *Loop,\n) (Response, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/reconcile.go
+
+NODE id=matrix/neo/internal/runtime/loop.ResumeLoopFactory kind=type
+  digest=b3:0fd3487e038a4a0018ed297ab45a6c171fe653876649dc92cb051baf255666c5 file=neo/internal/runtime/loop/reconcile.go range=17:17 lang=go exported=true byte_range=312:375
+  sig=type ResumeLoopFactory func(turnstate.TurnState) (*Loop, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/reconcile.go
+
+NODE id=matrix/neo/internal/runtime/loop.StateCompletionGate kind=type
+  digest=b3:0812e548d77ae7775d42bc61794109acf6d99fe82b9ea9d17f417fb374182c08 file=neo/internal/runtime/loop/completion.go range=11:14 lang=go exported=true byte_range=214:301
+  sig=type StateCompletionGate struct {\n	mu		sync.RWMutex\n	decision	CompletionDecision\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.StateCompletionGate#decision,matrix/neo/internal/runtime/loop.StateCompletionGate#mu,matrix/neo/internal/runtime/loop.StateCompletionGate.CheckCompletion,matrix/neo/internal/runtime/loop.StateCompletionGate.Update
+  implements=matrix/neo/internal/runtime/loop.CompletionGate
+  ^defines=matrix/neo/internal/runtime/loop/completion.go
+
+NODE id=matrix/neo/internal/runtime/loop.StateCompletionGate#decision kind=field
+  digest=b3:a15a8312a64bb95aa7a489aa06cd26292a7604878778aa7fa60b28f998e8df1e file=neo/internal/runtime/loop/completion.go range=13:13 lang=go exported=false byte_range=272:299
+  sig=loop.CompletionDecision
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.StateCompletionGate
+
+NODE id=matrix/neo/internal/runtime/loop.StateCompletionGate#mu kind=field
+  digest=b3:a7c75c859cdd604b83fb395d202b56fc3870dbbd2c92a3ee325dbad234358b51 file=neo/internal/runtime/loop/completion.go range=12:12 lang=go exported=false byte_range=249:270
+  sig=sync.RWMutex
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.StateCompletionGate
+
+NODE id=matrix/neo/internal/runtime/loop.StateCompletionGate.CheckCompletion kind=method
+  digest=b3:63a67f528d0e58ae76aaa9380691500bbed68ed50e43505e22c1fba07ca0f430 file=neo/internal/runtime/loop/completion.go range=26:35 lang=go exported=true byte_range=569:806
+  sig=func (gate *StateCompletionGate) CheckCompletion(\n	context.Context,\n) (CompletionDecision, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.StateCompletionGate
+  ^defines=matrix/neo/internal/runtime/loop/completion.go
+
+NODE id=matrix/neo/internal/runtime/loop.StateCompletionGate.Update kind=method
+  digest=b3:50707eb7d3caa3fa28175a038a72a2268c95e4bd9cb2ca7f3319174dc9acdfd9 file=neo/internal/runtime/loop/completion.go range=20:24 lang=go exported=true byte_range=435:567
+  sig=func (gate *StateCompletionGate) Update(decision CompletionDecision)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.StateCompletionGate
+  ^defines=matrix/neo/internal/runtime/loop/completion.go
+
+NODE id=matrix/neo/internal/runtime/loop.StreamingGenerator kind=interface
+  digest=b3:16714defc2f5c9f4ebc3957dd7f40c0b9ed3acea99b52e6b0f140cd9bf033364 file=neo/internal/runtime/loop/interfaces.go range=25:32 lang=go exported=true byte_range=557:761
+  sig=type StreamingGenerator interface {\n	GenerateStream(\n		context.Context,\n		protocol.GenerationRequest,\n		*provider.TurnUsage,\n		func(protocol.StreamChunk) error,\n	) (protocol.NormalizedGeneration, error)\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/provider.MiMoGenerator
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.SubgoalResolver kind=interface
+  digest=b3:c51719e59cb95fedc2ba06810f0b33fd0e83e8a697e258da17e41ea5c0d8a2da file=neo/internal/runtime/loop/interfaces.go range=129:131 lang=go exported=true byte_range=2892:2974
+  sig=type SubgoalResolver interface {\n	SubgoalFor(protocol.NormalizedToolCall) string\n}
+EDGES
+  ^implements=matrix/neo/internal/agent.rootSubgoal
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.TaskLedgerReconciler kind=type
+  digest=b3:e4cedd33078ca4a0017b4dea7471fa68c16ad4a78b73cb6e056c829f17bf0455 file=neo/internal/runtime/loop/reconcile.go range=27:32 lang=go exported=true byte_range=494:634
+  sig=type TaskLedgerReconciler struct {\n	Tasks		*task.Store\n	Turns		*turnstate.Store\n	NewLoop		ResumeLoopFactory\n	Reporter	DeliveryReporter\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.TaskLedgerReconciler#NewLoop,matrix/neo/internal/runtime/loop.TaskLedgerReconciler#Reporter,matrix/neo/internal/runtime/loop.TaskLedgerReconciler#Tasks,matrix/neo/internal/runtime/loop.TaskLedgerReconciler#Turns,matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/runtime/loop.TaskLedgerReconciler.surfaceOrphan
+  ^defines=matrix/neo/internal/runtime/loop/reconcile.go
+
+NODE id=matrix/neo/internal/runtime/loop.TaskLedgerReconciler#NewLoop kind=field
+  digest=b3:c8af3128cc66b84b60e13e4e3182d7468b628af2119788b8d122beb481c0375c file=neo/internal/runtime/loop/reconcile.go range=30:30 lang=go exported=true byte_range=579:605
+  sig=loop.ResumeLoopFactory
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.TaskLedgerReconciler
+
+NODE id=matrix/neo/internal/runtime/loop.TaskLedgerReconciler#Reporter kind=field
+  digest=b3:96a200816350c9d19895f1c96c3c67d097177a5d30099dae885d3183e8e6dc19 file=neo/internal/runtime/loop/reconcile.go range=31:31 lang=go exported=true byte_range=607:632
+  sig=loop.DeliveryReporter
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.TaskLedgerReconciler
+
+NODE id=matrix/neo/internal/runtime/loop.TaskLedgerReconciler#Tasks kind=field
+  digest=b3:a3cd555cafad80a934ac3853b2171b7bccd1216e51830ce687614ef6d67e8962 file=neo/internal/runtime/loop/reconcile.go range=28:28 lang=go exported=true byte_range=530:550
+  sig=*task.Store
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.TaskLedgerReconciler
+
+NODE id=matrix/neo/internal/runtime/loop.TaskLedgerReconciler#Turns kind=field
+  digest=b3:f9b60c74c4eff3af76e089ddf60636cb0dc221732cd240915edb4b41a6cde09e file=neo/internal/runtime/loop/reconcile.go range=29:29 lang=go exported=true byte_range=552:577
+  sig=*turnstate.Store
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.TaskLedgerReconciler
+
+NODE id=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile kind=method
+  digest=b3:a08da730b385469516046e535e6647885cf06a1db321cb3dd89309723e9fce09 file=neo/internal/runtime/loop/reconcile.go range=55:168 lang=go exported=true byte_range=1178:4505
+  sig=func (reconciler *TaskLedgerReconciler) Reconcile(\n	ctx context.Context,\n) (BootReconcileResult, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.TaskLedgerReconciler
+  ^defines=matrix/neo/internal/runtime/loop/reconcile.go
+
+NODE id=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.surfaceOrphan kind=method
+  digest=b3:832a3fca24e18e6385d9f8b2c3e50f7fba1607afc84cce373999d82fbc51a022 file=neo/internal/runtime/loop/reconcile.go range=202:206 lang=go exported=false byte_range=5534:5685
+  sig=func (reconciler *TaskLedgerReconciler) surfaceOrphan(content string)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.TaskLedgerReconciler
+  ^defines=matrix/neo/internal/runtime/loop/reconcile.go
+
+NODE id=matrix/neo/internal/runtime/loop.ToolExecution kind=type
+  digest=b3:81ba5f9cf7448e5d00387a4b8ee99a6589d974f71ebc50b30f155a42e1cf14ad file=neo/internal/runtime/loop/loop.go range=96:105 lang=go exported=true byte_range=4185:4743
+  sig=type ToolExecution struct {\n	Call		protocol.NormalizedToolCall	`json:"call"`\n	Result		json.RawMessage			`json:"result"`\n	Error		string				`json:"error,omitempty"`\n	Expect		string				`json:"expect,omitempty"`\n	IdempotencyKey	string				`json:"idempotency_key"`\n	MatchVerdict	string				`json:"match_verdict"`\n	SubgoalID	string				`json:"subgoal_id"`\n	Citation	*cortex.ToolEventCitation	`json:"citation,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.ToolExecution#Call,matrix/neo/internal/runtime/loop.ToolExecution#Citation,matrix/neo/internal/runtime/loop.ToolExecution#Error,matrix/neo/internal/runtime/loop.ToolExecution#Expect,matrix/neo/internal/runtime/loop.ToolExecution#IdempotencyKey,matrix/neo/internal/runtime/loop.ToolExecution#MatchVerdict,matrix/neo/internal/runtime/loop.ToolExecution#Result,matrix/neo/internal/runtime/loop.ToolExecution#SubgoalID
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.ToolExecution#Call kind=field
+  digest=b3:16fa6be5ed0639bec2d0c9f98b70ad561f7f9f50e206f1daa3389eedaf3beaa4 file=neo/internal/runtime/loop/loop.go range=97:97 lang=go exported=true byte_range=4214:4270
+  sig=protocol.NormalizedToolCall
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolExecution
+
+NODE id=matrix/neo/internal/runtime/loop.ToolExecution#Citation kind=field
+  digest=b3:5a9713c8a9c86a7ee407a4ad224ebdc1763d94b7ebbbce30445e15e32701dd5e file=neo/internal/runtime/loop/loop.go range=104:104 lang=go exported=true byte_range=4671:4741
+  sig=*cortex.ToolEventCitation
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolExecution
+
+NODE id=matrix/neo/internal/runtime/loop.ToolExecution#Error kind=field
+  digest=b3:54c3889481f0791cc21c1f19c7f990ed6c0d951d9a64e22c48e86ec05e9301ad file=neo/internal/runtime/loop/loop.go range=99:99 lang=go exported=true byte_range=4332:4399
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolExecution
+
+NODE id=matrix/neo/internal/runtime/loop.ToolExecution#Expect kind=field
+  digest=b3:45cfaa089ff94e66d510e3c75edbc8f7bfcc9b1a90b00337585da54b59958007 file=neo/internal/runtime/loop/loop.go range=100:100 lang=go exported=true byte_range=4401:4469
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolExecution
+
+NODE id=matrix/neo/internal/runtime/loop.ToolExecution#IdempotencyKey kind=field
+  digest=b3:46733b8416798977e29b5d226d20ce8b42df6a2e36fe1ab0878c3e3eddd40ca2 file=neo/internal/runtime/loop/loop.go range=101:101 lang=go exported=true byte_range=4471:4538
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolExecution
+
+NODE id=matrix/neo/internal/runtime/loop.ToolExecution#MatchVerdict kind=field
+  digest=b3:29877e6e8f0efa300a2c623998de36618628851f7568d3ea0c20ae878177cd0c file=neo/internal/runtime/loop/loop.go range=102:102 lang=go exported=true byte_range=4540:4605
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolExecution
+
+NODE id=matrix/neo/internal/runtime/loop.ToolExecution#Result kind=field
+  digest=b3:126400701ebeee8604f261de3b9dc1f8d1c1b11eafc16abd152cd1a4413ca6ac file=neo/internal/runtime/loop/loop.go range=98:98 lang=go exported=true byte_range=4272:4330
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolExecution
+
+NODE id=matrix/neo/internal/runtime/loop.ToolExecution#SubgoalID kind=field
+  digest=b3:52dbdfa7a9e1d003be2cbc92f03a0c6817d6cbf6882d6efa4ba7e98c7ad05f56 file=neo/internal/runtime/loop/loop.go range=103:103 lang=go exported=true byte_range=4607:4669
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolExecution
+
+NODE id=matrix/neo/internal/runtime/loop.ToolManager kind=interface
+  digest=b3:290e3edfdb425994340a25f4cc4270c030e89ca6ec63bcb07a9a03a66a180fc4 file=neo/internal/runtime/loop/interfaces.go range=55:63 lang=go exported=true byte_range=1348:1584
+  sig=type ToolManager interface {\n	Surface(context.Context) []protocol.ToolDefinition\n	Execute(\n		context.Context,\n		protocol.NormalizedToolCall,\n		string,\n	) (ToolResult, error)\n	Reconcile(context.Context, string) (ReconcileResult, error)\n}
+EDGES
+  ^implements=matrix/neo/internal/agent.resurrectionToolSurface,matrix/neo/internal/runtime/loop.ToolManagerAdapter,matrix/neo/internal/runtime/work.ScopedToolManager
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.ToolManagerAdapter kind=type
+  digest=b3:639b2b73f81af2641ea945f24660234b2f17f879622471eaf9e1a8d6aab7f56b file=neo/internal/runtime/loop/tool_manager.go range=32:35 lang=go exported=true byte_range=617:707
+  sig=type ToolManagerAdapter struct {\n	manager		*tools.Manager\n	reconciler	EffectReconciler\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.ToolManagerAdapter#manager,matrix/neo/internal/runtime/loop.ToolManagerAdapter#reconciler,matrix/neo/internal/runtime/loop.ToolManagerAdapter.Execute,matrix/neo/internal/runtime/loop.ToolManagerAdapter.Reconcile,matrix/neo/internal/runtime/loop.ToolManagerAdapter.Surface
+  implements=matrix/neo/internal/runtime/loop.ToolManager,matrix/neo/internal/runtime/work.ToolManager
+  ^defines=matrix/neo/internal/runtime/loop/tool_manager.go
+
+NODE id=matrix/neo/internal/runtime/loop.ToolManagerAdapter#manager kind=field
+  digest=b3:b379d64e1c229159a44f296a662db791856d8547b58e06734b278bcb401bb4d5 file=neo/internal/runtime/loop/tool_manager.go range=33:33 lang=go exported=false byte_range=651:676
+  sig=*tools.Manager
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolManagerAdapter
+
+NODE id=matrix/neo/internal/runtime/loop.ToolManagerAdapter#reconciler kind=field
+  digest=b3:eec1ef70e682f5d91ad8e9fc3555fc61b3281745dedec85e6edc624e391ef623 file=neo/internal/runtime/loop/tool_manager.go range=34:34 lang=go exported=false byte_range=678:705
+  sig=loop.EffectReconciler
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolManagerAdapter
+
+NODE id=matrix/neo/internal/runtime/loop.ToolManagerAdapter.Execute kind=method
+  digest=b3:499b7e0c11e32d217f6466f0dcc17347c8183ecdfbcb7c1801764d1156c9d241 file=neo/internal/runtime/loop/tool_manager.go range=71:118 lang=go exported=true byte_range=1580:2962
+  sig=func (adapter *ToolManagerAdapter) Execute(\n	ctx context.Context,\n	call protocol.NormalizedToolCall,\n	idempotencyKey string,\n) (ToolResult, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolManagerAdapter
+  ^defines=matrix/neo/internal/runtime/loop/tool_manager.go
+
+NODE id=matrix/neo/internal/runtime/loop.ToolManagerAdapter.Reconcile kind=method
+  digest=b3:16c92af67c47c359b01e2b2b9030215f5340208b8151f127a5994f19705e848d file=neo/internal/runtime/loop/tool_manager.go range=120:128 lang=go exported=true byte_range=2964:3241
+  sig=func (adapter *ToolManagerAdapter) Reconcile(\n	ctx context.Context,\n	idempotencyKey string,\n) (ReconcileResult, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolManagerAdapter
+  ^defines=matrix/neo/internal/runtime/loop/tool_manager.go
+
+NODE id=matrix/neo/internal/runtime/loop.ToolManagerAdapter.Surface kind=method
+  digest=b3:058226e311edad52fb294b48fcbf6e10410833d7ac85a74ace18d98f65b0d750 file=neo/internal/runtime/loop/tool_manager.go range=49:69 lang=go exported=true byte_range=1000:1578
+  sig=func (adapter *ToolManagerAdapter) Surface(\n	context.Context,\n) []protocol.ToolDefinition
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolManagerAdapter
+  ^defines=matrix/neo/internal/runtime/loop/tool_manager.go
+
+NODE id=matrix/neo/internal/runtime/loop.ToolResult kind=type
+  digest=b3:55cf10c11f12862e1408a3dc7d8384a3adb12a12c702fa021522ad76aa10aaba file=neo/internal/runtime/loop/interfaces.go range=34:40 lang=go exported=true byte_range=763:1081
+  sig=type ToolResult struct {\n	Content		json.RawMessage	`json:"content"`\n	IsError		bool		`json:"is_error"`\n	FailureClass	string		`json:"failure_class,omitempty"`\n	Retryable	bool		`json:"retryable,omitempty"`\n	FailureMessage	string		`json:"failure_message,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.ToolResult#Content,matrix/neo/internal/runtime/loop.ToolResult#FailureClass,matrix/neo/internal/runtime/loop.ToolResult#FailureMessage,matrix/neo/internal/runtime/loop.ToolResult#IsError,matrix/neo/internal/runtime/loop.ToolResult#Retryable
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop.ToolResult#Content kind=field
+  digest=b3:2496a672b9244ecb4ac0b4eaa572e035fe021cdc936c4088df7810fc9be1631c file=neo/internal/runtime/loop/interfaces.go range=35:35 lang=go exported=true byte_range=789:836
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolResult
+
+NODE id=matrix/neo/internal/runtime/loop.ToolResult#FailureClass kind=field
+  digest=b3:1a7ef3b6f82924d2bc951d38f72ffbff45c8a5f56cecc1e5b571135a5c621f97 file=neo/internal/runtime/loop/interfaces.go range=37:37 lang=go exported=true byte_range=888:951
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolResult
+
+NODE id=matrix/neo/internal/runtime/loop.ToolResult#FailureMessage kind=field
+  digest=b3:c391a636f866b45a42c2fbbb6e8149db727e79a80b119a5be427461d7751a8ab file=neo/internal/runtime/loop/interfaces.go range=39:39 lang=go exported=true byte_range=1014:1079
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolResult
+
+NODE id=matrix/neo/internal/runtime/loop.ToolResult#IsError kind=field
+  digest=b3:5ea140a20b78c74d96b29d68db8054a0a8029e066d553d69b0da05c96e5f5e56 file=neo/internal/runtime/loop/interfaces.go range=36:36 lang=go exported=true byte_range=838:886
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolResult
+
+NODE id=matrix/neo/internal/runtime/loop.ToolResult#Retryable kind=field
+  digest=b3:2cd7108024ffa5927d55a01d17d48e276ed8f2fa7c1854f167bb796293d8d876 file=neo/internal/runtime/loop/interfaces.go range=38:38 lang=go exported=true byte_range=953:1012
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.ToolResult
+
+NODE id=matrix/neo/internal/runtime/loop.TurnRecorder kind=interface
+  digest=b3:01798cdc6bdccb59a5db43a7939454324fc272baf2bb9aa79426cd6a08d78d1c file=neo/internal/runtime/loop/interfaces.go range=94:100 lang=go exported=true byte_range=2184:2368
+  sig=type TurnRecorder interface {\n	RecordUser(string)\n	RecordAssistant(protocol.Message)\n	RecordTool(protocol.Message)\n	RecordDelivery(string)\n	ProvenanceRange() (string, uint64, uint64)\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/loop.CortexAdapter
+  ^defines=matrix/neo/internal/runtime/loop/interfaces.go
+
+NODE id=matrix/neo/internal/runtime/loop._ kind=var
+  digest=b3:655e918408c2de23f31ed98e2a2f1b357058247a95726bedb86f556c6d5ac8b9 file=neo/internal/runtime/loop/effect_store.go range=107:107 lang=go exported=false byte_range=2722:2771
+  sig=loop.EffectReconciler
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/effect_store.go
+
+NODE id=matrix/neo/internal/runtime/loop.appendGuidance kind=func
+  digest=b3:2a7473985afa6c26e2ae44cbb136b68d41016a8a7432b3eb59626540d7b58678 file=neo/internal/runtime/loop/loop.go range=1276:1296 lang=go exported=false byte_range=39873:40401
+  sig=func appendGuidance(\n	messages []protocol.Message,\n	guidance []string,\n) []protocol.Message
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.automatrixIdle kind=const
+  digest=b3:bd473974c1e74719730610046da7306b1b74cfba3d2a49d016be4f556de44902 file=neo/internal/runtime/loop/delivery.go range=19:19 lang=go exported=false byte_range=464:504
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/delivery.go
+
+NODE id=matrix/neo/internal/runtime/loop.automatrixWakeMarker kind=const
+  digest=b3:741c380c73dfbc35261b0dcaf397f4f8d0566e56ab8a9905a6c671e1b97ca70d file=neo/internal/runtime/loop/delivery.go range=18:18 lang=go exported=false byte_range=427:462
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/delivery.go
+
+NODE id=matrix/neo/internal/runtime/loop.boundCircuitBreaker kind=const
+  digest=b3:6146672c4d25b9aac510ffa7821b8a8e96ec8eaae3f9b0239c70dc45dbbf8410 file=neo/internal/runtime/loop/loop.go range=57:57 lang=go exported=false byte_range=2964:3006
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.boundExplorationBudget kind=const
+  digest=b3:25dffbfba0f65caf23250b3fb86f3dcb7824114effadd9b9766784bc14a2e343 file=neo/internal/runtime/loop/loop.go range=54:54 lang=go exported=false byte_range=2827:2872
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.boundParallelism kind=const
+  digest=b3:6e4d30375e698104a222b990603e383c8421aced30046ab5895ebd2542927b73 file=neo/internal/runtime/loop/loop.go range=55:55 lang=go exported=false byte_range=2874:2912
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.boundSameStrategy kind=const
+  digest=b3:567a620f9bfa24d30da1d8af6960001dcd7ec7f614d08e445ae12f5e5461e9eb file=neo/internal/runtime/loop/loop.go range=56:56 lang=go exported=false byte_range=2914:2962
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.boundTokenBudget kind=const
+  digest=b3:8de820056c5da318f3fb3d40df92c40494974d33161ccdd714739d73e7ee3b86 file=neo/internal/runtime/loop/loop.go range=58:58 lang=go exported=false byte_range=3008:3047
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.boundToolBudget kind=const
+  digest=b3:35185d2759579d8a70b7ed83dcce0aaba74fca6396de696abc906970bad00d03 file=neo/internal/runtime/loop/loop.go range=53:53 lang=go exported=false byte_range=2787:2825
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.cloneCalls kind=func
+  digest=b3:eb7a557f96576cca7eec37436a6a8a8f5446ba7d2edaca547e1e839dc49c1b9c file=neo/internal/runtime/loop/loop.go range=1395:1404 lang=go exported=false byte_range=43292:43591
+  sig=func cloneCalls(\n	calls []protocol.NormalizedToolCall,\n) []protocol.NormalizedToolCall
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.cloneMessages kind=func
+  digest=b3:121a446286bc7e4b714b131aef316b18a4cad06e7c20a4ba5042f707029b330a file=neo/internal/runtime/loop/loop.go range=1386:1393 lang=go exported=false byte_range=43025:43290
+  sig=func cloneMessages(messages []protocol.Message) []protocol.Message
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.completionContinuationPrompt kind=func
+  digest=b3:862ed65b88f816b323ec8fa674732c98cb18d46209e7f498651ab42550433a23 file=neo/internal/runtime/loop/loop.go range=1298:1303 lang=go exported=false byte_range=40403:40778
+  sig=func completionContinuationPrompt(decision CompletionDecision) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.containsString kind=func
+  digest=b3:c776fc2c479b0017af2bba97bf1a010bda5a0a069681fb8ec0f65fdebfe66205 file=neo/internal/runtime/loop/tool_manager.go range=190:197 lang=go exported=false byte_range=4846:4997
+  sig=func containsString(values []string, target string) bool
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/tool_manager.go
+
+NODE id=matrix/neo/internal/runtime/loop.containsToolMarkup kind=func
+  digest=b3:212c1a708ef8d39bcc2c6ed07c3b3efa8c09f5a246fefe591677742c95b636fb file=neo/internal/runtime/loop/tool_markup.go range=26:35 lang=go exported=false byte_range=574:800
+  sig=func containsToolMarkup(content string) bool
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/tool_markup.go
+
+NODE id=matrix/neo/internal/runtime/loop.cursor kind=type
+  digest=b3:79f3eaf07164b1b6bcb0a963f34080254289fb25aa718b0ec27b313b4b9157fa file=neo/internal/runtime/loop/loop.go range=177:189 lang=go exported=false byte_range=7089:7884
+  sig=type cursor struct {\n	ToolCalls		int			`json:"tool_calls"`\n	TextualRepairs		int			`json:"textual_repairs"`\n	ExpectationRepairs	int			`json:"expectation_repairs"`\n	EmptyRepairs		int			`json:"empty_repairs"`\n	FinalRepairs		int			`json:"final_repairs"`\n	CompletionDefers	int			`json:"completion_defers"`\n	ExplorationCalls	int			`json:"exploration_calls,omitempty"`\n	LastSignature		string			`json:"last_signature,omitempty"`\n	RepeatedCalls		int			`json:"repeated_calls,omitempty"`\n	Circuit			liveness.BreakerState	`json:"circuit,omitempty"`\n	TokensSpent		int			`json:"tokens_spent,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/loop.cursor#Circuit,matrix/neo/internal/runtime/loop.cursor#CompletionDefers,matrix/neo/internal/runtime/loop.cursor#EmptyRepairs,matrix/neo/internal/runtime/loop.cursor#ExpectationRepairs,matrix/neo/internal/runtime/loop.cursor#ExplorationCalls,matrix/neo/internal/runtime/loop.cursor#FinalRepairs,matrix/neo/internal/runtime/loop.cursor#LastSignature,matrix/neo/internal/runtime/loop.cursor#RepeatedCalls,matrix/neo/internal/runtime/loop.cursor#TextualRepairs,matrix/neo/internal/runtime/loop.cursor#TokensSpent,matrix/neo/internal/runtime/loop.cursor#ToolCalls,matrix/neo/internal/runtime/loop.cursor.repaired
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.cursor#Circuit kind=field
+  digest=b3:89b14f180aeb8b3f3118ccd915201e21d08d5eb816ca2f6f6f13ae21b04d1e98 file=neo/internal/runtime/loop/loop.go range=187:187 lang=go exported=true byte_range=7741:7808
+  sig=liveness.BreakerState
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.cursor
+
+NODE id=matrix/neo/internal/runtime/loop.cursor#CompletionDefers kind=field
+  digest=b3:46e8326676382b37ec898afc892436e5cbaecb88b009b728799231a50e93d7e7 file=neo/internal/runtime/loop/loop.go range=183:183 lang=go exported=true byte_range=7441:7508
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.cursor
+
+NODE id=matrix/neo/internal/runtime/loop.cursor#EmptyRepairs kind=field
+  digest=b3:c880861990554a4480fea5c41cfaa8247b7ffa0319217e473d27d3aa4c5743b4 file=neo/internal/runtime/loop/loop.go range=181:181 lang=go exported=true byte_range=7311:7374
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.cursor
+
+NODE id=matrix/neo/internal/runtime/loop.cursor#ExpectationRepairs kind=field
+  digest=b3:86c627f42b4e9b8ccc9854a515c5a4bfe5b336777547c55c59a9d0062ee5ac28 file=neo/internal/runtime/loop/loop.go range=180:180 lang=go exported=true byte_range=7240:7309
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.cursor
+
+NODE id=matrix/neo/internal/runtime/loop.cursor#ExplorationCalls kind=field
+  digest=b3:e87de88fab8b054d665af5435f47e35251e6739292c53589c431f2edd7114670 file=neo/internal/runtime/loop/loop.go range=184:184 lang=go exported=true byte_range=7510:7587
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.cursor
+
+NODE id=matrix/neo/internal/runtime/loop.cursor#FinalRepairs kind=field
+  digest=b3:7c4055716517773d3e54f47a7fa22ad5421ff8aa237189ff2e17923d41ffb284 file=neo/internal/runtime/loop/loop.go range=182:182 lang=go exported=true byte_range=7376:7439
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.cursor
+
+NODE id=matrix/neo/internal/runtime/loop.cursor#LastSignature kind=field
+  digest=b3:67dff93f524ce290df38453485b19c5bb0bbe73c6e6729bc839ed315f1bbd708 file=neo/internal/runtime/loop/loop.go range=185:185 lang=go exported=true byte_range=7589:7663
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.cursor
+
+NODE id=matrix/neo/internal/runtime/loop.cursor#RepeatedCalls kind=field
+  digest=b3:8aae56172ba57d219c0107cdd70a932442db7f0b42ed7cea9dcdc4d640058243 file=neo/internal/runtime/loop/loop.go range=186:186 lang=go exported=true byte_range=7665:7739
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.cursor
+
+NODE id=matrix/neo/internal/runtime/loop.cursor#TextualRepairs kind=field
+  digest=b3:6e88193ac5b5845660eb8c4f30196c5a4f22c99611cea5d69d9095c5c756b868 file=neo/internal/runtime/loop/loop.go range=179:179 lang=go exported=true byte_range=7173:7238
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.cursor
+
+NODE id=matrix/neo/internal/runtime/loop.cursor#TokensSpent kind=field
+  digest=b3:0efd8ae130b1792e5f77c3431199559170f232d82489accd431b4f69a91bdfd7 file=neo/internal/runtime/loop/loop.go range=188:188 lang=go exported=true byte_range=7810:7882
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.cursor
+
+NODE id=matrix/neo/internal/runtime/loop.cursor#ToolCalls kind=field
+  digest=b3:5e2fae6459cbc86350a5aca7965efadebbe7ab521817c7afffef8961c2c64d9c file=neo/internal/runtime/loop/loop.go range=178:178 lang=go exported=true byte_range=7111:7171
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.cursor
+
+NODE id=matrix/neo/internal/runtime/loop.cursor.repaired kind=method
+  digest=b3:b7d23d064ccf4aa4c737eeef6b04854e8fb65d9154f3fad13a317b1ab454ae43 file=neo/internal/runtime/loop/loop.go range=191:194 lang=go exported=false byte_range=7886:8044
+  sig=func (state cursor) repaired() bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/loop.cursor
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.defaultCompletionDeferral kind=const
+  digest=b3:cffd2102b71a247e242234795423371ad76fb3ce261d2e6d504798ecd4153d22 file=neo/internal/runtime/loop/loop.go range=29:29 lang=go exported=false byte_range=628:657
+  sig=untyped int
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.defaultEmptyRepairLimit kind=const
+  digest=b3:e1809cbd08538ef6a1a4f4851e6c3cece1a495382361795aaf66182eb9ca1ab8 file=neo/internal/runtime/loop/loop.go range=28:28 lang=go exported=false byte_range=597:626
+  sig=untyped int
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.defaultIdleTimeout kind=const
+  digest=b3:a466839d6098b1e9a6a3f9c948a35ae21375c136738bebad3bf176169e3c9051 file=neo/internal/runtime/loop/loop.go range=26:26 lang=go exported=false byte_range=521:564
+  sig=time.Duration
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.defaultMaxToolCalls kind=const
+  digest=b3:9555a77ba7c023a6f05abcfba57deafa0d363ae76eea3aa82fd42c3abc5323b0 file=neo/internal/runtime/loop/loop.go range=25:25 lang=go exported=false byte_range=488:519
+  sig=untyped int
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.defaultMaxTurnTokens kind=const
+  digest=b3:76e0a024f6e8c2aeedb306afe34e775305ea63a72a22fbf3823c730d81ef8d49 file=neo/internal/runtime/loop/loop.go range=31:36 lang=go exported=false byte_range=660:1037
+  sig=untyped int
+  doc=defaultMaxTurnTokens bounds the cumulative tokens ONE turn may merge\nacross every provider call it makes. It sits below the recorded ~1M\nnon-convergence burn while leaving headroom for a genuinely long turn on\nthe 1M window. Exhaustion is never a failure: it routes to the honest\npartial, which delivers the work already done.
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.defaultRepairLimit kind=const
+  digest=b3:3d29a9770f91b40520626d9abb6f704a7e15dff4ecb9b56dbcc5745267f97803 file=neo/internal/runtime/loop/loop.go range=27:27 lang=go exported=false byte_range=566:595
+  sig=untyped int
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.emptyFinalRepairPrompt kind=const
+  digest=b3:13db04fc30a4091042144f55ad0d6a07a9501815b1c4c7fe7b4d81ce1e6a14c7 file=neo/internal/runtime/loop/loop.go range=44:44 lang=go exported=false byte_range=2289:2550
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.encodeToolExecution kind=func
+  digest=b3:28ce268aac5dbe91d5bd54b44d270e2d964cfcbd4383d726793c2ae69b3bac57 file=neo/internal/runtime/loop/loop.go range=1406:1412 lang=go exported=false byte_range=43593:43798
+  sig=func encodeToolExecution(event ToolExecution) json.RawMessage
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.evidenceWord kind=var
+  digest=b3:5161b43f9e78a00f6ff936f7c644c8abd7cc013b3c8c537f7487b372e9d8abc8 file=neo/internal/runtime/loop/evidence.go range=154:154 lang=go exported=false byte_range=4214:4273
+  sig=*regexp.Regexp
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/evidence.go
+
+NODE id=matrix/neo/internal/runtime/loop.executionError kind=func
+  digest=b3:f4841fdaaa9ebab52defaba742e0c903fefb30290df36be74949edb6c2a4dd72 file=neo/internal/runtime/loop/evidence.go range=140:152 lang=go exported=false byte_range=3715:4208
+  sig=func executionError(result ToolResult) string
+  doc=executionError derives the evidence error string from a tool result. Both\nthe dispatch path and the pending-call reconciliation path go through it so\na resumed turn commits byte-identical evidence to an uninterrupted one — a\nresult carrying only a failure class must not lose its error on resume.
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/evidence.go
+
+NODE id=matrix/neo/internal/runtime/loop.expectationFinalPrompt kind=const
+  digest=b3:bdff0d59fe2e2d6be615cca69d354623802936358f838dbe2914feb32d88572a file=neo/internal/runtime/loop/loop.go range=43:43 lang=go exported=false byte_range=2006:2287
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.expectationRepairPrompt kind=const
+  digest=b3:38a95de5635a0c2a6cb1b6fa037ca077ce2ea599de9e17063c1a180c7b1822b1 file=neo/internal/runtime/loop/loop.go range=42:42 lang=go exported=false byte_range=1714:2004
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.explorationExhaustedResult kind=const
+  digest=b3:7cd5d04e508fee8fe0e87d45c4b914ebeadafdcea64df7f686a092ad6cfb0726 file=neo/internal/runtime/loop/loop.go range=48:48 lang=go exported=false byte_range=2563:2675
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.extractExpectations kind=func
+  digest=b3:b0e2947d1f291e9aab3e6b2ea09b0f878141c3e01eb5f8b4e696fd7063e14d7f file=neo/internal/runtime/loop/loop.go range=1305:1336 lang=go exported=false byte_range=40780:41689
+  sig=func extractExpectations(\n	calls []protocol.NormalizedToolCall,\n) ([]string, []protocol.NormalizedToolCall, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.finalAnswerAddressesRequest kind=func
+  digest=b3:735bff1e7eb363de4c4306da64d2ce75136a19d6967aea3d20057d5634f5a8ca file=neo/internal/runtime/loop/final_answer.go range=24:69 lang=go exported=false byte_range=734:2088
+  sig=func finalAnswerAddressesRequest(\n	userContent string,\n	content string,\n	events []ToolExecution,\n) (bool, string)
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/final_answer.go
+
+NODE id=matrix/neo/internal/runtime/loop.finalAnswerHonestFallback kind=func
+  digest=b3:54813b471f7be011bc5aeabb04c4c6f915389eba3b345cc6b7fcafac1e5ac1b9 file=neo/internal/runtime/loop/final_answer.go range=71:99 lang=go exported=false byte_range=2090:2867
+  sig=func finalAnswerHonestFallback(events []ToolExecution) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/final_answer.go
+
+NODE id=matrix/neo/internal/runtime/loop.finalAnswerRepairPrompt kind=func
+  digest=b3:2384e31066d1a21cb98db12461ac3171679c37afdd3020d66777a8be46d22bde file=neo/internal/runtime/loop/final_answer.go range=16:22 lang=go exported=false byte_range=337:732
+  sig=func finalAnswerRepairPrompt(reason string) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/final_answer.go
+
+NODE id=matrix/neo/internal/runtime/loop.finalAnswerStopword kind=func
+  digest=b3:fb1b07e72fbae17694827d65f322da68021446112eb506aba25770abcc673c65 file=neo/internal/runtime/loop/final_answer.go range=138:148 lang=go exported=false byte_range=3924:4274
+  sig=func finalAnswerStopword(token string) bool
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/final_answer.go
+
+NODE id=matrix/neo/internal/runtime/loop.finalAnswerTokenPattern kind=var
+  digest=b3:306f54a89b73a0c0fc977e6827cece148788cb081b65e67bd54b58d3492f51d0 file=neo/internal/runtime/loop/final_answer.go range=14:14 lang=go exported=false byte_range=268:335
+  sig=*regexp.Regexp
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/final_answer.go
+
+NODE id=matrix/neo/internal/runtime/loop.foldDoubt kind=func
+  digest=b3:bd4d92b30d743c1b88ed8d6080a94adf59459859f8cb9c7459d5fa30f56e9060 file=neo/internal/runtime/loop/evidence.go range=100:127 lang=go exported=false byte_range=2581:3499
+  sig=func foldDoubt(\n	messages []protocol.Message,\n	line string,\n) []protocol.Message
+  doc=foldDoubt layers the controller line after the content of the LAST\nassistant message in a request-time clone. Content-only by construction:\nit mutates nothing but .Content, never a tool call, role, or a\ntool/user/system message, and the original text is always preserved.\nReturns messages unchanged when there is no assistant message to fold into.
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/evidence.go
+
+NODE id=matrix/neo/internal/runtime/loop.hasExplorationEvidence kind=func
+  digest=b3:0a1c27754beeb62be8c96b478e3d8ef98d4b42913b3b57131ba820f9416d9466 file=neo/internal/runtime/loop/final_answer.go range=108:115 lang=go exported=false byte_range=3217:3396
+  sig=func hasExplorationEvidence(events []ToolExecution) bool
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/final_answer.go
+
+NODE id=matrix/neo/internal/runtime/loop.heartbeatOK kind=const
+  digest=b3:8f48dd552327aeb88a1e683b8dceab205f1e577899580bb6204f7ba3b99e5e57 file=neo/internal/runtime/loop/delivery.go range=17:17 lang=go exported=false byte_range=388:425
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/delivery.go
+
+NODE id=matrix/neo/internal/runtime/loop.heartbeatWakeMarker kind=const
+  digest=b3:296e3697e797d381f6158cf5b0a06a31dd5aa01dc77da14957e4da4e32573748 file=neo/internal/runtime/loop/delivery.go range=16:16 lang=go exported=false byte_range=352:386
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/delivery.go
+
+NODE id=matrix/neo/internal/runtime/loop.incompleteFromState kind=func
+  digest=b3:7c2644d037fa4c6ee60dae62482d68bb1d1f416c3a9278552ab654ef59e17330 file=neo/internal/runtime/loop/reconcile.go range=170:200 lang=go exported=false byte_range=4507:5532
+  sig=func incompleteFromState(state turnstate.TurnState) (*Incomplete, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/reconcile.go
+
+NODE id=matrix/neo/internal/runtime/loop.incompleteHazard kind=func
+  digest=b3:baa4b304bf1bb2aeba3f81bae205a52efc299fc24ca38c3f476563e5544f0918 file=neo/internal/runtime/loop/o1_replay.go range=77:86 lang=go exported=false byte_range=1850:2089
+  sig=func incompleteHazard(layer o1.FailureLayer) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/o1_replay.go
+
+NODE id=matrix/neo/internal/runtime/loop.incompleteRecovery kind=func
+  digest=b3:1cf778a00d5481b332bd7e49ff1941f2e4ac5e997c972f5e655fc6b1df0bcd28 file=neo/internal/runtime/loop/o1_replay.go range=62:75 lang=go exported=false byte_range=1482:1848
+  sig=func incompleteRecovery(\n	phase string,\n) (o1.FailureLayer, o1.TransitionKind)
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/o1_replay.go
+
+NODE id=matrix/neo/internal/runtime/loop.incompleteStatus kind=func
+  digest=b3:5775f001746a61c543a855991de0038afe92cdc926b7b97c95bd88dfa2fcb70a file=neo/internal/runtime/loop/delivery.go range=85:94 lang=go exported=false byte_range=2041:2523
+  sig=func incompleteStatus(incomplete *Incomplete) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/delivery.go
+
+NODE id=matrix/neo/internal/runtime/loop.injectExpect kind=func
+  digest=b3:c09e4711a9982a24b83c20c5d4cbb5341440f4b5286da645cc52f1b4a3a5d555 file=neo/internal/runtime/loop/tool_manager.go range=130:159 lang=go exported=false byte_range=3243:4135
+  sig=func injectExpect(definition *protocol.ToolDefinition) error
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/tool_manager.go
+
+NODE id=matrix/neo/internal/runtime/loop.makeIdempotencyKey kind=func
+  digest=b3:4290e104454432cf6a19d97efff60812d8d5e82aba4199439691931d28adad28 file=neo/internal/runtime/loop/loop.go range=1338:1351 lang=go exported=false byte_range=41691:42095
+  sig=func makeIdempotencyKey(\n	turnID string,\n	call protocol.NormalizedToolCall,\n) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.markupOnlyInMarkdownCode kind=func
+  digest=b3:b13e1cf26500bea91beaa2ab5c66b2f924720a63cb1c00ea56d83a7b2e986e23 file=neo/internal/runtime/loop/tool_markup.go range=37:58 lang=go exported=false byte_range=802:1285
+  sig=func markupOnlyInMarkdownCode(content string) bool
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/tool_markup.go
+
+NODE id=matrix/neo/internal/runtime/loop.matchToolExpectation kind=func
+  digest=b3:4e3880d9171f1b2c68c8830aea7b35535504d0e1a62ffab97975962b49eae9b9 file=neo/internal/runtime/loop/evidence.go range=156:202 lang=go exported=false byte_range=4275:5803
+  sig=func matchToolExpectation(expect string, result ToolResult) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/evidence.go
+
+NODE id=matrix/neo/internal/runtime/loop.normalizeToolResult kind=func
+  digest=b3:ebc796955563ba992cb93cb4e78ad7bdbbb2575e2599a71baf8b5e3d13c2b829 file=neo/internal/runtime/loop/tool_manager.go range=161:171 lang=go exported=false byte_range=4137:4480
+  sig=func normalizeToolResult(content string) json.RawMessage
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/tool_manager.go
+
+NODE id=matrix/neo/internal/runtime/loop.numberAsInt kind=func
+  digest=b3:a98d61d019b9d9afab3b8e64fc34b4887a96f42b8f449ed0943ea73a42ffd4a5 file=neo/internal/runtime/loop/evidence.go range=204:214 lang=go exported=false byte_range=5805:6082
+  sig=func numberAsInt(value interface{}) (int, bool)
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/evidence.go
+
+NODE id=matrix/neo/internal/runtime/loop.parallelismDeferredResult kind=const
+  digest=b3:0fc5f8d5e8dd5a94cc4b9c4b00217728c32d9e7f1d8a94858cd2826418ee5cbc file=neo/internal/runtime/loop/loop.go range=49:49 lang=go exported=false byte_range=2677:2774
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.rejectTextualToolMarkup kind=func
+  digest=b3:f9e4446710c78e339c64040729e6d28b53ce71817b520b463bb69c199c93b0aa file=neo/internal/runtime/loop/tool_markup.go range=16:24 lang=go exported=false byte_range=319:572
+  sig=func rejectTextualToolMarkup(content string) error
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/tool_markup.go
+
+NODE id=matrix/neo/internal/runtime/loop.renderCortexActivation kind=func
+  digest=b3:4aa1c3ef72bd47415f928972d5caf9cba29be6bf4a300a04438e53e256f178e0 file=neo/internal/runtime/loop/cortex.go range=169:258 lang=go exported=false byte_range=4057:6510
+  sig=func renderCortexActivation(\n	bundle *cortex.ActivationBundle,\n	relevant []memory.Snippet,\n	lexical string,\n	premises []string,\n) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/cortex.go
+
+NODE id=matrix/neo/internal/runtime/loop.renderPinned kind=func
+  digest=b3:da27113224dd3c8d5c69822ee2c97953f6d513ca479e954bf8058164c0c2baf9 file=neo/internal/runtime/loop/cortex.go range=260:268 lang=go exported=false byte_range=6512:6732
+  sig=func renderPinned(item *cmem.Memory) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/cortex.go
+
+NODE id=matrix/neo/internal/runtime/loop.renderTranscript kind=func
+  digest=b3:bb2acb8131a009eb978b2737fc2b90e0170b0e6864081af93e47d4eb36c0fe9c file=neo/internal/runtime/loop/delivery.go range=132:151 lang=go exported=false byte_range=3457:4032
+  sig=func renderTranscript(messages []protocol.Message) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/delivery.go
+
+NODE id=matrix/neo/internal/runtime/loop.requestMessages kind=func
+  digest=b3:58e89f2789b25ab68a372526f11765d767d5aaea3aa261d8d67a7be0344e27cf file=neo/internal/runtime/loop/loop.go range=1250:1274 lang=go exported=false byte_range=39149:39871
+  sig=func requestMessages(\n	systemPrompt string,\n	durable []protocol.Message,\n	repair string,\n	activation string,\n) []protocol.Message
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.requestsResearchAnswer kind=func
+  digest=b3:38d9f2f42c5b786e273071a4c0bc3cfed8807fee5a0525571cfd65ede5be2474 file=neo/internal/runtime/loop/final_answer.go range=101:106 lang=go exported=false byte_range=2869:3215
+  sig=func requestsResearchAnswer(request string) bool
+  doc=The acceptance gate and the enforced exploration budget read the SAME\nclassifiers, so a request that earns an exploration budget is exactly the one\nwhose answer is held to the source requirement. Two lists would drift.
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/final_answer.go
+
+NODE id=matrix/neo/internal/runtime/loop.responseFromCheckpoint kind=func
+  digest=b3:bc641356424e4dba2c49fd1c854d052f3563af54625429694f98aadf3a3d17ec file=neo/internal/runtime/loop/loop.go range=1353:1367 lang=go exported=false byte_range=42097:42549
+  sig=func responseFromCheckpoint(\n	checkpoint turnstate.Checkpoint,\n) (Response, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.sharesRequestSubject kind=func
+  digest=b3:3aed229a6d4f3c9b930e50f0483a734d2eb3b9dc69c0436202f7db11b19ff862 file=neo/internal/runtime/loop/final_answer.go range=117:136 lang=go exported=false byte_range=3398:3922
+  sig=func sharesRequestSubject(request, answer string) bool
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/final_answer.go
+
+NODE id=matrix/neo/internal/runtime/loop.shouldSuppressDelivery kind=func
+  digest=b3:1d2d3c2d1f3bd57c2827c99b68f308f937e0f96785e7a4ed94db13d121a8541d file=neo/internal/runtime/loop/delivery.go range=124:130 lang=go exported=false byte_range=3184:3455
+  sig=func shouldSuppressDelivery(userInput, content string) bool
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/delivery.go
+
+NODE id=matrix/neo/internal/runtime/loop.statesResearchLimitation kind=func
+  digest=b3:68efc9c99535c1edc48b0b7974411dd48bd0aa9f6998337608f69e7d7070a941 file=neo/internal/runtime/loop/final_answer.go range=150:161 lang=go exported=false byte_range=4276:4592
+  sig=func statesResearchLimitation(answer string) bool
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/final_answer.go
+
+NODE id=matrix/neo/internal/runtime/loop.stringSlice kind=func
+  digest=b3:7776cc7a19f752efd76f580be184a387d49555fe042821b4e19a4f82494e4e60 file=neo/internal/runtime/loop/tool_manager.go range=173:188 lang=go exported=false byte_range=4482:4844
+  sig=func stringSlice(value interface{}) []string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/tool_manager.go
+
+NODE id=matrix/neo/internal/runtime/loop.textualToolFinalPrompt kind=const
+  digest=b3:bb9d0bc6d816a6356bfcae59ec4b9d1fcf36bb89c559d0ecf7a42d876ca5b505 file=neo/internal/runtime/loop/loop.go range=41:41 lang=go exported=false byte_range=1364:1712
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.textualToolRepairPrompt kind=const
+  digest=b3:6e0998e99df4dc279200cb2a452c0c5a85541a9be4452fdc5fb4da65757c99a9 file=neo/internal/runtime/loop/loop.go range=40:40 lang=go exported=false byte_range=1050:1362
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.tokenBudgetBoundary kind=const
+  digest=b3:17aa04a9c47ce879b5e6ec6229452e86c7688a01472ffd2b8658bed9a119340d file=neo/internal/runtime/loop/loop.go range=61:61 lang=go exported=false byte_range=3057:3255
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop.truncateActivation kind=func
+  digest=b3:f37610ad297d502e74a5a4d611f123bfd7cffff81a25dcffc0125a7b49dcf7b7 file=neo/internal/runtime/loop/cortex.go range=270:285 lang=go exported=false byte_range=6734:7188
+  sig=func truncateActivation(content string, budgetTokens int) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/cortex.go
+
+NODE id=matrix/neo/internal/runtime/loop.validateCheckpoint kind=func
+  digest=b3:837156ef0013339debe127c1dee129af661f456faa1c1535828230bd9f15eaf3 file=neo/internal/runtime/loop/loop.go range=1369:1384 lang=go exported=false byte_range=42551:43023
+  sig=func validateCheckpoint(\n	userContent string,\n	checkpoint turnstate.Checkpoint,\n) error
+EDGES
+  ^defines=matrix/neo/internal/runtime/loop/loop.go
+
+NODE id=matrix/neo/internal/runtime/loop/completion.go kind=file
+  digest=b3:31991a9f04a9004cf50b6580637d839ab77c22eb74ecb2a33f295abb0af0b521 file=neo/internal/runtime/loop/completion.go range=1:35 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.NewStateCompletionGate,matrix/neo/internal/runtime/loop.StateCompletionGate,matrix/neo/internal/runtime/loop.StateCompletionGate.CheckCompletion,matrix/neo/internal/runtime/loop.StateCompletionGate.Update
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/cortex.go kind=file
+  digest=b3:77168a0ca66d6ad794425280f3a26725869f455b67dca6d0c186366ecc33b376 file=neo/internal/runtime/loop/cortex.go range=1:285 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.CortexAdapter,matrix/neo/internal/runtime/loop.CortexAdapter.Activate,matrix/neo/internal/runtime/loop.CortexAdapter.ProvenanceRange,matrix/neo/internal/runtime/loop.CortexAdapter.RecordAssistant,matrix/neo/internal/runtime/loop.CortexAdapter.RecordDelivery,matrix/neo/internal/runtime/loop.CortexAdapter.RecordTool,matrix/neo/internal/runtime/loop.CortexAdapter.RecordUser,matrix/neo/internal/runtime/loop.CortexAdapter.append,matrix/neo/internal/runtime/loop.NewCortexAdapter,matrix/neo/internal/runtime/loop.renderCortexActivation,matrix/neo/internal/runtime/loop.renderPinned,matrix/neo/internal/runtime/loop.truncateActivation
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/delivery.go kind=file
+  digest=b3:ead8bb1b534d9bfcfd31c6d85b3cec31756210f3ffc57677bc6ac57022e6e945 file=neo/internal/runtime/loop/delivery.go range=1:151 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.DeliveryChoke,matrix/neo/internal/runtime/loop.DeliveryChoke.Deliver,matrix/neo/internal/runtime/loop.DeliveryChoke.FinalizeIncomplete,matrix/neo/internal/runtime/loop.DeliveryChoke.consolidate,matrix/neo/internal/runtime/loop.DeliveryResult,matrix/neo/internal/runtime/loop.automatrixIdle,matrix/neo/internal/runtime/loop.automatrixWakeMarker,matrix/neo/internal/runtime/loop.heartbeatOK,matrix/neo/internal/runtime/loop.heartbeatWakeMarker,matrix/neo/internal/runtime/loop.incompleteStatus,matrix/neo/internal/runtime/loop.renderTranscript,matrix/neo/internal/runtime/loop.shouldSuppressDelivery
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/effect_store.go kind=file
+  digest=b3:293a2275d800c7246b9fb758b3785d1c4a6b9e8bbdaa8205d06cab7bdc683295 file=neo/internal/runtime/loop/effect_store.go range=1:107 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.DurableEffectJournal,matrix/neo/internal/runtime/loop.DurableEffectJournal.BeginEffect,matrix/neo/internal/runtime/loop.DurableEffectJournal.CompleteEffect,matrix/neo/internal/runtime/loop.DurableEffectJournal.ReconcileEffect,matrix/neo/internal/runtime/loop.EffectStateStore,matrix/neo/internal/runtime/loop._
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/evidence.go kind=file
+  digest=b3:bf3082222d87c02a1e24ad80609ee37a41d00d2f0c1d4f9d41c119390a50de06 file=neo/internal/runtime/loop/evidence.go range=1:214 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.CortexToolJournal,matrix/neo/internal/runtime/loop.CortexToolJournal.CommitToolExecution,matrix/neo/internal/runtime/loop.Loop.commitEvidence,matrix/neo/internal/runtime/loop.Loop.observeDoubt,matrix/neo/internal/runtime/loop.Loop.subgoalFor,matrix/neo/internal/runtime/loop.evidenceWord,matrix/neo/internal/runtime/loop.executionError,matrix/neo/internal/runtime/loop.foldDoubt,matrix/neo/internal/runtime/loop.matchToolExpectation,matrix/neo/internal/runtime/loop.numberAsInt
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/final_answer.go kind=file
+  digest=b3:4ab4958677730505f5b211702ae1ea8405e78b0a27d8434bcd154545a05acc22 file=neo/internal/runtime/loop/final_answer.go range=1:161 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.finalAnswerAddressesRequest,matrix/neo/internal/runtime/loop.finalAnswerHonestFallback,matrix/neo/internal/runtime/loop.finalAnswerRepairPrompt,matrix/neo/internal/runtime/loop.finalAnswerStopword,matrix/neo/internal/runtime/loop.finalAnswerTokenPattern,matrix/neo/internal/runtime/loop.hasExplorationEvidence,matrix/neo/internal/runtime/loop.requestsResearchAnswer,matrix/neo/internal/runtime/loop.sharesRequestSubject,matrix/neo/internal/runtime/loop.statesResearchLimitation
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/interfaces.go kind=file
+  digest=b3:1a957c3ad5823401653116fab6094bbb202e24f5306090ca7edac88d7f9925cd file=neo/internal/runtime/loop/interfaces.go range=1:166 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.ActivationRequest,matrix/neo/internal/runtime/loop.ActivationSource,matrix/neo/internal/runtime/loop.CheckpointStore,matrix/neo/internal/runtime/loop.CompletionDecision,matrix/neo/internal/runtime/loop.CompletionGate,matrix/neo/internal/runtime/loop.Consolidator,matrix/neo/internal/runtime/loop.DeliveryReporter,matrix/neo/internal/runtime/loop.DoubtController,matrix/neo/internal/runtime/loop.EvidenceJournal,matrix/neo/internal/runtime/loop.EvidenceObserver,matrix/neo/internal/runtime/loop.GenerationObserver,matrix/neo/internal/runtime/loop.Generator,matrix/neo/internal/runtime/loop.GuidanceSource,matrix/neo/internal/runtime/loop.HonestPartialReporter,matrix/neo/internal/runtime/loop.IncompleteRecorder,matrix/neo/internal/runtime/loop.LivenessSource,matrix/neo/internal/runtime/loop.PremiseSource,matrix/neo/internal/runtime/loop.ReconcileCompleted,matrix/neo/internal/runtime/loop.ReconcileResult,matrix/neo/internal/runtime/loop.ReconcileRetrySafe,matrix/neo/internal/runtime/loop.ReconcileStatus,matrix/neo/internal/runtime/loop.ReconcileUnknown,matrix/neo/internal/runtime/loop.StreamingGenerator,matrix/neo/internal/runtime/loop.SubgoalResolver,matrix/neo/internal/runtime/loop.ToolManager,matrix/neo/internal/runtime/loop.ToolResult,matrix/neo/internal/runtime/loop.TurnRecorder
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/loop.go kind=file
+  digest=b3:d67ecc9ec94623a367dd2665da0331dd211b26a104f4df11c498dfac0568edd7 file=neo/internal/runtime/loop/loop.go range=1:1412 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.Config,matrix/neo/internal/runtime/loop.Dependencies,matrix/neo/internal/runtime/loop.Incomplete,matrix/neo/internal/runtime/loop.Incomplete.Error,matrix/neo/internal/runtime/loop.Incomplete.Unwrap,matrix/neo/internal/runtime/loop.IncompleteRecord,matrix/neo/internal/runtime/loop.LivenessEnforcement,matrix/neo/internal/runtime/loop.LivenessTrace,matrix/neo/internal/runtime/loop.Loop,matrix/neo/internal/runtime/loop.Loop.Resume,matrix/neo/internal/runtime/loop.Loop.Turn,matrix/neo/internal/runtime/loop.Loop.deliverAccepted,matrix/neo/internal/runtime/loop.Loop.deliverHonestPartial,matrix/neo/internal/runtime/loop.Loop.derivePolicy,matrix/neo/internal/runtime/loop.Loop.execute,matrix/neo/internal/runtime/loop.Loop.generate,matrix/neo/internal/runtime/loop.Loop.incomplete,matrix/neo/internal/runtime/loop.Loop.injectToolResult,matrix/neo/internal/runtime/loop.Loop.reconcilePending,matrix/neo/internal/runtime/loop.Loop.runTurn,matrix/neo/internal/runtime/loop.Loop.save,matrix/neo/internal/runtime/loop.New,matrix/neo/internal/runtime/loop.Response,matrix/neo/internal/runtime/loop.ToolExecution,matrix/neo/internal/runtime/loop.appendGuidance,matrix/neo/internal/runtime/loop.boundCircuitBreaker,matrix/neo/internal/runtime/loop.boundExplorationBudget,matrix/neo/internal/runtime/loop.boundParallelism,matrix/neo/internal/runtime/loop.boundSameStrategy,matrix/neo/internal/runtime/loop.boundTokenBudget,matrix/neo/internal/runtime/loop.boundToolBudget,matrix/neo/internal/runtime/loop.cloneCalls,matrix/neo/internal/runtime/loop.cloneMessages,matrix/neo/internal/runtime/loop.completionContinuationPrompt,matrix/neo/internal/runtime/loop.cursor,matrix/neo/internal/runtime/loop.cursor.repaired,matrix/neo/internal/runtime/loop.defaultCompletionDeferral,matrix/neo/internal/runtime/loop.defaultEmptyRepairLimit,matrix/neo/internal/runtime/loop.defaultIdleTimeout,matrix/neo/internal/runtime/loop.defaultMaxToolCalls,matrix/neo/internal/runtime/loop.defaultMaxTurnTokens,matrix/neo/internal/runtime/loop.defaultRepairLimit,matrix/neo/internal/runtime/loop.emptyFinalRepairPrompt,matrix/neo/internal/runtime/loop.encodeToolExecution,matrix/neo/internal/runtime/loop.expectationFinalPrompt,matrix/neo/internal/runtime/loop.expectationRepairPrompt,matrix/neo/internal/runtime/loop.explorationExhaustedResult,matrix/neo/internal/runtime/loop.extractExpectations,matrix/neo/internal/runtime/loop.makeIdempotencyKey,matrix/neo/internal/runtime/loop.parallelismDeferredResult,matrix/neo/internal/runtime/loop.requestMessages,matrix/neo/internal/runtime/loop.responseFromCheckpoint,matrix/neo/internal/runtime/loop.textualToolFinalPrompt,matrix/neo/internal/runtime/loop.textualToolRepairPrompt,matrix/neo/internal/runtime/loop.tokenBudgetBoundary,matrix/neo/internal/runtime/loop.validateCheckpoint
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/o1_replay.go kind=file
+  digest=b3:b7da7a669516982be0b4eebe5f9e360096b4fd3ccd06ee1078fc2a8e10fab6b4 file=neo/internal/runtime/loop/o1_replay.go range=1:86 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.O1FailureReplayLane,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete,matrix/neo/internal/runtime/loop.O1FailureReplayLane.Records,matrix/neo/internal/runtime/loop.incompleteHazard,matrix/neo/internal/runtime/loop.incompleteRecovery
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/observer.go kind=file
+  digest=b3:0d56fa77463c585cdeb50ca1be5afa52826f8c24ce6871326cfc87c151411446 file=neo/internal/runtime/loop/observer.go range=1:67 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.NewReporterObserver,matrix/neo/internal/runtime/loop.Reporter,matrix/neo/internal/runtime/loop.ReporterObserver,matrix/neo/internal/runtime/loop.ReporterObserver.CommitAttempt,matrix/neo/internal/runtime/loop.ReporterObserver.ContentDelta,matrix/neo/internal/runtime/loop.ReporterObserver.ReasoningDelta,matrix/neo/internal/runtime/loop.ReporterObserver.Reset,matrix/neo/internal/runtime/loop.ReporterObserver.emit
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/premises.go kind=file
+  digest=b3:267e5a07c77c0e4f123f03f71f3674c32f2bb302fdec241b8cb78e6fc88b68cb file=neo/internal/runtime/loop/premises.go range=1:35 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.PremiseSet,matrix/neo/internal/runtime/loop.PremiseSet.ActivePremises,matrix/neo/internal/runtime/loop.PremiseSet.Replace
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/reconcile.go kind=file
+  digest=b3:0c26962f17532c4135c7d8a16fcec7fc4fcf26948874e62f63fe322fac2e3fab file=neo/internal/runtime/loop/reconcile.go range=1:206 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.BootReconcileResult,matrix/neo/internal/runtime/loop.ResumeIncomplete,matrix/neo/internal/runtime/loop.ResumeLoopFactory,matrix/neo/internal/runtime/loop.TaskLedgerReconciler,matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/runtime/loop.TaskLedgerReconciler.surfaceOrphan,matrix/neo/internal/runtime/loop.incompleteFromState
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/tool_manager.go kind=file
+  digest=b3:e79d95ad468fdb15fd8b8f32ca88d513a9f1e25b3364a9d7ffae5eddf3bbc82a file=neo/internal/runtime/loop/tool_manager.go range=1:197 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.EffectLifecycle,matrix/neo/internal/runtime/loop.EffectReconciler,matrix/neo/internal/runtime/loop.NewToolManagerAdapter,matrix/neo/internal/runtime/loop.ToolManagerAdapter,matrix/neo/internal/runtime/loop.ToolManagerAdapter.Execute,matrix/neo/internal/runtime/loop.ToolManagerAdapter.Reconcile,matrix/neo/internal/runtime/loop.ToolManagerAdapter.Surface,matrix/neo/internal/runtime/loop.containsString,matrix/neo/internal/runtime/loop.injectExpect,matrix/neo/internal/runtime/loop.normalizeToolResult,matrix/neo/internal/runtime/loop.stringSlice
+  ^contains=matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/runtime/loop/tool_markup.go kind=file
+  digest=b3:bdf8680a9e86b24585ae08812bfe1480de1c4c885c27140c0f4a8a87e38df416 file=neo/internal/runtime/loop/tool_markup.go range=1:58 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/loop.ErrTextualToolMarkup,matrix/neo/internal/runtime/loop.containsToolMarkup,matrix/neo/internal/runtime/loop.markupOnlyInMarkdownCode,matrix/neo/internal/runtime/loop.rejectTextualToolMarkup
+  ^contains=matrix/neo/internal/runtime/loop

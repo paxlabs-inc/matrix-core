@@ -43,6 +43,7 @@ import (
 	"matrix/router/internal/beta"
 	"matrix/router/internal/config"
 	"matrix/router/internal/db"
+	"matrix/router/internal/finance"
 	"matrix/router/internal/fly"
 	"matrix/router/internal/jwt"
 	"matrix/router/internal/mw"
@@ -379,6 +380,15 @@ func main() {
 		}
 	}
 
+	// Market data for the agent: the per-user daemon's finance bridge is told
+	// where the internal lane is and given the token to reach it. It is handed
+	// no vendor key — the keys stay in this process, and the daemon reads market
+	// data through the same cache and quota the browser uses.
+	if cfg.FinanceToken != "" {
+		adminH.MachineEnv["MATRIX_FINANCE_URL"] = envOr("MATRIX_FINANCE_URL", "http://matrix-router.railway.internal:8088/internal/finance")
+		adminH.MachineEnv["MATRIX_FINANCE_TOKEN"] = cfg.FinanceToken
+	}
+
 	// Wire router-side auto-provisioning: the proxy hands an
 	// authenticated-but-unprovisioned user to the admin provisioner on
 	// first request. Gated on the daemon image so a router without
@@ -466,6 +476,15 @@ func main() {
 		APIKey:    os.Getenv("MATRIX_LIVEKIT_KEY"),
 		Secret:    os.Getenv("MATRIX_LIVEKIT_SECRET"),
 	}))
+
+	// Market data. The finance lane is served CENTRALLY here — not proxied to a
+	// per-user daemon — so the vendor keys live in exactly one process, the
+	// cache and quota are shared between the browser and Neo's finance bridge,
+	// and every upstream call is counted in one place. It boots with or without
+	// the keys; without them every call answers with a typed, plain-language
+	// "not configured" naming the missing variable.
+	financeSvc := finance.NewService(finance.ConfigFromEnv())
+	publicMux.Handle("/finance/", mw.JWT(verifier, logf)(finance.NewHandler(financeSvc, logf)))
 
 	// JWT-protected proxy for everything else (/messages, /events, /intents/*).
 	if centralProxy != nil {
@@ -559,6 +578,19 @@ func main() {
 	// public /preview/{userID}/ mount then reverse-proxies to it. Admin-token
 	// auth (constant-time bearer). Empty token leaves it unmounted, and the
 	// public mount serves 404 (no targets ever registered).
+	// Market-data door for the per-user daemon's finance bridge. It shares the
+	// SAME finance.Service as the public lane, which is the whole point: the
+	// agent asking for a quote and the user opening that symbol hit one cache,
+	// one vendor quota, and one metering record — and no vendor key is ever
+	// copied into a per-user machine. Admin-token auth; the acting user rides
+	// the X-Matrix-Subject header so metering stays per user.
+	if cfg.FinanceToken != "" {
+		internalMux.Handle("/internal/finance/", mw.Admin(cfg.FinanceToken, logf)(finance.NewInternalHandler(financeSvc, logf)))
+		logf("finance: internal lane enabled at %s/internal/finance/*", cfg.InternalAddr)
+	} else {
+		logf("finance: internal lane DISABLED (ROUTER_FINANCE_TOKEN unset)")
+	}
+
 	if cfg.PreviewToken != "" {
 		previewHandler := preview.RegisterHandler(previewReg)
 		if routerRole == "shard" {

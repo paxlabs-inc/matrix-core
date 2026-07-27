@@ -110,6 +110,13 @@ type Config struct {
 	// (the public /preview/ mount then serves 404 for every user).
 	PreviewToken string
 
+	// FinanceToken authenticates the internal /internal/finance/* endpoints
+	// used by a per-user daemon's finance bridge, so the agent reads market
+	// data through the SAME cache, quota and metering as the browser instead of
+	// holding a vendor key of its own. Empty disables the internal mount; the
+	// public JWT-authed /finance/* lane is unaffected.
+	FinanceToken string
+
 	// CORSOrigins is the browser cross-origin allow-list for the public API
 	// (ROUTER_CORS_ORIGINS, comma-separated). The Next.js client is served from
 	// a different origin than this API and needs CORS to connect. Empty or "*"
@@ -155,6 +162,7 @@ func Load() (*Config, error) {
 		CodyPort:                getOrDefault("ROUTER_CODY_PORT", "8090"),
 		WakeToken:               os.Getenv("ROUTER_WAKE_TOKEN"),
 		PreviewToken:            os.Getenv("ROUTER_PREVIEW_TOKEN"),
+		FinanceToken:            os.Getenv("ROUTER_FINANCE_TOKEN"),
 		CORSOrigins:             parseCSV(os.Getenv("ROUTER_CORS_ORIGINS")),
 	}
 

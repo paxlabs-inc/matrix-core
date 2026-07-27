@@ -1,9 +1,9 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:b0ed2224e61918e847ac3288dd4d83f0cfa30864579a01464e3f1e4c988637e8
+# GENERATED gen=codegraph do-not-edit merkle=b3:8087349d214ea6556bd1e327d9b1cfe401192e02e5c71997ca02544fd4c21fca
 
 NODE id=matrix/cortex kind=package
-  digest=b3:72af0f7f270c1385d46e4ce435ba92eafe6c93ad02d611f6d44e1b6d073e76c1 file=cortex range=0:0 lang=go exported=true
+  digest=b3:a53ea5d9fbb2ae317688d736302d2cbb893be4007b16d3aa91233ad0a8e6fb45 file=cortex range=0:0 lang=go exported=true
 EDGES
-  contains=matrix/cortex/activate.go,matrix/cortex/attest.go,matrix/cortex/cascade.go,matrix/cortex/compact.go,matrix/cortex/context.go,matrix/cortex/cortex.go,matrix/cortex/edges.go,matrix/cortex/embedder.go,matrix/cortex/episodic_backfill.go,matrix/cortex/goal_state.go,matrix/cortex/lexical.go,matrix/cortex/provenance.go,matrix/cortex/ratelimit.go,matrix/cortex/rebuild.go,matrix/cortex/recall.go,matrix/cortex/recent.go,matrix/cortex/repair.go,matrix/cortex/rollup.go,matrix/cortex/rollup_enrich.go,matrix/cortex/scope_enforce.go,matrix/cortex/session.go,matrix/cortex/story.go,matrix/cortex/supersede.go,matrix/cortex/sweep.go,matrix/cortex/update_head.go
+  contains=matrix/cortex/activate.go,matrix/cortex/attest.go,matrix/cortex/cascade.go,matrix/cortex/compact.go,matrix/cortex/context.go,matrix/cortex/cortex.go,matrix/cortex/edges.go,matrix/cortex/embedder.go,matrix/cortex/episodic_backfill.go,matrix/cortex/goal_state.go,matrix/cortex/lexical.go,matrix/cortex/provenance.go,matrix/cortex/ratelimit.go,matrix/cortex/rebuild.go,matrix/cortex/recall.go,matrix/cortex/recent.go,matrix/cortex/repair.go,matrix/cortex/rollup.go,matrix/cortex/rollup_enrich.go,matrix/cortex/scope_enforce.go,matrix/cortex/session.go,matrix/cortex/story.go,matrix/cortex/supersede.go,matrix/cortex/sweep.go,matrix/cortex/tool_event.go,matrix/cortex/update_head.go
   ^contains=mod:matrix/cortex
 
 NODE id=matrix/cortex.ActivationBundle kind=type
@@ -640,7 +640,7 @@ NODE id=matrix/cortex.Cortex kind=type
   sig=type Cortex struct {\n	s	*store.Store\n	now	func() time.Time	// overridable for tests\n	idGen	func() memory.ID\n\n	// embed holds the async embedding worker state when StartEmbedder is\n	// called. Nil when no worker is running (the default). All access\n	// goes through helpers in embedder.go.\n	embed	*embedderState\n\n	// snap holds the journal MMR + per-namespace SMTs (Phase 7). Always\n	// constructed in New; the MMRHook is installed on the underlying\n	// Store so every journal entry contributes a leaf transparently.\n	// SMT updates are staged explicitly by Write/Update/Tombstone/AddEdge/\n	// RemoveEdge and the embedder.\n	snap	*snapshot.State\n\n	// keyResolver is used by Phase 10 scope verification (sub-agent\n	// CortexScope reads/writes). nil means scoped calls are rejected\n	// with ErrNoKeyResolver. Cortex never holds key material itself\n	// (D4); the resolver is plumbed in by the agent runtime.\n	keyResolver	scope.KeyResolver\n\n	// rl holds the Phase 14 token buckets gating\n	// (1) cortex.logScopeViolation journal writes (R5 DoS surface)\n	// (2) cortex.Attest entry (R3b DoS surface).\n	// Always non-nil after New; never persisted (runtime policy state,\n	// not memory data — see ratelimit.go Q4 lock).\n	rl	*rateLimiter\n\n	// pinnedMu/pinnedCache* back the continuous-memory task 4.1 per-turn\n	// Pinned-tier cache consulted by Activate (activate.go), fixing audit\n	// finding NE-7 (the per-step idx/type pinned rescan). PURELY IN-MEMORY\n	// runtime state — like rl above and embed above, it is NEVER persisted\n	// or journaled, so (stronger than "lives in the derived lane") it\n	// cannot perturb ANY lane, anchored or derived. Valid for exactly as\n	// long as c.s.NextSeq() (the journal head) hasn't advanced since it was\n	// computed — any mutating call bumps that seq, so the cache spans\n	// precisely "since the last cortex write", the same window as one turn\n	// in a turn loop that doesn't write to cortex mid-turn.\n	pinnedMu	sync.Mutex\n	pinnedCacheSeq	uint64\n	pinnedCacheIDs	[]memory.ID\n	pinnedCacheOK	bool\n}
   doc=Cortex wraps a per-actor store.Store and exposes the §11–12 API.
 EDGES
-  contains=matrix/cortex.Cortex#embed,matrix/cortex.Cortex#idGen,matrix/cortex.Cortex#keyResolver,matrix/cortex.Cortex#now,matrix/cortex.Cortex#pinnedCacheIDs,matrix/cortex.Cortex#pinnedCacheOK,matrix/cortex.Cortex#pinnedCacheSeq,matrix/cortex.Cortex#pinnedMu,matrix/cortex.Cortex#rl,matrix/cortex.Cortex#s,matrix/cortex.Cortex#snap,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AddSessionProvenance,matrix/cortex.Cortex.AddSessionProvenanceHeuristic,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.Cascade,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.DeleteGoalState,matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.EmbedText,matrix/cortex.Cortex.EmbedderModel,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.EpisodicBackfill,matrix/cortex.Cortex.ExpandToTranscript,matrix/cortex.Cortex.Find,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.Index,matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.ListGoalStates,matrix/cortex.Cortex.LoadCheckpoint,matrix/cortex.Cortex.LoadEnrichment,matrix/cortex.Cortex.LoadRollup,matrix/cortex.Cortex.LoadRollupEnriched,matrix/cortex.Cortex.LoadStorySoFar,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.QueryLexical,matrix/cortex.Cortex.ReadGoalState,matrix/cortex.Cortex.Rebuild,matrix/cortex.Cortex.RebuildLexicalIndex,matrix/cortex.Cortex.RecallDescend,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.RepairRollup,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveScoped,matrix/cortex.Cortex.ResolveToolResult,matrix/cortex.Cortex.Rollups,matrix/cortex.Cortex.Snap,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.Cortex.StopEmbedder,matrix/cortex.Cortex.Store,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.SweepNow,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Transcript,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Verify,matrix/cortex.Cortex.VerifyScope,matrix/cortex.Cortex.Versions,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.WriteGoalState,matrix/cortex.Cortex.addSessionProvenance,matrix/cortex.Cortex.backfillMemoryBatch,matrix/cortex.Cortex.backfillSessionBatch,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.Cortex.cascadeCoarse,matrix/cortex.Cortex.cascadeHours,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.Cortex.enforceContextBudget,matrix/cortex.Cortex.enforceRead,matrix/cortex.Cortex.enforceWrite,matrix/cortex.Cortex.findIdxActorObjKey,matrix/cortex.Cortex.findIdxTagKey,matrix/cortex.Cortex.hasSessionProvenance,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.iterEdges,matrix/cortex.Cortex.loadOrRepairStorySoFar,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.Cortex.notifyEmbedder,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.Cortex.prepareSupersedesEdge,matrix/cortex.Cortex.repairCoarseRollup,matrix/cortex.Cortex.repairHourRollup,matrix/cortex.Cortex.resolveNear,matrix/cortex.Cortex.saveEpisodicBackfill,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.Cortex.stageLexicalMessage,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.Cortex.stageSupersedesEdge,matrix/cortex.Cortex.tierFrameRelevant,matrix/cortex.Cortex.tierOutcomes,matrix/cortex.Cortex.tierPinned,matrix/cortex.Cortex.transcriptSliceApprox,matrix/cortex.Cortex.transcriptSliceExact
+  contains=matrix/cortex.Cortex#embed,matrix/cortex.Cortex#idGen,matrix/cortex.Cortex#keyResolver,matrix/cortex.Cortex#now,matrix/cortex.Cortex#pinnedCacheIDs,matrix/cortex.Cortex#pinnedCacheOK,matrix/cortex.Cortex#pinnedCacheSeq,matrix/cortex.Cortex#pinnedMu,matrix/cortex.Cortex#rl,matrix/cortex.Cortex#s,matrix/cortex.Cortex#snap,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AddSessionProvenance,matrix/cortex.Cortex.AddSessionProvenanceHeuristic,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.Cascade,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.DeleteGoalState,matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.EmbedText,matrix/cortex.Cortex.EmbedderModel,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.EpisodicBackfill,matrix/cortex.Cortex.ExpandToTranscript,matrix/cortex.Cortex.Find,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.Index,matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.ListGoalStates,matrix/cortex.Cortex.LoadCheckpoint,matrix/cortex.Cortex.LoadEnrichment,matrix/cortex.Cortex.LoadRollup,matrix/cortex.Cortex.LoadRollupEnriched,matrix/cortex.Cortex.LoadStorySoFar,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.QueryLexical,matrix/cortex.Cortex.ReadGoalState,matrix/cortex.Cortex.Rebuild,matrix/cortex.Cortex.RebuildLexicalIndex,matrix/cortex.Cortex.RecallDescend,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.RecordToolEvent,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.RepairRollup,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveScoped,matrix/cortex.Cortex.ResolveToolResult,matrix/cortex.Cortex.Rollups,matrix/cortex.Cortex.Snap,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.Cortex.StopEmbedder,matrix/cortex.Cortex.Store,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.SweepNow,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Transcript,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Verify,matrix/cortex.Cortex.VerifyScope,matrix/cortex.Cortex.VerifyToolEventCitation,matrix/cortex.Cortex.Versions,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.WriteGoalState,matrix/cortex.Cortex.addSessionProvenance,matrix/cortex.Cortex.backfillMemoryBatch,matrix/cortex.Cortex.backfillSessionBatch,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.Cortex.cascadeCoarse,matrix/cortex.Cortex.cascadeHours,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.Cortex.enforceContextBudget,matrix/cortex.Cortex.enforceRead,matrix/cortex.Cortex.enforceWrite,matrix/cortex.Cortex.findIdxActorObjKey,matrix/cortex.Cortex.findIdxTagKey,matrix/cortex.Cortex.findToolEventByIdempotency,matrix/cortex.Cortex.hasSessionProvenance,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.iterEdges,matrix/cortex.Cortex.journalEntryAt,matrix/cortex.Cortex.loadOrRepairStorySoFar,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.Cortex.notifyEmbedder,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.Cortex.prepareSupersedesEdge,matrix/cortex.Cortex.repairCoarseRollup,matrix/cortex.Cortex.repairHourRollup,matrix/cortex.Cortex.resolveNear,matrix/cortex.Cortex.saveEpisodicBackfill,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.Cortex.stageLexicalMessage,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.Cortex.stageSupersedesEdge,matrix/cortex.Cortex.tierFrameRelevant,matrix/cortex.Cortex.tierOutcomes,matrix/cortex.Cortex.tierPinned,matrix/cortex.Cortex.transcriptSliceApprox,matrix/cortex.Cortex.transcriptSliceExact
   ^defines=matrix/cortex/cortex.go
 
 NODE id=matrix/cortex.Cortex#embed kind=field
@@ -1022,6 +1022,14 @@ EDGES
   ^contains=matrix/cortex.Cortex
   ^defines=matrix/cortex/recent.go
 
+NODE id=matrix/cortex.Cortex.RecordToolEvent kind=method
+  digest=b3:2beeacb0e91f511daec6ba2e4ae703980ea62e68c9232983bd4d1a68873019e5 file=cortex/tool_event.go range=51:158 lang=go exported=true byte_range=1165:4961
+  sig=func (c *Cortex) RecordToolEvent(\n	event ToolEvent,\n) (ToolEventCitation, error)
+  doc=RecordToolEvent commits one execution-evidence leaf into the journal MMR\nand returns the citation that pins it: the leaf's seq, the leaf count at\ncommit, the canonical plaintext leaf hash, and the journal root over\nexactly that prefix.\n\nThe root is read with MMR.RootAt(leafCount) rather than MMR.Root(). The\nstore's seqMu is released by Commit, so a concurrent journal writer (the\nasync embedder, a session append, a sibling tool execution) can land a\nleaf before this call reads the accumulator; Root() would then return a\nroot over more leaves than the citation claims, minting a citation that\ncan never verify. RootAt pins the prefix this call actually committed.\n\nWhen IdempotencyKey is set, a replay of the same execution resolves\nthrough the tev/idem/ index to the existing leaf and appends nothing.\nA different execution under the same key is ErrToolEventConflict.
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/tool_event.go
+
 NODE id=matrix/cortex.Cortex.RemoveEdge kind=method
   digest=b3:fda555392c4625ddecd1e4c60f2185ec4f86a27256f806baaa0b3ef6a90ddbf4 file=cortex/edges.go range=140:221 lang=go exported=true byte_range=4362:6727
   sig=func (c *Cortex) RemoveEdge(src memory.ID, t memory.EdgeType, dst memory.ID, reason, by string) error
@@ -1182,6 +1190,14 @@ EDGES
   ^contains=matrix/cortex.Cortex
   ^defines=matrix/cortex/scope_enforce.go
 
+NODE id=matrix/cortex.Cortex.VerifyToolEventCitation kind=method
+  digest=b3:9b36dd16d47bdafa07bf73bf7fe3c7951d8ec8cc1c1f018e2c2598f407c9feec file=cortex/tool_event.go range=201:247 lang=go exported=true byte_range=6242:8071
+  sig=func (c *Cortex) VerifyToolEventCitation(\n	citation ToolEventCitation,\n) (journal.ToolEventPayload, error)
+  doc=VerifyToolEventCitation proves a citation against the journal MMR and\nreturns the evidence it pins.\n\nThree independent checks, all O(log n) or better: the entry at Seq must\nhash to the cited leaf (the citation names a real, unaltered entry), the\npersisted accumulator's root over LeafCount leaves must equal the cited\nroot (the root was not forged, and still holds after later appends), and\nthe pinned entry must decode as a well-formed tool event.
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/tool_event.go
+
 NODE id=matrix/cortex.Cortex.Versions kind=method
   digest=b3:107959cbca89cb1b806ad1b07d66b2b841af93e7e9d9c860a1e8ddde76cb4771 file=cortex/cortex.go range=414:431 lang=go exported=true byte_range=14207:14865
   sig=func (c *Cortex) Versions(id memory.ID) ([]memory.Version, error)
@@ -1306,6 +1322,14 @@ EDGES
   ^contains=matrix/cortex.Cortex
   ^defines=matrix/cortex/update_head.go
 
+NODE id=matrix/cortex.Cortex.findToolEventByIdempotency kind=method
+  digest=b3:4b6e810005b031c5dc7a7f2220c2c878698c6b8eab9e0dda229f787d27a33cab file=cortex/tool_event.go range=160:199 lang=go exported=false byte_range=4963:6240
+  sig=func (c *Cortex) findToolEventByIdempotency(\n	key string,\n) (ToolEventCitation, []byte, bool, error)
+  doc=findToolEventByIdempotency resolves key through the tev/idem/ index and\nrebuilds the citation for the leaf it points at. Returns found=false when\nthe key has never been recorded.
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/tool_event.go
+
 NODE id=matrix/cortex.Cortex.hasSessionProvenance kind=method
   digest=b3:5a35ec7c5d2a7527389e292d8acfa3c401ae70468d8f2ad31e79d4e553d5b99f file=cortex/episodic_backfill.go range=140:150 lang=go exported=false byte_range=3952:4401
   sig=func (c *Cortex) hasSessionProvenance(id memory.ID) (bool, error)
@@ -1327,6 +1351,14 @@ NODE id=matrix/cortex.Cortex.iterEdges kind=method
 EDGES
   ^contains=matrix/cortex.Cortex
   ^defines=matrix/cortex/edges.go
+
+NODE id=matrix/cortex.Cortex.journalEntryAt kind=method
+  digest=b3:d68f1b81c9d90bac7c97d33ea1a0103660cfc4706f6b056feca329d4ec1b92d3 file=cortex/tool_event.go range=249:273 lang=go exported=false byte_range=8073:8887
+  sig=func (c *Cortex) journalEntryAt(\n	seq uint64,\n) (journal.Entry, [32]byte, error)
+  doc=journalEntryAt reads j/<seq> through the vault seam and returns the\ndecoded entry alongside the leaf hash over its canonical plaintext\nencoding — the same bytes the MMR hook committed.
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/tool_event.go
 
 NODE id=matrix/cortex.Cortex.loadOrRepairStorySoFar kind=method
   digest=b3:ae42b20c3a312143301a04b83a572471379b54ca90ebaf64960f0fbce97732c9 file=cortex/activate.go range=393:421 lang=go exported=false byte_range=15566:16429
@@ -1897,6 +1929,24 @@ NODE id=matrix/cortex.ErrTooManyCitations kind=var
   doc=ErrTooManyCitations is returned when len(Cited) >\nMaxCitedURIsPerAttest.
 EDGES
   ^defines=matrix/cortex/attest.go
+
+NODE id=matrix/cortex.ErrToolCitationInvalid kind=var
+  digest=b3:458fc26301bda5bd75de8ebc3229d1ae43c9aefb83ecc5700bac2cf06820ea38 file=cortex/tool_event.go range=46:46 lang=go exported=true byte_range=927:1002
+  sig=error
+EDGES
+  ^defines=matrix/cortex/tool_event.go
+
+NODE id=matrix/cortex.ErrToolCitationMismatch kind=var
+  digest=b3:702aa6b1955b39442c35f56b0b93d9974425ad674d272f327b1c8309bbe1c958 file=cortex/tool_event.go range=47:47 lang=go exported=true byte_range=1004:1080
+  sig=error
+EDGES
+  ^defines=matrix/cortex/tool_event.go
+
+NODE id=matrix/cortex.ErrToolEventConflict kind=var
+  digest=b3:57d07a142f0a33900c23f60f17f9b58f76e26acdfc555d9706601cb221e9c4db file=cortex/tool_event.go range=48:48 lang=go exported=true byte_range=1082:1161
+  sig=error
+EDGES
+  ^defines=matrix/cortex/tool_event.go
 
 NODE id=matrix/cortex.GoalRuntimeState kind=type
   digest=b3:379e39c97282e1976f8baa4a4342bb91eb6e9dc401a90294c08c950134f4d800 file=cortex/goal_state.go range=38:52 lang=go exported=true byte_range=1509:2371
@@ -2843,6 +2893,122 @@ NODE id=matrix/cortex.TierPinned kind=const
   doc=TierPinned: Identity ∪ Constraint{Strength=Hard} ∪ Goal{Status=Active}.\nSpec: research/04 §12.1 ("Pinned tier: idx/type/<Identity|Constraint|\nGoal>/...") + research/03 §2.1 ("identity, active hard rules, active\nhard constraints, currently-running intents").
 EDGES
   ^defines=matrix/cortex/context.go
+
+NODE id=matrix/cortex.ToolEvent kind=type
+  digest=b3:2730a6b54fdf16db19ba31c488aa34f072c87df0a431d53c9e4d857ca5eb17cd file=cortex/tool_event.go range=25:36 lang=go exported=true byte_range=448:721
+  sig=type ToolEvent struct {\n	CallID		string\n	ToolName	string\n	Arguments	json.RawMessage\n	Result		json.RawMessage\n	Error		string\n	Expect		string\n	MatchVerdict	string\n	SubgoalID	string\n	IdempotencyKey	string\n	CreatedBy	string\n}
+EDGES
+  contains=matrix/cortex.ToolEvent#Arguments,matrix/cortex.ToolEvent#CallID,matrix/cortex.ToolEvent#CreatedBy,matrix/cortex.ToolEvent#Error,matrix/cortex.ToolEvent#Expect,matrix/cortex.ToolEvent#IdempotencyKey,matrix/cortex.ToolEvent#MatchVerdict,matrix/cortex.ToolEvent#Result,matrix/cortex.ToolEvent#SubgoalID,matrix/cortex.ToolEvent#ToolName
+  ^defines=matrix/cortex/tool_event.go
+
+NODE id=matrix/cortex.ToolEvent#Arguments kind=field
+  digest=b3:c2c1d62f2df2c3020aa8b3823d105319208c8a3441eabf460a8fb6cbee0df16b file=cortex/tool_event.go range=28:28 lang=go exported=true byte_range=519:549
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/cortex.ToolEvent
+
+NODE id=matrix/cortex.ToolEvent#CallID kind=field
+  digest=b3:a8536749e607e22c65c3220bc14b2017dd7a9c19f93fdaba299bd49a10c48734 file=cortex/tool_event.go range=26:26 lang=go exported=true byte_range=473:494
+  sig=string
+EDGES
+  ^contains=matrix/cortex.ToolEvent
+
+NODE id=matrix/cortex.ToolEvent#CreatedBy kind=field
+  digest=b3:34a51263f49b693cd7186a0ce3a2fa31b6827774e23d02481d0312eb595eac76 file=cortex/tool_event.go range=35:35 lang=go exported=true byte_range=698:719
+  sig=string
+EDGES
+  ^contains=matrix/cortex.ToolEvent
+
+NODE id=matrix/cortex.ToolEvent#Error kind=field
+  digest=b3:5fd920be0abb2416449944f70121561f7a2babbafaa96abbe50f102cffc370ed file=cortex/tool_event.go range=30:30 lang=go exported=true byte_range=583:604
+  sig=string
+EDGES
+  ^contains=matrix/cortex.ToolEvent
+
+NODE id=matrix/cortex.ToolEvent#Expect kind=field
+  digest=b3:77da100e2ca323948e024c1af94e8a42817da22db69532a3aee3fc88bde70ae3 file=cortex/tool_event.go range=31:31 lang=go exported=true byte_range=606:627
+  sig=string
+EDGES
+  ^contains=matrix/cortex.ToolEvent
+
+NODE id=matrix/cortex.ToolEvent#IdempotencyKey kind=field
+  digest=b3:53197bc1c40c9fa72646f569770a472b67c8b009bda74681c2f0653f4babc1c5 file=cortex/tool_event.go range=34:34 lang=go exported=true byte_range=675:696
+  sig=string
+EDGES
+  ^contains=matrix/cortex.ToolEvent
+
+NODE id=matrix/cortex.ToolEvent#MatchVerdict kind=field
+  digest=b3:d470688e062932884d787ac3a34a61a3e81e15a63eb37d8082eb599121e78f60 file=cortex/tool_event.go range=32:32 lang=go exported=true byte_range=629:650
+  sig=string
+EDGES
+  ^contains=matrix/cortex.ToolEvent
+
+NODE id=matrix/cortex.ToolEvent#Result kind=field
+  digest=b3:f50b0f85d5e0d1979d1820ba8dd9b9e532571f87d04cbfcb93b98ef5f92f0449 file=cortex/tool_event.go range=29:29 lang=go exported=true byte_range=551:581
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/cortex.ToolEvent
+
+NODE id=matrix/cortex.ToolEvent#SubgoalID kind=field
+  digest=b3:98b33bd36ca7f29a445ed86d3314656ac519a987c98546705a99fa63ea29b1ba file=cortex/tool_event.go range=33:33 lang=go exported=true byte_range=652:673
+  sig=string
+EDGES
+  ^contains=matrix/cortex.ToolEvent
+
+NODE id=matrix/cortex.ToolEvent#ToolName kind=field
+  digest=b3:9e826a40b58b14ca15080269923ad2e7123d7ca5de1518f618ff4ebbe49e8cbd file=cortex/tool_event.go range=27:27 lang=go exported=true byte_range=496:517
+  sig=string
+EDGES
+  ^contains=matrix/cortex.ToolEvent
+
+NODE id=matrix/cortex.ToolEventCitation kind=type
+  digest=b3:91963d3352ea331893f4aeed2c85af79877bfda1abf98d2d9e6c932f0d2aa4ab file=cortex/tool_event.go range=38:43 lang=go exported=true byte_range=723:918
+  sig=type ToolEventCitation struct {\n	Seq		uint64		`json:"seq"`\n	LeafCount	uint64		`json:"leaf_count"`\n	LeafHash	[32]byte	`json:"leaf_hash"`\n	JournalRoot	[32]byte	`json:"journal_root"`\n}
+EDGES
+  contains=matrix/cortex.ToolEventCitation#JournalRoot,matrix/cortex.ToolEventCitation#LeafCount,matrix/cortex.ToolEventCitation#LeafHash,matrix/cortex.ToolEventCitation#Seq
+  ^defines=matrix/cortex/tool_event.go
+
+NODE id=matrix/cortex.ToolEventCitation#JournalRoot kind=field
+  digest=b3:0f99f0c81387de2350bf7130e71f389490bec7664b46973ece67996404a23ee7 file=cortex/tool_event.go range=42:42 lang=go exported=true byte_range=874:916
+  sig=[32]byte
+EDGES
+  ^contains=matrix/cortex.ToolEventCitation
+
+NODE id=matrix/cortex.ToolEventCitation#LeafCount kind=field
+  digest=b3:06f153f8946b9ea74b9218ec23fa399581d2d7dd3b8736d141beec5cbcca16a3 file=cortex/tool_event.go range=40:40 lang=go exported=true byte_range=791:831
+  sig=uint64
+EDGES
+  ^contains=matrix/cortex.ToolEventCitation
+
+NODE id=matrix/cortex.ToolEventCitation#LeafHash kind=field
+  digest=b3:314aece5c668361a00581ff520778c62cfd498191f4affdd512fdc1ff6e913c5 file=cortex/tool_event.go range=41:41 lang=go exported=true byte_range=833:872
+  sig=[32]byte
+EDGES
+  ^contains=matrix/cortex.ToolEventCitation
+
+NODE id=matrix/cortex.ToolEventCitation#Seq kind=field
+  digest=b3:f9bed574cf4fecf808f3254036f218c1264f2bf0ce4aee13072b863c0a92d884 file=cortex/tool_event.go range=39:39 lang=go exported=true byte_range=756:789
+  sig=uint64
+EDGES
+  ^contains=matrix/cortex.ToolEventCitation
+
+NODE id=matrix/cortex.ToolMatchMatched kind=const
+  digest=b3:1674daf3070275622a6f52a55a3e2cf15fa7e469a8dbf1a04e735a0ec93d62d5 file=cortex/tool_event.go range=20:20 lang=go exported=true byte_range=344:375
+  sig=untyped string
+EDGES
+  ^defines=matrix/cortex/tool_event.go
+
+NODE id=matrix/cortex.ToolMatchMismatched kind=const
+  digest=b3:414d7271987b12f41fb79f06e0b997621ceb8e4128027707dd32ed970902a376 file=cortex/tool_event.go range=21:21 lang=go exported=true byte_range=377:411
+  sig=untyped string
+EDGES
+  ^defines=matrix/cortex/tool_event.go
+
+NODE id=matrix/cortex.ToolMatchUnknown kind=const
+  digest=b3:41ef5fe4fbd65e5db68562fc88b3444041518bafbc3217d6ae6a8e4b2aec0eef file=cortex/tool_event.go range=22:22 lang=go exported=true byte_range=413:444
+  sig=untyped string
+EDGES
+  ^defines=matrix/cortex/tool_event.go
 
 NODE id=matrix/cortex.TranscriptSlice kind=type
   digest=b3:49001a375ac549327c4527e5a0b31b14f8d0fb676b379157d4d7e726fbe1ca51 file=cortex/provenance.go range=100:111 lang=go exported=true byte_range=4456:4982
@@ -4211,6 +4377,12 @@ NODE id=matrix/cortex.validRole kind=func
 EDGES
   ^defines=matrix/cortex/session.go
 
+NODE id=matrix/cortex.validToolMatch kind=func
+  digest=b3:538574e2ffcf99740c250fd1f03b7ac6dbf3940bd81b34044aa48eb3a1fe5fe3 file=cortex/tool_event.go range=275:282 lang=go exported=false byte_range=8889:9056
+  sig=func validToolMatch(verdict string) bool
+EDGES
+  ^defines=matrix/cortex/tool_event.go
+
 NODE id=matrix/cortex.versionValidAt kind=func
   digest=b3:dd7fd76415c297dc8636c452f6d33c2e02b286e34335a3646aa9ea3f266e6f85 file=cortex/recall.go range=415:423 lang=go exported=false byte_range=14459:14906
   sig=func versionValidAt(v *memory.Version, asOf time.Time) bool
@@ -4381,6 +4553,12 @@ NODE id=matrix/cortex/sweep.go kind=file
   digest=b3:1f9995e30ac83fa849d5a00c3183262b84016c4d9146da7e4d8fdac5fd173250 file=cortex/sweep.go range=1:34 lang=go exported=true
 EDGES
   defines=matrix/cortex.Cortex.SweepNow
+  ^contains=matrix/cortex
+
+NODE id=matrix/cortex/tool_event.go kind=file
+  digest=b3:6cc049a033c44015ad639ccb9477d33d5f6295e27d2a81ab59db6fce7c41cac0 file=cortex/tool_event.go range=1:282 lang=go exported=true
+EDGES
+  defines=matrix/cortex.Cortex.RecordToolEvent,matrix/cortex.Cortex.VerifyToolEventCitation,matrix/cortex.Cortex.findToolEventByIdempotency,matrix/cortex.Cortex.journalEntryAt,matrix/cortex.ErrToolCitationInvalid,matrix/cortex.ErrToolCitationMismatch,matrix/cortex.ErrToolEventConflict,matrix/cortex.ToolEvent,matrix/cortex.ToolEventCitation,matrix/cortex.ToolMatchMatched,matrix/cortex.ToolMatchMismatched,matrix/cortex.ToolMatchUnknown,matrix/cortex.validToolMatch
   ^contains=matrix/cortex
 
 NODE id=matrix/cortex/update_head.go kind=file

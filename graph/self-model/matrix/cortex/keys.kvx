@@ -1,720 +1,734 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:b0ed2224e61918e847ac3288dd4d83f0cfa30864579a01464e3f1e4c988637e8
+# GENERATED gen=codegraph do-not-edit merkle=b3:8087349d214ea6556bd1e327d9b1cfe401192e02e5c71997ca02544fd4c21fca
 
 NODE id=matrix/cortex/keys kind=package
-  digest=b3:6f9f61900e425be4c5cc5f599d519dd80ec74469d02bceac41ebcd2c978827ee file=cortex/keys range=0:0 lang=go exported=true
+  digest=b3:df8e3ef9beb6686b447cd5a943bae31e71e61322280af0d094b548c5d6523ca9 file=cortex/keys range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/keys/keys.go
   ^contains=mod:matrix/cortex
 
 NODE id=matrix/cortex/keys.AccumMMRLeafCount kind=var
-  digest=b3:cdd37aac278c15a3d26a21c8e11a395ecd32ad7affd5c1a8578f47132834f617 file=cortex/keys/keys.go range=712:714 lang=go exported=true byte_range=27627:27851
+  digest=b3:cdd37aac278c15a3d26a21c8e11a395ecd32ad7affd5c1a8578f47132834f617 file=cortex/keys/keys.go range=732:734 lang=go exported=true byte_range=28625:28849
   sig=[]byte
   doc=AccumMMRLeafCount returns accum/mmr/leafcount, the MMR leaf-count key.\nValue is uint64 BE; absent means zero leaves appended.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.AccumMMRNodeKey kind=func
-  digest=b3:c0d951400f782605ec9fa173ed768a74092da48302aaad459363829397b1b89a file=cortex/keys/keys.go range=716:725 lang=go exported=true byte_range=27853:28273
+  digest=b3:c0d951400f782605ec9fa173ed768a74092da48302aaad459363829397b1b89a file=cortex/keys/keys.go range=736:745 lang=go exported=true byte_range=28851:29271
   sig=func AccumMMRNodeKey(pos uint64) []byte
   doc=AccumMMRNodeKey returns accum/mmr/n/<pos:8> for one MMR node hash. Position\nuses the standard 1-indexed depth-first MMR numbering (research/04-cortex.md\n§7.1 references the Grin/CT MMR shape).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.CheckpointIntentPrefix kind=func
-  digest=b3:3823f7d7516bdc880e9f6e4ae841456a702cee773b26443e9ba8fbf8f4f81259 file=cortex/keys/keys.go range=801:817 lang=go exported=true byte_range=31184:31850
+  digest=b3:3823f7d7516bdc880e9f6e4ae841456a702cee773b26443e9ba8fbf8f4f81259 file=cortex/keys/keys.go range=821:837 lang=go exported=true byte_range=32182:32848
   sig=func CheckpointIntentPrefix(intentID string) ([]byte, error)
   doc=CheckpointIntentPrefix returns chk/<lpstr intent_id>/, the prefix\nfor scanning every step's checkpoint under one intent (audit and\nre-entry helpers). Same constraints as CheckpointKey.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.CheckpointKey kind=func
-  digest=b3:d6a03e464d19b9465fcddfb37fb4e716192a35f677bafee12edd6d519f15c9d8 file=cortex/keys/keys.go range=766:799 lang=go exported=true byte_range=29809:31182
+  digest=b3:d6a03e464d19b9465fcddfb37fb4e716192a35f677bafee12edd6d519f15c9d8 file=cortex/keys/keys.go range=786:819 lang=go exported=true byte_range=30807:32180
   sig=func CheckpointKey(intentID, stepID string) ([]byte, error)
   doc=CheckpointKey returns chk/<lpstr intent_id>/<lpstr step_id>.\n\nSpec: research/03-retrieval-patterns.md §5.1 step 3 + §5.3 (the\ncortex.compact primitive). Phase 9 / Andrew lock A1.\n\nBoth components are 1-byte length-prefixed strings (PutLPString), so\nthe variable-width tail is unambiguously parseable. The literal '/'\nbetween them is cosmetic — the parser uses lengths, not delimiters —\nbut matches the visual style of EdgeFromKey/EdgeToKey.\n\nCaller-supplied ids may not contain '/' (validated). Empty ids\nrejected at the API surface (cortex.Compact); we only enforce the\n255-byte and no-slash constraints here.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EdgeFromKey kind=func
-  digest=b3:08b7db13d9680a6a114113c9a17b291fed4b596314fb18b3252bb9899a7ca37e file=cortex/keys/keys.go range=276:290 lang=go exported=true byte_range=12033:12730
+  digest=b3:08b7db13d9680a6a114113c9a17b291fed4b596314fb18b3252bb9899a7ca37e file=cortex/keys/keys.go range=283:297 lang=go exported=true byte_range=12441:13138
   sig=func EdgeFromKey(src ULID, edge byte, dst ULID) []byte
   doc=EdgeFromKey returns e/from/<src:16>/<edge:1>/<dst:16>.\n\nLayout: a single byte slash separates the src ULID from the 1-byte edge\ntype, then another slash separates edge type from dst ULID. Slashes inside\nULIDs are not possible (binary ULIDs may contain 0x2F, so use FIXED widths,\nnot slash as delimiter inside the binary fields). Here the slash is\nCOSMETIC after fixed-width src; the parser uses widths, not delimiters.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EdgeFromPrefix kind=func
-  digest=b3:65ed9e5853d9213e17268d17edbeaecbbd6fd39a839ab1fcc0e11d612a998cbc file=cortex/keys/keys.go range=302:309 lang=go exported=true byte_range=13040:13367
+  digest=b3:65ed9e5853d9213e17268d17edbeaecbbd6fd39a839ab1fcc0e11d612a998cbc file=cortex/keys/keys.go range=309:316 lang=go exported=true byte_range=13448:13775
   sig=func EdgeFromPrefix(src ULID) []byte
   doc=EdgeFromPrefix returns e/from/<src:16>/, suitable for scanning all outgoing\nedges from src (any edge type, any dst, sorted by edge byte then dst).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EdgeFromTypePrefix kind=func
-  digest=b3:94abad73dba9e486c8fe53e7c02fc2acef699682fa788abeeb2d6266e9a158ec file=cortex/keys/keys.go range=311:319 lang=go exported=true byte_range=13369:13737
+  digest=b3:94abad73dba9e486c8fe53e7c02fc2acef699682fa788abeeb2d6266e9a158ec file=cortex/keys/keys.go range=318:326 lang=go exported=true byte_range=13777:14145
   sig=func EdgeFromTypePrefix(src ULID, edge byte) []byte
   doc=EdgeFromTypePrefix returns e/from/<src:16>/<edge:1>, suitable for scanning\noutgoing edges of one specific type from src. Sorted ascending by dst.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EdgeToKey kind=func
-  digest=b3:db461cd7128393dec855e2ef612fd790fd030560ff8a36254578c725a5a70c38 file=cortex/keys/keys.go range=292:300 lang=go exported=true byte_range=12732:13038
+  digest=b3:db461cd7128393dec855e2ef612fd790fd030560ff8a36254578c725a5a70c38 file=cortex/keys/keys.go range=299:307 lang=go exported=true byte_range=13140:13446
   sig=func EdgeToKey(dst ULID, edge byte, src ULID) []byte
   doc=EdgeToKey returns e/to/<dst:16>/<edge:1>/<src:16>.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EdgeToPrefix kind=func
-  digest=b3:ab7954b323b029192e228c2b11cb28df92de039bc9bc1fe77b96cd4816e07a16 file=cortex/keys/keys.go range=321:327 lang=go exported=true byte_range=13739:13947
+  digest=b3:ab7954b323b029192e228c2b11cb28df92de039bc9bc1fe77b96cd4816e07a16 file=cortex/keys/keys.go range=328:334 lang=go exported=true byte_range=14147:14355
   sig=func EdgeToPrefix(dst ULID) []byte
   doc=EdgeToPrefix returns e/to/<dst:16>/.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EdgeToTypePrefix kind=func
-  digest=b3:be72f8d31495cbdd80c630baa4ab5d41858e6fb28e4988fd556c766b58af55fa file=cortex/keys/keys.go range=329:337 lang=go exported=true byte_range=13949:14307
+  digest=b3:be72f8d31495cbdd80c630baa4ab5d41858e6fb28e4988fd556c766b58af55fa file=cortex/keys/keys.go range=336:344 lang=go exported=true byte_range=14357:14715
   sig=func EdgeToTypePrefix(dst ULID, edge byte) []byte
   doc=EdgeToTypePrefix returns e/to/<dst:16>/<edge:1>, suitable for scanning\nincoming edges of one specific type into dst. Sorted ascending by src.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EnrichKey kind=func
-  digest=b3:f66e8f8b268cbd4d4c1558508503bf668ac2043253330d4f1fd1f825c5d8623e file=cortex/keys/keys.go range=972:989 lang=go exported=true byte_range=37154:38051
+  digest=b3:f66e8f8b268cbd4d4c1558508503bf668ac2043253330d4f1fd1f825c5d8623e file=cortex/keys/keys.go range=992:1009 lang=go exported=true byte_range=38152:39049
   sig=func EnrichKey(tier uint8, start uint64) []byte
   doc=EnrichKey returns enr/<tier:1><start:8 BE>.\n\nContinuous-memory task 2.3: the OPTIONAL LLM-enrichment record for one\nrollup window, stored in a lane PARALLEL to roll/ under the SAME (tier,\nwindow-start) identity. Same layout/posture as RollupKey (1-byte tier +\n8-byte big-endian window start, byte-sort == (tier, start) sort). The\nenrichment is a SEPARATE derived record — the stored RollupRecord is never\nmutated to reference it — so the deterministic rollup floor stays\nbyte-stable; the enrichment is resolved by the same window key and treated\nas stale/absent whenever its SourceRecordHash no longer matches the current\nrollup. Never an anchored SMT write.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EnrichTierPrefix kind=func
-  digest=b3:e89ac3c95ec662380f7bbef61b25eacba0ea648b62b794d795cf2118af5d6257 file=cortex/keys/keys.go range=991:998 lang=go exported=true byte_range=38053:38346
+  digest=b3:e89ac3c95ec662380f7bbef61b25eacba0ea648b62b794d795cf2118af5d6257 file=cortex/keys/keys.go range=1011:1018 lang=go exported=true byte_range=39051:39344
   sig=func EnrichTierPrefix(tier uint8) []byte
   doc=EnrichTierPrefix returns enr/<tier:1>, the prefix for scanning every\nenrichment of one tier in ascending window-start order.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ErrBadPrefix kind=var
-  digest=b3:321eb7c177ba7e46a682938e1539f5ce80fb0521142ee5d9134f468f89e40ce5 file=cortex/keys/keys.go range=199:202 lang=go exported=true byte_range=9653:9813
+  digest=b3:321eb7c177ba7e46a682938e1539f5ce80fb0521142ee5d9134f468f89e40ce5 file=cortex/keys/keys.go range=206:209 lang=go exported=true byte_range=10061:10221
   sig=error
   doc=Errors returned by decoders.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ErrBadStrLen kind=var
-  digest=b3:07db0482c7b3958c0718fe0e3c82241e9fc2ad5fc3ff5a2e7d35e94b8ab7350b file=cortex/keys/keys.go range=199:203 lang=go exported=true byte_range=9653:9875
+  digest=b3:07db0482c7b3958c0718fe0e3c82241e9fc2ad5fc3ff5a2e7d35e94b8ab7350b file=cortex/keys/keys.go range=206:210 lang=go exported=true byte_range=10061:10283
   sig=error
   doc=Errors returned by decoders.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ErrShortKey kind=var
-  digest=b3:0581077871cc471bc91d7327b5227a44e0d82ec4ec3c78f6be3c64ae455f8d8e file=cortex/keys/keys.go range=199:201 lang=go exported=true byte_range=9653:9761
+  digest=b3:0581077871cc471bc91d7327b5227a44e0d82ec4ec3c78f6be3c64ae455f8d8e file=cortex/keys/keys.go range=206:208 lang=go exported=true byte_range=10061:10169
   sig=error
   doc=Errors returned by decoders.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxActorObjKey kind=func
-  digest=b3:bfae062caaf68c052d91c38e1ef0ed827debcc6183999bb17755303f19445cb8 file=cortex/keys/keys.go range=613:638 lang=go exported=true byte_range=23965:25234
+  digest=b3:bfae062caaf68c052d91c38e1ef0ed827debcc6183999bb17755303f19445cb8 file=cortex/keys/keys.go range=633:658 lang=go exported=true byte_range=24963:26232
   sig=func IdxActorObjKey(verb byte, objHash [ObjHashSize]byte, createdUnixNano uint64, id ULID) []byte
   doc=IdxActorObjKey returns idx/actor_obj/<verb:1>/<obj_hash:16>/<created:8>/<id:16>.\n\nSpec: research/04-cortex.md §2.3 — the outcome-history secondary\nindex. Scanned by cortex.context's Outcomes tier with the\n(verb, obj_hash) prefix; results sort ascending by created and the\ncomposer takes the LAST N entries (= most recent N outcomes).\n\nPhase 8 caller: cortex.Write emits one of these per FrameRef in\nh.Frames ONLY when h.Type == TypeEvent. Other memory types\n(Preference, Belief, ...) stamp idx/frame but never idx/actor_obj,\nbecause outcomes-by-(verb,object) is an Event-only concept per\nresearch/03-retrieval-patterns.md §2.1 ("1-3 prior similar intents\nand their outcomes").\n\nThe created field is a Unix-nanosecond timestamp cast to uint64\nbig-endian, identical to idx/type's created handling — keeps\nbyte-sort=time-sort over the plausible post-1970 range.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxActorObjPrefixVerb kind=func
-  digest=b3:5357d69f0a614b6cb739db36e589f42e27bfd1784a5bc219ab64984373484a6b file=cortex/keys/keys.go range=640:647 lang=go exported=true byte_range=25236:25512
+  digest=b3:5357d69f0a614b6cb739db36e589f42e27bfd1784a5bc219ab64984373484a6b file=cortex/keys/keys.go range=660:667 lang=go exported=true byte_range=26234:26510
   sig=func IdxActorObjPrefixVerb(verb byte) []byte
   doc=IdxActorObjPrefixVerb returns idx/actor_obj/<verb:1>/, the broadest\nscan prefix (debug-only).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxActorObjPrefixVerbObj kind=func
-  digest=b3:765c0c1cabd338ad9f97879ed51307be5b30306934f3e7f8e4b1969c3dde925c file=cortex/keys/keys.go range=649:659 lang=go exported=true byte_range=25514:26019
+  digest=b3:765c0c1cabd338ad9f97879ed51307be5b30306934f3e7f8e4b1969c3dde925c file=cortex/keys/keys.go range=669:679 lang=go exported=true byte_range=26512:27017
   sig=func IdxActorObjPrefixVerbObj(verb byte, objHash [ObjHashSize]byte) []byte
   doc=IdxActorObjPrefixVerbObj returns idx/actor_obj/<verb:1>/<obj_hash:16>/,\nthe prefix the Outcomes tier scans for one (verb, obj_ref) tuple.\nEntries inside this prefix sort ascending by created; the composer\nreverses to take the most-recent N.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxFrameKey kind=func
-  digest=b3:10f90f1c90249805a413f49e3c205fb931cc0f0ab2fb97a7c1ef1c87bd096eb2 file=cortex/keys/keys.go range=532:556 lang=go exported=true byte_range=20671:21852
+  digest=b3:10f90f1c90249805a413f49e3c205fb931cc0f0ab2fb97a7c1ef1c87bd096eb2 file=cortex/keys/keys.go range=552:576 lang=go exported=true byte_range=21669:22850
   sig=func IdxFrameKey(verb, objKind byte, objHash [ObjHashSize]byte, id ULID) []byte
   doc=IdxFrameKey returns idx/frame/<verb:1>/<obj_kind:1>/<obj_hash:16>/<id:16>.\n\nSpec: research/04-cortex.md §2.3 — the frame-relevance secondary\nindex. Scanned by cortex.context's Frame-relevant tier with the\n(verb, kind, obj_hash) prefix to retrieve every memory a skill\nstamped as relevant for that frame.\n\nPhase 8 caller: cortex.Write emits one of these per FrameRef in\nh.Frames (auto-derivation across all memory types). Insertion order\ninside the prefix is byte-sort over the trailing memory ID, which\nequals creation order under ULID monotonicity — good enough for the\nsalience-rank step downstream.\n\nNo `created` byte is stored in the key (cf. idx/tag and idx/type):\nthe composer always salience-ranks frame matches, never time-ranks,\nso adding 8 bytes per row would inflate the index without giving\nany new scan affordance.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxFramePrefixVerb kind=func
-  digest=b3:f8e21050a4b63b43e55ee2b6ba53775ab6255ff5a66cbc514d92281ee7b893ad file=cortex/keys/keys.go range=558:566 lang=go exported=true byte_range=21854:22230
+  digest=b3:f8e21050a4b63b43e55ee2b6ba53775ab6255ff5a66cbc514d92281ee7b893ad file=cortex/keys/keys.go range=578:586 lang=go exported=true byte_range=22852:23228
   sig=func IdxFramePrefixVerb(verb byte) []byte
   doc=IdxFramePrefixVerb returns idx/frame/<verb:1>/, the broadest scan\nprefix. Used by debug tools that want to enumerate every frame entry\nfor one verb; the cortex.context composer never scans this wide.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxFramePrefixVerbKind kind=func
-  digest=b3:be6dd508c1b4d7d4ab817b25442e51f60a747b68796520dbf044c41e084c8613 file=cortex/keys/keys.go range=568:576 lang=go exported=true byte_range=22232:22635
+  digest=b3:be6dd508c1b4d7d4ab817b25442e51f60a747b68796520dbf044c41e084c8613 file=cortex/keys/keys.go range=588:596 lang=go exported=true byte_range=23230:23633
   sig=func IdxFramePrefixVerbKind(verb, objKind byte) []byte
   doc=IdxFramePrefixVerbKind returns idx/frame/<verb:1>/<kind:1>/, useful\nfor "every (verb, kind) pair regardless of object" scans. Mainly a\ndebug surface; the Phase 8 composer uses IdxFramePrefixVerbKindObj.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxFramePrefixVerbKindObj kind=func
-  digest=b3:5b25bdcb75239c22a43236d2503df934b3d8e49da114f97be6f4db94750ce193 file=cortex/keys/keys.go range=578:588 lang=go exported=true byte_range=22637:23183
+  digest=b3:5b25bdcb75239c22a43236d2503df934b3d8e49da114f97be6f4db94750ce193 file=cortex/keys/keys.go range=598:608 lang=go exported=true byte_range=23635:24181
   sig=func IdxFramePrefixVerbKindObj(verb, objKind byte, objHash [ObjHashSize]byte) []byte
   doc=IdxFramePrefixVerbKindObj returns idx/frame/<verb:1>/<kind:1>/<obj_hash:16>/,\nthe prefix the cortex.context Frame-relevant tier scans for each\n(verb, kind, obj_ref) tuple in ContextOpts.Objects. One scan per\ntuple; results unioned across tuples then salience-ranked.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxSMTNamespacePrefix kind=func
-  digest=b3:5acdd90a6e4ef9e1d8bf29ee62d8c9026a9e3a92e760aae11c44ddb6382dd4d1 file=cortex/keys/keys.go range=753:764 lang=go exported=true byte_range=29311:29807
+  digest=b3:5acdd90a6e4ef9e1d8bf29ee62d8c9026a9e3a92e760aae11c44ddb6382dd4d1 file=cortex/keys/keys.go range=773:784 lang=go exported=true byte_range=30309:30805
   sig=func IdxSMTNamespacePrefix(ns string) ([]byte, error)
   doc=IdxSMTNamespacePrefix returns idx/smt/<ns>/n/, the prefix for scanning all\nnode entries of one SMT (used during a drop+rebuild on replay).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxSMTNodeKey kind=func
-  digest=b3:b6b233d9e3ff478468fd162c0e33d70ae7a549e811a9410d0e7a1d26bb1e0821 file=cortex/keys/keys.go range=727:751 lang=go exported=true byte_range=28275:29309
+  digest=b3:b6b233d9e3ff478468fd162c0e33d70ae7a549e811a9410d0e7a1d26bb1e0821 file=cortex/keys/keys.go range=747:771 lang=go exported=true byte_range=29273:30307
   sig=func IdxSMTNodeKey(ns string, depth uint16, path [32]byte) ([]byte, error)
   doc=IdxSMTNodeKey returns idx/smt/<ns>/n/<depth:2>/<path:32> for one SMT\ninternal node. Depth 0 = root level (subtree below has remaining depth\n256); depth 256 = leaf level. Path is the bit string from the root with\nthe top `depth` bits significant; lower bits MUST be zero (caller\nresponsibility, normalized via SMTNormalizePath).\n\nNamespace is a short ASCII tag ("memories", "edges"). The validator\nrejects '/' so the key is unambiguous.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxTagKey kind=func
-  digest=b3:01164cec8626fddb89fdc8d1428b9e652886aa760ebcd10328d28e74a60dbea7 file=cortex/keys/keys.go range=479:493 lang=go exported=true byte_range=18604:19308
+  digest=b3:01164cec8626fddb89fdc8d1428b9e652886aa760ebcd10328d28e74a60dbea7 file=cortex/keys/keys.go range=499:513 lang=go exported=true byte_range=19602:20306
   sig=func IdxTagKey(tagHash [TagHashSize]byte, createdUnixNano uint64, id ULID) []byte
   doc=IdxTagKey returns idx/tag/<tag_hash:8>/<created:8>/<id:16>.\n\n`tagHash` is the first 8 bytes of sha256(tag) (caller computed); we hash\nbecause tags are arbitrary user strings up to 64 bytes and we want\nfixed-width keys. Uniqueness is enforced by appending the full ID at the\ntail, so collisions in the 8-byte prefix only inflate scan candidates,\nthey never silently merge memories.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxTagPrefix kind=func
-  digest=b3:c424fd3144e11f77b9f48c42d9292928d3a9bc5e7764e1037963a394905e437e file=cortex/keys/keys.go range=495:502 lang=go exported=true byte_range=19310:19637
+  digest=b3:c424fd3144e11f77b9f48c42d9292928d3a9bc5e7764e1037963a394905e437e file=cortex/keys/keys.go range=515:522 lang=go exported=true byte_range=20308:20635
   sig=func IdxTagPrefix(tagHash [TagHashSize]byte) []byte
   doc=IdxTagPrefix returns idx/tag/<tag_hash:8>/, the prefix for scanning every\nmemory tagged with a given tag in creation-time order.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxTypeKey kind=func
-  digest=b3:4bfa5682749aedcdcc420bc2994d89d2783a2f87cd4f84d681033f6d4dd9a856 file=cortex/keys/keys.go range=452:462 lang=go exported=true byte_range=17523:18007
+  digest=b3:4bfa5682749aedcdcc420bc2994d89d2783a2f87cd4f84d681033f6d4dd9a856 file=cortex/keys/keys.go range=472:482 lang=go exported=true byte_range=18521:19005
   sig=func IdxTypeKey(memType byte, createdUnixNano uint64, id ULID) []byte
   doc=IdxTypeKey returns idx/type/<type:1>/<created:8>/<id:16>.\n`created` is a Unix nanosecond timestamp (int64 cast to uint64 BE — sign bit\nhandled by caller; negative times are unused in production).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxTypePrefix kind=func
-  digest=b3:b8bc2c7a171d17e1e95add6d9bda2585c0a6fac511275c772353e6076904ea4d file=cortex/keys/keys.go range=464:471 lang=go exported=true byte_range=18009:18291
+  digest=b3:b8bc2c7a171d17e1e95add6d9bda2585c0a6fac511275c772353e6076904ea4d file=cortex/keys/keys.go range=484:491 lang=go exported=true byte_range=19007:19289
   sig=func IdxTypePrefix(memType byte) []byte
   doc=IdxTypePrefix returns idx/type/<type:1>/, the prefix for scanning all\nmemories of a given type in time order.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.JournalKey kind=func
-  digest=b3:cad2ccca7de36f455a66d64b394ddce0502e5b1991abadcbc22305a7161eaa42 file=cortex/keys/keys.go range=377:383 lang=go exported=true byte_range=15332:15552
+  digest=b3:cad2ccca7de36f455a66d64b394ddce0502e5b1991abadcbc22305a7161eaa42 file=cortex/keys/keys.go range=384:390 lang=go exported=true byte_range=15740:15960
   sig=func JournalKey(seq uint64) []byte
   doc=JournalKey returns j/<seq:8>. Sorted ascending by seq.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.JournalRange kind=func
-  digest=b3:d302e6fa484d72ead72db86f7971e759ce233793093f6921026fe3e524808b8e file=cortex/keys/keys.go range=414:418 lang=go exported=true byte_range=16455:16685
+  digest=b3:d302e6fa484d72ead72db86f7971e759ce233793093f6921026fe3e524808b8e file=cortex/keys/keys.go range=434:438 lang=go exported=true byte_range=17453:17683
   sig=func JournalRange() (start, end []byte)
   doc=JournalRange returns the [start, end) byte range covering all journal keys.\nPass this to a Pebble iterator to walk the full journal in seq order.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MemoryHeadKey kind=func
-  digest=b3:14cd4478d7c52c17a404eec1143e6c940b44d0239bfe539ef29850e9afb66bf9 file=cortex/keys/keys.go range=245:251 lang=go exported=true byte_range=11010:11221
+  digest=b3:14cd4478d7c52c17a404eec1143e6c940b44d0239bfe539ef29850e9afb66bf9 file=cortex/keys/keys.go range=252:258 lang=go exported=true byte_range=11418:11629
   sig=func MemoryHeadKey(id ULID) []byte
   doc=MemoryHeadKey returns m/<id:16>.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MemoryVersionKey kind=func
-  digest=b3:5f584ed004e7ad078d4621e6b100dcf2cbba8c4c4bea5980cc44fa4142689788 file=cortex/keys/keys.go range=253:264 lang=go exported=true byte_range=11223:11672
+  digest=b3:5f584ed004e7ad078d4621e6b100dcf2cbba8c4c4bea5980cc44fa4142689788 file=cortex/keys/keys.go range=260:271 lang=go exported=true byte_range=11631:12080
   sig=func MemoryVersionKey(id ULID, version uint64) []byte
   doc=MemoryVersionKey returns mv/<id:16>/v/<version:8>.\n\nThe literal "/v/" in the middle keeps versions of one memory contiguous\nunder the same id prefix scan: mv/<id>/v/.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MemoryVersionPrefix kind=func
-  digest=b3:fcf2bc25de2fdae3c3783c94bf3a5493d91f02bd111742c777a84260a777f81b file=cortex/keys/keys.go range=266:274 lang=go exported=true byte_range=11674:12031
+  digest=b3:fcf2bc25de2fdae3c3783c94bf3a5493d91f02bd111742c777a84260a777f81b file=cortex/keys/keys.go range=273:281 lang=go exported=true byte_range=12082:12439
   sig=func MemoryVersionPrefix(id ULID) []byte
   doc=MemoryVersionPrefix returns mv/<id:16>/v/, the prefix for a single memory's\nversion history (byte-sorted ascending by version).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MetaCompileCacheKey kind=func
-  digest=b3:983ebb8b19785c45375cbfb24b011230dddc84a2541c0cfe3ceee9ed8c66d1d6 file=cortex/keys/keys.go range=86:95 lang=go exported=true byte_range=5081:5550
+  digest=b3:983ebb8b19785c45375cbfb24b011230dddc84a2541c0cfe3ceee9ed8c66d1d6 file=cortex/keys/keys.go range=93:102 lang=go exported=true byte_range=5489:5958
   sig=func MetaCompileCacheKey(hex string) []byte
   doc=MetaCompileCacheKey returns meta/compile_cache/<hex>. hex must be the\nlowercase hex-encoded sha256 of the cache-key tuple. Caller validates\nlength=64 + lowercase-hex; this helper does not (so the same builder\nworks for prefix scans during cache prune / inspect).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MetaGoalStateKey kind=func
-  digest=b3:5f4300586afd2ccb88f812ef2f4613d9dac551e3cbbdd6015b59150dcf3c3081 file=cortex/keys/keys.go range=168:174 lang=go exported=true byte_range=8701:8951
+  digest=b3:5f4300586afd2ccb88f812ef2f4613d9dac551e3cbbdd6015b59150dcf3c3081 file=cortex/keys/keys.go range=175:181 lang=go exported=true byte_range=9109:9359
   sig=func MetaGoalStateKey(goalID ULID) []byte
   doc=MetaGoalStateKey returns meta/goal_state/<goal_id:16>.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MetaJournalHead kind=var
-  digest=b3:72f49b105a13d96197475a7759fa856451971a31d1bfae55c627b19b95f4b176 file=cortex/keys/keys.go range=55:57 lang=go exported=true byte_range=3305:3541
+  digest=b3:72f49b105a13d96197475a7759fa856451971a31d1bfae55c627b19b95f4b176 file=cortex/keys/keys.go range=62:64 lang=go exported=true byte_range=3713:3949
   sig=[]byte
   doc=MetaJournalHead is the meta-namespace key holding the next-to-allocate\njournal sequence number for this actor. Stored as a uint64 big-endian.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MetaSalienceWeights kind=var
-  digest=b3:d73f88572598d53c9c21f68f5d7dcb11c53b8e89f019b424745fc5c43e4c46d3 file=cortex/keys/keys.go range=59:67 lang=go exported=true byte_range=3543:4159
+  digest=b3:d73f88572598d53c9c21f68f5d7dcb11c53b8e89f019b424745fc5c43e4c46d3 file=cortex/keys/keys.go range=66:74 lang=go exported=true byte_range=3951:4567
   sig=[]byte
   doc=MetaSalienceWeights is the meta-namespace key holding the per-actor\nEMA-learned salience weights (research/04-cortex.md §8.3, "Stored at\nsalience/<actor>/weights"). One Pebble key per actor; the cortex is\nper-actor by construction so no actor suffix is needed in-key. Value is\ncanonical CBOR salience.Weights; absent key ⇒ DefaultWeights (cold\nstart) per §8.2. Lives under meta/ rather than salience/ to avoid\ncolliding with the binary-ULID-suffix salience/<id:16> namespace\n(Phase 12 lock).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MetaSessionHead kind=func
-  digest=b3:66de778747eb5812d2934c4ff65b7719b97bdd0b49af002f18645205a512199e file=cortex/keys/keys.go range=134:148 lang=go exported=true byte_range=7596:8140
+  digest=b3:66de778747eb5812d2934c4ff65b7719b97bdd0b49af002f18645205a512199e file=cortex/keys/keys.go range=141:155 lang=go exported=true byte_range=8004:8548
   sig=func MetaSessionHead(conv string) ([]byte, error)
   doc=MetaSessionHead returns meta/session_head/<lpstr conv>. conv must not\ncontain '/' and must be <=255 bytes (validated).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ObjHashSize kind=const
-  digest=b3:98044c609b57565f9673e1fead3ddd2ea72635de7499b2f34e3374eb970ce759 file=cortex/keys/keys.go range=526:530 lang=go exported=true byte_range=20360:20669
+  digest=b3:98044c609b57565f9673e1fead3ddd2ea72635de7499b2f34e3374eb970ce759 file=cortex/keys/keys.go range=546:550 lang=go exported=true byte_range=21358:21667
   sig=untyped int
   doc=ObjHashSize is the byte length of obj_id components in idx/frame and\nidx/actor_obj keys. Mirrors memory.ObjHashSize but kept here so the\nkeys package has no import on memory (which would create a dependency\ncycle: memory → keys for ULID + keys → memory for ObjHashSize).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseCheckpointKey kind=func
-  digest=b3:aa95ffaa01de973896574614efe50d121f8aa47af648710f7dd51e156995547b file=cortex/keys/keys.go range=819:844 lang=go exported=true byte_range=31852:32606
+  digest=b3:aa95ffaa01de973896574614efe50d121f8aa47af648710f7dd51e156995547b file=cortex/keys/keys.go range=839:864 lang=go exported=true byte_range=32850:33604
   sig=func ParseCheckpointKey(k []byte) (intentID, stepID string, err error)
   doc=ParseCheckpointKey extracts (intentID, stepID) from a chk/ key.\nReturns ErrBadPrefix if k doesn't start with chk/, ErrShortKey on\ntruncation, or wraps lpstring decode errors.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseEdgeFromKey kind=func
-  digest=b3:7cdb2b69986742254e5c245ad4f82b0063a8c8acc02a7254dddc29fecca07b1e file=cortex/keys/keys.go range=339:357 lang=go exported=true byte_range=14309:14884
+  digest=b3:7cdb2b69986742254e5c245ad4f82b0063a8c8acc02a7254dddc29fecca07b1e file=cortex/keys/keys.go range=346:364 lang=go exported=true byte_range=14717:15292
   sig=func ParseEdgeFromKey(k []byte) (src ULID, edge byte, dst ULID, err error)
   doc=ParseEdgeFromKey extracts (src, edge, dst) from an e/from/ key. Returns\nErrShortKey on wrong length and ErrBadPrefix when k does not start with\ne/from/. Mirrors ParseEdgeToKey.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseEdgeToKey kind=func
-  digest=b3:d88a1b75648c56afcf8ad0b58c5730630a36a5e5a66e14f00a884ebb617be690 file=cortex/keys/keys.go range=359:375 lang=go exported=true byte_range=14886:15330
+  digest=b3:d88a1b75648c56afcf8ad0b58c5730630a36a5e5a66e14f00a884ebb617be690 file=cortex/keys/keys.go range=366:382 lang=go exported=true byte_range=15294:15738
   sig=func ParseEdgeToKey(k []byte) (dst ULID, edge byte, src ULID, err error)
   doc=ParseEdgeToKey extracts (dst, edge, src) from an e/to/ key.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseEnrichKey kind=func
-  digest=b3:93f2efe3123cdff13cb6e11c08ee435b3499e32ae9f93a9f6c87e5a90b5aeca8 file=cortex/keys/keys.go range=1000:1014 lang=go exported=true byte_range=38348:38834
+  digest=b3:93f2efe3123cdff13cb6e11c08ee435b3499e32ae9f93a9f6c87e5a90b5aeca8 file=cortex/keys/keys.go range=1020:1034 lang=go exported=true byte_range=39346:39832
   sig=func ParseEnrichKey(k []byte) (tier uint8, start uint64, err error)
   doc=ParseEnrichKey extracts (tier, start) from an enr/ key. Returns\nErrBadPrefix when k does not start with enr/, ErrShortKey on truncation.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseIdxActorObjKey kind=func
-  digest=b3:1bae60c29b1930bebda20f225e8cbabdec1c01e1c6164b68762f50b4615d4ef8 file=cortex/keys/keys.go range=661:679 lang=go exported=true byte_range=26021:26657
+  digest=b3:1bae60c29b1930bebda20f225e8cbabdec1c01e1c6164b68762f50b4615d4ef8 file=cortex/keys/keys.go range=681:699 lang=go exported=true byte_range=27019:27655
   sig=func ParseIdxActorObjKey(k []byte) (verb byte, objHash [ObjHashSize]byte, createdUnixNano uint64, id ULID, err error)
   doc=ParseIdxActorObjKey extracts (verb, objHash, createdUnixNano, id)\nfrom an idx/actor_obj key.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseIdxFrameKey kind=func
-  digest=b3:9d682eea3f82b986f632c153d3a5508b3da6a4772febfafc3fb307cecb14a0db file=cortex/keys/keys.go range=590:611 lang=go exported=true byte_range=23185:23963
+  digest=b3:9d682eea3f82b986f632c153d3a5508b3da6a4772febfafc3fb307cecb14a0db file=cortex/keys/keys.go range=610:631 lang=go exported=true byte_range=24183:24961
   sig=func ParseIdxFrameKey(k []byte) (verb, objKind byte, objHash [ObjHashSize]byte, id ULID, err error)
   doc=ParseIdxFrameKey extracts (verb, objKind, objHash, id) from an\nidx/frame key. Strict-length check; bad-prefix / short-key errors as\nelsewhere. The composer relies on the returned ID alone (the prefix\nalready pinned verb+kind+obj_hash) but the full tuple is returned\nfor symmetry with ParseIdxTagKey / ParseIdxTypeKey.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseIdxTagKey kind=func
-  digest=b3:e1a2cb5d998a39670c708117a2ef569aa8936fbade5124a849835f586ff6a6e2 file=cortex/keys/keys.go range=504:524 lang=go exported=true byte_range=19639:20358
+  digest=b3:e1a2cb5d998a39670c708117a2ef569aa8936fbade5124a849835f586ff6a6e2 file=cortex/keys/keys.go range=524:544 lang=go exported=true byte_range=20637:21356
   sig=func ParseIdxTagKey(k []byte) (uint64, ULID, error)
   doc=ParseIdxTagKey extracts (createdUnixNano, id) from an idx/tag key. Returns\nErrShortKey if k is the wrong length and ErrBadPrefix if it does not begin\nwith idx/tag/. The tag-hash component is opaque to consumers and not\nreturned (the prefix already pinned which tag we scanned).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseIdxTypeKey kind=func
-  digest=b3:048ba008699763aacbac76fb242fd6355cfd945940358efb442cc56c84caaa63 file=cortex/keys/keys.go range=681:698 lang=go exported=true byte_range=26659:27235
+  digest=b3:048ba008699763aacbac76fb242fd6355cfd945940358efb442cc56c84caaa63 file=cortex/keys/keys.go range=701:718 lang=go exported=true byte_range=27657:28233
   sig=func ParseIdxTypeKey(k []byte) (memType byte, created uint64, id ULID, err error)
   doc=ParseIdxTypeKey extracts (memType, createdUnixNano, id) from an idx/type\nkey. Mirrors ParseIdxTagKey for symmetry.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseJournalKey kind=func
-  digest=b3:82c1e8554e2a3e49277ccbf874f6244e67f3b81d7d873be14be1657a881d6bc1 file=cortex/keys/keys.go range=385:395 lang=go exported=true byte_range=15554:15900
+  digest=b3:82c1e8554e2a3e49277ccbf874f6244e67f3b81d7d873be14be1657a881d6bc1 file=cortex/keys/keys.go range=392:402 lang=go exported=true byte_range=15962:16308
   sig=func ParseJournalKey(k []byte) (uint64, error)
   doc=ParseJournalKey extracts the seq from a journal key. Returns ErrBadPrefix\nif k does not start with j/.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseMetaGoalStateKey kind=func
-  digest=b3:e6fb8e8e519f54c3493c719c11437099e549ac06bf62ebce2e9872cc2462411f file=cortex/keys/keys.go range=176:190 lang=go exported=true byte_range=8953:9420
+  digest=b3:e6fb8e8e519f54c3493c719c11437099e549ac06bf62ebce2e9872cc2462411f file=cortex/keys/keys.go range=183:197 lang=go exported=true byte_range=9361:9828
   sig=func ParseMetaGoalStateKey(k []byte) (ULID, error)
   doc=ParseMetaGoalStateKey extracts the goal ULID from a meta/goal_state/ key.\nReturns ErrShortKey on truncation, ErrBadPrefix when k is not a goal-state\nkey.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseMetaSessionHead kind=func
-  digest=b3:231a28d892340579ca5c13b12e930a7b1fd8c17166312a099be7f11e335e13e4 file=cortex/keys/keys.go range=150:166 lang=go exported=true byte_range=8142:8699
+  digest=b3:231a28d892340579ca5c13b12e930a7b1fd8c17166312a099be7f11e335e13e4 file=cortex/keys/keys.go range=157:173 lang=go exported=true byte_range=8550:9107
   sig=func ParseMetaSessionHead(k []byte) (conv string, err error)
   doc=ParseMetaSessionHead extracts the conversation id from a\nmeta/session_head/ key. Returns ErrBadPrefix when k is not a\nsession-head key, or wraps the lpstring decode error.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseRollupKey kind=func
-  digest=b3:b0b8ff643c57bd77f5399c453db0d4cf75b6cb464260e87cda2f5e6c24c18272 file=cortex/keys/keys.go range=956:970 lang=go exported=true byte_range=36665:37152
+  digest=b3:b0b8ff643c57bd77f5399c453db0d4cf75b6cb464260e87cda2f5e6c24c18272 file=cortex/keys/keys.go range=976:990 lang=go exported=true byte_range=37663:38150
   sig=func ParseRollupKey(k []byte) (tier uint8, start uint64, err error)
   doc=ParseRollupKey extracts (tier, start) from a roll/ key. Returns\nErrBadPrefix when k does not start with roll/, ErrShortKey on truncation.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseSessionKey kind=func
-  digest=b3:bc0375c0cdfc84c7e0e992497ef1c55a34c27f813223aab11cf2f31c9f873b50 file=cortex/keys/keys.go range=888:908 lang=go exported=true byte_range=34173:34805
+  digest=b3:bc0375c0cdfc84c7e0e992497ef1c55a34c27f813223aab11cf2f31c9f873b50 file=cortex/keys/keys.go range=908:928 lang=go exported=true byte_range=35171:35803
   sig=func ParseSessionKey(k []byte) (conv string, seq uint64, err error)
   doc=ParseSessionKey extracts (conv, seq) from a sess/ key. Returns\nErrBadPrefix if k doesn't start with sess/, ErrShortKey on truncation,\nor wraps the lpstring decode error.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseSnapshotKey kind=func
-  digest=b3:e947032209ea7ee2526357187cb4f59dbd40c50890bc5f30d08a5c15a8441b89 file=cortex/keys/keys.go range=700:710 lang=go exported=true byte_range=27237:27625
+  digest=b3:e947032209ea7ee2526357187cb4f59dbd40c50890bc5f30d08a5c15a8441b89 file=cortex/keys/keys.go range=720:730 lang=go exported=true byte_range=28235:28623
   sig=func ParseSnapshotKey(k []byte) (uint64, error)
   doc=ParseSnapshotKey extracts the seq from a snap/ key. Returns ErrBadPrefix\nif k does not start with snap/. Used by snapshot iteration helpers.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixAccum kind=var
-  digest=b3:94881441536a9e8c2583a2b0e1b2937a2370a126c6c9c22a7272234db8625bf3 file=cortex/keys/keys.go range=25:42 lang=go exported=true byte_range=945:2081
+  digest=b3:94881441536a9e8c2583a2b0e1b2937a2370a126c6c9c22a7272234db8625bf3 file=cortex/keys/keys.go range=26:43 lang=go exported=true byte_range=962:2098
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixCheckpoint kind=var
-  digest=b3:47d478ac03cce6ecda64ed9c136e83d613d977ac77f4ba8b271868cefe3d9053 file=cortex/keys/keys.go range=25:44 lang=go exported=true byte_range=945:2315
+  digest=b3:47d478ac03cce6ecda64ed9c136e83d613d977ac77f4ba8b271868cefe3d9053 file=cortex/keys/keys.go range=26:45 lang=go exported=true byte_range=962:2332
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixEdgeFrom kind=var
-  digest=b3:d0b6a5232a0f39aea86f7bc6daaec772bf5dfd9bdd647d3ec7568580b3d6506d file=cortex/keys/keys.go range=25:30 lang=go exported=true byte_range=945:1255
+  digest=b3:d0b6a5232a0f39aea86f7bc6daaec772bf5dfd9bdd647d3ec7568580b3d6506d file=cortex/keys/keys.go range=26:31 lang=go exported=true byte_range=962:1272
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixEdgeTo kind=var
-  digest=b3:13ebab2c67591b6f76157fbcbd5f75e2d0dc9d8a15ccbdebbdbe7ea46c9939fb file=cortex/keys/keys.go range=25:31 lang=go exported=true byte_range=945:1333
+  digest=b3:13ebab2c67591b6f76157fbcbd5f75e2d0dc9d8a15ccbdebbdbe7ea46c9939fb file=cortex/keys/keys.go range=26:32 lang=go exported=true byte_range=962:1350
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixEnrich kind=var
-  digest=b3:5495f6e27a36de25e42f605c36719fc7efebb0874731830d9b413181c1f59727 file=cortex/keys/keys.go range=25:48 lang=go exported=true byte_range=945:2846
+  digest=b3:5495f6e27a36de25e42f605c36719fc7efebb0874731830d9b413181c1f59727 file=cortex/keys/keys.go range=26:49 lang=go exported=true byte_range=962:2863
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixIdxActorObj kind=var
-  digest=b3:b9d0407d7dc6ad8ddd4fd8ada84a75d41a8acd59c88babe0917dba1e3954b983 file=cortex/keys/keys.go range=25:38 lang=go exported=true byte_range=945:1809
+  digest=b3:b9d0407d7dc6ad8ddd4fd8ada84a75d41a8acd59c88babe0917dba1e3954b983 file=cortex/keys/keys.go range=26:39 lang=go exported=true byte_range=962:1826
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixIdxFrame kind=var
-  digest=b3:41594f3532e99a76caa58b48048689449c9acb89284d67d3b5dd396770a5d392 file=cortex/keys/keys.go range=25:37 lang=go exported=true byte_range=945:1761
+  digest=b3:41594f3532e99a76caa58b48048689449c9acb89284d67d3b5dd396770a5d392 file=cortex/keys/keys.go range=26:38 lang=go exported=true byte_range=962:1778
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixIdxSMT kind=var
-  digest=b3:090b091753f9f18ca74d78d64f5f7e1b77b78970f8895d4a40c291a572d09061 file=cortex/keys/keys.go range=25:43 lang=go exported=true byte_range=945:2188
+  digest=b3:090b091753f9f18ca74d78d64f5f7e1b77b78970f8895d4a40c291a572d09061 file=cortex/keys/keys.go range=26:44 lang=go exported=true byte_range=962:2205
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixIdxTag kind=var
-  digest=b3:560e14b57732305852276cd288bcdc3a480460a25addd579e49f460951595fc9 file=cortex/keys/keys.go range=25:36 lang=go exported=true byte_range=945:1672
+  digest=b3:560e14b57732305852276cd288bcdc3a480460a25addd579e49f460951595fc9 file=cortex/keys/keys.go range=26:37 lang=go exported=true byte_range=962:1689
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixIdxType kind=var
-  digest=b3:e27da8c34d030d34b3789557adfd181f6bd462bdd4872d68ef4ee2aee2991dda file=cortex/keys/keys.go range=25:35 lang=go exported=true byte_range=945:1589
+  digest=b3:e27da8c34d030d34b3789557adfd181f6bd462bdd4872d68ef4ee2aee2991dda file=cortex/keys/keys.go range=26:36 lang=go exported=true byte_range=962:1606
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixJournal kind=var
-  digest=b3:d5761479f3111ebac1d317466370d684523286fe7cc609779610178fdc067f33 file=cortex/keys/keys.go range=25:32 lang=go exported=true byte_range=945:1408
+  digest=b3:d5761479f3111ebac1d317466370d684523286fe7cc609779610178fdc067f33 file=cortex/keys/keys.go range=26:33 lang=go exported=true byte_range=962:1425
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixLexical kind=var
-  digest=b3:639ec6438504a3c59e795d2e08cd1b826f9c6fba85159f11f0d2c112ddcb0bcb file=cortex/keys/keys.go range=25:50 lang=go exported=true byte_range=945:3144
+  digest=b3:639ec6438504a3c59e795d2e08cd1b826f9c6fba85159f11f0d2c112ddcb0bcb file=cortex/keys/keys.go range=26:51 lang=go exported=true byte_range=962:3161
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixLexicalDoc kind=var
-  digest=b3:8ebdb66ef451d5c7610244a85041fc30ed15eab7f1eb66bea4ac887aac22a2bf file=cortex/keys/keys.go range=25:51 lang=go exported=true byte_range=945:3258
+  digest=b3:8ebdb66ef451d5c7610244a85041fc30ed15eab7f1eb66bea4ac887aac22a2bf file=cortex/keys/keys.go range=26:52 lang=go exported=true byte_range=962:3275
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixLexicalTerm kind=var
-  digest=b3:cf9bb810f78e36381b992b37c6e08c29292922e26812123cc426430515cdaef0 file=cortex/keys/keys.go range=25:52 lang=go exported=true byte_range=945:3301
+  digest=b3:cf9bb810f78e36381b992b37c6e08c29292922e26812123cc426430515cdaef0 file=cortex/keys/keys.go range=26:53 lang=go exported=true byte_range=962:3318
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixMemoryHead kind=var
-  digest=b3:f06469786a6115941c1902116b35f0970a4958c9f1f8175dcff6d26e55375c7b file=cortex/keys/keys.go range=25:28 lang=go exported=true byte_range=945:1123
+  digest=b3:f06469786a6115941c1902116b35f0970a4958c9f1f8175dcff6d26e55375c7b file=cortex/keys/keys.go range=26:29 lang=go exported=true byte_range=962:1140
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixMemoryVersion kind=var
-  digest=b3:b904a45c8a54d2de602a9eb445f0ed835e26abadadd2ed5580b7601e52a38035 file=cortex/keys/keys.go range=25:29 lang=go exported=true byte_range=945:1180
+  digest=b3:b904a45c8a54d2de602a9eb445f0ed835e26abadadd2ed5580b7601e52a38035 file=cortex/keys/keys.go range=26:30 lang=go exported=true byte_range=962:1197
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixMeta kind=var
-  digest=b3:cd87acef05a10d2379aa0bacc499098f0f5dd8e037b47a0c13d3e4ac04a1ad4f file=cortex/keys/keys.go range=25:41 lang=go exported=true byte_range=945:1974
+  digest=b3:cd87acef05a10d2379aa0bacc499098f0f5dd8e037b47a0c13d3e4ac04a1ad4f file=cortex/keys/keys.go range=26:42 lang=go exported=true byte_range=962:1991
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixMetaCompileCache kind=var
-  digest=b3:cf216504f5ad4b8098c4e2d3552243c77f51367a84f5fa7a34429ec4c996a9ca file=cortex/keys/keys.go range=69:84 lang=go exported=true byte_range=4161:5079
+  digest=b3:cf216504f5ad4b8098c4e2d3552243c77f51367a84f5fa7a34429ec4c996a9ca file=cortex/keys/keys.go range=76:91 lang=go exported=true byte_range=4569:5487
   sig=[]byte
   doc=PrefixMetaCompileCache is the meta/ sub-namespace for the per-actor\ncompile-cache sidecar (Session 31d · P4). Each cached compile is\nstored under meta/compile_cache/<sha256_hex:64> where the hex hash\nis the cache key derived from\n\n	sha256(skill_digest || US || prose || US || cortex_snapshot_hash\n	  || US || verb || US || model_digest)\n\nThe cache is a SIDECAR (mirrors meta/salience_weights posture from\nPhase 12): runtime policy state only, NEVER part of cortex\nOverallRoot. Tombstoning a memory or rolling a new snapshot does NOT\ninvalidate cached entries — they are key-tied to the cortex root\nhash captured at compile time, so the next compile against a fresh\nroot simply misses and recomputes. Entry value is canonical-CBOR\ncompileCacheEntry (see executor/compilecache).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixMetaGoalState kind=var
-  digest=b3:65a31ef4b8bfb4c40795650a1efb6ccd747f9564fab6340f4de713b1c9c978e3 file=cortex/keys/keys.go range=97:116 lang=go exported=true byte_range=5552:6658
+  digest=b3:65a31ef4b8bfb4c40795650a1efb6ccd747f9564fab6340f4de713b1c9c978e3 file=cortex/keys/keys.go range=104:123 lang=go exported=true byte_range=5960:7066
   sig=[]byte
   doc=PrefixMetaGoalState is the meta/ sub-namespace for the per-actor\ngoal runtime state sidecar (Session 32 ambient architect).\n\nOne Pebble key per Goal at meta/goal_state/<goal_id:16> holding a\ncanonical-CBOR cortex.GoalRuntimeState (see cortex/goal_state.go):\nscheduler debounce timestamp, daily counters, failure streak, last\ndecision, etc.\n\nSIDECAR posture: mirrors meta/salience_weights (Phase 12) and\nmeta/compile_cache (sess#31d). Runtime policy state ONLY; NEVER part\nof the cortex OverallRoot. Replay rebuilds drop these keys (replay/\ndrop.go); a freshly-rebuilt actor has cold-start scheduler state and\nthe next scheduler tick simply re-derives debounce/counters from\ncortex memories + journaled cost events.\n\nWhy a sidecar: scheduler state mutates on every tick (≈1Hz under load).\nIncluding it in the canonical root would force a journal entry per\ntick — an expensive footgun for an audit-grade ledger. The plan\n(S32Q4) explicitly pins this posture.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixMetaSessionHead kind=var
-  digest=b3:0baf60b375847300f1e78a323d45fbba5eef488831c53c9de697724cd613594e file=cortex/keys/keys.go range=118:132 lang=go exported=true byte_range=6660:7594
+  digest=b3:0baf60b375847300f1e78a323d45fbba5eef488831c53c9de697724cd613594e file=cortex/keys/keys.go range=125:139 lang=go exported=true byte_range=7068:8002
   sig=[]byte
   doc=PrefixMetaSessionHead is the meta/ sub-namespace for the per-conversation\nsession sequence allocator (continuous-memory task 1.1).\n\nOne Pebble key per conversation at meta/session_head/<lpstr conv> holding\nthe next-to-allocate uint64 (8 bytes BE) session seq for that\nconversation. AppendMessage reads it (default 0 when absent) under the\nheld write batch, uses it as this message's seq, and writes seq+1 back —\nso per-conversation seqs are monotonic and gap-free.\n\nCANONICAL, not derived. Unlike meta/salience_weights or meta/goal_state\n(sidecar runtime state cleared on replay drop+rebuild), this counter is\nthe source of truth for the gap-free session seq and MUST be preserved\nacross replay exactly like meta/journal_head. It is deliberately NOT\nadded to replay/drop.go derivedSingleMetaKeys.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixRange kind=func
-  digest=b3:f3aedd93e08243d332dc025e4961d196da4a6fc89b9b0549945d4e154364939b file=cortex/keys/keys.go range=397:412 lang=go exported=true byte_range=15902:16453
+  digest=b3:f3aedd93e08243d332dc025e4961d196da4a6fc89b9b0549945d4e154364939b file=cortex/keys/keys.go range=417:432 lang=go exported=true byte_range=16900:17451
   sig=func PrefixRange(prefix []byte) (lower, upper []byte)
   doc=PrefixRange returns [prefix, upper) such that every Pebble key beginning\nwith prefix lies in the half-open range. Returns nil upper if prefix has no\nsuccessor (all 0xFF bytes); callers should treat that as "scan to end".
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixRollup kind=var
-  digest=b3:60a97f2794abc430c3dbf1f5968e3571162d8bb4d76be30fb0accf229d9f34d0 file=cortex/keys/keys.go range=25:47 lang=go exported=true byte_range=945:2707
+  digest=b3:60a97f2794abc430c3dbf1f5968e3571162d8bb4d76be30fb0accf229d9f34d0 file=cortex/keys/keys.go range=26:48 lang=go exported=true byte_range=962:2724
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixSalience kind=var
-  digest=b3:71a06cbd010775f203a23a17cca03d54357681fe2f1e8220b97b4479547180e2 file=cortex/keys/keys.go range=25:39 lang=go exported=true byte_range=945:1852
+  digest=b3:71a06cbd010775f203a23a17cca03d54357681fe2f1e8220b97b4479547180e2 file=cortex/keys/keys.go range=26:40 lang=go exported=true byte_range=962:1869
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixSession kind=var
-  digest=b3:e7baca2e88dc41123abb79132e34d97f24edd1433c2b96b04b4b486b4a235d1c file=cortex/keys/keys.go range=25:45 lang=go exported=true byte_range=945:2436
+  digest=b3:e7baca2e88dc41123abb79132e34d97f24edd1433c2b96b04b4b486b4a235d1c file=cortex/keys/keys.go range=26:46 lang=go exported=true byte_range=962:2453
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixSessionBlob kind=var
-  digest=b3:1bd326ffc3ff35d11f0faf5eae2622e9c1a1ec1f3739889265895be0a75cdf08 file=cortex/keys/keys.go range=25:46 lang=go exported=true byte_range=945:2575
+  digest=b3:1bd326ffc3ff35d11f0faf5eae2622e9c1a1ec1f3739889265895be0a75cdf08 file=cortex/keys/keys.go range=26:47 lang=go exported=true byte_range=962:2592
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixSnapshot kind=var
-  digest=b3:11ff34ece7f47b1f574fc9c95376e7d6dac81ba68dde1ba4085d2c0cb7685e8b file=cortex/keys/keys.go range=25:34 lang=go exported=true byte_range=945:1526
+  digest=b3:11ff34ece7f47b1f574fc9c95376e7d6dac81ba68dde1ba4085d2c0cb7685e8b file=cortex/keys/keys.go range=26:35 lang=go exported=true byte_range=962:1543
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixStory kind=var
-  digest=b3:b0fc0a084195f31647452a28664367b871bb780dc2c0bd909f58b045e9425f0b file=cortex/keys/keys.go range=25:49 lang=go exported=true byte_range=945:3007
+  digest=b3:b0fc0a084195f31647452a28664367b871bb780dc2c0bd909f58b045e9425f0b file=cortex/keys/keys.go range=26:50 lang=go exported=true byte_range=962:3024
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixTombstone kind=var
-  digest=b3:f59149f5b6c7df8b9b862cbfe0cdca63330008cd3dafd0d9b25cdce7fa588e3c file=cortex/keys/keys.go range=25:33 lang=go exported=true byte_range=945:1467
+  digest=b3:f59149f5b6c7df8b9b862cbfe0cdca63330008cd3dafd0d9b25cdce7fa588e3c file=cortex/keys/keys.go range=26:34 lang=go exported=true byte_range=962:1484
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
+NODE id=matrix/cortex/keys.PrefixToolEventIdem kind=var
+  digest=b3:38b133551379ad7395b7c769d72d6f29c4414a281c42dc24a6db4548c9a6df21 file=cortex/keys/keys.go range=54:59 lang=go exported=true byte_range=3320:3709
+  sig=[]byte
+  doc=PrefixToolEventIdem maps a runtime idempotency key to the journal seq\nof the KindToolEvent entry that recorded it — tev/idem/<sha256:32> →\n<seq:8>. Written in the same atomic batch as the journal entry it\npoints at, so a replayed tool execution resolves to the existing leaf\nwith one point lookup instead of a journal scan.
+EDGES
+  ^defines=matrix/cortex/keys/keys.go
+
 NODE id=matrix/cortex/keys.PrefixVecMeta kind=var
-  digest=b3:553b342b9a1735b1dd23c74237b52e59974edd6810527cdbb5a742e11cd34fa0 file=cortex/keys/keys.go range=25:40 lang=go exported=true byte_range=945:1915
+  digest=b3:553b342b9a1735b1dd23c74237b52e59974edd6810527cdbb5a742e11cd34fa0 file=cortex/keys/keys.go range=26:41 lang=go exported=true byte_range=962:1932
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PutLPString kind=func
-  digest=b3:27092126372469664496e3fec34f096113458e0af57892f4ac5ee364c534d433 file=cortex/keys/keys.go range=222:231 lang=go exported=true byte_range=10377:10714
+  digest=b3:27092126372469664496e3fec34f096113458e0af57892f4ac5ee364c534d433 file=cortex/keys/keys.go range=229:238 lang=go exported=true byte_range=10785:11122
   sig=func PutLPString(dst []byte, s string) ([]byte, error)
   doc=PutLPString appends a 1-byte length-prefixed ASCII/UTF-8 string. Returns an\nerror if s exceeds 255 bytes; in that case caller should hash s instead.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PutUint64BE kind=func
-  digest=b3:19b4c330661f3737efa7116b37c4ac914d8801ae1b878f5e9f791eb90fa41652 file=cortex/keys/keys.go range=206:211 lang=go exported=true byte_range=9879:10074
+  digest=b3:19b4c330661f3737efa7116b37c4ac914d8801ae1b878f5e9f791eb90fa41652 file=cortex/keys/keys.go range=213:218 lang=go exported=true byte_range=10287:10482
   sig=func PutUint64BE(dst []byte, v uint64) []byte
   doc=PutUint64BE appends an 8-byte big-endian uint64 to dst.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ReadLPString kind=func
-  digest=b3:5dbc21c4ad950c9c8c8cf6688457f860696db1b983c8b3d90334ab5ee8071ba7 file=cortex/keys/keys.go range=233:243 lang=go exported=true byte_range=10716:11008
+  digest=b3:5dbc21c4ad950c9c8c8cf6688457f860696db1b983c8b3d90334ab5ee8071ba7 file=cortex/keys/keys.go range=240:250 lang=go exported=true byte_range=11124:11416
   sig=func ReadLPString(src []byte) (s string, rest []byte, err error)
   doc=ReadLPString reads a 1-byte length-prefixed string.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ReadUint64BE kind=func
-  digest=b3:24dd77959a53983ce4c5392628ea22c78d15224b7feed89c591c307c432534c0 file=cortex/keys/keys.go range=213:220 lang=go exported=true byte_range=10076:10375
+  digest=b3:24dd77959a53983ce4c5392628ea22c78d15224b7feed89c591c307c432534c0 file=cortex/keys/keys.go range=220:227 lang=go exported=true byte_range=10484:10783
   sig=func ReadUint64BE(src []byte) (v uint64, rest []byte, err error)
   doc=ReadUint64BE reads an 8-byte big-endian uint64 from src; returns the value\nand the remainder of src after the 8 bytes.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.RollupKey kind=func
-  digest=b3:e3055ae1f9fc991ede78adef97d40efb16ee450878163256dcd2b194b3eea73c file=cortex/keys/keys.go range=929:945 lang=go exported=true byte_range=35534:36371
+  digest=b3:e3055ae1f9fc991ede78adef97d40efb16ee450878163256dcd2b194b3eea73c file=cortex/keys/keys.go range=949:965 lang=go exported=true byte_range=36532:37369
   sig=func RollupKey(tier uint8, start uint64) []byte
   doc=RollupKey returns roll/<tier:1><start:8 BE>.\n\nContinuous-memory task 2.1: the derived temporal-ladder rollup record for\none time window. The 1-byte tier followed by an 8-byte big-endian window\nstart (Unix nanoseconds, cast from int64) guarantees byte-sort == (tier,\nstart) sort, so a tier prefix scan (RollupTierPrefix) yields records in\nascending window-start order. Same key-family posture as chk/ (compaction\ncheckpoints) and sess/ (session transcript): a derived record keyed by its\nown identity — here the (tier, window-start) time window — NOT a 10th\nmemory type and never an anchored SMT write.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.RollupTierPrefix kind=func
-  digest=b3:58a88b23a11fb168c893903eb2f74e77980bcba7cbf714367beeaa1da97ea59c file=cortex/keys/keys.go range=947:954 lang=go exported=true byte_range=36373:36663
+  digest=b3:58a88b23a11fb168c893903eb2f74e77980bcba7cbf714367beeaa1da97ea59c file=cortex/keys/keys.go range=967:974 lang=go exported=true byte_range=37371:37661
   sig=func RollupTierPrefix(tier uint8) []byte
   doc=RollupTierPrefix returns roll/<tier:1>, the prefix for scanning every\nrollup of one tier in ascending window-start order.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.SalienceKey kind=func
-  digest=b3:c7f589f7902bb1e43ad742f7db3838e74fac09d456ab0bde5ea222f1f3ef9648 file=cortex/keys/keys.go range=436:442 lang=go exported=true byte_range=17103:17313
+  digest=b3:c7f589f7902bb1e43ad742f7db3838e74fac09d456ab0bde5ea222f1f3ef9648 file=cortex/keys/keys.go range=456:462 lang=go exported=true byte_range=18101:18311
   sig=func SalienceKey(id ULID) []byte
   doc=SalienceKey returns salience/<id:16>.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.SessionBlobKey kind=func
-  digest=b3:5a80c855eeb085d906bec6d6d0a1597adf6b1d762f04a31189eb2ddfd7b001bc file=cortex/keys/keys.go range=910:927 lang=go exported=true byte_range=34807:35532
+  digest=b3:5a80c855eeb085d906bec6d6d0a1597adf6b1d762f04a31189eb2ddfd7b001bc file=cortex/keys/keys.go range=930:947 lang=go exported=true byte_range=35805:36530
   sig=func SessionBlobKey(conv string, seq uint64) ([]byte, error)
   doc=SessionBlobKey returns sessblob/<lpstr conv><seq:8 BE>. Holds a large\ntool_result payload that was spilled out of the session record proper\n(overflow discipline — keeps sess/ a page-in target rather than resident\nbloat). Same layout/constraints as SessionKey.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.SessionConvPrefix kind=func
-  digest=b3:5c08408d9c5203831946c570ca513664caf36ae8fe7cfbc211d5738581cb1fab file=cortex/keys/keys.go range=871:886 lang=go exported=true byte_range=33587:34171
+  digest=b3:5c08408d9c5203831946c570ca513664caf36ae8fe7cfbc211d5738581cb1fab file=cortex/keys/keys.go range=891:906 lang=go exported=true byte_range=34585:35169
   sig=func SessionConvPrefix(conv string) ([]byte, error)
   doc=SessionConvPrefix returns sess/<lpstr conv>, the prefix for scanning\nevery message record of one conversation in ascending seq order. Same\nconstraints as SessionKey.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.SessionKey kind=func
-  digest=b3:592b545dd9fecefc1befbf7a44af2eaed5b43af1f66f917fc7d71e25e9f988f2 file=cortex/keys/keys.go range=846:869 lang=go exported=true byte_range=32608:33585
+  digest=b3:592b545dd9fecefc1befbf7a44af2eaed5b43af1f66f917fc7d71e25e9f988f2 file=cortex/keys/keys.go range=866:889 lang=go exported=true byte_range=33606:34583
   sig=func SessionKey(conv string, seq uint64) ([]byte, error)
   doc=SessionKey returns sess/<lpstr conv><seq:8 BE>.\n\nContinuous-memory task 1.1: the durable session/transcript record for\none message. The 1-byte length-prefixed conversation id followed by an\n8-byte big-endian seq guarantees byte-sort == (conv, seq) sort, so a\nprefix scan on one conversation (SessionConvPrefix) yields records in\nascending seq order. The length prefix disambiguates conversations whose\nids are prefixes of one another (e.g. "a" vs "ab").\n\nconv must not contain '/' and must be <=255 bytes (validated).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.SnapshotKey kind=func
-  digest=b3:f82fe7620d11fe984960836a72a85a38c00e135f930d6248860a47f346fc8b68 file=cortex/keys/keys.go range=428:434 lang=go exported=true byte_range=16899:17101
+  digest=b3:f82fe7620d11fe984960836a72a85a38c00e135f930d6248860a47f346fc8b68 file=cortex/keys/keys.go range=448:454 lang=go exported=true byte_range=17897:18099
   sig=func SnapshotKey(seq uint64) []byte
   doc=SnapshotKey returns snap/<seq:8>.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.StoryKey kind=func
-  digest=b3:1ae37496a769b9a06f77dfeb1faa1934895631187cda824ec76925c37dfc1343 file=cortex/keys/keys.go range=1016:1039 lang=go exported=true byte_range=38836:39833
+  digest=b3:1ae37496a769b9a06f77dfeb1faa1934895631187cda824ec76925c37dfc1343 file=cortex/keys/keys.go range=1036:1059 lang=go exported=true byte_range=39834:40831
   sig=func StoryKey(conv string) ([]byte, error)
   doc=StoryKey returns story/<lpstr conv>.\n\nContinuous-memory task 4.2: the durable per-conversation "story so far"\nrecord — a single record per conversation (NOT keyed by seq/window like\nsess/ or roll/) that is overwritten as the conversation's transcript\ngrows. The 1-byte length-prefixed conversation id disambiguates\nconversations whose ids are prefixes of one another, matching the\nSessionKey/RollupKey discipline. Same derived-lane posture: rebuildable\nfrom the conversation's own sess/ transcript, no anchored SMT write.\n\nconv must not contain '/' and must be <=255 bytes (validated).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.TagHashSize kind=const
-  digest=b3:fd21b18ba857c2b85e88373f90ab61fa89df06f3bac80f298015644cc292571d file=cortex/keys/keys.go range=473:477 lang=go exported=true byte_range=18293:18602
+  digest=b3:fd21b18ba857c2b85e88373f90ab61fa89df06f3bac80f298015644cc292571d file=cortex/keys/keys.go range=493:497 lang=go exported=true byte_range=19291:19600
   sig=untyped int
   doc=TagHashSize is the prefix length of the tag hash kept in idx/tag keys.\nEight bytes is sufficient: collision probability ≈ 1/2^32 between any two\ntags in an actor's tag set, which is bounded at MaxTagsPerMemory*N memories\n(well under 2^16 tags per actor in realistic loads).
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.TombstoneKey kind=func
-  digest=b3:a373abca4d532333223f61b4edb6254fd31a21ec015660cb60a41206294c87da file=cortex/keys/keys.go range=420:426 lang=go exported=true byte_range=16687:16897
+  digest=b3:a373abca4d532333223f61b4edb6254fd31a21ec015660cb60a41206294c87da file=cortex/keys/keys.go range=440:446 lang=go exported=true byte_range=17685:17895
   sig=func TombstoneKey(id ULID) []byte
   doc=TombstoneKey returns tomb/<id:16>.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
+NODE id=matrix/cortex/keys.ToolEventIdemKey kind=func
+  digest=b3:e345a74330817651e64333fc11ccc60466658c4b849bc4c6aee57c7c757b6960 file=cortex/keys/keys.go range=404:415 lang=go exported=true byte_range=16310:16898
+  sig=func ToolEventIdemKey(key string) []byte
+  doc=ToolEventIdemKey returns tev/idem/<sha256(key):32>, the point-lookup key\nmapping a runtime idempotency key to the seq of the KindToolEvent journal\nentry that already recorded it. The idempotency key is hashed rather than\nembedded so tool names and argument digests never appear in a key (store\nkeys are not sealed), and so the key stays fixed-width.
+EDGES
+  ^defines=matrix/cortex/keys/keys.go
+
 NODE id=matrix/cortex/keys.ULID kind=type
-  digest=b3:ca1655467b25383aa61acbe682859b68401635ad9c9588d28279c8daba0bc00b file=cortex/keys/keys.go range=195:197 lang=go exported=true byte_range=9491:9651
+  digest=b3:ca1655467b25383aa61acbe682859b68401635ad9c9588d28279c8daba0bc00b file=cortex/keys/keys.go range=202:204 lang=go exported=true byte_range=9899:10059
   sig=type ULID [ULIDSize]byte
   doc=ULID is a 16-byte binary ULID. We mirror oklog/ulid/v2's representation but\nkeep keys/ free of that import so callers can choose.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ULIDSize kind=const
-  digest=b3:450ce394744fffed48254c8843bc357f1f333becdaec3a1582f045dbd03ee5a7 file=cortex/keys/keys.go range=192:193 lang=go exported=true byte_range=9422:9489
+  digest=b3:450ce394744fffed48254c8843bc357f1f333becdaec3a1582f045dbd03ee5a7 file=cortex/keys/keys.go range=199:200 lang=go exported=true byte_range=9830:9897
   sig=untyped int
   doc=ULIDSize is the binary ULID length in bytes.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ValidateNoSeparator kind=func
-  digest=b3:023977d40cb3f7de24102709d9c8c42324ad0c84f0a7e444a267351b1a8099cd file=cortex/keys/keys.go range=1054:1063 lang=go exported=true byte_range=40052:40363
+  digest=b3:023977d40cb3f7de24102709d9c8c42324ad0c84f0a7e444a267351b1a8099cd file=cortex/keys/keys.go range=1074:1083 lang=go exported=true byte_range=41050:41361
   sig=func ValidateNoSeparator(s string) error
   doc=ValidateNoSeparator returns an error if s contains '/' (0x2F). Path\ncomponents inside keys must not contain the separator.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.VecMetaKey kind=func
-  digest=b3:48f3764f783ef1f8e78b572c695d8c6aa8f355827db80f4384f51b4d2f135dd4 file=cortex/keys/keys.go range=444:450 lang=go exported=true byte_range=17315:17521
+  digest=b3:48f3764f783ef1f8e78b572c695d8c6aa8f355827db80f4384f51b4d2f135dd4 file=cortex/keys/keys.go range=464:470 lang=go exported=true byte_range=18313:18519
   sig=func VecMetaKey(id ULID) []byte
   doc=VecMetaKey returns vec/meta/<id:16>.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.hasPrefix kind=func
-  digest=b3:181fc666103f94f45b0622e287203f33551c791848dc5c04c424bb5868b5af85 file=cortex/keys/keys.go range=1041:1052 lang=go exported=false byte_range=39835:40050
+  digest=b3:181fc666103f94f45b0622e287203f33551c791848dc5c04c424bb5868b5af85 file=cortex/keys/keys.go range=1061:1072 lang=go exported=false byte_range=40833:41048
   sig=func hasPrefix(b, p []byte) bool
   doc=hasPrefix reports whether b begins with p, allocation-free.
 EDGES
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys/keys.go kind=file
-  digest=b3:3062c4ee242ab584548616e808d2900e9636bcad05534678d659404680a3f895 file=cortex/keys/keys.go range=1:1065 lang=go exported=true
+  digest=b3:a0eee46684d76be63645285043176c8574d35de1e830b9ccd8ec068ef0c50603 file=cortex/keys/keys.go range=1:1085 lang=go exported=true
 EDGES
-  defines=matrix/cortex/keys.AccumMMRLeafCount,matrix/cortex/keys.AccumMMRNodeKey,matrix/cortex/keys.CheckpointIntentPrefix,matrix/cortex/keys.CheckpointKey,matrix/cortex/keys.EdgeFromKey,matrix/cortex/keys.EdgeFromPrefix,matrix/cortex/keys.EdgeFromTypePrefix,matrix/cortex/keys.EdgeToKey,matrix/cortex/keys.EdgeToPrefix,matrix/cortex/keys.EdgeToTypePrefix,matrix/cortex/keys.EnrichKey,matrix/cortex/keys.EnrichTierPrefix,matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrBadStrLen,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.IdxActorObjKey,matrix/cortex/keys.IdxActorObjPrefixVerb,matrix/cortex/keys.IdxActorObjPrefixVerbObj,matrix/cortex/keys.IdxFrameKey,matrix/cortex/keys.IdxFramePrefixVerb,matrix/cortex/keys.IdxFramePrefixVerbKind,matrix/cortex/keys.IdxFramePrefixVerbKindObj,matrix/cortex/keys.IdxSMTNamespacePrefix,matrix/cortex/keys.IdxSMTNodeKey,matrix/cortex/keys.IdxTagKey,matrix/cortex/keys.IdxTagPrefix,matrix/cortex/keys.IdxTypeKey,matrix/cortex/keys.IdxTypePrefix,matrix/cortex/keys.JournalKey,matrix/cortex/keys.JournalRange,matrix/cortex/keys.MemoryHeadKey,matrix/cortex/keys.MemoryVersionKey,matrix/cortex/keys.MemoryVersionPrefix,matrix/cortex/keys.MetaCompileCacheKey,matrix/cortex/keys.MetaGoalStateKey,matrix/cortex/keys.MetaJournalHead,matrix/cortex/keys.MetaSalienceWeights,matrix/cortex/keys.MetaSessionHead,matrix/cortex/keys.ObjHashSize,matrix/cortex/keys.ParseCheckpointKey,matrix/cortex/keys.ParseEdgeFromKey,matrix/cortex/keys.ParseEdgeToKey,matrix/cortex/keys.ParseEnrichKey,matrix/cortex/keys.ParseIdxActorObjKey,matrix/cortex/keys.ParseIdxFrameKey,matrix/cortex/keys.ParseIdxTagKey,matrix/cortex/keys.ParseIdxTypeKey,matrix/cortex/keys.ParseJournalKey,matrix/cortex/keys.ParseMetaGoalStateKey,matrix/cortex/keys.ParseMetaSessionHead,matrix/cortex/keys.ParseRollupKey,matrix/cortex/keys.ParseSessionKey,matrix/cortex/keys.ParseSnapshotKey,matrix/cortex/keys.PrefixAccum,matrix/cortex/keys.PrefixCheckpoint,matrix/cortex/keys.PrefixEdgeFrom,matrix/cortex/keys.PrefixEdgeTo,matrix/cortex/keys.PrefixEnrich,matrix/cortex/keys.PrefixIdxActorObj,matrix/cortex/keys.PrefixIdxFrame,matrix/cortex/keys.PrefixIdxSMT,matrix/cortex/keys.PrefixIdxTag,matrix/cortex/keys.PrefixIdxType,matrix/cortex/keys.PrefixJournal,matrix/cortex/keys.PrefixLexical,matrix/cortex/keys.PrefixLexicalDoc,matrix/cortex/keys.PrefixLexicalTerm,matrix/cortex/keys.PrefixMemoryHead,matrix/cortex/keys.PrefixMemoryVersion,matrix/cortex/keys.PrefixMeta,matrix/cortex/keys.PrefixMetaCompileCache,matrix/cortex/keys.PrefixMetaGoalState,matrix/cortex/keys.PrefixMetaSessionHead,matrix/cortex/keys.PrefixRange,matrix/cortex/keys.PrefixRollup,matrix/cortex/keys.PrefixSalience,matrix/cortex/keys.PrefixSession,matrix/cortex/keys.PrefixSessionBlob,matrix/cortex/keys.PrefixSnapshot,matrix/cortex/keys.PrefixStory,matrix/cortex/keys.PrefixTombstone,matrix/cortex/keys.PrefixVecMeta,matrix/cortex/keys.PutLPString,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.ReadLPString,matrix/cortex/keys.ReadUint64BE,matrix/cortex/keys.RollupKey,matrix/cortex/keys.RollupTierPrefix,matrix/cortex/keys.SalienceKey,matrix/cortex/keys.SessionBlobKey,matrix/cortex/keys.SessionConvPrefix,matrix/cortex/keys.SessionKey,matrix/cortex/keys.SnapshotKey,matrix/cortex/keys.StoryKey,matrix/cortex/keys.TagHashSize,matrix/cortex/keys.TombstoneKey,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/keys.VecMetaKey,matrix/cortex/keys.hasPrefix
+  defines=matrix/cortex/keys.AccumMMRLeafCount,matrix/cortex/keys.AccumMMRNodeKey,matrix/cortex/keys.CheckpointIntentPrefix,matrix/cortex/keys.CheckpointKey,matrix/cortex/keys.EdgeFromKey,matrix/cortex/keys.EdgeFromPrefix,matrix/cortex/keys.EdgeFromTypePrefix,matrix/cortex/keys.EdgeToKey,matrix/cortex/keys.EdgeToPrefix,matrix/cortex/keys.EdgeToTypePrefix,matrix/cortex/keys.EnrichKey,matrix/cortex/keys.EnrichTierPrefix,matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrBadStrLen,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.IdxActorObjKey,matrix/cortex/keys.IdxActorObjPrefixVerb,matrix/cortex/keys.IdxActorObjPrefixVerbObj,matrix/cortex/keys.IdxFrameKey,matrix/cortex/keys.IdxFramePrefixVerb,matrix/cortex/keys.IdxFramePrefixVerbKind,matrix/cortex/keys.IdxFramePrefixVerbKindObj,matrix/cortex/keys.IdxSMTNamespacePrefix,matrix/cortex/keys.IdxSMTNodeKey,matrix/cortex/keys.IdxTagKey,matrix/cortex/keys.IdxTagPrefix,matrix/cortex/keys.IdxTypeKey,matrix/cortex/keys.IdxTypePrefix,matrix/cortex/keys.JournalKey,matrix/cortex/keys.JournalRange,matrix/cortex/keys.MemoryHeadKey,matrix/cortex/keys.MemoryVersionKey,matrix/cortex/keys.MemoryVersionPrefix,matrix/cortex/keys.MetaCompileCacheKey,matrix/cortex/keys.MetaGoalStateKey,matrix/cortex/keys.MetaJournalHead,matrix/cortex/keys.MetaSalienceWeights,matrix/cortex/keys.MetaSessionHead,matrix/cortex/keys.ObjHashSize,matrix/cortex/keys.ParseCheckpointKey,matrix/cortex/keys.ParseEdgeFromKey,matrix/cortex/keys.ParseEdgeToKey,matrix/cortex/keys.ParseEnrichKey,matrix/cortex/keys.ParseIdxActorObjKey,matrix/cortex/keys.ParseIdxFrameKey,matrix/cortex/keys.ParseIdxTagKey,matrix/cortex/keys.ParseIdxTypeKey,matrix/cortex/keys.ParseJournalKey,matrix/cortex/keys.ParseMetaGoalStateKey,matrix/cortex/keys.ParseMetaSessionHead,matrix/cortex/keys.ParseRollupKey,matrix/cortex/keys.ParseSessionKey,matrix/cortex/keys.ParseSnapshotKey,matrix/cortex/keys.PrefixAccum,matrix/cortex/keys.PrefixCheckpoint,matrix/cortex/keys.PrefixEdgeFrom,matrix/cortex/keys.PrefixEdgeTo,matrix/cortex/keys.PrefixEnrich,matrix/cortex/keys.PrefixIdxActorObj,matrix/cortex/keys.PrefixIdxFrame,matrix/cortex/keys.PrefixIdxSMT,matrix/cortex/keys.PrefixIdxTag,matrix/cortex/keys.PrefixIdxType,matrix/cortex/keys.PrefixJournal,matrix/cortex/keys.PrefixLexical,matrix/cortex/keys.PrefixLexicalDoc,matrix/cortex/keys.PrefixLexicalTerm,matrix/cortex/keys.PrefixMemoryHead,matrix/cortex/keys.PrefixMemoryVersion,matrix/cortex/keys.PrefixMeta,matrix/cortex/keys.PrefixMetaCompileCache,matrix/cortex/keys.PrefixMetaGoalState,matrix/cortex/keys.PrefixMetaSessionHead,matrix/cortex/keys.PrefixRange,matrix/cortex/keys.PrefixRollup,matrix/cortex/keys.PrefixSalience,matrix/cortex/keys.PrefixSession,matrix/cortex/keys.PrefixSessionBlob,matrix/cortex/keys.PrefixSnapshot,matrix/cortex/keys.PrefixStory,matrix/cortex/keys.PrefixTombstone,matrix/cortex/keys.PrefixToolEventIdem,matrix/cortex/keys.PrefixVecMeta,matrix/cortex/keys.PutLPString,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.ReadLPString,matrix/cortex/keys.ReadUint64BE,matrix/cortex/keys.RollupKey,matrix/cortex/keys.RollupTierPrefix,matrix/cortex/keys.SalienceKey,matrix/cortex/keys.SessionBlobKey,matrix/cortex/keys.SessionConvPrefix,matrix/cortex/keys.SessionKey,matrix/cortex/keys.SnapshotKey,matrix/cortex/keys.StoryKey,matrix/cortex/keys.TagHashSize,matrix/cortex/keys.TombstoneKey,matrix/cortex/keys.ToolEventIdemKey,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/keys.VecMetaKey,matrix/cortex/keys.hasPrefix
   ^contains=matrix/cortex/keys

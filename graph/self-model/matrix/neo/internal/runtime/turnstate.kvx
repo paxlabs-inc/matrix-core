@@ -1,0 +1,1017 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:8087349d214ea6556bd1e327d9b1cfe401192e02e5c71997ca02544fd4c21fca
+
+NODE id=matrix/neo/internal/runtime/turnstate kind=package
+  digest=b3:de7d83aff3794c268a56f9d24b1ed2ebe162f479863e2402b518ab7c28aa4e3e file=neo/internal/runtime/turnstate range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate/effects.go,matrix/neo/internal/runtime/turnstate/migrations.go,matrix/neo/internal/runtime/turnstate/scheduled.go,matrix/neo/internal/runtime/turnstate/store.go,matrix/neo/internal/runtime/turnstate/supervisor.go,matrix/neo/internal/runtime/turnstate/types.go
+  ^contains=mod:matrix/neo
+
+NODE id=matrix/neo/internal/runtime/turnstate.Checkpoint kind=type
+  digest=b3:803d2624974b47cdd5906c433a32de1844d3a9f2206ac87d3998f8917e2cc0c7 file=neo/internal/runtime/turnstate/types.go range=36:46 lang=go exported=true byte_range=944:1522
+  sig=type Checkpoint struct {\n	Messages		[]protocol.Message	`json:"messages"`\n	ToolEvents		[]json.RawMessage	`json:"tool_events,omitempty"`\n	Step			int			`json:"step"`\n	ProviderAttempts	int			`json:"provider_attempts"`\n	Plan			json.RawMessage		`json:"plan,omitempty"`\n	Revision		json.RawMessage		`json:"revision,omitempty"`\n	Runtime			json.RawMessage		`json:"runtime,omitempty"`\n	PendingCall		*PendingCall		`json:"pending_call,omitempty"`\n	SavedAt			time.Time		`json:"saved_at"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.Checkpoint#Messages,matrix/neo/internal/runtime/turnstate.Checkpoint#PendingCall,matrix/neo/internal/runtime/turnstate.Checkpoint#Plan,matrix/neo/internal/runtime/turnstate.Checkpoint#ProviderAttempts,matrix/neo/internal/runtime/turnstate.Checkpoint#Revision,matrix/neo/internal/runtime/turnstate.Checkpoint#Runtime,matrix/neo/internal/runtime/turnstate.Checkpoint#SavedAt,matrix/neo/internal/runtime/turnstate.Checkpoint#Step,matrix/neo/internal/runtime/turnstate.Checkpoint#ToolEvents,matrix/neo/internal/runtime/turnstate.Checkpoint.Validate,matrix/neo/internal/runtime/turnstate.Checkpoint.ValidateForResume
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Checkpoint#Messages kind=field
+  digest=b3:8c7508978d5c1a05cb45f963b07756c27b2df66a7394e15cb03d9d6cf6b53035 file=neo/internal/runtime/turnstate/types.go range=37:37 lang=go exported=true byte_range=970:1023
+  sig=[]protocol.Message
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Checkpoint
+
+NODE id=matrix/neo/internal/runtime/turnstate.Checkpoint#PendingCall kind=field
+  digest=b3:bd825823f880daee1e0231b461a46de49033ff0f5e6a6b93fda6c2034a89ee9c file=neo/internal/runtime/turnstate/types.go range=44:44 lang=go exported=true byte_range=1398:1465
+  sig=*turnstate.PendingCall
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Checkpoint
+
+NODE id=matrix/neo/internal/runtime/turnstate.Checkpoint#Plan kind=field
+  digest=b3:22995cd6ea82c59e0c733111fd668d97e56f6a06610d227aed2e40c0a867de97 file=neo/internal/runtime/turnstate/types.go range=41:41 lang=go exported=true byte_range=1208:1267
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Checkpoint
+
+NODE id=matrix/neo/internal/runtime/turnstate.Checkpoint#ProviderAttempts kind=field
+  digest=b3:b6efaafe93ef4e7528ff1631125a3dab9f9cdfe400974c931431c59ae47772da file=neo/internal/runtime/turnstate/types.go range=40:40 lang=go exported=true byte_range=1144:1206
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Checkpoint
+
+NODE id=matrix/neo/internal/runtime/turnstate.Checkpoint#Revision kind=field
+  digest=b3:804f15072de98ccacfbb55e31544f2f88e1c49589264d0db3e206cd2c755ec3e file=neo/internal/runtime/turnstate/types.go range=42:42 lang=go exported=true byte_range=1269:1332
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Checkpoint
+
+NODE id=matrix/neo/internal/runtime/turnstate.Checkpoint#Runtime kind=field
+  digest=b3:e06dd4e0be27c98340d2eaca80a7e274c1ea0030f33f57f7584228f07269a0f0 file=neo/internal/runtime/turnstate/types.go range=43:43 lang=go exported=true byte_range=1334:1396
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Checkpoint
+
+NODE id=matrix/neo/internal/runtime/turnstate.Checkpoint#SavedAt kind=field
+  digest=b3:c059f2b58a52837f7743a4b79ce44a486b9fca6eadc27d14e6969b7c31dde781 file=neo/internal/runtime/turnstate/types.go range=45:45 lang=go exported=true byte_range=1467:1520
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Checkpoint
+
+NODE id=matrix/neo/internal/runtime/turnstate.Checkpoint#Step kind=field
+  digest=b3:ba6f62667344d1abcc490efc283c43ad8a63f7d6b49d06f12bef8bf04af50bf9 file=neo/internal/runtime/turnstate/types.go range=39:39 lang=go exported=true byte_range=1093:1142
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Checkpoint
+
+NODE id=matrix/neo/internal/runtime/turnstate.Checkpoint#ToolEvents kind=field
+  digest=b3:91916b416175e404684f81a15bf7c6fa9cd6a249bec3aa0256bd8ecb182e25cf file=neo/internal/runtime/turnstate/types.go range=38:38 lang=go exported=true byte_range=1025:1091
+  sig=[]json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Checkpoint
+
+NODE id=matrix/neo/internal/runtime/turnstate.Checkpoint.Validate kind=method
+  digest=b3:b5af3c9de36324273d0958d4b50e5efa5eb5da99060f8a9fbd94cfa3dd066d18 file=neo/internal/runtime/turnstate/types.go range=102:125 lang=go exported=true byte_range=3171:3889
+  sig=func (checkpoint Checkpoint) Validate() error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Checkpoint
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Checkpoint.ValidateForResume kind=method
+  digest=b3:68dedfe35903f380eb2f258ffa49fb0a6d490f8495a080447c310cb6ade2cd5c file=neo/internal/runtime/turnstate/types.go range=127:129 lang=go exported=true byte_range=3891:3979
+  sig=func (checkpoint Checkpoint) ValidateForResume() error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Checkpoint
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.ClassifyWake kind=func
+  digest=b3:584f52b7dd1be17e26f93a51dafd46a115e8533427c9cd7ea1f6a39c6757845b file=neo/internal/runtime/turnstate/scheduled.go range=44:56 lang=go exported=true byte_range=973:1416
+  sig=func ClassifyWake(message string) (WakeKind, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/scheduled.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.DefaultPath kind=const
+  digest=b3:9c55190593dca02a4d8fca7db8c9746c5a01d46aeb97657e2c886df2be1b4d57 file=neo/internal/runtime/turnstate/store.go range=24:24 lang=go exported=true byte_range=383:429
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectCompleted kind=const
+  digest=b3:88e5464c3cb215383aa65e2b9195095af07e0ec8e4c4ae35cceea024809747f9 file=neo/internal/runtime/turnstate/effects.go range=21:21 lang=go exported=true byte_range=374:416
+  sig=turnstate.EffectStatus
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/effects.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectRecord kind=type
+  digest=b3:3250ff2055294923940906ab375bac232f6e63aa1851abb87c03613266a52582 file=neo/internal/runtime/turnstate/effects.go range=32:41 lang=go exported=true byte_range=742:1192
+  sig=type EffectRecord struct {\n	IdempotencyKey	string		`json:"idempotency_key"`\n	ToolName	string		`json:"tool_name"`\n	ArgumentsHash	[32]byte	`json:"arguments_hash"`\n	RetrySafe	bool		`json:"retry_safe"`\n	Status		EffectStatus	`json:"status"`\n	Result		*EffectResult	`json:"result,omitempty"`\n	StartedAt	time.Time	`json:"started_at"`\n	CompletedAt	*time.Time	`json:"completed_at,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.EffectRecord#ArgumentsHash,matrix/neo/internal/runtime/turnstate.EffectRecord#CompletedAt,matrix/neo/internal/runtime/turnstate.EffectRecord#IdempotencyKey,matrix/neo/internal/runtime/turnstate.EffectRecord#Result,matrix/neo/internal/runtime/turnstate.EffectRecord#RetrySafe,matrix/neo/internal/runtime/turnstate.EffectRecord#StartedAt,matrix/neo/internal/runtime/turnstate.EffectRecord#Status,matrix/neo/internal/runtime/turnstate.EffectRecord#ToolName
+  ^defines=matrix/neo/internal/runtime/turnstate/effects.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectRecord#ArgumentsHash kind=field
+  digest=b3:6cf96a2e3bc5e94585531e096e3c912534a0445315cabe25e11a23bec6e78ed1 file=neo/internal/runtime/turnstate/effects.go range=35:35 lang=go exported=true byte_range=874:926
+  sig=[32]byte
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectRecord
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectRecord#CompletedAt kind=field
+  digest=b3:d285217e62e9ca0a6ea7bfd6b66e9337088dde40bc941db1ae35bdd595a55d2e file=neo/internal/runtime/turnstate/effects.go range=40:40 lang=go exported=true byte_range=1130:1190
+  sig=*time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectRecord
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectRecord#IdempotencyKey kind=field
+  digest=b3:9e4f883073844133d5bfbbfe08b6716cdc221bf47ddfd0f0f101c50de35d56c1 file=neo/internal/runtime/turnstate/effects.go range=33:33 lang=go exported=true byte_range=770:823
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectRecord
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectRecord#Result kind=field
+  digest=b3:4a97d54da5ec6685c503c73e1ba380344fc0713cbbed65ea7ec2a9a48c22eb87 file=neo/internal/runtime/turnstate/effects.go range=38:38 lang=go exported=true byte_range=1024:1078
+  sig=*turnstate.EffectResult
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectRecord
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectRecord#RetrySafe kind=field
+  digest=b3:fff36153a5286be591e75c49657a48cd2b840c9ea08027b1da8833bc57e22ae9 file=neo/internal/runtime/turnstate/effects.go range=36:36 lang=go exported=true byte_range=928:976
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectRecord
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectRecord#StartedAt kind=field
+  digest=b3:0d86bf67896b02baac9a384041089d6a5dd24064a6ab5ab545830bb34a1a0e0b file=neo/internal/runtime/turnstate/effects.go range=39:39 lang=go exported=true byte_range=1080:1128
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectRecord
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectRecord#Status kind=field
+  digest=b3:ca87d6cfd3300b5cec4ebf3b909124cb71aeb2b3deeafa8de817a1b626d2f10d file=neo/internal/runtime/turnstate/effects.go range=37:37 lang=go exported=true byte_range=978:1022
+  sig=turnstate.EffectStatus
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectRecord
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectRecord#ToolName kind=field
+  digest=b3:9e5e1e10016511fa497581354242341a188c0c551ac42e647a13bf7253a927e4 file=neo/internal/runtime/turnstate/effects.go range=34:34 lang=go exported=true byte_range=825:872
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectRecord
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectResult kind=type
+  digest=b3:1839f338c0a5f167e12230e0c0f6864f27ee17a7156bf480c7fa979722c3ffc1 file=neo/internal/runtime/turnstate/effects.go range=24:30 lang=go exported=true byte_range=420:740
+  sig=type EffectResult struct {\n	Content		json.RawMessage	`json:"content"`\n	IsError		bool		`json:"is_error"`\n	FailureClass	string		`json:"failure_class,omitempty"`\n	Retryable	bool		`json:"retryable,omitempty"`\n	FailureMessage	string		`json:"failure_message,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.EffectResult#Content,matrix/neo/internal/runtime/turnstate.EffectResult#FailureClass,matrix/neo/internal/runtime/turnstate.EffectResult#FailureMessage,matrix/neo/internal/runtime/turnstate.EffectResult#IsError,matrix/neo/internal/runtime/turnstate.EffectResult#Retryable
+  ^defines=matrix/neo/internal/runtime/turnstate/effects.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectResult#Content kind=field
+  digest=b3:2496a672b9244ecb4ac0b4eaa572e035fe021cdc936c4088df7810fc9be1631c file=neo/internal/runtime/turnstate/effects.go range=25:25 lang=go exported=true byte_range=448:495
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectResult
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectResult#FailureClass kind=field
+  digest=b3:1a7ef3b6f82924d2bc951d38f72ffbff45c8a5f56cecc1e5b571135a5c621f97 file=neo/internal/runtime/turnstate/effects.go range=27:27 lang=go exported=true byte_range=547:610
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectResult
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectResult#FailureMessage kind=field
+  digest=b3:c391a636f866b45a42c2fbbb6e8149db727e79a80b119a5be427461d7751a8ab file=neo/internal/runtime/turnstate/effects.go range=29:29 lang=go exported=true byte_range=673:738
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectResult
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectResult#IsError kind=field
+  digest=b3:5ea140a20b78c74d96b29d68db8054a0a8029e066d553d69b0da05c96e5f5e56 file=neo/internal/runtime/turnstate/effects.go range=26:26 lang=go exported=true byte_range=497:545
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectResult
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectResult#Retryable kind=field
+  digest=b3:2cd7108024ffa5927d55a01d17d48e276ed8f2fa7c1854f167bb796293d8d876 file=neo/internal/runtime/turnstate/effects.go range=28:28 lang=go exported=true byte_range=612:671
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.EffectResult
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectStarted kind=const
+  digest=b3:81d33e577b0366d346ae0ca829c1ad4aad13c84daccf2eabc9a5e319dc59d093 file=neo/internal/runtime/turnstate/effects.go range=20:20 lang=go exported=true byte_range=332:372
+  sig=turnstate.EffectStatus
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/effects.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.EffectStatus kind=type
+  digest=b3:4d23990ec5fa073a0e032cf763858c5566cdf10b07783c65984aee90b40eb82b file=neo/internal/runtime/turnstate/effects.go range=17:17 lang=go exported=true byte_range=297:321
+  sig=type EffectStatus string
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/effects.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.ErrClosed kind=var
+  digest=b3:513b4ede3da3df8b6b21d95d4ea6dcce8e038e102a19026361491e6ee6413a12 file=neo/internal/runtime/turnstate/store.go range=29:29 lang=go exported=true byte_range=488:537
+  sig=error
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.OccurrenceID kind=func
+  digest=b3:59ac2ff3a5bfbff754b7a56dd05f9e6ce65092925e8209c363b1517dae8fda65 file=neo/internal/runtime/turnstate/scheduled.go range=58:76 lang=go exported=true byte_range=1418:2033
+  sig=func OccurrenceID(\n	kind WakeKind,\n	alarmID string,\n	scheduledFor time.Time,\n) (string, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/scheduled.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Open kind=func
+  digest=b3:10c0ed8802d8d2dafb076bf4cbd69288044c012ee13e3d9944fb4ccf7e14a0aa file=neo/internal/runtime/turnstate/store.go range=50:107 lang=go exported=true byte_range=883:2601
+  sig=func Open(\n	ctx context.Context,\n	path string,\n	session *vault.Session,\n) (*Store, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.PendingCall kind=type
+  digest=b3:66c270eb49bfe7b777260d89ea68127e5e2926acf78dcaa40b9027d275bd1e3c file=neo/internal/runtime/turnstate/types.go range=27:34 lang=go exported=true byte_range=594:942
+  sig=type PendingCall struct {\n	CallID		string		`json:"call_id"`\n	IdempotencyKey	string		`json:"idempotency_key"`\n	ToolName	string		`json:"tool_name"`\n	Arguments	json.RawMessage	`json:"arguments"`\n	Expect		string		`json:"expect,omitempty"`\n	DispatchedAt	time.Time	`json:"dispatched_at"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.PendingCall#Arguments,matrix/neo/internal/runtime/turnstate.PendingCall#CallID,matrix/neo/internal/runtime/turnstate.PendingCall#DispatchedAt,matrix/neo/internal/runtime/turnstate.PendingCall#Expect,matrix/neo/internal/runtime/turnstate.PendingCall#IdempotencyKey,matrix/neo/internal/runtime/turnstate.PendingCall#ToolName,matrix/neo/internal/runtime/turnstate.PendingCall.Validate
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.PendingCall#Arguments kind=field
+  digest=b3:931c96e79f75bea6177e0c9dbaa9c2675b0e8b64c166be469350ce28f5faad12 file=neo/internal/runtime/turnstate/types.go range=31:31 lang=go exported=true byte_range=778:827
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.PendingCall
+
+NODE id=matrix/neo/internal/runtime/turnstate.PendingCall#CallID kind=field
+  digest=b3:7ab7624231f4445f89d44753fd75165dc16cc0dfe8758b16a8aa55d4cad93284 file=neo/internal/runtime/turnstate/types.go range=28:28 lang=go exported=true byte_range=621:668
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.PendingCall
+
+NODE id=matrix/neo/internal/runtime/turnstate.PendingCall#DispatchedAt kind=field
+  digest=b3:5fa80f808320deed2ba13566c622464388a4499032ab9aa087898553997ab371 file=neo/internal/runtime/turnstate/types.go range=33:33 lang=go exported=true byte_range=887:940
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.PendingCall
+
+NODE id=matrix/neo/internal/runtime/turnstate.PendingCall#Expect kind=field
+  digest=b3:5bbc1c2a3daf87b490e2463b834e7f11118a950851c5508530d45d7b5f1dc4fb file=neo/internal/runtime/turnstate/types.go range=32:32 lang=go exported=true byte_range=829:885
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.PendingCall
+
+NODE id=matrix/neo/internal/runtime/turnstate.PendingCall#IdempotencyKey kind=field
+  digest=b3:ab24c8ac5380765c38b76dbcd0d35b9459cf833d7bba83222edadafbac4cfdd7 file=neo/internal/runtime/turnstate/types.go range=29:29 lang=go exported=true byte_range=670:725
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.PendingCall
+
+NODE id=matrix/neo/internal/runtime/turnstate.PendingCall#ToolName kind=field
+  digest=b3:b12010da9441ddbe19a9f64b4bd123339b9f8f776d69168213051c7592c5e511 file=neo/internal/runtime/turnstate/types.go range=30:30 lang=go exported=true byte_range=727:776
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.PendingCall
+
+NODE id=matrix/neo/internal/runtime/turnstate.PendingCall.Validate kind=method
+  digest=b3:3b5c4209899b9c2895463c29dea3952459fbe09d52d5c749e5d41320767714ac file=neo/internal/runtime/turnstate/types.go range=131:141 lang=go exported=true byte_range=3981:4327
+  sig=func (call PendingCall) Validate() error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.PendingCall
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Recovery kind=type
+  digest=b3:ccfc62f9ecfcc8eab53d9b3699a6d8f6c7217869d014f966a2623a458b784e95 file=neo/internal/runtime/turnstate/types.go range=48:54 lang=go exported=true byte_range=1524:1830
+  sig=type Recovery struct {\n	Phase			string		`json:"phase"`\n	LastToolEvidence	json.RawMessage	`json:"last_tool_evidence,omitempty"`\n	StartedAt		time.Time	`json:"started_at"`\n	AttemptCount		int		`json:"attempt_count"`\n	Advice			string		`json:"advice"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.Recovery#Advice,matrix/neo/internal/runtime/turnstate.Recovery#AttemptCount,matrix/neo/internal/runtime/turnstate.Recovery#LastToolEvidence,matrix/neo/internal/runtime/turnstate.Recovery#Phase,matrix/neo/internal/runtime/turnstate.Recovery#StartedAt,matrix/neo/internal/runtime/turnstate.Recovery.Validate
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Recovery#Advice kind=field
+  digest=b3:570f5ef3b29c317e1eab7a8d1d14145bc324903f1f273fef030811aea1ede8df file=neo/internal/runtime/turnstate/types.go range=53:53 lang=go exported=true byte_range=1780:1828
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Recovery
+
+NODE id=matrix/neo/internal/runtime/turnstate.Recovery#AttemptCount kind=field
+  digest=b3:b7c121936378f9407d61189f2fa076b9c2c734e06ad505e8c7984fb476231989 file=neo/internal/runtime/turnstate/types.go range=52:52 lang=go exported=true byte_range=1723:1778
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Recovery
+
+NODE id=matrix/neo/internal/runtime/turnstate.Recovery#LastToolEvidence kind=field
+  digest=b3:0cb78ea0d11a7e527e828db71d61c13e52c8e8a9e773c8d685a0cabb9b5d653a file=neo/internal/runtime/turnstate/types.go range=50:50 lang=go exported=true byte_range=1597:1667
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Recovery
+
+NODE id=matrix/neo/internal/runtime/turnstate.Recovery#Phase kind=field
+  digest=b3:696c1df2fab3a1d9546f8bfab22309ff431c110655e156b638eef155880a11db file=neo/internal/runtime/turnstate/types.go range=49:49 lang=go exported=true byte_range=1548:1595
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Recovery
+
+NODE id=matrix/neo/internal/runtime/turnstate.Recovery#StartedAt kind=field
+  digest=b3:fd5539751434477ac9ee2891e04c4faebcafb53743a34f79e2d2008a7b6ccb63 file=neo/internal/runtime/turnstate/types.go range=51:51 lang=go exported=true byte_range=1669:1721
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Recovery
+
+NODE id=matrix/neo/internal/runtime/turnstate.Recovery.Validate kind=method
+  digest=b3:514afac7b91f5e876bf1a8c3670adbf659833461e7402e0103bdadba9865d44e file=neo/internal/runtime/turnstate/types.go range=143:155 lang=go exported=true byte_range=4329:4744
+  sig=func (recovery Recovery) Validate() error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Recovery
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.ScheduledWake kind=type
+  digest=b3:badc1b19e9d45441cb9f47163b56485d1662119904830082cf8ca50f7e13a41a file=neo/internal/runtime/turnstate/scheduled.go range=27:33 lang=go exported=true byte_range=505:642
+  sig=type ScheduledWake struct {\n	AlarmID		string\n	ActorID		string\n	SessionID	string\n	Message		string\n	ScheduledFor	time.Time\n}
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.ScheduledWake#ActorID,matrix/neo/internal/runtime/turnstate.ScheduledWake#AlarmID,matrix/neo/internal/runtime/turnstate.ScheduledWake#Message,matrix/neo/internal/runtime/turnstate.ScheduledWake#ScheduledFor,matrix/neo/internal/runtime/turnstate.ScheduledWake#SessionID
+  ^defines=matrix/neo/internal/runtime/turnstate/scheduled.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.ScheduledWake#ActorID kind=field
+  digest=b3:4d6e8d1b63eaf02aad55b83d5f43f4def3342429739fb246a506694fed4beef8 file=neo/internal/runtime/turnstate/scheduled.go range=29:29 lang=go exported=true byte_range=555:574
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.ScheduledWake
+
+NODE id=matrix/neo/internal/runtime/turnstate.ScheduledWake#AlarmID kind=field
+  digest=b3:a91cc7ac7988f9b8dab6b6cdfac2d63f604610821001af0a2ac5921fb1422270 file=neo/internal/runtime/turnstate/scheduled.go range=28:28 lang=go exported=true byte_range=534:553
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.ScheduledWake
+
+NODE id=matrix/neo/internal/runtime/turnstate.ScheduledWake#Message kind=field
+  digest=b3:7bbd9995688787b4069f41284edc2bebf19c7d28889541fbb3458e3764bf9dbc file=neo/internal/runtime/turnstate/scheduled.go range=31:31 lang=go exported=true byte_range=597:616
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.ScheduledWake
+
+NODE id=matrix/neo/internal/runtime/turnstate.ScheduledWake#ScheduledFor kind=field
+  digest=b3:261eecee5c07a583bd66bfad0f81e18dd04cdc44f2085547e2df6330bf30f2d0 file=neo/internal/runtime/turnstate/scheduled.go range=32:32 lang=go exported=true byte_range=618:640
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.ScheduledWake
+
+NODE id=matrix/neo/internal/runtime/turnstate.ScheduledWake#SessionID kind=field
+  digest=b3:7d3f6fb2d0fac8172213a7d34c45c312134d4d0f684882a1c7caf9557325820c file=neo/internal/runtime/turnstate/scheduled.go range=30:30 lang=go exported=true byte_range=576:595
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.ScheduledWake
+
+NODE id=matrix/neo/internal/runtime/turnstate.Status kind=type
+  digest=b3:b601ba3d4abd875f9ceb19f7203cbf0fe9de957bb0bd98c2f9ec20f21462accb file=neo/internal/runtime/turnstate/types.go range=15:15 lang=go exported=true byte_range=284:302
+  sig=type Status string
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.Status.Valid
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Status.Valid kind=method
+  digest=b3:3c6e3760316826665d1fe4c065492c921da7375ac0409db4a02da5c1664cc384 file=neo/internal/runtime/turnstate/types.go range=92:100 lang=go exported=true byte_range=2947:3169
+  sig=func (status Status) Valid() bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Status
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.StatusCancelled kind=const
+  digest=b3:ed6a712cd6d9b6d976277dd4d64a2834a51c1e2d48a27a20119f9f904cccc8dd file=neo/internal/runtime/turnstate/types.go range=23:23 lang=go exported=true byte_range=510:548
+  sig=turnstate.Status
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.StatusCompleted kind=const
+  digest=b3:0c1abac5aea17af295adcb85a60579c85501c7b9181a2a1c5ee2d36d199e4f15 file=neo/internal/runtime/turnstate/types.go range=21:21 lang=go exported=true byte_range=433:471
+  sig=turnstate.Status
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.StatusFailed kind=const
+  digest=b3:c6f955b3c723cd60a7b919bc286395c6d7c60c5ae1fb50aa125bcf8b334cd2fa file=neo/internal/runtime/turnstate/types.go range=22:22 lang=go exported=true byte_range=473:508
+  sig=turnstate.Status
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.StatusIncomplete kind=const
+  digest=b3:fd90b75b4924bdf166f0c3d9ca4f8d53546dfb37558f8dee370115aa1a3ea749 file=neo/internal/runtime/turnstate/types.go range=20:20 lang=go exported=true byte_range=392:431
+  sig=turnstate.Status
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.StatusInterrupted kind=const
+  digest=b3:5a9d193e6ac8ac5a64e6b0793e237543bf9a6df75ce81adffc9a46c7ef9952d4 file=neo/internal/runtime/turnstate/types.go range=24:24 lang=go exported=true byte_range=550:590
+  sig=turnstate.Status
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.StatusRecovering kind=const
+  digest=b3:984c958bacd784343fa5dfa2f876bbe0abb5e15a10ed5d0679f596bd0717ca6a file=neo/internal/runtime/turnstate/types.go range=19:19 lang=go exported=true byte_range=351:390
+  sig=turnstate.Status
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.StatusRunning kind=const
+  digest=b3:c19351a6429ea0330cd758e8792db82da6d0a3d14fe9ad88cde95a4be7f756df file=neo/internal/runtime/turnstate/types.go range=18:18 lang=go exported=true byte_range=313:349
+  sig=turnstate.Status
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store kind=type
+  digest=b3:55829d7f3109af84c58f34e98da010e47df654d46bcf302294efa0bd867cca61 file=neo/internal/runtime/turnstate/store.go range=37:48 lang=go exported=true byte_range=657:881
+  sig=type Store struct {\n	readDB	*sql.DB\n	writeDB	*sql.DB\n	vault	*vault.Session\n	user	string\n	now	func() time.Time\n\n	lifecycleMu	sync.RWMutex\n	closed		bool\n	writes		chan writeRequest\n	writerDone	chan struct{}\n}
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.Store#closed,matrix/neo/internal/runtime/turnstate.Store#lifecycleMu,matrix/neo/internal/runtime/turnstate.Store#now,matrix/neo/internal/runtime/turnstate.Store#readDB,matrix/neo/internal/runtime/turnstate.Store#user,matrix/neo/internal/runtime/turnstate.Store#vault,matrix/neo/internal/runtime/turnstate.Store#writeDB,matrix/neo/internal/runtime/turnstate.Store#writerDone,matrix/neo/internal/runtime/turnstate.Store#writes,matrix/neo/internal/runtime/turnstate.Store.BeginEffect,matrix/neo/internal/runtime/turnstate.Store.Close,matrix/neo/internal/runtime/turnstate.Store.CompleteEffect,matrix/neo/internal/runtime/turnstate.Store.CreateScheduledTurn,matrix/neo/internal/runtime/turnstate.Store.CreateTurnState,matrix/neo/internal/runtime/turnstate.Store.ListAllSupervisorRuns,matrix/neo/internal/runtime/turnstate.Store.ListSupervisorRuns,matrix/neo/internal/runtime/turnstate.Store.ListTurnMessages,matrix/neo/internal/runtime/turnstate.Store.LoadCognitionState,matrix/neo/internal/runtime/turnstate.Store.LoadEffect,matrix/neo/internal/runtime/turnstate.Store.LoadSupervisorRun,matrix/neo/internal/runtime/turnstate.Store.LoadTurnState,matrix/neo/internal/runtime/turnstate.Store.RecoverableTurnStates,matrix/neo/internal/runtime/turnstate.Store.SaveCognitionState,matrix/neo/internal/runtime/turnstate.Store.SaveSupervisorRun,matrix/neo/internal/runtime/turnstate.Store.SaveTurnCheckpoint,matrix/neo/internal/runtime/turnstate.Store.SchemaVersion,matrix/neo/internal/runtime/turnstate.Store.SetTurnFailure,matrix/neo/internal/runtime/turnstate.Store.SetTurnRecovery,matrix/neo/internal/runtime/turnstate.Store.SetTurnStatus,matrix/neo/internal/runtime/turnstate.Store.checkOpen,matrix/neo/internal/runtime/turnstate.Store.open,matrix/neo/internal/runtime/turnstate.Store.openEffect,matrix/neo/internal/runtime/turnstate.Store.openTurn,matrix/neo/internal/runtime/turnstate.Store.seal,matrix/neo/internal/runtime/turnstate.Store.sealEffect,matrix/neo/internal/runtime/turnstate.Store.sealTurn,matrix/neo/internal/runtime/turnstate.Store.submit,matrix/neo/internal/runtime/turnstate.Store.updateTurn,matrix/neo/internal/runtime/turnstate.Store.writer
+  implements=matrix/neo/internal/runtime/belief.CognitionStore,matrix/neo/internal/runtime/loop.CheckpointStore,matrix/neo/internal/runtime/loop.EffectStateStore,matrix/neo/internal/runtime/work.RunStore,matrix/neo/internal/runtime/work.TurnRuntimeStore
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store#closed kind=field
+  digest=b3:8ca9b730516dcf29962b2f3b9f51aeab8cf2cf3ed5b91de94d86e972467b3d29 file=neo/internal/runtime/turnstate/store.go range=45:45 lang=go exported=false byte_range=805:821
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store#lifecycleMu kind=field
+  digest=b3:213b89b0fcabc3073ae2899ab01ce1df24add957ca45e73d02c5aa78f3ed9ad3 file=neo/internal/runtime/turnstate/store.go range=44:44 lang=go exported=false byte_range=779:803
+  sig=sync.RWMutex
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store#now kind=field
+  digest=b3:4fbb1f89a6a690cb395dc480d9caae4938a375e77a2b0f799cc98fe4baab8ec2 file=neo/internal/runtime/turnstate/store.go range=42:42 lang=go exported=false byte_range=752:776
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store#readDB kind=field
+  digest=b3:44011715fa6a19102dd96fbc2002385b836f042e1c1d6595f0add60b274fc273 file=neo/internal/runtime/turnstate/store.go range=38:38 lang=go exported=false byte_range=678:693
+  sig=*sql.DB
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store#user kind=field
+  digest=b3:3baf315b379daea8658c0675a379c775a964e1566d486724c81d44a7555c5c0e file=neo/internal/runtime/turnstate/store.go range=41:41 lang=go exported=false byte_range=736:750
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store#vault kind=field
+  digest=b3:d01e08518c9105f6931e05d7ffd543efe3bf04674ecbc6ce954e95e75d69a57b file=neo/internal/runtime/turnstate/store.go range=40:40 lang=go exported=false byte_range=712:734
+  sig=*vault.Session
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store#writeDB kind=field
+  digest=b3:029eaad35cccc994d972fd86e2a4ee66d3c86563dc4f9618ecbec9371d3b8d74 file=neo/internal/runtime/turnstate/store.go range=39:39 lang=go exported=false byte_range=695:710
+  sig=*sql.DB
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store#writerDone kind=field
+  digest=b3:146f19c21057f23f1b6d599ffe42d1882b54bd40118b59b589d4862c1f89a405 file=neo/internal/runtime/turnstate/store.go range=47:47 lang=go exported=false byte_range=854:879
+  sig=chan struct{}
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store#writes kind=field
+  digest=b3:9b48f915382ed55ba19279c792050aea9d645522a3fbde29999d74345df8ced9 file=neo/internal/runtime/turnstate/store.go range=46:46 lang=go exported=false byte_range=823:852
+  sig=chan turnstate.writeRequest
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.BeginEffect kind=method
+  digest=b3:f796a5171952bd2cecdb6ee0d3da20685c609bfe06ab446ac87a356df3b77bd8 file=neo/internal/runtime/turnstate/effects.go range=43:119 lang=go exported=true byte_range=1194:3509
+  sig=func (store *Store) BeginEffect(\n	ctx context.Context,\n	idempotencyKey string,\n	toolName string,\n	arguments json.RawMessage,\n	retrySafe bool,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/effects.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.Close kind=method
+  digest=b3:4b14e1ea0904dc0402b14e8f4c064b928387b8c4f51dac0f53aeaefc609ad16c file=neo/internal/runtime/turnstate/store.go range=511:541 lang=go exported=true byte_range=13192:14058
+  sig=func (store *Store) Close(ctx context.Context) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.CompleteEffect kind=method
+  digest=b3:0a616f5ee86de9c2a927147734a3c636d6f92e6ec6888c12a5da0acf55000721 file=neo/internal/runtime/turnstate/effects.go range=121:186 lang=go exported=true byte_range=3511:5487
+  sig=func (store *Store) CompleteEffect(\n	ctx context.Context,\n	idempotencyKey string,\n	result EffectResult,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/effects.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.CreateScheduledTurn kind=method
+  digest=b3:8a5b40ec21951f947c4a4482463bb74b2f67c23f7e1e14f29af07092f90ea76b file=neo/internal/runtime/turnstate/scheduled.go range=78:193 lang=go exported=true byte_range=2035:5586
+  sig=func (store *Store) CreateScheduledTurn(\n	ctx context.Context,\n	wake ScheduledWake,\n) (TurnState, bool, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/scheduled.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.CreateTurnState kind=method
+  digest=b3:5a5ea3f7b1941af70c456d8b75d145d7335e97e2bc44e05106e21fc7db0b4b22 file=neo/internal/runtime/turnstate/store.go range=129:155 lang=go exported=true byte_range=3108:3924
+  sig=func (store *Store) CreateTurnState(ctx context.Context, state TurnState) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.ListAllSupervisorRuns kind=method
+  digest=b3:b656dc51a00d823a4c3b09ca2f5128ed00e53e31727ead40070cd7f7cb998d7e file=neo/internal/runtime/turnstate/supervisor.go range=163:214 lang=go exported=true byte_range=4078:5308
+  sig=func (store *Store) ListAllSupervisorRuns(\n	ctx context.Context,\n) ([]SupervisorRecord, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/supervisor.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.ListSupervisorRuns kind=method
+  digest=b3:1df9ff6f1e752e46b612a471b2bc7d9c7b661a45b7ba3d8710ac481d0a2d116b file=neo/internal/runtime/turnstate/supervisor.go range=102:161 lang=go exported=true byte_range=2674:4076
+  sig=func (store *Store) ListSupervisorRuns(\n	ctx context.Context,\n	actorID string,\n) ([]SupervisorRecord, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/supervisor.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.ListTurnMessages kind=method
+  digest=b3:f3a6ff1182ad88f2ca94c48a40ffddd1bce58d1fe68dfd067cb9abe787aa43c9 file=neo/internal/runtime/turnstate/scheduled.go range=195:236 lang=go exported=true byte_range=5588:6805
+  sig=func (store *Store) ListTurnMessages(\n	ctx context.Context,\n	turnID string,\n) ([]TurnMessage, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/scheduled.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.LoadCognitionState kind=method
+  digest=b3:5ec4483ecf4687362b59007d4846378b6cebb3584c7759a4b366970db51435e2 file=neo/internal/runtime/turnstate/store.go range=319:345 lang=go exported=true byte_range=8255:9110
+  sig=func (store *Store) LoadCognitionState(\n	ctx context.Context,\n	sessionID string,\n) (json.RawMessage, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.LoadEffect kind=method
+  digest=b3:1edfbbbe438afe3ce1b9b06662892fb28e2faa28da63ea9e46a82f70710fca9d file=neo/internal/runtime/turnstate/effects.go range=188:207 lang=go exported=true byte_range=5489:6128
+  sig=func (store *Store) LoadEffect(\n	ctx context.Context,\n	idempotencyKey string,\n) (EffectRecord, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/effects.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.LoadSupervisorRun kind=method
+  digest=b3:79cd3f6cb63eece8e2bcaf85fecf999f8c114c5746dbefb2b106edd12df1efa8 file=neo/internal/runtime/turnstate/supervisor.go range=61:100 lang=go exported=true byte_range=1622:2672
+  sig=func (store *Store) LoadSupervisorRun(\n	ctx context.Context,\n	runID string,\n) (SupervisorRecord, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/supervisor.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.LoadTurnState kind=method
+  digest=b3:21902c66cc49424cb3038c20b47156fe7ae0981db7df924c9c5012cd4263dc88 file=neo/internal/runtime/turnstate/store.go range=157:175 lang=go exported=true byte_range=3926:4489
+  sig=func (store *Store) LoadTurnState(\n	ctx context.Context,\n	turnID string,\n) (TurnState, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.RecoverableTurnStates kind=method
+  digest=b3:e26b6e8cd72122d23293558488191ff1980c2e6016b3cef44f78cb3089b387d3 file=neo/internal/runtime/turnstate/store.go range=250:284 lang=go exported=true byte_range=6280:7283
+  sig=func (store *Store) RecoverableTurnStates(\n	ctx context.Context,\n) ([]TurnState, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.SaveCognitionState kind=method
+  digest=b3:ed93d2a9e038d00da3c12188b56bccfc42bad3aab0e5d4461562fba2bd9fc285 file=neo/internal/runtime/turnstate/store.go range=286:317 lang=go exported=true byte_range=7285:8253
+  sig=func (store *Store) SaveCognitionState(\n	ctx context.Context,\n	sessionID string,\n	state json.RawMessage,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.SaveSupervisorRun kind=method
+  digest=b3:4fd0438a213901e7f24de2ed14e90cc7b63d200fc1ab268e9206a49f83673a79 file=neo/internal/runtime/turnstate/supervisor.go range=21:59 lang=go exported=true byte_range=369:1620
+  sig=func (store *Store) SaveSupervisorRun(\n	ctx context.Context,\n	record SupervisorRecord,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/supervisor.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.SaveTurnCheckpoint kind=method
+  digest=b3:2d12ac1821049c231701080529cba3cca8f179f2956f971a9751bf8853ede674 file=neo/internal/runtime/turnstate/store.go range=177:190 lang=go exported=true byte_range=4491:4826
+  sig=func (store *Store) SaveTurnCheckpoint(\n	ctx context.Context,\n	turnID string,\n	checkpoint Checkpoint,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.SchemaVersion kind=method
+  digest=b3:8cc613d939019895f8c3f690582bd3f9f0d14695646d5c78178deb776316db58 file=neo/internal/runtime/turnstate/store.go range=347:358 lang=go exported=true byte_range=9112:9485
+  sig=func (store *Store) SchemaVersion(ctx context.Context) (int, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.SetTurnFailure kind=method
+  digest=b3:84aea160917037ec9c629b53de0d1a84dd36e9a2d719c0b88eb61a4cc884b293 file=neo/internal/runtime/turnstate/store.go range=226:248 lang=go exported=true byte_range=5622:6278
+  sig=func (store *Store) SetTurnFailure(\n	ctx context.Context,\n	turnID string,\n	status Status,\n	code string,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.SetTurnRecovery kind=method
+  digest=b3:4279156c61af62a964ac1d98ac572a43614cd895b9f4f1758e14bdd88a96d12e file=neo/internal/runtime/turnstate/store.go range=192:210 lang=go exported=true byte_range=4828:5318
+  sig=func (store *Store) SetTurnRecovery(\n	ctx context.Context,\n	turnID string,\n	status Status,\n	recovery Recovery,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.SetTurnStatus kind=method
+  digest=b3:aaa175cccd583b41ae771d55177d31d62e044bef08579c745696553bd881ea54 file=neo/internal/runtime/turnstate/store.go range=212:224 lang=go exported=true byte_range=5320:5620
+  sig=func (store *Store) SetTurnStatus(\n	ctx context.Context,\n	turnID string,\n	status Status,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.checkOpen kind=method
+  digest=b3:2df5cce69abbf61ec2a60e6f0801dc2b593a86308cf7b59a761784b1fdff64f2 file=neo/internal/runtime/turnstate/store.go range=502:509 lang=go exported=false byte_range=13034:13190
+  sig=func (store *Store) checkOpen() error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.open kind=method
+  digest=b3:6aae5970550b85042d69a88f2bdb29705dec47eefb6f15d40eaa67f21e001fcf file=neo/internal/runtime/turnstate/store.go range=454:464 lang=go exported=false byte_range=12044:12308
+  sig=func (store *Store) open(\n	stream string,\n	schema string,\n	envelope []byte,\n) ([]byte, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.openEffect kind=method
+  digest=b3:4418fcebc85614b9d588f1705e1a7458d33ef3db70242c10642d2980c42908b2 file=neo/internal/runtime/turnstate/effects.go range=218:241 lang=go exported=false byte_range=6420:7246
+  sig=func (store *Store) openEffect(\n	idempotencyKey string,\n	envelope []byte,\n) (EffectRecord, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/effects.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.openTurn kind=method
+  digest=b3:193be6062e9d6887fca5a00bfe9608eab8c421793cf9d1e6e1e3612ee569bc04 file=neo/internal/runtime/turnstate/store.go range=427:441 lang=go exported=false byte_range=11305:11803
+  sig=func (store *Store) openTurn(turnID string, envelope []byte) (TurnState, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.seal kind=method
+  digest=b3:d574fd86875cd2369becaae2fbbcfa659e2b5bdeaad05153db210ca6d9390c7b file=neo/internal/runtime/turnstate/store.go range=443:452 lang=go exported=false byte_range=11805:12042
+  sig=func (store *Store) seal(\n	stream string,\n	schema string,\n	plaintext []byte,\n) ([]byte, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.sealEffect kind=method
+  digest=b3:e1d41b49e274d56b36cdf7089ba8b93060d21225ac7eb71ae2cc2af259b07e1d file=neo/internal/runtime/turnstate/effects.go range=209:216 lang=go exported=false byte_range=6130:6418
+  sig=func (store *Store) sealEffect(record EffectRecord) ([]byte, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/effects.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.sealTurn kind=method
+  digest=b3:cfcc8469ab577559d9e002baf55b23770a8a28be141606151991e4da7a49bbde file=neo/internal/runtime/turnstate/store.go range=418:425 lang=go exported=false byte_range=11035:11303
+  sig=func (store *Store) sealTurn(state TurnState) ([]byte, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.submit kind=method
+  digest=b3:fb0341411194e1dee4f24e156ee077091d044e007f462865298f171dc56e4460 file=neo/internal/runtime/turnstate/store.go range=479:500 lang=go exported=false byte_range=12586:13032
+  sig=func (store *Store) submit(\n	ctx context.Context,\n	run func(context.Context, *sql.DB) error,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.updateTurn kind=method
+  digest=b3:23de3c41aa6f4afb0d9788e14a346e82b68555e04ae73d410200e0fa0d3bcbca file=neo/internal/runtime/turnstate/store.go range=360:416 lang=go exported=false byte_range=9487:11033
+  sig=func (store *Store) updateTurn(\n	ctx context.Context,\n	turnID string,\n	update func(*TurnState) error,\n) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.Store.writer kind=method
+  digest=b3:c9fa18bbbf8f78442521df3f3a721bbb7bb9d97ef1b89937611800794322472b file=neo/internal/runtime/turnstate/store.go range=466:477 lang=go exported=false byte_range=12310:12584
+  sig=func (store *Store) writer()
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.Store
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.SupervisorRecord kind=type
+  digest=b3:ac9170641b2d1a59309643fabf725d2efb708bd253fa334ee15f7326968b247c file=neo/internal/runtime/turnstate/supervisor.go range=14:19 lang=go exported=true byte_range=262:367
+  sig=type SupervisorRecord struct {\n	RunID	string\n	ActorID	string\n	Status	string\n	State	json.RawMessage\n}
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.SupervisorRecord#ActorID,matrix/neo/internal/runtime/turnstate.SupervisorRecord#RunID,matrix/neo/internal/runtime/turnstate.SupervisorRecord#State,matrix/neo/internal/runtime/turnstate.SupervisorRecord#Status
+  ^defines=matrix/neo/internal/runtime/turnstate/supervisor.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.SupervisorRecord#ActorID kind=field
+  digest=b3:655222c7e01cf7b57dbfc8bd82deab3918eca7308f56438dc06de43a3b70567d file=neo/internal/runtime/turnstate/supervisor.go range=16:16 lang=go exported=true byte_range=310:324
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.SupervisorRecord
+
+NODE id=matrix/neo/internal/runtime/turnstate.SupervisorRecord#RunID kind=field
+  digest=b3:8fb87362efa7a255a4b366ba102baa7e6a7b363bbfb1c99821237b86f0bd852a file=neo/internal/runtime/turnstate/supervisor.go range=15:15 lang=go exported=true byte_range=294:308
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.SupervisorRecord
+
+NODE id=matrix/neo/internal/runtime/turnstate.SupervisorRecord#State kind=field
+  digest=b3:e1326aceed7e6b8055fd62280de0dbeb16d888de03b64e048f1ebbcde422473b file=neo/internal/runtime/turnstate/supervisor.go range=18:18 lang=go exported=true byte_range=342:365
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.SupervisorRecord
+
+NODE id=matrix/neo/internal/runtime/turnstate.SupervisorRecord#Status kind=field
+  digest=b3:7cd3ccc27cbf99935754465c2897e6ada4152b7bc1cfdda895214d3a7768fb69 file=neo/internal/runtime/turnstate/supervisor.go range=17:17 lang=go exported=true byte_range=326:340
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.SupervisorRecord
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnMessage kind=type
+  digest=b3:48661b7d301ce75c7511d307104f0ab1a14097fa8c867484614c9aef3e01c37e file=neo/internal/runtime/turnstate/scheduled.go range=35:42 lang=go exported=true byte_range=644:971
+  sig=type TurnMessage struct {\n	MessageID	string			`json:"message_id"`\n	TurnID		string			`json:"turn_id"`\n	SessionID	string			`json:"session_id"`\n	Role		protocol.MessageRole	`json:"role"`\n	Content		string			`json:"content"`\n	CreatedAt	time.Time		`json:"created_at"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.TurnMessage#Content,matrix/neo/internal/runtime/turnstate.TurnMessage#CreatedAt,matrix/neo/internal/runtime/turnstate.TurnMessage#MessageID,matrix/neo/internal/runtime/turnstate.TurnMessage#Role,matrix/neo/internal/runtime/turnstate.TurnMessage#SessionID,matrix/neo/internal/runtime/turnstate.TurnMessage#TurnID
+  ^defines=matrix/neo/internal/runtime/turnstate/scheduled.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnMessage#Content kind=field
+  digest=b3:c1df1bdb7d3b78b49530ddae9e6bfd92a1e5738c9abf682069bc8bb910fe8d99 file=neo/internal/runtime/turnstate/scheduled.go range=40:40 lang=go exported=true byte_range=870:917
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnMessage
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnMessage#CreatedAt kind=field
+  digest=b3:f1480de96d703794284665e9f5d1bf10d7316ad5aed8c75a9019b6f99fb4e730 file=neo/internal/runtime/turnstate/scheduled.go range=41:41 lang=go exported=true byte_range=919:969
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnMessage
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnMessage#MessageID kind=field
+  digest=b3:dedd23115992609c17f63796a6da3d1c7fc392477e8cfd810efa53f43c074466 file=neo/internal/runtime/turnstate/scheduled.go range=36:36 lang=go exported=true byte_range=671:721
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnMessage
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnMessage#Role kind=field
+  digest=b3:b3a0b48e3bc95ddb6f5cec6b56664ab1875c5a6417f9268482f8538d45400b53 file=neo/internal/runtime/turnstate/scheduled.go range=39:39 lang=go exported=true byte_range=824:868
+  sig=protocol.MessageRole
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnMessage
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnMessage#SessionID kind=field
+  digest=b3:f6c3b27c793302616ecf528487fdbddb32223f108729db72d9adc75752222f74 file=neo/internal/runtime/turnstate/scheduled.go range=38:38 lang=go exported=true byte_range=772:822
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnMessage
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnMessage#TurnID kind=field
+  digest=b3:337ba592de5f3a9e9b74b043f39f5b44a14e493074c37f598cb530da9c87e472 file=neo/internal/runtime/turnstate/scheduled.go range=37:37 lang=go exported=true byte_range=723:770
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnMessage
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState kind=type
+  digest=b3:cf5e46a62fa77abf72d4259b27c5cc3800f91a939b25d00200e9c3640e124055 file=neo/internal/runtime/turnstate/types.go range=56:68 lang=go exported=true byte_range=1832:2383
+  sig=type TurnState struct {\n	TurnID		string		`json:"turn_id"`\n	ActorID		string		`json:"actor_id"`\n	SessionID	string		`json:"session_id"`\n	Content		string		`json:"content"`\n	Surface		string		`json:"surface,omitempty"`\n	Origin		string		`json:"origin,omitempty"`\n	Status		Status		`json:"status"`\n	Checkpoint	*Checkpoint	`json:"checkpoint,omitempty"`\n	Recovery	*Recovery	`json:"recovery,omitempty"`\n	FailureCode	string		`json:"failure_code,omitempty"`\n	UpdatedAt	time.Time	`json:"updated_at"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.TurnState#ActorID,matrix/neo/internal/runtime/turnstate.TurnState#Checkpoint,matrix/neo/internal/runtime/turnstate.TurnState#Content,matrix/neo/internal/runtime/turnstate.TurnState#FailureCode,matrix/neo/internal/runtime/turnstate.TurnState#Origin,matrix/neo/internal/runtime/turnstate.TurnState#Recovery,matrix/neo/internal/runtime/turnstate.TurnState#SessionID,matrix/neo/internal/runtime/turnstate.TurnState#Status,matrix/neo/internal/runtime/turnstate.TurnState#Surface,matrix/neo/internal/runtime/turnstate.TurnState#TurnID,matrix/neo/internal/runtime/turnstate.TurnState#UpdatedAt,matrix/neo/internal/runtime/turnstate.TurnState.Validate
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState#ActorID kind=field
+  digest=b3:077744908a193e077400f0c49a240a02a5afbb167f4d69562cf7d21e4cd6aa47 file=neo/internal/runtime/turnstate/types.go range=58:58 lang=go exported=true byte_range=1899:1940
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnState
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState#Checkpoint kind=field
+  digest=b3:d233f90063a8bb66a85c3e3a874af68d1f44acbe615ad0d65117e5886006218d file=neo/internal/runtime/turnstate/types.go range=64:64 lang=go exported=true byte_range=2173:2226
+  sig=*turnstate.Checkpoint
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnState
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState#Content kind=field
+  digest=b3:6954f5a8c6612108fd38e3fb7622c283b2156c33ffc946df16f80228a692278d file=neo/internal/runtime/turnstate/types.go range=60:60 lang=go exported=true byte_range=1987:2027
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnState
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState#FailureCode kind=field
+  digest=b3:253af5ddb2f4ab65180416e53cd526428dd1863b47779a74b6d0a1d635363d28 file=neo/internal/runtime/turnstate/types.go range=66:66 lang=go exported=true byte_range=2281:2336
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnState
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState#Origin kind=field
+  digest=b3:13caa4a4700d2ee422e07baa376969fcd360b63e25f87caf524db7fc0f0dc839 file=neo/internal/runtime/turnstate/types.go range=62:62 lang=go exported=true byte_range=2081:2130
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnState
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState#Recovery kind=field
+  digest=b3:39a90d75a904d807164d660b79f77a4df452789e7c81c694ab61ec6b91b1098a file=neo/internal/runtime/turnstate/types.go range=65:65 lang=go exported=true byte_range=2228:2279
+  sig=*turnstate.Recovery
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnState
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState#SessionID kind=field
+  digest=b3:4f62d826011d1965bed380bcab536f0f8dc1993e70b4d6b7f7fbf404f68910a4 file=neo/internal/runtime/turnstate/types.go range=59:59 lang=go exported=true byte_range=1942:1985
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnState
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState#Status kind=field
+  digest=b3:e399c590f2f095256d2910c845b332627460ce7a7ad2804709a2e0db42f30b32 file=neo/internal/runtime/turnstate/types.go range=63:63 lang=go exported=true byte_range=2132:2171
+  sig=turnstate.Status
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnState
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState#Surface kind=field
+  digest=b3:55d9d501097c219b807dc73bf0e1e88103ed051c22ac1e670ad6a45f0901cfea file=neo/internal/runtime/turnstate/types.go range=61:61 lang=go exported=true byte_range=2029:2079
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnState
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState#TurnID kind=field
+  digest=b3:671d5d4a814e16f6d8dccaa4cb2b38eebc65f32dc2653f6bfeef57f06f57898f file=neo/internal/runtime/turnstate/types.go range=57:57 lang=go exported=true byte_range=1857:1897
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnState
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState#UpdatedAt kind=field
+  digest=b3:16efa3942cd3e5266e41954b339bc83a9b534f7d5d7bd1dc4b41089b12c29a47 file=neo/internal/runtime/turnstate/types.go range=67:67 lang=go exported=true byte_range=2338:2381
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnState
+
+NODE id=matrix/neo/internal/runtime/turnstate.TurnState.Validate kind=method
+  digest=b3:69cca4d51b52ac40811129aeab241c8b9bd60eaf5b4822e71011f84feca33e06 file=neo/internal/runtime/turnstate/types.go range=70:90 lang=go exported=true byte_range=2385:2945
+  sig=func (state TurnState) Validate() error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.TurnState
+  ^defines=matrix/neo/internal/runtime/turnstate/types.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.WakeAutomatrix kind=const
+  digest=b3:62455ef1adbd3c013adfab3bea44d7ae9a0100acf53acec52f7a94d7b12d6839 file=neo/internal/runtime/turnstate/scheduled.go range=23:23 lang=go exported=true byte_range=416:456
+  sig=turnstate.WakeKind
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/scheduled.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.WakeHeartbeat kind=const
+  digest=b3:6de22cc7a610108ae32f053f0d41b5d85010d9092c85b370e283d716217693fc file=neo/internal/runtime/turnstate/scheduled.go range=22:22 lang=go exported=true byte_range=375:414
+  sig=turnstate.WakeKind
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/scheduled.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.WakeKind kind=type
+  digest=b3:7e0660371394665a6d608877b396dbaef5da8710b061e4b1ef164d8c72e51fdf file=neo/internal/runtime/turnstate/scheduled.go range=19:19 lang=go exported=true byte_range=344:364
+  sig=type WakeKind string
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/scheduled.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.WakeMorningBrief kind=const
+  digest=b3:10d7a5163eeec38b592a00696b8343598ae6e3f32b2006cace009f4782f105c6 file=neo/internal/runtime/turnstate/scheduled.go range=24:24 lang=go exported=true byte_range=458:501
+  sig=turnstate.WakeKind
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/scheduled.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.applyMigrations kind=func
+  digest=b3:4bd7402a17b80dbfa0440732947907a640e78489218a5d871873259a44e85daa file=neo/internal/runtime/turnstate/migrations.go range=28:61 lang=go exported=false byte_range=436:1422
+  sig=func applyMigrations(ctx context.Context, db *sql.DB, now time.Time) error
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/migrations.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.effectResultsEqual kind=func
+  digest=b3:e4db8e4bf7cdf60b3e2a7028bb30a0c48286928bcf0899575d90bc9c0b6f571a file=neo/internal/runtime/turnstate/effects.go range=243:248 lang=go exported=false byte_range=7248:7489
+  sig=func effectResultsEqual(left EffectResult, right EffectResult) bool
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/effects.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.errorsIsNoRows kind=func
+  digest=b3:fde336f3bde4a6ae8370284f047cd0bdf03bec284db3e065f80f5c88f361e079 file=neo/internal/runtime/turnstate/scheduled.go range=238:240 lang=go exported=false byte_range=6807:6875
+  sig=func errorsIsNoRows(err error) bool
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/scheduled.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.isSQLiteBusy kind=func
+  digest=b3:b0acaa89ab6c84d6cc1619566da23471ebe4da6856f5fef192c73970d7a16389 file=neo/internal/runtime/turnstate/store.go range=571:578 lang=go exported=false byte_range=14629:14823
+  sig=func isSQLiteBusy(err error) bool
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.loadMigrations kind=func
+  digest=b3:a77198520595efe934d157eca45b31705931bfc89656131e479c10a870798a3c file=neo/internal/runtime/turnstate/migrations.go range=63:90 lang=go exported=false byte_range=1424:2429
+  sig=func loadMigrations() ([]migration, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/migrations.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.maxBusyRetries kind=const
+  digest=b3:bc2d79b11975be6e23aa3cfbadb72623f43fb6e77f26cb2ae1aa278139dab57e file=neo/internal/runtime/turnstate/store.go range=26:26 lang=go exported=false byte_range=457:480
+  sig=untyped int
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.migration kind=type
+  digest=b3:16c67b3eb245de8bbefed80aebc291c55ccdd67902dcae0804691a6a3fbf3ba7 file=neo/internal/runtime/turnstate/migrations.go range=22:26 lang=go exported=false byte_range=364:434
+  sig=type migration struct {\n	version	int\n	name	string\n	sql	string\n}
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.migration#name,matrix/neo/internal/runtime/turnstate.migration#sql,matrix/neo/internal/runtime/turnstate.migration#version
+  ^defines=matrix/neo/internal/runtime/turnstate/migrations.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.migration#name kind=field
+  digest=b3:32c874ad26049f94833214403a5a074cd7e4ec02d654cfe3b856d692fef22684 file=neo/internal/runtime/turnstate/migrations.go range=24:24 lang=go exported=false byte_range=402:416
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.migration
+
+NODE id=matrix/neo/internal/runtime/turnstate.migration#sql kind=field
+  digest=b3:ce66c81c6fd4f848906753fd9d97eba9915158a8a13270c72b3238721a37c3fa file=neo/internal/runtime/turnstate/migrations.go range=25:25 lang=go exported=false byte_range=418:432
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.migration
+
+NODE id=matrix/neo/internal/runtime/turnstate.migration#version kind=field
+  digest=b3:59a0ce50f475ed487b0b1fafc7fba3760293b71df9db3a424257c334ca36c707 file=neo/internal/runtime/turnstate/migrations.go range=23:23 lang=go exported=false byte_range=389:400
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.migration
+
+NODE id=matrix/neo/internal/runtime/turnstate.migrationApplied kind=func
+  digest=b3:02a3372fe72f9f8c1cfbe8ab2edf28024e6324c273798f17bf9181ba9ec8de60 file=neo/internal/runtime/turnstate/migrations.go range=92:110 lang=go exported=false byte_range=2431:3065
+  sig=func migrationApplied(ctx context.Context, db *sql.DB, version int) (bool, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/migrations.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.migrationFiles kind=var
+  digest=b3:6e280ccd7bc4c706c4a76d7af59fe0bb7bda90224e1608252eeedae359c16df1 file=neo/internal/runtime/turnstate/migrations.go range=19:20 lang=go exported=false byte_range=307:362
+  sig=embed.FS
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/migrations.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.runWithBusyRetry kind=func
+  digest=b3:6bf7507dbe3de928154fadaa5316800e10a33784ba670496ee012b833445b327 file=neo/internal/runtime/turnstate/store.go range=543:569 lang=go exported=false byte_range=14060:14627
+  sig=func runWithBusyRetry(\n	ctx context.Context,\n	db *sql.DB,\n	run func(context.Context, *sql.DB) error,\n) error
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.sqliteDSN kind=func
+  digest=b3:924994161690a3b153c612a82ffe31ceab149692f9c82ac3857c6470fc399a32 file=neo/internal/runtime/turnstate/store.go range=109:127 lang=go exported=false byte_range=2603:3106
+  sig=func sqliteDSN(path string) (string, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.writeRequest kind=type
+  digest=b3:9939610ef33fe171e1837c9ccc6353746f6cb7903054cece0e221758e7503e13 file=neo/internal/runtime/turnstate/store.go range=31:35 lang=go exported=false byte_range=539:655
+  sig=type writeRequest struct {\n	ctx	context.Context\n	run	func(context.Context, *sql.DB) error\n	result	chan error\n}
+EDGES
+  contains=matrix/neo/internal/runtime/turnstate.writeRequest#ctx,matrix/neo/internal/runtime/turnstate.writeRequest#result,matrix/neo/internal/runtime/turnstate.writeRequest#run
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.writeRequest#ctx kind=field
+  digest=b3:22a4642b1816e857a5cef1bc3be43362580cbf12f1d5e01536d1e283fde31ff1 file=neo/internal/runtime/turnstate/store.go range=32:32 lang=go exported=false byte_range=567:589
+  sig=context.Context
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.writeRequest
+
+NODE id=matrix/neo/internal/runtime/turnstate.writeRequest#result kind=field
+  digest=b3:3596ddb1bc81d1adb20a7733fd9f77f6ce9aedfc313956bc8742312b7af2632d file=neo/internal/runtime/turnstate/store.go range=34:34 lang=go exported=false byte_range=636:653
+  sig=chan error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.writeRequest
+
+NODE id=matrix/neo/internal/runtime/turnstate.writeRequest#run kind=field
+  digest=b3:8e3c3861b2fc8f072658464fdbe7ff32ea0e3e92bf7124de78cb865b9120b71c file=neo/internal/runtime/turnstate/store.go range=33:33 lang=go exported=false byte_range=591:634
+  sig=func(context.Context, *sql.DB) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/turnstate.writeRequest
+
+NODE id=matrix/neo/internal/runtime/turnstate.writerQueueCapacity kind=const
+  digest=b3:9363dc3c6d2c9954ebd83ae419f31df4a85b4a36d1f5398c70371ad614db5fdd file=neo/internal/runtime/turnstate/store.go range=25:25 lang=go exported=false byte_range=431:455
+  sig=untyped int
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate.zero kind=func
+  digest=b3:10cd15be87715ae3a05a7a851735fabd93ec7cc59d43c2785f0c47264cfca9b8 file=neo/internal/runtime/turnstate/store.go range=580:584 lang=go exported=false byte_range=14825:14908
+  sig=func zero(content []byte)
+EDGES
+  ^defines=matrix/neo/internal/runtime/turnstate/store.go
+
+NODE id=matrix/neo/internal/runtime/turnstate/effects.go kind=file
+  digest=b3:84c7127375de75c6bbdb195e47df76f50de08320649c0a21d7c4257f6f5a545f file=neo/internal/runtime/turnstate/effects.go range=1:248 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/turnstate.EffectCompleted,matrix/neo/internal/runtime/turnstate.EffectRecord,matrix/neo/internal/runtime/turnstate.EffectResult,matrix/neo/internal/runtime/turnstate.EffectStarted,matrix/neo/internal/runtime/turnstate.EffectStatus,matrix/neo/internal/runtime/turnstate.Store.BeginEffect,matrix/neo/internal/runtime/turnstate.Store.CompleteEffect,matrix/neo/internal/runtime/turnstate.Store.LoadEffect,matrix/neo/internal/runtime/turnstate.Store.openEffect,matrix/neo/internal/runtime/turnstate.Store.sealEffect,matrix/neo/internal/runtime/turnstate.effectResultsEqual
+  ^contains=matrix/neo/internal/runtime/turnstate
+
+NODE id=matrix/neo/internal/runtime/turnstate/migrations.go kind=file
+  digest=b3:a48042aac8977c1ea1540c88db3e7bec5f0c0b37ac7ff71dd0802fad7631a71c file=neo/internal/runtime/turnstate/migrations.go range=1:110 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/turnstate.applyMigrations,matrix/neo/internal/runtime/turnstate.loadMigrations,matrix/neo/internal/runtime/turnstate.migration,matrix/neo/internal/runtime/turnstate.migrationApplied,matrix/neo/internal/runtime/turnstate.migrationFiles
+  ^contains=matrix/neo/internal/runtime/turnstate
+
+NODE id=matrix/neo/internal/runtime/turnstate/scheduled.go kind=file
+  digest=b3:ce630d536ef6cb4c15f6c162f21209b12ae84fe66d2d652d99634a300ae1a37f file=neo/internal/runtime/turnstate/scheduled.go range=1:240 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/turnstate.ClassifyWake,matrix/neo/internal/runtime/turnstate.OccurrenceID,matrix/neo/internal/runtime/turnstate.ScheduledWake,matrix/neo/internal/runtime/turnstate.Store.CreateScheduledTurn,matrix/neo/internal/runtime/turnstate.Store.ListTurnMessages,matrix/neo/internal/runtime/turnstate.TurnMessage,matrix/neo/internal/runtime/turnstate.WakeAutomatrix,matrix/neo/internal/runtime/turnstate.WakeHeartbeat,matrix/neo/internal/runtime/turnstate.WakeKind,matrix/neo/internal/runtime/turnstate.WakeMorningBrief,matrix/neo/internal/runtime/turnstate.errorsIsNoRows
+  ^contains=matrix/neo/internal/runtime/turnstate
+
+NODE id=matrix/neo/internal/runtime/turnstate/store.go kind=file
+  digest=b3:349bcd91c06e5d92eb32fc57363183fe17cf9456795a2dc983e3aac6601e8240 file=neo/internal/runtime/turnstate/store.go range=1:584 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/turnstate.DefaultPath,matrix/neo/internal/runtime/turnstate.ErrClosed,matrix/neo/internal/runtime/turnstate.Open,matrix/neo/internal/runtime/turnstate.Store,matrix/neo/internal/runtime/turnstate.Store.Close,matrix/neo/internal/runtime/turnstate.Store.CreateTurnState,matrix/neo/internal/runtime/turnstate.Store.LoadCognitionState,matrix/neo/internal/runtime/turnstate.Store.LoadTurnState,matrix/neo/internal/runtime/turnstate.Store.RecoverableTurnStates,matrix/neo/internal/runtime/turnstate.Store.SaveCognitionState,matrix/neo/internal/runtime/turnstate.Store.SaveTurnCheckpoint,matrix/neo/internal/runtime/turnstate.Store.SchemaVersion,matrix/neo/internal/runtime/turnstate.Store.SetTurnFailure,matrix/neo/internal/runtime/turnstate.Store.SetTurnRecovery,matrix/neo/internal/runtime/turnstate.Store.SetTurnStatus,matrix/neo/internal/runtime/turnstate.Store.checkOpen,matrix/neo/internal/runtime/turnstate.Store.open,matrix/neo/internal/runtime/turnstate.Store.openTurn,matrix/neo/internal/runtime/turnstate.Store.seal,matrix/neo/internal/runtime/turnstate.Store.sealTurn,matrix/neo/internal/runtime/turnstate.Store.submit,matrix/neo/internal/runtime/turnstate.Store.updateTurn,matrix/neo/internal/runtime/turnstate.Store.writer,matrix/neo/internal/runtime/turnstate.isSQLiteBusy,matrix/neo/internal/runtime/turnstate.maxBusyRetries,matrix/neo/internal/runtime/turnstate.runWithBusyRetry,matrix/neo/internal/runtime/turnstate.sqliteDSN,matrix/neo/internal/runtime/turnstate.writeRequest,matrix/neo/internal/runtime/turnstate.writerQueueCapacity,matrix/neo/internal/runtime/turnstate.zero
+  ^contains=matrix/neo/internal/runtime/turnstate
+
+NODE id=matrix/neo/internal/runtime/turnstate/supervisor.go kind=file
+  digest=b3:9e342fc7338a35425757703c35fd97152e4d9167395a39eed9766f8df8900160 file=neo/internal/runtime/turnstate/supervisor.go range=1:214 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/turnstate.Store.ListAllSupervisorRuns,matrix/neo/internal/runtime/turnstate.Store.ListSupervisorRuns,matrix/neo/internal/runtime/turnstate.Store.LoadSupervisorRun,matrix/neo/internal/runtime/turnstate.Store.SaveSupervisorRun,matrix/neo/internal/runtime/turnstate.SupervisorRecord
+  ^contains=matrix/neo/internal/runtime/turnstate
+
+NODE id=matrix/neo/internal/runtime/turnstate/types.go kind=file
+  digest=b3:746987b34d611da674946507d45dd66d694d60d7cae5be0155b6d9f118de31e4 file=neo/internal/runtime/turnstate/types.go range=1:155 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/turnstate.Checkpoint,matrix/neo/internal/runtime/turnstate.Checkpoint.Validate,matrix/neo/internal/runtime/turnstate.Checkpoint.ValidateForResume,matrix/neo/internal/runtime/turnstate.PendingCall,matrix/neo/internal/runtime/turnstate.PendingCall.Validate,matrix/neo/internal/runtime/turnstate.Recovery,matrix/neo/internal/runtime/turnstate.Recovery.Validate,matrix/neo/internal/runtime/turnstate.Status,matrix/neo/internal/runtime/turnstate.Status.Valid,matrix/neo/internal/runtime/turnstate.StatusCancelled,matrix/neo/internal/runtime/turnstate.StatusCompleted,matrix/neo/internal/runtime/turnstate.StatusFailed,matrix/neo/internal/runtime/turnstate.StatusIncomplete,matrix/neo/internal/runtime/turnstate.StatusInterrupted,matrix/neo/internal/runtime/turnstate.StatusRecovering,matrix/neo/internal/runtime/turnstate.StatusRunning,matrix/neo/internal/runtime/turnstate.TurnState,matrix/neo/internal/runtime/turnstate.TurnState.Validate
+  ^contains=matrix/neo/internal/runtime/turnstate

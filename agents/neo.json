@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/neo",
-  "description": "Neo front-agent manifest. Human-facing systems are reached through a stable browser, machine-mail, filesystem, and shell substrate. Open-web LOOKUP defaults to the web-search lane (Tavily-backed web_search/web_news + fetch: API search and page reads with no captchas or bot walls — research never stalls on a challenge page); the browser is for site-specific interactive workflows or when the user asks for it; product procedures are skills rather than dedicated integration schemas — except the essential paxeer-net chain/wallet lane (embedded-wallet custody network-side, writes gated by PaxeerSpendPolicy) and the media generation lane (image/video/speech through the media bridge, xAI Grok Imagine primary), neither of which is browser-replaceable; both stay direct tool surfaces. The desktop lane drives a disposable Railway-sandbox desktop (DOJO) over bytebotd via the daemon's /dojo proxy; it is reached only while a desktop session is live, is grounded by the desktop_look (omni vision) and desktop_a11y (AT-SPI) synthetic tools, and — being a human-shared surface that can log in and spend — is excluded from every autonomous (Automatrix/sub-agent) surface. Autonomous surfaces still structurally exclude value-moving tools and the desktop lane. Machine-mail credentials are injected from the encrypted per-user settings vault or inherited from MACHINEMAIL_API_KEY. The exec server's service registry is isolated to /data/neo/services through MATRIX_EXEC_STATE_DIR.",
+  "description": "Neo front-agent manifest. Human-facing systems are reached through a stable browser, machine-mail, filesystem, and shell substrate. Open-web LOOKUP defaults to the web-search lane (Tavily-backed web_search/web_news + fetch: API search and page reads with no captchas or bot walls \u2014 research never stalls on a challenge page); the browser is for site-specific interactive workflows or when the user asks for it; product procedures are skills rather than dedicated integration schemas \u2014 except the essential paxeer-net chain/wallet lane (embedded-wallet custody network-side, writes gated by PaxeerSpendPolicy) and the media generation lane (image/video/speech through the media bridge, xAI Grok Imagine primary), neither of which is browser-replaceable; both stay direct tool surfaces. The desktop lane drives a disposable Railway-sandbox desktop (DOJO) over bytebotd via the daemon's /dojo proxy; it is reached only while a desktop session is live, is grounded by the desktop_look (omni vision) and desktop_a11y (AT-SPI) synthetic tools, and \u2014 being a human-shared surface that can log in and spend \u2014 is excluded from every autonomous (Automatrix/sub-agent) surface. Autonomous surfaces still structurally exclude value-moving tools and the desktop lane. Machine-mail credentials are injected from the encrypted per-user settings vault or inherited from MACHINEMAIL_API_KEY. The exec server's service registry is isolated to /data/neo/services through MATRIX_EXEC_STATE_DIR.",
   "allowed_side_effects": [
     "read",
     "write",
@@ -264,9 +264,100 @@
         },
         {
           "name": "web_news",
-          "description": "Search recent news for query-relevant ranked articles (title, url, snippet, published) — the default for news lookups, no captchas. Discovery only: read a selected URL with fetch before making a factual claim. Read-only. args: query (required), max_results?",
+          "description": "Search recent news for query-relevant ranked articles (title, url, snippet, published) \u2014 the default for news lookups, no captchas. Discovery only: read a selected URL with fetch before making a factual claim. Read-only. args: query (required), max_results?",
           "side_effect_class": "network",
           "timeout_ms": 20000
+        }
+      ]
+    },
+    {
+      "alias": "finance",
+      "transport": "stdio",
+      "command": "node",
+      "args": [
+        "/root/matrix/tools/finance/finance.mjs"
+      ],
+      "env": [],
+      "package_digest": "sha256:f1nance0000000000000000000000000000000000000000000000000000000000",
+      "version": "0.1.0",
+      "tools": [
+        {
+          "name": "market_quote",
+          "description": "Live price for one instrument \u2014 stocks, indexes (^GSPC), crypto (BTCUSD), forex (EURUSD) and commodities (GCUSD) all work. Returns price, change, day/year range, volume, market cap and the extended-hours quote when there is one, with the as-of time and the data source named. Prefer this over driving a browser to a finance site. Read-only. args: symbol (required)",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_quotes",
+          "description": "Live prices for several instruments in ONE call \u2014 use this instead of repeating market_quote when comparing or watching a list. Read-only. args: symbols (required, comma-separated)",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_series",
+          "description": "Price history for a symbol over a range, summarised for reading: open/close/high/low, the change over the range, and a sampled path of closes. Resolution is chosen from the range. Read-only. args: symbol (required), range? (1D|5D|1M|6M|YTD|1Y|5Y|MAX, default 1M)",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_search",
+          "description": "Find a ticker by company or instrument name when you do not already know the symbol. Read-only. args: query (required), limit?",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_profile",
+          "description": "Company reference data for a symbol: name, exchange, sector, industry, country, CEO, employees, IPO date, market cap, beta and the business description. Read-only. args: symbol (required)",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_movers",
+          "description": "Today's ranked US market lists: biggest gainers, biggest losers, or most actively traded. Read-only. args: kind? (gainers|losers|active, default gainers)",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_sectors",
+          "description": "Sector performance for a session \u2014 the average change per sector, for reading how the market moved beneath the index. Read-only. args: date? (YYYY-MM-DD, default the latest session), exchange?",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_news",
+          "description": "Market news with source and publication time \u2014 the whole market, the stock tape, company press releases, or the stream for specific symbols. Some stories carry a sentiment score. Read-only. args: scope? (market|stocks|press|symbols), symbols? (required when scope=symbols), limit?",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_fundamentals",
+          "description": "Trailing-twelve-month fundamentals and analyst consensus for a symbol: market cap, P/E, price-to-book, price-to-sales, dividend yield, EPS, margins, leverage, plus the analyst grade split and price targets. Read-only. args: symbol (required)",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_earnings",
+          "description": "Reported and scheduled earnings for a symbol: date, actual and estimated EPS and revenue. Read-only. args: symbol (required), limit?",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_dividends",
+          "description": "Dividend history for a symbol: ex-date, payment date, amount, yield and frequency. Read-only. args: symbol (required), limit?",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_status",
+          "description": "Whether markets are open or closed right now, with local session hours by region or exchange. Check this before describing a price as live. Read-only. args: exchange? (e.g. NASDAQ; omit for the global board)",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_macro",
+          "description": "An economic series by name \u2014 GDP, CPI, inflationRate, unemploymentRate, federalFunds, retailSales, consumerSentiment and the other published indicators. Read-only. args: name (required), from?, to?",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
         }
       ]
     },
@@ -283,7 +374,7 @@
       "tools": [
         {
           "name": "fetch",
-          "description": "Fetch a URL and return its content as Markdown — the default way to READ a page found via web_search (no captchas, no browser session). Use the browser instead only when the page needs interaction (login, forms, dynamic apps).",
+          "description": "Fetch a URL and return its content as Markdown \u2014 the default way to READ a page found via web_search (no captchas, no browser session). Use the browser instead only when the page needs interaction (login, forms, dynamic apps).",
           "side_effect_class": "network",
           "timeout_ms": 30000
         }
@@ -436,7 +527,7 @@
       "tools": [
         {
           "name": "alarm_set",
-          "description": "Schedule a future wake for yourself. kind='once' with delay_seconds (relative) or fire_at (absolute RFC3339); kind='cron' with cron_expr (+ optional IANA timezone) for recurring. wake_message is REQUIRED — the contextful turn delivered to your future self on fire. Optional conversation_id resumes a thread; payload is opaque state echoed back. Durable: survives restarts.",
+          "description": "Schedule a future wake for yourself. kind='once' with delay_seconds (relative) or fire_at (absolute RFC3339); kind='cron' with cron_expr (+ optional IANA timezone) for recurring. wake_message is REQUIRED \u2014 the contextful turn delivered to your future self on fire. Optional conversation_id resumes a thread; payload is opaque state echoed back. Durable: survives restarts.",
           "side_effect_class": "write",
           "timeout_ms": 30000
         },
@@ -715,7 +806,7 @@
         },
         {
           "name": "desktop_click_mouse",
-          "description": "Click a mouse button at an absolute screen pixel on the disposable desktop. A logged-in desktop click can submit forms and confirm purchases — an external, irreversible action.",
+          "description": "Click a mouse button at an absolute screen pixel on the disposable desktop. A logged-in desktop click can submit forms and confirm purchases \u2014 an external, irreversible action.",
           "side_effect_class": "network",
           "timeout_ms": 60000
         },

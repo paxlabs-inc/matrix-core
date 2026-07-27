@@ -934,6 +934,7 @@ var traceWorkspaceTypes = map[string]bool{
 	"tool.search":             true,
 	"tool.media":              true,
 	"tool.artifact":           true,
+	"tool.finance":            true,
 	"tool.todo":               true,
 	"memory.activation":       true,
 	"construct.surface":       true,
@@ -1095,6 +1096,19 @@ func (e *Engine) surfaceTool(r *run, ev agent.ToolEvent) {
 
 	if ev.Phase != agent.ToolEnd {
 		return
+	}
+	// Finance tools return a compact, structured market payload. Publish it as
+	// its own durable screen event so Neo's Computer can render the same quote,
+	// chart and list components as /finance instead of a generic action chip.
+	if payload, ok := financeResult(ev); ok {
+		e.broker.publish(r.id, "tool.finance", "neo", map[string]interface{}{
+			"intent_id":       r.id,
+			"conversation_id": r.convID,
+			"id":              ev.ID,
+			"tool":            stripAlias(ev.Name),
+			"ok":              !ev.IsErr,
+			"payload":         payload,
+		})
 	}
 	// On completion, web search/news also emit rich source+snippet cards.
 	if isSearchTool(ev.Name) {

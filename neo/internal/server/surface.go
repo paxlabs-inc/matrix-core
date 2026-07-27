@@ -4,6 +4,7 @@
 package server
 
 import (
+	"encoding/json"
 	"path"
 	"strings"
 
@@ -78,6 +79,10 @@ func describeStep(ev agent.ToolEvent) map[string]interface{} {
 		step["surface"] = "media"
 		step["title"] = mediaTitle(bare)
 
+	case hasAlias(ev.Name, "finance"):
+		step["surface"] = "action"
+		step["title"] = financeTitle(bare)
+
 	case hasAlias(ev.Name, "git"):
 		step["surface"] = "terminal"
 		step["command"] = "git " + strings.TrimPrefix(strings.ReplaceAll(bare, "_", " "), "git ")
@@ -91,6 +96,44 @@ func describeStep(ev agent.ToolEvent) map[string]interface{} {
 		step["title"] = "Using " + humanizeTool(ev.Name)
 	}
 	return step
+}
+
+func financeTitle(tool string) string {
+	switch tool {
+	case "market_quote", "market_quotes":
+		return "Checking market prices"
+	case "market_series":
+		return "Reading a price chart"
+	case "market_search":
+		return "Searching markets"
+	case "market_profile", "market_fundamentals":
+		return "Reading company data"
+	case "market_movers", "market_sectors", "market_status":
+		return "Reading the market"
+	case "market_news":
+		return "Reading market news"
+	case "market_earnings", "market_dividends":
+		return "Reading company events"
+	case "market_macro":
+		return "Reading economic data"
+	default:
+		return "Reading market data"
+	}
+}
+
+func financeResult(ev agent.ToolEvent) (map[string]interface{}, bool) {
+	if !hasAlias(ev.Name, "finance") || strings.TrimSpace(ev.Result) == "" {
+		return nil, false
+	}
+	var payload map[string]interface{}
+	if err := json.Unmarshal([]byte(ev.Result), &payload); err != nil || len(payload) == 0 {
+		return nil, false
+	}
+	tool, _ := payload["tool"].(string)
+	if tool == "" || !strings.HasPrefix(tool, "market_") {
+		return nil, false
+	}
+	return payload, true
 }
 
 // fillBrowser maps a browser_* tool onto the browser surface: the action verb,

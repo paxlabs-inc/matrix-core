@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:b0ed2224e61918e847ac3288dd4d83f0cfa30864579a01464e3f1e4c988637e8
+# GENERATED gen=codegraph do-not-edit merkle=b3:8087349d214ea6556bd1e327d9b1cfe401192e02e5c71997ca02544fd4c21fca
 
 NODE id=matrix/neo/internal/llm kind=package
-  digest=b3:1e3fd963a28f2893412b9e4d61c08d5aba9c18d726d29674e746bd811218f998 file=neo/internal/llm range=0:0 lang=go exported=true
+  digest=b3:4fe30031e645aa2e3f5c6e821c91d41d5a487e8670d9c9d277b1a5f8f0d2dd8a file=neo/internal/llm range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/llm/client.go,matrix/neo/internal/llm/message.go,matrix/neo/internal/llm/mimo.go,matrix/neo/internal/llm/stream_idle.go
   ^contains=mod:matrix/neo
@@ -908,7 +908,7 @@ EDGES
   ^defines=matrix/neo/internal/llm/stream_idle.go
 
 NODE id=matrix/neo/internal/llm.isMimoFamily kind=func
-  digest=b3:f88e94b1103c6c43786562f3191325f87bd0b74b71724ce6ef6f99fd9785d1e6 file=neo/internal/llm/mimo.go range=29:44 lang=go exported=false byte_range=1197:2016
+  digest=b3:f88e94b1103c6c43786562f3191325f87bd0b74b71724ce6ef6f99fd9785d1e6 file=neo/internal/llm/mimo.go range=28:43 lang=go exported=false byte_range=1225:2044
   sig=func isMimoFamily(model string) bool
   doc=isMimoFamily reports whether the model is any MiMo v2.5 variant — the text\nplanner (mimo-v2.5-pro, matched by mcllm.IsXiaomiModel) OR the omni vision id\n(mimo-v2.5, used only for DOJO desktop_look grounding). Both take Xiaomi's\nthinking control and the max_completion_tokens field, so the omni grounder's\nvisible JSON is never starved by a reasoning burst (wave-1 empty-content\ngotcha). It deliberately does NOT feed XiaomiModelID (which would rewrite the\nomni id to the planner id) or the multi-turn reasoning_content replay flag\n(omni is a stateless single-turn call).
 EDGES
@@ -956,66 +956,10 @@ NODE id=matrix/neo/internal/llm.kimiSectionEnd kind=const
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
-NODE id=matrix/neo/internal/llm.mimoFunctionClose kind=const
-  digest=b3:5012ba3022a85a7fb398107448943214bed4f8c4de28cf0d13846688ff2a9d1a file=neo/internal/llm/mimo.go range=46:55 lang=go exported=false byte_range=2018:2517
-  sig=untyped string
-  doc=The qwen3_xml tag grammar MiMo uses when the server does not parse tool calls:\na `<tool_call>` wrapper, a `<function=NAME>` header, then one\n`<parameter=key>value` span per argument. Closing tags (`</parameter>`,\n`</function>`, `</tool_call>`) are frequently omitted or lost to truncation,\nso the parser treats every closer as optional.
-EDGES
-  ^defines=matrix/neo/internal/llm/mimo.go
-
-NODE id=matrix/neo/internal/llm.mimoFunctionOpen kind=const
-  digest=b3:91f1e0d0cc5093a58e1c872bbe3b21d9b2dcd45ed5dcacaa9e55c53f3345318f file=neo/internal/llm/mimo.go range=46:54 lang=go exported=false byte_range=2018:2482
-  sig=untyped string
-  doc=The qwen3_xml tag grammar MiMo uses when the server does not parse tool calls:\na `<tool_call>` wrapper, a `<function=NAME>` header, then one\n`<parameter=key>value` span per argument. Closing tags (`</parameter>`,\n`</function>`, `</tool_call>`) are frequently omitted or lost to truncation,\nso the parser treats every closer as optional.
-EDGES
-  ^defines=matrix/neo/internal/llm/mimo.go
-
-NODE id=matrix/neo/internal/llm.mimoParamArgs kind=func
-  digest=b3:7f0c878cb4e0baba876f91eee29c2afb7f20c63ab0610e9b3460b8daf9f5b809 file=neo/internal/llm/mimo.go range=130:172 lang=go exported=false byte_range=4757:5944
-  sig=func mimoParamArgs(body string) string
-  doc=mimoParamArgs parses the `<parameter=key>value` spans of one call body into a\nJSON-object argument string. Values are trimmed raw strings; a value that is\nitself standalone JSON (object/array/number/bool/null) is kept typed so\nnumeric and structured arguments survive the round trip.
-EDGES
-  ^defines=matrix/neo/internal/llm/mimo.go
-
-NODE id=matrix/neo/internal/llm.mimoParamClose kind=const
-  digest=b3:eb942c1fdbae09dd01e6f4c311a48aa511d8ac1a2883e921ab042c4c36b123a6 file=neo/internal/llm/mimo.go range=46:57 lang=go exported=false byte_range=2018:2588
-  sig=untyped string
-  doc=The qwen3_xml tag grammar MiMo uses when the server does not parse tool calls:\na `<tool_call>` wrapper, a `<function=NAME>` header, then one\n`<parameter=key>value` span per argument. Closing tags (`</parameter>`,\n`</function>`, `</tool_call>`) are frequently omitted or lost to truncation,\nso the parser treats every closer as optional.
-EDGES
-  ^defines=matrix/neo/internal/llm/mimo.go
-
-NODE id=matrix/neo/internal/llm.mimoParamOpen kind=const
-  digest=b3:b8cfa87c8d414b3eee5426caba2453732e03eeb7065cc6b203de629e966b9d24 file=neo/internal/llm/mimo.go range=46:56 lang=go exported=false byte_range=2018:2552
-  sig=untyped string
-  doc=The qwen3_xml tag grammar MiMo uses when the server does not parse tool calls:\na `<tool_call>` wrapper, a `<function=NAME>` header, then one\n`<parameter=key>value` span per argument. Closing tags (`</parameter>`,\n`</function>`, `</tool_call>`) are frequently omitted or lost to truncation,\nso the parser treats every closer as optional.
-EDGES
-  ^defines=matrix/neo/internal/llm/mimo.go
-
-NODE id=matrix/neo/internal/llm.mimoParamValue kind=func
-  digest=b3:b930dd2da4940d697db3817081fd772f2a368b4a45a798c6fb26a3847ebad51b file=neo/internal/llm/mimo.go range=174:184 lang=go exported=false byte_range=5946:6301
-  sig=func mimoParamValue(raw string) interface{}
-  doc=mimoParamValue keeps a parameter value as its raw string unless the whole\nvalue parses as standalone JSON, in which case the typed value is preserved.
-EDGES
-  ^defines=matrix/neo/internal/llm/mimo.go
-
 NODE id=matrix/neo/internal/llm.mimoReasoningContent kind=func
-  digest=b3:ba473a26a4142bd2149c25278b9c64c87b684e935f032bfe01fe2eadf65d7448 file=neo/internal/llm/mimo.go range=186:205 lang=go exported=false byte_range=6303:7407
+  digest=b3:ba473a26a4142bd2149c25278b9c64c87b684e935f032bfe01fe2eadf65d7448 file=neo/internal/llm/mimo.go range=70:89 lang=go exported=false byte_range=2689:3793
   sig=func mimoReasoningContent(role, reasoning string) *string
   doc=mimoReasoningContent is the request-side half of the MiMo reasoning adapter\n(the `--reasoning-parser mimo` counterpart). MiMo uses DeepSeek-compatible\nthinking: prior assistant reasoning_content must be replayed through a\nmulti-turn tool conversation, and on an assistant turn that is part of a\ntool-call chain the field must be present VERBATIM — including the empty\nstring "" — or a strict deserializer 400s ("reasoning_content" required) and\nthe model loses the thread it was mid-thought on.\n\nSo for a MiMo request every assistant message carries reasoning_content\n(a non-nil pointer, possibly to ""); user / tool / system messages never do.\nThe pointer lets an explicit "" ride the wire that `omitempty` would drop.\nA resumed conversation whose durable seed lost the reasoning (it is never\npersisted) degrades gracefully: the assistant turn ships reasoning_content:""\nwhich MiMo accepts, rather than an absent field it may reject.
-EDGES
-  ^defines=matrix/neo/internal/llm/mimo.go
-
-NODE id=matrix/neo/internal/llm.mimoToolCallClose kind=const
-  digest=b3:bc21f0f50cac25a9db9bc161fc15fcf6316c1c768aef3ba4e09812713565f42e file=neo/internal/llm/mimo.go range=46:53 lang=go exported=false byte_range=2018:2448
-  sig=untyped string
-  doc=The qwen3_xml tag grammar MiMo uses when the server does not parse tool calls:\na `<tool_call>` wrapper, a `<function=NAME>` header, then one\n`<parameter=key>value` span per argument. Closing tags (`</parameter>`,\n`</function>`, `</tool_call>`) are frequently omitted or lost to truncation,\nso the parser treats every closer as optional.
-EDGES
-  ^defines=matrix/neo/internal/llm/mimo.go
-
-NODE id=matrix/neo/internal/llm.mimoToolCallOpen kind=const
-  digest=b3:8b818d4c209cf9bd7b5a69623969d16b51d12499538e55a770b57dd2b60cd40e file=neo/internal/llm/mimo.go range=46:52 lang=go exported=false byte_range=2018:2412
-  sig=untyped string
-  doc=The qwen3_xml tag grammar MiMo uses when the server does not parse tool calls:\na `<tool_call>` wrapper, a `<function=NAME>` header, then one\n`<parameter=key>value` span per argument. Closing tags (`</parameter>`,\n`</function>`, `</tool_call>`) are frequently omitted or lost to truncation,\nso the parser treats every closer as optional.
 EDGES
   ^defines=matrix/neo/internal/llm/mimo.go
 
@@ -1027,9 +971,8 @@ EDGES
   ^defines=matrix/neo/internal/llm/stream_idle.go
 
 NODE id=matrix/neo/internal/llm.parseMimoToolCalls kind=func
-  digest=b3:12cd6b3ad2fa964edf5c0651d39a56720e147524e797aa8f22b89e730d415051 file=neo/internal/llm/mimo.go range=60:128 lang=go exported=false byte_range=2592:4755
+  digest=b3:d13ac965c67e61a119f069a4d9d5d0ecac8ff640e3c154a6b82ad2d47cbba6f5 file=neo/internal/llm/mimo.go range=45:68 lang=go exported=false byte_range=2046:2687
   sig=func parseMimoToolCalls(content string) (string, []ToolCall)
-  doc=parseMimoToolCalls is the native MiMo (qwen3_xml) tool-call parser: it pulls\ntag-grammar tool calls out of content and returns the content with those\nspans removed plus the structured calls. Parameter values run to the next\nparameter/closer (or end of content on truncation); each value is kept as a\nraw string unless it parses as standalone JSON. Returns (content, nil) when\nthere is nothing to extract, so a server-parsed response is never disturbed.
 EDGES
   ^defines=matrix/neo/internal/llm/mimo.go
 
@@ -1365,9 +1308,9 @@ EDGES
   ^contains=matrix/neo/internal/llm
 
 NODE id=matrix/neo/internal/llm/mimo.go kind=file
-  digest=b3:d1f64662025fa7888326d4245de7cc6df30264a1bbffc17891383a2b7fac8a18 file=neo/internal/llm/mimo.go range=1:205 lang=go exported=true
+  digest=b3:420206c31ddc23230f1e335eb39e198ca828ca44c89d54754e44298145164865 file=neo/internal/llm/mimo.go range=1:89 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/llm.isMimoFamily,matrix/neo/internal/llm.mimoFunctionClose,matrix/neo/internal/llm.mimoFunctionOpen,matrix/neo/internal/llm.mimoParamArgs,matrix/neo/internal/llm.mimoParamClose,matrix/neo/internal/llm.mimoParamOpen,matrix/neo/internal/llm.mimoParamValue,matrix/neo/internal/llm.mimoReasoningContent,matrix/neo/internal/llm.mimoToolCallClose,matrix/neo/internal/llm.mimoToolCallOpen,matrix/neo/internal/llm.parseMimoToolCalls
+  defines=matrix/neo/internal/llm.isMimoFamily,matrix/neo/internal/llm.mimoReasoningContent,matrix/neo/internal/llm.parseMimoToolCalls
   ^contains=matrix/neo/internal/llm
 
 NODE id=matrix/neo/internal/llm/stream_idle.go kind=file
