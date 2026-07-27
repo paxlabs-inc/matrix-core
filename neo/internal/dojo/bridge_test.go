@@ -169,7 +169,7 @@ func TestCallBytebotdLargeChunked(t *testing.T) {
 	payload := append([]byte(`{"image":"`), big...)
 	payload = append(payload, []byte(`"}`)...)
 	f := &shellFixture{
-		bytebotBody: payload, bytebotCode: 201, execOutputCap: 80_000,
+		bytebotBody: payload, bytebotCode: 201, execOutputCap: 60_000,
 		chunkDelay: 5 * time.Millisecond,
 	}
 	m := managerOverShell(t, f)

@@ -58,13 +58,13 @@ const applianceContainer = "dojo"
 // a11yTimeoutSec bounds the AT-SPI walk.
 const a11yTimeoutSec = 30
 
-// Railway caps sandboxExec stdout at 80,000 encoded bytes in production. Each
-// raw chunk is base64-expanded before crossing that boundary, so 48 KiB leaves
+// Railway caps sandboxExec stdout at 60,000 encoded bytes in production. Each
+// raw chunk is base64-expanded before crossing that boundary, so 40 KiB leaves
 // enough headroom for the complete encoded chunk. Large responses are read
 // with bounded parallelism so a multi-megabyte screenshot still lands inside
 // the client's 30-second frame budget.
 const (
-	execChunkBytes  = 48 * 1024
+	execChunkBytes  = 40 * 1024
 	execReadWorkers = 8
 )
 
