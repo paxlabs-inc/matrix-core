@@ -1,17 +1,17 @@
 module matrix/executor
 
-go 1.21
+go 1.23
 
 require (
-	github.com/fxamacker/cbor/v2 v2.6.0
+	github.com/fxamacker/cbor/v2 v2.9.2
 	matrix/cassandra v0.0.0
 	matrix/construct v0.0.0
 	matrix/mcl v0.0.0
 )
 
 require (
-	github.com/creack/pty v1.1.21
-	github.com/fsnotify/fsnotify v1.6.0
+	github.com/creack/pty v1.1.24
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gorilla/websocket v1.5.3
 	matrix/bridge v0.0.0-00010101000000-000000000000
 	matrix/cortex v0.0.0
