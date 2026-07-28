@@ -1,0 +1,19 @@
+{% macro statsBar(stats) %}
+<section class="section border-y border-border">
+  <div class="container-site">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+      {% for stat in stats %}
+        <div class="text-center" data-animate="fade-up">
+          <div class="flex items-baseline justify-center gap-1 mb-2">
+            <span class="text-4xl md:text-5xl font-semibold text-foreground tracking-tight" data-counter="{{ stat.value }}" data-suffix="{{ stat.unit }}">{{ stat.value }}</span>
+            {% if stat.unit %}
+              <span class="text-xl md:text-2xl font-medium text-muted-foreground">{{ stat.unit }}</span>
+            {% endif %}
+          </div>
+          <p class="text-sm text-muted-foreground">{{ stat.label }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endmacro %}

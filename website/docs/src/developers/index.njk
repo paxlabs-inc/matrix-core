@@ -1,0 +1,97 @@
+---
+layout: layouts/page.njk
+title: "Developers"
+description: "Get started with Matrix Core — install the CLI, compile your first intent, run a walk, and integrate with your existing tools via MCP."
+---
+
+{% from "macros/code-example.njk" import codeExample %}
+{% from "macros/feature-grid.njk" import featureGrid %}
+{% from "macros/cta-banner.njk" import ctaBanner %}
+
+<div class="section">
+  <div class="text-center mb-16">
+    <h1 class="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight mb-4" data-animate="fade-up">Built for developers</h1>
+    <p class="text-lg text-muted-foreground max-w-2xl mx-auto" data-animate="fade-up">Clear APIs, typed interfaces, and a CLI that gets out of your way. Ship agent workflows in minutes, not weeks.</p>
+  </div>
+</div>
+
+{# Quickstart #}
+<section class="section border-t border-border">
+  <div class="container-narrow">
+    <h2 class="text-2xl font-semibold tracking-tight mb-6" data-animate="fade-up">Quickstart</h2>
+    <p class="text-muted-foreground mb-8" data-animate="fade-up">Clone, build, and compile your first intent in under 5 minutes.</p>
+    
+    <div class="space-y-6" data-animate="fade-up">
+      <div>
+        <h3 class="font-medium text-foreground mb-3">1. Clone & Build</h3>
+        <pre><code class="language-bash">git clone https://github.com/paxlabs-inc/matrix-core.git
+cd matrix-core
+make build && make install</code></pre>
+      </div>
+      
+      <div>
+        <h3 class="font-medium text-foreground mb-3">2. Compile an Intent</h3>
+        <pre><code class="language-bash">./bin/mclc compile \
+  -skill skills/writing-plans/SKILL.mtx \
+  -prose "Build a deployment pipeline for my Node.js app" \
+  -verb build</code></pre>
+      </div>
+      
+      <div>
+        <h3 class="font-medium text-foreground mb-3">3. Run a Walk</h3>
+        <pre><code class="language-bash">./bin/mcl-execute walk \
+  -prose "Summarise the README and write it to /tmp/summary.md" \
+  -manifest agents/default.json \
+  -cortex-root ./runs/dev-cortex \
+  -skills-root ./skills</code></pre>
+      </div>
+      
+      <div>
+        <h3 class="font-medium text-foreground mb-3">4. Start the Daemon</h3>
+        <pre><code class="language-bash">./bin/mcl-execute daemon \
+  -addr :8080 \
+  -cortex-root ./runs/dev-cortex \
+  -manifest agents/default.json \
+  -skills-root ./skills</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# API Reference #}
+<section class="section border-t border-border">
+  <div class="container-site">
+    <h2 class="text-2xl font-semibold tracking-tight mb-6" data-animate="fade-up">API Endpoints</h2>
+    <p class="text-muted-foreground mb-8" data-animate="fade-up">The executor daemon exposes a lightweight HTTP API for agent interaction.</p>
+    
+    <div class="overflow-x-auto" data-animate="fade-up">
+      <table class="table-matrix w-full">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Path</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="tag-matrix">GET</span></td><td class="font-mono text-sm">/healthz</td><td class="text-sm text-muted-foreground">Liveness probe + SSE broker statistics</td></tr>
+          <tr><td><span class="tag-matrix">POST</span></td><td class="font-mono text-sm">/chat</td><td class="text-sm text-muted-foreground">Converse with the agent via Neo</td></tr>
+          <tr><td><span class="tag-matrix">GET</span></td><td class="font-mono text-sm">/events</td><td class="text-sm text-muted-foreground">Server-Sent Events stream for real-time transcript</td></tr>
+          <tr><td><span class="tag-matrix">POST</span></td><td class="font-mono text-sm">/messages</td><td class="text-sm text-muted-foreground">Submit a prose message (rigorous MCL rail)</td></tr>
+          <tr><td><span class="tag-matrix">GET</span></td><td class="font-mono text-sm">/intents/{id}</td><td class="text-sm text-muted-foreground">Read intent envelope chain by ID</td></tr>
+          <tr><td><span class="tag-matrix">GET</span></td><td class="font-mono text-sm">/me</td><td class="text-sm text-muted-foreground">Per-user settings and identity</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+{# Developer Features #}
+{{ featureGrid(features | selectattr("category", "equalto", "developer"), 2, "cards") }}
+
+{{ ctaBanner(
+  "Dive deeper",
+  "Full documentation, language reference, and contribution guide available.",
+  "Read the Docs",
+  "https://docs.matrixmcl.com"
+) }}

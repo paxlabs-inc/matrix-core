@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  {# SEO Meta Tags #}
+  {% include "partials/seo-meta.njk" %}
+  
+  {# Preconnect hints for fonts #}
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  {# Font loading with swap for no FOIT #}
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  {# ───────────────────────────────────────────────────────────────────
+     Critical above-the-fold CSS (Requirements 18.7, 25.2, 5.6)
+     Inlined to paint the dark theme, font stacks, sticky header/nav, and
+     hero baseline immediately — eliminating the render-blocking round-trip
+     to the main stylesheet and preventing FOUC / layout shift (CLS).
+     Keep this minimal: only what is visible before scroll.
+     ─────────────────────────────────────────────────────────────────── #}
+  <style>
+    /* Reset + dark theme base */
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --background: #0A0A0A;
+      --foreground: #F5F5F5;
+      --muted-foreground: #888888;
+      --border: rgba(255, 255, 255, 0.1);
+      --accent: #f59e0b; /* bright amber - nav active */
+      color-scheme: dark;
+    }
+    html {
+      background: #0A0A0A;
+      color: #F5F5F5;
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+    /* ─── Font fallback strategy (Requirements 25.2, 5.6) ───────────────
+       The Google Fonts <link>s above use `&display=swap`, so the browser
+       paints text immediately in the system fallback (no FOIT) and swaps in
+       the web font once loaded.
+
+       To avoid layout shift (CLS) on swap OR on total web-font failure, the
+       fallback stacks below are chosen to be metric-compatible with the web
+       fonts: the leading system UI faces (system-ui / -apple-system / Segoe
+       UI / Roboto) have x-height and advance widths very close to Inter, and
+       the leading monospace faces (ui-monospace / SF Mono / Menlo) closely
+       match JetBrains Mono's fixed advance. Because all monospace glyphs share
+       one advance width, the mono fallback is effectively metric-identical.
+
+       These two stacks MUST stay byte-for-byte identical to the ones declared
+       in src/css/components.css (html / code) so the inlined critical CSS and
+       the async main bundle never disagree and re-flow text. If you change one,
+       change the other. (No `size-adjust` @font-face is needed because the
+       fallbacks are already metric-compatible; document any future override
+       here alongside the matching components.css change.) */
+    body {
+      margin: 0;
+      min-width: 320px;
+      overflow-x: hidden;
+      min-height: 100vh;
+      background: var(--background);
+      color: var(--foreground);
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    code, pre, .font-mono {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", "Fira Code", Menlo, Consolas, monospace;
+    }
+    /* Sticky header / nav baseline (matches header.njk: fixed, h-16 = 64px) */
+    [data-sticky-nav] {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      height: 4rem;
+      transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+    }
+    [data-sticky-nav] nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 4rem;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+    /* Hero baseline — large bold headline, prevents jump before full CSS loads */
+    h1 { font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 1rem; font-weight: 600; }
+    img, svg, video { max-width: 100%; height: auto; }
+    a { color: inherit; }
+  </style>
+
+  {# Main CSS bundle — preloaded then applied async to avoid render-blocking,
+     with a <noscript> fallback for clients without JavaScript. #}
+  <link rel="preload" href="/css/styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="/css/styles.css"></noscript>
+  
+  {# Favicon #}
+  <link rel="icon" href="/assets/images/favicon.ico" type="image/x-icon">
+</head>
+<body class="min-h-screen bg-background text-foreground antialiased">
+  {# Skip to content link for keyboard users (visually hidden until focused) #}
+  <a href="#main" class="skip-link">Skip to content</a>
+
+  {{ content | safe }}
+  
+  {# Deferred JavaScript #}
+  <script type="module" src="/js/main.js" defer></script>
+</body>
+</html>

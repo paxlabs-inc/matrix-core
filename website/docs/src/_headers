@@ -1,0 +1,22 @@
+# Security headers for the Matrix marketing site.
+# Netlify / Cloudflare Pages "_headers" format. Eleventy copies this file
+# verbatim to the site root (_site/_headers) via addPassthroughCopy.
+# Requirements: 22.1, 22.2, 22.3, 22.4, 22.5, 22.6
+#
+# Notes on CSP:
+#   - default-src 'self'    -> same-origin only baseline.
+#   - script-src 'self'     -> the site loads no external JS. SRI hashes are
+#                              added on any <script> tag that later loads from a
+#                              CDN (Requirement 22.6). 'unsafe-inline' is kept so
+#                              the small inline progressive-enhancement scripts
+#                              (e.g. the use-cases filter) continue to work.
+#   - style-src             -> 'self' plus Google Fonts stylesheet host and
+#                              'unsafe-inline' for the inline critical CSS in
+#                              base.njk (Requirement 18.7).
+#   - font-src              -> Google Fonts file host (fonts.gstatic.com).
+/*
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin

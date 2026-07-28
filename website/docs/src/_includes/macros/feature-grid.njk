@@ -1,0 +1,31 @@
+{% macro featureGrid(features, columns, style) %}
+<section class="section">
+  <div class="container-site">
+    <div class="grid grid-cols-1 {% if columns == 2 %}md:grid-cols-2{% elif columns == 4 %}sm:grid-cols-2 lg:grid-cols-4{% else %}sm:grid-cols-2 lg:grid-cols-3{% endif %} gap-6">
+      {% for feature in features %}
+        <div class="card p-6 rounded-lg border border-border hover:border-border/80 transition-colors" data-animate="fade-up">
+          <header class="flex items-start gap-4 mb-0 p-0">
+            <div class="p-2 rounded-md bg-muted text-muted-foreground">
+              {% lucide feature.icon, { "size": 20 } %}
+            </div>
+            <div>
+              <h3 class="text-base font-medium text-foreground">{{ feature.title }}</h3>
+            </div>
+          </header>
+          <section class="p-0 mt-3">
+            <p class="text-sm text-muted-foreground leading-relaxed">{{ feature.description }}</p>
+          </section>
+          {% if feature.link %}
+            <footer class="p-0 mt-4">
+              <a href="{{ feature.link }}" class="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1">
+                Learn more
+                {% lucide "arrow-right", { "size": 14 } %}
+              </a>
+            </footer>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endmacro %}

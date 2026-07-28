@@ -1,0 +1,64 @@
+---
+layout: layouts/page.njk
+title: "Use Cases"
+description: "Discover how teams across industries use Matrix to automate complex workflows, build reliable agents, and ship faster."
+permalink: /use-cases/
+---
+
+<div class="section">
+  <div class="text-center mb-16">
+    <h1 class="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight mb-4" data-animate="fade-up">Use Cases</h1>
+    <p class="text-lg text-muted-foreground max-w-2xl mx-auto" data-animate="fade-up">See how organizations leverage Matrix to solve real problems — from DeFi automation to enterprise operations.</p>
+  </div>
+
+  {# Category Filter UI #}
+  <div class="flex flex-wrap justify-center gap-3 mb-12" data-animate="fade-up">
+    <button class="badge badge-outline px-4 py-2 cursor-pointer hover:bg-muted transition-colors" data-filter="all" aria-pressed="true">All</button>
+    <button class="badge badge-outline px-4 py-2 cursor-pointer hover:bg-muted transition-colors" data-filter="defi" aria-pressed="false">DeFi</button>
+    <button class="badge badge-outline px-4 py-2 cursor-pointer hover:bg-muted transition-colors" data-filter="enterprise" aria-pressed="false">Enterprise</button>
+    <button class="badge badge-outline px-4 py-2 cursor-pointer hover:bg-muted transition-colors" data-filter="developer" aria-pressed="false">Developer</button>
+  </div>
+
+  {# Use Cases Grid #}
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    {% for useCase in collections.useCases %}
+    <a href="{{ useCase.url }}" class="card p-6 hover:border-primary/50 transition-colors no-underline group" data-category="{{ useCase.data.category }}" data-animate="fade-up">
+      <div class="mb-4">
+        <span class="badge badge-outline text-xs uppercase tracking-wide">{{ useCase.data.category }}</span>
+      </div>
+      <h2 class="text-xl font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">{{ useCase.data.title }}</h2>
+      <p class="text-muted-foreground text-sm">{{ useCase.data.excerpt }}</p>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if collections.useCases.length == 0 %}
+  <p class="text-center text-muted-foreground">No use cases available yet. Check back soon.</p>
+  {% endif %}
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const filterButtons = document.querySelectorAll('[data-filter]');
+    const cards = document.querySelectorAll('[data-category]');
+
+    filterButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const filter = button.dataset.filter;
+
+        // Update active state
+        filterButtons.forEach(btn => btn.setAttribute('aria-pressed', 'false'));
+        button.setAttribute('aria-pressed', 'true');
+
+        // Filter cards
+        cards.forEach(card => {
+          if (filter === 'all' || card.dataset.category === filter) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+  });
+</script>

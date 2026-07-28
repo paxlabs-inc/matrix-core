@@ -1,0 +1,24 @@
+{% macro hero(title, subtitle, cta_primary, cta_secondary, animation_type) %}
+<section class="section-hero">
+  <div class="container-site text-center">
+    <h1 class="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tight max-w-4xl mx-auto mb-6" data-animate="fade-up">
+      {{ title }}
+    </h1>
+    
+    {% if subtitle %}
+      <p class="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10" data-animate="fade-up">
+        {{ subtitle }}
+      </p>
+    {% endif %}
+    
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4" data-animate="fade-up">
+      {% if cta_primary %}
+        <a href="{{ cta_primary.url }}" class="btn-cta text-base px-8 py-3">{{ cta_primary.text }}</a>
+      {% endif %}
+      {% if cta_secondary %}
+        <a href="{{ cta_secondary.url }}" class="btn-ghost-matrix text-base px-8 py-3"{% if cta_secondary.external %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ cta_secondary.text }}</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endmacro %}

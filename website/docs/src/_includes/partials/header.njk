@@ -1,0 +1,66 @@
+<header class="fixed top-0 left-0 right-0 z-50 transition-all duration-300" data-sticky-nav>
+  <nav class="container-site flex items-center justify-between h-16">
+    {# Logo #}
+    <a href="/" class="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+      <span class="font-semibold text-lg">{{ site.title }}</span>
+    </a>
+
+    {# Desktop Navigation #}
+    <ul class="hidden md:flex items-center gap-1">
+      {% for item in navigation.primary %}
+        <li>
+          <a href="{{ item.url }}" 
+             class="px-3 py-2 text-sm rounded-md transition-colors {% if page.url == item.url %}nav-accent font-medium{% else %}text-muted-foreground hover:text-foreground{% endif %}">
+            {{ item.label }}
+            {% if item.badge %}
+              <span class="tag-matrix ml-1.5 text-[10px]">{{ item.badge }}</span>
+            {% endif %}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+
+    {# Desktop CTAs #}
+    <div class="hidden md:flex items-center gap-3">
+      {% for cta in navigation.headerCta %}
+        {% if cta.variant == "ghost" %}
+          <a href="{{ cta.url }}" class="btn-ghost-matrix text-sm px-4 py-2"{% if cta.external %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ cta.label }}</a>
+        {% else %}
+          <a href="{{ cta.url }}" class="btn-cta text-sm px-4 py-2">{{ cta.label }}</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {# Mobile Menu Toggle #}
+    <button class="md:hidden p-2 text-foreground" data-mobile-toggle aria-expanded="false" aria-controls="mobile-menu" aria-label="Toggle navigation menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    </button>
+  </nav>
+
+  {# Mobile Menu #}
+  <div id="mobile-menu" class="md:hidden fixed inset-0 top-16 bg-background/95 backdrop-blur-lg z-40 p-6" data-mobile-menu aria-hidden="true">
+    <ul class="flex flex-col gap-2">
+      {% for item in navigation.mobile.main %}
+        <li>
+          <a href="{{ item.url }}" class="block px-4 py-3 text-lg rounded-md transition-colors {% if page.url == item.url %}nav-accent{% else %}text-muted-foreground hover:text-foreground{% endif %}">
+            {{ item.label }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+    <hr class="border-border my-4">
+    <ul class="flex flex-col gap-2">
+      {% for item in navigation.mobile.secondary %}
+        <li>
+          <a href="{{ item.url }}" class="block px-4 py-2 text-sm text-muted-foreground hover:text-foreground"{% if item.external %} target="_blank" rel="noopener noreferrer"{% endif %}>
+            {{ item.label }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</header>
+
+{# Spacer to prevent content from going under fixed header #}
+<div class="h-16"></div>

@@ -1,0 +1,154 @@
+---
+layout: layouts/page.njk
+title: "Architecture"
+description: "A deep dive into Matrix Core's system architecture — from the MCL compiler to the executor walker, cortex memory, and MCP dispatch."
+---
+
+{% from "macros/cta-banner.njk" import ctaBanner %}
+
+<div class="section">
+  <div class="text-center mb-16">
+    <h1 class="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight mb-4" data-animate="fade-up">System Architecture</h1>
+    <p class="text-lg text-muted-foreground max-w-2xl mx-auto" data-animate="fade-up">How Matrix transforms natural-language prose into deterministic, replayable execution through a rigorously typed compilation pipeline.</p>
+  </div>
+</div>
+
+{# Compilation Pipeline #}
+<section class="section border-t border-border">
+  <div class="container-narrow">
+    <h2 class="text-2xl font-semibold tracking-tight mb-6" data-animate="fade-up">The MCL Compilation Pipeline</h2>
+    <p class="text-muted-foreground mb-8" data-animate="fade-up">Natural language enters the pipeline and emerges as typed Intent IR — a closed-vocabulary AST with deterministic semantics. The compiler guarantees that two semantically identical inputs produce the same canonical hash.</p>
+    
+    <div class="space-y-6" data-animate="fade-up">
+      <div class="flex items-start gap-4 p-4 rounded-lg border border-border">
+        <span class="tag-matrix shrink-0">1</span>
+        <div>
+          <h3 class="font-medium text-foreground mb-1">Lexer</h3>
+          <p class="text-sm text-muted-foreground">Tokenizes prose input, extracting verb candidates and object references from natural language.</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-4 p-4 rounded-lg border border-border">
+        <span class="tag-matrix shrink-0">2</span>
+        <div>
+          <h3 class="font-medium text-foreground mb-1">Parser</h3>
+          <p class="text-sm text-muted-foreground">Maps tokens to the closed vocabulary (10 verbs × 8 kinds), producing an unvalidated AST.</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-4 p-4 rounded-lg border border-border">
+        <span class="tag-matrix shrink-0">3</span>
+        <div>
+          <h3 class="font-medium text-foreground mb-1">Validator</h3>
+          <p class="text-sm text-muted-foreground">Type-checks the AST against SKILL manifests and agent capability declarations.</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-4 p-4 rounded-lg border border-border">
+        <span class="tag-matrix shrink-0">4</span>
+        <div>
+          <h3 class="font-medium text-foreground mb-1">Canonicaliser</h3>
+          <p class="text-sm text-muted-foreground">Normalizes the AST to canonical form. Comments and whitespace don't affect the digest — content-addressed and reformat-safe.</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-4 p-4 rounded-lg border border-border">
+        <span class="tag-matrix shrink-0">5</span>
+        <div>
+          <h3 class="font-medium text-foreground mb-1">Interpreter</h3>
+          <p class="text-sm text-muted-foreground">Expands the canonical IR into a plan envelope with LLM-mediated step decomposition.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# Module Map #}
+<section class="section border-t border-border">
+  <div class="container-site">
+    <h2 class="text-2xl font-semibold tracking-tight mb-6" data-animate="fade-up">Module Map</h2>
+    <p class="text-muted-foreground mb-8" data-animate="fade-up">Nine independently buildable Go modules with clean interface boundaries.</p>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-animate="fade-up">
+      {% set modules = [
+        { name: "MCL", desc: "MatrixScript compiler — lexer, parser, validator, canonicaliser, interpreter" },
+        { name: "Cortex", desc: "Per-actor typed memory graph on Pebble with Merkle-anchored snapshots" },
+        { name: "Executor", desc: "Plan walker, lifecycle state machine, MCP dispatch, per-user daemon" },
+        { name: "Neo", desc: "Conversational tool-calling agent with automatic MCL delegation" },
+        { name: "Gateway", desc: "Metered LLM proxy with PAX credit ledger and rate card enforcement" },
+        { name: "Router", desc: "Per-user Fly Machine provisioning with wake-then-reverse-proxy" },
+        { name: "Deus", desc: "Agent-service marketplace: registry, discovery, metered invocation" },
+        { name: "Tachyon", desc: "Agent-native Solidity/EVM engine — compile, test, simulate, deploy" },
+        { name: "Bridge", desc: "MCL-to-Cortex adapter with clean interface boundaries" }
+      ] %}
+      {% for mod in modules %}
+        <div class="p-4 rounded-lg border border-border">
+          <h3 class="font-medium text-foreground font-mono text-sm mb-1">{{ mod.name }}</h3>
+          <p class="text-xs text-muted-foreground">{{ mod.desc }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# Interactive Architecture Explorer #}
+<section class="section border-t border-border">
+  <div class="container-site">
+    <h2 class="text-2xl font-semibold tracking-tight mb-6" data-animate="fade-up">Architecture Explorer</h2>
+    <p class="text-muted-foreground mb-8" data-animate="fade-up">Trace the execution path from intent to action through the system's core components.</p>
+    
+    <div class="rounded-lg border border-border p-8 min-h-[400px]" data-architecture-explorer data-nodes='[{"id":"mcl","label":"MCL Compiler"},{"id":"cortex","label":"Cortex Memory"},{"id":"executor","label":"Executor Walker"},{"id":"neo","label":"Neo Agent"},{"id":"gateway","label":"LLM Gateway"},{"id":"router","label":"Router"},{"id":"deus","label":"Deus Marketplace"},{"id":"tachyon","label":"Tachyon EVM"},{"id":"bridge","label":"Bridge Adapter"}]' data-animate="fade-up">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="text-center p-4 rounded-lg border border-border hover:border-primary/50 transition-colors cursor-pointer" data-node="mcl">
+          <div class="font-mono text-sm font-medium text-foreground mb-2">MCL Compiler</div>
+          <p class="text-xs text-muted-foreground">Intent → Typed IR</p>
+        </div>
+        <div class="text-center p-4 rounded-lg border border-border hover:border-primary/50 transition-colors cursor-pointer" data-node="executor">
+          <div class="font-mono text-sm font-medium text-foreground mb-2">Executor Walker</div>
+          <p class="text-xs text-muted-foreground">IR → Plan Steps</p>
+        </div>
+        <div class="text-center p-4 rounded-lg border border-border hover:border-primary/50 transition-colors cursor-pointer" data-node="cortex">
+          <div class="font-mono text-sm font-medium text-foreground mb-2">Cortex Memory</div>
+          <p class="text-xs text-muted-foreground">State → Snapshots</p>
+        </div>
+        <div class="text-center p-4 rounded-lg border border-border hover:border-primary/50 transition-colors cursor-pointer" data-node="gateway">
+          <div class="font-mono text-sm font-medium text-foreground mb-2">LLM Gateway</div>
+          <p class="text-xs text-muted-foreground">Metered Proxy</p>
+        </div>
+        <div class="text-center p-4 rounded-lg border border-border hover:border-primary/50 transition-colors cursor-pointer" data-node="neo">
+          <div class="font-mono text-sm font-medium text-foreground mb-2">Neo Agent</div>
+          <p class="text-xs text-muted-foreground">Conversational Interface</p>
+        </div>
+        <div class="text-center p-4 rounded-lg border border-border hover:border-primary/50 transition-colors cursor-pointer" data-node="deus">
+          <div class="font-mono text-sm font-medium text-foreground mb-2">Deus Marketplace</div>
+          <p class="text-xs text-muted-foreground">Service Registry</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# Key Invariants #}
+<section class="section border-t border-border">
+  <div class="container-narrow">
+    <h2 class="text-2xl font-semibold tracking-tight mb-6" data-animate="fade-up">Key Design Invariants</h2>
+    
+    <div class="space-y-8" data-animate="fade-up">
+      <div>
+        <h3 class="font-medium text-foreground mb-2">Replay Invariant</h3>
+        <p class="text-sm text-muted-foreground">Derived state can always be rebuilt byte-identically from the journal. Enforced on every pull request via <code>make ci</code>.</p>
+      </div>
+      <div>
+        <h3 class="font-medium text-foreground mb-2">Canonical AST Hashing</h3>
+        <p class="text-sm text-muted-foreground">Comments and whitespace do not affect the digest. Two semantically identical programs produce the same hash.</p>
+      </div>
+      <div>
+        <h3 class="font-medium text-foreground mb-2">Closed Vocabularies</h3>
+        <p class="text-sm text-muted-foreground">Intent survives multi-step execution because meaning is typed at the compiler level, not inferred by the LLM at runtime.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{{ ctaBanner(
+  "Explore the source",
+  "Matrix Core is open source. Read the code, run the tests, build on the framework.",
+  "View on GitHub",
+  "https://github.com/paxlabs-inc/matrix-core"
+) }}

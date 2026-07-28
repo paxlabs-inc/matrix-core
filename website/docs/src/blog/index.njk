@@ -1,0 +1,41 @@
+---
+layout: layouts/page.njk
+title: "Blog"
+description: "News, updates, and technical deep dives from the Matrix and PaxLabs team."
+---
+
+<div class="section">
+  <div class="text-center mb-16">
+    <h1 class="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight mb-4" data-animate="fade-up">Blog</h1>
+    <p class="text-lg text-muted-foreground" data-animate="fade-up">News, updates, and technical insights from the team.</p>
+  </div>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for post in collections.posts %}
+      <article class="card p-6 rounded-lg border border-border hover:border-border/80 transition-colors" data-animate="fade-up">
+        <header class="p-0 mb-4">
+          <div class="flex items-center gap-2 mb-3">
+            {% for tag in post.data.tags %}
+              {% if tag != "post" %}
+                <span class="tag-matrix">{{ tag }}</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <h2 class="text-lg font-semibold text-foreground leading-tight">
+            <a href="{{ post.url }}" class="hover:text-accent transition-colors">{{ post.data.title }}</a>
+          </h2>
+        </header>
+        <section class="p-0">
+          <p class="text-sm text-muted-foreground line-clamp-3">{{ post.data.excerpt }}</p>
+        </section>
+        <footer class="p-0 mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+          <time>{{ post.date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) }}</time>
+          {% if post.data.author %}
+            <span>·</span>
+            <span>{{ post.data.author }}</span>
+          {% endif %}
+        </footer>
+      </article>
+    {% endfor %}
+  </div>
+</div>
