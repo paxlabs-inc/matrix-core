@@ -273,10 +273,27 @@ RUN set -eux; \
 
 # Pre-install MCP servers so first cold-start does not hit registries.
 # Versions PINNED to releases whose tools/list exactly matches default.json.
+#
+# The `mcp` SDK MUST be pinned alongside each server. Both Python servers
+# declare an UNBOUNDED upper bound on it (mcp-server-fetch: `mcp>=1.1.3`,
+# mcp-server-git: `mcp>=1.0.0`), so a new SDK major is picked up silently at
+# resolve time. That is exactly what took prod down on 2026-07-29: `mcp` 2.0.0
+# (released 2026-07-28) renamed McpError -> MCPError, mcp-server-fetch 2025.4.7
+# died with ImportError on startup, the daemon's spawn of "fetch" hit its
+# initialize deadline, mcl-execute exited 1, and the entrypoint stopped the
+# pair — a boot crash loop.
+#
+# NOTE: the agent manifests spawn these through `uvx --from <pinned> --with
+# <pinned mcp>`, which resolves in the CALLING user's cache (uid 10001), NOT
+# from this root-owned `uv tool install`. The pin therefore has to live in
+# agents/*.json to be load-bearing; keep the two in lockstep. This layer stays
+# because it warms the wheel cache and is what the readabilipy fix below
+# patches.
+ARG MCP_SDK_VERSION=1.29.0
 RUN set -eux; \
     npm install -g @modelcontextprotocol/server-filesystem@2026.1.14; \
-    uv tool install mcp-server-fetch==2025.4.7; \
-    uv tool install mcp-server-git==2026.1.14; \
+    uv tool install --with "mcp==${MCP_SDK_VERSION}" mcp-server-fetch==2025.4.7; \
+    uv tool install --with "mcp==${MCP_SDK_VERSION}" mcp-server-git==2026.1.14; \
     command -v mcp-server-filesystem; \
     command -v mcp-server-fetch; \
     command -v mcp-server-git; \
@@ -333,6 +350,28 @@ COPY --from=builder /out/neo         /opt/matrix/bin/neo
 COPY skills/         /opt/matrix/skills/
 # agents/ carries every agent manifest (agents/neo.json + agents/default.json).
 COPY agents/         /opt/matrix/agents/
+
+# Manifest spawn gate. For EVERY uvx-launched server in the two deployed
+# manifests, run the real command AS the agent uid and assert that
+# initialize + tools/list succeed and return exactly the tool names the
+# manifest declares. This is the gate that would have caught the 2026-07-29
+# `mcp` 2.0.0 outage at build time: an unpinned transitive SDK that breaks the
+# server's import fails HERE instead of in a prod boot crash loop.
+#
+# Running as matrix-agent also warms uid 10001's uv cache, so the first cold
+# start after a deploy does not resolve from PyPI.
+COPY deploy/railway/verify-mcp-manifest.py /tmp/verify-mcp-manifest.py
+RUN set -eux; \
+    chmod 0755 /tmp/verify-mcp-manifest.py; \
+    # HOME is forced so uv resolves into uid 10001's cache — the same one the
+    # daemon's MCP subprocesses use at runtime. `su` without `-` would leave
+    # HOME=/root and warm the wrong cache (and not prove the agent uid can
+    # actually resolve these packages).
+    su matrix-agent -s /bin/bash -c \
+      'HOME=/home/matrix-agent PATH=/usr/local/bin:/usr/bin:/bin \
+       python3 /tmp/verify-mcp-manifest.py \
+         /opt/matrix/agents/default.json /opt/matrix/agents/neo.json'; \
+    rm -f /tmp/verify-mcp-manifest.py
 # rules/ is the language/standards library Neo's coding prompts reference.
 COPY rules/          /opt/matrix/rules/
 # graph/self-model is the GENERATED structural self-graph (the codegraph
