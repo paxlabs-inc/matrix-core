@@ -135,9 +135,10 @@ bitmap; `BaseOptical` gives no-op defaults + `immutable poolRegistry, owner`,
   the named hooks, with a `getFlags()` bitmap that **exactly matches** the
   overrides (bit0 `beforeSwap`, bit1 `afterSwap`, bit2 `beforeFeeDistribution`,
   bit3 `afterFeeDistribution`) and constructor args `(poolRegistry, owner)`. Then
-  drive Tachyon: **`tachyon_compile` → `tachyon_test` → (only on green)
-  `tachyon_deploy`** on chain 125 with constructor `[poolRegistry, embedded-wallet
-  owner]` and an `idempotency_key` (`tachyon_simulate` first where useful).
+  build it locally with Foundry: **`forge build` → `forge test -vv` → (only on
+  green) broadcast the creation transaction with `contract_write`** on chain 125
+  with constructor `[poolRegistry, embedded-wallet owner]` and an idempotency
+  key (an `eth_call` dry-run first where useful).
   **Never deploy on a failed compile or failed test.** The custom template keeps
   `onlyPool` on any value-gating hook and the optical immutable — do not generate
   a contract that bypasses the pool-registry caller check.

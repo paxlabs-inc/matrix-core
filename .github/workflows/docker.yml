@@ -4,20 +4,18 @@ name: docker
 # Railway to redeploy the control-plane services that got a new image.
 #
 # Images (all tagged <short-sha> + latest on main):
-#   matrix-daemon          deploy/daemon/Dockerfile   per-user daemon (Fly)
 #   matrix-daemon-railway  deploy/railway/Dockerfile  per-user daemon (Railway,
 #                                                     Ubuntu 24.04 + dev toolchains)
 #   matrix-gateway         deploy/gateway/Dockerfile  metered LLM proxy
 #   matrix-router          deploy/router/Dockerfile   front door / provisioner
 #   matrix-chronos         deploy/chronos/Dockerfile  scheduler / wake plane
-#   matrix-deus            deploy/deus/Dockerfile     deus control plane
 #   matrix-sandboxd        sandboxd/Dockerfile        Railway sandbox + branded preview plane
 #
 # Only images whose inputs changed are rebuilt (the `changes` job computes a
 # dynamic matrix); workflow_dispatch force-builds everything. Docker layer
 # caching is per-image via the GitHub Actions cache backend.
 #
-# Railway auto-update: the control-plane services (router/gateway/chronos/deus)
+# Railway auto-update: the control-plane services (router/gateway/chronos)
 # run from the :latest GHCR tag; after a successful push the `redeploy` job
 # calls Railway's serviceInstanceRedeploy per rebuilt service so they pull
 # the new image immediately. Per-user daemon services are deliberately NOT
@@ -29,7 +27,7 @@ name: docker
 #   secret RAILWAY_API_TOKEN          project-scoped API token
 #   vars   RAILWAY_ENVIRONMENT_ID     the one Railway environment
 #   vars   RAILWAY_ROUTER_SERVICE_ID / RAILWAY_GATEWAY_SERVICE_ID /
-#          RAILWAY_CHRONOS_SERVICE_ID / RAILWAY_DEUS_SERVICE_ID
+#          RAILWAY_CHRONOS_SERVICE_ID / RAILWAY_SANDBOX_SERVICE_ID
 
 on:
   push:
@@ -47,29 +45,23 @@ on:
       - "gateway/**"
       - "router/**"
       - "chronos/**"
-      - "deus/**"
-      - "layerx/**"
       - "sandboxd/**"
       - "skills/**"
       - "agents/**"
       - "tools/**"
       - "rules/**"
-      - "deploy/daemon/**"
       - "deploy/railway/**"
       - "deploy/gateway/**"
       - "deploy/router/**"
       - "deploy/chronos/**"
-      - "deploy/deus/**"
       - ".github/workflows/docker.yml"
   pull_request:
     branches: [main]
     paths:
-      - "deploy/daemon/**"
       - "deploy/railway/**"
       - "deploy/gateway/**"
       - "deploy/router/**"
       - "deploy/chronos/**"
-      - "deploy/deus/**"
       - "sandboxd/**"
       - ".github/workflows/docker.yml"
   workflow_dispatch:
@@ -98,12 +90,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       include: ${{ steps.matrix.outputs.include }}
-      daemon: ${{ steps.decide.outputs.daemon }}
       railway: ${{ steps.decide.outputs.railway }}
       gateway: ${{ steps.decide.outputs.gateway }}
       router: ${{ steps.decide.outputs.router }}
       chronos: ${{ steps.decide.outputs.chronos }}
-      deus: ${{ steps.decide.outputs.deus }}
       sandbox: ${{ steps.decide.outputs.sandbox }}
     steps:
       - uses: actions/checkout@v4
@@ -129,9 +119,6 @@ jobs:
               - "tools/**"
               - "rules/**"
               - ".github/workflows/docker.yml"
-            daemon:
-              - *daemon-core
-              - "deploy/daemon/**"
             railway:
               - *daemon-core
               - "deploy/railway/**"
@@ -147,11 +134,6 @@ jobs:
               - "chronos/**"
               - "deploy/chronos/**"
               - ".github/workflows/docker.yml"
-            deus:
-              - "deus/**"
-              - "layerx/**"
-              - "deploy/deus/**"
-              - ".github/workflows/docker.yml"
             sandbox:
               - "sandboxd/**"
               - ".github/workflows/docker.yml"
@@ -161,15 +143,13 @@ jobs:
         id: decide
         env:
           FORCE: ${{ github.event_name == 'workflow_dispatch' }}
-          DAEMON: ${{ steps.filter.outputs.daemon }}
           RAILWAY: ${{ steps.filter.outputs.railway }}
           GATEWAY: ${{ steps.filter.outputs.gateway }}
           ROUTER: ${{ steps.filter.outputs.router }}
           CHRONOS: ${{ steps.filter.outputs.chronos }}
-          DEUS: ${{ steps.filter.outputs.deus }}
           SANDBOX: ${{ steps.filter.outputs.sandbox }}
         run: |
-          for key in daemon railway gateway router chronos deus sandbox; do
+          for key in railway gateway router chronos sandbox; do
             var="$(echo "$key" | tr '[:lower:]' '[:upper:]')"
             val="${!var}"
             if [[ "$FORCE" == "true" || "$val" == "true" ]]; then
@@ -182,22 +162,18 @@ jobs:
       - name: build matrix
         id: matrix
         env:
-          DAEMON: ${{ steps.decide.outputs.daemon }}
           RAILWAY: ${{ steps.decide.outputs.railway }}
           GATEWAY: ${{ steps.decide.outputs.gateway }}
           ROUTER: ${{ steps.decide.outputs.router }}
           CHRONOS: ${{ steps.decide.outputs.chronos }}
-          DEUS: ${{ steps.decide.outputs.deus }}
           SANDBOX: ${{ steps.decide.outputs.sandbox }}
         run: |
           include='[]'
           add() { include="$(jq -c --arg i "$1" --arg d "$2" --arg c "${3:-.}" '. + [{image:$i, dockerfile:$d, context:$c}]' <<<"$include")"; }
-          [[ "$DAEMON"  == "true" ]] && add matrix-daemon         deploy/daemon/Dockerfile
           [[ "$RAILWAY" == "true" ]] && add matrix-daemon-railway deploy/railway/Dockerfile
           [[ "$GATEWAY" == "true" ]] && add matrix-gateway        deploy/gateway/Dockerfile
           [[ "$ROUTER"  == "true" ]] && add matrix-router         deploy/router/Dockerfile
           [[ "$CHRONOS" == "true" ]] && add matrix-chronos        deploy/chronos/Dockerfile
-          [[ "$DEUS"    == "true" ]] && add matrix-deus           deploy/deus/Dockerfile
           [[ "$SANDBOX" == "true" ]] && add matrix-sandboxd       sandboxd/Dockerfile sandboxd
           echo "include=$include" >> "$GITHUB_OUTPUT"
           echo "building: $include"
@@ -273,12 +249,10 @@ jobs:
           ROUTER_CHANGED: ${{ needs.changes.outputs.router }}
           GATEWAY_CHANGED: ${{ needs.changes.outputs.gateway }}
           CHRONOS_CHANGED: ${{ needs.changes.outputs.chronos }}
-          DEUS_CHANGED: ${{ needs.changes.outputs.deus }}
           SANDBOX_CHANGED: ${{ needs.changes.outputs.sandbox }}
           RAILWAY_ROUTER_SERVICE_ID: ${{ vars.RAILWAY_ROUTER_SERVICE_ID }}
           RAILWAY_GATEWAY_SERVICE_ID: ${{ vars.RAILWAY_GATEWAY_SERVICE_ID }}
           RAILWAY_CHRONOS_SERVICE_ID: ${{ vars.RAILWAY_CHRONOS_SERVICE_ID }}
-          RAILWAY_DEUS_SERVICE_ID: ${{ vars.RAILWAY_DEUS_SERVICE_ID }}
           RAILWAY_SANDBOX_SERVICE_ID: ${{ vars.RAILWAY_SANDBOX_SERVICE_ID }}
         run: |
           if [[ -z "$RAILWAY_API_TOKEN" || -z "$RAILWAY_ENVIRONMENT_ID" ]]; then
@@ -314,6 +288,5 @@ jobs:
           redeploy matrix-router  "$ROUTER_CHANGED"  "$RAILWAY_ROUTER_SERVICE_ID"
           redeploy matrix-gateway "$GATEWAY_CHANGED" "$RAILWAY_GATEWAY_SERVICE_ID"
           redeploy matrix-chronos "$CHRONOS_CHANGED" "$RAILWAY_CHRONOS_SERVICE_ID"
-          redeploy matrix-deus    "$DEUS_CHANGED"    "$RAILWAY_DEUS_SERVICE_ID"
           redeploy matrix-sandboxd "$SANDBOX_CHANGED" "$RAILWAY_SANDBOX_SERVICE_ID"
           exit "$fail"

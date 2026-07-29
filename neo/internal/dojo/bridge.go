@@ -58,13 +58,12 @@ const applianceContainer = "dojo"
 // a11yTimeoutSec bounds the AT-SPI walk.
 const a11yTimeoutSec = 30
 
-// Railway caps sandboxExec stdout at 60,000 encoded bytes in production. Each
-// raw chunk is base64-expanded before crossing that boundary, so 40 KiB leaves
-// enough headroom for the complete encoded chunk. Large responses are read
-// with bounded parallelism so a multi-megabyte screenshot still lands inside
-// the client's 30-second frame budget.
+// sandboxExec stdout is bounded and the effective ceiling can vary. Raw chunks
+// are base64-expanded before crossing that boundary; truncated ranges are
+// bisected until they fit. Bounded parallelism keeps screenshots responsive.
 const (
-	execChunkBytes  = 40 * 1024
+	execChunkBytes  = 32 * 1024
+	execMinChunk    = 1024
 	execReadWorkers = 8
 )
 
@@ -414,27 +413,9 @@ func (t *execCurlTransport) readFile(ctx context.Context, sandboxID, path string
 				if off+n > total {
 					n = total - off
 				}
-				cmd := fmt.Sprintf("tail -c +%d %s | head -c %d | base64 -w0", off+1, path, n)
-				res, err := t.rw.ExecSandbox(readCtx, sandboxID, cmd, bytebotdExecTimeoutSec)
+				chunk, err := t.readRange(readCtx, sandboxID, path, off, n)
 				if err != nil {
-					fail(fmt.Errorf("read chunk at %d: %w", off, err))
-					return
-				}
-				if res.ExitCode != 0 || res.TimedOut {
-					fail(fmt.Errorf("read chunk at %d exit=%d timedOut=%v: %s", off, res.ExitCode, res.TimedOut, strings.TrimSpace(res.Stderr)))
-					return
-				}
-				if res.Truncated {
-					fail(fmt.Errorf("read chunk at %d was truncated after requesting %d bytes", off, n))
-					return
-				}
-				chunk, err := base64.StdEncoding.DecodeString(strings.TrimSpace(res.Stdout))
-				if err != nil {
-					fail(fmt.Errorf("decode chunk at %d: %w", off, err))
-					return
-				}
-				if len(chunk) != n {
-					fail(fmt.Errorf("read chunk at %d recovered %d of %d bytes", off, len(chunk), n))
+					fail(err)
 					return
 				}
 				parts[index] = chunk
@@ -459,6 +440,43 @@ func (t *execCurlTransport) readFile(ctx context.Context, sandboxID, path string
 		return out, fmt.Errorf("recovered %d of %d bytes from %s", len(out), total, path)
 	}
 	return out, nil
+}
+
+func (t *execCurlTransport) readRange(ctx context.Context, sandboxID, path string, off, n int) ([]byte, error) {
+	cmd := fmt.Sprintf("tail -c +%d %s | head -c %d | base64 -w0", off+1, path, n)
+	res, err := t.rw.ExecSandbox(ctx, sandboxID, cmd, bytebotdExecTimeoutSec)
+	if err != nil {
+		return nil, fmt.Errorf("read chunk at %d: %w", off, err)
+	}
+	if res.ExitCode != 0 || res.TimedOut {
+		return nil, fmt.Errorf("read chunk at %d exit=%d timedOut=%v: %s", off, res.ExitCode, res.TimedOut, strings.TrimSpace(res.Stderr))
+	}
+
+	chunk, decodeErr := base64.StdEncoding.DecodeString(strings.TrimSpace(res.Stdout))
+	if !res.Truncated && decodeErr == nil && len(chunk) == n {
+		return chunk, nil
+	}
+	if n <= execMinChunk {
+		switch {
+		case res.Truncated:
+			return nil, fmt.Errorf("read chunk at %d remained truncated at %d bytes", off, n)
+		case decodeErr != nil:
+			return nil, fmt.Errorf("decode chunk at %d: %w", off, decodeErr)
+		default:
+			return nil, fmt.Errorf("read chunk at %d recovered %d of %d bytes", off, len(chunk), n)
+		}
+	}
+
+	leftN := n / 2
+	left, err := t.readRange(ctx, sandboxID, path, off, leftN)
+	if err != nil {
+		return nil, err
+	}
+	right, err := t.readRange(ctx, sandboxID, path, off+leftN, n-leftN)
+	if err != nil {
+		return nil, err
+	}
+	return append(left, right...), nil
 }
 
 func (t *execCurlTransport) ExecDesktop(ctx context.Context, s Session, command string, timeoutSec int) (string, int, error) {

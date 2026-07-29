@@ -55,10 +55,10 @@ HTTP payment protocol). All user data at rest is being sealed by the **vault**
    +-------------------------------------------------------------------------------------+
           |                |                 |                  |
           v                v                 v                  v
-     chronos           gateway            layerx             deus / uwac / tachyon
-   (alarm clock:    (LLM metering,     (USDX ledger,       (service registry+LXP gateway,
-    HEARTBEAT,       PAX credit         holds, LXP           app-access grants,
-    AUTOMATRIX,      ledger)            receipts)            EVM toolbox)
+     chronos           gateway            sandboxd            layerx / deus
+   (alarm clock:    (LLM metering,     (dojo sandboxes,     (external services:
+    HEARTBEAT,       PAX credit         branded             USDX ledger + holds,
+    AUTOMATRIX,      ledger)            previews)           service registry/LXP)
     MORNING_BRIEF)
 ```
 
@@ -79,13 +79,21 @@ each other) and is independently buildable/testable.
 | `chronos/`   | Centralized agent alarm clock (`chronosd`): cron/timezone scheduling with wake conventions `HEARTBEAT`, `AUTOMATRIX`, `MORNING_BRIEF` delivered as `/chat` wake turns. |
 | `router/`    | `matrix-router`: the only public listener. Supabase/GoTrue JWT auth, per-user daemon provisioning + wake on Railway, reverse proxy, machine env injection (vault KEK gate, provider keys, snapshot policy). |
 | `gateway/`   | `matrix-gateway`: OpenAI-compatible LLM metering proxy (PAX credit ledger, per-actor rate limits, free-tier whitelist, BYO bypass). |
-| `layerx/`    | `layerxd`: the USDX (6dp) payments ledger — accounts, transfers, holds (authorize/capture/release), ref binding, receipts. The custody/concurrency authority for agent payments. |
-| `deus/`      | Agent-services registry, discovery, and execution gateway, re-platformed on **LXP** (`lxp/1`): HTTP 402 challenge → DID-signed intent → layerxd settle → `X-LayerX-Receipt`. Middleware kits in `pkg/lxp` (Go) and `runner/src/lxp.js` (Node). |
 | `construct/` | Typed screen surfaces the agent renders onto the client (`construct_render`, Ask back-channel, surfacestore persistence). |
-| `uwac/`      | Universal Web App Connectors: agent-triggered consent grants for a user's external apps; the agent invokes actions without ever holding the OAuth token. |
-| `tachyon/`   | Agent-native Solidity/EVM toolbox service (API/MCP first; the CLI is a thin client). Also home of the shared `.kvx` config parser. |
 | `codegraph/` | Agent-native code graph (model/store/extract/retrieve) — the structural self-model source.                |
-| `cody/`      | **Dead.** The orchestrator product was folded into Neo (the `/cody` route is the Neo-owned workbench). The directory awaits owner-approved deletion (morpheus task 1.3). |
+
+`sandboxd/` (Node) rounds out the deployed set: the Railway sandbox and
+branded-preview plane the dojo disposable desktop boots on.
+
+### Services that live outside this repo
+
+Both are live and both are reached from the daemon through an MCP stdio bridge
+in `tools/`, never by importing their Go packages.
+
+| Service  | Role                                                                                                     |
+| -------- | -------------------------------------------------------------------------------------------------------- |
+| LayerX   | `layerxd`: the USDX (6dp) payments ledger — accounts, transfers, holds (authorize/capture/release), ref binding, receipts. The custody/concurrency authority for agent payments. |
+| Deus     | Agent-services registry, discovery, and execution gateway on **LXP** (`lxp/1`): HTTP 402 challenge → DID-signed intent → layerxd settle → `X-LayerX-Receipt`. |
 
 ## Neo, the unified agent
 
@@ -147,8 +155,8 @@ servers, and Playwright+Chromium for the local browser bridge. Per-user state
 snapshots (vault-encrypted tarballs) push to MinIO. LLM traffic goes through
 the gateway (main/cheap lanes currently MiMo; grok on the Cassandra lanes).
 
-`deploy/box` (the original single-box topology) and `deploy/daemon` (Fly
-Machines) are historical.
+`deploy/railway` is the only per-user daemon image. The earlier single-box and
+Fly Machines topologies have been retired out of the tree.
 
 ## Clients
 
@@ -170,7 +178,8 @@ Machines) are historical.
   `cortex/activate.go` → `cortex/replay/replay.go`.
 - Vault: `vault/` (crypto core) → `cortex/store/vaultseam.go` →
   `neo/internal/conversation/store.go` (record-AEAD JSONL in practice).
-- Payments: `layerx/DESIGN.md` → `deus/docs/08-payments-billing.md` (lxp/1) →
-  `deus/pkg/lxp`.
+- Payments: the money lane from this side is `tools/layerx/layerx.mjs` and
+  `tools/deus/deus.mjs`; the ledger and gateway themselves live outside this
+  repo.
 - Executor/MCL: `executor/cmd/mcl-execute/daemon_cmd.go` → `MCL/mtx/spec.md`.
 - Deploy: `deploy/railway/`.

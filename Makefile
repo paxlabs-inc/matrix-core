@@ -1,5 +1,5 @@
 # Matrix — root Makefile
-# Drives the four sibling Go modules (cortex/, MCL/, bridge/, executor/) plus
+# Drives the twelve sibling Go modules that make up the deployed system plus
 # repo-wide tasks (lint, fmt, e2e, deploy artefacts).
 #
 # Style: zero implicit magic. Every target is grep-able and self-contained.
@@ -10,7 +10,7 @@ SHELL              := /usr/bin/env bash
 .SHELLFLAGS        := -eu -o pipefail -c
 .DEFAULT_GOAL      := help
 
-MODULES            := MCL bridge executor gateway router cortex tachyon deus neo chronos layerx construct chronos codegraph
+MODULES            := vault cortex MCL bridge construct codegraph cassandra executor neo router gateway chronos
 GO                 ?= /usr/local/go/bin/go
 GOFLAGS            ?=
 GOTEST_FLAGS       ?= -count=1
@@ -91,10 +91,7 @@ install: ## Install runnable binaries into ./bin.
 	@$(GO) -C router   build -o $(BIN_DIR)/matrix-router   ./cmd/matrix-router
 	@$(GO) -C neo      build -o $(BIN_DIR)/neo             ./cmd/neo
 	@$(GO) -C chronos  build -o $(BIN_DIR)/chronosd        ./cmd/chronosd
-	@$(GO) -C layerx   build -o $(BIN_DIR)/layerxd         ./cmd/layerxd
 	@$(GO) -C construct build -o $(BIN_DIR)/construct      ./cmd/construct
-	@$(GO) -C cody     build -o $(BIN_DIR)/codyd           ./cmd/codyd
-	@$(GO) -C uwac     build -o $(BIN_DIR)/uwacd           ./cmd/uwacd
 	@$(GO) -C codegraph build -o $(BIN_DIR)/codegraph      ./cmd/codegraph
 	@printf "  $(C_GREEN)binaries$(C_RESET) -> $(BIN_DIR)\n"
 	@ls -1 $(BIN_DIR) | sed 's/^/    /'
@@ -199,16 +196,16 @@ e2e-sweep: ## Run the sweep harness wrapper at tools/e2e/run_sweep.sh.
 # ---------------------------------------------------------------------------
 
 .PHONY: docker-daemon
-docker-daemon: ## Build the daemon container image (deploy/daemon/Dockerfile).
+docker-daemon: ## Build the per-user daemon image (deploy/railway/Dockerfile).
 	$(call HEADER,docker build matrix-daemon:dev)
-	@docker build -f deploy/daemon/Dockerfile -t matrix-daemon:dev .
+	@docker build -f deploy/railway/Dockerfile -t matrix-daemon:dev .
 
 .PHONY: docker-daemon-run
-docker-daemon-run: ## Run the daemon container locally (binds 8080 + mounts ./runs/data).
-	@mkdir -p $(REPO_ROOT)/runs/data
+docker-daemon-run: ## Run the daemon container locally (binds 8080 + mounts ./.run/data).
+	@mkdir -p $(REPO_ROOT)/.run/data
 	@docker run --rm -it \
 	  -p 8080:8080 \
-	  -v $(REPO_ROOT)/runs/data:/data \
+	  -v $(REPO_ROOT)/.run/data:/data \
 	  --env-file $(REPO_ROOT)/.env \
 	  matrix-daemon:dev
 
@@ -217,7 +214,7 @@ docker-daemon-run: ## Run the daemon container locally (binds 8080 + mounts ./ru
 # ---------------------------------------------------------------------------
 
 .PHONY: clean
-clean: ## Remove build artefacts, coverage, bin/, transient runs/.
+clean: ## Remove build artefacts, coverage and bin/.
 	$(call HEADER,clean)
 	@rm -rf $(BIN_DIR) $(COVERAGE_DIR)
 	@rm -f cortex/cortex-shell cortex/two-model-smoke cortex/embed-smoke

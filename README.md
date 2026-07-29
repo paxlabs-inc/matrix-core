@@ -106,13 +106,14 @@ The root Makefile drives its sibling Go modules — each independently `go build
 
 
 ```
-📁 matrix-core
-├── 📁 agents
+📁 matrix
+├── 📁 agents        agent manifests (neo.json, default.json)
+├── 📁 apps          client   the web app
 ├── 📁 bridge
 │   └── _..._
-├── 📁 chronos
+├── 📁 cassandra
 │   └── _..._
-├── 📁 client
+├── 📁 chronos
 │   └── _..._
 ├── 📁 codegraph
 │   └── _..._
@@ -120,6 +121,7 @@ The root Makefile drives its sibling Go modules — each independently `go build
 │   └── _..._
 ├── 📁 cortex
 │   └── _..._
+├── 📁 deploy        railway (per-user daemon), router, gateway, chronos
 ├── 📁 dojo
 │   └── _..._
 ├── 📁 executor
@@ -134,7 +136,9 @@ The root Makefile drives its sibling Go modules — each independently `go build
 │   └── _..._
 ├── 📁 sandboxd
 │   └── _..._
-└── 📁 tools
+├── 📁 skills        SKILL.mtx + SKILL.md capability manifests
+├── 📁 tools         MCP server bridges
+└── 📁 vault
     └── _..._
 ```
 
@@ -146,20 +150,23 @@ The root Makefile drives its sibling Go modules — each independently `go build
 | **executor** | The Loop Manager. Per-agent loop engine, lifecycle state machine, MCP dispatch, per-user daemon, Liaison narrator, end-to-end test harness. |
 | **bridge** | MCL-to-cortex adapter. Separate Go module for clean interface boundaries. |
 | **gateway** | Metered LLM proxy with PAX credit ledger, free-tier whitelist, and rate card enforcement. |
-| **router** | Per-user Fly Machine provisioning with wake-then-reverse-proxy front door. |
-| **deus** | Agent-service marketplace: registry, discovery, metered invocation, EIP-712 receipts, hosted execution. |
-| **tachyon** | Agent-native Solidity/EVM engine — compile, test, simulate, deploy. (git submodule) |
-| **layerx** | Settlement fabric and custody spine for agent balances. |
+| **router** | The only public listener. Supabase JWT auth, per-user provisioning and wake on Railway, reverse proxy, machine env injection. |
+| **vault** | Envelope encryption for all user data at rest: platform KEK → per-user key → per-object DEKs, AES-256-GCM, fail-closed. |
+| **cassandra** | Verdict adjudicator. Runs as a silent-voice controller in-process in Neo, and as the executor's completeness critic. |
+| **construct** | Typed screen surfaces the agent renders onto the client, with an Ask back-channel. |
+| **codegraph** | Agent-native code graph — the structural half of the agent's self-model. |
 | **chronos** | Centralised agent scheduler and wake-up system. |
-| **atlas** | Additional infrastructure orchestration layer. |
-| **context** | Context management subsystem. |
-| **journal** | Append-only journal subsystem for deterministic state replay. |
-| **knowledge** | Canonical references: matrix.kvx project state, models, and schema definitions. |
+| **sandboxd** | Railway sandbox and branded preview plane; the substrate the dojo disposable desktop boots on. |
+| **dojo** | Disposable desktop: a pinned bytebot-desktop image the agent drives by sight, plus the AGON benchmark corpus. |
 | **skills** | SKILL.mtx capability manifests and SKILL.md prose capability descriptions. |
-| **tools** | MCP servers: Paxeer RPC/PaxScan/price and wallet operations, browser, tachyon, deus, uwac, web-search, media, cortex; plus the per-user LiveKit voice worker. |
+| **tools** | MCP server bridges: Paxeer RPC and wallet operations, browser, web-search, machine-mail, exec, media, chronos, desktop, finance, kindle, layerx, deus, sandbox; plus the per-user LiveKit voice worker. |
 | **agents** | DID-bound agent manifests (default.json, neo.json) plus MCP server templates. |
-| **protocol** | Protocol definitions and wire formats. |
-| **deploy** | Daemon container image, Fly Machine deploy, shared-service images, box install scripts. |
+| **apps/client** | The Next.js web app: chat over SSE, workspace trace, workbench, settings, wallet. |
+| **deploy** | Per-user daemon image (`railway/`) plus the router, gateway and chronos control-plane images. |
+
+LayerX (settlement and custody) and Deus (agent-service registry) are live
+services that ship on their own infrastructure; their source lives outside this
+repo. Neo reaches both through the `layerx` and `deus` MCP bridges in `tools/`.
 
 ## Key Design Decisions
 
@@ -275,7 +282,7 @@ MCL daemon and reachable through the same front.
 | [Security Policy](SECURITY.md) | Vulnerability disclosure and responsible reporting |
 | [Changelog](CHANGELOG.md) | Keep-a-Changelog format release notes |
 | [MCL Documentation](docs/MCL-docs/index.md) | MCL language reference, closed-verb grammar, and agent internals |
-| [Daemon Deploy Guide](deploy/daemon/README.md) | Production deployment, Fly Machine configuration, and operations |
+| [Daemon Image](deploy/railway/Dockerfile) | The per-user daemon container: baked binaries, tool bridges, and dev toolchain |
 | [Full Documentation](https://docs.matrixmcl.com) | Complete documentation site at docs.matrixmcl.com |
 
 ## Contributing

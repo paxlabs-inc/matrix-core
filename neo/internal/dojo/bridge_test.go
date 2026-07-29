@@ -39,6 +39,7 @@ type shellFixture struct {
 	mu                sync.Mutex
 	chunksInFlight    int
 	maxChunksInFlight int
+	truncatedReads    int
 }
 
 var (
@@ -80,6 +81,9 @@ func (f *shellFixture) server(t *testing.T) *httptest.Server {
 		if f.execOutputCap > 0 && len(stdout) > f.execOutputCap {
 			stdout = stdout[:f.execOutputCap]
 			truncated = true
+			f.mu.Lock()
+			f.truncatedReads++
+			f.mu.Unlock()
 		}
 		out, _ := json.Marshal(stdout)
 		fmt.Fprintf(w, `{"data":{"sandboxExec":{"stdout":%s,"stderr":"","exitCode":0,"timedOut":false,"truncated":%t}}}`, out, truncated)
@@ -128,6 +132,12 @@ func (f *shellFixture) maxConcurrentChunks() int {
 	return f.maxChunksInFlight
 }
 
+func (f *shellFixture) truncations() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.truncatedReads
+}
+
 func managerOverShell(t *testing.T, f *shellFixture) *Manager {
 	t.Helper()
 	srv := f.server(t)
@@ -169,7 +179,7 @@ func TestCallBytebotdLargeChunked(t *testing.T) {
 	payload := append([]byte(`{"image":"`), big...)
 	payload = append(payload, []byte(`"}`)...)
 	f := &shellFixture{
-		bytebotBody: payload, bytebotCode: 201, execOutputCap: 60_000,
+		bytebotBody: payload, bytebotCode: 201, execOutputCap: 40_000,
 		chunkDelay: 5 * time.Millisecond,
 	}
 	m := managerOverShell(t, f)
@@ -183,8 +193,31 @@ func TestCallBytebotdLargeChunked(t *testing.T) {
 	if string(resp) != string(payload) {
 		t.Fatal("reassembled bytes differ from source")
 	}
+	if f.truncations() == 0 {
+		t.Fatal("test did not exercise adaptive truncated-range recovery")
+	}
 	if got := f.maxConcurrentChunks(); got < 2 || got > execReadWorkers {
 		t.Fatalf("concurrent chunk reads = %d, want 2..%d", got, execReadWorkers)
+	}
+}
+
+func TestCallBytebotdAdaptiveMultiLevelTruncation(t *testing.T) {
+	payload := make([]byte, execChunkBytes)
+	for i := range payload {
+		payload[i] = byte('a' + (i % 26))
+	}
+	f := &shellFixture{bytebotBody: payload, bytebotCode: 201, execOutputCap: 10_000}
+	m := managerOverShell(t, f)
+
+	resp, err := m.CallBytebotd(context.Background(), []byte(`{"action":"screenshot"}`))
+	if err != nil {
+		t.Fatalf("CallBytebotd: %v", err)
+	}
+	if !bytes.Equal(resp, payload) {
+		t.Fatalf("adaptive reassembly recovered %d of %d bytes", len(resp), len(payload))
+	}
+	if f.truncations() < 3 {
+		t.Fatalf("truncated reads = %d, want multi-level splitting", f.truncations())
 	}
 }
 

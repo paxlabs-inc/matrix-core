@@ -3,8 +3,8 @@
 
 // Package db wraps Postgres queries used by matrix-router.
 //
-// Schema source of truth: deploy/box/postgres/schema.sql (idempotent,
-// applied by bootstrap.sh).
+// Schema source of truth: deploy/router/postgres/schema.sql (idempotent),
+// with incremental changes under deploy/router/postgres/migrations/.
 //
 // Two query surfaces:
 //   - LookupForRoute     hot-path: JWT subject → user row needed for proxy

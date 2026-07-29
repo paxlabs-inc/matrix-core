@@ -1,17 +1,17 @@
 // Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// matrix-router — front door for Fly daemon Machines.
+// matrix-router — front door for the per-user daemon services.
 //
 // Two listeners:
 //
 //	ROUTER_ADDR (public, e.g. :443)        JWT-protected reverse proxy
 //	ROUTER_INTERNAL_ADDR (private, :8088)  admin + healthz (admin-token)
 //
-// Both share state: one *db.DB pool, one *fly.Client, one
-// *jwt.Verifier. systemd loads /etc/matrix/router.env +
-// /etc/matrix/postgres.env (see deploy/box/router/router.service)
-// before exec.
+// Both share state: one *db.DB pool, one provider client, one
+// *jwt.Verifier. On a systemd host, /etc/matrix/router.env +
+// /etc/matrix/postgres.env are loaded before exec; on Railway the
+// environment comes from the platform.
 //
 // Hot path:
 //
@@ -253,19 +253,6 @@ func main() {
 			// sessions). MATRIX_BROWSER_TOKEN (optional) is sent as a bearer.
 			"MATRIX_BROWSER_URL":   envOr("MATRIX_BROWSER_URL", "http://matrix-browser.internal:8931/mcp"),
 			"MATRIX_BROWSER_TOKEN": os.Getenv("MATRIX_BROWSER_TOKEN"),
-			// Shared Solidity/EVM engine (tools/tachyon/tachyon.mjs stdio proxy
-			// in the daemon image -> the matrix-tachyon Fly app running tachyond
-			// over its JSON-RPC /rpc transport). Like the browser proxy, it
-			// answers initialize/tools/list locally so an unreachable engine
-			// never bricks daemon boot; it dials MATRIX_TACHYON_URL lazily on
-			// the first tachyon_* call. Defaults to the private 6PN address.
-			// WRITE tools (deploy / broadcast call) are signed by the caller's
-			// OWN embedded wallet: the proxy mints + forwards the agent's
-			// did:matrix bearer per request (reusing the daemon's executor key,
-			// same as the paxeer lane), so the shared engine holds NO seed.
-			// MATRIX_TACHYON_TOKEN (optional) is the engine's own bearer.
-			"MATRIX_TACHYON_URL":   envOr("MATRIX_TACHYON_URL", "http://matrix-tachyon.internal:8645/rpc"),
-			"MATRIX_TACHYON_TOKEN": os.Getenv("MATRIX_TACHYON_TOKEN"),
 			// KindleLaunch bridge (tools/kindle in the daemon image). All contract
 			// addresses self-default to the 2026-06-20 chain-125 manifest in
 			// lib/config.mjs; signing reuses the paxeer embedded-wallet lane (the
@@ -278,17 +265,6 @@ func main() {
 			"KINDLE_MEDIA_GATEWAY": envOr("KINDLE_MEDIA_GATEWAY", "https://cdn.kindlelaunch.com"),
 			"KINDLE_METADATA_URL":  envOr("KINDLE_METADATA_URL", "https://metadata.kindlelaunch.com"),
 			"KINDLE_FRONTEND_URL":  envOr("KINDLE_FRONTEND_URL", "https://kindlelaunch.com"),
-			// UWAC connector hub (tools/uwac/uwac.mjs stdio proxy in the daemon
-			// image -> the shared uwacd Fly app: OAuth connector vault + tool
-			// invoke). Like the browser/tachyon proxies it answers
-			// initialize/tools/list locally so an unreachable hub never bricks
-			// daemon boot; it dials MATRIX_UWAC_URL lazily on the first uwac_*
-			// call. The daemon mints its OWN agent-DID principal token (reusing
-			// the executor key, label = MATRIX_USER_ID) so uwacd scopes the
-			// vault lookup to this owner. MATRIX_UWAC_TOKEN is the shared
-			// transport bearer; OAuth tokens never reach the daemon.
-			"MATRIX_UWAC_URL":   envOr("MATRIX_UWAC_URL", "http://matrix-uwac.internal:8646"),
-			"MATRIX_UWAC_TOKEN": os.Getenv("MATRIX_UWAC_TOKEN"),
 			// Deus agent-service gateway (tools/deus/deus.mjs stdio proxy).
 			"MATRIX_DEUS_URL":        envOr("MATRIX_DEUS_URL", "http://deus-control.internal:9095"),
 			"MATRIX_DEUS_TIMEOUT_MS": os.Getenv("MATRIX_DEUS_TIMEOUT_MS"),

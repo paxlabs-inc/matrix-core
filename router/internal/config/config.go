@@ -3,10 +3,10 @@
 
 // Package config loads matrix-router configuration from environment.
 //
-// Production layout: systemd unit at /etc/systemd/system/matrix-router.service
-// loads /etc/matrix/router.env + /etc/matrix/postgres.env (see deploy/box/
-// router/router.service); both files are mode 0640 owned by root:matrix and
-// readable only by the service user.
+// Production layout: the router runs from deploy/router/Dockerfile with its
+// environment supplied by the platform. On a systemd host it instead reads
+// /etc/matrix/router.env + /etc/matrix/postgres.env, both mode 0640 owned by
+// root:matrix and readable only by the service user.
 //
 // Required envs at minimum:
 //

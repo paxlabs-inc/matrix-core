@@ -97,9 +97,8 @@ func (d *daemonState) handleChat(t *transcript) http.HandlerFunc {
 		if conversationID == "" {
 			conversationID = synthConversationID(req.Message)
 		}
-		// An explicit client-pinned skill is respected; otherwise the skill
-		// is selected per-prose inside dispatch (selectSkill routes contract
-		// intents to tachyon-engineer, else the configured default).
+		// An explicit client-pinned skill is respected; otherwise the
+		// daemon's configured default skill is used.
 		pinnedSkill := req.Skill
 		userID := userIDFromContext(ctx)
 
@@ -109,7 +108,7 @@ func (d *daemonState) handleChat(t *transcript) http.HandlerFunc {
 		dispatch := func(prose string) {
 			skill := pinnedSkill
 			if skill == "" {
-				skill = d.selectSkill(prose, "chat")
+				skill = d.defaultSkillURI
 			}
 			if skill == "" {
 				writeJSON(w, http.StatusBadRequest, map[string]string{

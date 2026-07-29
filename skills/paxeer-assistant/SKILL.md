@@ -13,10 +13,9 @@ It runs on the **default** Matrix agent, which already bundles every server it
 needs: the `/workspace` filesystem (`fs`), the shell + service supervisor
 (`exec`), version control (`git`), web search (`web-search`), URL fetch
 (`fetch`), a real headless browser (`browser`), the Paxeer network bridge
-(`paxeer-net`), and the shared Solidity/EVM engine (`tachyon`, a Foundry/forge
-proxy to the matrix-tachyon app). Reads are free; chain writes and contract
-deployments sign through the embedded wallet with custody and spend policy
-enforced network-side.
+(`paxeer-net`), and a full Foundry toolchain on PATH for Solidity work. Reads
+are free; chain writes and contract deployments sign through the embedded
+wallet with custody and spend policy enforced network-side.
 
 ## Two axes: domain (what kind of work) × verb (lifecycle stage)
 
@@ -142,38 +141,31 @@ source of truth for swap execution):
 ## Domain 4 — CONTRACTS (author, compile, test, deploy Solidity)
 
 When the work is a **smart contract** — write it, compile it, test it, or DEPLOY
-it — use the `tachyon` tools. **Never hand-roll `solc` / `solcjs` / `npm` via
-`exec.shell`: the daemon image has no solc and that path always fails.** The
-engine is a shared Foundry (forge) box reached over the private network; it
-holds no wallet seed — deployments are signed by *your* embedded wallet, with
-the agent identity forwarded automatically.
+it — build it locally with **Foundry**, which is baked into your image and on
+your PATH (`forge`, `cast`, `anvil`, `chisel`). **Never hand-roll `solc` /
+`solcjs` / `npm`: there is no standalone solc and that path always fails.**
 
-- **`tachyon_compile`** — pass the contract as a `sources` map (`path`->content;
-  contracts under `src/`, tests under `test/`). `@openzeppelin/contracts/...`
-  and `forge-std/...` imports resolve automatically. Returns the ABI +
-  bytecode and a stable **`project_id`** that threads into deploy/call.
-- **`tachyon_test`** — run the Forge suite; per-case pass/fail/gas. Narrow with
-  `match_path` / `match_contract` / `filter`.
-- **`tachyon_simulate`** — read-only `eth_call` dry-run against a chain (no
-  broadcast); returns return-data + any revert reason.
-- **`tachyon_deploy`** — sign + broadcast the deployment via the embedded wallet.
-  Resolve by contract name + `project_id`; pass an `idempotency_key` so a retry
-  is safe. Returns the **contract address + tx_hash**.
-- **`tachyon_call`** — invoke a method. `simulate_only=true` is a read; otherwise
-  a wallet-signed write. Encode by `method`+`args` (ABI from inline `abi` or
-  `contract`+`project_id`) or pass pre-encoded `data`.
-- **`tachyon_chain_list` / `tachyon_chain_register`** — list / add RPC profiles
-  (Paxeer is chain 125).
-- **`tachyon_artifact_get` / `tachyon_registry_lookup`** — fetch a cached
-  artifact (ABI + bytecode) by name + `project_id`, or resolve a prior
-  deployment by `idempotency_key` + `chain_id`.
+- **Scaffold** — `forge init <dir>` (or write `foundry.toml` + `src/` yourself)
+  via `exec.shell`. Contracts under `src/`, tests under `test/`.
+- **Dependencies** — `forge install OpenZeppelin/openzeppelin-contracts` and
+  `forge install foundry-rs/forge-std`, then import normally.
+- **Compile** — `forge build`. The ABI + bytecode land under `out/<Name>.sol/`;
+  read them with the fs tools.
+- **Test** — `forge test -vv`. Narrow with `--match-path` / `--match-contract`.
+- **Simulate** — `eth_call` (read-only, no broadcast) via `eth_call` or
+  `contract_read`; returns return-data and any revert reason.
+- **Deploy** — encode the creation transaction and broadcast it with
+  `contract_write` so it is signed by *your* embedded wallet. Pass an
+  idempotency key so a retry is safe. Capture the **contract address + tx_hash**
+  from the result.
+- **Interact** — `contract_read` for reads, `contract_write` for wallet-signed
+  writes, `encode_call` when you need calldata by hand.
 
-*Recipe — deploy a token (e.g. an ERC-20):* `tachyon_compile` the source ->
-`tachyon_test` -> `tachyon_simulate` -> `tachyon_deploy` (capture address +
-tx_hash) -> `tachyon_call` to read/verify (e.g. `name` / `symbol` /
-`totalSupply`, `simulate_only=true`). **Take the address and tx_hash verbatim
-from the tachyon result — never fabricate a `PLACEHOLDER` value; if a step
-errors, report the error.**
+*Recipe — deploy a token (e.g. an ERC-20):* write the source -> `forge build`
+-> `forge test -vv` -> `eth_call` to dry-run -> `contract_write` to deploy
+(capture address + tx_hash) -> `contract_read` to verify (`name` / `symbol` /
+`totalSupply`). **Take the address and tx_hash verbatim from the tool result —
+never fabricate a `PLACEHOLDER` value; if a step errors, report the error.**
 
 ## Order of operations (every verb)
 

@@ -290,73 +290,6 @@
       ]
     },
     {
-      "alias": "tachyon",
-      "transport": "stdio",
-      "command": "node",
-      "args": [
-        "/root/matrix/tools/tachyon/tachyon.mjs"
-      ],
-      "env": [],
-      "package_digest": "sha256:2b795d2a304eae11ac697f2576c928b9c1107513fd6badfafe91d58c7ffe86c0",
-      "version": "0.1.0",
-      "tools": [
-        {
-          "name": "tachyon_compile",
-          "description": "Compile Solidity with forge and return artifacts (ABI + bytecode) + a stable project_id. Pass sources as a map of path->content (contracts under src/, tests under test/); @openzeppelin/contracts/... and forge-std/... resolve automatically. The project_id threads into tachyon_deploy / tachyon_call.",
-          "side_effect_class": "shell",
-          "timeout_ms": 180000
-        },
-        {
-          "name": "tachyon_test",
-          "description": "Run a Forge test suite and return per-case results (pass/fail/gas). Pass sources (tests under test/, contracts under src/); narrow with match_path / match_contract / filter.",
-          "side_effect_class": "shell",
-          "timeout_ms": 300000
-        },
-        {
-          "name": "tachyon_simulate",
-          "description": "Dry-run an eth_call against a chain without broadcasting (read-only). Provide to, pre-encoded data, and chain_id or rpc_url; returns return data + any revert reason.",
-          "side_effect_class": "network",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "tachyon_deploy",
-          "description": "Deploy a compiled contract on-chain. WRITE: signs + broadcasts via the caller's embedded wallet (agent identity forwarded automatically). Resolve by contract name + project_id; idempotency_key makes redeploys safe.",
-          "side_effect_class": "write",
-          "timeout_ms": 120000
-        },
-        {
-          "name": "tachyon_call",
-          "description": "Invoke a contract method. simulate_only=true is a read (eth_call); otherwise a WRITE that signs + broadcasts via the caller's embedded wallet. Encode by method+args (ABI from inline abi or contract+project_id) or pass pre-encoded data.",
-          "side_effect_class": "write",
-          "timeout_ms": 60000
-        },
-        {
-          "name": "tachyon_chain_list",
-          "description": "List configured chain RPC profiles (id, name, chain_id, explorer) and the active chain. Read-only.",
-          "side_effect_class": "read",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "tachyon_chain_register",
-          "description": "Register or update a custom chain RPC profile (id, name, rpc_url, chain_id, explorer) so later ops can target it by id.",
-          "side_effect_class": "write",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "tachyon_artifact_get",
-          "description": "Fetch a cached compile artifact (ABI + bytecode) by contract name + project_id. Read-only.",
-          "side_effect_class": "read",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "tachyon_registry_lookup",
-          "description": "Resolve a prior deployment by idempotency_key + chain_id (address, tx hash, confirmation state, or found=false). Read-only.",
-          "side_effect_class": "read",
-          "timeout_ms": 15000
-        }
-      ]
-    },
-    {
       "alias": "deus",
       "transport": "stdio",
       "command": "node",
@@ -804,49 +737,6 @@
           "name": "wallet_action",
           "description": "Poll a durable action by id: status, tx hashes, LayerX credit, and the interpretation-free error envelope. Read-only (never resubmits a broadcast action).",
           "side_effect_class": "network",
-          "timeout_ms": 30000
-        }
-      ]
-    },
-    {
-      "alias": "uwac",
-      "transport": "stdio",
-      "command": "node",
-      "args": [
-        "/root/matrix/tools/uwac/uwac.mjs"
-      ],
-      "env": [],
-      "package_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
-      "version": "0.1.0",
-      "tools": [
-        {
-          "name": "calendar_create_event",
-          "description": "Create an event on the owner's connected Google primary calendar. IRREVERSIBLE: pass confirmed=true once the user approves. args: summary, start (RFC3339), end (RFC3339), description?.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "calendar_list_events",
-          "description": "List upcoming events on the owner's connected Google primary calendar. Read-only. args: max_results?, time_min? (RFC3339).",
-          "side_effect_class": "network",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "gmail_get_message",
-          "description": "Fetch one Gmail message (headers + snippet + body) by id from the owner's connected Google account. Read-only. args: id, format? (metadata|full).",
-          "side_effect_class": "network",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "gmail_search",
-          "description": "Search the owner's connected Gmail. Returns matching message ids + thread ids. Read-only. args: query (Gmail search syntax), max_results?.",
-          "side_effect_class": "network",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "gmail_send",
-          "description": "Send an email from the owner's connected Gmail. IRREVERSIBLE: pass confirmed=true once the user approves. args: to, subject, body.",
-          "side_effect_class": "write",
           "timeout_ms": 30000
         }
       ]

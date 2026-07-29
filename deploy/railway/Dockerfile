@@ -347,7 +347,6 @@ COPY tools/finance   /opt/matrix/tools/finance
 COPY tools/browser   /opt/matrix/tools/browser
 COPY tools/machinemail /opt/matrix/tools/machinemail
 COPY tools/exec      /opt/matrix/tools/exec
-COPY tools/tachyon   /opt/matrix/tools/tachyon
 COPY tools/kindle    /opt/matrix/tools/kindle
 COPY tools/deus      /opt/matrix/tools/deus
 COPY tools/media     /opt/matrix/tools/media
@@ -356,7 +355,6 @@ COPY tools/voice/requirements.txt /opt/matrix/tools/voice/requirements.txt
 RUN set -eux; \
     cd /opt/matrix/tools/voice; \
     /opt/voice-venv/bin/python agent.py download-files
-COPY tools/uwac      /opt/matrix/tools/uwac
 COPY tools/chronos   /opt/matrix/tools/chronos
 COPY tools/layerx    /opt/matrix/tools/layerx
 COPY tools/sandbox   /opt/matrix/tools/sandbox

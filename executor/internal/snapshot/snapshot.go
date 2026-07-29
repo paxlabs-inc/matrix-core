@@ -482,7 +482,7 @@ func (m *Manager) Stop(ctx context.Context) error {
 // tarZst archives src/ as zstd-compressed tar at dst. Shells to
 // `tar -I zstd -cf <dst> -C <src> .` so we avoid pulling a Go zstd
 // dependency. The image's apt-installed zstd + tar are required at
-// runtime (verified in deploy/daemon/Dockerfile).
+// runtime (verified in deploy/railway/Dockerfile).
 func tarZst(ctx context.Context, src, dst string) error {
 	cmd := exec.CommandContext(ctx, "tar", "-I", "zstd", "-cf", dst, "-C", src, ".")
 	cmd.Env = tool.AgentEnvironment(os.Environ())

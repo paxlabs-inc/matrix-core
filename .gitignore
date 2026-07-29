@@ -63,10 +63,6 @@ tmp/
 # Vector index files written by cortex/embedder.go.
 **/vec/
 
-# Journal mirrors written by mcl-execute / mcl-e2e harness.
-journal/logs/*/
-!journal/logs/.gitkeep
-
 # Sweep harness outputs.
 tools/e2e/sweeps/
 sweeps/
@@ -117,9 +113,9 @@ node_modules/
 npm-debug.log*
 
 # --- Docker / deploy artefacts -------------------------------------------
-deploy/daemon/.build/
 fly.toml
-!deploy/daemon/fly.toml.tmpl
+# Local `make docker-daemon-run` volume mount.
+.run/
 
 # --- Generated docs / static analysis ------------------------------------
 docs/_build/
@@ -136,38 +132,24 @@ site/
 .matrix/logs/
 .matrix/run/
 .matrix/
-deploy/box
 executor/gideon-ingest
-executor/${n02.target_path}
 executor/mcl-e2e
 executor/mcl-execute
 executor/bin/
 gideon/
-journal/**
-!journal/.gitkeep
 protocol/**
 !protocol/.gitkeep
-runs/**
-!runs/.gitkeep
 website/
 nohup.out
 apps/
-deploy/gideon
 deploy/deploy.sh
-.archive/
-.logs/
 tools/forge/
 skills/gideon-ops
 agents/gideon.json
-deploy/telegram/**
-deploy/deploy.sh
-layerx/IMPLEMENTATION_PLAN.md
-deploy/layerx
 construct/IMPLEMENTATION_PLAN.md
 construct/construct.frozen.kvx
 cassandra/CASSANDRA_SESSIONS_GUIDE.md
 .claude/settings.json
-.playwright-mcp
 
 # --- Feature specs --------------------------------------------------------
 # Ignore EVERY working spec directory; only the specgen tooling and the
@@ -178,14 +160,10 @@ spec/*
 !spec/specgen/**
 !spec/workflow.kvx
 
-# --- Empty-directory hygiene ---------------------------------------------
-# Only directories that carry an explicit .gitkeep are tracked; everything
-# else empty stays out of the tree (git never commits empty dirs).
+# --- Local-only working material -----------------------------------------
+# Operator inventories, historical design records and the durable knowledge
+# corpus are kept on the box, not in the published tree.
 infra/
 research/
 knowledge/
-temp/
-shard-dep.sh
-layerx/
-cody/
-deus/
+scripts/shard-dep.sh

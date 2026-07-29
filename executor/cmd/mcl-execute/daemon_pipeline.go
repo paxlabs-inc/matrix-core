@@ -182,7 +182,7 @@ func runMessage(
 		return nil, fmt.Errorf("daemon: prose is required")
 	}
 	if req.SkillURI == "" {
-		req.SkillURI = d.selectSkill(req.Prose, req.Verb)
+		req.SkillURI = d.defaultSkillURI
 	}
 	if req.SkillURI == "" {
 		return nil, fmt.Errorf("daemon: skill URI is required (no default configured)")
