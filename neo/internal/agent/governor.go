@@ -72,7 +72,7 @@ func (a *Agent) governFailsafes(calls []llm.ToolCall) (repeat, stalled bool) {
 // it), and return the honest ErrIncomplete. message carries the reason prose
 // (ending with a colon); the where-it-stands digest is appended.
 func (a *Agent) governDeath(reason, message string) error {
-	a.consolidateWorking()
+	a.consolidateWorking("", false)
 	digest := a.lastToolSummary()
 	a.recordDeath(reason, digest)
 	if a.turn != nil && a.turn.runLedger != nil {

@@ -33,7 +33,7 @@ const (
 
 func factExtract() string {
 	return fmt.Sprintf(
-		`{"facts":[%q],"user_facts":[],"preferences":[],"corrections":[],"patterns":[],"opportunities":[],"outcome":null}`,
+		`{"facts":[{"subject":"matrix://knowledge/test","predicate":"observation","statement":%q,"evidence":[1]}],"user_facts":[],"preferences":[],"corrections":[],"patterns":[],"opportunities":[],"outcome":null}`,
 		expectedFact,
 	)
 }

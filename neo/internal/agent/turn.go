@@ -26,6 +26,13 @@ import (
 // (lastFailureClass, lastDeath) stay reachable through Agent.LastFailureClass
 // and Agent.LastDeath until the next turn replaces them.
 type turn struct {
+	// objective is the original user-authored task. inputOrigin distinguishes a
+	// genuine user turn from a supervisor resume instruction; resume guidance
+	// enters the cognitive window only and is never durable evidence.
+	objective   string
+	inputOrigin inputOrigin
+	attempt     int
+
 	// contract is Architect O1's executable, versioned statement of the
 	// complete request. It is compiled before model execution and revised
 	// monotonically when genuine user steering arrives.
@@ -233,6 +240,13 @@ type turn struct {
 	episodicPending  bool
 	episodicTrigger  string
 }
+
+type inputOrigin uint8
+
+const (
+	originUser inputOrigin = iota
+	originSupervisorResume
+)
 
 // newTurn constructs a fresh turn — the reset state. Maps the loop reads
 // unconditionally are allocated here; the rest stay lazily allocated by their

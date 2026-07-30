@@ -1,0 +1,122 @@
+{
+  "capabilities": {
+    "resources": [
+      {
+        "description": "Overview of the code graph",
+        "mimeType": "application/json",
+        "name": "Graph Statistics",
+        "uri": "codegraph://stats"
+      }
+    ],
+    "tools": [
+      {
+        "description": "Search for code symbols by name, type, or pattern",
+        "name": "search_symbols",
+        "parameters": {
+          "limit": {
+            "default": 20,
+            "type": "integer"
+          },
+          "query": {
+            "description": "Search query (name, qualified name, or regex)",
+            "type": "string"
+          }
+        }
+      },
+      {
+        "description": "Get detailed information about a specific code node",
+        "name": "get_node",
+        "parameters": {
+          "node_id": {
+            "description": "The node ID",
+            "type": "string"
+          }
+        }
+      },
+      {
+        "description": "Get neighbors of a node (callers, callees, imports, etc.)",
+        "name": "get_neighbors",
+        "parameters": {
+          "depth": {
+            "default": 1,
+            "type": "integer"
+          },
+          "edge_type": {
+            "description": "Edge type filter: calls, imports, references, contains",
+            "type": "string"
+          },
+          "node_id": {
+            "description": "The node ID",
+            "type": "string"
+          }
+        }
+      },
+      {
+        "description": "Analyze the impact radius of a node change",
+        "name": "impact_analysis",
+        "parameters": {
+          "max_depth": {
+            "default": 3,
+            "type": "integer"
+          },
+          "node_id": {
+            "description": "The node ID to analyze",
+            "type": "string"
+          }
+        }
+      },
+      {
+        "description": "Get overall graph statistics",
+        "name": "graph_stats",
+        "parameters": {}
+      }
+    ]
+  },
+  "metadata": {
+    "edges_by_type": {
+      "calls": 5002,
+      "contains": 9682,
+      "defines": 17746,
+      "embeds": 8,
+      "implements": 103,
+      "imports": 380,
+      "references": 12934
+    },
+    "languages": [
+      "go",
+      "javascript",
+      "python",
+      "typescript"
+    ],
+    "nodes_by_kind": {
+      "class": 173,
+      "const": 1058,
+      "field": 3964,
+      "file": 2072,
+      "func": 7727,
+      "interface": 1757,
+      "method": 3097,
+      "module": 16,
+      "package": 533,
+      "repo": 1,
+      "struct": 471,
+      "type": 2338,
+      "var": 769
+    },
+    "total_edges": 45855,
+    "total_files": 2232,
+    "total_nodes": 23976
+  },
+  "name": "codegraph-ultra-mcp",
+  "server": {
+    "args": [
+      "mcp",
+      "serve"
+    ],
+    "command": "cg",
+    "env": {
+      "CG_DB_PATH": "auto"
+    }
+  },
+  "version": "1.0.0"
+}

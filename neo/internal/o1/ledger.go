@@ -98,6 +98,23 @@ type TerminalProof struct {
 	ProofHash string   `json:"proof_hash"`
 }
 
+// EvidenceSnapshot returns a detached, consistent copy of the ledger evidence
+// that is safe to hand to background memory consolidation.
+func (l *RunLedger) EvidenceSnapshot() ([]AttemptRecord, *TerminalProof) {
+	if l == nil {
+		return nil, nil
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	attempts := append([]AttemptRecord(nil), l.Attempts...)
+	if l.TerminalProof == nil {
+		return attempts, nil
+	}
+	proof := *l.TerminalProof
+	proof.Evidence = append([]string(nil), l.TerminalProof.Evidence...)
+	return attempts, &proof
+}
+
 // NewRunLedger creates a fresh ledger for a run.
 func NewRunLedger(runID, contractID string, contractVer uint64) *RunLedger {
 	now := time.Now()

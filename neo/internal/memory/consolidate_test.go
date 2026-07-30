@@ -42,7 +42,7 @@ func TestConsolidationIsPureMemorySideChannel(t *testing.T) {
 
 	for i := 1; i <= 3; i++ {
 		s := deathSummary(i, "ship the migration", "re-ran the same check", "no_progress_stall", "web_search")
-		if _, err := p.RecordLoopDeath(ctx, s, "conv-pure"); err != nil {
+		if _, err := p.RecordLoopDeath(ctx, s, fmt.Sprintf("run-pure-%d", i)); err != nil {
 			t.Fatalf("RecordLoopDeath: %v", err)
 		}
 	}
@@ -114,10 +114,10 @@ func TestSelfAuthoringConsolidatesSameModeIntoOneReinforcedMemory(t *testing.T) 
 	defer p.Close()
 	ctx := context.Background()
 
-	// Three deaths of the SAME mode (no_progress_stall).
+	// Three distinct logical tasks died by the SAME mode.
 	for i := 1; i <= 3; i++ {
 		s := deathSummary(i, "ship the schema migration", "re-ran the same status check without editing a file", "no_progress_stall", "web_search")
-		if _, err := p.RecordLoopDeath(ctx, s, "conv-consolidate"); err != nil {
+		if _, err := p.RecordLoopDeath(ctx, s, fmt.Sprintf("run-consolidate-%d", i)); err != nil {
 			t.Fatalf("RecordLoopDeath: %v", err)
 		}
 	}
@@ -153,12 +153,14 @@ func TestSelfAuthoringConsolidatesSameModeIntoOneReinforcedMemory(t *testing.T) 
 	// Two MORE same-mode deaths plus one of a DIFFERENT mode (step_budget).
 	for i := 4; i <= 5; i++ {
 		s := deathSummary(i, "ship the schema migration", "re-ran the same status check without editing a file", "no_progress_stall", "web_search")
-		if _, err := p.RecordLoopDeath(ctx, s, "conv-consolidate"); err != nil {
+		if _, err := p.RecordLoopDeath(ctx, s, fmt.Sprintf("run-consolidate-%d", i)); err != nil {
 			t.Fatalf("RecordLoopDeath: %v", err)
 		}
 	}
-	if _, err := p.RecordLoopDeath(ctx, deathSummary(1, "write the whole paper in one pass", "ran out of steps at section 3 of 8", "step_budget", "write_file"), "conv-consolidate2"); err != nil {
-		t.Fatalf("RecordLoopDeath: %v", err)
+	for i := 1; i <= 3; i++ {
+		if _, err := p.RecordLoopDeath(ctx, deathSummary(i, "write the whole paper in one pass", "ran out of steps at section 3 of 8", "step_budget", "write_file"), fmt.Sprintf("run-budget-%d", i)); err != nil {
+			t.Fatalf("RecordLoopDeath: %v", err)
+		}
 	}
 
 	if _, err := p.ConsolidateDeathJournal(ctx); err != nil {
@@ -191,5 +193,27 @@ func TestSelfAuthoringConsolidatesSameModeIntoOneReinforcedMemory(t *testing.T) 
 	}
 	if !strings.Contains(recalled, "failure-mode:no_progress_stall") {
 		t.Fatalf("the authored failure pattern must be recallable:\n%s", recalled)
+	}
+}
+
+func TestRepeatedRespawnsOfOneIntentStayOneIncident(t *testing.T) {
+	p, err := Open(testCfg(t))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer p.Close()
+	ctx := context.Background()
+	for attempt := 1; attempt <= 4; attempt++ {
+		summary := deathSummary(attempt, "ship the schema migration", "same task retry", "no_progress_stall", "web_search")
+		if _, err := p.RecordLoopDeath(ctx, summary, "run-one-task"); err != nil {
+			t.Fatalf("RecordLoopDeath: %v", err)
+		}
+	}
+	written, err := p.ConsolidateDeathJournal(ctx)
+	if err != nil {
+		t.Fatalf("ConsolidateDeathJournal: %v", err)
+	}
+	if written != 0 {
+		t.Fatalf("four respawns of one task must not become a cross-task failure pattern; wrote %d", written)
 	}
 }

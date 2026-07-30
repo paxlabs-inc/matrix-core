@@ -169,7 +169,7 @@ func TestEpisodicFeedRealChatLoop(t *testing.T) {
 			return
 		}
 		if strings.Contains(string(body), "memory consolidator") {
-			writeEpisodicSSE(w, `{"facts":["Zephyr recovered after rotating the Buildkite token"],"user_facts":[],"preferences":[],"corrections":[],"patterns":[],"opportunities":[],"outcome":null}`)
+			writeEpisodicSSE(w, `{"facts":[{"subject":"matrix://knowledge/zephyr","predicate":"recovery","statement":"Zephyr recovered after rotating the Buildkite token","evidence":[1]}],"user_facts":[],"preferences":[],"corrections":[],"patterns":[],"opportunities":[],"outcome":null}`)
 			return
 		}
 		generationBody = append([]byte(nil), body...)

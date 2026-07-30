@@ -57,18 +57,18 @@ func DecodePatternSpec(statement string) PatternSpec {
 	return PatternSpec{Steps: []string{s}}
 }
 
-// dedupKey is the normalized identity used to reinforce an existing pattern
-// rather than writing a duplicate: the name when present, else the trigger,
-// else the joined steps.
+// dedupKey is the normalized procedural identity: trigger plus canonical
+// action sequence. Model-generated display names are deliberately excluded.
 func (s PatternSpec) dedupKey() string {
-	switch {
-	case strings.TrimSpace(s.Name) != "":
-		return normalizeStatement(s.Name)
-	case strings.TrimSpace(s.Trigger) != "":
-		return normalizeStatement(s.Trigger)
-	default:
-		return normalizeStatement(strings.Join(s.Steps, " "))
+	trigger := normalizeStatement(s.Trigger)
+	steps := normalizeStatement(strings.Join(s.Steps, " -> "))
+	if trigger == "" {
+		return steps
 	}
+	if steps == "" {
+		return trigger
+	}
+	return trigger + "|" + steps
 }
 
 // IsEmpty reports whether the spec carries no usable content.

@@ -315,6 +315,34 @@ func (loop *Loop) Turn(
 	return loop.runTurn(ctx, userContent, checkpoint, cursor{})
 }
 
+// TurnInternal starts a supervised retry from the original user objective
+// while keeping the supervisor instruction in the system lane. It does not
+// record another user message.
+func (loop *Loop) TurnInternal(
+	ctx context.Context,
+	userContent string,
+	guidance string,
+) (Response, error) {
+	userContent = strings.TrimSpace(userContent)
+	if userContent == "" {
+		return Response{}, fmt.Errorf("runtime loop: user objective is required")
+	}
+	checkpoint := turnstate.Checkpoint{
+		Messages: []protocol.Message{{
+			Role: protocol.RoleUser, Content: userContent,
+		}},
+	}
+	if guidance = strings.TrimSpace(guidance); guidance != "" {
+		checkpoint.Messages = append(checkpoint.Messages, protocol.Message{
+			Role: protocol.RoleSystem, Content: guidance,
+		})
+	}
+	if err := loop.save(ctx, &checkpoint, cursor{}); err != nil {
+		return Response{}, err
+	}
+	return loop.runTurn(ctx, userContent, checkpoint, cursor{})
+}
+
 func (loop *Loop) Resume(
 	ctx context.Context,
 	userContent string,

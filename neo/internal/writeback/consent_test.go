@@ -20,7 +20,7 @@ import (
 // userFactExtract emits one durable user fact — a correctly-behaving model's
 // output for a fact-bearing casual turn.
 func userFactExtract() string {
-	return `{"facts":[],"user_facts":["The user lives in Berlin"],"preferences":[],"corrections":[],"patterns":[],"opportunities":[],"outcome":null}`
+	return `{"facts":[],"user_facts":[{"predicate":"location","statement":"The user lives in Berlin","evidence":[1]}],"preferences":[],"corrections":[],"patterns":[],"opportunities":[],"outcome":null}`
 }
 
 const factMarker = "I live in Berlin"

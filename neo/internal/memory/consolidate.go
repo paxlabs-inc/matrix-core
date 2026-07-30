@@ -18,8 +18,9 @@ import (
 // recurrence of the SAME mode against the ONE belief it already wrote, so
 // repeated deaths reinforce a single memory rather than piling up duplicates.
 const (
-	failureModeMarkerPrefix = "[failure-mode:"
-	failureModeMarkerSuffix = "]"
+	failureModeMarkerPrefix   = "[failure-mode:"
+	failureModeMarkerSuffix   = "]"
+	minDistinctFailureIntents = 3
 )
 
 // ConsolidateDeathJournal is the self-authoring consolidation pass (self-model
@@ -52,7 +53,7 @@ func (p *Pager) ConsolidateDeathJournal(ctx context.Context) (int, error) {
 	// Group the journal by failure mode. The journal is newest-first, so the
 	// first digest seen for a mode is the freshest example of it.
 	type modeAgg struct {
-		count    int
+		intents  map[string]struct{}
 		evidence []string
 		digest   string
 	}
@@ -62,11 +63,13 @@ func (p *Pager) ConsolidateDeathJournal(ctx context.Context) (int, error) {
 		mode := deathMode(d.Summary)
 		g := groups[mode]
 		if g == nil {
-			g = &modeAgg{}
+			g = &modeAgg{intents: make(map[string]struct{})}
 			groups[mode] = g
 			order = append(order, mode)
 		}
-		g.count++
+		if intentID := strings.TrimSpace(d.IntentID); intentID != "" {
+			g.intents[intentID] = struct{}{}
+		}
 		g.evidence = append(g.evidence, d.URI)
 		if g.digest == "" {
 			g.digest = deathStuckDigest(d.Summary)
@@ -88,7 +91,10 @@ func (p *Pager) ConsolidateDeathJournal(ctx context.Context) (int, error) {
 	written := 0
 	for _, mode := range order {
 		g := groups[mode]
-		statement := failurePatternStatement(mode, g.count, g.digest)
+		if len(g.intents) < minDistinctFailureIntents {
+			continue
+		}
+		statement := failurePatternStatement(mode, len(g.intents), g.digest)
 		if fp, ok := existing[mode]; ok {
 			// Recurrence of a known mode: reinforce the ONE belief (refresh its
 			// recency so salience rises, merge the new supporting deaths) rather

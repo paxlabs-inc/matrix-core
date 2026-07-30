@@ -5,7 +5,10 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 
+	"matrix/neo/internal/consolidation"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/o1"
 )
@@ -31,7 +34,7 @@ func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[stri
 	if isHeartbeatWake(userInput) && shouldSuppressHeartbeat(answer) {
 		// Still consolidate + attest the (heartbeat) turn so cortex learns, but
 		// produce NO user-facing output.
-		a.consolidateWorking()
+		a.consolidateWorking("", true)
 		a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
 		return
 	}
@@ -43,7 +46,7 @@ func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[stri
 	if isAutomatrixWake(userInput) && shouldSuppressAutomatrix(answer) {
 		// Still consolidate + attest the (Automatrix) turn so cortex learns, but
 		// produce NO user-facing output.
-		a.consolidateWorking()
+		a.consolidateWorking("", true)
 		a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
 		return
 	}
@@ -63,7 +66,7 @@ func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[stri
 	a.out.Say(answer, completion)
 	// [memory.writeback] step_5: consolidate before any compaction nils the
 	// working transcript.
-	a.consolidateWorking()
+	a.consolidateWorking(answer, true)
 	// Attest surfaced memories so cortex salience + EMA learn from what helped
 	// vs. what merely crowded the budget. Cheap, best-effort.
 	a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
@@ -192,14 +195,58 @@ func joinO1Evidence(results []o1.VerifierResult) string {
 	return evidence
 }
 
-// consolidateWorking sweeps the current turn's transcript into cortex (write-
-// back option B). Called on EVERY terminal path — success, stall, step-budget
-// exhaustion, and model error — so Neo also learns from failed/abandoned turns
-// (a failure pattern is durable signal), not only from clean completions.
-// Best-effort + idempotent enough: the consolidator de-dupes on write.
-func (a *Agent) consolidateWorking() {
-	if a.consolidator != nil {
-		conv, seqLo, seqHi := a.provenanceRange()
-		a.consolidator.Consolidate(renderTranscript(a.working), conv, seqLo, seqHi)
+// consolidateWorking emits an evidence-only job. Mutable working-window
+// cognition, Cassandra overlays, retry narration, and supervisor guidance are
+// excluded by construction.
+func (a *Agent) consolidateWorking(answer string, terminal bool) {
+	if a.consolidator == nil || a.turn == nil {
+		return
 	}
+	conv, seqLo, seqHi := a.provenanceRange()
+	job := consolidation.Job{
+		IntentID:  a.turnIntentID(),
+		Attempt:   a.turn.attempt,
+		Terminal:  terminal,
+		Objective: strings.TrimSpace(a.turn.objective),
+		Conv:      conv,
+		HaveSeq:   conv != "",
+		SeqLo:     seqLo,
+		SeqHi:     seqHi,
+	}
+	if job.Attempt <= 0 {
+		job.Attempt = 1
+	}
+	if job.Objective != "" {
+		job.Evidence = append(job.Evidence, consolidation.Evidence{
+			Kind: consolidation.EvidenceUser, Content: job.Objective,
+		})
+	}
+	if a.turn.runLedger != nil {
+		attempts, proof := a.turn.runLedger.EvidenceSnapshot()
+		for _, attempt := range attempts {
+			encoded, err := json.Marshal(attempt)
+			if err != nil {
+				continue
+			}
+			job.Evidence = append(job.Evidence, consolidation.Evidence{
+				Kind: consolidation.EvidenceTool, ToolName: attempt.Operation,
+				AttemptID: attempt.AttemptID, Content: string(encoded),
+			})
+		}
+		if proof != nil {
+			encoded, err := json.Marshal(proof)
+			if err == nil {
+				job.Evidence = append(job.Evidence, consolidation.Evidence{
+					Kind: consolidation.EvidenceVerified, Content: string(encoded),
+				})
+			}
+		}
+	}
+	if answer = strings.TrimSpace(answer); terminal && answer != "" {
+		job.Outcome = answer
+		job.Evidence = append(job.Evidence, consolidation.Evidence{
+			Kind: consolidation.EvidenceAssistant, Content: answer,
+		})
+	}
+	a.consolidator.Consolidate(job)
 }

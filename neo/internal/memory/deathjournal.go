@@ -14,15 +14,14 @@ import (
 	"matrix/cortex/query"
 )
 
-// deathJournalTag marks a cortex Event as a supervised-loop death record, so the
-// death journal is a FIRST-CLASS, directly-queryable set (self-model task 3.1,
-// req.4.2) — the self-authoring consolidation pass (task 3.2) reads it by tag
-// rather than guessing which failure Events were loop deaths. The tag is
-// ADDITIVE: a death record is still a TypeEvent failure observation, so ordinary
-// recall/Activate keeps surfacing it in the working set when salient (req.4.2).
-// Unlike the opportunity tag it does NOT exclude the record from recall — it
-// only makes the journal readable as a whole.
+// deathJournalTag identifies legacy failure Events written before the death
+// journal moved out of ordinary memory. Read paths filter these old records.
 const deathJournalTag memory.Tag = "neo:death-journal"
+
+// deathJournalConversation is a dedicated derived session lane. It is
+// journaled and vault-sealed by cortex.AppendMessage, but is not an anchored
+// memory and never enters another conversation's ambient activation.
+const deathJournalConversation = "neo-death-journal"
 
 // deathJournalScanCap bounds how many death records the journal reader scans
 // before ordering. The journal is small by design (one entry per supervised
@@ -38,17 +37,9 @@ const deathJournalScanCap = 256
 // failure MODE from it without a second fetch.
 type DeathRecord struct {
 	URI       string
+	IntentID  string
 	Summary   string
 	CreatedAt time.Time
-}
-
-// deathJournalHead is p.head with the death-journal tag attached, so a death
-// record is discoverable as a member of the journal while remaining an ordinary
-// recallable failure Event.
-func (p *Pager) deathJournalHead(importance uint8) memory.Head {
-	h := p.head(importance)
-	h.Tags = []memory.Tag{deathJournalTag}
-	return h
 }
 
 // DeathJournal returns the durable death-journal entries newest-first, capped at
@@ -64,35 +55,48 @@ func (p *Pager) DeathJournal(ctx context.Context, limit int) ([]DeathRecord, err
 	if p == nil || p.cortex == nil {
 		return nil, nil
 	}
-	res, err := p.cortex.Find(query.Query{
-		Where: query.HasTag{Tag: string(deathJournalTag)},
-		Limit: deathJournalScanCap,
-		Form:  query.FormMedium,
-	})
+	messages, err := p.cortex.Transcript(deathJournalConversation, 0, 0)
 	if err != nil {
 		return nil, err
 	}
-	if res == nil {
-		return nil, nil
-	}
-	out := make([]DeathRecord, 0, len(res.Memories))
-	for _, m := range res.Memories {
-		if m.Head.Type != memory.TypeEvent || !headHasDeathJournalTag(m.Head) {
+	out := make([]DeathRecord, 0, len(messages))
+	for _, message := range messages {
+		if message.Role != cortex.RoleToolResult {
 			continue
 		}
-		data, derr := memory.DecodeData(m.Version.Type, m.Version.Data)
-		if derr != nil {
-			continue
-		}
-		summary := strings.TrimSpace(eventSummary(data))
+		summary := strings.TrimSpace(message.Content)
 		if summary == "" {
 			continue
 		}
 		out = append(out, DeathRecord{
-			URI:       string(cortex.BuildURI(m.Head.Type, m.Head.ID, m.Head.CurrentVersion)),
+			URI:       string(cortex.BuildSessionURI(deathJournalConversation, message.Seq)),
+			IntentID:  strings.TrimSpace(message.ToolName),
 			Summary:   summary,
-			CreatedAt: m.Version.CreatedAt,
+			CreatedAt: time.Unix(0, message.TS).UTC(),
 		})
+	}
+	legacy, legacyErr := p.cortex.Find(query.Query{
+		Where: query.HasTag{Tag: string(deathJournalTag)},
+		Limit: deathJournalScanCap,
+		Form:  query.FormMedium,
+	})
+	if legacyErr == nil && legacy != nil {
+		for _, item := range legacy.Memories {
+			data, decodeErr := memory.DecodeData(item.Version.Type, item.Version.Data)
+			if decodeErr != nil {
+				continue
+			}
+			event, ok := asEvent(data)
+			if !ok || strings.TrimSpace(event.Summary) == "" {
+				continue
+			}
+			out = append(out, DeathRecord{
+				URI:       string(cortex.BuildURI(item.Head.Type, item.Head.ID, item.Head.CurrentVersion)),
+				IntentID:  strings.TrimSpace(event.IntentRef),
+				Summary:   strings.TrimSpace(event.Summary),
+				CreatedAt: item.Version.CreatedAt,
+			})
+		}
 	}
 	// Newest first — a respawn cares most about how it just died, and the
 	// consolidation pass reinforces the freshest recurrence. Deaths written in a
@@ -110,7 +114,7 @@ func (p *Pager) DeathJournal(ctx context.Context, limit int) ([]DeathRecord, err
 	return out, nil
 }
 
-// headHasDeathJournalTag reports whether a head carries the death-journal tag.
+// headHasDeathJournalTag reports whether a head carries the legacy tag.
 func headHasDeathJournalTag(h memory.Head) bool {
 	for _, t := range h.Tags {
 		if t == deathJournalTag {
@@ -118,17 +122,4 @@ func headHasDeathJournalTag(h memory.Head) bool {
 		}
 	}
 	return false
-}
-
-// eventSummary extracts the one-line Summary from a decoded EventData (value or
-// pointer form), or "" for any other decoded type.
-func eventSummary(data any) string {
-	switch e := data.(type) {
-	case memory.EventData:
-		return e.Summary
-	case *memory.EventData:
-		return e.Summary
-	default:
-		return ""
-	}
 }

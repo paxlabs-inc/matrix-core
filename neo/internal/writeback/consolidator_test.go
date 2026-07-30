@@ -12,16 +12,16 @@ import (
 
 func TestParseLooseJSON(t *testing.T) {
 	cases := []string{
-		`{"facts":["a"],"patterns":[],"outcome":null}`,
-		"```json\n{\"facts\":[\"a\"],\"patterns\":[],\"outcome\":null}\n```",
-		"Sure! Here is the result:\n{\"facts\":[\"a\"],\"patterns\":[],\"outcome\":null}\nHope that helps.",
+		`{"facts":[{"subject":"matrix://repo","predicate":"state","statement":"a","evidence":[1]}],"patterns":[],"outcome":null}`,
+		"```json\n{\"facts\":[{\"subject\":\"matrix://repo\",\"predicate\":\"state\",\"statement\":\"a\",\"evidence\":[1]}],\"patterns\":[],\"outcome\":null}\n```",
+		"Sure! Here is the result:\n{\"facts\":[{\"subject\":\"matrix://repo\",\"predicate\":\"state\",\"statement\":\"a\",\"evidence\":[1]}],\"patterns\":[],\"outcome\":null}\nHope that helps.",
 	}
 	for i, in := range cases {
 		var out extract
 		if err := parseLooseJSON(in, &out); err != nil {
 			t.Fatalf("case %d parse err: %v", i, err)
 		}
-		if len(out.Facts) != 1 || out.Facts[0] != "a" {
+		if len(out.Facts) != 1 || out.Facts[0].Statement != "a" {
 			t.Errorf("case %d: facts not extracted: %+v", i, out)
 		}
 	}
@@ -33,7 +33,7 @@ func TestParseLooseJSON(t *testing.T) {
 }
 
 func TestParseLooseJSONStructuredPattern(t *testing.T) {
-	in := `{"facts":[],"patterns":[{"name":"deploy","trigger":"launch token","steps":["compile","deploy"],"gotchas":["MCOPY"],"success_criteria":["status=1"]}],"outcome":{"summary":"shipped","status":"success"}}`
+	in := `{"facts":[],"patterns":[{"name":"deploy","trigger":"launch token","steps":["compile","deploy"],"gotchas":["MCOPY"],"success_criteria":["status=1"],"evidence":[2]}],"outcome":{"summary":"shipped","status":"success","evidence":[2]}}`
 	var out extract
 	if err := parseLooseJSON(in, &out); err != nil {
 		t.Fatalf("parse: %v", err)
@@ -56,7 +56,7 @@ func TestParseLooseJSONStructuredPattern(t *testing.T) {
 }
 
 func TestParseLooseJSONPreferencesAndCorrections(t *testing.T) {
-	in := `{"facts":[],"user_facts":[],"preferences":[{"topic":"render a Construct surface while working","polarity":"do","strength":0.85,"rationale":"user wants to see work"}],"corrections":["Always render a Construct surface when performing a task, not just describe it"],"patterns":[],"outcome":null}`
+	in := `{"facts":[],"user_facts":[],"preferences":[{"topic":"render a Construct surface while working","polarity":"do","strength":0.85,"rationale":"user wants to see work","evidence":[1]}],"corrections":[{"statement":"Always render a Construct surface when performing a task, not just describe it","evidence":[1]}],"patterns":[],"outcome":null}`
 	var out extract
 	if err := parseLooseJSON(in, &out); err != nil {
 		t.Fatalf("parse: %v", err)
@@ -68,7 +68,7 @@ func TestParseLooseJSONPreferencesAndCorrections(t *testing.T) {
 	if pf.Polarity != "do" || pf.Strength != 0.85 || pf.Topic == "" {
 		t.Errorf("preference not decoded: %+v", pf)
 	}
-	if len(out.Corrections) != 1 || !strings.Contains(out.Corrections[0], "Construct surface") {
+	if len(out.Corrections) != 1 || !strings.Contains(out.Corrections[0].Statement, "Construct surface") {
 		t.Errorf("corrections not decoded: %+v", out.Corrections)
 	}
 }

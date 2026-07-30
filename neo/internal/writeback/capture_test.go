@@ -66,7 +66,7 @@ func emptyExtract() string {
 
 func impliedExtract() string {
 	return fmt.Sprintf(
-		`{"facts":[],"user_facts":[],"preferences":[],"corrections":[],"patterns":[],"opportunities":[{"summary":%q,"rationale":%q,"financial":false,"confidence":0.82}],"outcome":null}`,
+		`{"facts":[],"user_facts":[],"preferences":[],"corrections":[],"patterns":[],"opportunities":[{"summary":%q,"rationale":%q,"financial":false,"confidence":0.82,"evidence":[1]}],"outcome":null}`,
 		expectedSummary, expectedRationale,
 	)
 }
@@ -74,13 +74,13 @@ func impliedExtract() string {
 // ungroundedExtract emits a high-confidence opportunity with an EMPTY
 // rationale — the consolidator must drop it (grounding is required, req.1.2).
 func ungroundedExtract() string {
-	return `{"facts":[],"user_facts":[],"preferences":[],"corrections":[],"patterns":[],"opportunities":[{"summary":"Clean up the stale TODO comments","rationale":"   ","financial":false,"confidence":0.95}],"outcome":null}`
+	return `{"facts":[],"user_facts":[],"preferences":[],"corrections":[],"patterns":[],"opportunities":[{"summary":"Clean up the stale TODO comments","rationale":"   ","financial":false,"confidence":0.95,"evidence":[1]}],"outcome":null}`
 }
 
 // lowConfExtract emits a grounded opportunity BELOW the configured confidence
 // floor (default 0.6) — the consolidator must drop it (selective, req.1.2).
 func lowConfExtract() string {
-	return `{"facts":[],"user_facts":[],"preferences":[],"corrections":[],"patterns":[],"opportunities":[{"summary":"Maybe reorganize the docs folder","rationale":"user vaguely mused about docs being messy","financial":false,"confidence":0.30}],"outcome":null}`
+	return `{"facts":[],"user_facts":[],"preferences":[],"corrections":[],"patterns":[],"opportunities":[{"summary":"Maybe reorganize the docs folder","rationale":"user vaguely mused about docs being messy","financial":false,"confidence":0.30,"evidence":[1]}],"outcome":null}`
 }
 
 // writeSSE serializes a single OpenAI-style chat-completions SSE stream whose

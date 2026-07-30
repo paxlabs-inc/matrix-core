@@ -27,6 +27,7 @@ import (
 
 	exectool "matrix/executor/tool"
 	"matrix/neo/internal/config"
+	"matrix/neo/internal/consolidation"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
@@ -45,21 +46,11 @@ import (
 // Detect with errors.Is(err, agent.ErrIncomplete).
 var ErrIncomplete = errors.New("neo: turn incomplete (task not finished)")
 
-// Consolidator is the background write-back hook: it receives a completed
-// turn's transcript and promotes durable learnings to cortex out-of-band.
+// Consolidator is the background write-back hook: it receives a structured
+// evidence job and promotes only cited durable learnings to cortex out-of-band.
 // Implemented by internal/writeback; optional (nil disables write-back).
 type Consolidator interface {
-	// Consolidate enqueues a rendered turn transcript for background
-	// consolidation. conv + [seqLo, seqHi] are the cortex session
-	// conversation id and the (inclusive) session seq span of the turn that
-	// produced the transcript, threaded so every memory the consolidator
-	// writes gets a derived_from provenance edge back to its source
-	// transcript slice (DEJA-VU req 1.1). A blank conv disables provenance
-	// linking (the CLI/bare path with no cortex session state).
-	Consolidate(transcript, conv string, seqLo, seqHi uint64)
-	// ConsolidateSync runs the same extraction synchronously on the caller's
-	// goroutine, carrying the same provenance coordinates as Consolidate.
-	ConsolidateSync(ctx context.Context, transcript, conv string, seqLo, seqHi uint64)
+	Consolidate(consolidation.Job)
 }
 
 // ConvRecaller surfaces the most relevant PAST turns of this conversation
@@ -233,6 +224,11 @@ type Agent struct {
 	// construction, turnSeq session.
 	convID  string
 	turnSeq int
+
+	// logicalIntentID is the server-owned task identity. It stays constant
+	// across supervised respawns, unlike turnSeq on a freshly rebuilt Agent.
+	logicalIntentID   string
+	supervisedAttempt int
 
 	// generation is the per-session command-queue tag for the current turn
 	// (P2-6 lane-based concurrency). Set by the session before each Chat call
@@ -631,7 +627,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	if a.runtimeMode == "resurrection" || a.runtimeErr != nil {
 		return a.chatResurrection(ctx, userInput)
 	}
-	return a.chat(ctx, userInput, nil)
+	return a.chat(ctx, userInput, nil, "")
 }
 
 // ChatAudio runs the same staged turn with one audio-native user message. The
@@ -642,10 +638,26 @@ func (a *Agent) ChatAudio(ctx context.Context, userInput string, audio *AudioTur
 	if a.runtimeMode == "resurrection" || a.runtimeErr != nil {
 		return a.chatAudioResurrection(ctx, userInput, audio)
 	}
-	return a.chat(ctx, userInput, audio)
+	return a.chat(ctx, userInput, audio, "")
 }
 
-func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn) error {
+// ChatResume enters supervisor guidance into the cognitive window without
+// recording it as a user message or using it as the activation query.
+func (a *Agent) ChatResume(ctx context.Context, objective, guidance string) error {
+	if a.runtimeMode == "resurrection" || a.runtimeErr != nil {
+		return a.chatResurrectionResume(ctx, objective, guidance)
+	}
+	return a.chat(ctx, objective, nil, guidance)
+}
+
+// SetRunIdentity binds this Agent attempt to the stable server run identity.
+// A session rebuild must call it before Chat or ChatResume.
+func (a *Agent) SetRunIdentity(intentID string, attempt int) {
+	a.logicalIntentID = strings.TrimSpace(intentID)
+	a.supervisedAttempt = attempt
+}
+
+func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn, resumeGuidance string) error {
 	userInput = strings.TrimSpace(userInput)
 	if userInput == "" {
 		return nil
@@ -661,6 +673,11 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn) er
 	// failure-class scratch, and the death capture all scope to it by
 	// construction. Zero manual field zeroing.
 	t := newTurn()
+	t.objective = userInput
+	t.attempt = a.supervisedAttempt
+	if strings.TrimSpace(resumeGuidance) != "" {
+		t.inputOrigin = originSupervisorResume
+	}
 	a.turn = t
 	// Run-scoped overflow files (neo-smoothness req.4.3) are ephemeral to this
 	// turn: clean them up on every exit (completion, stall, budget, error).
@@ -673,7 +690,7 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn) er
 	if audio != nil {
 		audioIndex = len(a.working)
 	}
-	cmTail, err := a.prepareTurn(ctx, userInput, audioData(audio))
+	cmTail, err := a.prepareTurn(ctx, userInput, audioData(audio), resumeGuidance)
 	if err != nil {
 		return err
 	}
@@ -713,7 +730,7 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn) er
 		res, streamedReasoning, proceed, err := a.generate(ctx, step, cmTail, window, tail)
 		if err != nil {
 			finalizeAudio()
-			a.consolidateWorking()
+			a.consolidateWorking("", false)
 			return fmt.Errorf("neo: model call failed: %w", err)
 		}
 		if !proceed {
@@ -754,7 +771,7 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn) er
 // USER-role tail (the activation snapshot is frozen for the whole turn — the
 // NE-7 discipline). The Q2 first-turn relevance push rides the same tail so
 // the usage-salience attestation loop still learns from what surfaced.
-func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData string) (string, error) {
+func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData, resumeGuidance string) (string, error) {
 	a.turn.contract = o1.Compile(o1.CompileInput{
 		Request: userInput,
 		RepositoryRules: []string{
@@ -803,15 +820,19 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData string) (s
 	}
 	a.schemaTokens = estimateToolTokens(a.schemas)
 	a.schemaBytes = estimateToolBytes(a.schemas)
-	if audioData != "" {
-		a.working = append(a.working, llm.UserAudioMessage(userInput, audioData))
+	if guidance := strings.TrimSpace(resumeGuidance); guidance != "" {
+		a.pushGuidance(guidance)
 	} else {
-		a.working = append(a.working, llm.UserMessage(userInput))
-	}
-	// Record the user message to the durable cortex transcript so cortex — not
-	// the in-memory working slice — owns the turn-by-turn record.
-	if audioData == "" {
-		a.cmRecordUser(userInput)
+		if audioData != "" {
+			a.working = append(a.working, llm.UserAudioMessage(userInput, audioData))
+		} else {
+			a.working = append(a.working, llm.UserMessage(userInput))
+		}
+		// Record only genuine user input. Supervisor resume guidance is
+		// cognitive state and must never become a durable user assertion.
+		if audioData == "" {
+			a.cmRecordUser(userInput)
+		}
 	}
 
 	bundle := a.cmActivate(userInput)
@@ -1549,6 +1570,9 @@ func (a *Agent) attestTurn(ctx context.Context, surfaced map[string]struct{}, su
 // turnIntentID is the per-turn attestation IntentID, conversation-scoped for
 // audit. Falls back to "cli" when there is no conversation (the CLI path).
 func (a *Agent) turnIntentID() string {
+	if id := strings.TrimSpace(a.logicalIntentID); id != "" {
+		return id
+	}
 	cid := a.convID
 	if cid == "" {
 		cid = "cli"

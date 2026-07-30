@@ -660,7 +660,10 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 
 		actx, acancel := s.attemptContext(ctx)
 		var err error
-		if attempt == 1 && audio != nil {
+		s.agent.SetRunIdentity(r.id, attempt)
+		if resume || attempt > 1 {
+			err = s.agent.ChatResume(withRun(actx, r), objective, prompt)
+		} else if attempt == 1 && audio != nil {
 			err = s.agent.ChatAudio(withRun(actx, r), prompt, audio)
 		} else {
 			err = s.agent.Chat(withRun(actx, r), prompt)
@@ -709,7 +712,7 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 		// spamming a "still working" bubble every few seconds.
 		outage := errors.Is(err, llm.ErrRateLimited) || errors.Is(err, llm.ErrProviderUnavailable)
 		s.engine.tasks.Checkpoint(s.id, r.id, attempt+1, friendlyErr(err))
-		s.recordLoopDeath(ctx, objective, attempt, err, failClass)
+		s.recordLoopDeath(ctx, r.id, objective, attempt, err, failClass)
 		s.emitProgress(r, attempt, err, outage)
 		lastErr = err
 		if !superviseBackoff(ctx, attempt, outage) {
@@ -876,7 +879,7 @@ func (e deathEntry) durableSummary() string {
 // built from the shared deathEntry so it describes the SAME death the successor's
 // prime folds in (req.4.3). Best-effort: a nil pager, a clean exit, or a write
 // error never blocks the respawn.
-func (s *session) recordLoopDeath(ctx context.Context, objective string, attempt int, err error, failClass delegate.FailureClass) {
+func (s *session) recordLoopDeath(ctx context.Context, intentID, objective string, attempt int, err error, failClass delegate.FailureClass) {
 	if s.engine == nil || s.engine.pager == nil || err == nil {
 		return
 	}
@@ -892,7 +895,7 @@ func (s *session) recordLoopDeath(ctx context.Context, objective string, attempt
 		}
 	}
 	entry := newDeathEntry(objective, attempt, err, failClass, state)
-	_, _ = s.engine.pager.RecordLoopDeath(ctx, entry.durableSummary(), s.id)
+	_, _ = s.engine.pager.RecordLoopDeath(ctx, entry.durableSummary(), intentID)
 	s.maybeConsolidateDeaths(ctx)
 }
 
@@ -1155,7 +1158,13 @@ func (s *session) superviseAutomatrixTask(ctx context.Context, objective string)
 			prompt = resumePrime(objective, attempt, lastErr)
 		}
 		actx, acancel := s.attemptContext(ctx)
-		err := s.agent.Chat(actx, prompt)
+		s.agent.SetRunIdentity(s.id, attempt)
+		var err error
+		if attempt > 1 {
+			err = s.agent.ChatResume(actx, objective, prompt)
+		} else {
+			err = s.agent.Chat(actx, prompt)
+		}
 		acancel()
 
 		failClass := s.agent.LastFailureClass()
@@ -1172,7 +1181,7 @@ func (s *session) superviseAutomatrixTask(ctx context.Context, objective string)
 		// actRespawn — not done. Journal the death, back off (honoring
 		// cancellation), then respawn a FRESH restricted agent over durable state
 		// and try again. No progress is surfaced to the user (req 5.5).
-		s.recordLoopDeath(ctx, objective, attempt, err, failClass)
+		s.recordLoopDeath(ctx, s.id, objective, attempt, err, failClass)
 		lastErr = err
 		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited) || errors.Is(err, llm.ErrProviderUnavailable)) {
 			return task.StatusCeiling
@@ -1207,7 +1216,13 @@ func (s *session) superviseBriefTask(ctx context.Context, objective string) task
 			prompt = resumePrime(objective, attempt, lastErr)
 		}
 		actx, acancel := s.attemptContext(ctx)
-		err := s.agent.Chat(actx, prompt)
+		s.agent.SetRunIdentity(s.id, attempt)
+		var err error
+		if attempt > 1 {
+			err = s.agent.ChatResume(actx, objective, prompt)
+		} else {
+			err = s.agent.Chat(actx, prompt)
+		}
 		acancel()
 
 		failClass := s.agent.LastFailureClass()
@@ -1222,7 +1237,7 @@ func (s *session) superviseBriefTask(ctx context.Context, objective string) task
 		// actRespawn — not done. Journal the death, back off (honoring
 		// cancellation), then respawn a FRESH brief-surface agent over durable
 		// state and try again. Nothing is surfaced to the user (req 15.2).
-		s.recordLoopDeath(ctx, objective, attempt, err, failClass)
+		s.recordLoopDeath(ctx, s.id, objective, attempt, err, failClass)
 		lastErr = err
 		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited) || errors.Is(err, llm.ErrProviderUnavailable)) {
 			return task.StatusCeiling

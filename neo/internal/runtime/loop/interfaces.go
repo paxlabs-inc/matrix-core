@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 
 	"matrix/cortex"
+	"matrix/neo/internal/consolidation"
 	"matrix/neo/internal/runtime/liveness"
 	"matrix/neo/internal/runtime/protocol"
 	"matrix/neo/internal/runtime/provider"
@@ -108,7 +109,7 @@ type HonestPartialReporter interface {
 }
 
 type Consolidator interface {
-	Consolidate(string, string, uint64, uint64)
+	Consolidate(consolidation.Job)
 }
 
 type IncompleteRecorder interface {

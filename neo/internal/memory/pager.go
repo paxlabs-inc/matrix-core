@@ -44,6 +44,11 @@ type Pager struct {
 
 	mu         sync.RWMutex
 	activeGoal string
+
+	// writeMu serializes canonical-identity upserts. Cortex commits each
+	// replacement atomically; this lock prevents two local writers from both
+	// observing the same pre-write head and minting duplicate replacements.
+	writeMu sync.Mutex
 }
 
 // Snippet is a single retrieved memory rendered for injection into the window.
@@ -265,6 +270,7 @@ func (p *Pager) UserProfile(ctx context.Context) []string {
 		return nil
 	}
 	var out []string
+	seen := make(map[string]struct{})
 	for _, m := range res.Memories {
 		data, derr := memory.DecodeData(m.Version.Type, m.Version.Data)
 		if derr != nil {
@@ -282,6 +288,11 @@ func (p *Pager) UserProfile(ctx context.Context) []string {
 		if fd.Subject != userFactSubject || strings.TrimSpace(fd.Statement) == "" {
 			continue
 		}
+		identity := canonicalFactRetrievalIdentity(fd)
+		if _, duplicate := seen[identity]; duplicate {
+			continue
+		}
+		seen[identity] = struct{}{}
 		out = append(out, strings.TrimSpace(fd.Statement))
 		if len(out) >= userProfileMax {
 			break
@@ -475,6 +486,7 @@ func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, erro
 		id         memory.ID
 		score      float32
 		order      int
+		identity   string
 		validUntil *time.Time // v3 #2: closed valid-time of the memory's current version
 	}
 	var (
@@ -576,8 +588,14 @@ func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, erro
 		if hasMemoryTag(mem.Head, memoryConsentTag) {
 			continue // internal consent carrier, never surfaced to the model
 		}
+		if headHasDeathJournalTag(mem.Head) {
+			continue // legacy death record; failure history is explicit-only
+		}
 		if current, _ := memory.CurrentTruthAt(&mem.Head, &mem.Version, now); !current {
 			continue
+		}
+		if data, decodeErr := memory.DecodeData(mem.Version.Type, mem.Version.Data); decodeErr == nil {
+			c.identity = canonicalRetrievalIdentity(data)
 		}
 		kept = append(kept, c)
 	}
@@ -616,9 +634,16 @@ func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, erro
 		return cands[a].order < cands[b].order
 	})
 	out := make([]Snippet, 0, p.cfg.RetrievalTopK)
+	seenIdentities := make(map[string]struct{})
 	for _, c := range cands {
 		if len(out) >= p.cfg.RetrievalTopK {
 			break
+		}
+		if c.identity != "" {
+			if _, duplicate := seenIdentities[c.identity]; duplicate {
+				continue
+			}
+			seenIdentities[c.identity] = struct{}{}
 		}
 		out = append(out, c.snip)
 	}
@@ -684,6 +709,9 @@ func (p *Pager) cascadeNeighbors(seedURI string) []scoredSnip {
 	for i, m := range res.Memories {
 		if headHasOpportunityTag(m.Head) {
 			continue // proactive queue, not ambient context
+		}
+		if headHasDeathJournalTag(m.Head) {
+			continue // legacy death record, never ambient context
 		}
 		text := ""
 		if i < len(res.Rendered) {
@@ -822,12 +850,17 @@ func (p *Pager) RecallHits(_ context.Context, queryText string, types []string, 
 		}
 	}
 	hits := make([]RecallHit, 0, len(res.Memories))
+	seenIdentities := make(map[string]struct{})
+	includeFailures := explicitFailureQuery(queryText)
 	for i, m := range res.Memories {
 		if headHasOpportunityTag(m.Head) {
 			continue // proactive queue, not recallable memory
 		}
 		if hasMemoryTag(m.Head, memoryConsentTag) {
 			continue // internal consent carrier, not recallable memory
+		}
+		if headHasDeathJournalTag(m.Head) && !includeFailures {
+			continue
 		}
 		text := ""
 		if i < len(res.Rendered) {
@@ -838,6 +871,14 @@ func (p *Pager) RecallHits(_ context.Context, queryText string, types []string, 
 		}
 		if strings.TrimSpace(text) == "" {
 			continue
+		}
+		if data, decodeErr := memory.DecodeData(m.Version.Type, m.Version.Data); decodeErr == nil {
+			if identity := canonicalRetrievalIdentity(data); identity != "" {
+				if _, duplicate := seenIdentities[identity]; duplicate {
+					continue
+				}
+				seenIdentities[identity] = struct{}{}
+			}
 		}
 		note := ""
 		if !m.Head.ID.IsZero() && p.contradictsAnyOf(m.Head.ID, live) {
@@ -853,6 +894,16 @@ func (p *Pager) RecallHits(_ context.Context, queryText string, types []string, 
 		})
 	}
 	return hits, nil
+}
+
+func explicitFailureQuery(queryText string) bool {
+	queryText = strings.ToLower(queryText)
+	for _, marker := range []string{"failure", "failed", "loop", "death", "respawn", "stuck"} {
+		if strings.Contains(queryText, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 // Recall renders an explicit, user-visible memory lookup: the pinned user

@@ -5,8 +5,10 @@ package loop
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 
+	"matrix/neo/internal/consolidation"
 	neoidentity "matrix/neo/internal/identity"
 	"matrix/neo/internal/runtime/protocol"
 	"matrix/neo/internal/runtime/turnstate"
@@ -31,6 +33,8 @@ type DeliveryChoke struct {
 	Recorder           TurnRecorder
 	Consolidator       Consolidator
 	SuppressIncomplete bool
+	IntentID           string
+	Attempt            int
 }
 
 func (choke *DeliveryChoke) Deliver(
@@ -60,7 +64,7 @@ func (choke *DeliveryChoke) Deliver(
 			choke.Reporter.Say(scrubbed, false)
 		}
 	}
-	choke.consolidate(checkpoint, scrubbed)
+	choke.consolidate(checkpoint, userInput, scrubbed, true)
 	return DeliveryResult{
 		Content: scrubbed, Suppressed: suppressed,
 		IdentityScrubbed: leaked,
@@ -79,7 +83,7 @@ func (choke *DeliveryChoke) FinalizeIncomplete(
 		}
 		choke.Reporter.Say(content, false)
 	}
-	choke.consolidate(checkpoint, "")
+	choke.consolidate(checkpoint, firstUserContent(checkpoint.Messages), "", false)
 }
 
 func incompleteStatus(incomplete *Incomplete) string {
@@ -95,17 +99,12 @@ func incompleteStatus(incomplete *Incomplete) string {
 
 func (choke *DeliveryChoke) consolidate(
 	checkpoint turnstate.Checkpoint,
+	objective string,
 	finalContent string,
+	terminal bool,
 ) {
 	if choke.Consolidator == nil {
 		return
-	}
-	messages := cloneMessages(checkpoint.Messages)
-	if finalContent != "" && len(messages) > 0 {
-		last := len(messages) - 1
-		if messages[last].Role == protocol.RoleAssistant {
-			messages[last].Content = finalContent
-		}
 	}
 	conversationID := ""
 	var sequenceLow, sequenceHigh uint64
@@ -113,12 +112,47 @@ func (choke *DeliveryChoke) consolidate(
 		conversationID, sequenceLow, sequenceHigh =
 			choke.Recorder.ProvenanceRange()
 	}
-	choke.Consolidator.Consolidate(
-		renderTranscript(messages),
-		conversationID,
-		sequenceLow,
-		sequenceHigh,
-	)
+	job := consolidation.Job{
+		IntentID: strings.TrimSpace(choke.IntentID),
+		Attempt:  choke.Attempt, Terminal: terminal,
+		Objective: strings.TrimSpace(objective),
+		Outcome:   strings.TrimSpace(finalContent),
+		Conv:      conversationID, HaveSeq: conversationID != "",
+		SeqLo: sequenceLow, SeqHi: sequenceHigh,
+	}
+	if job.Attempt <= 0 {
+		job.Attempt = 1
+	}
+	if job.Objective != "" {
+		job.Evidence = append(job.Evidence, consolidation.Evidence{
+			Kind: consolidation.EvidenceUser, Content: job.Objective,
+		})
+	}
+	for _, message := range checkpoint.Messages {
+		switch message.Role {
+		case protocol.RoleTool:
+			job.Evidence = append(job.Evidence, consolidation.Evidence{
+				Kind: consolidation.EvidenceTool, ToolName: message.Name,
+				AttemptID: message.ToolCallID, Content: message.Content,
+			})
+		case protocol.RoleAssistant:
+			for _, call := range message.ToolCalls {
+				encoded, err := json.Marshal(call)
+				if err == nil {
+					job.Evidence = append(job.Evidence, consolidation.Evidence{
+						Kind: consolidation.EvidenceTool, ToolName: call.Name,
+						AttemptID: call.ID, Content: string(encoded),
+					})
+				}
+			}
+		}
+	}
+	if job.Outcome != "" {
+		job.Evidence = append(job.Evidence, consolidation.Evidence{
+			Kind: consolidation.EvidenceAssistant, Content: job.Outcome,
+		})
+	}
+	choke.Consolidator.Consolidate(job)
 }
 
 func shouldSuppressDelivery(userInput, content string) bool {
@@ -129,23 +163,11 @@ func shouldSuppressDelivery(userInput, content string) bool {
 			answer == automatrixIdle
 }
 
-func renderTranscript(messages []protocol.Message) string {
-	var builder strings.Builder
+func firstUserContent(messages []protocol.Message) string {
 	for _, message := range messages {
-		content := strings.TrimSpace(message.Content)
-		if content != "" {
-			builder.WriteString(string(message.Role))
-			builder.WriteString(": ")
-			builder.WriteString(content)
-			builder.WriteByte('\n')
-		}
-		for _, call := range message.ToolCalls {
-			builder.WriteString("assistant tool call: ")
-			builder.WriteString(call.Name)
-			builder.WriteByte(' ')
-			builder.Write(call.Arguments)
-			builder.WriteByte('\n')
+		if message.Role == protocol.RoleUser && strings.TrimSpace(message.Content) != "" {
+			return message.Content
 		}
 	}
-	return builder.String()
+	return ""
 }

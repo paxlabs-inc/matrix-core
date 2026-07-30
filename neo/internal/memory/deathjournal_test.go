@@ -9,14 +9,14 @@ import (
 	"testing"
 )
 
-// TestDeathJournalIsFirstClassAndStillRecallable proves the DURABLE death-journal
+// TestDeathJournalIsFirstClassAndExcludedFromAmbientRecall proves the DURABLE death-journal
 // read path (self-model task 3.1, req.4.2) over REAL cortex: a recorded death is
 // (a) readable as a first-class journal via DeathJournal (the set the
-// self-authoring pass and the observability surface read) AND (b) still surfaced
-// by ordinary recall as an Event (the tag is additive, never excluding it). No
+// self-authoring pass and the observability surface read) AND (b) excluded from
+// ordinary memory recall. No
 // fakes: a real cortex store under t.TempDir(), the real RecordLoopDeath write,
 // and the real DeathJournal / RecallHits reads.
-func TestDeathJournalIsFirstClassAndStillRecallable(t *testing.T) {
+func TestDeathJournalIsFirstClassAndExcludedFromAmbientRecall(t *testing.T) {
 	p, err := Open(testCfg(t))
 	if err != nil {
 		t.Fatalf("Open: %v", err)
@@ -41,31 +41,23 @@ func TestDeathJournalIsFirstClassAndStillRecallable(t *testing.T) {
 	if journal[0].Summary != summary {
 		t.Errorf("DeathJournal summary not preserved:\n got: %q\nwant: %q", journal[0].Summary, summary)
 	}
-	if !strings.Contains(strings.ToLower(journal[0].URI), "event") {
-		t.Errorf("death record must be a cortex Event; uri = %q", journal[0].URI)
+	if !strings.Contains(strings.ToLower(journal[0].URI), "/session/neo-death-journal/") {
+		t.Errorf("death record must use the derived journal lane; uri = %q", journal[0].URI)
+	}
+	if journal[0].IntentID != "conv-death-journal" {
+		t.Errorf("intent identity not preserved: %q", journal[0].IntentID)
 	}
 	if journal[0].CreatedAt.IsZero() {
 		t.Error("death record must carry a real creation time")
 	}
 
-	// (b) Ordinary recall STILL surfaces the death as an Event (req.4.2): the
-	// death-journal tag did not exclude it from the recallable Event set the way
-	// the opportunity tag excludes the proactive queue.
+	// (b) Ordinary memory recall excludes the derived failure journal.
 	hits, err := p.RecallHits(ctx, "", []string{"event"}, 10, nil)
 	if err != nil {
 		t.Fatalf("RecallHits: %v", err)
 	}
-	found := false
-	for _, h := range hits {
-		if strings.Contains(h.Text, "ship the migration") && strings.Contains(h.Text, "no_progress_stall") {
-			found = true
-			if strings.ToLower(h.Type) != "event" {
-				t.Errorf("recalled death record type = %q, want event", h.Type)
-			}
-		}
-	}
-	if !found {
-		t.Fatalf("a tagged death record must still be surfaced by ordinary recall; hits=%v", hits)
+	if len(hits) != 0 {
+		t.Fatalf("death journal leaked into ordinary recall: hits=%v", hits)
 	}
 }
 

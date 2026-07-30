@@ -12,13 +12,16 @@ package writeback
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"matrix/neo/internal/config"
+	"matrix/neo/internal/consolidation"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
 )
@@ -30,8 +33,18 @@ type Consolidator struct {
 	classify *llm.Client // cheap relation-classify on the rare similar-neighbor path
 	pager    *memory.Pager
 
-	jobs chan consolidateJob
+	wake chan struct{}
+	stop chan struct{}
 	done chan struct{}
+
+	queueMu   sync.Mutex
+	pending   map[string]consolidation.Job
+	committed map[string]struct{}
+	closing   bool
+
+	startOnce sync.Once
+	stopOnce  sync.Once
+	processMu sync.Mutex
 
 	// P2-2: proposed skills awaiting activation. Populated by proposeIfReady
 	// when a pattern's coverage crosses cfg.MinPatternSuccesses. Deduped by
@@ -40,18 +53,6 @@ type Consolidator struct {
 	proposed       []string
 	proposedSet    map[string]struct{}
 	reinforceCount map[string]int // tracks how many times each pattern name was reinforced (for auto-propose)
-}
-
-// consolidateJob is one enqueued consolidation unit: the rendered turn
-// transcript plus the provenance the consolidator threads onto every memory it
-// writes — the conversation id and the (inclusive) session seq span of the turn
-// that produced the transcript (DEJA-VU req 1.1). A blank Conv disables
-// provenance linking (e.g. the CLI/bare path with no cortex session state).
-type consolidateJob struct {
-	transcript string
-	conv       string
-	seqLo      uint64
-	seqHi      uint64
 }
 
 // New builds a consolidator. extract drives the per-turn learning extraction
@@ -64,8 +65,11 @@ func New(extract, classify *llm.Client, pager *memory.Pager, cfg config.Config) 
 		extract:        extract,
 		classify:       classify,
 		pager:          pager,
-		jobs:           make(chan consolidateJob, 8),
+		wake:           make(chan struct{}, 1),
+		stop:           make(chan struct{}),
 		done:           make(chan struct{}),
+		pending:        make(map[string]consolidation.Job),
+		committed:      make(map[string]struct{}),
 		proposedSet:    make(map[string]struct{}),
 		reinforceCount: make(map[string]int),
 	}
@@ -76,28 +80,35 @@ func (c *Consolidator) Start() {
 	if c == nil {
 		return
 	}
-	go c.loop()
+	c.startOnce.Do(func() { go c.loop() })
 }
 
-// Consolidate enqueues a turn transcript for background consolidation. Never
-// blocks the agent: if the queue is full the job is handed to a detached
-// goroutine instead of being dropped, so a burst of turns never silently
-// rots the durable store (cortex stays best-effort + eventually-current; the
-// live transcript is ground truth for the turn anyway).
-func (c *Consolidator) Consolidate(transcript, conv string, seqLo, seqHi uint64) {
-	if c == nil || strings.TrimSpace(transcript) == "" || !c.allowed() {
+// Consolidate coalesces by stable intent identity and wakes the single commit
+// worker. It never spawns detached writers and never blocks the agent.
+func (c *Consolidator) Consolidate(job consolidation.Job) {
+	if c == nil || job.Empty() || !c.allowed() {
 		return
 	}
-	job := consolidateJob{transcript: transcript, conv: conv, seqLo: seqLo, seqHi: seqHi}
+	key := strings.TrimSpace(job.IntentID)
+	if key == "" {
+		sum := sha256.Sum256([]byte(strings.TrimSpace(job.Objective)))
+		key = fmt.Sprintf("anonymous:%x", sum[:8])
+		job.IntentID = key
+	}
+	c.queueMu.Lock()
+	if c.closing {
+		c.queueMu.Unlock()
+		return
+	}
+	if _, alreadyCommitted := c.committed[key]; alreadyCommitted {
+		c.queueMu.Unlock()
+		return
+	}
+	c.pending[key] = consolidation.Merge(c.pending[key], job)
+	c.queueMu.Unlock()
 	select {
-	case c.jobs <- job:
+	case c.wake <- struct{}{}:
 	default:
-		// Queue full (a burst of turns). Rather than silently DROP the learning
-		// — which is how a durable memory quietly rots — process this one on a
-		// detached goroutine. Bursts are rare (turns are serialized per
-		// conversation and the worker drains continuously), so this overflow
-		// path cannot fan out unboundedly in practice.
-		go c.process(context.Background(), job)
 	}
 }
 
@@ -118,7 +129,14 @@ func (c *Consolidator) ConsolidateSync(ctx context.Context, transcript, conv str
 	// stall budget (the caller's context already bounds the total time).
 	subCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	c.process(subCtx, consolidateJob{transcript: transcript, conv: conv, seqLo: seqLo, seqHi: seqHi})
+	sum := sha256.Sum256([]byte(transcript))
+	c.process(subCtx, consolidation.Job{
+		IntentID: fmt.Sprintf("sync:%x", sum[:8]),
+		Attempt:  1, Terminal: true, Objective: "synchronous transcript consolidation",
+		Evidence: []consolidation.Evidence{{Kind: consolidation.EvidenceVerified, Content: transcript}},
+		Conv:     conv, HaveSeq: strings.TrimSpace(conv) != "",
+		SeqLo: seqLo, SeqHi: seqHi,
+	})
 }
 
 // proposeIfReady checks if a pattern has accumulated enough successes
@@ -175,33 +193,97 @@ func (c *Consolidator) Stop() {
 	if c == nil {
 		return
 	}
-	close(c.jobs)
+	c.stopOnce.Do(func() {
+		c.queueMu.Lock()
+		c.closing = true
+		c.queueMu.Unlock()
+		close(c.stop)
+	})
 	<-c.done
 }
 
 func (c *Consolidator) loop() {
 	defer close(c.done)
-	for t := range c.jobs {
-		c.process(context.Background(), t)
+	for {
+		select {
+		case <-c.wake:
+			c.drain(false)
+		case <-c.stop:
+			c.drain(true)
+			return
+		}
 	}
 }
 
-const consolidatePrompt = `You are a memory consolidator for an AI agent. Read the interaction transcript and extract ONLY durable learnings worth keeping beyond this session. Be very selective — most interactions yield nothing, and that is the correct, common answer.
+func (c *Consolidator) drain(includeIncomplete bool) {
+	for {
+		c.queueMu.Lock()
+		if len(c.pending) == 0 {
+			c.queueMu.Unlock()
+			return
+		}
+		keys := make([]string, 0, len(c.pending))
+		for key, job := range c.pending {
+			if !includeIncomplete && !job.Terminal {
+				continue
+			}
+			keys = append(keys, key)
+		}
+		if len(keys) == 0 {
+			c.queueMu.Unlock()
+			return
+		}
+		sort.Strings(keys)
+		jobs := make([]consolidation.Job, 0, len(keys))
+		for _, key := range keys {
+			jobs = append(jobs, c.pending[key])
+			delete(c.pending, key)
+			c.committed[key] = struct{}{}
+		}
+		c.queueMu.Unlock()
+		for _, job := range jobs {
+			c.process(context.Background(), job)
+		}
+	}
+}
+
+const consolidatePrompt = `You are a memory consolidator for an AI agent. Read the structured evidence packet and extract ONLY durable learnings worth keeping beyond this session. Be very selective — most interactions yield nothing, and that is the correct, common answer.
 
 Return STRICT JSON, nothing else, in exactly this shape:
-{"facts": ["..."], "user_facts": ["..."], "preferences": [{"topic": "...", "polarity": "prefer|avoid|do|dont", "strength": 0.8, "rationale": "..."}], "corrections": ["..."], "patterns": [{"name": "...", "trigger": "...", "preconditions": ["..."], "steps": ["..."], "gotchas": ["..."], "success_criteria": ["..."]}], "opportunities": [{"summary": "...", "rationale": "...", "financial": false, "confidence": 0.0}], "outcome": {"summary": "...", "status": "success|failure|partial"}}
+{"facts": [{"subject": "matrix://...", "predicate": "...", "statement": "...", "evidence": [1]}], "user_facts": [{"predicate": "name|role|identity|...", "statement": "...", "evidence": [1]}], "preferences": [{"topic": "...", "polarity": "prefer|avoid|do|dont", "strength": 0.8, "rationale": "...", "evidence": [1]}], "corrections": [{"statement": "...", "evidence": [1]}], "patterns": [{"name": "...", "trigger": "...", "preconditions": ["..."], "steps": ["..."], "gotchas": ["..."], "success_criteria": ["..."], "evidence": [2]}], "opportunities": [{"summary": "...", "rationale": "...", "financial": false, "confidence": 0.0, "evidence": [1]}], "outcome": {"summary": "...", "status": "success|failure|partial", "evidence": [2,3]}}
 
 Rules:
+- Every emitted item MUST carry one or more evidence numbers from the EVIDENCE section. Items with missing, empty, or invented evidence numbers are discarded.
+- CONTEXT and Objective are interpretation aids only. They are not evidence and cannot support a memory.
 - facts: objective, durable truths about the user's repo, environment, or domain (NOT transient chit-chat, NOT the question itself). Usually [].
+- facts must use a stable subject URI and bounded predicate so later changes update the same typed identity instead of creating a duplicate.
 - user_facts: durable truths about the USER THEMSELVES — their name, role, stated identity, or stable working preferences (e.g. "The user's name is Andrew"). These are pinned to every future conversation, so include ONLY what the user actually asserted about themselves. Usually [].
 - preferences: durable WORKING preferences about HOW the user wants you to behave — tone, format, which tools/surfaces to use, how to present results (e.g. topic "render a Construct surface while working on a task", polarity "do", strength 0.85). polarity is one of prefer|avoid|do|dont; strength is 0..1. Include ONLY a genuine standing preference, not a one-off request. Usually [].
 - corrections: standing behavioral rules you learned because the USER CORRECTED YOU this turn (you did X, they told you to do Y instead). Each is ONE short imperative rule worded for your future self (e.g. "Always render a Construct surface when performing a task, not just describe it"). These get pinned to every future turn, so include ONLY genuine corrections the user actually made. Usually [].
 - patterns: reusable how-to recipes worth reapplying to similar future tasks. Each is an object — name (short label), trigger (when to apply it), preconditions (what must be true first), steps (the proven tool sequence), gotchas (learned failure modes), success_criteria (how to know it worked). Omit a field if unknown. Usually [].
 - opportunities: specific, actionable things the user IMPLIED wanting or would clearly BENEFIT from but did NOT explicitly ask you to do this turn — proactive work to surface later. A direct request the user made this turn is NOT an opportunity (it is already being handled); never capture it here. Each is an object — summary (a short imperative of the helpful task, self-sufficient), rationale (REQUIRED: quote or cite what the user actually said/did that grounds it; an opportunity with no grounding is dropped), financial (true for anything involving spending money, sending value, trading, or on-chain writes), confidence (0..1; vague or low-signal items are dropped). Be selective — most turns yield none, and that is the correct, common answer. Usually [].
-- outcome: include ONLY if a concrete task was actually completed or failed in this transcript; otherwise set it to null.
+- outcome: include ONLY when Terminal=true and a concrete committed outcome is supported by assistant or verified-outcome evidence; otherwise set it to null.
 - Copy identifiers (addresses, tx hashes, IDs, file paths, numbers, hostnames, base URLs) VERBATIM — these high-entropy operational facts are the whole point of remembering a recurring task; never paraphrase or drop them.
 - NEVER record a negative-existence conclusion — that a service, endpoint, domain, or resource is defunct, gone, shut down, unreachable, or no longer exists — as a durable fact or outcome UNLESS the transcript shows it was independently confirmed. Failing to reach something (a DNS error, a 404, a redirect, a parked or for-sale page) is NOT proof it does not exist; it usually means a wrong address was used. When in doubt, drop it. A false "it is gone" memory poisons every future attempt at that task.
 - If nothing is durable, return {"facts": [], "user_facts": [], "preferences": [], "corrections": [], "patterns": [], "opportunities": [], "outcome": null}.`
+
+type factJSON struct {
+	Subject   string `json:"subject"`
+	Predicate string `json:"predicate"`
+	Statement string `json:"statement"`
+	Evidence  []int  `json:"evidence"`
+}
+
+type userFactJSON struct {
+	Predicate string `json:"predicate"`
+	Statement string `json:"statement"`
+	Evidence  []int  `json:"evidence"`
+}
+
+type citedTextJSON struct {
+	Statement string `json:"statement"`
+	Evidence  []int  `json:"evidence"`
+}
 
 type patternJSON struct {
 	Name            string   `json:"name"`
@@ -210,6 +292,7 @@ type patternJSON struct {
 	Steps           []string `json:"steps"`
 	Gotchas         []string `json:"gotchas"`
 	SuccessCriteria []string `json:"success_criteria"`
+	Evidence        []int    `json:"evidence"`
 }
 
 type prefJSON struct {
@@ -217,6 +300,7 @@ type prefJSON struct {
 	Polarity  string  `json:"polarity"`
 	Strength  float32 `json:"strength"`
 	Rationale string  `json:"rationale"`
+	Evidence  []int   `json:"evidence"`
 }
 
 // opportunityJSON is one captured Automatrix opportunity as emitted by the
@@ -229,18 +313,20 @@ type opportunityJSON struct {
 	Rationale  string  `json:"rationale"`
 	Financial  bool    `json:"financial"`
 	Confidence float32 `json:"confidence"`
+	Evidence   []int   `json:"evidence"`
 }
 
 type extract struct {
-	Facts         []string          `json:"facts"`
-	UserFacts     []string          `json:"user_facts"`
+	Facts         []factJSON        `json:"facts"`
+	UserFacts     []userFactJSON    `json:"user_facts"`
 	Preferences   []prefJSON        `json:"preferences"`
-	Corrections   []string          `json:"corrections"`
+	Corrections   []citedTextJSON   `json:"corrections"`
 	Patterns      []patternJSON     `json:"patterns"`
 	Opportunities []opportunityJSON `json:"opportunities"`
 	Outcome       *struct {
-		Summary string `json:"summary"`
-		Status  string `json:"status"`
+		Summary  string `json:"summary"`
+		Status   string `json:"status"`
+		Evidence []int  `json:"evidence"`
 	} `json:"outcome"`
 }
 
@@ -249,27 +335,29 @@ type extract struct {
 // (DEJA-VU req 1.1/1.2). It runs AFTER the memory write has already committed,
 // so a failed or impossible edge (empty URI from a deduped write, blank conv on
 // the CLI path, or an edge error) never fails the memory write.
-func (c *Consolidator) linkProvenance(uri string, job consolidateJob) {
-	if c == nil || c.pager == nil || job.conv == "" || strings.TrimSpace(uri) == "" {
+func (c *Consolidator) linkProvenance(uri string, job consolidation.Job) {
+	if c == nil || c.pager == nil || job.Conv == "" || strings.TrimSpace(uri) == "" {
 		return
 	}
-	_ = c.pager.LinkSessionProvenance(uri, job.conv, job.seqLo, job.seqHi)
+	_ = c.pager.LinkSessionProvenance(uri, job.Conv, job.SeqLo, job.SeqHi)
 }
 
-func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
-	transcript := job.transcript
+func (c *Consolidator) process(ctx context.Context, job consolidation.Job) {
 	if c.extract == nil || c.pager == nil || !c.allowed() {
 		return
 	}
+	c.processMu.Lock()
+	defer c.processMu.Unlock()
 	// The caller may have already bounded the context (ConsolidateSync).
 	// For the async path (loop), ctx is context.Background() with a 60s timeout.
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
+	packet, validEvidence := consolidation.Render(job)
 	res, err := c.extract.Chat(ctx, llm.ChatRequest{
 		Messages: []llm.Message{
 			llm.SystemMessage(consolidatePrompt),
-			llm.UserMessage("Transcript:\n\n" + transcript),
+			llm.UserMessage(packet),
 		},
 	})
 	if err != nil || res == nil {
@@ -290,8 +378,11 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 		if i >= 5 {
 			break
 		}
-		if s := strings.TrimSpace(f); s != "" {
-			uri, _ := c.pager.RememberFactRelated(ctx, s, c.classifyRelation)
+		if !consolidation.ValidCitations(f.Evidence, validEvidence) {
+			continue
+		}
+		if s := strings.TrimSpace(f.Statement); s != "" {
+			uri, _ := c.pager.UpsertFact(ctx, f.Subject, f.Predicate, s)
 			c.linkProvenance(uri, job)
 		}
 	}
@@ -302,8 +393,11 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 		if i >= 5 {
 			break
 		}
-		if s := strings.TrimSpace(f); s != "" {
-			uri, _ := c.pager.RememberUserFact(ctx, s)
+		if !consolidation.ValidCitations(f.Evidence, validEvidence) {
+			continue
+		}
+		if s := strings.TrimSpace(f.Statement); s != "" {
+			uri, _ := c.pager.UpsertUserFact(ctx, f.Predicate, s)
 			c.linkProvenance(uri, job)
 		}
 	}
@@ -317,11 +411,14 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 		if strings.TrimSpace(pj.Topic) == "" {
 			continue
 		}
+		if !consolidation.ValidCitations(pj.Evidence, validEvidence) {
+			continue
+		}
 		strength := pj.Strength
 		if strength <= 0 {
 			strength = 0.7 // a stated preference is a strong default by construction
 		}
-		uri, _ := c.pager.RememberPreferenceRelated(ctx, pj.Topic, pj.Polarity, strength, pj.Rationale, c.classifyRelation)
+		uri, _ := c.pager.UpsertPreference(ctx, pj.Topic, pj.Polarity, strength, pj.Rationale)
 		c.linkProvenance(uri, job)
 	}
 	for i, corr := range out.Corrections {
@@ -331,10 +428,13 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 		if i >= 5 {
 			break
 		}
-		if s := strings.TrimSpace(corr); s != "" {
+		if !consolidation.ValidCitations(corr.Evidence, validEvidence) {
+			continue
+		}
+		if s := strings.TrimSpace(corr.Statement); s != "" {
 			// A correction is a learned do-rule, firm by default (a strong
 			// standing default, not an inviolable hard rule).
-			uri, _ := c.pager.RememberConstraintRelated(ctx, s, "do", "firm", c.classifyRelation)
+			uri, _ := c.pager.UpsertConstraint(ctx, s, "do", "firm")
 			c.linkProvenance(uri, job)
 		}
 	}
@@ -356,6 +456,9 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 		if spec.IsEmpty() {
 			continue
 		}
+		if !consolidation.ValidCitations(pj.Evidence, validEvidence) {
+			continue
+		}
 		c.proposeMu.Lock()
 		c.reinforceCount[spec.Name]++
 		coverage := c.reinforceCount[spec.Name]
@@ -368,8 +471,10 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 		// dedupes + guards the threshold.
 		c.proposeIfReady(spec, coverage)
 	}
-	if c.allowed() && out.Outcome != nil && strings.TrimSpace(out.Outcome.Summary) != "" {
-		uri, _ := c.pager.RecordOutcome(ctx, out.Outcome.Summary, mapOutcome(out.Outcome.Status), "")
+	if c.allowed() && job.Terminal && out.Outcome != nil &&
+		consolidation.ValidCitations(out.Outcome.Evidence, validEvidence) &&
+		strings.TrimSpace(out.Outcome.Summary) != "" {
+		uri, _ := c.pager.UpsertOutcome(ctx, out.Outcome.Summary, mapOutcome(out.Outcome.Status), job.IntentID)
 		c.linkProvenance(uri, job)
 	}
 	// Automatrix capture: fan accepted opportunities into the proactive queue.
@@ -394,6 +499,9 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 			continue
 		}
 		if oj.Confidence < c.cfg.AutomatrixMinConfidence {
+			continue
+		}
+		if !consolidation.ValidCitations(oj.Evidence, validEvidence) {
 			continue
 		}
 		uri, _ := c.pager.RememberOpportunity(ctx, memory.OpportunitySpec{

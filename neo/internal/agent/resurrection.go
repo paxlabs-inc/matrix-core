@@ -130,6 +130,22 @@ func (a *Agent) chatResurrection(
 	ctx context.Context,
 	userInput string,
 ) error {
+	return a.chatResurrectionWithGuidance(ctx, userInput, "")
+}
+
+func (a *Agent) chatResurrectionResume(
+	ctx context.Context,
+	objective string,
+	guidance string,
+) error {
+	return a.chatResurrectionWithGuidance(ctx, objective, guidance)
+}
+
+func (a *Agent) chatResurrectionWithGuidance(
+	ctx context.Context,
+	userInput string,
+	resumeGuidance string,
+) error {
 	userInput = strings.TrimSpace(userInput)
 	if userInput == "" {
 		return nil
@@ -165,6 +181,12 @@ func (a *Agent) chatResurrection(
 		turnstate.TurnState{
 			TurnID: turnID, ActorID: actorID,
 			SessionID: conversationID, Content: userInput,
+			Origin: func() string {
+				if strings.TrimSpace(resumeGuidance) != "" {
+					return "supervisor_resume"
+				}
+				return "user"
+			}(),
 			Status:    turnstate.StatusRunning,
 			UpdatedAt: time.Now().UTC(),
 		},
@@ -223,6 +245,7 @@ func (a *Agent) chatResurrection(
 				AgentName: a.agentName(), Reporter: a.out,
 				Recorder: cortexAdapter, Consolidator: a.consolidator,
 				SuppressIncomplete: true,
+				IntentID:           a.turnIntentID(), Attempt: a.supervisedAttempt,
 			},
 		},
 	)
@@ -230,7 +253,13 @@ func (a *Agent) chatResurrection(
 		a.runtimeFailure = delegate.ClassDeterministic
 		return err
 	}
-	response, turnErr := runtimeLoop.Turn(ctx, userInput)
+	var response loop.Response
+	var turnErr error
+	if strings.TrimSpace(resumeGuidance) != "" {
+		response, turnErr = runtimeLoop.TurnInternal(ctx, userInput, resumeGuidance)
+	} else {
+		response, turnErr = runtimeLoop.Turn(ctx, userInput)
+	}
 	a.runtimeLast = strings.TrimSpace(response.Content)
 	if a.runtimeLast == "" {
 		a.runtimeLast = runtimeBestEffort(response)

@@ -38,15 +38,15 @@ func TestDecodeLegacyPlainStatement(t *testing.T) {
 	}
 }
 
-func TestDedupKeyPrecedence(t *testing.T) {
-	if k := (PatternSpec{Name: "Deploy  ERC20", Trigger: "t", Steps: []string{"s"}}).dedupKey(); k != "deploy erc20" {
-		t.Errorf("name should win and normalize: %q", k)
+func TestDedupKeyUsesTriggerAndActions(t *testing.T) {
+	if k := (PatternSpec{Name: "Deploy  ERC20", Trigger: "t", Steps: []string{"s"}}).dedupKey(); k != "t|s" {
+		t.Errorf("display name must not define identity: %q", k)
 	}
-	if k := (PatternSpec{Trigger: "When Launching", Steps: []string{"s"}}).dedupKey(); k != "when launching" {
-		t.Errorf("trigger should be the fallback: %q", k)
+	if k := (PatternSpec{Trigger: "When Launching", Steps: []string{"s"}}).dedupKey(); k != "when launching|s" {
+		t.Errorf("trigger and action sequence must define identity: %q", k)
 	}
-	if k := (PatternSpec{Steps: []string{"Compile", "Deploy"}}).dedupKey(); k != "compile deploy" {
-		t.Errorf("steps should be the last resort: %q", k)
+	if k := (PatternSpec{Steps: []string{"Compile", "Deploy"}}).dedupKey(); k != "compile -> deploy" {
+		t.Errorf("steps should define identity without a trigger: %q", k)
 	}
 	if !(PatternSpec{}).IsEmpty() {
 		t.Error("zero spec must be empty")

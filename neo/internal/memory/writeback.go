@@ -208,33 +208,20 @@ func (p *Pager) RecordOutcome(ctx context.Context, summary string, outcome memor
 	return string(uri), err
 }
 
-// RecordLoopDeath persists a durable death-journal entry when a supervised
-// attempt died in a loop-affecting way and forced a respawn — the DURABLE read
-// path of the death journal (the immediate path is the successor's resume
-// prime). It is a failure-outcome observation Event so ordinary recall/Activate
-// surfaces it, letting the agent self-author its world-model of how it fails,
-// AND it carries the death-journal tag so the journal is directly readable as a
-// whole via DeathJournal (self-model task 3.1, req.4.2) — the tag is additive,
-// never excluding the record from ordinary recall. Importance 6 sits above a
-// routine outcome (4) so a recurring failure mode stays salient enough to inform
-// future attempts. Best-effort: an empty summary or a write error is swallowed
-// so it can never block a respawn.
+// RecordLoopDeath persists one failure incident in the dedicated derived
+// death-journal session lane. It cannot surface through ordinary activation.
 func (p *Pager) RecordLoopDeath(ctx context.Context, summary, intentRef string) (string, error) {
+	_ = ctx
 	summary = strings.TrimSpace(summary)
 	if summary == "" {
 		return "", nil
 	}
-	uri, err := p.cortex.Write(
-		p.deathJournalHead(6),
-		memory.EventData{
-			SchemaVersion: 1,
-			Kind:          memory.EventObservation,
-			OutcomeVal:    memory.OutcomeFailure,
-			Summary:       summary,
-			IntentRef:     intentRef,
-		},
-		p.writeMeta(),
-	)
+	uri, err := p.cortex.AppendMessage(cortex.Message{
+		ConversationID: deathJournalConversation,
+		Role:           cortex.RoleToolResult,
+		ToolName:       strings.TrimSpace(intentRef),
+		Content:        summary,
+	})
 	return string(uri), err
 }
 
@@ -268,6 +255,8 @@ func (p *Pager) ReinforcePattern(ctx context.Context, spec PatternSpec, derivedF
 	if key == "" {
 		return "", nil
 	}
+	p.writeMu.Lock()
+	defer p.writeMu.Unlock()
 	res, err := p.cortex.Find(query.Query{Type: []memory.Type{memory.TypePattern}, Limit: 100})
 	if err == nil && res != nil {
 		for _, m := range res.Memories {
