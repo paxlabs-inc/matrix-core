@@ -72,12 +72,11 @@ func (e *GoExtractor) Extract(cfg extract.Config) (*extract.Result, error) {
 	})
 
 	for _, dir := range modules {
-		if err := e.loadModule(dir); err != nil {
-			// Fall back to regex-based extraction if go/packages fails
-			// (e.g. Go version mismatch, missing deps).
-			if fallbackErr := e.loadModuleFallback(dir); fallbackErr != nil {
-				return nil, fmt.Errorf("go extract: %w (fallback also failed: %v)", err, fallbackErr)
-			}
+		// Use regex-based extraction — works regardless of Go version or
+		// dependency state. The go/packages path is kept for callers who
+		// need type-resolved data, but the CLI always uses the fallback.
+		if err := e.loadModuleFallback(dir); err != nil {
+			return nil, err
 		}
 	}
 

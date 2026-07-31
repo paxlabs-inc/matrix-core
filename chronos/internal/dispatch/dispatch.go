@@ -94,6 +94,13 @@ func (w *Worker) fire(ctx context.Context, a types.Alarm) {
 		Message:        a.WakeMessage,
 		Payload:        a.Payload,
 		AlarmID:        a.ID,
+		Target:         a.Target,
+		ScheduledAt: func() time.Time {
+			if a.OccurrenceAt != nil {
+				return *a.OccurrenceAt
+			}
+			return a.NextFireAt
+		}(),
 	})
 	if err == nil {
 		w.onSuccess(ctx, a, now)

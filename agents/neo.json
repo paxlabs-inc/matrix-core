@@ -271,6 +271,67 @@
       ]
     },
     {
+      "alias": "exa",
+      "transport": "stdio",
+      "command": "node",
+      "args": [
+        "/root/matrix/tools/exa/exa.mjs"
+      ],
+      "env": [],
+      "package_digest": "sha256:bd072fc3cb9e86039e663c18956c4dc7e23e691bcdeec32a976392f86118935e",
+      "version": "0.1.0",
+      "tools": [
+        {
+          "name": "exa_search",
+          "description": "Semantic web search through the router-owned Exa lane. Defaults to extractive highlights and returns source cards, request ID, cost and generated-output grounding. Prefer ordinary web_search for cheap discovery; use Exa for semantic retrieval, controlled domains/dates, financial reports or deeper synthesis. Read-only. args: query (required), type?, num_results?, category?, domain/date/highlight controls?",
+          "side_effect_class": "network",
+          "timeout_ms": 50000
+        },
+        {
+          "name": "exa_contents",
+          "description": "Fetch extractive evidence or bounded full text from 1-10 known URLs. Every per-URL status is returned even when the overall request succeeds; partial failures remain explicit. Read-only. args: urls (required), highlight_query?, full_text?, max_characters?, max_age_hours?",
+          "side_effect_class": "network",
+          "timeout_ms": 50000
+        },
+        {
+          "name": "exa_research_start",
+          "description": "Start asynchronous multi-source Exa Agent research through the router. Output is generated synthesis; terminal output.grounding is authoritative. Use bounded schemas and medium or lower effort by default. Read-only research. args: query (required), workflow?, subject?, effort?, output_schema?",
+          "side_effect_class": "network",
+          "timeout_ms": 50000
+        },
+        {
+          "name": "exa_research_get",
+          "description": "Get an owned asynchronous Exa Agent run. Completed results include generated output and authoritative terminal grounding. Read-only. args: run_id (required)",
+          "side_effect_class": "network",
+          "timeout_ms": 50000
+        },
+        {
+          "name": "exa_research_continue",
+          "description": "Continue an owned completed Exa Agent run with a follow-up query. Creates a new run ID while preserving the previous run as context. Read-only research. args: run_id and query (required), effort?",
+          "side_effect_class": "network",
+          "timeout_ms": 50000
+        },
+        {
+          "name": "exa_research_cancel",
+          "description": "Cancel an owned queued or running Exa Agent job to stop further work and cost. It cannot publish, message, or change external content. args: run_id (required)",
+          "side_effect_class": "network",
+          "timeout_ms": 50000
+        },
+        {
+          "name": "exa_outbound_brief",
+          "description": "Build a grounded company or person outbound-research brief with recent triggers and talking points. It researches only and sends nothing. Read-only. args: company (required), person?",
+          "side_effect_class": "network",
+          "timeout_ms": 50000
+        },
+        {
+          "name": "exa_social_draft",
+          "description": "Create a source-grounded social draft anchored in a recent event. Draft-only: this tool has no publishing or messaging capability. Read-only research. args: topic (required), platform? (linkedin|x|thread)",
+          "side_effect_class": "network",
+          "timeout_ms": 50000
+        }
+      ]
+    },
+    {
       "alias": "finance",
       "transport": "stdio",
       "command": "node",
@@ -278,8 +339,8 @@
         "/root/matrix/tools/finance/finance.mjs"
       ],
       "env": [],
-      "package_digest": "sha256:fa1eaab73be3ab748bb30b5ff03644e1dd53c336a0ae3a5047accb90a8260be0",
-      "version": "0.1.0",
+      "package_digest": "sha256:7c5135fdd086bff2ff4acc7c981fc81c1088f2f7f2913d7364f709f92071ea28",
+      "version": "0.2.0",
       "tools": [
         {
           "name": "market_quote",
@@ -358,6 +419,24 @@
           "description": "An economic series by name \u2014 GDP, CPI, inflationRate, unemploymentRate, federalFunds, retailSales, consumerSentiment and the other published indicators. Read-only. args: name (required), from?, to?",
           "side_effect_class": "network",
           "timeout_ms": 25000
+        },
+        {
+          "name": "market_research_start",
+          "description": "Start on-demand grounded research for one public company. Use equity_brief for bull/bear debates, KPIs, peer read-throughs and management commentary; enrichment for typed facts and ownership filings; risk_rubric for a versioned evidence-based rubric. Asynchronous, generated synthesis with terminal grounding, read-only, and never investment advice. args: symbol (required), kind?, effort?, as_of?, rubric_version?, dimensions?",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_research_get",
+          "description": "Get an asynchronous grounded finance research run. Treat terminal output.grounding as authoritative and output text or structured fields as generated synthesis. Read-only. args: run_id (required)",
+          "side_effect_class": "network",
+          "timeout_ms": 25000
+        },
+        {
+          "name": "market_verify_facts",
+          "description": "Cross-check selected financial facts against issuer, regulator, exchange and other authoritative evidence without replacing canonical market data. Returns verified, conflict or inconclusive states with grounding. Read-only. args: symbol (required), fields (required), as_of?",
+          "side_effect_class": "network",
+          "timeout_ms": 30000
         }
       ]
     },

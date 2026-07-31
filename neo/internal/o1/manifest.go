@@ -136,7 +136,7 @@ func (ms *ManifestSet) SelectMinimal(requiredCapabilities []string) []OperationM
 // Synthetic tools map to their constant names; MCP tools map by alias prefix.
 var capabilityGroups = map[string][]string{
 	"filesystem":        {"fs__", "read_file", "write_file", "edit_file", "delete_file", "list_directory"},
-	"web_evidence":      {"web-search__", "fetch__", "fetch", "search", "news"},
+	"web_evidence":      {"web-search__", "exa__", "fetch__", "fetch", "search", "news"},
 	"browser":           {"browser__"},
 	"media":             {"media__"},
 	"memory":            {"memory_recall", "memory_mutate", "write_skill"},

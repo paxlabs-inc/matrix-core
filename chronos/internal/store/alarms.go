@@ -18,7 +18,8 @@ var ErrNotFound = errors.New("store: alarm not found")
 // on this exact order.
 const alarmColumns = `id, owner_did, user_id, label, kind, fire_at, cron_expr, timezone,
 	next_fire_at, conversation_id, wake_message, payload, status, idempotency_key,
-	max_failures, failure_count, last_error, claimed_at, created_at, updated_at, last_fired_at`
+	max_failures, failure_count, last_error, claimed_at, created_at, updated_at, last_fired_at,
+	target, occurrence_at`
 
 func scanAlarm(row pgx.Row) (types.Alarm, error) {
 	var a types.Alarm
@@ -27,6 +28,7 @@ func scanAlarm(row pgx.Row) (types.Alarm, error) {
 		&a.ID, &a.OwnerDID, &a.UserID, &a.Label, &a.Kind, &a.FireAt, &a.CronExpr, &a.Timezone,
 		&a.NextFireAt, &a.ConversationID, &a.WakeMessage, &payload, &a.Status, &a.IdempotencyKey,
 		&a.MaxFailures, &a.FailureCount, &a.LastError, &a.ClaimedAt, &a.CreatedAt, &a.UpdatedAt, &a.LastFiredAt,
+		&a.Target, &a.OccurrenceAt,
 	)
 	if err != nil {
 		return types.Alarm{}, err
@@ -39,6 +41,9 @@ func scanAlarm(row pgx.Row) (types.Alarm, error) {
 // idempotency key that already exists for the owner, the existing row is
 // returned with deduped=true (no duplicate is created).
 func (s *Store) CreateAlarm(ctx context.Context, a types.Alarm) (types.Alarm, bool, error) {
+	if a.Target == "" {
+		a.Target = types.TargetNeoChat
+	}
 	payload := a.Payload
 	if len(payload) == 0 {
 		payload = []byte("{}")
@@ -46,15 +51,15 @@ func (s *Store) CreateAlarm(ctx context.Context, a types.Alarm) (types.Alarm, bo
 	row := s.pool.QueryRow(ctx, `
 		INSERT INTO alarms (
 			owner_did, user_id, label, kind, fire_at, cron_expr, timezone,
-			next_fire_at, conversation_id, wake_message, payload, status,
-			idempotency_key, max_failures
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+				next_fire_at, conversation_id, wake_message, payload, status,
+				idempotency_key, max_failures, target
+			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 		ON CONFLICT (owner_did, idempotency_key) WHERE idempotency_key <> ''
 		DO NOTHING
 		RETURNING `+alarmColumns,
 		a.OwnerDID, a.UserID, a.Label, a.Kind, a.FireAt, a.CronExpr, a.Timezone,
 		a.NextFireAt, a.ConversationID, a.WakeMessage, payload, types.StatusActive,
-		a.IdempotencyKey, a.MaxFailures,
+		a.IdempotencyKey, a.MaxFailures, a.Target,
 	)
 	created, err := scanAlarm(row)
 	if err == nil {
@@ -137,7 +142,8 @@ func (s *Store) ClaimDue(ctx context.Context, batch int, lease time.Duration) ([
 	}
 	leaseSec := lease.Seconds()
 	rows, err := s.pool.Query(ctx, `
-		UPDATE alarms SET claimed_at = now(), updated_at = now()
+			UPDATE alarms SET claimed_at = now(), updated_at = now(),
+			    occurrence_at = COALESCE(occurrence_at,next_fire_at)
 		WHERE id IN (
 			SELECT id FROM alarms
 			WHERE status = 'active'
@@ -166,16 +172,16 @@ func (s *Store) ClaimDue(ctx context.Context, batch int, lease time.Duration) ([
 // MarkFired records a successful once-alarm fire (retained for audit).
 func (s *Store) MarkFired(ctx context.Context, id string) error {
 	return s.exec(ctx, `
-		UPDATE alarms SET status = 'fired', last_fired_at = now(), claimed_at = NULL,
-			failure_count = 0, last_error = '', updated_at = now()
+			UPDATE alarms SET status = 'fired', last_fired_at = now(), claimed_at = NULL,
+				failure_count = 0, last_error = '', occurrence_at=NULL, updated_at = now()
 		WHERE id = $1`, id)
 }
 
 // Reschedule records a successful cron fire and advances next_fire_at.
 func (s *Store) Reschedule(ctx context.Context, id string, next time.Time) error {
 	return s.exec(ctx, `
-		UPDATE alarms SET next_fire_at = $2, last_fired_at = now(), claimed_at = NULL,
-			failure_count = 0, last_error = '', updated_at = now()
+			UPDATE alarms SET next_fire_at = $2, last_fired_at = now(), claimed_at = NULL,
+				failure_count = 0, last_error = '', occurrence_at=NULL, updated_at = now()
 		WHERE id = $1`, id, next)
 }
 
@@ -192,8 +198,8 @@ func (s *Store) RecordRetry(ctx context.Context, id string, nextRetry time.Time,
 // (dispatch.retry ladder_2 — never silently dropped, invariant i6).
 func (s *Store) MarkFailed(ctx context.Context, id, errMsg string) error {
 	return s.exec(ctx, `
-		UPDATE alarms SET status = 'failed', failure_count = failure_count + 1,
-			last_error = $2, claimed_at = NULL, updated_at = now()
+			UPDATE alarms SET status = 'failed', failure_count = failure_count + 1,
+				last_error = $2, claimed_at = NULL, occurrence_at=NULL, updated_at = now()
 		WHERE id = $1`, id, truncErr(errMsg))
 }
 
@@ -202,8 +208,8 @@ func (s *Store) MarkFailed(ctx context.Context, id, errMsg string) error {
 // skip-and-advance). The error is retained for observability.
 func (s *Store) RescheduleAfterFailure(ctx context.Context, id string, next time.Time, errMsg string) error {
 	return s.exec(ctx, `
-		UPDATE alarms SET next_fire_at = $2, failure_count = 0, last_error = $3,
-			claimed_at = NULL, updated_at = now()
+			UPDATE alarms SET next_fire_at = $2, failure_count = 0, last_error = $3,
+				claimed_at = NULL, occurrence_at=NULL, updated_at = now()
 		WHERE id = $1`, id, next, truncErr(errMsg))
 }
 

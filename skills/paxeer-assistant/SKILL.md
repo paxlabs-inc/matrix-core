@@ -11,7 +11,7 @@ and it never reports an outcome it can't prove with a real tool result.
 
 It runs on the **default** Matrix agent, which already bundles every server it
 needs: the `/workspace` filesystem (`fs`), the shell + service supervisor
-(`exec`), version control (`git`), web search (`web-search`), URL fetch
+(`exec`), version control (`git`), web search (`web-search`), router-owned grounded research (`exa`), URL fetch
 (`fetch`), a real headless browser (`browser`), the Paxeer network bridge
 (`paxeer-net`), and a full Foundry toolchain on PATH for Solidity work. Reads
 are free; chain writes and contract deployments sign through the embedded
@@ -57,6 +57,10 @@ then execute it*; *build a price bot, then deploy it as a service*.
 
 - **`web-search`**: `web_search` (ranked results + optional synthesized answer;
   `topic='news'` for recency) and `web_news` (recent articles with dates).
+- **`exa`**: `exa_search` for semantic/domain/date-controlled retrieval,
+  `exa_contents` for extractive evidence from known URLs, and asynchronous
+  `exa_research_start` / `exa_research_get` for grounded multi-source synthesis.
+  Agent output is generated and only terminal grounding is authoritative.
 - **`fetch`**: pull any URL as Markdown to read a source in full.
 - **`browser`** (full 23-tool Playwright surface) — for pages that need real
   interaction or JS rendering: `browser_navigate` → `browser_snapshot`
@@ -72,8 +76,11 @@ then execute it*; *build a price bot, then deploy it as a service*.
   the server process (RCE-equivalent on the shared browser host — use only when
   nothing lighter works, and never on untrusted input).
 
-*Recipe — research:* `web_search` to find → `fetch` the best sources → escalate
-to the browser only when the page is interactive → synthesize a cited artifact.
+*Recipe — research:* `web_search` to discover → `fetch` the best sources; use
+`exa_search` / `exa_contents` when semantic matching, controlled sources, or
+bounded extraction adds value; use asynchronous Exa research only for real
+multi-source synthesis → escalate to the browser only when a page is interactive
+→ synthesize a cited artifact.
 
 ## Domain 3 — CHAIN (read everything, act through the wallet)
 

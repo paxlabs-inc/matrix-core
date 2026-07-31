@@ -59,18 +59,19 @@ CREATE INDEX IF NOT EXISTS idx_nodes_name ON nodes(name);
 CREATE INDEX IF NOT EXISTS idx_nodes_file ON nodes(file);
 CREATE INDEX IF NOT EXISTS idx_nodes_lang ON nodes(lang);
 
+CREATE TABLE IF NOT EXISTS meta (
+	key   TEXT PRIMARY KEY,
+	value TEXT NOT NULL
+);
+`
+
+const ftsSchema = `
 CREATE VIRTUAL TABLE IF NOT EXISTS nodes_fts USING fts5(
 	id, name, qname, doc, sig, summary,
 	content='nodes',
 	content_rowid='rowid'
 );
 
-CREATE TABLE IF NOT EXISTS meta (
-	key   TEXT PRIMARY KEY,
-	value TEXT NOT NULL
-);
-
--- Triggers to keep FTS in sync
 CREATE TRIGGER IF NOT EXISTS nodes_ai AFTER INSERT ON nodes BEGIN
 	INSERT INTO nodes_fts(rowid, id, name, qname, doc, sig, summary)
 	VALUES (new.rowid, new.id, new.name, new.qname, new.doc, new.sig, new.summary);
@@ -102,6 +103,12 @@ func Open(dbPath string) (*DB, error) {
 	if _, err := conn.Exec(schema); err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("create schema: %w", err)
+	}
+	// Try to create FTS5 virtual table — this may fail if SQLite was compiled
+	// without FTS5 support (common in some distro packages). We degrade gracefully:
+	// search will fall back to LIKE queries.
+	if _, err := conn.Exec(ftsSchema); err != nil {
+		// FTS5 not available — continue without it
 	}
 	return &DB{conn: conn, path: dbPath}, nil
 }
@@ -260,11 +267,13 @@ func (db *DB) Edges(typ model.EdgeType) []model.Edge {
 }
 
 // Search performs full-text search across node IDs, names, docs, sigs, and summaries.
+// Falls back to LIKE queries if FTS5 is not available.
 func (db *DB) Search(query string, limit int) []*model.Node {
 	if limit <= 0 {
 		limit = 20
 	}
-	// FTS5 query: quote each term for safety
+
+	// Try FTS5 first
 	terms := strings.Fields(query)
 	for i, t := range terms {
 		terms[i] = `"` + strings.ReplaceAll(t, `"`, "") + `"`
@@ -278,6 +287,20 @@ func (db *DB) Search(query string, limit int) []*model.Node {
 		ORDER BY rank
 		LIMIT ?
 	`, ftsQuery, limit)
+	if err == nil {
+		defer rows.Close()
+		return scanNodes(rows)
+	}
+
+	// Fallback to LIKE queries
+	likeQuery := "%" + strings.ReplaceAll(query, "%", "\\%") + "%"
+	rows, err = db.conn.Query(`
+		SELECT id, kind, name, qname, lang, file, line_start, line_end, digest, sig, exported, doc, summary, salience, embed_ref
+		FROM nodes
+		WHERE name LIKE ? OR qname LIKE ? OR doc LIKE ? OR sig LIKE ?
+		ORDER BY name
+		LIMIT ?
+	`, likeQuery, likeQuery, likeQuery, likeQuery, limit)
 	if err != nil {
 		return nil
 	}

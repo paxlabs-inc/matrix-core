@@ -125,6 +125,12 @@ func (c *responsesClient) Decode(ctx context.Context, messages []interpreter.Mes
 	if err != nil {
 		return "", fmt.Errorf("llm: %s responses read body: %w", c.provider, err)
 	}
+	if c.cfg.OnRawExchange != nil {
+		c.cfg.OnRawExchange(
+			append([]byte(nil), body...),
+			append([]byte(nil), respBody...),
+		)
+	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var parsed responsesErrorEnvelope

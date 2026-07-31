@@ -14,6 +14,66 @@ git tags.
 
 ## [Unreleased]
 
+## [0.90.0] - 2026-07-31 — WORKFORCE: seven-department stateless organization (in progress)
+
+### Added
+
+- **WORKFORCE — a deterministic, user-controlled organization runtime**
+  (`spec/workforce/`, waves 1-7 mostly complete; 24 of 28 tasks done):
+  a separate top-level Go module and execution model for long-horizon
+  organizational work, distinct from Neo's conversational agent loop.
+  - **Organization and control plane**: seven first-class departments
+    (Developer, Executive, Research and Development, Marketing and Social,
+    Legal, Accounting, Back Office), each with three durable seats (Lead,
+    Executor, Auditor) carrying versioned mandates, allowed skills, data
+    scopes, and escalation rules; a signed organizational ledger with
+    provenance and correction fan-out; a deterministic `workforced` kernel
+    owning the global work graph, dependency resolution, scheduling,
+    leases/fencing, and a single fenced effect gateway (no seat process
+    ever holds effect credentials).
+  - **Stateless wake workers**: every Lead/Executor wake spawns a fresh,
+    isolated `workforce-seat` process bound to a typed WorkPacket
+    (mandate, goal slice, tools, model binding, policy, lease, budget,
+    deadline); no transcript, scratchpad, or episodic memory survives
+    between wakes. The Workforce Execution Loop implements durable
+    lease/reconcile/orient/select/propose/compile/preflight/execute/
+    observe/verify/commit/yield/sleep stages. Auditors (`workforce-auditor`)
+    are memoryless per verdict with a cross-audit disagreement sampler.
+  - **Coordination fabric**: Workforce Mail Protocol for typed internal
+    mail, a Chronos-driven wake/lease scheduler, compiled autonomy and
+    approval policies (signed, non-delegable authority stays with the
+    human owner), reconciliation probes and circuit breakers around
+    ambiguous effects.
+  - **Developer Project Brain**: the sole cross-wake persistence exception
+    — a project-scoped CodeGraph plus verified engineering decisions,
+    invariants, failures, plans, changes, and test evidence attached to
+    the codebase, not to any agent persona; change-scope leases and a
+    real Developer skill pack qualified across a multi-wake loop.
+  - **Department skill packs**: real capability packs shipped for
+    Executive, Research & Development, Marketing & Social, Legal,
+    Accounting, and Back Office, qualified together in a seven-department
+    Work Order.
+  - **APIs, live events, and command center**: authenticated owner APIs
+    for organization activation, Work Orders, graph/mail/approvals/
+    receipts/policies/schedules/incidents, and Project Brain; a dedicated
+    `apps/client` Workforce route with guided empty-ledger activation,
+    department/seat state, budgets, autonomy, schedules, and receipt-backed
+    completion (no success inferred from in-flight activity); initial
+    Mail/Approvals/Receipts/Policies/Project Brain record surfaces.
+  - **Security qualification**: adversarial real-process isolation tests
+    proving seats cannot reach effect credentials, other seats' sessions,
+    other tenants, private Auditor state, or unauthorized Project Brain
+    data.
+  - **Remaining before a 1.0.0 release** (`spec/workforce/spec.kvx`
+    tasks 24/26/27/28, tracked `pending`): the full Mail/Approvals/
+    Receipts/Policies/Project Brain client surface set; encrypted backup,
+    point-in-time recovery, retention, and cryptographic erasure for the
+    ledger, policies, receipts, mailboxes, and Project Brain; enforced
+    latency/memory/resource budgets with overload shedding and
+    breaker-storm/load/leak qualification; and the complete adversarial
+    Workforce property and release-qualification gate (Property WORKFORCE)
+    spanning all seven departments end-to-end.
+
 ## [0.65.0] - 2026-07-17 — Launch readiness
 
 ### Added

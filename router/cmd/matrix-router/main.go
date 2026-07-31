@@ -43,6 +43,7 @@ import (
 	"matrix/router/internal/beta"
 	"matrix/router/internal/config"
 	"matrix/router/internal/db"
+	"matrix/router/internal/exa"
 	"matrix/router/internal/finance"
 	"matrix/router/internal/fly"
 	"matrix/router/internal/jwt"
@@ -364,6 +365,10 @@ func main() {
 		adminH.MachineEnv["MATRIX_FINANCE_URL"] = envOr("MATRIX_FINANCE_URL", "http://matrix-router.railway.internal:8088/internal/finance")
 		adminH.MachineEnv["MATRIX_FINANCE_TOKEN"] = cfg.FinanceToken
 	}
+	if cfg.ResearchToken != "" {
+		adminH.MachineEnv["MATRIX_EXA_URL"] = envOr("MATRIX_EXA_URL", "http://matrix-router.railway.internal:8088/internal/exa")
+		adminH.MachineEnv["MATRIX_EXA_TOKEN"] = cfg.ResearchToken
+	}
 
 	// Wire router-side auto-provisioning: the proxy hands an
 	// authenticated-but-unprovisioned user to the admin provisioner on
@@ -461,6 +466,9 @@ func main() {
 	// "not configured" naming the missing variable.
 	financeSvc := finance.NewService(finance.ConfigFromEnv())
 	publicMux.Handle("/finance/", mw.JWT(verifier, logf)(finance.NewHandler(financeSvc, logf)))
+	exaSvc := exa.NewService(exa.ServiceConfig{Store: pool})
+	publicMux.Handle("/exa/", mw.JWT(verifier, logf)(exa.NewHandler(exaSvc, proxy.Subject, logf)))
+	publicMux.Handle("/finance/research/", mw.JWT(verifier, logf)(exa.NewFinanceHandler(exaSvc, false, proxy.Subject, logf)))
 
 	// JWT-protected proxy for everything else (/messages, /events, /intents/*).
 	if centralProxy != nil {
@@ -561,10 +569,17 @@ func main() {
 	// copied into a per-user machine. Admin-token auth; the acting user rides
 	// the X-Matrix-Subject header so metering stays per user.
 	if cfg.FinanceToken != "" {
+		internalMux.Handle("/internal/finance/research/", mw.Admin(cfg.FinanceToken, logf)(exa.NewFinanceHandler(exaSvc, true, nil, logf)))
 		internalMux.Handle("/internal/finance/", mw.Admin(cfg.FinanceToken, logf)(finance.NewInternalHandler(financeSvc, logf)))
 		logf("finance: internal lane enabled at %s/internal/finance/*", cfg.InternalAddr)
 	} else {
 		logf("finance: internal lane DISABLED (ROUTER_FINANCE_TOKEN unset)")
+	}
+	if cfg.ResearchToken != "" {
+		internalMux.Handle("/internal/exa/", mw.Admin(cfg.ResearchToken, logf)(exa.NewInternalHandler(exaSvc, logf)))
+		logf("exa: internal lane enabled at %s/internal/exa/*", cfg.InternalAddr)
+	} else {
+		logf("exa: internal lane DISABLED (ROUTER_RESEARCH_TOKEN unset)")
 	}
 
 	if cfg.PreviewToken != "" {

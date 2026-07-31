@@ -95,3 +95,18 @@ func TestFinanceToolDropsUnstructuredResult(t *testing.T) {
 		t.Fatalf("unstructured finance result must not become a screen: %#v", payload)
 	}
 }
+
+func TestFinanceResearchResultPublishesOnTheFinanceSurface(t *testing.T) {
+	ev := agent.ToolEvent{
+		Name:   "finance__market_research_get",
+		Result: `{"tool":"market_research_get","research":{"id":"agent_run_1","status":"completed","output":{"grounding":[{"field":"ticker","citations":[{"url":"https://www.sec.gov/aapl"}]}]}}}`,
+		Phase:  agent.ToolEnd,
+	}
+	payload, ok := financeResult(ev)
+	if !ok || payload["tool"] != "market_research_get" {
+		t.Fatalf("grounded finance result = %#v, %v", payload, ok)
+	}
+	if got := financeTitle("market_research_get"); got != "Reading grounded company research" {
+		t.Fatalf("research title = %q", got)
+	}
+}

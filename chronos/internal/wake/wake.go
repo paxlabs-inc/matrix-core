@@ -12,7 +12,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
+
+	"matrix/workforce/scheduler"
+
+	"github.com/paxlabs-inc/chronos/pkg/types"
 )
 
 // Request is the body POSTed to the router /internal/wake endpoint. The router
@@ -26,6 +31,84 @@ type Request struct {
 	Payload        json.RawMessage `json:"payload,omitempty"`
 	AlarmID        string          `json:"alarm_id"`
 	Origin         string          `json:"origin"` // always "chronos"
+	Target         string          `json:"-"`
+	ScheduledAt    time.Time       `json:"-"`
+}
+
+type TargetWaker struct {
+	NeoChat   Waker
+	Workforce Waker
+}
+
+func (w *TargetWaker) Wake(ctx context.Context, req Request) error {
+	switch req.Target {
+	case "", types.TargetNeoChat:
+		if w.NeoChat == nil {
+			return fmt.Errorf("wake: Neo chat target is not configured")
+		}
+		return w.NeoChat.Wake(ctx, req)
+	case types.TargetWorkforced:
+		if w.Workforce == nil {
+			return fmt.Errorf("wake: workforced target is not configured")
+		}
+		return w.Workforce.Wake(ctx, req)
+	default:
+		return fmt.Errorf("wake: unsupported target %q", req.Target)
+	}
+}
+
+type WorkforceHTTPWaker struct {
+	URL    string
+	Token  string
+	Client *http.Client
+}
+
+func NewWorkforce(url, token string) *WorkforceHTTPWaker {
+	return &WorkforceHTTPWaker{
+		URL: url, Token: token, Client: &http.Client{Timeout: 60 * time.Second},
+	}
+}
+
+func (w *WorkforceHTTPWaker) Wake(ctx context.Context, req Request) error {
+	var envelope scheduler.WakeEnvelope
+	if err := json.Unmarshal(req.Payload, &envelope); err != nil {
+		return fmt.Errorf("wake: decode workforce envelope: %w", err)
+	}
+	if req.ScheduledAt.IsZero() {
+		return fmt.Errorf("wake: workforce occurrence time is required")
+	}
+	envelope.ScheduledAt = req.ScheduledAt.UTC()
+	if envelope.Trigger == scheduler.TriggerRecurring {
+		suffix := req.ScheduledAt.UTC().Format(time.RFC3339Nano)
+		envelope.WakeID = envelope.ScheduleID + ":" + suffix
+		envelope.IdempotencyKey = strings.TrimSuffix(envelope.IdempotencyKey, ":") + ":" + suffix
+	}
+	if err := envelope.Validate(); err != nil {
+		return fmt.Errorf("wake: validate workforce envelope: %w", err)
+	}
+	body, err := json.Marshal(envelope)
+	if err != nil {
+		return fmt.Errorf("wake: marshal workforce envelope: %w", err)
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, w.URL, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("wake: build workforce request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	if w.Token != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+w.Token)
+	}
+	resp, err := w.Client.Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("wake: post workforced: %w", err)
+	}
+	defer resp.Body.Close()
+	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("wake: workforced returned %d: %s",
+			resp.StatusCode, truncate(respBody, 300))
+	}
+	return nil
 }
 
 // Waker delivers a wake. Implementations must return a non-nil error on any

@@ -69,6 +69,7 @@ func IsFailureKind(err error, kind FailureKind) bool {
 type Config struct {
 	GatewayURL     string
 	BearerEnv      string
+	Bearer         string
 	ActorDID       string
 	SlotLabel      string
 	MaxAttempts    int
@@ -76,6 +77,7 @@ type Config struct {
 	BackoffMax     time.Duration
 	IdleTimeout    time.Duration
 	HTTPClient     *http.Client
+	OnRawExchange  func(request, response []byte)
 }
 
 type Client struct {
@@ -89,6 +91,7 @@ type Client struct {
 	backoffMax     time.Duration
 	idleTimeout    time.Duration
 	httpClient     *http.Client
+	onRawExchange  func(request, response []byte)
 }
 
 func New(adapter Adapter, config Config) (*Client, error) {
@@ -105,7 +108,10 @@ func New(adapter Adapter, config Config) (*Client, error) {
 	if bearerEnv == "" {
 		bearerEnv = "MATRIX_GATEWAY_TOKEN"
 	}
-	bearer := strings.TrimSpace(os.Getenv(bearerEnv))
+	bearer := strings.TrimSpace(config.Bearer)
+	if bearer == "" {
+		bearer = strings.TrimSpace(os.Getenv(bearerEnv))
+	}
 	if bearer == "" {
 		return nil, fmt.Errorf("resurrection provider: gateway bearer env %s is empty", bearerEnv)
 	}
@@ -149,6 +155,7 @@ func New(adapter Adapter, config Config) (*Client, error) {
 		backoffMax:     backoffMax,
 		idleTimeout:    idleTimeout,
 		httpClient:     httpClient,
+		onRawExchange:  config.OnRawExchange,
 	}, nil
 }
 
@@ -242,6 +249,7 @@ func (client *Client) generateAttempt(
 	defer response.Body.Close()
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		message, readErr := io.ReadAll(io.LimitReader(response.Body, 64<<10))
+		client.recordRawExchange(body, message)
 		if readErr != nil {
 			message = []byte(readErr.Error())
 		}
@@ -260,8 +268,9 @@ func (client *Client) generateAttempt(
 		return protocol.NormalizedGeneration{}, failure
 	}
 
+	var rawResponse bytes.Buffer
 	var idle atomic.Bool
-	reader := newIdleReader(response.Body, client.idleTimeout, func() {
+	reader := newIdleReader(io.TeeReader(response.Body, &rawResponse), client.idleTimeout, func() {
 		idle.Store(true)
 		cancel()
 	})
@@ -276,6 +285,7 @@ func (client *Client) generateAttempt(
 			generation, err = client.adapter.TranslateResponse(raw)
 		}
 	}
+	client.recordRawExchange(body, rawResponse.Bytes())
 	if idle.Load() {
 		return protocol.NormalizedGeneration{}, &Failure{
 			Kind: FailureIdle, Err: fmt.Errorf("provider stream idle for %s", client.idleTimeout),
@@ -285,6 +295,16 @@ func (client *Client) generateAttempt(
 		return protocol.NormalizedGeneration{}, &Failure{Kind: FailureProtocol, Err: err}
 	}
 	return generation, nil
+}
+
+func (client *Client) recordRawExchange(request, response []byte) {
+	if client == nil || client.onRawExchange == nil {
+		return
+	}
+	requestCopy := append([]byte(nil), request...)
+	responseCopy := append([]byte(nil), response...)
+	defer func() { _ = recover() }()
+	client.onRawExchange(requestCopy, responseCopy)
 }
 
 func (client *Client) decodeStream(reader io.Reader) (protocol.NormalizedGeneration, error) {

@@ -15,6 +15,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	grounded "matrix/router/internal/exa"
 )
 
 // These drive the REAL tools/finance MCP bridge as a real node subprocess
@@ -327,6 +329,56 @@ func TestBridgeWithoutLaneWiringDegradesHonestly(t *testing.T) {
 	msg, _ := payload["error"].(string)
 	if !strings.Contains(msg, "not configured") {
 		t.Fatalf("error = %q", msg)
+	}
+}
+
+func TestBridgeRunsGroundedFinanceResearchThroughTheRouterLane(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/agent/runs":
+			_, _ = w.Write([]byte(`{"id":"agent_run_finance","status":"queued"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/agent/runs/agent_run_finance":
+			_, _ = w.Write([]byte(`{"id":"agent_run_finance","status":"completed","output":{"structured":{"ticker":"AAPL","key_debates":[],"kpis_to_watch":[]},"text":"Grounded brief","grounding":[{"field":"ticker","confidence":"high","citations":[{"url":"https://www.sec.gov/aapl","title":"Filing"}]}]},"costDollars":{"total":0.1}}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/search":
+			_, _ = w.Write([]byte(`{"requestId":"verify-1","searchType":"deep","results":[],"output":{"content":{"revenue":{"value":10,"unit":"USD","state":"verified","evidence":[]}},"grounding":[{"field":"revenue","confidence":"high","citations":[{"url":"https://www.sec.gov/aapl","title":"Filing"}]}]},"costDollars":{"total":0.02}}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(upstream.Close)
+	service := grounded.NewService(grounded.ServiceConfig{
+		Client: grounded.NewClient(grounded.ClientConfig{APIKey: "exa-key", BaseURL: upstream.URL}),
+		Store:  grounded.NewMemoryStore(),
+	})
+	handler := grounded.NewFinanceHandler(service, true, nil, nil)
+	lane := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer lane-token" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		handler.ServeHTTP(w, r)
+	}))
+	t.Cleanup(lane.Close)
+	bridge := startBridge(t, lane.URL+"/internal/finance", "lane-token")
+
+	started := bridge.callTool("market_research_start", map[string]any{"symbol": "AAPL", "kind": "equity_brief"})
+	research, ok := started["research"].(map[string]any)
+	if !ok || research["id"] != "agent_run_finance" || research["status"] != "queued" {
+		t.Fatalf("started=%+v", started)
+	}
+	completed := bridge.callTool("market_research_get", map[string]any{"run_id": "agent_run_finance"})
+	research, ok = completed["research"].(map[string]any)
+	output, _ := research["output"].(map[string]any)
+	if !ok || research["status"] != "completed" || output["synthesis_note"] == nil {
+		t.Fatalf("completed=%+v", completed)
+	}
+	grounding, _ := output["grounding"].([]any)
+	if len(grounding) != 1 {
+		t.Fatalf("grounding=%+v", grounding)
+	}
+	verified := bridge.callTool("market_verify_facts", map[string]any{"symbol": "AAPL", "fields": []string{"revenue"}})
+	if verified["verification"] == nil || verified["synthesis_note"] == nil {
+		t.Fatalf("verification=%+v", verified)
 	}
 }
 

@@ -36,6 +36,7 @@ func main() {
 		cli.TUICmd(),
 		cli.SpecCmd(),
 		cli.ExportCmd(),
+		cli.SetupCmd(),
 	)
 
 	// "cg mcp serve" starts the MCP stdio server directly.

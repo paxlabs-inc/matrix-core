@@ -87,9 +87,17 @@ func run() int {
 	}()
 
 	// Dispatch worker: claims due alarms and delivers them via the router wake.
-	waker := wake.New(cfg.RouterWakeURL, cfg.WakeToken)
+	waker := &wake.TargetWaker{
+		NeoChat: wake.New(cfg.RouterWakeURL, cfg.WakeToken),
+		Workforce: wake.NewWorkforce(
+			cfg.WorkforcedWakeURL, cfg.WorkforcedWakeToken,
+		),
+	}
 	if cfg.WakeToken == "" {
 		log.Warn("CHRONOS_WAKE_TOKEN unset: router /internal/wake will reject deliveries unless it too is tokenless (dev only)")
+	}
+	if cfg.WorkforcedWakeToken == "" {
+		log.Warn("CHRONOS_WORKFORCED_WAKE_TOKEN unset: typed Workforce wakes require a tokenless dev receiver")
 	}
 	worker := dispatch.New(st, waker, log, dispatch.Config{
 		Tick:        cfg.Tick,

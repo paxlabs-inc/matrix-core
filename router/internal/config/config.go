@@ -117,6 +117,10 @@ type Config struct {
 	// public JWT-authed /finance/* lane is unaffected.
 	FinanceToken string
 
+	// ResearchToken authenticates the general internal /internal/exa/* lane
+	// used by Neo's Exa MCP. The Exa vendor key remains router-only.
+	ResearchToken string
+
 	// CORSOrigins is the browser cross-origin allow-list for the public API
 	// (ROUTER_CORS_ORIGINS, comma-separated). The Next.js client is served from
 	// a different origin than this API and needs CORS to connect. Empty or "*"
@@ -163,6 +167,7 @@ func Load() (*Config, error) {
 		WakeToken:               os.Getenv("ROUTER_WAKE_TOKEN"),
 		PreviewToken:            os.Getenv("ROUTER_PREVIEW_TOKEN"),
 		FinanceToken:            os.Getenv("ROUTER_FINANCE_TOKEN"),
+		ResearchToken:           os.Getenv("ROUTER_RESEARCH_TOKEN"),
 		CORSOrigins:             parseCSV(os.Getenv("ROUTER_CORS_ORIGINS")),
 	}
 

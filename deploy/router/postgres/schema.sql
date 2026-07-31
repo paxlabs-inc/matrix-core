@@ -145,3 +145,4 @@ ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 COMMIT;
 
 \ir ../../../router/migrations/005_railway_sharding.sql
+\ir ../../../router/migrations/006_exa_research.sql

@@ -79,17 +79,23 @@ function notConfigured(tool) {
 }
 
 // ── the lane ─────────────────────────────────────────────────────────────────
-async function lane(path, params = {}) {
+async function lane(path, params = {}, options = {}) {
   if (typeof fetch !== 'function') throw new Error('finance: global fetch unavailable (Node 18+ required)')
   const query = new URLSearchParams()
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined || v === null || v === '') continue
     query.set(k, Array.isArray(v) ? v.join(',') : String(v))
   }
-  const url = `${laneURL()}/${path}${query.toString() ? `?${query}` : ''}`
+  const method = options.method || 'GET'
+  const url = `${laneURL()}/${path}${method === 'GET' && query.toString() ? `?${query}` : ''}`
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
   const headers = { Accept: 'application/json', Authorization: `Bearer ${laneToken()}` }
+  let body
+  if (method !== 'GET') {
+    headers['Content-Type'] = 'application/json'
+    body = JSON.stringify(options.body ?? params)
+  }
   // The acting user, so the router's metering and rate limiting stay per user
   // even when the call arrives from the agent rather than the browser.
   const subject = (process.env.MATRIX_USER_ID || process.env.MATRIX_ACTOR_DID || '').trim()
@@ -97,7 +103,7 @@ async function lane(path, params = {}) {
 
   let res
   try {
-    res = await fetch(url, { method: 'GET', headers, signal: controller.signal })
+    res = await fetch(url, { method, headers, body, signal: controller.signal })
   } catch (e) {
     clearTimeout(timer)
     const reason = e && e.name === 'AbortError' ? `timed out after ${TIMEOUT_MS}ms` : (e && e.message) || String(e)
@@ -309,6 +315,30 @@ function shapeFundamentals(f) {
   return { ...out, ...stamp(f.source) }
 }
 
+function shapeResearch(envelope) {
+  const run = envelope?.run || {}
+  const output = run.output || undefined
+  const shaped = {
+    id: run.id,
+    status: run.status,
+    workflow: envelope?.workflow,
+    subject: envelope?.subject,
+    cache_hit: envelope?.meta?.cache_hit === true,
+    retrieved_at: envelope?.meta?.retrieved_at,
+  }
+  if (output) {
+    shaped.output = {
+      text: output.text,
+      structured: output.structured,
+      grounding: output.grounding || [],
+      synthesis_note: 'generated synthesis — verify claims against the attached grounding',
+    }
+  }
+  if (run.costDollars?.total !== undefined) shaped.cost_dollars = run.costDollars.total
+  if (run.error) shaped.error = run.error
+  return shaped
+}
+
 // ── dispatch ─────────────────────────────────────────────────────────────────
 const VALID_RANGES = new Set(['1D', '5D', '1M', '6M', 'YTD', '1Y', '5Y', 'MAX'])
 
@@ -402,6 +432,45 @@ export async function dispatch(name, args = {}) {
           interval: data?.interval,
           points: (data?.points || []).slice(-60),
           ...stamp(data?.source),
+        })
+      }
+      case 'market_research_start': {
+        const kind = String(args?.kind ?? 'equity_brief').trim().toLowerCase()
+        if (!['equity_brief', 'enrichment', 'risk_rubric'].includes(kind)) {
+          throw new Error('kind must be equity_brief, enrichment or risk_rubric')
+        }
+        const body = {
+          kind,
+          symbol: symbolArg(args),
+          as_of: args?.as_of,
+          effort: args?.effort,
+          rubric_version: args?.rubric_version,
+          dimensions: Array.isArray(args?.dimensions) ? args.dimensions : undefined,
+        }
+        const data = await lane('research/start', {}, { method: 'POST', body })
+        return ok({ tool: name, research: shapeResearch(data) })
+      }
+      case 'market_research_get': {
+        const id = String(args?.run_id ?? '').trim()
+        if (!id) throw new Error('run_id is required')
+        const data = await lane(`research/${encodeURIComponent(id)}`)
+        return ok({ tool: name, research: shapeResearch(data) })
+      }
+      case 'market_verify_facts': {
+        const fields = Array.isArray(args?.fields)
+          ? args.fields.map((field) => String(field).trim()).filter(Boolean)
+          : String(args?.fields ?? '').split(',').map((field) => field.trim()).filter(Boolean)
+        if (fields.length === 0) throw new Error('fields is required')
+        const data = await lane('research/verify', {}, {
+          method: 'POST',
+          body: { symbol: symbolArg(args), fields, as_of: args?.as_of },
+        })
+        return ok({
+          tool: name,
+          verification: data?.data,
+          cache_hit: data?.meta?.cache_hit === true,
+          retrieved_at: data?.meta?.retrieved_at,
+          synthesis_note: 'generated verification synthesis — conflicts and inconclusive fields must remain explicit',
         })
       }
       default:
@@ -505,6 +574,41 @@ export const tools = [
     inputSchema: A(
       { name: S('e.g. GDP, CPI, inflationRate, unemploymentRate, federalFunds'), from: S('YYYY-MM-DD'), to: S('YYYY-MM-DD') },
       ['name'],
+    ),
+  },
+  {
+    name: 'market_research_start',
+    description:
+      'Start on-demand grounded research for one public company. Use equity_brief for bull/bear debates, KPIs, peer read-throughs and management commentary; enrichment for typed facts and ownership filings; risk_rubric for a versioned evidence-based rubric. This is asynchronous and never investment advice. Read-only. args: symbol (required), kind?, effort?, as_of?, rubric_version?, dimensions?',
+    inputSchema: A(
+      {
+        symbol: S('ticker'),
+        kind: S('equity_brief (default), enrichment or risk_rubric'),
+        effort: S('minimal, low, medium (default), high or xhigh'),
+        as_of: S('ISO date or explicit research cutoff'),
+        rubric_version: S('version label for risk_rubric'),
+        dimensions: { type: 'array', items: S('lowercase rubric dimension name'), description: 'up to 8 rubric dimensions' },
+      },
+      ['symbol'],
+    ),
+  },
+  {
+    name: 'market_research_get',
+    description:
+      'Get an asynchronous grounded finance research run. Terminal output.grounding is authoritative; output text and structured fields are generated synthesis. Read-only. args: run_id (required)',
+    inputSchema: A({ run_id: S('run identifier returned by market_research_start') }, ['run_id']),
+  },
+  {
+    name: 'market_verify_facts',
+    description:
+      'Cross-check selected financial facts against issuer, regulator, exchange and other authoritative evidence without replacing canonical market data. Returns verified, conflict or inconclusive states with grounding. Read-only. args: symbol (required), fields (required), as_of?',
+    inputSchema: A(
+      {
+        symbol: S('ticker'),
+        fields: { type: 'array', items: S('field name such as revenue, eps, market_cap or next_earnings_date') },
+        as_of: S('ISO date or explicit research cutoff'),
+      },
+      ['symbol', 'fields'],
     ),
   },
 ]

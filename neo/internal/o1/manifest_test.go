@@ -40,6 +40,25 @@ func TestManifestSetSelectMinimalEmptyCapsReturnsNone(t *testing.T) {
 	}
 }
 
+func TestManifestSetWebEvidenceIncludesExa(t *testing.T) {
+	ms := &ManifestSet{manifests: map[string]OperationManifest{
+		"exa__exa_search":    {Operation: "exa__exa_search"},
+		"web-search__search": {Operation: "web-search__search"},
+		"browser__navigate":  {Operation: "browser__navigate"},
+	}}
+	selected := ms.SelectMinimal([]string{"web_evidence"})
+	names := make(map[string]bool, len(selected))
+	for _, manifest := range selected {
+		names[manifest.Operation] = true
+	}
+	if !names["exa__exa_search"] || !names["web-search__search"] {
+		t.Fatalf("web evidence must include Exa and ordinary search, got %v", selected)
+	}
+	if names["browser__navigate"] {
+		t.Fatal("web evidence must not implicitly expose browser automation")
+	}
+}
+
 func TestRunPreflightFailsClosedOnUnknownPrecondition(t *testing.T) {
 	result := RunPreflight(PreflightEnvironment{}, OperationManifest{
 		Operation: "test__op", Preconditions: []string{"unimplemented_check"},

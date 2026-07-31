@@ -1178,7 +1178,7 @@ func (e *Engine) surfaceTool(r *run, ev agent.ToolEvent) {
 }
 
 func isSearchTool(name string) bool {
-	return strings.HasSuffix(name, "web_search") || strings.HasSuffix(name, "web_news")
+	return strings.HasSuffix(name, "web_search") || strings.HasSuffix(name, "web_news") || hasAlias(name, "exa")
 }
 
 // searchPayload mirrors the web-search MCP tool's JSON result.

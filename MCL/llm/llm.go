@@ -161,6 +161,12 @@ type Config struct {
 	// Timeout for HTTP requests. Default 90s.
 	Timeout time.Duration
 
+	// OnRawExchange receives copies of the exact non-streaming HTTP request
+	// and response bodies. It is intended for encrypted replay lineage at a
+	// credential-bearing caller boundary; headers and credentials are never
+	// included.
+	OnRawExchange func(request, response []byte)
+
 	// GrammarMode controls how grammar constraints are passed to the provider.
 	GrammarMode GrammarMode
 

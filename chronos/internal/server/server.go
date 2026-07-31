@@ -17,6 +17,8 @@ import (
 	"strings"
 	"time"
 
+	"matrix/workforce/scheduler"
+
 	"github.com/paxlabs-inc/chronos/internal/auth"
 	"github.com/paxlabs-inc/chronos/internal/schedule"
 	"github.com/paxlabs-inc/chronos/internal/store"
@@ -192,8 +194,17 @@ func (s *Server) handleCreateAlarm(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &req) {
 		return
 	}
-	if strings.TrimSpace(req.WakeMessage) == "" {
+	target := strings.TrimSpace(req.Target)
+	if target == "" {
+		target = types.TargetNeoChat
+	}
+	if target == types.TargetNeoChat && strings.TrimSpace(req.WakeMessage) == "" {
 		writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, "wake_message is required (the contextful turn delivered on wake)")
+		return
+	}
+	if target != types.TargetNeoChat && target != types.TargetWorkforced {
+		writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest,
+			"target must be 'neo_chat' or 'workforced'")
 		return
 	}
 
@@ -207,6 +218,7 @@ func (s *Server) handleCreateAlarm(w http.ResponseWriter, r *http.Request) {
 		Payload:        req.Payload,
 		IdempotencyKey: strings.TrimSpace(req.IdempotencyKey),
 		MaxFailures:    req.MaxFailures,
+		Target:         target,
 	}
 	if alarm.MaxFailures <= 0 {
 		alarm.MaxFailures = s.defaultMaxFail
@@ -240,6 +252,36 @@ func (s *Server) handleCreateAlarm(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, "kind must be 'once' or 'cron'")
 		return
+	}
+	if target == types.TargetWorkforced {
+		if req.WorkforceWake == nil {
+			writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest,
+				"workforce_wake is required for workforced target")
+			return
+		}
+		envelope := *req.WorkforceWake
+		envelope.ScheduledAt = alarm.NextFireAt
+		if alarm.Kind == types.KindCron && envelope.Trigger != scheduler.TriggerRecurring {
+			writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest,
+				"cron workforced alarms require recurring trigger")
+			return
+		}
+		if alarm.Kind == types.KindOnce && envelope.Trigger == scheduler.TriggerRecurring {
+			writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest,
+				"once workforced alarms cannot use recurring trigger")
+			return
+		}
+		if err := envelope.Validate(); err != nil {
+			writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, err.Error())
+			return
+		}
+		encoded, err := json.Marshal(envelope)
+		if err != nil {
+			writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, err.Error())
+			return
+		}
+		alarm.Payload = encoded
+		alarm.WakeMessage = ""
 	}
 
 	created, deduped, err := s.store.CreateAlarm(r.Context(), alarm)

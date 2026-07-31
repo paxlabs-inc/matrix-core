@@ -73,7 +73,11 @@ func describeStep(ev agent.ToolEvent) map[string]interface{} {
 	case isSearchTool(ev.Name):
 		step["surface"] = "search"
 		step["query"] = argStr(ev.Args, "query")
-		step["title"] = "Searching the web"
+		if hasAlias(ev.Name, "exa") {
+			step["title"] = exaTitle(bare)
+		} else {
+			step["title"] = "Searching the web"
+		}
 
 	case isMediaTool(bare):
 		step["surface"] = "media"
@@ -98,6 +102,27 @@ func describeStep(ev agent.ToolEvent) map[string]interface{} {
 	return step
 }
 
+func exaTitle(tool string) string {
+	switch tool {
+	case "exa_contents":
+		return "Reading source evidence"
+	case "exa_research_start":
+		return "Starting grounded research"
+	case "exa_research_get":
+		return "Reading grounded research"
+	case "exa_research_continue":
+		return "Continuing grounded research"
+	case "exa_research_cancel":
+		return "Stopping grounded research"
+	case "exa_outbound_brief":
+		return "Researching an outbound brief"
+	case "exa_social_draft":
+		return "Researching a social draft"
+	default:
+		return "Searching grounded sources"
+	}
+}
+
 func financeTitle(tool string) string {
 	switch tool {
 	case "market_quote", "market_quotes":
@@ -116,6 +141,12 @@ func financeTitle(tool string) string {
 		return "Reading company events"
 	case "market_macro":
 		return "Reading economic data"
+	case "market_research_start":
+		return "Starting grounded company research"
+	case "market_research_get":
+		return "Reading grounded company research"
+	case "market_verify_facts":
+		return "Verifying financial facts"
 	default:
 		return "Reading market data"
 	}

@@ -9,6 +9,8 @@ package types
 import (
 	"encoding/json"
 	"time"
+
+	"matrix/workforce/scheduler"
 )
 
 // Envelope is the uniform {ok,data,error} response shape.
@@ -59,6 +61,11 @@ const (
 	KindCron = "cron"
 )
 
+const (
+	TargetNeoChat    = "neo_chat"
+	TargetWorkforced = "workforced"
+)
+
 // Alarm lifecycle statuses.
 const (
 	StatusActive    = "active"
@@ -75,6 +82,7 @@ type Alarm struct {
 	UserID         string // Supabase user UUID from the DID label — the wake target
 	Label          string
 	Kind           string // once | cron
+	Target         string // neo_chat | workforced
 	FireAt         *time.Time
 	CronExpr       string
 	Timezone       string
@@ -91,6 +99,7 @@ type Alarm struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	LastFiredAt    *time.Time
+	OccurrenceAt   *time.Time
 }
 
 // View is the JSON projection of an alarm returned to the agent. High-entropy
@@ -99,6 +108,7 @@ type View struct {
 	ID             string          `json:"id"`
 	Label          string          `json:"label"`
 	Kind           string          `json:"kind"`
+	Target         string          `json:"target"`
 	CronExpr       string          `json:"cron_expr,omitempty"`
 	Timezone       string          `json:"timezone,omitempty"`
 	NextFireAt     *time.Time      `json:"next_fire_at,omitempty"`
@@ -120,6 +130,7 @@ func ViewOf(a Alarm) View {
 		ID:             a.ID,
 		Label:          a.Label,
 		Kind:           a.Kind,
+		Target:         a.Target,
 		CronExpr:       a.CronExpr,
 		Timezone:       a.Timezone,
 		ConversationID: a.ConversationID,
@@ -142,8 +153,9 @@ func ViewOf(a Alarm) View {
 
 // CreateAlarmRequest is POST /v1/alarms (and the alarm_set MCP tool args).
 type CreateAlarmRequest struct {
-	Label string `json:"label"`
-	Kind  string `json:"kind"` // once | cron
+	Label  string `json:"label"`
+	Kind   string `json:"kind"`             // once | cron
+	Target string `json:"target,omitempty"` // neo_chat | workforced
 	// once: exactly one of DelaySeconds / FireAt.
 	DelaySeconds int64  `json:"delay_seconds,omitempty"`
 	FireAt       string `json:"fire_at,omitempty"` // RFC3339 absolute instant
@@ -151,11 +163,12 @@ type CreateAlarmRequest struct {
 	CronExpr string `json:"cron_expr,omitempty"`
 	Timezone string `json:"timezone,omitempty"` // IANA tz for cron (default UTC)
 
-	ConversationID string          `json:"conversation_id,omitempty"`
-	WakeMessage    string          `json:"wake_message"`
-	Payload        json.RawMessage `json:"payload,omitempty"`
-	IdempotencyKey string          `json:"idempotency_key,omitempty"`
-	MaxFailures    int             `json:"max_failures,omitempty"`
+	ConversationID string                  `json:"conversation_id,omitempty"`
+	WakeMessage    string                  `json:"wake_message"`
+	Payload        json.RawMessage         `json:"payload,omitempty"`
+	IdempotencyKey string                  `json:"idempotency_key,omitempty"`
+	MaxFailures    int                     `json:"max_failures,omitempty"`
+	WorkforceWake  *scheduler.WakeEnvelope `json:"workforce_wake,omitempty"`
 }
 
 // CreateAlarmResponse is returned on a successful create.

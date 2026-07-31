@@ -15,8 +15,9 @@ name: docker
 # dynamic matrix); workflow_dispatch force-builds everything. Docker layer
 # caching is per-image via the GitHub Actions cache backend.
 #
-# Railway auto-update: the control-plane services (router/gateway/chronos)
-# run from the :latest GHCR tag; after a successful push the `redeploy` job
+# Railway auto-update: router/gateway/chronos use their own :latest GHCR tags;
+# Workforce uses the shared matrix-daemon-railway image in `workforce` mode.
+# After a successful push the `redeploy` job
 # calls Railway's serviceInstanceRedeploy per rebuilt service so they pull
 # the new image immediately. Per-user daemon services are deliberately NOT
 # mass-redeployed here — new provisions pick the image up via
@@ -27,7 +28,8 @@ name: docker
 #   secret RAILWAY_API_TOKEN          project-scoped API token
 #   vars   RAILWAY_ENVIRONMENT_ID     the one Railway environment
 #   vars   RAILWAY_ROUTER_SERVICE_ID / RAILWAY_GATEWAY_SERVICE_ID /
-#          RAILWAY_CHRONOS_SERVICE_ID / RAILWAY_SANDBOX_SERVICE_ID
+#          RAILWAY_CHRONOS_SERVICE_ID / RAILWAY_WORKFORCE_SERVICE_ID /
+#          RAILWAY_SANDBOX_SERVICE_ID
 
 on:
   push:
@@ -37,6 +39,7 @@ on:
       - "cortex/**"
       - "MCL/**"
       - "codegraph/**"
+      - "codegraph-ultra/**"
       - "bridge/**"
       - "construct/**"
       - "executor/**"
@@ -45,6 +48,7 @@ on:
       - "gateway/**"
       - "router/**"
       - "chronos/**"
+      - "workforce/**"
       - "sandboxd/**"
       - "skills/**"
       - "agents/**"
@@ -62,6 +66,10 @@ on:
       - "deploy/gateway/**"
       - "deploy/router/**"
       - "deploy/chronos/**"
+      - "workforce/**"
+      - "neo/**"
+      - "vault/**"
+      - "codegraph-ultra/**"
       - "sandboxd/**"
       - ".github/workflows/docker.yml"
   workflow_dispatch:
@@ -94,6 +102,7 @@ jobs:
       gateway: ${{ steps.decide.outputs.gateway }}
       router: ${{ steps.decide.outputs.router }}
       chronos: ${{ steps.decide.outputs.chronos }}
+      workforce: ${{ steps.decide.outputs.workforce }}
       sandbox: ${{ steps.decide.outputs.sandbox }}
     steps:
       - uses: actions/checkout@v4
@@ -113,6 +122,8 @@ jobs:
               - "construct/**"
               - "executor/**"
               - "neo/**"
+              - "workforce/**"
+              - "codegraph-ultra/**"
               - "cassandra/**"
               - "skills/**"
               - "agents/**"
@@ -134,6 +145,9 @@ jobs:
               - "chronos/**"
               - "deploy/chronos/**"
               - ".github/workflows/docker.yml"
+            workforce:
+              - *daemon-core
+              - "deploy/railway/**"
             sandbox:
               - "sandboxd/**"
               - ".github/workflows/docker.yml"
@@ -147,9 +161,10 @@ jobs:
           GATEWAY: ${{ steps.filter.outputs.gateway }}
           ROUTER: ${{ steps.filter.outputs.router }}
           CHRONOS: ${{ steps.filter.outputs.chronos }}
+          WORKFORCE: ${{ steps.filter.outputs.workforce }}
           SANDBOX: ${{ steps.filter.outputs.sandbox }}
         run: |
-          for key in railway gateway router chronos sandbox; do
+          for key in railway gateway router chronos workforce sandbox; do
             var="$(echo "$key" | tr '[:lower:]' '[:upper:]')"
             val="${!var}"
             if [[ "$FORCE" == "true" || "$val" == "true" ]]; then
@@ -166,6 +181,7 @@ jobs:
           GATEWAY: ${{ steps.decide.outputs.gateway }}
           ROUTER: ${{ steps.decide.outputs.router }}
           CHRONOS: ${{ steps.decide.outputs.chronos }}
+          WORKFORCE: ${{ steps.decide.outputs.workforce }}
           SANDBOX: ${{ steps.decide.outputs.sandbox }}
         run: |
           include='[]'
@@ -249,10 +265,12 @@ jobs:
           ROUTER_CHANGED: ${{ needs.changes.outputs.router }}
           GATEWAY_CHANGED: ${{ needs.changes.outputs.gateway }}
           CHRONOS_CHANGED: ${{ needs.changes.outputs.chronos }}
+          WORKFORCE_CHANGED: ${{ needs.changes.outputs.workforce }}
           SANDBOX_CHANGED: ${{ needs.changes.outputs.sandbox }}
           RAILWAY_ROUTER_SERVICE_ID: ${{ vars.RAILWAY_ROUTER_SERVICE_ID }}
           RAILWAY_GATEWAY_SERVICE_ID: ${{ vars.RAILWAY_GATEWAY_SERVICE_ID }}
           RAILWAY_CHRONOS_SERVICE_ID: ${{ vars.RAILWAY_CHRONOS_SERVICE_ID }}
+          RAILWAY_WORKFORCE_SERVICE_ID: ${{ vars.RAILWAY_WORKFORCE_SERVICE_ID }}
           RAILWAY_SANDBOX_SERVICE_ID: ${{ vars.RAILWAY_SANDBOX_SERVICE_ID }}
         run: |
           if [[ -z "$RAILWAY_API_TOKEN" || -z "$RAILWAY_ENVIRONMENT_ID" ]]; then
@@ -288,5 +306,6 @@ jobs:
           redeploy matrix-router  "$ROUTER_CHANGED"  "$RAILWAY_ROUTER_SERVICE_ID"
           redeploy matrix-gateway "$GATEWAY_CHANGED" "$RAILWAY_GATEWAY_SERVICE_ID"
           redeploy matrix-chronos "$CHRONOS_CHANGED" "$RAILWAY_CHRONOS_SERVICE_ID"
+          redeploy matrix-workforce "$WORKFORCE_CHANGED" "$RAILWAY_WORKFORCE_SERVICE_ID"
           redeploy matrix-sandboxd "$SANDBOX_CHANGED" "$RAILWAY_SANDBOX_SERVICE_ID"
           exit "$fail"

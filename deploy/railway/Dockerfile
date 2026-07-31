@@ -36,7 +36,17 @@
 # Runtime layout inside the container is identical to deploy/daemon/Dockerfile
 # (see its header comment for the /opt/matrix + /data map).
 
-# -------- 1. Builder --------
+# -------- 1. Builders --------
+# CodeGraph Ultra pins a Go 1.21-era x/tools API and is intentionally built
+# with its own declared toolchain instead of Neo's newer Go 1.25 toolchain.
+FROM golang:1.21-bookworm AS codegraph-ultra-builder
+
+WORKDIR /src/codegraph-ultra
+COPY codegraph-ultra/go.mod codegraph-ultra/go.sum ./
+RUN go mod download
+COPY codegraph-ultra/ ./
+RUN CGO_ENABLED=1 go build -ldflags="-s -w" -o /out/cg ./cmd/codegraph-ultra
+
 # neo/go.mod requires Go >= 1.25.0 (the other modules are 1.21); the builder
 # base MUST be >= that or `go build ./cmd/neo` fails with GOTOOLCHAIN=local.
 FROM golang:1.25-bookworm AS builder
@@ -67,6 +77,7 @@ COPY bridge/go.mod  bridge/go.sum  bridge/
 COPY construct/go.mod              construct/
 COPY executor/go.mod executor/go.sum executor/
 COPY neo/go.mod     neo/go.sum     neo/
+COPY workforce/go.mod workforce/go.sum workforce/
 # cassandra (matrix/cassandra) — imported by the executor's critic stage
 # (cmd/mcl-execute/critique.go), so its tree MUST be present for the daemon
 # build. Neo no longer imports it (Cassandra 2.0 is in-process in neo).
@@ -81,6 +92,7 @@ COPY bridge/    bridge/
 COPY construct/ construct/
 COPY executor/  executor/
 COPY neo/       neo/
+COPY workforce/ workforce/
 COPY cassandra/ cassandra/
 
 WORKDIR /src/executor
@@ -90,6 +102,14 @@ RUN go build -ldflags="-s -w" -o /out/mcl-execute ./cmd/mcl-execute
 # the sibling replace directives in neo/go.mod (those trees are copied above).
 WORKDIR /src/neo
 RUN go build -ldflags="-s -w" -o /out/neo ./cmd/neo
+
+# Workforce ships in the same production image. Railway can run the default
+# Neo pair or select the `workforce` entrypoint mode for the independent
+# control-plane service; both modes therefore consume one tested image digest.
+WORKDIR /src/workforce
+RUN go build -ldflags="-s -w" -o /out/workforced ./cmd/workforced && \
+    go build -ldflags="-s -w" -o /out/workforce-seat ./cmd/workforce-seat && \
+    go build -ldflags="-s -w" -o /out/workforce-auditor ./cmd/workforce-auditor
 
 # -------- 2. Runtime --------
 FROM ubuntu:24.04 AS runtime
@@ -115,7 +135,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-        ca-certificates curl git tini gnupg \
+        bubblewrap ca-certificates curl git tini gnupg \
         build-essential pkg-config \
         python3 python3-pip python3-venv \
         unzip zstd jq ffmpeg tmux; \
@@ -333,7 +353,13 @@ RUN set -eux; \
     useradd --uid 10001 --gid 10001 --create-home --shell /bin/bash matrix-agent; \
     chmod 0711 /root
 ENV MATRIX_AGENT_UID=10001 \
-    MATRIX_AGENT_GID=10001
+    MATRIX_AGENT_GID=10001 \
+    WORKFORCE_BUBBLEWRAP=/usr/bin/bwrap \
+    WORKFORCE_SEAT_BINARY=/opt/matrix/bin/workforce-seat \
+    WORKFORCE_AUDITOR_BINARY=/opt/matrix/bin/workforce-auditor \
+    WORKFORCE_DEVELOPER_REPOSITORY=/workspace \
+    WORKFORCE_CODEGRAPH_EXECUTABLE=/usr/local/bin/cg \
+    WORKFORCE_DATA_DIR=/data/workforce
 
 WORKDIR /opt/matrix
 
@@ -342,6 +368,10 @@ WORKDIR /opt/matrix
 # (matrix/neo serve) — the only agent in the runtime.
 COPY --from=builder /out/mcl-execute /opt/matrix/bin/mcl-execute
 COPY --from=builder /out/neo         /opt/matrix/bin/neo
+COPY --from=builder /out/workforced /opt/matrix/bin/workforced
+COPY --from=builder /out/workforce-seat /opt/matrix/bin/workforce-seat
+COPY --from=builder /out/workforce-auditor /opt/matrix/bin/workforce-auditor
+COPY --from=codegraph-ultra-builder /out/cg /usr/local/bin/cg
 
 # Bake the skill corpus + agent manifests + tool bridges — the same set as
 # deploy/daemon/Dockerfile (see its per-tool comments); the daemon's strict
@@ -382,6 +412,7 @@ COPY rules/          /opt/matrix/rules/
 COPY graph/self-model/ /opt/matrix/graph/self-model/
 COPY tools/paxeer    /opt/matrix/tools/paxeer
 COPY tools/websearch /opt/matrix/tools/websearch
+COPY tools/exa       /opt/matrix/tools/exa
 COPY tools/finance   /opt/matrix/tools/finance
 COPY tools/browser   /opt/matrix/tools/browser
 COPY tools/machinemail /opt/matrix/tools/machinemail
@@ -424,9 +455,9 @@ RUN chmod +x /opt/matrix/entrypoint.sh
 # which reverse-proxies /healthz to the MCL daemon backend on :8081 — so a
 # 200 here proves BOTH processes are up. Start period covers the two boots.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-    CMD curl -fsS http://127.0.0.1:8080/healthz >/dev/null || exit 1
+    CMD if curl -fsS http://127.0.0.1:8080/healthz >/dev/null; then exit 0; fi; test -n "${WORKFORCE_OWNER_TOKEN:-}" && curl -fsS -H "Authorization: Bearer ${WORKFORCE_OWNER_TOKEN}" http://127.0.0.1:${WORKFORCE_PORT:-8091}/v1/workforce/session >/dev/null
 
-EXPOSE 8080
+EXPOSE 8080 8091
 
 # The Railway volume is mounted at /data; the daemon expects it.
 VOLUME ["/data"]

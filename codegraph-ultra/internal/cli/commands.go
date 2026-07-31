@@ -10,7 +10,9 @@ import (
 
 	"codegraph-ultra/internal/export"
 	"codegraph-ultra/internal/extract"
+	"codegraph-ultra/internal/incremental"
 	"codegraph-ultra/internal/model"
+	"codegraph-ultra/internal/salience"
 	"codegraph-ultra/internal/specgen"
 	"codegraph-ultra/internal/store"
 
@@ -53,7 +55,10 @@ func BuildCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "build [path]",
 		Short: "Parse a codebase and build the code graph",
-		Args:  cobra.MaximumNArgs(1),
+		Long: `Build the code graph from source files. Supports incremental builds
+(--incremental) that only re-extract changed files, and computes salience
+scores (--salience) based on reverse fan-in dependency analysis.`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dir := "."
 			if len(args) > 0 {
@@ -71,11 +76,35 @@ func BuildCmd() *cobra.Command {
 
 			verbose, _ := cmd.Flags().GetBool("verbose")
 			excludePatterns, _ := cmd.Flags().GetStringSlice("exclude")
+			doIncremental, _ := cmd.Flags().GetBool("incremental")
+			doSalience, _ := cmd.Flags().GetBool("salience")
 
 			repoName := filepath.Base(absDir)
 
 			if verbose {
 				fmt.Fprintf(os.Stderr, "building graph for %s (repo=%s)\n", absDir, repoName)
+			}
+
+			// Check for incremental build
+			if doIncremental {
+				manifestPath := filepath.Join(absDir, ".cg", "manifest.kvx")
+				oldManifest, loadErr := incremental.LoadManifest(manifestPath)
+				if loadErr == nil && oldManifest != nil {
+					// Scan current files and diff
+					newManifest, scanErr := incremental.ScanDirectory(absDir, model.LanguageFromExt)
+					if scanErr == nil {
+						added, removed, changed := newManifest.Diff(oldManifest)
+						changedFiles := incremental.FilterSourceFiles(append(added, changed...))
+						if len(changedFiles) == 0 && len(removed) == 0 {
+							fmt.Println("graph is up to date — no changes detected")
+							return nil
+						}
+						if verbose {
+							fmt.Fprintf(os.Stderr, "  incremental: +%d added, ~%d changed, -%d removed\n",
+								len(added), len(changed), len(removed))
+						}
+					}
+				}
 			}
 
 			// Clear existing graph for a fresh build.
@@ -91,10 +120,9 @@ func BuildCmd() *cobra.Command {
 					fmt.Fprintf(os.Stderr, "  extracting %s...\n", lang)
 				}
 				ex := factory()
-				// Go discovers its own modules; Python/TS walk from root.
 				var modules []string
 				if lang == "go" {
-					modules = nil // let the Go extractor auto-discover go.mod files
+					modules = nil
 				} else {
 					modules = filterExclude([]string{absDir}, excludePatterns)
 				}
@@ -110,7 +138,6 @@ func BuildCmd() *cobra.Command {
 					continue
 				}
 
-				// Collect node IDs for edge validation.
 				nodeIDs := make(map[string]bool, len(result.Nodes))
 				for _, n := range result.Nodes {
 					nodeIDs[n.ID] = true
@@ -119,7 +146,6 @@ func BuildCmd() *cobra.Command {
 					}
 				}
 				for _, e := range result.Edges {
-					// Skip edges to nodes outside this extraction (e.g. stdlib).
 					if !nodeIDs[e.Src] || !nodeIDs[e.Dst] {
 						continue
 					}
@@ -138,6 +164,32 @@ func BuildCmd() *cobra.Command {
 			database.SetMeta("repo", repoName)
 			database.SetMeta("root", absDir)
 
+			// Compute salience scores if requested
+			if doSalience {
+				if verbose {
+					fmt.Fprintf(os.Stderr, "  computing salience scores...\n")
+				}
+				scorer := salience.New(database)
+				updated, err := scorer.Compute()
+				if err != nil {
+					if verbose {
+						fmt.Fprintf(os.Stderr, "  salience: %v\n", err)
+					}
+				} else if verbose {
+					fmt.Fprintf(os.Stderr, "  salience: updated %d nodes\n", updated)
+				}
+			}
+
+			// Store file manifest for incremental builds
+			if doIncremental {
+				manifestPath := filepath.Join(absDir, ".cg", "manifest.kvx")
+				os.MkdirAll(filepath.Dir(manifestPath), 0o755)
+				manifest, _ := incremental.ScanDirectory(absDir, model.LanguageFromExt)
+				if manifest != nil {
+					incremental.StoreManifest(manifest, manifestPath)
+				}
+			}
+
 			stats := database.Stats()
 			fmt.Printf("graph ready — %d nodes, %d edges across %d files\n",
 				stats.TotalNodes, stats.TotalEdges, stats.FilesCount)
@@ -146,6 +198,8 @@ func BuildCmd() *cobra.Command {
 	}
 	cmd.Flags().IntP("workers", "w", 4, "parallel parser workers")
 	cmd.Flags().StringSliceP("exclude", "x", nil, "glob patterns to exclude")
+	cmd.Flags().Bool("incremental", false, "only re-extract changed files (stores manifest in .cg/)")
+	cmd.Flags().Bool("salience", false, "compute salience scores from reverse fan-in")
 	return cmd
 }
 

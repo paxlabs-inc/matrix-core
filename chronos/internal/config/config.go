@@ -34,6 +34,10 @@ type Config struct {
 	RouterWakeURL string
 	// WakeToken is the shared secret matching the router's ROUTER_WAKE_TOKEN.
 	WakeToken string
+	// WorkforcedWakeURL is the typed Workforce scheduler delivery endpoint.
+	WorkforcedWakeURL string
+	// WorkforcedWakeToken authenticates Chronos to workforced.
+	WorkforcedWakeToken string
 
 	// Tick is the dispatch worker poll interval (default 1s).
 	Tick time.Duration
@@ -50,14 +54,15 @@ type Config struct {
 }
 
 const (
-	defaultPort          = 9096
-	defaultChallengeTTL  = 120 * time.Second
-	defaultTokenTTL      = 24 * time.Hour
-	defaultTick          = time.Second
-	defaultMaxFailures   = 5
-	defaultClaimLease    = 2 * time.Minute
-	defaultClaimBatch    = 100
-	defaultRouterWakeURL = "http://127.0.0.1:8088/internal/wake"
+	defaultPort              = 9096
+	defaultChallengeTTL      = 120 * time.Second
+	defaultTokenTTL          = 24 * time.Hour
+	defaultTick              = time.Second
+	defaultMaxFailures       = 5
+	defaultClaimLease        = 2 * time.Minute
+	defaultClaimBatch        = 100
+	defaultRouterWakeURL     = "http://127.0.0.1:8088/internal/wake"
+	defaultWorkforcedWakeURL = "http://127.0.0.1:9097/internal/workforce/wake"
 )
 
 // Load resolves configuration: kvx overlay first, env overrides, then defaults.
@@ -83,11 +88,15 @@ func Load() (*Config, error) {
 		TokenTTL:        time.Duration(doc.uint64Or("auth", "token_ttl_seconds", uint64(defaultTokenTTL/time.Second))) * time.Second,
 		RouterWakeURL:   pick("CHRONOS_ROUTER_WAKE_URL", doc.str("wake", "router_url"), defaultRouterWakeURL),
 		WakeToken:       pick("CHRONOS_WAKE_TOKEN", doc.str("wake", "token"), ""),
-		Tick:            time.Duration(pickUint("CHRONOS_TICK_MS", doc.uint64Or("dispatch", "tick_ms", uint64(defaultTick/time.Millisecond)), uint64(defaultTick/time.Millisecond))) * time.Millisecond,
-		MaxFailures:     int(pickUint("CHRONOS_MAX_FAILURES", doc.uint64Or("dispatch", "max_failures", defaultMaxFailures), defaultMaxFailures)),
-		ClaimLease:      time.Duration(doc.uint64Or("dispatch", "claim_lease_seconds", uint64(defaultClaimLease/time.Second))) * time.Second,
-		ClaimBatch:      int(doc.uint64Or("dispatch", "claim_batch", defaultClaimBatch)),
-		Dev:             dev,
+		WorkforcedWakeURL: pick("CHRONOS_WORKFORCED_WAKE_URL",
+			doc.str("wake", "workforced_url"), defaultWorkforcedWakeURL),
+		WorkforcedWakeToken: pick("CHRONOS_WORKFORCED_WAKE_TOKEN",
+			doc.str("wake", "workforced_token"), ""),
+		Tick:        time.Duration(pickUint("CHRONOS_TICK_MS", doc.uint64Or("dispatch", "tick_ms", uint64(defaultTick/time.Millisecond)), uint64(defaultTick/time.Millisecond))) * time.Millisecond,
+		MaxFailures: int(pickUint("CHRONOS_MAX_FAILURES", doc.uint64Or("dispatch", "max_failures", defaultMaxFailures), defaultMaxFailures)),
+		ClaimLease:  time.Duration(doc.uint64Or("dispatch", "claim_lease_seconds", uint64(defaultClaimLease/time.Second))) * time.Second,
+		ClaimBatch:  int(doc.uint64Or("dispatch", "claim_batch", defaultClaimBatch)),
+		Dev:         dev,
 	}
 
 	if cfg.PostgresURI == "" {
@@ -102,6 +111,9 @@ func Load() (*Config, error) {
 		}
 		if cfg.WakeToken == "" {
 			return nil, fmt.Errorf("chronos config: CHRONOS_WAKE_TOKEN is required in production")
+		}
+		if cfg.WorkforcedWakeToken == "" {
+			return nil, fmt.Errorf("chronos config: CHRONOS_WORKFORCED_WAKE_TOKEN is required in production")
 		}
 	}
 	if cfg.AgentAuthSecret == "" {

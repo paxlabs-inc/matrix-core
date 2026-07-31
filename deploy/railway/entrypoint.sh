@@ -16,7 +16,7 @@
 #     service awake. BootPull from MinIO is retained — it is the volume-seed /
 #     Fly→Railway migration vehicle.
 #
-# Two run modes (selected by $1; the image CMD defaults to `neo`):
+# Three run modes (selected by $1; the image CMD defaults to `neo`):
 #
 #   neo     The per-user runtime (DEFAULT). Boots the plumbing daemon in the
 #           BACKGROUND on :8081 (healthz, /memory + /profile stores, volume
@@ -26,6 +26,10 @@
 #           exits so the platform's on-failure restart reboots the pair.
 #
 #   daemon  The MCL daemon ALONE on :8080 (legacy / compat).
+#
+#   workforce  The independent Workforce control plane on :8091. It uses the
+#              same production image but retains its own process, authority,
+#              PostgreSQL, Vault, Bubblewrap, and CodeGraph Ultra boundaries.
 #
 # Idempotent: every boot ensures the directory tree exists; on a fresh volume
 # this creates everything; on a wake from sleep the dirs are already there.
@@ -53,6 +57,7 @@ mkdir -p \
     "${DATA_DIR}/media" \
     "${DATA_DIR}/services" \
     "${DATA_DIR}/neo/services" \
+    "${DATA_DIR}/workforce" \
     "${DATA_DIR}/.matrix"
 
 # Agent-owned mutable paths are migrated once, then kept owned by the dedicated
@@ -312,6 +317,23 @@ case "${1:-neo}" in
         shift || true
         build_daemon_argv ":8080"
         exec "${DAEMON_ARGV[@]}" "$@"
+        ;;
+    workforce)
+        shift || true
+        workforce_repository="${WORKFORCE_DEVELOPER_REPOSITORY:-/workspace}"
+        mkdir -p "${workforce_repository}/.cg"
+        "${WORKFORCE_CODEGRAPH_EXECUTABLE:-/usr/local/bin/cg}" \
+            --db "${workforce_repository}/.cg/codegraph.db" \
+            build "${workforce_repository}" \
+            --exclude .cg \
+            --exclude .codegraph \
+            --exclude .git \
+            --exclude node_modules \
+            --exclude .next
+        exec "${MATRIX_HOME}/bin/workforced" \
+            -serve \
+            -listen ":${WORKFORCE_PORT:-8091}" \
+            "$@"
         ;;
     walk|classify|loader)
         # Pass-through for ad-hoc CLI work inside the container.
