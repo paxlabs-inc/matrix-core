@@ -21,7 +21,10 @@
 #   CHRONOS_TICK_MS / CHRONOS_MAX_FAILURES / CHRONOS_DEV — see config.go
 
 # -------- 1. Builder --------
-FROM golang:1.22-bookworm AS builder
+# chronos/go.mod requires Go >= 1.25.0 (workforce Chronos wake target); the
+# builder base MUST be >= that or `go build ./cmd/chronosd` fails with
+# GOTOOLCHAIN=local.
+FROM golang:1.25-bookworm AS builder
 
 WORKDIR /src
 ENV CGO_ENABLED=0 \

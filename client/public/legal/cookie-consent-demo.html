@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cookie Consent — Demo &amp; Integration · Matrix</title>
+    <link rel="stylesheet" href="legal.css" />
+    <style>
+      .pill {
+        display: inline-block;
+        font-family: 'Spline Sans Mono', monospace;
+        font-size: 12px;
+        padding: 3px 9px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+      }
+      .pill.on {
+        background: #e7f6ec;
+        border-color: #bfe5cb;
+        color: #1d6b39;
+      }
+      .pill.off {
+        background: #fbeaea;
+        border-color: #e8c4c4;
+        color: #9a2a2a;
+      }
+      .status {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 6px 0 22px;
+      }
+      pre {
+        background: #0f1117;
+        color: #e7e9f3;
+        border-radius: 12px;
+        padding: 18px 20px;
+        overflow: auto;
+        font-family: 'Spline Sans Mono', monospace;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      pre .c {
+        color: #7f88a8;
+      }
+      .btnrow {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 18px 0;
+      }
+      .b {
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 10px;
+        padding: 10px 16px;
+        cursor: pointer;
+        border: 1px solid var(--ink-line);
+        background: var(--ink-soft);
+        color: var(--ink-deep);
+      }
+      .b.primary {
+        background: var(--ink);
+        color: #fff;
+        border-color: var(--ink);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="index.html">
+          <span class="glyph">M</span>
+          <span class="wordmark"><b>Matrix</b><span>Paxeer Network</span></span>
+        </a>
+        <nav class="topnav">
+          <a href="index.html">Legal Home</a>
+          <a href="cookie-policy.html">Cookies</a>
+          <a href="cookie-consent-demo.html" class="active">Consent Demo</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="shell" style="grid-template-columns: 1fr; max-width: 880px">
+      <article class="doc" style="max-width: none">
+        <span class="eyebrow"
+          ><span class="dot"></span> Cookie Consent — Demo &amp; Integration</span
+        >
+        <h1>The <code>mx_consent</code> banner</h1>
+        <p class="lede">
+          A drop-in consent banner that writes the <code>mx_consent</code> cookie described in the
+          Cookie Policy, gates non-essential scripts until consent, and respects Global Privacy
+          Control / Do Not Track.
+        </p>
+
+        <h2><span class="num">01</span> Live status</h2>
+        <p>Current value of <code>mx_consent</code> on this page:</p>
+        <div class="status" id="status"></div>
+        <div class="btnrow">
+          <button class="b primary" onclick="MatrixConsent.openPreferences()">
+            Open preferences
+          </button>
+          <button class="b" onclick="MatrixConsent.reset()">Reset &amp; re-prompt</button>
+          <button class="b" data-cookie-settings>Cookie settings (link trigger)</button>
+        </div>
+
+        <h2><span class="num">02</span> Add it to a page</h2>
+        <pre><span class="c">&lt;!-- 1. include once, ideally before other scripts --&gt;</span>
+&lt;script src="cookie-consent.js" defer&gt;&lt;/script&gt;
+
+<span class="c">&lt;!-- 2. gate any non-essential script: it runs only after consent --&gt;</span>
+&lt;script type="text/plain" data-consent="analytics"
+        src="https://your-analytics/snippet.js"&gt;&lt;/script&gt;
+
+<span class="c">&lt;!-- inline works too --&gt;</span>
+&lt;script type="text/plain" data-consent="analytics"&gt;
+  initAnalytics(); <span class="c">// only fires if analytics consent granted</span>
+&lt;/script&gt;
+
+<span class="c">&lt;!-- 3. a re-open trigger anywhere (footer link, settings menu) --&gt;</span>
+&lt;a href="#" data-cookie-settings&gt;Cookie settings&lt;/a&gt;</pre>
+
+        <h2><span class="num">03</span> Use the API in your app</h2>
+        <pre><span class="c">// React / Vue / vanilla — same global object</span>
+if (MatrixConsent.allowed('analytics')) {
+  startTelemetry();
+}
+
+<span class="c">// react to changes (banner choice, preference edits)</span>
+MatrixConsent.onChange(function (consent) {
+  console.log(consent); <span class="c">// { necessary, functional, analytics, ts, v }</span>
+  if (consent.analytics) startTelemetry(); else stopTelemetry();
+});</pre>
+
+        <div class="note">
+          <span class="label">Notes for production</span>
+          The cookie is <code>SameSite=Lax</code>, <code>Secure</code> on HTTPS,
+          <code>Path=/</code>, 12-month max-age. Bump <code>VERSION</code> in
+          <code>cookie-consent.js</code> after any material cookie-policy change to re-prompt all
+          users. For EU/UK users this gives a genuine prior-consent gate (non-essential scripts
+          don&rsquo;t run until accepted). Wire your real analytics tag into the
+          <code>data-consent="analytics"</code> slot and remove the placeholder URLs.
+        </div>
+      </article>
+    </main>
+
+    <footer class="foot">
+      <div class="foot-inner">
+        <div>© 2026 PaxLabs Inc. and the Paxeer Group.</div>
+        <div class="links">
+          <a href="index.html">Legal Home</a><a href="cookie-policy.html">Cookie Policy</a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="cookie-consent.js" defer></script>
+    <script>
+      function paint(c) {
+        var s = document.getElementById('status')
+        if (!c) {
+          s.innerHTML = '<span class="pill off">no choice yet</span>'
+          return
+        }
+        function p(label, on) {
+          return (
+            '<span class="pill ' +
+            (on ? 'on' : 'off') +
+            '">' +
+            label +
+            ': ' +
+            (on ? 'on' : 'off') +
+            '</span>'
+          )
+        }
+        s.innerHTML =
+          p('necessary', true) +
+          p('functional', c.functional) +
+          p('analytics', c.analytics) +
+          '<span class="pill">v' +
+          c.v +
+          '</span>'
+      }
+      window.addEventListener('DOMContentLoaded', function () {
+        // MatrixConsent may not be ready synchronously due to defer; poll briefly
+        var t = setInterval(function () {
+          if (window.MatrixConsent) {
+            clearInterval(t)
+            paint(MatrixConsent.get())
+            MatrixConsent.onChange(paint)
+          }
+        }, 50)
+      })
+    </script>
+  </body>
+</html>

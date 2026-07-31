@@ -1,0 +1,492 @@
+/* ============================================================
+   Matrix · Paxeer Network — Legal Suite Shared Stylesheet
+   Brand accent: Paxeer Ink #2841B8
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Spline+Sans:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap');
+
+:root {
+  --ink: #2841b8;
+  --ink-deep: #1c2e85;
+  --ink-soft: #eef1fb;
+  --ink-line: #dde2f5;
+  --paper: #fbfbfd;
+  --surface: #ffffff;
+  --text: #15171f;
+  --text-soft: #4a4f5e;
+  --text-faint: #888da0;
+  --border: #e7e8ee;
+  --warn-bg: #fff7ed;
+  --warn-line: #f0c894;
+  --warn-text: #7a4a12;
+  --radius: 14px;
+  --maxw: 1180px;
+  --shadow: 0 1px 2px rgba(20, 23, 40, 0.04), 0 8px 30px rgba(20, 23, 40, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--text);
+  font-family:
+    'Spline Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 16.5px;
+  line-height: 1.72;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(251, 251, 253, 0.82);
+  backdrop-filter: saturate(160%) blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text);
+}
+.brand .glyph {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--ink), var(--ink-deep));
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  font-family: 'Fraunces', serif;
+  box-shadow: 0 4px 14px rgba(40, 65, 184, 0.35);
+}
+.brand .wordmark {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.brand .wordmark b {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.brand .wordmark span {
+  font-size: 12px;
+  color: var(--text-faint);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.topnav {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.topnav a {
+  font-size: 13.5px;
+  color: var(--text-soft);
+  text-decoration: none;
+  padding: 7px 12px;
+  border-radius: 8px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.topnav a:hover {
+  background: var(--ink-soft);
+  color: var(--ink-deep);
+}
+.topnav a.active {
+  color: var(--ink-deep);
+  background: var(--ink-soft);
+  font-weight: 600;
+}
+
+/* ---------- Layout ---------- */
+.shell {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 28px 96px;
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  gap: 56px;
+  align-items: start;
+}
+.toc {
+  position: sticky;
+  top: 92px;
+  align-self: start;
+  padding-top: 48px;
+  font-size: 13.5px;
+}
+.toc h4 {
+  margin: 0 0 12px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+.toc ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: toc;
+}
+.toc li {
+  counter-increment: toc;
+}
+.toc a {
+  display: block;
+  color: var(--text-soft);
+  text-decoration: none;
+  padding: 5px 0 5px 26px;
+  position: relative;
+  line-height: 1.4;
+  border-left: 2px solid transparent;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.toc a::before {
+  content: counter(toc, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  font-family: 'Spline Sans Mono', monospace;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.toc a:hover {
+  color: var(--ink-deep);
+  border-left-color: var(--ink);
+}
+
+.doc {
+  padding-top: 48px;
+  max-width: 760px;
+}
+
+/* ---------- Hero / doc head ---------- */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-deep);
+  font-weight: 600;
+  background: var(--ink-soft);
+  padding: 6px 12px;
+  border-radius: 999px;
+  margin-bottom: 20px;
+}
+.eyebrow .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+h1 {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: clamp(2.1rem, 4.5vw, 3.1rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px;
+  color: var(--text);
+}
+.lede {
+  font-size: 1.12rem;
+  color: var(--text-soft);
+  margin: 0 0 22px;
+  max-width: 64ch;
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  font-size: 13.5px;
+  color: var(--text-faint);
+}
+.meta b {
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+/* ---------- Body content ---------- */
+.doc h2 {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+  margin: 52px 0 14px;
+  padding-top: 16px;
+  scroll-margin-top: 92px;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+.doc h2 .num {
+  font-family: 'Spline Sans Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--ink);
+  font-weight: 500;
+  flex: none;
+}
+.doc h3 {
+  font-size: 1.06rem;
+  font-weight: 600;
+  margin: 30px 0 8px;
+  color: var(--text);
+  scroll-margin-top: 92px;
+}
+.doc p {
+  margin: 0 0 16px;
+}
+.doc ul,
+.doc ol {
+  margin: 0 0 16px;
+  padding-left: 26px;
+}
+.doc li {
+  margin: 0 0 8px;
+}
+.doc a {
+  color: var(--ink-deep);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+.doc strong {
+  font-weight: 600;
+  color: var(--text);
+}
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 40px 0;
+}
+
+/* ---------- Callouts ---------- */
+.callout {
+  border: 1px solid var(--warn-line);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin: 24px 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.callout strong {
+  color: var(--warn-text);
+}
+.callout .label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.note {
+  border: 1px solid var(--ink-line);
+  background: var(--ink-soft);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin: 24px 0;
+  font-size: 15px;
+  color: var(--ink-deep);
+}
+.note .label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+
+/* ---------- Tables ---------- */
+.tbl-wrap {
+  overflow-x: auto;
+  margin: 22px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+th,
+td {
+  text-align: left;
+  padding: 12px 16px;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+thead th {
+  background: var(--ink-soft);
+  color: var(--ink-deep);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+tbody tr:last-child td {
+  border-bottom: none;
+}
+tbody tr:nth-child(even) td {
+  background: #fafafc;
+}
+
+/* ---------- Entity cards (hub) ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+  margin: 28px 0;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  text-decoration: none;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.18s,
+    box-shadow 0.18s,
+    border-color 0.18s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card:hover {
+  transform: translateY(-3px);
+  border-color: var(--ink-line);
+  box-shadow: 0 10px 34px rgba(40, 65, 184, 0.12);
+}
+.card .kicker {
+  font-family: 'Spline Sans Mono', monospace;
+  font-size: 12px;
+  color: var(--ink);
+}
+.card h3 {
+  margin: 0;
+  font-size: 1.16rem;
+  font-weight: 600;
+  font-family: 'Fraunces', serif;
+}
+.card p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+.card .go {
+  margin-top: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-deep);
+}
+
+.entity-table {
+  font-size: 14px;
+}
+
+/* ---------- Footer ---------- */
+.foot {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  margin-top: 40px;
+}
+.foot-inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 40px 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+.foot a {
+  color: var(--text-soft);
+  text-decoration: none;
+}
+.foot a:hover {
+  color: var(--ink-deep);
+}
+.foot .links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .toc {
+    display: none;
+  }
+  .doc {
+    padding-top: 32px;
+  }
+  .topnav {
+    display: none;
+  }
+}
+
+/* ---------- Print ---------- */
+@media print {
+  .topbar,
+  .toc,
+  .foot {
+    display: none;
+  }
+  .shell {
+    display: block;
+    padding: 0;
+  }
+  body {
+    background: #fff;
+    font-size: 11pt;
+  }
+  .callout,
+  .note {
+    break-inside: avoid;
+  }
+}
