@@ -30,14 +30,22 @@ WORKDIR /src
 ENV CGO_ENABLED=0 \
     GOFLAGS=-trimpath
 
-# Module manifest first for layer caching.
-COPY chronos/go.mod chronos/go.sum chronos/
+# Module manifests first for layer caching. chronos pulls in the workforce
+# Chronos wake target via `replace matrix/workforce => ../workforce`, which in
+# turn pulls in vault (matrix/vault, pure-stdlib, no go.sum) via
+# `replace matrix/vault => ../vault`, so both trees MUST be present or
+# `go build ./cmd/chronosd` fails to resolve the replace targets.
+COPY vault/go.mod                    vault/
+COPY workforce/go.mod workforce/go.sum workforce/
+COPY chronos/go.mod   chronos/go.sum   chronos/
 WORKDIR /src/chronos
 RUN go mod download
 
 # Then the source.
 WORKDIR /src
-COPY chronos/ chronos/
+COPY vault/     vault/
+COPY workforce/ workforce/
+COPY chronos/   chronos/
 WORKDIR /src/chronos
 RUN go build -ldflags="-s -w" -o /out/chronosd ./cmd/chronosd
 
