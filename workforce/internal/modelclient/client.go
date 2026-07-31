@@ -28,6 +28,7 @@ type Config struct {
 	ModelVersion string
 	Endpoint     string
 	APIKey       string
+	ActorDID     string
 	Temperature  float64
 	MaxTokens    int
 	Timeout      time.Duration
@@ -76,6 +77,7 @@ func New(config Config) (*Client, error) {
 		strings.TrimSpace(config.ModelVersion) == "" ||
 		strings.TrimSpace(config.Endpoint) == "" ||
 		strings.TrimSpace(config.APIKey) == "" ||
+		strings.TrimSpace(config.ActorDID) == "" ||
 		config.MaxTokens <= 0 || config.Timeout <= 0 ||
 		config.Temperature < 0 || math.IsNaN(config.Temperature) ||
 		math.IsInf(config.Temperature, 0) {
@@ -88,7 +90,7 @@ func New(config Config) (*Client, error) {
 	}
 	decoder, err := neoprovider.NewMiMo(neoprovider.MiMoConfig{
 		APIKey: config.APIKey, Endpoint: config.Endpoint,
-		ActorDID: "did:matrix:workforced", SlotLabel: "workforce",
+		ActorDID: config.ActorDID, SlotLabel: "workforce",
 		MaxAttempts: 3, IdleTimeout: config.Timeout,
 	})
 	if err != nil {

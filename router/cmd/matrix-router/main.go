@@ -54,6 +54,7 @@ import (
 	"matrix/router/internal/railway"
 	"matrix/router/internal/shard"
 	"matrix/router/internal/voice"
+	"matrix/router/internal/workforceauth"
 )
 
 // version is the build identity; overridden via -ldflags="-X main.version=...".
@@ -76,6 +77,14 @@ func main() {
 	}
 	logf("matrix-router version=%s public=%s internal=%s provider=%s app=%s region=%s",
 		version, cfg.PublicAddr, cfg.InternalAddr, cfg.Provider, cfg.FlyApp, cfg.FlyRegion)
+	var workforceCredentials *workforceauth.Deriver
+	if cfg.WorkforceEnabled {
+		workforceCredentials, err = workforceauth.New(cfg.WorkforceRootSecret)
+		if err != nil {
+			logf("workforce credentials: %v", err)
+			os.Exit(2)
+		}
+	}
 
 	// 1. JWT verifier (HS256 legacy + JWKS asymmetric).
 	verifier, err := jwt.New(jwt.Options{
@@ -157,6 +166,8 @@ func main() {
 	// Route the /cody/* path prefix to the co-located codyd engine on its own
 	// port (default :8090); everything else goes to the Neo front on :8080.
 	proxyH.CodyPort = cfg.CodyPort
+	proxyH.WorkforcePort = cfg.WorkforcePort
+	proxyH.Workforce = workforceCredentials
 	directProxyH := proxyH
 	if cfg.Provider == config.ProviderRailway && shardRegistry != nil {
 		flyProv := &fly.Provisioner{
@@ -168,18 +179,22 @@ func main() {
 		directProxyH = proxy.New(pool, flyProv, cfg.DaemonPort, cfg.WakeTimeout, cfg.ProbeInterval, logf)
 		directProxyH.ReadyTimeout = cfg.DaemonReadyTimeout
 		directProxyH.CodyPort = cfg.CodyPort
+		directProxyH.WorkforcePort = cfg.WorkforcePort
+		directProxyH.Workforce = workforceCredentials
 		directProxyH.ShardProviders = shardRegistry
 	}
 
 	// 5. Admin handler (admin-token-protected). Daemon image must be
 	//    provider-registry-pushable; passing via env keeps it operator-set.
 	adminH := &admin.Handler{
-		DB:               pool,
-		Prov:             prov,
-		ShardProviders:   shardRegistry,
-		Provider:         cfg.Provider,
-		DefaultRegion:    cfg.FlyRegion,
-		ProvisionTimeout: 90 * time.Second,
+		DB:                   pool,
+		Prov:                 prov,
+		ShardProviders:       shardRegistry,
+		Provider:             cfg.Provider,
+		DefaultRegion:        cfg.FlyRegion,
+		ProvisionTimeout:     90 * time.Second,
+		Workforce:            workforceCredentials,
+		WorkforcePostgresURI: cfg.WorkforcePostgresURI,
 		MachineEnv: map[string]string{
 			"MATRIX_S3_ENDPOINT": cfg.S3Endpoint,
 			"MATRIX_S3_BUCKET":   cfg.S3Bucket,
@@ -555,6 +570,17 @@ func main() {
 		logf("wake: enabled at %s/internal/wake", cfg.InternalAddr)
 	} else {
 		logf("wake: DISABLED (ROUTER_WAKE_TOKEN unset)")
+	}
+	if cfg.WorkforceEnabled {
+		workforceWakeHandler := http.Handler(proxyH.WorkforceWakeHandler())
+		if centralProxy != nil {
+			workforceWakeHandler = centralProxy.WorkforceWakeHandler()
+		}
+		internalMux.Handle(
+			"/internal/workforce/wake",
+			mw.Admin(cfg.WorkforceWakeToken, logf)(workforceWakeHandler),
+		)
+		logf("workforce wake: enabled at %s/internal/workforce/wake", cfg.InternalAddr)
 	}
 
 	// Preview registration door: codyd (inside a user's VM) registers /

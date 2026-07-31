@@ -16,6 +16,8 @@
 #   CHRONOS_AGENT_AUTH_SECRET agent challenge/token secret
 #   CHRONOS_ROUTER_WAKE_URL   router /internal/wake base URL
 #   CHRONOS_WAKE_TOKEN        bearer for the router wake endpoint
+#   CHRONOS_WORKFORCED_WAKE_URL router /internal/workforce/wake endpoint
+#   CHRONOS_WORKFORCED_WAKE_TOKEN bearer matching ROUTER_WORKFORCE_WAKE_TOKEN
 #   CHRONOS_PORT              listen port (default 9096; Go ":port" binds
 #                             dual-stack, so IPv6-only private networks work)
 #   CHRONOS_TICK_MS / CHRONOS_MAX_FAILURES / CHRONOS_DEV — see config.go

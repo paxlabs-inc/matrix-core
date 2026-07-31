@@ -203,8 +203,14 @@ func runContext(ctx context.Context, args []string, stdout, stderr io.Writer) in
 			}
 		}
 	}()
+	rootHandler := http.NewServeMux()
+	rootHandler.Handle(
+		"/internal/workforce/wake",
+		scheduler.Handler(schedulerStore, config.wakeToken),
+	)
+	rootHandler.Handle("/", service.Handler())
 	server := &http.Server{
-		Addr: config.listen, Handler: service.Handler(),
+		Addr: config.listen, Handler: rootHandler,
 		ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 90 * time.Second,
 	}
 	stopped := make(chan struct{})
@@ -235,6 +241,7 @@ type runtimeConfig struct {
 	organizationID   contracts.OrganizationID
 	ownerID          contracts.OwnerID
 	ownerToken       string
+	wakeToken        string
 	ownerKeyID       string
 	ownerPublicKey   ed25519.PublicKey
 	runtimeKeyID     string
@@ -255,9 +262,22 @@ type runtimeConfig struct {
 }
 
 func loadConfig(listen string) (runtimeConfig, error) {
-	mimoAPIKey := strings.TrimSpace(os.Getenv("MIMO_API_KEY"))
-	if mimoAPIKey == "" {
-		mimoAPIKey = strings.TrimSpace(os.Getenv("XIAOMI_API_KEY"))
+	gatewayURL := strings.TrimRight(strings.TrimSpace(os.Getenv("MATRIX_GATEWAY_URL")), "/")
+	gatewayToken := strings.TrimSpace(os.Getenv("MATRIX_GATEWAY_TOKEN"))
+	modelEndpoint := ""
+	modelCredential := ""
+	if gatewayURL != "" || gatewayToken != "" {
+		if gatewayURL == "" || gatewayToken == "" {
+			return runtimeConfig{}, fmt.Errorf("workforced: MATRIX_GATEWAY_URL and MATRIX_GATEWAY_TOKEN must be configured together")
+		}
+		modelEndpoint = gatewayURL + "/v1/chat/completions"
+		modelCredential = gatewayToken
+	} else {
+		modelCredential = strings.TrimSpace(os.Getenv("MIMO_API_KEY"))
+		if modelCredential == "" {
+			modelCredential = strings.TrimSpace(os.Getenv("XIAOMI_API_KEY"))
+		}
+		modelEndpoint = neoprovider.MiMoChatEndpoint
 	}
 	config := runtimeConfig{
 		listen: listen, postgresURI: os.Getenv("WORKFORCE_POSTGRES_URI"),
@@ -265,6 +285,7 @@ func loadConfig(listen string) (runtimeConfig, error) {
 		organizationID: contracts.OrganizationID(os.Getenv("WORKFORCE_ORGANIZATION_ID")),
 		ownerID:        contracts.OwnerID(os.Getenv("WORKFORCE_OWNER_ID")),
 		ownerToken:     os.Getenv("WORKFORCE_OWNER_TOKEN"),
+		wakeToken:      os.Getenv("WORKFORCE_WAKE_TOKEN"),
 		ownerKeyID:     os.Getenv("WORKFORCE_OWNER_KEY_ID"),
 		runtimeKeyID:   os.Getenv("WORKFORCE_RUNTIME_KEY_ID"),
 		bubblewrap:     os.Getenv("WORKFORCE_BUBBLEWRAP"),
@@ -276,23 +297,24 @@ func loadConfig(listen string) (runtimeConfig, error) {
 		dataDir:        os.Getenv("WORKFORCE_DATA_DIR"),
 	}
 	for name, value := range map[string]string{
-		"WORKFORCE_POSTGRES_URI":         config.postgresURI,
-		"WORKFORCE_TENANT_ID":            config.tenantID,
-		"WORKFORCE_ORGANIZATION_ID":      string(config.organizationID),
-		"WORKFORCE_OWNER_ID":             string(config.ownerID),
-		"WORKFORCE_OWNER_TOKEN":          config.ownerToken,
-		"WORKFORCE_OWNER_KEY_ID":         config.ownerKeyID,
-		"WORKFORCE_OWNER_PUBLIC_KEY":     os.Getenv("WORKFORCE_OWNER_PUBLIC_KEY"),
-		"WORKFORCE_RUNTIME_KEY_ID":       config.runtimeKeyID,
-		"WORKFORCE_RUNTIME_PRIVATE_KEY":  os.Getenv("WORKFORCE_RUNTIME_PRIVATE_KEY"),
-		"MIMO_API_KEY/XIAOMI_API_KEY":    mimoAPIKey,
-		"WORKFORCE_BUBBLEWRAP":           config.bubblewrap,
-		"WORKFORCE_SEAT_BINARY":          config.seatBinary,
-		"WORKFORCE_AUDITOR_BINARY":       config.auditorBinary,
-		"WORKFORCE_DEVELOPER_REPOSITORY": config.developerRepo,
-		"WORKFORCE_CODEGRAPH_EXECUTABLE": config.codegraph,
-		"WORKFORCE_AUDITOR_SEAT_ID":      string(config.auditorSeatID),
-		"WORKFORCE_DATA_DIR":             config.dataDir,
+		"WORKFORCE_POSTGRES_URI":                              config.postgresURI,
+		"WORKFORCE_TENANT_ID":                                 config.tenantID,
+		"WORKFORCE_ORGANIZATION_ID":                           string(config.organizationID),
+		"WORKFORCE_OWNER_ID":                                  string(config.ownerID),
+		"WORKFORCE_OWNER_TOKEN":                               config.ownerToken,
+		"WORKFORCE_WAKE_TOKEN":                                config.wakeToken,
+		"WORKFORCE_OWNER_KEY_ID":                              config.ownerKeyID,
+		"WORKFORCE_OWNER_PUBLIC_KEY":                          os.Getenv("WORKFORCE_OWNER_PUBLIC_KEY"),
+		"WORKFORCE_RUNTIME_KEY_ID":                            config.runtimeKeyID,
+		"WORKFORCE_RUNTIME_PRIVATE_KEY":                       os.Getenv("WORKFORCE_RUNTIME_PRIVATE_KEY"),
+		"MATRIX_GATEWAY_TOKEN or MIMO_API_KEY/XIAOMI_API_KEY": modelCredential,
+		"WORKFORCE_BUBBLEWRAP":                                config.bubblewrap,
+		"WORKFORCE_SEAT_BINARY":                               config.seatBinary,
+		"WORKFORCE_AUDITOR_BINARY":                            config.auditorBinary,
+		"WORKFORCE_DEVELOPER_REPOSITORY":                      config.developerRepo,
+		"WORKFORCE_CODEGRAPH_EXECUTABLE":                      config.codegraph,
+		"WORKFORCE_AUDITOR_SEAT_ID":                           string(config.auditorSeatID),
+		"WORKFORCE_DATA_DIR":                                  config.dataDir,
 	} {
 		if strings.TrimSpace(value) == "" {
 			return runtimeConfig{}, fmt.Errorf("workforced: %s is required", name)
@@ -338,8 +360,9 @@ func loadConfig(listen string) (runtimeConfig, error) {
 	config.model = modelclient.Config{
 		Provider: "mimo", ModelID: neoprovider.MiMoV25ProModel,
 		ModelVersion: neoprovider.MiMoV25ProModel,
-		Endpoint:     neoprovider.MiMoChatEndpoint,
-		APIKey:       mimoAPIKey,
+		Endpoint:     modelEndpoint,
+		APIKey:       modelCredential,
+		ActorDID:     "did:matrix:" + config.tenantID + ":workforce",
 		Temperature:  neoprovider.MiMoTemperature,
 		MaxTokens:    modelMaxTokens, Timeout: modelTimeout,
 	}

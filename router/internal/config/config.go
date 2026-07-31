@@ -121,6 +121,14 @@ type Config struct {
 	// used by Neo's Exa MCP. The Exa vendor key remains router-only.
 	ResearchToken string
 
+	// WorkforceEnabled turns on the per-user co-located workforced runtime,
+	// the JWT-authenticated public proxy, and the Chronos internal wake route.
+	WorkforceEnabled     bool
+	WorkforceRootSecret  string
+	WorkforcePostgresURI string
+	WorkforceWakeToken   string
+	WorkforcePort        string
+
 	// CORSOrigins is the browser cross-origin allow-list for the public API
 	// (ROUTER_CORS_ORIGINS, comma-separated). The Next.js client is served from
 	// a different origin than this API and needs CORS to connect. Empty or "*"
@@ -141,6 +149,7 @@ const (
 	DefaultProxyTimeout       = 5 * time.Minute
 	DefaultProbeInterval      = 250 * time.Millisecond
 	DefaultDaemonReadyTimeout = 30 * time.Second
+	DefaultWorkforcePort      = "8091"
 )
 
 // Load reads from os.Getenv. Returns aggregate error listing every
@@ -168,6 +177,11 @@ func Load() (*Config, error) {
 		PreviewToken:            os.Getenv("ROUTER_PREVIEW_TOKEN"),
 		FinanceToken:            os.Getenv("ROUTER_FINANCE_TOKEN"),
 		ResearchToken:           os.Getenv("ROUTER_RESEARCH_TOKEN"),
+		WorkforceEnabled:        envTrue("ROUTER_WORKFORCE_ENABLED"),
+		WorkforceRootSecret:     os.Getenv("ROUTER_WORKFORCE_ROOT_SECRET"),
+		WorkforcePostgresURI:    os.Getenv("ROUTER_WORKFORCE_POSTGRES_URI"),
+		WorkforceWakeToken:      os.Getenv("ROUTER_WORKFORCE_WAKE_TOKEN"),
+		WorkforcePort:           getOrDefault("ROUTER_WORKFORCE_PORT", DefaultWorkforcePort),
 		CORSOrigins:             parseCSV(os.Getenv("ROUTER_CORS_ORIGINS")),
 	}
 
@@ -219,10 +233,39 @@ func Load() (*Config, error) {
 	if c.DatabaseURL == "" {
 		missing = append(missing, "DATABASE_URL")
 	}
+	if c.WorkforceEnabled {
+		if len([]byte(c.WorkforceRootSecret)) < 32 {
+			missing = append(missing, "ROUTER_WORKFORCE_ROOT_SECRET (at least 32 bytes)")
+		}
+		if c.WorkforcePostgresURI == "" {
+			missing = append(missing, "ROUTER_WORKFORCE_POSTGRES_URI")
+		}
+		if c.WorkforceWakeToken == "" {
+			missing = append(missing, "ROUTER_WORKFORCE_WAKE_TOKEN")
+		}
+		if os.Getenv("MATRIX_GATEWAY_URL") == "" {
+			missing = append(missing, "MATRIX_GATEWAY_URL")
+		}
+		if os.Getenv("MATRIX_GATEWAY_TOKEN") == "" {
+			missing = append(missing, "MATRIX_GATEWAY_TOKEN")
+		}
+		if os.Getenv("MATRIX_VAULT_KEK") == "" {
+			missing = append(missing, "MATRIX_VAULT_KEK")
+		}
+	}
 	if len(missing) > 0 {
 		return nil, fmt.Errorf("config: missing required env vars: %s", strings.Join(missing, ", "))
 	}
 	return c, nil
+}
+
+func envTrue(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(name))) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
 }
 
 func getOrDefault(env, def string) string {

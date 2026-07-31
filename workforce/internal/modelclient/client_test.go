@@ -14,6 +14,7 @@ func TestNewBuildsCanonicalSamplingBinding(t *testing.T) {
 		Provider: "mimo", ModelID: neoprovider.MiMoV25ProModel,
 		ModelVersion: neoprovider.MiMoV25ProModel,
 		Endpoint:     neoprovider.MiMoChatEndpoint, APIKey: "configured",
+		ActorDID:    "did:matrix:workforce-test",
 		Temperature: neoprovider.MiMoTemperature,
 		MaxTokens:   1024, Timeout: time.Second,
 	}
@@ -65,6 +66,7 @@ func TestNewRejectsNonFiniteTemperature(t *testing.T) {
 			Provider: "mimo", ModelID: neoprovider.MiMoV25ProModel,
 			ModelVersion: neoprovider.MiMoV25ProModel,
 			Endpoint:     neoprovider.MiMoChatEndpoint, APIKey: "configured",
+			ActorDID:    "did:matrix:workforce-test",
 			Temperature: temperature, MaxTokens: 1024,
 			Timeout: time.Second,
 		})

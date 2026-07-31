@@ -248,6 +248,26 @@ start_voice_controller() {
     VOICE_CONTROLLER_PID=$!
 }
 
+start_workforce() {
+    if [[ "${WORKFORCE_ENABLED:-false}" != "true" ]]; then
+        return 0
+    fi
+    local workforce_repository="${WORKFORCE_DEVELOPER_REPOSITORY:-/workspace}"
+    mkdir -p "${workforce_repository}/.cg"
+    "${WORKFORCE_CODEGRAPH_EXECUTABLE:-/usr/local/bin/cg}" \
+        --db "${workforce_repository}/.cg/codegraph.db" \
+        build "${workforce_repository}" \
+        --exclude .cg \
+        --exclude .codegraph \
+        --exclude .git \
+        --exclude node_modules \
+        --exclude .next
+    exec "${MATRIX_HOME}/bin/workforced" \
+        -serve \
+        -listen ":${WORKFORCE_PORT:-8091}" \
+        "$@"
+}
+
 case "${1:-neo}" in
     neo)
         shift || true
@@ -257,6 +277,21 @@ case "${1:-neo}" in
         # browser.mjs bridges (the bridge reads it at spawn).
         start_local_browser
         start_voice_controller
+
+		# Workforce is a separate deterministic runtime, co-located only at
+		# the service boundary so the Router can address the same per-user
+		# private hostname on :8091. It keeps its own Postgres, Vault,
+		# authority, scheduler, Bubblewrap workers, and process lifecycle.
+		if [[ "${WORKFORCE_ENABLED:-false}" == "true" ]]; then
+			start_workforce &
+			WORKFORCE_PID=$!
+			# The background Workforce process received its own environment copy.
+			# Remove its database and authority material before spawning Neo, the
+			# plumbing daemon, or any MCP child process.
+			unset WORKFORCE_POSTGRES_URI WORKFORCE_OWNER_TOKEN WORKFORCE_WAKE_TOKEN
+			unset WORKFORCE_OWNER_PUBLIC_KEY WORKFORCE_RUNTIME_PRIVATE_KEY
+			unset WORKFORCE_OWNER_KEY_ID WORKFORCE_RUNTIME_KEY_ID
+		fi
 
         # Backend: the plumbing daemon on :8081 (background). Neo
         # reverse-proxies every non-conversational route to it (healthz,
@@ -300,15 +335,15 @@ case "${1:-neo}" in
             "$@" &
         NEO_PID=$!
 
-        # If EITHER exits, tear the other down and exit non-zero so the
-        # platform's on-failure restart reboots the pair. (tini -g also
+        # If any required runtime exits, tear the others down and exit non-zero so the
+        # platform's on-failure restart reboots the service. (tini -g also
         # forwards a platform stop/restart signal to the whole group.)
         set +e
         wait -n
         EXIT=$?
         set -e
-        echo "entrypoint: a co-located process exited (status ${EXIT}); stopping the pair" >&2
-        kill "${DAEMON_PID}" "${NEO_PID}" ${BROWSER_PID:+"${BROWSER_PID}"} ${VOICE_CONTROLLER_PID:+"${VOICE_CONTROLLER_PID}"} 2>/dev/null || true
+        echo "entrypoint: a co-located process exited (status ${EXIT}); stopping the runtime" >&2
+        kill "${DAEMON_PID}" "${NEO_PID}" ${WORKFORCE_PID:+"${WORKFORCE_PID}"} ${BROWSER_PID:+"${BROWSER_PID}"} ${VOICE_CONTROLLER_PID:+"${VOICE_CONTROLLER_PID}"} 2>/dev/null || true
         wait 2>/dev/null || true
         exit "${EXIT}"
         ;;
@@ -320,20 +355,8 @@ case "${1:-neo}" in
         ;;
     workforce)
         shift || true
-        workforce_repository="${WORKFORCE_DEVELOPER_REPOSITORY:-/workspace}"
-        mkdir -p "${workforce_repository}/.cg"
-        "${WORKFORCE_CODEGRAPH_EXECUTABLE:-/usr/local/bin/cg}" \
-            --db "${workforce_repository}/.cg/codegraph.db" \
-            build "${workforce_repository}" \
-            --exclude .cg \
-            --exclude .codegraph \
-            --exclude .git \
-            --exclude node_modules \
-            --exclude .next
-        exec "${MATRIX_HOME}/bin/workforced" \
-            -serve \
-            -listen ":${WORKFORCE_PORT:-8091}" \
-            "$@"
+        export WORKFORCE_ENABLED=true
+        start_workforce "$@"
         ;;
     walk|classify|loader)
         # Pass-through for ad-hoc CLI work inside the container.

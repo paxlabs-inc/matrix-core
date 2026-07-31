@@ -42,6 +42,7 @@ type Provisioner struct {
 
 var _ provision.Provisioner = (*Provisioner)(nil)
 var _ provision.Recoverable = (*Provisioner)(nil)
+var _ provision.VariableUpdater = (*Provisioner)(nil)
 
 func (p *Provisioner) ServiceName(userID string) string { return ServiceName(userID) }
 
@@ -114,6 +115,13 @@ func (p *Provisioner) CreateVolume(ctx context.Context, serviceID, mountPath str
 		return "", mapErr(err)
 	}
 	return vol.ID, nil
+}
+
+func (p *Provisioner) UpdateVariables(ctx context.Context, ref provision.Ref, env map[string]string) error {
+	if p == nil || p.Client == nil {
+		return errors.New("railway: client is required")
+	}
+	return mapErr(p.Client.UpsertVariables(ctx, ref.EnvID, env))
 }
 
 func (p *Provisioner) WaitReady(ctx context.Context, serviceID string) error {

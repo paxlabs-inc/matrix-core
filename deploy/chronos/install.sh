@@ -16,6 +16,7 @@
 #     --token        "<random-32-bytes-base64>"  \  # CHRONOS_TOKEN (transport)
 #     --agent-secret "<random-32-bytes-base64>"  \  # CHRONOS_AGENT_AUTH_SECRET
 #     --wake-token   "<must match ROUTER_WAKE_TOKEN>" \
+#     --workforced-wake-token "<must match ROUTER_WORKFORCE_WAKE_TOKEN>" \
 #     [--router-wake-url http://127.0.0.1:8088/internal/wake]
 #
 # Re-running is safe: every step is idempotent. Fails fast (set -euo pipefail).
@@ -28,7 +29,9 @@ POSTGRES_URI=""
 TOKEN=""
 AGENT_SECRET=""
 WAKE_TOKEN=""
+WORKFORCED_WAKE_TOKEN=""
 ROUTER_WAKE_URL="http://127.0.0.1:8088/internal/wake"
+WORKFORCED_WAKE_URL="http://127.0.0.1:8088/internal/workforce/wake"
 INSTALL_DIR="/opt/matrix-chronos"
 ENV_FILE="/etc/matrix/chronos.env"
 SERVICE_FILE="/etc/systemd/system/chronosd.service"
@@ -36,7 +39,7 @@ SERVICE_FILE="/etc/systemd/system/chronosd.service"
 usage() {
     cat <<EOF
 Usage: $0 --binary PATH --postgres-uri URI --token TOKEN \\
-       --agent-secret SECRET --wake-token TOKEN [--router-wake-url URL]
+       --agent-secret SECRET --wake-token TOKEN --workforced-wake-token TOKEN
 
   --binary          Path to the compiled chronosd binary.
   --postgres-uri    Postgres URI (shared matrix DB).        -> CHRONOS_POSTGRES_URI
@@ -45,6 +48,11 @@ Usage: $0 --binary PATH --postgres-uri URI --token TOKEN \\
   --wake-token      Shared secret matching the router.      -> CHRONOS_WAKE_TOKEN
   --router-wake-url Router internal wake endpoint.          -> CHRONOS_ROUTER_WAKE_URL
                     (default: $ROUTER_WAKE_URL)
+  --workforced-wake-token
+                    Shared secret matching the router.      -> CHRONOS_WORKFORCED_WAKE_TOKEN
+  --workforced-wake-url
+                    Router Workforce wake endpoint.         -> CHRONOS_WORKFORCED_WAKE_URL
+                    (default: $WORKFORCED_WAKE_URL)
 EOF
     exit 2
 }
@@ -57,12 +65,14 @@ while [[ $# -gt 0 ]]; do
         --agent-secret)    AGENT_SECRET="$2"; shift 2 ;;
         --wake-token)      WAKE_TOKEN="$2"; shift 2 ;;
         --router-wake-url) ROUTER_WAKE_URL="$2"; shift 2 ;;
+        --workforced-wake-token) WORKFORCED_WAKE_TOKEN="$2"; shift 2 ;;
+        --workforced-wake-url) WORKFORCED_WAKE_URL="$2"; shift 2 ;;
         -h|--help)         usage ;;
         *)                 echo "unknown flag $1"; usage ;;
     esac
 done
 
-[[ -z "$BINARY" || -z "$POSTGRES_URI" || -z "$TOKEN" || -z "$AGENT_SECRET" || -z "$WAKE_TOKEN" ]] && usage
+[[ -z "$BINARY" || -z "$POSTGRES_URI" || -z "$TOKEN" || -z "$AGENT_SECRET" || -z "$WAKE_TOKEN" || -z "$WORKFORCED_WAKE_TOKEN" ]] && usage
 [[ "$EUID" -eq 0 ]] || { echo "must run as root"; exit 1; }
 [[ -x "$BINARY" ]] || { echo "binary not executable: $BINARY"; exit 1; }
 
@@ -100,6 +110,8 @@ CHRONOS_TOKEN=$TOKEN
 CHRONOS_AGENT_AUTH_SECRET=$AGENT_SECRET
 CHRONOS_WAKE_TOKEN=$WAKE_TOKEN
 CHRONOS_ROUTER_WAKE_URL=$ROUTER_WAKE_URL
+CHRONOS_WORKFORCED_WAKE_TOKEN=$WORKFORCED_WAKE_TOKEN
+CHRONOS_WORKFORCED_WAKE_URL=$WORKFORCED_WAKE_URL
 EOF
 chown root:matrix "$ENV_FILE"
 chmod 0640 "$ENV_FILE"
@@ -116,5 +128,6 @@ systemctl --no-pager status chronosd.service || true
 
 echo "chronosd installed; reachable at http://127.0.0.1:9096 (healthz: /healthz)"
 echo "router side: set ROUTER_WAKE_TOKEN=<same wake token> in /etc/matrix/router.env"
+echo "router side: set ROUTER_WORKFORCE_WAKE_TOKEN=<same Workforce wake token>"
 echo "daemon side: set MATRIX_CHRONOS_URL + MATRIX_CHRONOS_TOKEN on each Machine"
 echo "optional public surface: add deploy/chronos/nginx-snippet.conf + reload nginx."

@@ -33,6 +33,7 @@ import (
 
 	"matrix/router/internal/db"
 	"matrix/router/internal/provision"
+	"matrix/router/internal/workforceauth"
 )
 
 // Provisioner triggers out-of-band provisioning of a user's environment
@@ -55,8 +56,10 @@ type Handler struct {
 	ShardProviders interface {
 		Provider(string) (provision.Provisioner, bool)
 	}
-	DaemonPort    string        // backend listen port (e.g. "8080")
-	CodyPort      string        // codyd listen port (e.g. "8090"); "" disables /cody routing
+	DaemonPort    string // backend listen port (e.g. "8080")
+	CodyPort      string // codyd listen port (e.g. "8090"); "" disables /cody routing
+	WorkforcePort string // workforced listen port (e.g. "8091"); empty disables Workforce routing
+	Workforce     *workforceauth.Deriver
 	WakeTimeout   time.Duration // environment wake deadline
 	ProbeInterval time.Duration // poll cadence inside Wake + readiness probe
 	ReadyTimeout  time.Duration // deadline for the daemon HTTP server to accept connections post-wake
@@ -255,6 +258,11 @@ func (h *Handler) forward(w http.ResponseWriter, r *http.Request, sub string, re
 }
 
 func (h *Handler) forwardWith(w http.ResponseWriter, r *http.Request, sub string, ref provision.Ref, prov provision.Provisioner) {
+	workforceRoute := classifyWorkforceRoute(r.URL.Path)
+	if workforceRoute != workforceRouteNone && (h.Workforce == nil || h.WorkforcePort == "") {
+		http.Error(w, "workforce unavailable", http.StatusServiceUnavailable)
+		return
+	}
 	// Wake the environment (idempotent if already running). We give the
 	// wake step its own deadline so a stuck provider API call doesn't
 	// pollute the proxy timeout for the body. On wake-on-request
@@ -290,6 +298,20 @@ func (h *Handler) forwardWith(w http.ResponseWriter, r *http.Request, sub string
 		http.Error(w, "daemon waking; retry shortly", http.StatusServiceUnavailable)
 		return
 	}
+	if workforceRoute != workforceRouteNone {
+		ownerToken, tokenErr := h.Workforce.OwnerToken(sub)
+		if tokenErr != nil {
+			h.Logf("workforce readiness credential %s: %v", sub, tokenErr)
+			http.Error(w, "workforce routing error", http.StatusInternalServerError)
+			return
+		}
+		if err := h.waitWorkforceReady(r.Context(), env, ownerToken); err != nil {
+			h.Logf("workforce readiness %s: %v", ref.EnvID, err)
+			w.Header().Set("Retry-After", "3")
+			http.Error(w, "workforce waking; retry shortly", http.StatusServiceUnavailable)
+			return
+		}
+	}
 
 	// Cody engine (codyd) is a co-located sibling on its own port (:8090),
 	// reached over the private network — NOT proxied through the Neo front.
@@ -297,6 +319,9 @@ func (h *Handler) forwardWith(w http.ResponseWriter, r *http.Request, sub string
 	// routes (/projects, /chat, /events, /workspace/*, /conversations/*,
 	// /intents/*), which otherwise collide with Neo's identical paths on :8080.
 	targetPort := h.DaemonPort
+	if workforceRoute != workforceRouteNone {
+		targetPort = h.WorkforcePort
+	}
 	if p := r.URL.Path; h.CodyPort != "" && (p == "/cody" || strings.HasPrefix(p, "/cody/")) {
 		targetPort = h.CodyPort
 		r.URL.Path = strings.TrimPrefix(p, "/cody")
@@ -327,6 +352,20 @@ func (h *Handler) forwardWith(w http.ResponseWriter, r *http.Request, sub string
 	// Pass user identity downstream so the daemon can attribute
 	// requests in its own logs without re-verifying the JWT.
 	rew.Header.Set("X-Matrix-User", sub)
+	if workforceRoute != workforceRouteNone {
+		var token string
+		if workforceRoute == workforceRouteWake {
+			token, err = h.Workforce.WakeToken(sub)
+		} else {
+			token, err = h.Workforce.OwnerToken(sub)
+		}
+		if err != nil {
+			h.Logf("workforce credential %s: %v", sub, err)
+			http.Error(w, "workforce routing error", http.StatusInternalServerError)
+			return
+		}
+		rew.Header.Set("Authorization", "Bearer "+token)
+	}
 
 	// X-Forwarded-* hygiene
 	if cli, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
@@ -344,6 +383,24 @@ func (h *Handler) forwardWith(w http.ResponseWriter, r *http.Request, sub string
 	}
 
 	h.once.ServeHTTP(w, rew)
+}
+
+type workforceRouteKind uint8
+
+const (
+	workforceRouteNone workforceRouteKind = iota
+	workforceRouteOwner
+	workforceRouteWake
+)
+
+func classifyWorkforceRoute(path string) workforceRouteKind {
+	if path == "/internal/workforce/wake" {
+		return workforceRouteWake
+	}
+	if path == "/v1/workforce" || strings.HasPrefix(path, "/v1/workforce/") {
+		return workforceRouteOwner
+	}
+	return workforceRouteNone
 }
 
 // buildUpstreamURL composes http://<host>:<port><path>?<query> from the
@@ -432,6 +489,48 @@ func (h *Handler) waitDaemonReadyWith(ctx context.Context, env *provision.Env, p
 		select {
 		case <-readyCtx.Done():
 			return fmt.Errorf("daemon %s not ready within %s: %w", env.ID, ready, lastErr)
+		case <-time.After(interval):
+		}
+	}
+}
+
+func (h *Handler) waitWorkforceReady(ctx context.Context, env *provision.Env, ownerToken string) error {
+	ready := h.ReadyTimeout
+	if ready <= 0 {
+		ready = defaultReadyTimeout
+	}
+	interval := h.ProbeInterval
+	if interval <= 0 {
+		interval = 250 * time.Millisecond
+	}
+	probe := &http.Request{URL: &url.URL{Path: "/v1/workforce/session"}}
+	probeURL, err := buildUpstreamURL(env.Endpoint, h.WorkforcePort, probe)
+	if err != nil {
+		return err
+	}
+	readyCtx, cancel := context.WithTimeout(ctx, ready)
+	defer cancel()
+	client := &http.Client{Timeout: 3 * time.Second}
+	var lastErr error
+	for {
+		req, err := http.NewRequestWithContext(readyCtx, http.MethodGet, probeURL.String(), http.NoBody)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Authorization", "Bearer "+ownerToken)
+		resp, err := client.Do(req)
+		if err == nil {
+			_ = resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				return nil
+			}
+			lastErr = fmt.Errorf("workforced answered %d", resp.StatusCode)
+		} else {
+			lastErr = err
+		}
+		select {
+		case <-readyCtx.Done():
+			return fmt.Errorf("workforced %s not ready within %s: %w", env.ID, ready, lastErr)
 		case <-time.After(interval):
 		}
 	}

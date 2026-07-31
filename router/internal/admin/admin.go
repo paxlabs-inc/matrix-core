@@ -31,6 +31,7 @@ import (
 
 	"matrix/router/internal/db"
 	"matrix/router/internal/provision"
+	"matrix/router/internal/workforceauth"
 )
 
 // Logf is the optional log sink used by handlers. Cmd/main.go wires
@@ -44,11 +45,13 @@ type Handler struct {
 	ShardProviders interface {
 		Provider(string) (provision.Provisioner, bool)
 	}
-	Provider         string // 'fly' | 'railway' — recorded on attached rows; empty defaults to 'fly'
-	DefaultRegion    string
-	MachineEnv       map[string]string // baseline env for every environment
-	ProvisionTimeout time.Duration     // budget per provision call
-	Log              Logf
+	Provider             string // 'fly' | 'railway' — recorded on attached rows; empty defaults to 'fly'
+	DefaultRegion        string
+	MachineEnv           map[string]string // baseline env for every environment
+	Workforce            *workforceauth.Deriver
+	WorkforcePostgresURI string
+	ProvisionTimeout     time.Duration // budget per provision call
+	Log                  Logf
 
 	// inflight dedupes concurrent StartProvision calls per user id so a
 	// burst of first requests provisions exactly one environment.
@@ -179,10 +182,16 @@ func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, regi
 	//    bakes in MATRIX_USER_ID + MATRIX_S3_* so the daemon's BootPull
 	//    (executor/internal/snapshot) hits the right snapshot prefix on
 	//    first boot.
+	instanceEnv, err := h.instanceEnv(userID)
+	if err != nil {
+		_ = h.DB.FinishProvisionJob(ctx, jobID, "failed", err.Error(), nil)
+		_ = h.DB.SetUserState(ctx, userID, db.StateFailed)
+		return nil, false, err
+	}
 	createReq := provision.CreateRequest{
 		UserID: userID,
 		Region: region,
-		Env:    h.instanceEnv(userID),
+		Env:    instanceEnv,
 	}
 	var env *provision.Env
 	var provErr error
@@ -359,7 +368,7 @@ func boundedReconcile(ctx context.Context, probe func() error) error {
 
 // instanceEnv builds the per-instance environment-variable set: the
 // user identity plus the operator baseline (MachineEnv).
-func (h *Handler) instanceEnv(userID string) map[string]string {
+func (h *Handler) instanceEnv(userID string) (map[string]string, error) {
 	env := map[string]string{
 		"MATRIX_USER_ID":  userID,
 		"MATRIX_DATA_DIR": "/data",
@@ -371,7 +380,42 @@ func (h *Handler) instanceEnv(userID string) map[string]string {
 	for k, v := range h.MachineEnv {
 		env[k] = v
 	}
-	return env
+	if h.Workforce == nil {
+		return env, nil
+	}
+	ownerToken, err := h.Workforce.OwnerToken(userID)
+	if err != nil {
+		return nil, err
+	}
+	wakeToken, err := h.Workforce.WakeToken(userID)
+	if err != nil {
+		return nil, err
+	}
+	runtimeKey, err := h.Workforce.RuntimePrivateKey(userID)
+	if err != nil {
+		return nil, err
+	}
+	ownerPublicKey, err := h.Workforce.BootstrapOwnerPublicKey(userID)
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range map[string]string{
+		"WORKFORCE_ENABLED":             "true",
+		"WORKFORCE_POSTGRES_URI":        h.WorkforcePostgresURI,
+		"WORKFORCE_TENANT_ID":           userID,
+		"WORKFORCE_ORGANIZATION_ID":     "organization-" + userID,
+		"WORKFORCE_OWNER_ID":            "owner-" + userID,
+		"WORKFORCE_OWNER_TOKEN":         ownerToken,
+		"WORKFORCE_WAKE_TOKEN":          wakeToken,
+		"WORKFORCE_OWNER_KEY_ID":        "bootstrap-owner-v1",
+		"WORKFORCE_OWNER_PUBLIC_KEY":    ownerPublicKey,
+		"WORKFORCE_RUNTIME_KEY_ID":      "runtime-v1",
+		"WORKFORCE_RUNTIME_PRIVATE_KEY": runtimeKey,
+		"WORKFORCE_AUDITOR_SEAT_ID":     "seat-developer-auditor",
+	} {
+		env[key] = value
+	}
+	return env, nil
 }
 
 // StartProvision triggers EnsureMachine for userID out-of-band and
@@ -495,9 +539,55 @@ func (h *Handler) handleUserItem(w http.ResponseWriter, r *http.Request) {
 		h.setState(ctx, w, userID, db.StateSuspended)
 	case action == "restore" && r.Method == http.MethodPost:
 		h.setState(ctx, w, userID, db.StateActive)
+	case action == "reconcile-workforce" && r.Method == http.MethodPost:
+		h.reconcileWorkforceEnvironment(ctx, w, userID)
 	default:
 		http.Error(w, fmt.Sprintf("unknown action %q (or wrong method %s)", action, r.Method), http.StatusNotFound)
 	}
+}
+
+func (h *Handler) reconcileWorkforceEnvironment(ctx context.Context, w http.ResponseWriter, userID string) {
+	if h.Workforce == nil {
+		http.Error(w, "workforce is disabled", http.StatusServiceUnavailable)
+		return
+	}
+	user, err := h.DB.LookupForRoute(ctx, userID)
+	if err != nil {
+		if errors.Is(err, db.ErrUserNotFound) {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	provider := h.Prov
+	if user.Provider == "railway" && h.ShardProviders != nil {
+		var ok bool
+		provider, ok = h.ShardProviders.Provider(user.RailwayShardID)
+		if !ok {
+			http.Error(w, "assigned shard unavailable", http.StatusServiceUnavailable)
+			return
+		}
+	}
+	updater, ok := provider.(provision.VariableUpdater)
+	if !ok {
+		http.Error(w, "provider does not support environment reconciliation", http.StatusNotImplemented)
+		return
+	}
+	environment, err := h.instanceEnv(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ref := provision.Ref{UserID: user.ID, EnvID: user.EnvID, VolumeID: user.VolumeID}
+	if err := updater.UpdateVariables(ctx, ref, environment); err != nil {
+		h.logf("reconcile Workforce environment %s: %v", userID, err)
+		http.Error(w, "workforce environment reconciliation failed", http.StatusBadGateway)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]string{
+		"user_id": userID, "status": "workforce_environment_reconciled",
+	})
 }
 
 func (h *Handler) getUser(ctx context.Context, w http.ResponseWriter, userID string) {

@@ -36,6 +36,7 @@ func gqlServer(t *testing.T, handle func(t *testing.T, op string, vars map[strin
 		op := ""
 		for _, name := range []string{
 			"serviceCreate", "volumeCreate", "deployments", "serviceDelete", "volumeDelete",
+			"variableCollectionUpsert",
 		} {
 			if strings.Contains(req.Query, name+"(") {
 				op = name
@@ -52,6 +53,37 @@ func gqlServer(t *testing.T, handle func(t *testing.T, op string, vars map[strin
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	}))
+}
+
+func TestRailwayUpdateVariablesMergesWithoutReplace(t *testing.T) {
+	server := gqlServer(t, func(t *testing.T, op string, vars map[string]any) (any, string) {
+		if op != "variableCollectionUpsert" {
+			t.Fatalf("operation = %q", op)
+		}
+		input, _ := vars["input"].(map[string]any)
+		if input["projectId"] != "proj-1" || input["environmentId"] != "env-1" ||
+			input["serviceId"] != "svc-1" {
+			t.Fatalf("scope = %#v", input)
+		}
+		if _, exists := input["replace"]; exists {
+			t.Fatal("variable update requested destructive replacement")
+		}
+		variables, _ := input["variables"].(map[string]any)
+		if variables["WORKFORCE_ENABLED"] != "true" {
+			t.Fatalf("variables = %#v", variables)
+		}
+		return map[string]any{"variableCollectionUpsert": true}, ""
+	})
+	defer server.Close()
+	provisioner := testProvisioner(server.URL)
+	err := provisioner.UpdateVariables(
+		context.Background(),
+		provision.Ref{UserID: "user-one", EnvID: "svc-1"},
+		map[string]string{"WORKFORCE_ENABLED": "true"},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func testProvisioner(srvURL string) *Provisioner {

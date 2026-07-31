@@ -164,6 +164,7 @@ func TestIntegration_LiveMiMoCompletesOneRealDeveloperWake(t *testing.T) {
 		Provider: "mimo", ModelID: neoprovider.MiMoV25ProModel,
 		ModelVersion: neoprovider.MiMoV25ProModel,
 		Endpoint:     neoprovider.MiMoChatEndpoint, APIKey: apiKey,
+		ActorDID:    "did:matrix:workforce-live",
 		Temperature: neoprovider.MiMoTemperature,
 		MaxTokens:   4096, Timeout: 90 * time.Second,
 	})
@@ -209,6 +210,7 @@ func TestIntegration_LiveMiMoCompletesSevenDepartmentReceiptChain(t *testing.T) 
 		Provider: "mimo", ModelID: neoprovider.MiMoV25ProModel,
 		ModelVersion: neoprovider.MiMoV25ProModel,
 		Endpoint:     neoprovider.MiMoChatEndpoint, APIKey: apiKey,
+		ActorDID:    "did:matrix:workforce-live",
 		Temperature: neoprovider.MiMoTemperature,
 		MaxTokens:   4096, Timeout: 90 * time.Second,
 	})
@@ -600,6 +602,7 @@ func newWakeRuntimeFixture(
 		ModelVersion: neoprovider.MiMoV25ProModel,
 		Endpoint:     "http://127.0.0.1:1/v1/chat/completions",
 		APIKey:       "unavailable-provider-boundary",
+		ActorDID:     "did:matrix:workforce-test",
 		Temperature:  neoprovider.MiMoTemperature,
 		MaxTokens:    256, Timeout: time.Second,
 	})

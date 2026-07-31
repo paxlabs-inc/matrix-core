@@ -62,7 +62,7 @@ const (
 	defaultClaimLease        = 2 * time.Minute
 	defaultClaimBatch        = 100
 	defaultRouterWakeURL     = "http://127.0.0.1:8088/internal/wake"
-	defaultWorkforcedWakeURL = "http://127.0.0.1:9097/internal/workforce/wake"
+	defaultWorkforcedWakeURL = "http://127.0.0.1:8088/internal/workforce/wake"
 )
 
 // Load resolves configuration: kvx overlay first, env overrides, then defaults.

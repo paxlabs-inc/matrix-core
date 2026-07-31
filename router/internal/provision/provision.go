@@ -121,4 +121,11 @@ type Recoverable interface {
 	DeleteVolume(ctx context.Context, volumeID string) error
 }
 
+// VariableUpdater is the explicit operator-controlled seam for reconciling
+// environment variables on an already-provisioned service. Implementations
+// must merge the supplied values and preserve unrelated variables.
+type VariableUpdater interface {
+	UpdateVariables(ctx context.Context, ref Ref, env map[string]string) error
+}
+
 // Copyright © 2026 Paxlabs Inc. All rights reserved.

@@ -268,6 +268,25 @@ func (c *Client) CreateService(ctx context.Context, name, image string, env map[
 	return &out.ServiceCreate, nil
 }
 
+// UpsertVariables merges variables into an existing service instance. Railway
+// deploys the resulting staged change by default; replace is deliberately
+// omitted so unrelated user-service configuration is preserved.
+func (c *Client) UpsertVariables(ctx context.Context, serviceID string, env map[string]string) error {
+	if serviceID == "" || len(env) == 0 {
+		return fmt.Errorf("railway: service id and variables are required")
+	}
+	const q = `mutation VariableCollectionUpsert($input: VariableCollectionUpsertInput!) {
+  variableCollectionUpsert(input: $input)
+}`
+	vars := map[string]any{
+		"input": map[string]any{
+			"projectId": c.projectID, "environmentId": c.environmentID,
+			"serviceId": serviceID, "variables": env,
+		},
+	}
+	return c.do(ctx, q, vars, nil)
+}
+
 // CreateVolume attaches a fresh persistent volume to the service at
 // mountPath. Railway allows exactly ONE volume mount per service.
 func (c *Client) CreateVolume(ctx context.Context, serviceID, mountPath string) (*Volume, error) {
