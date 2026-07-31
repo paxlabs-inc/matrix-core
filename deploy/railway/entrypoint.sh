@@ -248,20 +248,33 @@ start_voice_controller() {
     VOICE_CONTROLLER_PID=$!
 }
 
-start_workforce() {
-    if [[ "${WORKFORCE_ENABLED:-false}" != "true" ]]; then
-        return 0
-    fi
+bootstrap_workforce_codegraph() {
     local workforce_repository="${WORKFORCE_DEVELOPER_REPOSITORY:-/workspace}"
     mkdir -p "${workforce_repository}/.cg"
-    "${WORKFORCE_CODEGRAPH_EXECUTABLE:-/usr/local/bin/cg}" \
+    if "${WORKFORCE_CODEGRAPH_EXECUTABLE:-/usr/local/bin/cg}" \
         --db "${workforce_repository}/.cg/codegraph.db" \
         build "${workforce_repository}" \
         --exclude .cg \
         --exclude .codegraph \
         --exclude .git \
         --exclude node_modules \
-        --exclude .next
+        --exclude .next \
+        >>/tmp/workforce-codegraph.log 2>&1; then
+        echo "entrypoint: Workforce CodeGraph bootstrap complete" >&2
+    else
+        echo "entrypoint: Workforce CodeGraph bootstrap failed; control plane remains available and Developer graph operations fail closed" >&2
+    fi
+}
+
+start_workforce() {
+    if [[ "${WORKFORCE_ENABLED:-false}" != "true" ]]; then
+        return 0
+    fi
+    # Repository indexing can take minutes for an established workspace. It is
+    # not part of HTTP readiness: bind the authenticated control plane now and
+    # construct the durable Project Brain graph concurrently. Developer graph
+    # operations remain fail-closed until the real build completes.
+    bootstrap_workforce_codegraph &
     exec "${MATRIX_HOME}/bin/workforced" \
         -serve \
         -listen ":${WORKFORCE_PORT:-8091}" \

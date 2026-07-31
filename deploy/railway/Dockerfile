@@ -453,9 +453,11 @@ RUN chmod +x /opt/matrix/entrypoint.sh
 
 # Health-check probe. In the default `neo` run mode :8080 is the Neo front,
 # which reverse-proxies /healthz to the MCL daemon backend on :8081 — so a
-# 200 here proves BOTH processes are up. Start period covers the two boots.
+# 200 here proves BOTH Neo processes are up. When Workforce is enabled the
+# authenticated :8091 session probe is also mandatory; Neo health alone must
+# never hide an absent or failed workforced sibling.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-    CMD if curl -fsS http://127.0.0.1:8080/healthz >/dev/null; then exit 0; fi; test -n "${WORKFORCE_OWNER_TOKEN:-}" && curl -fsS -H "Authorization: Bearer ${WORKFORCE_OWNER_TOKEN}" http://127.0.0.1:${WORKFORCE_PORT:-8091}/v1/workforce/session >/dev/null
+    CMD curl -fsS http://127.0.0.1:8080/healthz >/dev/null && { test "${WORKFORCE_ENABLED:-false}" != "true" || { test -n "${WORKFORCE_OWNER_TOKEN:-}" && curl -fsS -H "Authorization: Bearer ${WORKFORCE_OWNER_TOKEN}" http://127.0.0.1:${WORKFORCE_PORT:-8091}/v1/workforce/session >/dev/null; }; }
 
 EXPOSE 8080 8091
 
