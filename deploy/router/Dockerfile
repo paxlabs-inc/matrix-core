@@ -54,6 +54,8 @@ RUN set -eux; \
     update-ca-certificates
 
 COPY --from=builder /out/matrix-router /usr/local/bin/matrix-router
+COPY deploy/router/reconcile-workforce-fleet.sh /usr/local/bin/reconcile-workforce-fleet
+RUN chmod 0755 /usr/local/bin/reconcile-workforce-fleet
 
 # Public + internal listeners; the operator maps the real external ports.
 EXPOSE 8080 8088

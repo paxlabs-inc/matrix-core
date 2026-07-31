@@ -131,6 +131,49 @@ func (d *DB) LookupForRoute(ctx context.Context, supabaseUserID string) (*User, 
 	return &u, nil
 }
 
+// ListWorkforceReconcileUsers returns attached Railway runtimes that are
+// eligible for an explicit operator-triggered Workforce environment rollout.
+// Suspended, failed, and deleted users are excluded so a fleet reconciliation
+// never wakes or redeploys environments that are intentionally offline.
+func (d *DB) ListWorkforceReconcileUsers(ctx context.Context) ([]User, error) {
+	const q = `
+		SELECT id, COALESCE(email,''), state, COALESCE(provider,'fly'),
+		       COALESCE(env_id, fly_machine_id, ''),
+		       COALESCE(env_volume_id, fly_volume_id, ''),
+		       COALESCE(railway_shard_id, ''),
+		       COALESCE(fly_region,''), COALESCE(s3_access_key,''),
+		       daily_token_budget, created_at, updated_at, last_seen_at
+		  FROM users
+		 WHERE state IN ('active','provisioning')
+		   AND COALESCE(provider,'fly') = 'railway'
+		   AND COALESCE(env_id, fly_machine_id, '') <> ''
+		   AND COALESCE(railway_shard_id, '') <> ''
+		 ORDER BY id
+	`
+	rows, err := d.pool.Query(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("db: list Workforce reconciliation users: %w", err)
+	}
+	defer rows.Close()
+	users := make([]User, 0)
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(
+			&u.ID, &u.Email, &u.State, &u.Provider,
+			&u.EnvID, &u.VolumeID, &u.RailwayShardID, &u.Region,
+			&u.S3AccessKey, &u.DailyBudget, &u.CreatedAt, &u.UpdatedAt,
+			&u.LastSeenAt,
+		); err != nil {
+			return nil, fmt.Errorf("db: scan Workforce reconciliation user: %w", err)
+		}
+		users = append(users, u)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("db: list Workforce reconciliation users: %w", err)
+	}
+	return users, nil
+}
+
 // CreateOrTouchUser inserts a row in 'provisioning' state if absent;
 // otherwise updates email/handle. Returns whether a new row was made.
 func (d *DB) CreateOrTouchUser(ctx context.Context, supabaseUserID, email, handle string) (created bool, err error) {

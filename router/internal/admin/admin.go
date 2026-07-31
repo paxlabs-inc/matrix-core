@@ -12,6 +12,7 @@
 //	POST   /admin/users/{id}/restore set state=active
 //	DELETE /admin/users/{id}         destroy environment + state=deleted
 //	GET    /admin/users/{id}         lookup row (debug aid)
+//	POST   /admin/workforce/reconcile reconcile every eligible Railway runtime
 //
 // Provisioning is synchronous in v1 (the request blocks while we call
 // the provider API). v1 wakes < 1 user concurrently per box; if
@@ -56,6 +57,11 @@ type Handler struct {
 	// inflight dedupes concurrent StartProvision calls per user id so a
 	// burst of first requests provisions exactly one environment.
 	inflight sync.Map
+	// Workforce reconciliation is operator-triggered and provider-mutating.
+	// These guards prevent overlapping fleet runs and duplicate writes for the
+	// same user when a single-user command races a fleet rollout.
+	workforceReconcileMu       sync.Mutex
+	workforceReconcileInflight sync.Map
 }
 
 // Mount registers the admin routes onto mux under "/admin/".
@@ -66,6 +72,7 @@ type Handler struct {
 func (h *Handler) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/users", h.handleUsersCollection)
 	mux.HandleFunc("/admin/users/", h.handleUserItem)
+	mux.HandleFunc("/admin/workforce/reconcile", h.handleWorkforceFleetReconcile)
 	mux.HandleFunc("/admin/shards", h.handleShards)
 	mux.HandleFunc("/admin/shards/", h.handleShard)
 	h.MountBeta(mux)
@@ -366,6 +373,14 @@ func boundedReconcile(ctx context.Context, probe func() error) error {
 	return fmt.Errorf("%w: reconciliation exhausted: %v", provision.ErrUncertain, last)
 }
 
+var routerOnlyWorkforceVariables = [...]string{
+	"ROUTER_WORKFORCE_ENABLED",
+	"ROUTER_WORKFORCE_PORT",
+	"ROUTER_WORKFORCE_POSTGRES_URI",
+	"ROUTER_WORKFORCE_ROOT_SECRET",
+	"ROUTER_WORKFORCE_WAKE_TOKEN",
+}
+
 // instanceEnv builds the per-instance environment-variable set: the
 // user identity plus the operator baseline (MachineEnv).
 func (h *Handler) instanceEnv(userID string) (map[string]string, error) {
@@ -384,13 +399,7 @@ func (h *Handler) instanceEnv(userID string) (map[string]string, error) {
 	// machine baseline. Scrub it defensively even if an operator accidentally
 	// placed one of these names in MachineEnv; per-user runtimes receive only
 	// the derived WORKFORCE_* credentials below.
-	for _, name := range []string{
-		"ROUTER_WORKFORCE_ENABLED",
-		"ROUTER_WORKFORCE_PORT",
-		"ROUTER_WORKFORCE_POSTGRES_URI",
-		"ROUTER_WORKFORCE_ROOT_SECRET",
-		"ROUTER_WORKFORCE_WAKE_TOKEN",
-	} {
+	for _, name := range routerOnlyWorkforceVariables {
 		delete(env, name)
 	}
 	if h.Workforce == nil {
@@ -573,27 +582,7 @@ func (h *Handler) reconcileWorkforceEnvironment(ctx context.Context, w http.Resp
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	provider := h.Prov
-	if user.Provider == "railway" && h.ShardProviders != nil {
-		var ok bool
-		provider, ok = h.ShardProviders.Provider(user.RailwayShardID)
-		if !ok {
-			http.Error(w, "assigned shard unavailable", http.StatusServiceUnavailable)
-			return
-		}
-	}
-	updater, ok := provider.(provision.VariableUpdater)
-	if !ok {
-		http.Error(w, "provider does not support environment reconciliation", http.StatusNotImplemented)
-		return
-	}
-	environment, err := h.instanceEnv(userID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	ref := provision.Ref{UserID: user.ID, EnvID: user.EnvID, VolumeID: user.VolumeID}
-	if err := updater.UpdateVariables(ctx, ref, environment); err != nil {
+	if err := h.updateWorkforceEnvironment(ctx, user); err != nil {
 		h.logf("reconcile Workforce environment %s: %v", userID, err)
 		http.Error(w, "workforce environment reconciliation failed", http.StatusBadGateway)
 		return
@@ -601,6 +590,173 @@ func (h *Handler) reconcileWorkforceEnvironment(ctx context.Context, w http.Resp
 	writeJSON(w, http.StatusAccepted, map[string]string{
 		"user_id": userID, "status": "workforce_environment_reconciled",
 	})
+}
+
+const (
+	defaultWorkforceReconcileConcurrency = 3
+	maxWorkforceReconcileConcurrency     = 8
+	workforceFleetReconcileTimeout       = 30 * time.Minute
+)
+
+type workforceFleetReconcileRequest struct {
+	Concurrency int `json:"concurrency,omitempty"`
+}
+
+type workforceFleetReconcileFailure struct {
+	UserID string `json:"user_id"`
+	Error  string `json:"error"`
+}
+
+type workforceFleetReconcileResponse struct {
+	Eligible  int                              `json:"eligible"`
+	Succeeded int                              `json:"succeeded"`
+	Failed    int                              `json:"failed"`
+	Failures  []workforceFleetReconcileFailure `json:"failures"`
+}
+
+func (h *Handler) handleWorkforceFleetReconcile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if h.Workforce == nil {
+		http.Error(w, "workforce is disabled", http.StatusServiceUnavailable)
+		return
+	}
+	if !h.workforceReconcileMu.TryLock() {
+		http.Error(w, "workforce fleet reconciliation already in progress", http.StatusConflict)
+		return
+	}
+	defer h.workforceReconcileMu.Unlock()
+	var request workforceFleetReconcileRequest
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		http.Error(w, "bad json: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	concurrency, err := workforceReconcileConcurrency(request.Concurrency)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), workforceFleetReconcileTimeout)
+	defer cancel()
+	users, err := h.DB.ListWorkforceReconcileUsers(ctx)
+	if err != nil {
+		h.logf("list Workforce reconciliation users: %v", err)
+		http.Error(w, "workforce reconciliation user listing failed", http.StatusInternalServerError)
+		return
+	}
+	if len(users) < concurrency {
+		concurrency = len(users)
+	}
+	response := workforceFleetReconcileResponse{
+		Eligible: len(users), Failures: make([]workforceFleetReconcileFailure, 0),
+	}
+	if len(users) == 0 {
+		writeJSON(w, http.StatusOK, response)
+		return
+	}
+	type result struct {
+		userID string
+		err    error
+	}
+	jobs := make(chan db.User, len(users))
+	results := make(chan result, len(users))
+	var workers sync.WaitGroup
+	for worker := 0; worker < concurrency; worker++ {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			for user := range jobs {
+				userCtx, userCancel := context.WithTimeout(ctx, h.timeout())
+				err := h.updateWorkforceEnvironment(userCtx, &user)
+				userCancel()
+				results <- result{userID: user.ID, err: err}
+			}
+		}()
+	}
+	for _, user := range users {
+		jobs <- user
+	}
+	close(jobs)
+	workers.Wait()
+	close(results)
+	for result := range results {
+		if result.err == nil {
+			response.Succeeded++
+			continue
+		}
+		response.Failed++
+		response.Failures = append(response.Failures, workforceFleetReconcileFailure{
+			UserID: result.userID, Error: result.err.Error(),
+		})
+	}
+	status := http.StatusOK
+	if response.Failed > 0 {
+		status = http.StatusMultiStatus
+	}
+	h.logf(
+		"Workforce fleet reconciliation eligible=%d succeeded=%d failed=%d",
+		response.Eligible, response.Succeeded, response.Failed,
+	)
+	writeJSON(w, status, response)
+}
+
+func workforceReconcileConcurrency(requested int) (int, error) {
+	if requested == 0 {
+		return defaultWorkforceReconcileConcurrency, nil
+	}
+	if requested < 1 || requested > maxWorkforceReconcileConcurrency {
+		return 0, fmt.Errorf(
+			"concurrency must be between 1 and %d", maxWorkforceReconcileConcurrency,
+		)
+	}
+	return requested, nil
+}
+
+func (h *Handler) updateWorkforceEnvironment(ctx context.Context, user *db.User) error {
+	if _, busy := h.workforceReconcileInflight.LoadOrStore(user.ID, struct{}{}); busy {
+		return errors.New("Workforce environment reconciliation already in progress")
+	}
+	defer h.workforceReconcileInflight.Delete(user.ID)
+	provider := h.Prov
+	if user.Provider == "railway" && h.ShardProviders != nil {
+		var ok bool
+		provider, ok = h.ShardProviders.Provider(user.RailwayShardID)
+		if !ok {
+			return fmt.Errorf("assigned shard %q is unavailable", user.RailwayShardID)
+		}
+	}
+	updater, ok := provider.(provision.VariableUpdater)
+	if !ok {
+		return errors.New("provider does not support environment reconciliation")
+	}
+	environment, err := h.workforceReconcileEnvironment(user.ID)
+	if err != nil {
+		return err
+	}
+	ref := provision.Ref{UserID: user.ID, EnvID: user.EnvID, VolumeID: user.VolumeID}
+	if err := updater.UpdateVariables(ctx, ref, environment); err != nil {
+		return fmt.Errorf("update variables: %w", err)
+	}
+	return nil
+}
+
+func (h *Handler) workforceReconcileEnvironment(userID string) (map[string]string, error) {
+	environment, err := h.instanceEnv(userID)
+	if err != nil {
+		return nil, err
+	}
+	// Legacy Railway services referenced the shared Router variables directly.
+	// Neutralize those references in the same collection upsert that installs
+	// the derived per-user authority, so reconciliation causes one deployment
+	// and no Router root secret reaches the next user-runtime process.
+	for _, name := range routerOnlyWorkforceVariables {
+		environment[name] = ""
+	}
+	return environment, nil
 }
 
 func (h *Handler) getUser(ctx context.Context, w http.ResponseWriter, userID string) {
@@ -624,6 +780,20 @@ func (h *Handler) setState(ctx context.Context, w http.ResponseWriter, userID, s
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	// Restore is an explicit operator mutation, so it is also the safe point to
+	// bring a previously suspended runtime onto the current Workforce contract.
+	// Ordinary authenticated traffic never performs this provider write.
+	if state == db.StateActive && h.Workforce != nil {
+		user, err := h.DB.LookupForRoute(ctx, userID)
+		if err == nil {
+			err = h.updateWorkforceEnvironment(ctx, user)
+		}
+		if err != nil {
+			h.logf("restore Workforce environment %s: %v", userID, err)
+			http.Error(w, "restored user but Workforce reconciliation failed", http.StatusBadGateway)
+			return
+		}
 	}
 	writeJSON(w, http.StatusOK, map[string]string{
 		"user_id": userID, "state": state,

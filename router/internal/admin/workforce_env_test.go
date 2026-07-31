@@ -64,4 +64,43 @@ func TestInstanceEnvAddsPerUserWorkforceCredentialsWithoutRootSecret(t *testing.
 	if envA["MATRIX_GATEWAY_URL"] != "https://gateway.example" {
 		t.Fatal("baseline machine environment was not preserved")
 	}
+	reconciled, err := handler.workforceReconcileEnvironment("user-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range routerOnlyWorkforceVariables {
+		value, exists := reconciled[name]
+		if !exists || value != "" {
+			t.Fatalf("legacy Router variable %s was not neutralized", name)
+		}
+	}
+	if reconciled["WORKFORCE_ENABLED"] != "true" || reconciled["WORKFORCE_OWNER_TOKEN"] == "" {
+		t.Fatal("derived per-user Workforce authority was not preserved")
+	}
+}
+
+func TestWorkforceReconcileConcurrency(t *testing.T) {
+	tests := []struct {
+		requested int
+		want      int
+		wantError bool
+	}{
+		{requested: 0, want: defaultWorkforceReconcileConcurrency},
+		{requested: 1, want: 1},
+		{requested: maxWorkforceReconcileConcurrency, want: maxWorkforceReconcileConcurrency},
+		{requested: -1, wantError: true},
+		{requested: maxWorkforceReconcileConcurrency + 1, wantError: true},
+	}
+	for _, test := range tests {
+		got, err := workforceReconcileConcurrency(test.requested)
+		if test.wantError {
+			if err == nil {
+				t.Fatalf("requested=%d: expected error", test.requested)
+			}
+			continue
+		}
+		if err != nil || got != test.want {
+			t.Fatalf("requested=%d: got=%d err=%v want=%d", test.requested, got, err, test.want)
+		}
+	}
 }
