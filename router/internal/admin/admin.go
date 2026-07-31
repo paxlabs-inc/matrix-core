@@ -380,6 +380,19 @@ func (h *Handler) instanceEnv(userID string) (map[string]string, error) {
 	for k, v := range h.MachineEnv {
 		env[k] = v
 	}
+	// Router Workforce configuration is control-plane authority, never a
+	// machine baseline. Scrub it defensively even if an operator accidentally
+	// placed one of these names in MachineEnv; per-user runtimes receive only
+	// the derived WORKFORCE_* credentials below.
+	for _, name := range []string{
+		"ROUTER_WORKFORCE_ENABLED",
+		"ROUTER_WORKFORCE_PORT",
+		"ROUTER_WORKFORCE_POSTGRES_URI",
+		"ROUTER_WORKFORCE_ROOT_SECRET",
+		"ROUTER_WORKFORCE_WAKE_TOKEN",
+	} {
+		delete(env, name)
+	}
 	if h.Workforce == nil {
 		return env, nil
 	}

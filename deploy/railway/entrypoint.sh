@@ -39,6 +39,18 @@
 
 set -euo pipefail
 
+# Router-side Workforce configuration must never be inherited by a per-user
+# runtime. In particular, ROUTER_WORKFORCE_ROOT_SECRET can derive every user's
+# authority and belongs only in Router/Chronos control-plane services. Existing
+# services created before Workforce reconciliation may still carry these names;
+# diagnose that state, then scrub them before starting any browser, voice,
+# daemon, Neo, Workforce, or MCP process.
+if [[ "${ROUTER_WORKFORCE_ENABLED:-false}" == "true" && "${WORKFORCE_ENABLED:-false}" != "true" ]]; then
+    echo "entrypoint: Workforce is enabled on the Router but this user runtime has not been reconciled; WORKFORCE_ENABLED and derived per-user authority are absent" >&2
+fi
+unset ROUTER_WORKFORCE_ENABLED ROUTER_WORKFORCE_PORT
+unset ROUTER_WORKFORCE_POSTGRES_URI ROUTER_WORKFORCE_ROOT_SECRET ROUTER_WORKFORCE_WAKE_TOKEN
+
 DATA_DIR="${MATRIX_DATA_DIR:-/data}"
 WORKSPACE_LINK="/workspace"
 MATRIX_HOME="${MATRIX_HOME:-/opt/matrix}"

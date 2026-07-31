@@ -14,8 +14,15 @@ func TestInstanceEnvAddsPerUserWorkforceCredentialsWithoutRootSecret(t *testing.
 		t.Fatal(err)
 	}
 	handler := &Handler{
-		MachineEnv: map[string]string{"MATRIX_GATEWAY_URL": "https://gateway.example"},
-		Workforce:  deriver, WorkforcePostgresURI: "postgres://workforce",
+		MachineEnv: map[string]string{
+			"MATRIX_GATEWAY_URL":            "https://gateway.example",
+			"ROUTER_WORKFORCE_ENABLED":      "true",
+			"ROUTER_WORKFORCE_PORT":         "8091",
+			"ROUTER_WORKFORCE_POSTGRES_URI": "postgres://router-only",
+			"ROUTER_WORKFORCE_ROOT_SECRET":  "must-not-reach-user-runtime",
+			"ROUTER_WORKFORCE_WAKE_TOKEN":   "must-not-reach-user-runtime",
+		},
+		Workforce: deriver, WorkforcePostgresURI: "postgres://workforce",
 	}
 	envA, err := handler.instanceEnv("user-a")
 	if err != nil {
@@ -41,8 +48,14 @@ func TestInstanceEnvAddsPerUserWorkforceCredentialsWithoutRootSecret(t *testing.
 		envA["WORKFORCE_RUNTIME_PRIVATE_KEY"] == envB["WORKFORCE_RUNTIME_PRIVATE_KEY"] {
 		t.Fatal("per-user credentials were reused")
 	}
-	if _, exists := envA["ROUTER_WORKFORCE_ROOT_SECRET"]; exists {
-		t.Fatal("router root secret leaked into machine environment")
+	for _, name := range []string{
+		"ROUTER_WORKFORCE_ENABLED", "ROUTER_WORKFORCE_PORT",
+		"ROUTER_WORKFORCE_POSTGRES_URI", "ROUTER_WORKFORCE_ROOT_SECRET",
+		"ROUTER_WORKFORCE_WAKE_TOKEN",
+	} {
+		if _, exists := envA[name]; exists {
+			t.Fatalf("router-only variable %s leaked into machine environment", name)
+		}
 	}
 	privateKey, err := base64.RawURLEncoding.DecodeString(envA["WORKFORCE_RUNTIME_PRIVATE_KEY"])
 	if err != nil || len(privateKey) != ed25519.PrivateKeySize {
