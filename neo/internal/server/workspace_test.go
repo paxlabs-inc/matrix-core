@@ -23,7 +23,15 @@ func wsServer(t *testing.T) (*Server, string) {
 	if err := os.MkdirAll(filepath.Join(root, "app"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	return &Server{engine: &Engine{workspaceRoot: root}}, root
+	engine := &Engine{workspaceRoot: root}
+	registry := engine.projectsRegistry()
+	if registry == nil {
+		t.Fatal("project registry unavailable")
+	}
+	if err := registry.create(project{ID: "app", Name: "App", Root: filepath.Join(root, "app")}); err != nil {
+		t.Fatal(err)
+	}
+	return &Server{engine: engine}, root
 }
 
 func wsDo(t *testing.T, s *Server, method, target string, body interface{}) (int, map[string]interface{}) {
@@ -199,6 +207,9 @@ func TestWorkspaceDiffAndExec(t *testing.T) {
 
 	// Non-git project degrades to an empty diff, not an error.
 	if err := os.MkdirAll(filepath.Join(root, "plain"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.engine.projectsRegistry().create(project{ID: "plain", Name: "Plain", Root: filepath.Join(root, "plain")}); err != nil {
 		t.Fatal(err)
 	}
 	code, out = wsDo(t, s, http.MethodGet, "/workspace/diff?project=plain", nil)

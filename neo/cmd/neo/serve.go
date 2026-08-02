@@ -30,6 +30,7 @@ import (
 	"matrix/neo/internal/automatrixsettings"
 	"matrix/neo/internal/briefhistory"
 	"matrix/neo/internal/briefsettings"
+	"matrix/neo/internal/codingworker"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/dojo"
@@ -237,6 +238,10 @@ func runServe(args []string) {
 	// resume it (the Task Durability Rule).
 	taskDir := task.Dir(os.Getenv("NEO_TASKS_DIR"), cfg.CortexRoot)
 	runDir := runrecord.Dir(os.Getenv("NEO_RUNS_DIR"), cfg.CortexRoot)
+	buildDir := strings.TrimSpace(os.Getenv("NEO_BUILD_JOBS_DIR"))
+	if buildDir == "" {
+		buildDir = filepath.Join(filepath.Dir(cfg.CortexRoot), "build-jobs")
+	}
 	journalPath := sessionjournal.Dir(os.Getenv("NEO_SESSION_JOURNAL_PATH"), cfg.CortexRoot)
 	journal, err := sessionjournal.Open(ctx, journalPath, vaultSess)
 	if err != nil {
@@ -347,6 +352,7 @@ func runServe(args []string) {
 		ConversationDir:        convDir,
 		TaskDir:                taskDir,
 		RunDir:                 runDir,
+		BuildDir:               buildDir,
 		Journal:                journal,
 		TraceDir:               traceDir,
 		AutomatrixDir:          automatrixDir,
@@ -377,6 +383,73 @@ func runServe(args []string) {
 		BackendToken:    os.Getenv("NEO_DAEMON_TOKEN"),
 		Vault:           vaultSess,
 	})
+	var codingCredentialSource *codingworker.GatewayCredentialSource
+	if !*sandbox && !strings.EqualFold(strings.TrimSpace(os.Getenv("NEO_CODING_RUNTIME_ENABLED")), "false") {
+		binary := envOrDefault("NEO_AGENTCORE_BINARY", "/opt/agentcore/.venv/bin/agentcore")
+		gatewayURL := strings.TrimRight(strings.TrimSpace(cfg.GatewayURL), "/")
+		if gatewayURL != "" && !strings.HasSuffix(gatewayURL, "/v1") {
+			gatewayURL += "/v1"
+		}
+		legacyBearer := []byte(os.Getenv("MATRIX_GATEWAY_TOKEN"))
+		managedDir := envOrDefault("NEO_AGENTCORE_MANAGED_DIR", "/etc/matrix-agentcore")
+		homeRoot := envOrDefault("NEO_AGENTCORE_HOME", filepath.Join(vaultDataDir, "agentcore"))
+		uidValue := envInt("NEO_AGENTCORE_UID", envInt("MATRIX_AGENT_UID", 10001))
+		gidValue := envInt("NEO_AGENTCORE_GID", envInt("MATRIX_AGENT_GID", 10001))
+		uid, gid := uint32(uidValue), uint32(gidValue)
+		port := envInt("NEO_AGENTCORE_PORT", 9119)
+		codingActor := strings.TrimSpace(cfg.ActorDID)
+		if codingActor == "" {
+			codingActor = strings.TrimSpace(vaultUser)
+		}
+		if _, statErr := os.Stat(binary); statErr == nil && gatewayURL != "" && len(legacyBearer) > 0 && workspaceDir != "" && uidValue > 0 && gidValue > 0 {
+			if mkdirErr := os.MkdirAll(managedDir, 0o755); mkdirErr != nil {
+				fatal("cannot create AgentCore managed directory: %v", mkdirErr)
+			}
+			codingCredentialSource, err = codingworker.NewGatewayCredentialSource(codingworker.GatewayCredentialSourceConfig{
+				GatewayURL: gatewayURL, LegacyBearer: legacyBearer, Timeout: 5 * time.Second,
+			})
+			for index := range legacyBearer {
+				legacyBearer[index] = 0
+			}
+			if err == nil {
+				var supervisor *codingworker.ProcessSupervisor
+				supervisor, err = codingworker.NewProcessSupervisor(codingworker.SupervisorConfig{
+					Binary: binary, ManagedDir: managedDir, CredentialSource: codingCredentialSource,
+					IdleTimeout: 30 * time.Minute, Output: os.Stderr,
+				})
+				if err == nil {
+					err = engine.StartBuildWorker(ctx, server.BuildWorkerConfig{
+						Supervisor: supervisor, ActorDID: codingActor, GatewayURL: gatewayURL,
+						HomeRoot: homeRoot, Port: port, UID: uid, GID: gid,
+						Model:    envOrDefault("NEO_AGENTCORE_MODEL", "mimo-v2.5-pro"),
+						Provider: envOrDefault("NEO_AGENTCORE_PROVIDER", "xiaomi"),
+						Preview: preview.NewRouterRegistrar(preview.Config{
+							UserID: previewUserID, RouterInternalURL: os.Getenv("ROUTER_INTERNAL_URL"),
+							RouterToken: os.Getenv("ROUTER_PREVIEW_TOKEN"),
+							PublicBase:  os.Getenv("MATRIX_ROUTER_PUBLIC_URL"),
+						}, envOrDefault("NEO_PREVIEW_PRIVATE_HOST", os.Getenv("RAILWAY_PRIVATE_DOMAIN"))),
+					})
+				}
+			}
+		} else {
+			err = fmt.Errorf("requires AgentCore binary, gateway URL/token, and workspace")
+			for index := range legacyBearer {
+				legacyBearer[index] = 0
+			}
+		}
+		if err != nil {
+			if codingCredentialSource != nil {
+				_ = codingCredentialSource.Close()
+				codingCredentialSource = nil
+			}
+			if strings.EqualFold(strings.TrimSpace(os.Getenv("NEO_CODING_RUNTIME_REQUIRED")), "true") {
+				fatal("cannot start private coding runtime: %v", err)
+			}
+			fmt.Fprintf(os.Stderr, "neo: private coding runtime unavailable (%v) — Build dispatch disabled\n", err)
+		} else {
+			fmt.Printf("  coding runtime: private AgentCore worker on loopback port %d\n", port)
+		}
+	}
 	if convDir != "" {
 		fmt.Printf("  history: %s\n", convDir)
 	}
@@ -385,6 +458,9 @@ func runServe(args []string) {
 	}
 	if traceDir != "" {
 		fmt.Printf("  trace: %s (workspace survives reload)\n", traceDir)
+	}
+	if buildDir != "" {
+		fmt.Printf("  build jobs: %s (private asynchronous coding state)\n", buildDir)
 	}
 	if journalPath != "" {
 		fmt.Printf("  session journal: %s\n", journalPath)
@@ -477,6 +553,9 @@ func runServe(args []string) {
 	// Flush the durable workspace trace writer before exit so a reopen after a
 	// graceful restart still sees the last events (F3).
 	engine.Close()
+	if codingCredentialSource != nil {
+		_ = codingCredentialSource.Close()
+	}
 	if wc != nil {
 		wc.Stop()
 	}
@@ -493,6 +572,18 @@ func envOrDefault(key, def string) string {
 		return v
 	}
 	return def
+}
+
+func envInt(key string, fallback int) int {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }
 
 // randomToken mints a 32-hex shared secret for the loopback desktop-bridge

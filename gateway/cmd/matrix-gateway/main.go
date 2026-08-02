@@ -46,6 +46,15 @@
 //
 //	MATRIX_GATEWAY_DISABLED=true  → kill switch; responds 503 to everything
 //	                                except /healthz until cleared.
+//	MATRIX_GATEWAY_AGENTCORE_ACTIVE_KID      active scoped-token signing key id
+//	MATRIX_GATEWAY_AGENTCORE_SIGNING_KEY     unpadded base64url HMAC key (32+ bytes)
+//	MATRIX_GATEWAY_AGENTCORE_VERIFICATION_KEYS
+//	                                comma-separated kid=base64url prior keys kept
+//	                                only while their issued tokens can remain valid
+//
+// Mint a 15-minute, actor-bound Cody credential without exposing the MiMo key:
+//
+//	matrix-gateway mint-agentcore-token -actor did:matrix:<user>:cody
 //
 // The Postgres driver registration is intentionally left to the build
 // system: this file imports nothing driver-specific so the gateway
@@ -93,6 +102,9 @@ func main() {
 }
 
 func run(args []string) error {
+	if len(args) > 0 && args[0] == "mint-agentcore-token" {
+		return runMintAgentCoreToken(args[1:], os.Stdout, os.Getenv, time.Now)
+	}
 	fs := flag.NewFlagSet("matrix-gateway", flag.ContinueOnError)
 	var (
 		addr            = fs.String("addr", "127.0.0.1:9090", "HTTP listen address")
@@ -137,11 +149,27 @@ func run(args []string) error {
 		})
 	}
 
+	agentCoreKeys, err := loadAgentCoreVerificationKeys(os.Getenv)
+	if err != nil {
+		return fmt.Errorf("matrix-gateway: AgentCore keys: %w", err)
+	}
 	authn, err := auth.New(auth.Options{
-		Token: os.Getenv("MATRIX_GATEWAY_TOKEN"),
+		Token:                     os.Getenv("MATRIX_GATEWAY_TOKEN"),
+		AgentCoreVerificationKeys: agentCoreKeys,
 	})
 	if err != nil {
 		return fmt.Errorf("matrix-gateway: auth: %w", err)
+	}
+	var agentCoreIssuer *auth.AgentCoreIssuer
+	if activeID := strings.TrimSpace(os.Getenv(agentCoreActiveKeyIDEnv)); activeID != "" {
+		activeKey, err := decodeAgentCoreKey(os.Getenv(agentCoreSigningKeyEnv))
+		if err != nil {
+			return fmt.Errorf("matrix-gateway: AgentCore issuer key: %w", err)
+		}
+		agentCoreIssuer, err = auth.NewAgentCoreIssuer(auth.AgentCoreIssuerOptions{KeyID: activeID, Key: activeKey})
+		if err != nil {
+			return fmt.Errorf("matrix-gateway: AgentCore issuer: %w", err)
+		}
 	}
 
 	router := routing.New(routing.Options{FreeTierOnly: *freeTierOnly})
@@ -189,9 +217,10 @@ func run(args []string) error {
 			FireworksKey: os.Getenv("FIREWORKS_API_KEY"),
 			TogetherKey:  os.Getenv("TOGETHER_API_KEY"),
 		},
-		Logf:           logf,
-		Disabled:       disabled.Load,
-		PreEstimatePax: *preEstimate,
+		Logf:            logf,
+		Disabled:        disabled.Load,
+		PreEstimatePax:  *preEstimate,
+		AgentCoreIssuer: agentCoreIssuer,
 	})
 	if err != nil {
 		return fmt.Errorf("matrix-gateway: proxy.New: %w", err)

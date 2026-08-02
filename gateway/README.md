@@ -40,6 +40,26 @@ Endpoints (mounted on the loopback listener):
 | `X-Matrix-BYO-API-Key`  | optional | `true` to bypass metering                     |
 | `X-Matrix-User-API-Key` | BYO-only | caller's own provider API key                 |
 
+### AgentCore scoped credential
+
+AgentCore does not receive `MATRIX_GATEWAY_TOKEN` or `MIMO_API_KEY`. The
+control plane mints an expiring `mxg1` credential:
+
+```bash
+matrix-gateway mint-agentcore-token -actor did:matrix:<user>:cody
+```
+
+The command reads `MATRIX_GATEWAY_AGENTCORE_ACTIVE_KID` and
+`MATRIX_GATEWAY_AGENTCORE_SIGNING_KEY` from its environment and prints only
+the token. Tokens default to 15 minutes and cannot exceed one hour. Their
+signed claims bind the actor, `cody` slot, `agentcore` audience, and
+`POST /v1/chat/completions` scope. Actor or slot spoofing, embeddings, BYO,
+expiry, tampering, and malformed scoped tokens fail authentication without
+falling back to the legacy bearer. During signing-key rotation, prior
+verification keys are supplied through
+`MATRIX_GATEWAY_AGENTCORE_VERIFICATION_KEYS` as comma-separated
+`kid=base64url` entries until their last token expires.
+
 ## Response augmentations
 
 | response header                | meaning                            |

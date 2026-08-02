@@ -28,7 +28,7 @@ func TestHandler_ProxiesToRegisteredTarget(t *testing.T) {
 	// Real backend that echoes the path (and query) it received.
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = io.WriteString(w, "path="+r.URL.Path+" query="+r.URL.RawQuery)
+		_, _ = io.WriteString(w, "path="+r.URL.Path+" query="+r.URL.RawQuery+" cookie="+r.Header.Get("Cookie")+" authorization="+r.Header.Get("Authorization"))
 	}))
 	defer backend.Close()
 
@@ -42,7 +42,12 @@ func TestHandler_ProxiesToRegisteredTarget(t *testing.T) {
 
 	h := &Handler{Reg: reg, Logf: func(string, ...any) {}}
 
-	rec := serveWithSubject(h, "alice", "/preview/alice/app/page?x=1")
+	req := httptest.NewRequest(http.MethodGet, "/preview/alice/app/page?x=1&access_token=private-jwt", nil)
+	req.Header.Set("Cookie", "app_session=allowed; mx_pv=private-jwt")
+	req.Header.Set("Authorization", "Bearer private-jwt")
+	req = req.WithContext(proxy.WithSubject(req.Context(), "alice"))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body=%q", rec.Code, rec.Body.String())
 	}
@@ -52,6 +57,15 @@ func TestHandler_ProxiesToRegisteredTarget(t *testing.T) {
 	}
 	if !strings.Contains(body, "query=x=1") {
 		t.Errorf("query not preserved: body=%q", body)
+	}
+	if strings.Contains(body, "private-jwt") || strings.Contains(body, "access_token") {
+		t.Errorf("preview credential reached the project server: body=%q", body)
+	}
+	if !strings.Contains(body, "cookie=app_session=allowed") {
+		t.Errorf("project cookie was not preserved: body=%q", body)
+	}
+	if cookie := rec.Header().Get("Set-Cookie"); !strings.Contains(cookie, "mx_pv=private-jwt") || !strings.Contains(cookie, "Path=/preview/alice") {
+		t.Errorf("preview cookie not established: %q", cookie)
 	}
 }
 

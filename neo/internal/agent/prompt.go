@@ -179,6 +179,9 @@ func (a *Agent) systemPrompt() string {
 		} else {
 			fmt.Fprintf(&b, "- This conversation is on the default project (the workspace root itself). When you start a new app, create ONE new subdirectory of %s (short lowercase-hyphen name) and keep every file for that app inside it.\n", a.wsRoot)
 		}
+		if a.tools != nil && a.tools.BuildProjectEnabled() {
+			writeCodingDelegationPolicy(&b)
+		}
 		b.WriteString("- Choose the stack the way a senior engineer would for the actual requirements: scaffold a real framework and build setup with your shell (a React/Vue/Svelte app via its standard scaffolder, a Go/Python/Node service, whatever genuinely fits). Do NOT default to hand-written index.html/style.css/app.js files — plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
 		if a.tools != nil && a.tools.PreviewEnabled() {
 			b.WriteString("- To show the user the running app, call workspace_preview once the project is runnable — it comes up live in their workbench Preview pane. That is how your work gets seen.\n")
@@ -263,6 +266,17 @@ func (a *Agent) systemPrompt() string {
 		b.WriteString("\n")
 	}
 	return b.String()
+}
+
+// writeCodingDelegationPolicy resolves the overlap between Neo's ordinary
+// filesystem/shell tools and the durable private Build worker. Without this
+// resident rule both surfaces look valid to the model, and the general
+// "work end to end" charter biases long builds into Neo's interactive turn.
+func writeCodingDelegationPolicy(b *strings.Builder) {
+	b.WriteString("- Choose the coding execution path BEFORE mutating files or running setup commands. Use your own file, shell, service, and browser tools for bounded work that fits comfortably in this interactive turn: explaining or inspecting code, a localized repair, a few targeted edits, or a quick verification.\n")
+	b.WriteString("- For long-running or substantial coding work, call build_project instead of implementing it yourself. This includes creating a new site, application, API, or database-backed feature; broad multi-file or repository-wide changes; dependency installation plus implementation plus verification; work likely to need many tool steps or continue in the background; and work that is approaching your context or step budget.\n")
+	b.WriteString("- If a direct coding attempt develops repeated errors, loses convergence, or expands materially beyond a bounded edit, preserve the current files and delegate the remaining work through build_project with a complete brief, constraints, and observable acceptance criteria. Do not restart or discard completed work.\n")
+	b.WriteString("- Once build_project reports that the durable job was accepted, STOP using coding tools, do not poll it, and end this turn with a short plain-language acknowledgement. The private worker continues from the selected project and you will be woken for a real question, blocker, interruption, failure, or verified completion.\n")
 }
 
 // groundTruthFor renders the embedded ground truth for the configured agent

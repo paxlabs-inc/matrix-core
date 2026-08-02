@@ -1,5 +1,13 @@
 # syntax=docker/dockerfile:1.7
 
+# The private coding runtime is built and attested independently from the
+# pruned AgentCore source checkout, then promoted to Matrix's private GHCR
+# package. The digest is the OCI index recorded in
+# deploy/codingruntime/agentcore.pin; an explicit build arg may replace the
+# repository while retaining the same digest for mirrors.
+ARG AGENTCORE_RUNTIME_IMAGE=ghcr.io/paxlabs-inc/matrix/matrix-agentcore@sha256:34abf460b2a7b372fa81af4cac3425bd0e52f19ec128208df270ca285a26c9f4
+FROM ${AGENTCORE_RUNTIME_IMAGE} AS agentcore-runtime
+
 # Matrix Railway dev-environment image.
 #
 # The Railway sibling of deploy/daemon/Dockerfile: the SAME daemon stack
@@ -354,6 +362,17 @@ RUN set -eux; \
     chmod 0711 /root
 ENV MATRIX_AGENT_UID=10001 \
     MATRIX_AGENT_GID=10001 \
+    NEO_CODING_RUNTIME_ENABLED=true \
+    NEO_CODING_RUNTIME_REQUIRED=true \
+    NEO_AGENTCORE_BINARY=/opt/agentcore/.venv/bin/agentcore \
+    NEO_AGENTCORE_MANAGED_DIR=/etc/matrix-agentcore \
+    NEO_AGENTCORE_HOME=/data/agentcore \
+    NEO_AGENTCORE_UID=10001 \
+    NEO_AGENTCORE_GID=10001 \
+    NEO_AGENTCORE_PORT=9119 \
+    NEO_AGENTCORE_PROVIDER=xiaomi \
+    NEO_AGENTCORE_MODEL=mimo-v2.5-pro \
+    NEO_BUILD_JOBS_DIR=/data/build-jobs \
     WORKFORCE_BUBBLEWRAP=/usr/bin/bwrap \
     WORKFORCE_SEAT_BINARY=/opt/matrix/bin/workforce-seat \
     WORKFORCE_AUDITOR_BINARY=/opt/matrix/bin/workforce-auditor \
@@ -372,6 +391,61 @@ COPY --from=builder /out/workforced /opt/matrix/bin/workforced
 COPY --from=builder /out/workforce-seat /opt/matrix/bin/workforce-seat
 COPY --from=builder /out/workforce-auditor /opt/matrix/bin/workforce-auditor
 COPY --from=codegraph-ultra-builder /out/cg /usr/local/bin/cg
+
+# Private AgentCore worker payload. Python 3.13 is copied with the pinned venv
+# because Ubuntu 24.04's system Python is 3.12. Only runtime dependencies,
+# browser assets, and build metadata are copied from the artifact. The project
+# itself is installed non-editably from a read-only BuildKit mount below, so
+# the private checkout and editable source locator never enter a final layer.
+# Installed Python modules remain inspectable by their own process; Matrix does
+# not claim that Python packaging provides native-code secrecy.
+COPY --from=agentcore-runtime /usr/local/bin/python3.13 /usr/local/bin/python3.13
+COPY --from=agentcore-runtime /usr/local/lib/libpython3.13.so.1.0 /usr/local/lib/libpython3.13.so.1.0
+COPY --from=agentcore-runtime /usr/local/lib/python3.13/ /usr/local/lib/python3.13/
+COPY --from=agentcore-runtime /usr/lib/x86_64-linux-gnu/libssl.so.3 /opt/agentcore/lib/libssl.so.3
+COPY --from=agentcore-runtime /usr/lib/x86_64-linux-gnu/libcrypto.so.3 /opt/agentcore/lib/libcrypto.so.3
+COPY --from=agentcore-runtime /usr/local/bin/google-chrome /usr/local/bin/google-chrome
+COPY --from=agentcore-runtime /opt/agentcore/.venv/ /opt/agentcore/.venv/
+COPY --from=agentcore-runtime /opt/agentcore/node_modules/ /opt/agentcore/node_modules/
+COPY --from=agentcore-runtime /opt/agentcore/.agent-browser/ /opt/agentcore/.agent-browser/
+COPY --from=agentcore-runtime /opt/agentcore/.agentcore_build_sha /opt/agentcore/.agentcore_build_sha
+COPY --from=agentcore-runtime /opt/agentcore/skills/software-development/ /opt/agentcore/.venv/lib/python3.13/site-packages/skills/software-development/
+COPY --from=agentcore-runtime /etc/matrix-agentcore/ /etc/matrix-agentcore/
+COPY --from=agentcore-runtime /usr/share/licenses/matrix-agentcore/ /usr/share/licenses/matrix-agentcore/
+COPY --chmod=0755 deploy/codingruntime/git-readonly /opt/matrix/coding-bin/git
+RUN --mount=from=agentcore-runtime,source=/opt/agentcore,target=/run/matrix-agentcore-source,readonly \
+    --mount=from=agentcore-runtime,source=/usr/local/bin/uv,target=/usr/local/bin/matrix-agentcore-uv,readonly \
+    set -eux; \
+    ln -sfn python3.13 /usr/local/bin/python3; \
+    package_root="$(mktemp -d)"; \
+    find /run/matrix-agentcore-source -mindepth 1 -maxdepth 1 \
+      ! -name .venv ! -name node_modules ! -name .agent-browser \
+      ! -name build ! -name agentcore_agent.egg-info \
+      -exec ln -s '{}' "${package_root}/" ';'; \
+    AGENTCORE_NIX_BUILD=1 /usr/local/bin/matrix-agentcore-uv pip install \
+      --reinstall --no-deps --no-cache --compile-bytecode \
+      --python /opt/agentcore/.venv/bin/python \
+      "${package_root}"; \
+    rm -rf "${package_root}"; \
+    test "$(cat /opt/agentcore/.agentcore_build_sha)" = "f5d27c088a6629636a8a54dcefa014e5e5fbec38"; \
+    test -x /opt/agentcore/.venv/bin/agentcore; \
+    test -x /opt/matrix/coding-bin/git; \
+    test -r /etc/matrix-agentcore/config.yaml; \
+    test -r /usr/share/licenses/matrix-agentcore/AGENTCORE-LICENSE; \
+    test -r /usr/share/licenses/matrix-agentcore/THIRD_PARTY_NOTICES.txt; \
+    test -r /usr/share/licenses/matrix-agentcore/python.cdx.json; \
+    test -r /usr/share/licenses/matrix-agentcore/node.cdx.json; \
+    test ! -e /opt/agentcore/run_agent.py; \
+    test ! -e /opt/agentcore/agent; \
+    test ! -e /opt/agentcore/pyproject.toml; \
+    test ! -e /opt/agentcore/uv.lock; \
+    ! find /opt/agentcore/.venv/lib/python3.13/site-packages -maxdepth 1 -name '__editable__*' -print -quit | grep -q .; \
+    /opt/agentcore/.venv/bin/python -c 'from importlib.util import find_spec; from pathlib import Path; import agentcore_cli.main, toolsets; site = Path("/opt/agentcore/.venv/lib/python3.13/site-packages").resolve(); origins = (agentcore_cli.main.__file__, toolsets.__file__, find_spec("run_agent").origin); assert "matrix-coding-v1" in toolsets.TOOLSETS; assert all(Path(origin).resolve().is_relative_to(site) for origin in origins)'; \
+    chmod -R o-rwx /opt/agentcore /etc/matrix-agentcore; \
+    chgrp -R matrix-agent /opt/agentcore /etc/matrix-agentcore; \
+    chmod g+rX /opt/agentcore /etc/matrix-agentcore; \
+    chmod 0440 /etc/matrix-agentcore/config.yaml; \
+    chmod 0755 /opt/matrix/coding-bin/git
 
 # Bake the skill corpus + agent manifests + tool bridges — the same set as
 # deploy/daemon/Dockerfile (see its per-tool comments); the daemon's strict
@@ -398,8 +472,8 @@ RUN set -eux; \
     # HOME=/root and warm the wrong cache (and not prove the agent uid can
     # actually resolve these packages).
     su matrix-agent -s /bin/bash -c \
-      'HOME=/home/matrix-agent PATH=/usr/local/bin:/usr/bin:/bin \
-       python3 /tmp/verify-mcp-manifest.py \
+      'HOME=/home/matrix-agent UV_PYTHON=/usr/bin/python3 PATH=/usr/local/bin:/usr/bin:/bin \
+       /usr/bin/python3 /tmp/verify-mcp-manifest.py \
          /opt/matrix/agents/default.json /opt/matrix/agents/neo.json'; \
     rm -f /tmp/verify-mcp-manifest.py
 # rules/ is the language/standards library Neo's coding prompts reference.

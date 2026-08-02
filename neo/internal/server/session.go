@@ -444,6 +444,37 @@ func (s *session) submitIdempotent(message, key string, onFinish func(task.Statu
 	return r.id, true, false, nil
 }
 
+// submitSystemWake dispatches a durable internal wake only while the
+// conversation is idle. Unlike a user message it never joins the live inbox:
+// the durable Build wake outbox retries later, keeping unrelated user work and
+// background completion narration as separate turns.
+func (s *session) submitSystemWake(message, key string) (runID string, fresh, duplicate, busy bool, err error) {
+	s.actMu.Lock()
+	defer s.actMu.Unlock()
+	key = strings.TrimSpace(key)
+	if key != "" && s.engine.runRecords != nil && s.engine.runRecords.Enabled() {
+		if rec, ok, findErr := s.engine.runRecords.FindByIdempotency(key); findErr != nil {
+			return "", false, false, false, findErr
+		} else if ok {
+			if rec.ConversationID != s.id || rec.Request != strings.TrimSpace(message) {
+				return rec.IntentID, false, true, false, runrecord.ErrIdempotencyConflict
+			}
+			return rec.IntentID, false, true, false, nil
+		}
+	}
+	if r := s.active; r != nil && !r.stopped.Load() {
+		return r.id, false, false, true, nil
+	}
+	r, created, dispatchErr := s.dispatchLockedAs(message, false, nil, nil, "", key)
+	if dispatchErr != nil {
+		return "", false, false, false, dispatchErr
+	}
+	if !created {
+		return r.id, false, true, false, nil
+	}
+	return r.id, true, false, false, nil
+}
+
 // startResume re-dispatches an orphaned task (the boot reaper after a restart /
 // Fly suspend): it drives the original objective with the catch-up prime from
 // attempt one, since work may already exist on the volume.

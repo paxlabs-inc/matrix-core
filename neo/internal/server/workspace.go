@@ -145,15 +145,19 @@ func (e *Engine) projectRoot(project string) (string, error) {
 	if e.workspaceRoot == "" {
 		return "", errors.New("workspace is not configured on this daemon")
 	}
-	project = strings.TrimSpace(project)
-	if project == "" {
-		return filepath.Abs(e.workspaceRoot)
-	}
-	abs, err := resolveWorkspacePath(e.workspaceRoot, project)
+	record, err := e.resolveProjectRecord(strings.TrimSpace(project))
 	if err != nil {
 		return "", err
 	}
-	return abs, nil
+	abs, err := resolveWorkspacePath(e.workspaceRoot, record.Root)
+	if err != nil {
+		return "", err
+	}
+	resolved, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		return "", err
+	}
+	return resolveWorkspacePath(e.workspaceRoot, resolved)
 }
 
 // reqProjectRoot resolves ?project= to the project root and requires it to be

@@ -66,6 +66,9 @@ func TestProjectsRegistryRoundTrip(t *testing.T) {
 	if id != "my-shop-app" {
 		t.Fatalf("id = %q, want my-shop-app", id)
 	}
+	if _, exposed := out["root"]; exposed {
+		t.Fatal("project response exposed its private absolute root")
+	}
 	if info, err := os.Stat(filepath.Join(root, id)); err != nil || !info.IsDir() {
 		t.Fatalf("project subtree missing: %v", err)
 	}
@@ -115,6 +118,66 @@ func TestProjectsRegistryRoundTrip(t *testing.T) {
 	// The default project is synthesized and not deletable.
 	if code, _ := projDo(t, s2, http.MethodDelete, "/projects/default", nil); code != http.StatusNotFound {
 		t.Fatalf("delete default = %d, want 404", code)
+	}
+}
+
+func TestProjectSaveForkAndReopen(t *testing.T) {
+	root := t.TempDir()
+	s := projServer(t, root)
+	code, created := projDo(t, s, http.MethodPost, "/projects", map[string]string{"name": "Source App"})
+	if code != http.StatusCreated {
+		t.Fatalf("create = %d (%v)", code, created)
+	}
+	source := filepath.Join(root, "source-app")
+	if err := os.MkdirAll(filepath.Join(source, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "src", "main.ts"), []byte("export const value = 1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(source, ".env"), []byte("PRIVATE=value\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	code, saved := projDo(t, s, http.MethodPost, "/projects/source-app/save", nil)
+	if code != http.StatusOK || saved["saved"] != true {
+		t.Fatalf("save = %d (%v)", code, saved)
+	}
+	code, forked := projDo(t, s, http.MethodPost, "/projects/source-app/fork", map[string]string{
+		"name": "Independent App", "dir": "independent-app",
+	})
+	if code != http.StatusCreated || forked["independent"] != true {
+		t.Fatalf("fork = %d (%v)", code, forked)
+	}
+	forkRoot := filepath.Join(root, "independent-app")
+	content, err := os.ReadFile(filepath.Join(forkRoot, "src", "main.ts"))
+	if err != nil || string(content) != "export const value = 1\n" {
+		t.Fatalf("fork content = %q, %v", content, err)
+	}
+	if _, err := os.Stat(filepath.Join(forkRoot, ".env")); !os.IsNotExist(err) {
+		t.Fatal("fork copied a dotenv credential file")
+	}
+	if err := os.WriteFile(filepath.Join(forkRoot, "src", "main.ts"), []byte("fork only\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	original, err := os.ReadFile(filepath.Join(source, "src", "main.ts"))
+	if err != nil || string(original) != "export const value = 1\n" {
+		t.Fatalf("source changed after fork edit: %q, %v", original, err)
+	}
+	code, reopened := projDo(t, s, http.MethodPost, "/projects/independent-app/reopen", nil)
+	if code != http.StatusOK || reopened["reopened"] != true {
+		t.Fatalf("reopen = %d (%v)", code, reopened)
+	}
+	projectJSON, _ := json.Marshal(reopened["project"])
+	if bytes.Contains(projectJSON, []byte(root)) || bytes.Contains(projectJSON, []byte(`"root"`)) {
+		t.Fatalf("reopen exposed private root: %s", projectJSON)
+	}
+	registryInfo, err := os.Stat(filepath.Join(root, ".neo", "projects.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if registryInfo.Mode().Perm() != 0o600 {
+		t.Fatalf("registry mode = %o, want 600", registryInfo.Mode().Perm())
 	}
 }
 

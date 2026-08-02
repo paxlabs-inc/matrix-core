@@ -1,0 +1,48 @@
+model:
+  provider: xiaomi
+  default: mimo-v2.5-pro
+  base_url: ${XIAOMI_BASE_URL}
+  api_mode: chat_completions
+  default_headers:
+    X-Matrix-Actor-DID: ${MATRIX_ACTOR_DID}
+    X-Matrix-Slot: cody
+
+providers:
+  xiaomi:
+    request_timeout_seconds: 360
+    stale_timeout_seconds: 330
+    models:
+      mimo-v2.5-pro:
+        request_timeout_seconds: 360
+        stale_timeout_seconds: 330
+
+agent:
+  coding_context: focus
+  verify_on_stop: true
+  api_max_retries: 3
+
+tools:
+  cli:
+    enabled:
+      - matrix-coding-v1
+    disabled: []
+
+terminal:
+  backend: local
+  env: local
+  env_passthrough: []
+  local_persistent: false
+
+delegation:
+  max_concurrent_children: 3
+  max_spawn_depth: 1
+  orchestrator_enabled: false
+  subagent_auto_approve: false
+  inherit_mcp_toolsets: false
+
+skills:
+  external_dirs: []
+  inline_shell: false
+
+mcp_servers: {}
+

@@ -161,7 +161,18 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			req.Host = target.Host
 			// Strip the /preview/{userID} prefix; forward the remainder.
 			req.URL.Path = rest
-			// RawQuery is preserved from the inbound request as-is.
+			query := req.URL.Query()
+			query.Del("access_token")
+			req.URL.RawQuery = query.Encode()
+			req.Header.Del("Authorization")
+			req.Header.Del("X-Matrix-Actor-DID")
+			cookies := req.Cookies()
+			req.Header.Del("Cookie")
+			for _, cookie := range cookies {
+				if cookie.Name != previewCookie {
+					req.AddCookie(cookie)
+				}
+			}
 			req.Header.Set("X-Matrix-User", sub)
 			// Standard X-Forwarded-Proto hygiene; previews sit behind the
 			// public TLS front door.

@@ -1,0 +1,52 @@
+--- a/providers/__init__.py
++++ b/providers/__init__.py
+@@ -32,6 +32,7 @@
+ 
+ import importlib
+ import importlib.util
+ import logging
++import os
+ import sys
+ from pathlib import Path
+ 
+@@ -89,6 +90,13 @@ def list_providers() -> list[ProviderProfile]:
+ 
+ def _user_plugins_dir() -> Path | None:
+     """Return ``$AGENTCORE_HOME/plugins/model-providers/`` if it exists."""
++    if os.environ.get("AGENTCORE_SAFE_MODE", "").strip().lower() in {
++        "1",
++        "true",
++        "yes",
++        "on",
++    }:
++        return None
+     try:
+         from agentcore_constants import get_agentcore_home
+ 
+--- a/toolsets.py
++++ b/toolsets.py
+@@ -393,6 +393,24 @@ TOOLSETS = {
+         # non-configurable-toolset recovery loop in agentcore_cli/tools_config.py).
+         "posture": True,
+     },
++
++    "matrix-coding-v1": {
++        "description": "Matrix managed coding runtime v1",
++        "tools": [
++            "web_search", "web_extract",
++            "terminal", "process",
++            "read_file", "write_file", "patch", "search_files",
++            "vision_analyze",
++            "skills_list", "skill_view",
++            "browser_navigate", "browser_snapshot", "browser_click",
++            "browser_type", "browser_scroll", "browser_back",
++            "browser_press", "browser_get_images",
++            "browser_vision", "browser_console", "browser_cdp", "browser_dialog",
++            "todo", "clarify", "delegate_task",
++        ],
++        "includes": [],
++        "posture": True,
++    },
+     
+     # ==========================================================================
+     # Full AgentCore toolsets (CLI + messaging platforms)

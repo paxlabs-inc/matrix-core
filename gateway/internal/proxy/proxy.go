@@ -41,8 +41,10 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
+	"matrix/gateway/internal/agentwire"
 	"matrix/gateway/internal/auth"
 	"matrix/gateway/internal/ledger"
 	"matrix/gateway/internal/ratelimit"
@@ -51,19 +53,24 @@ import (
 	"matrix/gateway/internal/types"
 )
 
+const upstreamCallTimeout = 5 * time.Minute
+
 // Server is the HTTP entry point.
 type Server struct {
-	auth         *auth.Authenticator
-	router       *routing.Decider
-	ledger       ledger.Ledger
-	rl           *ratelimit.Limiter
-	provider     ProviderKeys
-	httpClient   *http.Client
-	logf         func(event string, fields map[string]any)
-	disabled     func() bool
-	maxBodyBytes int64
-	now          func() time.Time
-	preEstimate  string // pre-flight projected cost for budget gate
+	auth            *auth.Authenticator
+	router          *routing.Decider
+	ledger          ledger.Ledger
+	rl              *ratelimit.Limiter
+	provider        ProviderKeys
+	httpClient      *http.Client
+	logf            func(event string, fields map[string]any)
+	disabled        func() bool
+	maxBodyBytes    int64
+	now             func() time.Time
+	agentCoreIssuer *auth.AgentCoreIssuer
+	preEstimate     string // pre-flight projected cost for budget gate
+	scopedMu        sync.Mutex
+	scopedLive      map[string]struct{}
 }
 
 // ProviderKeys holds the gateway's own upstream API keys (used when
@@ -99,6 +106,9 @@ type Options struct {
 	// projected cost for budget gating. Empty defaults to "0.5"
 	// (covers the common-case classify call upper bound).
 	PreEstimatePax string
+	// AgentCoreIssuer mints short-lived, actor-bound coding credentials for
+	// authenticated managed user servers. nil disables the issuance route.
+	AgentCoreIssuer *auth.AgentCoreIssuer
 }
 
 // New builds a Server.
@@ -118,7 +128,7 @@ func New(opts Options) (*Server, error) {
 	}
 	hc := opts.HTTPClient
 	if hc == nil {
-		hc = &http.Client{Timeout: 5 * time.Minute}
+		hc = &http.Client{Timeout: upstreamCallTimeout}
 	}
 	maxBody := opts.MaxBodyBytes
 	if maxBody <= 0 {
@@ -141,17 +151,19 @@ func New(opts Options) (*Server, error) {
 		now = time.Now
 	}
 	return &Server{
-		auth:         opts.Auth,
-		router:       opts.Router,
-		ledger:       opts.Ledger,
-		rl:           rl,
-		provider:     opts.Provider,
-		httpClient:   hc,
-		logf:         logf,
-		disabled:     disabled,
-		maxBodyBytes: maxBody,
-		now:          now,
-		preEstimate:  pre,
+		auth:            opts.Auth,
+		router:          opts.Router,
+		ledger:          opts.Ledger,
+		rl:              rl,
+		provider:        opts.Provider,
+		httpClient:      hc,
+		logf:            logf,
+		disabled:        disabled,
+		maxBodyBytes:    maxBody,
+		now:             now,
+		agentCoreIssuer: opts.AgentCoreIssuer,
+		preEstimate:     pre,
+		scopedLive:      make(map[string]struct{}),
 	}, nil
 }
 
@@ -162,7 +174,49 @@ func (s *Server) Mux() *http.ServeMux {
 	mux.HandleFunc("/healthz", s.handleHealthz)
 	mux.HandleFunc("/v1/chat/completions", s.makeHandler(routing.EndpointChat))
 	mux.HandleFunc("/v1/embeddings", s.makeHandler(routing.EndpointEmbedding))
+	mux.HandleFunc("/internal/agentcore/token", s.handleAgentCoreToken)
 	return mux
+}
+
+func (s *Server) handleAgentCoreToken(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if s.disabled() {
+		writeJSONErr(w, http.StatusServiceUnavailable, "gateway_disabled", "gateway is disabled")
+		return
+	}
+	if s.agentCoreIssuer == nil {
+		writeJSONErr(w, http.StatusServiceUnavailable, "agentcore_issuer_unavailable", "scoped coding credentials are not configured")
+		return
+	}
+	principal, err := s.auth.Authenticate(r)
+	if err != nil {
+		writeAuthError(w, err)
+		return
+	}
+	if principal.Scoped {
+		writeJSONErr(w, http.StatusForbidden, "scoped_token_cannot_mint", "a scoped credential cannot mint another credential")
+		return
+	}
+	if err := s.auth.VerifySignature(r, principal.Actor); err != nil {
+		writeJSONErr(w, http.StatusUnauthorized, "signature_invalid", err.Error())
+		return
+	}
+	token, claims, err := s.agentCoreIssuer.Mint(principal.Actor, auth.AgentCoreTokenTTL)
+	if err != nil {
+		writeJSONErr(w, http.StatusInternalServerError, "agentcore_token_failed", "could not issue scoped coding credential")
+		return
+	}
+	s.logf("agentcore.token.issued", map[string]any{"actor": principal.Actor, "expires_at": claims.ExpiresAt, "token_id": claims.TokenID})
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"token": token, "expires_at": claims.ExpiresAt, "actor": principal.Actor,
+		"slot": claims.Slot, "provider": claims.Provider, "model": claims.Model,
+	})
 }
 
 func (s *Server) handleHealthz(w http.ResponseWriter, _ *http.Request) {
@@ -194,14 +248,23 @@ func (s *Server) makeHandler(ep routing.Endpoint) http.HandlerFunc {
 func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request, ep routing.Endpoint) {
 	ctx := r.Context()
 
-	actor, err := s.auth.Verify(r)
+	principal, err := s.auth.Authenticate(r)
 	if err != nil {
 		writeAuthError(w, err)
 		return
 	}
-	if err := s.auth.VerifySignature(r, actor); err != nil {
+	actor := principal.Actor
+	if err := s.auth.VerifySignature(r, principal.Actor); err != nil {
 		writeJSONErr(w, http.StatusUnauthorized, "signature_invalid", err.Error())
 		return
+	}
+	if principal.Scoped {
+		if !s.acquireScopedCall(principal.Actor) {
+			writeJSONErr(w, http.StatusTooManyRequests, "agentcore_call_in_progress",
+				"a scoped AgentCore model call is already active for this actor")
+			return
+		}
+		defer s.releaseScopedCall(principal.Actor)
 	}
 
 	// Rate-limit per actor BEFORE reading the body (1 token = 1 call).
@@ -227,8 +290,16 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request, ep routing.
 		writeJSONErr(w, http.StatusBadRequest, "body_invalid_json", err.Error())
 		return
 	}
-
-	decision, err := s.router.Decide(r, head.Model, ep)
+	if principal.Scoped && head.Model != principal.Model {
+		writeJSONErr(w, http.StatusForbidden, "scoped_model_mismatch",
+			"requested model is outside the signed AgentCore authority")
+		return
+	}
+	routeRequest := r.Clone(r.Context())
+	routeRequest.Header = r.Header.Clone()
+	routeRequest.Header.Set(types.HeaderActorDID, principal.Actor)
+	routeRequest.Header.Set(types.HeaderSlot, principal.Slot)
+	decision, err := s.router.Decide(routeRequest, head.Model, ep)
 	if err != nil {
 		switch {
 		case errors.Is(err, routing.ErrFreeTierNotWhitelisted):
@@ -240,6 +311,11 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request, ep routing.
 		default:
 			writeJSONErr(w, http.StatusBadGateway, "routing_error", err.Error())
 		}
+		return
+	}
+	if principal.Scoped && (decision.Provider.String() != principal.Provider || decision.Model != principal.Model) {
+		writeJSONErr(w, http.StatusForbidden, "scoped_route_mismatch",
+			"resolved route is outside the signed AgentCore authority")
 		return
 	}
 
@@ -283,8 +359,8 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request, ep routing.
 	// so we can decode `usage` and stamp cost headers BEFORE writing
 	// status (HTTP semantics — headers must precede body).
 	//
-	// Streaming callers (the executor slot is the only one today) get
-	// stream_options.include_usage forced on: Fireworks + Together emit
+	// Streaming callers get stream_options.include_usage forced on:
+	// compatible providers emit
 	// the token `usage` block solely in the FINAL SSE chunk, and only
 	// when asked. Without it handleStreaming scans no usage, maybeDebit
 	// writes no ledger row, and the call slips past the daily budget
@@ -296,7 +372,9 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request, ep routing.
 	// xAI (Grok) is OpenAI-compatible and accepts the bare "grok-*" fleet id
 	// verbatim, so no last-hop body rewrite is needed (unlike the retired Z.ai
 	// path, which required native-id + thinking-block translation).
-	upstream, err := s.buildUpstreamRequest(ctx, r, decision, upstreamBody)
+	upstreamCtx, cancelUpstream := context.WithTimeout(context.WithoutCancel(ctx), upstreamCallTimeout)
+	defer cancelUpstream()
+	upstream, err := s.buildUpstreamRequest(upstreamCtx, r, decision, upstreamBody)
 	if err != nil {
 		writeJSONErr(w, http.StatusBadGateway, "upstream_build", err.Error())
 		return
@@ -341,6 +419,22 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request, ep routing.
 	})
 }
 
+func (s *Server) acquireScopedCall(actor string) bool {
+	s.scopedMu.Lock()
+	defer s.scopedMu.Unlock()
+	if _, exists := s.scopedLive[actor]; exists {
+		return false
+	}
+	s.scopedLive[actor] = struct{}{}
+	return true
+}
+
+func (s *Server) releaseScopedCall(actor string) {
+	s.scopedMu.Lock()
+	delete(s.scopedLive, actor)
+	s.scopedMu.Unlock()
+}
+
 // ledgerCtx bundles the per-request fields that the cost-debit step
 // needs after the upstream call returns.
 type ledgerCtx struct {
@@ -362,6 +456,13 @@ func (s *Server) handleBuffered(w http.ResponseWriter, resp *http.Response, dec 
 	}
 	usage := extractUsage(body)
 	cost, costErr := s.maybeDebit(dec, usage, lc)
+	if dec.Provider == routing.ProviderXiaomi {
+		body, err = agentwire.NormalizeChatCompletion(body)
+		if err != nil {
+			writeJSONErr(w, http.StatusBadGateway, "upstream_tool_protocol", err.Error())
+			return
+		}
+	}
 
 	copyHeaders(w.Header(), resp.Header)
 	if costErr == nil {
@@ -392,14 +493,47 @@ func (s *Server) handleStreaming(w http.ResponseWriter, resp *http.Response, dec
 
 	scanner := bufio.NewReader(resp.Body)
 	var lastUsage *types.UpstreamUsage
+	var normalizer *agentwire.StreamNormalizer
+	if dec.Provider == routing.ProviderXiaomi {
+		normalizer = agentwire.NewStreamNormalizer()
+	}
+	debited := false
+	debit := func() {
+		if debited {
+			return
+		}
+		debited = true
+		if lastUsage != nil {
+			_, _ = s.maybeDebit(dec, lastUsage, lc)
+		}
+	}
+	drainAndDebit := func() {
+		lastUsage = drainStreamUsageBounded(scanner, resp.Body, lastUsage)
+		debit()
+	}
 	for {
 		chunk, err := scanner.ReadBytes('\n')
 		if len(chunk) > 0 {
 			if u, ok := scanUsageFromChunk(chunk); ok {
 				lastUsage = u
 			}
-			if _, werr := w.Write(chunk); werr != nil {
-				return
+			outputs := [][]byte{chunk}
+			if normalizer != nil {
+				var normalizeErr error
+				outputs, normalizeErr = normalizer.PushLine(chunk)
+				if normalizeErr != nil {
+					s.logf("gateway.upstream.tool_protocol_err", map[string]any{
+						"actor": lc.actor, "error": normalizeErr.Error(),
+					})
+					drainAndDebit()
+					return
+				}
+			}
+			for _, output := range outputs {
+				if _, werr := w.Write(output); werr != nil {
+					drainAndDebit()
+					return
+				}
 			}
 			if flusher != nil {
 				flusher.Flush()
@@ -412,11 +546,73 @@ func (s *Server) handleStreaming(w http.ResponseWriter, resp *http.Response, dec
 			s.logf("gateway.upstream.stream_err", map[string]any{
 				"actor": lc.actor, "error": err.Error(),
 			})
+			debit()
 			return
 		}
 	}
-	if lastUsage != nil {
-		_, _ = s.maybeDebit(dec, lastUsage, lc)
+	if normalizer != nil {
+		outputs, err := normalizer.Flush()
+		if err != nil {
+			s.logf("gateway.upstream.tool_protocol_err", map[string]any{
+				"actor": lc.actor, "error": err.Error(),
+			})
+			debit()
+			return
+		}
+		for _, output := range outputs {
+			if _, werr := w.Write(output); werr != nil {
+				debit()
+				return
+			}
+		}
+		if len(outputs) > 0 && flusher != nil {
+			flusher.Flush()
+		}
+	}
+	debit()
+}
+
+const (
+	streamDrainLimit   = 4 << 20
+	streamDrainTimeout = upstreamCallTimeout
+)
+
+// drainStreamUsageBounded consumes the remainder of a successful upstream SSE
+// response without forwarding it. It gives protocol failures and downstream
+// disconnects a bounded opportunity to observe the provider's trailing usage
+// event so the request is still metered.
+func drainStreamUsageBounded(reader *bufio.Reader, body io.Closer, initial *types.UpstreamUsage) *types.UpstreamUsage {
+	result := make(chan *types.UpstreamUsage, 1)
+	go func() {
+		usage := initial
+		limited := bufio.NewReader(io.LimitReader(reader, streamDrainLimit))
+		for {
+			chunk, err := limited.ReadBytes('\n')
+			if len(chunk) > 0 {
+				if current, ok := scanUsageFromChunk(chunk); ok {
+					usage = current
+				}
+			}
+			if err != nil {
+				break
+			}
+		}
+		result <- usage
+	}()
+
+	timer := time.NewTimer(streamDrainTimeout)
+	defer timer.Stop()
+	select {
+	case usage := <-result:
+		return usage
+	case <-timer.C:
+		_ = body.Close()
+		select {
+		case usage := <-result:
+			return usage
+		case <-time.After(250 * time.Millisecond):
+			return initial
+		}
 	}
 }
 

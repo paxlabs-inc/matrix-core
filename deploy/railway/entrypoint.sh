@@ -69,6 +69,8 @@ mkdir -p \
     "${DATA_DIR}/media" \
     "${DATA_DIR}/services" \
     "${DATA_DIR}/neo/services" \
+    "${DATA_DIR}/build-jobs" \
+    "${DATA_DIR}/agentcore" \
     "${DATA_DIR}/workforce" \
     "${DATA_DIR}/.matrix"
 
@@ -77,12 +79,14 @@ mkdir -p \
 AGENT_UID="${MATRIX_AGENT_UID:-10001}"
 AGENT_GID="${MATRIX_AGENT_GID:-10001}"
 OWNER_MARKER="${DATA_DIR}/.matrix/agent-owner-v1"
+export UV_PYTHON="${UV_PYTHON:-/usr/bin/python3}"
 AGENT_ENV=(
     "HOME=/home/matrix-agent"
     "USER=matrix-agent"
     "LOGNAME=matrix-agent"
     "SHELL=/bin/bash"
     "PATH=${PATH}"
+    "UV_PYTHON=/usr/bin/python3"
     "PWD=${DATA_DIR}/workspace"
     "TERM=${TERM:-xterm-256color}"
     "LANG=${LANG:-C.UTF-8}"
@@ -112,15 +116,18 @@ if [[ ! -f "${OWNER_MARKER}" ]]; then
     chown -R "${AGENT_UID}:${AGENT_GID}" \
         "${DATA_DIR}/workspace" \
         "${DATA_DIR}/services" \
-        "${DATA_DIR}/neo/services"
+        "${DATA_DIR}/neo/services" \
+        "${DATA_DIR}/agentcore"
     touch "${OWNER_MARKER}"
 fi
 chown "${AGENT_UID}:${AGENT_GID}" \
     "${DATA_DIR}/workspace" \
     "${DATA_DIR}/services" \
-    "${DATA_DIR}/neo/services"
+    "${DATA_DIR}/neo/services" \
+    "${DATA_DIR}/agentcore"
 chmod 0750 "${DATA_DIR}/workspace" "${DATA_DIR}/services" "${DATA_DIR}/neo/services"
-chmod 0700 "${DATA_DIR}/cortex" "${DATA_DIR}/journal" "${DATA_DIR}/transcripts" "${DATA_DIR}/.matrix"
+chmod 0700 "${DATA_DIR}/agentcore"
+chmod 0700 "${DATA_DIR}/build-jobs" "${DATA_DIR}/cortex" "${DATA_DIR}/journal" "${DATA_DIR}/transcripts" "${DATA_DIR}/.matrix"
 
 # 1b. Media plane. Generated + uploaded images/video/audio live on the volume
 #     at /data/media and are served by the Neo front at /media. Export the dir

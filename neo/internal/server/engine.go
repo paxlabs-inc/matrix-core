@@ -31,6 +31,7 @@ import (
 	"matrix/neo/internal/automatrixsettings"
 	"matrix/neo/internal/briefhistory"
 	"matrix/neo/internal/briefsettings"
+	"matrix/neo/internal/codingruntime"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/delegate"
@@ -79,6 +80,10 @@ type Engine struct {
 	mediaDir           string // machine-volume dir for generated + uploaded media ("" disables)
 	mediaStudio        *mediastudio.Service
 	mediaStudioErr     error
+	buildJobs          *codingruntime.Store
+	buildWorker        *buildWorkerService
+	buildDispatch      func(codingruntime.Job)
+	buildInterrupt     func(context.Context, codingruntime.Job) error
 	voiceASRURL        string
 	voiceASRKey        string
 	voiceControllerURL string
@@ -238,6 +243,7 @@ type EngineOptions struct {
 	TelegramSettingsDir    string // encrypted per-user Telegram bot/channel state ("" disables the integration)
 	MachineMailSettingsDir string // encrypted per-user MachineMail API key ("" disables the integration)
 	MediaDir               string // machine-volume media dir ("" disables image/video/audio I/O)
+	BuildDir               string // sealed durable asynchronous coding Build jobs ("" disables Build)
 	NovitaAPIKey           string
 	VoiceASRURL            string
 	VoiceASRKey            string
@@ -273,6 +279,7 @@ func NewEngine(o EngineOptions) *Engine {
 		trace:              trace.Open(o.TraceDir),
 		automatrix:         automatrixlog.Open(o.AutomatrixDir),
 		briefHistory:       briefhistory.Open(o.BriefHistoryDir),
+		buildJobs:          codingruntime.Open(o.BuildDir),
 		mediaDir:           strings.TrimRight(o.MediaDir, "/"),
 		voiceASRURL:        strings.TrimSpace(o.VoiceASRURL),
 		voiceASRKey:        strings.TrimSpace(o.VoiceASRKey),
@@ -321,6 +328,7 @@ func NewEngine(o EngineOptions) *Engine {
 	e.runRecords.SetVault(o.Vault, vaultUser)
 	e.automatrix.SetVault(o.Vault, vaultUser)
 	e.briefHistory.SetVault(o.Vault, vaultUser)
+	e.buildJobs.SetVault(o.Vault, vaultUser)
 	e.sessions = newSessionRegistry(e)
 	// On-demand sandbox previews (NEO-WORKBENCH req 7): built only when a
 	// sandbox client is configured; events flow through publishPreview onto
@@ -510,6 +518,9 @@ func (e *Engine) Close() {
 	}
 	if e.telegram != nil {
 		e.telegram.Stop()
+	}
+	if e.buildWorker != nil {
+		e.buildWorker.Stop()
 	}
 	if e.mediaStudio != nil {
 		e.mediaStudio.Close()

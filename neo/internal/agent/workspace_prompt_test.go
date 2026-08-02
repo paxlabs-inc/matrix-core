@@ -69,3 +69,20 @@ func TestSystemPromptWorkspacePreviewTool(t *testing.T) {
 		t.Error("wired preview launcher must surface the workspace_preview tool in the prompt")
 	}
 }
+
+func TestCodingDelegationPolicyDefinesDirectAndDurablePaths(t *testing.T) {
+	var b strings.Builder
+	writeCodingDelegationPolicy(&b)
+	policy := b.String()
+	for _, want := range []string{
+		"Choose the coding execution path BEFORE mutating files",
+		"bounded work that fits comfortably in this interactive turn",
+		"For long-running or substantial coding work, call build_project",
+		"preserve the current files and delegate the remaining work",
+		"Once build_project reports that the durable job was accepted, STOP",
+	} {
+		if !strings.Contains(policy, want) {
+			t.Errorf("coding delegation policy missing %q", want)
+		}
+	}
+}

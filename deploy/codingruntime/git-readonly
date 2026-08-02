@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly real_git=/usr/bin/git
+readonly -a original=("$@")
+command_name=""
+index=0
+while (( index < ${#original[@]} )); do
+  argument=${original[$index]}
+  case "$argument" in
+    -C)
+      (( index + 1 < ${#original[@]} )) || { echo "git: -C requires a path" >&2; exit 2; }
+      requested=$(realpath -m -- "${original[$((index + 1))]}")
+      safe_root=$(realpath -m -- "${AGENTCORE_WRITE_SAFE_ROOT:?}")
+      [[ "$requested" == "$safe_root" || "$requested" == "$safe_root"/* ]] || {
+        echo "git: -C may not leave the selected project" >&2
+        exit 77
+      }
+      (( index += 2 ))
+      ;;
+    -c|--git-dir|--work-tree|--namespace|--exec-path)
+      echo "git: configuration and repository overrides are unavailable in the coding runtime" >&2
+      exit 77
+      ;;
+    --git-dir=*|--work-tree=*|--namespace=*|--exec-path=*)
+      echo "git: repository overrides are unavailable in the coding runtime" >&2
+      exit 77
+      ;;
+    --no-pager|--no-replace-objects|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs)
+      (( index += 1 ))
+      ;;
+    --version|--help)
+      exec "$real_git" "${original[@]}"
+      ;;
+    --*)
+      echo "git: global option is unavailable in the coding runtime" >&2
+      exit 2
+      ;;
+    *)
+      command_name=$argument
+      (( index += 1 ))
+      break
+      ;;
+  esac
+done
+
+case "$command_name" in
+  status|diff|log|show|rev-parse|ls-files|grep|describe|shortlog|blame|name-rev|cat-file|for-each-ref|ls-tree)
+    exec "$real_git" "${original[@]}"
+    ;;
+  branch)
+    while (( index < ${#original[@]} )); do
+      argument=${original[$index]}
+      case "$argument" in
+        -a|-r|--all|--remotes|--list|--show-current|-v|-vv|--verbose|--color|--no-color|--contains|--no-contains|--merged|--no-merged|--sort=*|--format=*|--column|--no-column) ;;
+        *)
+          echo "git: branch mutation is disabled; use the Matrix-owned project workflow" >&2
+          exit 77
+          ;;
+      esac
+      (( index += 1 ))
+    done
+    exec "$real_git" "${original[@]}"
+    ;;
+  "")
+    exec "$real_git" "${original[@]}"
+    ;;
+  *)
+    echo "git: write operation '$command_name' is disabled in the coding runtime" >&2
+    exit 77
+    ;;
+esac

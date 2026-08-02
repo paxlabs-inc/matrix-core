@@ -13,11 +13,17 @@
 package auth
 
 import (
+	"bytes"
+	"crypto/hmac"
 	"crypto/subtle"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"matrix/gateway/internal/types"
 )
@@ -35,6 +41,8 @@ type Authenticator struct {
 	// construct with allowEmptyToken=false (the default) so a misconfig
 	// can never silently disable auth.
 	allowEmptyToken bool
+	agentCoreKeys   map[string][]byte
+	now             func() time.Time
 }
 
 // Options controls Authenticator behavior.
@@ -48,6 +56,14 @@ type Options struct {
 	// error from NewAuthenticator so misconfigured production deploys
 	// fail fast instead of silently accepting traffic.
 	AllowEmptyToken bool
+
+	// AgentCoreVerificationKeys maps token key ids to HMAC-SHA256 keys.
+	// Include the active key and any prior keys still inside their maximum
+	// one-hour token lifetime. Keys are cloned during construction.
+	AgentCoreVerificationKeys map[string][]byte
+
+	// Now is the verification clock. nil uses time.Now.
+	Now func() time.Time
 }
 
 // New constructs a new Authenticator from the supplied options.
@@ -55,9 +71,25 @@ func New(opts Options) (*Authenticator, error) {
 	if opts.Token == "" && !opts.AllowEmptyToken {
 		return nil, fmt.Errorf("gateway.auth: empty token but AllowEmptyToken=false")
 	}
+	keys := make(map[string][]byte, len(opts.AgentCoreVerificationKeys))
+	for keyID, key := range opts.AgentCoreVerificationKeys {
+		if !validKeyID(keyID) {
+			return nil, fmt.Errorf("gateway.auth: invalid AgentCore verification key id")
+		}
+		if len(key) < 32 {
+			return nil, fmt.Errorf("gateway.auth: AgentCore verification key %q must be at least 32 bytes", keyID)
+		}
+		keys[keyID] = append([]byte(nil), key...)
+	}
+	now := opts.Now
+	if now == nil {
+		now = time.Now
+	}
 	return &Authenticator{
 		token:           opts.Token,
 		allowEmptyToken: opts.AllowEmptyToken,
+		agentCoreKeys:   keys,
+		now:             now,
 	}, nil
 }
 
@@ -74,6 +106,42 @@ var ErrUnauthorized = errors.New("gateway.auth: unauthorized")
 // with "did:" passes; deeper validation is the wallet's job.
 var ErrMalformedActor = errors.New("gateway.auth: malformed X-Matrix-Actor-DID")
 
+// Principal is the authenticated authority for a gateway request. Scoped
+// principals carry signed provider and model constraints; legacy principals
+// retain the shared-token behavior and leave those constraints empty.
+type Principal struct {
+	Actor    string
+	Slot     string
+	Scoped   bool
+	Provider string
+	Model    string
+}
+
+// Authenticate verifies the request and returns its authenticated authority.
+func (a *Authenticator) Authenticate(r *http.Request) (Principal, error) {
+	if r == nil {
+		return Principal{}, fmt.Errorf("gateway.auth: nil request")
+	}
+	supplied, hasBearer := bearerToken(r.Header.Get(types.HeaderAuthorization))
+	if supplied == agentCoreTokenPrefix || strings.HasPrefix(supplied, agentCoreTokenPrefix+".") {
+		return a.verifyAgentCore(r, supplied)
+	}
+	if !a.checkLegacyBearer(supplied, hasBearer) {
+		return Principal{}, ErrUnauthorized
+	}
+	actor := strings.TrimSpace(r.Header.Get(types.HeaderActorDID))
+	if actor == "" {
+		return Principal{}, ErrMissingActor
+	}
+	if !looksLikeDID(actor) {
+		return Principal{}, ErrMalformedActor
+	}
+	return Principal{
+		Actor: actor,
+		Slot:  strings.TrimSpace(r.Header.Get(types.HeaderSlot)),
+	}, nil
+}
+
 // Verify checks the Authorization header against the configured token
 // and the actor header for presence. Returns the actor DID on success.
 //
@@ -81,20 +149,11 @@ var ErrMalformedActor = errors.New("gateway.auth: malformed X-Matrix-Actor-DID")
 // or nil. Callers map these to HTTP 401 / 400 themselves so the
 // package stays HTTP-framework agnostic.
 func (a *Authenticator) Verify(r *http.Request) (actor string, err error) {
-	if r == nil {
-		return "", fmt.Errorf("gateway.auth: nil request")
+	principal, err := a.Authenticate(r)
+	if err != nil {
+		return "", err
 	}
-	if !a.checkBearer(r.Header.Get(types.HeaderAuthorization)) {
-		return "", ErrUnauthorized
-	}
-	actor = strings.TrimSpace(r.Header.Get(types.HeaderActorDID))
-	if actor == "" {
-		return "", ErrMissingActor
-	}
-	if !looksLikeDID(actor) {
-		return "", ErrMalformedActor
-	}
-	return actor, nil
+	return principal.Actor, nil
 }
 
 // VerifySignature is a placeholder for future ed25519 wallet
@@ -117,20 +176,92 @@ func (a *Authenticator) VerifySignature(_ *http.Request, _ string) error {
 	return nil
 }
 
-func (a *Authenticator) checkBearer(header string) bool {
+func (a *Authenticator) checkLegacyBearer(supplied string, hasBearer bool) bool {
 	if a.token == "" && a.allowEmptyToken {
 		return true
 	}
-	header = strings.TrimSpace(header)
-	const prefix = "Bearer "
-	if !strings.HasPrefix(header, prefix) {
-		return false
-	}
-	supplied := strings.TrimSpace(header[len(prefix):])
-	if supplied == "" {
+	if !hasBearer {
 		return false
 	}
 	return subtle.ConstantTimeCompare([]byte(supplied), []byte(a.token)) == 1
+}
+
+func bearerToken(header string) (string, bool) {
+	header = strings.TrimSpace(header)
+	const prefix = "Bearer "
+	if !strings.HasPrefix(header, prefix) {
+		return "", false
+	}
+	supplied := strings.TrimSpace(header[len(prefix):])
+	return supplied, supplied != ""
+}
+
+func (a *Authenticator) verifyAgentCore(r *http.Request, token string) (Principal, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 || parts[0] != agentCoreTokenPrefix {
+		return Principal{}, ErrUnauthorized
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return Principal{}, ErrUnauthorized
+	}
+	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil || len(signature) != 32 {
+		return Principal{}, ErrUnauthorized
+	}
+	var claims AgentCoreClaims
+	decoder := json.NewDecoder(bytes.NewReader(payload))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&claims); err != nil {
+		return Principal{}, ErrUnauthorized
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		return Principal{}, ErrUnauthorized
+	}
+	key, ok := a.agentCoreKeys[claims.KeyID]
+	if !ok {
+		return Principal{}, ErrUnauthorized
+	}
+	want := signAgentCoreToken(key, parts[0]+"."+parts[1])
+	if !hmac.Equal(signature, want) {
+		return Principal{}, ErrUnauthorized
+	}
+	jti, jtiErr := base64.RawURLEncoding.DecodeString(claims.TokenID)
+	if claims.Audience != AgentCoreAudience || claims.Scope != AgentCoreScope ||
+		claims.Slot != AgentCoreSlot || claims.Provider != AgentCoreProvider ||
+		claims.Model != AgentCoreModel || !looksLikeDID(claims.ActorDID) ||
+		jtiErr != nil || len(jti) != 16 {
+		return Principal{}, ErrUnauthorized
+	}
+	now := a.now().UTC()
+	issuedAt := time.Unix(claims.IssuedAt, 0)
+	expiresAt := time.Unix(claims.ExpiresAt, 0)
+	if claims.IssuedAt <= 0 || claims.ExpiresAt <= claims.IssuedAt ||
+		expiresAt.Sub(issuedAt) > AgentCoreMaxTokenTTL ||
+		issuedAt.After(now.Add(agentCoreClockSkew)) || !now.Before(expiresAt) {
+		return Principal{}, ErrUnauthorized
+	}
+	if r.Method != http.MethodPost || r.URL == nil || r.URL.Path != "/v1/chat/completions" {
+		return Principal{}, ErrUnauthorized
+	}
+	actor := strings.TrimSpace(r.Header.Get(types.HeaderActorDID))
+	slot := strings.TrimSpace(r.Header.Get(types.HeaderSlot))
+	if actor != claims.ActorDID || slot != claims.Slot {
+		return Principal{}, ErrUnauthorized
+	}
+	byo := strings.TrimSpace(r.Header.Get(types.HeaderBYOAPIKey))
+	if strings.EqualFold(byo, "true") || byo == "1" || strings.EqualFold(byo, "yes") ||
+		strings.TrimSpace(r.Header.Get(types.HeaderUserAPIKey)) != "" {
+		return Principal{}, ErrUnauthorized
+	}
+	return Principal{
+		Actor:    claims.ActorDID,
+		Slot:     claims.Slot,
+		Scoped:   true,
+		Provider: claims.Provider,
+		Model:    claims.Model,
+	}, nil
 }
 
 // looksLikeDID is a deliberately permissive shape check. The DID Core

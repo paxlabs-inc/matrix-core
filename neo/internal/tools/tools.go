@@ -96,6 +96,11 @@ const TodoTool = "todo"
 // preview launcher is wired (sandbox previews configured on this daemon).
 const PreviewTool = "workspace_preview"
 
+// BuildProjectTool is Neo's asynchronous coding delegation. It persists a
+// private Build job before returning and never exposes the worker runtime or
+// AgentCore protocol to the model or browser.
+const BuildProjectTool = "build_project"
+
 // DesktopLookTool / DesktopA11yTool are the disposable-desktop grounding
 // synthetics (DOJO req 3). They are Neo-owned (they call the omni vision client
 // and the AT-SPI exec through the dojo session manager), so they never enter
@@ -158,6 +163,16 @@ type TodoFunc func(ctx context.Context, items []TodoItem) error
 // engine wiring (see internal/server); nil until wired, in which case the
 // preview tool is not advertised at all.
 type PreviewFunc func(ctx context.Context) (string, error)
+
+type BuildRequest struct {
+	Request            string
+	AcceptanceCriteria []string
+	Constraints        []string
+}
+
+// BuildFunc accepts a normalized project brief and returns immediately after
+// the durable job is accepted. Completion and questions arrive out of band.
+type BuildFunc func(ctx context.Context, request BuildRequest) (string, error)
 
 // DesktopLookFunc grounds the disposable desktop with the stateless MiMo v2.5
 // omni vision call (DOJO req 3.2): it captures the desktop, invokes omni with a
@@ -248,6 +263,7 @@ type Manager struct {
 	writeSkill  WriteSkillFunc
 	todo        TodoFunc
 	preview     PreviewFunc
+	build       BuildFunc
 	desktopLook DesktopLookFunc
 	desktopA11y DesktopA11yFunc
 	media       MediaPersistFunc
@@ -480,6 +496,9 @@ func (m *Manager) Schemas() []llm.Tool {
 	if m.preview != nil {
 		out = append(out, previewSchema())
 	}
+	if m.build != nil {
+		out = append(out, buildProjectSchema())
+	}
 	if m.desktopLook != nil {
 		out = append(out, desktopLookSchema())
 	}
@@ -580,6 +599,10 @@ func (m *Manager) Preflight(funcNames []string) error {
 			if m.preview == nil {
 				return fmt.Errorf("%s is not connected", funcName)
 			}
+		case BuildProjectTool:
+			if m.build == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
 		case DesktopLookTool:
 			if m.desktopLook == nil {
 				return fmt.Errorf("%s is not connected", funcName)
@@ -630,6 +653,9 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 		return syntheticResult(c, e, er)
 	case PreviewTool:
 		c, e, er := m.dispatchPreview(ctx)
+		return syntheticResult(c, e, er)
+	case BuildProjectTool:
+		c, e, er := m.dispatchBuildProject(ctx, args)
 		return syntheticResult(c, e, er)
 	case DesktopLookTool:
 		c, e, er := m.dispatchDesktopLook(ctx, args)
@@ -1083,6 +1109,10 @@ func (m *Manager) SetPreview(f PreviewFunc) { m.preview = f }
 // session.
 func (m *Manager) PreviewEnabled() bool { return m != nil && m.preview != nil }
 
+func (m *Manager) SetBuildProject(f BuildFunc) { m.build = f }
+
+func (m *Manager) BuildProjectEnabled() bool { return m != nil && m.build != nil }
+
 // SetDesktop wires the disposable-desktop grounding synthetics (DOJO req 3)
 // after construction (they need the engine's dojo session manager + omni vision
 // client assembled first). Passing nil for either leaves that tool unadvertised.
@@ -1138,6 +1168,28 @@ func (m *Manager) dispatchPreview(ctx context.Context) (string, bool, error) {
 	}
 	if out == "" {
 		out = "Preview is starting — it will appear in the workbench Preview pane when ready."
+	}
+	return out, false, nil
+}
+
+func (m *Manager) dispatchBuildProject(ctx context.Context, args map[string]interface{}) (string, bool, error) {
+	if m.build == nil {
+		return "the private Build worker is not available on this machine", true, nil
+	}
+	request := strings.TrimSpace(asString(args["request"]))
+	if request == "" {
+		return "request is required", true, nil
+	}
+	out, err := m.build(ctx, BuildRequest{
+		Request:            request,
+		AcceptanceCriteria: asStringSlice(args["acceptance_criteria"]),
+		Constraints:        asStringSlice(args["constraints"]),
+	})
+	if err != nil {
+		return fmt.Sprintf("could not accept the Build job: %v", err), true, nil
+	}
+	if strings.TrimSpace(out) == "" {
+		out = "The Build job was accepted. I will return when it needs input or has a verified result."
 	}
 	return out, false, nil
 }
@@ -1557,6 +1609,31 @@ func previewSchema() llm.Tool {
 		map[string]interface{}{
 			"type":       "object",
 			"properties": map[string]interface{}{},
+		},
+	)
+}
+
+func buildProjectSchema() llm.Tool {
+	return llm.NewFunctionTool(
+		BuildProjectTool,
+		"Delegate a longer coding task for the selected project to your private Build worker. Use this when the user asks you to build or substantially modify a site, small application, API, or database-backed feature. Provide a complete implementation brief and concrete acceptance criteria. The call returns as soon as the durable job is accepted; do not poll it or keep this turn open. You will be woken only for a question, approval, blocker, interruption, failure, or verified completion. Building never deploys the result.",
+		map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"request": map[string]interface{}{
+					"type":        "string",
+					"description": "A self-contained description of exactly what to build or change in the selected project.",
+				},
+				"acceptance_criteria": map[string]interface{}{
+					"type": "array", "items": map[string]interface{}{"type": "string"},
+					"description": "Concrete observable behaviors that define success.",
+				},
+				"constraints": map[string]interface{}{
+					"type": "array", "items": map[string]interface{}{"type": "string"},
+					"description": "Framework, database, compatibility, security, and no-deployment constraints.",
+				},
+			},
+			"required": []interface{}{"request", "acceptance_criteria"},
 		},
 	)
 }

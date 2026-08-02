@@ -6,12 +6,14 @@ package proxy
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -67,6 +69,7 @@ func newTestServer(t *testing.T, fakeURL string, freeTierOnly bool) *Server {
 		BasetenEmbeddingsURL:   fakeURL,
 		XaiChatURL:             fakeURL,
 		XaiEmbeddingsURL:       fakeURL,
+		XiaomiChatURL:          fakeURL,
 	})
 	lg := ledger.NewMemory("10")
 	// Pin the ledger's clock to the SAME fixed instant the server uses.
@@ -82,7 +85,7 @@ func newTestServer(t *testing.T, fakeURL string, freeTierOnly bool) *Server {
 		Auth:           a,
 		Router:         router,
 		Ledger:         lg,
-		Provider:       ProviderKeys{FireworksKey: "test_fw_key"},
+		Provider:       ProviderKeys{FireworksKey: "test_fw_key", XiaomiKey: "test_mimo_key"},
 		PreEstimatePax: "0.0001",
 		Now:            fixedNow,
 	})
@@ -90,6 +93,33 @@ func newTestServer(t *testing.T, fakeURL string, freeTierOnly bool) *Server {
 		t.Fatalf("proxy.New: %v", err)
 	}
 	return srv
+}
+
+func configureScopedAgentCoreAuth(t *testing.T, srv *Server, now time.Time) (string, []byte) {
+	t.Helper()
+	key := bytes.Repeat([]byte("agentcore-test-key-material-"), 2)
+	authenticator, err := auth.New(auth.Options{
+		Token:                     "shh",
+		AgentCoreVerificationKeys: map[string][]byte{"active-test": key},
+		Now:                       func() time.Time { return now },
+	})
+	if err != nil {
+		t.Fatalf("auth.New scoped: %v", err)
+	}
+	issuer, err := auth.NewAgentCoreIssuer(auth.AgentCoreIssuerOptions{
+		KeyID: "active-test",
+		Key:   key,
+		Now:   func() time.Time { return now },
+	})
+	if err != nil {
+		t.Fatalf("NewAgentCoreIssuer: %v", err)
+	}
+	token, _, err := issuer.Mint("did:matrix:user-scoped:cody", auth.AgentCoreTokenTTL)
+	if err != nil {
+		t.Fatalf("Mint: %v", err)
+	}
+	srv.auth = authenticator
+	return token, key
 }
 
 func newGatewayRequest(method, path string, body []byte, hdrs map[string]string) *http.Request {
@@ -283,6 +313,58 @@ func TestProxyHealthz(t *testing.T) {
 	mux.ServeHTTP(w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("healthz: %d", w.Code)
+	}
+}
+
+func TestAgentCoreTokenEndpointMintsOnlyFromLegacyAuthority(t *testing.T) {
+	srv := newTestServer(t, "http://127.0.0.1:1", false)
+	now := time.Date(2026, 5, 27, 0, 0, 0, 0, time.UTC)
+	key := bytes.Repeat([]byte("agentcore-issuer-test-key-"), 2)
+	authenticator, err := auth.New(auth.Options{
+		Token: "shh", AgentCoreVerificationKeys: map[string][]byte{"issuer-test": key},
+		Now: func() time.Time { return now },
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	issuer, err := auth.NewAgentCoreIssuer(auth.AgentCoreIssuerOptions{
+		KeyID: "issuer-test", Key: key, Now: func() time.Time { return now },
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv.auth = authenticator
+	srv.agentCoreIssuer = issuer
+
+	request := httptest.NewRequest(http.MethodPost, "/internal/agentcore/token", http.NoBody)
+	request.Header.Set(types.HeaderAuthorization, "Bearer shh")
+	request.Header.Set(types.HeaderActorDID, "did:matrix:user-token:cody")
+	recorder := httptest.NewRecorder()
+	srv.Mux().ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK || recorder.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("mint = %d headers=%v body=%s", recorder.Code, recorder.Header(), recorder.Body.String())
+	}
+	var response struct {
+		Token string `json:"token"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil || response.Token == "" {
+		t.Fatalf("decode mint: %v body=%s", err, recorder.Body.String())
+	}
+	check := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", http.NoBody)
+	check.Header.Set(types.HeaderAuthorization, "Bearer "+response.Token)
+	check.Header.Set(types.HeaderActorDID, "did:matrix:user-token:cody")
+	check.Header.Set(types.HeaderSlot, auth.AgentCoreSlot)
+	principal, err := authenticator.Authenticate(check)
+	if err != nil || !principal.Scoped || principal.Actor != "did:matrix:user-token:cody" || principal.Model != auth.AgentCoreModel {
+		t.Fatalf("minted principal = (%+v, %v)", principal, err)
+	}
+
+	scoped := httptest.NewRequest(http.MethodPost, "/internal/agentcore/token", http.NoBody)
+	scoped.Header = check.Header.Clone()
+	denied := httptest.NewRecorder()
+	srv.Mux().ServeHTTP(denied, scoped)
+	if denied.Code != http.StatusUnauthorized {
+		t.Fatalf("scoped remint = %d: %s", denied.Code, denied.Body.String())
 	}
 }
 
@@ -599,6 +681,481 @@ func TestMaybeDebitSurvivesCanceledRequestCtx(t *testing.T) {
 	}
 	if rows[0].Model != rates.ModelKimiK26 || rows[0].TokensInput != 1000 {
 		t.Fatalf("row mismatch: %+v", rows[0])
+	}
+}
+
+func TestProxyNormalizesBufferedMiMoToolCall(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"id":"chatcmpl-mimo","choices":[{"index":0,"message":{"role":"assistant","content":"<tool_call><function=read_file><parameter=path>/workspace/main.go</parameter></function></tool_call>","reasoning_content":"inspect"},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15}}`)
+	}))
+	defer upstream.Close()
+
+	srv := newTestServer(t, upstream.URL, false)
+	body := []byte(`{"model":"mimo-v2.5-pro","messages":[{"role":"user","content":"inspect"}]}`)
+	r := newGatewayRequest(http.MethodPost, "/v1/chat/completions", body, map[string]string{
+		types.HeaderSlot: types.SlotCody,
+	})
+	w := httptest.NewRecorder()
+	srv.Mux().ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+	}
+	if strings.Contains(w.Body.String(), "<tool_call>") {
+		t.Fatalf("MiMo XML leaked: %s", w.Body.String())
+	}
+	var response struct {
+		Choices []struct {
+			Message struct {
+				Reasoning string `json:"reasoning_content"`
+				ToolCalls []struct {
+					ID       string `json:"id"`
+					Function struct {
+						Name      string `json:"name"`
+						Arguments string `json:"arguments"`
+					} `json:"function"`
+				} `json:"tool_calls"`
+			} `json:"message"`
+			FinishReason string `json:"finish_reason"`
+		} `json:"choices"`
+		Usage types.UpstreamUsage `json:"usage"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	choice := response.Choices[0]
+	if choice.Message.Reasoning != "inspect" || choice.FinishReason != "tool_calls" {
+		t.Fatalf("reasoning/finish mismatch: %+v", choice)
+	}
+	if len(choice.Message.ToolCalls) != 1 ||
+		choice.Message.ToolCalls[0].Function.Name != "read_file" ||
+		choice.Message.ToolCalls[0].Function.Arguments != `{"path":"/workspace/main.go"}` ||
+		!strings.HasPrefix(choice.Message.ToolCalls[0].ID, "mimo-") {
+		t.Fatalf("tool call mismatch: %+v", choice.Message.ToolCalls)
+	}
+	if response.Usage.TotalTokens != 15 || len(srv.ledger.(*ledger.Memory).Snapshot()) != 1 {
+		t.Fatalf("usage/debit lost: %+v rows=%+v", response.Usage, srv.ledger.(*ledger.Memory).Snapshot())
+	}
+}
+
+func TestProxyNormalizesSplitMiMoStream(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		flusher, _ := w.(http.Flusher)
+		emit := func(value string) {
+			_, _ = io.WriteString(w, value)
+			if flusher != nil {
+				flusher.Flush()
+			}
+		}
+		emit("data: {\"id\":\"chatcmpl-mimo\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_content\":\"inspect \"},\"finish_reason\":null}]}\n\n")
+		emit("data: {\"id\":\"chatcmpl-mimo\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_content\":\"<tool_\"},\"finish_reason\":null}]}\n\n")
+		emit("data: {\"id\":\"chatcmpl-mimo\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_content\":\"call><function=read_file><parameter=path>/workspace/main.go</parameter>\"},\"finish_reason\":null}]}\n\n")
+		emit("data: {\"id\":\"chatcmpl-mimo\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n")
+		emit("data: {\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,\"total_tokens\":15}}\n\n")
+		emit("data: [DONE]\n\n")
+	}))
+	defer upstream.Close()
+
+	srv := newTestServer(t, upstream.URL, false)
+	body := []byte(`{"model":"mimo-v2.5-pro","messages":[{"role":"user","content":"inspect"}],"stream":true}`)
+	r := newGatewayRequest(http.MethodPost, "/v1/chat/completions", body, map[string]string{
+		types.HeaderSlot: types.SlotCody,
+	})
+	w := httptest.NewRecorder()
+	srv.Mux().ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+	}
+	output := w.Body.String()
+	if strings.Contains(output, "<tool_") || strings.Contains(output, "<function=") {
+		t.Fatalf("split MiMo XML leaked: %s", output)
+	}
+	if !strings.Contains(output, `"reasoning_content":"inspect `) ||
+		!strings.Contains(output, `"name":"read_file"`) ||
+		!strings.Contains(output, `"finish_reason":"tool_calls"`) ||
+		!strings.Contains(output, "data: [DONE]") {
+		t.Fatalf("normalized stream incomplete: %s", output)
+	}
+	rows := srv.ledger.(*ledger.Memory).Snapshot()
+	if len(rows) != 1 || rows[0].TokensInput != 10 || rows[0].TokensOutput != 5 {
+		t.Fatalf("stream usage debit mismatch: %+v", rows)
+	}
+}
+
+func TestProxyMiMoDuplicatedNativeTextualCallKeepsNativeID(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"choices":[{"index":0,"message":{"role":"assistant","content":"<tool_call><function=read_file><parameter=path>/same</parameter></function></tool_call>","tool_calls":[{"id":"native-stable","type":"function","function":{"name":"read_file","arguments":"{\"path\":\"/same\"}"}}]},"finish_reason":"stop"}],"usage":{"prompt_tokens":21,"completion_tokens":8,"total_tokens":29}}`)
+	}))
+	defer upstream.Close()
+
+	srv := newTestServer(t, upstream.URL, false)
+	req := newGatewayRequest(http.MethodPost, "/v1/chat/completions", []byte(`{"model":"mimo-v2.5-pro","messages":[]}`), map[string]string{
+		types.HeaderSlot: types.SlotCody,
+	})
+	recorder := httptest.NewRecorder()
+	srv.Mux().ServeHTTP(recorder, req)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", recorder.Code, recorder.Body.String())
+	}
+	if strings.Contains(recorder.Body.String(), "<tool_call>") || strings.Count(recorder.Body.String(), `"type":"function"`) != 1 {
+		t.Fatalf("duplicated native/textual call was not coalesced: %s", recorder.Body.String())
+	}
+	if !strings.Contains(recorder.Body.String(), `"id":"native-stable"`) {
+		t.Fatalf("native id was not retained: %s", recorder.Body.String())
+	}
+	rows := srv.ledger.(*ledger.Memory).Snapshot()
+	if len(rows) != 1 || rows[0].TokensInput != 21 || rows[0].TokensOutput != 8 {
+		t.Fatalf("debit mismatch: %+v", rows)
+	}
+}
+
+func TestProxyMiMoIdenticalParallelTextualCallsHaveStableUniqueIDs(t *testing.T) {
+	call := `<tool_call><function=read_file><parameter=path>/same</parameter></function></tool_call>`
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `{"choices":[{"index":0,"message":{"role":"assistant","content":%q},"finish_reason":"stop"}],"usage":{"prompt_tokens":2,"completion_tokens":3,"total_tokens":5}}`, call+call)
+	}))
+	defer upstream.Close()
+
+	srv := newTestServer(t, upstream.URL, false)
+	request := func() []string {
+		t.Helper()
+		req := newGatewayRequest(http.MethodPost, "/v1/chat/completions", []byte(`{"model":"mimo-v2.5-pro","messages":[]}`), map[string]string{
+			types.HeaderSlot: types.SlotCody,
+		})
+		recorder := httptest.NewRecorder()
+		srv.Mux().ServeHTTP(recorder, req)
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("status=%d body=%s", recorder.Code, recorder.Body.String())
+		}
+		var response struct {
+			Choices []struct {
+				Message struct {
+					ToolCalls []struct {
+						ID string `json:"id"`
+					} `json:"tool_calls"`
+				} `json:"message"`
+			} `json:"choices"`
+		}
+		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if len(response.Choices) != 1 || len(response.Choices[0].Message.ToolCalls) != 2 {
+			t.Fatalf("parallel calls missing: %s", recorder.Body.String())
+		}
+		return []string{response.Choices[0].Message.ToolCalls[0].ID, response.Choices[0].Message.ToolCalls[1].ID}
+	}
+	first := request()
+	second := request()
+	if first[0] == "" || first[1] == "" || first[0] == first[1] {
+		t.Fatalf("parallel ids are not unique: %+v", first)
+	}
+	if first[0] != second[0] || first[1] != second[1] {
+		t.Fatalf("parallel ids are not stable: first=%+v second=%+v", first, second)
+	}
+}
+
+func TestProxyMiMoTruncatedTextualCallIsRecovered(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"choices":[{"index":0,"message":{"role":"assistant","content":"prefix <tool_call><function=read_file><parameter=path>/truncated"},"finish_reason":"stop"}],"usage":{"prompt_tokens":4,"completion_tokens":6,"total_tokens":10}}`)
+	}))
+	defer upstream.Close()
+
+	srv := newTestServer(t, upstream.URL, false)
+	req := newGatewayRequest(http.MethodPost, "/v1/chat/completions", []byte(`{"model":"mimo-v2.5-pro","messages":[]}`), map[string]string{
+		types.HeaderSlot: types.SlotCody,
+	})
+	recorder := httptest.NewRecorder()
+	srv.Mux().ServeHTTP(recorder, req)
+	if recorder.Code != http.StatusOK || strings.Contains(recorder.Body.String(), "<tool_call>") {
+		t.Fatalf("truncated call not normalized: status=%d body=%s", recorder.Code, recorder.Body.String())
+	}
+	if !strings.Contains(recorder.Body.String(), `"content":"prefix"`) ||
+		!strings.Contains(recorder.Body.String(), `"arguments":"{\"path\":\"/truncated\"}"`) {
+		t.Fatalf("truncated call recovery mismatch: %s", recorder.Body.String())
+	}
+}
+
+func TestProxyMiMoBufferedMismatchStillDebitsRawUsage(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"choices":[{"index":0,"message":{"role":"assistant","content":"<tool_call><function=read_file><parameter=path>/textual</parameter></function></tool_call>","tool_calls":[{"id":"native","type":"function","function":{"name":"read_file","arguments":"{\"path\":\"/native\"}"}}]},"finish_reason":"stop"}],"usage":{"prompt_tokens":31,"completion_tokens":12,"total_tokens":43}}`)
+	}))
+	defer upstream.Close()
+
+	srv := newTestServer(t, upstream.URL, false)
+	req := newGatewayRequest(http.MethodPost, "/v1/chat/completions", []byte(`{"model":"mimo-v2.5-pro","messages":[]}`), map[string]string{
+		types.HeaderSlot: types.SlotCody,
+	})
+	recorder := httptest.NewRecorder()
+	srv.Mux().ServeHTTP(recorder, req)
+	if recorder.Code != http.StatusBadGateway || !strings.Contains(recorder.Body.String(), "upstream_tool_protocol") {
+		t.Fatalf("expected protocol 502, status=%d body=%s", recorder.Code, recorder.Body.String())
+	}
+	rows := srv.ledger.(*ledger.Memory).Snapshot()
+	if len(rows) != 1 || rows[0].TokensInput != 31 || rows[0].TokensOutput != 12 {
+		t.Fatalf("raw mismatch usage was not debited: %+v", rows)
+	}
+}
+
+func TestProxyMiMoStreamingMismatchDrainsUsageWithoutDone(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		flusher, _ := w.(http.Flusher)
+		emit := func(event string) {
+			_, _ = io.WriteString(w, event)
+			if flusher != nil {
+				flusher.Flush()
+			}
+		}
+		emit(`data: {"choices":[{"index":0,"delta":{"content":"<tool_call><function=read_file><parameter=path>/textual</parameter></function></tool_call>","tool_calls":[{"index":0,"id":"native","type":"function","function":{"name":"read_file","arguments":"{\"path\":\"/native\"}"}}]},"finish_reason":"stop"}]}` + "\n\n")
+		emit(`data: {"choices":[],"usage":{"prompt_tokens":41,"completion_tokens":14,"total_tokens":55}}` + "\n\n")
+		emit("data: [DONE]\n\n")
+	}))
+	defer upstream.Close()
+
+	srv := newTestServer(t, upstream.URL, false)
+	req := newGatewayRequest(http.MethodPost, "/v1/chat/completions", []byte(`{"model":"mimo-v2.5-pro","messages":[],"stream":true}`), map[string]string{
+		types.HeaderSlot: types.SlotCody,
+	})
+	recorder := httptest.NewRecorder()
+	srv.Mux().ServeHTTP(recorder, req)
+	if strings.Contains(recorder.Body.String(), "[DONE]") || strings.Contains(recorder.Body.String(), "<tool_call>") {
+		t.Fatalf("failed stream leaked terminal/tool data: %s", recorder.Body.String())
+	}
+	rows := srv.ledger.(*ledger.Memory).Snapshot()
+	if len(rows) != 1 || rows[0].TokensInput != 41 || rows[0].TokensOutput != 14 {
+		t.Fatalf("drained mismatch usage was not debited: %+v", rows)
+	}
+}
+
+func TestProxyMiMoStreamEOFFlushesTruncatedCallAndDebits(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = io.WriteString(w, `data: {"choices":[{"index":0,"delta":{"content":"<tool_call><function=read_file><parameter=path>/eof"},"finish_reason":null}]}`+"\n\n")
+		_, _ = io.WriteString(w, `data: {"choices":[],"usage":{"prompt_tokens":17,"completion_tokens":9,"total_tokens":26}}`+"\n\n")
+	}))
+	defer upstream.Close()
+
+	srv := newTestServer(t, upstream.URL, false)
+	req := newGatewayRequest(http.MethodPost, "/v1/chat/completions", []byte(`{"model":"mimo-v2.5-pro","messages":[],"stream":true}`), map[string]string{
+		types.HeaderSlot: types.SlotCody,
+	})
+	recorder := httptest.NewRecorder()
+	srv.Mux().ServeHTTP(recorder, req)
+	if strings.Contains(recorder.Body.String(), "<tool_call>") || strings.Contains(recorder.Body.String(), "[DONE]") ||
+		!strings.Contains(recorder.Body.String(), `"name":"read_file"`) {
+		t.Fatalf("EOF normalization mismatch: %s", recorder.Body.String())
+	}
+	rows := srv.ledger.(*ledger.Memory).Snapshot()
+	if len(rows) != 1 || rows[0].TokensInput != 17 || rows[0].TokensOutput != 9 {
+		t.Fatalf("EOF debit mismatch: %+v", rows)
+	}
+}
+
+type failingStreamWriter struct {
+	header    http.Header
+	body      bytes.Buffer
+	status    int
+	writes    int
+	failAfter int
+}
+
+func (writer *failingStreamWriter) Header() http.Header {
+	return writer.header
+}
+
+func (writer *failingStreamWriter) WriteHeader(status int) {
+	writer.status = status
+}
+
+func (writer *failingStreamWriter) Write(value []byte) (int, error) {
+	writer.writes++
+	if writer.writes > writer.failAfter {
+		return 0, io.ErrClosedPipe
+	}
+	return writer.body.Write(value)
+}
+
+func (writer *failingStreamWriter) Flush() {}
+
+func TestProxyStreamClientCancellationDrainsAndDebits(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = io.WriteString(w, `data: {"choices":[{"index":0,"delta":{"content":"hello"},"finish_reason":null}]}`+"\n\n")
+		_, _ = io.WriteString(w, `data: {"choices":[],"usage":{"prompt_tokens":19,"completion_tokens":11,"total_tokens":30}}`+"\n\n")
+		_, _ = io.WriteString(w, "data: [DONE]\n\n")
+	}))
+	defer upstream.Close()
+
+	srv := newTestServer(t, upstream.URL, false)
+	req := newGatewayRequest(http.MethodPost, "/v1/chat/completions", []byte(`{"model":"mimo-v2.5-pro","messages":[],"stream":true}`), map[string]string{
+		types.HeaderSlot: types.SlotCody,
+	})
+	writer := &failingStreamWriter{header: make(http.Header), failAfter: 1}
+	srv.Mux().ServeHTTP(writer, req)
+	if strings.Contains(writer.body.String(), "[DONE]") {
+		t.Fatalf("DONE was forwarded after client write failure: %s", writer.body.String())
+	}
+	rows := srv.ledger.(*ledger.Memory).Snapshot()
+	if len(rows) != 1 || rows[0].TokensInput != 19 || rows[0].TokensOutput != 11 {
+		t.Fatalf("cancellation drain did not debit: %+v", rows)
+	}
+}
+
+func TestProxyNonXiaomiStreamPassesThroughByteIdentical(t *testing.T) {
+	exact := "data: {\"choices\":[{\"index\":0,\"delta\":{\"content\":\"<tool_call>opaque\"}}]}\n\n" +
+		"data: {\"choices\":[],\"usage\":{\"prompt_tokens\":7,\"completion_tokens\":3,\"total_tokens\":10}}\n\n" +
+		"data: [DONE]\n\n"
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = io.WriteString(w, exact)
+	}))
+	defer upstream.Close()
+
+	srv := newTestServer(t, upstream.URL, true)
+	req := newGatewayRequest(http.MethodPost, "/v1/chat/completions", []byte(`{"model":"accounts/fireworks/models/deepseek-v4-flash","messages":[],"stream":true}`), map[string]string{
+		types.HeaderSlot: "executor",
+	})
+	recorder := httptest.NewRecorder()
+	srv.Mux().ServeHTTP(recorder, req)
+	if recorder.Body.String() != exact {
+		t.Fatalf("non-Xiaomi SSE was rewritten:\nwant %q\n got %q", exact, recorder.Body.String())
+	}
+	rows := srv.ledger.(*ledger.Memory).Snapshot()
+	if len(rows) != 1 || rows[0].TokensInput != 7 || rows[0].TokensOutput != 3 {
+		t.Fatalf("non-Xiaomi stream debit mismatch: %+v", rows)
+	}
+}
+
+func TestProxyScopedAgentCoreCredentialBindsActorSlotAndProtectsProviderKey(t *testing.T) {
+	const providerKey = "mimo-provider-key-sentinel"
+	var upstreamCalls atomic.Int32
+	var upstreamAuthorization string
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		upstreamCalls.Add(1)
+		upstreamAuthorization = r.Header.Get(types.HeaderAuthorization)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(types.HeaderAuthorization, "Bearer "+providerKey)
+		_, _ = io.WriteString(w, `{"choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":13,"completion_tokens":5,"total_tokens":18}}`)
+	}))
+	defer upstream.Close()
+
+	srv := newTestServer(t, upstream.URL, false)
+	now := time.Date(2026, 5, 27, 0, 0, 0, 0, time.UTC)
+	token, key := configureScopedAgentCoreAuth(t, srv, now)
+	srv.provider.XiaomiKey = providerKey
+	requestModel := func(path, currentToken, actor, slot, model string, extra map[string]string) *httptest.ResponseRecorder {
+		t.Helper()
+		body, err := json.Marshal(map[string]any{
+			"model":    model,
+			"messages": []map[string]string{{"role": "user", "content": "build"}},
+		})
+		if err != nil {
+			t.Fatalf("marshal request: %v", err)
+		}
+		r := newGatewayRequest(http.MethodPost, path, body, map[string]string{
+			types.HeaderSlot: slot,
+		})
+		r.Header.Set(types.HeaderAuthorization, "Bearer "+currentToken)
+		r.Header.Set(types.HeaderActorDID, actor)
+		for name, value := range extra {
+			r.Header.Set(name, value)
+		}
+		w := httptest.NewRecorder()
+		srv.Mux().ServeHTTP(w, r)
+		return w
+	}
+	request := func(path, currentToken, actor, slot string, extra map[string]string) *httptest.ResponseRecorder {
+		t.Helper()
+		return requestModel(path, currentToken, actor, slot, auth.AgentCoreModel, extra)
+	}
+
+	valid := request(
+		"/v1/chat/completions",
+		token,
+		"did:matrix:user-scoped:cody",
+		types.SlotCody,
+		nil,
+	)
+	if valid.Code != http.StatusOK {
+		t.Fatalf("valid scoped status=%d body=%s", valid.Code, valid.Body.String())
+	}
+	if token == providerKey || upstreamAuthorization != "Bearer "+providerKey {
+		t.Fatalf("inbound token crossed provider boundary: token_equal=%v upstream_auth=%q", token == providerKey, upstreamAuthorization)
+	}
+	if valid.Header().Get(types.HeaderAuthorization) != "" ||
+		strings.Contains(valid.Body.String(), providerKey) || strings.Contains(valid.Body.String(), token) {
+		t.Fatalf("credential leaked downstream: headers=%v body=%s", valid.Header(), valid.Body.String())
+	}
+	rows := srv.ledger.(*ledger.Memory).Snapshot()
+	if len(rows) != 1 || rows[0].ActorDID != "did:matrix:user-scoped:cody" || rows[0].Slot != types.SlotCody {
+		t.Fatalf("scoped ledger attribution=%+v", rows)
+	}
+	for _, deniedModel := range []string{"xiaomimimo/mimo-v2.5-pro", "grok-4.3"} {
+		response := requestModel(
+			"/v1/chat/completions",
+			token,
+			"did:matrix:user-scoped:cody",
+			types.SlotCody,
+			deniedModel,
+			nil,
+		)
+		if response.Code != http.StatusForbidden || !strings.Contains(response.Body.String(), "scoped_model_mismatch") {
+			t.Fatalf("model %q bypass status=%d body=%s", deniedModel, response.Code, response.Body.String())
+		}
+	}
+
+	expiredIssuer, err := auth.NewAgentCoreIssuer(auth.AgentCoreIssuerOptions{
+		KeyID: "active-test", Key: key, Now: func() time.Time { return now.Add(-time.Hour) },
+	})
+	if err != nil {
+		t.Fatalf("expired issuer: %v", err)
+	}
+	expired, _, err := expiredIssuer.Mint("did:matrix:user-scoped:cody", auth.AgentCoreTokenTTL)
+	if err != nil {
+		t.Fatalf("expired token: %v", err)
+	}
+	parts := strings.Split(token, ".")
+	signature, _ := base64.RawURLEncoding.DecodeString(parts[2])
+	signature[0] ^= 1
+	tampered := parts[0] + "." + parts[1] + "." + base64.RawURLEncoding.EncodeToString(signature)
+
+	tests := []struct {
+		name  string
+		path  string
+		token string
+		actor string
+		slot  string
+		extra map[string]string
+	}{
+		{name: "actor spoof", path: "/v1/chat/completions", token: token, actor: "did:matrix:other:cody", slot: types.SlotCody},
+		{name: "slot spoof", path: "/v1/chat/completions", token: token, actor: "did:matrix:user-scoped:cody", slot: types.SlotNeo},
+		{name: "wrong path", path: "/v1/embeddings", token: token, actor: "did:matrix:user-scoped:cody", slot: types.SlotCody},
+		{name: "byo", path: "/v1/chat/completions", token: token, actor: "did:matrix:user-scoped:cody", slot: types.SlotCody, extra: map[string]string{
+			types.HeaderBYOAPIKey: "true", types.HeaderUserAPIKey: "user-provider-key",
+		}},
+		{name: "expired", path: "/v1/chat/completions", token: expired, actor: "did:matrix:user-scoped:cody", slot: types.SlotCody},
+		{name: "tampered", path: "/v1/chat/completions", token: tampered, actor: "did:matrix:user-scoped:cody", slot: types.SlotCody},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := request(test.path, test.token, test.actor, test.slot, test.extra)
+			if response.Code != http.StatusUnauthorized {
+				t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+			}
+			if strings.Contains(response.Body.String(), providerKey) || strings.Contains(response.Body.String(), test.token) {
+				t.Fatalf("credential leaked in denial: %s", response.Body.String())
+			}
+		})
+	}
+	if upstreamCalls.Load() != 1 {
+		t.Fatalf("denied requests reached upstream: calls=%d", upstreamCalls.Load())
 	}
 }
 
