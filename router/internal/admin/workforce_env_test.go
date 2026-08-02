@@ -38,6 +38,8 @@ func TestInstanceEnvAddsPerUserWorkforceCredentialsWithoutRootSecret(t *testing.
 		"WORKFORCE_OWNER_TOKEN", "WORKFORCE_WAKE_TOKEN",
 		"WORKFORCE_OWNER_KEY_ID", "WORKFORCE_OWNER_PUBLIC_KEY",
 		"WORKFORCE_RUNTIME_KEY_ID", "WORKFORCE_RUNTIME_PRIVATE_KEY",
+		"WORKFORCE_COMPANY_ISSUER_KEY_ID",
+		"WORKFORCE_COMPANY_ISSUER_PRIVATE_KEY",
 		"WORKFORCE_AUDITOR_SEAT_ID",
 	} {
 		if envA[name] == "" {
@@ -45,7 +47,8 @@ func TestInstanceEnvAddsPerUserWorkforceCredentialsWithoutRootSecret(t *testing.
 		}
 	}
 	if envA["WORKFORCE_OWNER_TOKEN"] == envB["WORKFORCE_OWNER_TOKEN"] ||
-		envA["WORKFORCE_RUNTIME_PRIVATE_KEY"] == envB["WORKFORCE_RUNTIME_PRIVATE_KEY"] {
+		envA["WORKFORCE_RUNTIME_PRIVATE_KEY"] == envB["WORKFORCE_RUNTIME_PRIVATE_KEY"] ||
+		envA["WORKFORCE_COMPANY_ISSUER_PRIVATE_KEY"] == envB["WORKFORCE_COMPANY_ISSUER_PRIVATE_KEY"] {
 		t.Fatal("per-user credentials were reused")
 	}
 	for _, name := range []string{
@@ -60,6 +63,16 @@ func TestInstanceEnvAddsPerUserWorkforceCredentialsWithoutRootSecret(t *testing.
 	privateKey, err := base64.RawURLEncoding.DecodeString(envA["WORKFORCE_RUNTIME_PRIVATE_KEY"])
 	if err != nil || len(privateKey) != ed25519.PrivateKeySize {
 		t.Fatalf("runtime key invalid: bytes=%d err=%v", len(privateKey), err)
+	}
+	companyIssuerKey, err := base64.RawURLEncoding.DecodeString(
+		envA["WORKFORCE_COMPANY_ISSUER_PRIVATE_KEY"],
+	)
+	if err != nil || len(companyIssuerKey) != ed25519.PrivateKeySize {
+		t.Fatalf("company issuer key invalid: bytes=%d err=%v", len(companyIssuerKey), err)
+	}
+	if string(privateKey) == string(companyIssuerKey) ||
+		envA["WORKFORCE_RUNTIME_KEY_ID"] == envA["WORKFORCE_COMPANY_ISSUER_KEY_ID"] {
+		t.Fatal("company issuer and runtime authority were not separated")
 	}
 	if envA["MATRIX_GATEWAY_URL"] != "https://gateway.example" {
 		t.Fatal("baseline machine environment was not preserved")

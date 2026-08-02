@@ -42,6 +42,15 @@ func (d *Deriver) RuntimePrivateKey(userID string) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(privateKey), nil
 }
 
+func (d *Deriver) CompanyIssuerPrivateKey(userID string) (string, error) {
+	seed, err := d.derive("company-issuer-signing-key", userID)
+	if err != nil {
+		return "", err
+	}
+	privateKey := ed25519.NewKeyFromSeed(seed)
+	return base64.RawURLEncoding.EncodeToString(privateKey), nil
+}
+
 func (d *Deriver) BootstrapOwnerPublicKey(userID string) (string, error) {
 	seed, err := d.derive("bootstrap-owner-key", userID)
 	if err != nil {

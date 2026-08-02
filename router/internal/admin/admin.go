@@ -417,23 +417,29 @@ func (h *Handler) instanceEnv(userID string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	companyIssuerKey, err := h.Workforce.CompanyIssuerPrivateKey(userID)
+	if err != nil {
+		return nil, err
+	}
 	ownerPublicKey, err := h.Workforce.BootstrapOwnerPublicKey(userID)
 	if err != nil {
 		return nil, err
 	}
 	for key, value := range map[string]string{
-		"WORKFORCE_ENABLED":             "true",
-		"WORKFORCE_POSTGRES_URI":        h.WorkforcePostgresURI,
-		"WORKFORCE_TENANT_ID":           userID,
-		"WORKFORCE_ORGANIZATION_ID":     "organization-" + userID,
-		"WORKFORCE_OWNER_ID":            "owner-" + userID,
-		"WORKFORCE_OWNER_TOKEN":         ownerToken,
-		"WORKFORCE_WAKE_TOKEN":          wakeToken,
-		"WORKFORCE_OWNER_KEY_ID":        "bootstrap-owner-v1",
-		"WORKFORCE_OWNER_PUBLIC_KEY":    ownerPublicKey,
-		"WORKFORCE_RUNTIME_KEY_ID":      "runtime-v1",
-		"WORKFORCE_RUNTIME_PRIVATE_KEY": runtimeKey,
-		"WORKFORCE_AUDITOR_SEAT_ID":     "seat-developer-auditor",
+		"WORKFORCE_ENABLED":                    "true",
+		"WORKFORCE_POSTGRES_URI":               h.WorkforcePostgresURI,
+		"WORKFORCE_TENANT_ID":                  userID,
+		"WORKFORCE_ORGANIZATION_ID":            "organization-" + userID,
+		"WORKFORCE_OWNER_ID":                   "owner-" + userID,
+		"WORKFORCE_OWNER_TOKEN":                ownerToken,
+		"WORKFORCE_WAKE_TOKEN":                 wakeToken,
+		"WORKFORCE_OWNER_KEY_ID":               "bootstrap-owner-v1",
+		"WORKFORCE_OWNER_PUBLIC_KEY":           ownerPublicKey,
+		"WORKFORCE_RUNTIME_KEY_ID":             "runtime-v1",
+		"WORKFORCE_RUNTIME_PRIVATE_KEY":        runtimeKey,
+		"WORKFORCE_COMPANY_ISSUER_KEY_ID":      "company-issuer-v1",
+		"WORKFORCE_COMPANY_ISSUER_PRIVATE_KEY": companyIssuerKey,
+		"WORKFORCE_AUDITOR_SEAT_ID":            "seat-developer-auditor",
 	} {
 		env[key] = value
 	}

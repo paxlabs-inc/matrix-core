@@ -39,6 +39,27 @@ func TestDeriverProducesStableSeparatedPerUserCredentials(t *testing.T) {
 	if err != nil || len(runtimeKey) != ed25519.PrivateKeySize {
 		t.Fatalf("runtime private key is invalid: bytes=%d err=%v", len(runtimeKey), err)
 	}
+	companyIssuerEncoded, err := deriver.CompanyIssuerPrivateKey("user-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	companyIssuerKey, err := base64.RawURLEncoding.DecodeString(companyIssuerEncoded)
+	if err != nil || len(companyIssuerKey) != ed25519.PrivateKeySize {
+		t.Fatalf("company issuer private key is invalid: bytes=%d err=%v", len(companyIssuerKey), err)
+	}
+	companyIssuerAgain, err := deriver.CompanyIssuerPrivateKey("user-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	companyIssuerB, err := deriver.CompanyIssuerPrivateKey("user-b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if companyIssuerEncoded != companyIssuerAgain ||
+		companyIssuerEncoded == companyIssuerB ||
+		companyIssuerEncoded == runtimeEncoded {
+		t.Fatal("company issuer key is not stable and domain-separated")
+	}
 	ownerPublicEncoded, err := deriver.BootstrapOwnerPublicKey("user-a")
 	if err != nil {
 		t.Fatal(err)
