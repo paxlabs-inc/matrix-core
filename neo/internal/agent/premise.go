@@ -161,7 +161,7 @@ Usually 1-4 premises. Return [] when the plan rests on no factual premise.`
 
 // epistemicPremisesOn reports whether Mechanism 1 is active.
 func (a *Agent) epistemicPremisesOn() bool {
-	return a.cfg.EpistemicPremises
+	return a.cfg.EpistemicPremises && a.executionPosture()
 }
 
 // premiseObservePlan runs at the plan-formation seam: the first committing

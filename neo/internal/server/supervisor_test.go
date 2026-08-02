@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"matrix/neo/internal/agent"
+	"matrix/neo/internal/config"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/o1"
 )
@@ -59,6 +60,27 @@ func TestSuperviseDecision(t *testing.T) {
 		if got != c.want {
 			t.Errorf("%s: superviseDecision = %v, want %v", c.name, got, c.want)
 		}
+	}
+}
+
+func TestPostureRespawnLimit(t *testing.T) {
+	cfg := config.Default()
+	cfg.TaskMaxRespawns = 7
+	if got := postureRespawnLimit(cfg, "hello there"); got != 7 {
+		t.Fatalf("flag-off limit = %d, want 7", got)
+	}
+	cfg.InteractionPosture = true
+	if got := postureRespawnLimit(cfg, "hello there"); got != 0 {
+		t.Fatalf("conversation limit = %d, want 0", got)
+	}
+	if got := postureRespawnLimit(cfg, "research the current status"); got != 0 {
+		t.Fatalf("exploration limit = %d, want 0", got)
+	}
+	if got := postureRespawnLimit(cfg, "implement and deploy the fix"); got != 7 {
+		t.Fatalf("execution limit = %d, want 7", got)
+	}
+	if got := superviseDecision(false, agent.ErrIncomplete, delegate.ClassNone, nil, 1, postureRespawnLimit(cfg, "implement the fix")); got != actRespawn {
+		t.Fatalf("wedged execution must retain supervisor respawn, got %v", got)
 	}
 }
 

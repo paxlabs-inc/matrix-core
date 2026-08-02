@@ -9,7 +9,12 @@
 // itself; it verdicts, and closeTurn acts.
 package agent
 
-import "matrix/neo/internal/llm"
+import (
+	"context"
+	"fmt"
+
+	"matrix/neo/internal/llm"
+)
 
 // closeVerdict is the explicit verdict a close guard returns (req.4.1).
 type closeVerdict string
@@ -100,7 +105,11 @@ func (a *Agent) evalCloseChain(cc *closeContext) (string, closeDecision) {
 // the turn boundary. Contract — mutates: the working transcript (appends the
 // drained user messages); fires only when at least one message was injected.
 func guardInboxDrain(a *Agent, _ *closeContext) (closeDecision, bool) {
-	if !a.drainInbox() {
+	injected, err := a.drainInbox(context.Background())
+	if err != nil {
+		return closeDecision{verdict: verdictSuppress, err: fmt.Errorf("neo: persist queued user message: %w", err)}, true
+	}
+	if !injected {
 		return closeDecision{}, false
 	}
 	return closeDecision{verdict: verdictSuppress}, true

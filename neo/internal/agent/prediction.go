@@ -196,7 +196,7 @@ func (a *Agent) compareExpectationModel(ctx context.Context, expect, content str
 
 // epistemicPredictionsOn reports whether Mechanism 3 is active.
 func (a *Agent) epistemicPredictionsOn() bool {
-	return a.cfg.EpistemicPredictions
+	return a.cfg.EpistemicPredictions && a.executionPosture()
 }
 
 // predictionObserve is the belief-update seam, called from the single-threaded

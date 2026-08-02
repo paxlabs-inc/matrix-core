@@ -39,6 +39,7 @@ import (
 	"matrix/neo/internal/runrecord"
 	sbx "matrix/neo/internal/sandbox"
 	"matrix/neo/internal/server"
+	"matrix/neo/internal/sessionjournal"
 	"matrix/neo/internal/task"
 	"matrix/neo/internal/telegramsettings"
 	"matrix/neo/internal/tools"
@@ -236,6 +237,11 @@ func runServe(args []string) {
 	// resume it (the Task Durability Rule).
 	taskDir := task.Dir(os.Getenv("NEO_TASKS_DIR"), cfg.CortexRoot)
 	runDir := runrecord.Dir(os.Getenv("NEO_RUNS_DIR"), cfg.CortexRoot)
+	journalPath := sessionjournal.Dir(os.Getenv("NEO_SESSION_JOURNAL_PATH"), cfg.CortexRoot)
+	journal, err := sessionjournal.Open(ctx, journalPath, vaultSess)
+	if err != nil {
+		fatal("cannot start session journal: %v", err)
+	}
 	// Durable workspace trace: "Neo's Computer" (tool steps / search cards /
 	// media / surfaces / swarm windows) persisted per run beside history on the
 	// machine volume, so reopening a thread rebuilds the workspace instead of
@@ -341,6 +347,7 @@ func runServe(args []string) {
 		ConversationDir:        convDir,
 		TaskDir:                taskDir,
 		RunDir:                 runDir,
+		Journal:                journal,
 		TraceDir:               traceDir,
 		AutomatrixDir:          automatrixDir,
 		AutomatrixSettingsDir:  automatrixsettings.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot),
@@ -378,6 +385,9 @@ func runServe(args []string) {
 	}
 	if traceDir != "" {
 		fmt.Printf("  trace: %s (workspace survives reload)\n", traceDir)
+	}
+	if journalPath != "" {
+		fmt.Printf("  session journal: %s\n", journalPath)
 	}
 	if automatrixDir != "" {
 		fmt.Printf("  automatrix: %s (completion inbox survives reload)\n", automatrixDir)

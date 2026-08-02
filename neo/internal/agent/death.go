@@ -100,7 +100,7 @@ func (a *Agent) snapshotLoop(step, pct, repeats int, recentSigs []string, batch 
 // preserving the existing summary + successor-prime digest (req.3.2).
 func (a *Agent) recordDeath(reason, digest string) {
 	a.turn.lastDeath = &LoopDeath{
-		Objective:        truncate(strings.TrimSpace(a.activeGoal), 200),
+		Objective:        truncate(a.currentObjective(), 200),
 		Faculty:          a.faculty(),
 		Reason:           reason,
 		LastTool:         a.turn.curLoop.lastTool,

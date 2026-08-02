@@ -421,7 +421,7 @@ func casOpLabel(calls []llm.ToolCall) string {
 // never fires on a pure-conversation turn (a greeting or an explanation is a valid
 // bare answer with no tool evidence).
 func (a *Agent) goalWantsAction() bool {
-	g := strings.ToLower(a.activeGoal)
+	g := strings.ToLower(a.currentObjective())
 	for _, v := range []string{"deploy", "send ", "transfer", "swap", "build", "create", "generate", "fetch", "download", "search", "browse", "run ", "execute", "install", "make me", "render"} {
 		if strings.Contains(g, v) {
 			return true

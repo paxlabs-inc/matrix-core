@@ -43,6 +43,7 @@ import (
 	"matrix/neo/internal/preview"
 	"matrix/neo/internal/runrecord"
 	"matrix/neo/internal/sandbox"
+	"matrix/neo/internal/sessionjournal"
 	"matrix/neo/internal/task"
 	"matrix/neo/internal/telegramsettings"
 	"matrix/neo/internal/tools"
@@ -69,6 +70,7 @@ type Engine struct {
 	conv               *conversation.Store // durable chat-thread history (per conversation_id)
 	tasks              *task.Store         // durable task-supervision ledger (survives restart/suspend)
 	runRecords         *runrecord.Store
+	journal            *sessionjournal.Store
 	trace              *trace.Store         // durable per-run workspace timeline ("Neo's Computer"); sidecar, never cortex
 	automatrix         *automatrixlog.Store // durable Automatrix completion inbox (in-app surprise results); sidecar, never cortex
 	briefHistory       *briefhistory.Store  // durable morning-brief recommendation history + feedback (ORACLE task 5.5); sidecar, never cortex
@@ -227,6 +229,7 @@ type EngineOptions struct {
 	ConversationDir        string // durable conversation store dir ("" disables persistence)
 	TaskDir                string // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
 	RunDir                 string
+	Journal                *sessionjournal.Store
 	TraceDir               string // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
 	AutomatrixDir          string // durable Automatrix completion-inbox dir ("" disables; the in-app surprise-results store)
 	AutomatrixSettingsDir  string // durable Automatrix opt-in settings dir ("" = in-memory only; wiring the production governor)
@@ -266,6 +269,7 @@ func NewEngine(o EngineOptions) *Engine {
 		conv:               conversation.Open(o.ConversationDir),
 		tasks:              task.Open(o.TaskDir),
 		runRecords:         runrecord.Open(o.RunDir),
+		journal:            o.Journal,
 		trace:              trace.Open(o.TraceDir),
 		automatrix:         automatrixlog.Open(o.AutomatrixDir),
 		briefHistory:       briefhistory.Open(o.BriefHistoryDir),
@@ -531,6 +535,9 @@ func (e *Engine) Close() {
 		cancel()
 	}
 	e.trace.Close()
+	if e.journal != nil {
+		_ = e.journal.Close()
+	}
 }
 
 // waitBounded waits for wg up to d, returning early when it drains. Used only
@@ -788,6 +795,23 @@ func (e *Engine) approverFor(r *run) delegate.Approver {
 			r.sess.clearGate(nodeID)
 			return false, ""
 		case a := <-ans:
+			decision := "denied"
+			if a.approved {
+				decision = "approved"
+			}
+			if e.journal != nil {
+				if _, err := e.journal.Append(ctx, sessionjournal.Event{
+					ConversationID: r.convID, TurnID: r.id,
+					Kind: sessionjournal.KindApproval, DisplayContent: question,
+					Approval: &sessionjournal.Approval{
+						ApprovalID: nodeID, Action: question,
+						Decision: decision, Authority: "user", Reason: a.answer,
+					},
+				}); err != nil {
+					e.logLifecycle("journal.approval", r.id, r.convID, decision, time.Since(r.started), err)
+					return false, ""
+				}
+			}
 			e.broker.publish(r.id, "gate.decided", "neo", map[string]interface{}{
 				"intent_id": r.id,
 				"node_id":   nodeID,
@@ -1163,6 +1187,18 @@ func (e *Engine) surfaceTool(r *run, ev agent.ToolEvent) {
 	// object storage as a content-addressed ref (boundaries: never bytes in the
 	// conversation store or cortex).
 	if a, ok := parseArtifact(ev.Result); ok {
+		if e.journal != nil {
+			if _, err := e.journal.Append(context.Background(), sessionjournal.Event{
+				ConversationID: r.convID, TurnID: r.id,
+				Kind: sessionjournal.KindArtifact, DisplayContent: ev.Result,
+				Artifact: &sessionjournal.Artifact{
+					ArtifactID: ev.ID + ":" + a.URL, Kind: a.Kind,
+					URI: a.URL,
+				},
+			}); err != nil {
+				e.logLifecycle("journal.artifact", r.id, r.convID, a.Kind, time.Since(r.started), err)
+			}
+		}
 		e.broker.publish(r.id, "tool.artifact", "neo", map[string]interface{}{
 			"intent_id":       r.id,
 			"conversation_id": r.convID,

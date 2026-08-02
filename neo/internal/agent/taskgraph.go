@@ -45,10 +45,10 @@ type taskGraph struct {
 	actionsSinceGrowth int
 }
 
-// ensureGraph lazily seeds the graph from the active goal.
+// ensureGraph lazily seeds the graph from the authoritative current objective.
 func (a *Agent) ensureGraph() *taskGraph {
 	if a.turn.graph == nil {
-		a.turn.graph = &taskGraph{Goal: a.activeGoal, evidenceSet: map[string]struct{}{}}
+		a.turn.graph = &taskGraph{Goal: a.currentObjective(), evidenceSet: map[string]struct{}{}}
 	}
 	return a.turn.graph
 }

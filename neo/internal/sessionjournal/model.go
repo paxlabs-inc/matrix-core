@@ -14,17 +14,17 @@ import (
 type Kind string
 
 const (
-	KindUserMessage     Kind = "user_message"
+	KindUserMessage      Kind = "user_message"
 	KindAssistantMessage Kind = "assistant_message"
-	KindToolCall        Kind = "tool_call"
-	KindToolResult      Kind = "tool_result"
-	KindReasoning       Kind = "reasoning"
-	KindProviderReplay  Kind = "provider_replay"
-	KindApproval        Kind = "approval"
-	KindArtifact        Kind = "artifact"
-	KindUncertainEffect Kind = "uncertain_effect"
-	KindSupervisor      Kind = "supervisor"
-	KindRecovery        Kind = "recovery"
+	KindToolCall         Kind = "tool_call"
+	KindToolResult       Kind = "tool_result"
+	KindReasoning        Kind = "reasoning"
+	KindProviderReplay   Kind = "provider_replay"
+	KindApproval         Kind = "approval"
+	KindArtifact         Kind = "artifact"
+	KindUncertainEffect  Kind = "uncertain_effect"
+	KindSupervisor       Kind = "supervisor"
+	KindRecovery         Kind = "recovery"
 )
 
 const (
@@ -78,11 +78,11 @@ type ToolCall struct {
 }
 
 type ToolResult struct {
-	CallID        string `json:"call_id"`
-	Name          string `json:"name"`
-	Result        []byte `json:"result,omitempty"`
-	IsError       bool   `json:"is_error,omitempty"`
-	FailureClass  string `json:"failure_class,omitempty"`
+	CallID           string `json:"call_id"`
+	Name             string `json:"name"`
+	Result           []byte `json:"result,omitempty"`
+	IsError          bool   `json:"is_error,omitempty"`
+	FailureClass     string `json:"failure_class,omitempty"`
 	ProviderMetadata []byte `json:"provider_metadata,omitempty"`
 }
 

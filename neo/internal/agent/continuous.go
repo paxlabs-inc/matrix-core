@@ -20,6 +20,7 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -312,8 +313,20 @@ func (a *Agent) renderActivationBundle(b *cortex.ActivationBundle) string {
 
 	sb.WriteString("(Reference notes, not a new message — this conversation is already in progress. Continue from the live exchange above; do NOT restart it or re-answer an earlier request.)\n")
 
-	if goal := strings.TrimSpace(a.activeGoal); goal != "" {
-		fmt.Fprintf(&sb, "Standing objective for this conversation (background, already underway — not a fresh request): %s\n", goal)
+	if !a.cfg.SessionCurrentIntent {
+		if goal := strings.TrimSpace(a.activeGoal); goal != "" {
+			fmt.Fprintf(&sb, "Standing objective for this conversation (background, already underway — not a fresh request): %s\n", goal)
+		}
+	} else {
+		if objective := a.currentObjective(); objective != "" {
+			fmt.Fprintf(&sb, "Current user objective (authoritative; newer than any historical task): %s\n", objective)
+		}
+		if goal, ok := a.CurrentPersistentGoal(); ok && goal.Objective != a.currentObjective() {
+			fmt.Fprintf(&sb, "Persistent unfinished goal (subordinate background, not the current request): %s\n", goal.Objective)
+		}
+		for _, loop := range a.OpenLoops() {
+			fmt.Fprintf(&sb, "Open loop (unresolved background, never an overriding objective): %s\n", loop.Summary)
+		}
 	}
 
 	if b == nil {
@@ -369,8 +382,35 @@ func (a *Agent) renderActivationBundle(b *cortex.ActivationBundle) string {
 		sb.WriteString(reason)
 		sb.WriteString(".\n")
 	}
+	if a.cfg.SessionExactProjection && !workingCoversCortexTranscript(a.working, b.Transcript) {
+		sb.WriteString("Exact cortex transcript slice recovered because the live protocol window no longer contains the full active-session tail:\n")
+		for _, message := range b.Transcript {
+			encoded, err := json.Marshal(message)
+			if err != nil {
+				continue
+			}
+			sb.Write(encoded)
+			sb.WriteString("\n")
+		}
+	}
 
 	return sb.String()
+}
+
+func workingCoversCortexTranscript(working []llm.Message, transcript []cortex.Message) bool {
+	protocolEvents := 0
+	for _, message := range working {
+		switch message.Role {
+		case llm.RoleUser, llm.RoleTool:
+			protocolEvents++
+		case llm.RoleAssistant:
+			if strings.TrimSpace(message.Content) != "" {
+				protocolEvents++
+			}
+			protocolEvents += len(message.ToolCalls)
+		}
+	}
+	return protocolEvents >= len(transcript)
 }
 
 // renderPinnedMemory renders one Pinned-tier cortex memory to a single line,
@@ -395,6 +435,14 @@ func assembleWindowUserTail(stableSystem string, transcript []llm.Message, tail 
 	return append(append([]llm.Message{llm.SystemMessage(stableSystem)}, transcript...), llm.UserMessage(tail))
 }
 
+func assembleWindowContextSidecar(stableSystem string, transcript []llm.Message, contextProjection string) []llm.Message {
+	window := append([]llm.Message{llm.SystemMessage(stableSystem)}, transcript...)
+	if sidecar := llm.ContextMessage(contextProjection); sidecar.Role != "" {
+		window = append(window, sidecar)
+	}
+	return window
+}
+
 // cmTrimWorking is the continuous-memory replacement for a.compact (retired,
 // req.9.3): it bounds the live in-memory window WITHOUT an LLM summarization
 // pass, because the older turns are already durable in cortex (task 6.1) and
@@ -403,6 +451,10 @@ func assembleWindowUserTail(stableSystem string, transcript []llm.Message, tail 
 // and drops older ones; when the window is a single long turn (no older section
 // to carve), it strips dead-weight inline images and keeps a provider-safe tail.
 func (a *Agent) cmTrimWorking() {
+	if a.cfg.SessionExactProjection {
+		a.compactExactWorking()
+		return
+	}
 	if len(a.working) <= 2 {
 		return
 	}

@@ -249,7 +249,16 @@ type ChatRequest struct {
 	// the Kimi tool-call token grammar are withheld), so they are safe to show
 	// verbatim. Fragments are best-effort coalesced and never delivered after
 	// Chat returns. Leave nil to disable streaming (buffered turn only).
-	OnDelta func(Delta)
+	OnDelta   func(Delta)
+	OnRequest func([]byte) error
+}
+
+func ContextMessage(content string) Message {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return Message{}
+	}
+	return Message{Role: RoleSystem, Content: "<session_context>\n" + content + "\n</session_context>", Guidance: true}
 }
 
 // Delta is one coalesced streaming fragment of an in-flight assistant turn.

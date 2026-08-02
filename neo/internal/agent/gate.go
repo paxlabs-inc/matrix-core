@@ -189,7 +189,7 @@ func (a *Agent) forcedRevisionStep(ctx context.Context, window []llm.Message, on
 	a.turn.revisionsThisTurn++
 	g := a.pushGuidance(reason)
 	window = append(window, g)
-	res, err := a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, OnDelta: onDelta})
+	res, err := a.chatWithRetry(ctx, a.providerRequest(ctx, window, nil, onDelta, 0))
 	if err != nil {
 		return err
 	}

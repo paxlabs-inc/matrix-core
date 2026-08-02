@@ -29,9 +29,13 @@ type turn struct {
 	// objective is the original user-authored task. inputOrigin distinguishes a
 	// genuine user turn from a supervisor resume instruction; resume guidance
 	// enters the cognitive window only and is never durable evidence.
-	objective   string
-	inputOrigin inputOrigin
-	attempt     int
+	objective       string
+	turnObjective   string
+	inputOrigin     inputOrigin
+	attempt         int
+	posture         InteractionPosture
+	promoted        bool
+	localRecoveries int
 
 	// contract is Architect O1's executable, versioned statement of the
 	// complete request. It is compiled before model execution and revised
@@ -194,6 +198,8 @@ type turn struct {
 	// Bumps. Applied to every generate call this turn once bumped.
 	answerTokenBudget int
 	answerTokenBumps  int
+	projection        string
+	projectionFrozen  bool
 
 	// curStep/stepBudget carry this step's index and the effective step budget so
 	// the budget tail can surface steps-remaining to the model (start writing

@@ -238,6 +238,11 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	if err != nil {
 		return nil, fmt.Errorf("neo/llm: marshal request: %w", err)
 	}
+	if req.OnRequest != nil {
+		if err := req.OnRequest(append([]byte(nil), body...)); err != nil {
+			return nil, fmt.Errorf("neo/llm: persist request before send: %w", err)
+		}
+	}
 
 	// Stream-aware cancellation: there is no total-request timeout (that would
 	// strangle a long healthy generation). An idle-stall watchdog over the

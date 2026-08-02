@@ -49,7 +49,7 @@ func (a *Agent) governEpistemic() (directive string, due bool) {
 // mutates: the just-appended assistant message's Content (in place) and the
 // Cassandra per-turn state, only when a trigger fires.
 func (a *Agent) governVoice(s *stepSignals) bool {
-	if !a.cfg.CassandraEnabled {
+	if !a.cfg.CassandraEnabled || !a.executionPosture() {
 		return false
 	}
 	return a.cassandraStep(s.cassandraView())

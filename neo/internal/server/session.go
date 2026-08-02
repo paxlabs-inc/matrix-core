@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"strings"
@@ -18,12 +19,14 @@ import (
 
 	"matrix/construct/schema/primitives"
 	"matrix/neo/internal/agent"
+	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/o1"
 	"matrix/neo/internal/recall"
 	"matrix/neo/internal/runrecord"
+	"matrix/neo/internal/sessionjournal"
 	"matrix/neo/internal/task"
 )
 
@@ -193,8 +196,8 @@ func (e *Engine) newSession(convID string) *session {
 // window and seeds it from durable history. It runs when the session is first
 // minted AND on every task-supervisor respawn: a hard failure, a stall, or a
 // wedged transcript never carries into the next attempt, because the new agent
-// starts from durable TEXT history (no prior tool_calls to re-poison a strict
-// provider) plus the resume prime and the work already on the volume.
+// starts from the exact session journal when enabled, with the text-only
+// conversation store retained as a degraded fallback.
 func (s *session) rebuildAgent() {
 	e := s.engine
 	// Conversational recall lane: relevant PAST turns of this (now unbounded)
@@ -214,6 +217,7 @@ func (s *session) rebuildAgent() {
 		Tools:   e.tools,
 		Pager:   e.pager,
 		Runtime: e.runtime,
+		Journal: e.journal,
 		// Epistemic-core req.2: the resolved capability surface renders
 		// resident in the agent's byte-stable prefix.
 		Capability:   e.capabilitySurface(context.Background()),
@@ -302,11 +306,21 @@ func (s *session) rebuildAgent() {
 			s.agent.SetWorkspace(e.workspaceRoot, proj.ID, proj.Name, proj.Root)
 		}
 	}
-	// Resume continuity: if this conversation already has durable turns (a
-	// reopened thread, one that outlived a restart, or a respawn mid-task),
-	// seed the fresh agent's transcript so it remembers the thread instead of
-	// starting blank.
-	if e.conv.Enabled() {
+	seededFromJournal := false
+	if e.cfg.SessionExactProjection && e.journal != nil {
+		if _, _, err := e.journal.FinalizeTail(context.Background(), s.id, "restart or supervisor rebuild finalized an abnormal protocol tail"); err != nil {
+			log.Printf("neo/session: finalize journal tail for %s: %v", s.id, err)
+		} else if replay, err := e.journal.Replay(context.Background(), s.id); err != nil {
+			log.Printf("neo/session: replay journal for %s: %v", s.id, err)
+		} else if seeded, err := s.agent.SeedReplay(replay); err != nil {
+			log.Printf("neo/session: reconstruct journal for %s: %v", s.id, err)
+		} else {
+			seededFromJournal = seeded
+		}
+	}
+	// Resume continuity fallback: conversations without journal history retain
+	// the existing bounded role+text seed.
+	if !seededFromJournal && e.conv.Enabled() {
 		if turns := e.conv.Recent(s.id, conversation.DefaultRecallTurns); len(turns) > 0 {
 			// On a supervisor respawn, the durable history already contains the
 			// CURRENT run's own persisted narration ("Still on it…", status
@@ -637,7 +651,7 @@ func (s *session) drive(ctx context.Context, r *run, message string, resume bool
 // FRESH agent over durable state, and goes again.
 func (s *session) superviseTask(ctx context.Context, r *run, objective string, resume bool, audio *agent.AudioTurn) task.Status {
 	cfg := s.engine.cfg
-	maxRespawns := cfg.TaskMaxRespawns
+	maxRespawns := postureRespawnLimit(cfg, objective)
 	if maxRespawns < 0 || !cfg.SuperviseTasks {
 		// Supervisor off: a single attempt, then an honest partial — never a
 		// fabricated "done" and never a bare "failed".
@@ -650,6 +664,7 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 	// death-journal read path. nil on the first attempt (no predecessor).
 	var lastErr error
 	for attempt := 1; ; attempt++ {
+		s.appendSupervisorEvent(ctx, r, attempt, "attempt_start", "")
 		// A fresh first dispatch runs the user's message verbatim (the session
 		// is already seeded from durable history WITHOUT it). A reaper resume,
 		// or any respawn, uses the catch-up prime over the rebuilt agent.
@@ -688,6 +703,7 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 			return task.StatusInterrupted
 		case actDone:
 			// Genuine completion: the agent's Say already emitted the terminal.
+			s.appendSupervisorEvent(ctx, r, attempt, "complete", "")
 			return task.StatusDone
 		case actStop:
 			// Deterministic blocker: a fresh agent would hit the same wall.
@@ -713,6 +729,8 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 		outage := errors.Is(err, llm.ErrRateLimited) || errors.Is(err, llm.ErrProviderUnavailable)
 		s.engine.tasks.Checkpoint(s.id, r.id, attempt+1, friendlyErr(err))
 		s.recordLoopDeath(ctx, r.id, objective, attempt, err, failClass)
+		s.appendSupervisorEvent(ctx, r, attempt, "respawn", friendlyErr(err))
+		s.appendRecoveryEvent(ctx, r, attempt, "resumable", friendlyErr(err))
 		s.emitProgress(r, attempt, err, outage)
 		lastErr = err
 		if !superviseBackoff(ctx, attempt, outage) {
@@ -722,6 +740,46 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 			return s.deliverCeiling(r, "reached the time limit I had for this task")
 		}
 		s.rebuildAgent()
+	}
+}
+
+func postureRespawnLimit(cfg config.Config, objective string) int {
+	if cfg.InteractionPosture && agent.ClassifyInteractionPosture(cfg, objective) != agent.PostureExecution {
+		return 0
+	}
+	return cfg.TaskMaxRespawns
+}
+
+func (s *session) appendSupervisorEvent(ctx context.Context, r *run, attempt int, action, reason string) {
+	if s == nil || s.engine == nil || s.engine.journal == nil || r == nil {
+		return
+	}
+	_, err := s.engine.journal.Append(ctx, sessionjournal.Event{
+		ConversationID: s.id, TurnID: r.id, Attempt: attempt,
+		Kind: sessionjournal.KindSupervisor, DisplayContent: reason,
+		Supervisor: &sessionjournal.Supervisor{
+			IntentID: r.id, Attempt: attempt, Action: action, Reason: reason,
+		},
+	})
+	if err != nil {
+		s.engine.logLifecycle("journal.supervisor", r.id, s.id, action, time.Since(r.started), err)
+	}
+}
+
+func (s *session) appendRecoveryEvent(ctx context.Context, r *run, attempt int, state, reason string) {
+	if s == nil || s.engine == nil || s.engine.journal == nil || r == nil {
+		return
+	}
+	if strings.TrimSpace(reason) == "" {
+		reason = "supervised attempt requires recovery"
+	}
+	_, err := s.engine.journal.Append(ctx, sessionjournal.Event{
+		ConversationID: s.id, TurnID: r.id, Attempt: attempt,
+		Kind: sessionjournal.KindRecovery, DisplayContent: reason,
+		Recovery: &sessionjournal.Recovery{State: state, Reason: reason},
+	})
+	if err != nil {
+		s.engine.logLifecycle("journal.recovery", r.id, s.id, state, time.Since(r.started), err)
 	}
 }
 

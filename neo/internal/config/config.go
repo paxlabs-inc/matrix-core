@@ -90,6 +90,14 @@ type Config struct {
 	// warming it on app-open keeps the first message's recall off the cold path.
 	WarmOnOpen bool
 
+	// --- hello-world session substrate (all flags default off) ---
+	// SessionCurrentIntent replaces the set-once standing objective with the
+	// latest real user request plus explicit persistent goals and open loops.
+	// When false, the legacy activeGoal path remains byte-identical.
+	SessionCurrentIntent   bool
+	SessionExactProjection bool
+	InteractionPosture     bool
+
 	// --- loop discipline ---
 	StepBudget      int // max tool-call iterations per turn (anti-infinite); the configured ceiling
 	StepBudgetMin   int // P2-7: adaptive floor. 0 = adaptation disabled (effective budget = StepBudgetMax, today's fixed behavior). When >0 the effective budget scales within [StepBudgetMin, StepBudgetMax] based on turn complexity.
@@ -318,6 +326,9 @@ func Default() Config {
 		// memory_recall, and the embedder/HNSW cold-start is paid on app-open.
 		FirstTurnRelevancePush: true,
 		WarmOnOpen:             true,
+		SessionCurrentIntent:   false,
+		SessionExactProjection: false,
+		InteractionPosture:     false,
 
 		StepBudget:                 50,
 		StepBudgetMin:              0,  // P2-7: adaptation disabled by default (effective budget = 50, today's behavior)
@@ -536,6 +547,11 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.FirstTurnRelevancePush = d.boolOr("memory", "first_turn_relevance_push", c.FirstTurnRelevancePush)
 		c.WarmOnOpen = d.boolOr("memory", "warm_on_open", c.WarmOnOpen)
 	}
+	if d.has("session") {
+		c.SessionCurrentIntent = d.boolOr("session", "current_intent", c.SessionCurrentIntent)
+		c.SessionExactProjection = d.boolOr("session", "exact_projection", c.SessionExactProjection)
+		c.InteractionPosture = d.boolOr("session", "interaction_posture", c.InteractionPosture)
+	}
 	if d.has("loop") {
 		c.StepBudget = d.intOr("loop", "step_budget", c.StepBudget)
 		c.StepBudgetMin = d.intOr("loop", "step_budget_min", c.StepBudgetMin)
@@ -711,6 +727,9 @@ func (c *Config) applyEnv() {
 	// Q2 memory warm + relevance push (default on; set to false to disable).
 	c.FirstTurnRelevancePush = envBool("NEO_FIRST_TURN_RELEVANCE_PUSH", c.FirstTurnRelevancePush)
 	c.WarmOnOpen = envBool("NEO_WARM_ON_OPEN", c.WarmOnOpen)
+	c.SessionCurrentIntent = envBool("NEO_SESSION_CURRENT_INTENT", c.SessionCurrentIntent)
+	c.SessionExactProjection = envBool("NEO_SESSION_EXACT_PROJECTION", c.SessionExactProjection)
+	c.InteractionPosture = envBool("NEO_INTERACTION_POSTURE", c.InteractionPosture)
 
 	// Automatrix (proactive surprise tasks). Interval/jitter/cap accept 0
 	// (interval 0 = disabled, jitter 0 = no randomization) so they use the

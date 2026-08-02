@@ -33,6 +33,7 @@ import (
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/o1"
 	"matrix/neo/internal/recall"
+	"matrix/neo/internal/sessionjournal"
 	"matrix/neo/internal/tools"
 )
 
@@ -123,20 +124,23 @@ type ToolObserver func(ToolEvent)
 // reified turn, replaced at Chat entry).
 type Agent struct {
 	// Lifetime: construction — wiring set at New.
-	cfg            config.Config
-	main           *llm.Client
-	cheap          *llm.Client
-	tools          *tools.Manager
-	pager          *memory.Pager
-	runtime        *ResurrectionRuntime
-	runtimeMode    string
-	runtimeErr     error
-	runtimeLast    string
-	runtimeFailure delegate.FailureClass
-	out            Reporter
-	consolidator   Consolidator
-	recaller       ConvRecaller
-	observer       ToolObserver
+	cfg                config.Config
+	main               *llm.Client
+	cheap              *llm.Client
+	tools              *tools.Manager
+	pager              *memory.Pager
+	runtime            *ResurrectionRuntime
+	runtimeMode        string
+	runtimeErr         error
+	runtimeLast        string
+	runtimeFailure     delegate.FailureClass
+	out                Reporter
+	consolidator       Consolidator
+	recaller           ConvRecaller
+	observer           ToolObserver
+	journal            *sessionjournal.Store
+	restoredReplay     sessionjournal.Replay
+	semanticCheckpoint sessionjournal.SemanticCheckpoint
 
 	// auditObserver streams Cassandra 2.0 controller audit events (cassandra.mod)
 	// to the harness on a pure observability side-channel; nil discards them.
@@ -174,7 +178,11 @@ type Agent struct {
 	// activeGoal is THIS conversation's task, pinned every turn. Held on the
 	// agent (not the pager) so many conversations can share one cortex store
 	// without clobbering each other's goal. Lifetime: session.
-	activeGoal string
+	activeGoal     string
+	intentMu       sync.RWMutex
+	persistentGoal *PersistentGoal
+	openLoops      map[string]OpenLoop
+	intentSequence uint64
 
 	// persona, when set, frames this agent as a task-scoped SUB-AGENT with a
 	// specific role. Sub-agents run headless (no human in the loop): they get
@@ -305,6 +313,7 @@ type Options struct {
 	Recaller     ConvRecaller // optional: relevant past-turn recall (additive read-lane)
 	Observer     ToolObserver // optional: per-tool-result surfacing (show the work)
 	Runtime      *ResurrectionRuntime
+	Journal      *sessionjournal.Store
 
 	// AuditObserver streams Cassandra 2.0 controller audit events (cassandra.mod)
 	// to the harness; nil discards them.
@@ -390,6 +399,7 @@ func New(o Options) *Agent {
 		consolidator:     o.Consolidator,
 		recaller:         o.Recaller,
 		observer:         o.Observer,
+		journal:          o.Journal,
 		auditObserver:    o.AuditObserver,
 		memObserver:      o.MemoryObserver,
 		episodicSurfaced: map[string]struct{}{},
@@ -477,9 +487,9 @@ func (a *Agent) Generation() uint64 { return a.generation }
 // No-op when no inbox is wired (CLI path). Injection happens at a clean
 // boundary (loop top / pre-finish), where the transcript ends on a tool result
 // or assistant turn, so appending a user message keeps it well-formed.
-func (a *Agent) drainInbox() bool {
+func (a *Agent) drainInbox(ctx context.Context) (bool, error) {
 	if a.inbox == nil {
-		return false
+		return false, nil
 	}
 	injected := false
 	for _, m := range a.inbox() {
@@ -487,11 +497,22 @@ func (a *Agent) drainInbox() bool {
 		if m == "" {
 			continue
 		}
+		if err := a.journalUser(ctx, llm.UserMessage(m)); err != nil {
+			return injected, err
+		}
+		if a.cfg.SessionCurrentIntent {
+			a.setTurnObjective(m)
+		}
+		if err := a.promoteForIntent(m); err != nil {
+			return injected, err
+		}
 		a.working = append(a.working, llm.UserMessage(m))
-		a.turn.contract = a.turn.contract.Revise(m)
+		if a.executionPosture() {
+			a.turn.contract = a.turn.contract.Revise(m)
+		}
 		injected = true
 	}
-	return injected
+	return injected, nil
 }
 
 // SetSkillIndex injects a names-only skill index into the STABLE system prefix
@@ -571,6 +592,17 @@ type effectiveBudgetSignals struct {
 // The no-progress stall path is independent and unaffected: a stalling turn
 // terminates via NoProgressStall regardless of the effective budget (m9).
 func (a *Agent) effectiveStepBudget(sig effectiveBudgetSignals) int {
+	if a.cfg.InteractionPosture && a.turn != nil {
+		switch a.turn.posture {
+		case PostureConversation:
+			return 1
+		case PostureExploration:
+			if a.cfg.StepBudget > 0 && a.cfg.StepBudget < 8 {
+				return a.cfg.StepBudget
+			}
+			return 8
+		}
+	}
 	min := a.cfg.StepBudgetMin
 	max := a.cfg.StepBudgetMax
 
@@ -644,10 +676,17 @@ func (a *Agent) ChatAudio(ctx context.Context, userInput string, audio *AudioTur
 // ChatResume enters supervisor guidance into the cognitive window without
 // recording it as a user message or using it as the activation query.
 func (a *Agent) ChatResume(ctx context.Context, objective, guidance string) error {
+	goalID := a.RegisterPersistentGoal(objective)
+	var err error
 	if a.runtimeMode == "resurrection" || a.runtimeErr != nil {
-		return a.chatResurrectionResume(ctx, objective, guidance)
+		err = a.chatResurrectionResume(ctx, objective, guidance)
+	} else {
+		err = a.chat(ctx, objective, nil, guidance)
 	}
-	return a.chat(ctx, objective, nil, guidance)
+	if err == nil && goalID != "" {
+		a.CompletePersistentGoal(goalID)
+	}
+	return err
 }
 
 // SetRunIdentity binds this Agent attempt to the stable server run identity.
@@ -662,7 +701,7 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn, re
 	if userInput == "" {
 		return nil
 	}
-	if a.activeGoal == "" {
+	if !a.cfg.SessionCurrentIntent && a.activeGoal == "" {
 		a.activeGoal = userInput
 	}
 	a.turnSeq++
@@ -674,6 +713,11 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn, re
 	// construction. Zero manual field zeroing.
 	t := newTurn()
 	t.objective = userInput
+	t.turnObjective = userInput
+	t.posture = ClassifyInteractionPosture(a.cfg, userInput)
+	if a.cfg.SessionCurrentIntent {
+		a.activeGoal = userInput
+	}
 	t.attempt = a.supervisedAttempt
 	if strings.TrimSpace(resumeGuidance) != "" {
 		t.inputOrigin = originSupervisorResume
@@ -721,7 +765,10 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn, re
 		// F5: fold in any messages the user queued mid-task (sent without
 		// interrupting) so the agent picks them up on THIS step — delivered at
 		// the tool-call boundary, never cancelling the in-flight run.
-		a.drainInbox()
+		if _, err := a.drainInbox(ctx); err != nil {
+			a.consolidateWorking("", false)
+			return fmt.Errorf("neo: persist queued user message: %w", err)
+		}
 
 		window, tail, pct, windowErr := a.prepareWindow(cmTail)
 		if windowErr != nil {
@@ -737,6 +784,10 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn, re
 			continue
 		}
 		finalizeAudio()
+		if err := a.journalAssistant(ctx, res.Message); err != nil {
+			a.consolidateWorking("", false)
+			return err
+		}
 		casMod := a.deliberate(step, res, streamedReasoning)
 		if !res.HasToolCalls() {
 			finished, cerr := a.closeTurn(ctx, res, casMod, userInput)
@@ -772,62 +823,25 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn, re
 // NE-7 discipline). The Q2 first-turn relevance push rides the same tail so
 // the usage-salience attestation loop still learns from what surfaced.
 func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData, resumeGuidance string) (string, error) {
-	a.turn.contract = o1.Compile(o1.CompileInput{
-		Request: userInput,
-		RepositoryRules: []string{
-			"Preserve unrelated workspace changes.",
-			"Do not use fake, mock, stub, canned, or placeholder implementations or verification.",
-		},
-	})
-	var selected o1.RuntimeCapabilities
-	var err error
-	if a.cfg.O1ConstrainTools {
-		selected, err = o1.CompileRuntimeCapabilities(a.turn.contract, a.allSchemas)
-	} else {
-		// Default: advertise the FULL bound surface. The O1 manifests/verifiers/
-		// ledger/preflight still compile over every tool, but nothing is hidden
-		// from the model — the contract's request->capability text heuristic must
-		// not silently strip an essential tool (e.g. fetch) it failed to name.
-		selected, err = o1.CompileAllCapabilities(a.allSchemas)
+	if err := a.preparePosture(); err != nil {
+		return "", err
 	}
-	if err != nil {
-		return "", fmt.Errorf("o1 capability preflight: %w", err)
-	}
-	if a.tools != nil {
-		names := make([]string, 0, len(selected.Tools))
-		for _, schema := range selected.Tools {
-			if schema.Function.Name == readOverflowTool {
-				continue
-			}
-			names = append(names, schema.Function.Name)
-		}
-		if err := a.tools.Preflight(names); err != nil {
-			return "", fmt.Errorf("o1 live capability preflight: %w", err)
-		}
-	}
-	a.turn.runLedger = o1.NewRunLedger(a.turnIntentID(), a.turn.contract.ID, a.turn.contract.Version)
-	if restored := a.restoreO1State(a.turn.contract.ID); restored != nil {
-		a.turn.runLedger = restored
-	}
-	a.turn.verifiers = o1.CompileVerifiers(a.turn.contract.Criteria)
-	for _, manifest := range selected.Manifests {
-		a.turn.manifests[manifest.Operation] = manifest
-	}
-	a.schemas = selected.Tools
-	a.advertised = make(map[string]struct{}, len(a.schemas))
-	for _, schema := range a.schemas {
-		a.advertised[schema.Function.Name] = struct{}{}
-	}
-	a.schemaTokens = estimateToolTokens(a.schemas)
-	a.schemaBytes = estimateToolBytes(a.schemas)
 	if guidance := strings.TrimSpace(resumeGuidance); guidance != "" {
+		if err := a.journalRecovery(ctx, "resuming", guidance); err != nil {
+			return "", err
+		}
 		a.pushGuidance(guidance)
 	} else {
+		var userMessage llm.Message
 		if audioData != "" {
-			a.working = append(a.working, llm.UserAudioMessage(userInput, audioData))
+			userMessage = llm.UserAudioMessage(userInput, audioData)
 		} else {
-			a.working = append(a.working, llm.UserMessage(userInput))
+			userMessage = llm.UserMessage(userInput)
 		}
+		if err := a.journalUser(ctx, userMessage); err != nil {
+			return "", err
+		}
+		a.working = append(a.working, userMessage)
 		// Record only genuine user input. Supervisor resume guidance is
 		// cognitive state and must never become a durable user assertion.
 		if audioData == "" {
@@ -838,7 +852,9 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData, resumeGui
 	bundle := a.cmActivate(userInput)
 	a.activationAssemblies++
 	cmTail := a.renderActivationBundle(bundle)
-	cmTail += a.turn.contract.Render()
+	if a.executionPosture() {
+		cmTail += a.turn.contract.Render()
+	}
 	// Q2 first-message relevance push: Activate's tiers are recency-based
 	// + query-independent, so on the OPENING turn also inject a bounded
 	// relevance retrieval keyed on the message — the agent gets
@@ -908,22 +924,40 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData, resumeGui
 // window within token budget can still 413 — images strip first (cheaper,
 // less lossy), then the trim.
 func (a *Agent) prepareWindow(cmTail string) (window []llm.Message, tail string, pct int, err error) {
+	a.repairWorkingProtocol()
 	if err := o1.ValidateConversationTruth(a.working); err != nil {
 		return nil, "", 0, fmt.Errorf("o1 context truth: %w", err)
 	}
-	baseSystem := a.stableSystem() + cmTail
+	checkpointTail := ""
+	if a.cfg.SessionExactProjection {
+		checkpointTail = a.semanticCheckpoint.Render()
+	}
+	baseSystem := a.stableSystem() + cmTail + checkpointTail
 	if a.overHardBudget(baseSystem) {
 		a.cmTrimWorking()
+		checkpointTail = a.semanticCheckpoint.Render()
+		baseSystem = a.stableSystem() + cmTail + checkpointTail
 	}
 	if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
 		a.stripOldImages()
 		if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
 			a.cmTrimWorking()
+			checkpointTail = a.semanticCheckpoint.Render()
+			baseSystem = a.stableSystem() + cmTail + checkpointTail
 		}
 	}
 	pct = a.budgetPct(baseSystem)
-	tail = cmTail + a.epistemicTail() + a.budgetTail(pct)
-	window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
+	tail = cmTail + checkpointTail + a.epistemicTail() + a.budgetTail(pct)
+	if a.cfg.SessionExactProjection {
+		if !a.turn.projectionFrozen {
+			a.turn.projection = tail
+			a.turn.projectionFrozen = true
+		}
+		tail = a.turn.projection
+		window = assembleWindowContextSidecar(a.stableSystem(), a.working, tail)
+	} else {
+		window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
+	}
 	a.windowAssemblies++
 	return window, tail, pct, nil
 }
@@ -980,7 +1014,7 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 		return nil, streamedReasoning, false, nil
 	}
 
-	res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
+	res, err = a.chatWithRetry(ctx, a.providerRequest(ctx, window, a.schemas, onDelta, 0))
 	if err != nil {
 		// HTTP 413 (provider request-body byte cap) is recoverable: the
 		// window serialized past the byte limit even though it was within
@@ -997,7 +1031,7 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 				if prepareErr != nil {
 					return nil, streamedReasoning, false, prepareErr
 				}
-				res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta, MaxTokens: a.turn.answerTokenBudget})
+				res, err = a.chatWithRetry(ctx, a.providerRequest(ctx, window, a.schemas, onDelta, a.turn.answerTokenBudget))
 			}
 			if err != nil && errors.Is(err, llm.ErrRequestTooLarge) {
 				a.cmTrimWorking()
@@ -1006,7 +1040,7 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 				if prepareErr != nil {
 					return nil, streamedReasoning, false, prepareErr
 				}
-				res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta, MaxTokens: a.turn.answerTokenBudget})
+				res, err = a.chatWithRetry(ctx, a.providerRequest(ctx, window, a.schemas, onDelta, a.turn.answerTokenBudget))
 			}
 		}
 		if err != nil {
@@ -1023,7 +1057,12 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 		// Raise the output-token budget one rung so the retried call has room to
 		// finish (Claude Code's 8K→64K escalation), then drop the cut-off batch.
 		a.bumpAnswerBudget()
-		a.working = append(a.working, llm.UserMessage("(your last tool call was cut off by the output limit before its arguments finished — don't inline large content as a tool argument. Write large files in chunks/appends, or call the tool with compact arguments.)"))
+		nudge := "(your last tool call was cut off by the output limit before its arguments finished — don't inline large content as a tool argument. Write large files in chunks/appends, or call the tool with compact arguments.)"
+		if a.cfg.SessionExactProjection {
+			a.pushGuidance(nudge)
+		} else {
+			a.working = append(a.working, llm.UserMessage(nudge))
+		}
 		return nil, streamedReasoning, false, nil
 	}
 	return res, streamedReasoning, true, nil
@@ -1172,6 +1211,12 @@ func (a *Agent) noteCloseChurn(answer string) bool {
 // from the unified signal state computed at deliberate.)
 func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) error {
 	t := a.turn
+	if a.cfg.InteractionPosture && t.posture != PostureExecution && callsRequireExecution(res.Message.ToolCalls) {
+		if err := a.promoteToExecution(); err != nil {
+			return err
+		}
+		a.pushGuidance("This turn crossed into state-changing execution. Apply the execution contract and guards before continuing.\n" + t.contract.Render())
+	}
 	// Per-step dispatch-gate read (item 1c): reset before the gates run this step,
 	// so the end-of-act fold can tell a wholly-refused step (refused a call, then
 	// dispatched nothing) from a step that made real tool progress.
@@ -1261,13 +1306,17 @@ func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) err
 	// plan's self-claims against the resident capability surface and
 	// refuses dependent dispatches while a refuted premise stands
 	// (introspection tools stay allowed — they are the discharge path).
-	allowed, refusedByGate := a.checkBeforeAct(res.Message.ToolCalls)
-	if refusedByGate {
-		t.stepRefused = true
-	}
-	if !t.contract.ReadyForMutation() {
-		a.pushGuidance("The task contract has an unresolved material input. Do not call tools or mutate state. Ask only for the missing required value recorded in the contract.")
-		return nil
+	allowed := res.Message.ToolCalls
+	if a.executionPosture() {
+		var refusedByGate bool
+		allowed, refusedByGate = a.checkBeforeAct(res.Message.ToolCalls)
+		if refusedByGate {
+			t.stepRefused = true
+		}
+		if !t.contract.ReadyForMutation() {
+			a.pushGuidance("The task contract has an unresolved material input. Do not call tools or mutate state. Ask only for the missing required value recorded in the contract.")
+			return nil
+		}
 	}
 	if err := a.runToolCalls(ctx, allowed); err != nil {
 		return err
@@ -1402,6 +1451,11 @@ func oneLine(s string) string {
 func (a *Agent) Reset() {
 	a.working = nil
 	a.activeGoal = ""
+	a.resetSessionIntent()
+	a.semanticCheckpoint = sessionjournal.SemanticCheckpoint{}
+	if a.cfg.SessionCurrentIntent {
+		a.turn = newTurn()
+	}
 	a.runtimeLast = ""
 	a.runtimeFailure = delegate.ClassNone
 	a.episodicReset()
@@ -1432,7 +1486,7 @@ func (a *Agent) Seed(history []llm.Message, goal string) {
 		return
 	}
 	a.working = append(a.working, history...)
-	if a.activeGoal == "" {
+	if !a.cfg.SessionCurrentIntent && a.activeGoal == "" {
 		a.activeGoal = strings.TrimSpace(goal)
 	}
 }
@@ -1629,6 +1683,10 @@ func (a *Agent) chatWithRetry(ctx context.Context, req llm.ChatRequest) (*llm.Ch
 		}
 		res, err := a.main.Chat(ctx, req)
 		if err == nil {
+			repairable := a.normalizeProviderResult(res)
+			if repairable && res != nil {
+				return res, nil
+			}
 			if conformErr := o1.ConformChatResult(res, o1.DefaultBudget(), o1.DialectForProvider(a.main.Provider())); conformErr != nil {
 				// A SIZE verdict is not a failure: the generation is complete and
 				// usable, merely long. Discarding it here destroyed finished
@@ -1640,7 +1698,12 @@ func (a *Agent) chatWithRetry(ctx context.Context, req llm.ChatRequest) (*llm.Ch
 				if errors.Is(conformErr, o1.ErrBudgetExceeded) {
 					a.emitAudit(auditEventBudgetOverage, map[string]interface{}{"detail": oneLine(conformErr.Error())})
 				} else {
-					return nil, fmt.Errorf("o1 provider protocol: %w", conformErr)
+					lastErr = fmt.Errorf("o1 provider protocol: %w", conformErr)
+					if !a.cfg.InteractionPosture {
+						return nil, lastErr
+					}
+					a.turn.localRecoveries++
+					continue
 				}
 			}
 			return res, nil
@@ -1670,6 +1733,9 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 	n := len(calls)
 	if n <= 1 || a.cfg.ToolDispatchConcurrency <= 0 {
 		return a.runToolCallsSerial(ctx, calls)
+	}
+	if err := a.journalToolCalls(ctx, calls); err != nil {
+		return err
 	}
 
 	conc := a.cfg.ToolDispatchConcurrency
@@ -1701,7 +1767,11 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 		args, perr := call.ParseArgs()
 		if perr != nil {
 			// Parse failure: surface immediately and mark so dispatch skips it.
-			a.working = append(a.working, llm.ToolResult(call.ID, name, fmt.Sprintf("could not parse arguments (%v). Re-issue the call with valid JSON arguments.", perr)))
+			content := a.malformedArgumentsObservation(call, perr)
+			if err := a.journalToolResult(ctx, call, i, content, content, true, exectool.FailureValidation); err != nil {
+				return err
+			}
+			a.working = append(a.working, llm.ToolResult(call.ID, name, content))
 			parsedArgs[i] = nil // sentinel: already handled, do not dispatch
 			stepIDs[i] = ""
 			continue
@@ -1712,6 +1782,9 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 		// the ground-or-hypothesize directive (req.6.1), never dispatched.
 		expects[i] = popExpect(args)
 		if directive, refused := a.refuseUnstatedExpectation(name, args, expects[i], batchRefused); refused {
+			if err := a.journalToolResult(ctx, call, i, directive, directive, true, exectool.FailureValidation); err != nil {
+				return err
+			}
 			a.working = append(a.working, llm.ToolResult(call.ID, name, directive))
 			a.cmRecordToolResult(name, directive)
 			a.turn.stepRefused = true
@@ -1795,7 +1868,14 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 		// the provider's request-body byte cap on its own. The observer
 		// below still gets the full, untruncated content so the product
 		// shows real evidence.
-		a.working = append(a.working, llm.ToolResult(call.ID, name, a.capToolResult(name, content)))
+		capped := a.capToolResult(name, content)
+		if err := a.journalUncertainEffect(ctx, call, i, parsedArgs[i], evidence, results[i].failureClass); err != nil {
+			return err
+		}
+		if err := a.journalToolResult(ctx, call, i, capped, evidence, isErr, results[i].failureClass); err != nil {
+			return err
+		}
+		a.working = append(a.working, llm.ToolResult(call.ID, name, capped))
 		// Continuous-memory (task 6.1): record the FULL tool result to the
 		// durable cortex transcript (cortex spills oversized payloads itself).
 		a.cmRecordToolResult(name, evidence)
@@ -1822,6 +1902,9 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 // goroutine spin-up would be pure overhead). Behaviour is byte-identical
 // to the pre-P2-5 loop.
 func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) error {
+	if err := a.journalToolCalls(ctx, calls); err != nil {
+		return err
+	}
 	// Batch idempotency (NE-3, req 5.x), serial path: an equivalent
 	// state-touching duplicate (core_execute with the same resolved intent)
 	// joins the canonical call's cached result instead of running again. The
@@ -1843,7 +1926,11 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) er
 		name := call.Function.Name
 		args, perr := call.ParseArgs()
 		if perr != nil {
-			a.working = append(a.working, llm.ToolResult(call.ID, name, fmt.Sprintf("could not parse arguments (%v). Re-issue the call with valid JSON arguments.", perr)))
+			content := a.malformedArgumentsObservation(call, perr)
+			if err := a.journalToolResult(ctx, call, i, content, content, true, exectool.FailureValidation); err != nil {
+				return err
+			}
+			a.working = append(a.working, llm.ToolResult(call.ID, name, content))
 			continue
 		}
 		// Epistemic-core Mechanism 3: lift the stated expectation off the call
@@ -1852,6 +1939,9 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) er
 		// the ground-or-hypothesize directive (req.6.1), never dispatched.
 		expect := popExpect(args)
 		if directive, refused := a.refuseUnstatedExpectation(name, args, expect, batchRefused); refused {
+			if err := a.journalToolResult(ctx, call, i, directive, directive, true, exectool.FailureValidation); err != nil {
+				return err
+			}
 			a.working = append(a.working, llm.ToolResult(call.ID, name, directive))
 			a.cmRecordToolResult(name, directive)
 			a.turn.stepRefused = true
@@ -1896,7 +1986,14 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) er
 		// fetch / file read / MCP payload) can blow the provider's request-
 		// body byte cap on its own. The observer below still gets the full,
 		// untruncated content so the product shows real evidence.
-		a.working = append(a.working, llm.ToolResult(call.ID, name, a.capToolResult(name, content)))
+		capped := a.capToolResult(name, content)
+		if err := a.journalUncertainEffect(ctx, call, i, args, evidence, failureClass); err != nil {
+			return err
+		}
+		if err := a.journalToolResult(ctx, call, i, capped, evidence, isErr, failureClass); err != nil {
+			return err
+		}
+		a.working = append(a.working, llm.ToolResult(call.ID, name, capped))
 		// Continuous-memory (task 6.1): record the FULL tool result to the
 		// durable cortex transcript (cortex spills oversized payloads itself).
 		a.cmRecordToolResult(name, evidence)
@@ -2058,7 +2155,7 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 	// structural rather than advisory.
 	if a.advertised != nil {
 		if _, ok := a.advertised[name]; !ok {
-			content := fmt.Sprintf("tool %q is not available in this session — use only the tools you were given.", name)
+			content := a.unavailableToolObservation(name)
 			a.recordO1ToolOutcome(name, args, content, true, exectool.FailureInvocation, false)
 			return content, content, "", true, delegate.ClassDeterministic, exectool.FailureInvocation
 		}
