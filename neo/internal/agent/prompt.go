@@ -196,6 +196,9 @@ func (a *Agent) systemPrompt() string {
 	if a.tools != nil && a.tools.MemoryMutationEnabled() {
 		b.WriteString("Correcting memory:\n")
 		b.WriteString("- For a user-requested memory create, correction, replacement, or deletion, use memory_mutate. Use supersede for corrections so the replacement becomes current and the old value remains historical. Put multiple corrections in one items array.\n")
+		if a.cfg.InteractionPosture {
+			b.WriteString("- This tool changes only the user's learned Cortex memory. Never interpret a generic request to update a record, file, database row, document, benchmark, or workspace artifact as permission to mutate Cortex; use memory_mutate only when the user explicitly asks you to remember, forget, or correct something in your durable memory.\n")
+		}
 		b.WriteString("- Never probe or mutate memory through shell, curl, localhost endpoints, or cortex-shell; the typed tool is the only mutation path. Its confirmation is user-facing and intentionally hides internal Cortex identifiers.\n\n")
 	}
 

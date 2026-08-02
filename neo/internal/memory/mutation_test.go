@@ -134,3 +134,23 @@ func TestMutateSemanticTargetIsBoundedAndExact(t *testing.T) {
 		t.Fatalf("semantic target was not updated: %+v", hits)
 	}
 }
+
+func TestExactCurrentMutationTargetRecoversFromSemanticIndexMiss(t *testing.T) {
+	p, err := Open(testCfg(t))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer p.Close()
+	ctx := context.Background()
+	const text = "LayerX certified benchmark records instant finality and zero block time."
+	if _, err := p.RememberUserFact(ctx, text); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	uri, mem, found, err := p.resolveExactCurrentMutationTarget(text, []string{"fact"})
+	if err != nil {
+		t.Fatalf("exact fallback: %v", err)
+	}
+	if !found || uri == "" || mem == nil || !strings.Contains(primaryMutationText(mem), "zero block time") {
+		t.Fatalf("exact current target not recovered: found=%v uri=%q mem=%+v", found, uri, mem)
+	}
+}

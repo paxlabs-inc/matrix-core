@@ -89,6 +89,13 @@ type turn struct {
 	// 7.2); revisionsThisTurn bounds them (maxRevisionsPerTurn).
 	revisionPending   string
 	revisionsThisTurn int
+	// localFinalizePending holds a one-shot, tools-stripped close instruction
+	// after an expected application conflict that cannot be repaired by
+	// repeating the same operation (for example, a stale durable-memory
+	// target). The next model call must turn the useful work already gathered
+	// into an honest answer or focused clarification instead of letting the
+	// conflict grow into a governor death.
+	localFinalizePending string
 
 	// premiseTail / graphTail are the FIXED epistemic tail slots (epistemic-core
 	// req.3.1): after the activation/memory block, the premise ledger renders,

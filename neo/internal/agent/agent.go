@@ -1014,7 +1014,13 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 		return nil, streamedReasoning, false, nil
 	}
 
-	res, err = a.chatWithRetry(ctx, a.providerRequest(ctx, window, a.schemas, onDelta, 0))
+	schemas := a.schemas
+	if guidance := strings.TrimSpace(a.turn.localFinalizePending); guidance != "" {
+		a.turn.localFinalizePending = ""
+		window = append(window, a.pushGuidance(guidance))
+		schemas = nil
+	}
+	res, err = a.chatWithRetry(ctx, a.providerRequest(ctx, window, schemas, onDelta, 0))
 	if err != nil {
 		// HTTP 413 (provider request-body byte cap) is recoverable: the
 		// window serialized past the byte limit even though it was within
@@ -1352,6 +1358,22 @@ func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) err
 		a.pushGuidance("You already obtained the result and showed it — do NOT fetch or render it again. Give the user the answer now and finish.")
 	}
 	return nil
+}
+
+func (a *Agent) armMemoryMutationFinalization(name, content string, isErr bool) {
+	if a == nil || a.turn == nil || !a.cfg.InteractionPosture || !isErr || name != tools.MemoryMutateTool {
+		return
+	}
+	normalized := strings.ToLower(content)
+	if !strings.Contains(normalized, "semantic target matched no current memory") &&
+		!strings.Contains(normalized, "semantic target matched no live memory") &&
+		!strings.Contains(normalized, "semantic target is ambiguous") {
+		return
+	}
+	if a.turn.localFinalizePending == "" {
+		a.turn.localRecoveries++
+	}
+	a.turn.localFinalizePending = "The durable-memory change could not be applied because its target is missing, stale, or ambiguous. Do not retry memory_mutate or call another tool in this response. Preserve and deliver the useful answer or work already completed. If changing durable memory was the user's explicit primary request, say plainly that no record was changed and ask one precise question that identifies the intended current record; otherwise do not let this optional memory conflict block the user's actual task."
 }
 
 // noteBatch commits the no-progress/stall read for ONE assistant tool-calling
@@ -1856,6 +1878,7 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 		content := results[i].content
 		evidence := results[i].evidence
 		isErr := results[i].isErr
+		a.armMemoryMutationFinalization(name, evidence, isErr)
 		// Record the shared class of this dispatch's outcome (a success clears a
 		// prior recorded failure) for the supervisor. Single-threaded here (the
 		// concurrent goroutines only wrote results[i]), so no race on
@@ -1975,6 +1998,7 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) er
 			content, evidence, shot, isErr, class, failureClass = a.dispatchWithRetry(ctx, name, args)
 		}
 		results[i] = dispatchResult{content: content, evidence: evidence, shot: shot, isErr: isErr, class: class, failureClass: failureClass}
+		a.armMemoryMutationFinalization(name, evidence, isErr)
 		// Record the shared class of this dispatch's outcome (a success clears a
 		// prior recorded failure) so the supervisor reads the SAME
 		// classification (NE-5).

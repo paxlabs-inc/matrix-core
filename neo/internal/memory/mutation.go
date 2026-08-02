@@ -12,6 +12,7 @@ import (
 
 	"matrix/cortex"
 	cmemory "matrix/cortex/memory"
+	cquery "matrix/cortex/query"
 )
 
 const maxMutationItems = 20
@@ -220,9 +221,24 @@ func (p *Pager) resolveMutationTarget(ctx context.Context, target *MutationTarge
 
 	hits, err := p.RecallHits(ctx, queryText, target.Types, semanticTargetLimit, nil)
 	if err != nil {
+		if p.cfg.InteractionPosture {
+			if uri, mem, found, exactErr := p.resolveExactCurrentMutationTarget(queryText, target.Types); exactErr != nil {
+				return "", nil, exactErr
+			} else if found {
+				return uri, mem, nil
+			}
+			return "", nil, errors.New("semantic target matched no current memory")
+		}
 		return "", nil, fmt.Errorf("semantic target lookup: %w", err)
 	}
 	if len(hits) == 0 {
+		if p.cfg.InteractionPosture {
+			if uri, mem, found, exactErr := p.resolveExactCurrentMutationTarget(queryText, target.Types); exactErr != nil {
+				return "", nil, exactErr
+			} else if found {
+				return uri, mem, nil
+			}
+		}
 		return "", nil, errors.New("semantic target matched no current memory")
 	}
 	type candidate struct {
@@ -255,9 +271,59 @@ func (p *Pager) resolveMutationTarget(ctx context.Context, target *MutationTarge
 		return candidates[0].uri, candidates[0].mem, nil
 	}
 	if len(candidates) == 0 {
+		if p.cfg.InteractionPosture {
+			if uri, mem, found, exactErr := p.resolveExactCurrentMutationTarget(queryText, target.Types); exactErr != nil {
+				return "", nil, exactErr
+			} else if found {
+				return uri, mem, nil
+			}
+		}
 		return "", nil, errors.New("semantic target matched no live memory")
 	}
 	return "", nil, fmt.Errorf("semantic target is ambiguous across %d current memories; narrow the query or use an explicit uri", len(candidates))
+}
+
+func (p *Pager) resolveExactCurrentMutationTarget(queryText string, typeNames []string) (cmemory.URI, *cmemory.Memory, bool, error) {
+	types := parseRecallTypes(typeNames)
+	if len(types) == 0 {
+		types = []cmemory.Type{
+			cmemory.TypeFact,
+			cmemory.TypePreference,
+			cmemory.TypeBelief,
+			cmemory.TypeGoal,
+			cmemory.TypeConstraint,
+		}
+	}
+	res, err := p.cortex.Find(cquery.Query{Type: types, Limit: 512})
+	if err != nil {
+		return "", nil, false, fmt.Errorf("exact current target lookup: %w", err)
+	}
+	normQuery := normalizeMutationText(queryText)
+	type candidate struct {
+		uri cmemory.URI
+		mem *cmemory.Memory
+	}
+	var matches []candidate
+	if res != nil {
+		for index := range res.Memories {
+			mem := res.Memories[index]
+			primary := normalizeMutationText(primaryMutationText(mem))
+			if primary == "" || (primary != normQuery && !strings.Contains(primary, normQuery) && !strings.Contains(normQuery, primary)) {
+				continue
+			}
+			matches = append(matches, candidate{
+				uri: cortex.BuildURI(mem.Head.Type, mem.Head.ID, mem.Head.CurrentVersion),
+				mem: mem,
+			})
+		}
+	}
+	if len(matches) == 0 {
+		return "", nil, false, nil
+	}
+	if len(matches) > 1 {
+		return "", nil, false, fmt.Errorf("semantic target is ambiguous across %d exact current memories; narrow the query or use an explicit uri", len(matches))
+	}
+	return matches[0].uri, matches[0].mem, true, nil
 }
 
 func mutationData(existing *cmemory.Memory, value *MutationValue) (cmemory.TypedData, error) {

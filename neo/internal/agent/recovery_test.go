@@ -19,6 +19,7 @@ import (
 
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/llm"
+	"matrix/neo/internal/memory"
 	"matrix/neo/internal/sessionjournal"
 	"matrix/neo/internal/tools"
 )
@@ -81,6 +82,72 @@ func TestLocalRecoveryTurnsInvalidCallsIntoContinuedObservations(t *testing.T) {
 				t.Fatalf("continued request lacks structured %s observation: %s", tc.kind, secondBody)
 			}
 		})
+	}
+}
+
+func TestMissingMemoryTargetFinalizesUsefulWorkWithoutTurnDeath(t *testing.T) {
+	ctx := context.Background()
+	cfg := config.Default()
+	cfg.CortexRoot = t.TempDir()
+	cfg.CortexActor = "missing-memory-target-recovery"
+	cfg.InteractionPosture = true
+	cfg.SessionCurrentIntent = true
+	cfg.SessionExactProjection = true
+	cfg.CassandraEnabled = false
+	pager, err := memory.Open(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = pager.Close() })
+	manager := &tools.Manager{}
+	manager.SetMemoryMutation(pager.Mutate)
+
+	args, _ := json.Marshal(map[string]any{
+		"expect": "one existing current LayerX benchmark memory is replaced",
+		"items": []any{map[string]any{
+			"operation": "supersede",
+			"target": map[string]any{
+				"query": "the current LayerX certified performance benchmark",
+				"types": []string{"fact"},
+			},
+			"value": map[string]any{
+				"type":    "fact",
+				"content": "LayerX reaches instant finality and its observed block time is zero.",
+			},
+		}},
+	})
+	toolCall := fmt.Sprintf(`{"index":0,"id":"memory-stale","type":"function","function":{"name":%q,"arguments":%q}}`, tools.MemoryMutateTool, string(args))
+
+	var calls atomic.Int32
+	var finalRequest string
+	model := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		if calls.Add(1) == 1 {
+			writeSSEToolCall(w, toolCall)
+			return
+		}
+		finalRequest = string(raw)
+		writeSSEAnswer(w, "LayerX reaches instant finality. I could not update durable memory because no current benchmark record matched, so no memory was changed.")
+	}))
+	t.Cleanup(model.Close)
+
+	reporter := &chokeReporter{}
+	client := revisionTestClient(t, model.URL)
+	a := New(Options{Config: cfg, Main: client, Cheap: client, Tools: manager, Pager: pager, Reporter: reporter})
+	if err := a.Chat(ctx, "Compare our certified block time, then update the existing durable memory record."); err != nil {
+		t.Fatalf("ordinary turn died after a stale memory target: %v", err)
+	}
+	if calls.Load() != 2 {
+		t.Fatalf("model calls = %d, want one mutation attempt plus one finalization", calls.Load())
+	}
+	if a.LocalRecoveryCount() != 1 {
+		t.Fatalf("local recovery count = %d, want 1; final request: %s", a.LocalRecoveryCount(), finalRequest)
+	}
+	if !strings.Contains(finalRequest, "semantic target matched no current memory") || strings.Contains(finalRequest, `"tool_choice"`) {
+		t.Fatalf("finalization was not tools-stripped over the stale-target observation: %s", finalRequest)
+	}
+	if got := strings.Join(reporter.all(), "\n"); !strings.Contains(got, "no memory was changed") {
+		t.Fatalf("honest useful answer was not delivered: %s", got)
 	}
 }
 
