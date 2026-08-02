@@ -126,9 +126,10 @@ type DispatchResult struct {
 
 // ProbeResult carries a closed authoritative drift outcome and any observation.
 type ProbeResult struct {
-	Outcome  skills.ProbeOutcome
-	Dispatch DispatchResult
-	Reason   string
+	Outcome         skills.ProbeOutcome
+	Dispatch        DispatchResult
+	Reason          string
+	TerminalFailure bool
 }
 
 // Result is the durable effect projection safe to return to a seat.
@@ -153,12 +154,19 @@ type Adapter interface {
 
 // Operation is the immutable provider request after gateway preflight.
 type Operation struct {
+	ProposalID     string
 	OrganizationID contracts.OrganizationID
+	IntentID       contracts.IntentID
 	SeatID         contracts.SeatID
 	LeaseID        contracts.LeaseID
 	Fence          contracts.FenceToken
 	Name           string
 	IdempotencyKey string
+	EffectClass    skills.EffectClass
+	Irreversible   bool
+	ApprovalID     contracts.ApprovalID
+	ApprovalCost   uint64
+	Deadline       time.Time
 	Input          []byte
 }
 

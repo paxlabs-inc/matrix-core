@@ -168,6 +168,54 @@ func (store *Store) EnqueueTx(
 	return EnqueueResult{WakeID: wake.WakeID, Coalesced: coalesced}, nil
 }
 
+func (store *Store) ForceSeatTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	organizationID string,
+	seatID string,
+	forceID string,
+	reason string,
+	now time.Time,
+) (EnqueueResult, error) {
+	if tx == nil || validText("organization_id", organizationID, 512) != nil ||
+		validText("seat_id", seatID, 512) != nil || validText("force_id", forceID, 512) != nil ||
+		validText("reason", reason, 512) != nil || now.IsZero() || now.Location() != time.UTC {
+		return EnqueueResult{}, ErrUnauthorized
+	}
+	var sourceWakeID string
+	var sealed []byte
+	err := tx.QueryRow(ctx, `
+		SELECT wake_id,sealed_envelope
+		FROM workforce_scheduled_wakes
+		WHERE tenant_id=$1 AND organization_id=$2 AND seat_id=$3
+		ORDER BY updated_at DESC,wake_id DESC LIMIT 1
+	`, store.tenantID, organizationID, seatID).Scan(&sourceWakeID, &sealed)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return EnqueueResult{}, ErrNotReady
+	}
+	if err != nil {
+		return EnqueueResult{}, fmt.Errorf("%w: load force-wake template: %v", ErrUncertain, err)
+	}
+	opened, err := store.vault.OpenRecord(store.ad(organizationID, sourceWakeID), sealed)
+	if err != nil {
+		return EnqueueResult{}, fmt.Errorf("%w: open force-wake template: %v", ErrUncertain, err)
+	}
+	var wake WakeEnvelope
+	if err := json.Unmarshal(opened, &wake); err != nil ||
+		wake.TenantID != store.tenantID || wake.OrganizationID != organizationID ||
+		wake.SeatID != seatID {
+		return EnqueueResult{}, ErrUnauthorized
+	}
+	wake.WakeID = "wake:force:" + forceID
+	wake.ScheduleID = "schedule:force:" + forceID
+	wake.Trigger = TriggerForce
+	wake.Reason = reason
+	wake.ScheduledAt = now
+	wake.IdempotencyKey = "force:" + forceID
+	wake.CoalesceKey = "force:" + forceID
+	return store.EnqueueTx(ctx, tx, wake, now)
+}
+
 func (store *Store) ClaimDue(
 	ctx context.Context,
 	organizationID string,

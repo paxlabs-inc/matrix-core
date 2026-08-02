@@ -263,6 +263,202 @@ type RequiredOutput struct {
 	SuccessPredicate string `json:"success_predicate"`
 }
 
+// CompanyAuthorityLineage identifies the exact founder-controlled authority
+// versions under which a controller-issued wake is allowed to execute.
+type CompanyAuthorityLineage struct {
+	MissionID              string `json:"mission_id"`
+	MissionVersion         uint64 `json:"mission_version"`
+	ConstitutionID         string `json:"constitution_id"`
+	ConstitutionVersion    uint64 `json:"constitution_version"`
+	CapitalEnvelopeID      string `json:"capital_envelope_id"`
+	CapitalEnvelopeVersion uint64 `json:"capital_envelope_version"`
+}
+
+func (value CompanyAuthorityLineage) Validate() error {
+	for name, id := range map[string]string{
+		"mission_id": value.MissionID, "constitution_id": value.ConstitutionID,
+		"capital_envelope_id": value.CapitalEnvelopeID,
+	} {
+		if err := validateID(name, id); err != nil {
+			return err
+		}
+	}
+	if value.MissionVersion == 0 || value.ConstitutionVersion == 0 ||
+		value.CapitalEnvelopeVersion == 0 {
+		return fmt.Errorf("company authority versions must be positive")
+	}
+	return nil
+}
+
+// CompanyInitiativeLineage carries the durable lifecycle, plan, capability,
+// and business-gate state for an initiative-backed controller Work Order.
+type CompanyInitiativeLineage struct {
+	InitiativeID            string                   `json:"initiative_id"`
+	LifecycleState          string                   `json:"lifecycle_state"`
+	LifecycleVersion        uint64                   `json:"lifecycle_version"`
+	LifecycleCheckpointHash ContentHash              `json:"lifecycle_checkpoint_hash"`
+	PortfolioDecisionID     string                   `json:"portfolio_decision_id"`
+	CapitalAllocationID     string                   `json:"capital_allocation_id"`
+	CapabilityPlanID        string                   `json:"capability_plan_id"`
+	CapabilityPlanHash      ContentHash              `json:"capability_plan_hash"`
+	InitiativePlanID        string                   `json:"initiative_plan_id"`
+	InitiativePlanVersion   uint64                   `json:"initiative_plan_version"`
+	PlanNodeID              string                   `json:"plan_node_id"`
+	BusinessOutcomeGateIDs  []string                 `json:"business_outcome_gate_ids"`
+	ProductExecution        *ProductExecutionLineage `json:"product_execution"`
+}
+
+// ProductExecutionLineage binds one packet to the exact dynamic squad and
+// durable stage assignment selected for a funded product execution.
+type ProductExecutionLineage struct {
+	ExecutionID       string       `json:"execution_id"`
+	Phase             string       `json:"phase"`
+	Stage             string       `json:"stage"`
+	SquadAssignmentID string       `json:"squad_assignment_id"`
+	ProjectID         ProjectID    `json:"project_id"`
+	WorkspaceID       WorkspaceID  `json:"workspace_id"`
+	CheckpointVersion uint64       `json:"checkpoint_version"`
+	PlanNodeID        string       `json:"plan_node_id"`
+	WorkOrderID       string       `json:"work_order_id"`
+	CapabilityNeedID  string       `json:"capability_need_id"`
+	SeatID            SeatID       `json:"seat_id"`
+	DepartmentID      DepartmentID `json:"department_id"`
+	SeatRole          string       `json:"seat_role"`
+	MandateID         MandateID    `json:"mandate_id"`
+	MandateVersion    uint64       `json:"mandate_version"`
+	MandateDigest     ContentHash  `json:"mandate_digest"`
+	GoalID            GoalID       `json:"goal_id"`
+	IntentID          IntentID     `json:"intent_id"`
+	WakeID            WakeID       `json:"wake_id"`
+}
+
+func (value ProductExecutionLineage) Validate() error {
+	for name, id := range map[string]string{
+		"execution_id": value.ExecutionID, "phase": value.Phase, "stage": value.Stage,
+		"squad_assignment_id": value.SquadAssignmentID,
+		"project_id":          string(value.ProjectID), "workspace_id": string(value.WorkspaceID),
+		"plan_node_id": value.PlanNodeID, "work_order_id": value.WorkOrderID,
+		"capability_need_id": value.CapabilityNeedID, "seat_id": string(value.SeatID),
+		"department_id": string(value.DepartmentID), "seat_role": value.SeatRole,
+		"mandate_id": string(value.MandateID), "goal_id": string(value.GoalID),
+		"intent_id": string(value.IntentID), "wake_id": string(value.WakeID),
+	} {
+		if err := validateID(name, id); err != nil {
+			return err
+		}
+	}
+	if value.CheckpointVersion == 0 || value.MandateVersion == 0 ||
+		value.MandateDigest.Validate() != nil {
+		return fmt.Errorf("product execution lineage is incomplete")
+	}
+	return nil
+}
+
+func (value CompanyInitiativeLineage) Validate() error {
+	for name, id := range map[string]string{
+		"initiative_id": value.InitiativeID, "lifecycle_state": value.LifecycleState,
+		"portfolio_decision_id": value.PortfolioDecisionID,
+		"capital_allocation_id": value.CapitalAllocationID,
+		"capability_plan_id":    value.CapabilityPlanID,
+		"initiative_plan_id":    value.InitiativePlanID, "plan_node_id": value.PlanNodeID,
+	} {
+		if err := validateID(name, id); err != nil {
+			return err
+		}
+	}
+	if value.LifecycleVersion == 0 || value.InitiativePlanVersion == 0 {
+		return fmt.Errorf("company initiative lineage versions must be positive")
+	}
+	if err := value.LifecycleCheckpointHash.Validate(); err != nil {
+		return fmt.Errorf("lifecycle checkpoint hash: %w", err)
+	}
+	if err := value.CapabilityPlanHash.Validate(); err != nil {
+		return fmt.Errorf("capability plan hash: %w", err)
+	}
+	if value.ProductExecution != nil {
+		if err := value.ProductExecution.Validate(); err != nil {
+			return err
+		}
+	}
+	if len(value.BusinessOutcomeGateIDs) == 0 || len(value.BusinessOutcomeGateIDs) > 128 {
+		return fmt.Errorf("company initiative must carry business outcome gates")
+	}
+	for _, id := range value.BusinessOutcomeGateIDs {
+		if err := validateID("business outcome gate id", id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CompanyCycleLineage identifies one recurring company cadence and its exact
+// signed runtime configuration. It is disjoint from initiative execution.
+type CompanyCycleLineage struct {
+	RuntimeConfigID      string      `json:"runtime_config_id"`
+	RuntimeConfigVersion uint64      `json:"runtime_config_version"`
+	RuntimeConfigHash    ContentHash `json:"runtime_config_hash"`
+	CycleID              string      `json:"cycle_id"`
+	CadenceKind          string      `json:"cadence_kind"`
+	RequiredCapabilities []string    `json:"required_capabilities"`
+	IndependentAudit     bool        `json:"independent_audit"`
+}
+
+func (value CompanyCycleLineage) Validate() error {
+	for name, id := range map[string]string{
+		"runtime_config_id": value.RuntimeConfigID, "cycle_id": value.CycleID,
+		"cadence_kind": value.CadenceKind,
+	} {
+		if err := validateID(name, id); err != nil {
+			return err
+		}
+	}
+	if value.RuntimeConfigVersion == 0 || !value.IndependentAudit {
+		return fmt.Errorf("company cycle lineage is incomplete")
+	}
+	if err := value.RuntimeConfigHash.Validate(); err != nil {
+		return fmt.Errorf("runtime config hash: %w", err)
+	}
+	if len(value.RequiredCapabilities) == 0 || len(value.RequiredCapabilities) > 64 {
+		return fmt.Errorf("company cycle capabilities are required")
+	}
+	for _, capability := range value.RequiredCapabilities {
+		if err := validateID("required capability", capability); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CompanyExecutionContext is the controller-authority union projected into a
+// fresh WorkPacket. Exactly one initiative or recurring-cycle lineage is set.
+type CompanyExecutionContext struct {
+	Issuer        string                    `json:"issuer"`
+	CompanyState  string                    `json:"company_state"`
+	WorkOrderHash ContentHash               `json:"work_order_hash"`
+	Authority     CompanyAuthorityLineage   `json:"authority"`
+	Initiative    *CompanyInitiativeLineage `json:"initiative"`
+	Cycle         *CompanyCycleLineage      `json:"cycle"`
+}
+
+func (value CompanyExecutionContext) Validate() error {
+	if value.Issuer != "company_controller" || value.CompanyState != "active" {
+		return fmt.Errorf("company execution authority is not active")
+	}
+	if err := value.WorkOrderHash.Validate(); err != nil {
+		return fmt.Errorf("company Work Order hash: %w", err)
+	}
+	if err := value.Authority.Validate(); err != nil {
+		return err
+	}
+	if (value.Initiative == nil) == (value.Cycle == nil) {
+		return fmt.Errorf("company execution must carry exactly one lineage kind")
+	}
+	if value.Initiative != nil {
+		return value.Initiative.Validate()
+	}
+	return value.Cycle.Validate()
+}
+
 // Validate enforces a named output with a bounded machine-facing predicate.
 func (o RequiredOutput) Validate() error {
 	if err := validateID("required output kind", o.Kind); err != nil {
@@ -277,23 +473,24 @@ func (o RequiredOutput) Validate() error {
 // WorkPacket is the complete current-state projection supplied to one fresh worker.
 // It contains no prior-session transcript, scratchpad, or private agent memory.
 type WorkPacket struct {
-	SchemaVersion   string            `json:"schema_version"`
-	Lease           WakeLease         `json:"lease"`
-	Seat            Seat              `json:"seat"`
-	Mandate         Mandate           `json:"mandate"`
-	Goal            Goal              `json:"goal"`
-	Intent          Intent            `json:"intent"`
-	VerifiedState   []RecordRef       `json:"verified_state"`
-	Dependencies    []IntentID        `json:"dependencies"`
-	Artifacts       []ArtifactRef     `json:"artifacts"`
-	Evidence        []EvidenceRef     `json:"evidence"`
-	Inbox           []MessageEnvelope `json:"inbox"`
-	Tools           []ToolRef         `json:"tools"`
-	Skills          []SkillRef        `json:"skills"`
-	Policies        []PolicyRef       `json:"policies"`
-	RequiredOutputs []RequiredOutput  `json:"required_outputs"`
-	ProjectBrain    *ProjectBrainRef  `json:"project_brain"`
-	AssembledAt     time.Time         `json:"assembled_at"`
+	SchemaVersion    string                   `json:"schema_version"`
+	Lease            WakeLease                `json:"lease"`
+	Seat             Seat                     `json:"seat"`
+	Mandate          Mandate                  `json:"mandate"`
+	Goal             Goal                     `json:"goal"`
+	Intent           Intent                   `json:"intent"`
+	VerifiedState    []RecordRef              `json:"verified_state"`
+	Dependencies     []IntentID               `json:"dependencies"`
+	Artifacts        []ArtifactRef            `json:"artifacts"`
+	Evidence         []EvidenceRef            `json:"evidence"`
+	Inbox            []MessageEnvelope        `json:"inbox"`
+	Tools            []ToolRef                `json:"tools"`
+	Skills           []SkillRef               `json:"skills"`
+	Policies         []PolicyRef              `json:"policies"`
+	RequiredOutputs  []RequiredOutput         `json:"required_outputs"`
+	ProjectBrain     *ProjectBrainRef         `json:"project_brain"`
+	CompanyExecution *CompanyExecutionContext `json:"company_execution"`
+	AssembledAt      time.Time                `json:"assembled_at"`
 }
 
 // Validate enforces one internally consistent, bounded, stateless wake projection.
@@ -409,6 +606,16 @@ func (p WorkPacket) Validate() error {
 		}
 		if !p.ProjectBrain.ExpiresAt.After(p.AssembledAt) {
 			return fmt.Errorf("project brain view expires before the wake can use it")
+		}
+	}
+	if p.CompanyExecution != nil {
+		if err := p.CompanyExecution.Validate(); err != nil {
+			return fmt.Errorf("company execution: %w", err)
+		}
+		if p.CompanyExecution.Authority.MissionID != "mission:"+string(p.Lease.OrganizationID) ||
+			p.CompanyExecution.Authority.ConstitutionID != "constitution:"+string(p.Lease.OrganizationID) ||
+			p.CompanyExecution.Authority.CapitalEnvelopeID != "capital:"+string(p.Lease.OrganizationID) {
+			return fmt.Errorf("company execution authority is outside the lease organization")
 		}
 	}
 	return nil

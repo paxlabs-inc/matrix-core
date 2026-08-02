@@ -305,8 +305,8 @@ func (runner *Runner) assembleInitialPacket(
 		)
 	}
 	expiresAt := now.Add(runner.LeaseDuration)
-	if expiresAt.After(work.Order.Deadline) {
-		expiresAt = work.Order.Deadline
+	if expiresAt.After(work.Execute.Deadline) {
+		expiresAt = work.Execute.Deadline
 	}
 	if !expiresAt.After(now) {
 		return contracts.WorkPacket{}, nil, fmt.Errorf(
@@ -378,11 +378,42 @@ func (runner *Runner) assembleInitialPacket(
 			Intent:         work.Intent,
 			Artifacts:      predecessorArtifacts,
 			Evidence:       predecessorEvidence,
-			RequiredOutput: requiredOutputs(work.Order.AcceptanceCriteria),
+			RequiredOutput: requiredOutputs(work.Execute.AcceptanceCriteria),
 			InboxLimit:     100,
 		},
 	)
 	if err != nil {
+		return contracts.WorkPacket{}, nil, err
+	}
+	if work.CompanyExecution != nil && work.CompanyExecution.Initiative != nil &&
+		runner.ProductExecution != nil {
+		view, binding, loadErr := runner.ProductExecution.LoadByIntent(ctx, intentID)
+		if loadErr == nil {
+			if string(view.InitiativeID) != work.CompanyExecution.Initiative.InitiativeID ||
+				binding.IntentID != intentID {
+				return contracts.WorkPacket{}, nil, fmt.Errorf(
+					"wakeruntime: product execution lineage crosses initiative or intent",
+				)
+			}
+			work.CompanyExecution.Initiative.ProductExecution = &contracts.ProductExecutionLineage{
+				ExecutionID: string(view.ID), Phase: string(view.Phase), Stage: string(binding.Stage),
+				SquadAssignmentID: string(view.SquadAssignmentID),
+				ProjectID:         view.ProjectID, WorkspaceID: view.WorkspaceID,
+				CheckpointVersion: view.CheckpointVersion,
+				PlanNodeID:        binding.PlanNodeID, WorkOrderID: binding.WorkOrderID,
+				CapabilityNeedID: binding.NeedID, SeatID: binding.SeatID,
+				DepartmentID: binding.DepartmentID, SeatRole: string(binding.Role),
+				MandateID: binding.MandateID, MandateVersion: binding.MandateVersion,
+				MandateDigest: binding.MandateDigest,
+				GoalID:        contracts.GoalID(binding.GoalID), IntentID: binding.IntentID,
+				WakeID: binding.WakeID,
+			}
+		} else if !errors.Is(loadErr, pgx.ErrNoRows) {
+			return contracts.WorkPacket{}, nil, loadErr
+		}
+	}
+	packet.CompanyExecution = work.CompanyExecution
+	if err := packet.Validate(); err != nil {
 		return contracts.WorkPacket{}, nil, err
 	}
 	return packet, &grant, nil
@@ -975,7 +1006,7 @@ func (runner *Runner) verifyAndCommit(
 	)
 	if errors.Is(err, lineage.ErrConflict) {
 		finalIntent, finalErr := runner.finalIntent(
-			ctx, prepared.organization, prepared.work.Node.ID,
+			ctx, prepared.organization, prepared.work.Goal.ID, prepared.work.Node.ID,
 		)
 		if finalErr != nil {
 			return finalErr
@@ -984,13 +1015,17 @@ func (runner *Runner) verifyAndCommit(
 		if finalIntent {
 			disposition = contracts.DispositionGoalCompleted
 		}
+		authorityConstraint := "owner-signed work order, current mandate, policy, live fence, fresh seat, and independent audit"
+		if prepared.work.Cycle != nil {
+			authorityConstraint = "company-controller-signed recurring cycle under the current founder-signed runtime configuration, current mandate, policy, live fence, fresh seat, and independent audit"
+		} else if prepared.work.Issuer == workorder.IssuerCompanyController {
+			authorityConstraint = "company-controller-signed work order under current founder-signed issuer policy, current mandate, policy, live fence, fresh seat, and independent audit"
+		}
 		receipt, err = runner.Lineage.BuildReceipt(
 			lineage.ReceiptInput{
 				ID: receiptID, Packet: prepared.packet, Plan: plan,
-				ModelEvidence: modelEvidence,
-				Constraints: []string{
-					"owner-signed work order, current mandate, policy, live fence, fresh seat, and independent audit",
-				},
+				ModelEvidence:    modelEvidence,
+				Constraints:      []string{authorityConstraint},
 				Evidence:         []contracts.EvidenceRef{observation},
 				VerdictID:        &verdict.ID,
 				LatencyMillis:    uint64(runner.Now().Sub(prepared.checkpoint.StartedAt) / time.Millisecond),
@@ -1069,8 +1104,8 @@ func (runner *Runner) runIndependentAudit(
 		auditorGrant = recovered
 	} else {
 		expiresAt := runner.Now().Add(runner.LeaseDuration)
-		if expiresAt.After(prepared.work.Order.Deadline) {
-			expiresAt = prepared.work.Order.Deadline
+		if expiresAt.After(prepared.work.Execute.Deadline) {
+			expiresAt = prepared.work.Execute.Deadline
 		}
 		auditorLease, auditorGrant, err = runner.auditorLease(
 			ctx, prepared.packet, auditorSeat,
@@ -1196,10 +1231,10 @@ func (runner *Runner) yield(
 	if err != nil {
 		return err
 	}
-	nextIntent := eligibleIntent(projection)
+	nextIntent := eligibleIntent(projection, prepared.work.Goal.ID)
 	disposition := contracts.DispositionProgressed
 	if nextIntent == nil {
-		goal := eligibleGoal(projection)
+		goal := eligibleGoal(projection, prepared.work.Goal.ID)
 		if goal != nil {
 			if _, err := runner.Graph.FinishGoalFromReceipts(
 				ctx, prepared.organization, goal.ID, goal.Version+1,
@@ -1213,7 +1248,7 @@ func (runner *Runner) yield(
 			if snapshotErr != nil {
 				return snapshotErr
 			}
-			if !completedGoalExists(snapshot) {
+			if !completedGoalExists(snapshot, prepared.work.Goal.ID) {
 				return fmt.Errorf(
 					"wakeruntime: no next intent and root goal is not complete",
 				)
@@ -1246,14 +1281,14 @@ func (runner *Runner) finishScheduledWake(
 		if err != nil {
 			return err
 		}
-		next := eligibleIntent(projection)
+		next := eligibleIntent(projection, prepared.work.Goal.ID)
 		if next == nil {
 			return fmt.Errorf(
 				"wakeruntime: progressed wake has no eligible successor",
 			)
 		}
 		nextWake, err := runner.nextEnvelope(
-			ctx, prepared.work.Order, *next,
+			ctx, prepared.work.Execute, *next,
 		)
 		if err != nil {
 			return err
@@ -1266,6 +1301,14 @@ func (runner *Runner) finishScheduledWake(
 		}
 		nextWakeQueued = true
 	case contracts.DispositionGoalCompleted:
+		if runner.ProductExecution != nil {
+			_, _, err := runner.ProductExecution.AdvanceReceipt(
+				ctx, contracts.IntentID(prepared.intent), prepared.checkpoint.ReceiptID,
+			)
+			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				return fmt.Errorf("wakeruntime: advance product execution: %w", err)
+			}
+		}
 		if err := runner.Scheduler.Complete(
 			ctx, prepared.wake.OrganizationID,
 			prepared.wake.WakeID, 0,
@@ -1329,7 +1372,13 @@ func (runner *Runner) openPacket(
 		contracts.WorkPacket, *contracts.WorkPacket,
 	](content)
 	if err != nil {
-		return contracts.WorkPacket{}, false, err
+		legacy, legacyErr := contracts.DecodeCanonical[
+			legacyWorkPacket, *legacyWorkPacket,
+		](content)
+		if legacyErr != nil {
+			return contracts.WorkPacket{}, false, err
+		}
+		value = legacy.current()
 	}
 	return value, true, nil
 }
@@ -1421,6 +1470,16 @@ func validateRecoveredPacket(
 		return fmt.Errorf(
 			"wakeruntime: durable WorkPacket conflicts with claimed wake",
 		)
+	}
+	if (packet.CompanyExecution == nil) != (work.CompanyExecution == nil) {
+		return fmt.Errorf("wakeruntime: durable WorkPacket issuer lineage changed")
+	}
+	if packet.CompanyExecution != nil {
+		packetHash, packetErr := contracts.HashCanonical(packet.CompanyExecution)
+		workHash, workErr := contracts.HashCanonical(work.CompanyExecution)
+		if packetErr != nil || workErr != nil || packetHash != workHash {
+			return fmt.Errorf("wakeruntime: durable WorkPacket company state is stale")
+		}
 	}
 	return nil
 }
@@ -1527,9 +1586,9 @@ func snapshotNode(
 	return dependency.Node{}, false
 }
 
-func completedGoalExists(snapshot dependency.Snapshot) bool {
+func completedGoalExists(snapshot dependency.Snapshot, goalID contracts.GoalID) bool {
 	for _, node := range snapshot.Nodes {
-		if node.Kind == dependency.NodeGoal &&
+		if node.ID == dependency.NodeID(goalID) && node.Kind == dependency.NodeGoal &&
 			node.State == dependency.StateCompleted &&
 			node.TerminalRecordID != nil {
 			return true

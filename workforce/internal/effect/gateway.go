@@ -129,12 +129,17 @@ func (gateway *Gateway) Execute(ctx context.Context, proposal Proposal) (Result,
 	dispatchContext, cancel := context.WithTimeout(ctx, proposal.Deadline.Sub(now))
 	defer cancel()
 	observation, dispatchErr := adapter.Dispatch(dispatchContext, Operation{
+		ProposalID:     proposal.ID,
 		OrganizationID: proposal.OrganizationID,
+		IntentID:       proposal.IntentID,
 		SeatID:         proposal.SeatID,
 		LeaseID:        proposal.LeaseID,
 		Fence:          proposal.Fence,
 		Name:           proposal.Operation, IdempotencyKey: proposal.IdempotencyKey,
-		Input: append([]byte(nil), proposal.Input...),
+		EffectClass: proposal.EffectClass, Irreversible: proposal.Irreversible,
+		ApprovalID: proposal.ApprovalID, ApprovalCost: proposal.ApprovalCost,
+		Deadline: proposal.Deadline,
+		Input:    append([]byte(nil), proposal.Input...),
 	})
 	if dispatchErr != nil {
 		if observation.Started {
@@ -203,12 +208,17 @@ func (gateway *Gateway) Reconcile(ctx context.Context, proposal Proposal) (Resul
 		return Result{}, err
 	}
 	probe, probeErr := adapter.Probe(ctx, Operation{
+		ProposalID:     proposal.ID,
 		OrganizationID: proposal.OrganizationID,
+		IntentID:       proposal.IntentID,
 		SeatID:         proposal.SeatID,
 		LeaseID:        proposal.LeaseID,
 		Fence:          proposal.Fence,
 		Name:           proposal.Operation, IdempotencyKey: proposal.IdempotencyKey,
-		Input: append([]byte(nil), proposal.Input...),
+		EffectClass: proposal.EffectClass, Irreversible: proposal.Irreversible,
+		ApprovalID: proposal.ApprovalID, ApprovalCost: proposal.ApprovalCost,
+		Deadline: proposal.Deadline,
+		Input:    append([]byte(nil), proposal.Input...),
 	})
 	if probeErr != nil || !probe.Outcome.Valid() {
 		_ = gateway.setProbe(ctx, proposal, skills.ProbeUnknown,
@@ -222,6 +232,27 @@ func (gateway *Gateway) Reconcile(ctx context.Context, proposal Proposal) (Resul
 			ExternalID: probe.Dispatch.ExternalID, SafeErrorCode: "probe_inconclusive",
 			ProbeOutcome: skills.ProbeUnknown,
 		}, ErrAmbiguous
+	}
+	if probe.TerminalFailure {
+		if probe.Outcome != skills.ProbeUnchanged && probe.Outcome != skills.ProbeReversed {
+			_ = gateway.breakers.Release(context.WithoutCancel(ctx), permit)
+			return Result{}, ErrRejected
+		}
+		result, err := gateway.commitEvidenceState(
+			ctx, proposal, probe.Dispatch, StateFailed, "authoritative_rejection",
+		)
+		if err != nil {
+			_ = gateway.breakers.Release(context.WithoutCancel(ctx), permit)
+			return Result{}, err
+		}
+		result.ProbeOutcome = probe.Outcome
+		if err := gateway.setProbeOutcome(ctx, proposal, probe.Outcome); err != nil {
+			return result, err
+		}
+		if err := gateway.breakers.Succeed(context.WithoutCancel(ctx), permit); err != nil {
+			return result, err
+		}
+		return result, nil
 	}
 	if probe.Outcome == skills.ProbeCompletedOutOfBand {
 		result, err := gateway.commitEvidence(ctx, proposal, probe.Dispatch)
@@ -642,7 +673,7 @@ func (gateway *Gateway) setProbeOutcome(
 		UPDATE workforce_effect_operations
 		SET last_probe_outcome=$1,last_probe_at=$2,updated_at=$2
 		WHERE tenant_id=$3 AND organization_id=$4 AND proposal_id=$5
-		  AND state='succeeded'
+		  AND state IN ('succeeded','failed')
 	`, outcome, gateway.now(), gateway.tenantID, proposal.OrganizationID, proposal.ID)
 	if err != nil {
 		return fmt.Errorf("%w: persist probe outcome: %v", ErrUncertain, err)
@@ -658,6 +689,19 @@ func (gateway *Gateway) commitEvidence(
 	proposal Proposal,
 	observation DispatchResult,
 ) (Result, error) {
+	return gateway.commitEvidenceState(ctx, proposal, observation, StateSucceeded, "")
+}
+
+func (gateway *Gateway) commitEvidenceState(
+	ctx context.Context,
+	proposal Proposal,
+	observation DispatchResult,
+	state State,
+	safeCode string,
+) (Result, error) {
+	if state != StateSucceeded && state != StateFailed {
+		return Result{}, fmt.Errorf("effect: evidence target state is invalid")
+	}
 	if !observation.Started || strings.TrimSpace(observation.ExternalID) == "" ||
 		len(observation.Observation) == 0 || len(observation.Observation) > 256<<10 ||
 		observation.ObservedAt.IsZero() || observation.ObservedAt.Location() != time.UTC {
@@ -695,11 +739,11 @@ func (gateway *Gateway) commitEvidence(
 	}
 	command, err := tx.Exec(ctx, `
 		UPDATE workforce_effect_operations
-		SET state='succeeded',external_id=$1,evidence_hash=$2,
-			safe_error_code=NULL,updated_at=$3
-		WHERE tenant_id=$4 AND organization_id=$5 AND proposal_id=$6
+		SET state=$1,external_id=$2,evidence_hash=$3,
+			safe_error_code=NULLIF($4,''),updated_at=$5
+		WHERE tenant_id=$6 AND organization_id=$7 AND proposal_id=$8
 		  AND state IN ('dispatching','externally_ambiguous')
-	`, observation.ExternalID, evidenceHash, observation.ObservedAt,
+	`, state, observation.ExternalID, evidenceHash, safeCode, observation.ObservedAt,
 		gateway.tenantID, proposal.OrganizationID, proposal.ID)
 	if err != nil {
 		return Result{}, fmt.Errorf("%w: commit observation: %v", ErrUncertain, err)
@@ -711,10 +755,11 @@ func (gateway *Gateway) commitEvidence(
 		return Result{}, fmt.Errorf("%w: commit evidence: %v", ErrUncertain, err)
 	}
 	return Result{
-		ProposalID: proposal.ID, State: StateSucceeded,
-		ExternalID:   observation.ExternalID,
-		EvidenceHash: contracts.ContentHash{Algorithm: "sha256", Digest: evidenceHash},
-		ObservedAt:   observation.ObservedAt,
+		ProposalID: proposal.ID, State: state,
+		ExternalID:    observation.ExternalID,
+		EvidenceHash:  contracts.ContentHash{Algorithm: "sha256", Digest: evidenceHash},
+		ObservedAt:    observation.ObservedAt,
+		SafeErrorCode: safeCode,
 	}, nil
 }
 

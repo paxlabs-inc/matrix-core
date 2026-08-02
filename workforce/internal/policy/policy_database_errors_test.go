@@ -2,6 +2,7 @@ package policy
 
 import (
 	"context"
+	"crypto/ed25519"
 	"errors"
 	"strings"
 	"testing"
@@ -26,11 +27,47 @@ func TestPolicyClosedAndIncompleteDatabasesFailClosed(t *testing.T) {
 	if err := closed.PublishPolicy(ctx, policy, writeGrant); err == nil {
 		t.Fatal("published authority through closed pool")
 	}
+	if _, err := closed.PublishSeed(ctx, seedForClosedStore(t, store, privateKey)); err == nil {
+		t.Fatal("published seed through closed pool")
+	}
 	if err := closed.AuthorizeLease(ctx, "lease"); err == nil {
 		t.Fatal("authorized lease through closed pool")
 	}
 	if _, err := closed.LoadPolicy(ctx, policy.ID, policy.Version); err == nil {
 		t.Fatal("loaded authority through closed pool")
+	}
+	if _, err := closed.LoadCurrentPolicyRefs(ctx); err == nil {
+		t.Fatal("listed policies through closed pool")
+	}
+	if _, err := closed.LoadCurrentRuntimeAuthority(ctx, "runtime"); err == nil {
+		t.Fatal("loaded current runtime authority through closed pool")
+	}
+	if _, err := closed.LoadMandate(ctx, "mandate", 1); err == nil {
+		t.Fatal("loaded mandate through closed pool")
+	}
+	if _, err := closed.LoadSeat(ctx, "seat", 1); err == nil {
+		t.Fatal("loaded seat through closed pool")
+	}
+	if _, err := closed.LoadCurrentSeat(ctx, "seat"); err == nil {
+		t.Fatal("loaded current seat through closed pool")
+	}
+	if _, err := closed.LoadLease(ctx, "lease"); err == nil {
+		t.Fatal("loaded lease through closed pool")
+	}
+	if err := closed.requireCurrent(
+		ctx, KindPolicy, "policy", 1, policyNow(),
+	); err == nil {
+		t.Fatal("accepted current authority through closed pool")
+	}
+	if err := closed.requirePolicyReference(
+		ctx,
+		contracts.PolicyRef{
+			ID: "policy", Version: 1,
+			Hash: contracts.ContentHash{Algorithm: "sha256", Digest: strings.Repeat("a", 64)},
+		},
+		policyNow(),
+	); err == nil {
+		t.Fatal("accepted policy reference through closed pool")
 	}
 	revocation := Revocation{
 		SchemaVersion: contracts.SchemaVersionV1,
@@ -71,6 +108,26 @@ func TestPolicyClosedAndIncompleteDatabasesFailClosed(t *testing.T) {
 	if err := incomplete.PublishPolicy(ctx, policy, writeGrant); err == nil {
 		t.Fatal("published authority without authority tables")
 	}
+}
+
+func seedForClosedStore(
+	t *testing.T,
+	store *Store,
+	privateKey ed25519.PrivateKey,
+) Seed {
+	t.Helper()
+	seed, err := BuildSeed(
+		store.root.OrganizationID,
+		store.root.OwnerID,
+		"Closed store",
+		policyNow(),
+		store.root.KeyID,
+		privateKey,
+	)
+	if err != nil {
+		t.Fatalf("build closed-store seed: %v", err)
+	}
+	return seed
 }
 
 func TestPolicyEntryPointsRejectInvalidClock(t *testing.T) {

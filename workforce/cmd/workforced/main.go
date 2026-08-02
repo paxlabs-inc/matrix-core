@@ -26,7 +26,13 @@ import (
 	"matrix/workforce/internal/actorstate"
 	"matrix/workforce/internal/approval"
 	"matrix/workforce/internal/audit"
+	"matrix/workforce/internal/businessoutcome"
 	"matrix/workforce/internal/circuit"
+	"matrix/workforce/internal/commercialcapability"
+	"matrix/workforce/internal/commercialexecution"
+	"matrix/workforce/internal/companylifecycle"
+	"matrix/workforce/internal/companyrecovery"
+	"matrix/workforce/internal/companyruntime"
 	"matrix/workforce/internal/contracts"
 	"matrix/workforce/internal/controlapi"
 	"matrix/workforce/internal/departmentadapter"
@@ -34,14 +40,27 @@ import (
 	"matrix/workforce/internal/developer"
 	"matrix/workforce/internal/effect"
 	"matrix/workforce/internal/execution"
+	"matrix/workforce/internal/founderprojection"
+	"matrix/workforce/internal/initiative"
+	"matrix/workforce/internal/learning"
 	"matrix/workforce/internal/lease"
 	"matrix/workforce/internal/ledger"
 	"matrix/workforce/internal/lineage"
 	"matrix/workforce/internal/mail"
+	"matrix/workforce/internal/mission"
 	"matrix/workforce/internal/modelclient"
+	"matrix/workforce/internal/organization"
 	"matrix/workforce/internal/policy"
+	"matrix/workforce/internal/portfolio"
+	"matrix/workforce/internal/productcapability"
+	"matrix/workforce/internal/productexecution"
 	"matrix/workforce/internal/projectbrain"
+	"matrix/workforce/internal/provider/customer"
+	"matrix/workforce/internal/provider/external"
+	"matrix/workforce/internal/provider/financial"
+	"matrix/workforce/internal/securityqualification"
 	"matrix/workforce/internal/skills"
+	"matrix/workforce/internal/squad"
 	"matrix/workforce/internal/wakeruntime"
 	"matrix/workforce/internal/workcompile"
 	"matrix/workforce/internal/workorder"
@@ -145,6 +164,12 @@ func runContext(ctx context.Context, args []string, stdout, stderr io.Writer) in
 		fmt.Fprintln(stderr, err)
 		return 2
 	}
+	if err := service.AttachCompanyIssuerAuthority(
+		config.companyIssuerKeyID, config.companyIssuerPublicKey,
+	); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
 	if err := service.AttachRuntimeModel(
 		config.model.Provider, config.model.ModelID,
 	); err != nil {
@@ -163,6 +188,186 @@ func runContext(ctx context.Context, args []string, stdout, stderr io.Writer) in
 		fmt.Fprintln(stderr, err)
 		return 2
 	}
+	nowFunc := func() time.Time { return time.Now().UTC() }
+	companyRecoveryStore, err := companyrecovery.NewStore(
+		pool, vaultSession.UserVault(), config.tenantID, config.organizationID,
+		companyrecovery.Authority{
+			FounderKeyID:      config.ownerKeyID,
+			FounderPublicKey:  config.ownerPublicKey,
+			RuntimeKeyID:      config.runtimeKeyID,
+			RuntimePrivateKey: config.runtimeKey,
+		},
+		nowFunc,
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	if config.recoveryBackend != "" {
+		recoveryBackend, backendErr := companyrecovery.NewCommandBackend(
+			config.recoveryBackend, config.recoveryBackendArgs, config.recoveryBackendTimeout,
+		)
+		if backendErr != nil {
+			fmt.Fprintln(stderr, backendErr)
+			return 2
+		}
+		if backendErr = companyRecoveryStore.AttachPITRBackend(recoveryBackend); backendErr != nil {
+			fmt.Fprintln(stderr, backendErr)
+			return 2
+		}
+		if backendErr = companyRecoveryStore.AttachErasureBackend(recoveryBackend); backendErr != nil {
+			fmt.Fprintln(stderr, backendErr)
+			return 2
+		}
+	}
+	if err := service.AttachCompanyRecovery(companyRecoveryStore); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	founderProjectionStore, err := founderprojection.NewStore(
+		pool, config.tenantID, config.organizationID, config.ownerID,
+		config.runtimeKeyID, config.runtimeKey, nowFunc,
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	if err := service.AttachFounderProjection(founderProjectionStore); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	securityStore, err := securityqualification.NewStore(
+		pool, vaultSession.UserVault(), config.tenantID, config.organizationID,
+		config.runtimeKeyID, config.runtimePublicKey, nowFunc,
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	if err := service.AttachSecurityQualification(
+		securityStore, config.runtimeKeyID, config.runtimeKey,
+	); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	learningStore, err := learning.NewStore(
+		pool, vaultSession.UserVault(), config.tenantID, config.organizationID,
+		config.runtimeKeyID, config.runtimePublicKey, nowFunc,
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	learningEngine, err := learning.NewEngine(config.runtimeKeyID, config.runtimeKey)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	if err := service.AttachLearning(learningStore, learningEngine); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	missionStore, err := mission.NewStore(
+		pool, vaultSession.UserVault(), config.tenantID, config.organizationID,
+		config.ownerID, config.ownerKeyID, config.ownerPublicKey, nowFunc,
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	portfolioStore, err := portfolio.NewStore(
+		pool, vaultSession.UserVault(), config.tenantID, config.organizationID,
+		config.companyIssuerKeyID, config.companyIssuerKey, nowFunc,
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	companyStore, err := companyruntime.NewStore(
+		pool, vaultSession.UserVault(), missionStore, portfolioStore,
+		config.tenantID, config.organizationID, config.ownerKeyID,
+		config.ownerPublicKey, config.companyIssuerKeyID, config.companyIssuerKey, nowFunc,
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	lifecycleStore, err := companylifecycle.New(
+		pool, vaultSession.UserVault(), config.tenantID,
+		config.companyIssuerKeyID, config.companyIssuerKey, companyStore, nowFunc,
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	initiativeCompiler, err := initiative.NewCompiler(
+		config.ownerKeyID, config.ownerPublicKey, config.companyIssuerKey,
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	initiativeStore, err := initiative.NewStore(
+		pool, vaultSession.UserVault(), config.tenantID, config.organizationID, nowFunc,
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	initiativeDispatcher, err := initiative.NewDispatcher(
+		pool, schedulerStore, config.tenantID, config.organizationID, nowFunc,
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	companyCoordinator, err := companyruntime.NewCoordinatorWithDispatcher(
+		pool, companyStore, missionStore, portfolioStore, lifecycleStore,
+		initiativeCompiler, initiativeStore, initiativeDispatcher, nowFunc,
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	cyclePack, err := skills.WorkforcePack()
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	cycleCatalog, err := skills.NewCatalog(cyclePack)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	cycleDispatcher, err := companyruntime.NewCycleDispatcher(
+		companyStore, schedulerStore, companyruntime.CycleRuntimeBinding{
+			ModelProvider: config.model.Provider, ModelID: config.model.ModelID,
+			MGSReference: "skill-catalog:workforce",
+			MGSDigest:    cycleCatalog.Digest().Digest,
+		},
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	if err := companyCoordinator.AttachCycleDispatcher(cycleDispatcher); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	if err := service.AttachCompanyRuntime(companyCoordinator); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	runtimeReload := make(chan struct{}, 1)
+	if err := service.AttachRuntimeReload(func() {
+		select {
+		case runtimeReload <- struct{}{}:
+		default:
+		}
+	}); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
 	runtimeStopped := make(chan struct{})
 	go func() {
 		defer close(runtimeStopped)
@@ -170,23 +375,103 @@ func runContext(ctx context.Context, args []string, stdout, stderr io.Writer) in
 		defer ticker.Stop()
 		var wakeRunner *wakeruntime.Runner
 		for {
+			if err := companyRecoveryStore.AssertOperational(ctx); err != nil {
+				if ctx.Err() == nil {
+					fmt.Fprintln(stderr, "workforced: company runtime paused:", err)
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case <-runtimeReload:
+					wakeRunner = nil
+				case <-ticker.C:
+				}
+				continue
+			}
 			if wakeRunner == nil {
-				ownerRoot, rootErr := service.RuntimeOwnerRoot(
-					ctx, principal,
-				)
+				ownerRoot, rootErr := service.RuntimeOwnerRoot(ctx, principal)
 				if rootErr == nil {
 					wakeRunner, rootErr = buildWakeRunner(
-						pool, vaultSession.UserVault(), service,
-						principal, schedulerStore, config, ownerRoot,
+						ctx, pool, vaultSession.UserVault(), service,
+						principal, schedulerStore, config, ownerRoot, missionStore,
+						companyStore, lifecycleStore, initiativeStore, cycleDispatcher,
 					)
+					if rootErr == nil {
+						rootErr = service.AttachProductExecution(wakeRunner.ProductExecution)
+					}
+					if rootErr == nil {
+						rootErr = service.AttachFinancial(wakeRunner.Financial)
+					}
+					if rootErr == nil {
+						rootErr = service.AttachBusinessOutcomes(wakeRunner.BusinessOutcomes)
+					}
+					if rootErr == nil {
+						rootErr = service.AttachCommercialExecution(
+							wakeRunner.CommercialExecution,
+							wakeRunner.CommercialCoordinator,
+						)
+					}
 				}
 				if rootErr != nil &&
 					!errors.Is(rootErr, controlapi.ErrNotActivated) &&
 					ctx.Err() == nil {
-					fmt.Fprintln(
-						stderr, "workforced: initialize wake runtime:",
-						rootErr,
-					)
+					fmt.Fprintln(stderr, "workforced: initialize wake runtime:", rootErr)
+				}
+			}
+			dispatches, dispatchErr := companyCoordinator.DispatchReady(
+				ctx, uint16(config.claimBatch),
+			)
+			if dispatchErr != nil && !errors.Is(dispatchErr, companyruntime.ErrNotStarted) && ctx.Err() == nil {
+				fmt.Fprintln(stderr, "workforced: company dispatch:", dispatchErr)
+			}
+			for _, dispatch := range dispatches {
+				_, publishErr := service.Publish(ctx, principal, controlapi.LifecycleEvent{
+					ID:             "event:company-work-order-dispatch:" + dispatch.WorkOrderID,
+					OrganizationID: principal.OrganizationID,
+					Type:           "company.work_order.queued", ResourceKind: "company-work-order",
+					ResourceID: dispatch.WorkOrderID, ResourceVersion: dispatch.PlanVersion,
+					VerifiedCompletion: false,
+					Fields: map[string]any{
+						"state": "queued", "initiative_id": dispatch.InitiativeID,
+						"plan_node_id": dispatch.PlanNodeID, "goal_id": dispatch.GoalID,
+						"wake_id": dispatch.WakeID, "intent_ids": dispatch.IntentIDs,
+					},
+				})
+				if publishErr != nil && ctx.Err() == nil {
+					fmt.Fprintln(stderr, "workforced: publish company dispatch:", publishErr)
+				}
+			}
+			cycles, cycleErr := companyCoordinator.RunDue(ctx, uint16(config.claimBatch))
+			if cycleErr != nil && !errors.Is(cycleErr, companyruntime.ErrNotStarted) && ctx.Err() == nil {
+				fmt.Fprintln(stderr, "workforced: company controller:", cycleErr)
+			}
+			for _, cycle := range cycles {
+				cycleDispatch, cycleDispatchErr := companyCoordinator.DispatchCycle(ctx, cycle)
+				if cycleDispatchErr != nil {
+					if ctx.Err() == nil {
+						fmt.Fprintln(stderr, "workforced: dispatch company cycle:", cycleDispatchErr)
+					}
+					continue
+				}
+				_, publishErr := service.Publish(ctx, principal, controlapi.LifecycleEvent{
+					ID:             "event:company-cycle:" + cycle.ID,
+					OrganizationID: principal.OrganizationID, Type: "company.cycle.queued",
+					ResourceKind: "company-cycle", ResourceID: cycle.ID, ResourceVersion: 1,
+					VerifiedCompletion: false,
+					Fields: map[string]any{
+						"kind": cycle.Kind, "due_at": cycle.DueAt, "next_at": cycle.NextAt,
+						"departments":           cycle.Departments,
+						"required_capabilities": cycle.RequiredCapabilities,
+						"independent_audit":     cycle.IndependentAudit,
+						"state":                 "queued",
+						"work_order_id":         cycleDispatch.WorkOrderID,
+						"goal_id":               cycleDispatch.GoalID,
+						"intent_ids":            cycleDispatch.IntentIDs,
+						"wake_id":               cycleDispatch.WakeID,
+					},
+				})
+				if publishErr != nil && ctx.Err() == nil {
+					fmt.Fprintln(stderr, "workforced: publish company cycle:", publishErr)
 				}
 			}
 			if wakeRunner != nil {
@@ -199,6 +484,8 @@ func runContext(ctx context.Context, args []string, stdout, stderr io.Writer) in
 			select {
 			case <-ctx.Done():
 				return
+			case <-runtimeReload:
+				wakeRunner = nil
 			case <-ticker.C:
 			}
 		}
@@ -217,9 +504,26 @@ func runContext(ctx context.Context, args []string, stdout, stderr io.Writer) in
 	go func() {
 		defer close(stopped)
 		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
+		shutdownID := companyrecovery.ShutdownID(
+			"shutdown-" + strconv.FormatInt(nowFunc().UnixNano(), 10),
+		)
+		if _, shutdownErr := companyRecoveryStore.BeginShutdown(
+			shutdownCtx, shutdownID, "process_signal",
+		); shutdownErr != nil {
+			fmt.Fprintln(stderr, "workforced: begin graceful shutdown:", shutdownErr)
+		}
 		_ = server.Shutdown(shutdownCtx)
+		select {
+		case <-runtimeStopped:
+		case <-shutdownCtx.Done():
+		}
+		if _, shutdownErr := companyRecoveryStore.CompleteShutdown(
+			shutdownCtx, shutdownID,
+		); shutdownErr != nil {
+			fmt.Fprintln(stderr, "workforced: complete graceful shutdown:", shutdownErr)
+		}
 	}()
 	fmt.Fprintf(stdout, "workforced %s listening on %s\n", version, config.listen)
 	err = server.ListenAndServe()
@@ -235,30 +539,36 @@ func runContext(ctx context.Context, args []string, stdout, stderr io.Writer) in
 }
 
 type runtimeConfig struct {
-	listen           string
-	postgresURI      string
-	tenantID         string
-	organizationID   contracts.OrganizationID
-	ownerID          contracts.OwnerID
-	ownerToken       string
-	wakeToken        string
-	ownerKeyID       string
-	ownerPublicKey   ed25519.PublicKey
-	runtimeKeyID     string
-	runtimeKey       ed25519.PrivateKey
-	runtimePublicKey ed25519.PublicKey
-	scheduler        scheduler.Config
-	model            modelclient.Config
-	bubblewrap       string
-	seatBinary       string
-	auditorBinary    string
-	developerRepo    string
-	codegraph        string
-	auditorSeatID    contracts.SeatID
-	pollInterval     time.Duration
-	leaseDuration    time.Duration
-	claimBatch       uint32
-	dataDir          string
+	listen                 string
+	postgresURI            string
+	tenantID               string
+	organizationID         contracts.OrganizationID
+	ownerID                contracts.OwnerID
+	ownerToken             string
+	wakeToken              string
+	ownerKeyID             string
+	ownerPublicKey         ed25519.PublicKey
+	runtimeKeyID           string
+	runtimeKey             ed25519.PrivateKey
+	runtimePublicKey       ed25519.PublicKey
+	companyIssuerKeyID     string
+	companyIssuerKey       ed25519.PrivateKey
+	companyIssuerPublicKey ed25519.PublicKey
+	scheduler              scheduler.Config
+	model                  modelclient.Config
+	bubblewrap             string
+	seatBinary             string
+	auditorBinary          string
+	developerRepo          string
+	codegraph              string
+	auditorSeatID          contracts.SeatID
+	pollInterval           time.Duration
+	leaseDuration          time.Duration
+	claimBatch             uint32
+	dataDir                string
+	recoveryBackend        string
+	recoveryBackendArgs    []string
+	recoveryBackendTimeout time.Duration
 }
 
 func loadConfig(listen string) (runtimeConfig, error) {
@@ -281,20 +591,22 @@ func loadConfig(listen string) (runtimeConfig, error) {
 	}
 	config := runtimeConfig{
 		listen: listen, postgresURI: os.Getenv("WORKFORCE_POSTGRES_URI"),
-		tenantID:       os.Getenv("WORKFORCE_TENANT_ID"),
-		organizationID: contracts.OrganizationID(os.Getenv("WORKFORCE_ORGANIZATION_ID")),
-		ownerID:        contracts.OwnerID(os.Getenv("WORKFORCE_OWNER_ID")),
-		ownerToken:     os.Getenv("WORKFORCE_OWNER_TOKEN"),
-		wakeToken:      os.Getenv("WORKFORCE_WAKE_TOKEN"),
-		ownerKeyID:     os.Getenv("WORKFORCE_OWNER_KEY_ID"),
-		runtimeKeyID:   os.Getenv("WORKFORCE_RUNTIME_KEY_ID"),
-		bubblewrap:     os.Getenv("WORKFORCE_BUBBLEWRAP"),
-		seatBinary:     os.Getenv("WORKFORCE_SEAT_BINARY"),
-		auditorBinary:  os.Getenv("WORKFORCE_AUDITOR_BINARY"),
-		developerRepo:  os.Getenv("WORKFORCE_DEVELOPER_REPOSITORY"),
-		codegraph:      os.Getenv("WORKFORCE_CODEGRAPH_EXECUTABLE"),
-		auditorSeatID:  contracts.SeatID(os.Getenv("WORKFORCE_AUDITOR_SEAT_ID")),
-		dataDir:        os.Getenv("WORKFORCE_DATA_DIR"),
+		tenantID:           os.Getenv("WORKFORCE_TENANT_ID"),
+		organizationID:     contracts.OrganizationID(os.Getenv("WORKFORCE_ORGANIZATION_ID")),
+		ownerID:            contracts.OwnerID(os.Getenv("WORKFORCE_OWNER_ID")),
+		ownerToken:         os.Getenv("WORKFORCE_OWNER_TOKEN"),
+		wakeToken:          os.Getenv("WORKFORCE_WAKE_TOKEN"),
+		ownerKeyID:         os.Getenv("WORKFORCE_OWNER_KEY_ID"),
+		runtimeKeyID:       os.Getenv("WORKFORCE_RUNTIME_KEY_ID"),
+		companyIssuerKeyID: os.Getenv("WORKFORCE_COMPANY_ISSUER_KEY_ID"),
+		bubblewrap:         os.Getenv("WORKFORCE_BUBBLEWRAP"),
+		seatBinary:         os.Getenv("WORKFORCE_SEAT_BINARY"),
+		auditorBinary:      os.Getenv("WORKFORCE_AUDITOR_BINARY"),
+		developerRepo:      os.Getenv("WORKFORCE_DEVELOPER_REPOSITORY"),
+		codegraph:          os.Getenv("WORKFORCE_CODEGRAPH_EXECUTABLE"),
+		auditorSeatID:      contracts.SeatID(os.Getenv("WORKFORCE_AUDITOR_SEAT_ID")),
+		dataDir:            os.Getenv("WORKFORCE_DATA_DIR"),
+		recoveryBackend:    strings.TrimSpace(os.Getenv("WORKFORCE_RECOVERY_BACKEND_EXECUTABLE")),
 	}
 	for name, value := range map[string]string{
 		"WORKFORCE_POSTGRES_URI":                              config.postgresURI,
@@ -307,6 +619,8 @@ func loadConfig(listen string) (runtimeConfig, error) {
 		"WORKFORCE_OWNER_PUBLIC_KEY":                          os.Getenv("WORKFORCE_OWNER_PUBLIC_KEY"),
 		"WORKFORCE_RUNTIME_KEY_ID":                            config.runtimeKeyID,
 		"WORKFORCE_RUNTIME_PRIVATE_KEY":                       os.Getenv("WORKFORCE_RUNTIME_PRIVATE_KEY"),
+		"WORKFORCE_COMPANY_ISSUER_KEY_ID":                     config.companyIssuerKeyID,
+		"WORKFORCE_COMPANY_ISSUER_PRIVATE_KEY":                os.Getenv("WORKFORCE_COMPANY_ISSUER_PRIVATE_KEY"),
 		"MATRIX_GATEWAY_TOKEN or MIMO_API_KEY/XIAOMI_API_KEY": modelCredential,
 		"WORKFORCE_BUBBLEWRAP":                                config.bubblewrap,
 		"WORKFORCE_SEAT_BINARY":                               config.seatBinary,
@@ -339,6 +653,24 @@ func loadConfig(listen string) (runtimeConfig, error) {
 	config.runtimeKey = runtimeKey
 	config.runtimePublicKey = append(
 		ed25519.PublicKey(nil), runtimeKey.Public().(ed25519.PublicKey)...,
+	)
+	companyIssuerKey, err := decodePrivateKey(
+		os.Getenv("WORKFORCE_COMPANY_ISSUER_PRIVATE_KEY"),
+	)
+	if err != nil {
+		return runtimeConfig{}, fmt.Errorf(
+			"workforced: WORKFORCE_COMPANY_ISSUER_PRIVATE_KEY must be an Ed25519 private key",
+		)
+	}
+	if config.companyIssuerKeyID == config.runtimeKeyID ||
+		companyIssuerKey.Equal(runtimeKey) {
+		return runtimeConfig{}, fmt.Errorf(
+			"workforced: company issuer and runtime authority must be distinct",
+		)
+	}
+	config.companyIssuerKey = companyIssuerKey
+	config.companyIssuerPublicKey = append(
+		ed25519.PublicKey(nil), companyIssuerKey.Public().(ed25519.PublicKey)...,
 	)
 	schedulerConfig, err := loadSchedulerConfig()
 	if err != nil {
@@ -388,6 +720,13 @@ func loadConfig(listen string) (runtimeConfig, error) {
 		return runtimeConfig{}, fmt.Errorf(
 			"workforced: WORKFORCE_CLAIM_BATCH is invalid",
 		)
+	}
+	config.recoveryBackendArgs = strings.Fields(os.Getenv("WORKFORCE_RECOVERY_BACKEND_ARGUMENTS"))
+	config.recoveryBackendTimeout, err = time.ParseDuration(
+		envOr("WORKFORCE_RECOVERY_BACKEND_TIMEOUT", "30m"),
+	)
+	if err != nil || config.recoveryBackendTimeout <= 0 || config.recoveryBackendTimeout > 24*time.Hour {
+		return runtimeConfig{}, fmt.Errorf("workforced: WORKFORCE_RECOVERY_BACKEND_TIMEOUT is invalid")
 	}
 	return config, nil
 }
@@ -442,6 +781,7 @@ func loadSchedulerConfig() (scheduler.Config, error) {
 }
 
 func buildWakeRunner(
+	ctx context.Context,
 	pool *pgxpool.Pool,
 	userVault *vault.UserVault,
 	service *controlapi.Service,
@@ -449,6 +789,11 @@ func buildWakeRunner(
 	schedulerStore *scheduler.Store,
 	config runtimeConfig,
 	ownerRoot policy.OwnerRoot,
+	missionStore *mission.Store,
+	companyStore *companyruntime.Store,
+	lifecycleStore *companylifecycle.Store,
+	initiativeStore *initiative.Store,
+	cycleDispatcher *companyruntime.CycleDispatcher,
 ) (*wakeruntime.Runner, error) {
 	now := func() time.Time { return time.Now().UTC() }
 	authority, err := policy.New(
@@ -507,6 +852,26 @@ func buildWakeRunner(
 		ownerRoot.PublicKey,
 	)
 	if err != nil {
+		return nil, err
+	}
+	if err := orderStore.AttachCompanyAuthority(func(ctx context.Context) (workorder.CompanyAuthority, error) {
+		current, err := missionStore.LoadCurrent(ctx)
+		at := now()
+		if err != nil || !current.Executable(at) {
+			return workorder.CompanyAuthority{}, fmt.Errorf("workforced: company issuer authority is not executable")
+		}
+		return workorder.CompanyAuthority{
+			Policy:       current.Authority.IssuerPolicy,
+			FounderKeyID: ownerRoot.KeyID, FounderPublicKey: ownerRoot.PublicKey,
+			CurrentMissionVersion:         current.Authority.Mission.Version,
+			CurrentConstitutionVersion:    current.Authority.Constitution.Version,
+			CurrentCapitalEnvelopeVersion: current.Authority.Capital.Version,
+			At:                            at,
+		}, nil
+	}); err != nil {
+		return nil, err
+	}
+	if err := orderStore.AttachCompanyCycleAuthority(cycleDispatcher.Authority); err != nil {
 		return nil, err
 	}
 	compiler, err := workcompile.New(
@@ -590,13 +955,176 @@ func buildWakeRunner(
 	if err != nil {
 		return nil, err
 	}
-	adapters := append([]effect.Adapter{developerAdapter}, departmentAdapters...)
+	productCapabilityAdapter, err := productcapability.NewAdapter(now)
+	if err != nil {
+		return nil, err
+	}
+	commercialCapabilityAdapter, err := commercialcapability.NewAdapter(now)
+	if err != nil {
+		return nil, err
+	}
+	externalStore, err := external.NewStore(
+		pool, userVault, config.tenantID, ownerRoot.KeyID,
+		ownerRoot.PublicKey, now,
+	)
+	if err != nil {
+		return nil, err
+	}
+	externalAdapters, err := external.LoadAdapters(ctx, externalStore, config.organizationID)
+	if err != nil {
+		return nil, err
+	}
+	currentCompany, err := missionStore.LoadCurrent(ctx)
+	if err != nil || !currentCompany.Executable(now()) {
+		return nil, fmt.Errorf("workforced: company authority is not executable")
+	}
+	controllerPublicKey, err := base64.RawURLEncoding.DecodeString(
+		currentCompany.Authority.IssuerPolicy.IssuerPublicKey,
+	)
+	if err != nil || len(controllerPublicKey) != ed25519.PublicKeySize {
+		return nil, fmt.Errorf("workforced: company issuer key is invalid")
+	}
+	customerStore, err := customer.NewStore(
+		pool, userVault, config.tenantID, ownerRoot.KeyID, ownerRoot.PublicKey,
+		map[string]ed25519.PublicKey{
+			currentCompany.Authority.IssuerPolicy.IssuerKeyID: ed25519.PublicKey(controllerPublicKey),
+		},
+		now,
+	)
+	if err != nil {
+		return nil, err
+	}
+	externalRegistry := make(map[string]effect.Adapter, len(externalAdapters))
+	for _, adapter := range externalAdapters {
+		externalRegistry[adapter.Name()] = adapter
+	}
+	var customerAdapters []effect.Adapter
+	if len(externalRegistry) != 0 {
+		customerAdapters, err = customer.LoadAdapters(
+			ctx, customerStore, config.organizationID, externalRegistry,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+	financialStore, err := financial.NewStore(
+		pool, userVault, config.tenantID, ownerRoot.KeyID, ownerRoot.PublicKey,
+		map[string]ed25519.PublicKey{
+			currentCompany.Authority.IssuerPolicy.IssuerKeyID: ed25519.PublicKey(controllerPublicKey),
+		},
+		now,
+	)
+	if err != nil {
+		return nil, err
+	}
+	financialConnections, err := financialStore.ListActiveConnections(ctx, config.organizationID)
+	if err != nil {
+		return nil, err
+	}
+	var financialAdapters []effect.Adapter
+	if len(financialConnections) != 0 {
+		financialAdapters, err = financial.LoadAdapters(
+			ctx, financialStore, config.organizationID, externalRegistry,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+	businessOutcomeStore, err := businessoutcome.NewStore(
+		pool, userVault, config.tenantID, config.organizationID, now,
+	)
+	if err != nil {
+		return nil, err
+	}
+	financialSourceVerifier, err := businessoutcome.NewPostgreSQLFinancialSourceVerifier(
+		pool, config.tenantID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if err := businessOutcomeStore.AttachFinancialSourceVerifier(financialSourceVerifier); err != nil {
+		return nil, err
+	}
+	commercialExecutionStore, err := commercialexecution.NewStore(
+		pool, userVault, leaseStore, config.tenantID, config.organizationID,
+		currentCompany.Authority.IssuerPolicy.IssuerKeyID,
+		ed25519.PublicKey(controllerPublicKey),
+		[]commercialexecution.IssuerPolicy{{
+			KeyID:     config.runtimeKeyID,
+			PublicKey: runtimePublic,
+			Phases: []commercialexecution.Phase{
+				commercialexecution.PhaseAcquisition,
+				commercialexecution.PhaseCustomerQualification,
+				commercialexecution.PhaseSale,
+				commercialexecution.PhaseFinancialIntent,
+				commercialexecution.PhaseFinancialReconciliation,
+				commercialexecution.PhaseSupport,
+				commercialexecution.PhaseMeasurement,
+			},
+		}},
+		now,
+	)
+	if err != nil {
+		return nil, err
+	}
+	commercialCoordinator, err := commercialexecution.NewCoordinator(
+		commercialExecutionStore, businessOutcomeStore,
+	)
+	if err != nil {
+		return nil, err
+	}
+	adapters := append(
+		[]effect.Adapter{
+			developerAdapter,
+			productCapabilityAdapter,
+			commercialCapabilityAdapter,
+		},
+		departmentAdapters...,
+	)
+	adapters = append(adapters, externalAdapters...)
+	adapters = append(adapters, customerAdapters...)
+	adapters = append(adapters, financialAdapters...)
 	effectGateway, err := effect.New(
 		pool, userVault, leaseStore, authority, breakers,
 		config.tenantID, approval.Authority{
 			OwnerID: ownerRoot.OwnerID, KeyID: ownerRoot.KeyID,
 			PublicKey: ownerRoot.PublicKey,
 		}, now, adapters...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	organizationStore, err := organization.NewStore(
+		pool, userVault, organization.OwnerAuthority{
+			TenantID: config.tenantID, OrganizationID: config.organizationID,
+			OwnerID: ownerRoot.OwnerID, KeyID: ownerRoot.KeyID,
+			PublicKey: ownerRoot.PublicKey,
+		}, now,
+	)
+	if err != nil {
+		return nil, err
+	}
+	squadStore, err := squad.NewStore(
+		pool, userVault, organizationStore, squad.ControllerAuthority{
+			TenantID: config.tenantID, OrganizationID: config.organizationID,
+			KeyID: config.companyIssuerKeyID, PrivateKey: config.companyIssuerKey,
+			EffectiveAt: currentCompany.Authority.IssuerPolicy.EffectiveAt,
+			ExpiresAt:   currentCompany.Authority.IssuerPolicy.ExpiresAt,
+		}, now,
+	)
+	if err != nil {
+		return nil, err
+	}
+	productStore, err := productcapability.NewStore(
+		pool, userVault, config.tenantID, config.organizationID, now,
+	)
+	if err != nil {
+		return nil, err
+	}
+	productExecutionStore, err := productexecution.NewStore(
+		pool, userVault, missionStore, squadStore, productStore,
+		initiativeStore, lifecycleStore, companyStore, schedulerStore,
+		lineageStore, effectGateway, config.tenantID, config.organizationID, now,
 	)
 	if err != nil {
 		return nil, err
@@ -634,8 +1162,13 @@ func buildWakeRunner(
 			DeveloperAuthorityKey:   runtimePublic,
 		},
 		Audits: auditStore, Catalog: catalog, SkillStore: skillStore,
-		Developer:    developerAuthority,
-		RuntimeKeyID: config.runtimeKeyID, RuntimeKey: config.runtimeKey,
+		Developer:             developerAuthority,
+		ProductExecution:      productExecutionStore,
+		Financial:             financialStore,
+		BusinessOutcomes:      businessOutcomeStore,
+		CommercialExecution:   commercialExecutionStore,
+		CommercialCoordinator: commercialCoordinator,
+		RuntimeKeyID:          config.runtimeKeyID, RuntimeKey: config.runtimeKey,
 		Runtime: runtime, TenantID: config.tenantID,
 		AuditorSeatID: config.auditorSeatID,
 		LeaseDuration: config.leaseDuration,

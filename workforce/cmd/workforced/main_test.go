@@ -29,26 +29,32 @@ func TestLoadConfigUsesGatewayAndSeparateWakeCredential(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	_, issuerPrivate, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
 	values := map[string]string{
-		"WORKFORCE_POSTGRES_URI":         "postgres://workforce",
-		"WORKFORCE_TENANT_ID":            "user-one",
-		"WORKFORCE_ORGANIZATION_ID":      "organization-user-one",
-		"WORKFORCE_OWNER_ID":             "owner-user-one",
-		"WORKFORCE_OWNER_TOKEN":          "owner-token",
-		"WORKFORCE_WAKE_TOKEN":           "wake-token",
-		"WORKFORCE_OWNER_KEY_ID":         "bootstrap-owner-v1",
-		"WORKFORCE_OWNER_PUBLIC_KEY":     base64.RawURLEncoding.EncodeToString(ownerPublic),
-		"WORKFORCE_RUNTIME_KEY_ID":       "runtime-v1",
-		"WORKFORCE_RUNTIME_PRIVATE_KEY":  base64.RawURLEncoding.EncodeToString(runtimePrivate),
-		"WORKFORCE_BUBBLEWRAP":           "/usr/bin/bwrap",
-		"WORKFORCE_SEAT_BINARY":          "/opt/matrix/bin/workforce-seat",
-		"WORKFORCE_AUDITOR_BINARY":       "/opt/matrix/bin/workforce-auditor",
-		"WORKFORCE_DEVELOPER_REPOSITORY": "/workspace",
-		"WORKFORCE_CODEGRAPH_EXECUTABLE": "/usr/local/bin/cg",
-		"WORKFORCE_AUDITOR_SEAT_ID":      "seat-developer-auditor",
-		"WORKFORCE_DATA_DIR":             "/data/workforce",
-		"MATRIX_GATEWAY_URL":             "https://gateway.example/gw",
-		"MATRIX_GATEWAY_TOKEN":           "gateway-token",
+		"WORKFORCE_POSTGRES_URI":               "postgres://workforce",
+		"WORKFORCE_TENANT_ID":                  "user-one",
+		"WORKFORCE_ORGANIZATION_ID":            "organization-user-one",
+		"WORKFORCE_OWNER_ID":                   "owner-user-one",
+		"WORKFORCE_OWNER_TOKEN":                "owner-token",
+		"WORKFORCE_WAKE_TOKEN":                 "wake-token",
+		"WORKFORCE_OWNER_KEY_ID":               "bootstrap-owner-v1",
+		"WORKFORCE_OWNER_PUBLIC_KEY":           base64.RawURLEncoding.EncodeToString(ownerPublic),
+		"WORKFORCE_RUNTIME_KEY_ID":             "runtime-v1",
+		"WORKFORCE_RUNTIME_PRIVATE_KEY":        base64.RawURLEncoding.EncodeToString(runtimePrivate),
+		"WORKFORCE_COMPANY_ISSUER_KEY_ID":      "company-issuer-v1",
+		"WORKFORCE_COMPANY_ISSUER_PRIVATE_KEY": base64.RawURLEncoding.EncodeToString(issuerPrivate),
+		"WORKFORCE_BUBBLEWRAP":                 "/usr/bin/bwrap",
+		"WORKFORCE_SEAT_BINARY":                "/opt/matrix/bin/workforce-seat",
+		"WORKFORCE_AUDITOR_BINARY":             "/opt/matrix/bin/workforce-auditor",
+		"WORKFORCE_DEVELOPER_REPOSITORY":       "/workspace",
+		"WORKFORCE_CODEGRAPH_EXECUTABLE":       "/usr/local/bin/cg",
+		"WORKFORCE_AUDITOR_SEAT_ID":            "seat-developer-auditor",
+		"WORKFORCE_DATA_DIR":                   "/data/workforce",
+		"MATRIX_GATEWAY_URL":                   "https://gateway.example/gw",
+		"MATRIX_GATEWAY_TOKEN":                 "gateway-token",
 	}
 	for name, value := range values {
 		t.Setenv(name, value)

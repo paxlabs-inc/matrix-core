@@ -66,6 +66,21 @@ func (service *Service) CreateWorkOrder(
 		!order.Deadline.After(now) {
 		return WorkOrderResult{}, fmt.Errorf("controlapi: work order time is outside the acceptance window")
 	}
+	var companyState string
+	var issuerRevokedAt *time.Time
+	err = service.pool.QueryRow(ctx, `
+		SELECT state,issuer_revoked_at
+		FROM workforce_organization_v2_projection
+		WHERE tenant_id=$1 AND organization_id=$2
+	`, principal.TenantID, principal.OrganizationID).Scan(
+		&companyState, &issuerRevokedAt,
+	)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return WorkOrderResult{}, err
+	}
+	if err == nil && (companyState != "active" || issuerRevokedAt != nil) {
+		return WorkOrderResult{}, fmt.Errorf("controlapi: company initiation is paused")
+	}
 	if service.runtimeModelProvider == "" || service.runtimeModelID == "" {
 		return WorkOrderResult{}, fmt.Errorf(
 			"controlapi: executable runtime model is unavailable",

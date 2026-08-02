@@ -17,6 +17,8 @@ import (
 
 	"matrix/workforce/internal/actorstate"
 	"matrix/workforce/internal/audit"
+	"matrix/workforce/internal/businessoutcome"
+	"matrix/workforce/internal/commercialexecution"
 	"matrix/workforce/internal/contracts"
 	"matrix/workforce/internal/dependency"
 	"matrix/workforce/internal/developer"
@@ -26,7 +28,9 @@ import (
 	"matrix/workforce/internal/lineage"
 	"matrix/workforce/internal/modelclient"
 	"matrix/workforce/internal/policy"
+	"matrix/workforce/internal/productexecution"
 	"matrix/workforce/internal/projectbrain"
+	"matrix/workforce/internal/provider/financial"
 	"matrix/workforce/internal/skills"
 	"matrix/workforce/internal/workcompile"
 	"matrix/workforce/internal/workorder"
@@ -34,33 +38,38 @@ import (
 )
 
 type Runner struct {
-	Scheduler        *scheduler.Store
-	Graph            *dependency.Store
-	Orders           *workorder.Store
-	Authority        *policy.Store
-	Leases           *lease.Store
-	Assembler        *actorstate.Assembler
-	Seat             actorstate.Runner
-	Model            *modelclient.Client
-	Compiler         *workcompile.Compiler
-	Effects          *effect.Gateway
-	Execution        *execution.Store
-	Lineage          *lineage.Store
-	Auditor          audit.Runner
-	Audits           *audit.Store
-	Catalog          *skills.Catalog
-	SkillStore       *skills.Store
-	Developer        *developer.Authority
-	RuntimeKeyID     string
-	RuntimeKey       ed25519.PrivateKey
-	Runtime          contracts.RuntimeBinding
-	TenantID         string
-	AuditorSeatID    contracts.SeatID
-	LeaseDuration    time.Duration
-	WakeBudget       contracts.WakeBudget
-	ReplayEvidence   bool
-	Now              func() time.Time
-	PublishLifecycle func(
+	Scheduler             *scheduler.Store
+	Graph                 *dependency.Store
+	Orders                *workorder.Store
+	Authority             *policy.Store
+	Leases                *lease.Store
+	Assembler             *actorstate.Assembler
+	Seat                  actorstate.Runner
+	Model                 *modelclient.Client
+	Compiler              *workcompile.Compiler
+	Effects               *effect.Gateway
+	Execution             *execution.Store
+	Lineage               *lineage.Store
+	Auditor               audit.Runner
+	Audits                *audit.Store
+	Catalog               *skills.Catalog
+	SkillStore            *skills.Store
+	Developer             *developer.Authority
+	ProductExecution      *productexecution.Store
+	Financial             *financial.Store
+	BusinessOutcomes      *businessoutcome.Store
+	CommercialExecution   *commercialexecution.Store
+	CommercialCoordinator *commercialexecution.Coordinator
+	RuntimeKeyID          string
+	RuntimeKey            ed25519.PrivateKey
+	Runtime               contracts.RuntimeBinding
+	TenantID              string
+	AuditorSeatID         contracts.SeatID
+	LeaseDuration         time.Duration
+	WakeBudget            contracts.WakeBudget
+	ReplayEvidence        bool
+	Now                   func() time.Time
+	PublishLifecycle      func(
 		context.Context, string, string, bool, contracts.ReceiptID,
 		map[string]any,
 	) error
@@ -72,7 +81,9 @@ func (runner *Runner) Validate() error {
 		runner.Assembler == nil || runner.Model == nil || runner.Compiler == nil ||
 		runner.Effects == nil || runner.Execution == nil ||
 		runner.Lineage == nil || runner.Audits == nil || runner.Catalog == nil ||
-		runner.SkillStore == nil ||
+		runner.SkillStore == nil || runner.Financial == nil ||
+		runner.BusinessOutcomes == nil || runner.CommercialExecution == nil ||
+		runner.CommercialCoordinator == nil ||
 		strings.TrimSpace(runner.RuntimeKeyID) == "" ||
 		strings.TrimSpace(runner.TenantID) == "" ||
 		len(runner.RuntimeKey) != ed25519.PrivateKeySize ||
@@ -188,14 +199,16 @@ func (runner *Runner) sourceState(
 func (runner *Runner) finalIntent(
 	ctx context.Context,
 	organizationID contracts.OrganizationID,
+	goalID contracts.GoalID,
 	current dependency.NodeID,
 ) (bool, error) {
 	snapshot, err := runner.Graph.Snapshot(ctx, organizationID)
 	if err != nil {
 		return false, err
 	}
+	scope := goalScope(snapshot.Nodes, snapshot.Edges, dependency.NodeID(goalID))
 	for _, node := range snapshot.Nodes {
-		if node.Kind == dependency.NodeIntent && node.ID != current &&
+		if scope[node.ID] && node.Kind == dependency.NodeIntent && node.ID != current &&
 			node.State != dependency.StateCompleted {
 			return false, nil
 		}
@@ -205,7 +218,7 @@ func (runner *Runner) finalIntent(
 
 func (runner *Runner) nextEnvelope(
 	ctx context.Context,
-	order workorder.Order,
+	order workorder.ExecutionOrder,
 	node dependency.Node,
 ) (scheduler.WakeEnvelope, error) {
 	if node.OwnerSeatID == nil {
@@ -219,10 +232,14 @@ func (runner *Runner) nextEnvelope(
 	}
 	sum := sha256.Sum256([]byte(node.ID))
 	suffix := hex.EncodeToString(sum[:8])
+	domain := ""
+	if order.Domain != "owner" {
+		domain = order.Domain + ":"
+	}
 	value := scheduler.WakeEnvelope{
 		SchemaVersion: "workforce.wake.v1",
-		WakeID:        "wake:" + order.ID + ":" + suffix,
-		ScheduleID:    "schedule:" + order.ID,
+		WakeID:        "wake:" + domain + order.ID + ":" + suffix,
+		ScheduleID:    "schedule:" + domain + order.ID,
 		TenantID:      runner.TenantID, OrganizationID: string(order.OrganizationID),
 		SeatID: string(seat.ID), MandateID: string(seat.MandateID),
 		MandateVersion: seat.MandateVersion,
@@ -239,8 +256,8 @@ func (runner *Runner) nextEnvelope(
 		MGS: scheduler.MGSBinding{
 			Reference: order.MGSReference, Digest: order.MGSDigest,
 		},
-		IdempotencyKey: "next:" + order.ID + ":" + string(node.ID),
-		CoalesceKey:    "work-order:" + order.ID,
+		IdempotencyKey: "next:" + domain + order.ID + ":" + string(node.ID),
+		CoalesceKey:    domain + "work-order:" + order.ID,
 		GraphScope:     string(node.ID),
 	}
 	return value, nil
@@ -313,7 +330,7 @@ func (runner *Runner) bindRuntimeGrant(
 			"wakeruntime: Developer project authority is unavailable",
 		)
 	}
-	root, err := filepath.EvalSymlinks(prepared.work.Order.Scope)
+	root, err := filepath.EvalSymlinks(prepared.work.Execute.Scope)
 	if err != nil {
 		return nil, err
 	}
@@ -332,8 +349,8 @@ func (runner *Runner) bindRuntimeGrant(
 		),
 		TenantID:                runner.TenantID,
 		OrganizationID:          prepared.organization,
-		ProjectID:               prepared.work.Order.ProjectID,
-		WorkspaceID:             prepared.work.Order.WorkspaceID,
+		ProjectID:               prepared.work.Execute.ProjectID,
+		WorkspaceID:             prepared.work.Execute.WorkspaceID,
 		WorkspaceRoot:           root,
 		Operation:               projectbrain.CapabilityChangeScope,
 		RequesterSeatID:         seat.ID,
@@ -354,15 +371,15 @@ func (runner *Runner) bindRuntimeGrant(
 	developerGrant, err := runner.Developer.Bind(
 		ctx, grant, developer.ScopeRequest{
 			SchemaVersion: contracts.SchemaVersionV1,
-			ProjectID:     prepared.work.Order.ProjectID,
-			WorkspaceID:   prepared.work.Order.WorkspaceID,
+			ProjectID:     prepared.work.Execute.ProjectID,
+			WorkspaceID:   prepared.work.Execute.WorkspaceID,
 			TaskNodeID:    prepared.work.Node.ID,
 			WorkspaceRoot: root,
 			Files: append(
-				[]string(nil), prepared.work.Order.ScopeFiles...,
+				[]string(nil), prepared.work.Execute.ScopeFiles...,
 			),
 			Symbols: append(
-				[]string(nil), prepared.work.Order.ScopeSymbols...,
+				[]string(nil), prepared.work.Execute.ScopeSymbols...,
 			),
 			Capability: capability,
 		},
@@ -426,10 +443,11 @@ func advance(
 	})
 }
 
-func eligibleIntent(projection dependency.Projection) *dependency.Node {
+func eligibleIntent(projection dependency.Projection, goalID contracts.GoalID) *dependency.Node {
+	scope := goalScope(projection.Nodes, projection.Edges, dependency.NodeID(goalID))
 	values := make([]dependency.Node, 0)
 	for _, node := range projection.Eligible {
-		if node.Kind == dependency.NodeIntent {
+		if scope[node.ID] && node.Kind == dependency.NodeIntent {
 			values = append(values, node)
 		}
 	}
@@ -442,13 +460,36 @@ func eligibleIntent(projection dependency.Projection) *dependency.Node {
 	return &values[0]
 }
 
-func eligibleGoal(projection dependency.Projection) *dependency.Node {
+func eligibleGoal(projection dependency.Projection, goalID contracts.GoalID) *dependency.Node {
 	for index := range projection.Eligible {
-		if projection.Eligible[index].Kind == dependency.NodeGoal {
+		if projection.Eligible[index].Kind == dependency.NodeGoal &&
+			projection.Eligible[index].ID == dependency.NodeID(goalID) {
 			return &projection.Eligible[index]
 		}
 	}
 	return nil
+}
+
+func goalScope(
+	nodes []dependency.Node,
+	edges []dependency.Edge,
+	goalID dependency.NodeID,
+) map[dependency.NodeID]bool {
+	exists := make(map[dependency.NodeID]bool, len(nodes))
+	for _, node := range nodes {
+		exists[node.ID] = true
+	}
+	scope := map[dependency.NodeID]bool{goalID: exists[goalID]}
+	for changed := true; changed; {
+		changed = false
+		for _, edge := range edges {
+			if exists[edge.Prerequisite] && scope[edge.Dependent] && !scope[edge.Prerequisite] {
+				scope[edge.Prerequisite] = true
+				changed = true
+			}
+		}
+	}
+	return scope
 }
 
 func safeFailure(err error) string {

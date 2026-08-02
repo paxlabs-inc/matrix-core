@@ -48,34 +48,40 @@ func TestIntegration_RunContextMountsOwnerAndChronosBoundaries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	_, issuerPrivate, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
 	testExecutable, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)
 	}
 	for name, value := range map[string]string{
-		"WORKFORCE_POSTGRES_URI":         databaseURL,
-		"WORKFORCE_TENANT_ID":            "integration-user",
-		"WORKFORCE_ORGANIZATION_ID":      "organization-integration-user",
-		"WORKFORCE_OWNER_ID":             "owner-integration-user",
-		"WORKFORCE_OWNER_TOKEN":          "owner-integration-token",
-		"WORKFORCE_WAKE_TOKEN":           "wake-integration-token",
-		"WORKFORCE_OWNER_KEY_ID":         "bootstrap-owner-v1",
-		"WORKFORCE_OWNER_PUBLIC_KEY":     base64.RawURLEncoding.EncodeToString(ownerPublic),
-		"WORKFORCE_RUNTIME_KEY_ID":       "runtime-v1",
-		"WORKFORCE_RUNTIME_PRIVATE_KEY":  base64.RawURLEncoding.EncodeToString(runtimePrivate),
-		"WORKFORCE_BUBBLEWRAP":           "/bin/true",
-		"WORKFORCE_SEAT_BINARY":          testExecutable,
-		"WORKFORCE_AUDITOR_BINARY":       testExecutable,
-		"WORKFORCE_DEVELOPER_REPOSITORY": t.TempDir(),
-		"WORKFORCE_CODEGRAPH_EXECUTABLE": "/bin/true",
-		"WORKFORCE_AUDITOR_SEAT_ID":      "seat-developer-auditor",
-		"WORKFORCE_DATA_DIR":             t.TempDir(),
-		"WORKFORCE_POLL_INTERVAL":        "20ms",
-		"MATRIX_GATEWAY_URL":             "http://127.0.0.1:1",
-		"MATRIX_GATEWAY_TOKEN":           "gateway-integration-token",
-		"VAULT_REQUIRED":                 "true",
-		"VAULT_KEK":                      strings.Repeat("01", 32),
-		"VAULT_KEK_ID":                   "integration-kek-v1",
+		"WORKFORCE_POSTGRES_URI":               databaseURL,
+		"WORKFORCE_TENANT_ID":                  "integration-user",
+		"WORKFORCE_ORGANIZATION_ID":            "organization-integration-user",
+		"WORKFORCE_OWNER_ID":                   "owner-integration-user",
+		"WORKFORCE_OWNER_TOKEN":                "owner-integration-token",
+		"WORKFORCE_WAKE_TOKEN":                 "wake-integration-token",
+		"WORKFORCE_OWNER_KEY_ID":               "bootstrap-owner-v1",
+		"WORKFORCE_OWNER_PUBLIC_KEY":           base64.RawURLEncoding.EncodeToString(ownerPublic),
+		"WORKFORCE_RUNTIME_KEY_ID":             "runtime-v1",
+		"WORKFORCE_RUNTIME_PRIVATE_KEY":        base64.RawURLEncoding.EncodeToString(runtimePrivate),
+		"WORKFORCE_COMPANY_ISSUER_KEY_ID":      "company-issuer-v1",
+		"WORKFORCE_COMPANY_ISSUER_PRIVATE_KEY": base64.RawURLEncoding.EncodeToString(issuerPrivate),
+		"WORKFORCE_BUBBLEWRAP":                 "/bin/true",
+		"WORKFORCE_SEAT_BINARY":                testExecutable,
+		"WORKFORCE_AUDITOR_BINARY":             testExecutable,
+		"WORKFORCE_DEVELOPER_REPOSITORY":       t.TempDir(),
+		"WORKFORCE_CODEGRAPH_EXECUTABLE":       "/bin/true",
+		"WORKFORCE_AUDITOR_SEAT_ID":            "seat-developer-auditor",
+		"WORKFORCE_DATA_DIR":                   t.TempDir(),
+		"WORKFORCE_POLL_INTERVAL":              "20ms",
+		"MATRIX_GATEWAY_URL":                   "http://127.0.0.1:1",
+		"MATRIX_GATEWAY_TOKEN":                 "gateway-integration-token",
+		"VAULT_REQUIRED":                       "true",
+		"VAULT_KEK":                            strings.Repeat("01", 32),
+		"VAULT_KEK_ID":                         "integration-kek-v1",
 	} {
 		t.Setenv(name, value)
 	}

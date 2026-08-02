@@ -23,18 +23,44 @@ var (
 )
 
 type Store struct {
-	pool      *pgxpool.Pool
-	vault     *vault.UserVault
-	tenantID  string
-	keyID     string
-	publicKey ed25519.PublicKey
+	pool             *pgxpool.Pool
+	vault            *vault.UserVault
+	tenantID         string
+	keyID            string
+	publicKey        ed25519.PublicKey
+	companyAuthority CompanyAuthorityResolver
+	cycleAuthority   CompanyCycleAuthorityResolver
 }
 
+type CompanyAuthorityResolver func(context.Context) (CompanyAuthority, error)
+type CompanyCycleAuthorityResolver func(context.Context) (CompanyCycleAuthority, error)
+
 type Context struct {
-	Order  Order
-	Goal   contracts.Goal
-	Intent contracts.Intent
-	Node   dependency.Node
+	Issuer           IssuerKind
+	Order            Order
+	Company          *CompanyOrder
+	Cycle            *CompanyCycleOrder
+	CompanyExecution *contracts.CompanyExecutionContext
+	Execute          ExecutionOrder
+	Goal             contracts.Goal
+	Intent           contracts.Intent
+	Node             dependency.Node
+}
+
+func (store *Store) AttachCompanyCycleAuthority(resolver CompanyCycleAuthorityResolver) error {
+	if store == nil || resolver == nil {
+		return fmt.Errorf("workorder: company cycle authority resolver is required")
+	}
+	store.cycleAuthority = resolver
+	return nil
+}
+
+func (store *Store) AttachCompanyAuthority(resolver CompanyAuthorityResolver) error {
+	if store == nil || resolver == nil {
+		return fmt.Errorf("workorder: company authority resolver is required")
+	}
+	store.companyAuthority = resolver
+	return nil
 }
 
 func NewStore(
@@ -90,7 +116,7 @@ func (store *Store) LoadContext(
 		&sealed, &expectedHash, &orderID, &goalID,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return Context{}, ErrNotFound
+		return store.loadCompanyContext(ctx, organizationID, intentID)
 	}
 	if err != nil {
 		return Context{}, fmt.Errorf("workorder: locate context: %w", err)
@@ -163,7 +189,7 @@ func (store *Store) LoadContext(
 	}
 	deadline := node.Deadline
 	result := Context{
-		Order: order, Node: node,
+		Issuer: IssuerOwner, Order: order, Execute: ExecutionFromOwner(order), Node: node,
 		Goal: contracts.Goal{
 			SchemaVersion: contracts.SchemaVersionV1,
 			ID:            contracts.GoalID(goalID), OrganizationID: organizationID,
@@ -180,8 +206,329 @@ func (store *Store) LoadContext(
 			CreatedAt: node.CreatedAt, Deadline: deadline,
 		},
 	}
-	if result.Goal.Validate() != nil || result.Intent.Validate() != nil ||
+	if result.Execute.Validate() != nil || result.Goal.Validate() != nil || result.Intent.Validate() != nil ||
 		node.Validate() != nil {
+		return Context{}, ErrIntegrity
+	}
+	return result, nil
+}
+
+func (store *Store) loadCompanyContext(
+	ctx context.Context,
+	organizationID contracts.OrganizationID,
+	intentID contracts.IntentID,
+) (Context, error) {
+	if store.companyAuthority == nil {
+		return store.loadCompanyCycleContext(ctx, organizationID, intentID)
+	}
+	tx, err := store.pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return Context{}, fmt.Errorf("workorder: begin company context read: %w", err)
+	}
+	defer func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }()
+	var sealed []byte
+	var expectedHash, orderID, goalID string
+	err = tx.QueryRow(ctx, `
+		WITH RECURSIVE successors(node_id) AS (
+			VALUES ($3::TEXT)
+			UNION
+			SELECT edge.dependent_node_id
+			FROM workforce_work_edges edge
+			JOIN successors ON successors.node_id=edge.prerequisite_node_id
+			WHERE edge.tenant_id=$1 AND edge.organization_id=$2
+		)
+		SELECT company.sealed_order,company.canonical_hash,
+		       company.work_order_id,dispatch.goal_id
+		FROM successors
+		JOIN workforce_company_work_order_dispatches dispatch
+		  ON dispatch.tenant_id=$1 AND dispatch.organization_id=$2
+		 AND dispatch.goal_id=successors.node_id
+		JOIN workforce_company_work_orders company
+		  ON company.tenant_id=dispatch.tenant_id
+		 AND company.organization_id=dispatch.organization_id
+		 AND company.work_order_id=dispatch.work_order_id
+		LIMIT 1
+	`, store.tenantID, organizationID, intentID).Scan(
+		&sealed, &expectedHash, &orderID, &goalID,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return store.loadCompanyCycleContext(ctx, organizationID, intentID)
+	}
+	if err != nil {
+		return Context{}, fmt.Errorf("workorder: locate company context: %w", err)
+	}
+	node := dependency.Node{ID: dependency.NodeID(intentID), OrganizationID: organizationID}
+	var ownerSeat, ownerDepartment, terminalRecord *string
+	err = tx.QueryRow(ctx, `
+		SELECT node_kind,owner_seat_id,owner_department_id,title,state,
+		       base_priority,created_at,updated_at,deadline,contested,
+		       COALESCE(cancellation_reason,''),terminal_record_id,version
+		FROM workforce_work_nodes
+		WHERE tenant_id=$1 AND organization_id=$2 AND node_id=$3
+	`, store.tenantID, organizationID, intentID).Scan(
+		&node.Kind, &ownerSeat, &ownerDepartment, &node.Title, &node.State,
+		&node.BasePriority, &node.CreatedAt, &node.UpdatedAt, &node.Deadline,
+		&node.Contested, &node.CancellationReason, &terminalRecord, &node.Version,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Context{}, ErrNotFound
+	}
+	if err != nil {
+		return Context{}, fmt.Errorf("workorder: load company intent node: %w", err)
+	}
+	node.CreatedAt = node.CreatedAt.UTC()
+	node.UpdatedAt = node.UpdatedAt.UTC()
+	if node.Deadline != nil {
+		value := node.Deadline.UTC()
+		node.Deadline = &value
+	}
+	if ownerSeat != nil {
+		value := contracts.SeatID(*ownerSeat)
+		node.OwnerSeatID = &value
+	}
+	if ownerDepartment != nil {
+		value := contracts.DepartmentID(*ownerDepartment)
+		node.OwnerDepartmentID = &value
+	}
+	if terminalRecord != nil {
+		value := contracts.RecordID(*terminalRecord)
+		node.TerminalRecordID = &value
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return Context{}, fmt.Errorf("workorder: commit company context read: %w", err)
+	}
+	canonical, err := store.vault.OpenRecord(vault.AD{
+		User: store.tenantID, Store: "workforce.company-work-order",
+		Stream: string(organizationID) + "/" + orderID,
+		Schema: CompanyOrderSchemaVersion,
+	}, sealed)
+	if err != nil {
+		return Context{}, ErrIntegrity
+	}
+	sum := sha256.Sum256(canonical)
+	if hex.EncodeToString(sum[:]) != expectedHash {
+		return Context{}, ErrIntegrity
+	}
+	order, err := contracts.DecodeCanonical[CompanyOrder, *CompanyOrder](canonical)
+	if err != nil {
+		return Context{}, ErrIntegrity
+	}
+	authority, err := store.companyAuthority(ctx)
+	if err != nil || VerifyCompany(order, authority) != nil || order.ID != orderID ||
+		order.OrganizationID != organizationID || node.Kind != dependency.NodeIntent ||
+		node.OwnerSeatID == nil {
+		return Context{}, ErrIntegrity
+	}
+	var lifecycleState, checkpointHash string
+	var lifecycleVersion uint64
+	if err := store.pool.QueryRow(ctx, `
+		SELECT state,version,checkpoint_hash
+		FROM workforce_lifecycle_heads
+		WHERE tenant_id=$1 AND organization_id=$2 AND initiative_id=$3
+	`, store.tenantID, organizationID, order.Binding.InitiativeID).Scan(
+		&lifecycleState, &lifecycleVersion, &checkpointHash,
+	); err != nil {
+		return Context{}, ErrIntegrity
+	}
+	execute := ExecutionFromCompany(order)
+	companyExecution := &contracts.CompanyExecutionContext{
+		Issuer: "company_controller", CompanyState: "active",
+		WorkOrderHash: contracts.ContentHash{Algorithm: "sha256", Digest: expectedHash},
+		Authority: contracts.CompanyAuthorityLineage{
+			MissionID: order.Binding.MissionID, MissionVersion: order.Binding.MissionVersion,
+			ConstitutionID:         order.Binding.ConstitutionID,
+			ConstitutionVersion:    order.Binding.ConstitutionVersion,
+			CapitalEnvelopeID:      "capital:" + string(organizationID),
+			CapitalEnvelopeVersion: order.Binding.CapitalEnvelopeVersion,
+		},
+		Initiative: &contracts.CompanyInitiativeLineage{
+			InitiativeID:   order.Binding.InitiativeID,
+			LifecycleState: lifecycleState, LifecycleVersion: lifecycleVersion,
+			LifecycleCheckpointHash: contracts.ContentHash{Algorithm: "sha256", Digest: checkpointHash},
+			PortfolioDecisionID:     order.Binding.PortfolioDecisionID,
+			CapitalAllocationID:     order.Binding.CapitalAllocationID,
+			CapabilityPlanID:        order.Binding.CapabilityPlanID,
+			CapabilityPlanHash:      order.Binding.CapabilityPlanHash,
+			InitiativePlanID:        order.Binding.InitiativePlanID,
+			InitiativePlanVersion:   order.Binding.InitiativePlanVersion,
+			PlanNodeID:              order.Binding.PlanNodeID,
+			BusinessOutcomeGateIDs:  append([]string(nil), order.Binding.BusinessOutcomeGateIDs...),
+		},
+	}
+	result := Context{
+		Issuer: IssuerCompanyController, Company: &order,
+		CompanyExecution: companyExecution, Execute: execute, Node: node,
+		Goal: contracts.Goal{
+			SchemaVersion: contracts.SchemaVersionV1,
+			ID:            contracts.GoalID(goalID), OrganizationID: organizationID,
+			WorkOrderID: contracts.WorkOrderID(order.ID), Title: order.Objective,
+			SuccessCriteria: append([]string(nil), order.AcceptanceCriteria...),
+			CreatedAt:       order.CreatedAt,
+		},
+		Intent: contracts.Intent{
+			SchemaVersion: contracts.SchemaVersionV1,
+			ID:            intentID, OrganizationID: organizationID,
+			GoalID: contracts.GoalID(goalID), OwnerSeatID: *node.OwnerSeatID,
+			Summary: node.Title, Priority: node.BasePriority,
+			CreatedAt: node.CreatedAt, Deadline: node.Deadline,
+		},
+	}
+	if result.Execute.Validate() != nil || result.Goal.Validate() != nil ||
+		result.Intent.Validate() != nil || node.Validate() != nil ||
+		result.CompanyExecution.Validate() != nil {
+		return Context{}, ErrIntegrity
+	}
+	return result, nil
+}
+
+func (store *Store) loadCompanyCycleContext(
+	ctx context.Context,
+	organizationID contracts.OrganizationID,
+	intentID contracts.IntentID,
+) (Context, error) {
+	if store.cycleAuthority == nil {
+		return Context{}, ErrNotFound
+	}
+	tx, err := store.pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return Context{}, fmt.Errorf("workorder: begin company cycle context read: %w", err)
+	}
+	defer func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }()
+	var sealed []byte
+	var expectedHash, orderID, goalID string
+	err = tx.QueryRow(ctx, `
+		WITH RECURSIVE successors(node_id) AS (
+			VALUES ($3::TEXT)
+			UNION
+			SELECT edge.dependent_node_id
+			FROM workforce_work_edges edge
+			JOIN successors ON successors.node_id=edge.prerequisite_node_id
+			WHERE edge.tenant_id=$1 AND edge.organization_id=$2
+		)
+		SELECT cycle.sealed_order,cycle.canonical_hash,
+		       cycle.work_order_id,dispatch.goal_id
+		FROM successors
+		JOIN workforce_company_cycle_dispatches dispatch
+		  ON dispatch.tenant_id=$1 AND dispatch.organization_id=$2
+		 AND dispatch.goal_id=successors.node_id
+		JOIN workforce_company_cycle_orders cycle
+		  ON cycle.tenant_id=dispatch.tenant_id
+		 AND cycle.organization_id=dispatch.organization_id
+		 AND cycle.work_order_id=dispatch.work_order_id
+		LIMIT 1
+	`, store.tenantID, organizationID, intentID).Scan(
+		&sealed, &expectedHash, &orderID, &goalID,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Context{}, ErrNotFound
+	}
+	if err != nil {
+		return Context{}, fmt.Errorf("workorder: locate company cycle context: %w", err)
+	}
+	node := dependency.Node{ID: dependency.NodeID(intentID), OrganizationID: organizationID}
+	var ownerSeat, ownerDepartment, terminalRecord *string
+	err = tx.QueryRow(ctx, `
+		SELECT node_kind,owner_seat_id,owner_department_id,title,state,
+		       base_priority,created_at,updated_at,deadline,contested,
+		       COALESCE(cancellation_reason,''),terminal_record_id,version
+		FROM workforce_work_nodes
+		WHERE tenant_id=$1 AND organization_id=$2 AND node_id=$3
+	`, store.tenantID, organizationID, intentID).Scan(
+		&node.Kind, &ownerSeat, &ownerDepartment, &node.Title, &node.State,
+		&node.BasePriority, &node.CreatedAt, &node.UpdatedAt, &node.Deadline,
+		&node.Contested, &node.CancellationReason, &terminalRecord, &node.Version,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Context{}, ErrNotFound
+	}
+	if err != nil {
+		return Context{}, fmt.Errorf("workorder: load company cycle intent node: %w", err)
+	}
+	node.CreatedAt = node.CreatedAt.UTC()
+	node.UpdatedAt = node.UpdatedAt.UTC()
+	if node.Deadline != nil {
+		value := node.Deadline.UTC()
+		node.Deadline = &value
+	}
+	if ownerSeat != nil {
+		value := contracts.SeatID(*ownerSeat)
+		node.OwnerSeatID = &value
+	}
+	if ownerDepartment != nil {
+		value := contracts.DepartmentID(*ownerDepartment)
+		node.OwnerDepartmentID = &value
+	}
+	if terminalRecord != nil {
+		value := contracts.RecordID(*terminalRecord)
+		node.TerminalRecordID = &value
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return Context{}, fmt.Errorf("workorder: commit company cycle context read: %w", err)
+	}
+	canonical, err := store.vault.OpenRecord(vault.AD{
+		User: store.tenantID, Store: "workforce.company-cycle-work-order",
+		Stream: string(organizationID) + "/" + orderID,
+		Schema: CompanyCycleOrderSchemaVersion,
+	}, sealed)
+	if err != nil {
+		return Context{}, ErrIntegrity
+	}
+	sum := sha256.Sum256(canonical)
+	if hex.EncodeToString(sum[:]) != expectedHash {
+		return Context{}, ErrIntegrity
+	}
+	order, err := contracts.DecodeCanonical[CompanyCycleOrder, *CompanyCycleOrder](canonical)
+	if err != nil {
+		return Context{}, ErrIntegrity
+	}
+	authority, err := store.cycleAuthority(ctx)
+	if err != nil || VerifyCompanyCycle(order, authority) != nil || order.ID != orderID ||
+		order.OrganizationID != organizationID || node.Kind != dependency.NodeIntent ||
+		node.OwnerSeatID == nil {
+		return Context{}, ErrIntegrity
+	}
+	execute := ExecutionFromCompanyCycle(order)
+	companyExecution := &contracts.CompanyExecutionContext{
+		Issuer: "company_controller", CompanyState: "active",
+		WorkOrderHash: contracts.ContentHash{Algorithm: "sha256", Digest: expectedHash},
+		Authority: contracts.CompanyAuthorityLineage{
+			MissionID:              "mission:" + string(organizationID),
+			MissionVersion:         order.Binding.MissionVersion,
+			ConstitutionID:         "constitution:" + string(organizationID),
+			ConstitutionVersion:    order.Binding.ConstitutionVersion,
+			CapitalEnvelopeID:      "capital:" + string(organizationID),
+			CapitalEnvelopeVersion: order.Binding.CapitalEnvelopeVersion,
+		},
+		Cycle: &contracts.CompanyCycleLineage{
+			RuntimeConfigID:      order.Binding.RuntimeConfigID,
+			RuntimeConfigVersion: order.Binding.RuntimeConfigVersion,
+			RuntimeConfigHash:    order.Binding.RuntimeConfigHash,
+			CycleID:              order.Binding.CycleID, CadenceKind: order.Binding.CadenceKind,
+			RequiredCapabilities: append([]string(nil), order.Binding.RequiredCapabilities...),
+			IndependentAudit:     order.Binding.IndependentAudit,
+		},
+	}
+	result := Context{
+		Issuer: IssuerCompanyController, Cycle: &order,
+		CompanyExecution: companyExecution, Execute: execute, Node: node,
+		Goal: contracts.Goal{
+			SchemaVersion: contracts.SchemaVersionV1,
+			ID:            contracts.GoalID(goalID), OrganizationID: organizationID,
+			WorkOrderID: contracts.WorkOrderID(order.ID), Title: order.Objective,
+			SuccessCriteria: append([]string(nil), order.AcceptanceCriteria...),
+			CreatedAt:       order.CreatedAt,
+		},
+		Intent: contracts.Intent{
+			SchemaVersion: contracts.SchemaVersionV1,
+			ID:            intentID, OrganizationID: organizationID,
+			GoalID: contracts.GoalID(goalID), OwnerSeatID: *node.OwnerSeatID,
+			Summary: node.Title, Priority: node.BasePriority,
+			CreatedAt: node.CreatedAt, Deadline: node.Deadline,
+		},
+	}
+	if result.Execute.Validate() != nil || result.Goal.Validate() != nil ||
+		result.Intent.Validate() != nil || node.Validate() != nil ||
+		result.CompanyExecution.Validate() != nil {
 		return Context{}, ErrIntegrity
 	}
 	return result, nil

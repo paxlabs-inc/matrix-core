@@ -228,8 +228,8 @@ func seedMandate(
 	prohibition := "cannot-self-approve"
 	description := "The seat cannot approve or attest its own work."
 	if kind == contracts.DepartmentExecutive {
-		prohibition = "no-approval-or-control-plane-authority"
-		description = "Executive seats cannot approve, sign, use effect credentials, or acquire control-plane authority."
+		prohibition = "executive-bounded-decision-only"
+		description = "Executive seats may make only current compiled company decisions and cannot approve work, sign as the founder, hold or use effect credentials, mint leases, or acquire other control-plane authority."
 	}
 	purpose := strings.ReplaceAll(departmentNames[kind], " ", "-")
 	return contracts.Mandate{

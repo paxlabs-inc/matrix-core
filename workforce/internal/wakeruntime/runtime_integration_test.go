@@ -35,6 +35,7 @@ import (
 	"matrix/workforce/internal/ledger"
 	"matrix/workforce/internal/lineage"
 	"matrix/workforce/internal/mail"
+	"matrix/workforce/internal/mission"
 	"matrix/workforce/internal/modelclient"
 	"matrix/workforce/internal/policy"
 	"matrix/workforce/internal/projectbrain"
@@ -385,6 +386,15 @@ func newWakeRuntimeFixture(
 	}
 	if err := service.AttachRuntimeAuthority(
 		runtimeKeyID, runtimePublic,
+	); err != nil {
+		t.Fatal(err)
+	}
+	issuerPublic, _, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := service.AttachCompanyIssuerAuthority(
+		"key:company-issuer:wakeruntime-recovery", issuerPublic,
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -779,7 +789,7 @@ func activateWakeRuntimeOrganization(
 	preview, err := service.PreviewActivation(
 		ctx, principal, controlapi.ActivationPreviewRequest{
 			Name: "Recovery Proof Workforce", KeyID: ownerKeyID,
-			EffectiveAt: now,
+			EffectiveAt: now, Authority: wakeRuntimeActivationDraft(),
 		},
 	)
 	if err != nil {
@@ -825,6 +835,26 @@ func activateWakeRuntimeOrganization(
 	); err != nil {
 		t.Fatal(err)
 	}
+	if err := mission.SignFounderMission(
+		&preview.Authority.Mission, ownerKeyID, ownerPrivate,
+	); err != nil {
+		t.Fatal(err)
+	}
+	if err := mission.SignCompanyConstitution(
+		&preview.Authority.Constitution, ownerKeyID, ownerPrivate,
+	); err != nil {
+		t.Fatal(err)
+	}
+	if err := mission.SignCapitalEnvelope(
+		&preview.Authority.Capital, ownerKeyID, ownerPrivate,
+	); err != nil {
+		t.Fatal(err)
+	}
+	if err := mission.SignCompanyIssuerPolicy(
+		&preview.Authority.IssuerPolicy, ownerKeyID, ownerPrivate,
+	); err != nil {
+		t.Fatal(err)
+	}
 	for index := range preview.SkillContracts {
 		if err := skills.SignContract(
 			&preview.SkillContracts[index], ownerKeyID, ownerPrivate,
@@ -837,7 +867,8 @@ func activateWakeRuntimeOrganization(
 	}
 	result, err := service.ActivateOrganization(
 		ctx, principal, controlapi.ActivationBundle{
-			Seed: preview.Seed, SkillContracts: preview.SkillContracts,
+			Seed: preview.Seed, Authority: preview.Authority,
+			SkillContracts: preview.SkillContracts,
 		},
 	)
 	if err != nil {
@@ -847,6 +878,31 @@ func activateWakeRuntimeOrganization(
 		t.Fatalf("activation result = %#v", result)
 	}
 	return auditorSeatID
+}
+
+func wakeRuntimeActivationDraft() mission.ActivationDraft {
+	return mission.ActivationDraft{
+		Purpose:                  "Build verified software within founder authority",
+		PermittedBusinessDomains: []string{"software"},
+		StrategicPrinciples:      []string{"evidence before action"},
+		TargetOutcomes:           []string{"verified customer value"},
+		SuccessConditions:        []string{"receipt-backed customer outcome"},
+		FailureConditions:        []string{"unreconciled external state"},
+		LegalProhibitions:        []string{"no unlawful activity"},
+		EthicalProhibitions:      []string{"no deceptive claims"},
+		PermittedJurisdictions:   []string{"DE"},
+		DataBoundaries:           []string{"purpose-bound data"},
+		PermittedCounterparties:  []string{"owner-approved"},
+		RiskTolerance:            mission.RiskToleranceLow,
+		Autonomy:                 mission.AutonomyReviewRequired,
+		EscalationConditions:     []string{"unverifiable material claim"},
+		PauseConditions:          []string{"authority uncertainty"},
+		ShutdownConditions:       []string{"founder emergency stop"},
+		Currency:                 "EUR", StartingMicrounits: 1_000_000_000,
+		SpendCeilingMicrounits:    100_000_000,
+		ExposureCeilingMicrounits: 100_000_000,
+		MinimumRunwayDays:         180, MaxWorkOrderMicrounits: 10_000_000,
+	}
 }
 
 func (fixture wakeRuntimeFixture) developerOrder() controlapi.WorkOrder {
