@@ -331,6 +331,30 @@ jobs:
         working-directory: workforce
         run: go test -count=1 -race -timeout=15m ./...
 
+  service-supervisor:
+    name: service supervisor safety
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: verified process identity
+        run: node --test tools/exec/exec.test.mjs
+
+      - name: exec manifest and lifecycle smoke
+        run: node tools/exec/exec.mjs --selftest
+
+      - name: recurring alarm deduplication
+        run: node tools/chronos/chronos.mjs --selftest
+
+      - name: rollout script syntax
+        run: bash -n deploy/railway/entrypoint.sh deploy/railway/audit-service-supervisors.sh deploy/railway/rollout-service-supervisor.sh
+
   # -------------------------------------------------------------------------
   # Aggregator job — branch protection should require `ci-passed` only.
   # Any added/removed leaf job stays decoupled from the protection rule.
@@ -338,7 +362,7 @@ jobs:
   ci-passed:
     name: ci-passed
     runs-on: ubuntu-latest
-    needs: [build, agent-gate, workforce, mtx-corpus, codegraph]
+    needs: [build, agent-gate, workforce, service-supervisor, mtx-corpus, codegraph]
     if: always()
     steps:
       - name: aggregate

@@ -34,7 +34,7 @@ import { createInterface } from 'node:readline'
 import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
-import { createPrivateKey, createPublicKey, sign as edSign } from 'node:crypto'
+import { createHash, createPrivateKey, createPublicKey, sign as edSign } from 'node:crypto'
 
 const SERVER_NAME = 'chronos'
 const SERVER_VERSION = '0.1.0'
@@ -95,6 +95,27 @@ function coerceArgsToSchema(name, args) {
       args[key] = String(val)
     }
   }
+  return args
+}
+
+function normalizeDedupText(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+function applyCronIdempotency(args) {
+  if (!args || normalizeDedupText(args.kind) !== 'cron' || normalizeDedupText(args.idempotency_key)) {
+    return args
+  }
+  const purpose = normalizeDedupText(args.label) || normalizeDedupText(args.wake_message)
+  const cronExpr = normalizeDedupText(args.cron_expr)
+  if (!purpose || !cronExpr) return args
+  const canonical = [
+    normalizeDedupText(args.target) || 'neo_chat',
+    cronExpr,
+    normalizeDedupText(args.timezone) || 'utc',
+    purpose,
+  ].join('\u0000')
+  args.idempotency_key = `auto-cron-${createHash('sha256').update(canonical).digest('hex').slice(0, 32)}`
   return args
 }
 
@@ -266,7 +287,7 @@ async function callRemoteTool(name, rawArgs) {
   const args = coerceArgsToSchema(name, { ...(rawArgs || {}) })
   switch (name) {
     case 'alarm_set':
-      return envelopeResult(await alarmCall('POST', '/v1/alarms', args))
+      return envelopeResult(await alarmCall('POST', '/v1/alarms', applyCronIdempotency(args)))
     case 'alarm_list': {
       const q = args.limit != null ? `?limit=${encodeURIComponent(args.limit)}` : ''
       return envelopeResult(await alarmCall('GET', `/v1/alarms${q}`, null))
@@ -411,6 +432,30 @@ function runSelftest() {
   if (set.delay_seconds !== 600) cFails.push('alarm_set.delay_seconds should stay numeric')
   if (set.max_failures !== 3) cFails.push('alarm_set.max_failures should stay numeric')
   if (typeof set.payload !== 'object') cFails.push('alarm_set.payload object mangled')
+  const firstCron = applyCronIdempotency({
+    kind: 'cron', cron_expr: '0 */2 * * *', timezone: 'UTC',
+    label: 'Social agent health', conversation_id: 'conversation-one',
+    wake_message: 'Check the social agent.',
+  })
+  const duplicateCron = applyCronIdempotency({
+    kind: 'cron', cron_expr: '0 */2 * * *', timezone: 'utc',
+    label: '  social   agent health ', conversation_id: 'conversation-two',
+    wake_message: 'Check the same agent from another conversation.',
+  })
+  const distinctCron = applyCronIdempotency({
+    kind: 'cron', cron_expr: '0 9 * * *', timezone: 'UTC',
+    label: 'Social agent health', wake_message: 'Daily check.',
+  })
+  const explicitCron = applyCronIdempotency({
+    kind: 'cron', cron_expr: '0 */2 * * *', label: 'Social agent health',
+    wake_message: 'Check it.', idempotency_key: 'owner-explicit-key',
+  })
+  const once = applyCronIdempotency({ kind: 'once', delay_seconds: 60, wake_message: 'One reminder.' })
+  if (!firstCron.idempotency_key?.startsWith('auto-cron-')) cFails.push('cron idempotency key was not derived')
+  if (duplicateCron.idempotency_key !== firstCron.idempotency_key) cFails.push('equivalent cron alarms did not deduplicate')
+  if (distinctCron.idempotency_key === firstCron.idempotency_key) cFails.push('distinct cron schedules collided')
+  if (explicitCron.idempotency_key !== 'owner-explicit-key') cFails.push('explicit cron idempotency key changed')
+  if (once.idempotency_key) cFails.push('once alarm received an implicit idempotency key')
   const get = coerceArgsToSchema('alarm_get', { id: 42 })
   if (get.id !== '42') cFails.push(`alarm_get.id ${JSON.stringify(get.id)} != "42"`)
   if (cFails.length) {

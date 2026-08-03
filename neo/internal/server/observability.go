@@ -5,10 +5,12 @@ package server
 
 import (
 	"bufio"
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -16,6 +18,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"matrix/neo/internal/llm"
 )
 
 var structuredLogMu sync.Mutex
@@ -76,7 +80,8 @@ func writeStructuredLog(fields map[string]interface{}, eventErr error) {
 	w := os.Stdout
 	if eventErr != nil {
 		fields["severity"] = "error"
-		fields["error_class"] = "internal"
+		fields["error_class"] = observableErrorClass(eventErr)
+		fields["error_fingerprint"] = observableErrorFingerprint(eventErr)
 		w = os.Stderr
 	}
 	b, err := json.Marshal(fields)
@@ -87,6 +92,35 @@ func writeStructuredLog(fields map[string]interface{}, eventErr error) {
 	structuredLogMu.Lock()
 	_, _ = fmt.Fprintln(w, string(b))
 	structuredLogMu.Unlock()
+}
+
+func observableErrorClass(err error) string {
+	switch {
+	case err == nil:
+		return ""
+	case errors.Is(err, context.Canceled):
+		return "cancelled"
+	case errors.Is(err, context.DeadlineExceeded):
+		return "timeout"
+	case errors.Is(err, llm.ErrRateLimited):
+		return "rate_limited"
+	case errors.Is(err, llm.ErrProviderUnavailable):
+		return "provider_unavailable"
+	default:
+		var networkError net.Error
+		if errors.As(err, &networkError) {
+			return "network"
+		}
+		return "internal"
+	}
+}
+
+func observableErrorFingerprint(err error) string {
+	if err == nil {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(err.Error()))
+	return "err_" + hex.EncodeToString(sum[:8])
 }
 
 func tenantCorrelation(actor string) string {

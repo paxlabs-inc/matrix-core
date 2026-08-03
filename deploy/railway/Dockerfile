@@ -491,6 +491,9 @@ COPY tools/finance   /opt/matrix/tools/finance
 COPY tools/browser   /opt/matrix/tools/browser
 COPY tools/machinemail /opt/matrix/tools/machinemail
 COPY tools/exec      /opt/matrix/tools/exec
+RUN su matrix-agent -s /bin/bash -c \
+      'HOME=/home/matrix-agent PATH=/usr/local/bin:/usr/bin:/bin \
+       node /opt/matrix/tools/exec/exec.mjs --selftest'
 COPY tools/kindle    /opt/matrix/tools/kindle
 COPY tools/deus      /opt/matrix/tools/deus
 COPY tools/media     /opt/matrix/tools/media
