@@ -455,6 +455,30 @@ func TestCortexActivationRefreshAndSingleDeliveryChoke(t *testing.T) {
 	second := requests[1]
 	third := requests[2]
 	mu.Unlock()
+	activationContent := func(t *testing.T, iteration int, request gatewayRequest) string {
+		t.Helper()
+		activationIndex := -1
+		lastUserIndex := -1
+		for messageIndex, message := range request.Messages {
+			if message.Role == "system" && strings.Contains(message.Content, "Active premises:") {
+				activationIndex = messageIndex
+			}
+			if message.Role == "user" {
+				lastUserIndex = messageIndex
+			}
+		}
+		if activationIndex < 0 || lastUserIndex < 0 || activationIndex >= lastUserIndex {
+			t.Fatalf(
+				"iteration %d did not keep activation before the authoritative user message: %+v",
+				iteration, request.Messages,
+			)
+		}
+		content := request.Messages[activationIndex].Content
+		if len([]rune(content)) > cortexAdapter.budgetTokens*4 {
+			t.Fatalf("iteration %d activation exceeded budget", iteration)
+		}
+		return content
+	}
 	for index, request := range []gatewayRequest{first, second, third} {
 		if len(request.Messages) < 2 ||
 			request.Messages[0].Role != "system" ||
@@ -465,22 +489,10 @@ func TestCortexActivationRefreshAndSingleDeliveryChoke(t *testing.T) {
 				index+1, request.Messages,
 			)
 		}
-		// Retrieved memory rides the system role: in the user role it would
-		// stand as the most recent user turn and be read as the live request.
-		tail := request.Messages[len(request.Messages)-1]
-		if tail.Role != "system" ||
-			!strings.Contains(tail.Content, "Active premises:") ||
-			len([]rune(tail.Content)) >
-				cortexAdapter.budgetTokens*4 {
-			t.Fatalf(
-				"iteration %d missing activation system tail: %+v",
-				index+1, tail,
-			)
-		}
 	}
-	firstTail := first.Messages[len(first.Messages)-1].Content
-	secondTail := second.Messages[len(second.Messages)-1].Content
-	thirdTail := third.Messages[len(third.Messages)-1].Content
+	firstTail := activationContent(t, 1, first)
+	secondTail := activationContent(t, 2, second)
+	thirdTail := activationContent(t, 3, third)
 	if strings.Contains(firstTail, "tool result") ||
 		!strings.Contains(secondTail, "resurrection activation evidence") ||
 		firstTail == secondTail ||

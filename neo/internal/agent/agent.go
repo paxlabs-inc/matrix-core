@@ -33,6 +33,7 @@ import (
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/o1"
 	"matrix/neo/internal/recall"
+	"matrix/neo/internal/runtime/loop"
 	"matrix/neo/internal/sessionjournal"
 	"matrix/neo/internal/tools"
 )
@@ -134,6 +135,7 @@ type Agent struct {
 	runtimeErr         error
 	runtimeLast        string
 	runtimeFailure     delegate.FailureClass
+	runtimeIncomplete  *loop.IncompleteRecord
 	out                Reporter
 	consolidator       Consolidator
 	recaller           ConvRecaller
@@ -175,6 +177,13 @@ type Agent struct {
 	// re-derived every turn and never stored here, so it can't drift.
 	// Lifetime: session (append-only across turns; Reset/Seed manage it).
 	working []llm.Message
+	// recentHistory is the server-owned, current snapshot of visible durable
+	// user/assistant turns that precede the active run. Resurrection consumes
+	// this as real protocol history instead of asking Cortex activation to stand
+	// in for the live thread. The conversation store refreshes it before every
+	// supervised attempt, so a failure bubble from the immediately prior turn is
+	// available even when the long-lived Agent was not rebuilt.
+	recentHistory []llm.Message
 	// activeGoal is THIS conversation's task, pinned every turn. Held on the
 	// agent (not the pager) so many conversations can share one cortex store
 	// without clobbering each other's goal. Lifetime: session.
@@ -1523,6 +1532,26 @@ func (a *Agent) Seed(history []llm.Message, goal string) {
 	a.working = append(a.working, history...)
 	if !a.cfg.SessionCurrentIntent && a.activeGoal == "" {
 		a.activeGoal = strings.TrimSpace(goal)
+	}
+}
+
+// SetRecentConversationHistory replaces the authoritative visible history for
+// the next turn. Only user and assistant text messages are accepted: tool
+// protocol and system guidance belong to the per-turn runtime checkpoint, not
+// to the user's durable conversation.
+func (a *Agent) SetRecentConversationHistory(history []llm.Message) {
+	a.recentHistory = a.recentHistory[:0]
+	for _, message := range history {
+		if message.Role != llm.RoleUser && message.Role != llm.RoleAssistant {
+			continue
+		}
+		content := strings.TrimSpace(message.Content)
+		if content == "" {
+			continue
+		}
+		a.recentHistory = append(a.recentHistory, llm.Message{
+			Role: message.Role, Content: content,
+		})
 	}
 }
 

@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/delegate"
+	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/runtime/belief"
 	"matrix/neo/internal/runtime/controller"
@@ -150,6 +151,7 @@ func (a *Agent) chatResurrectionWithGuidance(
 	if userInput == "" {
 		return nil
 	}
+	a.runtimeIncomplete = nil
 	if a.runtimeErr != nil {
 		a.runtimeFailure = delegate.ClassDeterministic
 		return a.runtimeErr
@@ -208,6 +210,9 @@ func (a *Agent) chatResurrectionWithGuidance(
 	}
 	silentVoice := controller.New(controller.Cadence{}, nil, nil)
 	observer := loop.NewReporterObserver(a.out, a.turnSeq-1)
+	completionGate := loop.NewEvidenceCompletionGate(
+		loop.RequestRequiresToolEvidence(userInput),
+	)
 	scopedTools := resurrectionToolSurface{
 		parent: a.runtime.tools, allowed: a.advertised,
 	}
@@ -226,16 +231,18 @@ func (a *Agent) chatResurrectionWithGuidance(
 			MaxTurnTokens:   a.cfg.ContextWindowTokens,
 		},
 		loop.Dependencies{
-			Observer:   observer,
-			Activation: cortexAdapter,
-			Recorder:   cortexAdapter,
+			Observer:       observer,
+			CompletionGate: completionGate,
+			Activation:     cortexAdapter,
+			Recorder:       cortexAdapter,
 			EvidenceJournal: &loop.CortexToolJournal{
 				Cortex:    a.runtime.pager.Cortex(),
 				CreatedBy: actorID,
 			},
 			EvidenceObserver: runtimeEvidenceObserver{
-				ui:     runtimeToolObserver{observer: a.observer},
-				belief: beliefState,
+				ui:         runtimeToolObserver{observer: a.observer},
+				belief:     beliefState,
+				completion: completionGate,
 			},
 			Premises: beliefPremises{state: beliefState},
 			Liveness: beliefState,
@@ -255,10 +262,16 @@ func (a *Agent) chatResurrectionWithGuidance(
 	}
 	var response loop.Response
 	var turnErr error
+	history := resurrectionProtocolHistory(a.recentHistory)
+	if len(history) == 0 {
+		history = resurrectionProtocolHistory(a.working)
+	}
 	if strings.TrimSpace(resumeGuidance) != "" {
-		response, turnErr = runtimeLoop.TurnInternal(ctx, userInput, resumeGuidance)
+		response, turnErr = runtimeLoop.TurnInternalWithHistory(
+			ctx, userInput, history, resumeGuidance,
+		)
 	} else {
-		response, turnErr = runtimeLoop.Turn(ctx, userInput)
+		response, turnErr = runtimeLoop.TurnWithHistory(ctx, userInput, history)
 	}
 	a.runtimeLast = strings.TrimSpace(response.Content)
 	if a.runtimeLast == "" {
@@ -266,6 +279,12 @@ func (a *Agent) chatResurrectionWithGuidance(
 	}
 	if turnErr == nil {
 		if response.HonestPartial {
+			a.runtimeIncomplete = &loop.IncompleteRecord{
+				TurnID: turnID, ConversationID: conversationID,
+				Phase: "honest_partial", AttemptCount: response.ProviderCalls,
+				RecoveryAdvice: "resume_from_saved_partial",
+				Repairs:        response.Repairs,
+			}
 			a.runtimeFailure = delegate.ClassDeterministic
 			return fmt.Errorf(
 				"%w: the bounded runtime delivered saved partial work",
@@ -278,9 +297,56 @@ func (a *Agent) chatResurrectionWithGuidance(
 	a.runtimeFailure = runtimeFailureClass(turnErr)
 	var incomplete *loop.Incomplete
 	if errors.As(turnErr, &incomplete) {
+		a.runtimeIncomplete = &loop.IncompleteRecord{
+			TurnID: turnID, ConversationID: conversationID,
+			Phase:            incomplete.Phase,
+			LastToolEvidence: append(json.RawMessage(nil), incomplete.LastToolEvidence...),
+			StartedAt:        incomplete.StartedAt,
+			AttemptCount:     incomplete.AttemptCount,
+			RecoveryAdvice:   incomplete.RecoveryAdvice,
+			Repairs:          incomplete.Repairs,
+			CauseDetail:      incomplete.CauseDetail,
+			ProviderError:    incomplete.ProviderError,
+		}
 		return fmt.Errorf("%w: %v", ErrIncomplete, incomplete)
 	}
 	return turnErr
+}
+
+// LastRuntimeIncomplete returns the exact typed runtime failure behind the
+// supervisor's user-facing status. It intentionally excludes checkpoints and
+// tool payloads while preserving the phase, repair counters, and provider
+// error needed to diagnose a cascading failure.
+func (a *Agent) LastRuntimeIncomplete() (loop.IncompleteRecord, bool) {
+	if a == nil || a.runtimeIncomplete == nil {
+		return loop.IncompleteRecord{}, false
+	}
+	record := *a.runtimeIncomplete
+	record.LastToolEvidence = append(
+		json.RawMessage(nil), a.runtimeIncomplete.LastToolEvidence...,
+	)
+	return record, true
+}
+
+func resurrectionProtocolHistory(history []llm.Message) []protocol.Message {
+	result := make([]protocol.Message, 0, len(history))
+	for _, message := range history {
+		content := strings.TrimSpace(message.Content)
+		if content == "" {
+			continue
+		}
+		switch message.Role {
+		case llm.RoleUser:
+			result = append(result, protocol.Message{
+				Role: protocol.RoleUser, Content: content,
+			})
+		case llm.RoleAssistant:
+			result = append(result, protocol.Message{
+				Role: protocol.RoleAssistant, Content: content,
+			})
+		}
+	}
+	return result
 }
 
 type resurrectionToolSurface struct {
@@ -374,8 +440,9 @@ func (a *Agent) openBeliefState(
 // verify against the cortex journal stops the turn rather than updating
 // cognition from unanchored evidence.
 type runtimeEvidenceObserver struct {
-	ui     loop.EvidenceObserver
-	belief loop.EvidenceObserver
+	ui         loop.EvidenceObserver
+	belief     loop.EvidenceObserver
+	completion loop.EvidenceObserver
 }
 
 func (observer runtimeEvidenceObserver) ObserveToolExecution(
@@ -385,10 +452,15 @@ func (observer runtimeEvidenceObserver) ObserveToolExecution(
 	if observer.ui != nil {
 		_ = observer.ui.ObserveToolExecution(ctx, execution)
 	}
-	if observer.belief == nil {
-		return nil
+	if observer.belief != nil {
+		if err := observer.belief.ObserveToolExecution(ctx, execution); err != nil {
+			return err
+		}
 	}
-	return observer.belief.ObserveToolExecution(ctx, execution)
+	if observer.completion != nil {
+		return observer.completion.ObserveToolExecution(ctx, execution)
+	}
+	return nil
 }
 
 // activePremiseLimit bounds how much of the ledger reaches the window. The

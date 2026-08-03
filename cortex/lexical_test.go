@@ -118,6 +118,31 @@ func TestLexicalIndexIncrementalQueryRebuildAndRootIdentity(t *testing.T) {
 	}
 }
 
+func TestQueryLexicalConversationDoesNotLeakMatchingForeignThread(t *testing.T) {
+	c := openCortex(t)
+	for _, message := range []Message{
+		{ConversationID: "native-tools", Role: RoleUser, Content: "what happened to the native workspace tools"},
+		{ConversationID: "machine-mail", Role: RoleUser, Content: "what happened with Machine Mail neo-o1@machinemail.org"},
+	} {
+		if _, err := c.AppendMessage(message); err != nil {
+			t.Fatal(err)
+		}
+	}
+	hits, err := c.QueryLexicalConversation(
+		"what happened", "native-tools", time.Time{}, time.Time{}, 8,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) != 1 || hits[0].ConversationID != "native-tools" {
+		t.Fatalf("conversation-scoped lexical hits leaked: %+v", hits)
+	}
+	global, err := c.QueryLexical("what happened", time.Time{}, time.Time{}, 8)
+	if err != nil || len(global) != 2 {
+		t.Fatalf("explicit global lexical recall = %+v, err=%v", global, err)
+	}
+}
+
 func TestLexicalIndexValuesVaultSealedAndCorruptionFailsOpen(t *testing.T) {
 	c := openSealedCortex(t)
 	if _, err := c.AppendMessage(Message{ConversationID: "sealed", Role: RoleUser, Content: "cipherword exact needle"}); err != nil {

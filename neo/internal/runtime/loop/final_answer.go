@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"matrix/neo/internal/runtime/liveness"
+	"matrix/neo/internal/runtime/protocol"
 )
 
 var finalAnswerTokenPattern = regexp.MustCompile(`[a-z0-9][a-z0-9.-]*`)
@@ -25,6 +26,17 @@ func finalAnswerAddressesRequest(
 	userContent string,
 	content string,
 	events []ToolExecution,
+) (bool, string) {
+	return finalAnswerAddressesRequestWithHistory(
+		userContent, content, events, nil,
+	)
+}
+
+func finalAnswerAddressesRequestWithHistory(
+	userContent string,
+	content string,
+	events []ToolExecution,
+	history []protocol.Message,
 ) (bool, string) {
 	answer := strings.TrimSpace(content)
 	lower := strings.ToLower(answer)
@@ -46,6 +58,16 @@ func finalAnswerAddressesRequest(
 				"it exposed internal control flow or referred to an answer that was not delivered"
 		}
 	}
+	if RequestRequiresToolEvidence(userContent) &&
+		!hasSuccessfulToolEvidence(events) {
+		return false,
+			"the request requires real inspection or action but no citation-verified successful tool result exists"
+	}
+	if isThreadFollowUp(userContent) && len(history) > 0 &&
+		!answerLeadSharesThreadSubject(content, history) {
+		return false,
+			"the answer's leading subject is not grounded in the immediately preceding conversation"
+	}
 	if !hasExplorationEvidence(events) ||
 		!requestsResearchAnswer(userContent) {
 		return true, ""
@@ -66,6 +88,152 @@ func finalAnswerAddressesRequest(
 			"a completed research answer omitted sources or an explicit evidence limitation"
 	}
 	return true, ""
+}
+
+// RequestRequiresToolEvidence is deliberately conservative and fail-closed
+// for verbs that ask Neo to inspect or alter real state. Pure explanations are
+// excluded; action phrasing requires a verified tool result before completion.
+func RequestRequiresToolEvidence(request string) bool {
+	normalized := normalizedFinalRequest(request)
+	explanationOnly := false
+	for _, marker := range []string{
+		" how do i ", " how can i ", " explain ", " describe ",
+		" what does ", " why does ", " example of ",
+	} {
+		if strings.Contains(normalized, marker) {
+			explanationOnly = true
+			break
+		}
+	}
+	if explanationOnly {
+		explicitAction := false
+		for _, marker := range []string{
+			" then ", " go ahead ", " for me ", " actually ",
+			" and run ", " and check ", " and inspect ", " please run ",
+		} {
+			if strings.Contains(normalized, marker) {
+				explicitAction = true
+				break
+			}
+		}
+		if !explicitAction {
+			return false
+		}
+	}
+	for _, marker := range []string{
+		" read ", " list ", " inspect ", " check ", " verify ",
+		" look up ", " search ", " fetch ", " browse ", " open ",
+		" run ", " execute ", " test ", " write ", " edit ",
+		" create ", " delete ", " remove ", " move ", " copy ",
+		" restart ", " deploy ", " install ", " send ", " publish ",
+		" upload ", " download ", " click ", " log in ", " login ",
+	} {
+		if strings.Contains(normalized, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasSuccessfulToolEvidence(events []ToolExecution) bool {
+	for _, event := range events {
+		if event.Error == "" {
+			return true
+		}
+	}
+	return false
+}
+
+func isThreadFollowUp(request string) bool {
+	normalized := normalizedFinalRequest(request)
+	for _, marker := range []string{
+		" what happened ", " what went wrong ", " why did that ",
+		" why did it ", " continue ", " pick it back up ",
+		" try again ", " resume ", " what were we ", " where were we ",
+		" what do you mean ", " did it work ", " is it done ",
+		" how so ", " why ",
+	} {
+		if strings.Contains(normalized, marker) {
+			return true
+		}
+	}
+	if len(strings.Fields(normalized)) <= 14 {
+		for _, marker := range []string{
+			" it ", " that ", " this ", " those ", " them ",
+			" previous ", " earlier ", " last one ",
+		} {
+			if strings.Contains(normalized, marker) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func normalizedFinalRequest(request string) string {
+	tokens := finalAnswerTokenPattern.FindAllString(
+		strings.ToLower(strings.TrimSpace(request)), -1,
+	)
+	return " " + strings.Join(tokens, " ") + " "
+}
+
+func answerLeadSharesThreadSubject(answer string, history []protocol.Message) bool {
+	lastUser := -1
+	for index := len(history) - 1; index >= 0; index-- {
+		if history[index].Role == protocol.RoleUser {
+			lastUser = index
+			break
+		}
+	}
+	prior := history
+	if lastUser >= 0 {
+		prior = history[:lastUser]
+	}
+	if len(prior) == 0 {
+		return true
+	}
+	start := len(prior) - 6
+	if start < 0 {
+		start = 0
+	}
+	subject := make(map[string]struct{})
+	for _, message := range prior[start:] {
+		for _, token := range finalAnswerTokenPattern.FindAllString(
+			strings.ToLower(message.Content), -1,
+		) {
+			if len(token) >= 4 && !threadSubjectStopword(token) {
+				subject[token] = struct{}{}
+			}
+		}
+	}
+	if len(subject) == 0 {
+		return true
+	}
+	lead := []rune(strings.TrimSpace(answer))
+	if len(lead) > 320 {
+		lead = lead[:320]
+	}
+	for _, token := range finalAnswerTokenPattern.FindAllString(
+		strings.ToLower(string(lead)), -1,
+	) {
+		if _, ok := subject[token]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func threadSubjectStopword(token string) bool {
+	if finalAnswerStopword(token) {
+		return true
+	}
+	switch token {
+	case "conversation", "transcript", "message", "assistant", "working",
+		"happened", "continue", "started", "ready", "actual", "really":
+		return true
+	default:
+		return false
+	}
 }
 
 func finalAnswerHonestFallback(events []ToolExecution) string {

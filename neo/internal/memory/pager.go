@@ -950,6 +950,29 @@ func (p *Pager) Lexical(
 	return p.recallLexical(queryText, k, asOf)
 }
 
+// LexicalConversation is the ambient, conversation-isolated transcript lane.
+// Cross-thread lexical recall remains available only through the explicit
+// Lexical/Recall surfaces, whose rendered hits include conversation IDs.
+func (p *Pager) LexicalConversation(
+	queryText string,
+	conversationID string,
+	k int,
+	asOf *time.Time,
+) string {
+	if k <= 0 {
+		k = p.cfg.RetrievalTopK
+	}
+	var until time.Time
+	if asOf != nil {
+		until = asOf.UTC().Add(time.Nanosecond)
+	}
+	hits, err := p.cortex.QueryLexicalConversation(
+		queryText, conversationID, time.Time{}, until, k,
+	)
+	return p.renderLexicalHits(hits, err, asOf,
+		"Current conversation transcript matches:\n")
+}
+
 func (p *Pager) recallLexical(queryText string, k int, asOf *time.Time) string {
 	if k <= 0 {
 		k = p.cfg.RetrievalTopK
@@ -959,11 +982,21 @@ func (p *Pager) recallLexical(queryText string, k int, asOf *time.Time) string {
 		until = asOf.UTC().Add(time.Nanosecond)
 	}
 	hits, err := p.cortex.QueryLexical(queryText, time.Time{}, until, k)
+	return p.renderLexicalHits(hits, err, asOf,
+		"Verbatim transcript matches (explicit cross-thread recall; conversation provenance follows):\n")
+}
+
+func (p *Pager) renderLexicalHits(
+	hits []cortex.LexicalHit,
+	err error,
+	asOf *time.Time,
+	header string,
+) string {
 	if err != nil || len(hits) == 0 {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("Verbatim transcript matches:\n")
+	b.WriteString(header)
 	for _, hit := range hits {
 		ex, ok := p.lexicalExcerpt(hit, 1)
 		if !ok {
@@ -978,7 +1011,7 @@ func (p *Pager) recallLexical(queryText string, k int, asOf *time.Time) string {
 		}
 		fmt.Fprintf(&b, "- [%s %s seq %d-%d] %s\n", ex.ConversationID, ex.Date.UTC().Format("2006-01-02"), ex.SeqLo, ex.SeqHi, strings.ReplaceAll(ex.Text, "\n", " | "))
 	}
-	if b.String() == "Verbatim transcript matches:\n" {
+	if b.String() == header {
 		return ""
 	}
 	return b.String()

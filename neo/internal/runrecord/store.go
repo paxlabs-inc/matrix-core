@@ -28,17 +28,18 @@ var (
 )
 
 type Record struct {
-	IntentID       string     `json:"intent_id"`
-	ConversationID string     `json:"conversation_id"`
-	IdempotencyKey string     `json:"idempotency_key"`
-	Request        string     `json:"request"`
-	Status         string     `json:"status"`
-	CreatedAt      time.Time  `json:"created_at"`
-	StartedAt      *time.Time `json:"started_at,omitempty"`
-	EndedAt        *time.Time `json:"ended_at,omitempty"`
-	Result         string     `json:"result,omitempty"`
-	Error          string     `json:"error,omitempty"`
-	LastEventSeq   int        `json:"last_event_seq"`
+	IntentID       string          `json:"intent_id"`
+	ConversationID string          `json:"conversation_id"`
+	IdempotencyKey string          `json:"idempotency_key"`
+	Request        string          `json:"request"`
+	Status         string          `json:"status"`
+	CreatedAt      time.Time       `json:"created_at"`
+	StartedAt      *time.Time      `json:"started_at,omitempty"`
+	EndedAt        *time.Time      `json:"ended_at,omitempty"`
+	Result         string          `json:"result,omitempty"`
+	Error          string          `json:"error,omitempty"`
+	Diagnostics    json.RawMessage `json:"diagnostics,omitempty"`
+	LastEventSeq   int             `json:"last_event_seq"`
 }
 
 func (r Record) Terminal() bool {
@@ -221,6 +222,20 @@ func (s *Store) FindByIdempotency(key string) (Record, bool, error) {
 }
 
 func (s *Store) Finish(intentID, status, result, failure string, lastEventSeq int) (Record, bool, error) {
+	return s.FinishDetailed(
+		intentID, status, result, failure, lastEventSeq, nil,
+	)
+}
+
+// FinishDetailed preserves machine-actionable terminal diagnostics separately
+// from the short user-facing Error. Existing callers remain on Finish; runtime
+// failures use this form so the original phase and repair ladder survive the
+// supervisor's friendly terminal copy.
+func (s *Store) FinishDetailed(
+	intentID, status, result, failure string,
+	lastEventSeq int,
+	diagnostics json.RawMessage,
+) (Record, bool, error) {
 	if !s.Enabled() {
 		return Record{}, true, nil
 	}
@@ -244,6 +259,7 @@ func (s *Store) Finish(intentID, status, result, failure string, lastEventSeq in
 	rec.EndedAt = &now
 	rec.Result = strings.TrimSpace(result)
 	rec.Error = strings.TrimSpace(failure)
+	rec.Diagnostics = append(json.RawMessage(nil), diagnostics...)
 	if lastEventSeq > rec.LastEventSeq {
 		rec.LastEventSeq = lastEventSeq
 	}

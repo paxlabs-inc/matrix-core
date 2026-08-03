@@ -152,6 +152,31 @@ func (c *Cortex) RebuildLexicalIndex() error {
 }
 
 func (c *Cortex) QueryLexical(queryText string, from, until time.Time, k int) ([]LexicalHit, error) {
+	return c.queryLexical(queryText, "", from, until, k)
+}
+
+// QueryLexicalConversation searches only one conversation transcript. Ambient
+// activation must use this scoped form; the global form is reserved for an
+// explicit cross-thread recall request where every hit carries provenance.
+func (c *Cortex) QueryLexicalConversation(
+	queryText string,
+	conversationID string,
+	from, until time.Time,
+	k int,
+) ([]LexicalHit, error) {
+	conversationID = strings.TrimSpace(conversationID)
+	if conversationID == "" {
+		return nil, ErrEmptyConversationID
+	}
+	return c.queryLexical(queryText, conversationID, from, until, k)
+}
+
+func (c *Cortex) queryLexical(
+	queryText string,
+	conversationID string,
+	from, until time.Time,
+	k int,
+) ([]LexicalHit, error) {
 	terms := lexicalTokens(queryText)
 	if len(terms) == 0 {
 		return nil, nil
@@ -191,6 +216,9 @@ func (c *Cortex) QueryLexical(queryText string, from, until time.Time, k int) ([
 			var p lexicalPosting
 			if err := sessDec.Unmarshal(value, &p); err != nil {
 				return err
+			}
+			if conversationID != "" && p.ConversationID != conversationID {
+				return nil
 			}
 			at := time.Unix(0, p.TS).UTC()
 			if (!from.IsZero() && at.Before(from)) || (!until.IsZero() && !at.Before(until)) {

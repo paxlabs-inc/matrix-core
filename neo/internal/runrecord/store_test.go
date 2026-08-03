@@ -1,6 +1,7 @@
 package runrecord
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 )
@@ -35,6 +36,30 @@ func TestStoreLifecycleIsMonotonicAndTimestampsAreStable(t *testing.T) {
 	}
 	if _, _, err := s.Finish(rec.IntentID, StatusInterrupted, "stopped", "", 18); !errors.Is(err, ErrTerminal) {
 		t.Fatalf("terminal transition: got %v want %v", err, ErrTerminal)
+	}
+}
+
+func TestFinishDetailedPreservesRuntimeIncompleteDiagnostics(t *testing.T) {
+	store := Open(t.TempDir())
+	record, created, err := store.Begin(
+		"neo_diagnostic", "conv_diagnostic", "key_diagnostic", "inspect workspace",
+	)
+	if err != nil || !created {
+		t.Fatalf("Begin: created=%v err=%v", created, err)
+	}
+	diagnostic := json.RawMessage(`{"phase":"provider","repairs":{"expectation":2},"provider_error":"invalid structured tool call"}`)
+	finished, transitioned, err := store.FinishDetailed(
+		record.IntentID, StatusFailed, "saved partial", "friendly failure", 5, diagnostic,
+	)
+	if err != nil || !transitioned {
+		t.Fatalf("FinishDetailed: transitioned=%v err=%v", transitioned, err)
+	}
+	if string(finished.Diagnostics) != string(diagnostic) {
+		t.Fatalf("diagnostics = %s, want %s", finished.Diagnostics, diagnostic)
+	}
+	loaded, ok, err := store.Get(record.IntentID)
+	if err != nil || !ok || string(loaded.Diagnostics) != string(diagnostic) {
+		t.Fatalf("reloaded diagnostics = %s, ok=%v err=%v", loaded.Diagnostics, ok, err)
 	}
 }
 

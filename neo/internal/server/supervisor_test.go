@@ -13,6 +13,7 @@ import (
 
 	"matrix/neo/internal/agent"
 	"matrix/neo/internal/config"
+	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/o1"
 )
@@ -63,6 +64,23 @@ func TestSuperviseDecision(t *testing.T) {
 	}
 }
 
+func TestDropCurrentRunKeepsExactPriorThread(t *testing.T) {
+	current := &run{id: "neo_current"}
+	turns := []conversation.Turn{
+		{Role: "user", Text: "test native workspace tools", IntentID: "neo_prior"},
+		{Role: "assistant", Text: "the native tool attempt failed", IntentID: "neo_prior"},
+		{Role: "user", Text: "what happened?", IntentID: "neo_current"},
+		{Role: "assistant", Text: "in-flight narration", IntentID: "neo_current"},
+		{Role: "user", Text: "also inspect the logs", IntentID: "neo_current"},
+	}
+	got := dropCurrentRun(turns, current)
+	if len(got) != 3 || got[0].Text != "test native workspace tools" ||
+		got[1].Text != "the native tool attempt failed" ||
+		got[2].Text != "also inspect the logs" {
+		t.Fatalf("authoritative prior thread = %+v", got)
+	}
+}
+
 func TestPostureRespawnLimit(t *testing.T) {
 	cfg := config.Default()
 	cfg.TaskMaxRespawns = 7
@@ -73,8 +91,11 @@ func TestPostureRespawnLimit(t *testing.T) {
 	if got := postureRespawnLimit(cfg, "hello there"); got != 0 {
 		t.Fatalf("conversation limit = %d, want 0", got)
 	}
-	if got := postureRespawnLimit(cfg, "research the current status"); got != 0 {
-		t.Fatalf("exploration limit = %d, want 0", got)
+	if got := postureRespawnLimit(cfg, "research the current status"); got != 7 {
+		t.Fatalf("exploration limit = %d, want 7", got)
+	}
+	if got := postureRespawnLimit(cfg, "read a workspace file and list dirs"); got != 7 {
+		t.Fatalf("read-only native-tool limit = %d, want 7", got)
 	}
 	if got := postureRespawnLimit(cfg, "implement and deploy the fix"); got != 7 {
 		t.Fatalf("execution limit = %d, want 7", got)

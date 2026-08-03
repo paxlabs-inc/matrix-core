@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -714,6 +715,14 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 		actx, acancel := s.attemptContext(ctx)
 		var err error
 		s.agent.SetRunIdentity(r.id, attempt)
+		// The conversation store, not ambient memory, owns the current thread.
+		// Refresh the exact visible turns before every attempt and exclude this
+		// run's own user/narration records; the active objective is appended once
+		// by the runtime as the newest and authoritative user message.
+		if s.engine.conv.Enabled() {
+			turns := s.engine.conv.Recent(s.id, conversation.DefaultRecallTurns)
+			s.agent.SetRecentConversationHistory(seedMessages(dropCurrentRun(turns, r)))
+		}
 		if resume || attempt > 1 {
 			err = s.agent.ChatResume(withRun(actx, r), objective, prompt)
 		} else if attempt == 1 && audio != nil {
@@ -781,10 +790,35 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 	}
 }
 
+func dropCurrentRun(turns []conversation.Turn, r *run) []conversation.Turn {
+	if r == nil {
+		return turns
+	}
+	result := make([]conversation.Turn, 0, len(turns))
+	droppedObjective := false
+	for _, turn := range turns {
+		if turn.IntentID == r.id {
+			if turn.Role == "assistant" {
+				continue
+			}
+			if turn.Role == "user" && !droppedObjective {
+				droppedObjective = true
+				continue
+			}
+		}
+		result = append(result, turn)
+	}
+	return result
+}
+
 func postureRespawnLimit(cfg config.Config, objective string) int {
-	if cfg.InteractionPosture && agent.ClassifyInteractionPosture(cfg, objective) != agent.PostureExecution {
+	if cfg.InteractionPosture &&
+		agent.ClassifyInteractionPosture(cfg, objective) == agent.PostureConversation {
 		return 0
 	}
+	// Read-only exploration uses real tools and can fail for the same transient
+	// provider/protocol reasons as execution. It receives the configured retry
+	// budget; only ordinary conversation remains single-attempt.
 	return cfg.TaskMaxRespawns
 }
 
@@ -1100,6 +1134,9 @@ func (s *session) deliverCeiling(r *run, reason string) task.Status {
 	fields["honest_partial"] = true
 	fields["incomplete"] = true
 	fields["resumable"] = true
+	if diagnostic, ok := s.agent.LastRuntimeIncomplete(); ok {
+		fields["runtime_incomplete"] = diagnostic
+	}
 	s.finishRun(
 		r, runrecord.StatusFailed, text, reason, fields, true,
 	)
@@ -1426,7 +1463,13 @@ func (s *session) finishRun(r *run, status, text, failure string, fields map[str
 		if s.engine.runRecords == nil || !s.engine.runRecords.Enabled() {
 			return !r.closed
 		}
-		_, transitioned, err := s.engine.runRecords.Finish(r.id, status, text, failure, lastSeq)
+		var diagnostics json.RawMessage
+		if detail, ok := fields["runtime_incomplete"]; ok {
+			diagnostics, _ = json.Marshal(detail)
+		}
+		_, transitioned, err := s.engine.runRecords.FinishDetailed(
+			r.id, status, text, failure, lastSeq, diagnostics,
+		)
 		if err != nil {
 			s.engine.logLifecycle("run.final_persist", r.id, s.id, status, time.Since(r.started), err)
 			return false

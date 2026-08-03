@@ -115,6 +115,7 @@ type Response struct {
 	ReasoningStreamed bool
 	HonestPartial     bool
 	Liveness          LivenessTrace
+	Repairs           RepairDiagnostics
 }
 
 // LivenessTrace is the observability surface for the enforced policy: the
@@ -141,18 +142,32 @@ type Incomplete struct {
 	StartedAt        time.Time            `json:"started_at"`
 	AttemptCount     int                  `json:"attempt_count"`
 	RecoveryAdvice   string               `json:"recovery_advice"`
+	Repairs          RepairDiagnostics    `json:"repairs"`
+	CauseDetail      string               `json:"cause,omitempty"`
+	ProviderError    string               `json:"provider_error,omitempty"`
 	Checkpoint       turnstate.Checkpoint `json:"checkpoint"`
 	Cause            error                `json:"-"`
 }
 
 type IncompleteRecord struct {
-	TurnID           string          `json:"turn_id"`
-	ConversationID   string          `json:"conversation_id,omitempty"`
-	Phase            string          `json:"phase"`
-	LastToolEvidence json.RawMessage `json:"last_tool_evidence,omitempty"`
-	StartedAt        time.Time       `json:"started_at"`
-	AttemptCount     int             `json:"attempt_count"`
-	RecoveryAdvice   string          `json:"recovery_advice"`
+	TurnID           string            `json:"turn_id"`
+	ConversationID   string            `json:"conversation_id,omitempty"`
+	Phase            string            `json:"phase"`
+	LastToolEvidence json.RawMessage   `json:"last_tool_evidence,omitempty"`
+	StartedAt        time.Time         `json:"started_at"`
+	AttemptCount     int               `json:"attempt_count"`
+	RecoveryAdvice   string            `json:"recovery_advice"`
+	Repairs          RepairDiagnostics `json:"repairs"`
+	CauseDetail      string            `json:"cause,omitempty"`
+	ProviderError    string            `json:"provider_error,omitempty"`
+}
+
+type RepairDiagnostics struct {
+	Textual             int `json:"textual"`
+	Expectation         int `json:"expectation"`
+	Empty               int `json:"empty"`
+	FinalAnswer         int `json:"final_answer"`
+	CompletionDeferrals int `json:"completion_deferrals"`
 }
 
 func (incomplete *Incomplete) Error() string {
@@ -191,6 +206,16 @@ type cursor struct {
 func (state cursor) repaired() bool {
 	return state.TextualRepairs > 0 || state.ExpectationRepairs > 0 ||
 		state.EmptyRepairs > 0 || state.FinalRepairs > 0
+}
+
+func (state cursor) repairDiagnostics() RepairDiagnostics {
+	return RepairDiagnostics{
+		Textual:             state.TextualRepairs,
+		Expectation:         state.ExpectationRepairs,
+		Empty:               state.EmptyRepairs,
+		FinalAnswer:         state.FinalRepairs,
+		CompletionDeferrals: state.CompletionDefers,
+	}
 }
 
 type Loop struct {
@@ -297,14 +322,25 @@ func (loop *Loop) Turn(
 	ctx context.Context,
 	userContent string,
 ) (Response, error) {
+	return loop.TurnWithHistory(ctx, userContent, nil)
+}
+
+// TurnWithHistory starts a turn with the visible same-conversation transcript
+// represented as genuine role-separated protocol messages. The current user
+// request is always appended last and is never recovered from ambient memory.
+func (loop *Loop) TurnWithHistory(
+	ctx context.Context,
+	userContent string,
+	history []protocol.Message,
+) (Response, error) {
 	userContent = strings.TrimSpace(userContent)
 	if userContent == "" {
 		return Response{}, fmt.Errorf("runtime loop: user message is required")
 	}
 	checkpoint := turnstate.Checkpoint{
-		Messages: []protocol.Message{{
+		Messages: append(visibleConversationHistory(history), protocol.Message{
 			Role: protocol.RoleUser, Content: userContent,
-		}},
+		}),
 	}
 	if err := loop.save(ctx, &checkpoint, cursor{}); err != nil {
 		return Response{}, err
@@ -323,14 +359,23 @@ func (loop *Loop) TurnInternal(
 	userContent string,
 	guidance string,
 ) (Response, error) {
+	return loop.TurnInternalWithHistory(ctx, userContent, nil, guidance)
+}
+
+func (loop *Loop) TurnInternalWithHistory(
+	ctx context.Context,
+	userContent string,
+	history []protocol.Message,
+	guidance string,
+) (Response, error) {
 	userContent = strings.TrimSpace(userContent)
 	if userContent == "" {
 		return Response{}, fmt.Errorf("runtime loop: user objective is required")
 	}
 	checkpoint := turnstate.Checkpoint{
-		Messages: []protocol.Message{{
+		Messages: append(visibleConversationHistory(history), protocol.Message{
 			Role: protocol.RoleUser, Content: userContent,
-		}},
+		}),
 	}
 	if guidance = strings.TrimSpace(guidance); guidance != "" {
 		checkpoint.Messages = append(checkpoint.Messages, protocol.Message{
@@ -341,6 +386,23 @@ func (loop *Loop) TurnInternal(
 		return Response{}, err
 	}
 	return loop.runTurn(ctx, userContent, checkpoint, cursor{})
+}
+
+func visibleConversationHistory(history []protocol.Message) []protocol.Message {
+	result := make([]protocol.Message, 0, len(history)+1)
+	for _, message := range history {
+		if message.Role != protocol.RoleUser && message.Role != protocol.RoleAssistant {
+			continue
+		}
+		content := strings.TrimSpace(message.Content)
+		if content == "" {
+			continue
+		}
+		result = append(result, protocol.Message{
+			Role: message.Role, Content: content,
+		})
+	}
+	return result
 }
 
 func (loop *Loop) Resume(
@@ -638,8 +700,9 @@ func (loop *Loop) runTurn(
 					ctx, userContent, checkpoint, response, state, "",
 				)
 			}
-			if accepted, reason := finalAnswerAddressesRequest(
+			if accepted, reason := finalAnswerAddressesRequestWithHistory(
 				userContent, content, response.ToolEvents,
+				checkpoint.Messages,
 			); !accepted {
 				if loop.observer != nil && streamed {
 					_ = loop.observer.Reset(ctx)
@@ -1184,6 +1247,7 @@ func (loop *Loop) deliverHonestPartial(
 	state cursor,
 	boundary string,
 ) (Response, error) {
+	response.Repairs = state.repairDiagnostics()
 	content := finalAnswerHonestFallback(response.ToolEvents)
 	if boundary = strings.TrimSpace(boundary); boundary != "" {
 		content = boundary + " " + content
@@ -1237,10 +1301,24 @@ func (loop *Loop) incomplete(
 			response.ToolEvents[len(response.ToolEvents)-1],
 		)
 	}
+	var state cursor
+	if len(checkpoint.Runtime) > 0 {
+		_ = json.Unmarshal(checkpoint.Runtime, &state)
+	}
+	causeDetail := ""
+	if cause != nil {
+		causeDetail = strings.TrimSpace(cause.Error())
+	}
+	providerError := ""
+	if phase == "provider" {
+		providerError = causeDetail
+	}
 	incomplete := &Incomplete{
 		Phase: phase, LastToolEvidence: evidence,
 		StartedAt: started, AttemptCount: checkpoint.ProviderAttempts,
-		RecoveryAdvice: advice, Checkpoint: checkpoint, Cause: cause,
+		RecoveryAdvice: advice, Repairs: state.repairDiagnostics(),
+		CauseDetail: causeDetail, ProviderError: providerError,
+		Checkpoint: checkpoint, Cause: cause,
 	}
 	if incomplete.AttemptCount < 1 {
 		incomplete.AttemptCount = 1
@@ -1265,6 +1343,9 @@ func (loop *Loop) incomplete(
 			StartedAt:      started,
 			AttemptCount:   incomplete.AttemptCount,
 			RecoveryAdvice: advice,
+			Repairs:        incomplete.Repairs,
+			CauseDetail:    incomplete.CauseDetail,
+			ProviderError:  incomplete.ProviderError,
 		})
 	}
 	if loop.delivery != nil {
@@ -1287,22 +1368,20 @@ func requestMessages(
 			Role: protocol.RoleSystem, Content: prompt,
 		})
 	}
-	result = append(result, cloneMessages(durable)...)
-	if prompt := strings.TrimSpace(repair); prompt != "" {
-		result = append(result, protocol.Message{
-			Role: protocol.RoleSystem, Content: prompt,
-		})
-	}
-	// Retrieved memory rides the SYSTEM role, never the user role. It is the
-	// last message in the clone and is rebuilt every step, so in the user role
-	// it would occupy the most recent user turn for the whole turn — recalled
-	// text from an unrelated session then reads as the live request and the
-	// model attributes it to the user.
+	// Memory and controller repair are reference context. They must precede
+	// the durable conversation so the newest user message remains the final,
+	// authoritative live request on the initial generation.
 	if tail := strings.TrimSpace(activation); tail != "" {
 		result = append(result, protocol.Message{
 			Role: protocol.RoleSystem, Content: tail,
 		})
 	}
+	if prompt := strings.TrimSpace(repair); prompt != "" {
+		result = append(result, protocol.Message{
+			Role: protocol.RoleSystem, Content: prompt,
+		})
+	}
+	result = append(result, cloneMessages(durable)...)
 	return result
 }
 
@@ -1319,12 +1398,22 @@ func appendGuidance(
 	if len(accepted) == 0 {
 		return messages
 	}
-	result := cloneMessages(messages)
-	result = append(result, protocol.Message{
+	guidanceMessage := protocol.Message{
 		Role: protocol.RoleSystem,
 		Content: "Live supervisor guidance:\n" +
 			strings.Join(accepted, "\n"),
-	})
+	}
+	// Keep guidance in the system prefix. Appending it after the conversation
+	// would make it newer than the user's request and recreate the authority
+	// inversion that caused cross-thread context to win.
+	insertAt := 0
+	for insertAt < len(messages) && messages[insertAt].Role == protocol.RoleSystem {
+		insertAt++
+	}
+	result := make([]protocol.Message, 0, len(messages)+1)
+	result = append(result, cloneMessages(messages[:insertAt])...)
+	result = append(result, guidanceMessage)
+	result = append(result, cloneMessages(messages[insertAt:])...)
 	return result
 }
 
