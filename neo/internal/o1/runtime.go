@@ -223,9 +223,11 @@ func manifestFromTool(schema llm.Tool) OperationManifest {
 	switch {
 	case containsAny(lower, "delete", "remove", "drop", "rollback"):
 		effect, reversibility = EffectDestructive, Conditional
+	case lower == "build_project":
+		effect, reversibility = EffectWrite, Conditional
 	case containsAny(lower, "core_execute", "browser__click", "browser__fill", "browser__navigate", "fetch", "web-search"):
 		effect, reversibility = EffectExternal, Conditional
-	case containsAny(lower, "shell", "exec__"):
+	case containsAny(lower, "shell", "exec__", "service_", "move_file"):
 		effect, reversibility = EffectWrite, Conditional
 	case containsAny(lower, "write", "edit", "create", "append", "mutate", "send", "post", "schedule", "render"):
 		effect, reversibility = EffectWrite, Conditional

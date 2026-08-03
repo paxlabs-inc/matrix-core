@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 
 	"matrix/executor/tool"
@@ -29,6 +30,7 @@ import (
 	"matrix/neo/internal/delegate"
 	neollm "matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/server"
 	"matrix/neo/internal/tools"
 	"matrix/neo/internal/writeback"
 )
@@ -53,7 +55,7 @@ func runInteractive() {
 		cortexRoot = flag.String("cortex-root", "", "cortex brain root dir (overrides config)")
 		actor      = flag.String("actor", "", "cortex actor name (overrides config)")
 		prompt     = flag.String("prompt", "", "run a single turn with this prompt, then exit")
-		noTools    = flag.Bool("no-tools", false, "skip spawning MCP servers (chat-only)")
+		noTools    = flag.Bool("no-tools", false, "skip native and integration tools (chat-only)")
 	)
 	flag.Parse()
 
@@ -105,7 +107,19 @@ func runInteractive() {
 	// --- tools (best-effort) ---
 	var tm *tools.Manager
 	if !*noTools {
-		tm, err = tools.Spawn(ctx, tools.Options{ManifestPath: cfg.ManifestPath, StderrSink: os.Stderr})
+		workspaceDir := server.WorkspaceRoot(os.Getenv("NEO_WORKSPACE_DIR"))
+		nativeGitPath := "/opt/matrix/coding-bin/git"
+		if _, statErr := os.Stat(nativeGitPath); statErr != nil {
+			nativeGitPath = "git"
+		}
+		tm, err = tools.Spawn(ctx, tools.Options{
+			ManifestPath:    cfg.ManifestPath,
+			StderrSink:      os.Stderr,
+			NativeRoot:      workspaceDir,
+			NativeReadRoots: []string{"/data/media", strings.TrimSpace(os.Getenv("MATRIX_MEDIA_DIR"))},
+			NativeStateDir:  filepath.Join(filepath.Dir(cfg.CortexRoot), "native-services"),
+			NativeGitPath:   nativeGitPath,
+		})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "neo: tools unavailable (%v) — continuing chat-only\n", err)
 			tm = nil

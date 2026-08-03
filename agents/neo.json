@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/neo",
-  "description": "Neo front-agent manifest. Human-facing systems are reached through a stable browser, machine-mail, filesystem, and shell substrate. Open-web LOOKUP defaults to the web-search lane (Tavily-backed web_search/web_news + fetch: API search and page reads with no captchas or bot walls \u2014 research never stalls on a challenge page); the browser is for site-specific interactive workflows or when the user asks for it; product procedures are skills rather than dedicated integration schemas \u2014 except the essential paxeer-net chain/wallet lane (embedded-wallet custody network-side, writes gated by PaxeerSpendPolicy) and the media generation lane (image/video/speech through the media bridge, xAI Grok Imagine primary), neither of which is browser-replaceable; both stay direct tool surfaces. The desktop lane drives a disposable Railway-sandbox desktop (DOJO) over bytebotd via the daemon's /dojo proxy; it is reached only while a desktop session is live, is grounded by the desktop_look (omni vision) and desktop_a11y (AT-SPI) synthetic tools, and \u2014 being a human-shared surface that can log in and spend \u2014 is excluded from every autonomous (Automatrix/sub-agent) surface. Autonomous surfaces still structurally exclude value-moving tools and the desktop lane. Machine-mail credentials are injected from the encrypted per-user settings vault or inherited from MACHINEMAIL_API_KEY. The exec server's service registry is isolated to /data/neo/services through MATRIX_EXEC_STATE_DIR.",
+  "description": "Neo front-agent integration manifest. Local filesystem, bounded shell, durable service, and read-only git work is deliberately absent from MCP because it runs natively inside Neo; substantial asynchronous coding runs through the durable private AgentCore Build runtime. Open-web lookup defaults to the web-search lane (Tavily-backed web_search/web_news plus fetch); the browser is for site-specific interactive workflows or explicit user requests. Product procedures are skills rather than dedicated integration schemas, except the essential paxeer-net chain/wallet lane and media generation lane. The desktop lane drives a disposable Railway-sandbox desktop over bytebotd through the daemon's /dojo proxy and is excluded from every autonomous surface. Machine-mail credentials are injected from the encrypted per-user settings vault or inherited from MACHINEMAIL_API_KEY.",
   "allowed_side_effects": [
     "read",
     "write",
@@ -9,91 +9,6 @@
     "shell"
   ],
   "servers": [
-    {
-      "alias": "fs",
-      "transport": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "/"
-      ],
-      "env": [],
-      "package_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-      "version": "2026.1.14",
-      "tools": [
-        {
-          "name": "read_file",
-          "description": "Read a file (deprecated alias of read_text_file)",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "read_text_file",
-          "description": "Read the contents of a text file",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "read_media_file",
-          "description": "Read an image or audio file as base64",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "read_multiple_files",
-          "description": "Read multiple files in a single call",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "write_file",
-          "description": "Write content to a file (creates or overwrites)",
-          "side_effect_class": "write"
-        },
-        {
-          "name": "edit_file",
-          "description": "Apply line-based edits to a file",
-          "side_effect_class": "write"
-        },
-        {
-          "name": "create_directory",
-          "description": "Create a directory tree",
-          "side_effect_class": "write"
-        },
-        {
-          "name": "list_directory",
-          "description": "List entries in a directory",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "list_directory_with_sizes",
-          "description": "List entries in a directory including byte sizes",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "list_allowed_directories",
-          "description": "List the directories the server is permitted to access",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "directory_tree",
-          "description": "Recursive tree view of a directory",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "move_file",
-          "description": "Move or rename a file",
-          "side_effect_class": "write"
-        },
-        {
-          "name": "search_files",
-          "description": "Recursive glob search",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "get_file_info",
-          "description": "Stat a file or directory",
-          "side_effect_class": "read"
-        }
-      ]
-    },
     {
       "alias": "browser",
       "transport": "stdio",
@@ -264,7 +179,7 @@
         },
         {
           "name": "web_news",
-          "description": "Search recent news for query-relevant ranked articles (title, url, snippet, published) \u2014 the default for news lookups, no captchas. Discovery only: read a selected URL with fetch before making a factual claim. Read-only. args: query (required), max_results?",
+          "description": "Search recent news for query-relevant ranked articles (title, url, snippet, published) — the default for news lookups, no captchas. Discovery only: read a selected URL with fetch before making a factual claim. Read-only. args: query (required), max_results?",
           "side_effect_class": "network",
           "timeout_ms": 20000
         }
@@ -344,13 +259,13 @@
       "tools": [
         {
           "name": "market_quote",
-          "description": "Live price for one instrument \u2014 stocks, indexes (^GSPC), crypto (BTCUSD), forex (EURUSD) and commodities (GCUSD) all work. Returns price, change, day/year range, volume, market cap and the extended-hours quote when there is one, with the as-of time and the data source named. Prefer this over driving a browser to a finance site. Read-only. args: symbol (required)",
+          "description": "Live price for one instrument — stocks, indexes (^GSPC), crypto (BTCUSD), forex (EURUSD) and commodities (GCUSD) all work. Returns price, change, day/year range, volume, market cap and the extended-hours quote when there is one, with the as-of time and the data source named. Prefer this over driving a browser to a finance site. Read-only. args: symbol (required)",
           "side_effect_class": "network",
           "timeout_ms": 25000
         },
         {
           "name": "market_quotes",
-          "description": "Live prices for several instruments in ONE call \u2014 use this instead of repeating market_quote when comparing or watching a list. Read-only. args: symbols (required, comma-separated)",
+          "description": "Live prices for several instruments in ONE call — use this instead of repeating market_quote when comparing or watching a list. Read-only. args: symbols (required, comma-separated)",
           "side_effect_class": "network",
           "timeout_ms": 25000
         },
@@ -380,13 +295,13 @@
         },
         {
           "name": "market_sectors",
-          "description": "Sector performance for a session \u2014 the average change per sector, for reading how the market moved beneath the index. Read-only. args: date? (YYYY-MM-DD, default the latest session), exchange?",
+          "description": "Sector performance for a session — the average change per sector, for reading how the market moved beneath the index. Read-only. args: date? (YYYY-MM-DD, default the latest session), exchange?",
           "side_effect_class": "network",
           "timeout_ms": 25000
         },
         {
           "name": "market_news",
-          "description": "Market news with source and publication time \u2014 the whole market, the stock tape, company press releases, or the stream for specific symbols. Some stories carry a sentiment score. Read-only. args: scope? (market|stocks|press|symbols), symbols? (required when scope=symbols), limit?",
+          "description": "Market news with source and publication time — the whole market, the stock tape, company press releases, or the stream for specific symbols. Some stories carry a sentiment score. Read-only. args: scope? (market|stocks|press|symbols), symbols? (required when scope=symbols), limit?",
           "side_effect_class": "network",
           "timeout_ms": 25000
         },
@@ -416,7 +331,7 @@
         },
         {
           "name": "market_macro",
-          "description": "An economic series by name \u2014 GDP, CPI, inflationRate, unemploymentRate, federalFunds, retailSales, consumerSentiment and the other published indicators. Read-only. args: name (required), from?, to?",
+          "description": "An economic series by name — GDP, CPI, inflationRate, unemploymentRate, federalFunds, retailSales, consumerSentiment and the other published indicators. Read-only. args: name (required), from?, to?",
           "side_effect_class": "network",
           "timeout_ms": 25000
         },
@@ -457,7 +372,7 @@
       "tools": [
         {
           "name": "fetch",
-          "description": "Fetch a URL and return its content as Markdown \u2014 the default way to READ a page found via web_search (no captchas, no browser session). Use the browser instead only when the page needs interaction (login, forms, dynamic apps).",
+          "description": "Fetch a URL and return its content as Markdown — the default way to READ a page found via web_search (no captchas, no browser session). Use the browser instead only when the page needs interaction (login, forms, dynamic apps).",
           "side_effect_class": "network",
           "timeout_ms": 30000
         }
@@ -549,55 +464,6 @@
       ]
     },
     {
-      "alias": "exec",
-      "transport": "stdio",
-      "command": "node",
-      "args": [
-        "/root/matrix/tools/exec/exec.mjs"
-      ],
-      "env": [],
-      "package_digest": "sha256:089cd0465f64fda18cb07b890dc796a6b09791382f5247a9f319caf04a0671df",
-      "version": "0.1.0",
-      "tools": [
-        {
-          "name": "shell",
-          "description": "Run a shell command (bash -lc) to completion and return exit code + stdout + stderr. Install deps, build, run scripts, inspect the filesystem. Runs in /workspace by default. For a process that must keep running use service_start. args: command (required), cwd?, timeout_ms?, env?.",
-          "side_effect_class": "shell",
-          "timeout_ms": 600000
-        },
-        {
-          "name": "service_start",
-          "description": "Start or replace a long-lived background service that keeps running after the call and is respawned on machine restart (web servers, bots, workers). Output captured to a log. args: name (required), command (required), cwd?, env?, autostart?.",
-          "side_effect_class": "shell",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "service_list",
-          "description": "List supervised services with status (running/stopped), pid, uptime, command, cwd, log file. Read-only.",
-          "side_effect_class": "read",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "service_logs",
-          "description": "Read the tail of a service's combined stdout+stderr log to verify or debug it. Read-only. args: name (required), lines?.",
-          "side_effect_class": "read",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "service_stop",
-          "description": "Stop a supervised service (SIGTERM then SIGKILL the process group); disables autostart until restarted. args: name (required).",
-          "side_effect_class": "shell",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "service_restart",
-          "description": "Restart a supervised service from its recorded command and re-enable autostart. args: name (required).",
-          "side_effect_class": "shell",
-          "timeout_ms": 30000
-        }
-      ]
-    },
-    {
       "alias": "chronos",
       "transport": "stdio",
       "command": "node",
@@ -610,7 +476,7 @@
       "tools": [
         {
           "name": "alarm_set",
-          "description": "Schedule a future wake for yourself. kind='once' with delay_seconds (relative) or fire_at (absolute RFC3339); kind='cron' with cron_expr (+ optional IANA timezone) for recurring. wake_message is REQUIRED \u2014 the contextful turn delivered to your future self on fire. Recurring alarms automatically deduplicate by schedule and purpose unless an explicit distinct idempotency_key is supplied. Optional conversation_id resumes a thread; payload is opaque state echoed back. Durable: survives restarts.",
+          "description": "Schedule a future wake for yourself. kind='once' with delay_seconds (relative) or fire_at (absolute RFC3339); kind='cron' with cron_expr (+ optional IANA timezone) for recurring. wake_message is REQUIRED — the contextful turn delivered to your future self on fire. Recurring alarms automatically deduplicate by schedule and purpose unless an explicit distinct idempotency_key is supplied. Optional conversation_id resumes a thread; payload is opaque state echoed back. Durable: survives restarts.",
           "side_effect_class": "write",
           "timeout_ms": 30000
         },
@@ -895,7 +761,7 @@
         },
         {
           "name": "desktop_click_mouse",
-          "description": "Click a mouse button at an absolute screen pixel on the disposable desktop. A logged-in desktop click can submit forms and confirm purchases \u2014 an external, irreversible action.",
+          "description": "Click a mouse button at an absolute screen pixel on the disposable desktop. A logged-in desktop click can submit forms and confirm purchases — an external, irreversible action.",
           "side_effect_class": "network",
           "timeout_ms": 60000
         },

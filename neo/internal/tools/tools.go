@@ -1,10 +1,9 @@
 // Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Package tools is Neo's tool surface. It reuses the executor's MCP manager
-// + tool registry (so Neo's tools are byte-identical to the daemon's: fs,
-// web_search, browser, git, shell, fetch, …), advertises each tool's real
-// JSON schema to the model as a function, and dispatches calls.
+// Package tools is Neo's tool surface. Local filesystem, shell, process, and
+// read-only git operations run natively in this process; remote integrations
+// continue to use the executor's MCP manager and registry.
 //
 // It also owns the execution-surface split (see surface.go): money / signature
 // actions are classified Escalate and are NOT exposed as direct functions —
@@ -267,6 +266,7 @@ type Manager struct {
 	desktopLook DesktopLookFunc
 	desktopA11y DesktopA11yFunc
 	media       MediaPersistFunc
+	native      *nativeLocal
 	maxAgents   int
 
 	// personalization persists the user-confirmed personalization profile
@@ -320,6 +320,10 @@ type Options struct {
 	SpawnTimeout     time.Duration
 	Delegate         DelegateFunc
 	EscalatePatterns []string
+	NativeRoot       string
+	NativeReadRoots  []string
+	NativeStateDir   string
+	NativeGitPath    string
 }
 
 // Spawn loads the agent manifest, starts every declared MCP server (a server
@@ -330,7 +334,7 @@ func Spawn(ctx context.Context, opts Options) (*Manager, error) {
 		return nil, fmt.Errorf("neo/tools: ManifestPath required")
 	}
 	if opts.SpawnTimeout == 0 {
-		opts.SpawnTimeout = 90 * time.Second
+		opts.SpawnTimeout = 15 * time.Second
 	}
 	if opts.StderrSink == nil {
 		opts.StderrSink = os.Stderr
@@ -345,50 +349,61 @@ func Spawn(ctx context.Context, opts Options) (*Manager, error) {
 
 	var warnings []string
 	spawned := map[string]bool{}
-	for i := range manifest.Servers {
-		s := &manifest.Servers[i]
-		resolved, _, rerr := tool.ResolveEnvList(s.Env, os.LookupEnv)
-		if rerr != nil {
-			warnings = append(warnings, fmt.Sprintf("mcp server %q skipped (env: %v)", s.Alias, rerr))
-			continue
-		}
-		subEnv, privileged, rerr := tool.MCPEnvironment(s.Alias, os.Environ(), resolved)
-		if rerr != nil {
-			warnings = append(warnings, fmt.Sprintf("mcp server %q skipped (env: %v)", s.Alias, rerr))
-			continue
-		}
-		var runAs *mcp.ProcessIdentity
-		if !privileged {
-			if identity, configured, ierr := tool.AgentIdentityFromEnv(); ierr != nil {
-				warnings = append(warnings, fmt.Sprintf("mcp server %q skipped (identity: %v)", s.Alias, ierr))
-				continue
-			} else if configured {
-				runAs = &mcp.ProcessIdentity{
-					UID: identity.UID, GID: identity.GID,
-					Home: identity.Home, User: identity.User,
+	type spawnResult struct {
+		index int
+		alias string
+		stage string
+		err   error
+	}
+	results := make(chan spawnResult, len(manifest.Servers))
+	for index, server := range manifest.Servers {
+		go func(index int, s tool.ServerEntry) {
+			resolved, _, rerr := tool.ResolveEnvList(s.Env, os.LookupEnv)
+			if rerr != nil {
+				results <- spawnResult{index: index, alias: s.Alias, stage: "env", err: rerr}
+				return
+			}
+			subEnv, privileged, rerr := tool.MCPEnvironment(s.Alias, os.Environ(), resolved)
+			if rerr != nil {
+				results <- spawnResult{index: index, alias: s.Alias, stage: "env", err: rerr}
+				return
+			}
+			var runAs *mcp.ProcessIdentity
+			if !privileged {
+				identity, configured, ierr := tool.AgentIdentityFromEnv()
+				if ierr != nil {
+					results <- spawnResult{index: index, alias: s.Alias, stage: "identity", err: ierr}
+					return
+				}
+				if configured {
+					runAs = &mcp.ProcessIdentity{
+						UID: identity.UID, GID: identity.GID,
+						Home: identity.Home, User: identity.User,
+					}
 				}
 			}
-		}
-		spec := mcp.ServerSpec{
-			Alias:         s.Alias,
-			Transport:     s.Transport,
-			Command:       s.Command,
-			Args:          s.Args,
-			Env:           subEnv,
-			RunAs:         runAs,
-			Endpoint:      s.Endpoint,
-			Headers:       resolveHeaderEnv(s.Headers),
-			PackageDigest: s.PackageDigest,
-			ExpectedTools: toolNames(s.Tools),
-		}
-		sctx, cancel := context.WithTimeout(ctx, opts.SpawnTimeout)
-		_, serr := mgr.Spawn(sctx, spec)
-		cancel()
-		if serr != nil {
-			warnings = append(warnings, fmt.Sprintf("mcp server %q unavailable: %v", s.Alias, serr))
+			spec := mcp.ServerSpec{
+				Alias: s.Alias, Transport: s.Transport, Command: s.Command, Args: s.Args,
+				Env: subEnv, RunAs: runAs, Endpoint: s.Endpoint, Headers: resolveHeaderEnv(s.Headers),
+				PackageDigest: s.PackageDigest, ExpectedTools: toolNames(s.Tools),
+			}
+			sctx, cancel := context.WithTimeout(ctx, opts.SpawnTimeout)
+			_, serr := mgr.Spawn(sctx, spec)
+			cancel()
+			results <- spawnResult{index: index, alias: s.Alias, stage: "spawn", err: serr}
+		}(index, server)
+	}
+	ordered := make([]spawnResult, len(manifest.Servers))
+	for range manifest.Servers {
+		result := <-results
+		ordered[result.index] = result
+	}
+	for _, result := range ordered {
+		if result.err != nil {
+			warnings = append(warnings, fmt.Sprintf("mcp server %q skipped (%s: %v)", result.alias, result.stage, result.err))
 			continue
 		}
-		spawned[s.Alias] = true
+		spawned[result.alias] = true
 	}
 
 	reg, err := tool.NewRegistry(tool.RegistryParams{Manifest: manifest, MCP: mgr})
@@ -405,6 +420,14 @@ func Spawn(ctx context.Context, opts Options) (*Manager, error) {
 		delegate:   opts.Delegate,
 		byFunc:     map[string]*boundTool{},
 		warnings:   warnings,
+	}
+	if strings.TrimSpace(opts.NativeRoot) != "" {
+		native, nativeErr := newNativeLocal(opts.NativeRoot, opts.NativeReadRoots, opts.NativeStateDir, opts.NativeGitPath)
+		if nativeErr != nil {
+			m.warnings = append(m.warnings, fmt.Sprintf("native local tools skipped: %v", nativeErr))
+		} else {
+			m.native = native
+		}
 	}
 	m.bind(spawned)
 	return m, nil
@@ -467,10 +490,13 @@ func (m *Manager) bind(spawned map[string]bool) {
 // to it under failure (the 2026-07-13 LayerX deposit transcript). Synthetics
 // (memory_recall etc.) append when their seams are wired. Deterministic order.
 func (m *Manager) Schemas() []llm.Tool {
-	out := make([]llm.Tool, 0, len(m.order)+2)
+	out := make([]llm.Tool, 0, len(m.order)+24)
 	for _, fn := range m.order {
 		bt := m.byFunc[fn]
 		out = append(out, llm.NewFunctionTool(fn, bt.desc, bt.params))
+	}
+	if m.native != nil {
+		out = append(out, nativeSchemas()...)
 	}
 	if len(m.escalated) > 0 && m.delegate != nil {
 		out = append(out, coreExecuteSchema())
@@ -513,7 +539,7 @@ func (m *Manager) Schemas() []llm.Tool {
 // background sub-agent can't service an inline approval gate), memory_recall,
 // or spawn_subagents (no recursion). Deterministic order.
 func (m *Manager) SubagentSchemas() []llm.Tool {
-	out := make([]llm.Tool, 0, len(m.order))
+	out := make([]llm.Tool, 0, len(m.order)+24)
 	for _, fn := range m.order {
 		// The disposable-desktop lane is a human-shared, spend-capable surface
 		// (DOJO guard_surface): it is driven only by the top-level user-facing
@@ -523,6 +549,9 @@ func (m *Manager) SubagentSchemas() []llm.Tool {
 		}
 		bt := m.byFunc[fn]
 		out = append(out, llm.NewFunctionTool(fn, bt.desc, bt.params))
+	}
+	if m.native != nil {
+		out = append(out, nativeSchemas()...)
 	}
 	return out
 }
@@ -566,6 +595,12 @@ func (m *Manager) Preflight(funcNames []string) error {
 		return fmt.Errorf("tool manager is unavailable")
 	}
 	for _, funcName := range funcNames {
+		if isNativeTool(funcName) {
+			if m.native == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
+			continue
+		}
 		switch funcName {
 		case CoreExecuteTool:
 			if m.delegate == nil || len(m.escalated) == 0 {
@@ -629,6 +664,21 @@ func (m *Manager) Preflight(funcNames []string) error {
 }
 
 func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, failureClass tool.FailureClass, retryable bool, failureMessage string, err error) {
+	if isNativeTool(funcName) {
+		if m.native == nil {
+			return fmt.Sprintf("native tool %q is unavailable in this session", funcName), "", true, tool.FailureInvocation, false, "", nil
+		}
+		for _, schema := range nativeSchemas() {
+			if schema.Function.Name == funcName {
+				if msg, ok := validateToolArgs(funcName, schema.Function.Parameters, args); !ok {
+					return msg, "", true, tool.FailureValidation, false, msg, nil
+				}
+				break
+			}
+		}
+		c, e, er := m.native.call(ctx, funcName, args)
+		return syntheticResult(c, e, er)
+	}
 	switch funcName {
 	case CoreExecuteTool:
 		c, e, er := m.dispatchCoreExecute(ctx, args)
@@ -1392,7 +1442,16 @@ func (m *Manager) ClearMachineMail(ctx context.Context) error {
 }
 
 // NaturalToolNames returns the advertised (directly-callable) function names.
-func (m *Manager) NaturalToolNames() []string { return append([]string{}, m.order...) }
+func (m *Manager) NaturalToolNames() []string {
+	out := append([]string{}, m.order...)
+	if m != nil && m.native != nil {
+		for _, schema := range nativeSchemas() {
+			out = append(out, schema.Function.Name)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
 
 // EscalateToolNames returns the escalate-class function names (reachable only
 // via core_execute), for transparency / system-prompt construction.
@@ -1400,6 +1459,21 @@ func (m *Manager) EscalateToolNames() []string { return append([]string{}, m.esc
 
 // Warnings returns non-fatal MCP server start failures from Spawn.
 func (m *Manager) Warnings() []string { return append([]string{}, m.warnings...) }
+
+// NativeLocalEnabled reports whether Neo has its in-process local tool runtime.
+func (m *Manager) NativeLocalEnabled() bool { return m != nil && m.native != nil }
+
+// NativeToolNames returns the deterministic in-process local tool inventory.
+func (m *Manager) NativeToolNames() []string {
+	if m == nil || m.native == nil {
+		return nil
+	}
+	out := make([]string, 0, len(nativeSchemas()))
+	for _, schema := range nativeSchemas() {
+		out = append(out, schema.Function.Name)
+	}
+	return out
+}
 
 // Close stops every MCP server.
 func (m *Manager) Close() error {
@@ -1616,7 +1690,7 @@ func previewSchema() llm.Tool {
 func buildProjectSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		BuildProjectTool,
-		"Delegate a longer coding task for the selected project to your private Build worker. Use this when the user asks you to build or substantially modify a site, small application, API, or database-backed feature. Provide a complete implementation brief and concrete acceptance criteria. The call returns as soon as the durable job is accepted; do not poll it or keep this turn open. You will be woken only for a question, approval, blocker, interruption, failure, or verified completion. Building never deploys the result.",
+		"Delegate a substantial or long-running project coding job to the durable private Build worker when it should survive this turn and carry checkpoints, autonomous verification, interruption, and resume. Use Neo's native local tools for bounded file work, diagnostics, shell commands, durable services, and read-only git inspection. Provide the complete user request, constraints, and concrete acceptance criteria. The call returns as soon as the durable job is persisted and accepted; do not poll it or keep this turn open. Building never deploys the result.",
 		map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{

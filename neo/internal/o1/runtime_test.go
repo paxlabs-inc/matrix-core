@@ -11,17 +11,19 @@ import (
 
 func TestCompileRuntimeCapabilitiesSelectsMinimalLiveSurface(t *testing.T) {
 	available := []llm.Tool{
-		llm.NewFunctionTool("fs__read_file", "read", map[string]interface{}{"type": "object"}),
-		llm.NewFunctionTool("fs__write_file", "write", map[string]interface{}{"type": "object"}),
+		llm.NewFunctionTool("build_project", "durable build", map[string]interface{}{"type": "object"}),
 		llm.NewFunctionTool("browser__navigate", "browse", map[string]interface{}{"type": "object"}),
 	}
-	contract := Compile(CompileInput{Request: "Edit the repository file."})
+	contract := Compile(CompileInput{Request: "Edit the repository file and run its tests."})
 	got, err := CompileRuntimeCapabilities(contract, available)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got.Tools) != 2 || got.Tools[0].Function.Name != "fs__read_file" || got.Tools[1].Function.Name != "fs__write_file" {
+	if len(got.Tools) != 1 || got.Tools[0].Function.Name != "build_project" {
 		t.Fatalf("unexpected selected tools: %#v", got.Tools)
+	}
+	if got.Manifests[0].Effects != EffectWrite {
+		t.Fatalf("build_project effect = %q, want %q", got.Manifests[0].Effects, EffectWrite)
 	}
 }
 
@@ -32,6 +34,25 @@ func TestCompileRuntimeCapabilitiesFailsClosedOnMalformedSchema(t *testing.T) {
 	}})
 	if err == nil {
 		t.Fatal("malformed live schema must fail before exposure")
+	}
+}
+
+func TestNativeLocalEffectClassification(t *testing.T) {
+	params := map[string]interface{}{"type": "object"}
+	cases := map[string]EffectClass{
+		"read_text_file": EffectReadOnly,
+		"git_status":     EffectReadOnly,
+		"write_file":     EffectWrite,
+		"move_file":      EffectWrite,
+		"shell":          EffectWrite,
+		"service_start":  EffectWrite,
+		"service_stop":   EffectWrite,
+	}
+	for name, want := range cases {
+		manifest := manifestFromTool(llm.NewFunctionTool(name, name, params))
+		if manifest.Effects != want {
+			t.Fatalf("%s effect = %q, want %q", name, manifest.Effects, want)
+		}
 	}
 }
 

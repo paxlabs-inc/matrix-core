@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,6 +11,7 @@ const stateDir = join(probe, 'services')
 mkdirSync(stateDir, { recursive: true })
 process.env.MATRIX_EXEC_STATE_DIR = stateDir
 process.env.MATRIX_EXEC_WORKDIR = probe
+process.env.MATRIX_DATA_DIR = probe
 
 const bridgePath = new URL('./exec.mjs', import.meta.url)
 const bridge = await import(`${bridgePath.href}?test=${Date.now()}`)
@@ -147,4 +148,78 @@ test('block policy refuses a new credential-bearing service command', () => {
   const response = JSON.parse(result.stdout.trim())
   assert.equal(response.result.isError, true)
   assert.match(response.result.content[0].text, /inline credential material detected/)
+})
+
+test('junk cleanup removes only stopped logs and allowlisted cache roots', async () => {
+  rmSync(stateDir, { recursive: true, force: true })
+  mkdirSync(stateDir, { recursive: true })
+  const running = parseResult(
+    await bridge.dispatch('service_start', {
+      name: 'running-log',
+      command: `${process.execPath} -e "setInterval(() => {}, 1000)"`,
+      cwd: probe,
+      autostart: false,
+    }),
+  )
+  assert.equal(running.ok, true)
+  writeFileSync(join(stateDir, 'stopped.log'), 'old output')
+  mkdirSync(join(probe, 'tmp'), { recursive: true })
+  mkdirSync(join(probe, 'neo', 'cache'), { recursive: true })
+  writeFileSync(join(probe, 'tmp', 'scratch'), 'junk')
+  writeFileSync(join(probe, 'neo', 'cache', 'scratch'), 'junk')
+
+  const cleaned = bridge.cleanEnvironmentJunk()
+  assert.equal(cleaned.ok, true)
+  assert.equal(existsSync(join(stateDir, 'stopped.log')), false)
+  assert.equal(existsSync(join(stateDir, 'running-log.log')), true)
+  assert.equal(existsSync(join(probe, 'tmp', 'scratch')), false)
+  assert.equal(existsSync(join(probe, 'neo', 'cache', 'scratch')), false)
+  parseResult(await bridge.dispatch('service_stop', { name: 'running-log' }))
+})
+
+test('recenter stops verified services, clears registry state, and never kills pid aliases', async (t) => {
+  rmSync(stateDir, { recursive: true, force: true })
+  mkdirSync(stateDir, { recursive: true })
+  const started = parseResult(
+    await bridge.dispatch('service_start', {
+      name: 'owned-service',
+      command: `${process.execPath} -e "setInterval(() => {}, 1000)"`,
+      cwd: probe,
+      autostart: true,
+    }),
+  )
+  assert.equal(started.ok, true)
+  const unrelated = await realSleeper('unrelated-recenter-process')
+  t.after(() => bridge.stopRegisteredProcess(unrelated.service))
+  const activeShell = bridge.dispatch('shell', {
+    command: `${process.execPath} -e "setInterval(() => {}, 1000)"`,
+    cwd: probe,
+    timeout_ms: 10_000,
+  })
+  t.after(() => bridge.recenterRegistry())
+  for (let attempt = 0; attempt < 40; attempt++) {
+    if (readdirSync(stateDir).some((entry) => entry.startsWith('.active-shell-'))) break
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  assert.equal(readdirSync(stateDir).some((entry) => entry.startsWith('.active-shell-')), true)
+  assert.equal(bridge.auditRegistry().summary.active_shells_verified, 1)
+  const registry = JSON.parse(readFileSync(join(stateDir, 'registry.json'), 'utf8'))
+  registry.alias = {
+    ...unrelated.service,
+    name: 'alias',
+    process_identity: { ...unrelated.service.process_identity, start_ticks: '0' },
+  }
+  writeFileSync(join(stateDir, 'registry.json'), JSON.stringify(registry))
+
+  const result = bridge.recenterRegistry()
+  assert.equal(result.ok, true)
+  assert.equal(result.processes_stopped, 1)
+  assert.equal(result.shell_processes_stopped, 1)
+  assert.equal(result.detached_pid_aliases, 1)
+  assert.equal(bridge.inspectRegisteredProcess(registry['owned-service']).running, false)
+  assert.equal(processExists(unrelated.child.pid), true)
+  assert.deepEqual(JSON.parse(readFileSync(join(stateDir, 'registry.json'), 'utf8')), {})
+  assert.equal(readdirSync(stateDir).some((entry) => entry.startsWith('.active-shell-')), false)
+  assert.equal(bridge.auditRegistry().summary.active_shells_verified, 0)
+  assert.equal((await activeShell).isError, true)
 })

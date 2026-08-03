@@ -78,6 +78,10 @@ func (s *Server) routes() []routeFact {
 		// Global kill switch: interrupts EVERY live Neo run on this
 		// (single-tenant) daemon — the "Stop all" control.
 		{"/halt", "POST /halt — interrupt every live run (the user's stop-all control)", s.handleHalt},
+		// User-initiated recovery: clean bounded runtime junk or fully recenter
+		// agent-owned work while carrying a compact prior-thread handoff into a
+		// visually fresh conversation.
+		{"/recovery/", "POST /recovery/* — user-confirmed cache, environment, and agent recovery controls", s.handleRecovery},
 		// Neo owns conversation history (it persists every Neo turn); serve
 		// list/detail from Neo's own durable store instead of proxying to the
 		// daemon, which never saw a Neo conversation.
@@ -144,6 +148,7 @@ func (s *Server) routes() []routeFact {
 		// Self-model observability (self-model req.13): read-only inspection
 		// of the resident self-summary + failure patterns.
 		{"/diag/self-model", "GET /diag/self-model — read-only inspection of your current self-model", s.handleDiagSelfModel},
+		{"/diag/native-tools", "GET /diag/native-tools — read-only health and inventory for Neo's in-process local tools", s.handleDiagNativeTools},
 	}
 }
 
@@ -265,6 +270,26 @@ func (s *Server) handleDiagSelfModel(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func (s *Server) handleDiagNativeTools(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if s.engine == nil || s.engine.tools == nil || !s.engine.tools.NativeLocalEnabled() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"enabled": false,
+			"mode":    "in_process",
+			"tools":   []string{},
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"enabled": true,
+		"mode":    "in_process",
+		"tools":   s.engine.tools.NativeToolNames(),
+	})
 }
 
 // chatRequest mirrors the daemon's POST /chat body (only the fields Neo

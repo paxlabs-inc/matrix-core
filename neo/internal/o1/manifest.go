@@ -135,20 +135,20 @@ func (ms *ManifestSet) SelectMinimal(requiredCapabilities []string) []OperationM
 // capabilityGroups maps capability names to operation prefixes.
 // Synthetic tools map to their constant names; MCP tools map by alias prefix.
 var capabilityGroups = map[string][]string{
-	"filesystem":        {"fs__", "read_file", "write_file", "edit_file", "delete_file", "list_directory"},
+	"filesystem":        {"build_project", "read_text_file", "read_multiple_files", "write_file", "edit_file", "create_directory", "list_directory", "directory_tree", "move_file", "search_files", "get_file_info", "fs__"},
 	"web_evidence":      {"web-search__", "exa__", "fetch__", "fetch", "search", "news"},
 	"browser":           {"browser__"},
 	"media":             {"media__"},
 	"memory":            {"memory_recall", "memory_mutate", "write_skill"},
 	"scheduling":        {"chronos__"},
 	"chain_or_wallet":   {"paxeer-net__", "layerx__", "deus__", "kindle__"},
-	"workspace_preview": {"workspace_preview", "sandbox__"},
-	"execution":         {"core_execute", "exec__", "shell__"},
-	"code_edit":         {"fs__write_file", "fs__edit_file", "fs__read_file"},
+	"workspace_preview": {"build_project", "workspace_preview", "sandbox__"},
+	"execution":         {"build_project", "core_execute", "shell", "service_", "exec__", "shell__"},
+	"code_edit":         {"build_project", "read_text_file", "write_file", "edit_file", "create_directory", "move_file", "fs__write_file", "fs__edit_file", "fs__read_file"},
 	"subagents":         {"spawn_subagents"},
 	"construct":         {"construct_render"},
 	"task_state":        {"todo"},
-	"git":               {"git__"},
+	"git":               {"build_project", "git_", "git__"},
 }
 
 func matchesCapability(operation string, need map[string]bool) bool {

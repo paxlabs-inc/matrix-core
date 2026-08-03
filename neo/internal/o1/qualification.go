@@ -51,13 +51,13 @@ func StandardQualificationCorpus() []QualificationCase {
 	return []QualificationCase{
 		{ID: "qual-code-01", Category: "code", Name: "code modification with verification",
 			InitialPrompt: "Create a Go function that validates email addresses and write a test that proves it handles edge cases.",
-			RequiredTools: []string{"fs__write_file", "fs__read_file", "exec__shell"}},
+			RequiredTools: []string{"build_project"}},
 		{ID: "qual-largefile-01", Category: "large_file", Name: "large file creation with bounded chunks",
 			InitialPrompt: "Generate a 100KB CSV file with realistic test data.",
-			RequiredTools: []string{"fs__write_file", "fs__read_file"}},
+			RequiredTools: []string{"build_project"}},
 		{ID: "qual-framework-01", Category: "framework", Name: "framework project generation",
 			InitialPrompt: "Initialize a new React project with TypeScript and add a component.",
-			RequiredTools: []string{"fs__write_file", "exec__shell"}},
+			RequiredTools: []string{"build_project"}},
 		{ID: "qual-browser-01", Category: "browser", Name: "browser interaction and screenshot",
 			InitialPrompt: "Navigate to example.com and take a screenshot of the page.",
 			RequiredTools: []string{"browser__navigate", "browser__take_screenshot"}},
@@ -75,10 +75,10 @@ func StandardQualificationCorpus() []QualificationCase {
 			RequiredTools: []string{"chronos__set_alarm"}},
 		{ID: "qual-cancel-01", Category: "cancellation", Name: "cancellation handling",
 			InitialPrompt: "Start a long-running task and demonstrate clean cancellation.",
-			RequiredTools: []string{"exec__shell"}},
+			RequiredTools: []string{"build_project"}},
 		{ID: "qual-guarded-01", Category: "guarded_effect", Name: "guarded external effect",
 			InitialPrompt: "Create a file that requires destructive-operation authorization.",
-			RequiredTools: []string{"fs__write_file"}},
+			RequiredTools: []string{"build_project"}},
 	}
 }
 

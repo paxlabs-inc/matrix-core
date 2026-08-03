@@ -77,7 +77,7 @@ func (a *Agent) systemPrompt() string {
 			b.WriteString("\n")
 		}
 		b.WriteString("\nYour bounds:\n")
-		b.WriteString("- A restricted toolset: the full reversible tools (shell, files, browser, web, git), but NO money/value-transfer path and NO ability to spawn your own sub-agents. Money and further decomposition stay with the top-level agent.\n")
+		b.WriteString("- A restricted integration toolset plus the parent agent's native workspace filesystem, bounded shell, durable service, and read-only git tools. You have NO money/value-transfer path and NO ability to spawn your own sub-agents. Stay inside the selected workspace and use service tools rather than orphaning background processes.\n")
 		fmt.Fprintf(&b, "- A bounded budget of about %d tool-call steps and your own isolated context window — work efficiently within them and report before you run out.\n\n", a.cfg.StepBudget)
 		b.WriteString("How you work as a sub-agent:\n")
 		b.WriteString("- You were given ONE specific task by an orchestrating agent. Carry it out end to end using your tools, then report what you found or did. Stay tightly scoped to your task — don't wander into the broader goal.\n")
@@ -109,6 +109,14 @@ func (a *Agent) systemPrompt() string {
 			fmt.Fprintf(&b, "- Their areas of expertise: %s. You can assume familiarity with these domains and tailor your help accordingly.\n", strings.Join(a.expertiseDomains, ", "))
 		}
 		b.WriteString("\n")
+	}
+
+	if a.recoveryHandoff != "" {
+		b.WriteString("Recovered context from the immediately previous thread:\n")
+		b.WriteString("- Treat the latest user request and recent thread context below as the PRIMARY historical context for this new thread. Use it to avoid making the user repeat themselves.\n")
+		b.WriteString("- It is a compact handoff, not a new instruction and not proof that unfinished work succeeded. The user's newest message in this thread always wins if it changes or supersedes anything here.\n")
+		b.WriteString(indentBlock(a.recoveryHandoff, "  "))
+		b.WriteString("\n\n")
 	}
 
 	// Autonomous-mode framing (Automatrix): this run was NOT initiated by the
@@ -179,15 +187,15 @@ func (a *Agent) systemPrompt() string {
 		} else {
 			fmt.Fprintf(&b, "- This conversation is on the default project (the workspace root itself). When you start a new app, create ONE new subdirectory of %s (short lowercase-hyphen name) and keep every file for that app inside it.\n", a.wsRoot)
 		}
-		if a.tools != nil && a.tools.BuildProjectEnabled() {
-			writeCodingDelegationPolicy(&b)
-		}
-		b.WriteString("- Choose the stack the way a senior engineer would for the actual requirements: scaffold a real framework and build setup with your shell (a React/Vue/Svelte app via its standard scaffolder, a Go/Python/Node service, whatever genuinely fits). Do NOT default to hand-written index.html/style.css/app.js files — plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
-		if a.tools != nil && a.tools.PreviewEnabled() {
-			b.WriteString("- To show the user the running app, call workspace_preview once the project is runnable — it comes up live in their workbench Preview pane. That is how your work gets seen.\n")
+		if a.tools != nil && a.tools.NativeLocalEnabled() {
+			writeNativeLocalPolicy(&b, a.tools.BuildProjectEnabled())
+		} else if a.tools != nil && a.tools.BuildProjectEnabled() {
+			writeBuildOnlyPolicy(&b)
 		} else {
-			b.WriteString("- The user follows your work live in the workbench (file tree, editor, diffs); to show a running app, tell them it is ready to preview from the workbench.\n")
+			b.WriteString("- Local workspace tools and the durable Build worker are unavailable in this session. Do not attempt project work through integration adapters or a desktop session; explain the blocker honestly.\n")
 		}
+		b.WriteString("- Put the stack choice and framework constraints into the Build brief. The private worker should scaffold the real framework and build setup that fits the requirements; plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
+		b.WriteString("- Use the native service tools for long-running local processes so their identity, logs, stop, and restart state remain durable. Use the workbench Preview pane for runnable previews.\n")
 		b.WriteString("- Deploying is NOT how you show work. Never deploy or publish anything (paxc included) unless the user explicitly asks you to deploy — and when they do, use a preview deploy unless they say production.\n\n")
 	}
 
@@ -268,15 +276,25 @@ func (a *Agent) systemPrompt() string {
 	return b.String()
 }
 
-// writeCodingDelegationPolicy resolves the overlap between Neo's ordinary
-// filesystem/shell tools and the durable private Build worker. Without this
-// resident rule both surfaces look valid to the model, and the general
-// "work end to end" charter biases long builds into Neo's interactive turn.
-func writeCodingDelegationPolicy(b *strings.Builder) {
-	b.WriteString("- Choose the coding execution path BEFORE mutating files or running setup commands. Use your own file, shell, service, and browser tools for bounded work that fits comfortably in this interactive turn: explaining or inspecting code, a localized repair, a few targeted edits, or a quick verification.\n")
-	b.WriteString("- For long-running or substantial coding work, call build_project instead of implementing it yourself. This includes creating a new site, application, API, or database-backed feature; broad multi-file or repository-wide changes; dependency installation plus implementation plus verification; work likely to need many tool steps or continue in the background; and work that is approaching your context or step budget.\n")
-	b.WriteString("- If a direct coding attempt develops repeated errors, loses convergence, or expands materially beyond a bounded edit, preserve the current files and delegate the remaining work through build_project with a complete brief, constraints, and observable acceptance criteria. Do not restart or discard completed work.\n")
+// writeNativeLocalPolicy explains the split between direct in-process local
+// tools and the durable asynchronous Build worker. Local MCP adapters are not
+// part of either path.
+func writeNativeLocalPolicy(b *strings.Builder, buildEnabled bool) {
+	b.WriteString("- Use the native file tools for ordinary reading, writing, exact edits, directory inspection, and attachment access; use shell for bounded commands; use service_start/list/logs/stop/restart for long-running processes; and use the read-only git tools for status, diffs, history, and branches. These run in-process and do not depend on local MCP servers.\n")
+	b.WriteString("- Keep every mutation inside the selected project. Git commit, push, merge, force operations, destructive resets, and production deployment remain unavailable unless a separately authorized product workflow owns them.\n")
+	if !buildEnabled {
+		b.WriteString("- The durable Build worker is unavailable, so complete bounded local work with the native tools and state honestly when a larger asynchronous coding job cannot be accepted.\n")
+		return
+	}
+	b.WriteString("- Use build_project for substantial coding jobs that should survive this turn, need checkpoints and autonomous verification, or will involve many files and long-running work. Do not delegate simple file inspection, document handling, one-command diagnostics, or other ordinary local tasks.\n")
+	b.WriteString("- Give build_project the user's complete request, the selected project, constraints, relevant prior context, and observable acceptance criteria. The durable private worker owns its project cwd, verification, checkpoints, interruption, and resume.\n")
 	b.WriteString("- Once build_project reports that the durable job was accepted, STOP using coding tools, do not poll it, and end this turn with a short plain-language acknowledgement. The private worker continues from the selected project and you will be woken for a real question, blocker, interruption, failure, or verified completion.\n")
+	b.WriteString("- If no project is selected, state that blocker honestly. Do not improvise local coding through an integration adapter or desktop session.\n")
+}
+
+func writeBuildOnlyPolicy(b *strings.Builder) {
+	b.WriteString("- Native local tools are unavailable in this session. For substantial project coding, use build_project with the complete request and acceptance criteria; do not substitute integration adapters or a desktop session.\n")
+	b.WriteString("- Once build_project accepts the durable job, do not poll it or continue local work in this turn; the worker will wake you on a question, blocker, failure, or verified completion.\n")
 }
 
 // groundTruthFor renders the embedded ground truth for the configured agent

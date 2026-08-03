@@ -52,8 +52,8 @@ import (
 	"matrix/vault"
 )
 
-// Engine holds the process-wide shared dependencies (models, the one MCP tool
-// surface, the one cortex pager, the background consolidator) and hands each
+// Engine holds the process-wide shared dependencies (models, the native plus
+// integration tool surface, the cortex pager, the background consolidator) and hands each
 // conversation its own agent loop over them.
 type Engine struct {
 	cfg   config.Config

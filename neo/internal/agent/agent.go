@@ -299,6 +299,11 @@ type Agent struct {
 	wsProjectID   string
 	wsProjectName string
 	wsProjectRoot string
+	// recoveryHandoff is a bounded, durable prior-thread checkpoint attached
+	// only to a user-requested recentered conversation. It is session-stable
+	// and model-facing; it is never inserted as a visible user or assistant
+	// turn. The latest user request and recent thread context lead the handoff.
+	recoveryHandoff string
 }
 
 // Options configures New.
@@ -550,6 +555,14 @@ func (a *Agent) SetWorkspace(root, projectID, projectName, projectRoot string) {
 	a.wsProjectID = strings.TrimSpace(projectID)
 	a.wsProjectName = strings.TrimSpace(projectName)
 	a.wsProjectRoot = strings.TrimSpace(projectRoot)
+}
+
+// SetRecoveryHandoff attaches the prior thread's compact context to a freshly
+// recentered session. The handoff is rendered near the top of the stable
+// system prompt so the prior user goal remains primary, while the first real
+// message in this new thread remains authoritative over it.
+func (a *Agent) SetRecoveryHandoff(handoff string) {
+	a.recoveryHandoff = strings.TrimSpace(handoff)
 }
 
 // effectiveBudgetSignals carries the observable turn-complexity signals the

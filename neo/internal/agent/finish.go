@@ -129,7 +129,10 @@ func (a *Agent) o1CriterionEvidence(criterionID string) (string, bool) {
 		return "normalized answer passed the bounded qualitative close review", true
 	case "criterion.rules":
 		if contractNeedsCapability(t.contract, "execution") {
-			if !t.runLedger.HasSuccessfulOperation("exec__", "shell__") {
+			if t.runLedger.HasSuccessfulOperation("build_project") {
+				return "durable Build dispatch was accepted; the private worker owns repository rules and recorded verification before outcome delivery", true
+			}
+			if !t.runLedger.HasSuccessfulOperation("shell", "service_", "exec__", "shell__") {
 				return "", false
 			}
 			return "repository or framework validation completed with a normalized successful process outcome", true
@@ -138,12 +141,18 @@ func (a *Agent) o1CriterionEvidence(criterionID string) (string, bool) {
 	case "criterion.delivery":
 		return "finishTurn authorized durable Reporter.Say delivery", true
 	case "criterion.artifact":
-		if !t.runLedger.HasSuccessfulOperation("fs__write_file", "fs__edit_file", "write_file", "edit_file") {
+		if t.runLedger.HasSuccessfulOperation("build_project") {
+			return "durable Build dispatch was accepted for the selected project; artifact evidence will arrive from the private worker", true
+		}
+		if !t.runLedger.HasSuccessfulOperation("fs__write_file", "fs__edit_file", "write_file", "edit_file", "create_directory", "move_file") {
 			return "", false
 		}
 		return "bounded artifact mutation completed and its normalized result was recorded", true
 	case "criterion.execution":
-		if !t.runLedger.HasSuccessfulOperation("exec__", "shell__") {
+		if t.runLedger.HasSuccessfulOperation("build_project") {
+			return "durable Build dispatch was accepted; command and verification evidence is deferred to the worker outcome", true
+		}
+		if !t.runLedger.HasSuccessfulOperation("shell", "service_", "exec__", "shell__") {
 			return "", false
 		}
 		return "validation process completed successfully", true

@@ -349,6 +349,13 @@ jobs:
       - name: exec manifest and lifecycle smoke
         run: node tools/exec/exec.mjs --selftest
 
+      - name: production manifests exclude local coding MCP
+        run: |
+          set -euo pipefail
+          for manifest in agents/default.json agents/neo.json; do
+            jq -e '[.servers[].alias] | all(. != "fs" and . != "git" and . != "exec")' "$manifest" >/dev/null
+          done
+
       - name: recurring alarm deduplication
         run: node tools/chronos/chronos.mjs --selftest
 

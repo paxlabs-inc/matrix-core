@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/default",
-  "description": "Default Matrix agent \u2014 the per-user self/cloud runtime. Bundles filesystem + fetch + git MCP servers (Session 22 baseline) PLUS paxeer-net (the public Paxeer chain surface across RPC, PaxScan, price reads, and embedded-wallet writes). READS need no auth; chain WRITES sign through the Paxeer Embedded Wallet (custody network-side, spend-policy enforced at the wallet API) and are additionally pre-gated plan-time by PaxeerSpendPolicy (per-call PAXEER_SPEND_CAP_WEI ceiling) before any side effect. Headless wallet auth via PAXEER_WALLET_TOKEN or PAXEER_WALLET_EMAIL+PAXEER_WALLET_PASSWORD (+PAXEER_SUPABASE_ANON_KEY); without it the chain bridge is read-only. PackageDigest values are PLACEHOLDERS; operators MUST replace with the sha256 digest of the actual installed package before any production / chain-anchoring deployment.",
+  "description": "Default Matrix agent integration manifest. Local filesystem, bounded shell, durable service, and read-only git work is deliberately absent from MCP because it runs natively inside Neo; substantial asynchronous coding runs through the durable private AgentCore Build runtime. This manifest contains only remote or product integration adapters, including paxeer-net (the public Paxeer chain surface across RPC, PaxScan, price reads, and embedded-wallet writes). READS need no auth; chain WRITES sign through the Paxeer Embedded Wallet (custody network-side, spend-policy enforced at the wallet API) and are additionally pre-gated plan-time by PaxeerSpendPolicy (per-call PAXEER_SPEND_CAP_WEI ceiling) before any side effect. Headless wallet auth via PAXEER_WALLET_TOKEN or PAXEER_WALLET_EMAIL+PAXEER_WALLET_PASSWORD (+PAXEER_SUPABASE_ANON_KEY); without it the chain bridge is read-only. PackageDigest values are PLACEHOLDERS; operators MUST replace them with the sha256 digest of the actual installed package before any production or chain-anchoring deployment.",
   "allowed_side_effects": [
     "read",
     "write",
@@ -9,91 +9,6 @@
     "shell"
   ],
   "servers": [
-    {
-      "alias": "fs",
-      "transport": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "/workspace"
-      ],
-      "env": [],
-      "package_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-      "version": "2026.1.14",
-      "tools": [
-        {
-          "name": "read_file",
-          "description": "Read a file (deprecated alias of read_text_file)",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "read_text_file",
-          "description": "Read the contents of a text file",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "read_media_file",
-          "description": "Read an image or audio file as base64",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "read_multiple_files",
-          "description": "Read multiple files in a single call",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "write_file",
-          "description": "Write content to a file (creates or overwrites)",
-          "side_effect_class": "write"
-        },
-        {
-          "name": "edit_file",
-          "description": "Apply line-based edits to a file",
-          "side_effect_class": "write"
-        },
-        {
-          "name": "create_directory",
-          "description": "Create a directory tree",
-          "side_effect_class": "write"
-        },
-        {
-          "name": "list_directory",
-          "description": "List entries in a directory",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "list_directory_with_sizes",
-          "description": "List entries in a directory including byte sizes",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "list_allowed_directories",
-          "description": "List the directories the server is permitted to access",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "directory_tree",
-          "description": "Recursive tree view of a directory",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "move_file",
-          "description": "Move or rename a file",
-          "side_effect_class": "write"
-        },
-        {
-          "name": "search_files",
-          "description": "Recursive glob search",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "get_file_info",
-          "description": "Stat a file or directory",
-          "side_effect_class": "read"
-        }
-      ]
-    },
     {
       "alias": "fetch",
       "transport": "stdio",
@@ -355,7 +270,7 @@
       "tools": [
         {
           "name": "alarm_set",
-          "description": "Schedule a future wake for yourself. kind='once' with delay_seconds (relative) or fire_at (absolute RFC3339); kind='cron' with cron_expr (+ optional IANA timezone) for recurring. wake_message is REQUIRED \u2014 the contextful turn delivered to your future self on fire. Recurring alarms automatically deduplicate by schedule and purpose unless an explicit distinct idempotency_key is supplied. Optional conversation_id resumes a thread; payload is opaque state echoed back. Durable: survives restarts.",
+          "description": "Schedule a future wake for yourself. kind='once' with delay_seconds (relative) or fire_at (absolute RFC3339); kind='cron' with cron_expr (+ optional IANA timezone) for recurring. wake_message is REQUIRED — the contextful turn delivered to your future self on fire. Recurring alarms automatically deduplicate by schedule and purpose unless an explicit distinct idempotency_key is supplied. Optional conversation_id resumes a thread; payload is opaque state echoed back. Durable: survives restarts.",
           "side_effect_class": "write",
           "timeout_ms": 30000
         },
@@ -376,134 +291,6 @@
           "description": "Cancel one of your active alarms by id so it never fires. args: id.",
           "side_effect_class": "write",
           "timeout_ms": 15000
-        }
-      ]
-    },
-    {
-      "alias": "git",
-      "transport": "stdio",
-      "command": "uvx",
-      "args": [
-        "--from",
-        "mcp-server-git==2026.1.14",
-        "--with",
-        "mcp==1.29.0",
-        "mcp-server-git",
-        "--repository",
-        "/workspace"
-      ],
-      "env": [],
-      "package_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
-      "version": "2026.1.14",
-      "tools": [
-        {
-          "name": "git_status",
-          "description": "Show the working-tree status",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "git_diff_unstaged",
-          "description": "Diff unstaged changes",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "git_diff_staged",
-          "description": "Diff staged changes",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "git_diff",
-          "description": "Diff between commits/branches",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "git_log",
-          "description": "Show commit history",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "git_show",
-          "description": "Show a specific commit",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "git_branch",
-          "description": "List branches",
-          "side_effect_class": "read"
-        },
-        {
-          "name": "git_add",
-          "description": "Stage files for commit",
-          "side_effect_class": "write"
-        },
-        {
-          "name": "git_reset",
-          "description": "Reset staged changes",
-          "side_effect_class": "write"
-        },
-        {
-          "name": "git_commit",
-          "description": "Create a commit from staged changes",
-          "side_effect_class": "write"
-        },
-        {
-          "name": "git_create_branch",
-          "description": "Create a new branch",
-          "side_effect_class": "write"
-        },
-        {
-          "name": "git_checkout",
-          "description": "Switch branches",
-          "side_effect_class": "write"
-        }
-      ]
-    },
-    {
-      "alias": "exec",
-      "transport": "stdio",
-      "command": "node",
-      "args": [
-        "/root/matrix/tools/exec/exec.mjs"
-      ],
-      "env": [],
-      "package_digest": "sha256:089cd0465f64fda18cb07b890dc796a6b09791382f5247a9f319caf04a0671df",
-      "version": "0.1.0",
-      "tools": [
-        {
-          "name": "shell",
-          "description": "Run a shell command (bash -lc) to completion and return exit code + stdout + stderr. Install deps, build, run scripts, inspect the filesystem. Runs in /workspace by default. For a process that must keep running use service_start. args: command (required), cwd?, timeout_ms?, env?.",
-          "side_effect_class": "shell",
-          "timeout_ms": 600000
-        },
-        {
-          "name": "service_start",
-          "description": "Start or replace a long-lived background service that keeps running after the call and is respawned on machine restart (web servers, bots, workers). Output captured to a log. args: name (required), command (required), cwd?, env?, autostart?.",
-          "side_effect_class": "shell",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "service_list",
-          "description": "List supervised services with status (running/stopped), pid, uptime, command, cwd, log file. Read-only.",
-          "side_effect_class": "read",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "service_logs",
-          "description": "Read the tail of a service's combined stdout+stderr log to verify or debug it. Read-only. args: name (required), lines?.",
-          "side_effect_class": "read",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "service_stop",
-          "description": "Stop a supervised service (SIGTERM then SIGKILL the process group); disables autostart until restarted. args: name (required).",
-          "side_effect_class": "shell",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "service_restart",
-          "description": "Restart a supervised service from its recorded command and re-enable autostart. args: name (required).",
-          "side_effect_class": "shell",
-          "timeout_ms": 30000
         }
       ]
     },

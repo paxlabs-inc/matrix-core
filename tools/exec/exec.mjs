@@ -1,16 +1,11 @@
 #!/usr/bin/env node
-// exec — MCP stdio bridge giving Matrix agents a real execution surface.
+// exec — legacy service-registry supervisor and recovery CLI.
 //
-// This is the missing primitive that lets the per-user agent handle ANY
-// software task end-to-end on its OWN Fly machine: run shell commands,
-// install dependencies, build projects, and (crucially) start + supervise
-// LONG-LIVED background services (a web server, a Telegram bot, a worker)
-// that keep running after the tool call returns and across machine
-// restarts.
-//
-// Pairs with the baked-in `fs` server (write files into /workspace) and
-// `git`: `fs` authors the project, `exec` installs/builds/runs it, and the
-// service supervisor keeps the result alive.
+// No production agent manifest exposes this bridge. Coding now runs through
+// the durable private AgentCore Build runtime with native file, patch,
+// terminal, process, git-gate, checkpoint, interrupt, and resume semantics.
+// This file remains in the daemon image so operators and the Recovery API can
+// inspect, stop, and clean services created by older deployments.
 //
 // Tools (6):
 //   shell            run a shell command to completion (cwd, env, timeout)
@@ -52,6 +47,7 @@ import {
   renameSync,
   chmodSync,
   readlinkSync,
+  rmSync,
 } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join, isAbsolute, resolve } from 'node:path'
@@ -75,6 +71,7 @@ const MAX_SERVICES = clampInt(process.env.MATRIX_EXEC_MAX_SERVICES, 50, 1, 500)
 const MAX_LOG_LINES = clampInt(process.env.MATRIX_EXEC_MAX_LOG_LINES, 2_000, 1, 50_000)
 const INLINE_SECRET_POLICY = normalizeInlineSecretPolicy(process.env.MATRIX_EXEC_INLINE_SECRET_POLICY)
 const PROCESS_IDENTITY_VERSION = 1
+const ACTIVE_SHELL_IDENTITY = 'matrix-active-shell'
 
 function clampInt(v, def, min, max) {
   const n = Number.parseInt(v ?? '', 10)
@@ -109,6 +106,46 @@ function stateDir() {
 
 function registryPath() {
   return join(stateDir(), 'registry.json')
+}
+
+function activeShellPath(pid, startTicks) {
+  return join(stateDir(), `.active-shell-${pid}-${startTicks}.json`)
+}
+
+function activeShellRecords() {
+  const records = []
+  try {
+    for (const entry of readdirSync(stateDir())) {
+      if (!entry.startsWith('.active-shell-') || !entry.endsWith('.json')) continue
+      const path = join(stateDir(), entry)
+      try {
+        records.push({ path, service: JSON.parse(readFileSync(path, 'utf8')) })
+      } catch {
+        records.push({ path, service: null })
+      }
+    }
+  } catch {
+    /* no runtime state yet */
+  }
+  return records
+}
+
+function registerActiveShell(child) {
+  const identity = readProcessIdentity(child?.pid, ACTIVE_SHELL_IDENTITY)
+  if (!identity) return null
+  ensureStateDir()
+  const path = activeShellPath(child.pid, identity.start_ticks)
+  writeFileSync(
+    path,
+    JSON.stringify({
+      pid: child.pid,
+      command: ACTIVE_SHELL_IDENTITY,
+      process_identity: identity,
+      started_at: new Date().toISOString(),
+    }),
+    { mode: 0o600 },
+  )
+  return path
 }
 
 // ── result shaping ────────────────────────────────────────────────────────────
@@ -534,11 +571,23 @@ function runShell(args) {
 
   return new Promise((resolve) => {
     let child
+    let activeRecord = null
     try {
       const strictCommand = `curl() { command curl --fail-with-body "$@"; }\nexport -f curl\n${command}`
       child = spawn('bash', ['-lc', strictCommand], { cwd, env, detached: true })
     } catch (e) {
       resolve(fail('shell', `spawn failed: ${e?.message ?? String(e)}`, { cwd }))
+      return
+    }
+    try {
+      activeRecord = registerActiveShell(child)
+    } catch (e) {
+      try {
+        process.kill(-child.pid, 'SIGKILL')
+      } catch {
+        child.kill('SIGKILL')
+      }
+      resolve(fail('shell', `active process registration failed: ${e?.message ?? String(e)}`, { cwd }))
       return
     }
     const t0 = Date.now()
@@ -578,11 +627,13 @@ function runShell(args) {
 
     child.on('error', (e) => {
       clearTimeout(timer)
+      if (activeRecord) rmSync(activeRecord, { force: true })
       resolve(fail('shell', `exec error: ${e?.message ?? String(e)}`, { cwd }))
     })
 
     child.on('close', (code, signal) => {
       clearTimeout(timer)
+      if (activeRecord) rmSync(activeRecord, { force: true })
       const result = {
         ok: code === 0 && !timedOut,
         tool: 'shell',
@@ -715,6 +766,12 @@ export function auditRegistry() {
     })
     .sort((a, b) => String(a.name).localeCompare(String(b.name)))
   const count = (predicate) => services.filter(predicate).length
+  const shellStates = activeShellRecords().map((record) => {
+    if (!record.service) return 'invalid'
+    const observed = inspectRegisteredProcess(record.service)
+    return observed.running ? 'running' : observed.state
+  })
+  const shellCount = (state) => shellStates.filter((value) => value === state).length
   return {
     ok: true,
     state_dir: stateDir(),
@@ -727,8 +784,165 @@ export function auditRegistry() {
       pid_aliases: count((svc) => svc.state === 'pid_alias'),
       inline_credential_commands: count((svc) => svc.inline_credential_material),
       autostart_not_running: count((svc) => svc.autostart && !svc.identity_verified),
+      active_shells_verified: shellCount('running'),
+      active_shell_pid_aliases: shellCount('pid_alias') + shellCount('legacy_unverified'),
+      stale_active_shell_records: shellCount('stopped') + shellCount('invalid'),
     },
     services,
+  }
+}
+
+function clearDirectoryContents(path) {
+  let removed = 0
+  try {
+    for (const entry of readdirSync(path)) {
+      rmSync(join(path, entry), { recursive: true, force: true })
+      removed++
+    }
+  } catch {
+    /* absent or unreadable directories are an honest zero-removal result */
+  }
+  return removed
+}
+
+function recoveryJunkDirs() {
+  const dataRoot = resolve(DATA_DIR)
+  return [
+    join(dataRoot, 'tmp'),
+    join(dataRoot, 'cache'),
+    join(dataRoot, 'neo', 'tmp'),
+    join(dataRoot, 'neo', 'cache'),
+    join(tmpdir(), 'matrix-agent-cache'),
+  ]
+    .map((path) => resolve(path))
+    .filter((path, index, paths) => path !== dataRoot && path !== '/' && paths.indexOf(path) === index)
+}
+
+export function cleanEnvironmentJunk() {
+  const reg = loadRegistry()
+  const runningLogs = new Set()
+  let reconciled = 0
+  for (const svc of Object.values(reg)) {
+    if (!svc || typeof svc !== 'object') continue
+    const observed = inspectRegisteredProcess(svc)
+    if (observed.running) {
+      runningLogs.add(resolve(svc.log_file || logPathFor(svc.name)))
+      continue
+    }
+    if (svc.pid || svc.process_identity) {
+      clearObservedProcess(svc, observed)
+      reconciled++
+    }
+  }
+  saveRegistry(reg)
+
+  let reconciledShellProcesses = 0
+  for (const record of activeShellRecords()) {
+    if (!record.service || !inspectRegisteredProcess(record.service).running) {
+      rmSync(record.path, { force: true })
+      reconciledShellProcesses++
+    }
+  }
+
+  let logsRemoved = 0
+  let tempFilesRemoved = 0
+  try {
+    for (const entry of readdirSync(stateDir())) {
+      const path = resolve(join(stateDir(), entry))
+      if (entry.endsWith('.log') && !runningLogs.has(path)) {
+        rmSync(path, { force: true })
+        logsRemoved++
+      } else if (entry === 'registry.json.tmp' || entry.endsWith('.recovery.tmp')) {
+        rmSync(path, { force: true })
+        tempFilesRemoved++
+      }
+    }
+  } catch {
+    /* state directory may not exist yet */
+  }
+
+  let cacheEntriesRemoved = 0
+  const cleanedDirectories = []
+  for (const path of recoveryJunkDirs()) {
+    const removed = clearDirectoryContents(path)
+    if (removed > 0) cleanedDirectories.push(path)
+    cacheEntriesRemoved += removed
+  }
+  return {
+    ok: true,
+    state_dir: stateDir(),
+    reconciled_stale_processes: reconciled,
+    reconciled_shell_processes: reconciledShellProcesses,
+    logs_removed: logsRemoved,
+    temp_files_removed: tempFilesRemoved,
+    cache_entries_removed: cacheEntriesRemoved,
+    cleaned_directories: cleanedDirectories,
+  }
+}
+
+export function recenterRegistry() {
+  const reg = loadRegistry()
+  const remaining = {}
+  const stopped = []
+  const detachedAliases = []
+  const failed = []
+  const failedShellProcesses = []
+  let shellProcessesStopped = 0
+  let detachedShellAliases = 0
+
+  for (const [name, svc] of Object.entries(reg)) {
+    if (!svc || typeof svc !== 'object') continue
+    const observed = inspectRegisteredProcess(svc)
+    if (observed.running) {
+      stopRegisteredProcess(svc)
+      if (inspectRegisteredProcess(svc).running) {
+        remaining[name] = svc
+        failed.push(name)
+        continue
+      }
+      stopped.push(name)
+    } else if (observed.state === 'pid_alias' || observed.state === 'legacy_unverified') {
+      detachedAliases.push(name)
+    }
+    try {
+      rmSync(resolve(svc.log_file || logPathFor(name)), { force: true })
+    } catch {
+      /* log cleanup is best effort after process ownership was resolved */
+    }
+  }
+
+  for (const record of activeShellRecords()) {
+    if (!record.service) {
+      rmSync(record.path, { force: true })
+      continue
+    }
+    const observed = inspectRegisteredProcess(record.service)
+    if (observed.running) {
+      stopRegisteredProcess(record.service)
+      if (inspectRegisteredProcess(record.service).running) {
+        failedShellProcesses.push(String(record.service.pid || 'unknown'))
+        continue
+      }
+      shellProcessesStopped++
+    } else if (observed.state === 'pid_alias' || observed.state === 'legacy_unverified') {
+      detachedShellAliases++
+    }
+    rmSync(record.path, { force: true })
+  }
+
+  saveRegistry(remaining)
+  const junk = cleanEnvironmentJunk()
+  return {
+    ok: failed.length === 0 && failedShellProcesses.length === 0,
+    state_dir: stateDir(),
+    services_cleared: Object.keys(reg).length - failed.length,
+    processes_stopped: stopped.length,
+    shell_processes_stopped: shellProcessesStopped,
+    detached_pid_aliases: detachedAliases.length,
+    detached_shell_aliases: detachedShellAliases,
+    failed_services: failed,
+    failed_shell_processes: failedShellProcesses,
+    junk,
   }
 }
 
@@ -968,9 +1182,8 @@ function startStdioServer() {
 }
 
 // ── --selftest ────────────────────────────────────────────────────────────────
-// 1) Verify the bridge registry exactly matches every agent manifest that
-//    declares an `exec` server (executor/mcp Manager.verifyTools turns drift
-//    into a FATAL daemon boot; this catches it at build/CI as a non-zero exit).
+// 1) Verify the bridge registry exactly matches any legacy test manifest that
+//    explicitly declares an `exec` server. Production manifests declare none.
 // 2) Exercise a real shell call + a full service lifecycle in a temp state dir
 //    so the execution path itself is proven offline (no network).
 // EXEC_AGENTS_DIR overrides the manifest dir (used by tests).
@@ -1014,10 +1227,7 @@ async function runSelftest() {
       console.log(`exec: ${file} matches (${declared.size} tools)`)
     }
   }
-  if (checked === 0) {
-    console.error(`exec SELFTEST FAILED: no manifest under ${agentsDir} declares an exec server`)
-    process.exit(1)
-  }
+  if (checked === 0) console.log('exec: no agent manifest exposes exec (admin-only supervisor)')
   if (drift) {
     console.error('exec SELFTEST FAILED: manifest drift would crash the daemon at boot (Manager.verifyTools)')
     process.exit(1)
@@ -1168,7 +1378,9 @@ if (isDirect) {
     if (
       audit.summary.pid_aliases > 0 ||
       audit.summary.legacy_unverified > 0 ||
-      audit.summary.autostart_not_running > 0
+      audit.summary.autostart_not_running > 0 ||
+      audit.summary.active_shell_pid_aliases > 0 ||
+      audit.summary.stale_active_shell_records > 0
     ) {
       process.exitCode = 1
     }
@@ -1176,6 +1388,12 @@ if (isDirect) {
     const audit = auditRegistry()
     process.stdout.write(JSON.stringify(audit, null, 2) + '\n')
     if (audit.summary.inline_credential_commands > 0) process.exitCode = 1
+  } else if (process.argv.includes('--clean-junk')) {
+    process.stdout.write(JSON.stringify(cleanEnvironmentJunk(), null, 2) + '\n')
+  } else if (process.argv.includes('--recenter-registry')) {
+    const recovery = recenterRegistry()
+    process.stdout.write(JSON.stringify(recovery, null, 2) + '\n')
+    if (!recovery.ok) process.exitCode = 1
   } else {
     startStdioServer()
   }

@@ -292,6 +292,13 @@ func (s *session) rebuildAgent() {
 	e.maybeRefreshProfile()
 	agentName, preferredName, expertiseDomains := e.profileSnapshot()
 	s.agent.SetUserProfile(agentName, preferredName, expertiseDomains)
+	// A user-requested recenter starts a visually empty conversation but carries
+	// one sealed, bounded handoff from the immediately prior thread. Inject it
+	// before the first real user turn so the latest request and recent context
+	// remain primary without copying old turns into the new chat surface.
+	if _, handoff := e.conv.RecoveryHandoff(s.id); handoff != "" {
+		s.agent.SetRecoveryHandoff(handoff)
+	}
 	// Coding-workspace context (NEO-WORKBENCH): tell the agent where the
 	// workspace root is and which project this conversation is tagged to, so
 	// its file writes land where the workbench actually looks. An unknown or

@@ -58,7 +58,7 @@ func runServe(args []string) {
 		actor      = fs.String("actor", "", "cortex actor name (overrides config; default neo)")
 		addr       = fs.String("addr", envOrDefault("NEO_ADDR", ":8080"), "listen address")
 		backend    = fs.String("backend", "", "co-located MCL daemon base URL for core_execute + proxy (overrides NEO_DAEMON_URL/config)")
-		noTools    = fs.Bool("no-tools", false, "skip spawning MCP servers (chat-only)")
+		noTools    = fs.Bool("no-tools", false, "skip native and integration tools (chat-only)")
 		// P2-4: one-command hermetic local-dev preset. Composes Default()
 		// with a temp cortex, the Hash embedder stub, no-op chain RPC,
 		// and metering disabled. Zero external deps. When set, -config,
@@ -95,6 +95,7 @@ func runServe(args []string) {
 	if backendURL == "" {
 		backendURL = cfg.DaemonURL
 	}
+	workspaceDir := server.WorkspaceRoot(os.Getenv("NEO_WORKSPACE_DIR"))
 
 	// Fail-closed data-at-rest vault. Production (router injects VAULT_REQUIRED
 	// =true) MUST bring up a usable per-user key or the daemon refuses to boot
@@ -200,7 +201,22 @@ func runServe(args []string) {
 	// --- tools (Neo's natural surface; escalate-class reachable only via core_execute) ---
 	var tm *tools.Manager
 	if !*noTools {
-		tm, err = tools.Spawn(ctx, tools.Options{ManifestPath: cfg.ManifestPath, StderrSink: os.Stderr})
+		readRoots := []string{"/data/media"}
+		if mediaDir := strings.TrimSpace(os.Getenv("MATRIX_MEDIA_DIR")); mediaDir != "" {
+			readRoots = append(readRoots, mediaDir)
+		}
+		nativeGitPath := "/opt/matrix/coding-bin/git"
+		if _, statErr := os.Stat(nativeGitPath); statErr != nil {
+			nativeGitPath = "git"
+		}
+		tm, err = tools.Spawn(ctx, tools.Options{
+			ManifestPath:    cfg.ManifestPath,
+			StderrSink:      os.Stderr,
+			NativeRoot:      workspaceDir,
+			NativeReadRoots: readRoots,
+			NativeStateDir:  filepath.Join(filepath.Dir(cfg.CortexRoot), "native-services"),
+			NativeGitPath:   nativeGitPath,
+		})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "neo: tools unavailable (%v) — continuing chat-only\n", err)
 			tm = nil
@@ -260,7 +276,6 @@ func runServe(args []string) {
 	// Coding workbench workspace: the same persisted root the fs/exec tools
 	// mutate (/workspace in prod). NEO_WORKSPACE_DIR wins; absent any root the
 	// workbench surface stays disabled.
-	workspaceDir := server.WorkspaceRoot(os.Getenv("NEO_WORKSPACE_DIR"))
 	// On-demand Railway sandbox previews (dev servers never run on this VM).
 	// Enabled only when the Railway credentials AND the router coordinates +
 	// this user's id are all present; otherwise the workbench shows the honest

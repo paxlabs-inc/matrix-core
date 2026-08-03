@@ -8,7 +8,8 @@ Loaded by `executor/tool` at agent boot; the registry resolves every
 
 | File | Purpose |
 |---|---|
-| `default.json` | Baseline agent for v1: filesystem + fetch + git over MCP. Starting point for fork-and-customise per agent. |
+| `default.json` | Default remote/product integration adapters. Local filesystem, bounded shell, durable services, and read-only git run natively in Neo; substantial asynchronous coding delegates to durable AgentCore Build jobs. |
+| `neo.json` | Neo's remote and product integration adapters. Its local capabilities come from the same in-process native runtime, never local MCP. |
 
 ## Schema
 
@@ -19,7 +20,7 @@ Locked decisions (matrix.kvx `executor_locked_design`):
 
 | # | Decision |
 |---|---|
-| Q4  | Off-chain tools dispatch through Anthropic MCP — drop custom fs/shell/http |
+| Q4  | Remote and product integrations may dispatch through MCP; bounded local work uses Neo's native runtime and substantial asynchronous coding uses private AgentCore Build jobs. |
 | Q15 | Transports = `stdio` + `http` (streamable HTTP); SSE-only deferred |
 | Q17 | Tool URI scheme: `matrix://tool/mcp/<server-alias>/<tool-name>@<version>` |
 | Q18 | Server credentials via `$env:NAME` refs in `env` / `headers`; never journaled |
@@ -29,15 +30,12 @@ Locked decisions (matrix.kvx `executor_locked_design`):
 
 ## Production checklist
 
-The placeholder digests in `default.json` are zero-filled (
-`sha256:0000…`) for **bootstrap testing only**. Before any production
-or chain-anchoring deployment:
+Placeholder digests in production manifests are for **bootstrap testing only**.
+Before any production or chain-anchoring deployment:
 
 1. Install the MCP server packages locally with the version pinned in
    the manifest.
-2. Compute the actual sha256 of the distribution package
-   (e.g. `sha256sum $(npm pack --dry-run --json @modelcontextprotocol/server-filesystem@2024.11.1 | jq -r .[0].filename)`
-   or the equivalent for `uvx`).
+2. Compute the actual sha256 of the remote integration distribution package.
 3. Replace the zero-filled `package_digest` with the real value.
 4. Commit the manifest update; the `cortex_snapshot_hash` of any plan
    references the manifest indirectly through the tool URI version

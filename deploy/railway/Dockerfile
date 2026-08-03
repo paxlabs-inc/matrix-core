@@ -132,8 +132,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     CARGO_HOME=/usr/local/cargo \
     PATH="/root/.local/bin:/usr/local/go/bin:/usr/local/cargo/bin:/usr/local/foundry/bin:${PATH}"
 
-# Core runtime deps + dev toolchain base + Node (for the fs MCP server AND the
-# user's dev shell) + Python (for fetch/git MCP servers AND the user's dev
+# Core runtime deps + dev toolchain base + Node (for JavaScript integrations
+# and the user's dev shell) + Python (for the fetch adapter and the user's dev
 # shell) + uv. Ubuntu 24.04 ships Python 3.12; pip needs --break-system-packages
 # (PEP 668) exactly like bookworm.
 # Node MUST be >= 22.12 (NodeSource, NOT Ubuntu's node): the fetch MCP
@@ -302,9 +302,8 @@ RUN set -eux; \
 # Pre-install MCP servers so first cold-start does not hit registries.
 # Versions PINNED to releases whose tools/list exactly matches default.json.
 #
-# The `mcp` SDK MUST be pinned alongside each server. Both Python servers
-# declare an UNBOUNDED upper bound on it (mcp-server-fetch: `mcp>=1.1.3`,
-# mcp-server-git: `mcp>=1.0.0`), so a new SDK major is picked up silently at
+# The `mcp` SDK MUST be pinned alongside the fetch adapter because it declares
+# an UNBOUNDED upper bound (`mcp>=1.1.3`), so a new SDK major is picked up silently at
 # resolve time. That is exactly what took prod down on 2026-07-29: `mcp` 2.0.0
 # (released 2026-07-28) renamed McpError -> MCPError, mcp-server-fetch 2025.4.7
 # died with ImportError on startup, the daemon's spawn of "fetch" hit its
@@ -319,12 +318,8 @@ RUN set -eux; \
 # patches.
 ARG MCP_SDK_VERSION=1.29.0
 RUN set -eux; \
-    npm install -g @modelcontextprotocol/server-filesystem@2026.1.14; \
     uv tool install --with "mcp==${MCP_SDK_VERSION}" mcp-server-fetch==2025.4.7; \
-    uv tool install --with "mcp==${MCP_SDK_VERSION}" mcp-server-git==2026.1.14; \
-    command -v mcp-server-filesystem; \
     command -v mcp-server-fetch; \
-    command -v mcp-server-git; \
     # readabilipy's node extraction pipeline (what fetch__fetch uses for
     # article mode) needs its OWN npm deps — the wheel ships javascript/
     # package.json but NO node_modules and NO lockfile (it npm-installs lazily
@@ -447,10 +442,9 @@ RUN --mount=from=agentcore-runtime,source=/opt/agentcore,target=/run/matrix-agen
     chmod 0440 /etc/matrix-agentcore/config.yaml; \
     chmod 0755 /opt/matrix/coding-bin/git
 
-# Bake the skill corpus + agent manifests + tool bridges — the same set as
-# deploy/daemon/Dockerfile (see its per-tool comments); the daemon's strict
-# spawn check exits if any manifest-declared bridge file is missing, so ALL
-# of them MUST be baked.
+# Bake the skill corpus, agent manifests, and remote integration bridges. Build
+# time verification remains strict even though one unavailable integration is
+# no longer allowed to terminate the running daemon.
 COPY skills/         /opt/matrix/skills/
 # agents/ carries every agent manifest (agents/neo.json + agents/default.json).
 COPY agents/         /opt/matrix/agents/
@@ -490,6 +484,8 @@ COPY tools/exa       /opt/matrix/tools/exa
 COPY tools/finance   /opt/matrix/tools/finance
 COPY tools/browser   /opt/matrix/tools/browser
 COPY tools/machinemail /opt/matrix/tools/machinemail
+# Admin-only compatibility supervisor used by recovery and registry audits.
+# It is deliberately absent from every production agent manifest.
 COPY tools/exec      /opt/matrix/tools/exec
 RUN su matrix-agent -s /bin/bash -c \
       'HOME=/home/matrix-agent PATH=/usr/local/bin:/usr/bin:/bin \

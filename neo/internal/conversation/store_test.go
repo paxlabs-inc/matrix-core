@@ -419,6 +419,36 @@ func TestConversationManagementPersistsAndForksExactPrefix(t *testing.T) {
 	}
 }
 
+func TestRecoveryHandoffIsDurableModelContextWithoutVisibleTurns(t *testing.T) {
+	dir := t.TempDir()
+	store := Open(dir)
+	store.AppendUser("source", "run-1", "repair the deployment")
+	store.SetProject("source", "project-a")
+
+	const handoff = "Latest user request: repair the deployment\nRecent context: the health check failed."
+	if !store.SetRecoveryHandoff("recovered", "source", handoff) {
+		t.Fatal("set recovery handoff failed")
+	}
+	if store.Exists("recovered") {
+		t.Fatal("a recovery sidecar must not fabricate a visible conversation turn")
+	}
+	if items := store.List(); len(items) != 1 || items[0].ConversationID != "source" {
+		t.Fatalf("metadata-only recovery thread leaked into history: %+v", items)
+	}
+	if got := store.Project("recovered"); got != "project-a" {
+		t.Fatalf("recovery project = %q, want project-a", got)
+	}
+
+	reopened := Open(dir)
+	source, got := reopened.RecoveryHandoff("recovered")
+	if source != "source" || got != handoff {
+		t.Fatalf("durable recovery handoff = (%q, %q)", source, got)
+	}
+	if reopened.SetRecoveryHandoff("recovered", "other", "replacement") {
+		t.Fatal("recovery handoff must not be silently replaced")
+	}
+}
+
 func TestDir(t *testing.T) {
 	if got := Dir("/explicit", "/data/cortex"); got != "/explicit" {
 		t.Errorf("explicit override should win, got %q", got)

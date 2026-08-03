@@ -468,6 +468,11 @@ type convMeta struct {
 	// conversation id and the (exclusive) turn count copied into this fork.
 	ForkedFrom   string `json:"forked_from,omitempty"`
 	ForkedAtTurn int    `json:"forked_at_turn,omitempty"`
+	// RecoverySource / RecoveryHandoff bind a deliberately recentered thread
+	// to the compact context of the prior thread without copying those turns
+	// into the user-visible new conversation.
+	RecoverySource  string `json:"recovery_source,omitempty"`
+	RecoveryHandoff string `json:"recovery_handoff,omitempty"`
 }
 
 func (s *Store) metaPathLocked(convID string) string {
@@ -594,6 +599,45 @@ func (s *Store) Project(convID string) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.loadMetaLocked(convID).Project
+}
+
+// SetRecoveryHandoff creates the metadata for a fresh recentered conversation.
+// The new conversation intentionally has no visible turns until the user sends
+// its first message; rebuildAgent reads this sealed sidecar before that send.
+// The source project tag is carried forward so coding work stays in the same
+// workspace. Existing conversations are never overwritten.
+func (s *Store) SetRecoveryHandoff(convID, sourceID, handoff string) bool {
+	convID = strings.TrimSpace(convID)
+	sourceID = strings.TrimSpace(sourceID)
+	handoff = strings.TrimSpace(handoff)
+	if !s.Enabled() || convID == "" || handoff == "" {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.historyLocked(convID)) > 0 {
+		return false
+	}
+	if existing := s.loadMetaLocked(convID); existing.RecoveryHandoff != "" {
+		return false
+	}
+	meta := convMeta{RecoverySource: sourceID, RecoveryHandoff: handoff}
+	if sourceID != "" {
+		meta.Project = s.loadMetaLocked(sourceID).Project
+	}
+	return s.saveMetaLocked(convID, meta) == nil
+}
+
+// RecoveryHandoff returns the prior-thread context attached to a recentered
+// conversation. It is model-facing session context, not a visible chat turn.
+func (s *Store) RecoveryHandoff(convID string) (sourceID, handoff string) {
+	if !s.Enabled() || strings.TrimSpace(convID) == "" {
+		return "", ""
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	meta := s.loadMetaLocked(strings.TrimSpace(convID))
+	return meta.RecoverySource, meta.RecoveryHandoff
 }
 
 // AppendUser / AppendAssistant are thin helpers for the two turn kinds.

@@ -14,7 +14,7 @@ import (
 
 // NEO-WORKBENCH prompt grounding: a daemon with no workspace injects no
 // coding-workspace section; SetWorkspace renders the root, the active
-// project's directory, the framework rule, and the no-deploy-to-show rule —
+// project's directory, the durable-Build boundary, and the no-deploy rule —
 // the exact gaps behind the LinkedIn-clone incident (wrong directory,
 // HTML/CSS/JS default, unasked paxc production deploy).
 func TestSystemPromptWorkspaceSection(t *testing.T) {
@@ -30,20 +30,18 @@ func TestSystemPromptWorkspaceSection(t *testing.T) {
 		"/data/workspace",
 		"\"LinkedIn Clone\"",
 		"/data/workspace/linkedin-clone",
-		"Do NOT default to hand-written index.html/style.css/app.js",
+		"plain static files are only right",
+		"Local workspace tools and the durable Build worker are unavailable",
 		"Deploying is NOT how you show work",
 	} {
 		if !strings.Contains(sp, want) {
 			t.Errorf("workspace section missing %q", want)
 		}
 	}
-	// No preview launcher wired: the fallback line points at the workbench,
-	// and the tool must not be named.
+	// No Build worker is wired: local coding is unavailable and the legacy
+	// interactive preview tool must not be presented as a substitute.
 	if strings.Contains(sp, "workspace_preview") {
 		t.Error("preview tool must not be mentioned when no launcher is wired")
-	}
-	if !strings.Contains(sp, "ready to preview from the workbench") {
-		t.Error("missing the workbench-preview fallback line")
 	}
 }
 
@@ -59,30 +57,69 @@ func TestSystemPromptWorkspaceDefaultProject(t *testing.T) {
 	}
 }
 
-func TestSystemPromptWorkspacePreviewTool(t *testing.T) {
+func TestSystemPromptDoesNotUseLegacyPreviewAsCodingFallback(t *testing.T) {
 	m := &tools.Manager{}
 	m.SetPreview(func(ctx context.Context) (string, error) { return "", nil })
 	a := New(Options{Config: config.Default(), Tools: m})
 	a.SetWorkspace("/data/workspace", "shop", "Shop", "/data/workspace/shop")
 	sp := a.systemPrompt()
-	if !strings.Contains(sp, "workspace_preview") {
-		t.Error("wired preview launcher must surface the workspace_preview tool in the prompt")
+	if strings.Contains(sp, "call workspace_preview") {
+		t.Error("legacy preview must not replace the durable Build path")
+	}
+	if !strings.Contains(sp, "Local workspace tools and the durable Build worker are unavailable") {
+		t.Error("missing honest Build-unavailable guidance")
 	}
 }
 
-func TestCodingDelegationPolicyDefinesDirectAndDurablePaths(t *testing.T) {
+func TestNativeLocalPolicyKeepsBuildForSubstantialJobs(t *testing.T) {
 	var b strings.Builder
-	writeCodingDelegationPolicy(&b)
+	writeNativeLocalPolicy(&b, true)
 	policy := b.String()
 	for _, want := range []string{
-		"Choose the coding execution path BEFORE mutating files",
-		"bounded work that fits comfortably in this interactive turn",
-		"For long-running or substantial coding work, call build_project",
-		"preserve the current files and delegate the remaining work",
+		"native file tools",
+		"service_start/list/logs/stop/restart",
+		"read-only git tools",
+		"substantial coding jobs",
+		"Do not delegate simple file inspection",
 		"Once build_project reports that the durable job was accepted, STOP",
 	} {
 		if !strings.Contains(policy, want) {
 			t.Errorf("coding delegation policy missing %q", want)
 		}
+	}
+}
+
+func TestWorkspacePromptUsesBuildWhenNativeRuntimeIsUnavailable(t *testing.T) {
+	m := &tools.Manager{}
+	m.SetBuildProject(func(context.Context, tools.BuildRequest) (string, error) { return "accepted", nil })
+	a := New(Options{Config: config.Default(), Tools: m})
+	a.SetWorkspace("/data/workspace", "shop", "Shop", "/data/workspace/shop")
+	prompt := a.systemPrompt()
+	if !strings.Contains(prompt, "Native local tools are unavailable in this session") {
+		t.Fatal("workspace prompt does not explain the degraded build-only path")
+	}
+	if strings.Contains(prompt, "build setup with your shell") {
+		t.Fatal("workspace prompt still directs Neo to the removed interactive shell path")
+	}
+}
+
+func TestRecoveryHandoffLeadsWithPriorUserContext(t *testing.T) {
+	a := New(Options{Config: config.Default()})
+	handoff := "Latest user request:\n- Keep the checkout flow intact.\n\nRecent thread context:\n- User: the payment callback still fails.\n\nFailure context (secondary):\n- callback returned 502"
+	a.SetRecoveryHandoff(handoff)
+	prompt := a.systemPrompt()
+	for _, want := range []string{
+		"Recovered context from the immediately previous thread",
+		"PRIMARY historical context",
+		"Keep the checkout flow intact",
+		"Failure context (secondary)",
+		"newest message in this thread always wins",
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("recovery prompt missing %q", want)
+		}
+	}
+	if strings.Index(prompt, "Keep the checkout flow intact") > strings.Index(prompt, "callback returned 502") {
+		t.Fatal("latest user context must appear before secondary failure context")
 	}
 }

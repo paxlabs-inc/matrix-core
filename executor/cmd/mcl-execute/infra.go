@@ -44,20 +44,22 @@ type infraOpts struct {
 	WithEmbedder       bool
 	WithFireworksEmbed bool
 	StderrSink         io.Writer
-	SpawnTimeout       time.Duration  // default 90s per server
+	SpawnTimeout       time.Duration  // default 15s; adapters initialize concurrently
 	Vault              *vault.Session // seals cortex values at rest; nil = plaintext dev/CLI
 	VaultUser          string         // user DID bound into sealed values' associated data
 }
 
-// newInfra wires every dependency. Returns an error early on any
-// configuration failure; partial-init state is cleaned up before
-// returning so callers can simply propagate err.
+// newInfra wires every dependency. Invalid core state (manifest, registry,
+// cortex) remains fatal. Individual MCP integration adapters are optional at
+// boot: a configuration, identity, transport, or initialize failure omits that
+// adapter from the live manifest and registry so one external dependency
+// cannot stop the daemon.
 func newInfra(ctx context.Context, opts infraOpts, t *transcript) (*infra, error) {
 	if opts.ManifestPath == "" {
 		return nil, fmt.Errorf("infra: ManifestPath required")
 	}
 	if opts.SpawnTimeout == 0 {
-		opts.SpawnTimeout = 90 * time.Second
+		opts.SpawnTimeout = 15 * time.Second
 	}
 	if opts.StderrSink == nil {
 		opts.StderrSink = os.Stderr
@@ -85,57 +87,85 @@ func newInfra(ctx context.Context, opts infraOpts, t *transcript) (*infra, error
 	in.manager = mcp.NewManager(mcp.ManagerParams{
 		StderrSink: opts.StderrSink,
 	})
-	for _, s := range manifest.Servers {
-		// Q18 lock: $env: refs resolve to host process env at spawn time.
-		resolved, _, rerr := tool.ResolveEnvList(s.Env, os.LookupEnv)
-		if rerr != nil {
-			cleanupOnError()
-			return nil, fmt.Errorf("infra: env resolve for %q: %w", s.Alias, rerr)
-		}
-		subEnv, privileged, rerr := tool.MCPEnvironment(s.Alias, os.Environ(), resolved)
-		if rerr != nil {
-			cleanupOnError()
-			return nil, fmt.Errorf("infra: env policy for %q: %w", s.Alias, rerr)
-		}
-		var runAs *mcp.ProcessIdentity
-		if !privileged {
-			if identity, configured, ierr := tool.AgentIdentityFromEnv(); ierr != nil {
-				cleanupOnError()
-				return nil, fmt.Errorf("infra: agent identity for %q: %w", s.Alias, ierr)
-			} else if configured {
-				runAs = &mcp.ProcessIdentity{
-					UID: identity.UID, GID: identity.GID,
-					Home: identity.Home, User: identity.User,
+	liveServers := make([]tool.ServerEntry, 0, len(manifest.Servers))
+	unavailableServers := 0
+	recordUnavailable := func(event string, server tool.ServerEntry, stage string, cause error) {
+		unavailableServers++
+		t.Event(event, "infra", map[string]interface{}{
+			"alias": server.Alias,
+			"stage": stage,
+			"error": cause.Error(),
+		})
+	}
+	type spawnResult struct {
+		index  int
+		server tool.ServerEntry
+		stage  string
+		err    error
+	}
+	spawnResults := make(chan spawnResult, len(manifest.Servers))
+	for index, server := range manifest.Servers {
+		go func(index int, s tool.ServerEntry) {
+			// Q18 lock: $env: refs resolve to host process env at spawn time.
+			resolved, _, rerr := tool.ResolveEnvList(s.Env, os.LookupEnv)
+			if rerr != nil {
+				spawnResults <- spawnResult{index: index, server: s, stage: "env.resolve", err: rerr}
+				return
+			}
+			subEnv, privileged, rerr := tool.MCPEnvironment(s.Alias, os.Environ(), resolved)
+			if rerr != nil {
+				spawnResults <- spawnResult{index: index, server: s, stage: "env.policy", err: rerr}
+				return
+			}
+			var runAs *mcp.ProcessIdentity
+			if !privileged {
+				identity, configured, ierr := tool.AgentIdentityFromEnv()
+				if ierr != nil {
+					spawnResults <- spawnResult{index: index, server: s, stage: "identity", err: ierr}
+					return
+				}
+				if configured {
+					runAs = &mcp.ProcessIdentity{
+						UID: identity.UID, GID: identity.GID,
+						Home: identity.Home, User: identity.User,
+					}
 				}
 			}
+			spec := mcp.ServerSpec{
+				Alias: s.Alias, Transport: s.Transport, Command: s.Command, Args: s.Args,
+				Env: subEnv, RunAs: runAs, Endpoint: s.Endpoint, Headers: resolveHeaderEnv(s.Headers),
+				PackageDigest: s.PackageDigest, ExpectedTools: toolNames(s.Tools),
+			}
+			spawnCtx, cancel := context.WithTimeout(ctx, opts.SpawnTimeout)
+			_, spawnErr := in.manager.Spawn(spawnCtx, spec)
+			cancel()
+			spawnResults <- spawnResult{index: index, server: s, stage: "spawn.initialize", err: spawnErr}
+		}(index, server)
+	}
+	orderedResults := make([]spawnResult, len(manifest.Servers))
+	for range manifest.Servers {
+		result := <-spawnResults
+		orderedResults[result.index] = result
+	}
+	for _, result := range orderedResults {
+		if result.err != nil {
+			event := "mcp.spawn.error"
+			if result.stage != "spawn.initialize" {
+				event = "mcp.config.error"
+			}
+			recordUnavailable(event, result.server, result.stage, result.err)
+			continue
 		}
-		spec := mcp.ServerSpec{
-			Alias:         s.Alias,
-			Transport:     s.Transport,
-			Command:       s.Command,
-			Args:          s.Args,
-			Env:           subEnv,
-			RunAs:         runAs,
-			Endpoint:      s.Endpoint,
-			Headers:       resolveHeaderEnv(s.Headers),
-			PackageDigest: s.PackageDigest,
-			ExpectedTools: toolNames(s.Tools),
-		}
-		spawnCtx, cancel := context.WithTimeout(ctx, opts.SpawnTimeout)
-		_, spawnErr := in.manager.Spawn(spawnCtx, spec)
-		cancel()
-		if spawnErr != nil {
-			t.Event("mcp.spawn.error", "infra", map[string]interface{}{
-				"alias": s.Alias,
-				"error": spawnErr.Error(),
-			})
-			cleanupOnError()
-			return nil, fmt.Errorf("infra: spawn %q: %w", s.Alias, spawnErr)
-		}
+		liveServers = append(liveServers, result.server)
 		t.Event("mcp.spawn.ok", "infra", map[string]interface{}{
-			"alias":   s.Alias,
-			"version": s.Version,
-			"tools":   len(s.Tools),
+			"alias": result.server.Alias, "version": result.server.Version, "tools": len(result.server.Tools),
+		})
+	}
+	manifest.Servers = liveServers
+	if unavailableServers > 0 {
+		t.Event("mcp.degraded", "infra", map[string]interface{}{
+			"available":   len(liveServers),
+			"unavailable": unavailableServers,
 		})
 	}
 

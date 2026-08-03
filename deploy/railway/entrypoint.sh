@@ -58,16 +58,19 @@ MATRIX_HOME="${MATRIX_HOME:-/opt/matrix}"
 # Backend (plumbing daemon) port when fronted by Neo. The front is always :8080.
 NEO_BACKEND_PORT="${NEO_BACKEND_PORT:-8081}"
 
-# 1. Ensure volume layout. /data/neo/services keeps Neo's exec service
-#    registry isolated from the daemon's (/data/services) so the two
-#    co-located exec MCP servers never share a registry.json.
+# 1. Ensure volume layout. The two legacy service registries remain isolated so
+#    Recovery can audit and clean process records created by older deployments.
 mkdir -p \
     "${DATA_DIR}/cortex" \
     "${DATA_DIR}/journal" \
     "${DATA_DIR}/transcripts" \
     "${DATA_DIR}/workspace" \
     "${DATA_DIR}/media" \
+    "${DATA_DIR}/tmp" \
+    "${DATA_DIR}/cache" \
     "${DATA_DIR}/services" \
+    "${DATA_DIR}/neo/tmp" \
+    "${DATA_DIR}/neo/cache" \
     "${DATA_DIR}/neo/services" \
     "${DATA_DIR}/build-jobs" \
     "${DATA_DIR}/agentcore" \
@@ -116,19 +119,40 @@ done
 if [[ ! -f "${OWNER_MARKER}" ]]; then
     chown -R "${AGENT_UID}:${AGENT_GID}" \
         "${DATA_DIR}/workspace" \
+        "${DATA_DIR}/tmp" \
+        "${DATA_DIR}/cache" \
         "${DATA_DIR}/services" \
+        "${DATA_DIR}/neo/tmp" \
+        "${DATA_DIR}/neo/cache" \
         "${DATA_DIR}/neo/services" \
         "${DATA_DIR}/agentcore"
     touch "${OWNER_MARKER}"
 fi
 chown "${AGENT_UID}:${AGENT_GID}" \
     "${DATA_DIR}/workspace" \
+    "${DATA_DIR}/tmp" \
+    "${DATA_DIR}/cache" \
     "${DATA_DIR}/services" \
+    "${DATA_DIR}/neo/tmp" \
+    "${DATA_DIR}/neo/cache" \
     "${DATA_DIR}/neo/services" \
     "${DATA_DIR}/agentcore"
-chmod 0750 "${DATA_DIR}/workspace" "${DATA_DIR}/services" "${DATA_DIR}/neo/services"
+chmod 0750 \
+    "${DATA_DIR}/workspace" \
+    "${DATA_DIR}/tmp" \
+    "${DATA_DIR}/cache" \
+    "${DATA_DIR}/services" \
+    "${DATA_DIR}/neo/tmp" \
+    "${DATA_DIR}/neo/cache" \
+    "${DATA_DIR}/neo/services"
 chmod 0700 "${DATA_DIR}/agentcore"
 chmod 0700 "${DATA_DIR}/build-jobs" "${DATA_DIR}/cortex" "${DATA_DIR}/journal" "${DATA_DIR}/transcripts" "${DATA_DIR}/.matrix"
+
+# Neo's user-confirmed recovery controls operate only on these two supervised
+# service registries and the bridge baked into this image. Keeping the targets
+# explicit prevents a recovery request from expanding to arbitrary directories.
+export MATRIX_EXEC_BRIDGE_PATH="${MATRIX_EXEC_BRIDGE_PATH:-${MATRIX_HOME}/tools/exec/exec.mjs}"
+export MATRIX_RECOVERY_EXEC_STATE_DIRS="${MATRIX_RECOVERY_EXEC_STATE_DIRS:-${DATA_DIR}/services:${DATA_DIR}/neo/services}"
 
 # 1b. Media plane. Generated + uploaded images/video/audio live on the volume
 #     at /data/media and are served by the Neo front at /media. Export the dir
@@ -340,7 +364,8 @@ case "${1:-neo}" in
             || echo "entrypoint: backend daemon not ready on :${NEO_BACKEND_PORT} yet (continuing)" >&2
 
         # Front: Neo on :8080.
-        #  - MATRIX_EXEC_STATE_DIR isolates Neo's exec service registry.
+        #  - MATRIX_EXEC_STATE_DIR identifies Neo's legacy service registry for
+        #    admin-only recovery and cleanup; it is not an agent tool surface.
         #  - cortex actor `neo` is a separate Pebble store under the shared
         #    /data/cortex root (no lock conflict with the daemon's user actor).
         #  - NEO_ACTOR_DID attributes Neo's metered LLM spend to the user.

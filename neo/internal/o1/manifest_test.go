@@ -40,6 +40,30 @@ func TestManifestSetSelectMinimalEmptyCapsReturnsNone(t *testing.T) {
 	}
 }
 
+func TestManifestSetSelectsNativeLocalCapabilities(t *testing.T) {
+	ms := &ManifestSet{manifests: map[string]OperationManifest{
+		"read_text_file":    {Operation: "read_text_file"},
+		"write_file":        {Operation: "write_file"},
+		"shell":             {Operation: "shell"},
+		"service_start":     {Operation: "service_start"},
+		"git_status":        {Operation: "git_status"},
+		"browser__navigate": {Operation: "browser__navigate"},
+	}}
+	selected := ms.SelectMinimal([]string{"filesystem", "execution", "git"})
+	names := map[string]bool{}
+	for _, manifest := range selected {
+		names[manifest.Operation] = true
+	}
+	for _, want := range []string{"read_text_file", "write_file", "shell", "service_start", "git_status"} {
+		if !names[want] {
+			t.Fatalf("native capability selection omitted %s: %#v", want, selected)
+		}
+	}
+	if names["browser__navigate"] {
+		t.Fatal("native local selection unexpectedly included browser")
+	}
+}
+
 func TestManifestSetWebEvidenceIncludesExa(t *testing.T) {
 	ms := &ManifestSet{manifests: map[string]OperationManifest{
 		"exa__exa_search":    {Operation: "exa__exa_search"},
