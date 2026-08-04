@@ -38,6 +38,8 @@ def main() -> None:
         raise SystemExit("agentcore.pin: runtime_image_digest must be a sha256 digest")
 
     dockerfile = (ROOT / "deploy" / "railway" / "Dockerfile").read_text(encoding="utf-8")
+    neo_serve = (ROOT / "neo" / "cmd" / "neo" / "serve.go").read_text(encoding="utf-8")
+    agentcore_dockerignore = (RUNTIME / "Dockerfile.dockerignore").read_text(encoding="utf-8")
     image = f'{pin["runtime_image_repository"]}@{pin["runtime_image_digest"]}'
     require(dockerfile, f"ARG AGENTCORE_RUNTIME_IMAGE={image}", "Railway Dockerfile")
     require(dockerfile, f'test "$(cat /opt/agentcore/.agentcore_build_sha)" = "{pin["source_revision"]}"', "Railway Dockerfile")
@@ -61,8 +63,18 @@ def main() -> None:
     require(dockerfile, "test ! -e /opt/agentcore/pyproject.toml", "Railway Dockerfile")
     require(dockerfile, "test ! -e /opt/agentcore/uv.lock", "Railway Dockerfile")
     require(dockerfile, "is_relative_to(site)", "Railway Dockerfile")
+    require(dockerfile, 'find_spec("plugins.browser").origin', "Railway Dockerfile")
+    require(agentcore_dockerignore, "!plugins/browser", "AgentCore Docker build context")
+    require(agentcore_dockerignore, "!plugins/browser/**", "AgentCore Docker build context")
+    require(agentcore_dockerignore, "!gateway/session_context.py", "AgentCore Docker build context")
+    require(
+        neo_serve,
+        'strings.EqualFold(strings.TrimSpace(os.Getenv("NEO_CODING_RUNTIME_ENABLED")), "true")',
+        "Neo coding-runtime activation",
+    )
     for setting in (
-        "NEO_CODING_RUNTIME_REQUIRED=true",
+        "NEO_CODING_RUNTIME_ENABLED=false",
+        "NEO_CODING_RUNTIME_REQUIRED=false",
         "NEO_AGENTCORE_BINARY=/opt/agentcore/.venv/bin/agentcore",
         "NEO_AGENTCORE_MANAGED_DIR=/etc/matrix-agentcore",
         "NEO_AGENTCORE_HOME=/data/agentcore",

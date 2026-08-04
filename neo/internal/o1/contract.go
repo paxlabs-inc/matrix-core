@@ -112,7 +112,13 @@ func Compile(in CompileInput) TaskContract {
 			ID: "constraint.framework." + itoa(i+1), Text: rule, Provenance: Framework, Source: "installed_framework",
 		})
 	}
-	if request == "" || strings.Contains(request, "<TBD>") || strings.Contains(request, "{{") {
+	// Free-form user requests are not a template language. JSX, Go templates,
+	// documentation examples, and literal placeholders are valid task content;
+	// inferring a blocking ambiguity from their syntax prevents correctly
+	// specified work from ever reaching a tool. Only the absence of an
+	// objective is structurally knowable here. Any real missing input is asked
+	// by the model in conversation rather than guessed by this compiler.
+	if request == "" {
 		contract.Ambiguities = append(contract.Ambiguities, Ambiguity{
 			ID: "ambiguity.required_input", Question: "A required request value is missing.", Material: true,
 		})

@@ -3,6 +3,7 @@ package tools
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,6 +35,7 @@ const (
 	nativeReadMany       = "read_multiple_files"
 	nativeWriteFile      = "write_file"
 	nativeEditFile       = "edit_file"
+	nativePatchFiles     = "patch_files"
 	nativeCreateDir      = "create_directory"
 	nativeListDir        = "list_directory"
 	nativeTree           = "directory_tree"
@@ -41,6 +43,7 @@ const (
 	nativeSearchFiles    = "search_files"
 	nativeFileInfo       = "get_file_info"
 	nativeShell          = "shell"
+	nativeShellOutput    = "shell_output"
 	nativeServiceStart   = "service_start"
 	nativeServiceList    = "service_list"
 	nativeServiceLogs    = "service_logs"
@@ -52,8 +55,12 @@ const (
 	nativeGitShow        = "git_show"
 	nativeGitBranch      = "git_branch"
 
-	nativeMaxFileBytes = 1 << 20
-	nativeMaxOutput    = 128 << 10
+	nativeMaxFileBytes       = 1 << 20
+	nativeMaxOutput          = 128 << 10
+	nativeMaxStreamPreview   = nativeMaxOutput / 2
+	nativeMaxRetainedOutput  = 8 << 20
+	nativeMaxPatchFiles      = 32
+	nativeShellOutputMaxRead = 256 << 10
 )
 
 type nativeLocal struct {
@@ -103,10 +110,44 @@ func newNativeLocal(root string, readRoots []string, stateDir, gitPath string) (
 	if n.gitPath == "" {
 		n.gitPath = "git"
 	}
+	n.cleanupShellOutputs()
 	if err := n.loadAndRestore(); err != nil {
 		return nil, err
 	}
 	return n, nil
+}
+
+func (n *nativeLocal) cleanupShellOutputs() {
+	dir := filepath.Join(n.stateDir, "shell-output")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	type retained struct {
+		id       string
+		modified time.Time
+	}
+	metas := make([]retained, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+		info, statErr := entry.Info()
+		if statErr != nil {
+			continue
+		}
+		metas = append(metas, retained{id: strings.TrimSuffix(entry.Name(), ".json"), modified: info.ModTime()})
+	}
+	sort.Slice(metas, func(i, j int) bool { return metas[i].modified.After(metas[j].modified) })
+	cutoff := time.Now().Add(-24 * time.Hour)
+	for index, item := range metas {
+		if index < 64 && item.modified.After(cutoff) {
+			continue
+		}
+		for _, suffix := range []string{".json", ".stdout", ".stderr"} {
+			_ = os.Remove(filepath.Join(dir, item.id+suffix))
+		}
+	}
 }
 
 func canonicalExistingDir(path string) (string, error) {
@@ -208,13 +249,15 @@ func nativeSchemas() []llm.Tool {
 		llm.NewFunctionTool(nativeReadMany, "Read several UTF-8 text files in one bounded call.", obj(map[string]interface{}{"paths": map[string]interface{}{"type": "array", "items": str("File path"), "maxItems": 20}}, "paths")),
 		llm.NewFunctionTool(nativeWriteFile, "Atomically create or replace a workspace text file.", obj(map[string]interface{}{"path": str("Workspace-relative path."), "content": str("Complete file content.")}, "path", "content")),
 		llm.NewFunctionTool(nativeEditFile, "Apply an exact anchored text replacement to a workspace file.", obj(map[string]interface{}{"path": str("Workspace-relative path."), "old_text": str("Exact text to replace."), "new_text": str("Replacement text."), "replace_all": boolean("Replace every exact occurrence instead of requiring one.")}, "path", "old_text", "new_text")),
+		llm.NewFunctionTool(nativePatchFiles, "Atomically apply a validated set of complete-file writes and exact anchored replacements. Every change is prepared before any file is committed; a validation or commit failure leaves the original set intact.", obj(map[string]interface{}{"changes": map[string]interface{}{"type": "array", "minItems": 1, "maxItems": nativeMaxPatchFiles, "items": map[string]interface{}{"type": "object", "additionalProperties": false, "properties": map[string]interface{}{"path": str("Workspace-relative file path."), "content": str("Complete replacement content. Mutually exclusive with old_text/new_text."), "old_text": str("Exact anchor to replace. Requires new_text."), "new_text": str("Replacement for old_text."), "replace_all": boolean("Replace every occurrence instead of requiring a unique anchor."), "expected_sha256": str("Optional lowercase SHA-256 of the current file, or 'missing' when the file must not exist.")}, "required": []interface{}{"path"}}}}, "changes")),
 		llm.NewFunctionTool(nativeCreateDir, "Create a workspace directory and missing parents.", obj(map[string]interface{}{"path": str("Workspace-relative path.")}, "path")),
 		llm.NewFunctionTool(nativeListDir, "List one workspace or attachment directory.", obj(map[string]interface{}{"path": str("Directory path; defaults to workspace root.")})),
 		llm.NewFunctionTool(nativeTree, "Return a bounded recursive directory tree.", obj(map[string]interface{}{"path": str("Directory path; defaults to workspace root."), "max_depth": integer("Depth from 1 to 8.")})),
 		llm.NewFunctionTool(nativeMoveFile, "Move or rename a workspace file or directory without overwriting the destination.", obj(map[string]interface{}{"source": str("Existing workspace path."), "destination": str("New workspace path.")}, "source", "destination")),
 		llm.NewFunctionTool(nativeSearchFiles, "Search file names and bounded text contents under a directory.", obj(map[string]interface{}{"path": str("Directory path; defaults to workspace root."), "query": str("Case-insensitive literal text."), "max_results": integer("Maximum results from 1 to 200.")}, "query")),
 		llm.NewFunctionTool(nativeFileInfo, "Inspect file type, size, permissions, and modification time.", obj(map[string]interface{}{"path": str("File or directory path.")}, "path")),
-		llm.NewFunctionTool(nativeShell, "Run one bounded Bash command in a workspace directory with a credential-filtered environment. Use named service tools for long-running processes.", obj(map[string]interface{}{"command": str("Bash command."), "cwd": str("Workspace directory; defaults to root."), "timeout_seconds": integer("Timeout from 1 to 300 seconds.")}, "command")),
+		llm.NewFunctionTool(nativeShell, "Run one bounded Bash command in a workspace directory with a credential-filtered environment. Returns separate stdout/stderr, exit status, byte counts, and a retrievable output_id whenever inline output is truncated. Use named service tools for long-running processes.", obj(map[string]interface{}{"command": str("Bash command."), "cwd": str("Workspace directory; defaults to root."), "timeout_seconds": integer("Timeout from 1 to 300 seconds.")}, "command")),
+		llm.NewFunctionTool(nativeShellOutput, "Read a retained stdout or stderr segment from a truncated shell result.", obj(map[string]interface{}{"output_id": str("Identifier returned by shell."), "stream": map[string]interface{}{"type": "string", "enum": []interface{}{"stdout", "stderr"}}, "offset": integer("Zero-based byte offset."), "max_bytes": integer("Bytes to return, from 1 to 262144.")}, "output_id", "stream")),
 		llm.NewFunctionTool(nativeServiceStart, "Start a durable named workspace process with persisted logs and restart metadata.", obj(map[string]interface{}{"name": str("Stable lowercase service name."), "command": str("Long-running shell command."), "cwd": str("Workspace directory; defaults to root."), "autostart": boolean("Restore the service after Neo/container restart; defaults true.")}, "name", "command")),
 		llm.NewFunctionTool(nativeServiceList, "List durable named services and their verified process state.", obj(nil)),
 		llm.NewFunctionTool(nativeServiceLogs, "Read the tail of a durable service log.", obj(map[string]interface{}{"name": str("Service name."), "lines": integer("Last 1 to 1000 lines.")}, "name")),
@@ -249,6 +292,8 @@ func (n *nativeLocal) call(ctx context.Context, name string, args map[string]int
 		value, err = n.writeFile(args)
 	case nativeEditFile:
 		value, err = n.editFile(args)
+	case nativePatchFiles:
+		value, err = n.patchFiles(args)
 	case nativeCreateDir:
 		value, err = n.createDir(args)
 	case nativeListDir:
@@ -263,6 +308,8 @@ func (n *nativeLocal) call(ctx context.Context, name string, args map[string]int
 		value, err = n.fileInfo(args)
 	case nativeShell:
 		value, err = n.shell(ctx, args)
+	case nativeShellOutput:
+		value, err = n.shellOutput(args)
 	case nativeServiceStart:
 		value, err = n.serviceStart(args)
 	case nativeServiceList:
@@ -444,6 +491,189 @@ func (n *nativeLocal) editFile(args map[string]interface{}) (interface{}, error)
 		changed = count
 	}
 	return map[string]interface{}{"path": path, "replacements": changed, "bytes": len(replaced)}, nil
+}
+
+type preparedPatch struct {
+	path      string
+	content   []byte
+	existed   bool
+	mode      os.FileMode
+	stagePath string
+	backup    string
+}
+
+func (n *nativeLocal) patchFiles(args map[string]interface{}) (interface{}, error) {
+	raw, ok := args["changes"].([]interface{})
+	if !ok || len(raw) == 0 || len(raw) > nativeMaxPatchFiles {
+		return nil, fmt.Errorf("changes must contain 1 to %d items", nativeMaxPatchFiles)
+	}
+	prepared := make([]preparedPatch, 0, len(raw))
+	seen := make(map[string]struct{}, len(raw))
+	for index, item := range raw {
+		change, ok := item.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("change %d must be an object", index)
+		}
+		path, err := n.resolve(argString(change, "path"), true)
+		if err != nil {
+			return nil, fmt.Errorf("change %d: %w", index, err)
+		}
+		if _, duplicate := seen[path]; duplicate {
+			return nil, fmt.Errorf("change %d repeats path %q", index, path)
+		}
+		seen[path] = struct{}{}
+		current, readErr := os.ReadFile(path)
+		existed := readErr == nil
+		if readErr != nil && !os.IsNotExist(readErr) {
+			return nil, fmt.Errorf("change %d: %w", index, readErr)
+		}
+		expected := strings.ToLower(argString(change, "expected_sha256"))
+		if expected != "" {
+			if expected == "missing" {
+				if existed {
+					return nil, fmt.Errorf("change %d: expected %q to be missing", index, path)
+				}
+			} else {
+				actual := fmt.Sprintf("%x", sha256.Sum256(current))
+				if !existed || actual != expected {
+					return nil, fmt.Errorf("change %d: sha256 precondition failed for %q", index, path)
+				}
+			}
+		}
+		content, hasContent := change["content"].(string)
+		oldText, hasOld := change["old_text"].(string)
+		newText, hasNew := change["new_text"].(string)
+		if hasContent == (hasOld || hasNew) {
+			return nil, fmt.Errorf("change %d: provide either content or old_text with new_text", index)
+		}
+		var next []byte
+		if hasContent {
+			next = []byte(content)
+		} else {
+			if !hasOld || oldText == "" || !hasNew || !existed {
+				return nil, fmt.Errorf("change %d: anchored replacement requires an existing file, non-empty old_text, and new_text", index)
+			}
+			count := bytes.Count(current, []byte(oldText))
+			if count == 0 {
+				return nil, fmt.Errorf("change %d: old_text was not found", index)
+			}
+			all := argBool(change, "replace_all", false)
+			if !all && count != 1 {
+				return nil, fmt.Errorf("change %d: old_text matched %d times", index, count)
+			}
+			limit := 1
+			if all {
+				limit = -1
+			}
+			next = bytes.Replace(current, []byte(oldText), []byte(newText), limit)
+		}
+		if len(next) > nativeMaxFileBytes {
+			return nil, fmt.Errorf("change %d exceeds %d bytes", index, nativeMaxFileBytes)
+		}
+		mode := os.FileMode(0o644)
+		if existed {
+			if info, statErr := os.Stat(path); statErr == nil {
+				mode = info.Mode().Perm()
+			}
+		}
+		prepared = append(prepared, preparedPatch{path: path, content: next, existed: existed, mode: mode})
+	}
+
+	for index := range prepared {
+		change := &prepared[index]
+		if err := os.MkdirAll(filepath.Dir(change.path), 0o755); err != nil {
+			cleanupPreparedPatches(prepared)
+			return nil, err
+		}
+		if err := n.ownPathChain(filepath.Dir(change.path)); err != nil {
+			cleanupPreparedPatches(prepared)
+			return nil, err
+		}
+		stage, err := os.CreateTemp(filepath.Dir(change.path), ".matrix-patch-stage-*")
+		if err != nil {
+			cleanupPreparedPatches(prepared)
+			return nil, err
+		}
+		change.stagePath = stage.Name()
+		if err = stage.Chmod(change.mode); err == nil {
+			_, err = stage.Write(change.content)
+		}
+		if syncErr := stage.Sync(); err == nil {
+			err = syncErr
+		}
+		if closeErr := stage.Close(); err == nil {
+			err = closeErr
+		}
+		if err == nil {
+			err = n.ownPath(change.stagePath)
+		}
+		if err != nil {
+			cleanupPreparedPatches(prepared)
+			return nil, err
+		}
+	}
+
+	committed := 0
+	for index := range prepared {
+		change := &prepared[index]
+		if change.existed {
+			change.backup = change.path + ".matrix-patch-backup"
+			if _, err := os.Lstat(change.backup); err == nil {
+				rollbackPreparedPatches(prepared, committed)
+				return nil, fmt.Errorf("patch backup already exists for %q", change.path)
+			}
+			if err := os.Rename(change.path, change.backup); err != nil {
+				rollbackPreparedPatches(prepared, committed)
+				return nil, err
+			}
+		}
+		if err := os.Rename(change.stagePath, change.path); err != nil {
+			if change.existed {
+				_ = os.Rename(change.backup, change.path)
+				change.backup = ""
+			}
+			rollbackPreparedPatches(prepared, committed)
+			return nil, err
+		}
+		change.stagePath = ""
+		committed++
+	}
+	for index := range prepared {
+		if prepared[index].backup != "" {
+			_ = os.Remove(prepared[index].backup)
+		}
+	}
+	files := make([]map[string]interface{}, 0, len(prepared))
+	for _, change := range prepared {
+		files = append(files, map[string]interface{}{
+			"path": change.path, "bytes": len(change.content),
+			"sha256": fmt.Sprintf("%x", sha256.Sum256(change.content)),
+		})
+	}
+	digest, _ := json.Marshal(files)
+	transaction := sha256.Sum256(digest)
+	return map[string]interface{}{
+		"applied": true, "transaction_id": fmt.Sprintf("%x", transaction[:12]), "files": files,
+	}, nil
+}
+
+func cleanupPreparedPatches(prepared []preparedPatch) {
+	for _, change := range prepared {
+		if change.stagePath != "" {
+			_ = os.Remove(change.stagePath)
+		}
+	}
+}
+
+func rollbackPreparedPatches(prepared []preparedPatch, committed int) {
+	for index := committed - 1; index >= 0; index-- {
+		change := &prepared[index]
+		_ = os.Remove(change.path)
+		if change.backup != "" {
+			_ = os.Rename(change.backup, change.path)
+		}
+	}
+	cleanupPreparedPatches(prepared)
 }
 
 func (n *nativeLocal) createDir(args map[string]interface{}) (interface{}, error) {
@@ -697,9 +927,33 @@ func (n *nativeLocal) shell(ctx context.Context, args map[string]interface{}) (i
 	if err != nil {
 		return nil, err
 	}
-	var output cappedBuffer
-	cmd.Stdout, cmd.Stderr = &output, &output
+	outputDir := filepath.Join(n.stateDir, "shell-output")
+	if err := os.MkdirAll(outputDir, 0o700); err != nil {
+		return nil, err
+	}
+	seed := fmt.Sprintf("%d\x00%d\x00%s\x00%s", time.Now().UnixNano(), os.Getpid(), cmd.Dir, argString(args, "command"))
+	digest := sha256.Sum256([]byte(seed))
+	outputID := fmt.Sprintf("%x", digest[:12])
+	stdoutPath := filepath.Join(outputDir, outputID+".stdout")
+	stderrPath := filepath.Join(outputDir, outputID+".stderr")
+	stdoutFile, err := os.OpenFile(stdoutPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		return nil, err
+	}
+	stderrFile, err := os.OpenFile(stderrPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		stdoutFile.Close()
+		_ = os.Remove(stdoutPath)
+		return nil, err
+	}
+	stdout := &retainedOutputWriter{file: stdoutFile, limit: nativeMaxRetainedOutput}
+	stderr := &retainedOutputWriter{file: stderrFile, limit: nativeMaxRetainedOutput}
+	cmd.Stdout, cmd.Stderr = stdout, stderr
 	if err := cmd.Start(); err != nil {
+		stdoutFile.Close()
+		stderrFile.Close()
+		_ = os.Remove(stdoutPath)
+		_ = os.Remove(stderrPath)
 		return nil, err
 	}
 	done := make(chan error, 1)
@@ -722,7 +976,149 @@ func (n *nativeLocal) shell(ctx context.Context, args map[string]interface{}) (i
 			exit = -1
 		}
 	}
-	return map[string]interface{}{"command": argString(args, "command"), "exit_code": exit, "output": output.String(), "truncated": output.truncated, "timed_out": timedOut}, nil
+	if err := stdoutFile.Close(); err != nil {
+		return nil, err
+	}
+	if err := stderrFile.Close(); err != nil {
+		return nil, err
+	}
+	stdoutPreview, err := readOutputPreview(stdoutPath, nativeMaxStreamPreview)
+	if err != nil {
+		return nil, err
+	}
+	stderrPreview, err := readOutputPreview(stderrPath, nativeMaxStreamPreview)
+	if err != nil {
+		return nil, err
+	}
+	truncated := stdout.total > int64(len(stdoutPreview)) || stderr.total > int64(len(stderrPreview))
+	result := map[string]interface{}{
+		"command": argString(args, "command"), "cwd": cmd.Dir,
+		"exit_code": exit, "timed_out": timedOut, "truncated": truncated,
+		"stdout": map[string]interface{}{"text": string(stdoutPreview), "bytes": stdout.total, "inline_bytes": len(stdoutPreview), "capture_truncated": stdout.dropped},
+		"stderr": map[string]interface{}{"text": string(stderrPreview), "bytes": stderr.total, "inline_bytes": len(stderrPreview), "capture_truncated": stderr.dropped},
+	}
+	if truncated {
+		meta := shellOutputMeta{StdoutBytes: stdout.total, StderrBytes: stderr.total, StdoutCaptureTruncated: stdout.dropped, StderrCaptureTruncated: stderr.dropped, CreatedAt: time.Now().UTC()}
+		encoded, _ := json.Marshal(meta)
+		if err := os.WriteFile(filepath.Join(outputDir, outputID+".json"), encoded, 0o600); err != nil {
+			return nil, err
+		}
+		result["output_id"] = outputID
+		result["retrieval"] = map[string]interface{}{"tool": nativeShellOutput, "streams": []string{"stdout", "stderr"}}
+	} else {
+		_ = os.Remove(stdoutPath)
+		_ = os.Remove(stderrPath)
+	}
+	return result, nil
+}
+
+type retainedOutputWriter struct {
+	file    *os.File
+	limit   int64
+	written int64
+	total   int64
+	dropped bool
+}
+
+func (writer *retainedOutputWriter) Write(p []byte) (int, error) {
+	original := len(p)
+	writer.total += int64(original)
+	remaining := writer.limit - writer.written
+	if remaining <= 0 {
+		writer.dropped = true
+		return original, nil
+	}
+	if int64(len(p)) > remaining {
+		p = p[:remaining]
+		writer.dropped = true
+	}
+	written, err := writer.file.Write(p)
+	writer.written += int64(written)
+	if err != nil {
+		return written, err
+	}
+	return original, nil
+}
+
+type shellOutputMeta struct {
+	StdoutBytes            int64     `json:"stdout_bytes"`
+	StderrBytes            int64     `json:"stderr_bytes"`
+	StdoutCaptureTruncated bool      `json:"stdout_capture_truncated"`
+	StderrCaptureTruncated bool      `json:"stderr_capture_truncated"`
+	CreatedAt              time.Time `json:"created_at"`
+}
+
+func readOutputPreview(path string, limit int) ([]byte, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	return io.ReadAll(io.LimitReader(file, int64(limit)))
+}
+
+func (n *nativeLocal) shellOutput(args map[string]interface{}) (interface{}, error) {
+	id := argString(args, "output_id")
+	if len(id) != 24 {
+		return nil, errors.New("output_id is invalid")
+	}
+	for _, r := range id {
+		if !strings.ContainsRune("0123456789abcdef", r) {
+			return nil, errors.New("output_id is invalid")
+		}
+	}
+	stream := argString(args, "stream")
+	if stream != "stdout" && stream != "stderr" {
+		return nil, errors.New("stream must be stdout or stderr")
+	}
+	offset := argInt(args, "offset", 0)
+	if offset < 0 {
+		return nil, errors.New("offset cannot be negative")
+	}
+	maxBytes := argInt(args, "max_bytes", nativeMaxOutput)
+	if maxBytes < 1 || maxBytes > nativeShellOutputMaxRead {
+		return nil, fmt.Errorf("max_bytes must be from 1 to %d", nativeShellOutputMaxRead)
+	}
+	outputDir := filepath.Join(n.stateDir, "shell-output")
+	metaBytes, err := os.ReadFile(filepath.Join(outputDir, id+".json"))
+	if err != nil {
+		return nil, errors.New("shell output is unavailable or expired")
+	}
+	var meta shellOutputMeta
+	if err := json.Unmarshal(metaBytes, &meta); err != nil {
+		return nil, errors.New("shell output metadata is invalid")
+	}
+	file, err := os.Open(filepath.Join(outputDir, id+"."+stream))
+	if err != nil {
+		return nil, errors.New("shell output stream is unavailable")
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if int64(offset) > info.Size() {
+		return nil, errors.New("offset exceeds retained output")
+	}
+	if _, err := file.Seek(int64(offset), io.SeekStart); err != nil {
+		return nil, err
+	}
+	chunk, err := io.ReadAll(io.LimitReader(file, int64(maxBytes)))
+	if err != nil {
+		return nil, err
+	}
+	next := int64(offset + len(chunk))
+	captureTruncated := meta.StdoutCaptureTruncated
+	total := meta.StdoutBytes
+	if stream == "stderr" {
+		captureTruncated = meta.StderrCaptureTruncated
+		total = meta.StderrBytes
+	}
+	return map[string]interface{}{
+		"output_id": id, "stream": stream, "offset": offset, "content": string(chunk),
+		"next_offset": next, "eof": next >= info.Size(), "retained_bytes": info.Size(),
+		"total_bytes": total, "capture_truncated": captureTruncated,
+	}, nil
 }
 
 type cappedBuffer struct {

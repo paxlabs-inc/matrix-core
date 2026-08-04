@@ -54,8 +54,8 @@ verify_service() {
   remote_exec "${service}" bash -lc '
     set -euo pipefail
     curl -fsS http://127.0.0.1:8080/healthz >/dev/null
-    test "${NEO_CODING_RUNTIME_ENABLED:-}" = "true"
-    test "${NEO_CODING_RUNTIME_REQUIRED:-}" = "true"
+    test "${NEO_CODING_RUNTIME_ENABLED:-}" = "false"
+    test "${NEO_CODING_RUNTIME_REQUIRED:-}" = "false"
     test -x /opt/agentcore/.venv/bin/agentcore
     test -r /etc/matrix-agentcore/config.yaml
     native_tools="$(curl -fsS http://127.0.0.1:8080/diag/native-tools)"

@@ -66,8 +66,29 @@ func TestSystemPromptDoesNotUseLegacyPreviewAsCodingFallback(t *testing.T) {
 	if strings.Contains(sp, "call workspace_preview") {
 		t.Error("legacy preview must not replace the durable Build path")
 	}
-	if !strings.Contains(sp, "Local workspace tools and the durable Build worker are unavailable") {
-		t.Error("missing honest Build-unavailable guidance")
+	if !strings.Contains(sp, "Local workspace tools are unavailable") {
+		t.Error("missing honest workspace-unavailable guidance")
+	}
+	if strings.Contains(sp, "Build worker") || strings.Contains(sp, "build_project") {
+		t.Error("inactive Build delegation leaked into the prompt")
+	}
+}
+
+func TestNativeLocalPolicyOwnsSubstantialWorkWhenBuildIsInactive(t *testing.T) {
+	var b strings.Builder
+	writeNativeLocalPolicy(&b, false)
+	policy := b.String()
+	for _, want := range []string{
+		"Complete project work end to end in this Neo run",
+		"runtime-owned coding checkpoint",
+		"deliver the verified result directly",
+	} {
+		if !strings.Contains(policy, want) {
+			t.Errorf("native coding policy missing %q", want)
+		}
+	}
+	if strings.Contains(policy, "build_project") || strings.Contains(policy, "Build worker") {
+		t.Fatal("inactive Build delegation leaked into native coding policy")
 	}
 }
 

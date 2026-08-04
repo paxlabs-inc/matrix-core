@@ -23,16 +23,30 @@ import (
 	"matrix/vault"
 )
 
+// Memory substrate values for Config.MemorySubstrate. The resurrection loop
+// runs on the old cortex until the owner flips the flag (NEOCORTEX wave 7).
+const (
+	SubstrateCortex    = "cortex"
+	SubstrateNeocortex = "neocortex"
+)
+
 // Config is Neo's fully-resolved runtime configuration.
 type Config struct {
 	// --- identity / runtime wiring ---
-	AgentName      string // human label, "Morpheus" (the market identity; "Neo" stays a valid configured name)
-	CortexRoot     string // root dir of the cortex brain (per-actor stores live under it)
-	CortexActor    string // actor scope for Neo's memory store
-	DaemonURL      string // base URL of the MCL daemon for core_execute delegation
-	ManifestPath   string // agent manifest declaring MCP servers (agents/default.json)
-	SkillsRoot     string // skills corpus root (procedural-pattern promotion target)
-	SelfModelGraph string
+	AgentName   string // human label, "Morpheus" (the market identity; "Neo" stays a valid configured name)
+	CortexRoot  string // root dir of the cortex brain (per-actor stores live under it)
+	CortexActor string // actor scope for Neo's memory store
+	// MemorySubstrate selects the memory backend for the resurrection loop
+	// seam: "cortex" (the live default) or "neocortex" (cortexd side-by-side
+	// qualification). The default never flips without an explicit owner
+	// decision; any unrecognized value resolves to "cortex".
+	MemorySubstrate string
+	CortexdSocket   string // unix socket path of the per-user cortexd daemon
+	CortexdToken    string // hex capability token scoping this actor's cortexd namespace
+	DaemonURL       string // base URL of the MCL daemon for core_execute delegation
+	ManifestPath    string // agent manifest declaring MCP servers (agents/default.json)
+	SkillsRoot      string // skills corpus root (procedural-pattern promotion target)
+	SelfModelGraph  string
 
 	// --- models (provider-qualified ids; see matrix/mcl/llm DetectProvider) ---
 	MainModel  string // the conversational tool-calling loop
@@ -293,13 +307,14 @@ type RuntimeProviderConfig struct {
 // operational contract (neo/neo.frozen.kvx).
 func Default() Config {
 	return Config{
-		AgentName:      "Morpheus",
-		CortexRoot:     "/root/.cortex",
-		CortexActor:    "neo",
-		DaemonURL:      "http://127.0.0.1:8080",
-		ManifestPath:   "agents/default.json",
-		SkillsRoot:     "skills",
-		SelfModelGraph: "graph/self-model",
+		AgentName:       "Morpheus",
+		CortexRoot:      "/root/.cortex",
+		CortexActor:     "neo",
+		MemorySubstrate: SubstrateCortex,
+		DaemonURL:       "http://127.0.0.1:8080",
+		ManifestPath:    "agents/default.json",
+		SkillsRoot:      "skills",
+		SelfModelGraph:  "graph/self-model",
 
 		MainModel:          "mimo-v2.5-pro",
 		CheapModel:         "mimo-v2.5-pro",
@@ -382,11 +397,12 @@ func Default() Config {
 		CassandraLoopThreshold:  0,
 		CassandraCooldownSteps:  2,
 
-		// Epistemic core: both mechanisms ON by default (a clean, grounded run
-		// renders nothing and dispatches nothing differently); bounds per the
-		// design table (mismatch 3, convergence window 4).
-		EpistemicPremises:          true,
-		EpistemicPredictions:       true,
+		// Epistemic analysis remains available as an explicit diagnostic mode,
+		// but it is not an execution gate. The old defaults could refuse sound
+		// tool calls and force extra model turns based on heuristic premises or
+		// optional prediction prose.
+		EpistemicPremises:          false,
+		EpistemicPredictions:       false,
 		EpistemicMismatchLimit:     3,
 		EpistemicConvergenceWindow: 4,
 
@@ -644,6 +660,14 @@ func (c *Config) applyEnv() {
 	c.CassandraEscalateModel = envOr("NEO_CASSANDRA_ESCALATE_MODEL", c.CassandraEscalateModel)
 	c.CortexRoot = envOr("NEO_CORTEX_ROOT", c.CortexRoot)
 	c.CortexActor = envOr("NEO_CORTEX_ACTOR", c.CortexActor)
+	c.MemorySubstrate = strings.ToLower(strings.TrimSpace(
+		envOr("NEO_MEMORY_SUBSTRATE", c.MemorySubstrate),
+	))
+	if c.MemorySubstrate != SubstrateNeocortex {
+		c.MemorySubstrate = SubstrateCortex
+	}
+	c.CortexdSocket = envOr("NEO_CORTEXD_SOCKET", c.CortexdSocket)
+	c.CortexdToken = envOr("NEO_CORTEXD_TOKEN", c.CortexdToken)
 	c.DaemonURL = envOr("NEO_DAEMON_URL", c.DaemonURL)
 	c.ManifestPath = envOr("NEO_MANIFEST", c.ManifestPath)
 	c.SkillsRoot = envOr("NEO_SKILLS_ROOT", c.SkillsRoot)

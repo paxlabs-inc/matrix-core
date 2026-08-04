@@ -1,0 +1,99 @@
+name: neocortex
+
+on:
+  pull_request:
+    paths:
+      - "neocortex/**"
+      - ".github/workflows/neocortex.yml"
+  push:
+    paths:
+      - "neocortex/**"
+      - ".github/workflows/neocortex.yml"
+
+jobs:
+  verify-vendored:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 neocortex/toolchain/verify_vendored.py
+      - run: python3 neocortex/toolchain/verify_sysroot.py
+      - run: python3 neocortex/toolchain/verify_generated.py
+
+  native:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [asan, tsan, tidy]
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y clang-18 clang-tidy-18 lld-18 libc++-18-dev libc++abi-18-dev cmake ninja-build
+      - working-directory: neocortex
+        run: cmake --preset ${{ matrix.preset }}
+      - working-directory: neocortex
+        run: cmake --build --preset ${{ matrix.preset }}
+      - if: matrix.preset != 'tidy'
+        working-directory: neocortex
+        run: ctest --preset ${{ matrix.preset }}
+
+  fuzz-smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y clang-18 lld-18 libc++-18-dev libc++abi-18-dev cmake ninja-build
+      - working-directory: neocortex
+        run: cmake --preset fuzz && cmake --build --preset fuzz
+      - working-directory: neocortex
+        run: ./build/fuzz/fuzz_frame fuzz/corpus/frame -runs=10000 && ./build/fuzz/fuzz_mmr_state fuzz/corpus/mmr_state -runs=10000 && ./build/fuzz/fuzz_unseal -runs=10000 && ./build/fuzz/fuzz_schema fuzz/corpus/schema -runs=10000 && ./build/fuzz/fuzz_protocol_frame fuzz/corpus/protocol_frame -runs=10000 && ./build/fuzz/fuzz_query_input fuzz/corpus/query_input -runs=10000
+
+  reproducible-static:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y clang-18 lld-18 libc++-18-dev libc++abi-18-dev cmake ninja-build
+      - working-directory: neocortex
+        run: cmake --fresh --preset release -B build/repro-a && cmake --build build/repro-a
+      - working-directory: neocortex
+        run: cmake --fresh --preset release -B build/repro-b && cmake --build build/repro-b
+      - working-directory: neocortex
+        run: cmp build/repro-a/neocortex_frame_test build/repro-b/neocortex_frame_test && cmp build/repro-a/neocortex_segment_log_test build/repro-b/neocortex_segment_log_test && cmp build/repro-a/neocortex_schema_test build/repro-b/neocortex_schema_test && cmp build/repro-a/neocortex_mmr_test build/repro-b/neocortex_mmr_test && cmp build/repro-a/neocortex_seal_test build/repro-b/neocortex_seal_test && cmp build/repro-a/neocortex_core_sim_test build/repro-b/neocortex_core_sim_test && cmp build/repro-a/neocortex_projection_test build/repro-b/neocortex_projection_test && cmp build/repro-a/neocortex_belief_store_test build/repro-b/neocortex_belief_store_test && cmp build/repro-a/neocortex_entity_index_test build/repro-b/neocortex_entity_index_test && cmp build/repro-a/neocortex_index_plane_test build/repro-b/neocortex_index_plane_test && cmp build/repro-a/neocortex_temporal_ladder_test build/repro-b/neocortex_temporal_ladder_test && cmp build/repro-a/neocortex_continuity_projection_test build/repro-b/neocortex_continuity_projection_test && cmp build/repro-a/neocortex_composer_test build/repro-b/neocortex_composer_test && cmp build/repro-a/neocortex_cortexd_test build/repro-b/neocortex_cortexd_test && cmp build/repro-a/cortexd build/repro-b/cortexd && cmp build/repro-a/cortex-verify build/repro-b/cortex-verify && cmp build/repro-a/libneocortex_log.a build/repro-b/libneocortex_log.a && cmp build/repro-a/libneocortex_schema.a build/repro-b/libneocortex_schema.a && cmp build/repro-a/libneocortex_mmr.a build/repro-b/libneocortex_mmr.a && cmp build/repro-a/libneocortex_seal.a build/repro-b/libneocortex_seal.a && cmp build/repro-a/libneocortex_core.a build/repro-b/libneocortex_core.a && cmp build/repro-a/libneocortex_sim.a build/repro-b/libneocortex_sim.a && cmp build/repro-a/libneocortex_gate.a build/repro-b/libneocortex_gate.a && cmp build/repro-a/libneocortex_proj.a build/repro-b/libneocortex_proj.a && cmp build/repro-a/libneocortex_compose.a build/repro-b/libneocortex_compose.a && cmp build/repro-a/libneocortex_serve.a build/repro-b/libneocortex_serve.a && cmp build/repro-a/libneocortex_lmdb.a build/repro-b/libneocortex_lmdb.a && cmp build/repro-a/libneocortex_roaring.a build/repro-b/libneocortex_roaring.a && cmp build/repro-a/third_party/libsodium-install/lib/libsodium.a build/repro-b/third_party/libsodium-install/lib/libsodium.a
+
+  arm64-static:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y clang-18 lld-18 cmake ninja-build
+      - working-directory: neocortex
+        run: python3 toolchain/verify_sysroot.py
+      - working-directory: neocortex
+        run: cmake --preset arm64-release && cmake --build --preset arm64-release
+      - working-directory: neocortex
+        run: file build/arm64-release/cortex-verify | grep -q 'ARM aarch64.*statically linked'
+      - working-directory: neocortex
+        run: file build/arm64-release/neocortex_core_sim_test | grep -q 'ARM aarch64.*statically linked'
+      - working-directory: neocortex
+        run: file build/arm64-release/neocortex_projection_test | grep -q 'ARM aarch64.*statically linked'
+      - working-directory: neocortex
+        run: file build/arm64-release/neocortex_schema_test | grep -q 'ARM aarch64.*statically linked'
+      - working-directory: neocortex
+        run: file build/arm64-release/neocortex_seal_test | grep -q 'ARM aarch64.*statically linked'
+      - working-directory: neocortex
+        run: file build/arm64-release/neocortex_belief_store_test | grep -q 'ARM aarch64.*statically linked'
+      - working-directory: neocortex
+        run: file build/arm64-release/neocortex_entity_index_test | grep -q 'ARM aarch64.*statically linked'
+      - working-directory: neocortex
+        run: file build/arm64-release/neocortex_index_plane_test | grep -q 'ARM aarch64.*statically linked'
+      - working-directory: neocortex
+        run: file build/arm64-release/neocortex_temporal_ladder_test | grep -q 'ARM aarch64.*statically linked'
+      - working-directory: neocortex
+        run: file build/arm64-release/neocortex_continuity_projection_test | grep -q 'ARM aarch64.*statically linked'
+      - working-directory: neocortex
+        run: file build/arm64-release/neocortex_composer_test | grep -q 'ARM aarch64.*statically linked'
+      - working-directory: neocortex
+        run: file build/arm64-release/cortexd | grep -q 'ARM aarch64.*statically linked'
+      - working-directory: neocortex
+        run: file build/arm64-release/neocortex_cortexd_test | grep -q 'ARM aarch64.*statically linked'

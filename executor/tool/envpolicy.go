@@ -23,6 +23,7 @@ var agentVisibleEnvironment = stringSet(
 	"NEO_AUTOMATRIX_JITTER", "NEO_AUTOMATRIX_MAX_PER_DAY",
 	"NEO_AUTOMATRIX_MIN_CONFIDENCE", "MATRIX_MEDIA_XAI_VIDEO_MODEL",
 	"NEO_CONTINUOUS_MEMORY", "VAULT_REQUIRED", "VOICE_IDLE_DISCONNECT_S", "NEO_RUNTIME",
+	"NEO_MEMORY_SUBSTRATE",
 	"MATRIX_EXEC_STATE_DIR", "MATRIX_EXEC_WORKDIR", "MATRIX_EXEC_TIMEOUT_MS",
 	"MATRIX_EXEC_MAX_OUTPUT_BYTES", "MATRIX_EXEC_MAX_SERVICES", "MATRIX_EXEC_MAX_LOG_LINES",
 )
@@ -42,6 +43,9 @@ var protectedEnvironment = stringSet(
 	// The root data-encryption key cannot be agent-visible without defeating
 	// the vault, even though it was initially listed as ordinary config.
 	"VAULT_KEK", "VAULT_KEK_FILE", "MATRIX_VAULT_KEK", "MATRIX_VAULT_KEK_ID",
+	// The cortexd capability token scopes the actor namespace; an agent child
+	// holding it could bypass the memory seam entirely.
+	"NEO_CORTEXD_TOKEN",
 )
 
 var protectedEnvironmentOwner = map[string]string{
@@ -81,6 +85,7 @@ var protectedEnvironmentOwner = map[string]string{
 	"VAULT_KEK_FILE":                 "vault-bootstrap",
 	"MATRIX_VAULT_KEK":               "vault-bootstrap",
 	"MATRIX_VAULT_KEK_ID":            "vault-bootstrap",
+	"NEO_CORTEXD_TOKEN":              "neocortex-substrate",
 }
 
 var credentialedMCPEnvironment = map[string][]string{

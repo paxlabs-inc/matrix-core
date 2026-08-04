@@ -15,7 +15,6 @@ package agent
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -197,7 +196,6 @@ func (a *Agent) forcedRevisionStep(ctx context.Context, window []llm.Message, on
 	if content != "" {
 		a.working = append(a.working, llm.Message{Role: llm.RoleAssistant, Content: content})
 		a.cmRecordAssistant(llm.Message{Role: llm.RoleAssistant, Content: content})
-		a.out.Status(a.cleanContent(content))
 	}
 	// The revision IS the plan change: refuted premises are answered, the
 	// ledger re-extracts from the revised plan, and the per-strategy mismatch
@@ -211,82 +209,4 @@ func (a *Agent) forcedRevisionStep(ctx context.Context, window []llm.Message, on
 		a.renderGraphTail()
 	}
 	return nil
-}
-
-// maxExpectRefusals bounds how many times ONE probe strategy may be refused
-// for a missing `expect` field in a single turn before the gate stands down and
-// lets the call through. One refusal teaches the fix; repeating it past that
-// only burns the shared unproductive budget — the identity-leak / unread-
-// overflow posture, applied to the dispatch seam.
-const maxExpectRefusals = 1
-
-// refuseUnstatedExpectation decides whether a probe-class call carrying no
-// stated expectation is refused at the dispatch seam, and returns the directive
-// to hand back in its place. It is the BOUNDED form of req.6.1: the first BATCH
-// to issue a given strategy without `expect` is refused with the corrected-call
-// skeleton, and if the model still omits it the call DISPATCHES anyway — an
-// unstated expectation degrades the epistemic signal for that step
-// (predictionObserve simply has nothing to update), which is strictly better
-// than killing a turn over a field the tool itself never wanted.
-//
-// batchRefused keeps the verdict CONSISTENT within one batch: a call and its
-// deduped duplicate must produce the same result, so once a strategy is refused
-// in this batch every sibling call of that strategy is refused too, without
-// spending another rung of the bound. Contract — mutates: the per-turn
-// per-strategy refusal counter and batchRefused; called only from the serial
-// pre-dispatch pass.
-func (a *Agent) refuseUnstatedExpectation(name string, args map[string]interface{}, expect string, batchRefused map[string]bool) (string, bool) {
-	if !a.epistemicPredictionsOn() || strings.TrimSpace(expect) != "" {
-		return "", false
-	}
-	strategy, isProbe := probeStrategy(name, args)
-	if !isProbe {
-		return "", false
-	}
-	if batchRefused[strategy] {
-		return refuseGuess(name, args), true
-	}
-	if a.turn.expectRefusals == nil {
-		a.turn.expectRefusals = map[string]int{}
-	}
-	if a.turn.expectRefusals[strategy] >= maxExpectRefusals {
-		return "", false
-	}
-	a.turn.expectRefusals[strategy]++
-	if batchRefused != nil {
-		batchRefused[strategy] = true
-	}
-	return refuseGuess(name, args), true
-}
-
-// refuseGuess is the ground-or-hypothesize refusal (req.6.1): a probe-class
-// call with NO stated expectation is a guess by definition — it is refused at
-// the dispatch seam with a directive to ground the action or state the
-// hypothesis it tests. The directive carries a copy-pasteable corrected-call
-// skeleton (the call's OWN arguments plus the missing `expect` field) so the
-// refusal teaches the exact fix rather than describing it — a refusal that only
-// restates the rule is the one the model re-issues unchanged four times in a
-// row. Returns the directive to append as the call's result.
-func refuseGuess(name string, args map[string]interface{}) string {
-	skeleton := correctedCallSkeleton(args, "expect", "<one line: the outcome shape you predict, e.g. 200 with a JSON array of results>")
-	return "not dispatched (no expectation stated): a probe with no predicted outcome is a guess. Re-issue " + name +
-		" with an `expect` field ADDED to the same arguments — exactly like this: " + skeleton +
-		" — or ground the action first (docs, your capability surface, memory) and cite what you learned. Do not re-send the call without `expect`."
-}
-
-// correctedCallSkeleton renders a copy-pasteable argument object: the call's own
-// arguments plus one field the model omitted, so a refusal shows the exact fix
-// instead of describing it (errors that teach). Best-effort — on a marshal error
-// it falls back to a minimal skeleton naming just the field.
-func correctedCallSkeleton(args map[string]interface{}, field, placeholder string) string {
-	fixed := make(map[string]interface{}, len(args)+1)
-	for k, v := range args {
-		fixed[k] = v
-	}
-	fixed[field] = placeholder
-	b, err := json.Marshal(fixed)
-	if err != nil {
-		return fmt.Sprintf("{%q: %q, ...your other arguments}", field, placeholder)
-	}
-	return string(b)
 }

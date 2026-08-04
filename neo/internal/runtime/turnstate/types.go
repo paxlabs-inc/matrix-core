@@ -33,6 +33,25 @@ type PendingCall struct {
 	DispatchedAt   time.Time       `json:"dispatched_at"`
 }
 
+type CodingVerification struct {
+	Command    string    `json:"command"`
+	CWD        string    `json:"cwd,omitempty"`
+	ExitCode   int       `json:"exit_code"`
+	Succeeded  bool      `json:"succeeded"`
+	TimedOut   bool      `json:"timed_out,omitempty"`
+	VerifiedAt time.Time `json:"verified_at"`
+}
+
+type CodingCheckpoint struct {
+	ProjectRoot      string              `json:"project_root"`
+	Requirements     []string            `json:"requirements"`
+	FilesChanged     []string            `json:"files_changed,omitempty"`
+	LastVerification *CodingVerification `json:"last_verification,omitempty"`
+	CurrentFailures  []string            `json:"current_failures,omitempty"`
+	NextAction       string              `json:"next_action"`
+	UpdatedAt        time.Time           `json:"updated_at"`
+}
+
 type Checkpoint struct {
 	Messages         []protocol.Message `json:"messages"`
 	ToolEvents       []json.RawMessage  `json:"tool_events,omitempty"`
@@ -41,6 +60,7 @@ type Checkpoint struct {
 	Plan             json.RawMessage    `json:"plan,omitempty"`
 	Revision         json.RawMessage    `json:"revision,omitempty"`
 	Runtime          json.RawMessage    `json:"runtime,omitempty"`
+	Coding           *CodingCheckpoint  `json:"coding,omitempty"`
 	PendingCall      *PendingCall       `json:"pending_call,omitempty"`
 	SavedAt          time.Time          `json:"saved_at"`
 }
@@ -119,6 +139,17 @@ func (checkpoint Checkpoint) Validate() error {
 	if checkpoint.PendingCall != nil {
 		if err := checkpoint.PendingCall.Validate(); err != nil {
 			return err
+		}
+	}
+	if checkpoint.Coding != nil {
+		if strings.TrimSpace(checkpoint.Coding.ProjectRoot) == "" ||
+			len(checkpoint.Coding.Requirements) == 0 ||
+			strings.TrimSpace(checkpoint.Coding.NextAction) == "" ||
+			checkpoint.Coding.UpdatedAt.IsZero() {
+			return fmt.Errorf("turnstate: invalid coding checkpoint")
+		}
+		if checkpoint.Coding.LastVerification != nil && checkpoint.Coding.LastVerification.VerifiedAt.IsZero() {
+			return fmt.Errorf("turnstate: invalid coding verification")
 		}
 	}
 	return nil

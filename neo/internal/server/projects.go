@@ -6,6 +6,7 @@ package server
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -260,6 +261,54 @@ func (e *Engine) resolveProjectRecord(id string) (project, error) {
 		return project{}, fmt.Errorf("unknown project %q", id)
 	}
 	return p, nil
+}
+
+// ensureBuildProject resolves an existing project or creates its workspace
+// directory and registry record under one registry lock. It is idempotent for
+// replayed Build admission: the same normalized project name resolves to the
+// same record instead of producing a second directory.
+func (e *Engine) ensureBuildProject(name string) (project, bool, error) {
+	name = strings.TrimSpace(name)
+	id := projectDirSlug(name)
+	if id == "" || id == defaultProjectID {
+		return project{}, false, errors.New("could not derive a valid Build project name")
+	}
+	registry := e.projectsRegistry()
+	if registry == nil {
+		return project{}, false, errors.New("workspace is not configured on this daemon")
+	}
+	registry.mu.Lock()
+	defer registry.mu.Unlock()
+	projects := registry.loadLocked()
+	if existing, ok := projects[id]; ok {
+		return existing, false, nil
+	}
+	root, err := filepath.Abs(filepath.Join(e.workspaceRoot, id))
+	if err != nil {
+		return project{}, false, err
+	}
+	createdDir := false
+	if info, statErr := os.Lstat(root); statErr == nil {
+		if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+			return project{}, false, errors.New("Build project path is not a real directory")
+		}
+	} else if !os.IsNotExist(statErr) {
+		return project{}, false, statErr
+	} else {
+		if err := os.Mkdir(root, 0o755); err != nil {
+			return project{}, false, err
+		}
+		createdDir = true
+	}
+	created := project{ID: id, Name: name, Root: root, CreatedAt: time.Now().UTC()}
+	projects[id] = created
+	if err := registry.saveLocked(projects); err != nil {
+		if createdDir {
+			_ = os.Remove(root)
+		}
+		return project{}, false, err
+	}
+	return created, true, nil
 }
 
 // projectHasLiveRun reports whether any in-flight run belongs to a

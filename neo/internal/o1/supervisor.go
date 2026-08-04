@@ -70,7 +70,16 @@ func (s *Supervisor) Evaluate(
 			Evidence: "verifier graph all-closed, ledger clean",
 		}
 	}
-	// 2. Last outcome has a recovery transition available → follow it
+	// 2. A genuinely unresolved material input is actionable and must not be
+	// hidden behind a later generic retryable convergence outcome.
+	if !contract.ReadyForMutation() {
+		return SupervisorDecision{
+			Action:   SupAskUser,
+			Reason:   "task contract has unresolved material ambiguity",
+			Evidence: "contract.ReadyForMutation() = false",
+		}
+	}
+	// 3. Last outcome has a recovery transition available → follow it
 	if lastOutcome != nil && !lastOutcome.Success && lastOutcome.Retryable {
 		if lastOutcome.AllowsTransition(TransitionRepair) {
 			return SupervisorDecision{
@@ -95,14 +104,6 @@ func (s *Supervisor) Evaluate(
 				Evidence:     RenderOutcome(*lastOutcome),
 				RecoveryHint: "retry with the same recovery automaton",
 			}
-		}
-	}
-	// 3. Material ambiguity unresolved → ask user
-	if !contract.ReadyForMutation() {
-		return SupervisorDecision{
-			Action:   SupAskUser,
-			Reason:   "task contract has unresolved material ambiguity",
-			Evidence: "contract.ReadyForMutation() = false",
 		}
 	}
 	// 4. Last outcome is terminal failure with no transitions → stop

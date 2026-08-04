@@ -85,6 +85,7 @@ func TestPremiseLedgerFromRealPlan(t *testing.T) {
 	}
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
+	cfg.EpistemicPremises = true
 	a := New(Options{Config: cfg, Main: client, Cheap: client, Tools: &tools.Manager{}})
 
 	if err := a.Chat(context.Background(), "bridge Neo and the other agent"); err != nil {

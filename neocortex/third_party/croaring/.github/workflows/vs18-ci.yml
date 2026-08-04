@@ -1,0 +1,36 @@
+name: VS18-CI
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: windows-vs18
+    runs-on: windows-2025-vs2026
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {gen: Visual Studio 18 2026, arch: Win32}
+          - {gen: Visual Studio 18 2026, arch: x64}
+    steps:
+      - name: checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - name: Configure
+        run: |
+          mkdir build
+          cd build && cmake -DENABLE_ROARING_TESTS=ON  -DROARING_UNSAFE_FROZEN_TESTS=ON -G "${{matrix.gen}}" -A ${{matrix.arch}}  ..
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Run basic tests
+        run: |
+          cd build
+          ctest -C Release --output-on-failure
+      - name: Build Debug
+        run: cmake --build build --config Debug
+      - name: Run basic tests in Debug
+        run: |
+          cd build
+          ctest -C Debug --output-on-failure

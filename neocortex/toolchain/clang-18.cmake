@@ -1,0 +1,8 @@
+set(CMAKE_C_COMPILER "/usr/bin/clang-18" CACHE FILEPATH "" FORCE)
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++-18" CACHE FILEPATH "" FORCE)
+set(CMAKE_AR "/usr/bin/llvm-ar-18" CACHE FILEPATH "" FORCE)
+set(CMAKE_RANLIB "/usr/bin/llvm-ranlib-18" CACHE FILEPATH "" FORCE)
+set(CMAKE_LINKER_TYPE LLD)
+set(CMAKE_C_FLAGS_INIT "")
+set(CMAKE_CXX_FLAGS_INIT "-stdlib=libc++")
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-stdlib=libc++ -fuse-ld=lld-18")

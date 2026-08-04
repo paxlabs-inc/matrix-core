@@ -125,6 +125,7 @@ func TestPropertyArenaReplay(t *testing.T) {
 	}
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
+	cfg.EpistemicPremises = true
 	a = New(Options{
 		Config:     cfg,
 		Main:       client,
@@ -259,6 +260,7 @@ func TestPropertyOHLCReplay(t *testing.T) {
 	client := revisionTestClient(t, model.URL)
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
+	cfg.EpistemicPredictions = true
 	a := New(Options{
 		Config: cfg,
 		Main:   client,

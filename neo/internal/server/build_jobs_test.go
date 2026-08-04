@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -12,7 +13,39 @@ import (
 
 	"matrix/neo/internal/codingruntime"
 	"matrix/neo/internal/config"
+	"matrix/neo/internal/tools"
 )
+
+func TestAgentBuildCreatesSelectsAndAcceptsProjectInOneCall(t *testing.T) {
+	_, engine := buildJobServer(t)
+	run := &run{id: "neo-build-admission", convID: "conv-new-build"}
+	request := tools.BuildRequest{
+		Project: "Webhook Dispatcher", Request: "Build the webhook dispatcher",
+		AcceptanceCriteria: []string{"tests pass"},
+	}
+	first, err := engine.agentBuild(withRun(context.Background(), run), request)
+	if err != nil || !strings.Contains(first, "webhook-dispatcher") {
+		t.Fatalf("first Build admission = %q, %v", first, err)
+	}
+	if got := engine.conv.Project(run.convID); got != "webhook-dispatcher" {
+		t.Fatalf("conversation project = %q", got)
+	}
+	project, err := engine.resolveProjectRecord("webhook-dispatcher")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info, err := os.Stat(project.Root); err != nil || !info.IsDir() {
+		t.Fatalf("project root = %+v, %v", info, err)
+	}
+	second, err := engine.agentBuild(withRun(context.Background(), run), request)
+	if err != nil || second != first {
+		t.Fatalf("replayed Build admission = %q, %v; first %q", second, err, first)
+	}
+	jobs, err := engine.buildJobs.List()
+	if err != nil || len(jobs) != 1 || jobs[0].ProjectID != "webhook-dispatcher" {
+		t.Fatalf("durable jobs = %+v, %v", jobs, err)
+	}
+}
 
 func buildJobServer(t *testing.T) (*Server, *Engine) {
 	t.Helper()
@@ -22,10 +55,11 @@ func buildJobServer(t *testing.T) (*Server, *Engine) {
 		t.Fatal(err)
 	}
 	engine := NewEngine(EngineOptions{
-		Config:       config.Config{ActorDID: "did:matrix:test-builder"},
-		WorkspaceDir: workspace,
-		BuildDir:     t.TempDir(),
-		BackendURL:   "http://127.0.0.1:1",
+		Config:          config.Config{ActorDID: "did:matrix:test-builder"},
+		WorkspaceDir:    workspace,
+		BuildDir:        t.TempDir(),
+		ConversationDir: t.TempDir(),
+		BackendURL:      "http://127.0.0.1:1",
 	})
 	engine.buildDispatch = func(codingruntime.Job) {}
 	if err := engine.projectsRegistry().create(project{ID: "site", Name: "Site", Root: projectRoot}); err != nil {

@@ -413,6 +413,13 @@ func isSkippable(err error) bool {
 // already-embedded-and-up-to-date or otherwise legitimately skippable.
 var errEmbedderSkip = errors.New("embedder: skip")
 
+// errEmbedderHeadChanged leaves the journal cursor on the current entry so
+// the worker recomputes the vector from the memory's new current version.
+// It is deliberately not skippable: attaching a vector computed from an old
+// version to a concurrently advanced Head would make vec/meta lie about its
+// SourceVersion, while writing the old Head back would lose the update.
+var errEmbedderHeadChanged = errors.New("embedder: head changed during embedding")
+
 // processWriteEntry embeds the memory referenced by entry and persists
 // vec/meta + Head.EmbeddingRef + KindEmbed journal entry atomically.
 func (s *embedderState) processWriteEntry(entry *journal.Entry) error {
@@ -476,12 +483,51 @@ func (s *embedderState) processWriteEntry(entry *journal.Entry) error {
 		return embed.ErrDimMismatch
 	}
 	vecHash := memory.HashVector(vec)
+	return s.commitEmbedding(p, mid, head.CurrentVersion, vec, vecHash)
+}
+
+// commitEmbedding performs the durable half of processWriteEntry. Vector
+// computation intentionally happens before this method so a slow provider
+// never holds the store write lock. Once the vector is ready, BeginWrite
+// excludes every other journaled writer while the Head is reloaded and the
+// atomic vec/meta + Head + journal batch is committed.
+func (s *embedderState) commitEmbedding(
+	p journal.WritePayload,
+	mid memory.ID,
+	sourceVersion uint64,
+	vec []float32,
+	vecHash [32]byte,
+) error {
+	ulid := toKeysULID(mid)
+	wb := s.c.s.BeginWrite()
+	defer wb.Abort()
+
+	// The Head used to render the vector may have advanced while Embed was
+	// running. Reload it under the store write lock and retry the journal
+	// entry instead of overwriting a concurrent Update/Supersede with the
+	// stale pre-embedding copy.
+	latestHead, ok, err := loadHead(s.c.s, mid)
+	if err != nil {
+		return fmt.Errorf("reload head: %w", err)
+	}
+	if !ok {
+		return fmt.Errorf("%w: head missing", memory.ErrNotFound)
+	}
+	if latestHead.Tombstoned != nil {
+		return errEmbedderSkip
+	}
+	if latestHead.CurrentVersion != sourceVersion {
+		return fmt.Errorf(
+			"%w: source_version=%d current_version=%d",
+			errEmbedderHeadChanged, sourceVersion, latestHead.CurrentVersion,
+		)
+	}
 
 	// Reuse the existing vertex id if we're re-embedding (an Update);
 	// otherwise allocate a fresh one and insert into HNSW.
 	var vid uint64
-	if head.EmbeddingRef != nil && head.EmbeddingRef.VertexID != 0 {
-		vid = head.EmbeddingRef.VertexID
+	if latestHead.EmbeddingRef != nil && latestHead.EmbeddingRef.VertexID != 0 {
+		vid = latestHead.EmbeddingRef.VertexID
 		s.store.put(vid, vec)
 		// HNSW updates are not supported by the simple Add path; we
 		// model "update embedding" as "replace vector for the same
@@ -506,7 +552,7 @@ func (s *embedderState) processWriteEntry(entry *journal.Entry) error {
 		Dim:      uint16(s.embedder.Dim()),
 		Stale:    false,
 	}
-	updatedHead := head
+	updatedHead := latestHead
 	updatedHead.EmbeddingRef = newRef
 
 	meta := &memory.VectorMeta{
@@ -514,7 +560,7 @@ func (s *embedderState) processWriteEntry(entry *journal.Entry) error {
 		Model:         s.embedder.Model(),
 		Dim:           uint16(s.embedder.Dim()),
 		Vector:        vec,
-		SourceVersion: head.CurrentVersion,
+		SourceVersion: sourceVersion,
 		EmbeddedAt:    now,
 		VectorHash:    vecHash,
 	}
@@ -526,10 +572,6 @@ func (s *embedderState) processWriteEntry(entry *journal.Entry) error {
 	if err != nil {
 		return fmt.Errorf("encode head: %w", err)
 	}
-
-	ulid := toKeysULID(mid)
-	wb := s.c.s.BeginWrite()
-	defer wb.Abort()
 
 	if err := wb.Set(keys.VecMetaKey(ulid), metaBytes); err != nil {
 		return err
@@ -552,7 +594,7 @@ func (s *embedderState) processWriteEntry(entry *journal.Entry) error {
 		Model:         s.embedder.Model(),
 		Dim:           uint16(s.embedder.Dim()),
 		VectorHash:    vecHash,
-		SourceVersion: head.CurrentVersion,
+		SourceVersion: sourceVersion,
 	}
 	embBytes, err := journal.EncodeEmbedPayload(embPayload)
 	if err != nil {

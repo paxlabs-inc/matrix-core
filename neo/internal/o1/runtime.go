@@ -25,9 +25,6 @@ type RuntimeCapabilities struct {
 // A schema that cannot be represented as a bounded object is rejected before
 // it can reach the model.
 func CompileRuntimeCapabilities(contract TaskContract, available []llm.Tool) (RuntimeCapabilities, error) {
-	if !contract.ReadyForMutation() && len(contract.RequiredCapabilities) > 0 {
-		return RuntimeCapabilities{}, fmt.Errorf("task contract is not ready for mutation")
-	}
 	byName := make(map[string]llm.Tool, len(available))
 	ms := &ManifestSet{manifests: make(map[string]OperationManifest, len(available))}
 	for _, schema := range available {

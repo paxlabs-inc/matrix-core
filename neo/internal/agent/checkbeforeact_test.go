@@ -24,7 +24,9 @@ import (
 // a self-referential premise that MATCHES a resident surface fact is cited
 // from the self-model at the gate and the dispatch proceeds unrefused.
 func TestSelfClaimDischargeAllowsDispatch(t *testing.T) {
-	a := New(Options{Config: config.Default(), Capability: trueSurface()})
+	cfg := config.Default()
+	cfg.EpistemicPremises = true
+	a := New(Options{Config: cfg, Capability: trueSurface()})
 	a.turn.ledger = &premiseLedger{}
 	p := a.turn.ledger.add(Premise{Statement: "clients reach me via POST /chat", Status: premiseAssumption, SelfRef: true})
 
@@ -43,7 +45,9 @@ func TestSelfClaimDischargeAllowsDispatch(t *testing.T) {
 // must discharge to cited against the a.schemas-derived inventory — never be
 // refuted against the HTTP API surface — and the dependent dispatch proceeds.
 func TestSelfClaimToolInventoryDischarge(t *testing.T) {
-	a := New(Options{Config: config.Default(), Capability: trueSurface()})
+	cfg := config.Default()
+	cfg.EpistemicPremises = true
+	a := New(Options{Config: cfg, Capability: trueSurface()})
 	a.schemas = append(a.schemas, llm.NewFunctionTool("layerx__layerx_pay", "Pay USDX over LayerX", nil))
 	a.turn.ledger = &premiseLedger{}
 	p := a.turn.ledger.add(Premise{Statement: "layerx__layerx_pay is in my tool inventory", Status: premiseAssumption, SelfRef: true})
@@ -63,7 +67,9 @@ func TestSelfClaimToolInventoryDischarge(t *testing.T) {
 // visible ASSUMPTION (claimUnknown) — absence of a substring match is not
 // falsity, and dispatch is never refused over it.
 func TestSelfClaimUnmatchedStaysAssumption(t *testing.T) {
-	a := New(Options{Config: config.Default(), Capability: trueSurface()})
+	cfg := config.Default()
+	cfg.EpistemicPremises = true
+	a := New(Options{Config: cfg, Capability: trueSurface()})
 	a.turn.ledger = &premiseLedger{}
 	p := a.turn.ledger.add(Premise{Statement: "I keep a durable memory of past sessions", Status: premiseAssumption, SelfRef: true})
 
@@ -82,7 +88,9 @@ func TestSelfClaimUnmatchedStaysAssumption(t *testing.T) {
 // (alias__name) that matches NO advertised schema is positively false — the
 // premise is refuted and the dependent dispatch is refused.
 func TestSelfClaimAbsentToolRefuted(t *testing.T) {
-	a := New(Options{Config: config.Default(), Capability: trueSurface()})
+	cfg := config.Default()
+	cfg.EpistemicPremises = true
+	a := New(Options{Config: cfg, Capability: trueSurface()})
 	a.turn.ledger = &premiseLedger{}
 	p := a.turn.ledger.add(Premise{Statement: "I can call ghost__teleport to move the funds", Status: premiseAssumption, SelfRef: true})
 
@@ -213,6 +221,7 @@ func TestCheckBeforeActArenaShape(t *testing.T) {
 	}
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
+	cfg.EpistemicPremises = true
 	a := New(Options{
 		Config:     cfg,
 		Main:       client,

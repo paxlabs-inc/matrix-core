@@ -18,20 +18,11 @@ type Reporter interface {
 	// deterministically ends the task. completion=false is a conversational or
 	// ceiling answer that IS the content the user reads.
 	Say(text string, completion bool)
-	// Status emits DURABLE narration — genuine model-authored "thinking out
-	// loud" the model wrote alongside its tool calls. It becomes a permanent
-	// thread bubble and marks the turn as having delivered content the user
-	// read, so an accepted task_complete summary can be hidden as a redundant
-	// recap.
+	// Status is retained for reporter compatibility, but production reporters
+	// suppress it: model-authored tool/recovery prose is private working text.
 	Status(text string)
-	// Progress emits an EPHEMERAL "about to act" intent line — the synthesized
-	// narrate-before-act stub used when the model gave NO preamble of its own
-	// (e.g. it went straight to a tool). It is surfaced live so the user can
-	// follow along, but it is NEVER persisted to the durable thread and NEVER
-	// counts as the delivered answer. This is load-bearing: a synthetic stub
-	// (e.g. "Layerx deposit.") must not mark the turn "already narrated" and so
-	// suppress the real task_complete summary — the bug where the model batched
-	// straight to task_complete and the actual content silently vanished.
+	// Progress emits an EPHEMERAL deterministic runtime milestone. It is never
+	// persisted and never counts as delivered answer content.
 	Progress(text string)
 	// Notice emits a deliberate, visible notice — surfaced prominently because
 	// it is a spoken promise (compaction, escalation to the secure path).

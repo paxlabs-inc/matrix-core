@@ -35,6 +35,30 @@ func projDo(t *testing.T, s *Server, method, target string, body interface{}) (i
 	return rec.Code, out
 }
 
+func TestEnsureBuildProjectCreatesAndReplaysAtomically(t *testing.T) {
+	root := t.TempDir()
+	engine := &Engine{workspaceRoot: root}
+	createdProject, created, err := engine.ensureBuildProject("Webhook Dispatcher")
+	if err != nil || !created || createdProject.ID != "webhook-dispatcher" {
+		t.Fatalf("first ensure = %+v created=%v err=%v", createdProject, created, err)
+	}
+	if info, err := os.Lstat(createdProject.Root); err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		t.Fatalf("project root = %+v err=%v", info, err)
+	}
+	replayed, created, err := engine.ensureBuildProject("Webhook Dispatcher")
+	if err != nil || created || replayed != createdProject {
+		t.Fatalf("replayed ensure = %+v created=%v err=%v", replayed, created, err)
+	}
+	registryBytes, err := os.ReadFile(projectsRegistryPath(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var registry map[string]project
+	if json.Unmarshal(registryBytes, &registry) != nil || len(registry) != 1 || registry[createdProject.ID].Root != createdProject.Root {
+		t.Fatalf("registry = %s", registryBytes)
+	}
+}
+
 func projServer(t *testing.T, root string) *Server {
 	t.Helper()
 	e := NewEngine(EngineOptions{

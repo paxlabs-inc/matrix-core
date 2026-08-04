@@ -49,8 +49,6 @@ type stepSignals struct {
 	evidenceItems      int
 	actionsSinceGrowth int
 
-	// The unified unproductive-attempt counter at step entry.
-	unproductive    int
 	episodicPending bool
 }
 
@@ -95,7 +93,6 @@ func (a *Agent) readStepSignals(step int, calls []llm.ToolCall, repeats int, rec
 		refutedPremises:        len(t.ledger.unrevisedRefuted()),
 		ungroundedSelfPremises: len(t.ledger.ungroundedSelf()),
 		mismatch:               t.mismatchMeter,
-		unproductive:           t.unproductive,
 		episodicPending:        t.episodicPending,
 	}
 	if t.graph != nil {

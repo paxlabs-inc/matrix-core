@@ -51,6 +51,13 @@ func (choke *DeliveryChoke) Deliver(
 	scrubbed, leaked := neoidentity.Scrub(name, content)
 	if choke.Recorder != nil {
 		choke.Recorder.RecordDelivery(scrubbed)
+		if source, ok := choke.Recorder.(interface{ RecordError() error }); ok &&
+			source.RecordError() != nil {
+			return DeliveryResult{
+				Content: scrubbed, Suppressed: true,
+				IdentityScrubbed: leaked,
+			}
+		}
 	}
 	suppressed := shouldSuppressDelivery(userInput, scrubbed)
 	if !suppressed && choke.Reporter != nil {
@@ -80,6 +87,9 @@ func (choke *DeliveryChoke) FinalizeIncomplete(
 		content := incompleteStatus(incomplete)
 		if choke.Recorder != nil {
 			choke.Recorder.RecordDelivery(content)
+			if source, ok := choke.Recorder.(interface{ RecordError() error }); ok && source.RecordError() != nil {
+				return
+			}
 		}
 		choke.Reporter.Say(content, false)
 	}

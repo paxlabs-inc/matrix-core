@@ -25,11 +25,15 @@ import (
 	"sync"
 	"time"
 
+	"crypto/sha256"
+	"encoding/hex"
+
 	"matrix/cortex"
 	"matrix/cortex/embed"
 	"matrix/cortex/memory"
 	"matrix/cortex/query"
 	"matrix/cortex/store"
+	"matrix/cortexclient"
 
 	"matrix/neo/internal/config"
 )
@@ -41,6 +45,7 @@ type Pager struct {
 	store       *store.Store
 	embedder    embed.Embedder
 	hasEmbedder bool
+	neocortex   *cortexclient.Client
 
 	mu         sync.RWMutex
 	activeGoal string
@@ -83,6 +88,14 @@ func Open(cfg config.Config) (*Pager, error) {
 
 	emb := pickEmbedder(cfg)
 	p := &Pager{cfg: cfg, cortex: c, store: s, embedder: emb}
+	if cfg.MemorySubstrate == config.SubstrateNeocortex {
+		client, dialErr := dialNeocortex(cfg)
+		if dialErr != nil {
+			_ = s.Close()
+			return nil, dialErr
+		}
+		p.neocortex = client
+	}
 
 	if serr := c.StartEmbedder(cortex.EmbedderOptions{Embedder: emb}); serr == nil {
 		p.hasEmbedder = true
@@ -107,10 +120,58 @@ func (p *Pager) Close() error {
 	if p.cortex != nil && p.hasEmbedder {
 		_ = p.cortex.StopEmbedder()
 	}
+	if p.neocortex != nil {
+		_ = p.neocortex.Close()
+	}
 	if p.store != nil {
 		return p.store.Close()
 	}
 	return nil
+}
+
+// dialNeocortex connects the cortexd substrate handle for side-by-side
+// qualification. The flag is explicit: an unreachable or misconfigured daemon
+// is a boot failure, never a silent fallback to the old substrate.
+func dialNeocortex(cfg config.Config) (*cortexclient.Client, error) {
+	socket := strings.TrimSpace(cfg.CortexdSocket)
+	token, err := hex.DecodeString(strings.TrimSpace(cfg.CortexdToken))
+	if socket == "" || err != nil || len(token) != 32 {
+		return nil, fmt.Errorf(
+			"neo/memory: substrate %q requires NEO_CORTEXD_SOCKET and a 64-hex NEO_CORTEXD_TOKEN",
+			config.SubstrateNeocortex,
+		)
+	}
+	identity := sha256.Sum256(
+		[]byte("neocortex-connection-v1\x00" + cfg.CortexActor),
+	)
+	dialConfig := cortexclient.Config{SocketPath: socket}
+	copy(dialConfig.CapabilityToken[:], token)
+	copy(dialConfig.ConnectionID[:], identity[:16])
+	return cortexclient.Dial(dialConfig)
+}
+
+// NeocortexClient returns the cortexd substrate handle when the memory
+// substrate flag selects neocortex, nil otherwise.
+func (p *Pager) NeocortexClient() *cortexclient.Client {
+	return p.neocortex
+}
+
+// NewNeocortexLoopSeam binds a per-conversation resurrection loop seam over
+// the cortexd substrate handle.
+func (p *Pager) NewNeocortexLoopSeam(
+	conversationID string,
+	budgetTokens int,
+) (*cortexclient.LoopSeam, error) {
+	if p.neocortex == nil {
+		return nil, fmt.Errorf("neo/memory: neocortex substrate is not active")
+	}
+	if budgetTokens < 1 {
+		budgetTokens = 1
+	}
+	return cortexclient.NewLoopSeam(p.neocortex, cortexclient.SeamConfig{
+		ConversationID: conversationID,
+		BudgetTokens:   uint64(budgetTokens),
+	})
 }
 
 // SetActiveGoal records the task Neo is currently pursuing (pinned every turn).

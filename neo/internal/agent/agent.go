@@ -465,9 +465,9 @@ func New(o Options) *Agent {
 	// It is synthetic (intercepted in the loop, not routed through the Manager),
 	// so it never enters the manifest tool-bijection check.
 	a.schemas = append(a.schemas, readOverflowSchema())
-	// Epistemic-core Mechanism 3, universal: every advertised tool schema
-	// carries the `expect` parameter so the prediction discipline is enforced
-	// by the schema the model reads, not just charter prose. Copy-on-write —
+	// Epistemic-core Mechanism 3: only genuinely uncertain network/search probe
+	// schemas carry `expect`; deterministic reads, mutations, and commands must
+	// not be converted into belief-mismatch loops. Copy-on-write —
 	// the Manager's shared parameter maps are never mutated.
 	if a.cfg.EpistemicPredictions {
 		a.schemas = injectExpectParam(a.schemas)
@@ -874,9 +874,6 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData, resumeGui
 	bundle := a.cmActivate(userInput)
 	a.activationAssemblies++
 	cmTail := a.renderActivationBundle(bundle)
-	if a.executionPosture() {
-		cmTail += a.turn.contract.Render()
-	}
 	// Q2 first-message relevance push: Activate's tiers are recency-based
 	// + query-independent, so on the OPENING turn also inject a bounded
 	// relevance retrieval keyed on the message — the agent gets
@@ -985,20 +982,15 @@ func (a *Agent) prepareWindow(cmTail string) (window []llm.Message, tail string,
 }
 
 // generate is the generate stage (MORPHEUS req.3.1): one model call with live
-// streaming, the forced-revision variant, and the 413 oversize recovery.
-// Contract — inputs: the step index, the turn-frozen activation tail, and this
-// step's prepared window+tail; mutates: the working transcript only on a
-// forced revision (via forcedRevisionStep) or a cut-off tool-call batch (the
-// compact-retry nudge), plus trim/strip during 413 recovery; returns: the
-// model result, whether reasoning streamed live, and proceed=false when the
-// loop must re-enter its next iteration without a result (forced revision ran,
-// or the cut-off batch was dropped). err is a terminal model failure.
+// buffered streaming and 413 oversize recovery. Epistemic observations remain
+// diagnostic; they do not strip tools or force a private revision call before
+// ordinary execution.
 func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []llm.Message, tail string) (res *llm.ChatResult, streamedReasoning, proceed bool, err error) {
-	// Live "typing" channel: stream the model's incremental fragments as
-	// they generate so the user sees Neo thinking + answering in real time
-	// instead of staring at a blank surface until the whole turn lands.
-	// reasoning → the live thinking channel; content → the answer being
-	// typed. step segments the stream so the client resets per turn.
+	// Model text is classified only after generation settles. A tool-calling
+	// turn's prose/reasoning is private working state; publishing fragments
+	// before learning that tools are present is how recovery self-talk leaked
+	// into the public stream. Bare final answers are emitted below after the
+	// result is known.
 	// Live file-typing channel (NEO-WORKBENCH): tool-call argument fragments
 	// stream through the typer, which decodes write_file path/content
 	// incrementally and emits bounded ToolStream observer events. Fresh per
@@ -1012,28 +1004,6 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 		if d.Tool != nil {
 			typer.feed(d.Tool)
 		}
-		if d.Reasoning != "" {
-			streamedReasoning = true
-			a.out.Delta(step, "reasoning", a.nameReasoning(d.Reasoning))
-		}
-		if d.Content != "" {
-			// Identity net on the live answer stream (best-effort; the
-			// settled answer is re-scrubbed at delivery). A model name split
-			// across fragments can evade this, which is why finishTurn is the
-			// authoritative choke point.
-			a.out.Delta(step, "content", a.cleanContent(d.Content))
-		}
-	}
-
-	// Governor fire position 1 — the epistemic layer (req.5.2, epistemic-core
-	// req.5.2/6.3/7.2): a pending forced revision runs as a tools-stripped
-	// reasoning-only step BEFORE any further dispatch — the model must revise
-	// the plan in text first.
-	if _, due := a.governEpistemic(); due {
-		if rerr := a.forcedRevisionStep(ctx, window, onDelta); rerr != nil {
-			return nil, streamedReasoning, false, rerr
-		}
-		return nil, streamedReasoning, false, nil
 	}
 
 	schemas := a.schemas
@@ -1092,6 +1062,24 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 			a.working = append(a.working, llm.UserMessage(nudge))
 		}
 		return nil, streamedReasoning, false, nil
+	}
+	if res.HasToolCalls() {
+		// Mark settled reasoning as handled even though it was intentionally
+		// suppressed, so deliberate does not re-publish a post-hoc glimpse.
+		streamedReasoning = strings.TrimSpace(res.Message.Reasoning) != ""
+	} else {
+		if reasoning := a.nameReasoning(res.Message.Reasoning); reasoning != "" {
+			// Execution turns show deterministic runtime milestones, not the
+			// model's working monologue. Conversational turns may still surface
+			// the settled reasoning channel.
+			streamedReasoning = true
+			if !a.executionPosture() {
+				a.out.Delta(step, "reasoning", reasoning)
+			}
+		}
+		if content := a.cleanContent(res.Message.Content); content != "" {
+			a.out.Delta(step, "content", content)
+		}
 	}
 	return res, streamedReasoning, true, nil
 }
@@ -1157,22 +1145,20 @@ func (a *Agent) deliberate(step int, res *llm.ChatResult, streamedReasoning bool
 // of the termination guard chain (req.4.1): a bare-answer turn (no tool calls)
 // walks closeGuardChain in table order and the first firing guard decides —
 // deliver | nudge-and-continue | suppress — with finishTurn remaining the
-// single delivery choke point. Contract — inputs: the model result, whether
-// Cassandra modified this step, and the turn's user input; mutates: whatever
-// the one firing guard mutates (guidance nudges on the working transcript, the
-// unified unproductive counter, the scrubbed answer); returns finished=true
-// when the turn delivered (Chat returns nil), err on the unproductive-cap
-// escalation, and (false, nil) when the loop must re-enter (a nudge or
-// suppression asked the model to continue).
+// single delivery choke point. Contract — inputs: the model result and the
+// turn's user input; mutates only the state owned by the firing guard and the
+// scrubbed answer; returns finished=true when the turn delivered (Chat returns
+// nil), an error when a guard exhausts its own bound, and (false, nil) when a
+// nudge asks the model to continue.
 //
 // Termination (Cassandra 2.0: the proof-of-work completion gate is retired):
 // a turn ends when the model emits NO tool calls — the single completion path
 // — once no guard in the chain blocks the close. Honesty emerges from the
 // agent re-verifying under Cassandra's injected doubt, backstopped by the
 // loop-discipline guarantees, not from a terminal adjudicator.
-func (a *Agent) closeTurn(ctx context.Context, res *llm.ChatResult, casMod bool, userInput string) (finished bool, err error) {
+func (a *Agent) closeTurn(ctx context.Context, res *llm.ChatResult, _ bool, userInput string) (finished bool, err error) {
 	t := a.turn
-	cc := &closeContext{res: res, answer: strings.TrimSpace(res.Message.Content), casMod: casMod}
+	cc := &closeContext{res: res, answer: strings.TrimSpace(res.Message.Content)}
 	_, dec := a.evalCloseChain(cc)
 	if dec.err != nil {
 		return false, dec.err
@@ -1184,9 +1170,9 @@ func (a *Agent) closeTurn(ctx context.Context, res *llm.ChatResult, casMod bool,
 		// or progressing — invisible to the tool-batch repeat reads (a bare-answer
 		// step carries no tool calls to compare) and to the evidence-convergence
 		// meter. Past the stall bound it escalates to an honest stop through the
-		// SAME terminal funnel as every other unproductive death (escalateGuidance
-		// → governDeath), adding no new terminal site. A dedicated counter keeps it
-		// from double-counting with the guard nudges that share t.unproductive.
+		// same terminal funnel as other bounded loop deaths (escalateGuidance ->
+		// governDeath), adding no new terminal site. Its counter is independent of
+		// the close guards' own retry bounds.
 		if a.noteCloseChurn(cc.answer) {
 			return false, a.escalateGuidance(t.closeChurn)
 		}
@@ -1228,8 +1214,8 @@ func (a *Agent) noteCloseChurn(answer string) bool {
 }
 
 // act is the act stage (MORPHEUS req.3.1): narration, the governor's outer
-// failsafe commit for this batch, the check-before-act gate, and tool
-// dispatch with result assembly. Contract — inputs: the step index, this
+// failsafe commit for this batch, and tool dispatch with result assembly.
+// Contract — inputs: the step index, this
 // step's context-fill pct, and the tool-calling model result; mutates: the
 // working transcript (tool results, guidance), the turn's stall bookkeeping
 // and counters, the loop snapshot, and the epistemic run state (via the
@@ -1243,24 +1229,18 @@ func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) err
 		if err := a.promoteToExecution(); err != nil {
 			return err
 		}
-		a.pushGuidance("This turn crossed into state-changing execution. Apply the execution contract and guards before continuing.\n" + t.contract.Render())
+		a.pushGuidance("This turn crossed into state-changing execution. Apply the hard authorization, approval, and effect-safety guards before continuing.")
 	}
-	// Per-step dispatch-gate read (item 1c): reset before the gates run this step,
-	// so the end-of-act fold can tell a wholly-refused step (refused a call, then
-	// dispatched nothing) from a step that made real tool progress.
-	t.stepRefused = false
-	t.stepDispatched = false
 	for _, call := range res.Message.ToolCalls {
 		if call.Function.Name == tools.MemoryRecallTool {
 			t.episodicGrounded()
 		}
 	}
-	// Surface any preamble the model wrote alongside its tool calls as
-	// DURABLE narration — Neo "thinking out loud" before it acts. This runs
-	// for EVERY tool-calling turn: it is what makes Neo's running commentary
-	// the durable thread content.
+	// Tool-call prose is private working text. Persisting it as public narration
+	// exposed recovery self-talk ("continuing", "let me assess") and made a
+	// healthy resumed run look flaky. It may still seed the premise ledger, but
+	// only runtime-authored milestones are user-facing while tools execute.
 	if c := strings.TrimSpace(res.Message.Content); c != "" {
-		a.out.Status(a.cleanContent(c))
 		// Epistemic-core Mechanism 1 (req.4.1): the first committing
 		// assistant turn IS plan formation — extract its load-bearing
 		// premises with provenance into the resident ledger.
@@ -1272,7 +1252,7 @@ func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) err
 	// reworded — a cosmetic reword can't reset the counter and loop forever,
 	// NE-4), or a rotating A→B→A→B cycle that introduces no new tool.
 	// Distinct operations reset the repeat read.
-	repeat, stalled := a.governFailsafes(res.Message.ToolCalls)
+	_, stalled := a.governFailsafes(res.Message.ToolCalls)
 	// Self-model task 2.2: refresh the live loop-state snapshot for THIS
 	// step so any death exit below captures the real state at death.
 	a.snapshotLoop(step, pct, t.repeats, t.recentSigs, res.Message.ToolCalls, t.distinctToolSet)
@@ -1282,17 +1262,6 @@ func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) err
 		// the task is not done. (On the bare CLI path, with no supervisor, the
 		// wrapped reason is printed.)
 		return a.governDeath(DeathReasonStall, "repeating the same step without progress. Where it got stuck:")
-	}
-	// req.8.1: a no-progress repeat is itself an unproductive attempt — fold
-	// it into the ONE unified counter (alongside completion rejections and
-	// guidance nudges) so an interleaved mix that never trips the pure-repeat
-	// stall is still bounded, and escalate to an honest stop-and-ask past the
-	// bound rather than running to the step budget.
-	if repeat {
-		t.unproductive++
-		if a.capExceeded(t.unproductive) {
-			return a.escalateGuidance(t.unproductive)
-		}
 	}
 	// One firm convergence steer just before the hard stall: the model
 	// re-does work it already completed (re-fetching/re-rendering a value it
@@ -1312,69 +1281,16 @@ func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) err
 		t.distinctToolSet[c.Function.Name] = struct{}{}
 	}
 
-	// Narrate-before-act (req.2): if the model went straight to tools
-	// without writing its own preamble this step (that preamble was already
-	// surfaced above), synthesize ONE concise, action-specific intent line
-	// from the real operation so the user can always follow along — at most
-	// one per action, never a fixed boilerplate. Distinct per-action content
-	// (do_2) lets neo-execution-reliability's coalescing collapse only
-	// genuine consecutive repeats. This is a SYNTHETIC stub (Neo generated
-	// it from the tool name, e.g. "Layerx deposit."), so it rides the
-	// EPHEMERAL Progress channel — never persisted, never counted as the
-	// delivered answer. Routing it through durable Status was the bug where a
-	// straight-to-tools turn marked itself "already narrated" and a later
-	// bare-answer surface was hidden, so the user saw only the stub.
-	if strings.TrimSpace(res.Message.Content) == "" {
-		if line := narrateBatch(res.Message.ToolCalls); line != "" {
-			a.out.Progress(line)
-		}
-	}
-
-	// Epistemic-core check-before-act (req.5): the gate validates the
-	// plan's self-claims against the resident capability surface and
-	// refuses dependent dispatches while a refuted premise stands
-	// (introspection tools stay allowed — they are the discharge path).
 	allowed := res.Message.ToolCalls
-	if a.executionPosture() {
-		var refusedByGate bool
-		allowed, refusedByGate = a.checkBeforeAct(res.Message.ToolCalls)
-		if refusedByGate {
-			t.stepRefused = true
-		}
-		if !t.contract.ReadyForMutation() {
-			a.pushGuidance("The task contract has an unresolved material input. Do not call tools or mutate state. Ask only for the missing required value recorded in the contract.")
-			return nil
-		}
+	// Emit a deterministic public milestone only for the calls that survived
+	// admission and are actually about to enter dispatch. Refused calls are
+	// private diagnostics, not user-visible work.
+	if line := narrateBatch(allowed); line != "" {
+		a.out.Progress(line)
 	}
 	if err := a.runToolCalls(ctx, allowed); err != nil {
 		return err
 	}
-	// A step whose calls were wholly refused at a dispatch gate (a missing-
-	// prediction probe refusal or a refuted-premise dependent refusal) and that
-	// dispatched NOTHING makes no progress, yet produces no dispatched failure and
-	// — when the model varies the guessed argument each time — no batch-repeat, so
-	// it evades every existing stall read. Count it on the dedicated refusal run so
-	// a refusal LOOP escalates to an honest stop-and-ask instead of running
-	// silently to the step budget. An IDENTICAL refused batch is EXCLUDED (!repeat):
-	// it is a byte/semantic/cyclic repeat the stall path already counts and dies on
-	// at NoProgressStall, so this owns only the gap that path misses — varied-
-	// argument refusals — and never races the stall verdict for identical spirals.
-	// A genuine dispatch resets the run (real progress). It is kept off the shared
-	// t.unproductive counter so it never interacts with the repeat/guard-nudge
-	// bookkeeping.
-	switch {
-	case t.stepRefused && !t.stepDispatched && !repeat:
-		t.refusalRun++
-		if a.cfg.NoProgressStall > 0 && t.refusalRun >= a.cfg.NoProgressStall {
-			return a.escalateGuidance(t.refusalRun)
-		}
-	case t.stepDispatched:
-		t.refusalRun = 0
-	}
-	// req.8.2 (N2): a plain tool dispatch does NOT reset the unified
-	// unproductive counter — only genuine accepted progress does. This keeps
-	// an interleaved real tool call from silently resetting the loop-discipline
-	// bound and letting the loop run to the step budget.
 	if injectConvergeNudge {
 		t.convergeNudged = true
 		a.pushGuidance("You already obtained the result and showed it — do NOT fetch or render it again. Give the user the answer now and finish.")
@@ -1450,22 +1366,15 @@ func (a *Agent) pushGuidance(text string) llm.Message {
 }
 
 // pushGuidanceNudge routes a system-steering nudge through the guidance choke
-// point (req.1.1) and folds it into the ONE unified unproductive-attempt
-// counter (req.8.1): it increments the counter and reports whether the bound is
-// now exceeded. The close-chain guards (truncation/empty/read-full/identity
-// steers) all push through here, so they share ONE bound with the no-progress
-// repeats fed in the loop. The counter is reset ONLY on genuine accepted
-// progress (req.8.2) — never by a plain tool dispatch. A cap of 0 disables the
-// bound (unbounded nudging).
+// point and increments the caller's dedicated retry counter. No counter is
+// shared between synthesis, evidence, identity, or tool-repeat policy.
 func (a *Agent) pushGuidanceNudge(text string, counter *int) (capExceeded bool) {
 	a.pushGuidance(text)
 	*counter++
 	return a.capExceeded(*counter)
 }
 
-// capExceeded reports whether the unified unproductive-attempt counter has
-// passed its bound (config MaxGuidanceNudges, the shared unproductive-attempt
-// cap). A cap of 0 disables the bound (unbounded).
+// capExceeded reports whether one dedicated guidance counter passed its bound.
 func (a *Agent) capExceeded(counter int) bool {
 	return a.cfg.MaxGuidanceNudges > 0 && counter > a.cfg.MaxGuidanceNudges
 }
@@ -1823,9 +1732,6 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 	stepIDs := make([]string, n)
 	parsedArgs := make([]map[string]interface{}, n)
 	expects := make([]string, n)
-	// One verdict per strategy per BATCH, so a call and its deduped duplicate
-	// are never split by the bounded expectation gate.
-	batchRefused := map[string]bool{}
 	for i, call := range calls {
 		name := call.Function.Name
 		args, perr := call.ParseArgs()
@@ -1842,20 +1748,8 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 		}
 		// Epistemic-core Mechanism 3: lift the stated expectation off the call
 		// (the tool never sees it); the belief update runs at result assembly.
-		// A probe with NO expectation is a guess — refused at the seam with
-		// the ground-or-hypothesize directive (req.6.1), never dispatched.
+		// Prediction metadata is optional and never blocks dispatch.
 		expects[i] = popExpect(args)
-		if directive, refused := a.refuseUnstatedExpectation(name, args, expects[i], batchRefused); refused {
-			if err := a.journalToolResult(ctx, call, i, directive, directive, true, exectool.FailureValidation); err != nil {
-				return err
-			}
-			a.working = append(a.working, llm.ToolResult(call.ID, name, directive))
-			a.cmRecordToolResult(name, directive)
-			a.turn.stepRefused = true
-			parsedArgs[i] = nil
-			stepIDs[i] = ""
-			continue
-		}
 		parsedArgs[i] = args
 		stepID := call.ID
 		if stepID == "" {
@@ -1913,9 +1807,6 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 		if parsedArgs[i] == nil {
 			continue // parse-failed: already appended above
 		}
-		// A call reaching here was dispatched (not parse-failed, not gate-refused):
-		// the step made real progress, so it is not a wholly-refused step (item 1c).
-		a.turn.stepDispatched = true
 		name := call.Function.Name
 		content := results[i].content
 		evidence := results[i].evidence
@@ -1986,7 +1877,6 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) er
 	}
 	results := make([]dispatchResult, len(calls))
 	var convergenceErr error
-	batchRefused := map[string]bool{}
 	for i, call := range calls {
 		name := call.Function.Name
 		args, perr := call.ParseArgs()
@@ -2000,19 +1890,8 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) er
 		}
 		// Epistemic-core Mechanism 3: lift the stated expectation off the call
 		// (the tool never sees it); the belief update runs after dispatch.
-		// A probe with NO expectation is a guess — refused at the seam with
-		// the ground-or-hypothesize directive (req.6.1), never dispatched.
+		// Prediction metadata is optional and never blocks dispatch.
 		expect := popExpect(args)
-		if directive, refused := a.refuseUnstatedExpectation(name, args, expect, batchRefused); refused {
-			if err := a.journalToolResult(ctx, call, i, directive, directive, true, exectool.FailureValidation); err != nil {
-				return err
-			}
-			a.working = append(a.working, llm.ToolResult(call.ID, name, directive))
-			a.cmRecordToolResult(name, directive)
-			a.turn.stepRefused = true
-			continue
-		}
-		a.turn.stepDispatched = true // dispatched here: real step progress (item 1c)
 		// Stable surface id for this call: some providers omit tool_call ids, so
 		// fall back to a per-turn index. Shared across the start/end pair below
 		// so the UI updates ONE viewport (running→done) instead of dropping the

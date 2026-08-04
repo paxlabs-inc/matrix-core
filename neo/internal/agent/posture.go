@@ -128,15 +128,11 @@ func (a *Agent) preparePosture() error {
 	if a.executionPosture() {
 		return a.prepareExecutionFrame()
 	}
-	var selected []llm.Tool
-	if a.turn.posture == PostureExploration {
-		for _, schema := range a.allSchemas {
-			if readOnlyToolName(schema.Function.Name) {
-				selected = append(selected, schema)
-			}
-		}
-	}
-	return a.installPostureSchemas(selected)
+	// Posture is advisory until an effectful call is selected. Keep the real
+	// capability surface visible so prose classification cannot hide the tool
+	// the model needs; promotion installs the durable execution frame before a
+	// state-changing dispatch begins.
+	return a.installPostureSchemas(a.allSchemas)
 }
 
 func (a *Agent) installPostureSchemas(selected []llm.Tool) error {
@@ -170,13 +166,7 @@ func (a *Agent) prepareExecutionFrame() error {
 			"Do not use fake, mock, stub, canned, or placeholder implementations or verification.",
 		},
 	})
-	var selected o1.RuntimeCapabilities
-	var err error
-	if a.cfg.O1ConstrainTools {
-		selected, err = o1.CompileRuntimeCapabilities(a.turn.contract, a.allSchemas)
-	} else {
-		selected, err = o1.CompileAllCapabilities(a.allSchemas)
-	}
+	selected, err := o1.CompileAllCapabilities(a.allSchemas)
 	if err != nil {
 		return fmt.Errorf("o1 capability preflight: %w", err)
 	}

@@ -64,13 +64,67 @@ func TestNativeShellUsesBoundedCredentialFilteredEnvironment(t *testing.T) {
 	n := newNativeTestRuntime(t)
 	t.Setenv("RAILWAY_API_TOKEN", "must-not-leak")
 	result := nativeCall(t, n, nativeShell, map[string]interface{}{"command": "printf '%s|%s' \"$PWD\" \"${RAILWAY_API_TOKEN-unset}\"", "timeout_seconds": float64(5)})
-	output := result["output"].(string)
+	stdout := result["stdout"].(map[string]interface{})
+	output := stdout["text"].(string)
 	if !strings.Contains(output, n.root+"|unset") || strings.Contains(output, "must-not-leak") {
 		t.Fatalf("shell environment = %q", output)
 	}
 	result = nativeCall(t, n, nativeShell, map[string]interface{}{"command": "sleep 2", "timeout_seconds": float64(1)})
 	if timedOut, _ := result["timed_out"].(bool); !timedOut {
 		t.Fatalf("expected timeout: %#v", result)
+	}
+}
+
+func TestNativeShellReturnsStructuredRetrievableTruncation(t *testing.T) {
+	n := newNativeTestRuntime(t)
+	result := nativeCall(t, n, nativeShell, map[string]interface{}{
+		"command": "head -c 200000 /dev/zero | tr '\\000' x; printf problem >&2",
+	})
+	if !result["truncated"].(bool) || result["output_id"] == "" {
+		t.Fatalf("expected retrievable truncation: %#v", result)
+	}
+	if got := result["stderr"].(map[string]interface{})["text"]; got != "problem" {
+		t.Fatalf("stderr = %#v", got)
+	}
+	page := nativeCall(t, n, nativeShellOutput, map[string]interface{}{
+		"output_id": result["output_id"], "stream": "stdout", "offset": float64(nativeMaxStreamPreview), "max_bytes": float64(4096),
+	})
+	if len(page["content"].(string)) != 4096 || page["next_offset"].(float64) != float64(nativeMaxStreamPreview+4096) {
+		t.Fatalf("retrieved page = %#v", page)
+	}
+}
+
+func TestNativePatchFilesIsAllOrNothing(t *testing.T) {
+	n := newNativeTestRuntime(t)
+	nativeCall(t, n, nativeWriteFile, map[string]interface{}{"path": "a.txt", "content": "alpha"})
+	nativeCall(t, n, nativeWriteFile, map[string]interface{}{"path": "b.txt", "content": "beta"})
+	result := nativeCall(t, n, nativePatchFiles, map[string]interface{}{"changes": []interface{}{
+		map[string]interface{}{"path": "a.txt", "old_text": "alpha", "new_text": "one"},
+		map[string]interface{}{"path": "b.txt", "old_text": "beta", "new_text": "two"},
+		map[string]interface{}{"path": "c.txt", "content": "three", "expected_sha256": "missing"},
+	}})
+	if !result["applied"].(bool) || len(result["files"].([]interface{})) != 3 {
+		t.Fatalf("patch result = %#v", result)
+	}
+	for path, want := range map[string]string{"a.txt": "one", "b.txt": "two", "c.txt": "three"} {
+		got, err := os.ReadFile(filepath.Join(n.root, path))
+		if err != nil || string(got) != want {
+			t.Fatalf("%s = %q, %v", path, got, err)
+		}
+	}
+
+	_, isErr, err := n.call(context.Background(), nativePatchFiles, map[string]interface{}{"changes": []interface{}{
+		map[string]interface{}{"path": "a.txt", "content": "changed"},
+		map[string]interface{}{"path": "b.txt", "old_text": "missing-anchor", "new_text": "changed"},
+	}})
+	if err != nil || !isErr {
+		t.Fatalf("invalid patch = isErr %v err %v", isErr, err)
+	}
+	for path, want := range map[string]string{"a.txt": "one", "b.txt": "two"} {
+		got, _ := os.ReadFile(filepath.Join(n.root, path))
+		if string(got) != want {
+			t.Fatalf("failed patch partially changed %s to %q", path, got)
+		}
 	}
 }
 
@@ -186,6 +240,26 @@ func TestManagerAdvertisesAndPreflightsNativeToolsWithoutLocalMCP(t *testing.T) 
 	}
 	if _, ok := m.byFunc["fs__read_text_file"]; ok {
 		t.Fatal("native tool unexpectedly depends on MCP binding")
+	}
+}
+
+func TestNativeRuntimeShadowsLegacyLocalSchemasButKeepsReplayBinding(t *testing.T) {
+	m := &Manager{native: newNativeTestRuntime(t)}
+	for _, test := range []struct {
+		alias string
+		name  string
+		want  bool
+	}{
+		{alias: "fs", name: "write_file", want: true},
+		{alias: "exec", name: "shell", want: true},
+		{alias: "git", name: "status", want: true},
+		{alias: "browser", name: "browser_navigate", want: false},
+		{alias: "web-search", name: "web_search", want: false},
+	} {
+		bound := &boundTool{alias: test.alias, name: test.name}
+		if got := m.nativeShadows(bound); got != test.want {
+			t.Fatalf("nativeShadows(%s,%s) = %v, want %v", test.alias, test.name, got, test.want)
+		}
 	}
 }
 

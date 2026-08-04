@@ -68,7 +68,7 @@ func TestRunToolCalls_DuplicateCoreExecuteJoins(t *testing.T) {
 
 		calls := []llm.ToolCall{
 			tcid("c0", tools.CoreExecuteTool, `{"intent":"launch SPARK"}`),
-			tcid("c1", "web_search", `{"q":"price"}`),
+			tcid("c1", "read_text_file", `{"path":"missing.txt"}`),
 			tcid("c2", tools.CoreExecuteTool, `{"intent":"launch SPARK"}`),
 		}
 		a.runToolCalls(context.Background(), calls)

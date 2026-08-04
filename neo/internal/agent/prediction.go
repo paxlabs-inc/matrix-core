@@ -2,8 +2,8 @@
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // prediction.go — Mechanism 3 of the epistemic core (epistemic-core req.6):
-// prediction-carrying dispatch. Probe-class tool calls (network/endpoint/
-// search/exec probes) carry a one-line stated expectation of outcome shape
+// prediction-carrying dispatch. Genuinely uncertain network/search probes
+// carry a one-line stated expectation of outcome shape
 // (the `expect` argument); mismatch is detected deterministically where
 // possible (error, HTTP status, empty/nonempty, JSON parse) and by a cheap
 // model otherwise, and is a first-class belief-update event: the hypothesis
@@ -25,19 +25,23 @@ import (
 )
 
 // expectParamDescription is the schema-level advertisement of the `expect`
-// argument. Living in every tool's parameter schema (not just prose in the
-// charter) is what makes the model actually include it call after call.
-const expectParamDescription = "REQUIRED on every call: one short line predicting this call's outcome shape (e.g. \"200 with a JSON array of candles\", \"exit 0 listing the config files\"). The system lifts it off the call before the tool runs — it is your stated prediction, not a tool input."
+// argument. It is intentionally absent from deterministic reads, mutations,
+// and shell commands: forcing predictions onto known operations turned
+// ordinary execution into mismatch recovery loops.
+const expectParamDescription = "Optional hypothesis for this uncertain probe: one short line predicting its outcome shape (e.g. \"200 with a JSON array of candles\"). The system lifts it off before the tool runs; omitting it never blocks the tool."
 
 // injectExpectParam returns a copy of the advertised schemas with an `expect`
-// string property added to every tool's parameters (req.6.1 made universal:
-// every call carries a prediction, not just probe-class calls). Copy-on-write:
+// string property added only to genuinely uncertain probe schemas. Copy-on-write:
 // the Manager's own schema maps are never mutated — Schemas() hands out the
 // SAME underlying parameter maps on every call, so an in-place edit here
 // would poison every later consumer (sub-agents, the capability surface).
 func injectExpectParam(schemas []llm.Tool) []llm.Tool {
 	out := make([]llm.Tool, len(schemas))
 	for i, t := range schemas {
+		if _, probe := probeStrategy(t.Function.Name, nil); !probe {
+			out[i] = t
+			continue
+		}
 		params := make(map[string]interface{}, len(t.Function.Parameters)+1)
 		for k, v := range t.Function.Parameters {
 			params[k] = v
@@ -80,11 +84,15 @@ func popExpect(args map[string]interface{}) string {
 }
 
 // probeStrategy classifies a tool call as probe-class and returns its strategy
-// key. The key deliberately IGNORES the varying argument (the guessed path,
-// the reworded query) and keeps the invariant part (tool + host / command
-// head), so differently-argued guesses of one strategy meter together.
+// key. The key deliberately IGNORES the varying argument (the guessed path or
+// reworded query) and keeps the invariant part (tool + host), so differently-
+// argued guesses of one strategy meter together.
 func probeStrategy(name string, args map[string]interface{}) (string, bool) {
 	n := strings.ToLower(name)
+	base := n
+	if index := strings.LastIndex(base, "__"); index >= 0 {
+		base = base[index+2:]
+	}
 	argStr := func(keys ...string) string {
 		for _, k := range keys {
 			if v, ok := args[k].(string); ok && strings.TrimSpace(v) != "" {
@@ -94,23 +102,15 @@ func probeStrategy(name string, args map[string]interface{}) (string, bool) {
 		return ""
 	}
 	switch {
-	case strings.Contains(n, "search"):
+	case (strings.Contains(base, "web_search") || strings.Contains(base, "web_news") ||
+		strings.Contains(base, "exa_search") || base == "search") && base != "search_files":
 		return name, true
-	case strings.Contains(n, "fetch") || strings.Contains(n, "http") || strings.Contains(n, "request") ||
-		strings.Contains(n, "navigate") || strings.Contains(n, "download") || n == "web_read":
+	case strings.Contains(base, "fetch") || strings.Contains(base, "http") || strings.Contains(base, "request") ||
+		strings.Contains(base, "navigate") || strings.Contains(base, "download") || base == "web_read":
 		key := name
 		if raw := argStr("url", "uri", "address", "endpoint"); raw != "" {
 			if u, err := url.Parse(raw); err == nil && u.Host != "" {
 				key = name + "@" + u.Host
-			}
-		}
-		return key, true
-	case strings.Contains(n, "exec") || strings.Contains(n, "shell") || strings.Contains(n, "command") ||
-		strings.Contains(n, "terminal") || strings.HasPrefix(n, "run_"):
-		key := name
-		if cmd := argStr("command", "cmd", "script"); cmd != "" {
-			if fields := strings.Fields(cmd); len(fields) > 0 {
-				key = name + ":" + fields[0]
 			}
 		}
 		return key, true
@@ -214,20 +214,11 @@ func (a *Agent) predictionObserve(ctx context.Context, name string, args map[str
 	}
 	strategy, isProbe := probeStrategy(name, args)
 	if !isProbe {
-		// Non-probe calls join the discipline the moment they state an
-		// expectation (every call is asked to — the universal `expect`
-		// schema param): same ledger, same meter, same guidance, keyed by
-		// tool name. Without one there is nothing to update — refusal at
-		// the dispatch seam stays probe-only.
-		if expect == "" {
-			return false
-		}
-		strategy = name
+		return false
 	}
 	if expect == "" {
-		// No stated expectation: nothing to update (the refusal-to-dispatch
-		// enforcement lives at the gate, task 3.2). A bare failed probe still
-		// counts as missed for evidence purposes.
+		// No stated expectation means there is no hypothesis to update. The real
+		// probe result still reaches the model and ordinary recovery path.
 		return isErr
 	}
 	if a.turn.mismatchMeter == nil {

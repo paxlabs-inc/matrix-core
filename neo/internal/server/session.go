@@ -24,7 +24,6 @@ import (
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
-	"matrix/neo/internal/o1"
 	"matrix/neo/internal/recall"
 	"matrix/neo/internal/runrecord"
 	"matrix/neo/internal/sessionjournal"
@@ -113,9 +112,9 @@ type run struct {
 	idempotencyKey string
 	sess           *session
 	closed         bool // a closing (final) turn has been emitted
-	narrated       bool // at least one Status narration turn was persisted this run
+	narrated       bool // accepted streamed assistant content was committed this run
 	// lastText is the most recent DURABLE assistant text shown to the user this
-	// run (a Status narration or a Say). The ceiling / deterministic-stop
+	// run (an accepted streamed answer or a Say). The ceiling / deterministic-stop
 	// closing turns compare BestEffort against it so they never re-paste an
 	// answer that is already the last bubble on screen (the double-render).
 	lastText string
@@ -738,12 +737,6 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 		failClass := s.agent.LastFailureClass()
 
 		action := superviseDecision(r.stopped.Load(), err, failClass, ctx.Err(), attempt, maxRespawns)
-		if decision, ok := s.agent.LastO1Decision(); ok && err != nil {
-			action = superviseFromO1(action, decision)
-			if action == actStop {
-				return s.deliverO1Stop(r, decision)
-			}
-		}
 		switch action {
 		case actInterrupted:
 			// User stop / barge-in: drive() emits the interrupted terminal.
@@ -852,24 +845,6 @@ func (s *session) appendRecoveryEvent(ctx context.Context, r *run, attempt int, 
 	})
 	if err != nil {
 		s.engine.logLifecycle("journal.recovery", r.id, s.id, state, time.Since(r.started), err)
-	}
-}
-
-func superviseFromO1(fallback superviseAction, decision o1.SupervisorDecision) superviseAction {
-	switch decision.Action {
-	case o1.SupRepair, o1.SupReconcile:
-		if fallback == actInterrupted || fallback == actCeiling {
-			return fallback
-		}
-		return actRespawn
-	case o1.SupContinue:
-		return fallback
-	case o1.SupAskUser, o1.SupStop:
-		return actStop
-	case o1.SupComplete:
-		return actDone
-	default:
-		return fallback
 	}
 }
 
@@ -1193,42 +1168,6 @@ func (s *session) deliverDeterministicStop(r *run) task.Status {
 	s.finishRun(
 		r, runrecord.StatusFailed, text,
 		"deterministic blocker", fields, true,
-	)
-	return task.StatusCeiling
-}
-
-func (s *session) deliverO1Stop(r *run, decision o1.SupervisorDecision) task.Status {
-	if r.closed {
-		return task.StatusCeiling
-	}
-	text := o1.RenderTerminalMessage(decision, nil)
-	if decision.Terminal != nil && *decision.Terminal == o1.TermInternalFailure {
-		if death, ok := s.agent.LastDeath(); ok && death.Reason == agent.DeathReasonUnproductive {
-			best := strings.TrimSpace(s.agent.BestEffort())
-			switch {
-			case best != "" && best == r.lastText:
-				text = "I've taken this as far as I can on my own — my last message has where things stand."
-			case best != "":
-				text = "I've taken this as far as I can on my own. Here's where it stands:\n\n" + best
-			default:
-				text = "I've taken this as far as I can on my own."
-			}
-			text += "\n\nTell me how you'd like to adjust it and I'll pick it right back up."
-		}
-	}
-	reason := decision.Reason
-	if decision.Terminal != nil {
-		reason = string(*decision.Terminal)
-	}
-	fields := s.chatFields(r, text, true)
-	fields["incomplete"] = true
-	fields["resumable"] = true
-	if decision.Terminal != nil &&
-		*decision.Terminal == o1.TermSafePartial {
-		fields["honest_partial"] = true
-	}
-	s.finishRun(
-		r, runrecord.StatusFailed, text, reason, fields, true,
 	)
 	return task.StatusCeiling
 }
@@ -1661,13 +1600,9 @@ func (r *sseReporter) Say(text string, completion bool) {
 		strings.TrimSpace(text) == r.committed
 	r.committed = ""
 	r.mu.Unlock()
-	// Persist conversational / ceiling answers (the durable thread content). The
-	// task_complete completion summary is normally NOT persisted: Neo's narration
-	// (Status) is the durable thread now, so persisting the summary too would
-	// re-surface it as a duplicate closing bubble on reopen. The exception is a
-	// run that committed NO narration at all (e.g. it went straight to
-	// task_complete) — persisting the summary there is what keeps the reopened
-	// thread from being empty, mirroring the client's live safety net.
+	// Persist conversational / ceiling answers unless the accepted streamed
+	// answer was already committed. This keeps reopen durable without duplicating
+	// the same final bubble.
 	s.finishRun(
 		run, runrecord.StatusCompleted, text, "", fields,
 		(!completion || !run.narrated) && !alreadyPersisted,
@@ -1700,39 +1635,13 @@ func (r *sseReporter) SayHonestPartial(text string) {
 }
 
 func (r *sseReporter) Status(text string) {
-	s := r.sess
-	run := s.cur
-	if run == nil {
-		return
-	}
-	text = strings.TrimSpace(llm.StripGuidance(text))
-	if text == "" {
-		return
-	}
-	// Tool-start markers ("• <tool>") are now driven by the tool observer,
-	// which paints a rich animated workspace step (terminal / browser / editor)
-	// from the call's real arguments — so we drop the bare marker here. Only
-	// genuine model narration becomes an assistant turn.
-	if strings.HasPrefix(text, "• ") {
-		return
-	}
-	s.engine.broker.publish(run.id, "chat.assistant", "neo", s.chatFields(run, text, false))
-	// Persist genuine model narration: it is the durable thread content now (the
-	// task_complete summary is no longer persisted), so Neo's running commentary
-	// survives a reopen instead of vanishing the moment the run settles.
-	s.engine.conv.AppendAssistant(s.id, run.id, text)
-	run.narrated = true
-	run.lastText = text
+	// Free-form status is model-authored working text and is never public. Tool
+	// execution progress is emitted through Progress from deterministic runtime
+	// milestones; accepted final content is committed through Delta/Say.
 }
 
-// Progress surfaces the SYNTHETIC narrate-before-act intent stub (e.g. "Layerx
-// deposit.") — Neo generated it from the tool name, so it is EPHEMERAL: shown
-// live (flagged ephemeral:true so the client renders it transiently and never
-// counts it as durable thread content) but NEVER persisted and NEVER marking
-// run.narrated. That distinction is load-bearing: run.narrated gates whether the
-// accepted task_complete summary is hidden as a redundant recap, so letting a
-// synthetic stub set it was exactly the bug where a straight-to-task_complete
-// turn dropped the real answer (the user saw only "Layerx deposit.").
+// Progress surfaces deterministic runtime milestones. It is EPHEMERAL: shown
+// live but never persisted and never treated as delivered answer content.
 func (r *sseReporter) Progress(text string) {
 	s := r.sess
 	run := s.cur

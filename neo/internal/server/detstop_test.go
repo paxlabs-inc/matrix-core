@@ -15,8 +15,8 @@ import (
 )
 
 // detstopModelServer scripts the brand-kit incident's shape against the REAL
-// agent loop: the model narrates a real answer-shaped message alongside one
-// tool call (persisted as the durable thread content), then keeps returning
+// agent loop: the model emits answer-shaped working text alongside one tool
+// call (suppressed while execution is in flight), then keeps returning
 // EMPTY turns until the unified unproductive-attempt cap escalates — the
 // unproductive-cap death that used to be delivered as a false "permission or
 // limit" banner with the already-shown answer pasted in again.
@@ -58,8 +58,8 @@ func detstopModelServer(t *testing.T, narration string, calls *int, mu *sync.Mut
 //
 //  1. the copy says "I need your direction" (taken this as far as I can) —
 //     never the false "permission, limit" blocker language, and
-//  2. the narration the user already saw is REFERENCED, not re-pasted — the
-//     durable thread carries it exactly once.
+//  2. the suppressed working text may appear once in the honest closing turn,
+//     never as repeated progress narration.
 func TestDeterministicStopIsHonestAndNeverRepastes(t *testing.T) {
 	const narration = "The brand-kit site looks complete already. Which part should I pick back up?"
 	var (
@@ -90,14 +90,12 @@ func TestDeterministicStopIsHonestAndNeverRepastes(t *testing.T) {
 	if !strings.Contains(text, "as far as I can") {
 		t.Fatalf("the closing turn should own the stop honestly (need your direction), got %q", text)
 	}
-	if strings.Contains(text, narration) {
-		t.Fatalf("the closing turn re-pasted the already-shown answer:\n%q", text)
-	}
-	if !strings.Contains(text, "last message") {
-		t.Fatalf("the closing turn should point at the delivered answer, got %q", text)
+	if !strings.Contains(text, narration) {
+		t.Fatalf("the honest closing turn lost the suppressed best-effort result:\n%q", text)
 	}
 
-	// The narration is the durable thread content — exactly once, never doubled.
+	// The working text is public exactly once in the terminal honest partial,
+	// never as in-flight narration and then again at close.
 	seen := 0
 	for _, ev := range events {
 		if ev.Type != "chat.assistant" {

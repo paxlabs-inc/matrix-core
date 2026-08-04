@@ -55,6 +55,28 @@ RUN go mod download
 COPY codegraph-ultra/ ./
 RUN CGO_ENABLED=1 go build -ldflags="-s -w" -o /out/cg ./cmd/codegraph-ultra
 
+# cortexd is built from the pinned native toolchain as a static executable so
+# the final Ubuntu runtime needs no C++ runtime or projection dependencies.
+FROM ubuntu:24.04 AS neocortex-builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        build-essential clang-18 clang-tools-18 llvm-18 lld-18 \
+        libc++-18-dev libc++abi-18-dev \
+        cmake ninja-build python3 file; \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src/neocortex
+COPY neocortex/ ./
+RUN set -eux; \
+    python3 toolchain/verify_vendored.py; \
+    python3 toolchain/verify_generated.py; \
+    cmake --fresh --preset release; \
+    cmake --build --preset release --target cortexd; \
+    file build/release/cortexd | grep -q 'statically linked'
+
 # neo/go.mod requires Go >= 1.25.0 (the other modules are 1.21); the builder
 # base MUST be >= that or `go build ./cmd/neo` fails with GOTOOLCHAIN=local.
 FROM golang:1.25-bookworm AS builder
@@ -75,6 +97,7 @@ ENV CGO_ENABLED=0 \
 # replace target.
 COPY vault/go.mod                  vault/
 COPY cortex/go.mod  cortex/go.sum  cortex/
+COPY cortexclient/go.mod cortexclient/go.sum cortexclient/
 COPY MCL/go.mod     MCL/go.sum     MCL/
 # codegraph (matrix/codegraph) — neo pulls it in via `replace matrix/codegraph
 # => ../codegraph` (the self-model structural self-graph). It in turn replaces
@@ -94,6 +117,7 @@ COPY cassandra/go.mod              cassandra/
 # Now the source.
 COPY vault/     vault/
 COPY cortex/    cortex/
+COPY cortexclient/ cortexclient/
 COPY MCL/       MCL/
 COPY codegraph/ codegraph/
 COPY bridge/    bridge/
@@ -357,8 +381,8 @@ RUN set -eux; \
     chmod 0711 /root
 ENV MATRIX_AGENT_UID=10001 \
     MATRIX_AGENT_GID=10001 \
-    NEO_CODING_RUNTIME_ENABLED=true \
-    NEO_CODING_RUNTIME_REQUIRED=true \
+    NEO_CODING_RUNTIME_ENABLED=false \
+    NEO_CODING_RUNTIME_REQUIRED=false \
     NEO_AGENTCORE_BINARY=/opt/agentcore/.venv/bin/agentcore \
     NEO_AGENTCORE_MANAGED_DIR=/etc/matrix-agentcore \
     NEO_AGENTCORE_HOME=/data/agentcore \
@@ -386,6 +410,7 @@ COPY --from=builder /out/workforced /opt/matrix/bin/workforced
 COPY --from=builder /out/workforce-seat /opt/matrix/bin/workforce-seat
 COPY --from=builder /out/workforce-auditor /opt/matrix/bin/workforce-auditor
 COPY --from=codegraph-ultra-builder /out/cg /usr/local/bin/cg
+COPY --from=neocortex-builder /src/neocortex/build/release/cortexd /opt/matrix/bin/cortexd
 
 # Private AgentCore worker payload. Python 3.13 is copied with the pinned venv
 # because Ubuntu 24.04's system Python is 3.12. Only runtime dependencies,
@@ -435,7 +460,7 @@ RUN --mount=from=agentcore-runtime,source=/opt/agentcore,target=/run/matrix-agen
     test ! -e /opt/agentcore/pyproject.toml; \
     test ! -e /opt/agentcore/uv.lock; \
     ! find /opt/agentcore/.venv/lib/python3.13/site-packages -maxdepth 1 -name '__editable__*' -print -quit | grep -q .; \
-    /opt/agentcore/.venv/bin/python -c 'from importlib.util import find_spec; from pathlib import Path; import agentcore_cli.main, toolsets; site = Path("/opt/agentcore/.venv/lib/python3.13/site-packages").resolve(); origins = (agentcore_cli.main.__file__, toolsets.__file__, find_spec("run_agent").origin); assert "matrix-coding-v1" in toolsets.TOOLSETS; assert all(Path(origin).resolve().is_relative_to(site) for origin in origins)'; \
+    /opt/agentcore/.venv/bin/python -c 'from importlib.util import find_spec; from pathlib import Path; import agentcore_cli.main, toolsets; site = Path("/opt/agentcore/.venv/lib/python3.13/site-packages").resolve(); origins = (agentcore_cli.main.__file__, toolsets.__file__, find_spec("run_agent").origin, find_spec("plugins.browser").origin, find_spec("gateway.session_context").origin); assert "matrix-coding-v1" in toolsets.TOOLSETS; assert all(Path(origin).resolve().is_relative_to(site) for origin in origins)'; \
     chmod -R o-rwx /opt/agentcore /etc/matrix-agentcore; \
     chgrp -R matrix-agent /opt/agentcore /etc/matrix-agentcore; \
     chmod g+rX /opt/agentcore /etc/matrix-agentcore; \

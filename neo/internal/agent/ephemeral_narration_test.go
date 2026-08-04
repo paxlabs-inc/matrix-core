@@ -30,6 +30,8 @@ type channelReporter struct {
 	sayFinal []bool
 	status   []string
 	progress []string
+	thinking []string
+	deltas   []string
 }
 
 func (c *channelReporter) Say(text string, completion bool) {
@@ -55,9 +57,17 @@ func (c *channelReporter) Progress(text string) {
 	defer c.mu.Unlock()
 	c.progress = append(c.progress, text)
 }
-func (c *channelReporter) Notice(string)             {}
-func (c *channelReporter) Think(string)              {}
-func (c *channelReporter) Delta(int, string, string) {}
+func (c *channelReporter) Notice(string) {}
+func (c *channelReporter) Think(text string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.thinking = append(c.thinking, text)
+}
+func (c *channelReporter) Delta(_ int, kind, text string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.deltas = append(c.deltas, kind+":"+text)
+}
 
 // straightToCompleteServer scripts the exact grok shape from the 2026-07-05
 // LayerX drop, adapted to Cassandra 2.0 (the completion gate is retired): the
@@ -86,7 +96,11 @@ func straightToCompleteServer(t *testing.T, calls *int, mu *sync.Mutex) *httptes
 			frame := map[string]any{
 				"choices": []any{map[string]any{
 					"index": 0,
-					"delta": map[string]any{"role": "assistant", "tool_calls": []any{tcJSON}},
+					"delta": map[string]any{
+						"role":              "assistant",
+						"reasoning_content": "Let me assess where I am.",
+						"tool_calls":        []any{tcJSON},
+					},
 				}},
 			}
 			fb, _ := json.Marshal(frame)
@@ -169,6 +183,16 @@ func TestStraightToCompleteDeliversAnswerViaEphemeralStub(t *testing.T) {
 	// exact routing that suppressed the real answer.
 	if len(rep.status) != 0 {
 		t.Fatalf("synthetic stub must NOT ride durable Status (would suppress the real answer); got Status=%v", rep.status)
+	}
+	// Tool-call working text and reasoning are private. Neither the streaming
+	// delta channel nor the post-hoc thinking fallback may expose them.
+	if len(rep.thinking) != 0 {
+		t.Fatalf("tool-call reasoning must not reach Think; got %v", rep.thinking)
+	}
+	for _, delta := range rep.deltas {
+		if strings.Contains(delta, "Let me assess where I am") {
+			t.Fatalf("tool-call reasoning must not reach Delta; got %v", rep.deltas)
+		}
 	}
 	// The real answer must be delivered to the user via Say.
 	if len(rep.said) != 1 {

@@ -49,7 +49,7 @@ func TestInteractionPostureClassificationAndFlagOff(t *testing.T) {
 	}
 }
 
-func TestConversationPostureUsesOneBareModelCall(t *testing.T) {
+func TestConversationPostureKeepsCapabilitiesVisibleWithoutExecutionFrame(t *testing.T) {
 	var calls atomic.Int32
 	var advertised atomic.Int32
 	model := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -75,8 +75,8 @@ func TestConversationPostureUsesOneBareModelCall(t *testing.T) {
 	if err := a.Chat(context.Background(), "hello, how are you today?"); err != nil {
 		t.Fatal(err)
 	}
-	if calls.Load() != 1 || advertised.Load() != 0 {
-		t.Fatalf("conversation calls/tools = %d/%d, want 1/0", calls.Load(), advertised.Load())
+	if calls.Load() != 1 || advertised.Load() == 0 {
+		t.Fatalf("conversation calls/tools = %d/%d, want one call with the live capability surface", calls.Load(), advertised.Load())
 	}
 	if a.TurnPosture() != PostureConversation || a.turn.runLedger != nil || len(a.turn.verifiers.Verifiers) != 0 || a.turn.ledger != nil || len(a.turn.casRecord) != 0 {
 		t.Fatalf("conversation carried execution frame: posture=%q ledger=%v verifiers=%+v premises=%+v cassandra=%+v", a.TurnPosture(), a.turn.runLedger, a.turn.verifiers, a.turn.ledger, a.turn.casRecord)
@@ -118,10 +118,12 @@ func TestExplorationPostureRealReadOnlyTool(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			t.Errorf("decode request: %v", err)
 		}
+		foundWrite := false
 		for _, schema := range request.Tools {
-			if !readOnlyToolName(schema.Function.Name) {
-				t.Errorf("exploration advertised non-read tool %q", schema.Function.Name)
-			}
+			foundWrite = foundWrite || schema.Function.Name == "fs__write_file"
+		}
+		if !foundWrite {
+			t.Error("exploration prose hid the live write capability from the model")
 		}
 		if calls.Add(1) == 1 {
 			writeSSEToolCall(w, call)

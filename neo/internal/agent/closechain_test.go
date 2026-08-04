@@ -31,7 +31,6 @@ func TestCloseGuardChain_OrderIsTheDocumentedTable(t *testing.T) {
 		"unread_overflow",
 		"source_fetch",
 		"identity_leak",
-		"cassandra_self_heal",
 		"deliver",
 	}
 	if len(closeGuardChain) != len(want) {
@@ -93,44 +92,43 @@ func TestCloseGuardChain_FirstFiringGuardDecides(t *testing.T) {
 		answer      string
 		overflow    bool
 		sourceGap   bool
-		casMod      bool
 		wantGuard   string
 		wantVerdict closeVerdict
 	}{
 		{
 			name:  "inbox outranks everything",
-			inbox: inbox, finish: "length", answer: leakAnswer, overflow: true, casMod: true,
+			inbox: inbox, finish: "length", answer: leakAnswer, overflow: true,
 			wantGuard: "inbox_drain", wantVerdict: verdictSuppress,
 		},
 		{
 			name:   "truncation outranks overflow, identity, cassandra",
-			finish: "length", answer: leakAnswer, overflow: true, casMod: true,
+			finish: "length", answer: leakAnswer, overflow: true,
 			wantGuard: "truncated_answer", wantVerdict: verdictNudge,
 		},
 		{
 			name:   "empty answer outranks overflow, cassandra",
-			finish: "stop", answer: "", overflow: true, casMod: true,
+			finish: "stop", answer: "", overflow: true,
 			wantGuard: "empty_answer", wantVerdict: verdictNudge,
 		},
 		{
 			name:   "unread overflow outranks identity, cassandra",
-			finish: "stop", answer: leakAnswer, overflow: true, casMod: true,
+			finish: "stop", answer: leakAnswer, overflow: true,
 			wantGuard: "unread_overflow", wantVerdict: verdictNudge,
 		},
 		{
 			name:   "source fetch outranks identity and cassandra",
-			finish: "stop", answer: leakAnswer, sourceGap: true, casMod: true,
+			finish: "stop", answer: leakAnswer, sourceGap: true,
 			wantGuard: "source_fetch", wantVerdict: verdictNudge,
 		},
 		{
 			name:   "identity leak outranks cassandra",
-			finish: "stop", answer: leakAnswer, casMod: true,
+			finish: "stop", answer: leakAnswer,
 			wantGuard: "identity_leak", wantVerdict: verdictNudge,
 		},
 		{
-			name:   "cassandra self-heal suppresses a clean close",
-			finish: "stop", answer: "here is the verified result", casMod: true,
-			wantGuard: "cassandra_self_heal", wantVerdict: verdictSuppress,
+			name:   "cassandra observations do not veto a clean close",
+			finish: "stop", answer: "here is the verified result",
+			wantGuard: "deliver", wantVerdict: verdictDeliver,
 		},
 		{
 			name:   "nothing blocking delivers",
@@ -148,7 +146,7 @@ func TestCloseGuardChain_FirstFiringGuardDecides(t *testing.T) {
 			if tc.sourceGap {
 				a.turn.webSourceURLs = map[string]struct{}{"https://example.test/source": {}}
 			}
-			cc := &closeContext{res: bareResult(tc.answer, tc.finish), answer: strings.TrimSpace(tc.answer), casMod: tc.casMod}
+			cc := &closeContext{res: bareResult(tc.answer, tc.finish), answer: strings.TrimSpace(tc.answer)}
 			name, dec := a.evalCloseChain(cc)
 			if name != tc.wantGuard {
 				t.Fatalf("fired guard = %q, want %q", name, tc.wantGuard)
@@ -159,8 +157,8 @@ func TestCloseGuardChain_FirstFiringGuardDecides(t *testing.T) {
 			if dec.err != nil {
 				t.Fatalf("no escalation expected below the cap, got err: %v", dec.err)
 			}
-			// A nudge verdict must have pushed exactly one guidance message and
-			// advanced the unified unproductive counter; suppress/deliver must not.
+			// A nudge verdict must have pushed exactly one guidance message;
+			// suppress/deliver must not.
 			nudges := 0
 			for _, m := range a.working {
 				if m.IsGuidance() {
@@ -172,15 +170,9 @@ func TestCloseGuardChain_FirstFiringGuardDecides(t *testing.T) {
 				if nudges != 1 {
 					t.Fatalf("a nudge verdict must push exactly one guidance message, got %d", nudges)
 				}
-				if a.turn.unproductive != 1 {
-					t.Fatalf("unproductive counter = %d, want 1 after one nudge", a.turn.unproductive)
-				}
 			default:
 				if nudges != 0 {
 					t.Fatalf("verdict %q must push no guidance, got %d", tc.wantVerdict, nudges)
-				}
-				if a.turn.unproductive != 0 {
-					t.Fatalf("verdict %q must not advance the unproductive counter, got %d", tc.wantVerdict, a.turn.unproductive)
 				}
 			}
 			// The identity guard rewrites the delivered answer in place.
@@ -200,8 +192,8 @@ func TestCloseGuardChain_FirstFiringGuardDecides(t *testing.T) {
 // contained answer rather than a dead turn.
 func TestCloseGuardChain_IdentityCapDeliversScrubbed(t *testing.T) {
 	a := chainAgent(t, func(cfg *config.Config) { cfg.MaxGuidanceNudges = 1 }, nil)
-	a.turn.unproductive = 1 // the budget is already spent
-	cc := &closeContext{res: bareResult("I'm Grok, done.", "stop"), answer: "I'm Grok, done.", casMod: true}
+	a.turn.identityNudges = 1 // this guard's budget is already spent
+	cc := &closeContext{res: bareResult("I'm Grok, done.", "stop"), answer: "I'm Grok, done."}
 	name, dec := a.evalCloseChain(cc)
 	if name != "identity_leak" {
 		t.Fatalf("fired guard = %q, want identity_leak", name)
@@ -220,8 +212,8 @@ func TestCloseGuardChain_IdentityCapDeliversScrubbed(t *testing.T) {
 // death record carries the unproductive-cap reason.
 func TestCloseGuardChain_EscalationIsTerminal(t *testing.T) {
 	a := chainAgent(t, func(cfg *config.Config) { cfg.MaxGuidanceNudges = 1 }, nil)
-	a.turn.unproductive = 1
-	cc := &closeContext{res: bareResult("", "stop"), answer: "", casMod: false}
+	a.turn.emptyAnswerNudges = 1
+	cc := &closeContext{res: bareResult("", "stop"), answer: ""}
 	name, dec := a.evalCloseChain(cc)
 	if name != "empty_answer" {
 		t.Fatalf("fired guard = %q, want empty_answer", name)
@@ -232,6 +224,58 @@ func TestCloseGuardChain_EscalationIsTerminal(t *testing.T) {
 	death, ok := a.LastDeath()
 	if !ok || death.Reason != DeathReasonUnproductive {
 		t.Fatalf("escalation must record the unproductive-cap death, got ok=%v reason=%q", ok, death.Reason)
+	}
+}
+
+func TestTruncatedAnswerHasOneIndependentSynthesisRetry(t *testing.T) {
+	a := chainAgent(t, func(cfg *config.Config) { cfg.MaxGuidanceNudges = 1 }, nil)
+	a.turn.repeats = a.cfg.NoProgressStall - 1
+	a.turn.emptyAnswerNudges = a.cfg.MaxGuidanceNudges
+	a.turn.identityNudges = a.cfg.MaxGuidanceNudges
+
+	first := &closeContext{res: bareResult("partial synthesis", "length"), answer: "partial synthesis"}
+	name, dec := a.evalCloseChain(first)
+	if name != "truncated_answer" || dec.verdict != verdictNudge || dec.err != nil {
+		t.Fatalf("first truncation = guard %q verdict %q err %v", name, dec.verdict, dec.err)
+	}
+	if a.turn.finalSynthesisRetries != 1 {
+		t.Fatalf("synthesis retries = %d, want 1", a.turn.finalSynthesisRetries)
+	}
+
+	full := &closeContext{res: bareResult("the complete verified answer", "stop"), answer: "the complete verified answer"}
+	name, dec = a.evalCloseChain(full)
+	if name != "deliver" || dec.verdict != verdictDeliver || dec.err != nil {
+		t.Fatalf("full synthesis after retry = guard %q verdict %q err %v", name, dec.verdict, dec.err)
+	}
+}
+
+func TestTruncatedSynthesisRetriesThenDeliversThroughAgentLoop(t *testing.T) {
+	var calls int
+	model := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls++
+		w.Header().Set("Content-Type", "text/event-stream")
+		if calls == 1 {
+			fmt.Fprint(w, `data: {"choices":[{"index":0,"delta":{"role":"assistant","content":"partial internal synthesis"},"finish_reason":"length"}]}`+"\n")
+		} else {
+			fmt.Fprint(w, `data: {"choices":[{"index":0,"delta":{"role":"assistant","content":"the complete verified answer"},"finish_reason":"stop"}]}`+"\n")
+		}
+		fmt.Fprint(w, "data: [DONE]\n")
+	}))
+	t.Cleanup(model.Close)
+
+	reporter := &captureReporter{}
+	client := revisionTestClient(t, model.URL)
+	cfg := config.Default()
+	cfg.CassandraEnabled = true
+	a := New(Options{Config: cfg, Main: client, Cheap: client, Reporter: reporter})
+	if err := a.Chat(context.Background(), "finish the verified work and report the result"); err != nil {
+		t.Fatalf("agent loop: %v", err)
+	}
+	if calls != 2 {
+		t.Fatalf("model calls = %d, want one truncated call plus one synthesis retry", calls)
+	}
+	if len(reporter.said) != 1 || reporter.said[0] != "the complete verified answer" {
+		t.Fatalf("delivered answers = %v", reporter.said)
 	}
 }
 

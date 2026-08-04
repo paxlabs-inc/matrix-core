@@ -117,6 +117,50 @@ func TestLoadEnvOverridesDefault(t *testing.T) {
 	}
 }
 
+func TestMemorySubstrateDefaultsToCortex(t *testing.T) {
+	if got := Default().MemorySubstrate; got != SubstrateCortex {
+		t.Fatalf("Default MemorySubstrate = %q, want %q", got, SubstrateCortex)
+	}
+	t.Setenv("NEO_MEMORY_SUBSTRATE", "")
+	c, err := Load("")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.MemorySubstrate != SubstrateCortex {
+		t.Fatalf("loaded MemorySubstrate = %q, want %q", c.MemorySubstrate, SubstrateCortex)
+	}
+}
+
+func TestMemorySubstrateEnvSelectsNeocortex(t *testing.T) {
+	t.Setenv("NEO_MEMORY_SUBSTRATE", "  NeoCortex  ")
+	t.Setenv("NEO_CORTEXD_SOCKET", "/tmp/neocortex-config-test.sock")
+	t.Setenv("NEO_CORTEXD_TOKEN", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	c, err := Load("")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.MemorySubstrate != SubstrateNeocortex {
+		t.Fatalf("MemorySubstrate = %q, want %q", c.MemorySubstrate, SubstrateNeocortex)
+	}
+	if c.CortexdSocket != "/tmp/neocortex-config-test.sock" {
+		t.Fatalf("CortexdSocket = %q", c.CortexdSocket)
+	}
+	if c.CortexdToken != "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" {
+		t.Fatalf("CortexdToken = %q", c.CortexdToken)
+	}
+}
+
+func TestMemorySubstrateUnknownValueFailsClosedToCortex(t *testing.T) {
+	t.Setenv("NEO_MEMORY_SUBSTRATE", "experimental")
+	c, err := Load("")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.MemorySubstrate != SubstrateCortex {
+		t.Fatalf("MemorySubstrate = %q, want fail-closed %q", c.MemorySubstrate, SubstrateCortex)
+	}
+}
+
 func TestLoadKVXOverlayThenEnvPrecedence(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "neo.kvx")

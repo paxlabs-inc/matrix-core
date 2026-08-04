@@ -4,7 +4,6 @@
 package agent
 
 import (
-	"fmt"
 	"strings"
 
 	"matrix/neo/internal/llm"
@@ -36,37 +35,64 @@ const narrateArgMaxLen = 90
 // multi-call batch is summarized by its distinct actions so the line still
 // reflects the real work without spamming one line per call.
 func narrateBatch(calls []llm.ToolCall) string {
-	phrases := make([]string, 0, len(calls))
-	seen := make(map[string]struct{}, len(calls))
+	classes := make(map[string]bool, len(calls))
 	for _, c := range calls {
-		p := narratePhrase(c)
-		if p == "" {
-			continue
-		}
-		if _, dup := seen[p]; dup {
-			continue
-		}
-		seen[p] = struct{}{}
-		phrases = append(phrases, p)
+		classes[deterministicMilestoneClass(c)] = true
 	}
-	if len(phrases) == 0 {
+	for _, candidate := range []struct{ class, line string }{
+		{"build", "Starting a durable project build."},
+		{"verify", "Running project verification."},
+		{"write", "Updating project files."},
+		{"command", "Running a project command."},
+		{"inspect", "Inspecting the project."},
+		{"research", "Gathering source evidence."},
+		{"act", "Applying the requested operation."},
+	} {
+		if classes[candidate.class] {
+			return candidate.line
+		}
+	}
+	return ""
+}
+
+func deterministicMilestoneClass(call llm.ToolCall) string {
+	name := strings.ToLower(call.Function.Name)
+	base := name
+	if index := strings.LastIndex(base, "__"); index >= 0 {
+		base = base[index+2:]
+	}
+	if base == tools.BuildProjectTool {
+		return "build"
+	}
+	if base == "shell" || strings.Contains(base, "exec") || base == "run" || strings.Contains(base, "command") {
+		args, _ := call.ParseArgs()
+		command := strings.ToLower(salientArg(args, "command", "cmd", "script"))
+		for _, marker := range []string{" test", "go test", " vet", "go vet", " build", "go build", "lint", "typecheck", "check"} {
+			if strings.Contains(" "+command, marker) {
+				return "verify"
+			}
+		}
+		return "command"
+	}
+	for _, marker := range []string{"write", "edit", "patch", "create_directory", "move_file", "delete", "remove"} {
+		if strings.Contains(base, marker) {
+			return "write"
+		}
+	}
+	for _, marker := range []string{"read", "list", "tree", "search_files", "file_info", "git_"} {
+		if strings.Contains(base, marker) {
+			return "inspect"
+		}
+	}
+	for _, marker := range []string{"web_search", "web_news", "fetch", "exa_", "navigate", "browser"} {
+		if strings.Contains(base, marker) {
+			return "research"
+		}
+	}
+	if base == tools.TodoTool || base == readOverflowTool {
 		return ""
 	}
-	if len(phrases) == 1 {
-		return clampLine(capitalize(phrases[0]) + ".")
-	}
-	// Multiple distinct actions: list up to three, then summarize the rest.
-	shown := phrases
-	extra := 0
-	if len(shown) > 3 {
-		extra = len(shown) - 3
-		shown = shown[:3]
-	}
-	line := "Working on a few things: " + strings.Join(shown, ", ")
-	if extra > 0 {
-		line += fmt.Sprintf(", and %d more", extra)
-	}
-	return clampLine(line + ".")
+	return "act"
 }
 
 // narratePhrase returns the lowercase verb phrase for a single tool call (no

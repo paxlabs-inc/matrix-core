@@ -118,7 +118,7 @@ func TestCleanWindowLawWithRealMiMoAndExecDispatch(t *testing.T) {
 					"unsafe <tool_call>broken</tool_call>",
 				)
 			case 2:
-				writeSSETool(writer, "missing-expect", "exec__shell",
+				writeSSETool(writer, "missing-expect", "fetch_url",
 					map[string]interface{}{
 						"command": "printf missing-expect",
 						"cwd":     workdir,
@@ -236,7 +236,7 @@ func TestCleanWindowLawWithRealMiMoAndExecDispatch(t *testing.T) {
 			commits++
 		}
 	}
-	if retractions != 1 || commits != 2 {
+	if retractions != 2 || commits != 1 {
 		t.Fatalf(
 			"observer retractions=%d commits=%d deltas=%+v",
 			retractions, commits, deltas,
@@ -792,10 +792,6 @@ func TestLiveLoopRetractsRejectedRepairBeforeCommittingValidAnswer(
 	}
 	deltas := reporter.snapshot()
 	want := []recordedDelta{
-		{
-			Turn: 0, Channel: "content",
-			Text: "I already provided the answer above.",
-		},
 		{Turn: 0, Channel: "retraction"},
 		{
 			Turn: 1, Channel: "content",

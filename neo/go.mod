@@ -7,6 +7,7 @@ require (
 	matrix/codegraph v0.0.0
 	matrix/construct v0.0.0
 	matrix/cortex v0.0.0
+	matrix/cortexclient v0.0.0
 	matrix/executor v0.0.0-00010101000000-000000000000
 	matrix/mcl v0.0.0
 	matrix/vault v0.0.0
@@ -65,6 +66,8 @@ replace matrix/construct => ../construct
 replace matrix/codegraph => ../codegraph
 
 replace matrix/cortex => ../cortex
+
+replace matrix/cortexclient => ../cortexclient
 
 replace matrix/mcl => ../MCL
 

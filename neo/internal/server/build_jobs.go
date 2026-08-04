@@ -358,11 +358,23 @@ func (e *Engine) agentBuild(ctx context.Context, request tools.BuildRequest) (st
 	if run == nil {
 		return "", errors.New("Build dispatch has no active Neo conversation")
 	}
-	projectID := strings.TrimSpace(e.conv.Project(run.convID))
+	projectHash := sha256.Sum256([]byte(run.id + "\x00" + request.Request))
+	projectID := projectDirSlug(request.Project)
 	if projectID == "" {
-		return "", errors.New("select a project before starting a Build job")
+		projectID = strings.TrimSpace(e.conv.Project(run.convID))
 	}
-	hash := sha256.Sum256([]byte(run.id + "\x00" + request.Request))
+	if projectID == "" {
+		request.Project = "neo-build-" + hex.EncodeToString(projectHash[:6])
+		projectID = projectDirSlug(request.Project)
+	}
+	if _, err := e.resolveProjectRecord(projectID); err != nil {
+		project, _, createErr := e.ensureBuildProject(request.Project)
+		if createErr != nil {
+			return "", createErr
+		}
+		projectID = project.ID
+	}
+	hash := sha256.Sum256([]byte(run.id + "\x00" + projectID + "\x00" + request.Request))
 	job, _, err := e.acceptBuild(run.convID, projectID, codingruntime.BuildBrief{
 		Intent: request.Request, AcceptanceCriteria: request.AcceptanceCriteria,
 		Constraints: append(request.Constraints, "Do not deploy or use production credentials."),
@@ -370,7 +382,8 @@ func (e *Engine) agentBuild(ctx context.Context, request tools.BuildRequest) (st
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("Build job %s was accepted for %s. End this turn; you will be woken only if it needs input or reaches an outcome.", job.ID, projectID), nil
+	e.conv.SetProject(run.convID, projectID)
+	return fmt.Sprintf("Build job %s was accepted for project %s; project selection or creation is atomic with admission. End this turn; you will be woken only if it needs input or reaches an outcome.", job.ID, projectID), nil
 }
 
 func (s *Server) correctBuildJob(w http.ResponseWriter, r *http.Request, id string) {

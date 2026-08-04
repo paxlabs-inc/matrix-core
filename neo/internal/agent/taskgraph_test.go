@@ -84,6 +84,7 @@ func TestTaskGraphTracksRealRun(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
+	cfg.EpistemicPremises = true
 	a := New(Options{Config: cfg, Main: client, Tools: mgr})
 
 	if err := a.Chat(context.Background(), "find the data and report"); err != nil {

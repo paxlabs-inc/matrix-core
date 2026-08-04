@@ -15,7 +15,6 @@ import (
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/delegate"
-	"matrix/neo/internal/o1"
 )
 
 // TestSuperviseDecision pins the persistent-supervisor policy: any non-clean
@@ -102,26 +101,6 @@ func TestPostureRespawnLimit(t *testing.T) {
 	}
 	if got := superviseDecision(false, agent.ErrIncomplete, delegate.ClassNone, nil, 1, postureRespawnLimit(cfg, "implement the fix")); got != actRespawn {
 		t.Fatalf("wedged execution must retain supervisor respawn, got %v", got)
-	}
-}
-
-func TestSuperviseFromO1UsesTypedDecision(t *testing.T) {
-	internal := o1.SupervisorDecision{Action: o1.SupContinue}
-	if got := superviseFromO1(actStop, internal); got != actStop {
-		t.Fatalf("typed default continue must not erase a terminal attempt classification, got %v", got)
-	}
-	if got := superviseFromO1(actCeiling, internal); got != actCeiling {
-		t.Fatalf("typed default continue must not erase an exhausted execution ceiling, got %v", got)
-	}
-	if got := superviseFromO1(actRespawn, internal); got != actRespawn {
-		t.Fatalf("typed continue should preserve a valid respawn, got %v", got)
-	}
-	stop := o1.SupervisorDecision{Action: o1.SupStop}
-	if got := superviseFromO1(actRespawn, stop); got != actStop {
-		t.Fatalf("typed stop should stop, got %v", got)
-	}
-	if got := superviseFromO1(actInterrupted, internal); got != actInterrupted {
-		t.Fatalf("user interruption must remain sovereign, got %v", got)
 	}
 }
 

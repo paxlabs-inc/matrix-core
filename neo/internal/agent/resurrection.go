@@ -178,32 +178,88 @@ func (a *Agent) chatResurrectionWithGuidance(
 			"neo: resurrection runtime actor is unavailable",
 		)
 	}
-	if err := a.runtime.store.CreateTurnState(
-		ctx,
-		turnstate.TurnState{
-			TurnID: turnID, ActorID: actorID,
-			SessionID: conversationID, Content: userInput,
-			Origin: func() string {
-				if strings.TrimSpace(resumeGuidance) != "" {
-					return "supervisor_resume"
-				}
-				return "user"
-			}(),
-			Status:    turnstate.StatusRunning,
-			UpdatedAt: time.Now().UTC(),
-		},
-	); err != nil {
-		a.runtimeFailure = delegate.ClassDeterministic
-		return err
+	var activation loop.ActivationSource
+	var recorder loop.TurnRecorder
+	var evidence loop.EvidenceJournal
+	var checkpoints loop.CheckpointStore = a.runtime.store
+	var citationVerifier belief.CitationVerifier = a.runtime.pager.Cortex()
+	var deliveryConsolidator loop.Consolidator = a.consolidator
+	var neocortexAdapter *loop.NeocortexAdapter
+	var recoveryCheckpoint *turnstate.Checkpoint
+	if a.cfg.MemorySubstrate == config.SubstrateNeocortex {
+		turnID = a.turnIntentID()
+		seam, seamErr := a.runtime.pager.NewNeocortexLoopSeam(
+			conversationID, a.cfg.ActivationBudget(),
+		)
+		if seamErr != nil {
+			a.runtimeFailure = delegate.ClassDeterministic
+			return seamErr
+		}
+		adapter, adapterErr := loop.NewNeocortexAdapter(seam)
+		if adapterErr != nil {
+			a.runtimeFailure = delegate.ClassDeterministic
+			return adapterErr
+		}
+		neocortexAdapter = adapter
+		activation, recorder, evidence = adapter, adapter, adapter
+		citationVerifier = adapter
+		deliveryConsolidator = adapter
+		checkpointStore := &loop.NeocortexCheckpointStore{
+			Seam: seam, Turns: a.runtime.store,
+		}
+		checkpoints = checkpointStore
+		if strings.TrimSpace(resumeGuidance) != "" {
+			state, loadErr := checkpointStore.LoadTurnState(ctx, turnID)
+			switch {
+			case loadErr == nil && state.Checkpoint != nil:
+				recoveryCheckpoint = state.Checkpoint
+			case loadErr == nil:
+				a.runtimeFailure = delegate.ClassDeterministic
+				return fmt.Errorf(
+					"neo: neocortex recovery checkpoint is missing",
+				)
+			case !errors.Is(loadErr, sql.ErrNoRows):
+				a.runtimeFailure = delegate.ClassDeterministic
+				return loadErr
+			}
+		}
+	} else {
+		cortexAdapter, adapterErr := loop.NewCortexAdapter(
+			a.runtime.pager, a.cfg, conversationID,
+		)
+		if adapterErr != nil {
+			a.runtimeFailure = delegate.ClassDeterministic
+			return adapterErr
+		}
+		activation, recorder = cortexAdapter, cortexAdapter
+		evidence = &loop.CortexToolJournal{
+			Cortex:    a.runtime.pager.Cortex(),
+			CreatedBy: actorID,
+		}
 	}
-	cortexAdapter, err := loop.NewCortexAdapter(
-		a.runtime.pager, a.cfg, conversationID,
+	if recoveryCheckpoint == nil {
+		if err := a.runtime.store.CreateTurnState(
+			ctx,
+			turnstate.TurnState{
+				TurnID: turnID, ActorID: actorID,
+				SessionID: conversationID, Content: userInput,
+				Origin: func() string {
+					if strings.TrimSpace(resumeGuidance) != "" {
+						return "supervisor_resume"
+					}
+					return "user"
+				}(),
+				Status:    turnstate.StatusRunning,
+				UpdatedAt: time.Now().UTC(),
+			},
+		); err != nil {
+			a.runtimeFailure = delegate.ClassDeterministic
+			return err
+		}
+	}
+	beliefState, err := a.openBeliefState(
+		ctx, conversationID, citationVerifier,
 	)
-	if err != nil {
-		a.runtimeFailure = delegate.ClassDeterministic
-		return err
-	}
-	beliefState, err := a.openBeliefState(ctx, conversationID)
 	if err != nil {
 		a.runtimeFailure = delegate.ClassDeterministic
 		return err
@@ -219,10 +275,16 @@ func (a *Agent) chatResurrectionWithGuidance(
 	runtimeLoop, err := loop.New(
 		a.runtime.generator,
 		scopedTools,
-		a.runtime.store,
+		checkpoints,
 		loop.Config{
-			TurnID:          turnID,
-			ConversationID:  conversationID,
+			TurnID:         turnID,
+			ConversationID: conversationID,
+			ProjectRoot: func() string {
+				if strings.TrimSpace(a.wsProjectRoot) != "" {
+					return a.wsProjectRoot
+				}
+				return a.wsRoot
+			}(),
 			Model:           a.cfg.MainModel,
 			SystemPrompt:    a.stableSystem(),
 			MaxOutputTokens: 8192,
@@ -231,14 +293,11 @@ func (a *Agent) chatResurrectionWithGuidance(
 			MaxTurnTokens:   a.cfg.ContextWindowTokens,
 		},
 		loop.Dependencies{
-			Observer:       observer,
-			CompletionGate: completionGate,
-			Activation:     cortexAdapter,
-			Recorder:       cortexAdapter,
-			EvidenceJournal: &loop.CortexToolJournal{
-				Cortex:    a.runtime.pager.Cortex(),
-				CreatedBy: actorID,
-			},
+			Observer:        observer,
+			CompletionGate:  completionGate,
+			Activation:      activation,
+			Recorder:        recorder,
+			EvidenceJournal: evidence,
 			EvidenceObserver: runtimeEvidenceObserver{
 				ui:         runtimeToolObserver{observer: a.observer},
 				belief:     beliefState,
@@ -250,7 +309,7 @@ func (a *Agent) chatResurrectionWithGuidance(
 			Subgoals: rootSubgoal{},
 			Delivery: &loop.DeliveryChoke{
 				AgentName: a.agentName(), Reporter: a.out,
-				Recorder: cortexAdapter, Consolidator: a.consolidator,
+				Recorder: recorder, Consolidator: deliveryConsolidator,
 				SuppressIncomplete: true,
 				IntentID:           a.turnIntentID(), Attempt: a.supervisedAttempt,
 			},
@@ -266,12 +325,25 @@ func (a *Agent) chatResurrectionWithGuidance(
 	if len(history) == 0 {
 		history = resurrectionProtocolHistory(a.working)
 	}
-	if strings.TrimSpace(resumeGuidance) != "" {
+	if recoveryCheckpoint != nil {
+		response, turnErr = runtimeLoop.Resume(
+			ctx, userInput, *recoveryCheckpoint,
+		)
+	} else if strings.TrimSpace(resumeGuidance) != "" {
 		response, turnErr = runtimeLoop.TurnInternalWithHistory(
 			ctx, userInput, history, resumeGuidance,
 		)
 	} else {
 		response, turnErr = runtimeLoop.TurnWithHistory(ctx, userInput, history)
+	}
+	if neocortexAdapter != nil {
+		if recordErr := neocortexAdapter.RecordError(); recordErr != nil {
+			if turnErr == nil {
+				turnErr = recordErr
+			} else {
+				turnErr = errors.Join(turnErr, recordErr)
+			}
+		}
 	}
 	a.runtimeLast = strings.TrimSpace(response.Content)
 	if a.runtimeLast == "" {
@@ -420,9 +492,10 @@ func (a *Agent) chatAudioResurrection(
 func (a *Agent) openBeliefState(
 	ctx context.Context,
 	conversationID string,
+	verifier belief.CitationVerifier,
 ) (*belief.State, error) {
 	state, err := belief.New(
-		conversationID, a.runtime.pager.Cortex(), a.runtime.store,
+		conversationID, verifier, a.runtime.store,
 	)
 	if err != nil {
 		return nil, err

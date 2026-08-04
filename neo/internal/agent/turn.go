@@ -70,16 +70,6 @@ type turn struct {
 	mismatchMeter map[string]int
 	hypotheses    map[string]*Premise
 
-	// expectRefusals bounds the ground-or-hypothesize refusal (req.6.1) per
-	// probe strategy per turn. The refusal TEACHES — it hands back a corrected
-	// call skeleton — but a model that does not take the lesson must not be
-	// refused forever: each refusal is an unproductive step, so an unbounded
-	// gate spends the whole nudge budget and kills the turn on a tool that was
-	// never actually broken (2026-07-25: sub-agent 1 died after four
-	// consecutive web_search refusals). Keyed by probeStrategy, which ignores
-	// the varying argument, so re-wording the same query is the same strategy.
-	expectRefusals map[string]int
-
 	// graph is Mechanism 4's reified task graph (epistemic-core req.7): goal →
 	// subgoals → evidence, with convergence computed as evidence-set delta.
 	graph *taskGraph
@@ -151,10 +141,11 @@ type turn struct {
 	curLoop   loopSnapshot
 	lastDeath *LoopDeath
 
-	// unproductive is the ONE unified unproductive-attempt counter (N2/
-	// req.8.1): completion rejections, guidance nudges, and no-progress
-	// repeats all feed it; it is never reset by a plain tool dispatch.
-	unproductive int
+	// Close-retry bounds are independent. Harmless tool-repeat pressure or one
+	// evidence guard can never spend another guard's final-answer budget.
+	finalSynthesisRetries int
+	emptyAnswerNudges     int
+	identityNudges        int
 
 	// overflowNudges counts how many times the unread-overflow close guard has
 	// steered THIS turn. Past overflowNudgeCap the guard stands down and the
@@ -169,23 +160,6 @@ type turn struct {
 	// guard's precondition is unachievable and holding the answer hostage only
 	// spends the turn.
 	sourceFetchNudges int
-
-	// stepRefused/stepDispatched are the per-STEP dispatch-gate read (reset at act
-	// entry): stepRefused is set when the check-before-act gate or the missing-
-	// prediction gate refuses a call this step; stepDispatched is set when any call
-	// actually reached the tool. refusalRun is the CROSS-step counter of
-	// consecutive wholly-refused steps that were NOT already a batch-repeat — the
-	// gap every existing stall read misses (a step that refused a call and
-	// dispatched nothing produces no dispatched failure, and under varied arguments
-	// no batch-repeat either). An IDENTICAL refused batch is excluded (it is a
-	// repeat, owned by the stall path, so those spirals still die via
-	// no_progress_stall); a genuine dispatch resets the run. At the stall bound it
-	// escalates to an honest stop-and-ask — the research.txt failure: the same
-	// ungrounded probe re-issued with a new query every step, each refused before
-	// dispatch, previously never escalating.
-	stepRefused    bool
-	stepDispatched bool
-	refusalRun     int
 
 	// closeChurn/lastCloseContent are the reasoning-churn read across consecutive
 	// bare-answer (non-dispatching) closes: the tool-batch repeat detectors compare

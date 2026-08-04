@@ -131,6 +131,9 @@ func injectExpect(definition *protocol.ToolDefinition) error {
 	if definition == nil {
 		return fmt.Errorf("runtime loop: tool definition is required")
 	}
+	if !runtimeUncertainProbe(definition.Name) {
+		return nil
+	}
 	var schema map[string]interface{}
 	if err := json.Unmarshal(definition.Parameters, &schema); err != nil {
 		return err

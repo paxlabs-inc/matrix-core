@@ -16,7 +16,8 @@ import (
 const (
 	DeathReasonStall        = "no_progress_stall" // repeated the same step without progress
 	DeathReasonStepBudget   = "step_budget"       // exhausted the per-turn step budget
-	DeathReasonUnproductive = "unproductive_cap"  // hit the unified unproductive-attempt bound
+	DeathReasonUnproductive = "unproductive_cap"  // hit one bounded close-retry limit
+	DeathReasonSynthesis    = "final_synthesis"   // final answer truncated twice
 )
 
 // LoopDeath is the STRUCTURED capture of the loop state at the moment a turn
@@ -95,7 +96,7 @@ func (a *Agent) snapshotLoop(step, pct, repeats int, recentSigs []string, batch 
 }
 
 // recordDeath finalizes the structured death record from the live loop snapshot
-// at a death exit (stall, step budget, or the unproductive-cap escalation). It
+// at a death exit (stall, step budget, close-retry cap, or synthesis retry). It
 // is best-effort observability: it never blocks or alters the returned error,
 // preserving the existing summary + successor-prime digest (req.3.2).
 func (a *Agent) recordDeath(reason, digest string) {

@@ -28,13 +28,21 @@ func TestCompleteRequestCompilesReadyWithProvenance(t *testing.T) {
 	}
 }
 
-func TestMaterialMissingValueBlocksMutationPrecisely(t *testing.T) {
-	c := Compile(CompileInput{Request: "Deploy {{service_name}}"})
+func TestEmptyRequestIsTheOnlyCompilerInferredAmbiguity(t *testing.T) {
+	c := Compile(CompileInput{})
 	if c.ReadyForMutation() {
-		t.Fatal("material placeholder allowed mutation")
+		t.Fatal("empty request compiled ready")
 	}
 	if len(c.Ambiguities) != 1 || c.Ambiguities[0].Question != "A required request value is missing." {
 		t.Fatalf("unexpected ambiguity: %#v", c.Ambiguities)
+	}
+}
+
+func TestCodeSyntaxAndLiteralPlaceholdersDoNotBlockExecution(t *testing.T) {
+	request := "Build the React view with initial={{ opacity: 0 }} and document Deploy {{service_name}} as an example."
+	c := Compile(CompileInput{Request: request})
+	if !c.ReadyForMutation() || len(c.Ambiguities) != 0 {
+		t.Fatalf("valid free-form code request was treated as a template: %#v", c.Ambiguities)
 	}
 }
 

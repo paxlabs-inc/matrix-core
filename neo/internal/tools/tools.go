@@ -164,6 +164,7 @@ type TodoFunc func(ctx context.Context, items []TodoItem) error
 type PreviewFunc func(ctx context.Context) (string, error)
 
 type BuildRequest struct {
+	Project            string
 	Request            string
 	AcceptanceCriteria []string
 	Constraints        []string
@@ -471,13 +472,42 @@ func (m *Manager) bind(spawned map[string]bool) {
 			m.byFunc[fn] = bt
 			if bt.surface == Escalate {
 				m.escalated = append(m.escalated, fn)
-			} else {
+			} else if !m.nativeShadows(bt) {
 				m.order = append(m.order, fn)
 			}
 		}
 	}
 	sort.Strings(m.order)
 	sort.Strings(m.escalated)
+}
+
+// nativeShadows keeps legacy local MCP bindings callable for journal replay
+// while removing them from the model-facing inventory whenever the in-process
+// native runtime is active. One operation must have one canonical schema.
+func (m *Manager) nativeShadows(bound *boundTool) bool {
+	if m == nil || m.native == nil || bound == nil {
+		return false
+	}
+	alias := strings.ToLower(strings.TrimSpace(bound.alias))
+	name := strings.ToLower(strings.TrimSpace(bound.name))
+	switch alias {
+	case "fs", "filesystem", "files":
+		switch name {
+		case "read_file", "read_text_file", "read_multiple_files", "write_file", "edit_file", "patch_files", "create_directory", "list_directory", "directory_tree", "move_file", "search_files", "get_file_info":
+			return true
+		}
+	case "exec", "shell", "terminal":
+		switch name {
+		case "shell", "run", "exec", "execute", "execute_command", "shell_exec":
+			return true
+		}
+	case "git":
+		switch name {
+		case "git_status", "status", "git_diff", "diff", "git_log", "log", "git_show", "show", "git_branch", "branch":
+			return true
+		}
+	}
+	return false
 }
 
 // Schemas returns the function schemas advertised to the model: every Natural
@@ -1231,6 +1261,7 @@ func (m *Manager) dispatchBuildProject(ctx context.Context, args map[string]inte
 		return "request is required", true, nil
 	}
 	out, err := m.build(ctx, BuildRequest{
+		Project:            strings.TrimSpace(asString(args["project"])),
 		Request:            request,
 		AcceptanceCriteria: asStringSlice(args["acceptance_criteria"]),
 		Constraints:        asStringSlice(args["constraints"]),
@@ -1690,10 +1721,14 @@ func previewSchema() llm.Tool {
 func buildProjectSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		BuildProjectTool,
-		"Delegate a substantial or long-running project coding job to the durable private Build worker when it should survive this turn and carry checkpoints, autonomous verification, interruption, and resume. Use Neo's native local tools for bounded file work, diagnostics, shell commands, durable services, and read-only git inspection. Provide the complete user request, constraints, and concrete acceptance criteria. The call returns as soon as the durable job is persisted and accepted; do not poll it or keep this turn open. Building never deploys the result.",
+		"Delegate a substantial or long-running project coding job to the durable private Build worker when it should survive this turn and carry checkpoints, autonomous verification, interruption, and resume. Use Neo's native local tools for bounded file work, diagnostics, shell commands, durable services, and read-only git inspection. Provide the complete user request, constraints, concrete acceptance criteria, and project when starting new work. A missing project is created and selected atomically with durable job admission; replays resolve the same project and job. The call returns as soon as the job is persisted and accepted; do not poll it or keep this turn open. Building never deploys the result.",
 		map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
+				"project": map[string]interface{}{
+					"type":        "string",
+					"description": "Existing project ID/name, or the name of a new project to create and select atomically with Build admission. Omit only when the conversation already has the correct active project.",
+				},
 				"request": map[string]interface{}{
 					"type":        "string",
 					"description": "A self-contained description of exactly what to build or change in the selected project.",

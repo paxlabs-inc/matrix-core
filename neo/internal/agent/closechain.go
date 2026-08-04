@@ -33,9 +33,7 @@ const (
 )
 
 // closeDecision is one fired guard's outcome. err, when non-nil, is a terminal
-// escalation (the unified unproductive-attempt bound was exceeded) that ends
-// the turn regardless of the verdict — escalateGuidance already consolidated
-// and recorded the death.
+// escalation that ends the attempt regardless of the verdict.
 type closeDecision struct {
 	verdict closeVerdict
 	err     error
@@ -47,7 +45,6 @@ type closeDecision struct {
 type closeContext struct {
 	res    *llm.ChatResult
 	answer string // trimmed final answer, rewritten in place by the identity guard
-	casMod bool   // Cassandra folded doubt into this step's assistant message
 }
 
 // closeGuard is one named unit of the chain: eval reports whether the guard
@@ -68,8 +65,7 @@ type closeGuard struct {
 //  4. unread_overflow    — the read-full discipline blocks the close (req.4.2)
 //  5. source_fetch       — search discovery must be read before factual use
 //  6. identity_leak      — the compliance canary: audit, scrub, re-anchor
-//  7. cassandra_self_heal— folded doubt must be re-read before delivering
-//  8. deliver            — the terminal guard; always fires
+//  7. deliver            — the terminal guard; always fires
 //
 // Evaluation happens at exactly ONE site (closeTurn → evalCloseChain); the
 // first firing guard decides.
@@ -80,7 +76,6 @@ var closeGuardChain = []closeGuard{
 	{name: "unread_overflow", eval: guardUnreadOverflow},
 	{name: "source_fetch", eval: guardSourceFetch},
 	{name: "identity_leak", eval: guardIdentityLeak},
-	{name: "cassandra_self_heal", eval: guardCassandraSelfHeal},
 	{name: "deliver", eval: guardDeliver},
 }
 
@@ -115,37 +110,39 @@ func guardInboxDrain(a *Agent, _ *closeContext) (closeDecision, bool) {
 	return closeDecision{verdict: verdictSuppress}, true
 }
 
-// guardTruncatedAnswer: a truncated generation (finish_reason=length) is NEVER
-// a final answer — the cut-off text is half-formed monologue/payload (the
-// model may have been inlining a large blob) and saying it raw leaks internal
-// thoughts into the chat. Nudge for a compact retry via the guidance channel,
-// bounded so a model that keeps getting cut off escalates rather than
-// re-nudging forever. Contract — mutates: the working transcript (guidance)
-// and the unified unproductive counter.
+// guardTruncatedAnswer: a truncated generation (finish_reason=length) is never
+// a final answer. It receives exactly one synthesis retry, independent of
+// earlier tool-repeat or close-guard pressure. A second truncation ends this
+// attempt as resumable so the supervisor can continue from durable state.
 func guardTruncatedAnswer(a *Agent, cc *closeContext) (closeDecision, bool) {
 	if cc.res.FinishReason != "length" {
 		return closeDecision{}, false
 	}
+	if a.turn.finalSynthesisRetries >= 1 {
+		return closeDecision{
+			verdict: verdictNudge,
+			err:     a.governDeath(DeathReasonSynthesis, "could not finish the final answer after one bounded synthesis retry. Progress so far:"),
+		}, true
+	}
+	a.turn.finalSynthesisRetries++
 	// Raise the output-token budget one rung so the regenerated answer has room
 	// to finish a long synthesis instead of re-truncating at the same limit
 	// (synthesis-survives-death). Bounded by maxAnswerTokenBumps.
 	a.bumpAnswerBudget()
-	if a.pushGuidanceNudge("Your last message was cut off by the output limit and was NOT delivered to the user — don't inline large payloads in prose; call a tool with compact arguments, or give a concise final answer.", &a.turn.unproductive) {
-		return closeDecision{verdict: verdictNudge, err: a.escalateGuidance(a.turn.unproductive)}, true
-	}
+	a.pushGuidance("Your last message was cut off by the output limit and was NOT delivered to the user — don't inline large payloads in prose; call a tool with compact arguments, or give a concise final answer.")
 	return closeDecision{verdict: verdictNudge}, true
 }
 
 // guardEmptyAnswer: empty AND no tools → anti-premature steer to continue via
 // the guidance channel, bounded so a model that keeps returning nothing
-// escalates rather than looping forever. Contract — mutates: the working
-// transcript (guidance) and the unified unproductive counter.
+// escalates rather than looping forever. Its bound is independent of all
+// other close guards and tool-repeat detection.
 func guardEmptyAnswer(a *Agent, cc *closeContext) (closeDecision, bool) {
 	if cc.answer != "" {
 		return closeDecision{}, false
 	}
-	if a.pushGuidanceNudge("Continue: either call a tool to make progress, or give the final answer.", &a.turn.unproductive) {
-		return closeDecision{verdict: verdictNudge, err: a.escalateGuidance(a.turn.unproductive)}, true
+	if a.pushGuidanceNudge("Continue: either call a tool to make progress, or give the final answer.", &a.turn.emptyAnswerNudges) {
+		return closeDecision{verdict: verdictNudge, err: a.escalateGuidance(a.turn.emptyAnswerNudges)}, true
 	}
 	return closeDecision{verdict: verdictNudge}, true
 }
@@ -162,10 +159,9 @@ const overflowNudgeCap = 2
 // the window but the user never saw it) and BOUNDED: past overflowNudgeCap the
 // guard stands down and the answer delivers — the identity-leak posture. The
 // unbounded form drove the 2026-07-22 loopty-loop death spiral: complete
-// answers were silently withheld until the unified cap killed the turn.
-// Contract — mutates: the working transcript (guidance), the per-turn overflow
-// nudge counter, and the unified unproductive counter; fires only while under
-// its own cap.
+// answers were silently withheld until an unrelated shared cap killed the
+// turn. Contract — mutates the working transcript and the per-turn overflow
+// nudge counter; fires only while under its own cap.
 func guardUnreadOverflow(a *Agent, _ *closeContext) (closeDecision, bool) {
 	if !a.overflowUnread() {
 		return closeDecision{}, false
@@ -174,9 +170,7 @@ func guardUnreadOverflow(a *Agent, _ *closeContext) (closeDecision, bool) {
 		return closeDecision{}, false
 	}
 	a.turn.overflowNudges++
-	if a.pushGuidanceNudge(a.overflowUnreadNudge(), &a.turn.unproductive) {
-		return closeDecision{verdict: verdictNudge, err: a.escalateGuidance(a.turn.unproductive)}, true
-	}
+	a.pushGuidance(a.overflowUnreadNudge())
 	return closeDecision{verdict: verdictNudge}, true
 }
 
@@ -185,9 +179,8 @@ func guardUnreadOverflow(a *Agent, _ *closeContext) (closeDecision, bool) {
 // mirrors overflowNudgeCap for the same reason: the guard's precondition is not
 // always ACHIEVABLE. When every fetch of a discovered URL fails (paywall, bot
 // wall, dead host), no amount of steering can make webEvidenceReady true, and
-// an unbounded guard then withholds a finished answer until the shared
-// unproductive cap kills the turn — the 2026-07-22 loopty-loop shape, which was
-// closed for the overflow guard and left open here. Standing down is honest:
+// an unbounded guard then withholds a finished answer indefinitely. Standing
+// down is honest:
 // the model is told the answer was held back and why, so a delivered answer
 // carries its own caveat about unread sources.
 const sourceFetchNudgeCap = 2
@@ -200,9 +193,7 @@ func guardSourceFetch(a *Agent, _ *closeContext) (closeDecision, bool) {
 		return closeDecision{}, false
 	}
 	a.turn.sourceFetchNudges++
-	if a.pushGuidanceNudge("Your answer was NOT delivered to the user — it is being held back. Search results are source discovery, not evidence. Read at least one relevance-validated result URL with fetch before making a factual claim; if no relevant result exists, say that plainly without substituting another entity or evidence class. Then give your final answer again.", &a.turn.unproductive) {
-		return closeDecision{verdict: verdictNudge, err: a.escalateGuidance(a.turn.unproductive)}, true
-	}
+	a.pushGuidance("Your answer was NOT delivered to the user — it is being held back. Search results are source discovery, not evidence. Read at least one relevance-validated result URL with fetch before making a factual claim; if no relevant result exists, say that plainly without substituting another entity or evidence class. Then give your final answer again.")
 	return closeDecision{verdict: verdictNudge}, true
 }
 
@@ -214,8 +205,8 @@ func guardSourceFetch(a *Agent, _ *closeContext) (closeDecision, bool) {
 // channel so the model regenerates a compliant answer. Once the nudge budget
 // is spent the honest, SCRUBBED answer is delivered rather than looping
 // forever (finishTurn re-scrubs at delivery regardless). Contract — mutates:
-// cc.answer (the scrub), the working transcript (guidance), and the unified
-// unproductive counter; emits the identity.leak audit event.
+// cc.answer (the scrub) and the working transcript (guidance); emits the
+// identity.leak audit event. Its retry bound is independent.
 func guardIdentityLeak(a *Agent, cc *closeContext) (closeDecision, bool) {
 	scrubbed, leaked := scrubIdentity(a.agentName(), cc.answer)
 	if !leaked {
@@ -223,25 +214,10 @@ func guardIdentityLeak(a *Agent, cc *closeContext) (closeDecision, bool) {
 	}
 	a.emitAudit(auditEventIdentityLeak, map[string]interface{}{"where": "answer"})
 	cc.answer = scrubbed
-	if a.pushGuidanceNudge(identityReanchorNudge(a.agentName()), &a.turn.unproductive) {
+	if a.pushGuidanceNudge(identityReanchorNudge(a.agentName()), &a.turn.identityNudges) {
 		return closeDecision{verdict: verdictDeliver}, true
 	}
 	return closeDecision{verdict: verdictNudge}, true
-}
-
-// guardCassandraSelfHeal: Cassandra 2.0 self-heal on a would-be close
-// (req.6.2) — if the controller folded doubt into this bare answer (premature/
-// unverified close, or a close that bailed out of a loop), re-loop so the
-// model re-reads its OWN doubt and re-verifies instead of finishing. The
-// delivered answer is untouched (finishTurn reads the result copy, separate
-// from the edited a.working entry); it is bounded by the per-turn mod cap +
-// per-trigger cooldown so it can never loop forever, and never fabricates a
-// completion — it only asks the agent to check. Contract — mutates: nothing.
-func guardCassandraSelfHeal(_ *Agent, cc *closeContext) (closeDecision, bool) {
-	if !cc.casMod {
-		return closeDecision{}, false
-	}
-	return closeDecision{verdict: verdictSuppress}, true
 }
 
 // guardDeliver is the terminal guard: nothing blocked the close, so the answer

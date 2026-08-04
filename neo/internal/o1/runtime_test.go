@@ -37,6 +37,20 @@ func TestCompileRuntimeCapabilitiesFailsClosedOnMalformedSchema(t *testing.T) {
 	}
 }
 
+func TestCompileRuntimeCapabilitiesDoesNotHideToolsForContractAmbiguity(t *testing.T) {
+	contract := Compile(CompileInput{Request: "Edit the file."})
+	contract.Ambiguities = append(contract.Ambiguities, Ambiguity{ID: "manual", Material: true})
+	got, err := CompileRuntimeCapabilities(contract, []llm.Tool{
+		llm.NewFunctionTool("build_project", "durable build", map[string]interface{}{"type": "object"}),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Tools) != 1 || got.Tools[0].Function.Name != "build_project" {
+		t.Fatalf("material ambiguity stripped the live execution surface: %#v", got.Tools)
+	}
+}
+
 func TestNativeLocalEffectClassification(t *testing.T) {
 	params := map[string]interface{}{"type": "object"}
 	cases := map[string]EffectClass{

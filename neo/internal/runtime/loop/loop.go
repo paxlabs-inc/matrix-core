@@ -37,10 +37,10 @@ const (
 )
 
 const (
-	textualToolRepairPrompt = "The previous provider response used invalid textual tool-call markup. Do not repeat or quote that markup. Either emit a native structured tool call that satisfies the active JSON Schema, including the required expect prediction, or return a normal final answer with no tool-call tags."
+	textualToolRepairPrompt = "The previous provider response used invalid textual tool-call markup. Do not repeat or quote that markup. Either emit a native structured tool call that satisfies the active JSON Schema, or return a normal final answer with no tool-call tags."
 	textualToolFinalPrompt  = "Tool use is now disabled because repeated responses used unsafe tool-call markup. Give the user an honest ordinary-text answer from the available conversation and evidence. State any action you could not complete. Do not emit or quote tool names, tool-call tags, function tags, parameter tags, XML, JSON, or code fences."
-	expectationRepairPrompt = "The previous structured tool call was not executed because at least one call omitted its required non-empty expect prediction. Resubmit the intended native structured tool call, adding a one-line expect prediction to every call, or answer normally without tools."
-	expectationFinalPrompt  = "Tool use is now disabled because repeated structured calls omitted the required expect prediction. Give the user an honest ordinary-text answer from the available conversation and evidence, and state any action you could not complete. Do not call tools."
+	expectationRepairPrompt = "The previous uncertain network/search probe was not executed because it omitted its non-empty expect hypothesis. Resubmit that probe with a one-line predicted outcome shape, or answer normally without tools. Deterministic file, mutation, and shell calls do not use expect."
+	expectationFinalPrompt  = "Tool use is now disabled because repeated uncertain probes omitted their required expect hypothesis. Give the user an honest ordinary-text answer from the available conversation and evidence, and state any action you could not complete. Do not call tools."
 	emptyFinalRepairPrompt  = "The previous response ended without a user-facing answer. Answer the original user request now as ordinary text using the available conversation and tool results. Do not call tools, emit tool-call markup, or return an empty response."
 )
 
@@ -63,6 +63,7 @@ const tokenBudgetBoundary = "I stopped this turn at its work limit before I coul
 type Config struct {
 	TurnID                 string
 	ConversationID         string
+	ProjectRoot            string
 	Model                  string
 	SystemPrompt           string
 	MaxOutputTokens        int
@@ -342,11 +343,18 @@ func (loop *Loop) TurnWithHistory(
 			Role: protocol.RoleUser, Content: userContent,
 		}),
 	}
+	loop.initializeCodingCheckpoint(&checkpoint, userContent)
 	if err := loop.save(ctx, &checkpoint, cursor{}); err != nil {
 		return Response{}, err
 	}
 	if loop.recorder != nil {
 		loop.recorder.RecordUser(userContent)
+		if err := loop.recordingError(); err != nil {
+			return Response{}, loop.incomplete(
+				ctx, "turn_recording", checkpoint, Response{},
+				time.Now().UTC(), "resume_after_memory_recorder_recovery", err,
+			)
+		}
 	}
 	return loop.runTurn(ctx, userContent, checkpoint, cursor{})
 }
@@ -377,6 +385,7 @@ func (loop *Loop) TurnInternalWithHistory(
 			Role: protocol.RoleUser, Content: userContent,
 		}),
 	}
+	loop.initializeCodingCheckpoint(&checkpoint, userContent)
 	if guidance = strings.TrimSpace(guidance); guidance != "" {
 		checkpoint.Messages = append(checkpoint.Messages, protocol.Message{
 			Role: protocol.RoleSystem, Content: guidance,
@@ -538,6 +547,7 @@ func (loop *Loop) runTurn(
 			MaxOutputTokens: loop.config.MaxOutputTokens,
 			Stream:          loop.observer != nil,
 		}
+		request.Messages = appendCodingCheckpoint(request.Messages, checkpoint.Coding)
 		if loop.guidance != nil {
 			request.Messages = appendGuidance(
 				request.Messages,
@@ -627,6 +637,12 @@ func (loop *Loop) runTurn(
 				loop.recorder.RecordAssistant(
 					checkpoint.Messages[len(checkpoint.Messages)-1],
 				)
+				if err := loop.recordingError(); err != nil {
+					return response, loop.incomplete(
+						ctx, "turn_recording", checkpoint, response, started,
+						"resume_after_memory_recorder_recovery", err,
+					)
+				}
 			}
 			continue
 		}
@@ -765,10 +781,18 @@ func (loop *Loop) runTurn(
 			)
 		}
 		if loop.observer != nil {
-			if err := loop.observer.CommitAttempt(ctx); err != nil {
+			var observerErr error
+			if toolObserver, ok := loop.observer.(interface {
+				CommitToolAttempt(context.Context, []protocol.NormalizedToolCall) error
+			}); ok {
+				observerErr = toolObserver.CommitToolAttempt(ctx, calls)
+			} else {
+				observerErr = loop.observer.Reset(ctx)
+			}
+			if observerErr != nil {
 				return response, loop.incomplete(
 					ctx, "observer_commit", checkpoint, response,
-					started, "resume_from_checkpoint", err,
+					started, "resume_from_checkpoint", observerErr,
 				)
 			}
 		}
@@ -789,6 +813,12 @@ func (loop *Loop) runTurn(
 			loop.recorder.RecordAssistant(
 				checkpoint.Messages[len(checkpoint.Messages)-1],
 			)
+			if err := loop.recordingError(); err != nil {
+				return response, loop.incomplete(
+					ctx, "turn_recording", checkpoint, response, started,
+					"resume_after_memory_recorder_recovery", err,
+				)
+			}
 		}
 		// Excess parallel calls are deferred, never dropped: every deferred
 		// call gets an explicit tool-result marker below so the model sees a
@@ -846,6 +876,12 @@ func (loop *Loop) runTurn(
 					)
 					if err := loop.save(ctx, &checkpoint, state); err != nil {
 						return response, err
+					}
+					if err := loop.recordingError(); err != nil {
+						return response, loop.incomplete(
+							ctx, "turn_recording", checkpoint, response, started,
+							"resume_after_memory_recorder_recovery", err,
+						)
 					}
 					continue
 				}
@@ -906,6 +942,12 @@ func (loop *Loop) runTurn(
 					executeErr,
 				)
 			}
+			if resultObserver, ok := loop.observer.(interface {
+				ObserveToolResult(context.Context, protocol.NormalizedToolCall, ToolResult)
+			}); ok {
+				resultObserver.ObserveToolResult(ctx, call, result)
+			}
+			loop.updateCodingCheckpoint(&checkpoint, call, result)
 			execution := ToolExecution{
 				Call: call, Result: result.Content,
 				Expect:         expectations[index],
@@ -949,6 +991,12 @@ func (loop *Loop) runTurn(
 				loop.recorder.RecordTool(
 					checkpoint.Messages[len(checkpoint.Messages)-1],
 				)
+				if err := loop.recordingError(); err != nil {
+					return response, loop.incomplete(
+						ctx, "turn_recording", checkpoint, response, started,
+						"resume_after_memory_recorder_recovery", err,
+					)
+				}
 			}
 		}
 		for _, call := range deferred {
@@ -961,6 +1009,12 @@ func (loop *Loop) runTurn(
 		if len(deferred) > 0 {
 			if err := loop.save(ctx, &checkpoint, state); err != nil {
 				return response, err
+			}
+			if err := loop.recordingError(); err != nil {
+				return response, loop.incomplete(
+					ctx, "turn_recording", checkpoint, response, started,
+					"resume_after_memory_recorder_recovery", err,
+				)
 			}
 		}
 	}
@@ -1149,6 +1203,7 @@ func (loop *Loop) reconcilePending(
 		),
 		SubgoalID: loop.subgoalFor(call),
 	}
+	loop.updateCodingCheckpoint(checkpoint, call, reconciled.Result)
 	execution.Error = executionError(reconciled.Result)
 	if err := loop.commitEvidence(
 		ctx, &execution, *checkpoint, *response,
@@ -1177,6 +1232,12 @@ func (loop *Loop) reconcilePending(
 		loop.recorder.RecordTool(
 			checkpoint.Messages[len(checkpoint.Messages)-1],
 		)
+		if err := loop.recordingError(); err != nil {
+			return loop.incomplete(
+				ctx, "turn_recording", *checkpoint, *response,
+				pending.DispatchedAt, "resume_after_memory_recorder_recovery", err,
+			)
+		}
 	}
 	return nil
 }
@@ -1235,8 +1296,22 @@ func (loop *Loop) deliverAccepted(
 			response.Content = delivered.Content
 			response.Generation.Content = delivered.Content
 		}
+		if err := loop.recordingError(); err != nil {
+			return response, loop.incomplete(
+				ctx, "turn_recording", checkpoint, response,
+				time.Now().UTC(), "resume_after_memory_recorder_recovery", err,
+			)
+		}
 	}
 	return response, nil
+}
+
+func (loop *Loop) recordingError() error {
+	source, ok := loop.recorder.(interface{ RecordError() error })
+	if !ok {
+		return nil
+	}
+	return source.RecordError()
 }
 
 func (loop *Loop) deliverHonestPartial(
@@ -1356,6 +1431,171 @@ func (loop *Loop) incomplete(
 	return incomplete
 }
 
+func (loop *Loop) initializeCodingCheckpoint(checkpoint *turnstate.Checkpoint, requirement string) {
+	root := strings.TrimSpace(loop.config.ProjectRoot)
+	if checkpoint == nil || root == "" {
+		return
+	}
+	checkpoint.Coding = &turnstate.CodingCheckpoint{
+		ProjectRoot:  root,
+		Requirements: []string{strings.TrimSpace(requirement)},
+		NextAction:   "Inspect the project and begin the next requirement.",
+		UpdatedAt:    time.Now().UTC(),
+	}
+}
+
+func (loop *Loop) updateCodingCheckpoint(checkpoint *turnstate.Checkpoint, call protocol.NormalizedToolCall, result ToolResult) {
+	if checkpoint == nil || checkpoint.Coding == nil {
+		return
+	}
+	coding := checkpoint.Coding
+	base := strings.ToLower(call.Name)
+	if index := strings.LastIndex(base, "__"); index >= 0 {
+		base = base[index+2:]
+	}
+	var args map[string]interface{}
+	_ = json.Unmarshal(call.Arguments, &args)
+	var envelope map[string]interface{}
+	_ = json.Unmarshal(result.Content, &envelope)
+	mutation := false
+	switch base {
+	case "write_file", "edit_file", "create_directory":
+		mutation = true
+		addCodingFile(coding, stringValue(args["path"]))
+	case "move_file":
+		mutation = true
+		addCodingFile(coding, stringValue(args["destination"]))
+	case "patch_files":
+		mutation = true
+		if files, ok := envelope["files"].([]interface{}); ok {
+			for _, raw := range files {
+				if file, ok := raw.(map[string]interface{}); ok {
+					addCodingFile(coding, stringValue(file["path"]))
+				}
+			}
+		}
+	}
+	if base == "build_project" {
+		coding.NextAction = "End this turn and await the durable Build outcome."
+	} else if isVerificationCommand(base, args) {
+		exit, _ := numberAsInt(envelope["exit_code"])
+		timedOut, _ := envelope["timed_out"].(bool)
+		succeeded := !result.IsError && exit == 0 && !timedOut
+		coding.LastVerification = &turnstate.CodingVerification{
+			Command: stringValue(args["command"]), CWD: stringValue(envelope["cwd"]),
+			ExitCode: exit, Succeeded: succeeded, TimedOut: timedOut,
+			VerifiedAt: time.Now().UTC(),
+		}
+		if succeeded {
+			coding.CurrentFailures = nil
+			coding.NextAction = "Review the acceptance criteria and deliver the verified result."
+		} else {
+			coding.CurrentFailures = codingFailures(result, envelope)
+			coding.NextAction = "Correct the reported verification failures."
+		}
+	} else if result.IsError || shellEnvelopeFailed(envelope) {
+		coding.CurrentFailures = codingFailures(result, envelope)
+		coding.NextAction = "Correct the failed operation before continuing."
+	} else if mutation {
+		coding.NextAction = "Run the relevant project verification."
+	}
+	coding.UpdatedAt = time.Now().UTC()
+}
+
+func addCodingFile(checkpoint *turnstate.CodingCheckpoint, path string) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return
+	}
+	for _, existing := range checkpoint.FilesChanged {
+		if existing == path {
+			return
+		}
+	}
+	if len(checkpoint.FilesChanged) < 256 {
+		checkpoint.FilesChanged = append(checkpoint.FilesChanged, path)
+	}
+}
+
+func stringValue(value interface{}) string {
+	text, _ := value.(string)
+	return strings.TrimSpace(text)
+}
+
+func isVerificationCommand(base string, args map[string]interface{}) bool {
+	if base != "shell" && base != "run" && !strings.Contains(base, "exec") && !strings.Contains(base, "command") {
+		return false
+	}
+	command := strings.ToLower(stringValue(args["command"]))
+	for _, marker := range []string{"go test", "go vet", "go build", " test", " lint", "typecheck", " check", "cargo test", "pytest"} {
+		if strings.Contains(" "+command, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func shellEnvelopeFailed(envelope map[string]interface{}) bool {
+	if timedOut, _ := envelope["timed_out"].(bool); timedOut {
+		return true
+	}
+	exit, exists := numberAsInt(envelope["exit_code"])
+	return exists && exit != 0
+}
+
+func codingFailures(result ToolResult, envelope map[string]interface{}) []string {
+	values := []string{strings.TrimSpace(result.FailureMessage)}
+	for _, stream := range []string{"stderr", "stdout"} {
+		if structured, ok := envelope[stream].(map[string]interface{}); ok {
+			values = append(values, stringValue(structured["text"]))
+		} else {
+			values = append(values, stringValue(envelope[stream]))
+		}
+	}
+	values = append(values, stringValue(envelope["error"]))
+	out := make([]string, 0, 3)
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if len(value) > 1200 {
+			value = value[:1200]
+		}
+		out = append(out, value)
+		if len(out) == 3 {
+			break
+		}
+	}
+	if len(out) == 0 {
+		out = append(out, "The operation returned a failure without diagnostic text.")
+	}
+	return out
+}
+
+func appendCodingCheckpoint(messages []protocol.Message, checkpoint *turnstate.CodingCheckpoint) []protocol.Message {
+	if checkpoint == nil {
+		return messages
+	}
+	encoded, err := json.Marshal(checkpoint)
+	if err != nil {
+		return messages
+	}
+	message := protocol.Message{
+		Role:    protocol.RoleSystem,
+		Content: "Structured coding checkpoint (runtime-owned; resume from this state without narrating recovery):\n" + string(encoded),
+	}
+	insertAt := 0
+	for insertAt < len(messages) && messages[insertAt].Role == protocol.RoleSystem {
+		insertAt++
+	}
+	result := make([]protocol.Message, 0, len(messages)+1)
+	result = append(result, cloneMessages(messages[:insertAt])...)
+	result = append(result, message)
+	result = append(result, cloneMessages(messages[insertAt:])...)
+	return result
+}
+
 func requestMessages(
 	systemPrompt string,
 	durable []protocol.Message,
@@ -1440,9 +1680,11 @@ func extractExpectations(
 		}
 		raw, exists := arguments["expect"]
 		delete(arguments, "expect")
-		if !exists ||
-			json.Unmarshal(raw, &expectations[index]) != nil ||
-			strings.TrimSpace(expectations[index]) == "" {
+		if exists {
+			_ = json.Unmarshal(raw, &expectations[index])
+			expectations[index] = strings.TrimSpace(expectations[index])
+		}
+		if runtimeUncertainProbe(result[index].Name) && expectations[index] == "" {
 			return nil, nil, fmt.Errorf(
 				"runtime loop: tool call %s is missing expect",
 				result[index].ID,
@@ -1455,6 +1697,26 @@ func extractExpectations(
 		result[index].Arguments = stripped
 	}
 	return expectations, result, nil
+}
+
+func runtimeUncertainProbe(name string) bool {
+	base := strings.ToLower(strings.TrimSpace(name))
+	if index := strings.LastIndex(base, "__"); index >= 0 {
+		base = base[index+2:]
+	}
+	if base == "search_files" {
+		return false
+	}
+	return strings.Contains(base, "web_search") ||
+		strings.Contains(base, "web_news") ||
+		strings.Contains(base, "exa_search") ||
+		base == "search" ||
+		strings.Contains(base, "fetch") ||
+		strings.Contains(base, "http") ||
+		strings.Contains(base, "request") ||
+		strings.Contains(base, "navigate") ||
+		strings.Contains(base, "download") ||
+		base == "web_read"
 }
 
 func makeIdempotencyKey(

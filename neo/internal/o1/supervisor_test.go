@@ -36,10 +36,20 @@ func TestSupervisorRepairOnRepairableOutcome(t *testing.T) {
 
 func TestSupervisorAskOnAmbiguity(t *testing.T) {
 	s := &Supervisor{}
-	contract := Compile(CompileInput{Request: "Deploy {{service}}"})
+	contract := Compile(CompileInput{})
 	d := s.Evaluate(contract, NewRunLedger("r1", "c1", 1), nil, nil, nil)
 	if d.Action != SupAskUser {
 		t.Fatalf("expected ask_user, got %s", d.Action)
+	}
+}
+
+func TestSupervisorDoesNotMaskAmbiguityWithGenericRetry(t *testing.T) {
+	contract := Compile(CompileInput{})
+	outcome := NewOutcome("agent_turn").Fail(LayerApplication, "internal_convergence_failure").
+		Retryable(true).AllowTransition(TransitionRetry).Evidence("step budget").MustBuild()
+	d := (&Supervisor{}).Evaluate(contract, NewRunLedger("r1", contract.ID, 1), nil, nil, &outcome)
+	if d.Action != SupAskUser || d.Reason != "task contract has unresolved material ambiguity" {
+		t.Fatalf("ambiguity was masked by retry outcome: %#v", d)
 	}
 }
 

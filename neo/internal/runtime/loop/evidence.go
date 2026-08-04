@@ -155,6 +155,9 @@ var evidenceWord = regexp.MustCompile(`[a-z0-9][a-z0-9._:/-]*`)
 
 func matchToolExpectation(expect string, result ToolResult) string {
 	expected := strings.ToLower(strings.TrimSpace(expect))
+	if expected == "" {
+		return cortex.ToolMatchUnknown
+	}
 	actual := strings.ToLower(strings.TrimSpace(string(result.Content)))
 	predictsFailure := strings.Contains(expected, "error") ||
 		strings.Contains(expected, "fail") ||

@@ -74,6 +74,7 @@ mkdir -p \
     "${DATA_DIR}/neo/services" \
     "${DATA_DIR}/build-jobs" \
     "${DATA_DIR}/agentcore" \
+    "${DATA_DIR}/neocortex" \
     "${DATA_DIR}/workforce" \
     "${DATA_DIR}/.matrix"
 
@@ -108,6 +109,7 @@ for name in \
     NEO_AUTOMATRIX_INTERVAL NEO_AUTOMATRIX_JITTER NEO_AUTOMATRIX_MAX_PER_DAY \
     NEO_AUTOMATRIX_MIN_CONFIDENCE MATRIX_MEDIA_XAI_VIDEO_MODEL \
     NEO_CONTINUOUS_MEMORY VAULT_REQUIRED VOICE_IDLE_DISCONNECT_S NEO_RUNTIME \
+    NEO_MEMORY_SUBSTRATE NEO_CORTEXD_SOCKET \
     MATRIX_EXEC_STATE_DIR MATRIX_EXEC_WORKDIR MATRIX_EXEC_TIMEOUT_MS \
     MATRIX_EXEC_MAX_OUTPUT_BYTES MATRIX_EXEC_MAX_SERVICES MATRIX_EXEC_MAX_LOG_LINES \
     MATRIX_EXEC_INLINE_SECRET_POLICY
@@ -116,6 +118,13 @@ do
         AGENT_ENV+=("${name}=${!name}")
     fi
 done
+
+# The cortexd actor capability belongs only to the Neo memory seam. Keep it
+# out of every inherited process environment and inject it explicitly into
+# Neo after cortexd is ready. In particular, AGENT_ENV must never carry it to
+# Playwright, workspace shells, or custom commands.
+CORTEXD_ACTOR_TOKEN="${NEO_CORTEXD_TOKEN:-}"
+unset NEO_CORTEXD_TOKEN
 if [[ ! -f "${OWNER_MARKER}" ]]; then
     chown -R "${AGENT_UID}:${AGENT_GID}" \
         "${DATA_DIR}/workspace" \
@@ -146,7 +155,8 @@ chmod 0750 \
     "${DATA_DIR}/neo/cache" \
     "${DATA_DIR}/neo/services"
 chmod 0700 "${DATA_DIR}/agentcore"
-chmod 0700 "${DATA_DIR}/build-jobs" "${DATA_DIR}/cortex" "${DATA_DIR}/journal" "${DATA_DIR}/transcripts" "${DATA_DIR}/.matrix"
+chmod 0700 "${DATA_DIR}/build-jobs" "${DATA_DIR}/cortex" "${DATA_DIR}/journal" "${DATA_DIR}/transcripts" "${DATA_DIR}/neocortex" "${DATA_DIR}/.matrix"
+chown 0:0 "${DATA_DIR}/neocortex"
 
 # Neo's user-confirmed recovery controls operate only on these two supervised
 # service registries and the bridge baked into this image. Keeping the targets
@@ -240,6 +250,144 @@ wait_for_health() {
     return 1
 }
 
+random_hex() {
+    local bytes="$1"
+    od -An -N "${bytes}" -tx1 /dev/urandom | tr -d '[:space:]'
+}
+
+prepare_cortexd_config() {
+    local state_dir="${DATA_DIR}/neocortex"
+    local key_path="${state_dir}/bootstrap.keys"
+    local config_path="${state_dir}/cortexd.conf"
+    local log_path="${state_dir}/cortexd.log"
+    local socket_path="${NEO_CORTEXD_SOCKET:-${state_dir}/cortexd.sock}"
+    local key_tmp config_tmp key value
+    local user_id="" kek="" signing_seed="" admin_token=""
+
+    if [[ -L "${state_dir}" || -L "${key_path}" || -L "${config_path}" || -L "${log_path}" ]]; then
+        echo "entrypoint: refusing symlinked cortexd state or configuration" >&2
+        return 1
+    fi
+    if [[ "${socket_path}" != /* || "${socket_path}" == *$'\n'* || "$(dirname -- "${socket_path}")" != "${state_dir}" ]]; then
+        echo "entrypoint: NEO_CORTEXD_SOCKET must be a direct child of ${state_dir}" >&2
+        return 1
+    fi
+    if [[ ! "${CORTEXD_ACTOR_TOKEN}" =~ ^[[:xdigit:]]{64}$ ]]; then
+        echo "entrypoint: neocortex substrate requires a 64-hex NEO_CORTEXD_TOKEN" >&2
+        return 1
+    fi
+
+    mkdir -p "${state_dir}/data"
+    chown 0:0 "${state_dir}" "${state_dir}/data"
+    chmod 0700 "${state_dir}" "${state_dir}/data"
+    touch "${log_path}"
+    chown 0:0 "${log_path}"
+    chmod 0600 "${log_path}"
+    if [[ ! -f "${key_path}" ]]; then
+        key_tmp="$(mktemp "${state_dir}/.bootstrap.keys.XXXXXX")"
+        chmod 0600 "${key_tmp}"
+        {
+            printf 'user=%s\n' "$(random_hex 16)"
+            printf 'kek=%s\n' "$(random_hex 32)"
+            printf 'signing_seed=%s\n' "$(random_hex 32)"
+            printf 'admin_token=%s\n' "$(random_hex 32)"
+        } >"${key_tmp}"
+        mv -f "${key_tmp}" "${key_path}"
+    fi
+    chown 0:0 "${key_path}"
+    chmod 0600 "${key_path}"
+
+    while IFS='=' read -r key value; do
+        case "${key}" in
+            user) user_id="${value}" ;;
+            kek) kek="${value}" ;;
+            signing_seed) signing_seed="${value}" ;;
+            admin_token) admin_token="${value}" ;;
+            *)
+                echo "entrypoint: invalid cortexd bootstrap key file" >&2
+                return 1
+                ;;
+        esac
+    done <"${key_path}"
+    if [[ ! "${user_id}" =~ ^[[:xdigit:]]{32}$ ||
+          ! "${kek}" =~ ^[[:xdigit:]]{64}$ ||
+          ! "${signing_seed}" =~ ^[[:xdigit:]]{64}$ ||
+          ! "${admin_token}" =~ ^[[:xdigit:]]{64}$ ||
+          "${admin_token,,}" == "${CORTEXD_ACTOR_TOKEN,,}" ]]; then
+        echo "entrypoint: invalid cortexd bootstrap key material" >&2
+        return 1
+    fi
+
+    config_tmp="$(mktemp "${state_dir}/.cortexd.conf.XXXXXX")"
+    chmod 0600 "${config_tmp}"
+    {
+        printf 'socket=%s\n' "${socket_path}"
+        printf 'data=%s\n' "${state_dir}/data"
+        printf 'user=%s\n' "${user_id}"
+        printf 'kek=%s\n' "${kek}"
+        printf 'signing_seed=%s\n' "${signing_seed}"
+        printf 'admin_token=%s\n' "${admin_token}"
+        printf 'actor=1:%s\n' "${CORTEXD_ACTOR_TOKEN,,}"
+    } >"${config_tmp}"
+    mv -f "${config_tmp}" "${config_path}"
+    chown 0:0 "${config_path}"
+
+    export NEO_CORTEXD_SOCKET="${socket_path}"
+    CORTEXD_CONFIG_PATH="${config_path}"
+    CORTEXD_LOG_PATH="${log_path}"
+}
+
+start_cortexd() {
+    local substrate="${NEO_MEMORY_SUBSTRATE:-cortex}"
+    substrate="${substrate,,}"
+    substrate="${substrate//[[:space:]]/}"
+    if [[ "${substrate}" != "neocortex" ]]; then
+        unset CORTEXD_ACTOR_TOKEN
+        return 0
+    fi
+    export NEO_MEMORY_SUBSTRATE="neocortex"
+    prepare_cortexd_config
+
+    (
+        set +e
+        local child_pid="" status=0
+        trap 'if [[ -n "${child_pid}" ]]; then kill "${child_pid}" 2>/dev/null; wait "${child_pid}" 2>/dev/null; fi; exit 0' TERM INT
+        while true; do
+            if [[ -L "${NEO_CORTEXD_SOCKET}" || ( -e "${NEO_CORTEXD_SOCKET}" && ! -S "${NEO_CORTEXD_SOCKET}" ) ]]; then
+                echo "entrypoint: refusing non-socket cortexd path ${NEO_CORTEXD_SOCKET}" >&2
+                exit 1
+            fi
+            if [[ -S "${NEO_CORTEXD_SOCKET}" ]]; then
+                rm -f -- "${NEO_CORTEXD_SOCKET}"
+            fi
+            "${MATRIX_HOME}/bin/cortexd" --config "${CORTEXD_CONFIG_PATH}" \
+                >>"${CORTEXD_LOG_PATH}" 2>&1 &
+            child_pid=$!
+            wait "${child_pid}"
+            status=$?
+            child_pid=""
+            echo "entrypoint: cortexd exited (status ${status}); restarting in 1s" >&2
+            sleep 1
+        done
+    ) &
+    CORTEXD_SUPERVISOR_PID=$!
+
+    local i
+    for (( i = 0; i < 80; i++ )); do
+        if [[ -S "${NEO_CORTEXD_SOCKET}" ]]; then
+            return 0
+        fi
+        if ! kill -0 "${CORTEXD_SUPERVISOR_PID}" 2>/dev/null; then
+            echo "entrypoint: cortexd supervisor exited before readiness" >&2
+            return 1
+        fi
+        sleep 0.25
+    done
+    echo "entrypoint: cortexd socket did not become ready" >&2
+    kill "${CORTEXD_SUPERVISOR_PID}" 2>/dev/null || true
+    return 1
+}
+
 # start_local_browser -> boot the PER-USER Playwright MCP (@playwright/mcp,
 # baked into the image) on loopback and point MATRIX_BROWSER_URL at it
 # (BROWSER-FILMSTRIP req.1). The daemon-side stdio bridge
@@ -329,6 +477,10 @@ case "${1:-neo}" in
     neo)
         shift || true
 
+        # The old Cortex substrate remains the default. cortexd is started and
+        # made ready only for an explicit neocortex selection.
+        start_cortexd
+
         # Per-user local browser (BROWSER-FILMSTRIP): boot it first so
         # MATRIX_BROWSER_URL is exported before the daemon/neo spawn their
         # browser.mjs bridges (the bridge reads it at spawn).
@@ -384,7 +536,11 @@ case "${1:-neo}" in
         export NEO_ACTOR_DID="did:matrix:${MATRIX_USER_ID:-neo}:neo"
         export NEO_SKILLS_ROOT="${MATRIX_HOME}/skills"
 
-        "${MATRIX_HOME}/bin/neo" serve \
+        NEO_PROCESS_ENV=()
+        if [[ "${NEO_MEMORY_SUBSTRATE:-cortex}" == "neocortex" ]]; then
+            NEO_PROCESS_ENV+=("NEO_CORTEXD_TOKEN=${CORTEXD_ACTOR_TOKEN}")
+        fi
+        env "${NEO_PROCESS_ENV[@]}" "${MATRIX_HOME}/bin/neo" serve \
             -addr ":8080" \
             -backend "http://127.0.0.1:${NEO_BACKEND_PORT}" \
             -manifest "${MATRIX_HOME}/agents/neo.json" \
@@ -392,6 +548,7 @@ case "${1:-neo}" in
             -actor "neo" \
             "$@" &
         NEO_PID=$!
+        unset CORTEXD_ACTOR_TOKEN NEO_PROCESS_ENV
 
         # If any required runtime exits, tear the others down and exit non-zero so the
         # platform's on-failure restart reboots the service. (tini -g also
@@ -401,7 +558,7 @@ case "${1:-neo}" in
         EXIT=$?
         set -e
         echo "entrypoint: a co-located process exited (status ${EXIT}); stopping the runtime" >&2
-        kill "${DAEMON_PID}" "${NEO_PID}" ${WORKFORCE_PID:+"${WORKFORCE_PID}"} ${BROWSER_PID:+"${BROWSER_PID}"} ${VOICE_CONTROLLER_PID:+"${VOICE_CONTROLLER_PID}"} 2>/dev/null || true
+        kill "${DAEMON_PID}" "${NEO_PID}" ${CORTEXD_SUPERVISOR_PID:+"${CORTEXD_SUPERVISOR_PID}"} ${WORKFORCE_PID:+"${WORKFORCE_PID}"} ${BROWSER_PID:+"${BROWSER_PID}"} ${VOICE_CONTROLLER_PID:+"${VOICE_CONTROLLER_PID}"} 2>/dev/null || true
         wait 2>/dev/null || true
         exit "${EXIT}"
         ;;

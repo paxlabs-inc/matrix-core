@@ -141,10 +141,10 @@ func TestSignalParity_UnifiedReadMatchesCommit(t *testing.T) {
 	}
 }
 
-// TestSignalState_CarriesEpistemicAndCounterReads proves the unified state is
+// TestSignalState_CarriesEpistemicReads proves the unified state is
 // complete per req.5.1: the ledger reads (refuted / ungrounded-self), the
 // epistemic meters (per-strategy mismatches, evidence delta + actions-since-
-// growth), the unproductive counter, and the closing flag all ride the one
+// growth) and the closing flag all ride the one
 // state — read from the turn's REAL source structures, not recomputed copies.
 func TestSignalState_CarriesEpistemicAndCounterReads(t *testing.T) {
 	a := New(Options{Config: config.Default()})
@@ -157,7 +157,6 @@ func TestSignalState_CarriesEpistemicAndCounterReads(t *testing.T) {
 	// Real meters: a mismatch streak and a non-growing graph.
 	a.turn.mismatchMeter = map[string]int{"fetch:api": 2}
 	a.turn.graph = &taskGraph{evidenceSet: map[string]struct{}{"k1": {}, "k2": {}}, actionsSinceGrowth: 3}
-	a.turn.unproductive = 2
 
 	s := a.computeStepSignals(7, llm.Message{Role: llm.RoleAssistant, Content: "done"})
 	if !s.closing {
@@ -174,9 +173,6 @@ func TestSignalState_CarriesEpistemicAndCounterReads(t *testing.T) {
 	}
 	if s.evidenceItems != 2 || s.actionsSinceGrowth != 3 {
 		t.Errorf("graph reads = (%d evidence, %d since growth), want (2, 3)", s.evidenceItems, s.actionsSinceGrowth)
-	}
-	if s.unproductive != 2 {
-		t.Errorf("unproductive read = %d, want 2", s.unproductive)
 	}
 	if s.step != 7 {
 		t.Errorf("step = %d, want 7", s.step)

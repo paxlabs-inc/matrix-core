@@ -16,22 +16,17 @@ import (
 	"testing"
 
 	"matrix/neo/internal/config"
+	"matrix/neo/internal/o1"
 )
 
-// TestGovernorFireOrder_EpistemicBeforeCassandraBeforeStall proves the
-// governor's fire order (MORPHEUS req.5.2) on a REAL non-converging run —
+// TestEpistemicMismatchDoesNotInterceptDispatch proves the ordinary-execution
+// boundary on a REAL non-converging run —
 // real httptest SSE model, the real spawned MCP fetch tool probing a real
-// 404-only API, every production bound at its default:
-//
-//  1. the EPISTEMIC layer fires first — three prediction mismatches on one
-//     strategy arm the forced revision, which runs tools-stripped BEFORE any
-//     further dispatch;
-//  2. the CASSANDRA voice fires second — only once the post-revision spiral
-//     shows repeat pressure do silent in-place mods land;
-//  3. the OUTER FAILSAFE fires last — the hard NoProgressStall ends the turn
-//     through the governor's terminal verdict (governDeath), with the death
-//     taxonomy + failure-context round-trip intact (req.5.4).
-func TestGovernorFireOrder_EpistemicBeforeCassandraBeforeStall(t *testing.T) {
+// 404-only API, every production bound at its default. Prediction mismatch
+// remains observable, Cassandra may still annotate the working turn, and the
+// hard no-progress failsafe remains authoritative, but no tools-stripped
+// forced-revision call may intercept dispatch.
+func TestEpistemicMismatchDoesNotInterceptDispatch(t *testing.T) {
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}))
@@ -129,17 +124,11 @@ func TestGovernorFireOrder_EpistemicBeforeCassandraBeforeStall(t *testing.T) {
 			firstMod = i
 		}
 	}
-	if firstRevision < 0 {
-		t.Fatalf("the epistemic layer never fired (no tools-stripped revision); timeline: %v", events)
+	if firstRevision >= 0 {
+		t.Fatalf("prediction mismatch injected a tools-stripped revision call; timeline: %v", events)
 	}
 	if firstMod < 0 {
 		t.Fatalf("the Cassandra voice never fired; timeline: %v", events)
-	}
-	// The proven order: epistemic revision BEFORE the first Cassandra mod,
-	// both before the stall (the stall is last by construction — Chat returned
-	// on it).
-	if firstRevision > firstMod {
-		t.Fatalf("fire order violated: first Cassandra mod (idx %d) preceded the first epistemic revision (idx %d); timeline: %v", firstMod, firstRevision, events)
 	}
 
 	// req.5.4 — the death taxonomy is the governor's terminal verdict and the
@@ -174,7 +163,28 @@ func TestGovernorDeath_OneTerminalVerdictSite(t *testing.T) {
 		t.Fatalf("recordDeath must be called only from governDeath (governor.go), found %v", sites)
 	}
 	deathSites := productionCallSites(t, "a.governDeath(")
-	if len(deathSites) != 3 {
-		t.Fatalf("the three loop-affecting deaths (stall, step budget, unproductive cap) must all route through governDeath, found %v", deathSites)
+	if len(deathSites) != 4 {
+		t.Fatalf("stall, step budget, close-retry cap, and synthesis retry must all route through governDeath, found %v", deathSites)
+	}
+}
+
+func TestGovernDeathPreservesSuccessfulOperationStanding(t *testing.T) {
+	a := New(Options{Config: config.Default()})
+	success := o1.NewOutcome("write_project").Success().
+		Evidence("project files were written and verified").
+		PostSatisfied("requested files exist").MustBuild()
+	a.turn.commitOutcome(success)
+	a.turn.runLedger = o1.NewRunLedger("run-success", "contract", 1)
+
+	err := a.governDeath(DeathReasonSynthesis, "final synthesis retry exhausted. Progress so far:")
+	if err == nil || !errors.Is(err, ErrIncomplete) {
+		t.Fatalf("governDeath = %v, want resumable ErrIncomplete", err)
+	}
+	standing := a.turn.outcome()
+	if standing == nil || !standing.Success || standing.Operation != "write_project" {
+		t.Fatalf("successful standing was overwritten: %+v", standing)
+	}
+	if attempts := a.turn.runLedger.Attempts; len(attempts) != 0 {
+		t.Fatalf("turn death fabricated an operation attempt: %+v", attempts)
 	}
 }

@@ -1,0 +1,325 @@
+namespace neocortex.protocol;
+
+enum ResponseStatus : ubyte { ok, error }
+
+table Hello {
+  proto_version:ushort;
+  connection_id:[ubyte] (required);
+  capability_token:[ubyte] (required);
+}
+
+table Welcome {
+  proto_version:ushort;
+  actor_ns:ushort;
+  admin:bool;
+  maximum_frame_bytes:uint;
+  maximum_batch_events:uint;
+  maximum_subscriptions:uint;
+  next_client_seq:ulong;
+}
+
+table AppendEvent {
+  kind:ubyte;
+  conversation:[ubyte] (required);
+  payload:[ubyte] (required);
+}
+
+table Append {
+  client_seq:ulong;
+  events:[AppendEvent] (required);
+}
+
+table Activate {
+  conversation:[ubyte] (required);
+  query:[ubyte] (required);
+  turn_text:[ubyte];
+  budget_tokens:ulong;
+  query_embedding:[byte];
+  query_binary_prefilter:[ubyte];
+  temporal_from_ns:long;
+  temporal_to_ns:long;
+  token_weights:[ushort];
+  token_item_overhead:uint;
+}
+
+table Transcript {
+  conversation:[ubyte] (required);
+  since_lsn:ulong;
+  limit:uint;
+}
+
+enum RecallMode : ubyte { list_windows, open_window, resolve_members }
+
+table Recall {
+  query:[ubyte] (required);
+  limit:uint;
+  mode:RecallMode;
+  level:ubyte;
+  start_ns:long;
+  end_ns:long;
+}
+
+table AsOf {
+  belief_type:ubyte;
+  canonical_identity:string (required);
+  valid_time_ns:long;
+  transaction_lsn:ulong;
+}
+
+table Checkpoint {
+  turn_id:[ubyte] (required);
+  blob:[ubyte] (required);
+  client_seq:ulong;
+}
+
+table LatestCheckpoint {
+  turn_id:[ubyte] (required);
+}
+
+table Attest {
+  used:[ulong];
+  ignored:[ulong];
+  client_seq:ulong;
+}
+
+table Subscribe {
+  conversation:[ubyte];
+  since_lsn:ulong;
+}
+
+table Health {}
+table Stats {
+  actor:ushort;
+}
+table LatencyHistograms {}
+table VerifyStatus {
+  actor:ushort;
+}
+
+table RebuildProjection {
+  actor:ushort;
+  name:string (required);
+}
+
+table CryptoDelete {
+  actor:ushort;
+}
+
+union RequestPayload {
+  Append,
+  Activate,
+  Transcript,
+  Recall,
+  AsOf,
+  Checkpoint,
+  LatestCheckpoint,
+  Attest,
+  Subscribe,
+  Health,
+  Stats,
+  LatencyHistograms,
+  VerifyStatus,
+  RebuildProjection,
+  CryptoDelete
+}
+
+table Request {
+  request_id:ulong;
+  payload:RequestPayload (required);
+}
+
+table ErrorDetail {
+  code:ubyte;
+  system_error:int;
+  lsn:ulong;
+  offset:ulong;
+}
+
+table AppendAck {
+  client_seq:ulong;
+  first_lsn:ulong;
+  last_lsn:ulong;
+  duplicate:bool;
+  leaf_count:ulong;
+  last_leaf_hash:[ubyte];
+  mmr_root:[ubyte];
+}
+
+table BytesResult {
+  bytes:[ubyte] (required);
+}
+
+table SubscriptionAck {
+  subscription_id:ulong;
+}
+
+table HealthResult {
+  ready:bool;
+  actor_count:uint;
+  active_connections:uint;
+}
+
+table ProjectionStat {
+  name:string (required);
+  applied_lsn:ulong;
+}
+
+table StatsResult {
+  actor:ushort;
+  log_events:ulong;
+  log_bytes:ulong;
+  projection_stats:[ProjectionStat] (required);
+}
+
+table LatencyBucket {
+  operation:string (required);
+  upper_bound_ns:ulong;
+  count:ulong;
+}
+
+table LatencyResult {
+  buckets:[LatencyBucket] (required);
+}
+
+table VerifyResult {
+  actor:ushort;
+  root:[ubyte] (required);
+  leaf_count:ulong;
+  last_checkpoint_lsn:ulong;
+  verified:bool;
+}
+
+table RebuildResult {
+  actor:ushort;
+  name:string (required);
+  applied_lsn:ulong;
+}
+
+table DeleteResult {
+  actor:ushort;
+  receipt:[ubyte] (required);
+}
+
+table FrameRecord {
+  lsn:ulong;
+  kind:ubyte;
+  wall_timestamp_ns:long;
+  actor:ushort;
+  conversation:[ubyte] (required);
+  payload:[ubyte] (required);
+}
+
+table TranscriptResult {
+  records:[FrameRecord] (required);
+  truncated:bool;
+}
+
+table TemporalWindowRecord {
+  level:ubyte;
+  start_ns:long;
+  end_ns:long;
+  member_count:ulong;
+}
+
+table RecallResult {
+  windows:[TemporalWindowRecord];
+  members:[ulong];
+}
+
+table BeliefProvenanceRecord {
+  first_lsn:ulong;
+  last_lsn:ulong;
+}
+
+table BeliefConflictRecord {
+  other_type:ubyte;
+  other_canonical_identity:string (required);
+  created_lsn:ulong;
+  resolved_lsn:ulong;
+  obligated_surfacing:bool;
+}
+
+table BeliefResult {
+  present:bool;
+  belief_type:ubyte;
+  belief_id:[ubyte];
+  canonical_identity:string;
+  conflict_domain:string;
+  value:[ubyte];
+  claim:ubyte;
+  valid_from_ns:long;
+  valid_to_ns:long;
+  transaction_lsn:ulong;
+  version:ulong;
+  supersedes_version:ulong;
+  provenance:[BeliefProvenanceRecord];
+  conflict_edges:[BeliefConflictRecord];
+  tombstoned:bool;
+}
+
+table CheckpointAck {
+  lsn:ulong;
+}
+
+table CheckpointResult {
+  present:bool;
+  lsn:ulong;
+  blob:[ubyte];
+}
+
+table AttestAck {
+  first_lsn:ulong;
+  last_lsn:ulong;
+  count:uint;
+}
+
+union ResponsePayload {
+  ErrorDetail,
+  AppendAck,
+  BytesResult,
+  SubscriptionAck,
+  HealthResult,
+  StatsResult,
+  LatencyResult,
+  VerifyResult,
+  RebuildResult,
+  DeleteResult,
+  TranscriptResult,
+  RecallResult,
+  BeliefResult,
+  CheckpointAck,
+  CheckpointResult,
+  AttestAck
+}
+
+table Response {
+  request_id:ulong;
+  status:ResponseStatus;
+  payload:ResponsePayload;
+}
+
+table Event {
+  subscription_id:ulong;
+  lsn:ulong;
+  kind:ubyte;
+  wall_timestamp_ns:long;
+  actor:ushort;
+  conversation:[ubyte] (required);
+  payload:[ubyte] (required);
+}
+
+union WirePayload {
+  Hello,
+  Welcome,
+  Request,
+  Response,
+  Event
+}
+
+table WireEnvelope {
+  proto_version:ushort;
+  payload:WirePayload (required);
+}
+
+root_type WireEnvelope;
+file_identifier "NCPR";

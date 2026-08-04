@@ -80,6 +80,7 @@ func TestRevisionForcedAtMismatchLimit(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
+	cfg.EpistemicPredictions = true
 	a := New(Options{Config: cfg, Main: revisionTestClient(t, srv.URL), Tools: &tools.Manager{}})
 
 	if err := a.Chat(context.Background(), "get the OHLC data"); err != nil {
@@ -159,6 +160,7 @@ func TestRevisionForcedAtConvergenceWindow(t *testing.T) {
 	})
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
+	cfg.EpistemicPremises = true
 	a := New(Options{Config: cfg, Main: revisionTestClient(t, srv.URL), Tools: mgr})
 
 	if err := a.Chat(context.Background(), "figure it out"); err != nil {
@@ -182,10 +184,9 @@ func TestRevisionForcedAtConvergenceWindow(t *testing.T) {
 	}
 }
 
-// TestGuessRefusedAtDispatch proves req.6.1's refusal: a probe-class call
-// with NO stated expectation never dispatches — it is answered with the
-// ground-or-hypothesize directive at the real dispatch seam.
-func TestGuessRefusedAtDispatch(t *testing.T) {
+// TestExpectationFreeProbeDispatches proves optional prediction metadata can
+// never block a real tool attempt.
+func TestExpectationFreeProbeDispatches(t *testing.T) {
 	var (
 		mu     sync.Mutex
 		bodies []string
@@ -221,13 +222,13 @@ func TestGuessRefusedAtDispatch(t *testing.T) {
 	if err := a.Chat(context.Background(), "find the endpoint"); err != nil {
 		t.Fatalf("Chat: %v", err)
 	}
-	if dispatched != 0 {
-		t.Fatalf("an expectation-free probe must never dispatch; %d dispatches observed", dispatched)
+	if dispatched != 1 {
+		t.Fatalf("an expectation-free probe must dispatch once; %d dispatches observed", dispatched)
 	}
 	mu.Lock()
 	defer mu.Unlock()
-	if !strings.Contains(bodies[len(bodies)-1], "not dispatched (no expectation stated)") {
-		t.Fatal("the ground-or-hypothesize directive must answer the refused guess")
+	if strings.Contains(strings.Join(bodies, ""), "not dispatched (no expectation stated)") {
+		t.Fatal("optional prediction metadata produced a dispatch refusal")
 	}
 }
 

@@ -399,7 +399,7 @@ func runServe(args []string) {
 		Vault:           vaultSess,
 	})
 	var codingCredentialSource *codingworker.GatewayCredentialSource
-	if !*sandbox && !strings.EqualFold(strings.TrimSpace(os.Getenv("NEO_CODING_RUNTIME_ENABLED")), "false") {
+	if !*sandbox && strings.EqualFold(strings.TrimSpace(os.Getenv("NEO_CODING_RUNTIME_ENABLED")), "true") {
 		binary := envOrDefault("NEO_AGENTCORE_BINARY", "/opt/agentcore/.venv/bin/agentcore")
 		gatewayURL := strings.TrimRight(strings.TrimSpace(cfg.GatewayURL), "/")
 		if gatewayURL != "" && !strings.HasSuffix(gatewayURL, "/v1") {

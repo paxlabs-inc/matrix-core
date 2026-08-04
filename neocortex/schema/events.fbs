@@ -1,0 +1,165 @@
+namespace neocortex.schema;
+
+enum ResultStatus : ubyte { ok, error, outcome_unknown }
+enum ApprovalDecision : ubyte { approved, denied }
+enum EffectState : ubyte { dispatched, committed, returned, outcome_unknown }
+enum LoopCloseReason : ubyte { done, abandoned, handed_off, superseded }
+enum BeliefType : ubyte { fact, preference, constraint, goal, identity }
+enum AssertionClaim : ubyte { affirmative, negative_existence }
+enum AttestationDisposition : ubyte { used, ignored }
+
+struct ProvenanceRange {
+  first_lsn:ulong;
+  last_lsn:ulong;
+}
+
+table UserMsg {
+  content:[ubyte] (required);
+}
+
+table DeliveredMsg {
+  content:[ubyte] (required);
+}
+
+table ToolCall {
+  call_id:[ubyte] (required);
+  tool_name:string (required);
+  arguments:[ubyte] (required);
+}
+
+table ToolResult {
+  call_id:[ubyte] (required);
+  tool_call_lsn:ulong;
+  status:ResultStatus;
+  result:[ubyte] (required);
+}
+
+table Reasoning {
+  content:[ubyte] (required);
+}
+
+table ProviderFrame {
+  provider:string (required);
+  api_content:[ubyte] (required);
+}
+
+table MediaRef {
+  uri:string (required);
+  media_type:string (required);
+  digest:[ubyte] (required);
+}
+
+table Effect {
+  effect_id:[ubyte] (required);
+  tool_call_lsn:ulong;
+  state:EffectState;
+}
+
+table Approval {
+  effect_id:[ubyte] (required);
+  decision:ApprovalDecision;
+}
+
+table Outcome {
+  effect_id:[ubyte] (required);
+  status:ResultStatus;
+  detail:[ubyte] (required);
+}
+
+table Checkpoint {
+  cursor:[ubyte] (required);
+}
+
+table Supervisor {
+  code:string (required);
+  evidence:[ubyte] (required);
+}
+
+table Recovery {
+  code:string (required);
+  target_lsn:ulong;
+}
+
+table IntentSet {
+  objective:[ubyte] (required);
+}
+
+table LoopOpened {
+  loop_id:[ubyte] (required);
+  objective:[ubyte] (required);
+}
+
+table LoopClosed {
+  loop_id:[ubyte] (required);
+  reason:LoopCloseReason;
+  cause:[ubyte] (required);
+}
+
+table Assertion {
+  belief_id:[ubyte] (required);
+  belief_type:BeliefType;
+  canonical_identity:string (required);
+  value:[ubyte] (required);
+  valid_from_ns:long;
+  valid_to_ns:long;
+  provenance:[ProvenanceRange] (required);
+  conflict_domain:string;
+  claim:AssertionClaim = affirmative;
+}
+
+table Consolidation {
+  assertions:[Assertion] (required);
+}
+
+table Embedding {
+  target_lsn:ulong;
+  dimension:uint;
+  quantized:[byte] (required);
+  binary_prefilter:[ubyte] (required);
+}
+
+table Retract {
+  belief_id:[ubyte] (required);
+  provenance:[ProvenanceRange] (required);
+}
+
+table Attestation {
+  target_lsn:ulong;
+  disposition:AttestationDisposition;
+}
+
+union EventPayload {
+  UserMsg,
+  DeliveredMsg,
+  ToolCall,
+  ToolResult,
+  Reasoning,
+  ProviderFrame,
+  MediaRef,
+  Effect,
+  Approval,
+  Outcome,
+  Checkpoint,
+  Supervisor,
+  Recovery,
+  IntentSet,
+  LoopOpened,
+  LoopClosed,
+  Assertion,
+  Consolidation,
+  Embedding,
+  Retract,
+  Attestation
+}
+
+table EventEnvelope {
+  schema_version:ushort = 1;
+  payload:EventPayload (required);
+  connection_id:[ubyte];
+  client_seq:ulong;
+  client_event_index:uint;
+  client_event_count:uint;
+}
+
+root_type EventEnvelope;
+file_identifier "NCEV";

@@ -10,7 +10,7 @@ SHELL              := /usr/bin/env bash
 .SHELLFLAGS        := -eu -o pipefail -c
 .DEFAULT_GOAL      := help
 
-MODULES            := vault cortex MCL bridge construct codegraph cassandra executor neo router gateway chronos
+MODULES            := vault cortex cortexclient MCL bridge construct codegraph cassandra executor neo router gateway chronos
 GO                 ?= /usr/local/go/bin/go
 GOFLAGS            ?=
 GOTEST_FLAGS       ?= -count=1

@@ -170,8 +170,8 @@ func (a *Agent) systemPrompt() string {
 
 	if a.cfg.EpistemicPredictions {
 		b.WriteString("Predict before you act:\n")
-		b.WriteString("- EVERY tool call you make carries an `expect` argument: one short line stating the outcome shape you predict (e.g. \"200 with a JSON array of candles\", \"exit 0 listing the config files\", \"file written, ~40 lines\"). It is your prediction, not a tool input — the system lifts it off the call before the tool runs. If you cannot state what a call should return, you do not understand the call well enough to make it yet.\n")
-		b.WriteString("- PROBES — fetching a URL or endpoint, a search, an exploratory command — are held to this strictly: a probe with no expectation is a guess and is refused at dispatch. Ground it first (docs, your capability surface, memory) or state the hypothesis you are testing.\n")
+		b.WriteString("- Only genuinely uncertain network and search probes carry an `expect` argument: one short line stating the outcome shape you predict (e.g. \"200 with a JSON array of candles\"). It is your hypothesis, not a tool input — the system lifts it off before dispatch. Deterministic file operations, mutations, and shell commands do not use predictions.\n")
+		b.WriteString("- A network/search probe with no expectation is a guess and may be refused at dispatch. Ground it first (docs, your capability surface, memory) or state the hypothesis you are testing.\n")
 		b.WriteString("- When a result misses its expectation, that is INFORMATION about your premise, not noise: revise the hypothesis before acting again. Never fire another variation of the same call with the same mental model.\n\n")
 	}
 
@@ -192,9 +192,13 @@ func (a *Agent) systemPrompt() string {
 		} else if a.tools != nil && a.tools.BuildProjectEnabled() {
 			writeBuildOnlyPolicy(&b)
 		} else {
-			b.WriteString("- Local workspace tools and the durable Build worker are unavailable in this session. Do not attempt project work through integration adapters or a desktop session; explain the blocker honestly.\n")
+			b.WriteString("- Local workspace tools are unavailable in this session. Do not attempt project work through integration adapters or a desktop session; explain the blocker honestly.\n")
 		}
-		b.WriteString("- Put the stack choice and framework constraints into the Build brief. The private worker should scaffold the real framework and build setup that fits the requirements; plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
+		if a.tools != nil && a.tools.BuildProjectEnabled() {
+			b.WriteString("- Put the stack choice and framework constraints into the Build brief. The private worker should scaffold the real framework and build setup that fits the requirements; plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
+		} else {
+			b.WriteString("- Choose the stack and framework from the user's requirements, scaffold the real build setup with the native tools, and keep working through current verification and final delivery. Plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
+		}
 		b.WriteString("- Use the native service tools for long-running local processes so their identity, logs, stop, and restart state remain durable. Use the workbench Preview pane for runnable previews.\n")
 		b.WriteString("- Deploying is NOT how you show work. Never deploy or publish anything (paxc included) unless the user explicitly asks you to deploy — and when they do, use a preview deploy unless they say production.\n\n")
 	}
@@ -283,7 +287,7 @@ func writeNativeLocalPolicy(b *strings.Builder, buildEnabled bool) {
 	b.WriteString("- Use the native file tools for ordinary reading, writing, exact edits, directory inspection, and attachment access; use shell for bounded commands; use service_start/list/logs/stop/restart for long-running processes; and use the read-only git tools for status, diffs, history, and branches. These run in-process and do not depend on local MCP servers.\n")
 	b.WriteString("- Keep every mutation inside the selected project. Git commit, push, merge, force operations, destructive resets, and production deployment remain unavailable unless a separately authorized product workflow owns them.\n")
 	if !buildEnabled {
-		b.WriteString("- The durable Build worker is unavailable, so complete bounded local work with the native tools and state honestly when a larger asynchronous coding job cannot be accepted.\n")
+		b.WriteString("- Complete project work end to end in this Neo run with the native tools. For substantial work, keep the task list current, rely on the runtime-owned coding checkpoint for recovery, run the required verification, and deliver the verified result directly.\n")
 		return
 	}
 	b.WriteString("- Use build_project for substantial coding jobs that should survive this turn, need checkpoints and autonomous verification, or will involve many files and long-running work. Do not delegate simple file inspection, document handling, one-command diagnostics, or other ordinary local tasks.\n")

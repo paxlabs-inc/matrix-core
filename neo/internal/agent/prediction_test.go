@@ -40,8 +40,8 @@ func TestProbeStrategyGroupsVariedArgs(t *testing.T) {
 	if _, ok := probeStrategy("read_text_file", map[string]interface{}{"path": "/tmp/x"}); ok {
 		t.Fatal("a plain file read is not a probe")
 	}
-	if s, ok := probeStrategy("shell_exec", map[string]interface{}{"command": "curl -s http://x/a"}); !ok || !strings.Contains(s, "curl") {
-		t.Fatalf("exec probes key on the command head, got %q ok=%v", s, ok)
+	if _, ok := probeStrategy("shell_exec", map[string]interface{}{"command": "curl -s http://x/a"}); ok {
+		t.Fatal("shell commands are deterministic execution, not prediction probes")
 	}
 }
 
@@ -122,6 +122,7 @@ func TestPredictionMeterAcrossRealDispatches(t *testing.T) {
 	}
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
+	cfg.EpistemicPredictions = true
 	var (
 		obsMu   sync.Mutex
 		obsArgs []map[string]interface{}
@@ -186,11 +187,9 @@ func TestPredictionMeterAcrossRealDispatches(t *testing.T) {
 	}
 }
 
-// TestInjectExpectParamUniversal proves the universal `expect` advertisement:
-// every advertised schema (native, synthetic, read_overflow) carries the
-// expect property, and the injection is copy-on-write — the Manager's own
-// parameter maps are untouched, so a second consumer sees pristine schemas.
-func TestInjectExpectParamUniversal(t *testing.T) {
+// TestInjectExpectParamProbeOnly proves expect is advertised only on genuinely
+// uncertain probes and never on deterministic reads, mutations, or commands.
+func TestInjectExpectParamProbeOnly(t *testing.T) {
 	cfg := config.Default()
 	tm := &tools.Manager{}
 	a := New(Options{Config: cfg, Tools: tm})
@@ -203,21 +202,21 @@ func TestInjectExpectParamUniversal(t *testing.T) {
 		if !ok {
 			t.Fatalf("%s: parameters carry no properties map", s.Function.Name)
 		}
-		exp, ok := props["expect"].(map[string]interface{})
-		if !ok {
-			t.Fatalf("%s: schema does not advertise the expect param", s.Function.Name)
+		if _, has := props["expect"]; has {
+			t.Fatalf("deterministic schema %s unexpectedly advertises expect", s.Function.Name)
 		}
-		if exp["type"] != "string" {
-			t.Fatalf("%s: expect param is not a string", s.Function.Name)
-		}
-		// Enforcement lives at the dispatch seam, not provider-side JSON
-		// schema strictness: expect must NOT be in required.
-		if req, ok := s.Function.Parameters["required"].([]string); ok {
-			for _, r := range req {
-				if r == "expect" {
-					t.Fatalf("%s: expect must not be schema-required", s.Function.Name)
-				}
-			}
+	}
+	probeSchemas := []llm.Tool{
+		llm.NewFunctionTool("fetch_url", "fetch", map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}),
+		llm.NewFunctionTool("write_file", "write", map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}),
+		llm.NewFunctionTool("shell", "shell", map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}),
+	}
+	injected := injectExpectParam(probeSchemas)
+	for index, schema := range injected {
+		props := schema.Function.Parameters["properties"].(map[string]interface{})
+		_, has := props["expect"]
+		if (index == 0) != has {
+			t.Fatalf("%s expect presence = %v", schema.Function.Name, has)
 		}
 	}
 
@@ -243,40 +242,30 @@ func TestInjectExpectParamUniversal(t *testing.T) {
 	}
 }
 
-// TestPredictionObserveNonProbe proves the universal belief update: a NON-probe
-// call that states an expectation gets the same mismatch treatment (ledger
-// premise, meter, structured guidance), while an expectation-less non-probe
-// stays outside the discipline (refusal is probe-only).
+// TestPredictionObserveNonProbe proves deterministic operations stay outside
+// belief mismatch logic even if an older caller still sends expect.
 func TestPredictionObserveNonProbe(t *testing.T) {
 	cfg := config.Default()
+	cfg.EpistemicPredictions = true
 	a := New(Options{Config: cfg, Tools: &tools.Manager{}})
 
 	before := len(a.working)
 	missed := a.predictionObserve(context.Background(), "fs_write", map[string]interface{}{"path": "a.txt"},
 		"file written cleanly", "error: permission denied", true)
-	if !missed {
-		t.Fatal("non-probe mismatch with a stated expectation must count as missed")
+	if missed {
+		t.Fatal("non-probe failure must not become a prediction mismatch")
 	}
-	if a.turn.mismatchMeter["fs_write"] != 1 {
-		t.Fatalf("meter = %d, want 1 keyed by tool name", a.turn.mismatchMeter["fs_write"])
+	if len(a.turn.mismatchMeter) != 0 {
+		t.Fatalf("non-probe populated mismatch meter: %#v", a.turn.mismatchMeter)
 	}
-	guided := false
 	for _, m := range a.working[before:] {
-		if strings.Contains(m.Content, "Prediction mismatch") && strings.Contains(m.Content, "fs_write") {
-			guided = true
+		if strings.Contains(m.Content, "Prediction mismatch") {
+			t.Fatalf("non-probe emitted mismatch guidance: %q", m.Content)
 		}
 	}
-	if !guided {
-		t.Fatal("mismatch must render structured guidance naming the strategy")
-	}
-
-	// Match resets the meter and discharges the hypothesis.
 	if missed := a.predictionObserve(context.Background(), "fs_write", map[string]interface{}{"path": "a.txt"},
 		"file written cleanly", "wrote 42 bytes to a.txt", false); missed {
-		t.Fatal("matching outcome must not count as missed")
-	}
-	if a.turn.mismatchMeter["fs_write"] != 0 {
-		t.Fatalf("meter = %d after match, want 0", a.turn.mismatchMeter["fs_write"])
+		t.Fatal("non-probe success must not enter prediction logic")
 	}
 
 	// Expectation-less non-probe: outside the discipline entirely.

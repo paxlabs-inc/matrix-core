@@ -60,6 +60,7 @@ func TestTurnIsolation_EpistemicStateDoesNotLeakAcrossChats(t *testing.T) {
 	client := revisionTestClient(t, srv.URL)
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
+	cfg.EpistemicPremises = true
 	a := New(Options{Config: cfg, Main: client, Cheap: client, Tools: &tools.Manager{}})
 
 	if err := a.Chat(context.Background(), "bridge me with the arena agent"); err != nil {
@@ -185,7 +186,8 @@ func TestTurnIsolation_LoopStateDoesNotLeakAcrossChats(t *testing.T) {
 		t.Fatalf("turn 2 must start with a clean failure class, got %v", a.LastFailureClass())
 	}
 	if t2.repeats != 0 || len(t2.recentSigs) != 0 || t2.prevSig != "" || t2.prevCalls != nil ||
-		len(t2.distinctToolSet) != 0 || t2.unproductive != 0 || t2.convergeNudged {
+		len(t2.distinctToolSet) != 0 || t2.finalSynthesisRetries != 0 ||
+		t2.emptyAnswerNudges != 0 || t2.identityNudges != 0 || t2.convergeNudged {
 		t.Fatalf("turn 1 stall bookkeeping leaked into turn 2: %+v", t2)
 	}
 	if t2.casModsThisTurn != 0 || t2.casCooldown != nil || t2.casRecord != nil ||
