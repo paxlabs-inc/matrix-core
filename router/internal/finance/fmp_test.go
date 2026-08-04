@@ -106,7 +106,7 @@ const docProfileAAPL = `[
 // fmpServer stands up a real HTTP server routing the documented paths, and
 // returns the real client pointed at it. Every test drives production code from
 // the request out.
-func fmpServer(t *testing.T, routes map[string]string) (*FMP, *[]string) {
+func fmpServer(t *testing.T, routes map[string]string) (client *FMP, requests *[]string) {
 	t.Helper()
 	var seen []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

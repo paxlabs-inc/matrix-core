@@ -1,91 +1,139 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:8087349d214ea6556bd1e327d9b1cfe401192e02e5c71997ca02544fd4c21fca
+# GENERATED gen=codegraph do-not-edit merkle=b3:b9753067b0143b05d9e59aa7d4582f8ecc4f32217fc185000bee971850caf585
 
 NODE id=matrix/neo/internal/writeback kind=package
-  digest=b3:cd9c4b9581f484ded966250e8116a118d5ab57edf9744ab4ae05d20ae26f39cd file=neo/internal/writeback range=0:0 lang=go exported=true
+  digest=b3:469b2470e5c753aa40b3b2e28321860c8b7af44d63b044ed95882cba30bbd018 file=neo/internal/writeback range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/writeback/consolidator.go
   ^contains=mod:matrix/neo
 
 NODE id=matrix/neo/internal/writeback.Consolidator kind=type
-  digest=b3:809f6d50d88cff74bf26e0cf40347fc58511b1e5e5bf4499fb483e71e0da8b15 file=neo/internal/writeback/consolidator.go range=26:43 lang=go exported=true byte_range=832:1606
-  sig=type Consolidator struct {\n	cfg		config.Config\n	extract		*llm.Client	// durable-learning extraction (stronger; quality sets memory quality)\n	classify	*llm.Client	// cheap relation-classify on the rare similar-neighbor path\n	pager		*memory.Pager\n\n	jobs	chan consolidateJob\n	done	chan struct{}\n\n	// P2-2: proposed skills awaiting activation. Populated by proposeIfReady\n	// when a pattern's coverage crosses cfg.MinPatternSuccesses. Deduped by\n	// the pattern's name (the dedup key). Guarded by proposeMu.\n	proposeMu	sync.Mutex\n	proposed	[]string\n	proposedSet	map[string]struct{}\n	reinforceCount	map[string]int	// tracks how many times each pattern name was reinforced (for auto-propose)\n}
+  digest=b3:a6917eb14aa6dc20d7942852c90a02feabcb0121beedce564792d9eed4f77133 file=neo/internal/writeback/consolidator.go range=29:56 lang=go exported=true byte_range=894:1857
+  sig=type Consolidator struct {\n	cfg		config.Config\n	extract		*llm.Client	// durable-learning extraction (stronger; quality sets memory quality)\n	classify	*llm.Client	// cheap relation-classify on the rare similar-neighbor path\n	pager		*memory.Pager\n\n	wake	chan struct{}\n	stop	chan struct{}\n	done	chan struct{}\n\n	queueMu		sync.Mutex\n	pending		map[string]consolidation.Job\n	committed	map[string]struct{}\n	closing		bool\n\n	startOnce	sync.Once\n	stopOnce	sync.Once\n	processMu	sync.Mutex\n\n	// P2-2: proposed skills awaiting activation. Populated by proposeIfReady\n	// when a pattern's coverage crosses cfg.MinPatternSuccesses. Deduped by\n	// the pattern's name (the dedup key). Guarded by proposeMu.\n	proposeMu	sync.Mutex\n	proposed	[]string\n	proposedSet	map[string]struct{}\n	reinforceCount	map[string]int	// tracks how many times each pattern name was reinforced (for auto-propose)\n}
   doc=Consolidator runs consolidation jobs on a background goroutine.
 EDGES
-  contains=matrix/neo/internal/writeback.Consolidator#cfg,matrix/neo/internal/writeback.Consolidator#classify,matrix/neo/internal/writeback.Consolidator#done,matrix/neo/internal/writeback.Consolidator#extract,matrix/neo/internal/writeback.Consolidator#jobs,matrix/neo/internal/writeback.Consolidator#pager,matrix/neo/internal/writeback.Consolidator#proposeMu,matrix/neo/internal/writeback.Consolidator#proposed,matrix/neo/internal/writeback.Consolidator#proposedSet,matrix/neo/internal/writeback.Consolidator#reinforceCount,matrix/neo/internal/writeback.Consolidator.Consolidate,matrix/neo/internal/writeback.Consolidator.ConsolidateSync,matrix/neo/internal/writeback.Consolidator.ProposedSkills,matrix/neo/internal/writeback.Consolidator.Start,matrix/neo/internal/writeback.Consolidator.Stop,matrix/neo/internal/writeback.Consolidator.allowed,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.linkProvenance,matrix/neo/internal/writeback.Consolidator.loop,matrix/neo/internal/writeback.Consolidator.process,matrix/neo/internal/writeback.Consolidator.proposeIfReady
+  contains=matrix/neo/internal/writeback.Consolidator#cfg,matrix/neo/internal/writeback.Consolidator#classify,matrix/neo/internal/writeback.Consolidator#closing,matrix/neo/internal/writeback.Consolidator#committed,matrix/neo/internal/writeback.Consolidator#done,matrix/neo/internal/writeback.Consolidator#extract,matrix/neo/internal/writeback.Consolidator#pager,matrix/neo/internal/writeback.Consolidator#pending,matrix/neo/internal/writeback.Consolidator#processMu,matrix/neo/internal/writeback.Consolidator#proposeMu,matrix/neo/internal/writeback.Consolidator#proposed,matrix/neo/internal/writeback.Consolidator#proposedSet,matrix/neo/internal/writeback.Consolidator#queueMu,matrix/neo/internal/writeback.Consolidator#reinforceCount,matrix/neo/internal/writeback.Consolidator#startOnce,matrix/neo/internal/writeback.Consolidator#stop,matrix/neo/internal/writeback.Consolidator#stopOnce,matrix/neo/internal/writeback.Consolidator#wake,matrix/neo/internal/writeback.Consolidator.Consolidate,matrix/neo/internal/writeback.Consolidator.ConsolidateSync,matrix/neo/internal/writeback.Consolidator.ProposedSkills,matrix/neo/internal/writeback.Consolidator.Start,matrix/neo/internal/writeback.Consolidator.Stop,matrix/neo/internal/writeback.Consolidator.allowed,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.drain,matrix/neo/internal/writeback.Consolidator.linkProvenance,matrix/neo/internal/writeback.Consolidator.loop,matrix/neo/internal/writeback.Consolidator.process,matrix/neo/internal/writeback.Consolidator.proposeIfReady
   implements=matrix/neo/internal/agent.Consolidator,matrix/neo/internal/runtime/loop.Consolidator
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator#cfg kind=field
-  digest=b3:f086381d87ddec16b0158f56fd811ee26cc1a78c500956bc171124f477363315 file=neo/internal/writeback/consolidator.go range=28:28 lang=go exported=false byte_range=927:949
+  digest=b3:f086381d87ddec16b0158f56fd811ee26cc1a78c500956bc171124f477363315 file=neo/internal/writeback/consolidator.go range=31:31 lang=go exported=false byte_range=989:1011
   sig=config.Config
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
 
 NODE id=matrix/neo/internal/writeback.Consolidator#classify kind=field
-  digest=b3:d5f6a2159b9bbea1a5ec169456bc2192b4b6ea04f96f18898fafc0b95ec3418f file=neo/internal/writeback/consolidator.go range=30:30 lang=go exported=false byte_range=1044:1064
+  digest=b3:d5f6a2159b9bbea1a5ec169456bc2192b4b6ea04f96f18898fafc0b95ec3418f file=neo/internal/writeback/consolidator.go range=33:33 lang=go exported=false byte_range=1106:1126
   sig=*llm.Client
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
 
+NODE id=matrix/neo/internal/writeback.Consolidator#closing kind=field
+  digest=b3:c1f794b294f4fada5ac59ba716c064120447e46a75a83af51961e70addba3dbe file=neo/internal/writeback/consolidator.go range=43:43 lang=go exported=false byte_range=1368:1382
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/writeback.Consolidator
+
+NODE id=matrix/neo/internal/writeback.Consolidator#committed kind=field
+  digest=b3:b230e0eeab8877da9909d5e044197278411acf089eea3a3fb7465feb26f5582a file=neo/internal/writeback/consolidator.go range=42:42 lang=go exported=false byte_range=1337:1366
+  sig=map[string]struct{}
+EDGES
+  ^contains=matrix/neo/internal/writeback.Consolidator
+
 NODE id=matrix/neo/internal/writeback.Consolidator#done kind=field
-  digest=b3:d4d7e8e48eb17441bde55a62c4dd939444579d8aebe666fc3cc1890ecede7445 file=neo/internal/writeback/consolidator.go range=34:34 lang=go exported=false byte_range=1178:1196
+  digest=b3:d4d7e8e48eb17441bde55a62c4dd939444579d8aebe666fc3cc1890ecede7445 file=neo/internal/writeback/consolidator.go range=38:38 lang=go exported=false byte_range=1254:1272
   sig=chan struct{}
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
 
 NODE id=matrix/neo/internal/writeback.Consolidator#extract kind=field
-  digest=b3:2d96d4b45658497298417caf8695474b3cd611becaf10bf61f7b3328f441ad1a file=neo/internal/writeback/consolidator.go range=29:29 lang=go exported=false byte_range=951:971
+  digest=b3:2d96d4b45658497298417caf8695474b3cd611becaf10bf61f7b3328f441ad1a file=neo/internal/writeback/consolidator.go range=32:32 lang=go exported=false byte_range=1013:1033
   sig=*llm.Client
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
 
-NODE id=matrix/neo/internal/writeback.Consolidator#jobs kind=field
-  digest=b3:101a4364fca1432a1cb64521509de5aedc19a4d9e803809f2504290b4287b248 file=neo/internal/writeback/consolidator.go range=33:33 lang=go exported=false byte_range=1152:1176
-  sig=chan writeback.consolidateJob
-EDGES
-  ^contains=matrix/neo/internal/writeback.Consolidator
-
 NODE id=matrix/neo/internal/writeback.Consolidator#pager kind=field
-  digest=b3:87a62237cd15b2ce0ed35a50a0f341812d83f6be5b463af21c7e4d22eb5cbcfb file=neo/internal/writeback/consolidator.go range=31:31 lang=go exported=false byte_range=1127:1149
+  digest=b3:87a62237cd15b2ce0ed35a50a0f341812d83f6be5b463af21c7e4d22eb5cbcfb file=neo/internal/writeback/consolidator.go range=34:34 lang=go exported=false byte_range=1189:1211
   sig=*memory.Pager
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
 
+NODE id=matrix/neo/internal/writeback.Consolidator#pending kind=field
+  digest=b3:ff1b83199e92bd522af892912b43efcb8d9fc4134201b4ac67d4485fd94ab3e9 file=neo/internal/writeback/consolidator.go range=41:41 lang=go exported=false byte_range=1297:1335
+  sig=map[string]consolidation.Job
+EDGES
+  ^contains=matrix/neo/internal/writeback.Consolidator
+
+NODE id=matrix/neo/internal/writeback.Consolidator#processMu kind=field
+  digest=b3:d33ad6d70d61244e3503bd515bbd6aaaeeacd0c378de7c9c1ead2d9d80b0d745 file=neo/internal/writeback/consolidator.go range=47:47 lang=go exported=false byte_range=1427:1447
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/writeback.Consolidator
+
 NODE id=matrix/neo/internal/writeback.Consolidator#proposeMu kind=field
-  digest=b3:958075f2a41f3ffe49c0d41c0c77e17d005aa7c3734e7798ab604272f2e37689 file=neo/internal/writeback/consolidator.go range=36:39 lang=go exported=false byte_range=1199:1435
+  digest=b3:958075f2a41f3ffe49c0d41c0c77e17d005aa7c3734e7798ab604272f2e37689 file=neo/internal/writeback/consolidator.go range=49:52 lang=go exported=false byte_range=1450:1686
   sig=sync.Mutex
   doc=P2-2: proposed skills awaiting activation. Populated by proposeIfReady\nwhen a pattern's coverage crosses cfg.MinPatternSuccesses. Deduped by\nthe pattern's name (the dedup key). Guarded by proposeMu.
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
 
 NODE id=matrix/neo/internal/writeback.Consolidator#proposed kind=field
-  digest=b3:a94a452051b6d5e6fda84b2317c18fef08c056a5e1c730ad6fb26b2eb29dd2ab file=neo/internal/writeback/consolidator.go range=40:40 lang=go exported=false byte_range=1437:1460
+  digest=b3:a94a452051b6d5e6fda84b2317c18fef08c056a5e1c730ad6fb26b2eb29dd2ab file=neo/internal/writeback/consolidator.go range=53:53 lang=go exported=false byte_range=1688:1711
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
 
 NODE id=matrix/neo/internal/writeback.Consolidator#proposedSet kind=field
-  digest=b3:02b3bb68ce9364d71e3cfd500e2188ed70fb165cef3bf008d5ffc192710e3c08 file=neo/internal/writeback/consolidator.go range=41:41 lang=go exported=false byte_range=1462:1496
+  digest=b3:02b3bb68ce9364d71e3cfd500e2188ed70fb165cef3bf008d5ffc192710e3c08 file=neo/internal/writeback/consolidator.go range=54:54 lang=go exported=false byte_range=1713:1747
   sig=map[string]struct{}
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
 
+NODE id=matrix/neo/internal/writeback.Consolidator#queueMu kind=field
+  digest=b3:d822091945adc38ad4af98848743e01d1b3ea5a5c5362d2122bd7e50425391d5 file=neo/internal/writeback/consolidator.go range=40:40 lang=go exported=false byte_range=1275:1295
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/writeback.Consolidator
+
 NODE id=matrix/neo/internal/writeback.Consolidator#reinforceCount kind=field
-  digest=b3:830d796997ea9689ef2822df99fba7b5810671d4ef6f77d8f6419c343847caa6 file=neo/internal/writeback/consolidator.go range=42:42 lang=go exported=false byte_range=1498:1527
+  digest=b3:830d796997ea9689ef2822df99fba7b5810671d4ef6f77d8f6419c343847caa6 file=neo/internal/writeback/consolidator.go range=55:55 lang=go exported=false byte_range=1749:1778
   sig=map[string]int
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
 
+NODE id=matrix/neo/internal/writeback.Consolidator#startOnce kind=field
+  digest=b3:ed980c9a4cb77fb00f794fcbb8e0b317c9ec65151ee0f0e6018709f9854646b4 file=neo/internal/writeback/consolidator.go range=45:45 lang=go exported=false byte_range=1385:1404
+  sig=sync.Once
+EDGES
+  ^contains=matrix/neo/internal/writeback.Consolidator
+
+NODE id=matrix/neo/internal/writeback.Consolidator#stop kind=field
+  digest=b3:7fa7791d43a8192b98673de8b03658011ee635d3018b2108b84525b4ec362c61 file=neo/internal/writeback/consolidator.go range=37:37 lang=go exported=false byte_range=1234:1252
+  sig=chan struct{}
+EDGES
+  ^contains=matrix/neo/internal/writeback.Consolidator
+
+NODE id=matrix/neo/internal/writeback.Consolidator#stopOnce kind=field
+  digest=b3:b1a73dbb411b6dcedf7d9e0d3ad040a1b574a3c1731cc617b5c3627a4376571d file=neo/internal/writeback/consolidator.go range=46:46 lang=go exported=false byte_range=1406:1425
+  sig=sync.Once
+EDGES
+  ^contains=matrix/neo/internal/writeback.Consolidator
+
+NODE id=matrix/neo/internal/writeback.Consolidator#wake kind=field
+  digest=b3:c7282fa57e2eb6188300065cb1a5aecf46b9cc94ef13890385785831950e085c file=neo/internal/writeback/consolidator.go range=36:36 lang=go exported=false byte_range=1214:1232
+  sig=chan struct{}
+EDGES
+  ^contains=matrix/neo/internal/writeback.Consolidator
+
 NODE id=matrix/neo/internal/writeback.Consolidator.Consolidate kind=method
-  digest=b3:b62077f4ba86995ca7ef75ed0a3b47408c08043320a570080b3bd458f0acad4c file=neo/internal/writeback/consolidator.go range=82:102 lang=go exported=true byte_range=2878:3920
-  sig=func (c *Consolidator) Consolidate(transcript, conv string, seqLo, seqHi uint64)
-  doc=Consolidate enqueues a turn transcript for background consolidation. Never\nblocks the agent: if the queue is full the job is handed to a detached\ngoroutine instead of being dropped, so a burst of turns never silently\nrots the durable store (cortex stays best-effort + eventually-current; the\nlive transcript is ground truth for the turn anyway).
+  digest=b3:c89bc149b128071076a40c5777b67c3704f669544209e0dc1e4062448ed3f6ba file=neo/internal/writeback/consolidator.go range=86:113 lang=go exported=true byte_range=2795:3549
+  sig=func (c *Consolidator) Consolidate(job consolidation.Job)
+  doc=Consolidate coalesces by stable intent identity and wakes the single commit\nworker. It never spawns detached writers and never blocks the agent.
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.ConsolidateSync kind=method
-  digest=b3:e209973481846fecbdd84606313ffb5e9e72c5cf38a250e5f2f3cfe8aba00869 file=neo/internal/writeback/consolidator.go range=104:122 lang=go exported=true byte_range=3922:5113
+  digest=b3:c2380475380a502742653a63df2523b2b6098bfd25828f858f5f199e663ed152 file=neo/internal/writeback/consolidator.go range=115:140 lang=go exported=true byte_range=3551:5041
   sig=func (c *Consolidator) ConsolidateSync(ctx context.Context, transcript, conv string, seqLo, seqHi uint64)
   doc=ConsolidateSync runs the SAME extraction logic as Consolidate, but\nSYNCHRONOUSLY on the caller's goroutine — not through the async jobs\nchannel. It is called from compact() before evicting older turns so that\ndurable facts/events/patterns in the about-to-be-evicted transcript reach\ncortex BEFORE the turns are lost from the working window. This closes the\ngap where an async sweep could lag behind compaction and lose the last\nturns. The call respects the context deadline and never panics on a nil\nreceiver. It does NOT touch the async queue (steady-state is unchanged).
 EDGES
@@ -93,7 +141,7 @@ EDGES
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.ProposedSkills kind=method
-  digest=b3:7700ce97cafda6fab41f35ae72cc356df33e321682312bbd12e6370f17dcfd33 file=neo/internal/writeback/consolidator.go range=159:171 lang=go exported=true byte_range=6192:6600
+  digest=b3:7700ce97cafda6fab41f35ae72cc356df33e321682312bbd12e6370f17dcfd33 file=neo/internal/writeback/consolidator.go range=177:189 lang=go exported=true byte_range=6120:6528
   sig=func (c *Consolidator) ProposedSkills() []string
   doc=ProposedSkills returns the list of skill names that have been auto-proposed\nby the consolidator (patterns that crossed the MinPatternSuccesses guard).\nNil-safe: returns nil for a nil receiver.
 EDGES
@@ -101,7 +149,7 @@ EDGES
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.Start kind=method
-  digest=b3:782a13c4a1010072e272aad78904fd11d34c3c9b454c5191738fbff3aa74af02 file=neo/internal/writeback/consolidator.go range=74:80 lang=go exported=true byte_range=2753:2876
+  digest=b3:a2055786f3edebcf1084de0f53284dd02dd2fda071fc360867b14de29c4ae4e7 file=neo/internal/writeback/consolidator.go range=78:84 lang=go exported=true byte_range=2643:2793
   sig=func (c *Consolidator) Start()
   doc=Start launches the worker. Safe to call once.
 EDGES
@@ -109,7 +157,7 @@ EDGES
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.Stop kind=method
-  digest=b3:a0e122626cad78d6823b158455877c8bf28a106f6e75a1c06699b7959b1aa428 file=neo/internal/writeback/consolidator.go range=173:180 lang=go exported=true byte_range=6602:6729
+  digest=b3:d364138c20302e4050ccafcc4352d43b00d79de6f047d70b80ce8820b0ac5d9e file=neo/internal/writeback/consolidator.go range=191:203 lang=go exported=true byte_range=6530:6745
   sig=func (c *Consolidator) Stop()
   doc=Stop drains and shuts down the worker.
 EDGES
@@ -117,44 +165,51 @@ EDGES
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.allowed kind=method
-  digest=b3:09b4bf6b132358134d4d94421bcc4d20917845c4e9d1321c08b615370f5528b5 file=neo/internal/writeback/consolidator.go range=409:411 lang=go exported=false byte_range=17447:17557
+  digest=b3:09b4bf6b132358134d4d94421bcc4d20917845c4e9d1321c08b615370f5528b5 file=neo/internal/writeback/consolidator.go range=517:519 lang=go exported=false byte_range=20064:20174
   sig=func (c *Consolidator) allowed() bool
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.classifyRelation kind=method
-  digest=b3:fd978a3445343016a152c1ca78a9ba5a2b979e8ca711d63ba40298c58ad04a9c file=neo/internal/writeback/consolidator.go range=437:474 lang=go exported=false byte_range=19133:20535
+  digest=b3:fd978a3445343016a152c1ca78a9ba5a2b979e8ca711d63ba40298c58ad04a9c file=neo/internal/writeback/consolidator.go range=545:582 lang=go exported=false byte_range=21750:23152
   sig=func (c *Consolidator) classifyRelation(ctx context.Context, newText string, candidates []memory.Neighbor) (memory.Relation, string, string)
   doc=classifyRelation implements memory.RelationClassifier using the cheap\nconsolidation model. It is passed to the Remember*Related write paths and\ninvoked only when a similar neighbor exists. On any model/parse error it\nreturns RelationNew (no edge), so a flaky classifier degrades to the plain\nv1 write rather than mislinking memories.
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
+NODE id=matrix/neo/internal/writeback.Consolidator.drain kind=method
+  digest=b3:ff5cc590cca0c2a0f60c4b3e9a9ded02b96e1d79ebc439c3dc7b2c071a1b4c4e file=neo/internal/writeback/consolidator.go range=218:248 lang=go exported=false byte_range=6907:7583
+  sig=func (c *Consolidator) drain(includeIncomplete bool)
+EDGES
+  ^contains=matrix/neo/internal/writeback.Consolidator
+  ^defines=matrix/neo/internal/writeback/consolidator.go
+
 NODE id=matrix/neo/internal/writeback.Consolidator.linkProvenance kind=method
-  digest=b3:7642e8722167d5345da0e08ef04a60fa692a3c2423fa7ba5822db8eccc3d8fdb file=neo/internal/writeback/consolidator.go range=247:257 lang=go exported=false byte_range=12501:13114
-  sig=func (c *Consolidator) linkProvenance(uri string, job consolidateJob)
+  digest=b3:56fd8f9d2a9e545ab86fcbb7e6773ecd0e23819b1f46121e51b1405f1c607f39 file=neo/internal/writeback/consolidator.go range=333:343 lang=go exported=false byte_range=14503:15119
+  sig=func (c *Consolidator) linkProvenance(uri string, job consolidation.Job)
   doc=linkProvenance adds a best-effort derived_from provenance edge from a\nfreshly written memory back to the session slice it was extracted from\n(DEJA-VU req 1.1/1.2). It runs AFTER the memory write has already committed,\nso a failed or impossible edge (empty URI from a deduped write, blank conv on\nthe CLI path, or an edge error) never fails the memory write.
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.loop kind=method
-  digest=b3:45df4dcc7f673d9e92d2f5d1657cdb928d21b9aa579eec71288701259f8a080d file=neo/internal/writeback/consolidator.go range=182:187 lang=go exported=false byte_range=6731:6850
+  digest=b3:446f0b2f89ffed0def96699a3c8601a38ba69a151497d1330a0576910db08e25 file=neo/internal/writeback/consolidator.go range=205:216 lang=go exported=false byte_range=6747:6905
   sig=func (c *Consolidator) loop()
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.process kind=method
-  digest=b3:1ab375d0a0f78ff5b57d0952bb793ab4e940c07633c2268dd03b084d07101e4f file=neo/internal/writeback/consolidator.go range=259:407 lang=go exported=false byte_range=13116:17445
-  sig=func (c *Consolidator) process(ctx context.Context, job consolidateJob)
+  digest=b3:14da547433b097cd601ee4e15de1f136c7cf930266494044771af8764fd63de1 file=neo/internal/writeback/consolidator.go range=345:515 lang=go exported=false byte_range=15121:20062
+  sig=func (c *Consolidator) process(ctx context.Context, job consolidation.Job)
 EDGES
   ^contains=matrix/neo/internal/writeback.Consolidator
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.proposeIfReady kind=method
-  digest=b3:9230f6c8b26ba65ac773c63c069260e6ef6f71fffc2fb9e67425595dd5c19547 file=neo/internal/writeback/consolidator.go range=124:157 lang=go exported=false byte_range=5115:6190
+  digest=b3:9230f6c8b26ba65ac773c63c069260e6ef6f71fffc2fb9e67425595dd5c19547 file=neo/internal/writeback/consolidator.go range=142:175 lang=go exported=false byte_range=5043:6118
   sig=func (c *Consolidator) proposeIfReady(spec memory.PatternSpec, coverage int)
   doc=proposeIfReady checks if a pattern has accumulated enough successes\n(coverage >= cfg.MinPatternSuccesses) to be PROPOSED as a candidate skill.\nThis is the auto-propose extension (P2-2): when a successful tool-sequence\nrepeats past the existing confidence/N-success guard, the consolidator\nrecords the pattern's name as a proposed skill. Deduped by name (the dedup\nkey). Below the guard, nothing happens (anti-overfit). Nil-safe.
 EDGES
@@ -162,252 +217,313 @@ EDGES
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.New kind=func
-  digest=b3:34f64bc3c237f59fb78e4d3ac6a10ff142b01c8900c2968072fccd921ace1809 file=neo/internal/writeback/consolidator.go range=57:72 lang=go exported=true byte_range=2101:2751
+  digest=b3:a07f6529195642504d8ddd366910780ddc33fd923dc15cd662c162866b264eb6 file=neo/internal/writeback/consolidator.go range=58:76 lang=go exported=true byte_range=1859:2641
   sig=func New(extract, classify *llm.Client, pager *memory.Pager, cfg config.Config) *Consolidator
   doc=New builds a consolidator. extract drives the per-turn learning extraction\n(its quality directly sets memory quality); classify is the cheap model used\nonly on the rare similar-neighbor relation check. A nil classify falls back\nto extract.
 EDGES
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
-NODE id=matrix/neo/internal/writeback.consolidateJob kind=type
-  digest=b3:80f47c4fcf67e9f2c5bc8a4aa7414e6f23eb535881543dd94aaa2f471868d57c file=neo/internal/writeback/consolidator.go range=45:55 lang=go exported=false byte_range=1608:2099
-  sig=type consolidateJob struct {\n	transcript	string\n	conv		string\n	seqLo		uint64\n	seqHi		uint64\n}
-  doc=consolidateJob is one enqueued consolidation unit: the rendered turn\ntranscript plus the provenance the consolidator threads onto every memory it\nwrites — the conversation id and the (inclusive) session seq span of the turn\nthat produced the transcript (DEJA-VU req 1.1). A blank Conv disables\nprovenance linking (e.g. the CLI/bare path with no cortex session state).
+NODE id=matrix/neo/internal/writeback.citedTextJSON kind=type
+  digest=b3:77df25ecce9ea77433438527ec10aec32b7b22a8579e76735ed7e5715efbcedb file=neo/internal/writeback/consolidator.go range=283:286 lang=go exported=false byte_range=12748:12850
+  sig=type citedTextJSON struct {\n	Statement	string	`json:"statement"`\n	Evidence	[]int	`json:"evidence"`\n}
 EDGES
-  contains=matrix/neo/internal/writeback.consolidateJob#conv,matrix/neo/internal/writeback.consolidateJob#seqHi,matrix/neo/internal/writeback.consolidateJob#seqLo,matrix/neo/internal/writeback.consolidateJob#transcript
+  contains=matrix/neo/internal/writeback.citedTextJSON#Evidence,matrix/neo/internal/writeback.citedTextJSON#Statement
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
-NODE id=matrix/neo/internal/writeback.consolidateJob#conv kind=field
-  digest=b3:cb9d94fae06ac23bd7ea209b7a4338447224cfc8fb6edc9752d754ae8a2a566d file=neo/internal/writeback/consolidator.go range=52:52 lang=go exported=false byte_range=2042:2059
+NODE id=matrix/neo/internal/writeback.citedTextJSON#Evidence kind=field
+  digest=b3:f602a8ca224e78d2a5273a6ef86da5bc2d865d72abbc17fb55f39d763b619912 file=neo/internal/writeback/consolidator.go range=285:285 lang=go exported=true byte_range=12814:12848
+  sig=[]int
+EDGES
+  ^contains=matrix/neo/internal/writeback.citedTextJSON
+
+NODE id=matrix/neo/internal/writeback.citedTextJSON#Statement kind=field
+  digest=b3:517efd796baab0e54d4617befc7bee7df0938a2a1b9459015241931d22010151 file=neo/internal/writeback/consolidator.go range=284:284 lang=go exported=true byte_range=12777:12812
   sig=string
 EDGES
-  ^contains=matrix/neo/internal/writeback.consolidateJob
-
-NODE id=matrix/neo/internal/writeback.consolidateJob#seqHi kind=field
-  digest=b3:7336bfaa49b5ed51e6df7de5a19a46cff6ef5472a873fa3921e1eac587d1d3db file=neo/internal/writeback/consolidator.go range=54:54 lang=go exported=false byte_range=2080:2097
-  sig=uint64
-EDGES
-  ^contains=matrix/neo/internal/writeback.consolidateJob
-
-NODE id=matrix/neo/internal/writeback.consolidateJob#seqLo kind=field
-  digest=b3:cf8b1444e55fd2f2f6982b23ab6017f73dbfbddbb567dd939fa812124ba5d16a file=neo/internal/writeback/consolidator.go range=53:53 lang=go exported=false byte_range=2061:2078
-  sig=uint64
-EDGES
-  ^contains=matrix/neo/internal/writeback.consolidateJob
-
-NODE id=matrix/neo/internal/writeback.consolidateJob#transcript kind=field
-  digest=b3:be30aea8aa9255864660654ee4d82be2e73789822e65cc4a9f21f84dda23f57e file=neo/internal/writeback/consolidator.go range=51:51 lang=go exported=false byte_range=2023:2040
-  sig=string
-EDGES
-  ^contains=matrix/neo/internal/writeback.consolidateJob
+  ^contains=matrix/neo/internal/writeback.citedTextJSON
 
 NODE id=matrix/neo/internal/writeback.consolidatePrompt kind=const
-  digest=b3:c303ea5aba30b75afb5bc5a6b6d313efceed7a7899d24fac43d5186cd6c4d980 file=neo/internal/writeback/consolidator.go range=189:204 lang=go exported=false byte_range=6858:11005
+  digest=b3:69653bd9cc04b03356210da5822546e971b8b8d17fffb88f9d71e026f6ddf550 file=neo/internal/writeback/consolidator.go range=250:268 lang=go exported=false byte_range=7591:12435
   sig=untyped string
 EDGES
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.extract kind=type
-  digest=b3:b0131d753d5bcd21eca19f1286f2dca63295b34b97b196859a477fd1b53a5e5a file=neo/internal/writeback/consolidator.go range=234:245 lang=go exported=false byte_range=12048:12499
-  sig=type extract struct {\n	Facts		[]string		`json:"facts"`\n	UserFacts	[]string		`json:"user_facts"`\n	Preferences	[]prefJSON		`json:"preferences"`\n	Corrections	[]string		`json:"corrections"`\n	Patterns	[]patternJSON		`json:"patterns"`\n	Opportunities	[]opportunityJSON	`json:"opportunities"`\n	Outcome		*struct {\n		Summary	string	`json:"summary"`\n		Status	string	`json:"status"`\n	}	`json:"outcome"`\n}
+  digest=b3:4ac81c0181778fa6a852528d20dac09c638dbdba34b87d5fae6c16a494c677c3 file=neo/internal/writeback/consolidator.go range=319:331 lang=go exported=false byte_range=14012:14501
+  sig=type extract struct {\n	Facts		[]factJSON		`json:"facts"`\n	UserFacts	[]userFactJSON		`json:"user_facts"`\n	Preferences	[]prefJSON		`json:"preferences"`\n	Corrections	[]citedTextJSON		`json:"corrections"`\n	Patterns	[]patternJSON		`json:"patterns"`\n	Opportunities	[]opportunityJSON	`json:"opportunities"`\n	Outcome		*struct {\n		Summary		string	`json:"summary"`\n		Status		string	`json:"status"`\n		Evidence	[]int	`json:"evidence"`\n	}	`json:"outcome"`\n}
 EDGES
   contains=matrix/neo/internal/writeback.extract#Corrections,matrix/neo/internal/writeback.extract#Facts,matrix/neo/internal/writeback.extract#Opportunities,matrix/neo/internal/writeback.extract#Outcome,matrix/neo/internal/writeback.extract#Patterns,matrix/neo/internal/writeback.extract#Preferences,matrix/neo/internal/writeback.extract#UserFacts
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.extract#Corrections kind=field
-  digest=b3:0130a0159a605c0c5a2c8f240f8ebac8267309878a6eb0c56f54bfd1bf19f743 file=neo/internal/writeback/consolidator.go range=238:238 lang=go exported=true byte_range=12226:12278
-  sig=[]string
+  digest=b3:f2657a03d9c7d86c00a6eb2e5a90587ef7ea33fec4f63012b6c7177bea39a599 file=neo/internal/writeback/consolidator.go range=323:323 lang=go exported=true byte_range=14190:14242
+  sig=[]writeback.citedTextJSON
 EDGES
   ^contains=matrix/neo/internal/writeback.extract
 
 NODE id=matrix/neo/internal/writeback.extract#Facts kind=field
-  digest=b3:c8b8e53eb8cdade560dd906f7d235ef1eb9816825768b239d55f53b9586fa435 file=neo/internal/writeback/consolidator.go range=235:235 lang=go exported=true byte_range=12071:12117
-  sig=[]string
+  digest=b3:53ba4d293dc84780b89f67ddf86096ec9733983cb8088d469521539150a211db file=neo/internal/writeback/consolidator.go range=320:320 lang=go exported=true byte_range=14035:14081
+  sig=[]writeback.factJSON
 EDGES
   ^contains=matrix/neo/internal/writeback.extract
 
 NODE id=matrix/neo/internal/writeback.extract#Opportunities kind=field
-  digest=b3:35536c51c3110d42be3268685fbda0dfdbeabd9ab3e7a44fb2b58668202a53ad file=neo/internal/writeback/consolidator.go range=240:240 lang=go exported=true byte_range=12331:12385
+  digest=b3:35536c51c3110d42be3268685fbda0dfdbeabd9ab3e7a44fb2b58668202a53ad file=neo/internal/writeback/consolidator.go range=325:325 lang=go exported=true byte_range=14295:14349
   sig=[]writeback.opportunityJSON
 EDGES
   ^contains=matrix/neo/internal/writeback.extract
 
 NODE id=matrix/neo/internal/writeback.extract#Outcome kind=field
-  digest=b3:b50e01793d53d7a7ce24feebdce3471cd500eadaa52ae19aa7abeb291593074f file=neo/internal/writeback/consolidator.go range=241:244 lang=go exported=true byte_range=12387:12497
-  sig=*struct{Summary string "json:\\"summary\\""; Status string "json:\\"status\\""}
+  digest=b3:30b88b2436280b3b4917bcc085846b5f770e977c7ac22d4e6a065d860568e206 file=neo/internal/writeback/consolidator.go range=326:330 lang=go exported=true byte_range=14351:14499
+  sig=*struct{Summary string "json:\\"summary\\""; Status string "json:\\"status\\""; Evidence []int "json:\\"evidence\\""}
 EDGES
   ^contains=matrix/neo/internal/writeback.extract
 
 NODE id=matrix/neo/internal/writeback.extract#Patterns kind=field
-  digest=b3:0db979fbc5dbdaa4c4e771ab970fed7a0f7b281235459a2f42c90565755cdf30 file=neo/internal/writeback/consolidator.go range=239:239 lang=go exported=true byte_range=12280:12329
+  digest=b3:0db979fbc5dbdaa4c4e771ab970fed7a0f7b281235459a2f42c90565755cdf30 file=neo/internal/writeback/consolidator.go range=324:324 lang=go exported=true byte_range=14244:14293
   sig=[]writeback.patternJSON
 EDGES
   ^contains=matrix/neo/internal/writeback.extract
 
 NODE id=matrix/neo/internal/writeback.extract#Preferences kind=field
-  digest=b3:0f4072571c44dc462dcd1d1d6c02e909561c6e0bf695aa6400956a77784e4d46 file=neo/internal/writeback/consolidator.go range=237:237 lang=go exported=true byte_range=12172:12224
+  digest=b3:0f4072571c44dc462dcd1d1d6c02e909561c6e0bf695aa6400956a77784e4d46 file=neo/internal/writeback/consolidator.go range=322:322 lang=go exported=true byte_range=14136:14188
   sig=[]writeback.prefJSON
 EDGES
   ^contains=matrix/neo/internal/writeback.extract
 
 NODE id=matrix/neo/internal/writeback.extract#UserFacts kind=field
-  digest=b3:b991c812a4d45b9831fc4f444531b87d2b36f194b86f9f1607adcc7d59037b56 file=neo/internal/writeback/consolidator.go range=236:236 lang=go exported=true byte_range=12119:12170
-  sig=[]string
+  digest=b3:638a0fff0a5b809d15238e26952c8758a8b734299c62a82a778f7652c5fb7873 file=neo/internal/writeback/consolidator.go range=321:321 lang=go exported=true byte_range=14083:14134
+  sig=[]writeback.userFactJSON
 EDGES
   ^contains=matrix/neo/internal/writeback.extract
 
+NODE id=matrix/neo/internal/writeback.factJSON kind=type
+  digest=b3:f4df2ed62663d09f9f71e9452747b0c2d23a4467145d46652040f4d66ec6d4ce file=neo/internal/writeback/consolidator.go range=270:275 lang=go exported=false byte_range=12437:12606
+  sig=type factJSON struct {\n	Subject		string	`json:"subject"`\n	Predicate	string	`json:"predicate"`\n	Statement	string	`json:"statement"`\n	Evidence	[]int	`json:"evidence"`\n}
+EDGES
+  contains=matrix/neo/internal/writeback.factJSON#Evidence,matrix/neo/internal/writeback.factJSON#Predicate,matrix/neo/internal/writeback.factJSON#Statement,matrix/neo/internal/writeback.factJSON#Subject
+  ^defines=matrix/neo/internal/writeback/consolidator.go
+
+NODE id=matrix/neo/internal/writeback.factJSON#Evidence kind=field
+  digest=b3:f602a8ca224e78d2a5273a6ef86da5bc2d865d72abbc17fb55f39d763b619912 file=neo/internal/writeback/consolidator.go range=274:274 lang=go exported=true byte_range=12570:12604
+  sig=[]int
+EDGES
+  ^contains=matrix/neo/internal/writeback.factJSON
+
+NODE id=matrix/neo/internal/writeback.factJSON#Predicate kind=field
+  digest=b3:79245402738d5df317a9ad3177f17e029e8c1afc6b846531b007fa36963a60ea file=neo/internal/writeback/consolidator.go range=272:272 lang=go exported=true byte_range=12496:12531
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/writeback.factJSON
+
+NODE id=matrix/neo/internal/writeback.factJSON#Statement kind=field
+  digest=b3:517efd796baab0e54d4617befc7bee7df0938a2a1b9459015241931d22010151 file=neo/internal/writeback/consolidator.go range=273:273 lang=go exported=true byte_range=12533:12568
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/writeback.factJSON
+
+NODE id=matrix/neo/internal/writeback.factJSON#Subject kind=field
+  digest=b3:87eebb9ace1bd7d451d2d68371c745fcc979d99631f8352b00fd7d771433a888 file=neo/internal/writeback/consolidator.go range=271:271 lang=go exported=true byte_range=12461:12494
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/writeback.factJSON
+
 NODE id=matrix/neo/internal/writeback.mapOutcome kind=func
-  digest=b3:b7478114a40b589171bab8409fbf47e66f4d9a5bd600c7f05926e927e44e5183 file=neo/internal/writeback/consolidator.go range=476:485 lang=go exported=false byte_range=20537:20769
+  digest=b3:b7478114a40b589171bab8409fbf47e66f4d9a5bd600c7f05926e927e44e5183 file=neo/internal/writeback/consolidator.go range=584:593 lang=go exported=false byte_range=23154:23386
   sig=func mapOutcome(s string) memory.Outcome
 EDGES
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.opportunityJSON kind=type
-  digest=b3:07a5a3588464b75d454f539a86bf4546e44cf426ca28379d5104d8d4b4df8fa8 file=neo/internal/writeback/consolidator.go range=222:232 lang=go exported=false byte_range=11476:12046
-  sig=type opportunityJSON struct {\n	Summary		string	`json:"summary"`\n	Rationale	string	`json:"rationale"`\n	Financial	bool	`json:"financial"`\n	Confidence	float32	`json:"confidence"`\n}
+  digest=b3:6555a7265c8faad19c242f786b65f11ad5885d4fe03efd56556ba823ba414e92 file=neo/internal/writeback/consolidator.go range=306:317 lang=go exported=false byte_range=13402:14010
+  sig=type opportunityJSON struct {\n	Summary		string	`json:"summary"`\n	Rationale	string	`json:"rationale"`\n	Financial	bool	`json:"financial"`\n	Confidence	float32	`json:"confidence"`\n	Evidence	[]int	`json:"evidence"`\n}
   doc=opportunityJSON is one captured Automatrix opportunity as emitted by the\nextraction model: a specific, actionable thing the user implied wanting (or\nwould benefit from) but did NOT explicitly ask for this turn. financial is\nthe model's first-pass classification; the deterministic fail-closed\nre-check that hardens it into eligible_autonomous lives on the gating path.
 EDGES
-  contains=matrix/neo/internal/writeback.opportunityJSON#Confidence,matrix/neo/internal/writeback.opportunityJSON#Financial,matrix/neo/internal/writeback.opportunityJSON#Rationale,matrix/neo/internal/writeback.opportunityJSON#Summary
+  contains=matrix/neo/internal/writeback.opportunityJSON#Confidence,matrix/neo/internal/writeback.opportunityJSON#Evidence,matrix/neo/internal/writeback.opportunityJSON#Financial,matrix/neo/internal/writeback.opportunityJSON#Rationale,matrix/neo/internal/writeback.opportunityJSON#Summary
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.opportunityJSON#Confidence kind=field
-  digest=b3:953f3325b7ee1abb6a59e7561867295bdd123b8fb1811e90127d5008fbdc2468 file=neo/internal/writeback/consolidator.go range=231:231 lang=go exported=true byte_range=12006:12044
+  digest=b3:953f3325b7ee1abb6a59e7561867295bdd123b8fb1811e90127d5008fbdc2468 file=neo/internal/writeback/consolidator.go range=315:315 lang=go exported=true byte_range=13932:13970
   sig=float32
 EDGES
   ^contains=matrix/neo/internal/writeback.opportunityJSON
 
+NODE id=matrix/neo/internal/writeback.opportunityJSON#Evidence kind=field
+  digest=b3:8cdc6841a140a2cb233e588a0605dd6c742f21bd1fc11c8c0a903220b20efaaa file=neo/internal/writeback/consolidator.go range=316:316 lang=go exported=true byte_range=13972:14008
+  sig=[]int
+EDGES
+  ^contains=matrix/neo/internal/writeback.opportunityJSON
+
 NODE id=matrix/neo/internal/writeback.opportunityJSON#Financial kind=field
-  digest=b3:f943e8c9ec1ca58e7cd5bf9825b2c6a42520cd4d3a29f374546faeec27ac315b file=neo/internal/writeback/consolidator.go range=230:230 lang=go exported=true byte_range=11967:12004
+  digest=b3:f943e8c9ec1ca58e7cd5bf9825b2c6a42520cd4d3a29f374546faeec27ac315b file=neo/internal/writeback/consolidator.go range=314:314 lang=go exported=true byte_range=13893:13930
   sig=bool
 EDGES
   ^contains=matrix/neo/internal/writeback.opportunityJSON
 
 NODE id=matrix/neo/internal/writeback.opportunityJSON#Rationale kind=field
-  digest=b3:acb0622e05659aa5ffdadc5594264efc12ff83df5147153bdeaf9cb1a9e49384 file=neo/internal/writeback/consolidator.go range=229:229 lang=go exported=true byte_range=11928:11965
+  digest=b3:acb0622e05659aa5ffdadc5594264efc12ff83df5147153bdeaf9cb1a9e49384 file=neo/internal/writeback/consolidator.go range=313:313 lang=go exported=true byte_range=13854:13891
   sig=string
 EDGES
   ^contains=matrix/neo/internal/writeback.opportunityJSON
 
 NODE id=matrix/neo/internal/writeback.opportunityJSON#Summary kind=field
-  digest=b3:290231ef6fb462b2f5036ad6f5e6f67bafc15c4d1b008d1da5689704648da667 file=neo/internal/writeback/consolidator.go range=228:228 lang=go exported=true byte_range=11891:11926
+  digest=b3:290231ef6fb462b2f5036ad6f5e6f67bafc15c4d1b008d1da5689704648da667 file=neo/internal/writeback/consolidator.go range=312:312 lang=go exported=true byte_range=13817:13852
   sig=string
 EDGES
   ^contains=matrix/neo/internal/writeback.opportunityJSON
 
 NODE id=matrix/neo/internal/writeback.parseLooseJSON kind=func
-  digest=b3:416820ec920051dd8d4ab9f23642b067ba30a9d5ee37918bae843c9860e692e3 file=neo/internal/writeback/consolidator.go range=487:497 lang=go exported=false byte_range=20771:21152
+  digest=b3:416820ec920051dd8d4ab9f23642b067ba30a9d5ee37918bae843c9860e692e3 file=neo/internal/writeback/consolidator.go range=595:605 lang=go exported=false byte_range=23388:23769
   sig=func parseLooseJSON(s string, out interface{}) error
   doc=parseLooseJSON tolerates a model that wraps JSON in prose or code fences by\nextracting the outermost {...} object before unmarshaling.
 EDGES
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.patternJSON kind=type
-  digest=b3:e97c31dd8244dbb4f95111ff4b8be6b4d0165b4101e20f9a4dfc26675e1834ee file=neo/internal/writeback/consolidator.go range=206:213 lang=go exported=false byte_range=11007:11302
-  sig=type patternJSON struct {\n	Name		string		`json:"name"`\n	Trigger		string		`json:"trigger"`\n	Preconditions	[]string	`json:"preconditions"`\n	Steps		[]string	`json:"steps"`\n	Gotchas		[]string	`json:"gotchas"`\n	SuccessCriteria	[]string	`json:"success_criteria"`\n}
+  digest=b3:3600be812dc1e4b94e158a1d034606a55bdeba88ad9a36f3e8e4154ed56f0bd7 file=neo/internal/writeback/consolidator.go range=288:296 lang=go exported=false byte_range=12852:13191
+  sig=type patternJSON struct {\n	Name		string		`json:"name"`\n	Trigger		string		`json:"trigger"`\n	Preconditions	[]string	`json:"preconditions"`\n	Steps		[]string	`json:"steps"`\n	Gotchas		[]string	`json:"gotchas"`\n	SuccessCriteria	[]string	`json:"success_criteria"`\n	Evidence	[]int		`json:"evidence"`\n}
 EDGES
-  contains=matrix/neo/internal/writeback.patternJSON#Gotchas,matrix/neo/internal/writeback.patternJSON#Name,matrix/neo/internal/writeback.patternJSON#Preconditions,matrix/neo/internal/writeback.patternJSON#Steps,matrix/neo/internal/writeback.patternJSON#SuccessCriteria,matrix/neo/internal/writeback.patternJSON#Trigger
+  contains=matrix/neo/internal/writeback.patternJSON#Evidence,matrix/neo/internal/writeback.patternJSON#Gotchas,matrix/neo/internal/writeback.patternJSON#Name,matrix/neo/internal/writeback.patternJSON#Preconditions,matrix/neo/internal/writeback.patternJSON#Steps,matrix/neo/internal/writeback.patternJSON#SuccessCriteria,matrix/neo/internal/writeback.patternJSON#Trigger
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
+NODE id=matrix/neo/internal/writeback.patternJSON#Evidence kind=field
+  digest=b3:df19d0bbf3c7544814dff8f584ad91701a4eb33a4fc3ebdb70176ae0d06808c1 file=neo/internal/writeback/consolidator.go range=295:295 lang=go exported=true byte_range=13147:13189
+  sig=[]int
+EDGES
+  ^contains=matrix/neo/internal/writeback.patternJSON
+
 NODE id=matrix/neo/internal/writeback.patternJSON#Gotchas kind=field
-  digest=b3:35b7565148b02e5fb699af9e3bce1a3ad03c0dfe4036107cb0162214d82c3936 file=neo/internal/writeback/consolidator.go range=211:211 lang=go exported=true byte_range=11207:11248
+  digest=b3:35b7565148b02e5fb699af9e3bce1a3ad03c0dfe4036107cb0162214d82c3936 file=neo/internal/writeback/consolidator.go range=293:293 lang=go exported=true byte_range=13052:13093
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/writeback.patternJSON
 
 NODE id=matrix/neo/internal/writeback.patternJSON#Name kind=field
-  digest=b3:ccddf1c52948ca0201aaed8def3d5e2dd189fe749c653219f6f940fdb5bd5dae file=neo/internal/writeback/consolidator.go range=207:207 lang=go exported=true byte_range=11034:11072
+  digest=b3:ccddf1c52948ca0201aaed8def3d5e2dd189fe749c653219f6f940fdb5bd5dae file=neo/internal/writeback/consolidator.go range=289:289 lang=go exported=true byte_range=12879:12917
   sig=string
 EDGES
   ^contains=matrix/neo/internal/writeback.patternJSON
 
 NODE id=matrix/neo/internal/writeback.patternJSON#Preconditions kind=field
-  digest=b3:2201f3608b30142e6e5e57b6b3a94ade1a40a590a5179741de02f909461317fd file=neo/internal/writeback/consolidator.go range=209:209 lang=go exported=true byte_range=11117:11164
+  digest=b3:2201f3608b30142e6e5e57b6b3a94ade1a40a590a5179741de02f909461317fd file=neo/internal/writeback/consolidator.go range=291:291 lang=go exported=true byte_range=12962:13009
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/writeback.patternJSON
 
 NODE id=matrix/neo/internal/writeback.patternJSON#Steps kind=field
-  digest=b3:ff8237d5118a1226a20c096953431955758f47e1a6c4c18e8320bb81f4ce689d file=neo/internal/writeback/consolidator.go range=210:210 lang=go exported=true byte_range=11166:11205
+  digest=b3:ff8237d5118a1226a20c096953431955758f47e1a6c4c18e8320bb81f4ce689d file=neo/internal/writeback/consolidator.go range=292:292 lang=go exported=true byte_range=13011:13050
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/writeback.patternJSON
 
 NODE id=matrix/neo/internal/writeback.patternJSON#SuccessCriteria kind=field
-  digest=b3:372862efaf52619f18a17a1cb989b437579028b66647924ab162c51605f4fe40 file=neo/internal/writeback/consolidator.go range=212:212 lang=go exported=true byte_range=11250:11300
+  digest=b3:372862efaf52619f18a17a1cb989b437579028b66647924ab162c51605f4fe40 file=neo/internal/writeback/consolidator.go range=294:294 lang=go exported=true byte_range=13095:13145
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/writeback.patternJSON
 
 NODE id=matrix/neo/internal/writeback.patternJSON#Trigger kind=field
-  digest=b3:4b61fbd63600aeea2c9a99cb1eb33e413fee8ece2c0963b86d5b2dbf947cecd9 file=neo/internal/writeback/consolidator.go range=208:208 lang=go exported=true byte_range=11074:11115
+  digest=b3:4b61fbd63600aeea2c9a99cb1eb33e413fee8ece2c0963b86d5b2dbf947cecd9 file=neo/internal/writeback/consolidator.go range=290:290 lang=go exported=true byte_range=12919:12960
   sig=string
 EDGES
   ^contains=matrix/neo/internal/writeback.patternJSON
 
 NODE id=matrix/neo/internal/writeback.prefJSON kind=type
-  digest=b3:5ee8bb2f722bce6f49d2e24c1898331b144bcd2fc4d6c0c062f94641a0101566 file=neo/internal/writeback/consolidator.go range=215:220 lang=go exported=false byte_range=11304:11474
-  sig=type prefJSON struct {\n	Topic		string	`json:"topic"`\n	Polarity	string	`json:"polarity"`\n	Strength	float32	`json:"strength"`\n	Rationale	string	`json:"rationale"`\n}
+  digest=b3:c127c894e499c33d9dbb93b9e85a72beff6d6c6986149f5c8bc3b533cb965d8d file=neo/internal/writeback/consolidator.go range=298:304 lang=go exported=false byte_range=13193:13400
+  sig=type prefJSON struct {\n	Topic		string	`json:"topic"`\n	Polarity	string	`json:"polarity"`\n	Strength	float32	`json:"strength"`\n	Rationale	string	`json:"rationale"`\n	Evidence	[]int	`json:"evidence"`\n}
 EDGES
-  contains=matrix/neo/internal/writeback.prefJSON#Polarity,matrix/neo/internal/writeback.prefJSON#Rationale,matrix/neo/internal/writeback.prefJSON#Strength,matrix/neo/internal/writeback.prefJSON#Topic
+  contains=matrix/neo/internal/writeback.prefJSON#Evidence,matrix/neo/internal/writeback.prefJSON#Polarity,matrix/neo/internal/writeback.prefJSON#Rationale,matrix/neo/internal/writeback.prefJSON#Strength,matrix/neo/internal/writeback.prefJSON#Topic
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
+NODE id=matrix/neo/internal/writeback.prefJSON#Evidence kind=field
+  digest=b3:a1219d2075bb1d98fac52ce90dff0e4e4c9ca689524cea5c1ca75e8d278b3050 file=neo/internal/writeback/consolidator.go range=303:303 lang=go exported=true byte_range=13363:13398
+  sig=[]int
+EDGES
+  ^contains=matrix/neo/internal/writeback.prefJSON
+
 NODE id=matrix/neo/internal/writeback.prefJSON#Polarity kind=field
-  digest=b3:48b03ab1443f52dffef42a5768536e14c641a7fd64e7b3a5ec94747cb5e7fd30 file=neo/internal/writeback/consolidator.go range=217:217 lang=go exported=true byte_range=11362:11397
+  digest=b3:48b03ab1443f52dffef42a5768536e14c641a7fd64e7b3a5ec94747cb5e7fd30 file=neo/internal/writeback/consolidator.go range=300:300 lang=go exported=true byte_range=13251:13286
   sig=string
 EDGES
   ^contains=matrix/neo/internal/writeback.prefJSON
 
 NODE id=matrix/neo/internal/writeback.prefJSON#Rationale kind=field
-  digest=b3:0fb43f29eca1d18f43850cd0822913d7d6a5ced8570f278d285ea92ae447828f file=neo/internal/writeback/consolidator.go range=219:219 lang=go exported=true byte_range=11436:11472
+  digest=b3:0fb43f29eca1d18f43850cd0822913d7d6a5ced8570f278d285ea92ae447828f file=neo/internal/writeback/consolidator.go range=302:302 lang=go exported=true byte_range=13325:13361
   sig=string
 EDGES
   ^contains=matrix/neo/internal/writeback.prefJSON
 
 NODE id=matrix/neo/internal/writeback.prefJSON#Strength kind=field
-  digest=b3:a639112c35faffebb0bdd548f93312b89b2f2f7c8563d48f4f7679f9859b3bf6 file=neo/internal/writeback/consolidator.go range=218:218 lang=go exported=true byte_range=11399:11434
+  digest=b3:a639112c35faffebb0bdd548f93312b89b2f2f7c8563d48f4f7679f9859b3bf6 file=neo/internal/writeback/consolidator.go range=301:301 lang=go exported=true byte_range=13288:13323
   sig=float32
 EDGES
   ^contains=matrix/neo/internal/writeback.prefJSON
 
 NODE id=matrix/neo/internal/writeback.prefJSON#Topic kind=field
-  digest=b3:f8dd6d6927c52f964991c107fbfe3c1b552332e3128212d9acb9f9374c4cd866 file=neo/internal/writeback/consolidator.go range=216:216 lang=go exported=true byte_range=11328:11360
+  digest=b3:f8dd6d6927c52f964991c107fbfe3c1b552332e3128212d9acb9f9374c4cd866 file=neo/internal/writeback/consolidator.go range=299:299 lang=go exported=true byte_range=13217:13249
   sig=string
 EDGES
   ^contains=matrix/neo/internal/writeback.prefJSON
 
 NODE id=matrix/neo/internal/writeback.relationClassifyPrompt kind=const
-  digest=b3:5ebe883fca2ca91132e59490a1aad38e735745cd1607adf52cbdf3d380c6539b file=neo/internal/writeback/consolidator.go range=413:429 lang=go exported=false byte_range=17559:18993
+  digest=b3:5ebe883fca2ca91132e59490a1aad38e735745cd1607adf52cbdf3d380c6539b file=neo/internal/writeback/consolidator.go range=521:537 lang=go exported=false byte_range=20176:21610
   sig=untyped string
   doc=relationClassifyPrompt drives the cheap-model relation classifier. It is\nasked ONLY when a new write has a topically-similar (but not identical)\nneighbor, so the model call is rare and cheap.
 EDGES
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.relationJSON kind=type
-  digest=b3:52660f2f51a55304b7ad0543fa9b804fd6cdde959a3f9ee0cc08c8ec65920d74 file=neo/internal/writeback/consolidator.go range=431:435 lang=go exported=false byte_range=18995:19131
+  digest=b3:52660f2f51a55304b7ad0543fa9b804fd6cdde959a3f9ee0cc08c8ec65920d74 file=neo/internal/writeback/consolidator.go range=539:543 lang=go exported=false byte_range=21612:21748
   sig=type relationJSON struct {\n	Relation	string	`json:"relation"`\n	TargetURI	string	`json:"target_uri"`\n	Reason		string	`json:"reason"`\n}
 EDGES
   contains=matrix/neo/internal/writeback.relationJSON#Reason,matrix/neo/internal/writeback.relationJSON#Relation,matrix/neo/internal/writeback.relationJSON#TargetURI
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.relationJSON#Reason kind=field
-  digest=b3:2dff83cbe44d2711756bad0a6773357c1815be292735a5284b969c999e079ac8 file=neo/internal/writeback/consolidator.go range=434:434 lang=go exported=true byte_range=19097:19129
+  digest=b3:2dff83cbe44d2711756bad0a6773357c1815be292735a5284b969c999e079ac8 file=neo/internal/writeback/consolidator.go range=542:542 lang=go exported=true byte_range=21714:21746
   sig=string
 EDGES
   ^contains=matrix/neo/internal/writeback.relationJSON
 
 NODE id=matrix/neo/internal/writeback.relationJSON#Relation kind=field
-  digest=b3:0174f66f9f84651c856995a004ee85f273862b3643a803e8de38f8b9242f4669 file=neo/internal/writeback/consolidator.go range=432:432 lang=go exported=true byte_range=19023:19057
+  digest=b3:0174f66f9f84651c856995a004ee85f273862b3643a803e8de38f8b9242f4669 file=neo/internal/writeback/consolidator.go range=540:540 lang=go exported=true byte_range=21640:21674
   sig=string
 EDGES
   ^contains=matrix/neo/internal/writeback.relationJSON
 
 NODE id=matrix/neo/internal/writeback.relationJSON#TargetURI kind=field
-  digest=b3:a85254df2994eaef3b5a61c0ec70cee3f9737972748bf0df493211212b43afc1 file=neo/internal/writeback/consolidator.go range=433:433 lang=go exported=true byte_range=19059:19095
+  digest=b3:a85254df2994eaef3b5a61c0ec70cee3f9737972748bf0df493211212b43afc1 file=neo/internal/writeback/consolidator.go range=541:541 lang=go exported=true byte_range=21676:21712
   sig=string
 EDGES
   ^contains=matrix/neo/internal/writeback.relationJSON
 
-NODE id=matrix/neo/internal/writeback/consolidator.go kind=file
-  digest=b3:aa39cbce10fa3b18960188ba01429103e65cecfefd3b5bc48241c88bd8aaea96 file=neo/internal/writeback/consolidator.go range=1:497 lang=go exported=true
+NODE id=matrix/neo/internal/writeback.userFactJSON kind=type
+  digest=b3:06b38c7c71186023e86789cdc3d9951ed56dff16cccd6c1d9c5690080fe1b4fd file=neo/internal/writeback/consolidator.go range=277:281 lang=go exported=false byte_range=12608:12746
+  sig=type userFactJSON struct {\n	Predicate	string	`json:"predicate"`\n	Statement	string	`json:"statement"`\n	Evidence	[]int	`json:"evidence"`\n}
 EDGES
-  defines=matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.Consolidator.Consolidate,matrix/neo/internal/writeback.Consolidator.ConsolidateSync,matrix/neo/internal/writeback.Consolidator.ProposedSkills,matrix/neo/internal/writeback.Consolidator.Start,matrix/neo/internal/writeback.Consolidator.Stop,matrix/neo/internal/writeback.Consolidator.allowed,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.linkProvenance,matrix/neo/internal/writeback.Consolidator.loop,matrix/neo/internal/writeback.Consolidator.process,matrix/neo/internal/writeback.Consolidator.proposeIfReady,matrix/neo/internal/writeback.New,matrix/neo/internal/writeback.consolidateJob,matrix/neo/internal/writeback.consolidatePrompt,matrix/neo/internal/writeback.extract,matrix/neo/internal/writeback.mapOutcome,matrix/neo/internal/writeback.opportunityJSON,matrix/neo/internal/writeback.parseLooseJSON,matrix/neo/internal/writeback.patternJSON,matrix/neo/internal/writeback.prefJSON,matrix/neo/internal/writeback.relationClassifyPrompt,matrix/neo/internal/writeback.relationJSON
+  contains=matrix/neo/internal/writeback.userFactJSON#Evidence,matrix/neo/internal/writeback.userFactJSON#Predicate,matrix/neo/internal/writeback.userFactJSON#Statement
+  ^defines=matrix/neo/internal/writeback/consolidator.go
+
+NODE id=matrix/neo/internal/writeback.userFactJSON#Evidence kind=field
+  digest=b3:f602a8ca224e78d2a5273a6ef86da5bc2d865d72abbc17fb55f39d763b619912 file=neo/internal/writeback/consolidator.go range=280:280 lang=go exported=true byte_range=12710:12744
+  sig=[]int
+EDGES
+  ^contains=matrix/neo/internal/writeback.userFactJSON
+
+NODE id=matrix/neo/internal/writeback.userFactJSON#Predicate kind=field
+  digest=b3:79245402738d5df317a9ad3177f17e029e8c1afc6b846531b007fa36963a60ea file=neo/internal/writeback/consolidator.go range=278:278 lang=go exported=true byte_range=12636:12671
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/writeback.userFactJSON
+
+NODE id=matrix/neo/internal/writeback.userFactJSON#Statement kind=field
+  digest=b3:517efd796baab0e54d4617befc7bee7df0938a2a1b9459015241931d22010151 file=neo/internal/writeback/consolidator.go range=279:279 lang=go exported=true byte_range=12673:12708
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/writeback.userFactJSON
+
+NODE id=matrix/neo/internal/writeback/consolidator.go kind=file
+  digest=b3:76e61711eb073b1bcfd62892407ad7155292c17fcac7cb05275edfd95dfd6f87 file=neo/internal/writeback/consolidator.go range=1:605 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.Consolidator.Consolidate,matrix/neo/internal/writeback.Consolidator.ConsolidateSync,matrix/neo/internal/writeback.Consolidator.ProposedSkills,matrix/neo/internal/writeback.Consolidator.Start,matrix/neo/internal/writeback.Consolidator.Stop,matrix/neo/internal/writeback.Consolidator.allowed,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.drain,matrix/neo/internal/writeback.Consolidator.linkProvenance,matrix/neo/internal/writeback.Consolidator.loop,matrix/neo/internal/writeback.Consolidator.process,matrix/neo/internal/writeback.Consolidator.proposeIfReady,matrix/neo/internal/writeback.New,matrix/neo/internal/writeback.citedTextJSON,matrix/neo/internal/writeback.consolidatePrompt,matrix/neo/internal/writeback.extract,matrix/neo/internal/writeback.factJSON,matrix/neo/internal/writeback.mapOutcome,matrix/neo/internal/writeback.opportunityJSON,matrix/neo/internal/writeback.parseLooseJSON,matrix/neo/internal/writeback.patternJSON,matrix/neo/internal/writeback.prefJSON,matrix/neo/internal/writeback.relationClassifyPrompt,matrix/neo/internal/writeback.relationJSON,matrix/neo/internal/writeback.userFactJSON
   ^contains=matrix/neo/internal/writeback

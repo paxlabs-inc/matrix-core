@@ -1,0 +1,102 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=codegraph-ultra/internal/extract kind=package
+  digest=b3:810043b966fee587d6ad7f26374e1f384129ee75bbbb003240409f0fa9a35fbb file=codegraph-ultra/internal/extract range=0:0 lang=go exported=true
+EDGES
+  contains=codegraph-ultra/internal/extract/extract.go
+  ^contains=mod:codegraph-ultra
+
+NODE id=codegraph-ultra/internal/extract.Config kind=type
+  digest=b3:a770fe3e9485b1de8d2b9fa4ccf5faba7fad13f0b90ff18b0b99dc224ccadadf file=codegraph-ultra/internal/extract/extract.go range=16:21 lang=go exported=true byte_range=363:653
+  sig=type Config struct {\n	RepoRoot	string		// absolute repo root; emitted file paths are relative to it\n	RepoName	string		// e.g. "myproject"\n	Modules		[]string	// absolute module/package directories (language-specific meaning)\n}
+  doc=Config describes an extraction run for a single repository.
+EDGES
+  contains=codegraph-ultra/internal/extract.Config#Modules,codegraph-ultra/internal/extract.Config#RepoName,codegraph-ultra/internal/extract.Config#RepoRoot
+  ^defines=codegraph-ultra/internal/extract/extract.go
+
+NODE id=codegraph-ultra/internal/extract.Config#Modules kind=field
+  digest=b3:1d924c2d2692cb260c7f698de8b28d4b7862a3086b0ab20e3facc6d6c77f905d file=codegraph-ultra/internal/extract/extract.go range=20:20 lang=go exported=true byte_range=567:584
+  sig=[]string
+EDGES
+  ^contains=codegraph-ultra/internal/extract.Config
+
+NODE id=codegraph-ultra/internal/extract.Config#RepoName kind=field
+  digest=b3:9e90d7811b010ac233a7774ceb5e78afa0740dd2df1a7ae1c37b57a037cd3aa1 file=codegraph-ultra/internal/extract/extract.go range=19:19 lang=go exported=true byte_range=528:543
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/extract.Config
+
+NODE id=codegraph-ultra/internal/extract.Config#RepoRoot kind=field
+  digest=b3:52045924d8d657a3bdd8fe4d25faf650af8386ea157929e5f65a6e4cb0eab1a0 file=codegraph-ultra/internal/extract/extract.go range=18:18 lang=go exported=true byte_range=448:463
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/extract.Config
+
+NODE id=codegraph-ultra/internal/extract.DiscoverGoModules kind=func
+  digest=b3:f1beb77cb7e8f73dd1d5951a114368b871bad7edf44d42c2bbd4f089a9b8b271 file=codegraph-ultra/internal/extract/extract.go range=52:69 lang=go exported=true byte_range=1484:2067
+  sig=func DiscoverGoModules(root string) ([]string, error)
+  doc=DiscoverGoModules finds all directories containing a go.mod file under root.
+EDGES
+  ^defines=codegraph-ultra/internal/extract/extract.go
+
+NODE id=codegraph-ultra/internal/extract.Extractor kind=interface
+  digest=b3:d999e0cae6b20eddf43d819978fcda54ea207b1f4e8988ce9b1fb430c1cb9931 file=codegraph-ultra/internal/extract/extract.go range=29:33 lang=go exported=true byte_range=769:965
+  sig=type Extractor interface {\n	// Extract runs the extraction and returns nodes and edges.\n	Extract(cfg Config) (*Result, error)\n}
+  doc=Extractor is the interface every language extractor must satisfy.
+EDGES
+  ^implements=codegraph-ultra/internal/extract/go.GoExtractor,codegraph-ultra/internal/extract/python.pythonExtractor,codegraph-ultra/internal/extract/typescript.tsExtractor
+  ^defines=codegraph-ultra/internal/extract/extract.go
+
+NODE id=codegraph-ultra/internal/extract.IsRepoPkg kind=func
+  digest=b3:68e2e09c5cbef2ed8237f568af8efc8184ecbb55df2418599532b9efb38daa62 file=codegraph-ultra/internal/extract/extract.go range=71:74 lang=go exported=true byte_range=2069:2273
+  sig=func IsRepoPkg(repoName, pkgPath string) bool
+  doc=IsRepoPkg reports whether pkgPath belongs to the given repo by prefix matching.
+EDGES
+  ^defines=codegraph-ultra/internal/extract/extract.go
+
+NODE id=codegraph-ultra/internal/extract.Register kind=func
+  digest=b3:170d4811da55d1415b026d59073510801ff9a0f8aba33cf6d30efffa4be18c50 file=codegraph-ultra/internal/extract/extract.go range=38:41 lang=go exported=true byte_range=1072:1206
+  sig=func Register(lang string, fn func() Extractor)
+  doc=Register adds a language extractor to the global registry.
+EDGES
+  ^defines=codegraph-ultra/internal/extract/extract.go
+
+NODE id=codegraph-ultra/internal/extract.Registry kind=var
+  digest=b3:12a12127dcc11b67d516f2b03c4d77e4086a53c993acfe1f6beaef5def61696d file=codegraph-ultra/internal/extract/extract.go range=35:36 lang=go exported=true byte_range=967:1070
+  sig=map[string]func() extract.Extractor
+  doc=Registry maps language names to extractor constructors.
+EDGES
+  ^defines=codegraph-ultra/internal/extract/extract.go
+
+NODE id=codegraph-ultra/internal/extract.Result kind=type
+  digest=b3:86edd1426efae40f5537e352ffbd1a70a3b8f8f4bd2fac33befa8410e584b56f file=codegraph-ultra/internal/extract/extract.go range=23:27 lang=go exported=true byte_range=655:767
+  sig=type Result struct {\n	Nodes	[]*model.Node\n	Edges	[]model.Edge\n}
+  doc=Result holds the output of an extraction run.
+EDGES
+  contains=codegraph-ultra/internal/extract.Result#Edges,codegraph-ultra/internal/extract.Result#Nodes
+  ^defines=codegraph-ultra/internal/extract/extract.go
+
+NODE id=codegraph-ultra/internal/extract.Result#Edges kind=field
+  digest=b3:5de5ada4aad4ef77973ad0dc85876389ed7c80f6d24f6e8303312f49cacb8c38 file=codegraph-ultra/internal/extract/extract.go range=26:26 lang=go exported=true byte_range=747:765
+  sig=[]model.Edge
+EDGES
+  ^contains=codegraph-ultra/internal/extract.Result
+
+NODE id=codegraph-ultra/internal/extract.Result#Nodes kind=field
+  digest=b3:4a6a808ece308d86784e2fd1b6b8a8a5fbb0e098016294857dd593d164af84af file=codegraph-ultra/internal/extract/extract.go range=25:25 lang=go exported=true byte_range=726:745
+  sig=[]*model.Node
+EDGES
+  ^contains=codegraph-ultra/internal/extract.Result
+
+NODE id=codegraph-ultra/internal/extract.Run kind=func
+  digest=b3:0b550830ed64f9f346a54a3bef3aeb64fad803db389d39b60d184ecb7a23f6d6 file=codegraph-ultra/internal/extract/extract.go range=43:50 lang=go exported=true byte_range=1208:1482
+  sig=func Run(lang string, cfg Config) (*Result, error)
+  doc=Run dispatches extraction to the registered extractor for the given language.
+EDGES
+  ^defines=codegraph-ultra/internal/extract/extract.go
+
+NODE id=codegraph-ultra/internal/extract/extract.go kind=file
+  digest=b3:437135ee324f21a026f85cc5cde50e05802639ffb33d1385e25f700d3a44db5d file=codegraph-ultra/internal/extract/extract.go range=1:74 lang=go exported=true
+EDGES
+  defines=codegraph-ultra/internal/extract.Config,codegraph-ultra/internal/extract.DiscoverGoModules,codegraph-ultra/internal/extract.Extractor,codegraph-ultra/internal/extract.IsRepoPkg,codegraph-ultra/internal/extract.Register,codegraph-ultra/internal/extract.Registry,codegraph-ultra/internal/extract.Result,codegraph-ultra/internal/extract.Run
+  ^contains=codegraph-ultra/internal/extract

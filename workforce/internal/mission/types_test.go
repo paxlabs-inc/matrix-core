@@ -241,7 +241,10 @@ func signActivation(value *ActivationAuthority, keyID string, privateKey ed25519
 	if err := SignCapitalEnvelope(&value.Capital, keyID, privateKey); err != nil {
 		return err
 	}
-	return SignCompanyIssuerPolicy(&value.IssuerPolicy, keyID, privateKey)
+	if err := SignCompanyIssuerPolicy(&value.IssuerPolicy, keyID, privateKey); err != nil {
+		return err
+	}
+	return SignOrganizationV2(&value.Organization, keyID, privateKey)
 }
 
 func validDraft() ActivationDraft {
@@ -257,7 +260,14 @@ func validDraft() ActivationDraft {
 		PermittedJurisdictions:   []string{"DE"},
 		DataBoundaries:           []string{"purpose-bound customer data"},
 		PermittedCounterparties:  []string{"owner-approved"},
-		RiskTolerance:            RiskToleranceLow, Autonomy: AutonomyReviewRequired,
+		OperatingScopes: []OperatingScope{{
+			Kind: OperatingScopeProject, ScopeID: "project:matrix",
+			Purpose:             "Build and verify the approved Matrix workspace",
+			AllowedActions:      []string{"build", "read", "test", "write"},
+			DataClassifications: []string{"internal-source"},
+			Jurisdictions:       []string{"DE"},
+		}},
+		RiskTolerance: RiskToleranceLow, Autonomy: AutonomyReviewRequired,
 		EscalationConditions: []string{"unverifiable material claim"},
 		PauseConditions:      []string{"authority uncertainty"},
 		ShutdownConditions:   []string{"founder emergency stop"},

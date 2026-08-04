@@ -14,6 +14,80 @@ git tags.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-04 — Neo execution ownership and release hardening
+
+### Changed
+
+- **Neo owns project execution end to end.** The private AgentCore Build lane
+  is disabled by default and is no longer exposed in Neo's model-facing tool
+  inventory. Native filesystem, bounded shell, durable service, read-only Git,
+  task-list, and typed coding-checkpoint paths now carry project work through
+  verification and delivery. AgentCore remains packaged as dormant
+  compatibility utility so it can be repurposed without a destructive removal.
+- **Evidence-sensitive reasoning repaired.** Check-before-act filtering and
+  forced revision on repeated epistemic mismatch remain active; predictions
+  apply to uncertain network/search probes instead of deterministic local
+  operations. Tool-recovery narration stays private while user-visible
+  progress is emitted as deterministic runtime milestones.
+- **Release CI made hermetic.** Neocortex jobs install the pinned LLVM archive
+  tools, vendored source and toolchain trees are committed byte-for-byte despite
+  generic binary/archive ignore rules, Go MCP test dependencies are pinned,
+  and CodeGraph excludes vendored third-party modules from workspace discovery.
+
+### Fixed
+
+- Restored portable Neo test fixtures, isolated local exec self-test state from
+  `/data`, updated gateway/router lint findings, and brought Workforce's real
+  Organization V2 fixtures in line with the signed five-record authority set.
+
+## [0.93.0] - 2026-08-04 — Neocortex joins the Neo runtime
+
+### Added
+
+- A Go `cortexclient` module implementing the resurrection-loop activation,
+  turn recording, evidence journal, consolidation, and checkpoint seams over
+  the real `cortexd` Unix-socket protocol.
+- Neo substrate selection via `NEO_MEMORY_SUBSTRATE`, capability-scoped
+  connection credentials, durable Neocortex checkpoints, citation
+  verification, and supervised crash/reconnect handling.
+- Railway image and entrypoint support for a statically linked `cortexd`,
+  private bootstrap material, readiness gating, independent supervision, and
+  strict exclusion of the actor capability from child tool environments.
+
+### Security
+
+- `cortexd` remains mechanism-only: no outbound network or model client, one
+  actor namespace per capability, verified protocol inputs, bounded queues,
+  and fail-closed checkpoint/evidence recovery.
+
+## [0.92.0] - 2026-08-03 — Deterministic continuity and recall
+
+### Added
+
+- The INV-1 continuity contract: every successor activation carries a faithful
+  conversation projection, current intent with all open loops, and the
+  reconciled work-ledger tail across crash, respawn, overflow, or compaction.
+- One deterministic activation composer with never-trim resident/intent/work
+  tiers, exact entity recall, SIMD exact vector scan, BM25 fusion, conflict
+  obligations, temporal descent, structured provenance, and per-tier budgets.
+- A provenance-gated belief projection with typed upsert, supersession,
+  bi-temporal reads, contradiction edges, retraction, and rejection of
+  evidence-free negative-existence claims.
+
+## [0.91.0] - 2026-08-02 — Neocortex evidence-engine foundation
+
+### Added
+
+- `neocortex/`: a C++23 deterministic single-writer engine built around one
+  append-only typed evidence log per actor, fixed frames, group commit,
+  torn-tail recovery, and fail-closed interior-corruption detection.
+- BLAKE3 Merkle-mountain-range checkpoints, Ed25519 verification,
+  XChaCha20-Poly1305 record sealing below the hash boundary, and crypto-delete
+  receipts.
+- Replay-built LMDB projections, deterministic simulation with injected time,
+  entropy, and I/O, schema/protocol fuzz corpora, sanitizer jobs, reproducible
+  static builds, and pinned amd64/arm64 toolchains and vendored dependencies.
+
 ## [0.90.0] - 2026-07-31 — WORKFORCE: seven-department stateless organization (in progress)
 
 ### Added
@@ -734,7 +808,8 @@ git tags.
 - Initial `research/01-foundations.md` ... `06-agents.md` chapters.
 - Canonical project state at `knowledge/matrix.kvx`.
 
-[Unreleased]: https://github.com/paxlabs-inc/matrix/compare/v0.65.0...HEAD
+[Unreleased]: https://github.com/paxlabs-inc/matrix-core/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/paxlabs-inc/matrix-core/releases/tag/v1.0.0
 [0.65.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.65.0
 [0.25.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.25.0
 [0.24.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.24.0

@@ -1,4 +1,4 @@
-package developer
+package developer_test
 
 import (
 	"bufio"
@@ -19,11 +19,12 @@ import (
 	"matrix/workforce/internal/contracts"
 	"matrix/workforce/internal/controlapi"
 	"matrix/workforce/internal/dependency"
+	"matrix/workforce/internal/developer"
 )
 
 func TestIntegration_ControlAPIAuthorizationReplayPaginationAndStaleMutation(t *testing.T) {
 	ctx := context.Background()
-	now := developerNow()
+	now := developer.ControlAPITestNow()
 	principalA := controlapi.Principal{
 		TenantID: "tenant:control-a", OrganizationID: "organization:control-a",
 		OwnerID: "owner:control-a",
@@ -32,11 +33,11 @@ func TestIntegration_ControlAPIAuthorizationReplayPaginationAndStaleMutation(t *
 		TenantID: "tenant:control-b", OrganizationID: "organization:control-b",
 		OwnerID: "owner:control-b",
 	}
-	graphA, err := dependency.New(developerPool, principalA.TenantID, developerNow)
+	graphA, err := dependency.New(developer.ControlAPITestPool(), principalA.TenantID, developer.ControlAPITestNow)
 	if err != nil {
 		t.Fatal(err)
 	}
-	graphB, err := dependency.New(developerPool, principalB.TenantID, developerNow)
+	graphB, err := dependency.New(developer.ControlAPITestPool(), principalB.TenantID, developer.ControlAPITestNow)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,12 +66,12 @@ func TestIntegration_ControlAPIAuthorizationReplayPaginationAndStaleMutation(t *
 		t.Fatal(err)
 	}
 	service, err := controlapi.New(
-		developerPool, auth,
+		developer.ControlAPITestPool(), auth,
 		map[string]controlapi.OwnerKey{
 			principalA.TenantID: {KeyID: "key:control-a", PublicKey: publicA},
 			principalB.TenantID: {KeyID: "key:control-b", PublicKey: publicB},
 		},
-		developerNow, 2,
+		developer.ControlAPITestNow, 2,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -169,7 +170,7 @@ func TestIntegration_ControlAPIAuthorizationReplayPaginationAndStaleMutation(t *
 		OrganizationID: principalA.OrganizationID, OwnerID: principalA.OwnerID,
 		Action: "set_policy", ResourceKind: "policy", ResourceID: "policy:autonomy",
 		ExpectedVersion: 0, Change: json.RawMessage(`{"autonomy":"bounded"}`),
-		EffectiveAt: developerNow(),
+		EffectiveAt: developer.ControlAPITestNow(),
 	}
 	if err := controlapi.SignCommand(&command, "key:browser-a", browserPrivate); err != nil {
 		t.Fatal(err)
@@ -216,7 +217,10 @@ func registerControlKey(
 		t.Fatal(err)
 	}
 	defer response.Body.Close()
-	_, _ = io.Copy(io.Discard, response.Body)
+	responseBody, _ := io.ReadAll(response.Body)
+	if response.StatusCode >= http.StatusBadRequest {
+		t.Logf("POST /v1/workforce/commands = %d: %s", response.StatusCode, responseBody)
+	}
 	return response.StatusCode
 }
 

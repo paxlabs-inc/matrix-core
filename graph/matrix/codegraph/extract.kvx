@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/codegraph/extract kind=package
-  digest=b3:cb7ddca9eb26ef023fc225c52c6f99c36d448ac9d3e5692caeb47c7b3071eaea file=codegraph/extract range=0:0 lang=go exported=true
+  digest=b3:20bc050dd01aa80df6bea08b1b4405af0a018651ba9736dd7a746e315dd0fdba file=codegraph/extract range=0:0 lang=go exported=true
 EDGES
   contains=matrix/codegraph/extract/build.go,matrix/codegraph/extract/calls.go,matrix/codegraph/extract/extract.go,matrix/codegraph/extract/files.go,matrix/codegraph/extract/gate.go,matrix/codegraph/extract/incremental.go,matrix/codegraph/extract/selfscope.go,matrix/codegraph/extract/typeedges.go
   imports=matrix/codegraph/merkle,matrix/codegraph/model,matrix/codegraph/store
@@ -386,7 +386,7 @@ EDGES
   ^defines=matrix/codegraph/extract/build.go
 
 NODE id=matrix/codegraph/extract.FileTree kind=func
-  digest=b3:956052bb3ee8489e0ab83fa81204682d63dc68fc6c43885ba26f7aa4fcad269f file=codegraph/extract/files.go range=68:75 lang=go exported=true byte_range=1590:1832
+  digest=b3:956052bb3ee8489e0ab83fa81204682d63dc68fc6c43885ba26f7aa4fcad269f file=codegraph/extract/files.go range=68:75 lang=go exported=true byte_range=1605:1847
   sig=func FileTree(cfg Config) (*merkle.Tree, error)
   doc=FileTree builds the repo file Merkle tree from the canonical source-file set.
 EDGES
@@ -469,7 +469,7 @@ EDGES
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.RepoFiles kind=func
-  digest=b3:389146f46aa9f0dc88c0db2a47afab2714a6fc933371eb67dc59f247b0610a76 file=codegraph/extract/files.go range=11:56 lang=go exported=true byte_range=89:1389
+  digest=b3:349d6adda9c1236de054ed85daeca9e1d7ab4ec2e1ec99c5d580b5e357c1acf5 file=codegraph/extract/files.go range=11:56 lang=go exported=true byte_range=89:1404
   sig=func RepoFiles(cfg Config) (map[string][]byte, error)
   doc=RepoFiles returns the canonical source-file set the graph is built over:\nevery non-test .go file under the configured module dirs, keyed by repo-\nrelative slash path -> raw bytes. It skips _test.go files and the vendor,\ntestdata, node_modules, and .git trees — the same set go/packages loads for a\nnon-test build — so the file Merkle tree computed from it stays in lockstep\nwith the extracted graph across full and incremental builds.
 EDGES
@@ -479,7 +479,7 @@ EDGES
   ^defines=matrix/codegraph/extract/files.go
 
 NODE id=matrix/codegraph/extract.SelfModelConfig kind=func
-  digest=b3:b575fe0fed9a3668d1493959f4508c1ed2fbf1e0ec148767d52b398d0e8924c4 file=codegraph/extract/selfscope.go range=27:48 lang=go exported=true byte_range=371:1190
+  digest=b3:b575fe0fed9a3668d1493959f4508c1ed2fbf1e0ec148767d52b398d0e8924c4 file=codegraph/extract/selfscope.go range=24:45 lang=go exported=true byte_range=306:1125
   sig=func SelfModelConfig(repoRoot string) (Config, error)
 EDGES
   references=matrix/codegraph/extract.Config,matrix/codegraph/extract.SelfModelModules,matrix/codegraph/extract.SelfModelRequiredPackages,matrix/codegraph/extract.dir,matrix/codegraph/extract.err,matrix/codegraph/extract.info,matrix/codegraph/extract.modules,matrix/codegraph/extract.rel,matrix/codegraph/extract.repoRoot,matrix/codegraph/extract.root,matrix/codegraph/extract.statErr
@@ -488,14 +488,14 @@ EDGES
   ^defines=matrix/codegraph/extract/selfscope.go
 
 NODE id=matrix/codegraph/extract.SelfModelModules kind=var
-  digest=b3:3da763f2c9884590bf09946302f680aa3f279a50297c1050c0f33cf6525b7f30 file=codegraph/extract/selfscope.go range=9:14 lang=go exported=true byte_range=63:134
+  digest=b3:210089ef28147d7a9c18308219920059c49316c9ca5b0f44973406221406ec83 file=codegraph/extract/selfscope.go range=9:13 lang=go exported=true byte_range=63:125
   sig=[]string
 EDGES
   ^references=matrix/codegraph/extract.SelfModelConfig
   ^defines=matrix/codegraph/extract/selfscope.go
 
 NODE id=matrix/codegraph/extract.SelfModelRequiredPackages kind=var
-  digest=b3:590951922bec3cf08a084bbc234c64fdfa1d4df8d37754b81ad45688a87f27f5 file=codegraph/extract/selfscope.go range=16:25 lang=go exported=true byte_range=140:369
+  digest=b3:d7e98c03572722b700aea47f7cbf26aafb765dc919c4bf13c4b5a87fadc0946f file=codegraph/extract/selfscope.go range=15:22 lang=go exported=true byte_range=131:304
   sig=[]string
 EDGES
   ^references=matrix/codegraph/cmd/codegraph.cmdBuild,matrix/codegraph/extract.SelfModelConfig
@@ -558,7 +558,7 @@ EDGES
   ^defines=matrix/codegraph/extract/incremental.go
 
 NODE id=matrix/codegraph/extract.isGraphSource kind=func
-  digest=b3:c61e06b3b9c3e1bddc8395d5bbb835e26bba1aa32d139200efeb4ddc9f07fc7d file=codegraph/extract/files.go range=58:66 lang=go exported=false byte_range=1391:1588
+  digest=b3:c61e06b3b9c3e1bddc8395d5bbb835e26bba1aa32d139200efeb4ddc9f07fc7d file=codegraph/extract/files.go range=58:66 lang=go exported=false byte_range=1406:1603
   sig=func isGraphSource(name string) bool
 EDGES
   references=matrix/codegraph/extract.name
@@ -721,7 +721,7 @@ EDGES
   ^contains=matrix/codegraph/extract
 
 NODE id=matrix/codegraph/extract/files.go kind=file
-  digest=b3:18dc2a7b05c345488acefec5362ba2e6695dd62de5255a8409ceecccfee0122d file=codegraph/extract/files.go range=1:75 lang=go exported=true
+  digest=b3:914f3cea73375b5aede2b99bf1cc052462310ff53ef2a3b4f2c8238b32dfefd6 file=codegraph/extract/files.go range=1:75 lang=go exported=true
 EDGES
   defines=matrix/codegraph/extract.FileTree,matrix/codegraph/extract.RepoFiles,matrix/codegraph/extract.isGraphSource
   ^contains=matrix/codegraph/extract
@@ -739,7 +739,7 @@ EDGES
   ^contains=matrix/codegraph/extract
 
 NODE id=matrix/codegraph/extract/selfscope.go kind=file
-  digest=b3:36943a59b8ad0299bd1f194d96fdf04e30cbb921ae5d01e7ad4d7ba44c74c051 file=codegraph/extract/selfscope.go range=1:48 lang=go exported=true
+  digest=b3:1125d64680213c104a43e322ae14716cdd35755b34e6d9f07332da88dfd41b7f file=codegraph/extract/selfscope.go range=1:45 lang=go exported=true
 EDGES
   defines=matrix/codegraph/extract.SelfModelConfig,matrix/codegraph/extract.SelfModelModules,matrix/codegraph/extract.SelfModelRequiredPackages
   ^contains=matrix/codegraph/extract

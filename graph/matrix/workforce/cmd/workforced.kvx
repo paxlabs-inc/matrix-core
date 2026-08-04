@@ -1,0 +1,329 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=matrix/workforce/cmd/workforced kind=package
+  digest=b3:ac2cfc6c8b5832e8d45921d4d612c4c025c9f66747992440998edab40ca57a92 file=workforce/cmd/workforced range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/workforce/cmd/workforced/main.go
+  imports=matrix/neo/provider,matrix/vault,matrix/workforce/internal/actorstate,matrix/workforce/internal/approval,matrix/workforce/internal/audit,matrix/workforce/internal/businessoutcome,matrix/workforce/internal/circuit,matrix/workforce/internal/commercialcapability,matrix/workforce/internal/commercialexecution,matrix/workforce/internal/companylifecycle,matrix/workforce/internal/companyrecovery,matrix/workforce/internal/companyruntime,matrix/workforce/internal/contracts,matrix/workforce/internal/controlapi,matrix/workforce/internal/departmentadapter,matrix/workforce/internal/dependency,matrix/workforce/internal/developer,matrix/workforce/internal/effect,matrix/workforce/internal/execution,matrix/workforce/internal/founderprojection,matrix/workforce/internal/initiative,matrix/workforce/internal/learning,matrix/workforce/internal/lease,matrix/workforce/internal/ledger,matrix/workforce/internal/lineage,matrix/workforce/internal/mail,matrix/workforce/internal/mission,matrix/workforce/internal/modelclient,matrix/workforce/internal/organization,matrix/workforce/internal/policy,matrix/workforce/internal/portfolio,matrix/workforce/internal/productcapability,matrix/workforce/internal/productexecution,matrix/workforce/internal/projectbrain,matrix/workforce/internal/provider/customer,matrix/workforce/internal/provider/external,matrix/workforce/internal/provider/financial,matrix/workforce/internal/securityqualification,matrix/workforce/internal/skills,matrix/workforce/internal/squad,matrix/workforce/internal/wakeruntime,matrix/workforce/internal/workcompile,matrix/workforce/internal/workorder,matrix/workforce/scheduler
+  ^contains=mod:matrix/workforce
+
+NODE id=matrix/workforce/cmd/workforced.buildWakeRunner kind=func
+  digest=b3:762274a3ee384caeea22eb92cb76139b02850711898bcd0ad1b745b032e3d9ea file=workforce/cmd/workforced/main.go range=783:1199 lang=go exported=false byte_range=26313:39145
+  sig=func buildWakeRunner(\n	ctx context.Context,\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	service *controlapi.Service,\n	principal controlapi.Principal,\n	schedulerStore *scheduler.Store,\n	config runtimeConfig,\n	ownerRoot policy.OwnerRoot,\n	missionStore *mission.Store,\n	companyStore *companyruntime.Store,\n	lifecycleStore *companylifecycle.Store,\n	initiativeStore *initiative.Store,\n	cycleDispatcher *companyruntime.CycleDispatcher,\n) (*wakeruntime.Runner, error)
+EDGES
+  calls=matrix/workforce/cmd/workforced.executableDigest,matrix/workforce/internal/actorstate.NewAssembler,matrix/workforce/internal/approval.New,matrix/workforce/internal/audit.NewStore,matrix/workforce/internal/businessoutcome.NewPostgreSQLFinancialSourceVerifier,matrix/workforce/internal/businessoutcome.NewStore,matrix/workforce/internal/businessoutcome.Store.AttachFinancialSourceVerifier,matrix/workforce/internal/circuit.New,matrix/workforce/internal/commercialcapability.Adapter.Name,matrix/workforce/internal/commercialcapability.NewAdapter,matrix/workforce/internal/commercialexecution.NewCoordinator,matrix/workforce/internal/commercialexecution.NewStore,matrix/workforce/internal/contracts.RuntimeBinding.Validate,matrix/workforce/internal/departmentadapter.Adapter.Name,matrix/workforce/internal/departmentadapter.New,matrix/workforce/internal/dependency.New,matrix/workforce/internal/developer.Adapter.Name,matrix/workforce/internal/developer.NewAdapter,matrix/workforce/internal/developer.NewAuthority,matrix/workforce/internal/effect.New,matrix/workforce/internal/execution.New,matrix/workforce/internal/lease.New,matrix/workforce/internal/ledger.New,matrix/workforce/internal/lineage.New,matrix/workforce/internal/mail.New,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/modelclient.New,matrix/workforce/internal/organization.NewStore,matrix/workforce/internal/policy.New,matrix/workforce/internal/productcapability.Adapter.Name,matrix/workforce/internal/productcapability.NewAdapter,matrix/workforce/internal/productcapability.NewStore,matrix/workforce/internal/productexecution.NewStore,matrix/workforce/internal/projectbrain.New,matrix/workforce/internal/projectbrain.NewCodeGraph,matrix/workforce/internal/provider/customer.Adapter.Name,matrix/workforce/internal/provider/customer.LoadAdapters,matrix/workforce/internal/provider/customer.NewStore,matrix/workforce/internal/provider/external.Adapter.Name,matrix/workforce/internal/provider/external.LoadAdapters,matrix/workforce/internal/provider/external.NewStore,matrix/workforce/internal/provider/financial.Adapter.Name,matrix/workforce/internal/provider/financial.LoadAdapters,matrix/workforce/internal/provider/financial.NewStore,matrix/workforce/internal/provider/financial.Store.ListActiveConnections,matrix/workforce/internal/skills.Catalog.Digest,matrix/workforce/internal/skills.NewCatalog,matrix/workforce/internal/skills.NewStore,matrix/workforce/internal/skills.WorkforcePack,matrix/workforce/internal/squad.NewStore,matrix/workforce/internal/workcompile.New,matrix/workforce/internal/workorder.NewStore,matrix/workforce/internal/workorder.Store.AttachCompanyAuthority,matrix/workforce/internal/workorder.Store.AttachCompanyCycleAuthority
+  references=matrix/vault.UserVault,matrix/workforce/cmd/workforced.adapter,matrix/workforce/cmd/workforced.adapters,matrix/workforce/cmd/workforced.approvalStore,matrix/workforce/cmd/workforced.assembler,matrix/workforce/cmd/workforced.at,matrix/workforce/cmd/workforced.auditStore,matrix/workforce/cmd/workforced.auditorDigest,matrix/workforce/cmd/workforced.authority,matrix/workforce/cmd/workforced.brain,matrix/workforce/cmd/workforced.breakers,matrix/workforce/cmd/workforced.businessOutcomeStore,matrix/workforce/cmd/workforced.catalog,matrix/workforce/cmd/workforced.codeGraph,matrix/workforce/cmd/workforced.commercialCapabilityAdapter,matrix/workforce/cmd/workforced.commercialCoordinator,matrix/workforce/cmd/workforced.commercialExecutionStore,matrix/workforce/cmd/workforced.companyStore,matrix/workforce/cmd/workforced.compiler,matrix/workforce/cmd/workforced.config,matrix/workforce/cmd/workforced.controllerPublicKey,matrix/workforce/cmd/workforced.ctx,matrix/workforce/cmd/workforced.current,matrix/workforce/cmd/workforced.currentCompany,matrix/workforce/cmd/workforced.customerAdapters,matrix/workforce/cmd/workforced.customerStore,matrix/workforce/cmd/workforced.cycleDispatcher,matrix/workforce/cmd/workforced.departmentAdapters,matrix/workforce/cmd/workforced.developerAdapter,matrix/workforce/cmd/workforced.developerAuthority,matrix/workforce/cmd/workforced.effectGateway,matrix/workforce/cmd/workforced.err,matrix/workforce/cmd/workforced.executableDigest,matrix/workforce/cmd/workforced.executionStore,matrix/workforce/cmd/workforced.externalAdapters,matrix/workforce/cmd/workforced.externalRegistry,matrix/workforce/cmd/workforced.externalStore,matrix/workforce/cmd/workforced.fields,matrix/workforce/cmd/workforced.financialAdapters,matrix/workforce/cmd/workforced.financialConnections,matrix/workforce/cmd/workforced.financialSourceVerifier,matrix/workforce/cmd/workforced.financialStore,matrix/workforce/cmd/workforced.graph,matrix/workforce/cmd/workforced.initiativeStore,matrix/workforce/cmd/workforced.kind,matrix/workforce/cmd/workforced.leaseStore,matrix/workforce/cmd/workforced.ledgerStore,matrix/workforce/cmd/workforced.lifecycleStore,matrix/workforce/cmd/workforced.lineageStore,matrix/workforce/cmd/workforced.mailStore,matrix/workforce/cmd/workforced.missionStore,matrix/workforce/cmd/workforced.model,matrix/workforce/cmd/workforced.now,matrix/workforce/cmd/workforced.orderStore,matrix/workforce/cmd/workforced.organizationStore,matrix/workforce/cmd/workforced.ownerRoot,matrix/workforce/cmd/workforced.pack,matrix/workforce/cmd/workforced.pool,matrix/workforce/cmd/workforced.principal,matrix/workforce/cmd/workforced.productCapabilityAdapter,matrix/workforce/cmd/workforced.productExecutionStore,matrix/workforce/cmd/workforced.productStore,matrix/workforce/cmd/workforced.receiptID,matrix/workforce/cmd/workforced.resourceID,matrix/workforce/cmd/workforced.runtime,matrix/workforce/cmd/workforced.runtimeConfig,matrix/workforce/cmd/workforced.runtimePublic,matrix/workforce/cmd/workforced.schedulerStore,matrix/workforce/cmd/workforced.seatDigest,matrix/workforce/cmd/workforced.service,matrix/workforce/cmd/workforced.skillStore,matrix/workforce/cmd/workforced.squadStore,matrix/workforce/cmd/workforced.userVault,matrix/workforce/cmd/workforced.verified,matrix/workforce/internal/actorstate.NewAssembler,matrix/workforce/internal/actorstate.Runner,matrix/workforce/internal/approval.Authority,matrix/workforce/internal/approval.New,matrix/workforce/internal/audit.NewStore,matrix/workforce/internal/audit.Runner,matrix/workforce/internal/businessoutcome.NewPostgreSQLFinancialSourceVerifier,matrix/workforce/internal/businessoutcome.NewStore,matrix/workforce/internal/businessoutcome.Store.AttachFinancialSourceVerifier,matrix/workforce/internal/circuit.Config,matrix/workforce/internal/circuit.New,matrix/workforce/internal/commercialcapability.NewAdapter,matrix/workforce/internal/commercialexecution.IssuerPolicy,matrix/workforce/internal/commercialexecution.NewCoordinator,matrix/workforce/internal/commercialexecution.NewStore,matrix/workforce/internal/commercialexecution.Phase,matrix/workforce/internal/commercialexecution.PhaseAcquisition,matrix/workforce/internal/commercialexecution.PhaseCustomerQualification,matrix/workforce/internal/commercialexecution.PhaseFinancialIntent,matrix/workforce/internal/commercialexecution.PhaseFinancialReconciliation,matrix/workforce/internal/commercialexecution.PhaseMeasurement,matrix/workforce/internal/commercialexecution.PhaseSale,matrix/workforce/internal/commercialexecution.PhaseSupport,matrix/workforce/internal/companylifecycle.Store,matrix/workforce/internal/companyruntime.CycleDispatcher,matrix/workforce/internal/companyruntime.CycleDispatcher.Authority,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/contracts.ReceiptID,matrix/workforce/internal/contracts.RuntimeBinding,matrix/workforce/internal/contracts.RuntimeBinding.Validate,matrix/workforce/internal/contracts.WakeBudget,matrix/workforce/internal/controlapi.LifecycleEvent,matrix/workforce/internal/controlapi.Principal,matrix/workforce/internal/controlapi.Service,matrix/workforce/internal/controlapi.Service.Publish,matrix/workforce/internal/departmentadapter.New,matrix/workforce/internal/dependency.New,matrix/workforce/internal/developer.NewAdapter,matrix/workforce/internal/developer.NewAuthority,matrix/workforce/internal/developer.VerificationCommand,matrix/workforce/internal/effect.Adapter,matrix/workforce/internal/effect.Adapter.Name,matrix/workforce/internal/effect.New,matrix/workforce/internal/execution.New,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/lease.New,matrix/workforce/internal/ledger.New,matrix/workforce/internal/lineage.New,matrix/workforce/internal/mail.Config,matrix/workforce/internal/mail.New,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/modelclient.New,matrix/workforce/internal/organization.NewStore,matrix/workforce/internal/organization.OwnerAuthority,matrix/workforce/internal/policy.New,matrix/workforce/internal/policy.OwnerRoot,matrix/workforce/internal/productcapability.NewAdapter,matrix/workforce/internal/productcapability.NewStore,matrix/workforce/internal/productexecution.NewStore,matrix/workforce/internal/projectbrain.New,matrix/workforce/internal/projectbrain.NewCodeGraph,matrix/workforce/internal/provider/customer.LoadAdapters,matrix/workforce/internal/provider/customer.NewStore,matrix/workforce/internal/provider/external.LoadAdapters,matrix/workforce/internal/provider/external.NewStore,matrix/workforce/internal/provider/financial.LoadAdapters,matrix/workforce/internal/provider/financial.NewStore,matrix/workforce/internal/provider/financial.Store.ListActiveConnections,matrix/workforce/internal/skills.Catalog.Digest,matrix/workforce/internal/skills.NewCatalog,matrix/workforce/internal/skills.NewStore,matrix/workforce/internal/skills.WorkforcePack,matrix/workforce/internal/squad.ControllerAuthority,matrix/workforce/internal/squad.NewStore,matrix/workforce/internal/wakeruntime.Runner,matrix/workforce/internal/workcompile.New,matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.NewStore,matrix/workforce/internal/workorder.Store.AttachCompanyAuthority,matrix/workforce/internal/workorder.Store.AttachCompanyCycleAuthority,matrix/workforce/scheduler.Store
+  ^references=matrix/workforce/cmd/workforced.runContext
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.decodePrivateKey kind=func
+  digest=b3:a92cd1a75e5db541c047bbae19fa7b283ef6312eb0f07dbd08925217480ccc92 file=workforce/cmd/workforced/main.go range=1248:1257 lang=go exported=false byte_range=40356:40717
+  sig=func decodePrivateKey(value string) (ed25519.PrivateKey, error)
+EDGES
+  references=matrix/workforce/cmd/workforced.decoded,matrix/workforce/cmd/workforced.err,matrix/workforce/cmd/workforced.value
+  ^calls=matrix/workforce/cmd/workforced.loadConfig
+  ^references=matrix/workforce/cmd/workforced.loadConfig
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.envInt kind=func
+  digest=b3:cd3c8c74ea544a800ad543376bc03f7b53841cd0e51d47bc0eae2e3abb07d3b4 file=workforce/cmd/workforced/main.go range=1236:1246 lang=go exported=false byte_range=40084:40354
+  sig=func envInt(name string, fallback int) (int, error)
+EDGES
+  references=matrix/workforce/cmd/workforced.err,matrix/workforce/cmd/workforced.fallback,matrix/workforce/cmd/workforced.name,matrix/workforce/cmd/workforced.raw,matrix/workforce/cmd/workforced.value
+  ^calls=matrix/workforce/cmd/workforced.loadConfig,matrix/workforce/cmd/workforced.loadSchedulerConfig
+  ^references=matrix/workforce/cmd/workforced.loadConfig,matrix/workforce/cmd/workforced.loadSchedulerConfig
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.envOr kind=func
+  digest=b3:127e64dc2c0e10a04ea27fa968eacb00c904abff0a48624f29bb21622f6e2d81 file=workforce/cmd/workforced/main.go range=1259:1264 lang=go exported=false byte_range=40719:40861
+  sig=func envOr(name, fallback string) string
+EDGES
+  references=matrix/workforce/cmd/workforced.fallback,matrix/workforce/cmd/workforced.name,matrix/workforce/cmd/workforced.value
+  ^calls=matrix/workforce/cmd/workforced.loadConfig,matrix/workforce/cmd/workforced.loadSchedulerConfig,matrix/workforce/cmd/workforced.runContext
+  ^references=matrix/workforce/cmd/workforced.loadConfig,matrix/workforce/cmd/workforced.loadSchedulerConfig,matrix/workforce/cmd/workforced.runContext
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.envUint32 kind=func
+  digest=b3:f907f84d02e81c7343d0bafb948df47bcbb759524ac9b7bf7b75e69fa9c8208a file=workforce/cmd/workforced/main.go range=1216:1222 lang=go exported=false byte_range=39540:39788
+  sig=func envUint32(name string, fallback uint32) (uint32, error)
+EDGES
+  calls=matrix/workforce/cmd/workforced.envUint64
+  references=matrix/workforce/cmd/workforced.envUint64,matrix/workforce/cmd/workforced.err,matrix/workforce/cmd/workforced.fallback,matrix/workforce/cmd/workforced.name,matrix/workforce/cmd/workforced.value
+  ^calls=matrix/workforce/cmd/workforced.loadConfig,matrix/workforce/cmd/workforced.loadSchedulerConfig
+  ^references=matrix/workforce/cmd/workforced.loadConfig,matrix/workforce/cmd/workforced.loadSchedulerConfig
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.envUint64 kind=func
+  digest=b3:2b863d1166d418cb894ecab00ae9607a90cac8e65d3e0aa814a6185bd92a0978 file=workforce/cmd/workforced/main.go range=1224:1234 lang=go exported=false byte_range=39790:40082
+  sig=func envUint64(name string, fallback uint64) (uint64, error)
+EDGES
+  references=matrix/workforce/cmd/workforced.err,matrix/workforce/cmd/workforced.fallback,matrix/workforce/cmd/workforced.name,matrix/workforce/cmd/workforced.raw,matrix/workforce/cmd/workforced.value
+  ^calls=matrix/workforce/cmd/workforced.envUint32,matrix/workforce/cmd/workforced.loadSchedulerConfig
+  ^references=matrix/workforce/cmd/workforced.envUint32,matrix/workforce/cmd/workforced.loadSchedulerConfig
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.executableDigest kind=func
+  digest=b3:7e1858a0b15b602ac4072fde643c3405bf934a1ef4c03e1d009a4204a1272d17 file=workforce/cmd/workforced/main.go range=1201:1214 lang=go exported=false byte_range=39147:39538
+  sig=func executableDigest(path string) (contracts.ContentHash, error)
+EDGES
+  references=matrix/workforce/cmd/workforced.err,matrix/workforce/cmd/workforced.file,matrix/workforce/cmd/workforced.hash,matrix/workforce/cmd/workforced.path,matrix/workforce/internal/contracts.ContentHash
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.loadConfig kind=func
+  digest=b3:7e373071fc1ad215664d6b23d0ea092fc945a9e45011ea010f98c433d520876e file=workforce/cmd/workforced/main.go range=574:732 lang=go exported=false byte_range=17735:24929
+  sig=func loadConfig(listen string) (runtimeConfig, error)
+EDGES
+  calls=matrix/workforce/cmd/workforced.decodePrivateKey,matrix/workforce/cmd/workforced.envInt,matrix/workforce/cmd/workforced.envOr,matrix/workforce/cmd/workforced.envUint32,matrix/workforce/cmd/workforced.loadSchedulerConfig
+  references=matrix/neo/provider.MiMoChatEndpoint,matrix/neo/provider.MiMoTemperature,matrix/neo/provider.MiMoV25ProModel,matrix/workforce/cmd/workforced.companyIssuerKey,matrix/workforce/cmd/workforced.config,matrix/workforce/cmd/workforced.decodePrivateKey,matrix/workforce/cmd/workforced.envInt,matrix/workforce/cmd/workforced.envOr,matrix/workforce/cmd/workforced.envUint32,matrix/workforce/cmd/workforced.err,matrix/workforce/cmd/workforced.gatewayToken,matrix/workforce/cmd/workforced.gatewayURL,matrix/workforce/cmd/workforced.listen,matrix/workforce/cmd/workforced.loadSchedulerConfig,matrix/workforce/cmd/workforced.modelCredential,matrix/workforce/cmd/workforced.modelEndpoint,matrix/workforce/cmd/workforced.modelMaxTokens,matrix/workforce/cmd/workforced.modelTimeout,matrix/workforce/cmd/workforced.name,matrix/workforce/cmd/workforced.publicKey,matrix/workforce/cmd/workforced.runtimeConfig,matrix/workforce/cmd/workforced.runtimeKey,matrix/workforce/cmd/workforced.schedulerConfig,matrix/workforce/cmd/workforced.value,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/modelclient.Config
+  ^calls=matrix/workforce/cmd/workforced.runContext
+  ^references=matrix/workforce/cmd/workforced.runContext
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.loadSchedulerConfig kind=func
+  digest=b3:5a4014484b985ad5f8108dc8af7f72ec2ae518b3bbf78861fdb8173a60cba4fa file=workforce/cmd/workforced/main.go range=734:781 lang=go exported=false byte_range=24931:26311
+  sig=func loadSchedulerConfig() (scheduler.Config, error)
+EDGES
+  calls=matrix/workforce/cmd/workforced.envInt,matrix/workforce/cmd/workforced.envOr,matrix/workforce/cmd/workforced.envUint32,matrix/workforce/cmd/workforced.envUint64
+  references=matrix/workforce/cmd/workforced.claimLease,matrix/workforce/cmd/workforced.config,matrix/workforce/cmd/workforced.dailySpend,matrix/workforce/cmd/workforced.dailyTasks,matrix/workforce/cmd/workforced.envInt,matrix/workforce/cmd/workforced.envOr,matrix/workforce/cmd/workforced.envUint32,matrix/workforce/cmd/workforced.envUint64,matrix/workforce/cmd/workforced.err,matrix/workforce/cmd/workforced.organizationConcurrency,matrix/workforce/cmd/workforced.quietEnd,matrix/workforce/cmd/workforced.quietStart,matrix/workforce/cmd/workforced.seatConcurrency,matrix/workforce/scheduler.Config
+  ^calls=matrix/workforce/cmd/workforced.loadConfig
+  ^references=matrix/workforce/cmd/workforced.loadConfig
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.main kind=func
+  digest=b3:1258ecff7dbb5aea36621e0d06cf599fbb81dcd87de889a8b57c1674d0a0a691 file=workforce/cmd/workforced/main.go range=72:78 lang=go exported=false byte_range=2057:2245
+  sig=func main()
+EDGES
+  calls=matrix/workforce/cmd/workforced.runContext
+  references=matrix/workforce/cmd/workforced.cancel,matrix/workforce/cmd/workforced.ctx,matrix/workforce/cmd/workforced.runContext
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.printUsage kind=func
+  digest=b3:c85049e8274bf6dffb38673bced40d9d42f2d741cb916a6044d0f87e0716ca77 file=workforce/cmd/workforced/main.go range=1266:1268 lang=go exported=false byte_range=40863:40990
+  sig=func printUsage(writer io.Writer)
+EDGES
+  references=matrix/workforce/cmd/workforced.writer
+  ^calls=matrix/workforce/cmd/workforced.runContext
+  ^references=matrix/workforce/cmd/workforced.runContext
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.run kind=func
+  digest=b3:1cb5f9e0a067ee7ffe595c281817e7005a21079b238222592b71843c01dfad13 file=workforce/cmd/workforced/main.go range=80:82 lang=go exported=false byte_range=2247:2367
+  sig=func run(args []string, stdout, stderr io.Writer) int
+EDGES
+  calls=matrix/workforce/cmd/workforced.runContext
+  references=matrix/workforce/cmd/workforced.args,matrix/workforce/cmd/workforced.runContext,matrix/workforce/cmd/workforced.stderr,matrix/workforce/cmd/workforced.stdout
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.runContext kind=func
+  digest=b3:4625e40745c4ebc8b98d61c73a8f8d619f36672bc304f04f07a19de541e98f07 file=workforce/cmd/workforced/main.go range=84:539 lang=go exported=false byte_range=2369:16631
+  sig=func runContext(ctx context.Context, args []string, stdout, stderr io.Writer) int
+EDGES
+  calls=matrix/vault.Boot,matrix/vault.ConfigFromEnv,matrix/vault.Session.UserVault,matrix/workforce/cmd/workforced.envOr,matrix/workforce/cmd/workforced.loadConfig,matrix/workforce/cmd/workforced.printUsage,matrix/workforce/internal/companylifecycle.New,matrix/workforce/internal/companyrecovery.NewCommandBackend,matrix/workforce/internal/companyrecovery.NewStore,matrix/workforce/internal/companyrecovery.Store.AttachErasureBackend,matrix/workforce/internal/companyrecovery.Store.AttachPITRBackend,matrix/workforce/internal/companyruntime.Coordinator.AttachCycleDispatcher,matrix/workforce/internal/companyruntime.NewCoordinatorWithDispatcher,matrix/workforce/internal/companyruntime.NewCycleDispatcher,matrix/workforce/internal/companyruntime.NewStore,matrix/workforce/internal/controlapi.New,matrix/workforce/internal/controlapi.NewStaticAuthenticator,matrix/workforce/internal/controlapi.Service.AttachCompanyIssuerAuthority,matrix/workforce/internal/controlapi.Service.AttachCompanyRecovery,matrix/workforce/internal/controlapi.Service.AttachCompanyRuntime,matrix/workforce/internal/controlapi.Service.AttachFounderProjection,matrix/workforce/internal/controlapi.Service.AttachLearning,matrix/workforce/internal/controlapi.Service.AttachRuntimeAuthority,matrix/workforce/internal/controlapi.Service.AttachRuntimeModel,matrix/workforce/internal/controlapi.Service.AttachRuntimeReload,matrix/workforce/internal/controlapi.Service.AttachScheduler,matrix/workforce/internal/controlapi.Service.AttachSecurityQualification,matrix/workforce/internal/controlapi.Service.AttachVault,matrix/workforce/internal/controlapi.Service.Handler,matrix/workforce/internal/founderprojection.NewStore,matrix/workforce/internal/initiative.NewCompiler,matrix/workforce/internal/initiative.NewDispatcher,matrix/workforce/internal/initiative.NewStore,matrix/workforce/internal/learning.NewEngine,matrix/workforce/internal/learning.NewStore,matrix/workforce/internal/ledger.ApplyMigrations,matrix/workforce/internal/mission.NewStore,matrix/workforce/internal/portfolio.NewStore,matrix/workforce/internal/securityqualification.NewStore,matrix/workforce/internal/skills.Catalog.Digest,matrix/workforce/internal/skills.NewCatalog,matrix/workforce/internal/skills.WorkforcePack,matrix/workforce/scheduler.Handler,matrix/workforce/scheduler.New
+  references=matrix/vault.Boot,matrix/vault.ConfigFromEnv,matrix/vault.Session.UserVault,matrix/workforce/cmd/workforced.args,matrix/workforce/cmd/workforced.auth,matrix/workforce/cmd/workforced.backendErr,matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/cmd/workforced.cancel,matrix/workforce/cmd/workforced.companyCoordinator,matrix/workforce/cmd/workforced.companyRecoveryStore,matrix/workforce/cmd/workforced.companyStore,matrix/workforce/cmd/workforced.config,matrix/workforce/cmd/workforced.ctx,matrix/workforce/cmd/workforced.cycle,matrix/workforce/cmd/workforced.cycleCatalog,matrix/workforce/cmd/workforced.cycleDispatch,matrix/workforce/cmd/workforced.cycleDispatchErr,matrix/workforce/cmd/workforced.cycleDispatcher,matrix/workforce/cmd/workforced.cycleErr,matrix/workforce/cmd/workforced.cyclePack,matrix/workforce/cmd/workforced.cycles,matrix/workforce/cmd/workforced.dispatch,matrix/workforce/cmd/workforced.dispatchErr,matrix/workforce/cmd/workforced.dispatches,matrix/workforce/cmd/workforced.envOr,matrix/workforce/cmd/workforced.err,matrix/workforce/cmd/workforced.flags,matrix/workforce/cmd/workforced.founderProjectionStore,matrix/workforce/cmd/workforced.initiativeCompiler,matrix/workforce/cmd/workforced.initiativeDispatcher,matrix/workforce/cmd/workforced.initiativeStore,matrix/workforce/cmd/workforced.learningEngine,matrix/workforce/cmd/workforced.learningStore,matrix/workforce/cmd/workforced.lifecycleStore,matrix/workforce/cmd/workforced.listen,matrix/workforce/cmd/workforced.loadConfig,matrix/workforce/cmd/workforced.missionStore,matrix/workforce/cmd/workforced.now,matrix/workforce/cmd/workforced.nowFunc,matrix/workforce/cmd/workforced.ownerRoot,matrix/workforce/cmd/workforced.pool,matrix/workforce/cmd/workforced.portfolioStore,matrix/workforce/cmd/workforced.principal,matrix/workforce/cmd/workforced.printUsage,matrix/workforce/cmd/workforced.publishErr,matrix/workforce/cmd/workforced.recoveryBackend,matrix/workforce/cmd/workforced.rootErr,matrix/workforce/cmd/workforced.rootHandler,matrix/workforce/cmd/workforced.runtimeReload,matrix/workforce/cmd/workforced.runtimeStopped,matrix/workforce/cmd/workforced.schedulerStore,matrix/workforce/cmd/workforced.securityStore,matrix/workforce/cmd/workforced.serve,matrix/workforce/cmd/workforced.server,matrix/workforce/cmd/workforced.service,matrix/workforce/cmd/workforced.shutdownCtx,matrix/workforce/cmd/workforced.shutdownErr,matrix/workforce/cmd/workforced.shutdownID,matrix/workforce/cmd/workforced.stderr,matrix/workforce/cmd/workforced.stdout,matrix/workforce/cmd/workforced.stopped,matrix/workforce/cmd/workforced.ticker,matrix/workforce/cmd/workforced.vaultSession,matrix/workforce/cmd/workforced.version,matrix/workforce/cmd/workforced.versionOnly,matrix/workforce/cmd/workforced.wakeRunner,matrix/workforce/internal/companylifecycle.New,matrix/workforce/internal/companyrecovery.Authority,matrix/workforce/internal/companyrecovery.NewCommandBackend,matrix/workforce/internal/companyrecovery.NewStore,matrix/workforce/internal/companyrecovery.ShutdownID,matrix/workforce/internal/companyrecovery.Store.AssertOperational,matrix/workforce/internal/companyrecovery.Store.AttachErasureBackend,matrix/workforce/internal/companyrecovery.Store.AttachPITRBackend,matrix/workforce/internal/companyrecovery.Store.BeginShutdown,matrix/workforce/internal/companyrecovery.Store.CompleteShutdown,matrix/workforce/internal/companyruntime.Coordinator.AttachCycleDispatcher,matrix/workforce/internal/companyruntime.Coordinator.DispatchCycle,matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/companyruntime.Coordinator.RunDue,matrix/workforce/internal/companyruntime.CycleRuntimeBinding,matrix/workforce/internal/companyruntime.ErrNotStarted,matrix/workforce/internal/companyruntime.NewCoordinatorWithDispatcher,matrix/workforce/internal/companyruntime.NewCycleDispatcher,matrix/workforce/internal/companyruntime.NewStore,matrix/workforce/internal/controlapi.ErrNotActivated,matrix/workforce/internal/controlapi.LifecycleEvent,matrix/workforce/internal/controlapi.New,matrix/workforce/internal/controlapi.NewStaticAuthenticator,matrix/workforce/internal/controlapi.OwnerKey,matrix/workforce/internal/controlapi.Principal,matrix/workforce/internal/controlapi.Service.AttachBusinessOutcomes,matrix/workforce/internal/controlapi.Service.AttachCommercialExecution,matrix/workforce/internal/controlapi.Service.AttachCompanyIssuerAuthority,matrix/workforce/internal/controlapi.Service.AttachCompanyRecovery,matrix/workforce/internal/controlapi.Service.AttachCompanyRuntime,matrix/workforce/internal/controlapi.Service.AttachFinancial,matrix/workforce/internal/controlapi.Service.AttachFounderProjection,matrix/workforce/internal/controlapi.Service.AttachLearning,matrix/workforce/internal/controlapi.Service.AttachProductExecution,matrix/workforce/internal/controlapi.Service.AttachRuntimeAuthority,matrix/workforce/internal/controlapi.Service.AttachRuntimeModel,matrix/workforce/internal/controlapi.Service.AttachRuntimeReload,matrix/workforce/internal/controlapi.Service.AttachScheduler,matrix/workforce/internal/controlapi.Service.AttachSecurityQualification,matrix/workforce/internal/controlapi.Service.AttachVault,matrix/workforce/internal/controlapi.Service.Handler,matrix/workforce/internal/controlapi.Service.Publish,matrix/workforce/internal/controlapi.Service.RuntimeOwnerRoot,matrix/workforce/internal/founderprojection.NewStore,matrix/workforce/internal/initiative.NewCompiler,matrix/workforce/internal/initiative.NewDispatcher,matrix/workforce/internal/initiative.NewStore,matrix/workforce/internal/learning.NewEngine,matrix/workforce/internal/learning.NewStore,matrix/workforce/internal/ledger.ApplyMigrations,matrix/workforce/internal/mission.NewStore,matrix/workforce/internal/portfolio.NewStore,matrix/workforce/internal/securityqualification.NewStore,matrix/workforce/internal/skills.Catalog.Digest,matrix/workforce/internal/skills.NewCatalog,matrix/workforce/internal/skills.WorkforcePack,matrix/workforce/internal/wakeruntime.Runner,matrix/workforce/internal/wakeruntime.Runner.RunDue,matrix/workforce/scheduler.Handler,matrix/workforce/scheduler.New
+  ^calls=matrix/workforce/cmd/workforced.main,matrix/workforce/cmd/workforced.run
+  ^references=matrix/workforce/cmd/workforced.main,matrix/workforce/cmd/workforced.run
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig kind=type
+  digest=b3:da1e13100717815745549abff74a7adf49413a1002a6f77d7194956ad878e06b file=workforce/cmd/workforced/main.go range=541:572 lang=go exported=false byte_range=16633:17733
+  sig=type runtimeConfig struct {\n	listen			string\n	postgresURI		string\n	tenantID		string\n	organizationID		contracts.OrganizationID\n	ownerID			contracts.OwnerID\n	ownerToken		string\n	wakeToken		string\n	ownerKeyID		string\n	ownerPublicKey		ed25519.PublicKey\n	runtimeKeyID		string\n	runtimeKey		ed25519.PrivateKey\n	runtimePublicKey	ed25519.PublicKey\n	companyIssuerKeyID	string\n	companyIssuerKey	ed25519.PrivateKey\n	companyIssuerPublicKey	ed25519.PublicKey\n	scheduler		scheduler.Config\n	model			modelclient.Config\n	bubblewrap		string\n	seatBinary		string\n	auditorBinary		string\n	developerRepo		string\n	codegraph		string\n	auditorSeatID		contracts.SeatID\n	pollInterval		time.Duration\n	leaseDuration		time.Duration\n	claimBatch		uint32\n	dataDir			string\n	recoveryBackend		string\n	recoveryBackendArgs	[]string\n	recoveryBackendTimeout	time.Duration\n}
+EDGES
+  contains=matrix/workforce/cmd/workforced.runtimeConfig#auditorBinary,matrix/workforce/cmd/workforced.runtimeConfig#auditorSeatID,matrix/workforce/cmd/workforced.runtimeConfig#bubblewrap,matrix/workforce/cmd/workforced.runtimeConfig#claimBatch,matrix/workforce/cmd/workforced.runtimeConfig#codegraph,matrix/workforce/cmd/workforced.runtimeConfig#companyIssuerKey,matrix/workforce/cmd/workforced.runtimeConfig#companyIssuerKeyID,matrix/workforce/cmd/workforced.runtimeConfig#companyIssuerPublicKey,matrix/workforce/cmd/workforced.runtimeConfig#dataDir,matrix/workforce/cmd/workforced.runtimeConfig#developerRepo,matrix/workforce/cmd/workforced.runtimeConfig#leaseDuration,matrix/workforce/cmd/workforced.runtimeConfig#listen,matrix/workforce/cmd/workforced.runtimeConfig#model,matrix/workforce/cmd/workforced.runtimeConfig#organizationID,matrix/workforce/cmd/workforced.runtimeConfig#ownerID,matrix/workforce/cmd/workforced.runtimeConfig#ownerKeyID,matrix/workforce/cmd/workforced.runtimeConfig#ownerPublicKey,matrix/workforce/cmd/workforced.runtimeConfig#ownerToken,matrix/workforce/cmd/workforced.runtimeConfig#pollInterval,matrix/workforce/cmd/workforced.runtimeConfig#postgresURI,matrix/workforce/cmd/workforced.runtimeConfig#recoveryBackend,matrix/workforce/cmd/workforced.runtimeConfig#recoveryBackendArgs,matrix/workforce/cmd/workforced.runtimeConfig#recoveryBackendTimeout,matrix/workforce/cmd/workforced.runtimeConfig#runtimeKey,matrix/workforce/cmd/workforced.runtimeConfig#runtimeKeyID,matrix/workforce/cmd/workforced.runtimeConfig#runtimePublicKey,matrix/workforce/cmd/workforced.runtimeConfig#scheduler,matrix/workforce/cmd/workforced.runtimeConfig#seatBinary,matrix/workforce/cmd/workforced.runtimeConfig#tenantID,matrix/workforce/cmd/workforced.runtimeConfig#wakeToken
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/modelclient.Config,matrix/workforce/scheduler.Config
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/cmd/workforced.loadConfig
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#auditorBinary kind=field
+  digest=b3:a8e28d377ec445bb7088182899d255b19219e73ed9e4f7434a89f683db8bee4d file=workforce/cmd/workforced/main.go range=561:561 lang=go exported=false byte_range=17359:17388
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#auditorSeatID kind=field
+  digest=b3:56ebe7778b2d583c11be1f6c42229fd5f6f1c0ead4bcee09dd72686c35a4e9d0 file=workforce/cmd/workforced/main.go range=564:564 lang=go exported=false byte_range=17452:17491
+  sig=contracts.SeatID
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#bubblewrap kind=field
+  digest=b3:326ffc8fe70de6d974f1c0a8f7b2f36aac7af454a5998cc1282f71cc022e4b58 file=workforce/cmd/workforced/main.go range=559:559 lang=go exported=false byte_range=17297:17326
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#claimBatch kind=field
+  digest=b3:818a87493c225438ffaafa6f898de40db57942253520b827e4dd58b41719569d file=workforce/cmd/workforced/main.go range=567:567 lang=go exported=false byte_range=17569:17598
+  sig=uint32
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#codegraph kind=field
+  digest=b3:8b0cf2b35c056781f308f389bc87fec5c1572a0d60f2635ca0f67fda34fe16ba file=workforce/cmd/workforced/main.go range=563:563 lang=go exported=false byte_range=17421:17450
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#companyIssuerKey kind=field
+  digest=b3:a00a3e14880de9b08e8dc855f5da29b1aa545c172784a0668ef8a9b335de3512 file=workforce/cmd/workforced/main.go range=555:555 lang=go exported=false byte_range=17128:17169
+  sig=ed25519.PrivateKey
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#companyIssuerKeyID kind=field
+  digest=b3:3db5ab1236e649867d41e1fc9d690c8119d442088e59fa5f61d5454d2a6cff6a file=workforce/cmd/workforced/main.go range=554:554 lang=go exported=false byte_range=17097:17126
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#companyIssuerPublicKey kind=field
+  digest=b3:d694086dbcc73341a97a11e859de0019abf07feb050e22f66ee8452126aaec77 file=workforce/cmd/workforced/main.go range=556:556 lang=go exported=false byte_range=17171:17211
+  sig=ed25519.PublicKey
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#dataDir kind=field
+  digest=b3:09582c0a81d39326dfc7fd41822b3f56dd95e46e232bc6654570c8d26e99fb2d file=workforce/cmd/workforced/main.go range=568:568 lang=go exported=false byte_range=17600:17629
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#developerRepo kind=field
+  digest=b3:2170ac529e2941410634877a42c1ce2f9cef94a5bd9eb0496d3dae11bd33555c file=workforce/cmd/workforced/main.go range=562:562 lang=go exported=false byte_range=17390:17419
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#leaseDuration kind=field
+  digest=b3:9d64d9b83680b1a73a8bf13967d5c8505deb5fc39f2abdfb5248130e27ba63bf file=workforce/cmd/workforced/main.go range=566:566 lang=go exported=false byte_range=17531:17567
+  sig=time.Duration
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#listen kind=field
+  digest=b3:af7a29e8b4d435be303d218252ed5f93e799fc3a7e281146e0dbc985a80e5148 file=workforce/cmd/workforced/main.go range=542:542 lang=go exported=false byte_range=16662:16691
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#model kind=field
+  digest=b3:aeca1459232c1ac4ecadcbe2c1d15768b93c6ec64fb3f3ed546cb5c7029ff870 file=workforce/cmd/workforced/main.go range=558:558 lang=go exported=false byte_range=17254:17295
+  sig=modelclient.Config
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#organizationID kind=field
+  digest=b3:27e1d025685cb2634eeada72416f9e54837dea1035fcd20e81718c57dd4944e5 file=workforce/cmd/workforced/main.go range=545:545 lang=go exported=false byte_range=16755:16802
+  sig=contracts.OrganizationID
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#ownerID kind=field
+  digest=b3:4a54e3d637606daad7a44f7898cbef09f30614cfd1cb27311dd4a973e65d552b file=workforce/cmd/workforced/main.go range=546:546 lang=go exported=false byte_range=16804:16844
+  sig=contracts.OwnerID
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#ownerKeyID kind=field
+  digest=b3:20774c0237d0e4a3353355b087f2e7d3bf8a27553fd983ef2899c030de4bb876 file=workforce/cmd/workforced/main.go range=549:549 lang=go exported=false byte_range=16908:16937
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#ownerPublicKey kind=field
+  digest=b3:6c7e08ec730e9de7f5c8a220c8d5e05d736f5502bdf9d1c5a2a05b72a478ab8c file=workforce/cmd/workforced/main.go range=550:550 lang=go exported=false byte_range=16939:16979
+  sig=ed25519.PublicKey
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#ownerToken kind=field
+  digest=b3:f324fa3fd9b5b8a182ccef4ccb0359671e9c4ec76283ac15a2905b0b9bc60f31 file=workforce/cmd/workforced/main.go range=547:547 lang=go exported=false byte_range=16846:16875
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#pollInterval kind=field
+  digest=b3:9c2c9f06711d8e7ff8a29b77b113554534ed25ce25839b7c354067d20c59c300 file=workforce/cmd/workforced/main.go range=565:565 lang=go exported=false byte_range=17493:17529
+  sig=time.Duration
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#postgresURI kind=field
+  digest=b3:8a78cd5c274225e9b0a401e8cd4446b1acd0ab301329a4314c5d7bc3606389c6 file=workforce/cmd/workforced/main.go range=543:543 lang=go exported=false byte_range=16693:16722
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#recoveryBackend kind=field
+  digest=b3:23413e73a1c27a0f7062470e383aafaaed1802a5f9ceee8365d5c6d81593d5d2 file=workforce/cmd/workforced/main.go range=569:569 lang=go exported=false byte_range=17631:17660
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#recoveryBackendArgs kind=field
+  digest=b3:07497f9d69bedd448677a6aaab06ad97fa5015c81fba7bdd08f812d638f120d2 file=workforce/cmd/workforced/main.go range=570:570 lang=go exported=false byte_range=17662:17693
+  sig=[]string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#recoveryBackendTimeout kind=field
+  digest=b3:dc036d4f6d279d19142a59eaafb9dc09c7f470ef4062d71e86c8ffe34138881d file=workforce/cmd/workforced/main.go range=571:571 lang=go exported=false byte_range=17695:17731
+  sig=time.Duration
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#runtimeKey kind=field
+  digest=b3:71717ed5e5637394ae90c6cb6b299a3992052bcf0ab1e33852d2740373589f43 file=workforce/cmd/workforced/main.go range=552:552 lang=go exported=false byte_range=17012:17053
+  sig=ed25519.PrivateKey
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#runtimeKeyID kind=field
+  digest=b3:4652d3460e00ab186e81a04dbeb04afe284ff35afa048c1d1caf103ac7329e31 file=workforce/cmd/workforced/main.go range=551:551 lang=go exported=false byte_range=16981:17010
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#runtimePublicKey kind=field
+  digest=b3:183afd4d00b08be199ef2bdafea3bbb9f40a14dcf5c4c97899ed25c61863719f file=workforce/cmd/workforced/main.go range=553:553 lang=go exported=false byte_range=17055:17095
+  sig=ed25519.PublicKey
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#scheduler kind=field
+  digest=b3:a7cea55b698590690cdc0e6960c648a5bcaa57e233c45ae56d5e37fd28251180 file=workforce/cmd/workforced/main.go range=557:557 lang=go exported=false byte_range=17213:17252
+  sig=scheduler.Config
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#seatBinary kind=field
+  digest=b3:80fa9662e77fad82419ed073f99327210ab50b76cc565ce6354797de70fd67bb file=workforce/cmd/workforced/main.go range=560:560 lang=go exported=false byte_range=17328:17357
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#tenantID kind=field
+  digest=b3:f96ca3236206061b6d586b6f04a9851960ddb6f71aa8817a9e3d8bce86d0da9b file=workforce/cmd/workforced/main.go range=544:544 lang=go exported=false byte_range=16724:16753
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.runtimeConfig#wakeToken kind=field
+  digest=b3:95855a101c85342c320b60bf5b75bac3132622e6037c2400ece14fad4de09c07 file=workforce/cmd/workforced/main.go range=548:548 lang=go exported=false byte_range=16877:16906
+  sig=string
+EDGES
+  ^contains=matrix/workforce/cmd/workforced.runtimeConfig
+
+NODE id=matrix/workforce/cmd/workforced.version kind=var
+  digest=b3:5e7d26d814a0a4c24334e8dcbaefd39a92b8c64bfa116992f7a5670a1192547c file=workforce/cmd/workforced/main.go range=70:70 lang=go exported=false byte_range=2040:2055
+  sig=string
+EDGES
+  ^references=matrix/workforce/cmd/workforced.runContext
+  ^defines=matrix/workforce/cmd/workforced/main.go
+
+NODE id=matrix/workforce/cmd/workforced/main.go kind=file
+  digest=b3:0e87dea311652cec4b9aa3e8d45207b45d1612abec103bb18706e2e2498e874d file=workforce/cmd/workforced/main.go range=1:1268 lang=go exported=true
+EDGES
+  defines=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/cmd/workforced.decodePrivateKey,matrix/workforce/cmd/workforced.envInt,matrix/workforce/cmd/workforced.envOr,matrix/workforce/cmd/workforced.envUint32,matrix/workforce/cmd/workforced.envUint64,matrix/workforce/cmd/workforced.executableDigest,matrix/workforce/cmd/workforced.loadConfig,matrix/workforce/cmd/workforced.loadSchedulerConfig,matrix/workforce/cmd/workforced.main,matrix/workforce/cmd/workforced.printUsage,matrix/workforce/cmd/workforced.run,matrix/workforce/cmd/workforced.runContext,matrix/workforce/cmd/workforced.runtimeConfig,matrix/workforce/cmd/workforced.version
+  ^contains=matrix/workforce/cmd/workforced

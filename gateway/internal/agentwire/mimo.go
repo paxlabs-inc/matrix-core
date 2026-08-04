@@ -24,11 +24,11 @@ type ToolCall struct {
 	Arguments json.RawMessage
 }
 
-func ParseMiMoToolCalls(text string) (string, []ToolCall, bool, error) {
+func ParseMiMoToolCalls(text string) (cleanedText string, parsedCalls []ToolCall, found bool, parseErr error) {
 	return parseMiMoToolCalls(text, "standalone")
 }
 
-func parseMiMoToolCalls(text, context string) (string, []ToolCall, bool, error) {
+func parseMiMoToolCalls(text, context string) (cleanedText string, parsedCalls []ToolCall, found bool, parseErr error) {
 	hasMarkup := strings.Contains(text, mimoToolOpen) ||
 		strings.Contains(text, mimoToolClose) ||
 		strings.Contains(text, mimoFunctionOpen)
@@ -317,7 +317,7 @@ func mintToolCallID(context string, occurrence int, material []byte) string {
 	digest := sha256.New()
 	_, _ = digest.Write([]byte(context))
 	_, _ = digest.Write([]byte{0})
-	_, _ = digest.Write([]byte(fmt.Sprintf("%d", occurrence)))
+	_, _ = fmt.Fprintf(digest, "%d", occurrence)
 	_, _ = digest.Write([]byte{0})
 	_, _ = digest.Write(material)
 	sum := digest.Sum(nil)

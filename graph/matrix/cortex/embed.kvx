@@ -1,11 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/cortex/embed kind=package
   digest=b3:d73a343f26470a67c3d49857b29dab227853cc8813b40c4b56be5ba0b394de13 file=cortex/embed range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/embed/api_embedder.go,matrix/cortex/embed/chain.go,matrix/cortex/embed/embed.go
   ^contains=mod:matrix/cortex
-  ^imports=matrix/bridge/cmd/mclc-cortex,matrix/codegraph/enrich,matrix/cortex,matrix/cortex/cmd/cortex-shell,matrix/cortex/cmd/embed-smoke,matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/neo/internal/agent,matrix/neo/internal/memory,matrix/neo/internal/recall
+  ^imports=matrix/bridge/cmd/mclc-cortex,matrix/codegraph/enrich,matrix/cortex,matrix/cortex/cmd/cortex-shell,matrix/cortex/cmd/embed-smoke,matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/neo/internal/memory,matrix/neo/internal/recall
 
 NODE id=matrix/cortex/embed.APIEmbedder kind=type
   digest=b3:7577e666cbaa6283f84da5719f9e7019fad3f2d88019dab4980ccc41c99fc9b8 file=cortex/embed/api_embedder.go range=107:115 lang=go exported=true byte_range=4241:4525
@@ -223,8 +223,8 @@ NODE id=matrix/cortex/embed.Cosine kind=func
   doc=Cosine returns the cosine similarity of a and b. Both slices must be the\nsame length; returns 0 on a length mismatch rather than erroring so\ncallers in tight loops don't have to plumb errors. The HNSW index uses\nCosine via the negative-cosine distance to keep min-heap semantics\n(lower distance = closer).\n\nImplementation note: a and b are expected to be unit-normalized (the\nHashEmbedder and the planned production embedder both normalize) so\nCosine reduces to a plain dot product. We still divide by the norms to\nstay correct under non-normalized inputs.
 EDGES
   references=matrix/cortex/embed.a,matrix/cortex/embed.ax,matrix/cortex/embed.b,matrix/cortex/embed.bx,matrix/cortex/embed.dot,matrix/cortex/embed.i,matrix/cortex/embed.na,matrix/cortex/embed.nb
-  ^calls=matrix/cortex/cmd/embed-smoke.main,matrix/neo/internal/agent.topicTracker.observeVec,matrix/neo/internal/memory.Pager.RejectionCandidates,matrix/neo/internal/memory.Pager.duplicatePendingOpportunity,matrix/neo/internal/recall.Recaller.Relevant
-  ^references=matrix/cortex/cmd/embed-smoke.main,matrix/neo/internal/agent.topicTracker.observeVec,matrix/neo/internal/memory.Pager.RejectionCandidates,matrix/neo/internal/memory.Pager.duplicatePendingOpportunity,matrix/neo/internal/recall.Recaller.Relevant
+  ^calls=matrix/cortex/cmd/embed-smoke.main,matrix/neo/internal/memory.Pager.RejectionCandidates,matrix/neo/internal/memory.Pager.duplicatePendingOpportunity,matrix/neo/internal/recall.Recaller.Relevant
+  ^references=matrix/cortex/cmd/embed-smoke.main,matrix/neo/internal/memory.Pager.RejectionCandidates,matrix/neo/internal/memory.Pager.duplicatePendingOpportunity,matrix/neo/internal/recall.Recaller.Relevant
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.DefaultDim kind=const
@@ -249,7 +249,7 @@ NODE id=matrix/cortex/embed.Embedder kind=interface
   doc=Embedder maps text to a fixed-dimensional vector. Implementations must be\nsafe for concurrent use; the worker fans out batches across goroutines.
 EDGES
   ^implements=matrix/cortex/embed.APIEmbedder,matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.HashEmbedder
-  ^references=matrix/bridge/cmd/mclc-cortex.startEmbedder,matrix/codegraph/enrich.CortexEmbedder,matrix/codegraph/enrich.WrapEmbedder,matrix/cortex.EmbedderOptions,matrix/cortex.embedderState,matrix/cortex/embed.ChainConfig,matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.NewEmbedderChain,matrix/cortex/embed._,matrix/executor/cmd/mcl-e2e.MakeAndDrainEmbedder,matrix/executor/cmd/mcl-execute.newInfra,matrix/neo/internal/agent.newTopicTracker,matrix/neo/internal/agent.topicTracker,matrix/neo/internal/memory.Pager,matrix/neo/internal/memory.Pager.Embedder,matrix/neo/internal/memory.pickEmbedder,matrix/neo/internal/memory.probeEmbedder,matrix/neo/internal/recall.New,matrix/neo/internal/recall.Recaller
+  ^references=matrix/bridge/cmd/mclc-cortex.startEmbedder,matrix/codegraph/enrich.CortexEmbedder,matrix/codegraph/enrich.WrapEmbedder,matrix/cortex.EmbedderOptions,matrix/cortex.embedderState,matrix/cortex/embed.ChainConfig,matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.NewEmbedderChain,matrix/cortex/embed._,matrix/executor/cmd/mcl-e2e.MakeAndDrainEmbedder,matrix/executor/cmd/mcl-execute.newInfra,matrix/neo/internal/memory.Pager,matrix/neo/internal/memory.Pager.Embedder,matrix/neo/internal/memory.pickEmbedder,matrix/neo/internal/memory.probeEmbedder,matrix/neo/internal/recall.New,matrix/neo/internal/recall.Recaller
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.EmbedderChain kind=type
@@ -318,7 +318,7 @@ EDGES
   calls=matrix/cortex/embed.APIEmbedder.Dim,matrix/cortex/embed.APIEmbedder.Model,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.HashEmbedder.Dim,matrix/cortex/embed.HashEmbedder.Model,matrix/cortex/embed.chanMutex.lock,matrix/cortex/embed.chanMutex.unlock
   references=matrix/cortex/embed.Embedder.Dim,matrix/cortex/embed.Embedder.Model,matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.c,matrix/cortex/embed.chanMutex.lock,matrix/cortex/embed.chanMutex.unlock,matrix/cortex/embed.err,matrix/cortex/embed.lastErr,matrix/cortex/embed.p,matrix/cortex/embed.text,matrix/cortex/embed.vec
   ^contains=matrix/cortex/embed.EmbedderChain
-  ^calls=matrix/neo/internal/agent.topicTracker.observe,matrix/neo/internal/memory.Pager.RejectionCandidates,matrix/neo/internal/memory.Pager.duplicatePendingOpportunity,matrix/neo/internal/recall.Recaller.Relevant,matrix/neo/internal/recall.Recaller.refreshLocked
+  ^calls=matrix/neo/internal/memory.Pager.RejectionCandidates,matrix/neo/internal/memory.Pager.duplicatePendingOpportunity,matrix/neo/internal/recall.Recaller.Relevant,matrix/neo/internal/recall.Recaller.refreshLocked
   ^defines=matrix/cortex/embed/chain.go
 
 NODE id=matrix/cortex/embed.EmbedderChain.Model kind=method
@@ -402,7 +402,7 @@ NODE id=matrix/cortex/embed.HashEmbedder.Dim kind=method
 EDGES
   references=matrix/cortex/embed.HashEmbedder,matrix/cortex/embed.h
   ^contains=matrix/cortex/embed.HashEmbedder
-  ^calls=matrix/codegraph/enrich.CortexEmbedder.Dim,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/embed.EmbedderChain.Dim,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.NewEmbedderChain
+  ^calls=matrix/codegraph/enrich.CortexEmbedder.Dim,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.embedderState.commitEmbedding,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/embed.EmbedderChain.Dim,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.NewEmbedderChain
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.HashEmbedder.Embed kind=method
@@ -422,7 +422,7 @@ NODE id=matrix/cortex/embed.HashEmbedder.Model kind=method
 EDGES
   references=matrix/cortex/embed.HashEmbedder,matrix/cortex/embed.h
   ^contains=matrix/cortex/embed.HashEmbedder
-  ^calls=matrix/codegraph/enrich.CortexEmbedder.Model,matrix/cortex.Cortex.EmbedderModel,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.EmbedderChain.Model,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.NewEmbedderChain
+  ^calls=matrix/codegraph/enrich.CortexEmbedder.Model,matrix/cortex.Cortex.EmbedderModel,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.embedderState.commitEmbedding,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.EmbedderChain.Model,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.NewEmbedderChain
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.NewAPIEmbedder kind=func

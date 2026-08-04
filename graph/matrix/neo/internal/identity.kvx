@@ -1,0 +1,38 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=matrix/neo/internal/identity kind=package
+  digest=b3:36700187de2454cc360d7565f58a14a6ee02dc87cd4c1bf570acb4b7d06fb263 file=neo/internal/identity range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/neo/internal/identity/scrub.go
+  ^contains=mod:matrix/neo
+  ^imports=matrix/neo/internal/agent,matrix/neo/internal/runtime/loop
+
+NODE id=matrix/neo/internal/identity.Scrub kind=func
+  digest=b3:a896ac9db1c60abebadb3db1b641029afce0709b2e2f4dbe91570c14a31f2298 file=neo/internal/identity/scrub.go range=34:47 lang=go exported=true byte_range=1307:1617
+  sig=func Scrub(name, text string) (string, bool)
+EDGES
+  references=matrix/neo/internal/identity.name,matrix/neo/internal/identity.result,matrix/neo/internal/identity.safe,matrix/neo/internal/identity.scrub,matrix/neo/internal/identity.scrubs,matrix/neo/internal/identity.text
+  ^calls=matrix/neo/internal/agent.scrubIdentity,matrix/neo/internal/runtime/loop.DeliveryChoke.Deliver
+  ^references=matrix/neo/internal/agent.scrubIdentity,matrix/neo/internal/runtime/loop.DeliveryChoke.Deliver
+  ^defines=matrix/neo/internal/identity/scrub.go
+
+NODE id=matrix/neo/internal/identity.scrubs kind=var
+  digest=b3:dd33d11e88a34aa7eed7ff49cbfaab8243de1d747e054d0a6f166e0c1925b801 file=neo/internal/identity/scrub.go range=19:32 lang=go exported=false byte_range=531:1305
+  sig=[]*regexp.Regexp
+EDGES
+  references=matrix/neo/internal/identity.article,matrix/neo/internal/identity.filler,matrix/neo/internal/identity.index,matrix/neo/internal/identity.model,matrix/neo/internal/identity.name,matrix/neo/internal/identity.parts,matrix/neo/internal/identity.underlyingModelNames
+  ^references=matrix/neo/internal/identity.Scrub
+  ^defines=matrix/neo/internal/identity/scrub.go
+
+NODE id=matrix/neo/internal/identity.underlyingModelNames kind=var
+  digest=b3:1fd7861fa7f538fc524d754efe443f0b6e4235f4014920421f1fe9b12044f160 file=neo/internal/identity/scrub.go range=11:17 lang=go exported=false byte_range=224:525
+  sig=[]string
+EDGES
+  ^references=matrix/neo/internal/identity.scrubs
+  ^defines=matrix/neo/internal/identity/scrub.go
+
+NODE id=matrix/neo/internal/identity/scrub.go kind=file
+  digest=b3:52d53592945c315f601a76bfd1386592257d6577faff71d83116dfa3ae836764 file=neo/internal/identity/scrub.go range=1:47 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/identity.Scrub,matrix/neo/internal/identity.scrubs,matrix/neo/internal/identity.underlyingModelNames
+  ^contains=matrix/neo/internal/identity

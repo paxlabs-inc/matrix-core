@@ -1,0 +1,363 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=matrix/workforce/internal/actorstate kind=package
+  digest=b3:af6c5d8c9fa67d99cbed08be3eda80b8f636c4e1acbe30b13b77fd37d8604485 file=workforce/internal/actorstate range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/workforce/internal/actorstate/assembler.go,matrix/workforce/internal/actorstate/process.go,matrix/workforce/internal/actorstate/types.go
+  imports=matrix/workforce/internal/contracts,matrix/workforce/internal/dependency,matrix/workforce/internal/lease,matrix/workforce/internal/ledger,matrix/workforce/internal/mail,matrix/workforce/internal/policy,matrix/workforce/internal/processisolation,matrix/workforce/internal/projectbrain,matrix/workforce/internal/seatworker,matrix/workforce/internal/skills
+  ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/wakeruntime
+
+NODE id=matrix/workforce/internal/actorstate.Assembler kind=type
+  digest=b3:26efeab65b8b8821512f03f8db503f1bacff4f6a609f9943c3ed7bbfd23c0a34 file=workforce/internal/actorstate/assembler.go range=24:33 lang=go exported=true byte_range=494:714
+  sig=type Assembler struct {\n	graph	*dependency.Store\n	ledger	*ledger.Store\n	mail	*mail.Store\n	policy	*policy.Store\n	leases	*lease.Store\n	catalog	*skills.Catalog\n	brain	ProjectBrainReader\n	now	func() time.Time\n}
+EDGES
+  contains=matrix/workforce/internal/actorstate.Assembler#brain,matrix/workforce/internal/actorstate.Assembler#catalog,matrix/workforce/internal/actorstate.Assembler#graph,matrix/workforce/internal/actorstate.Assembler#leases,matrix/workforce/internal/actorstate.Assembler#ledger,matrix/workforce/internal/actorstate.Assembler#mail,matrix/workforce/internal/actorstate.Assembler#now,matrix/workforce/internal/actorstate.Assembler#policy,matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/actorstate.Assembler.graphSlice,matrix/workforce/internal/actorstate.Assembler.openInbox,matrix/workforce/internal/actorstate.Assembler.openProjectBrain,matrix/workforce/internal/actorstate.Assembler.openRecords
+  references=matrix/workforce/internal/actorstate.ProjectBrainReader,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/lease.Store,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/mail.Store,matrix/workforce/internal/policy.Store,matrix/workforce/internal/skills.Catalog
+  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/actorstate.Assembler.graphSlice,matrix/workforce/internal/actorstate.Assembler.openInbox,matrix/workforce/internal/actorstate.Assembler.openProjectBrain,matrix/workforce/internal/actorstate.Assembler.openRecords,matrix/workforce/internal/actorstate.NewAssembler,matrix/workforce/internal/wakeruntime.Runner
+  ^defines=matrix/workforce/internal/actorstate/assembler.go
+
+NODE id=matrix/workforce/internal/actorstate.Assembler#brain kind=field
+  digest=b3:fb34895710e6eb0c28d8f0af3bdcbacac7b7f13be8e1a3ae2c5bcbce9b3a6d2c file=workforce/internal/actorstate/assembler.go range=31:31 lang=go exported=false byte_range=660:686
+  sig=actorstate.ProjectBrainReader
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+
+NODE id=matrix/workforce/internal/actorstate.Assembler#catalog kind=field
+  digest=b3:b0aa25664d3f7588f8370c3ed683a0b9431eafebb1a5e45d07ecb3b77eebbb2b file=workforce/internal/actorstate/assembler.go range=30:30 lang=go exported=false byte_range=635:658
+  sig=*skills.Catalog
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+
+NODE id=matrix/workforce/internal/actorstate.Assembler#graph kind=field
+  digest=b3:df360c7d9ec48e49514dfc10f963d2ed74c1baa048d321e7c8aea2339473a546 file=workforce/internal/actorstate/assembler.go range=25:25 lang=go exported=false byte_range=519:544
+  sig=*dependency.Store
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+
+NODE id=matrix/workforce/internal/actorstate.Assembler#leases kind=field
+  digest=b3:0f3c44ea5ccb948b99194573e06acd468276b780a2136dc21e348d178f171e9f file=workforce/internal/actorstate/assembler.go range=29:29 lang=go exported=false byte_range=613:633
+  sig=*lease.Store
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+
+NODE id=matrix/workforce/internal/actorstate.Assembler#ledger kind=field
+  digest=b3:77648495a3b3d54c68cbe4fd32801a80ccc8d94b205194223d00bb72e5a036d0 file=workforce/internal/actorstate/assembler.go range=26:26 lang=go exported=false byte_range=546:567
+  sig=*ledger.Store
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+
+NODE id=matrix/workforce/internal/actorstate.Assembler#mail kind=field
+  digest=b3:37d4f3f549a5137d185bfb649a7f890f5ba7c5cb4fd832767bfe3e8278bb5ac3 file=workforce/internal/actorstate/assembler.go range=27:27 lang=go exported=false byte_range=569:588
+  sig=*mail.Store
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+
+NODE id=matrix/workforce/internal/actorstate.Assembler#now kind=field
+  digest=b3:4fbb1f89a6a690cb395dc480d9caae4938a375e77a2b0f799cc98fe4baab8ec2 file=workforce/internal/actorstate/assembler.go range=32:32 lang=go exported=false byte_range=688:712
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+
+NODE id=matrix/workforce/internal/actorstate.Assembler#policy kind=field
+  digest=b3:ff5f5a49c5b30c4ad41197224ffcf425ada48b25a1ef7680b13bfa93b4a22272 file=workforce/internal/actorstate/assembler.go range=28:28 lang=go exported=false byte_range=590:611
+  sig=*policy.Store
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+
+NODE id=matrix/workforce/internal/actorstate.Assembler.Assemble kind=method
+  digest=b3:cf7c60ef1047d79b053d26eb9a6cfe85bea015d5d3fa8991f34ade5c8ec10926 file=workforce/internal/actorstate/assembler.go range=68:160 lang=go exported=true byte_range=1722:5388
+  sig=func (assembler *Assembler) Assemble(\n	ctx context.Context,\n	request AssemblyRequest,\n) (contracts.WorkPacket, error)
+EDGES
+  calls=matrix/workforce/internal/actorstate.Assembler.graphSlice,matrix/workforce/internal/actorstate.Assembler.openInbox,matrix/workforce/internal/actorstate.Assembler.openProjectBrain,matrix/workforce/internal/actorstate.Assembler.openRecords,matrix/workforce/internal/actorstate.uniqueArtifacts,matrix/workforce/internal/actorstate.uniqueEvidence,matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.LoadCurrentSeat,matrix/workforce/internal/policy.Store.LoadLease,matrix/workforce/internal/policy.Store.LoadMandate,matrix/workforce/internal/policy.Store.LoadPolicy,matrix/workforce/internal/skills.Catalog.Digest,matrix/workforce/internal/skills.Catalog.Resolve
+  references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.Assembler.graphSlice,matrix/workforce/internal/actorstate.Assembler.openInbox,matrix/workforce/internal/actorstate.Assembler.openProjectBrain,matrix/workforce/internal/actorstate.Assembler.openRecords,matrix/workforce/internal/actorstate.AssemblyRequest,matrix/workforce/internal/actorstate.artifacts,matrix/workforce/internal/actorstate.assembler,matrix/workforce/internal/actorstate.authorityLease,matrix/workforce/internal/actorstate.brain,matrix/workforce/internal/actorstate.ctx,matrix/workforce/internal/actorstate.dependencies,matrix/workforce/internal/actorstate.err,matrix/workforce/internal/actorstate.evidence,matrix/workforce/internal/actorstate.inbox,matrix/workforce/internal/actorstate.mailArtifacts,matrix/workforce/internal/actorstate.mandate,matrix/workforce/internal/actorstate.now,matrix/workforce/internal/actorstate.packet,matrix/workforce/internal/actorstate.records,matrix/workforce/internal/actorstate.reference,matrix/workforce/internal/actorstate.request,matrix/workforce/internal/actorstate.runtimeLease,matrix/workforce/internal/actorstate.seat,matrix/workforce/internal/actorstate.skillRefs,matrix/workforce/internal/actorstate.uniqueArtifacts,matrix/workforce/internal/actorstate.uniqueEvidence,matrix/workforce/internal/contracts.PolicyRef,matrix/workforce/internal/contracts.RequiredOutput,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.ToolRef,matrix/workforce/internal/contracts.WorkPacket,matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.LoadCurrentSeat,matrix/workforce/internal/policy.Store.LoadLease,matrix/workforce/internal/policy.Store.LoadMandate,matrix/workforce/internal/policy.Store.LoadPolicy,matrix/workforce/internal/skills.Catalog.Digest,matrix/workforce/internal/skills.Catalog.Resolve
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket
+  ^references=matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket
+  ^defines=matrix/workforce/internal/actorstate/assembler.go
+
+NODE id=matrix/workforce/internal/actorstate.Assembler.graphSlice kind=method
+  digest=b3:37e96569067c9c9f485b08ac81876c771a58c71ecaf710c8892aa596724ad882 file=workforce/internal/actorstate/assembler.go range=162:207 lang=go exported=false byte_range=5390:6856
+  sig=func (assembler *Assembler) graphSlice(\n	ctx context.Context,\n	authority contracts.WakeLease,\n	seat contracts.Seat,\n	request AssemblyRequest,\n) ([]contracts.IntentID, error)
+EDGES
+  calls=matrix/workforce/internal/contracts.Goal.Validate,matrix/workforce/internal/contracts.Intent.Validate,matrix/workforce/internal/dependency.Store.Snapshot
+  references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.AssemblyRequest,matrix/workforce/internal/actorstate.assembler,matrix/workforce/internal/actorstate.authority,matrix/workforce/internal/actorstate.ctx,matrix/workforce/internal/actorstate.edge,matrix/workforce/internal/actorstate.err,matrix/workforce/internal/actorstate.found,matrix/workforce/internal/actorstate.i,matrix/workforce/internal/actorstate.j,matrix/workforce/internal/actorstate.node,matrix/workforce/internal/actorstate.request,matrix/workforce/internal/actorstate.result,matrix/workforce/internal/actorstate.seat,matrix/workforce/internal/actorstate.selected,matrix/workforce/internal/actorstate.snapshot,matrix/workforce/internal/contracts.Goal.Validate,matrix/workforce/internal/contracts.Intent.Validate,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/contracts.WakeLease,matrix/workforce/internal/dependency.ErrNotFound,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.StateEligible,matrix/workforce/internal/dependency.Store.Snapshot
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble
+  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble
+  ^defines=matrix/workforce/internal/actorstate/assembler.go
+
+NODE id=matrix/workforce/internal/actorstate.Assembler.openInbox kind=method
+  digest=b3:e558eecc4b6aae51fab6450442a35f71cd59a1597ce0f3cb34569fecaa5bd102 file=workforce/internal/actorstate/assembler.go range=316:355 lang=go exported=false byte_range=10466:11913
+  sig=func (assembler *Assembler) openInbox(\n	ctx context.Context,\n	authority contracts.WakeLease,\n	limit uint32,\n) ([]contracts.MessageEnvelope, []contracts.ArtifactRef, []contracts.EvidenceRef, error)
+EDGES
+  calls=matrix/workforce/internal/actorstate.uniqueEvidence,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Inbox
+  references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.artifacts,matrix/workforce/internal/actorstate.assembler,matrix/workforce/internal/actorstate.authority,matrix/workforce/internal/actorstate.ctx,matrix/workforce/internal/actorstate.deliveries,matrix/workforce/internal/actorstate.delivery,matrix/workforce/internal/actorstate.envelope,matrix/workforce/internal/actorstate.err,matrix/workforce/internal/actorstate.evidence,matrix/workforce/internal/actorstate.inbox,matrix/workforce/internal/actorstate.keyPrefix,matrix/workforce/internal/actorstate.limit,matrix/workforce/internal/actorstate.uniqueEvidence,matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/contracts.WakeLease,matrix/workforce/internal/mail.ConsumeRequest,matrix/workforce/internal/mail.StateDelivered,matrix/workforce/internal/mail.StateOpened,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Inbox
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble
+  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble
+  ^defines=matrix/workforce/internal/actorstate/assembler.go
+
+NODE id=matrix/workforce/internal/actorstate.Assembler.openProjectBrain kind=method
+  digest=b3:e0cc95d4860c59154fae9870ca3b92c64d6d3bdcd458c63a5e5612bf50838447 file=workforce/internal/actorstate/assembler.go range=272:314 lang=go exported=false byte_range=8912:10464
+  sig=func (assembler *Assembler) openProjectBrain(\n	ctx context.Context,\n	authority contracts.WakeLease,\n	seat contracts.Seat,\n	grant *projectbrain.CapabilityGrant,\n) (*contracts.ProjectBrainRef, error)
+EDGES
+  references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.ProjectBrainReader.View,matrix/workforce/internal/actorstate.assembler,matrix/workforce/internal/actorstate.authority,matrix/workforce/internal/actorstate.ctx,matrix/workforce/internal/actorstate.err,matrix/workforce/internal/actorstate.grant,matrix/workforce/internal/actorstate.seat,matrix/workforce/internal/actorstate.view,matrix/workforce/internal/contracts.ProjectBrainRef,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/contracts.SourceState,matrix/workforce/internal/contracts.WakeLease,matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.CapabilityRead
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble
+  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble
+  ^defines=matrix/workforce/internal/actorstate/assembler.go
+
+NODE id=matrix/workforce/internal/actorstate.Assembler.openRecords kind=method
+  digest=b3:5b331b6c59a3dd7c324fd48367f8db8c3b96e9b8f4fb67881a8ccfb78f2a37ae file=workforce/internal/actorstate/assembler.go range=209:270 lang=go exported=false byte_range=6858:8910
+  sig=func (assembler *Assembler) openRecords(\n	ctx context.Context,\n	authority contracts.WakeLease,\n	seat contracts.Seat,\n	mandate contracts.Mandate,\n	request AssemblyRequest,\n	brain *contracts.ProjectBrainRef,\n) ([]contracts.RecordRef, []contracts.ArtifactRef, error)
+EDGES
+  calls=matrix/workforce/internal/ledger.Store.OpenRecord
+  references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.AssemblyRequest,matrix/workforce/internal/actorstate.artifacts,matrix/workforce/internal/actorstate.assembler,matrix/workforce/internal/actorstate.authority,matrix/workforce/internal/actorstate.brain,matrix/workforce/internal/actorstate.ctx,matrix/workforce/internal/actorstate.grant,matrix/workforce/internal/actorstate.id,matrix/workforce/internal/actorstate.mandate,matrix/workforce/internal/actorstate.openErr,matrix/workforce/internal/actorstate.projectID,matrix/workforce/internal/actorstate.record,matrix/workforce/internal/actorstate.records,matrix/workforce/internal/actorstate.request,matrix/workforce/internal/actorstate.scope,matrix/workforce/internal/actorstate.seat,matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.Classification,matrix/workforce/internal/contracts.ClassificationRestricted,matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/contracts.ProjectBrainRef,matrix/workforce/internal/contracts.Record,matrix/workforce/internal/contracts.RecordRef,matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/contracts.ValidityActive,matrix/workforce/internal/contracts.WakeLease,matrix/workforce/internal/ledger.AccessGrant,matrix/workforce/internal/ledger.ErrNotFound,matrix/workforce/internal/ledger.OpenRequest,matrix/workforce/internal/ledger.Store.OpenRecord
+  ^contains=matrix/workforce/internal/actorstate.Assembler
+  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble
+  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble
+  ^defines=matrix/workforce/internal/actorstate/assembler.go
+
+NODE id=matrix/workforce/internal/actorstate.AssemblyRequest kind=type
+  digest=b3:3b3cda20d373ec534b5d45697ddbd224ea22ddfa2d2d22207ba4742e114c1912 file=workforce/internal/actorstate/assembler.go range=35:46 lang=go exported=true byte_range=716:1110
+  sig=type AssemblyRequest struct {\n	LeaseID		contracts.LeaseID\n	Goal		contracts.Goal\n	Intent		contracts.Intent\n	RecordIDs	[]contracts.RecordID\n	Artifacts	[]contracts.ArtifactRef\n	Evidence	[]contracts.EvidenceRef\n	Tools		[]contracts.ToolRef\n	RequiredOutput	[]contracts.RequiredOutput\n	ProjectBrain	*projectbrain.CapabilityGrant\n	InboxLimit	uint32\n}
+EDGES
+  contains=matrix/workforce/internal/actorstate.AssemblyRequest#Artifacts,matrix/workforce/internal/actorstate.AssemblyRequest#Evidence,matrix/workforce/internal/actorstate.AssemblyRequest#Goal,matrix/workforce/internal/actorstate.AssemblyRequest#InboxLimit,matrix/workforce/internal/actorstate.AssemblyRequest#Intent,matrix/workforce/internal/actorstate.AssemblyRequest#LeaseID,matrix/workforce/internal/actorstate.AssemblyRequest#ProjectBrain,matrix/workforce/internal/actorstate.AssemblyRequest#RecordIDs,matrix/workforce/internal/actorstate.AssemblyRequest#RequiredOutput,matrix/workforce/internal/actorstate.AssemblyRequest#Tools
+  references=matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.Goal,matrix/workforce/internal/contracts.Intent,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/contracts.RequiredOutput,matrix/workforce/internal/contracts.ToolRef,matrix/workforce/internal/projectbrain.CapabilityGrant
+  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/actorstate.Assembler.graphSlice,matrix/workforce/internal/actorstate.Assembler.openRecords,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket
+  ^defines=matrix/workforce/internal/actorstate/assembler.go
+
+NODE id=matrix/workforce/internal/actorstate.AssemblyRequest#Artifacts kind=field
+  digest=b3:9363e80db2877aad491224c7dcab5b1eb3c94122a0296b939c76dfac0ccaeeff file=workforce/internal/actorstate/assembler.go range=40:40 lang=go exported=true byte_range=882:920
+  sig=[]contracts.ArtifactRef
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.AssemblyRequest
+
+NODE id=matrix/workforce/internal/actorstate.AssemblyRequest#Evidence kind=field
+  digest=b3:197b7d9771f54442e446cc6cd056938021ff70d4e1b98bf6e4d2483738bfa71f file=workforce/internal/actorstate/assembler.go range=41:41 lang=go exported=true byte_range=922:960
+  sig=[]contracts.EvidenceRef
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.AssemblyRequest
+
+NODE id=matrix/workforce/internal/actorstate.AssemblyRequest#Goal kind=field
+  digest=b3:7023d80ba3a04151d645e0ffa8338d2063b8cdad45987a688426824a3308a721 file=workforce/internal/actorstate/assembler.go range=37:37 lang=go exported=true byte_range=781:810
+  sig=contracts.Goal
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.AssemblyRequest
+
+NODE id=matrix/workforce/internal/actorstate.AssemblyRequest#InboxLimit kind=field
+  digest=b3:c4a9fd45de4e09f85c9673b3d0b1cfe7fc432578e94aaeff13313b8a25f3823f file=workforce/internal/actorstate/assembler.go range=45:45 lang=go exported=true byte_range=1087:1108
+  sig=uint32
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.AssemblyRequest
+
+NODE id=matrix/workforce/internal/actorstate.AssemblyRequest#Intent kind=field
+  digest=b3:190c03078f036f584426297ac605b00a58e8da5987a0e851e86395f2f7097cd7 file=workforce/internal/actorstate/assembler.go range=38:38 lang=go exported=true byte_range=812:843
+  sig=contracts.Intent
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.AssemblyRequest
+
+NODE id=matrix/workforce/internal/actorstate.AssemblyRequest#LeaseID kind=field
+  digest=b3:6834620e54af1203cb9ae5e67e0c09ac70cee173ca89895139eb832fc15f91ec file=workforce/internal/actorstate/assembler.go range=36:36 lang=go exported=true byte_range=747:779
+  sig=contracts.LeaseID
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.AssemblyRequest
+
+NODE id=matrix/workforce/internal/actorstate.AssemblyRequest#ProjectBrain kind=field
+  digest=b3:e5872ea473814acd6202cb320f3443388c7f1cf3dfc5b095fc743bd607691dbe file=workforce/internal/actorstate/assembler.go range=44:44 lang=go exported=true byte_range=1041:1085
+  sig=*projectbrain.CapabilityGrant
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.AssemblyRequest
+
+NODE id=matrix/workforce/internal/actorstate.AssemblyRequest#RecordIDs kind=field
+  digest=b3:7d70aa719ed763ce1c603ddee3c1e236aaf7deedba10ae23563aeea4515a3ef7 file=workforce/internal/actorstate/assembler.go range=39:39 lang=go exported=true byte_range=845:880
+  sig=[]contracts.RecordID
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.AssemblyRequest
+
+NODE id=matrix/workforce/internal/actorstate.AssemblyRequest#RequiredOutput kind=field
+  digest=b3:93537e3eb4647abc424c124553964c839700c4422c28ea764ddaebe98044bf2f file=workforce/internal/actorstate/assembler.go range=43:43 lang=go exported=true byte_range=998:1039
+  sig=[]contracts.RequiredOutput
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.AssemblyRequest
+
+NODE id=matrix/workforce/internal/actorstate.AssemblyRequest#Tools kind=field
+  digest=b3:d9cbf7b88720ebc515847a150767186a08736139232b34493a8ad9e6e913c569 file=workforce/internal/actorstate/assembler.go range=42:42 lang=go exported=true byte_range=962:996
+  sig=[]contracts.ToolRef
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.AssemblyRequest
+
+NODE id=matrix/workforce/internal/actorstate.InputCounts kind=type
+  digest=b3:6215a2fcb0b0d6ff7dfc3fa16d4a7ba1af9f1a99ce1167a437d056814f8f2050 file=workforce/internal/actorstate/types.go range=9:9 lang=go exported=true byte_range=151:192
+  sig=type InputCounts seatworker.InputCounts
+EDGES
+  references=matrix/workforce/internal/seatworker.InputCounts
+  ^defines=matrix/workforce/internal/actorstate/types.go
+
+NODE id=matrix/workforce/internal/actorstate.MaxOutputBytes kind=const
+  digest=b3:c90792c0948a3e032b441ab2a820dbbf0b0299fdfc3b3bb274c50d7b6733ea8b file=workforce/internal/actorstate/process.go range=17:17 lang=go exported=true byte_range=255:297
+  sig=untyped int
+EDGES
+  references=matrix/workforce/internal/seatworker.MaxOutputBytes
+  ^references=matrix/workforce/internal/actorstate.Runner.run
+  ^defines=matrix/workforce/internal/actorstate/process.go
+
+NODE id=matrix/workforce/internal/actorstate.MaxPacketBytes kind=const
+  digest=b3:8de0fed89ea2714c5739c254a6cdf6192ef1e4f412da721e0ab28336e89d858f file=workforce/internal/actorstate/process.go range=16:16 lang=go exported=true byte_range=211:253
+  sig=untyped int
+EDGES
+  references=matrix/workforce/internal/seatworker.MaxPacketBytes
+  ^references=matrix/workforce/internal/actorstate.Runner.run
+  ^defines=matrix/workforce/internal/actorstate/process.go
+
+NODE id=matrix/workforce/internal/actorstate.NewAssembler kind=func
+  digest=b3:f92845d6a3f4f05409cb4de5a9ac7bc0bf01362b864b474db3f10f3441c133e4 file=workforce/internal/actorstate/assembler.go range=48:66 lang=go exported=true byte_range=1112:1720
+  sig=func NewAssembler(\n	graph *dependency.Store,\n	records *ledger.Store,\n	mailbox *mail.Store,\n	authority *policy.Store,\n	leases *lease.Store,\n	catalog *skills.Catalog,\n	brain ProjectBrainReader,\n	now func() time.Time,\n) (*Assembler, error)
+EDGES
+  references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.ProjectBrainReader,matrix/workforce/internal/actorstate.authority,matrix/workforce/internal/actorstate.brain,matrix/workforce/internal/actorstate.catalog,matrix/workforce/internal/actorstate.graph,matrix/workforce/internal/actorstate.leases,matrix/workforce/internal/actorstate.mailbox,matrix/workforce/internal/actorstate.now,matrix/workforce/internal/actorstate.records,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/lease.Store,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/mail.Store,matrix/workforce/internal/policy.Store,matrix/workforce/internal/skills.Catalog
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^defines=matrix/workforce/internal/actorstate/assembler.go
+
+NODE id=matrix/workforce/internal/actorstate.Orient kind=func
+  digest=b3:68ac0841dd408296b8e2ec3deef9f84db6ba1e888a318d519b16c6367e3c0dfc file=workforce/internal/actorstate/types.go range=11:13 lang=go exported=true byte_range=194:292
+  sig=func Orient(packet contracts.WorkPacket) (SeatOutput, error)
+EDGES
+  calls=matrix/workforce/internal/seatworker.Orient
+  references=matrix/workforce/internal/actorstate.SeatOutput,matrix/workforce/internal/actorstate.packet,matrix/workforce/internal/contracts.WorkPacket,matrix/workforce/internal/seatworker.Orient
+  ^calls=matrix/workforce/internal/actorstate.Runner.run
+  ^references=matrix/workforce/internal/actorstate.Runner.run
+  ^defines=matrix/workforce/internal/actorstate/types.go
+
+NODE id=matrix/workforce/internal/actorstate.ProjectBrainReader kind=interface
+  digest=b3:0ba82b3bed9bda32248d12dbbf099edbbb70248abc55ed4c61285f4fa1978c94 file=workforce/internal/actorstate/assembler.go range=20:22 lang=go exported=true byte_range=375:492
+  sig=type ProjectBrainReader interface {\n	View(context.Context, projectbrain.CapabilityGrant) (projectbrain.View, error)\n}
+EDGES
+  references=matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.View
+  ^implements=matrix/workforce/internal/projectbrain.Store
+  ^references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.NewAssembler
+  ^defines=matrix/workforce/internal/actorstate/assembler.go
+
+NODE id=matrix/workforce/internal/actorstate.Runner kind=type
+  digest=b3:eefb68288630811188af0107156746b3eba1990fb46fe10f8354a835ac5bd95b file=workforce/internal/actorstate/process.go range=20:23 lang=go exported=true byte_range=301:361
+  sig=type Runner struct {\n	Bubblewrap	string\n	Binary		string\n}
+EDGES
+  contains=matrix/workforce/internal/actorstate.Runner#Binary,matrix/workforce/internal/actorstate.Runner#Bubblewrap,matrix/workforce/internal/actorstate.Runner.Run,matrix/workforce/internal/actorstate.Runner.RunModel,matrix/workforce/internal/actorstate.Runner.run
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/actorstate.Runner.Run,matrix/workforce/internal/actorstate.Runner.RunModel,matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/wakeruntime.Runner
+  ^defines=matrix/workforce/internal/actorstate/process.go
+
+NODE id=matrix/workforce/internal/actorstate.Runner#Binary kind=field
+  digest=b3:fbd719c3aa776c80387bedf59b4693db5934c47445480f2f43ec3061207449fe file=workforce/internal/actorstate/process.go range=22:22 lang=go exported=true byte_range=342:359
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.Runner
+
+NODE id=matrix/workforce/internal/actorstate.Runner#Bubblewrap kind=field
+  digest=b3:8bbca4820321e4e65795860271808872e90544512a59ad804cdffe0a5985f6a3 file=workforce/internal/actorstate/process.go range=21:21 lang=go exported=true byte_range=323:340
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.Runner
+
+NODE id=matrix/workforce/internal/actorstate.Runner.Run kind=method
+  digest=b3:1620dc01f82fd7a7514ab547ebc78138a0f02634d612f1f725804354945ee68f file=workforce/internal/actorstate/process.go range=25:30 lang=go exported=true byte_range=363:503
+  sig=func (runner Runner) Run(\n	ctx context.Context,\n	packet contracts.WorkPacket,\n) (SeatOutput, error)
+EDGES
+  calls=matrix/workforce/internal/actorstate.Runner.run
+  references=matrix/workforce/internal/actorstate.Runner,matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/actorstate.SeatOutput,matrix/workforce/internal/actorstate.ctx,matrix/workforce/internal/actorstate.packet,matrix/workforce/internal/actorstate.runner,matrix/workforce/internal/contracts.WorkPacket
+  ^contains=matrix/workforce/internal/actorstate.Runner
+  ^defines=matrix/workforce/internal/actorstate/process.go
+
+NODE id=matrix/workforce/internal/actorstate.Runner.RunModel kind=method
+  digest=b3:1f313711d74fbef1bd21820d4dd839a9463d8f151b5a8884d72de03e1579c56e file=workforce/internal/actorstate/process.go range=32:41 lang=go exported=true byte_range=505:792
+  sig=func (runner Runner) RunModel(\n	ctx context.Context,\n	packet contracts.WorkPacket,\n	modelResponse []byte,\n) (SeatOutput, error)
+EDGES
+  calls=matrix/workforce/internal/actorstate.Runner.run
+  references=matrix/workforce/internal/actorstate.Runner,matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/actorstate.SeatOutput,matrix/workforce/internal/actorstate.ctx,matrix/workforce/internal/actorstate.modelResponse,matrix/workforce/internal/actorstate.packet,matrix/workforce/internal/actorstate.runner,matrix/workforce/internal/contracts.WorkPacket
+  ^contains=matrix/workforce/internal/actorstate.Runner
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.propose
+  ^references=matrix/workforce/internal/wakeruntime.Runner.propose
+  ^defines=matrix/workforce/internal/actorstate/process.go
+
+NODE id=matrix/workforce/internal/actorstate.Runner.run kind=method
+  digest=b3:cf200cf50bb9133989b06f8650e81d1c8ce0973ac672db0a4831f0a16f72c3a6 file=workforce/internal/actorstate/process.go range=43:100 lang=go exported=false byte_range=794:2830
+  sig=func (runner Runner) run(\n	ctx context.Context,\n	packet contracts.WorkPacket,\n	modelResponse []byte,\n) (SeatOutput, error)
+EDGES
+  calls=matrix/workforce/internal/actorstate.Orient,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/processisolation.Command,matrix/workforce/internal/processisolation.IsolatedCommand.Run,matrix/workforce/internal/seatworker.ApplyModel,matrix/workforce/internal/seatworker.SessionInput.Validate
+  references=matrix/workforce/internal/actorstate.MaxOutputBytes,matrix/workforce/internal/actorstate.MaxPacketBytes,matrix/workforce/internal/actorstate.Orient,matrix/workforce/internal/actorstate.Runner,matrix/workforce/internal/actorstate.SeatOutput,matrix/workforce/internal/actorstate.command,matrix/workforce/internal/actorstate.ctx,matrix/workforce/internal/actorstate.err,matrix/workforce/internal/actorstate.expected,matrix/workforce/internal/actorstate.input,matrix/workforce/internal/actorstate.limitedWriter,matrix/workforce/internal/actorstate.modelResponse,matrix/workforce/internal/actorstate.output,matrix/workforce/internal/actorstate.packet,matrix/workforce/internal/actorstate.runner,matrix/workforce/internal/actorstate.session,matrix/workforce/internal/actorstate.stdout,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WorkPacket,matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/processisolation.Command,matrix/workforce/internal/processisolation.IsolatedCommand.Run,matrix/workforce/internal/processisolation.Spec,matrix/workforce/internal/seatworker.ApplyModel,matrix/workforce/internal/seatworker.SessionInput,matrix/workforce/internal/seatworker.SessionInput.Validate
+  ^contains=matrix/workforce/internal/actorstate.Runner
+  ^calls=matrix/workforce/internal/actorstate.Runner.Run,matrix/workforce/internal/actorstate.Runner.RunModel
+  ^references=matrix/workforce/internal/actorstate.Runner.Run,matrix/workforce/internal/actorstate.Runner.RunModel
+  ^defines=matrix/workforce/internal/actorstate/process.go
+
+NODE id=matrix/workforce/internal/actorstate.SeatOutput kind=type
+  digest=b3:dbd4c051ef3d1112c2c74ef376eabf2266eb4cda260c280342987c8e6ce349d1 file=workforce/internal/actorstate/types.go range=8:8 lang=go exported=true byte_range=111:150
+  sig=type SeatOutput seatworker.SeatOutput
+EDGES
+  references=matrix/workforce/internal/seatworker.SeatOutput
+  ^references=matrix/workforce/internal/actorstate.Orient,matrix/workforce/internal/actorstate.Runner.Run,matrix/workforce/internal/actorstate.Runner.RunModel,matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/wakeruntime.Runner.openSeatOutput
+  ^defines=matrix/workforce/internal/actorstate/types.go
+
+NODE id=matrix/workforce/internal/actorstate.limitedWriter kind=type
+  digest=b3:5a811c681fd82970211c65b623cb5e9cbd1119b8086f24f98ad949f2aaf0c152 file=workforce/internal/actorstate/process.go range=102:105 lang=go exported=false byte_range=2832:2897
+  sig=type limitedWriter struct {\n	writer		io.Writer\n	remaining	int\n}
+EDGES
+  contains=matrix/workforce/internal/actorstate.limitedWriter#remaining,matrix/workforce/internal/actorstate.limitedWriter#writer,matrix/workforce/internal/actorstate.limitedWriter.Write
+  ^references=matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/actorstate.limitedWriter.Write
+  ^defines=matrix/workforce/internal/actorstate/process.go
+
+NODE id=matrix/workforce/internal/actorstate.limitedWriter#remaining kind=field
+  digest=b3:7685715ed9c762d2159466bd9f8756d7b49f333132a9a6e8be2aba145f0d139f file=workforce/internal/actorstate/process.go range=104:104 lang=go exported=false byte_range=2882:2895
+  sig=int
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.limitedWriter
+
+NODE id=matrix/workforce/internal/actorstate.limitedWriter#writer kind=field
+  digest=b3:5a651a9a6d4fcbdbda7a17c317932b33f43a594da34972fd8736a17359fd263d file=workforce/internal/actorstate/process.go range=103:103 lang=go exported=false byte_range=2861:2880
+  sig=io.Writer
+EDGES
+  ^contains=matrix/workforce/internal/actorstate.limitedWriter
+
+NODE id=matrix/workforce/internal/actorstate.limitedWriter.Write kind=method
+  digest=b3:7f8311a1406048a7f72566ed9e3a9047567ee110a011a8d6f1ab90bc65f317a3 file=workforce/internal/actorstate/process.go range=107:114 lang=go exported=true byte_range=2899:3150
+  sig=func (writer *limitedWriter) Write(value []byte) (int, error)
+EDGES
+  references=matrix/workforce/internal/actorstate.err,matrix/workforce/internal/actorstate.limitedWriter,matrix/workforce/internal/actorstate.n,matrix/workforce/internal/actorstate.value,matrix/workforce/internal/actorstate.writer
+  ^contains=matrix/workforce/internal/actorstate.limitedWriter
+  ^defines=matrix/workforce/internal/actorstate/process.go
+
+NODE id=matrix/workforce/internal/actorstate.uniqueArtifacts kind=func
+  digest=b3:9bc7d3c9e1de1cf74fb2335528b09beda3ddf0e3bc6ec88eba61c51e891b1f96 file=workforce/internal/actorstate/assembler.go range=357:368 lang=go exported=false byte_range=11915:12326
+  sig=func uniqueArtifacts(values []contracts.ArtifactRef) []contracts.ArtifactRef
+EDGES
+  references=matrix/workforce/internal/actorstate.i,matrix/workforce/internal/actorstate.j,matrix/workforce/internal/actorstate.result,matrix/workforce/internal/actorstate.seen,matrix/workforce/internal/actorstate.value,matrix/workforce/internal/actorstate.values,matrix/workforce/internal/contracts.ArtifactID,matrix/workforce/internal/contracts.ArtifactRef
+  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble
+  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble
+  ^defines=matrix/workforce/internal/actorstate/assembler.go
+
+NODE id=matrix/workforce/internal/actorstate.uniqueEvidence kind=func
+  digest=b3:56187ca779628506ae4850a5f56c4ec40d0274144c27d12c5cc3a37edfdc6513 file=workforce/internal/actorstate/assembler.go range=370:381 lang=go exported=false byte_range=12328:12738
+  sig=func uniqueEvidence(values []contracts.EvidenceRef) []contracts.EvidenceRef
+EDGES
+  references=matrix/workforce/internal/actorstate.i,matrix/workforce/internal/actorstate.j,matrix/workforce/internal/actorstate.result,matrix/workforce/internal/actorstate.seen,matrix/workforce/internal/actorstate.value,matrix/workforce/internal/actorstate.values,matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/contracts.EvidenceRef
+  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/actorstate.Assembler.openInbox
+  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/actorstate.Assembler.openInbox
+  ^defines=matrix/workforce/internal/actorstate/assembler.go
+
+NODE id=matrix/workforce/internal/actorstate/assembler.go kind=file
+  digest=b3:d25a22ae116ca9467125839538a4b771fa5be614cde093ef9a72d78775b6da32 file=workforce/internal/actorstate/assembler.go range=1:381 lang=go exported=true
+EDGES
+  defines=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/actorstate.Assembler.graphSlice,matrix/workforce/internal/actorstate.Assembler.openInbox,matrix/workforce/internal/actorstate.Assembler.openProjectBrain,matrix/workforce/internal/actorstate.Assembler.openRecords,matrix/workforce/internal/actorstate.AssemblyRequest,matrix/workforce/internal/actorstate.NewAssembler,matrix/workforce/internal/actorstate.ProjectBrainReader,matrix/workforce/internal/actorstate.uniqueArtifacts,matrix/workforce/internal/actorstate.uniqueEvidence
+  ^contains=matrix/workforce/internal/actorstate
+
+NODE id=matrix/workforce/internal/actorstate/process.go kind=file
+  digest=b3:9e1d2e87aacb5d1353ba69de6ce93347d54ee47402f57dc983ff2bfa756fd628 file=workforce/internal/actorstate/process.go range=1:114 lang=go exported=true
+EDGES
+  defines=matrix/workforce/internal/actorstate.MaxOutputBytes,matrix/workforce/internal/actorstate.MaxPacketBytes,matrix/workforce/internal/actorstate.Runner,matrix/workforce/internal/actorstate.Runner.Run,matrix/workforce/internal/actorstate.Runner.RunModel,matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/actorstate.limitedWriter,matrix/workforce/internal/actorstate.limitedWriter.Write
+  ^contains=matrix/workforce/internal/actorstate
+
+NODE id=matrix/workforce/internal/actorstate/types.go kind=file
+  digest=b3:b6030a5177a00a0c2d395bf4cc47dbab7ac526673f45e87d066326d7d8ab0516 file=workforce/internal/actorstate/types.go range=1:13 lang=go exported=true
+EDGES
+  defines=matrix/workforce/internal/actorstate.InputCounts,matrix/workforce/internal/actorstate.Orient,matrix/workforce/internal/actorstate.SeatOutput
+  ^contains=matrix/workforce/internal/actorstate

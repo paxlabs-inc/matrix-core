@@ -42,7 +42,7 @@ func (d *DB) BeginRailwayOperation(ctx context.Context, userID, kind string) (*R
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 	var shardID, projectID, environmentID, allocationKey string
 	err = tx.QueryRow(ctx, `SELECT a.shard_id,s.project_id,s.environment_id,a.operation_key
 		FROM railway_allocations a JOIN railway_shards s ON s.id=a.shard_id
@@ -180,12 +180,12 @@ func (d *DB) reserveRailwayShard(ctx context.Context, userID string) (*Allocatio
 	if err != nil {
 		return nil, fmt.Errorf("reserve shard: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 	var a Allocation
 	err = tx.QueryRow(ctx, `SELECT user_id, shard_id, state, operation_key FROM railway_allocations WHERE user_id=$1 AND state<>'released'`, userID).
 		Scan(&a.UserID, &a.ShardID, &a.State, &a.OperationKey)
 	if err == nil {
-		if err = tx.Commit(ctx); err != nil {
+		if err := tx.Commit(ctx); err != nil {
 			return nil, err
 		}
 		return &a, nil

@@ -109,6 +109,8 @@ func TestMorpheusColdStartSmoke(t *testing.T) {
 	t.Cleanup(model.Close)
 
 	cfg := config.Default() // every governor layer at production defaults, Cassandra ON
+	cfg.EpistemicPremises = true
+	cfg.EpistemicPredictions = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "morpheus-smoke"
 	pager, err := memory.Open(cfg)

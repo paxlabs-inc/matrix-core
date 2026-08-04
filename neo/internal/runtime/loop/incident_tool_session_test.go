@@ -210,7 +210,7 @@ func TestResurrectionIncidentToolSessionDeath_HeartbeatKeepsLiveBrowserCall(
 
 func incidentBrowserManifest(t *testing.T) string {
 	t.Helper()
-	raw, err := os.ReadFile("/root/matrix/agents/neo.json")
+	raw, err := os.ReadFile(filepath.Clean("../../../../agents/neo.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

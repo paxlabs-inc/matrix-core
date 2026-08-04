@@ -23,7 +23,9 @@ import (
 	"matrix/workforce/internal/actorstate"
 	"matrix/workforce/internal/approval"
 	"matrix/workforce/internal/audit"
+	"matrix/workforce/internal/businessoutcome"
 	"matrix/workforce/internal/circuit"
+	"matrix/workforce/internal/commercialexecution"
 	"matrix/workforce/internal/contracts"
 	"matrix/workforce/internal/controlapi"
 	"matrix/workforce/internal/departmentadapter"
@@ -39,6 +41,7 @@ import (
 	"matrix/workforce/internal/modelclient"
 	"matrix/workforce/internal/policy"
 	"matrix/workforce/internal/projectbrain"
+	"matrix/workforce/internal/provider/financial"
 	"matrix/workforce/internal/skills"
 	"matrix/workforce/internal/workcompile"
 	"matrix/workforce/internal/workorder"
@@ -607,6 +610,56 @@ func newWakeRuntimeFixture(
 	if err != nil {
 		t.Fatal(err)
 	}
+	financialStore, err := financial.NewStore(
+		pool, userVault, tenantID, ownerKeyID, ownerPublic,
+		map[string]ed25519.PublicKey{
+			"key:company-issuer:wakeruntime-recovery": issuerPublic,
+		},
+		func() time.Time { return now },
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	businessOutcomeStore, err := businessoutcome.NewStore(
+		pool, userVault, tenantID, principal.OrganizationID,
+		func() time.Time { return now },
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	financialVerifier, err := businessoutcome.NewPostgreSQLFinancialSourceVerifier(pool, tenantID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := businessOutcomeStore.AttachFinancialSourceVerifier(financialVerifier); err != nil {
+		t.Fatal(err)
+	}
+	commercialExecutionStore, err := commercialexecution.NewStore(
+		pool, userVault, leaseStore, tenantID, principal.OrganizationID,
+		"key:company-issuer:wakeruntime-recovery", issuerPublic,
+		[]commercialexecution.IssuerPolicy{{
+			KeyID: runtimeKeyID, PublicKey: runtimePublic,
+			Phases: []commercialexecution.Phase{
+				commercialexecution.PhaseAcquisition,
+				commercialexecution.PhaseCustomerQualification,
+				commercialexecution.PhaseSale,
+				commercialexecution.PhaseFinancialIntent,
+				commercialexecution.PhaseFinancialReconciliation,
+				commercialexecution.PhaseSupport,
+				commercialexecution.PhaseMeasurement,
+			},
+		}},
+		func() time.Time { return now },
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	commercialCoordinator, err := commercialexecution.NewCoordinator(
+		commercialExecutionStore, businessOutcomeStore,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
 	model, err := modelclient.New(modelclient.Config{
 		Provider: "mimo", ModelID: neoprovider.MiMoV25ProModel,
 		ModelVersion: neoprovider.MiMoV25ProModel,
@@ -642,8 +695,12 @@ func newWakeRuntimeFixture(
 			DeveloperAuthorityKey:   runtimePublic,
 		},
 		Audits: auditStore, Catalog: catalog, SkillStore: skillStore,
-		Developer:    developerAuthority,
-		RuntimeKeyID: runtimeKeyID, RuntimeKey: runtimePrivate,
+		Developer:             developerAuthority,
+		Financial:             financialStore,
+		BusinessOutcomes:      businessOutcomeStore,
+		CommercialExecution:   commercialExecutionStore,
+		CommercialCoordinator: commercialCoordinator,
+		RuntimeKeyID:          runtimeKeyID, RuntimeKey: runtimePrivate,
 		Runtime: runtime, TenantID: tenantID, AuditorSeatID: auditorSeatID,
 		LeaseDuration: 45 * time.Minute,
 		WakeBudget: contracts.WakeBudget{
@@ -855,6 +912,11 @@ func activateWakeRuntimeOrganization(
 	); err != nil {
 		t.Fatal(err)
 	}
+	if err := mission.SignOrganizationV2(
+		&preview.Authority.Organization, ownerKeyID, ownerPrivate,
+	); err != nil {
+		t.Fatal(err)
+	}
 	for index := range preview.SkillContracts {
 		if err := skills.SignContract(
 			&preview.SkillContracts[index], ownerKeyID, ownerPrivate,
@@ -893,12 +955,19 @@ func wakeRuntimeActivationDraft() mission.ActivationDraft {
 		PermittedJurisdictions:   []string{"DE"},
 		DataBoundaries:           []string{"purpose-bound data"},
 		PermittedCounterparties:  []string{"owner-approved"},
-		RiskTolerance:            mission.RiskToleranceLow,
-		Autonomy:                 mission.AutonomyReviewRequired,
-		EscalationConditions:     []string{"unverifiable material claim"},
-		PauseConditions:          []string{"authority uncertainty"},
-		ShutdownConditions:       []string{"founder emergency stop"},
-		Currency:                 "EUR", StartingMicrounits: 1_000_000_000,
+		OperatingScopes: []mission.OperatingScope{{
+			Kind: mission.OperatingScopeProject, ScopeID: "project:wakeruntime-recovery",
+			Purpose:             "Build and verify the recovery runtime",
+			AllowedActions:      []string{"build", "read", "test", "write"},
+			DataClassifications: []string{"internal-source"},
+			Jurisdictions:       []string{"DE"},
+		}},
+		RiskTolerance:        mission.RiskToleranceLow,
+		Autonomy:             mission.AutonomyReviewRequired,
+		EscalationConditions: []string{"unverifiable material claim"},
+		PauseConditions:      []string{"authority uncertainty"},
+		ShutdownConditions:   []string{"founder emergency stop"},
+		Currency:             "EUR", StartingMicrounits: 1_000_000_000,
 		SpendCeilingMicrounits:    100_000_000,
 		ExposureCeilingMicrounits: 100_000_000,
 		MinimumRunwayDays:         180, MaxWorkOrderMicrounits: 10_000_000,

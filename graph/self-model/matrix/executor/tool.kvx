@@ -1,10 +1,68 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:8087349d214ea6556bd1e327d9b1cfe401192e02e5c71997ca02544fd4c21fca
+# GENERATED gen=codegraph do-not-edit merkle=b3:b9753067b0143b05d9e59aa7d4582f8ecc4f32217fc185000bee971850caf585
 
 NODE id=matrix/executor/tool kind=package
-  digest=b3:c7c31fdc1b35a7a5e33913662fc73c08453ed8ecb9a8461b1f0ab99fc81479c0 file=executor/tool range=0:0 lang=go exported=true
+  digest=b3:e9d959169ffe25a596a0037b5ffb567be328dc43f71727bd001201537e01d308 file=executor/tool range=0:0 lang=go exported=true
 EDGES
-  contains=matrix/executor/tool/manifest.go,matrix/executor/tool/normalize.go,matrix/executor/tool/registry.go,matrix/executor/tool/tool.go,matrix/executor/tool/uri.go
+  contains=matrix/executor/tool/envpolicy.go,matrix/executor/tool/manifest.go,matrix/executor/tool/normalize.go,matrix/executor/tool/process_security_linux.go,matrix/executor/tool/registry.go,matrix/executor/tool/tool.go,matrix/executor/tool/uri.go
   ^contains=mod:matrix/executor
+
+NODE id=matrix/executor/tool.AgentEnvironment kind=func
+  digest=b3:f8bccb493747807f601b7aa66e626b0fc786cc9a648b92c2aa48d5a3eee63da2 file=executor/tool/envpolicy.go range=126:148 lang=go exported=true byte_range=5675:6373
+  sig=func AgentEnvironment(source []string) []string
+  doc=AgentEnvironment returns the exact subset of source approved for an\nagent/user child process. Unknown names are denied. Duplicate names use the\nfinal value, matching process-environment lookup behavior.
+EDGES
+  ^defines=matrix/executor/tool/envpolicy.go
+
+NODE id=matrix/executor/tool.AgentEnvironmentVisible kind=func
+  digest=b3:e42c4543ba21a3673831f2b254fb11e015c994c37b7d56d8aa212e807dd6bd8a file=executor/tool/envpolicy.go range=211:214 lang=go exported=true byte_range=8313:8433
+  sig=func AgentEnvironmentVisible(name string) bool
+EDGES
+  ^defines=matrix/executor/tool/envpolicy.go
+
+NODE id=matrix/executor/tool.AgentEnvironmentWithOverrides kind=func
+  digest=b3:8b143dd1db2dc3a5814ed186fc7a9635d50f39b339df9c080791ac130a704ceb file=executor/tool/envpolicy.go range=150:180 lang=go exported=true byte_range=6375:7382
+  sig=func AgentEnvironmentWithOverrides(source, overrides []string) ([]string, error)
+  doc=AgentEnvironmentWithOverrides builds the safe base and applies explicitly\nrequested overrides. Protected and unknown names are rejected, and error\nmessages never include values.
+EDGES
+  ^defines=matrix/executor/tool/envpolicy.go
+
+NODE id=matrix/executor/tool.AgentIdentity kind=type
+  digest=b3:ff46d3f09ff278d4401464a72cc9cc06544eed8b092f332d817d4941c0cc66f1 file=executor/tool/process_security_linux.go range=15:20 lang=go exported=true byte_range=116:197
+  sig=type AgentIdentity struct {\n	UID	uint32\n	GID	uint32\n	Home	string\n	User	string\n}
+EDGES
+  contains=matrix/executor/tool.AgentIdentity#GID,matrix/executor/tool.AgentIdentity#Home,matrix/executor/tool.AgentIdentity#UID,matrix/executor/tool.AgentIdentity#User
+  ^defines=matrix/executor/tool/process_security_linux.go
+
+NODE id=matrix/executor/tool.AgentIdentity#GID kind=field
+  digest=b3:ae040081c68a062891fa3d9854d12ce5c288a9061ae0e60b0cc9bac8f7aeb406 file=executor/tool/process_security_linux.go range=17:17 lang=go exported=true byte_range=158:169
+  sig=uint32
+EDGES
+  ^contains=matrix/executor/tool.AgentIdentity
+
+NODE id=matrix/executor/tool.AgentIdentity#Home kind=field
+  digest=b3:6e295d9205235f62bc6677293763ca85668b3772a8f7e425b74f5b5f4e71ca16 file=executor/tool/process_security_linux.go range=18:18 lang=go exported=true byte_range=171:182
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.AgentIdentity
+
+NODE id=matrix/executor/tool.AgentIdentity#UID kind=field
+  digest=b3:066c5a6754b3af4a398c0d318e2f30633add8efb3c5d0182c49961bd712e2c84 file=executor/tool/process_security_linux.go range=16:16 lang=go exported=true byte_range=145:156
+  sig=uint32
+EDGES
+  ^contains=matrix/executor/tool.AgentIdentity
+
+NODE id=matrix/executor/tool.AgentIdentity#User kind=field
+  digest=b3:c76c577a86ae40071a752886ae96e4264ea1904bc34149d6c7180d349458c374 file=executor/tool/process_security_linux.go range=19:19 lang=go exported=true byte_range=184:195
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.AgentIdentity
+
+NODE id=matrix/executor/tool.AgentIdentityFromEnv kind=func
+  digest=b3:052b42b50c2dfb3400a917dc818d2397108fd2cfaf1b806ca364d500558b656c file=executor/tool/process_security_linux.go range=22:46 lang=go exported=true byte_range=199:1172
+  sig=func AgentIdentityFromEnv() (AgentIdentity, bool, error)
+  doc=AgentIdentityFromEnv resolves the production-only unprivileged identity.\nAn unset pair preserves local development behavior; a partial or invalid\npair fails closed.
+EDGES
+  ^defines=matrix/executor/tool/process_security_linux.go
 
 NODE id=matrix/executor/tool.AgentManifest kind=type
   digest=b3:68cd14ccd9bd0395e7b7b76fabe9d6fb018757947a7108451d46c6f5d10325c7 file=executor/tool/manifest.go range=14:50 lang=go exported=true byte_range=253:1940
@@ -85,6 +143,13 @@ NODE id=matrix/executor/tool.CapabilityGate kind=type
 EDGES
   ^defines=matrix/executor/tool/tool.go
 
+NODE id=matrix/executor/tool.ConfigureAgentCommand kind=func
+  digest=b3:500169508fcd7f1fe9ad21366333ef49a23472fd77b8c3a7ff809a59a37a73da file=executor/tool/process_security_linux.go range=48:68 lang=go exported=true byte_range=1174:1968
+  sig=func ConfigureAgentCommand(cmd *exec.Cmd) error
+  doc=ConfigureAgentCommand drops one agent-controlled child to the dedicated\nruntime identity and corrects identity-related environment values.
+EDGES
+  ^defines=matrix/executor/tool/process_security_linux.go
+
 NODE id=matrix/executor/tool.Content kind=type
   digest=b3:665aa54c83136751854476cb62aa102b1a8e48dc0e792811a32b720a7fb29cf9 file=executor/tool/tool.go range=96:105 lang=go exported=true byte_range=4159:4617
   sig=type Content struct {\n	Type		string	`json:"type"`\n	Text		string	`json:"text,omitempty"`\n	Data		string	`json:"data,omitempty"`		// base64 for image\n	MimeType	string	`json:"mimeType,omitempty"`	// for image\n	URI		string	`json:"uri,omitempty"`		// for embedded resource\n}
@@ -143,6 +208,13 @@ NODE id=matrix/executor/tool.ContentTypeText kind=const
   doc=Content type constants (subset mirrored from mcp.ContentType*).
 EDGES
   ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.DisableProcessDump kind=func
+  digest=b3:0065686bbc73b6ccb0e463e2bcacf181bdc7ca84daf28bacfcc6dabb7cc976e5 file=executor/tool/process_security_linux.go range=70:77 lang=go exported=true byte_range=1970:2271
+  sig=func DisableProcessDump() error
+  doc=DisableProcessDump prevents same-UID ptrace and procfs memory/environment\ninspection of a secret-holding service process.
+EDGES
+  ^defines=matrix/executor/tool/process_security_linux.go
 
 NODE id=matrix/executor/tool.ErrInvalidSideEffect kind=var
   digest=b3:4a8c807ae0bdaf5cd2337bebfab1a17e85eb42a421e19dc0a3c2ac4e231f7ba8 file=executor/tool/tool.go range=170:172 lang=go exported=true byte_range=6535:6720
@@ -319,6 +391,13 @@ NODE id=matrix/executor/tool.LoadAgentManifest kind=func
   doc=LoadAgentManifest reads and validates a manifest from a JSON file.
 EDGES
   ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.MCPEnvironment kind=func
+  digest=b3:c9cc184df164fea17861a2763e12f68fd85585c2331a6b5993078cdf7d003eea file=executor/tool/envpolicy.go range=182:209 lang=go exported=true byte_range=7384:8311
+  sig=func MCPEnvironment(alias string, source, overrides []string) ([]string, bool, error)
+  doc=MCPEnvironment returns the environment for one fixed MCP server. Generic\nservers get only the agent-visible base. Credentialed aliases additionally\nreceive their exact capability profile and must run under the privileged\nservice identity; no caller can request an arbitrary secret name.
+EDGES
+  ^defines=matrix/executor/tool/envpolicy.go
 
 NODE id=matrix/executor/tool.MCPTool kind=type
   digest=b3:0b95bb723dba6957994b37186793192307d384a4bf4f2efb92639652f0c2f8cd file=executor/tool/registry.go range=365:383 lang=go exported=true byte_range=10560:11115
@@ -610,6 +689,19 @@ NODE id=matrix/executor/tool.ParseToolURI kind=func
   doc=ParseToolURI splits a tool URI per Q17 / S4. Returns ErrInvalidURI\nor ErrUnpinnedTool on malformed input.
 EDGES
   ^defines=matrix/executor/tool/uri.go
+
+NODE id=matrix/executor/tool.ProtectedEnvironment kind=func
+  digest=b3:f96ffee7d1efde756a20cc05b76a761e19136e275532aac3582643674f461a0a file=executor/tool/envpolicy.go range=216:219 lang=go exported=true byte_range=8435:8549
+  sig=func ProtectedEnvironment(name string) bool
+EDGES
+  ^defines=matrix/executor/tool/envpolicy.go
+
+NODE id=matrix/executor/tool.ProtectedEnvironmentOwner kind=func
+  digest=b3:f87ec6666bc6af61fcb488e5746bb87dc4c3da941c17e8acf894487e4bd533da file=executor/tool/envpolicy.go range=221:227 lang=go exported=true byte_range=8551:8923
+  sig=func ProtectedEnvironmentOwner(name string) (string, bool)
+  doc=ProtectedEnvironmentOwner returns the bounded capability that must replace\nambient access to a protected value. It is deliberately not a generic secret\nlookup: callers receive only an ownership label, never the value.
+EDGES
+  ^defines=matrix/executor/tool/envpolicy.go
 
 NODE id=matrix/executor/tool.Registry kind=type
   digest=b3:725d95ca10498d735667426f36c9bdc6b94952a028b128f9ed017c2adaecc204 file=executor/tool/registry.go range=170:200 lang=go exported=true byte_range=5019:6209
@@ -1074,6 +1166,12 @@ NODE id=matrix/executor/tool.ValidSideEffectClasses kind=var
 EDGES
   ^defines=matrix/executor/tool/tool.go
 
+NODE id=matrix/executor/tool.agentVisibleEnvironment kind=var
+  digest=b3:2429dee762444be43fe5b93309348e2428ade057a6ce084ec68ad824b4e4a905 file=executor/tool/envpolicy.go range=9:29 lang=go exported=false byte_range=56:1355
+  sig=map[string]struct{}
+EDGES
+  ^defines=matrix/executor/tool/envpolicy.go
+
 NODE id=matrix/executor/tool.applicationFailureMessage kind=func
   digest=b3:2c45b7b95065f44a0b692bc8080c6771c6e87d04eb92092fdf6ce09aa753e464 file=executor/tool/normalize.go range=243:252 lang=go exported=false byte_range=6711:7011
   sig=func applicationFailureMessage(detail string) string
@@ -1120,6 +1218,12 @@ NODE id=matrix/executor/tool.canonicalArgs kind=func
   doc=canonicalArgs marshals args to JSON with sorted object keys so the\ncache key is deterministic regardless of map iteration order.
 EDGES
   ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.credentialedMCPEnvironment kind=var
+  digest=b3:fd38c8e03dd47270339fa949c47426d2f69b998103fa9f7967205477e78826d7 file=executor/tool/envpolicy.go range=91:124 lang=go exported=false byte_range=4316:5673
+  sig=map[string][]string
+EDGES
+  ^defines=matrix/executor/tool/envpolicy.go
 
 NODE id=matrix/executor/tool.embeddedURI kind=func
   digest=b3:a4ca48e10471bdb55d9ecbd5e0bcbe0000662311b8f8e500b9f854dcb0d030a9 file=executor/tool/registry.go range=481:486 lang=go exported=false byte_range=14036:14132
@@ -1203,6 +1307,18 @@ NODE id=matrix/executor/tool.observeJSON kind=func
 EDGES
   ^defines=matrix/executor/tool/normalize.go
 
+NODE id=matrix/executor/tool.protectedEnvironment kind=var
+  digest=b3:e8c3b6911063f140a0358766fcbebfbcf2ede0b5ae2bc0893b3bc56620bc0576 file=executor/tool/envpolicy.go range=31:49 lang=go exported=false byte_range=1361:2478
+  sig=map[string]struct{}
+EDGES
+  ^defines=matrix/executor/tool/envpolicy.go
+
+NODE id=matrix/executor/tool.protectedEnvironmentOwner kind=var
+  digest=b3:e7520ed957dd501c27e078dc8c60eba3f942894ff814e2402dcc59b8da435a7e file=executor/tool/envpolicy.go range=51:89 lang=go exported=false byte_range=2484:4310
+  sig=map[string]string
+EDGES
+  ^defines=matrix/executor/tool/envpolicy.go
+
 NODE id=matrix/executor/tool.rawBool kind=func
   digest=b3:7decd215ea1cdd14792d95501ade15530656bface080cc2eeafb88057d372474 file=executor/tool/normalize.go range=191:200 lang=go exported=false byte_range=5624:5821
   sig=func rawBool(raw json.RawMessage) (bool, bool)
@@ -1275,12 +1391,24 @@ EDGES
   ^contains=matrix/executor/tool.resultCache
   ^defines=matrix/executor/tool/registry.go
 
+NODE id=matrix/executor/tool.setEnvironmentValue kind=func
+  digest=b3:4f85043e7c2968c6ce707e85bda12b5ed8514773e20d267af3ad0280fcffcf55 file=executor/tool/process_security_linux.go range=79:88 lang=go exported=false byte_range=2273:2536
+  sig=func setEnvironmentValue(env []string, key, value string) []string
+EDGES
+  ^defines=matrix/executor/tool/process_security_linux.go
+
 NODE id=matrix/executor/tool.sortStrings kind=func
   digest=b3:df4b82b26f2a8b2a21322020d4e731214792b66f10a6c60c1996446d8ebc36a0 file=executor/tool/registry.go range=535:546 lang=go exported=false byte_range=15871:16180
   sig=func sortStrings(s []string)
   doc=sortStrings is a small in-package sort to avoid importing sort from\nevery consumer.
 EDGES
   ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.stringSet kind=func
+  digest=b3:f3a095bdbf7da08879e59bc493c3a991052824bed08913c54db70f1218ebe2e9 file=executor/tool/envpolicy.go range=229:235 lang=go exported=false byte_range=8925:9101
+  sig=func stringSet(values ...string) map[string]struct{}
+EDGES
+  ^defines=matrix/executor/tool/envpolicy.go
 
 NODE id=matrix/executor/tool.teTimeout kind=func
   digest=b3:70faaa429e965d4fcc0d3174c9fa7bcab78614ba511599fa179d3b76ecda5df4 file=executor/tool/registry.go range=305:312 lang=go exported=false byte_range=8820:9082
@@ -1336,6 +1464,12 @@ NODE id=matrix/executor/tool.validateSideEffect kind=func
 EDGES
   ^defines=matrix/executor/tool/tool.go
 
+NODE id=matrix/executor/tool/envpolicy.go kind=file
+  digest=b3:4c28d0fb0a18abb916bda11c882edb394728aec23f6765983892f3441b323b15 file=executor/tool/envpolicy.go range=1:235 lang=go exported=true
+EDGES
+  defines=matrix/executor/tool.AgentEnvironment,matrix/executor/tool.AgentEnvironmentVisible,matrix/executor/tool.AgentEnvironmentWithOverrides,matrix/executor/tool.MCPEnvironment,matrix/executor/tool.ProtectedEnvironment,matrix/executor/tool.ProtectedEnvironmentOwner,matrix/executor/tool.agentVisibleEnvironment,matrix/executor/tool.credentialedMCPEnvironment,matrix/executor/tool.protectedEnvironment,matrix/executor/tool.protectedEnvironmentOwner,matrix/executor/tool.stringSet
+  ^contains=matrix/executor/tool
+
 NODE id=matrix/executor/tool/manifest.go kind=file
   digest=b3:a569c07e2ce8b1ccbd8ded1517f06783a1b1fd20e89139a5f746bc8e624c1523 file=executor/tool/manifest.go range=1:379 lang=go exported=true
 EDGES
@@ -1346,6 +1480,12 @@ NODE id=matrix/executor/tool/normalize.go kind=file
   digest=b3:ab2b55dfbbbc3c20702bca4509d57bc204287560f1315203d5019d77dca18c7d file=executor/tool/normalize.go range=1:252 lang=go exported=true
 EDGES
   defines=matrix/executor/tool.FailureApplication,matrix/executor/tool.FailureAuthorization,matrix/executor/tool.FailureCancellation,matrix/executor/tool.FailureClass,matrix/executor/tool.FailureClassOf,matrix/executor/tool.FailureConflict,matrix/executor/tool.FailureError,matrix/executor/tool.FailureError.Error,matrix/executor/tool.FailureError.Unwrap,matrix/executor/tool.FailureHTTP,matrix/executor/tool.FailureInvocation,matrix/executor/tool.FailureNone,matrix/executor/tool.FailurePolicy,matrix/executor/tool.FailureProcess,matrix/executor/tool.FailureProtocol,matrix/executor/tool.FailureTransport,matrix/executor/tool.FailureValidation,matrix/executor/tool.NormalizeResult,matrix/executor/tool.applicationFailureMessage,matrix/executor/tool.envelopeObservation,matrix/executor/tool.failureError,matrix/executor/tool.mergeObservation,matrix/executor/tool.observeJSON,matrix/executor/tool.rawBool,matrix/executor/tool.rawError,matrix/executor/tool.rawInt,matrix/executor/tool.rawString
+  ^contains=matrix/executor/tool
+
+NODE id=matrix/executor/tool/process_security_linux.go kind=file
+  digest=b3:446a54872e3e4bbaa81bd3ee4a3490e59b8cba2574d6b5660833900b00cc9e19 file=executor/tool/process_security_linux.go range=1:88 lang=go exported=true
+EDGES
+  defines=matrix/executor/tool.AgentIdentity,matrix/executor/tool.AgentIdentityFromEnv,matrix/executor/tool.ConfigureAgentCommand,matrix/executor/tool.DisableProcessDump,matrix/executor/tool.setEnvironmentValue
   ^contains=matrix/executor/tool
 
 NODE id=matrix/executor/tool/registry.go kind=file

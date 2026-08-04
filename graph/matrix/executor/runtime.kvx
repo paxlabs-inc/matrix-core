@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/executor/runtime kind=package
-  digest=b3:6e27877e0f715680121e34b8f2fc5ba7a59e4f64a39c748da60e8876d6d4d09c file=executor/runtime range=0:0 lang=go exported=true
+  digest=b3:9838a35e31a2c61e82c88d97139be17dc0a05b95853fbb3b03c1afb683db83f1 file=executor/runtime range=0:0 lang=go exported=true
 EDGES
   contains=matrix/executor/runtime/argref.go,matrix/executor/runtime/coerce.go,matrix/executor/runtime/marshal.go,matrix/executor/runtime/skill_loader.go,matrix/executor/runtime/skill_reload.go,matrix/executor/runtime/walker.go
   imports=matrix/cortex,matrix/cortex/memory,matrix/executor/tool,matrix/mcl/envelope,matrix/mcl/ir,matrix/mcl/mtx/ast,matrix/mcl/mtx/canonical,matrix/mcl/mtx/parser,matrix/mcl/mtx/validator
@@ -959,7 +959,7 @@ NODE id=matrix/executor/runtime.Walker.execToolCall kind=method
   sig=func (w *Walker) execToolCall(ctx context.Context, plan *ir.PlanTree, n *ir.PlanNode, wr *WalkResult, mu *sync.Mutex) error
   doc=execToolCall dispatches one NodeToolCall: Registry.Get → Tool.Call\n→ write Event memory → emit plan.step envelope.
 EDGES
-  calls=matrix/executor/cmd/mcl-execute.transcript.Event,matrix/executor/runtime.Walker.signStep,matrix/executor/runtime.Walker.writeEventMemory,matrix/executor/runtime.marshalToolResult,matrix/executor/runtime.noopSink.Event,matrix/executor/runtime.normalizeToolArg,matrix/executor/runtime.resolveOutputRefs,matrix/executor/runtime.truncate,matrix/executor/runtime.withLock,matrix/executor/tool.ExtractText,matrix/executor/tool.MCPTool.Call,matrix/executor/tool.NativeTool.Call,matrix/executor/tool.Registry.Get
+  calls=matrix/executor/cmd/mcl-execute.transcript.Event,matrix/executor/runtime.Walker.signStep,matrix/executor/runtime.Walker.writeEventMemory,matrix/executor/runtime.marshalToolResult,matrix/executor/runtime.noopSink.Event,matrix/executor/runtime.normalizeToolArg,matrix/executor/runtime.resolveOutputRefs,matrix/executor/runtime.truncate,matrix/executor/runtime.withLock,matrix/executor/tool.ExtractText,matrix/executor/tool.FailureError.Error,matrix/executor/tool.MCPTool.Call,matrix/executor/tool.NativeTool.Call,matrix/executor/tool.Registry.Get
   references=matrix/executor/runtime.EventSink.Event,matrix/executor/runtime.WalkResult,matrix/executor/runtime.Walker,matrix/executor/runtime.Walker.signStep,matrix/executor/runtime.Walker.writeEventMemory,matrix/executor/runtime.args,matrix/executor/runtime.callCtx,matrix/executor/runtime.callErr,matrix/executor/runtime.cancel,matrix/executor/runtime.collectNodeOutputs,matrix/executor/runtime.ctx,matrix/executor/runtime.dur,matrix/executor/runtime.err,matrix/executor/runtime.errMsg,matrix/executor/runtime.evtURI,matrix/executor/runtime.fullText,matrix/executor/runtime.k,matrix/executor/runtime.marshalToolResult,matrix/executor/runtime.mu,matrix/executor/runtime.n,matrix/executor/runtime.normalizeToolArg,matrix/executor/runtime.outputs,matrix/executor/runtime.plan,matrix/executor/runtime.res,matrix/executor/runtime.resBytes,matrix/executor/runtime.resolveOutputRefs,matrix/executor/runtime.resolveText,matrix/executor/runtime.resultText,matrix/executor/runtime.status,matrix/executor/runtime.t0,matrix/executor/runtime.tc,matrix/executor/runtime.timeoutMs,matrix/executor/runtime.tl,matrix/executor/runtime.truncate,matrix/executor/runtime.v,matrix/executor/runtime.w,matrix/executor/runtime.werr,matrix/executor/runtime.withLock,matrix/executor/runtime.wr,matrix/executor/tool.ExtractText,matrix/executor/tool.Registry.Get,matrix/executor/tool.Tool.Call,matrix/mcl/ir.PlanNode,matrix/mcl/ir.PlanTree
   ^contains=matrix/executor/runtime.Walker
   ^calls=matrix/executor/runtime.Walker.walkNode,matrix/executor/runtime.Walker.walkNodeWithLock
@@ -1017,7 +1017,7 @@ NODE id=matrix/executor/runtime.Walker.writeEventMemory kind=method
   sig=func (w *Walker) writeEventMemory(n *ir.PlanNode, toolRef, summary string, callErr error, isError bool) (memory.URI, error)
   doc=writeEventMemory persists a cortex Event capturing the tool outcome\nso subsequent attest can cite it (research/04 §4.2 EventKind=interaction).\nReturns ("", nil) when Cortex is not configured.
 EDGES
-  calls=matrix/cortex.Cortex.Write,matrix/executor/runtime.truncate
+  calls=matrix/cortex.Cortex.Write,matrix/executor/runtime.truncate,matrix/executor/tool.FailureError.Error
   references=matrix/cortex.Cortex.Write,matrix/cortex.WriteMeta,matrix/cortex/memory.EventData,matrix/cortex/memory.EventInteraction,matrix/cortex/memory.Head,matrix/cortex/memory.OutcomeFailure,matrix/cortex/memory.OutcomeSuccess,matrix/cortex/memory.Provenance,matrix/cortex/memory.SourceObserved,matrix/cortex/memory.Tag,matrix/cortex/memory.URI,matrix/executor/runtime.Walker,matrix/executor/runtime.callErr,matrix/executor/runtime.err,matrix/executor/runtime.isError,matrix/executor/runtime.n,matrix/executor/runtime.outcome,matrix/executor/runtime.short,matrix/executor/runtime.summary,matrix/executor/runtime.toolRef,matrix/executor/runtime.truncate,matrix/executor/runtime.uri,matrix/executor/runtime.w,matrix/mcl/ir.PlanNode
   ^contains=matrix/executor/runtime.Walker
   ^calls=matrix/executor/runtime.Walker.execToolCall
@@ -1257,11 +1257,11 @@ EDGES
   ^defines=matrix/executor/runtime/skill_loader.go
 
 NODE id=matrix/executor/runtime.marshalToolResult kind=func
-  digest=b3:c8b8138ae594fd9e43667b0bbd165ea28592ec9b603cfcea3ac53d55ca67cf66 file=executor/runtime/marshal.go range=12:27 lang=go exported=false byte_range=240:757
+  digest=b3:b5588ef567bdabea1779df7d1994b72bdda79f6e7772ca1a10e887c41bea6a2d file=executor/runtime/marshal.go range=12:49 lang=go exported=false byte_range=240:1299
   sig=func marshalToolResult(res *tool.Result, resultText string) []byte
   doc=marshalToolResult produces the deterministic JSON byte slice that the\nwalker stores on PlanStepBody.Result. Shape mirrors\ncmd/mcl-e2e/walk.go:175-180 so harness consumers and production\nconsumers see identical bytes.
 EDGES
-  references=matrix/executor/runtime.out,matrix/executor/runtime.res,matrix/executor/runtime.resultText,matrix/executor/tool.Result
+  references=matrix/executor/runtime.out,matrix/executor/runtime.res,matrix/executor/runtime.resultText,matrix/executor/runtime.shape,matrix/executor/tool.FailureNone,matrix/executor/tool.Result
   ^calls=matrix/executor/runtime.Walker.execToolCall
   ^references=matrix/executor/runtime.Walker.execToolCall
   ^defines=matrix/executor/runtime/marshal.go
@@ -1457,7 +1457,7 @@ EDGES
   ^contains=matrix/executor/runtime
 
 NODE id=matrix/executor/runtime/marshal.go kind=file
-  digest=b3:29d05a87a6576d7526f39b9fbe2a9ae8e500183da41f7b33324709037ec61ba3 file=executor/runtime/marshal.go range=1:29 lang=go exported=true
+  digest=b3:c7794ad55b71a6222e3176e367f985783f3cfb88fd7cb51406a585aa5b7ca7e9 file=executor/runtime/marshal.go range=1:51 lang=go exported=true
 EDGES
   defines=matrix/executor/runtime.marshalToolResult
   ^contains=matrix/executor/runtime

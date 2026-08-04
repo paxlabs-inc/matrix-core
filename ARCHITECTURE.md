@@ -1,7 +1,7 @@
 # Matrix Architecture
 
-This is the high-level map for contributors, current as of 2026-07-17
-(Matrix `0.65.0`). The
+This is the high-level map for contributors, current as of 2026-08-04
+(Matrix `1.0.0`). The
 canonical detailed sources of truth are:
 
 - **How to work in this repo** — `spec/workflow.kvx` (rendered by
@@ -17,11 +17,15 @@ If anything below contradicts a `spec.kvx`, the spec wins.
 ## The system in one paragraph
 
 Matrix runs **one agent per user — Neo** — on a per-user daemon service, with
-**one shared memory brain per user — cortex**. Neo is a conversational
+**one deterministic evidence process per user — Neocortex (`cortexd`)** when
+the new substrate is selected. Neo is a conversational
 tool-using agent loop; every other agent-shaped thing (the Cassandra
 controller, the `/cody` coding workbench, Automatrix proactive tasks, the
-morning brief) is a lens or a mode of Neo over the same cortex, not a separate
-agent. A central **router** authenticates users, provisions and wakes their
+morning brief) is a lens or a mode of Neo, not a separate agent. Neocortex
+preserves conversation, intent, work, evidence, beliefs, and checkpoints as
+typed events and deterministic projections. The Go Cortex remains an intact
+compatibility/default path until an explicit owner-approved cutover. A central
+**router** authenticates users, provisions and wakes their
 daemon, and reverse-proxies to it. Money is native: agents hold no keys and
 spend through the Paxeer embedded wallet and **LayerX** (USDX ledger + the LXP
 HTTP payment protocol). All user data at rest is being sealed by the **vault**
@@ -44,11 +48,12 @@ HTTP payment protocol). All user data at rest is being sealed by the **vault**
    |     (prepare/generate/deliberate/act)      - transcripts, async jobs, snapshots     |
    |   - Cassandra 2.0 silent-voice controller  - MCP tool subprocesses                  |
    |   - tools.Manager (one MCP surface)                                                 |
-   |   - memory pager  ------------------+------------------------------------           |
+   |   - memory seam   ------------------+------------------------------------           |
    |                                     v                                               |
-   |                          cortex (one Pebble brain per user)                          |
-   |            journal MMR/SMT roots · 9-type memories · HNSW · activation               |
-   |            temporal ladder · sessions · recursive recall · self-model               |
+   |                  cortexd / Neocortex (selected substrate)                           |
+   |       typed evidence log · BLAKE3 MMR · sealed records · intent/work ledger         |
+   |       deterministic LMDB projections · exact recall · activation · checkpoints      |
+   |                    cortex (compatibility / rollback path)                            |
    |                                     |                                               |
    |                       vault (KEK -> user key -> per-object DEKs)                     |
    |            record-AEAD JSONL · whole-file AEAD · streaming AEAD (media/snapshots)   |
@@ -70,7 +75,9 @@ each other) and is independently buildable/testable.
 | Module       | Role                                                                                                     |
 | ------------ | -------------------------------------------------------------------------------------------------------- |
 | `neo/`       | **The agent.** HTTP+SSE server engine, staged agent loop, tools manager, memory pager, Automatrix, morning brief, workbench backend, sub-agent swarm, writeback consolidator. |
-| `cortex/`    | Per-user typed memory brain on Pebble: append-only journal with MMR/SMT integrity roots (`OverallRoot`, §13.4 replay invariant), 9-type taxonomy, HNSW vectors, activation composer, temporal-ladder rollups, recursive recall, sessions, self-model records. Values are vault-sealed **below** the hash boundary (roots stay computed over plaintext logical encodings). |
+| `neocortex/` | C++23 deterministic single-writer evidence engine and `cortexd`: typed append-only actor logs, sealed payloads, BLAKE3 MMR checkpoints, replay-built LMDB projections, exact entity/vector/BM25 recall, temporal descent, intent frame, work ledger, and one activation composer. |
+| `cortexclient/` | Go client and migration seam for `cortexd`: capability-scoped protocol, resurrection-loop interfaces, checkpoint recovery, evidence citations, bounded reconnect, and Pebble export/import. |
+| `cortex/`    | Compatibility and rollback memory substrate on Pebble. It remains working and is the legacy migration source until the separately gated Neocortex cutover. |
 | `vault/`     | Envelope encryption for user data at rest: platform KEK behind a KeyProvider seam → wrapped per-user key → per-object DEKs; AES-256-GCM; three shapes (record-AEAD JSONL, whole-file AEAD, chunked streaming AEAD); fail-closed under `VAULT_REQUIRED`; cryptographic deletion by user-key destruction. |
 | `executor/`  | The MCL daemon (`cmd/mcl-execute`): the signed intent pipeline (compile → plan → walk → attest, D11 determinism), MCP tool subprocess manager, daemon HTTP routes (profile, personalization, transcripts, async jobs), snapshot push/pull. Neo delegates money/rigorous work here via `core_execute`. |
 | `MCL/`       | **Library only** (no longer a separate agent): MatrixScript compiler, intent/plan IR, envelopes, and the shared `llm` client packages that neo and executor import. |
@@ -101,10 +108,11 @@ in `tools/`, never by importing their Go packages.
   `prepareWindow` (the ONE window-assembly site) / `generate` / `deliberate` /
   `closeTurn` / `act` — over a reified per-turn struct. 1M-token window,
   byte-stable prompt prefix for cache hits.
-- **Memory**: continuous-memory path only — `cortex.Activate` composes the
-  working context, `AppendMessage` persists every turn, `RecallDescend` is the
-  recursive descent behind `memory_recall`. The writeback consolidator
-  promotes durable facts/preferences/corrections out-of-band.
+- **Evidence and continuity**: under Neocortex, the resurrection loop records
+  user, assistant, delivery, tool, intent, checkpoint, and consolidation events
+  through `cortexclient`. `cortexd` composes the next activation from faithful
+  conversation, current intent, reconciled work, exact recall, and temporal
+  descent. The legacy `cortex.Activate` path remains available for rollback.
 - **Epistemic core**: premise ledger with provenance, prediction-carrying
   tool dispatch, convergence-by-measurement termination; capability surface
   and self-model rendered resident in the prompt.
@@ -122,9 +130,13 @@ in `tools/`, never by importing their Go packages.
   restricted run delivered as a durable conversation turn + inbox record.
   Boundary: the three non-negotiables (no monetary, reputational, or
   psychological damage); autonomous surfaces structurally exclude money tools.
-- **Workbench**: the `/cody` client route is Neo-owned — projects are
+- **Workbench and coding**: the `/cody` client route is Neo-owned — projects are
   `/workspace/<dir>` subdirs, editable CodeMirror buffers over the
-  `/workspace/*` API, previews in on-demand Railway sandboxes.
+  `/workspace/*` API, previews in on-demand Railway sandboxes. Neo's native
+  filesystem, bounded shell, durable services, read-only Git, task list, and
+  coding checkpoint own execution. AgentCore Build dispatch is retained only
+  as dormant compatibility code and is disabled, so `build_project` is not
+  visible to Neo.
 - **Durability**: task ledger (`neo/internal/task`) supervises every run and
   resumes orphans at boot (briefs resume on their own restricted path);
   conversations, traces, settings, and inboxes are sidecar stores on `/data`,
@@ -150,8 +162,11 @@ One Railway project + environment holds everything: the router (public custom
 domain), gateway, chronos, Postgres, MinIO, shared tool services (searxng,
 gotenberg, stalwart, browser), and all per-user daemon services (serverless
 sleep/wake — the proxied request is the wake; daemons stay outbound-quiet when
-idle). The per-user image bakes `neo`, `mcl-execute`, the agent manifest, MCP
-servers, and Playwright+Chromium for the local browser bridge. Per-user state
+idle). The per-user image bakes `neo`, `mcl-execute`, `cortexd`, the agent
+manifest, MCP servers, and Playwright+Chromium for the local browser bridge.
+When `NEO_MEMORY_SUBSTRATE=neocortex`, the entrypoint creates the private
+capability-scoped configuration, starts `cortexd`, waits for its Unix socket,
+and only then starts Neo. Per-user state
 snapshots (vault-encrypted tarballs) push to MinIO. LLM traffic goes through
 the gateway (main/cheap lanes currently MiMo; grok on the Cassandra lanes).
 
@@ -174,7 +189,9 @@ Fly Machines topologies have been retired out of the tree.
   feature's `spec/<feature>/spec.kvx`.
 - Neo: `neo/internal/agent/agent.go` (loop) → `neo/internal/server/engine.go`
   → `neo/internal/tools/tools.go` → `neo/internal/memory/pager.go`.
-- Cortex: `cortex/cortex.go` → `cortex/store/store.go` →
+- Neocortex: `neocortex/src/` → `neocortex/cmd/cortexd/` →
+  `cortexclient/client.go` → `neo/internal/runtime/loop/neocortex.go`.
+- Cortex compatibility path: `cortex/cortex.go` → `cortex/store/store.go` →
   `cortex/activate.go` → `cortex/replay/replay.go`.
 - Vault: `vault/` (crypto core) → `cortex/store/vaultseam.go` →
   `neo/internal/conversation/store.go` (record-AEAD JSONL in practice).

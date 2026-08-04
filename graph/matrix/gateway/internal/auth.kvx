@@ -1,138 +1,475 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/gateway/internal/auth kind=package
-  digest=b3:2fb1c8dd1ea78d747cf0c58f652e0b510ef91e09cd03a5363d80b813a36e4de0 file=gateway/internal/auth range=0:0 lang=go exported=true
+  digest=b3:ff1bfb168e8efa71d2b832b3cc0ac4cd7463e8d9134a2c43fa86ff145b4b59cc file=gateway/internal/auth range=0:0 lang=go exported=true
 EDGES
-  contains=matrix/gateway/internal/auth/auth.go
+  contains=matrix/gateway/internal/auth/agentcore.go,matrix/gateway/internal/auth/auth.go
   imports=matrix/gateway/internal/types
   ^contains=mod:matrix/gateway
   ^imports=matrix/gateway/cmd/matrix-gateway,matrix/gateway/internal/proxy
 
+NODE id=matrix/gateway/internal/auth.AgentCoreAudience kind=const
+  digest=b3:0a98e490721a50c15dd8f86303058bcd7e4adacfc74441927ffb77e60eeeb347 file=gateway/internal/auth/agentcore.go range=16:16 lang=go exported=true byte_range=150:181
+  sig=untyped string
+EDGES
+  ^references=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.AgentCoreClaims kind=type
+  digest=b3:de44261793f0140855259b2e713b9f009ebc7bc12c97cca76c02294eef5d0753 file=gateway/internal/auth/agentcore.go range=30:41 lang=go exported=true byte_range=687:1044
+  sig=type AgentCoreClaims struct {\n	KeyID		string	`json:"kid"`\n	Audience	string	`json:"aud"`\n	Scope		string	`json:"scope"`\n	ActorDID	string	`json:"actor_did"`\n	Slot		string	`json:"slot"`\n	Provider	string	`json:"provider"`\n	Model		string	`json:"model"`\n	IssuedAt	int64	`json:"iat"`\n	ExpiresAt	int64	`json:"exp"`\n	TokenID		string	`json:"jti"`\n}
+EDGES
+  contains=matrix/gateway/internal/auth.AgentCoreClaims#ActorDID,matrix/gateway/internal/auth.AgentCoreClaims#Audience,matrix/gateway/internal/auth.AgentCoreClaims#ExpiresAt,matrix/gateway/internal/auth.AgentCoreClaims#IssuedAt,matrix/gateway/internal/auth.AgentCoreClaims#KeyID,matrix/gateway/internal/auth.AgentCoreClaims#Model,matrix/gateway/internal/auth.AgentCoreClaims#Provider,matrix/gateway/internal/auth.AgentCoreClaims#Scope,matrix/gateway/internal/auth.AgentCoreClaims#Slot,matrix/gateway/internal/auth.AgentCoreClaims#TokenID
+  ^references=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.AgentCoreClaims#ActorDID kind=field
+  digest=b3:14cac1b4c281c54fb9d0e9e4c3877572547cb8011bdf55e28f791b8fa7c4ca47 file=gateway/internal/auth/agentcore.go range=34:34 lang=go exported=true byte_range=813:848
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreClaims
+
+NODE id=matrix/gateway/internal/auth.AgentCoreClaims#Audience kind=field
+  digest=b3:21bcb1f4b9ebffb607e0de3a1732cb1a02854e4905e5c21cf65c53aaa0680f76 file=gateway/internal/auth/agentcore.go range=32:32 lang=go exported=true byte_range=749:778
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreClaims
+
+NODE id=matrix/gateway/internal/auth.AgentCoreClaims#ExpiresAt kind=field
+  digest=b3:d0bddc57f660968216891167ab3ced413162ae99cb1385e8074be576b09dde34 file=gateway/internal/auth/agentcore.go range=39:39 lang=go exported=true byte_range=982:1011
+  sig=int64
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreClaims
+
+NODE id=matrix/gateway/internal/auth.AgentCoreClaims#IssuedAt kind=field
+  digest=b3:af73cd9ac336b30cf0a873a0a5ee382b767ae7aa03e29f5c8d2f1683df79b01a file=gateway/internal/auth/agentcore.go range=38:38 lang=go exported=true byte_range=951:980
+  sig=int64
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreClaims
+
+NODE id=matrix/gateway/internal/auth.AgentCoreClaims#KeyID kind=field
+  digest=b3:b21cc21470a9672e87c08d1c1ed3311d75fee118a439d285f57ed5e3d1abee53 file=gateway/internal/auth/agentcore.go range=31:31 lang=go exported=true byte_range=718:747
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreClaims
+
+NODE id=matrix/gateway/internal/auth.AgentCoreClaims#Model kind=field
+  digest=b3:5ed38e1112e399dc005d286a75a3fb04c0788956df34a925f3962cdf04f70580 file=gateway/internal/auth/agentcore.go range=37:37 lang=go exported=true byte_range=918:949
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreClaims
+
+NODE id=matrix/gateway/internal/auth.AgentCoreClaims#Provider kind=field
+  digest=b3:ce932cb83c7fab90323f9a5f95da91b1ee42d5deda5b4dc8744a88b92249e1bc file=gateway/internal/auth/agentcore.go range=36:36 lang=go exported=true byte_range=882:916
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreClaims
+
+NODE id=matrix/gateway/internal/auth.AgentCoreClaims#Scope kind=field
+  digest=b3:dd9085454d8eae7e4bc837a92bcaed996b3d7577a4a9bf0af2585437890f7b3e file=gateway/internal/auth/agentcore.go range=33:33 lang=go exported=true byte_range=780:811
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreClaims
+
+NODE id=matrix/gateway/internal/auth.AgentCoreClaims#Slot kind=field
+  digest=b3:2764fe1969deffcf9ea24ec98c7b1dbfadc9fce25a1736b15c0320cd7af3f7c1 file=gateway/internal/auth/agentcore.go range=35:35 lang=go exported=true byte_range=850:880
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreClaims
+
+NODE id=matrix/gateway/internal/auth.AgentCoreClaims#TokenID kind=field
+  digest=b3:8a424d706924d740f4ceba6f1febfe40e9e443897a07098cc208fc0a49a1d06c file=gateway/internal/auth/agentcore.go range=40:40 lang=go exported=true byte_range=1013:1042
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreClaims
+
+NODE id=matrix/gateway/internal/auth.AgentCoreIssuer kind=type
+  digest=b3:1056a55e03dc50e1cb8477215f1e834c550227f83fc40323ffac83b2f721b45d file=gateway/internal/auth/agentcore.go range=50:55 lang=go exported=true byte_range=1155:1255
+  sig=type AgentCoreIssuer struct {\n	keyID	string\n	key	[]byte\n	now	func() time.Time\n	rand	io.Reader\n}
+EDGES
+  contains=matrix/gateway/internal/auth.AgentCoreIssuer#key,matrix/gateway/internal/auth.AgentCoreIssuer#keyID,matrix/gateway/internal/auth.AgentCoreIssuer#now,matrix/gateway/internal/auth.AgentCoreIssuer#rand,matrix/gateway/internal/auth.AgentCoreIssuer.Mint
+  ^references=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.NewAgentCoreIssuer,matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.Server
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.AgentCoreIssuer#key kind=field
+  digest=b3:11eda1e762dc3317daf78d2558999780e5a566686fc6dce14df721470f51f8d7 file=gateway/internal/auth/agentcore.go range=52:52 lang=go exported=false byte_range=1200:1212
+  sig=[]byte
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreIssuer
+
+NODE id=matrix/gateway/internal/auth.AgentCoreIssuer#keyID kind=field
+  digest=b3:2d8dad4088f42cc0d7d143c1d888acebab4cfb08e51120bd41fd51b78edcda11 file=gateway/internal/auth/agentcore.go range=51:51 lang=go exported=false byte_range=1186:1198
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreIssuer
+
+NODE id=matrix/gateway/internal/auth.AgentCoreIssuer#now kind=field
+  digest=b3:47af080b4860cd710591b444f53739ba7da7908cd7a8a50e597fdaf30c22e139 file=gateway/internal/auth/agentcore.go range=53:53 lang=go exported=false byte_range=1214:1236
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreIssuer
+
+NODE id=matrix/gateway/internal/auth.AgentCoreIssuer#rand kind=field
+  digest=b3:26e4392ff38faad9639b7ad24da3aed77e1fb5a69915ad76435c45aea558e857 file=gateway/internal/auth/agentcore.go range=54:54 lang=go exported=false byte_range=1238:1253
+  sig=io.Reader
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreIssuer
+
+NODE id=matrix/gateway/internal/auth.AgentCoreIssuer.Mint kind=method
+  digest=b3:171132b40d89a3b6aba9f7830f59d1795416991b7883f0443eb233828b2b6882 file=gateway/internal/auth/agentcore.go range=80:116 lang=go exported=true byte_range=1819:3272
+  sig=func (issuer *AgentCoreIssuer) Mint(actorDID string, ttl time.Duration) (string, AgentCoreClaims, error)
+EDGES
+  calls=matrix/gateway/internal/auth.looksLikeDID,matrix/gateway/internal/auth.signAgentCoreToken
+  references=matrix/gateway/internal/auth.AgentCoreAudience,matrix/gateway/internal/auth.AgentCoreClaims,matrix/gateway/internal/auth.AgentCoreIssuer,matrix/gateway/internal/auth.AgentCoreMaxTokenTTL,matrix/gateway/internal/auth.AgentCoreModel,matrix/gateway/internal/auth.AgentCoreProvider,matrix/gateway/internal/auth.AgentCoreScope,matrix/gateway/internal/auth.AgentCoreSlot,matrix/gateway/internal/auth.AgentCoreTokenTTL,matrix/gateway/internal/auth.ErrMalformedActor,matrix/gateway/internal/auth.actorDID,matrix/gateway/internal/auth.agentCoreTokenPrefix,matrix/gateway/internal/auth.claims,matrix/gateway/internal/auth.encoded,matrix/gateway/internal/auth.err,matrix/gateway/internal/auth.issuer,matrix/gateway/internal/auth.jtiBytes,matrix/gateway/internal/auth.looksLikeDID,matrix/gateway/internal/auth.now,matrix/gateway/internal/auth.payload,matrix/gateway/internal/auth.signAgentCoreToken,matrix/gateway/internal/auth.signature,matrix/gateway/internal/auth.signed,matrix/gateway/internal/auth.ttl
+  ^contains=matrix/gateway/internal/auth.AgentCoreIssuer
+  ^calls=matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken,matrix/gateway/internal/proxy.Server.handleAgentCoreToken
+  ^references=matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken,matrix/gateway/internal/proxy.Server.handleAgentCoreToken
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.AgentCoreIssuerOptions kind=type
+  digest=b3:caa1617faa7b789a4839a28496905e7c658ef53962c447e9fc37c02a055005d0 file=gateway/internal/auth/agentcore.go range=43:48 lang=go exported=true byte_range=1046:1153
+  sig=type AgentCoreIssuerOptions struct {\n	KeyID	string\n	Key	[]byte\n	Now	func() time.Time\n	Rand	io.Reader\n}
+EDGES
+  contains=matrix/gateway/internal/auth.AgentCoreIssuerOptions#Key,matrix/gateway/internal/auth.AgentCoreIssuerOptions#KeyID,matrix/gateway/internal/auth.AgentCoreIssuerOptions#Now,matrix/gateway/internal/auth.AgentCoreIssuerOptions#Rand
+  ^references=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken,matrix/gateway/internal/auth.NewAgentCoreIssuer
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.AgentCoreIssuerOptions#Key kind=field
+  digest=b3:d385b041b02ea5aaf5e3fab20cfee46d76d3eab94fde46e24fe33f63fa2f01dd file=gateway/internal/auth/agentcore.go range=45:45 lang=go exported=true byte_range=1098:1110
+  sig=[]byte
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreIssuerOptions
+
+NODE id=matrix/gateway/internal/auth.AgentCoreIssuerOptions#KeyID kind=field
+  digest=b3:b60707b87126e31d6bd7868c486c0339b32bf7fb20fd898de262b3953652296f file=gateway/internal/auth/agentcore.go range=44:44 lang=go exported=true byte_range=1084:1096
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreIssuerOptions
+
+NODE id=matrix/gateway/internal/auth.AgentCoreIssuerOptions#Now kind=field
+  digest=b3:ecee7debd91c1a3a1beaadab8753b1b773a465310e3c845b8867bdfba4f04681 file=gateway/internal/auth/agentcore.go range=46:46 lang=go exported=true byte_range=1112:1134
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreIssuerOptions
+
+NODE id=matrix/gateway/internal/auth.AgentCoreIssuerOptions#Rand kind=field
+  digest=b3:a66598763cedd938972e6b43f4397b7bc136b0e425866314220e2b8c866426a8 file=gateway/internal/auth/agentcore.go range=47:47 lang=go exported=true byte_range=1136:1151
+  sig=io.Reader
+EDGES
+  ^contains=matrix/gateway/internal/auth.AgentCoreIssuerOptions
+
+NODE id=matrix/gateway/internal/auth.AgentCoreMaxTokenTTL kind=const
+  digest=b3:4121870d1ec3844c080f8764622a26b670dea991b755c88e69fdf2e95c9c53d2 file=gateway/internal/auth/agentcore.go range=25:25 lang=go exported=true byte_range=579:611
+  sig=time.Duration
+EDGES
+  ^references=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.AgentCoreModel kind=const
+  digest=b3:1e450d489ead0829aecdfc4cc34624eb431713fe458f101507baed26e490b428 file=gateway/internal/auth/agentcore.go range=20:20 lang=go exported=true byte_range=281:316
+  sig=untyped string
+EDGES
+  ^references=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.AgentCoreProvider kind=const
+  digest=b3:dfa9861414369fbb665505450ee35242588d0ace08c4f8da232676b25f4dc2ac file=gateway/internal/auth/agentcore.go range=19:19 lang=go exported=true byte_range=251:279
+  sig=untyped string
+EDGES
+  ^references=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.AgentCoreScope kind=const
+  digest=b3:8f0351aa91be937561b22f066b02f4f1c2cd197370b9033b0a66bc0361ff3cb5 file=gateway/internal/auth/agentcore.go range=17:17 lang=go exported=true byte_range=183:221
+  sig=untyped string
+EDGES
+  ^references=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.AgentCoreSlot kind=const
+  digest=b3:eb91973a0d1e45b7776d0020aa3c8e3be0a60825712c3f4f18adc269423ba53b file=gateway/internal/auth/agentcore.go range=18:18 lang=go exported=true byte_range=223:249
+  sig=untyped string
+EDGES
+  ^references=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.AgentCoreTokenTTL kind=const
+  digest=b3:704873b26fcee8aab8c1ac03b8dac3758ebed7a78b4711e933bdcf087482c5e7 file=gateway/internal/auth/agentcore.go range=21:24 lang=go exported=true byte_range=318:577
+  sig=time.Duration
+  doc=A coding turn can include local installs and browser verification between\nmodel calls. Thirty minutes remains short-lived while avoiding expiry in\nthe middle of the worker's bounded twenty-minute job window.
+EDGES
+  ^references=matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken,matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/proxy.Server.handleAgentCoreToken
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
 NODE id=matrix/gateway/internal/auth.Authenticator kind=type
-  digest=b3:087759848286d44b6df44242ba3acbf0b8585fecb352bde7c670c44e90dd8c3d file=gateway/internal/auth/auth.go range=25:38 lang=go exported=true byte_range=799:1423
-  sig=type Authenticator struct {\n	// token is the expected MATRIX_GATEWAY_TOKEN value. Compared with\n	// constant-time equality to avoid leaking length-class via timing.\n	token	string\n\n	// allowEmptyToken keeps local-dev posture viable: when true AND\n	// token == "", every request is accepted. Production callers MUST\n	// construct with allowEmptyToken=false (the default) so a misconfig\n	// can never silently disable auth.\n	allowEmptyToken	bool\n}
+  digest=b3:68674a070e6379d15f5643a327280cae3b0cf96e7235b62b6a015a5ba82604b4 file=gateway/internal/auth/auth.go range=31:46 lang=go exported=true byte_range=873:1566
+  sig=type Authenticator struct {\n	// token is the expected MATRIX_GATEWAY_TOKEN value. Compared with\n	// constant-time equality to avoid leaking length-class via timing.\n	token	string\n\n	// allowEmptyToken keeps local-dev posture viable: when true AND\n	// token == "", every request is accepted. Production callers MUST\n	// construct with allowEmptyToken=false (the default) so a misconfig\n	// can never silently disable auth.\n	allowEmptyToken	bool\n	agentCoreKeys	map[string][]byte\n	now		func() time.Time\n}
   doc=Authenticator validates the gateway shared bearer token and the\nX-Matrix-Actor-DID actor header. Construct once per process via\nNewAuthenticator; safe for concurrent use.
 EDGES
-  contains=matrix/gateway/internal/auth.Authenticator#allowEmptyToken,matrix/gateway/internal/auth.Authenticator#token,matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/auth.Authenticator.VerifySignature,matrix/gateway/internal/auth.Authenticator.checkBearer
-  ^references=matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/auth.Authenticator.VerifySignature,matrix/gateway/internal/auth.Authenticator.checkBearer,matrix/gateway/internal/auth.New,matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.Server
+  contains=matrix/gateway/internal/auth.Authenticator#agentCoreKeys,matrix/gateway/internal/auth.Authenticator#allowEmptyToken,matrix/gateway/internal/auth.Authenticator#now,matrix/gateway/internal/auth.Authenticator#token,matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/auth.Authenticator.VerifySignature,matrix/gateway/internal/auth.Authenticator.checkLegacyBearer,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^references=matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/auth.Authenticator.VerifySignature,matrix/gateway/internal/auth.Authenticator.checkLegacyBearer,matrix/gateway/internal/auth.Authenticator.verifyAgentCore,matrix/gateway/internal/auth.New,matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.Server
   ^defines=matrix/gateway/internal/auth/auth.go
 
+NODE id=matrix/gateway/internal/auth.Authenticator#agentCoreKeys kind=field
+  digest=b3:a31a43fb492f8bceffd8d04448c4abc12b2ab3ec9a11437db9c76ff06b291c88 file=gateway/internal/auth/auth.go range=44:44 lang=go exported=false byte_range=1497:1530
+  sig=map[string][]byte
+EDGES
+  ^contains=matrix/gateway/internal/auth.Authenticator
+
 NODE id=matrix/gateway/internal/auth.Authenticator#allowEmptyToken kind=field
-  digest=b3:103136e488113c5c445bb4c26e94ff54a0462582afc24896c41c0cacb1334474 file=gateway/internal/auth/auth.go range=33:37 lang=go exported=false byte_range=1160:1421
+  digest=b3:103136e488113c5c445bb4c26e94ff54a0462582afc24896c41c0cacb1334474 file=gateway/internal/auth/auth.go range=39:43 lang=go exported=false byte_range=1234:1495
   sig=bool
   doc=allowEmptyToken keeps local-dev posture viable: when true AND\ntoken == "", every request is accepted. Production callers MUST\nconstruct with allowEmptyToken=false (the default) so a misconfig\ncan never silently disable auth.
 EDGES
   ^contains=matrix/gateway/internal/auth.Authenticator
 
+NODE id=matrix/gateway/internal/auth.Authenticator#now kind=field
+  digest=b3:2d0d7c2df350b8d46cadf68a285812e9efcd4195e7a4f8dc0a80c2181146fb9b file=gateway/internal/auth/auth.go range=45:45 lang=go exported=false byte_range=1532:1564
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/gateway/internal/auth.Authenticator
+
 NODE id=matrix/gateway/internal/auth.Authenticator#token kind=field
-  digest=b3:e652820b469ae494ac0c31e8b4def1683b59970c6810c3affe47296bb66c28f2 file=gateway/internal/auth/auth.go range=29:31 lang=go exported=false byte_range=1008:1157
+  digest=b3:e652820b469ae494ac0c31e8b4def1683b59970c6810c3affe47296bb66c28f2 file=gateway/internal/auth/auth.go range=35:37 lang=go exported=false byte_range=1082:1231
   sig=string
   doc=token is the expected MATRIX_GATEWAY_TOKEN value. Compared with\nconstant-time equality to avoid leaking length-class via timing.
 EDGES
   ^contains=matrix/gateway/internal/auth.Authenticator
 
+NODE id=matrix/gateway/internal/auth.Authenticator.Authenticate kind=method
+  digest=b3:b2af9145297555fc2c9d6ac80bcf679e8f7ac079664190d9edfc3d90005ab51b file=gateway/internal/auth/auth.go range=120:143 lang=go exported=true byte_range=4306:5141
+  sig=func (a *Authenticator) Authenticate(r *http.Request) (Principal, error)
+  doc=Authenticate verifies the request and returns its authenticated authority.
+EDGES
+  calls=matrix/gateway/internal/auth.Authenticator.checkLegacyBearer,matrix/gateway/internal/auth.Authenticator.verifyAgentCore,matrix/gateway/internal/auth.bearerToken,matrix/gateway/internal/auth.looksLikeDID
+  references=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.Authenticator.checkLegacyBearer,matrix/gateway/internal/auth.Authenticator.verifyAgentCore,matrix/gateway/internal/auth.ErrMalformedActor,matrix/gateway/internal/auth.ErrMissingActor,matrix/gateway/internal/auth.ErrUnauthorized,matrix/gateway/internal/auth.Principal,matrix/gateway/internal/auth.a,matrix/gateway/internal/auth.actor,matrix/gateway/internal/auth.agentCoreTokenPrefix,matrix/gateway/internal/auth.bearerToken,matrix/gateway/internal/auth.hasBearer,matrix/gateway/internal/auth.looksLikeDID,matrix/gateway/internal/auth.r,matrix/gateway/internal/auth.supplied,matrix/gateway/internal/types.HeaderActorDID,matrix/gateway/internal/types.HeaderAuthorization,matrix/gateway/internal/types.HeaderSlot
+  ^contains=matrix/gateway/internal/auth.Authenticator
+  ^calls=matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/proxy.Server.handleAgentCoreToken,matrix/gateway/internal/proxy.Server.handleProxy
+  ^references=matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/proxy.Server.handleAgentCoreToken,matrix/gateway/internal/proxy.Server.handleProxy
+  ^defines=matrix/gateway/internal/auth/auth.go
+
 NODE id=matrix/gateway/internal/auth.Authenticator.Verify kind=method
-  digest=b3:814a5fdb81cd5708944d1007307538ccc8b0780ddd4b419afb2ee6c752cc7d63 file=gateway/internal/auth/auth.go range=77:98 lang=go exported=true byte_range=2979:3739
+  digest=b3:7e43eb0e963b3584e0d00087139d945cc8f9542eb67dd973afb23d8a9ac5f5a2 file=gateway/internal/auth/auth.go range=145:157 lang=go exported=true byte_range=5143:5648
   sig=func (a *Authenticator) Verify(r *http.Request) (actor string, err error)
   doc=Verify checks the Authorization header against the configured token\nand the actor header for presence. Returns the actor DID on success.\n\nReturns one of: ErrUnauthorized, ErrMissingActor, ErrMalformedActor,\nor nil. Callers map these to HTTP 401 / 400 themselves so the\npackage stays HTTP-framework agnostic.
 EDGES
-  calls=matrix/gateway/internal/auth.Authenticator.checkBearer,matrix/gateway/internal/auth.looksLikeDID
-  references=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.Authenticator.checkBearer,matrix/gateway/internal/auth.ErrMalformedActor,matrix/gateway/internal/auth.ErrMissingActor,matrix/gateway/internal/auth.ErrUnauthorized,matrix/gateway/internal/auth.a,matrix/gateway/internal/auth.actor,matrix/gateway/internal/auth.looksLikeDID,matrix/gateway/internal/auth.r,matrix/gateway/internal/types.HeaderActorDID,matrix/gateway/internal/types.HeaderAuthorization
+  calls=matrix/gateway/internal/auth.Authenticator.Authenticate
+  references=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/auth.a,matrix/gateway/internal/auth.err,matrix/gateway/internal/auth.principal,matrix/gateway/internal/auth.r
   ^contains=matrix/gateway/internal/auth.Authenticator
-  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
-  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.Authenticator.VerifySignature kind=method
-  digest=b3:7d850a719ced7b1a4fb0f8ca1b6095d31df2b007c2eb7039cc7116046347fda6 file=gateway/internal/auth/auth.go range=100:118 lang=go exported=true byte_range=3741:4671
+  digest=b3:7d850a719ced7b1a4fb0f8ca1b6095d31df2b007c2eb7039cc7116046347fda6 file=gateway/internal/auth/auth.go range=159:177 lang=go exported=true byte_range=5650:6580
   sig=func (a *Authenticator) VerifySignature(_ *http.Request, _ string) error
   doc=VerifySignature is a placeholder for future ed25519 wallet\nverification across the canonical request body. The plan §5.15\nreserves this surface; v1 returns nil unconditionally so wiring\ncan land without forcing daemon-side signing in the same change.\n\nWhen implemented, it will:\n 1. Read Authorization-Signature: ed25519=<base58> from the request\n 2. Resolve the wallet pubkey for the actor DID (from a cache\n    populated by /wallet/keys, or via a future on-chain lookup)\n 3. Recompute canonical body bytes and verify the signature\n\nUntil then, callers should still invoke it so the boundary check\nis wired in advance.
 EDGES
   references=matrix/gateway/internal/auth.Authenticator
   ^contains=matrix/gateway/internal/auth.Authenticator
-  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
-  ^references=matrix/gateway/internal/proxy.Server.handleProxy
+  ^calls=matrix/gateway/internal/proxy.Server.handleAgentCoreToken,matrix/gateway/internal/proxy.Server.handleProxy
+  ^references=matrix/gateway/internal/proxy.Server.handleAgentCoreToken,matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/auth/auth.go
 
-NODE id=matrix/gateway/internal/auth.Authenticator.checkBearer kind=method
-  digest=b3:c8a405a35e5eb2ee3367878600fe6f0976b8fb966147eb8de46c8dba66e5b04f file=gateway/internal/auth/auth.go range=120:134 lang=go exported=false byte_range=4673:5078
-  sig=func (a *Authenticator) checkBearer(header string) bool
+NODE id=matrix/gateway/internal/auth.Authenticator.checkLegacyBearer kind=method
+  digest=b3:d138668242b324a7252a541a9b2475bc241402596e963c667f2707dacb2cf296 file=gateway/internal/auth/auth.go range=179:187 lang=go exported=false byte_range=6582:6833
+  sig=func (a *Authenticator) checkLegacyBearer(supplied string, hasBearer bool) bool
 EDGES
-  references=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.a,matrix/gateway/internal/auth.header,matrix/gateway/internal/auth.prefix,matrix/gateway/internal/auth.supplied
+  references=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.a,matrix/gateway/internal/auth.hasBearer,matrix/gateway/internal/auth.supplied
   ^contains=matrix/gateway/internal/auth.Authenticator
-  ^calls=matrix/gateway/internal/auth.Authenticator.Verify
-  ^references=matrix/gateway/internal/auth.Authenticator.Verify
+  ^calls=matrix/gateway/internal/auth.Authenticator.Authenticate
+  ^references=matrix/gateway/internal/auth.Authenticator.Authenticate
+  ^defines=matrix/gateway/internal/auth/auth.go
+
+NODE id=matrix/gateway/internal/auth.Authenticator.verifyAgentCore kind=method
+  digest=b3:c74118f47536b928a628c12b271b538faa6fc8ce6ea18cb80c0118cf2e9a446b file=gateway/internal/auth/auth.go range=199:265 lang=go exported=false byte_range=7098:9603
+  sig=func (a *Authenticator) verifyAgentCore(r *http.Request, token string) (Principal, error)
+EDGES
+  calls=matrix/gateway/internal/auth.looksLikeDID,matrix/gateway/internal/auth.signAgentCoreToken
+  references=matrix/gateway/internal/auth.AgentCoreAudience,matrix/gateway/internal/auth.AgentCoreClaims,matrix/gateway/internal/auth.AgentCoreMaxTokenTTL,matrix/gateway/internal/auth.AgentCoreModel,matrix/gateway/internal/auth.AgentCoreProvider,matrix/gateway/internal/auth.AgentCoreScope,matrix/gateway/internal/auth.AgentCoreSlot,matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.ErrUnauthorized,matrix/gateway/internal/auth.Principal,matrix/gateway/internal/auth.a,matrix/gateway/internal/auth.actor,matrix/gateway/internal/auth.agentCoreClockSkew,matrix/gateway/internal/auth.agentCoreTokenPrefix,matrix/gateway/internal/auth.byo,matrix/gateway/internal/auth.claims,matrix/gateway/internal/auth.decoder,matrix/gateway/internal/auth.err,matrix/gateway/internal/auth.expiresAt,matrix/gateway/internal/auth.issuedAt,matrix/gateway/internal/auth.jti,matrix/gateway/internal/auth.jtiErr,matrix/gateway/internal/auth.key,matrix/gateway/internal/auth.looksLikeDID,matrix/gateway/internal/auth.now,matrix/gateway/internal/auth.ok,matrix/gateway/internal/auth.parts,matrix/gateway/internal/auth.payload,matrix/gateway/internal/auth.r,matrix/gateway/internal/auth.signAgentCoreToken,matrix/gateway/internal/auth.signature,matrix/gateway/internal/auth.slot,matrix/gateway/internal/auth.token,matrix/gateway/internal/auth.trailing,matrix/gateway/internal/auth.want,matrix/gateway/internal/types.HeaderActorDID,matrix/gateway/internal/types.HeaderBYOAPIKey,matrix/gateway/internal/types.HeaderSlot,matrix/gateway/internal/types.HeaderUserAPIKey
+  ^contains=matrix/gateway/internal/auth.Authenticator
+  ^calls=matrix/gateway/internal/auth.Authenticator.Authenticate
+  ^references=matrix/gateway/internal/auth.Authenticator.Authenticate
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.ErrMalformedActor kind=var
-  digest=b3:81413d343ba5411f8b0660fab03d2a9041b0c2853a1b72c4f2dffabcfbfa67db file=gateway/internal/auth/auth.go range=71:75 lang=go exported=true byte_range=2621:2977
+  digest=b3:81413d343ba5411f8b0660fab03d2a9041b0c2853a1b72c4f2dffabcfbfa67db file=gateway/internal/auth/auth.go range=103:107 lang=go exported=true byte_range=3616:3972
   sig=error
   doc=ErrMalformedActor is returned when the actor header is present but\nnot a recognizable DID-shape ("did:" prefix, single colon-separated\ntriple). The check is deliberately permissive — any string starting\nwith "did:" passes; deeper validation is the wallet's job.
 EDGES
-  ^references=matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/proxy.writeAuthError
+  ^references=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/proxy.writeAuthError
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.ErrMissingActor kind=var
-  digest=b3:d91ac56bc30514b036b196a3b7d68d6fb8c94b8ace88dd76f02c6201aa2bf8d4 file=gateway/internal/auth/auth.go range=64:65 lang=go exported=true byte_range=2278:2426
+  digest=b3:d91ac56bc30514b036b196a3b7d68d6fb8c94b8ace88dd76f02c6201aa2bf8d4 file=gateway/internal/auth/auth.go range=96:97 lang=go exported=true byte_range=3273:3421
   sig=error
   doc=ErrMissingActor is returned when X-Matrix-Actor-DID is empty.
 EDGES
-  ^references=matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/proxy.writeAuthError
+  ^references=matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/proxy.writeAuthError
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.ErrUnauthorized kind=var
-  digest=b3:c8f1e999cd2ac25dd0f1dcd68011d18a48d5f5796e505c550aa28f4ec3e6653d file=gateway/internal/auth/auth.go range=67:69 lang=go exported=true byte_range=2428:2619
+  digest=b3:c8f1e999cd2ac25dd0f1dcd68011d18a48d5f5796e505c550aa28f4ec3e6653d file=gateway/internal/auth/auth.go range=99:101 lang=go exported=true byte_range=3423:3614
   sig=error
   doc=ErrUnauthorized is returned when the bearer token is missing or\nfails constant-time comparison against the expected token.
 EDGES
-  ^references=matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/proxy.writeAuthError
+  ^references=matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/auth.Authenticator.verifyAgentCore,matrix/gateway/internal/proxy.writeAuthError
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.New kind=func
-  digest=b3:3338c06987bb81256e7620fa960345b7ace746c09dac944f49ffa7a1abffaacb file=gateway/internal/auth/auth.go range=53:62 lang=go exported=true byte_range=1926:2276
+  digest=b3:ae59117234aae6146257b49b0b381eb786bf5968dab6a4664217f3df9423d4ec file=gateway/internal/auth/auth.go range=69:94 lang=go exported=true byte_range=2401:3271
   sig=func New(opts Options) (*Authenticator, error)
   doc=New constructs a new Authenticator from the supplied options.
 EDGES
-  references=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.Options,matrix/gateway/internal/auth.opts
+  calls=matrix/gateway/internal/auth.validKeyID
+  references=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.Options,matrix/gateway/internal/auth.key,matrix/gateway/internal/auth.keyID,matrix/gateway/internal/auth.keys,matrix/gateway/internal/auth.now,matrix/gateway/internal/auth.opts,matrix/gateway/internal/auth.validKeyID
   ^calls=matrix/gateway/cmd/matrix-gateway.run
   ^references=matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/internal/auth/auth.go
 
+NODE id=matrix/gateway/internal/auth.NewAgentCoreIssuer kind=func
+  digest=b3:b7832cc8c345e8a7b18b5cad6fb66a15954d7618a854c36e10a5d3506444a89e file=gateway/internal/auth/agentcore.go range=57:78 lang=go exported=true byte_range=1257:1817
+  sig=func NewAgentCoreIssuer(opts AgentCoreIssuerOptions) (*AgentCoreIssuer, error)
+EDGES
+  calls=matrix/gateway/internal/auth.validKeyID
+  references=matrix/gateway/internal/auth.AgentCoreIssuer,matrix/gateway/internal/auth.AgentCoreIssuerOptions,matrix/gateway/internal/auth.now,matrix/gateway/internal/auth.opts,matrix/gateway/internal/auth.random,matrix/gateway/internal/auth.validKeyID
+  ^calls=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken
+  ^references=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
 NODE id=matrix/gateway/internal/auth.Options kind=type
-  digest=b3:c31514aafc25360458770d3609f6e06bb19e9b9349732556504f421e774df682 file=gateway/internal/auth/auth.go range=40:51 lang=go exported=true byte_range=1425:1924
-  sig=type Options struct {\n	// Token is the shared secret expected in Authorization: Bearer ...\n	// Empty + AllowEmptyToken=true → auth disabled (local-dev only).\n	Token	string\n\n	// AllowEmptyToken explicitly opts into "no auth" when Token == "".\n	// Defaults to false: an empty Token without this flag returns an\n	// error from NewAuthenticator so misconfigured production deploys\n	// fail fast instead of silently accepting traffic.\n	AllowEmptyToken	bool\n}
+  digest=b3:25db8de1f7dd635e60c50c94c27a1a92ffa4a7de0005a15ee7e59ab7207e1ae9 file=gateway/internal/auth/auth.go range=48:67 lang=go exported=true byte_range=1568:2399
+  sig=type Options struct {\n	// Token is the shared secret expected in Authorization: Bearer ...\n	// Empty + AllowEmptyToken=true → auth disabled (local-dev only).\n	Token	string\n\n	// AllowEmptyToken explicitly opts into "no auth" when Token == "".\n	// Defaults to false: an empty Token without this flag returns an\n	// error from NewAuthenticator so misconfigured production deploys\n	// fail fast instead of silently accepting traffic.\n	AllowEmptyToken	bool\n\n	// AgentCoreVerificationKeys maps token key ids to HMAC-SHA256 keys.\n	// Include the active key and any prior keys still inside their maximum\n	// one-hour token lifetime. Keys are cloned during construction.\n	AgentCoreVerificationKeys	map[string][]byte\n\n	// Now is the verification clock. nil uses time.Now.\n	Now	func() time.Time\n}
   doc=Options controls Authenticator behavior.
 EDGES
-  contains=matrix/gateway/internal/auth.Options#AllowEmptyToken,matrix/gateway/internal/auth.Options#Token
+  contains=matrix/gateway/internal/auth.Options#AgentCoreVerificationKeys,matrix/gateway/internal/auth.Options#AllowEmptyToken,matrix/gateway/internal/auth.Options#Now,matrix/gateway/internal/auth.Options#Token
   ^references=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/internal/auth.New
   ^defines=matrix/gateway/internal/auth/auth.go
 
+NODE id=matrix/gateway/internal/auth.Options#AgentCoreVerificationKeys kind=field
+  digest=b3:66fa43b1430c51a894034d816870c139355ac65e21d3a3d3fac2630854dc747f file=gateway/internal/auth/auth.go range=60:63 lang=go exported=true byte_range=2068:2320
+  sig=map[string][]byte
+  doc=AgentCoreVerificationKeys maps token key ids to HMAC-SHA256 keys.\nInclude the active key and any prior keys still inside their maximum\none-hour token lifetime. Keys are cloned during construction.
+EDGES
+  ^contains=matrix/gateway/internal/auth.Options
+
 NODE id=matrix/gateway/internal/auth.Options#AllowEmptyToken kind=field
-  digest=b3:7f3b6f4f1bec4567351589a52fe295d8f4cc43b1af1a836be072d5fed78ff673 file=gateway/internal/auth/auth.go range=46:50 lang=go exported=true byte_range=1645:1922
+  digest=b3:7f3b6f4f1bec4567351589a52fe295d8f4cc43b1af1a836be072d5fed78ff673 file=gateway/internal/auth/auth.go range=54:58 lang=go exported=true byte_range=1788:2065
   sig=bool
   doc=AllowEmptyToken explicitly opts into "no auth" when Token == "".\nDefaults to false: an empty Token without this flag returns an\nerror from NewAuthenticator so misconfigured production deploys\nfail fast instead of silently accepting traffic.
 EDGES
   ^contains=matrix/gateway/internal/auth.Options
 
+NODE id=matrix/gateway/internal/auth.Options#Now kind=field
+  digest=b3:ace9b307ca34772ce39c82abc84e5edb9bfd187c472f2a4b63cff2c72ea00fbd file=gateway/internal/auth/auth.go range=65:66 lang=go exported=true byte_range=2323:2397
+  sig=func() time.Time
+  doc=Now is the verification clock. nil uses time.Now.
+EDGES
+  ^contains=matrix/gateway/internal/auth.Options
+
 NODE id=matrix/gateway/internal/auth.Options#Token kind=field
-  digest=b3:779a54032a67f21d470603c838e2e5e08a17a0cce2a10162de0d036cd3640e5b file=gateway/internal/auth/auth.go range=42:44 lang=go exported=true byte_range=1492:1642
+  digest=b3:779a54032a67f21d470603c838e2e5e08a17a0cce2a10162de0d036cd3640e5b file=gateway/internal/auth/auth.go range=50:52 lang=go exported=true byte_range=1635:1785
   sig=string
   doc=Token is the shared secret expected in Authorization: Bearer ...\nEmpty + AllowEmptyToken=true → auth disabled (local-dev only).
 EDGES
   ^contains=matrix/gateway/internal/auth.Options
 
+NODE id=matrix/gateway/internal/auth.Principal kind=type
+  digest=b3:924f11541194dcc3bff9addcb100ab5f45110e23dd4ca665489bbf2f8293dee5 file=gateway/internal/auth/auth.go range=109:118 lang=go exported=true byte_range=3974:4304
+  sig=type Principal struct {\n	Actor		string\n	Slot		string\n	Scoped		bool\n	Provider	string\n	Model		string\n}
+  doc=Principal is the authenticated authority for a gateway request. Scoped\nprincipals carry signed provider and model constraints; legacy principals\nretain the shared-token behavior and leave those constraints empty.
+EDGES
+  contains=matrix/gateway/internal/auth.Principal#Actor,matrix/gateway/internal/auth.Principal#Model,matrix/gateway/internal/auth.Principal#Provider,matrix/gateway/internal/auth.Principal#Scoped,matrix/gateway/internal/auth.Principal#Slot
+  ^references=matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^defines=matrix/gateway/internal/auth/auth.go
+
+NODE id=matrix/gateway/internal/auth.Principal#Actor kind=field
+  digest=b3:d20eb89f90fba888ea7a3a2f90f537fe16264e828fa63150109d8c5682b07ad7 file=gateway/internal/auth/auth.go range=113:113 lang=go exported=true byte_range=4221:4236
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.Principal
+
+NODE id=matrix/gateway/internal/auth.Principal#Model kind=field
+  digest=b3:e430b37d4994da9f0322cda2aa8aec9075e2fee3fe1d04562251fae5a1a19b13 file=gateway/internal/auth/auth.go range=117:117 lang=go exported=true byte_range=4287:4302
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.Principal
+
+NODE id=matrix/gateway/internal/auth.Principal#Provider kind=field
+  digest=b3:1c67b4872cd0669e85a25ce26b1d9295c4447bda7d2efed19f690c3ac06134cf file=gateway/internal/auth/auth.go range=116:116 lang=go exported=true byte_range=4270:4285
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.Principal
+
+NODE id=matrix/gateway/internal/auth.Principal#Scoped kind=field
+  digest=b3:1617708e1418a433edb02168ff66d30de219d0899ea413ec5e431a63d9e3cafd file=gateway/internal/auth/auth.go range=115:115 lang=go exported=true byte_range=4255:4268
+  sig=bool
+EDGES
+  ^contains=matrix/gateway/internal/auth.Principal
+
+NODE id=matrix/gateway/internal/auth.Principal#Slot kind=field
+  digest=b3:ee8bb6bc31cea39cc82417444697df0e449c9f3030892c9a5d6adf983e057493 file=gateway/internal/auth/auth.go range=114:114 lang=go exported=true byte_range=4238:4253
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/auth.Principal
+
+NODE id=matrix/gateway/internal/auth.agentCoreClockSkew kind=const
+  digest=b3:a4b7d7076731040775044c76a0df0f4361ceb0f6a964853e7b42727a33567ac9 file=gateway/internal/auth/agentcore.go range=27:27 lang=go exported=false byte_range=644:683
+  sig=time.Duration
+EDGES
+  ^references=matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.agentCoreTokenPrefix kind=const
+  digest=b3:a07b4b156b0e7be4f58b5b9bf4cfdac6c583d70c8108e60a5edaefc86375b329 file=gateway/internal/auth/agentcore.go range=26:26 lang=go exported=false byte_range=613:642
+  sig=untyped string
+EDGES
+  ^references=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.bearerToken kind=func
+  digest=b3:54b746561a33021b4fbab2f6c302734b3f602f13e2e75c5e746daed47b6915f1 file=gateway/internal/auth/auth.go range=189:197 lang=go exported=false byte_range=6835:7096
+  sig=func bearerToken(header string) (string, bool)
+EDGES
+  references=matrix/gateway/internal/auth.header,matrix/gateway/internal/auth.prefix,matrix/gateway/internal/auth.supplied
+  ^calls=matrix/gateway/internal/auth.Authenticator.Authenticate
+  ^references=matrix/gateway/internal/auth.Authenticator.Authenticate
+  ^defines=matrix/gateway/internal/auth/auth.go
+
 NODE id=matrix/gateway/internal/auth.looksLikeDID kind=func
-  digest=b3:0b5d3341c45c0d614d6de9a188136d51c06b069671fb5007c941fa80fedc58a0 file=gateway/internal/auth/auth.go range=136:152 lang=go exported=false byte_range=5080:5542
+  digest=b3:0b5d3341c45c0d614d6de9a188136d51c06b069671fb5007c941fa80fedc58a0 file=gateway/internal/auth/auth.go range=267:283 lang=go exported=false byte_range=9605:10067
   sig=func looksLikeDID(s string) bool
   doc=looksLikeDID is a deliberately permissive shape check. The DID Core\nspec allows arbitrary methods + identifiers; we only enforce the\n"did:<method>:<id>" triple structure. Heavy validation is wallet\nresponsibility.
 EDGES
   references=matrix/gateway/internal/auth.parts,matrix/gateway/internal/auth.s
-  ^calls=matrix/gateway/internal/auth.Authenticator.Verify
-  ^references=matrix/gateway/internal/auth.Authenticator.Verify
+  ^calls=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^references=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
   ^defines=matrix/gateway/internal/auth/auth.go
 
-NODE id=matrix/gateway/internal/auth/auth.go kind=file
-  digest=b3:47fafd24c793bbd1271ce33f2dbcf8c648d2785dd015a5f495b24d42059ed0cd file=gateway/internal/auth/auth.go range=1:154 lang=go exported=true
+NODE id=matrix/gateway/internal/auth.signAgentCoreToken kind=func
+  digest=b3:4167ba5bd1e4e61358284f3a41d34179826ab1890004519c2daadbd93d4106cb file=gateway/internal/auth/agentcore.go range=118:122 lang=go exported=false byte_range=3274:3424
+  sig=func signAgentCoreToken(key []byte, signed string) []byte
 EDGES
-  defines=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/auth.Authenticator.VerifySignature,matrix/gateway/internal/auth.Authenticator.checkBearer,matrix/gateway/internal/auth.ErrMalformedActor,matrix/gateway/internal/auth.ErrMissingActor,matrix/gateway/internal/auth.ErrUnauthorized,matrix/gateway/internal/auth.New,matrix/gateway/internal/auth.Options,matrix/gateway/internal/auth.looksLikeDID
+  references=matrix/gateway/internal/auth.key,matrix/gateway/internal/auth.mac,matrix/gateway/internal/auth.signed
+  ^calls=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^references=matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.Authenticator.verifyAgentCore
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth.validKeyID kind=func
+  digest=b3:442e7b35dc616a1d7e60378ab5da9a3109eba63421a5a8812c206778f22d0a22 file=gateway/internal/auth/agentcore.go range=124:138 lang=go exported=false byte_range=3426:3756
+  sig=func validKeyID(value string) bool
+EDGES
+  references=matrix/gateway/internal/auth.current,matrix/gateway/internal/auth.value
+  ^calls=matrix/gateway/internal/auth.New,matrix/gateway/internal/auth.NewAgentCoreIssuer
+  ^references=matrix/gateway/internal/auth.New,matrix/gateway/internal/auth.NewAgentCoreIssuer
+  ^defines=matrix/gateway/internal/auth/agentcore.go
+
+NODE id=matrix/gateway/internal/auth/agentcore.go kind=file
+  digest=b3:0e7f644bb97dcec9bb88c3720a2a071349bce81e857f7926619ad6df92dfd0f4 file=gateway/internal/auth/agentcore.go range=1:138 lang=go exported=true
+EDGES
+  defines=matrix/gateway/internal/auth.AgentCoreAudience,matrix/gateway/internal/auth.AgentCoreClaims,matrix/gateway/internal/auth.AgentCoreIssuer,matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.AgentCoreIssuerOptions,matrix/gateway/internal/auth.AgentCoreMaxTokenTTL,matrix/gateway/internal/auth.AgentCoreModel,matrix/gateway/internal/auth.AgentCoreProvider,matrix/gateway/internal/auth.AgentCoreScope,matrix/gateway/internal/auth.AgentCoreSlot,matrix/gateway/internal/auth.AgentCoreTokenTTL,matrix/gateway/internal/auth.NewAgentCoreIssuer,matrix/gateway/internal/auth.agentCoreClockSkew,matrix/gateway/internal/auth.agentCoreTokenPrefix,matrix/gateway/internal/auth.signAgentCoreToken,matrix/gateway/internal/auth.validKeyID
+  ^contains=matrix/gateway/internal/auth
+
+NODE id=matrix/gateway/internal/auth/auth.go kind=file
+  digest=b3:83d30027ceda8d7d43c8d14595022cdfc2f7d198f816a9682533e0b1a8ee0e52 file=gateway/internal/auth/auth.go range=1:285 lang=go exported=true
+EDGES
+  defines=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/auth.Authenticator.VerifySignature,matrix/gateway/internal/auth.Authenticator.checkLegacyBearer,matrix/gateway/internal/auth.Authenticator.verifyAgentCore,matrix/gateway/internal/auth.ErrMalformedActor,matrix/gateway/internal/auth.ErrMissingActor,matrix/gateway/internal/auth.ErrUnauthorized,matrix/gateway/internal/auth.New,matrix/gateway/internal/auth.Options,matrix/gateway/internal/auth.Principal,matrix/gateway/internal/auth.bearerToken,matrix/gateway/internal/auth.looksLikeDID
   ^contains=matrix/gateway/internal/auth

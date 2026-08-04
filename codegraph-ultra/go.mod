@@ -1,6 +1,6 @@
 module codegraph-ultra
 
-go 1.21
+go 1.25.0
 
 require (
 	github.com/charmbracelet/bubbles v0.20.0
@@ -8,7 +8,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/spf13/cobra v1.8.1
-	golang.org/x/tools v0.21.0
+	golang.org/x/tools v0.47.0
 )
 
 require (
@@ -27,8 +27,8 @@ require (
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/mod v0.37.0 // indirect
+	golang.org/x/sync v0.21.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.3.8 // indirect
 )

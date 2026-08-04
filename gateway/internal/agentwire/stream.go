@@ -186,7 +186,7 @@ func (normalizer *StreamNormalizer) Flush() ([][]byte, error) {
 	}
 	sort.Ints(indexes)
 
-	var output [][]byte
+	output := make([][]byte, 0, len(indexes))
 	for _, index := range indexes {
 		state := normalizer.choices[index]
 		delta := map[string]json.RawMessage{}

@@ -189,15 +189,12 @@ func (a *Agent) systemPrompt() string {
 		}
 		if a.tools != nil && a.tools.NativeLocalEnabled() {
 			writeNativeLocalPolicy(&b, a.tools.BuildProjectEnabled())
+			b.WriteString("- Choose the stack and framework from the user's requirements, scaffold the real build setup with the native tools, and keep working through current verification and final delivery. Plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
 		} else if a.tools != nil && a.tools.BuildProjectEnabled() {
 			writeBuildOnlyPolicy(&b)
-		} else {
-			b.WriteString("- Local workspace tools are unavailable in this session. Do not attempt project work through integration adapters or a desktop session; explain the blocker honestly.\n")
-		}
-		if a.tools != nil && a.tools.BuildProjectEnabled() {
 			b.WriteString("- Put the stack choice and framework constraints into the Build brief. The private worker should scaffold the real framework and build setup that fits the requirements; plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
 		} else {
-			b.WriteString("- Choose the stack and framework from the user's requirements, scaffold the real build setup with the native tools, and keep working through current verification and final delivery. Plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
+			b.WriteString("- Local workspace tools are unavailable in this session. Do not attempt project work through integration adapters or a desktop session; explain the blocker honestly.\n")
 		}
 		b.WriteString("- Use the native service tools for long-running local processes so their identity, logs, stop, and restart state remain durable. Use the workbench Preview pane for runnable previews.\n")
 		b.WriteString("- Deploying is NOT how you show work. Never deploy or publish anything (paxc included) unless the user explicitly asks you to deploy — and when they do, use a preview deploy unless they say production.\n\n")

@@ -176,7 +176,7 @@ func replayFetchManager(t *testing.T) *tools.Manager {
     "alias": "fetch",
     "transport": "stdio",
     "command": "uvx",
-    "args": ["--offline", "mcp-server-fetch==2025.4.7"],
+    "args": ["--offline", "--from", "mcp-server-fetch==2025.4.7", "--with", "mcp==1.29.0", "mcp-server-fetch"],
     "env": [],
     "package_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
     "version": "2025.4.7",

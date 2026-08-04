@@ -1,4 +1,4 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/construct/schema kind=package
   digest=b3:47805239b64066a6ac2dbb42bca9adb5cb39dadb430b5548ee128d0009fdec32 file=construct/schema range=0:0 lang=go exported=true
@@ -134,7 +134,7 @@ NODE id=matrix/construct/schema.Kind kind=type
   sig=type Kind string
   doc=Kind is the surface discriminator: which one of the 8 frozen primitives a\nsurface projects onto. Pinned as stable STRING constants (not enum ints) so\nthe wire and cross-language consumers are forward-stable.
 EDGES
-  ^references=matrix/construct/internal/codegen.kindStrings,matrix/construct/projection.ParseRender,matrix/construct/projection.autoID,matrix/construct/projection.buildSurface,matrix/construct/schema.KindAsk,matrix/construct/schema.KindCanvas,matrix/construct/schema.KindEntity,matrix/construct/schema.KindMetric,matrix/construct/schema.KindNarration,matrix/construct/schema.KindStream,matrix/construct/schema.KindStructure,matrix/construct/schema.KindTimeline,matrix/construct/schema.Kinds,matrix/construct/schema.Surface,matrix/construct/schema.ValidKind
+  ^references=matrix/construct/internal/codegen.kindStrings,matrix/construct/projection.ParseRender,matrix/construct/projection.autoID,matrix/construct/projection.buildSurface,matrix/construct/projection.renderVariant,matrix/construct/schema.KindAsk,matrix/construct/schema.KindCanvas,matrix/construct/schema.KindEntity,matrix/construct/schema.KindMetric,matrix/construct/schema.KindNarration,matrix/construct/schema.KindStream,matrix/construct/schema.KindStructure,matrix/construct/schema.KindTimeline,matrix/construct/schema.Kinds,matrix/construct/schema.Surface,matrix/construct/schema.ValidKind
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindAsk kind=const
@@ -143,7 +143,7 @@ NODE id=matrix/construct/schema.KindAsk kind=const
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
   references=matrix/construct/schema.Kind
-  ^references=matrix/construct/backchannel.Answered,matrix/construct/projection.buildSurface,matrix/construct/schema.Kinds,matrix/construct/schema.NewAsk,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind,matrix/neo/internal/tools.Manager.dispatchConstructRender
+  ^references=matrix/construct/backchannel.Answered,matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewAsk,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind,matrix/neo/internal/tools.Manager.dispatchConstructRender
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindCanvas kind=const
@@ -152,7 +152,7 @@ NODE id=matrix/construct/schema.KindCanvas kind=const
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
   references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/schema.Kinds,matrix/construct/schema.NewCanvas,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind
+  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewCanvas,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindEntity kind=const
@@ -161,7 +161,7 @@ NODE id=matrix/construct/schema.KindEntity kind=const
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
   references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/schema.Kinds,matrix/construct/schema.NewEntity,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.ValidKind
+  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewEntity,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.ValidKind
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindMetric kind=const
@@ -170,7 +170,7 @@ NODE id=matrix/construct/schema.KindMetric kind=const
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
   references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/schema.Kinds,matrix/construct/schema.NewMetric,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind
+  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewMetric,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindNarration kind=const
@@ -179,7 +179,7 @@ NODE id=matrix/construct/schema.KindNarration kind=const
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
   references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/schema.Kinds,matrix/construct/schema.NewNarration,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.ValidKind
+  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewNarration,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.ValidKind
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindStream kind=const
@@ -188,7 +188,7 @@ NODE id=matrix/construct/schema.KindStream kind=const
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
   references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/schema.Kinds,matrix/construct/schema.NewStream,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.ValidKind,matrix/construct/transport.ApplyPatch
+  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewStream,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.ValidKind,matrix/construct/transport.ApplyPatch
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindStructure kind=const
@@ -197,7 +197,7 @@ NODE id=matrix/construct/schema.KindStructure kind=const
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
   references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/schema.Kinds,matrix/construct/schema.NewStructure,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind
+  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewStructure,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindTimeline kind=const
@@ -206,7 +206,7 @@ NODE id=matrix/construct/schema.KindTimeline kind=const
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
   references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/schema.Kinds,matrix/construct/schema.NewTimeline,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind,matrix/construct/transport.ApplyPatch
+  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewTimeline,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind,matrix/construct/transport.ApplyPatch
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.Kinds kind=var
@@ -215,7 +215,7 @@ NODE id=matrix/construct/schema.Kinds kind=var
   doc=Kinds is the frozen, ordered set of all 8 primitive kinds. The order is the\nvocabulary order in the frozen spec and is the deterministic emit order for\ncodegen. Do NOT reorder; appending is a version-bump event (invariant i3).
 EDGES
   references=matrix/construct/schema.Kind,matrix/construct/schema.KindAsk,matrix/construct/schema.KindCanvas,matrix/construct/schema.KindEntity,matrix/construct/schema.KindMetric,matrix/construct/schema.KindNarration,matrix/construct/schema.KindStream,matrix/construct/schema.KindStructure,matrix/construct/schema.KindTimeline
-  ^references=matrix/construct/internal/codegen.enums,matrix/construct/projection.renderToolParams
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.NewAsk kind=func

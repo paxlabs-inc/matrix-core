@@ -1,0 +1,2441 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=matrix/router/internal/exa kind=package
+  digest=b3:bb77f888e1b186da2c64482bfab5b95ceec33c38a1915618fa1445833d8925bf file=router/internal/exa range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/router/internal/exa/client.go,matrix/router/internal/exa/failure.go,matrix/router/internal/exa/handler.go,matrix/router/internal/exa/meter.go,matrix/router/internal/exa/model.go,matrix/router/internal/exa/service.go,matrix/router/internal/exa/store.go,matrix/router/internal/exa/workflow.go
+  ^contains=mod:matrix/router
+  ^imports=matrix/router/cmd/matrix-router,matrix/router/internal/db
+
+NODE id=matrix/router/internal/exa.APIKeyEnv kind=const
+  digest=b3:b164887f939fa14aa995ae9c75e90cfd38e584c5a55ab25b56c6929f81874020 file=router/internal/exa/client.go range=20:20 lang=go exported=true byte_range=305:336
+  sig=untyped string
+EDGES
+  ^references=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.NewService
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.AgentError kind=type
+  digest=b3:83218f6e973b247ffed0d6be457916b0d5823cdfe64e95d3340153bed877bb83 file=router/internal/exa/model.go range=154:157 lang=go exported=true byte_range=5366:5475
+  sig=type AgentError struct {\n	Code	string	`json:"code,omitempty"`\n	Message	string	`json:"message,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.AgentError#Code,matrix/router/internal/exa.AgentError#Message
+  ^references=matrix/router/internal/exa.AgentRun
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.AgentError#Code kind=field
+  digest=b3:47c91c62cf4469a2290b0aa040f7b3c9b73ae2999184ef094bc6cc3d2d5f5fa4 file=router/internal/exa/model.go range=155:155 lang=go exported=true byte_range=5392:5430
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.AgentError
+
+NODE id=matrix/router/internal/exa.AgentError#Message kind=field
+  digest=b3:5e4556b452fc9ec7ec64531e194e4c27506d6e43cf006e8c427bd9cc151d4de8 file=router/internal/exa/model.go range=156:156 lang=go exported=true byte_range=5432:5473
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.AgentError
+
+NODE id=matrix/router/internal/exa.AgentRequest kind=type
+  digest=b3:70452aab1afd439894f51eb92e7de228f2f90ebf34ecd7286758a9a4550dc3bb file=router/internal/exa/model.go range=145:152 lang=go exported=true byte_range=4982:5364
+  sig=type AgentRequest struct {\n	Query		string			`json:"query"`\n	Effort		string			`json:"effort,omitempty"`\n	OutputSchema	map[string]any		`json:"outputSchema,omitempty"`\n	PreviousRunID	string			`json:"previousRunId,omitempty"`\n	Input		map[string]any		`json:"input,omitempty"`\n	DataSources	[]map[string]any	`json:"dataSources,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.AgentRequest#DataSources,matrix/router/internal/exa.AgentRequest#Effort,matrix/router/internal/exa.AgentRequest#Input,matrix/router/internal/exa.AgentRequest#OutputSchema,matrix/router/internal/exa.AgentRequest#PreviousRunID,matrix/router/internal/exa.AgentRequest#Query
+  ^references=matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.financeAgentRequest,matrix/router/internal/exa.validateAgent
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.AgentRequest#DataSources kind=field
+  digest=b3:6ad868d0a1c8f6240f08f15402e5dbf8708f6ecf9a2107dfdc479102baf61f25 file=router/internal/exa/model.go range=151:151 lang=go exported=true byte_range=5301:5362
+  sig=[]map[string]any
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRequest
+
+NODE id=matrix/router/internal/exa.AgentRequest#Effort kind=field
+  digest=b3:2e14c52402d92981359e18437556f13c70a98ffef0d8c4ca5dc8e3f48679b427 file=router/internal/exa/model.go range=147:147 lang=go exported=true byte_range=5057:5113
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRequest
+
+NODE id=matrix/router/internal/exa.AgentRequest#Input kind=field
+  digest=b3:f686c21a01d8abb367caec03e91350795d88575b5fc65f2ad56ce85d48f8bb87 file=router/internal/exa/model.go range=150:150 lang=go exported=true byte_range=5244:5299
+  sig=map[string]any
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRequest
+
+NODE id=matrix/router/internal/exa.AgentRequest#OutputSchema kind=field
+  digest=b3:20721efa2ddb80cf4c6c41227a91a532248f8b9a0b614095eb7c4076dd2c067f file=router/internal/exa/model.go range=148:148 lang=go exported=true byte_range=5115:5177
+  sig=map[string]any
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRequest
+
+NODE id=matrix/router/internal/exa.AgentRequest#PreviousRunID kind=field
+  digest=b3:9846de9e5cc894dd0ca6419ac4d2d6cc16e35e73160c7855d785d1fd36b5fd79 file=router/internal/exa/model.go range=149:149 lang=go exported=true byte_range=5179:5242
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRequest
+
+NODE id=matrix/router/internal/exa.AgentRequest#Query kind=field
+  digest=b3:f766a665355f006d0832a9fba9716ed973200d9c05136b304bc23efa55efe5a4 file=router/internal/exa/model.go range=146:146 lang=go exported=true byte_range=5010:5055
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRequest
+
+NODE id=matrix/router/internal/exa.AgentRun kind=type
+  digest=b3:7283a7cdd02a7a47d778609df21f47d34ef9fda4f3b1094dc8bb84322b41a4a8 file=router/internal/exa/model.go range=159:168 lang=go exported=true byte_range=5477:5902
+  sig=type AgentRun struct {\n	ID		string		`json:"id"`\n	Status		string		`json:"status"`\n	CreatedAt	string		`json:"createdAt,omitempty"`\n	UpdatedAt	string		`json:"updatedAt,omitempty"`\n	Output		*Output		`json:"output,omitempty"`\n	Cost		Cost		`json:"costDollars"`\n	Error		*AgentError	`json:"error,omitempty"`\n	Request		json.RawMessage	`json:"request,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.AgentRun#Cost,matrix/router/internal/exa.AgentRun#CreatedAt,matrix/router/internal/exa.AgentRun#Error,matrix/router/internal/exa.AgentRun#ID,matrix/router/internal/exa.AgentRun#Output,matrix/router/internal/exa.AgentRun#Request,matrix/router/internal/exa.AgentRun#Status,matrix/router/internal/exa.AgentRun#UpdatedAt,matrix/router/internal/exa.AgentRun.Terminal
+  references=matrix/router/internal/exa.AgentError,matrix/router/internal/exa.Cost,matrix/router/internal/exa.Output
+  ^references=matrix/router/internal/exa.AgentRun.Terminal,matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.Service.StartRun
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.AgentRun#Cost kind=field
+  digest=b3:dd7d4636883c003e2c0bb9950476aa6499d6b6de25c445bab4d73eef0a8303b4 file=router/internal/exa/model.go range=165:165 lang=go exported=true byte_range=5748:5794
+  sig=exa.Cost
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRun
+
+NODE id=matrix/router/internal/exa.AgentRun#CreatedAt kind=field
+  digest=b3:19d5f330734b82ede23c2e49eb3d361020e3d53ad37f07a8fada4e612cec3d8c file=router/internal/exa/model.go range=162:162 lang=go exported=true byte_range=5583:5637
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRun
+
+NODE id=matrix/router/internal/exa.AgentRun#Error kind=field
+  digest=b3:e35b5ae5b99f8cdfa5694d636b0ae9973afda20cd2c0b8ac78e21907411db70b file=router/internal/exa/model.go range=166:166 lang=go exported=true byte_range=5796:5846
+  sig=*exa.AgentError
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRun
+
+NODE id=matrix/router/internal/exa.AgentRun#ID kind=field
+  digest=b3:8b2398c1ba9180d4263bffcc13b06770ff7863e9367f6c1dd0cdf6b3c7dafc08 file=router/internal/exa/model.go range=160:160 lang=go exported=true byte_range=5501:5538
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRun
+
+NODE id=matrix/router/internal/exa.AgentRun#Output kind=field
+  digest=b3:f763ad6fa3d2abdaf07747f04dd63f70a6614ba66cde4ed7ba82403b77c76924 file=router/internal/exa/model.go range=164:164 lang=go exported=true byte_range=5695:5746
+  sig=*exa.Output
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRun
+
+NODE id=matrix/router/internal/exa.AgentRun#Request kind=field
+  digest=b3:088a588e4ee93d5818b91fc93b63b802e88398785c2bb6d51bfd38f76089e49b file=router/internal/exa/model.go range=167:167 lang=go exported=true byte_range=5848:5900
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRun
+
+NODE id=matrix/router/internal/exa.AgentRun#Status kind=field
+  digest=b3:b035e91bebe9837532cccc6d4607641f6793b3193d1643f6659e01266f32de68 file=router/internal/exa/model.go range=161:161 lang=go exported=true byte_range=5540:5581
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRun
+
+NODE id=matrix/router/internal/exa.AgentRun#UpdatedAt kind=field
+  digest=b3:a8e78873f1250d54087a36e0c7d7fdf257bd3b87e40668b785d2e82a05d42ca9 file=router/internal/exa/model.go range=163:163 lang=go exported=true byte_range=5639:5693
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.AgentRun
+
+NODE id=matrix/router/internal/exa.AgentRun.Terminal kind=method
+  digest=b3:1fb143746ac96d317441187e9374e1b4858399bdb049ca4ddf0accfa14060ae1 file=router/internal/exa/model.go range=170:177 lang=go exported=true byte_range=5904:6044
+  sig=func (r AgentRun) Terminal() bool
+EDGES
+  references=matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.r
+  ^contains=matrix/router/internal/exa.AgentRun
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.CacheRecord kind=type
+  digest=b3:30cb0fecec41b9a03bb55ce9ec473b9d1a0d00995b73352864d87d04566287b6 file=router/internal/exa/store.go range=24:30 lang=go exported=true byte_range=417:538
+  sig=type CacheRecord struct {\n	Key		string\n	User		string\n	Payload		[]byte\n	Cost		float64\n	ExpiresAt	time.Time\n}
+EDGES
+  contains=matrix/router/internal/exa.CacheRecord#Cost,matrix/router/internal/exa.CacheRecord#ExpiresAt,matrix/router/internal/exa.CacheRecord#Key,matrix/router/internal/exa.CacheRecord#Payload,matrix/router/internal/exa.CacheRecord#User
+  ^references=matrix/router/internal/db.DB.GetCache,matrix/router/internal/db.DB.PutCache,matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.MemoryStore.GetCache,matrix/router/internal/exa.MemoryStore.PutCache,matrix/router/internal/exa.NewMemoryStore,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.Store
+  ^defines=matrix/router/internal/exa/store.go
+
+NODE id=matrix/router/internal/exa.CacheRecord#Cost kind=field
+  digest=b3:fe12f01f60d61f5b444992e690c4be30223330a2b269882dba3efd0e113b9fc6 file=router/internal/exa/store.go range=28:28 lang=go exported=true byte_range=498:515
+  sig=float64
+EDGES
+  ^contains=matrix/router/internal/exa.CacheRecord
+
+NODE id=matrix/router/internal/exa.CacheRecord#ExpiresAt kind=field
+  digest=b3:7df37d96c3df9dc36ffbe63af04db04f6b698db8693cf03d865624631ae830fd file=router/internal/exa/store.go range=29:29 lang=go exported=true byte_range=517:536
+  sig=time.Time
+EDGES
+  ^contains=matrix/router/internal/exa.CacheRecord
+
+NODE id=matrix/router/internal/exa.CacheRecord#Key kind=field
+  digest=b3:b9a98ed345321c2e20b742bae549a082095e73a25fb0d03ecd2aa551b34c753b file=router/internal/exa/store.go range=25:25 lang=go exported=true byte_range=444:460
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.CacheRecord
+
+NODE id=matrix/router/internal/exa.CacheRecord#Payload kind=field
+  digest=b3:d9386522ab471d1ba804b8611addb9220dd7c2dd6fb961a0b9aa65512ba7ae9f file=router/internal/exa/store.go range=27:27 lang=go exported=true byte_range=480:496
+  sig=[]byte
+EDGES
+  ^contains=matrix/router/internal/exa.CacheRecord
+
+NODE id=matrix/router/internal/exa.CacheRecord#User kind=field
+  digest=b3:54c23b1964ee4582bbfb0fbda50218b119c34fcc671a501893b675532182b465 file=router/internal/exa/store.go range=26:26 lang=go exported=true byte_range=462:478
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.CacheRecord
+
+NODE id=matrix/router/internal/exa.Citation kind=type
+  digest=b3:9ad3618467facaeefc6279f5ac5e8a94d062ad7ad728e293ef2a242e3f91ae80 file=router/internal/exa/model.go range=20:23 lang=go exported=true byte_range=334:424
+  sig=type Citation struct {\n	URL	string	`json:"url"`\n	Title	string	`json:"title,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.Citation#Title,matrix/router/internal/exa.Citation#URL
+  ^references=matrix/router/internal/exa.Grounding
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.Citation#Title kind=field
+  digest=b3:2cbc5249a09b205f36c7cd58851769f42bc0c726ebd3ab9020d2e474ea0b940f file=router/internal/exa/model.go range=22:22 lang=go exported=true byte_range=385:422
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Citation
+
+NODE id=matrix/router/internal/exa.Citation#URL kind=field
+  digest=b3:7a1216fb9c2088bf67f9271b75027042910ebb0959d75ed8a19970c10949bdf9 file=router/internal/exa/model.go range=21:21 lang=go exported=true byte_range=358:383
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Citation
+
+NODE id=matrix/router/internal/exa.ClaimConflict kind=const
+  digest=b3:57ca63f5cea94acdb00b8a70c895b771286eb29cf20e42a961541e34eec78e2f file=router/internal/exa/model.go range=45:45 lang=go exported=true byte_range=1014:1055
+  sig=exa.ClaimState
+EDGES
+  references=matrix/router/internal/exa.ClaimState
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.ClaimInconclusive kind=const
+  digest=b3:d5f577ec4f44194d3146acd3b9be2d1c8b85dd31090d008a181b17b9922ff885 file=router/internal/exa/model.go range=46:46 lang=go exported=true byte_range=1057:1102
+  sig=exa.ClaimState
+EDGES
+  references=matrix/router/internal/exa.ClaimState
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.ClaimState kind=type
+  digest=b3:8fa437dcc6149caba12779502715d799db6bb4e44aaa55d78eb55a73bd99b22b file=router/internal/exa/model.go range=41:41 lang=go exported=true byte_range=938:960
+  sig=type ClaimState string
+EDGES
+  ^references=matrix/router/internal/exa.ClaimConflict,matrix/router/internal/exa.ClaimInconclusive,matrix/router/internal/exa.ClaimVerified,matrix/router/internal/exa.GroundedClaim
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.ClaimVerified kind=const
+  digest=b3:a321b115b8e940fdfa7d028163c0330b2b4b1d7d7ee9c1232f7b368800468c8d file=router/internal/exa/model.go range=44:44 lang=go exported=true byte_range=971:1012
+  sig=exa.ClaimState
+EDGES
+  references=matrix/router/internal/exa.ClaimState
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.Client kind=type
+  digest=b3:79d864ff41397d9f0a4153268653d37e2f587de34b6391fc20b966ab9db11c72 file=router/internal/exa/client.go range=32:36 lang=go exported=true byte_range=537:613
+  sig=type Client struct {\n	apiKey	string\n	baseURL	string\n	http	*http.Client\n}
+EDGES
+  contains=matrix/router/internal/exa.Client#apiKey,matrix/router/internal/exa.Client#baseURL,matrix/router/internal/exa.Client#http,matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Configured,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Client.do
+  ^references=matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Configured,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.NewClient,matrix/router/internal/exa.Service,matrix/router/internal/exa.ServiceConfig
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.Client#apiKey kind=field
+  digest=b3:40502ef5648ef11358fb29fd1244aeda57574abd828072808f81dbce89d879db file=router/internal/exa/client.go range=33:33 lang=go exported=false byte_range=559:573
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Client
+
+NODE id=matrix/router/internal/exa.Client#baseURL kind=field
+  digest=b3:f2962bf6b757b8899b3a89877c76a6f2b8c044ee558ff4423d6c97d4f1d35e47 file=router/internal/exa/client.go range=34:34 lang=go exported=false byte_range=575:589
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Client
+
+NODE id=matrix/router/internal/exa.Client#http kind=field
+  digest=b3:c7c6862a145ad6a7ab2bfa948ab6ad618e23052eb887bd929779c5dc97fc8634 file=router/internal/exa/client.go range=35:35 lang=go exported=false byte_range=591:611
+  sig=*http.Client
+EDGES
+  ^contains=matrix/router/internal/exa.Client
+
+NODE id=matrix/router/internal/exa.Client.CancelRun kind=method
+  digest=b3:fd4c0ccfbbcb7db0fa499411dfca92c32bfe836aa53e8bbf9b68f4e5beac6040 file=router/internal/exa/client.go range=121:131 lang=go exported=true byte_range=3569:3940
+  sig=func (c *Client) CancelRun(ctx context.Context, id string) (*AgentRun, error)
+EDGES
+  calls=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.c,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.id,matrix/router/internal/exa.out
+  ^contains=matrix/router/internal/exa.Client
+  ^calls=matrix/router/internal/exa.Service.CancelRun
+  ^references=matrix/router/internal/exa.Service.CancelRun
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.Client.Configured kind=method
+  digest=b3:0213c5de14d9ff45c5c89b3c5701756a346d9709042c19681e2124c13c18f5af file=router/internal/exa/client.go range=50:50 lang=go exported=true byte_range=967:1039
+  sig=func (c *Client) Configured() bool
+EDGES
+  references=matrix/router/internal/exa.Client,matrix/router/internal/exa.c
+  ^contains=matrix/router/internal/exa.Client
+  ^calls=matrix/router/internal/exa.Client.do
+  ^references=matrix/router/internal/exa.Client.do
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.Client.Contents kind=method
+  digest=b3:705b74249d6a588d99c09d10598da6e23942a31643b473cf3a3745eec6ebe880 file=router/internal/exa/client.go range=69:90 lang=go exported=true byte_range=1728:2494
+  sig=func (c *Client) Contents(ctx context.Context, input ContentsRequest) (*ContentsResponse, error)
+EDGES
+  calls=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.ContentsRequest,matrix/router/internal/exa.ContentsResponse,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailurePartial,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.c,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.failed,matrix/router/internal/exa.input,matrix/router/internal/exa.out,matrix/router/internal/exa.status
+  ^contains=matrix/router/internal/exa.Client
+  ^references=matrix/router/internal/exa.Service.Contents
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.Client.CreateRun kind=method
+  digest=b3:2f0b0c4ccaf6a7be87ae66fbb49af3183ab516d2dd0a59a3208b95b50371c42a file=router/internal/exa/client.go range=92:104 lang=go exported=true byte_range=2496:2995
+  sig=func (c *Client) CreateRun(ctx context.Context, input AgentRequest) (*AgentRun, error)
+EDGES
+  calls=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.c,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.input,matrix/router/internal/exa.out
+  ^contains=matrix/router/internal/exa.Client
+  ^calls=matrix/router/internal/exa.Service.StartRun
+  ^references=matrix/router/internal/exa.Service.StartRun
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.Client.GetRun kind=method
+  digest=b3:a5eae7da721e86b98ea71b341c1b2cb3f22b52d2c4b6d21ef4d9524c62b63269 file=router/internal/exa/client.go range=106:119 lang=go exported=true byte_range=2997:3567
+  sig=func (c *Client) GetRun(ctx context.Context, id string) (*AgentRun, error)
+EDGES
+  calls=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureUngrounded,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.c,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.id,matrix/router/internal/exa.out
+  ^contains=matrix/router/internal/exa.Client
+  ^calls=matrix/router/internal/exa.Service.GetRun
+  ^references=matrix/router/internal/exa.Service.GetRun
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.Client.Search kind=method
+  digest=b3:33dd1e768a81cebbb673d7c050cdb218fc7b5ca8e14372f24bda0e5dd71d30ad file=router/internal/exa/client.go range=52:67 lang=go exported=true byte_range=1041:1726
+  sig=func (c *Client) Search(ctx context.Context, input SearchRequest) (*SearchResponse, error)
+EDGES
+  calls=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureUngrounded,matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.SearchResponse,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.c,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.input,matrix/router/internal/exa.out
+  ^contains=matrix/router/internal/exa.Client
+  ^references=matrix/router/internal/exa.Service.Search
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.Client.do kind=method
+  digest=b3:27760a02fb7f122001dcdb9fa381f29278e7dd8696b5bebc8b897ef23072cf04 file=router/internal/exa/client.go range=133:177 lang=go exported=false byte_range=3942:6032
+  sig=func (c *Client) do(ctx context.Context, method, path string, input, output any) error
+EDGES
+  calls=matrix/router/internal/exa.Client.Configured,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.redact,matrix/router/internal/exa.statusFailure
+  references=matrix/router/internal/exa.APIKeyEnv,matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.Configured,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotConfigured,matrix/router/internal/exa.FailureTimeout,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.body,matrix/router/internal/exa.c,matrix/router/internal/exa.ctx,matrix/router/internal/exa.data,matrix/router/internal/exa.encoded,matrix/router/internal/exa.err,matrix/router/internal/exa.input,matrix/router/internal/exa.kind,matrix/router/internal/exa.maxResponseSize,matrix/router/internal/exa.message,matrix/router/internal/exa.method,matrix/router/internal/exa.output,matrix/router/internal/exa.path,matrix/router/internal/exa.readErr,matrix/router/internal/exa.redact,matrix/router/internal/exa.req,matrix/router/internal/exa.res,matrix/router/internal/exa.statusFailure,matrix/router/internal/exa.timeout
+  ^contains=matrix/router/internal/exa.Client
+  ^calls=matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search
+  ^references=matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.ClientConfig kind=type
+  digest=b3:4c3978b4b8186f39a2aceb327fdeabf3fa3e44bc1b9e467471db88005b258695 file=router/internal/exa/client.go range=26:30 lang=go exported=true byte_range=444:535
+  sig=type ClientConfig struct {\n	APIKey		string\n	BaseURL		string\n	HTTPClient	*http.Client\n}
+EDGES
+  contains=matrix/router/internal/exa.ClientConfig#APIKey,matrix/router/internal/exa.ClientConfig#BaseURL,matrix/router/internal/exa.ClientConfig#HTTPClient
+  ^references=matrix/router/internal/exa.NewClient,matrix/router/internal/exa.NewService
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.ClientConfig#APIKey kind=field
+  digest=b3:f94068a4effabedbd533f499d9326d60d74bcce44a3587f1cdff650440bd6d3d file=router/internal/exa/client.go range=27:27 lang=go exported=true byte_range=472:489
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.ClientConfig
+
+NODE id=matrix/router/internal/exa.ClientConfig#BaseURL kind=field
+  digest=b3:05ea9c006d4ccf82223052ce414c3ed1db888e1019bbbdc19b1b9d9d3b3ba007 file=router/internal/exa/client.go range=28:28 lang=go exported=true byte_range=491:508
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.ClientConfig
+
+NODE id=matrix/router/internal/exa.ClientConfig#HTTPClient kind=field
+  digest=b3:95264a03149c7719726e0340bf389ab14182fdcabd2e87cc942046f6b4477127 file=router/internal/exa/client.go range=29:29 lang=go exported=true byte_range=510:533
+  sig=*http.Client
+EDGES
+  ^contains=matrix/router/internal/exa.ClientConfig
+
+NODE id=matrix/router/internal/exa.ContentError kind=type
+  digest=b3:19947c5feb3edce2ada507d4fed07a6d7b0fc5ff73a14158e9dca34b64c9deab file=router/internal/exa/model.go range=127:130 lang=go exported=true byte_range=4492:4613
+  sig=type ContentError struct {\n	Tag		string	`json:"tag"`\n	HTTPStatusCode	*int	`json:"httpStatusCode,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.ContentError#HTTPStatusCode,matrix/router/internal/exa.ContentError#Tag
+  ^references=matrix/router/internal/exa.ContentStatus
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.ContentError#HTTPStatusCode kind=field
+  digest=b3:f86a397da90bc789dd218dab9a10b057448aea8b2ded8b925e1d2ae6eb9d95e9 file=router/internal/exa/model.go range=129:129 lang=go exported=true byte_range=4556:4611
+  sig=*int
+EDGES
+  ^contains=matrix/router/internal/exa.ContentError
+
+NODE id=matrix/router/internal/exa.ContentError#Tag kind=field
+  digest=b3:5dc6cb5fb847569b0107e1f4c2df0f6cbd94a4e410b6569b070faef14c4735e6 file=router/internal/exa/model.go range=128:128 lang=go exported=true byte_range=4520:4554
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.ContentError
+
+NODE id=matrix/router/internal/exa.ContentOptions kind=type
+  digest=b3:50036b7a30a28154b0a09a2d9ecdd51a2c8da7b7acea3a627409aaff326a6b6d file=router/internal/exa/model.go range=60:68 lang=go exported=true byte_range=1565:1993
+  sig=type ContentOptions struct {\n	Text			any		`json:"text,omitempty"`\n	Highlights		any		`json:"highlights,omitempty"`\n	Summary			any		`json:"summary,omitempty"`\n	MaxAgeHours		*int		`json:"maxAgeHours,omitempty"`\n	LivecrawlTimeout	int		`json:"livecrawlTimeout,omitempty"`\n	Subpages		int		`json:"subpages,omitempty"`\n	SubpageTarget		[]string	`json:"subpageTarget,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.ContentOptions#Highlights,matrix/router/internal/exa.ContentOptions#LivecrawlTimeout,matrix/router/internal/exa.ContentOptions#MaxAgeHours,matrix/router/internal/exa.ContentOptions#SubpageTarget,matrix/router/internal/exa.ContentOptions#Subpages,matrix/router/internal/exa.ContentOptions#Summary,matrix/router/internal/exa.ContentOptions#Text
+  ^references=matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.Service.VerifyFinance
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.ContentOptions#Highlights kind=field
+  digest=b3:e58640e7c39bddf42cf2d22249b7a9a0c9e2c76f37797d04f0b056d259aaea44 file=router/internal/exa/model.go range=62:62 lang=go exported=true byte_range=1646:1701
+  sig=any
+EDGES
+  ^contains=matrix/router/internal/exa.ContentOptions
+
+NODE id=matrix/router/internal/exa.ContentOptions#LivecrawlTimeout kind=field
+  digest=b3:945fb838ddde054086f16fe304cddf12972c1de709e3bea26801f8e2247e270b file=router/internal/exa/model.go range=65:65 lang=go exported=true byte_range=1815:1876
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/exa.ContentOptions
+
+NODE id=matrix/router/internal/exa.ContentOptions#MaxAgeHours kind=field
+  digest=b3:df3db67d3f1d4e5184e9f0c417b37e012d51318dcd45e8325b7a85b4b4207aca file=router/internal/exa/model.go range=64:64 lang=go exported=true byte_range=1757:1813
+  sig=*int
+EDGES
+  ^contains=matrix/router/internal/exa.ContentOptions
+
+NODE id=matrix/router/internal/exa.ContentOptions#SubpageTarget kind=field
+  digest=b3:b234de0c1de7c8f268027dfd0a6adac99c3c0ca46ee0cdef58494fd7f91f3a8c file=router/internal/exa/model.go range=67:67 lang=go exported=true byte_range=1933:1991
+  sig=[]string
+EDGES
+  ^contains=matrix/router/internal/exa.ContentOptions
+
+NODE id=matrix/router/internal/exa.ContentOptions#Subpages kind=field
+  digest=b3:e46e22a853689e22558781ae552066a9a90f1f169f80ccd6461a055f21c941cb file=router/internal/exa/model.go range=66:66 lang=go exported=true byte_range=1878:1931
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/exa.ContentOptions
+
+NODE id=matrix/router/internal/exa.ContentOptions#Summary kind=field
+  digest=b3:779cb615cd91939710ab075477534976a89f777f77f60c91c15494514c3b36d0 file=router/internal/exa/model.go range=63:63 lang=go exported=true byte_range=1703:1755
+  sig=any
+EDGES
+  ^contains=matrix/router/internal/exa.ContentOptions
+
+NODE id=matrix/router/internal/exa.ContentOptions#Text kind=field
+  digest=b3:afd8bd61cadbcadab68ab309db7881a7258420fa9f88037663350fc5c81cd2da file=router/internal/exa/model.go range=61:61 lang=go exported=true byte_range=1595:1644
+  sig=any
+EDGES
+  ^contains=matrix/router/internal/exa.ContentOptions
+
+NODE id=matrix/router/internal/exa.ContentStatus kind=type
+  digest=b3:3eaeaca3a0c2331aa46b4cc150b1cdffc2c9bfac2b935c6ebda33fac3bf3abf1 file=router/internal/exa/model.go range=132:136 lang=go exported=true byte_range=4615:4763
+  sig=type ContentStatus struct {\n	ID	string		`json:"id"`\n	Status	string		`json:"status"`\n	Error	*ContentError	`json:"error,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.ContentStatus#Error,matrix/router/internal/exa.ContentStatus#ID,matrix/router/internal/exa.ContentStatus#Status
+  references=matrix/router/internal/exa.ContentError
+  ^references=matrix/router/internal/exa.ContentsResponse
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.ContentStatus#Error kind=field
+  digest=b3:62c9d3039f30b1088273eb18714abaffeb6d74cdd7f0f112c071b78d73aeffe3 file=router/internal/exa/model.go range=135:135 lang=go exported=true byte_range=4716:4761
+  sig=*exa.ContentError
+EDGES
+  ^contains=matrix/router/internal/exa.ContentStatus
+
+NODE id=matrix/router/internal/exa.ContentStatus#ID kind=field
+  digest=b3:0a8493b93e92e9d25b1fb90d0dfc0ed59cf38c653dc35b4bc3c40c30f5a5cbf0 file=router/internal/exa/model.go range=133:133 lang=go exported=true byte_range=4644:4676
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.ContentStatus
+
+NODE id=matrix/router/internal/exa.ContentStatus#Status kind=field
+  digest=b3:fff290643c6fb9af7702994384bd75c11cde18097aa9aed89b23c3d2063c99d0 file=router/internal/exa/model.go range=134:134 lang=go exported=true byte_range=4678:4714
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.ContentStatus
+
+NODE id=matrix/router/internal/exa.ContentsEnvelope kind=type
+  digest=b3:c2cfe250cfa181875bea8f4eb809cbd0a005010b35589a7cf63ad2e4bc72cb16 file=router/internal/exa/service.go range=60:64 lang=go exported=true byte_range=1189:1359
+  sig=type ContentsEnvelope struct {\n	Data	*ContentsResponse	`json:"data,omitempty"`\n	Meta	ResponseMeta		`json:"meta"`\n	Error	*ErrorBody		`json:"error,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.ContentsEnvelope#Data,matrix/router/internal/exa.ContentsEnvelope#Error,matrix/router/internal/exa.ContentsEnvelope#Meta
+  references=matrix/router/internal/exa.ContentsResponse,matrix/router/internal/exa.ErrorBody,matrix/router/internal/exa.ResponseMeta
+  ^references=matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.ExtractFinanceNews
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.ContentsEnvelope#Data kind=field
+  digest=b3:d9311088d4a12a4ee013c354461610fd2716f6f83b0fe917d60c64e97db6e35f file=router/internal/exa/service.go range=61:61 lang=go exported=true byte_range=1221:1268
+  sig=*exa.ContentsResponse
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsEnvelope
+
+NODE id=matrix/router/internal/exa.ContentsEnvelope#Error kind=field
+  digest=b3:42d73699e16f3e2f1763f63380c8577d2344e9e3fbd989deb1649e2481b66573 file=router/internal/exa/service.go range=63:63 lang=go exported=true byte_range=1309:1357
+  sig=*exa.ErrorBody
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsEnvelope
+
+NODE id=matrix/router/internal/exa.ContentsEnvelope#Meta kind=field
+  digest=b3:ed954d93736cda8425683f284109de5e37e734694dd4ef2a66bcbc3a60747cbe file=router/internal/exa/service.go range=62:62 lang=go exported=true byte_range=1270:1307
+  sig=exa.ResponseMeta
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsEnvelope
+
+NODE id=matrix/router/internal/exa.ContentsRequest kind=type
+  digest=b3:83f0428f8f152b40e1f8d469ba36a4d16300c279ee29088ec5a463477097d5ab file=router/internal/exa/model.go range=116:125 lang=go exported=true byte_range=4020:4490
+  sig=type ContentsRequest struct {\n	URLs			[]string	`json:"urls"`\n	Text			any		`json:"text,omitempty"`\n	Highlights		any		`json:"highlights,omitempty"`\n	Summary			any		`json:"summary,omitempty"`\n	MaxAgeHours		*int		`json:"maxAgeHours,omitempty"`\n	LivecrawlTimeout	int		`json:"livecrawlTimeout,omitempty"`\n	Subpages		int		`json:"subpages,omitempty"`\n	SubpageTarget		[]string	`json:"subpageTarget,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.ContentsRequest#Highlights,matrix/router/internal/exa.ContentsRequest#LivecrawlTimeout,matrix/router/internal/exa.ContentsRequest#MaxAgeHours,matrix/router/internal/exa.ContentsRequest#SubpageTarget,matrix/router/internal/exa.ContentsRequest#Subpages,matrix/router/internal/exa.ContentsRequest#Summary,matrix/router/internal/exa.ContentsRequest#Text,matrix/router/internal/exa.ContentsRequest#URLs
+  ^references=matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.validateContents
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.ContentsRequest#Highlights kind=field
+  digest=b3:e58640e7c39bddf42cf2d22249b7a9a0c9e2c76f37797d04f0b056d259aaea44 file=router/internal/exa/model.go range=119:119 lang=go exported=true byte_range=4143:4198
+  sig=any
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsRequest
+
+NODE id=matrix/router/internal/exa.ContentsRequest#LivecrawlTimeout kind=field
+  digest=b3:945fb838ddde054086f16fe304cddf12972c1de709e3bea26801f8e2247e270b file=router/internal/exa/model.go range=122:122 lang=go exported=true byte_range=4312:4373
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsRequest
+
+NODE id=matrix/router/internal/exa.ContentsRequest#MaxAgeHours kind=field
+  digest=b3:df3db67d3f1d4e5184e9f0c417b37e012d51318dcd45e8325b7a85b4b4207aca file=router/internal/exa/model.go range=121:121 lang=go exported=true byte_range=4254:4310
+  sig=*int
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsRequest
+
+NODE id=matrix/router/internal/exa.ContentsRequest#SubpageTarget kind=field
+  digest=b3:b234de0c1de7c8f268027dfd0a6adac99c3c0ca46ee0cdef58494fd7f91f3a8c file=router/internal/exa/model.go range=124:124 lang=go exported=true byte_range=4430:4488
+  sig=[]string
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsRequest
+
+NODE id=matrix/router/internal/exa.ContentsRequest#Subpages kind=field
+  digest=b3:e46e22a853689e22558781ae552066a9a90f1f169f80ccd6461a055f21c941cb file=router/internal/exa/model.go range=123:123 lang=go exported=true byte_range=4375:4428
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsRequest
+
+NODE id=matrix/router/internal/exa.ContentsRequest#Summary kind=field
+  digest=b3:779cb615cd91939710ab075477534976a89f777f77f60c91c15494514c3b36d0 file=router/internal/exa/model.go range=120:120 lang=go exported=true byte_range=4200:4252
+  sig=any
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsRequest
+
+NODE id=matrix/router/internal/exa.ContentsRequest#Text kind=field
+  digest=b3:afd8bd61cadbcadab68ab309db7881a7258420fa9f88037663350fc5c81cd2da file=router/internal/exa/model.go range=118:118 lang=go exported=true byte_range=4092:4141
+  sig=any
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsRequest
+
+NODE id=matrix/router/internal/exa.ContentsRequest#URLs kind=field
+  digest=b3:3cd391ffe77eaa8c0d4b5f6aa248f1899007ad4f3e613081558716cab2c0f755 file=router/internal/exa/model.go range=117:117 lang=go exported=true byte_range=4051:4090
+  sig=[]string
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsRequest
+
+NODE id=matrix/router/internal/exa.ContentsResponse kind=type
+  digest=b3:06fb132cd50a83a0379df72c17ce4e08f3fe27b4b7f1be4c73d9f9b51dd09011 file=router/internal/exa/model.go range=138:143 lang=go exported=true byte_range=4765:4980
+  sig=type ContentsResponse struct {\n	RequestID	string		`json:"requestId"`\n	Results		[]Result	`json:"results"`\n	Statuses	[]ContentStatus	`json:"statuses"`\n	Cost		Cost		`json:"costDollars"`\n}
+EDGES
+  contains=matrix/router/internal/exa.ContentsResponse#Cost,matrix/router/internal/exa.ContentsResponse#RequestID,matrix/router/internal/exa.ContentsResponse#Results,matrix/router/internal/exa.ContentsResponse#Statuses
+  references=matrix/router/internal/exa.ContentStatus,matrix/router/internal/exa.Cost,matrix/router/internal/exa.Result
+  ^references=matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.ContentsEnvelope,matrix/router/internal/exa.Service.Contents
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.ContentsResponse#Cost kind=field
+  digest=b3:dd7d4636883c003e2c0bb9950476aa6499d6b6de25c445bab4d73eef0a8303b4 file=router/internal/exa/model.go range=142:142 lang=go exported=true byte_range=4932:4978
+  sig=exa.Cost
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsResponse
+
+NODE id=matrix/router/internal/exa.ContentsResponse#RequestID kind=field
+  digest=b3:02f2502bf5ef4d5420d8a3396d1e7a689bc6f215a74627caf2a939c5c2018cb4 file=router/internal/exa/model.go range=139:139 lang=go exported=true byte_range=4797:4841
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsResponse
+
+NODE id=matrix/router/internal/exa.ContentsResponse#Results kind=field
+  digest=b3:d213009d51dc1a864ea4738b03f5d7d0481410f87824223d15d4a1438eddf0b9 file=router/internal/exa/model.go range=140:140 lang=go exported=true byte_range=4843:4885
+  sig=[]exa.Result
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsResponse
+
+NODE id=matrix/router/internal/exa.ContentsResponse#Statuses kind=field
+  digest=b3:aa821011c132f1089738960d3065332afd81b724c2c6b95afe2c75854fef5b69 file=router/internal/exa/model.go range=141:141 lang=go exported=true byte_range=4887:4930
+  sig=[]exa.ContentStatus
+EDGES
+  ^contains=matrix/router/internal/exa.ContentsResponse
+
+NODE id=matrix/router/internal/exa.Cost kind=type
+  digest=b3:d5035095ade4a569935f707b54d6df7cb7819ee9a428a276de6d048968db7058 file=router/internal/exa/model.go range=16:18 lang=go exported=true byte_range=282:332
+  sig=type Cost struct {\n	Total float64 `json:"total"`\n}
+EDGES
+  contains=matrix/router/internal/exa.Cost#Total
+  ^references=matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.ContentsResponse,matrix/router/internal/exa.SearchResponse
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.Cost#Total kind=field
+  digest=b3:1537773003c0b6ece2b27665ec66566743bcf63369769c6b149aba7c33079e0c file=router/internal/exa/model.go range=17:17 lang=go exported=true byte_range=302:330
+  sig=float64
+EDGES
+  ^contains=matrix/router/internal/exa.Cost
+
+NODE id=matrix/router/internal/exa.EndpointStats kind=type
+  digest=b3:3b5176394cf310e83b367a4440702509ed176e35ff86a7d717b13bebb009ed70 file=router/internal/exa/meter.go range=21:29 lang=go exported=true byte_range=354:642
+  sig=type EndpointStats struct {\n	Endpoint	string	`json:"endpoint"`\n	Requests	int64	`json:"requests"`\n	CacheHits	int64	`json:"cache_hits"`\n	Errors		int64	`json:"errors"`\n	Cost		float64	`json:"cost_dollars"`\n	P50ms		int64	`json:"p50_ms"`\n	P95ms		int64	`json:"p95_ms"`\n}
+EDGES
+  contains=matrix/router/internal/exa.EndpointStats#CacheHits,matrix/router/internal/exa.EndpointStats#Cost,matrix/router/internal/exa.EndpointStats#Endpoint,matrix/router/internal/exa.EndpointStats#Errors,matrix/router/internal/exa.EndpointStats#P50ms,matrix/router/internal/exa.EndpointStats#P95ms,matrix/router/internal/exa.EndpointStats#Requests
+  ^references=matrix/router/internal/exa.Meter.Snapshot,matrix/router/internal/exa.Stats
+  ^defines=matrix/router/internal/exa/meter.go
+
+NODE id=matrix/router/internal/exa.EndpointStats#CacheHits kind=field
+  digest=b3:13acf71d520a61f2c51d4982938068c115f3d8e4f8e9bea3c7de1a206de7cba7 file=router/internal/exa/meter.go range=24:24 lang=go exported=true byte_range=457:494
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/exa.EndpointStats
+
+NODE id=matrix/router/internal/exa.EndpointStats#Cost kind=field
+  digest=b3:08f076fb9bcdb856b4fb627c2fee2544cd6dfc9a4466a97563a50b302a70baff file=router/internal/exa/meter.go range=26:26 lang=go exported=true byte_range=531:570
+  sig=float64
+EDGES
+  ^contains=matrix/router/internal/exa.EndpointStats
+
+NODE id=matrix/router/internal/exa.EndpointStats#Endpoint kind=field
+  digest=b3:c53333869659f1a7f4e3dc73bcc0944c58589a48a058b90c63e802f63e62a870 file=router/internal/exa/meter.go range=22:22 lang=go exported=true byte_range=383:418
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.EndpointStats
+
+NODE id=matrix/router/internal/exa.EndpointStats#Errors kind=field
+  digest=b3:3e392576d4cbd2c7596fdb3cf3a34b5089238839934c24079a1264e206b4d819 file=router/internal/exa/meter.go range=25:25 lang=go exported=true byte_range=496:529
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/exa.EndpointStats
+
+NODE id=matrix/router/internal/exa.EndpointStats#P50ms kind=field
+  digest=b3:a3329fe712a85e3fd0ec07d79b10128c295a1db63b4263dfc1a6263240222329 file=router/internal/exa/meter.go range=27:27 lang=go exported=true byte_range=572:605
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/exa.EndpointStats
+
+NODE id=matrix/router/internal/exa.EndpointStats#P95ms kind=field
+  digest=b3:67b965a4f48472c85cfb070da0596d536a4e252c06d7827a1c5fbe2661326625 file=router/internal/exa/meter.go range=28:28 lang=go exported=true byte_range=607:640
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/exa.EndpointStats
+
+NODE id=matrix/router/internal/exa.EndpointStats#Requests kind=field
+  digest=b3:01bd2259fdf68ae7f334d46fc6848ee629b83ab2d316b3d2094503e982f5cbea file=router/internal/exa/meter.go range=23:23 lang=go exported=true byte_range=420:455
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/exa.EndpointStats
+
+NODE id=matrix/router/internal/exa.ErrorBody kind=type
+  digest=b3:756052fcf0969318cc1e235b21dc2c1c3e4cbea9e325666e5c1706a1e90f1453 file=router/internal/exa/handler.go range=16:20 lang=go exported=true byte_range=298:465
+  sig=type ErrorBody struct {\n	Kind		FailureKind	`json:"kind"`\n	Message		string		`json:"message"`\n	RetryAfter	int		`json:"retry_after_seconds,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.ErrorBody#Kind,matrix/router/internal/exa.ErrorBody#Message,matrix/router/internal/exa.ErrorBody#RetryAfter
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.ContentsEnvelope,matrix/router/internal/exa.errorBody
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.ErrorBody#Kind kind=field
+  digest=b3:3116adc4920453ded042406c9d573c692b42c2602221c3bf827d88a1b307df5b file=router/internal/exa/handler.go range=17:17 lang=go exported=true byte_range=323:359
+  sig=exa.FailureKind
+EDGES
+  ^contains=matrix/router/internal/exa.ErrorBody
+
+NODE id=matrix/router/internal/exa.ErrorBody#Message kind=field
+  digest=b3:ca76911c7bef676d97726b13c57738ba7ff5b1a5a9baf85842436695b861af1e file=router/internal/exa/handler.go range=18:18 lang=go exported=true byte_range=361:400
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.ErrorBody
+
+NODE id=matrix/router/internal/exa.ErrorBody#RetryAfter kind=field
+  digest=b3:94aa83f3dd31274b459a91245120950660f2d499dc1ed4da054b77f66b948fbc file=router/internal/exa/handler.go range=19:19 lang=go exported=true byte_range=402:463
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/exa.ErrorBody
+
+NODE id=matrix/router/internal/exa.Evidence kind=type
+  digest=b3:8fa8e7079ac0ebb8f1ebc88f0847283aefbd785f4c1bf0d55e4fc13d3f98ad6f file=router/internal/exa/model.go range=31:39 lang=go exported=true byte_range=586:936
+  sig=type Evidence struct {\n	URL		string		`json:"url"`\n	Title		string		`json:"title,omitempty"`\n	PublishedAt	*time.Time	`json:"published_at,omitempty"`\n	RetrievedAt	time.Time	`json:"retrieved_at"`\n	Excerpt		string		`json:"excerpt,omitempty"`\n	Primary		bool		`json:"primary"`\n	ContentHash	string		`json:"content_hash"`\n}
+EDGES
+  contains=matrix/router/internal/exa.Evidence#ContentHash,matrix/router/internal/exa.Evidence#Excerpt,matrix/router/internal/exa.Evidence#Primary,matrix/router/internal/exa.Evidence#PublishedAt,matrix/router/internal/exa.Evidence#RetrievedAt,matrix/router/internal/exa.Evidence#Title,matrix/router/internal/exa.Evidence#URL
+  ^references=matrix/router/internal/exa.EvidenceFromGrounding,matrix/router/internal/exa.GroundedClaim
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.Evidence#ContentHash kind=field
+  digest=b3:65f76439cadb294054196665e513c8d04a4ff8e78af7f06e903fc8d1c0783926 file=router/internal/exa/model.go range=38:38 lang=go exported=true byte_range=890:934
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Evidence
+
+NODE id=matrix/router/internal/exa.Evidence#Excerpt kind=field
+  digest=b3:1b2ceb00467aa385135e0d548d43d941ccbe93f334dd50f2335449e1e78f4b3d file=router/internal/exa/model.go range=36:36 lang=go exported=true byte_range=798:847
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Evidence
+
+NODE id=matrix/router/internal/exa.Evidence#Primary kind=field
+  digest=b3:829a3ebc6bc7cb0f1765b875f369f15d1f014e7e3189f3b7c04dffa4a88bfed9 file=router/internal/exa/model.go range=37:37 lang=go exported=true byte_range=849:888
+  sig=bool
+EDGES
+  ^contains=matrix/router/internal/exa.Evidence
+
+NODE id=matrix/router/internal/exa.Evidence#PublishedAt kind=field
+  digest=b3:9049e7615f0d37786c74fccbf385e0296d05c7eee1edfd1883eb05be21581af0 file=router/internal/exa/model.go range=34:34 lang=go exported=true byte_range=696:750
+  sig=*time.Time
+EDGES
+  ^contains=matrix/router/internal/exa.Evidence
+
+NODE id=matrix/router/internal/exa.Evidence#RetrievedAt kind=field
+  digest=b3:b1aea7f6ea69ff1c903268b86e7e6e4ad9e78ab0846233309787637e417a11ee file=router/internal/exa/model.go range=35:35 lang=go exported=true byte_range=752:796
+  sig=time.Time
+EDGES
+  ^contains=matrix/router/internal/exa.Evidence
+
+NODE id=matrix/router/internal/exa.Evidence#Title kind=field
+  digest=b3:2c5ba65ca6d622f16cf7036bc9f026efa77e62320e5a0541ed154482185b9264 file=router/internal/exa/model.go range=33:33 lang=go exported=true byte_range=647:694
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Evidence
+
+NODE id=matrix/router/internal/exa.Evidence#URL kind=field
+  digest=b3:84ce53e857d53833f02ea05df9f24572154cd93ddf081afd43bb977205fc79fb file=router/internal/exa/model.go range=32:32 lang=go exported=true byte_range=610:645
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Evidence
+
+NODE id=matrix/router/internal/exa.EvidenceFromGrounding kind=func
+  digest=b3:89f71edeb0d1d7d9125e519e8d387e405c853a5511854245142f218f4898b3b0 file=router/internal/exa/model.go range=179:198 lang=go exported=true byte_range=6046:6735
+  sig=func EvidenceFromGrounding(grounding []Grounding, now time.Time) []Evidence
+EDGES
+  calls=matrix/router/internal/exa.canonicalURL,matrix/router/internal/exa.primarySource
+  references=matrix/router/internal/exa.Evidence,matrix/router/internal/exa.Grounding,matrix/router/internal/exa.canonical,matrix/router/internal/exa.canonicalURL,matrix/router/internal/exa.citation,matrix/router/internal/exa.grounding,matrix/router/internal/exa.group,matrix/router/internal/exa.hash,matrix/router/internal/exa.i,matrix/router/internal/exa.j,matrix/router/internal/exa.now,matrix/router/internal/exa.out,matrix/router/internal/exa.primarySource,matrix/router/internal/exa.seen
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.Failure kind=type
+  digest=b3:9059e81e4946d9fffd93e1d4041e4b6d4bf569013aa4fc3de2787f172f46ada3 file=router/internal/exa/failure.go range=26:33 lang=go exported=true byte_range=692:838
+  sig=type Failure struct {\n	Kind		FailureKind\n	Endpoint	string\n	Status		int\n	Message		string\n	Detail		string\n	RetryAfter	time.Duration\n}
+EDGES
+  contains=matrix/router/internal/exa.Failure#Detail,matrix/router/internal/exa.Failure#Endpoint,matrix/router/internal/exa.Failure#Kind,matrix/router/internal/exa.Failure#Message,matrix/router/internal/exa.Failure#RetryAfter,matrix/router/internal/exa.Failure#Status,matrix/router/internal/exa.Failure.Error
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Failure.Error,matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.serviceError,matrix/router/internal/exa.statusFailure
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.Failure#Detail kind=field
+  digest=b3:4b1e3c054cbc57fec49d4c0ab692dd1ad2f563b188d29b1fdbfcb636d1f9b7aa file=router/internal/exa/failure.go range=31:31 lang=go exported=true byte_range=793:810
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Failure
+
+NODE id=matrix/router/internal/exa.Failure#Endpoint kind=field
+  digest=b3:03cf1e66a23ce2e938a77cf3a999fb3252f2c025c388f9f1cb720eb7fb5234e6 file=router/internal/exa/failure.go range=28:28 lang=go exported=true byte_range=739:756
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Failure
+
+NODE id=matrix/router/internal/exa.Failure#Kind kind=field
+  digest=b3:48d0dbbdd6f0262875914b11852696f9367031e3090f01b8f2eb5b128a8564c3 file=router/internal/exa/failure.go range=27:27 lang=go exported=true byte_range=715:737
+  sig=exa.FailureKind
+EDGES
+  ^contains=matrix/router/internal/exa.Failure
+
+NODE id=matrix/router/internal/exa.Failure#Message kind=field
+  digest=b3:1f9ab599486d27aeffbc1e3f2ed632fa963a41b60a6b593828d2a6a2c7515d21 file=router/internal/exa/failure.go range=30:30 lang=go exported=true byte_range=774:791
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Failure
+
+NODE id=matrix/router/internal/exa.Failure#RetryAfter kind=field
+  digest=b3:c1dc124c61efe5f90c4283595fc31cb900e1301792062b8cd0e0b28e700c89e2 file=router/internal/exa/failure.go range=32:32 lang=go exported=true byte_range=812:836
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/exa.Failure
+
+NODE id=matrix/router/internal/exa.Failure#Status kind=field
+  digest=b3:37d561b0f74a024d875c0618e7e06b2decde0615329d1f556104353d3cf6a07f file=router/internal/exa/failure.go range=29:29 lang=go exported=true byte_range=758:772
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/exa.Failure
+
+NODE id=matrix/router/internal/exa.Failure.Error kind=method
+  digest=b3:739135136ab25957bc6a8df628f98e8ce5140006de1f52dc2e8ba83984086c8b file=router/internal/exa/failure.go range=35:43 lang=go exported=true byte_range=840:1077
+  sig=func (f *Failure) Error() string
+EDGES
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.f
+  ^contains=matrix/router/internal/exa.Failure
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.FailureBadRequest kind=const
+  digest=b3:99d2cc3fdda65cb090818f875f7f8ac21cd40eff0a8d02f0e6eeee7afca0608e file=router/internal/exa/failure.go range=20:20 lang=go exported=true byte_range=498:546
+  sig=exa.FailureKind
+EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.statusFailure
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.FailureConflict kind=const
+  digest=b3:d559850f95e92ce456d951f9a25fd53ba722bb45c624f504fb0edbed68a0068c file=router/internal/exa/failure.go range=23:23 lang=go exported=true byte_range=643:688
+  sig=exa.FailureKind
+EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Handler.writeError
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.FailureKind kind=type
+  digest=b3:fe26c29c36c2e67f0b9564540720e0023c3fe4d50c3846d4d442595e52d61b7c file=router/internal/exa/failure.go range=12:12 lang=go exported=true byte_range=219:242
+  sig=type FailureKind string
+EDGES
+  ^references=matrix/router/internal/exa.ErrorBody,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.FailureConflict,matrix/router/internal/exa.FailureNotConfigured,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.FailurePartial,matrix/router/internal/exa.FailureRateLimited,matrix/router/internal/exa.FailureTimeout,matrix/router/internal/exa.FailureUngrounded,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.KindOf
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.FailureNotConfigured kind=const
+  digest=b3:d5967c1ba2b0460db0616c67b5e1d16397beed753aa4068f115a97138aec37d9 file=router/internal/exa/failure.go range=15:15 lang=go exported=true byte_range=253:304
+  sig=exa.FailureKind
+EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.statusFailure
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.FailureNotFound kind=const
+  digest=b3:13c3f8c34bdc3f0c9053c90baaa0661223d25c21bd530ba96b08269524403812 file=router/internal/exa/failure.go range=19:19 lang=go exported=true byte_range=450:496
+  sig=exa.FailureKind
+EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.statusFailure
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.FailureOf kind=func
+  digest=b3:9999af891b6abcb6d3e8e6e7c037d88860793c13073f1aaea584f785eed134d0 file=router/internal/exa/failure.go range=45:51 lang=go exported=true byte_range=1079:1202
+  sig=func FailureOf(err error) *Failure
+EDGES
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.err,matrix/router/internal/exa.failure
+  ^calls=matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.KindOf,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.serviceError
+  ^references=matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.KindOf,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.serviceError
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.FailurePartial kind=const
+  digest=b3:c11bd49109e0edd77cf47d1a4aaa9b4b8c5bd8322300d48519b7c4530f5693b8 file=router/internal/exa/failure.go range=21:21 lang=go exported=true byte_range=548:592
+  sig=exa.FailureKind
+EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.Contents
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.FailureRateLimited kind=const
+  digest=b3:87e8fe910d60287c0eb36651d31ac8595bd191f0913bd168944a15cf756ff3bf file=router/internal/exa/failure.go range=16:16 lang=go exported=true byte_range=306:355
+  sig=exa.FailureKind
+EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.statusFailure
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.FailureTimeout kind=const
+  digest=b3:d8d058cec9a88761760bebc2b12fb72fac9293e3a00f398dfea8a81646063f39 file=router/internal/exa/failure.go range=18:18 lang=go exported=true byte_range=404:448
+  sig=exa.FailureKind
+EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Handler.writeError
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.FailureUngrounded kind=const
+  digest=b3:6df09083976f4c51c9816018f959aedc3b339ae0e40554b8a5a25b2701200a7c file=router/internal/exa/failure.go range=22:22 lang=go exported=true byte_range=594:641
+  sig=exa.FailureKind
+EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.GetRun
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.FailureUpstream kind=const
+  digest=b3:a8879160e0a5a2c8022ce4c5fdff82f59660746c923d693ffd9f2e20c62cd237 file=router/internal/exa/failure.go range=17:17 lang=go exported=true byte_range=357:402
+  sig=exa.FailureKind
+EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.KindOf,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.serviceError,matrix/router/internal/exa.statusFailure
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.FinanceNewsRequest kind=type
+  digest=b3:5cc1048daa5c37d913cff5f4e3503cdf5eb93a332b2cb0bf48b0cfbaf723d090 file=router/internal/exa/workflow.go range=27:30 lang=go exported=true byte_range=683:781
+  sig=type FinanceNewsRequest struct {\n	Symbol	string		`json:"symbol"`\n	URLs	[]string	`json:"urls"`\n}
+EDGES
+  contains=matrix/router/internal/exa.FinanceNewsRequest#Symbol,matrix/router/internal/exa.FinanceNewsRequest#URLs
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Service.ExtractFinanceNews
+  ^defines=matrix/router/internal/exa/workflow.go
+
+NODE id=matrix/router/internal/exa.FinanceNewsRequest#Symbol kind=field
+  digest=b3:e08f212f3b5bd5cc95bb4700f59c3399fc1389ead0517e287090453f5798fb5d file=router/internal/exa/workflow.go range=28:28 lang=go exported=true byte_range=717:748
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.FinanceNewsRequest
+
+NODE id=matrix/router/internal/exa.FinanceNewsRequest#URLs kind=field
+  digest=b3:98f9a4a0e1bfe143170e4abe320d5e2385f2ece7477ac083b640574b616187d1 file=router/internal/exa/workflow.go range=29:29 lang=go exported=true byte_range=750:779
+  sig=[]string
+EDGES
+  ^contains=matrix/router/internal/exa.FinanceNewsRequest
+
+NODE id=matrix/router/internal/exa.FinanceRequest kind=type
+  digest=b3:a997e7c587b63b99365ea22b38de8bcac523e36fcb34fd8394e2582ec2d492e7 file=router/internal/exa/workflow.go range=12:19 lang=go exported=true byte_range=223:542
+  sig=type FinanceRequest struct {\n	Kind		string		`json:"kind"`\n	Symbol		string		`json:"symbol"`\n	AsOf		string		`json:"as_of,omitempty"`\n	Effort		string		`json:"effort,omitempty"`\n	RubricVersion	string		`json:"rubric_version,omitempty"`\n	Dimensions	[]string	`json:"dimensions,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.FinanceRequest#AsOf,matrix/router/internal/exa.FinanceRequest#Dimensions,matrix/router/internal/exa.FinanceRequest#Effort,matrix/router/internal/exa.FinanceRequest#Kind,matrix/router/internal/exa.FinanceRequest#RubricVersion,matrix/router/internal/exa.FinanceRequest#Symbol
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.financeAgentRequest
+  ^defines=matrix/router/internal/exa/workflow.go
+
+NODE id=matrix/router/internal/exa.FinanceRequest#AsOf kind=field
+  digest=b3:b4b1b2de78e315eca6f87d4bd2905882ba602f2eafffeea22d27caee29a8a4fd file=router/internal/exa/workflow.go range=15:15 lang=go exported=true byte_range=331:378
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.FinanceRequest
+
+NODE id=matrix/router/internal/exa.FinanceRequest#Dimensions kind=field
+  digest=b3:31bdecd832257f6ac3e4c4bbc469f6266b692618441903144383a15db1a229f5 file=router/internal/exa/workflow.go range=18:18 lang=go exported=true byte_range=488:540
+  sig=[]string
+EDGES
+  ^contains=matrix/router/internal/exa.FinanceRequest
+
+NODE id=matrix/router/internal/exa.FinanceRequest#Effort kind=field
+  digest=b3:1671a82f391ce55378e7cd3c211454847a6c5ec222c2d1f5a4f4ea414f8391a8 file=router/internal/exa/workflow.go range=16:16 lang=go exported=true byte_range=380:428
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.FinanceRequest
+
+NODE id=matrix/router/internal/exa.FinanceRequest#Kind kind=field
+  digest=b3:a7c40ddac66307cc98380b43e1180a48fbd4f0602be54b48c779990603d92afc file=router/internal/exa/workflow.go range=13:13 lang=go exported=true byte_range=253:289
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.FinanceRequest
+
+NODE id=matrix/router/internal/exa.FinanceRequest#RubricVersion kind=field
+  digest=b3:0caba2ca12ed8b9629eed6110d143b644c1c8439d00520e814372b76dfba2d35 file=router/internal/exa/workflow.go range=17:17 lang=go exported=true byte_range=430:486
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.FinanceRequest
+
+NODE id=matrix/router/internal/exa.FinanceRequest#Symbol kind=field
+  digest=b3:235bda02906cde3e570c58de6ddc248b5a17bf8f1fae2acb10586aaae3c55e24 file=router/internal/exa/workflow.go range=14:14 lang=go exported=true byte_range=291:329
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.FinanceRequest
+
+NODE id=matrix/router/internal/exa.GroundedClaim kind=type
+  digest=b3:cf90077d527d200b7116fa2a9bef5c8c9ae3a83831f8e4e29d253f4671eb32ac file=router/internal/exa/model.go range=49:58 lang=go exported=true byte_range=1106:1563
+  sig=type GroundedClaim struct {\n	Value		json.RawMessage	`json:"value"`\n	AsOf		string		`json:"as_of,omitempty"`\n	FiscalPeriod	string		`json:"fiscal_period,omitempty"`\n	Unit		string		`json:"unit,omitempty"`\n	Currency	string		`json:"currency,omitempty"`\n	State		ClaimState	`json:"state"`\n	Confidence	string		`json:"confidence,omitempty"`\n	Evidence	[]Evidence	`json:"evidence"`\n}
+EDGES
+  contains=matrix/router/internal/exa.GroundedClaim#AsOf,matrix/router/internal/exa.GroundedClaim#Confidence,matrix/router/internal/exa.GroundedClaim#Currency,matrix/router/internal/exa.GroundedClaim#Evidence,matrix/router/internal/exa.GroundedClaim#FiscalPeriod,matrix/router/internal/exa.GroundedClaim#State,matrix/router/internal/exa.GroundedClaim#Unit,matrix/router/internal/exa.GroundedClaim#Value
+  references=matrix/router/internal/exa.ClaimState,matrix/router/internal/exa.Evidence
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.GroundedClaim#AsOf kind=field
+  digest=b3:6649d867bfe31ab1275a32e45569594a75709a02cbf0b7418abd6decb64342fe file=router/internal/exa/model.go range=51:51 lang=go exported=true byte_range=1180:1233
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.GroundedClaim
+
+NODE id=matrix/router/internal/exa.GroundedClaim#Confidence kind=field
+  digest=b3:5484ab46071a3fdfaf7c7833d247a849d7cdec05feaf09fcba59b5acecf9311d file=router/internal/exa/model.go range=56:56 lang=go exported=true byte_range=1455:1513
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.GroundedClaim
+
+NODE id=matrix/router/internal/exa.GroundedClaim#Currency kind=field
+  digest=b3:e1d48abd9e2f68b4c6ab47199d5dfc5249dab5542760f96f1d20cefa5273542a file=router/internal/exa/model.go range=54:54 lang=go exported=true byte_range=1352:1408
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.GroundedClaim
+
+NODE id=matrix/router/internal/exa.GroundedClaim#Evidence kind=field
+  digest=b3:d3031f03839a0ee10598b64744040390ec1a3128510e44ce6699a9e712f368c8 file=router/internal/exa/model.go range=57:57 lang=go exported=true byte_range=1515:1561
+  sig=[]exa.Evidence
+EDGES
+  ^contains=matrix/router/internal/exa.GroundedClaim
+
+NODE id=matrix/router/internal/exa.GroundedClaim#FiscalPeriod kind=field
+  digest=b3:2b7a8019db60dc1be6c4575a27b33d551edb60f98dfd6602aa550b785651b3b7 file=router/internal/exa/model.go range=52:52 lang=go exported=true byte_range=1235:1296
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.GroundedClaim
+
+NODE id=matrix/router/internal/exa.GroundedClaim#State kind=field
+  digest=b3:fab4042639cfda2ada0f887f3988bd040e6aaa53d587a88b4b85851ff2847a6e file=router/internal/exa/model.go range=55:55 lang=go exported=true byte_range=1410:1453
+  sig=exa.ClaimState
+EDGES
+  ^contains=matrix/router/internal/exa.GroundedClaim
+
+NODE id=matrix/router/internal/exa.GroundedClaim#Unit kind=field
+  digest=b3:f4efd14791a018e8e0dc015f4b43e9fb42e851cb84ea556008e0f42c719e300b file=router/internal/exa/model.go range=53:53 lang=go exported=true byte_range=1298:1350
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.GroundedClaim
+
+NODE id=matrix/router/internal/exa.GroundedClaim#Value kind=field
+  digest=b3:ed0a65eeeb6f1921eae088ed9a7c208739a4be8acd202b0e798ff8917ea885e0 file=router/internal/exa/model.go range=50:50 lang=go exported=true byte_range=1135:1178
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/router/internal/exa.GroundedClaim
+
+NODE id=matrix/router/internal/exa.Grounding kind=type
+  digest=b3:985f3a48a5da55087418d8bfcc684d83fe25186e927b820e6eb5a35afb028afd file=router/internal/exa/model.go range=25:29 lang=go exported=true byte_range=426:584
+  sig=type Grounding struct {\n	Field		string		`json:"field"`\n	Citations	[]Citation	`json:"citations"`\n	Confidence	string		`json:"confidence,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.Grounding#Citations,matrix/router/internal/exa.Grounding#Confidence,matrix/router/internal/exa.Grounding#Field
+  references=matrix/router/internal/exa.Citation
+  ^references=matrix/router/internal/exa.EvidenceFromGrounding,matrix/router/internal/exa.Output
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.Grounding#Citations kind=field
+  digest=b3:c51d74598dcf4df29fc926353c30d8909c6e5514b56a19cba92c920b1b125491 file=router/internal/exa/model.go range=27:27 lang=go exported=true byte_range=489:529
+  sig=[]exa.Citation
+EDGES
+  ^contains=matrix/router/internal/exa.Grounding
+
+NODE id=matrix/router/internal/exa.Grounding#Confidence kind=field
+  digest=b3:b4ecd7a9cec60e10ac181fcae38f3d249c0d83b33394d77cd61ca4cfff9d767e file=router/internal/exa/model.go range=28:28 lang=go exported=true byte_range=531:582
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Grounding
+
+NODE id=matrix/router/internal/exa.Grounding#Field kind=field
+  digest=b3:44b5b7a9c2cbde7a5082d5c966f681813d48eeb9baf74db7cc3ab04bc1ecc665 file=router/internal/exa/model.go range=26:26 lang=go exported=true byte_range=451:487
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Grounding
+
+NODE id=matrix/router/internal/exa.Handler kind=type
+  digest=b3:abec4959410bb28124d48f142a7d46ff1593a79c27751a3813b53475a8055957 file=router/internal/exa/handler.go range=22:28 lang=go exported=true byte_range=467:659
+  sig=type Handler struct {\n	Service			*Service\n	Finance			bool\n	TrustSubjectHeader	bool\n	Subject			func(context.Context) string\n	Log			func(string, ...any)\n}
+EDGES
+  contains=matrix/router/internal/exa.Handler#Finance,matrix/router/internal/exa.Handler#Log,matrix/router/internal/exa.Handler#Service,matrix/router/internal/exa.Handler#Subject,matrix/router/internal/exa.Handler#TrustSubjectHeader,matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON
+  references=matrix/router/internal/exa.Service
+  ^references=matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.NewFinanceHandler,matrix/router/internal/exa.NewHandler,matrix/router/internal/exa.NewInternalHandler
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.Handler#Finance kind=field
+  digest=b3:19a24a13ee1d16b7d6435bfb49a6f55e1a5e00d2ab5f9b82f0bce043a7d67ff8 file=router/internal/exa/handler.go range=24:24 lang=go exported=true byte_range=519:542
+  sig=bool
+EDGES
+  ^contains=matrix/router/internal/exa.Handler
+
+NODE id=matrix/router/internal/exa.Handler#Log kind=field
+  digest=b3:2a058972fe615081c538f312359d8b914487278e6fca9d5e7faa42754cbd249b file=router/internal/exa/handler.go range=27:27 lang=go exported=true byte_range=618:657
+  sig=func(string, ...any)
+EDGES
+  ^contains=matrix/router/internal/exa.Handler
+
+NODE id=matrix/router/internal/exa.Handler#Service kind=field
+  digest=b3:90ac8465cc00354a4d928ccd2db5fa6ef01e4b713be59affe0a58aa08af58675 file=router/internal/exa/handler.go range=23:23 lang=go exported=true byte_range=490:517
+  sig=*exa.Service
+EDGES
+  ^contains=matrix/router/internal/exa.Handler
+
+NODE id=matrix/router/internal/exa.Handler#Subject kind=field
+  digest=b3:9f0f8ae279f7108f2569ed73e0f12f250fad3e31fb85dc0d2fcf52a594b7aa78 file=router/internal/exa/handler.go range=26:26 lang=go exported=true byte_range=569:616
+  sig=func(context.Context) string
+EDGES
+  ^contains=matrix/router/internal/exa.Handler
+
+NODE id=matrix/router/internal/exa.Handler#TrustSubjectHeader kind=field
+  digest=b3:3bbfa1c263630bee11aebf0e6449458f71d245c6c125741f684a1cf4df452090 file=router/internal/exa/handler.go range=25:25 lang=go exported=true byte_range=544:567
+  sig=bool
+EDGES
+  ^contains=matrix/router/internal/exa.Handler
+
+NODE id=matrix/router/internal/exa.Handler.ServeHTTP kind=method
+  digest=b3:afe0c05d11479d455936dcfbf97db4f0c1b8ce7309ba4ed48b6abb584fe1852f file=router/internal/exa/handler.go range=40:67 lang=go exported=true byte_range=1229:2141
+  sig=func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request)
+EDGES
+  calls=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/proxy.Subject
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.FailureNotConfigured,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.SubjectHeader,matrix/router/internal/exa.h,matrix/router/internal/exa.path,matrix/router/internal/exa.r,matrix/router/internal/exa.user,matrix/router/internal/exa.w
+  ^contains=matrix/router/internal/exa.Handler
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.Handler.decode kind=method
+  digest=b3:649dbfae7d960a64d84868221d44eea8737bd69b88206d9e4b5a482445bb5215 file=router/internal/exa/handler.go range=160:169 lang=go exported=false byte_range=5358:5789
+  sig=func (h *Handler) decode(w http.ResponseWriter, r *http.Request, output any) bool
+EDGES
+  calls=matrix/router/internal/exa.Handler.writeError
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.decoder,matrix/router/internal/exa.err,matrix/router/internal/exa.h,matrix/router/internal/exa.output,matrix/router/internal/exa.r,matrix/router/internal/exa.w
+  ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.Handler.respond kind=method
+  digest=b3:fea6d3f5a1f55a90d1e46f21c84acfd0aa3d2aac7dc7816f66818a1ea8fc7fa3 file=router/internal/exa/handler.go range=171:177 lang=go exported=false byte_range=5791:5957
+  sig=func (h *Handler) respond(w http.ResponseWriter, output any, err error)
+EDGES
+  calls=matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON
+  references=matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.err,matrix/router/internal/exa.h,matrix/router/internal/exa.output,matrix/router/internal/exa.w
+  ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.Handler.serveFinance kind=method
+  digest=b3:54d979d28bde5f718acbfe6c87b8328c17b2e5dc257b8e6c0012564319fcbc48 file=router/internal/exa/handler.go range=105:133 lang=go exported=false byte_range=3466:4409
+  sig=func (h *Handler) serveFinance(w http.ResponseWriter, r *http.Request, user, path string)
+EDGES
+  calls=matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.VerifyFinance
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.FinanceNewsRequest,matrix/router/internal/exa.FinanceRequest,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.VerifyRequest,matrix/router/internal/exa.err,matrix/router/internal/exa.h,matrix/router/internal/exa.input,matrix/router/internal/exa.out,matrix/router/internal/exa.path,matrix/router/internal/exa.r,matrix/router/internal/exa.user,matrix/router/internal/exa.w
+  ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.ServeHTTP
+  ^references=matrix/router/internal/exa.Handler.ServeHTTP
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.Handler.serveGeneral kind=method
+  digest=b3:d04e38dcb3906dbe8dead110a35f33856789b679a5116c101cf1a72d232df276 file=router/internal/exa/handler.go range=69:103 lang=go exported=false byte_range=2143:3464
+  sig=func (h *Handler) serveGeneral(w http.ResponseWriter, r *http.Request, user, path string)
+EDGES
+  calls=matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.Stats
+  references=matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.ContentsRequest,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.Stats,matrix/router/internal/exa.err,matrix/router/internal/exa.h,matrix/router/internal/exa.input,matrix/router/internal/exa.out,matrix/router/internal/exa.path,matrix/router/internal/exa.r,matrix/router/internal/exa.user,matrix/router/internal/exa.w
+  ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.ServeHTTP
+  ^references=matrix/router/internal/exa.Handler.ServeHTTP
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.Handler.serveRun kind=method
+  digest=b3:afa91356c257b7cdebd725e62599e8a48343eb2de1e83cee3709a6e9d3f0e189 file=router/internal/exa/handler.go range=135:158 lang=go exported=false byte_range=4411:5356
+  sig=func (h *Handler) serveRun(w http.ResponseWriter, r *http.Request, user, suffix string)
+EDGES
+  calls=matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.err,matrix/router/internal/exa.h,matrix/router/internal/exa.id,matrix/router/internal/exa.input,matrix/router/internal/exa.out,matrix/router/internal/exa.parts,matrix/router/internal/exa.r,matrix/router/internal/exa.suffix,matrix/router/internal/exa.user,matrix/router/internal/exa.w
+  ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.Handler.writeError kind=method
+  digest=b3:c017bfe94b677c4ab7a479f76b573ddabf555ed7daa981247f3879b8ec1b318c file=router/internal/exa/handler.go range=191:216 lang=go exported=false byte_range=6311:7200
+  sig=func (h *Handler) writeError(w http.ResponseWriter, err error)
+EDGES
+  calls=matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.serviceError
+  references=matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.FailureConflict,matrix/router/internal/exa.FailureNotConfigured,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.FailurePartial,matrix/router/internal/exa.FailureRateLimited,matrix/router/internal/exa.FailureTimeout,matrix/router/internal/exa.FailureUngrounded,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.body,matrix/router/internal/exa.err,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.failure,matrix/router/internal/exa.h,matrix/router/internal/exa.serviceError,matrix/router/internal/exa.status,matrix/router/internal/exa.w
+  ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun
+  ^references=matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.Handler.writeJSON kind=method
+  digest=b3:8541963c03870d3a7e5f897a8dda8611f375ed34f7ca88e266f95fb080b50838 file=router/internal/exa/handler.go range=218:223 lang=go exported=false byte_range=7202:7446
+  sig=func (h *Handler) writeJSON(w http.ResponseWriter, status int, value any)
+EDGES
+  calls=matrix/router/internal/mw.statusWriter.WriteHeader
+  references=matrix/router/internal/exa.Handler,matrix/router/internal/exa.status,matrix/router/internal/exa.value,matrix/router/internal/exa.w
+  ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.writeError
+  ^references=matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.writeError
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.KindOf kind=func
+  digest=b3:9d31705515dd0847a1c648f945bc343d836affef96a04174fd6411500db8ed31 file=router/internal/exa/failure.go range=53:61 lang=go exported=true byte_range=1204:1371
+  sig=func KindOf(err error) FailureKind
+EDGES
+  calls=matrix/router/internal/exa.FailureOf
+  references=matrix/router/internal/exa.FailureKind,matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.err,matrix/router/internal/exa.failure
+  ^calls=matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.GetRun
+  ^references=matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.GetRun
+  ^defines=matrix/router/internal/exa/failure.go
+
+NODE id=matrix/router/internal/exa.MemoryStore kind=type
+  digest=b3:c2d62cfb1f27f9df957a8c5afd50b8134bf9db1047be95ca647f48052b5c7655 file=router/internal/exa/store.go range=41:46 lang=go exported=true byte_range=933:1062
+  sig=type MemoryStore struct {\n	mu	sync.Mutex\n	runs	map[string]RunRecord\n	cache	map[string]CacheRecord\n	spend	map[string]float64\n}
+EDGES
+  contains=matrix/router/internal/exa.MemoryStore#cache,matrix/router/internal/exa.MemoryStore#mu,matrix/router/internal/exa.MemoryStore#runs,matrix/router/internal/exa.MemoryStore#spend,matrix/router/internal/exa.MemoryStore.ActiveRuns,matrix/router/internal/exa.MemoryStore.GetCache,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.MemoryStore.PutCache,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.MemoryStore.ReserveSpend
+  implements=matrix/router/internal/exa.Store
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.RunRecord
+  ^references=matrix/router/internal/exa.MemoryStore.ActiveRuns,matrix/router/internal/exa.MemoryStore.GetCache,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.MemoryStore.PutCache,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.MemoryStore.ReserveSpend,matrix/router/internal/exa.NewMemoryStore
+  ^defines=matrix/router/internal/exa/store.go
+
+NODE id=matrix/router/internal/exa.MemoryStore#cache kind=field
+  digest=b3:8c9b93493479d8abac79dfb4de5370cc21c90b1a4e0dc92a4f3174e9d2503f32 file=router/internal/exa/store.go range=44:44 lang=go exported=false byte_range=1006:1034
+  sig=map[string]exa.CacheRecord
+EDGES
+  ^contains=matrix/router/internal/exa.MemoryStore
+
+NODE id=matrix/router/internal/exa.MemoryStore#mu kind=field
+  digest=b3:310fe5057943da02eaa2bd692fe105426780237e3a3659c4f6ff79923e64a299 file=router/internal/exa/store.go range=42:42 lang=go exported=false byte_range=960:976
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/router/internal/exa.MemoryStore
+
+NODE id=matrix/router/internal/exa.MemoryStore#runs kind=field
+  digest=b3:a0a3e29c8a3400cf0268d0511f3681eb43b7051edc4e01bdc68a37cddfbdeeb9 file=router/internal/exa/store.go range=43:43 lang=go exported=false byte_range=978:1004
+  sig=map[string]exa.RunRecord
+EDGES
+  ^contains=matrix/router/internal/exa.MemoryStore
+
+NODE id=matrix/router/internal/exa.MemoryStore#spend kind=field
+  digest=b3:148035f1fd0369d4ccf3e3099ab8e463ce91f027e70330cccb1177b93258b905 file=router/internal/exa/store.go range=45:45 lang=go exported=false byte_range=1036:1060
+  sig=map[string]float64
+EDGES
+  ^contains=matrix/router/internal/exa.MemoryStore
+
+NODE id=matrix/router/internal/exa.MemoryStore.ActiveRuns kind=method
+  digest=b3:fbb56f687959a4e7f6975952a0f38bec8e037af1e25d2074e78f0cc79cc7a198 file=router/internal/exa/store.go range=69:80 lang=go exported=true byte_range=1686:1987
+  sig=func (s *MemoryStore) ActiveRuns(_ context.Context, user string) (int, error)
+EDGES
+  references=matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.count,matrix/router/internal/exa.id,matrix/router/internal/exa.record,matrix/router/internal/exa.s,matrix/router/internal/exa.user
+  ^contains=matrix/router/internal/exa.MemoryStore
+  ^calls=matrix/router/internal/exa.Service.acquire
+  ^defines=matrix/router/internal/exa/store.go
+
+NODE id=matrix/router/internal/exa.MemoryStore.GetCache kind=method
+  digest=b3:acb2571a11713c3654d70cc823c14cbc3c8cee8a298992eaccc63e58c41d4297 file=router/internal/exa/store.go range=89:97 lang=go exported=true byte_range=2165:2458
+  sig=func (s *MemoryStore) GetCache(_ context.Context, user, key string, now time.Time) (CacheRecord, bool, error)
+EDGES
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.key,matrix/router/internal/exa.now,matrix/router/internal/exa.ok,matrix/router/internal/exa.record,matrix/router/internal/exa.s,matrix/router/internal/exa.user
+  ^contains=matrix/router/internal/exa.MemoryStore
+  ^calls=matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
+  ^defines=matrix/router/internal/exa/store.go
+
+NODE id=matrix/router/internal/exa.MemoryStore.GetRun kind=method
+  digest=b3:d7903508683a1b47ee14c2845e42e9c55d4ded0499171c14b4593fab02335e80 file=router/internal/exa/store.go range=62:67 lang=go exported=true byte_range=1484:1684
+  sig=func (s *MemoryStore) GetRun(_ context.Context, user, id string) (RunRecord, bool, error)
+EDGES
+  references=matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.RunRecord,matrix/router/internal/exa.id,matrix/router/internal/exa.ok,matrix/router/internal/exa.record,matrix/router/internal/exa.s,matrix/router/internal/exa.user
+  ^contains=matrix/router/internal/exa.MemoryStore
+  ^calls=matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun
+  ^defines=matrix/router/internal/exa/store.go
+
+NODE id=matrix/router/internal/exa.MemoryStore.PutCache kind=method
+  digest=b3:3985c5ee685d09bfd2c2ddab6ea66993b790269b44296360d7552dbde7f67123 file=router/internal/exa/store.go range=82:87 lang=go exported=true byte_range=1989:2163
+  sig=func (s *MemoryStore) PutCache(_ context.Context, record CacheRecord) error
+EDGES
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.record,matrix/router/internal/exa.s
+  ^contains=matrix/router/internal/exa.MemoryStore
+  ^calls=matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.cached
+  ^defines=matrix/router/internal/exa/store.go
+
+NODE id=matrix/router/internal/exa.MemoryStore.PutRun kind=method
+  digest=b3:702b9ea4ba8fdb7ff4def7d67aaad97d3d89fb0ceed35c3294f2e802112f8fcd file=router/internal/exa/store.go range=52:60 lang=go exported=true byte_range=1217:1482
+  sig=func (s *MemoryStore) PutRun(_ context.Context, record RunRecord) error
+EDGES
+  references=matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.RunRecord,matrix/router/internal/exa.existing,matrix/router/internal/exa.ok,matrix/router/internal/exa.record,matrix/router/internal/exa.s
+  ^contains=matrix/router/internal/exa.MemoryStore
+  ^calls=matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun
+  ^defines=matrix/router/internal/exa/store.go
+
+NODE id=matrix/router/internal/exa.MemoryStore.ReserveSpend kind=method
+  digest=b3:354a26f07327188ca9e3b76dee0a95e99dc890003bd0dc125f3690419f40119c file=router/internal/exa/store.go range=99:108 lang=go exported=true byte_range=2460:2770
+  sig=func (s *MemoryStore) ReserveSpend(_ context.Context, user string, day time.Time, amount, limit float64) (bool, error)
+EDGES
+  references=matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.amount,matrix/router/internal/exa.day,matrix/router/internal/exa.key,matrix/router/internal/exa.limit,matrix/router/internal/exa.s,matrix/router/internal/exa.user
+  ^contains=matrix/router/internal/exa.MemoryStore
+  ^calls=matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
+  ^defines=matrix/router/internal/exa/store.go
+
+NODE id=matrix/router/internal/exa.Meter kind=type
+  digest=b3:8390e2beb1941806c17bed12a1b777bf2d052fc993861a03dc5e31b7d51f2ca0 file=router/internal/exa/meter.go range=47:52 lang=go exported=true byte_range=1124:1231
+  sig=type Meter struct {\n	mu	sync.Mutex\n	since	time.Time\n	rows	map[string]*meterRow\n	users	map[string]bool\n}
+EDGES
+  contains=matrix/router/internal/exa.Meter#mu,matrix/router/internal/exa.Meter#rows,matrix/router/internal/exa.Meter#since,matrix/router/internal/exa.Meter#users,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.Meter.Snapshot
+  references=matrix/router/internal/exa.meterRow
+  ^references=matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.Meter.Snapshot,matrix/router/internal/exa.NewMeter,matrix/router/internal/exa.Service
+  ^defines=matrix/router/internal/exa/meter.go
+
+NODE id=matrix/router/internal/exa.Meter#mu kind=field
+  digest=b3:310fe5057943da02eaa2bd692fe105426780237e3a3659c4f6ff79923e64a299 file=router/internal/exa/meter.go range=48:48 lang=go exported=false byte_range=1145:1161
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/router/internal/exa.Meter
+
+NODE id=matrix/router/internal/exa.Meter#rows kind=field
+  digest=b3:7f759ef15db83629d62ed60401d6ad73c5eb2999ade8374ec78591fe7831932c file=router/internal/exa/meter.go range=50:50 lang=go exported=false byte_range=1180:1206
+  sig=map[string]*exa.meterRow
+EDGES
+  ^contains=matrix/router/internal/exa.Meter
+
+NODE id=matrix/router/internal/exa.Meter#since kind=field
+  digest=b3:7b3e22c4cfdd05d1ea2b2f235541ad16f42dcd6dda03026cfe202e884f80f83c file=router/internal/exa/meter.go range=49:49 lang=go exported=false byte_range=1163:1178
+  sig=time.Time
+EDGES
+  ^contains=matrix/router/internal/exa.Meter
+
+NODE id=matrix/router/internal/exa.Meter#users kind=field
+  digest=b3:ee12b474ab7b14c15af8e383777eac1cae9ac93a4191e60c7bb53d36984d237b file=router/internal/exa/meter.go range=51:51 lang=go exported=false byte_range=1208:1229
+  sig=map[string]bool
+EDGES
+  ^contains=matrix/router/internal/exa.Meter
+
+NODE id=matrix/router/internal/exa.Meter.Observe kind=method
+  digest=b3:2ae1bdf723c7461471f53b1b28bd8cb69ae6a57f84bb7c1ac24fb3bbe3381c78 file=router/internal/exa/meter.go range=58:86 lang=go exported=true byte_range=1363:1936
+  sig=func (m *Meter) Observe(record MeterRecord)
+EDGES
+  references=matrix/router/internal/exa.Meter,matrix/router/internal/exa.MeterRecord,matrix/router/internal/exa.m,matrix/router/internal/exa.meterRow,matrix/router/internal/exa.record,matrix/router/internal/exa.row
+  ^contains=matrix/router/internal/exa.Meter
+  ^calls=matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
+  ^references=matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
+  ^defines=matrix/router/internal/exa/meter.go
+
+NODE id=matrix/router/internal/exa.Meter.Snapshot kind=method
+  digest=b3:ebe96dabbb91fe9ca72afe498ee378c0ae154e464f470f492799c408005b77de file=router/internal/exa/meter.go range=88:113 lang=go exported=true byte_range=1938:2879
+  sig=func (m *Meter) Snapshot() Stats
+EDGES
+  references=matrix/router/internal/exa.EndpointStats,matrix/router/internal/exa.Meter,matrix/router/internal/exa.Stats,matrix/router/internal/exa.endpoint,matrix/router/internal/exa.i,matrix/router/internal/exa.index,matrix/router/internal/exa.j,matrix/router/internal/exa.latencies,matrix/router/internal/exa.m,matrix/router/internal/exa.out,matrix/router/internal/exa.p,matrix/router/internal/exa.q,matrix/router/internal/exa.row
+  ^contains=matrix/router/internal/exa.Meter
+  ^calls=matrix/router/internal/exa.Service.Stats
+  ^references=matrix/router/internal/exa.Service.Stats
+  ^defines=matrix/router/internal/exa/meter.go
+
+NODE id=matrix/router/internal/exa.MeterRecord kind=type
+  digest=b3:46f2e60d9fd4a24d9b085a39618e683ce01e5922200c1a50e74594071c0d9fb0 file=router/internal/exa/meter.go range=12:19 lang=go exported=true byte_range=218:352
+  sig=type MeterRecord struct {\n	Endpoint	string\n	User		string\n	CacheHit	bool\n	Latency		time.Duration\n	Cost		float64\n	Err		error\n}
+EDGES
+  contains=matrix/router/internal/exa.MeterRecord#CacheHit,matrix/router/internal/exa.MeterRecord#Cost,matrix/router/internal/exa.MeterRecord#Endpoint,matrix/router/internal/exa.MeterRecord#Err,matrix/router/internal/exa.MeterRecord#Latency,matrix/router/internal/exa.MeterRecord#User
+  ^references=matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
+  ^defines=matrix/router/internal/exa/meter.go
+
+NODE id=matrix/router/internal/exa.MeterRecord#CacheHit kind=field
+  digest=b3:5fbaacfa9f1b8df25564d05ac15fac5616a0c2a15d6a032f51ccbe291fde557c file=router/internal/exa/meter.go range=15:15 lang=go exported=true byte_range=279:292
+  sig=bool
+EDGES
+  ^contains=matrix/router/internal/exa.MeterRecord
+
+NODE id=matrix/router/internal/exa.MeterRecord#Cost kind=field
+  digest=b3:68739e53589ef8d4fa8cb54e0658fc54b6bdd8f1c7f87c937a73e59d29204dff file=router/internal/exa/meter.go range=17:17 lang=go exported=true byte_range=318:334
+  sig=float64
+EDGES
+  ^contains=matrix/router/internal/exa.MeterRecord
+
+NODE id=matrix/router/internal/exa.MeterRecord#Endpoint kind=field
+  digest=b3:d9a2c994cff4c8ebf4c47abe4385e940d598e14ca14d94ac18957cac1691e298 file=router/internal/exa/meter.go range=13:13 lang=go exported=true byte_range=245:260
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.MeterRecord
+
+NODE id=matrix/router/internal/exa.MeterRecord#Err kind=field
+  digest=b3:966188a389c0ef908a8e7c74fca9d377f281beb62a111e8aa10aa3e520e4fa4b file=router/internal/exa/meter.go range=18:18 lang=go exported=true byte_range=336:350
+  sig=error
+EDGES
+  ^contains=matrix/router/internal/exa.MeterRecord
+
+NODE id=matrix/router/internal/exa.MeterRecord#Latency kind=field
+  digest=b3:0972d64f992599aa76a3ae3c5cfa26ab33c5d19d78e5b85bce31c39e246836a7 file=router/internal/exa/meter.go range=16:16 lang=go exported=true byte_range=294:316
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/exa.MeterRecord
+
+NODE id=matrix/router/internal/exa.MeterRecord#User kind=field
+  digest=b3:17c049458da315e7771d81b8a35c49cd45d810b5f97bb949c40a350e77b8b149 file=router/internal/exa/meter.go range=14:14 lang=go exported=true byte_range=262:277
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.MeterRecord
+
+NODE id=matrix/router/internal/exa.NewClient kind=func
+  digest=b3:2ac4ed85c79055c828d036a893c7d71214d52cff5048affcc96bba9841512f02 file=router/internal/exa/client.go range=38:48 lang=go exported=true byte_range=615:965
+  sig=func NewClient(cfg ClientConfig) *Client
+EDGES
+  references=matrix/router/internal/exa.Client,matrix/router/internal/exa.ClientConfig,matrix/router/internal/exa.base,matrix/router/internal/exa.cfg,matrix/router/internal/exa.defaultBaseURL,matrix/router/internal/exa.defaultTimeout,matrix/router/internal/exa.httpClient
+  ^calls=matrix/router/internal/exa.NewService
+  ^references=matrix/router/internal/exa.NewService
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.NewFinanceHandler kind=func
+  digest=b3:7354ea1bb18fb705c2e33bb697d59498c0a0009465d2a708c2fae4b2126bfe43 file=router/internal/exa/handler.go range=36:38 lang=go exported=true byte_range=987:1227
+  sig=func NewFinanceHandler(service *Service, internal bool, subject func(context.Context) string, log func(string, ...any)) *Handler
+EDGES
+  references=matrix/router/internal/exa.Handler,matrix/router/internal/exa.Service,matrix/router/internal/exa.internal,matrix/router/internal/exa.log,matrix/router/internal/exa.service,matrix/router/internal/exa.subject
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.NewHandler kind=func
+  digest=b3:6d689bc400eec38cd255d681cea3b90df779cb172723d537f942bb25e0abec04 file=router/internal/exa/handler.go range=30:32 lang=go exported=true byte_range=661:834
+  sig=func NewHandler(service *Service, subject func(context.Context) string, log func(string, ...any)) *Handler
+EDGES
+  references=matrix/router/internal/exa.Handler,matrix/router/internal/exa.Service,matrix/router/internal/exa.log,matrix/router/internal/exa.service,matrix/router/internal/exa.subject
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.NewInternalHandler kind=func
+  digest=b3:db2a0ee4f25e5038fcea68060f9f0f280090d80abb8d092873bd0731ce02fd5c file=router/internal/exa/handler.go range=33:35 lang=go exported=true byte_range=835:986
+  sig=func NewInternalHandler(service *Service, log func(string, ...any)) *Handler
+EDGES
+  references=matrix/router/internal/exa.Handler,matrix/router/internal/exa.Service,matrix/router/internal/exa.log,matrix/router/internal/exa.service
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.NewMemoryStore kind=func
+  digest=b3:e4d386182f401ecd374665290495047cdda2fc72ba5a02fb8859b0a6dab614af file=router/internal/exa/store.go range=48:50 lang=go exported=true byte_range=1064:1215
+  sig=func NewMemoryStore() *MemoryStore
+EDGES
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.RunRecord
+  ^calls=matrix/router/internal/exa.NewService
+  ^references=matrix/router/internal/exa.NewService
+  ^defines=matrix/router/internal/exa/store.go
+
+NODE id=matrix/router/internal/exa.NewMeter kind=func
+  digest=b3:823aaff6c2471f9de71a42ea177eb92b9da2a098df4d32fcbe812cfd52591871 file=router/internal/exa/meter.go range=54:56 lang=go exported=true byte_range=1233:1361
+  sig=func NewMeter(now time.Time) *Meter
+EDGES
+  references=matrix/router/internal/exa.Meter,matrix/router/internal/exa.meterRow,matrix/router/internal/exa.now
+  ^calls=matrix/router/internal/exa.NewService
+  ^references=matrix/router/internal/exa.NewService
+  ^defines=matrix/router/internal/exa/meter.go
+
+NODE id=matrix/router/internal/exa.NewService kind=func
+  digest=b3:73a68c2090f804ef7e0a818aa6669202adcea9d572986ae48d2be0e24b8694b5 file=router/internal/exa/service.go range=73:105 lang=go exported=true byte_range=1564:2531
+  sig=func NewService(cfg ServiceConfig) *Service
+EDGES
+  calls=matrix/router/internal/exa.NewClient,matrix/router/internal/exa.NewMemoryStore,matrix/router/internal/exa.NewMeter
+  references=matrix/router/internal/exa.APIKeyEnv,matrix/router/internal/exa.ClientConfig,matrix/router/internal/exa.NewClient,matrix/router/internal/exa.NewMemoryStore,matrix/router/internal/exa.NewMeter,matrix/router/internal/exa.Service,matrix/router/internal/exa.ServiceConfig,matrix/router/internal/exa.cfg,matrix/router/internal/exa.client,matrix/router/internal/exa.concurrent,matrix/router/internal/exa.contentsTTL,matrix/router/internal/exa.flight,matrix/router/internal/exa.limit,matrix/router/internal/exa.now,matrix/router/internal/exa.researchTTL,matrix/router/internal/exa.searchTTL,matrix/router/internal/exa.store
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.Output kind=type
+  digest=b3:52a6b8262dbc1f94265b731c109ada1d7a8017c86457f10dedc5565a7f67d6c0 file=router/internal/exa/model.go range=101:106 lang=go exported=true byte_range=3534:3778
+  sig=type Output struct {\n	Content		json.RawMessage	`json:"content,omitempty"`\n	Text		string		`json:"text,omitempty"`\n	Structured	json.RawMessage	`json:"structured,omitempty"`\n	Grounding	[]Grounding	`json:"grounding,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.Output#Content,matrix/router/internal/exa.Output#Grounding,matrix/router/internal/exa.Output#Structured,matrix/router/internal/exa.Output#Text
+  references=matrix/router/internal/exa.Grounding
+  ^references=matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.SearchResponse
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.Output#Content kind=field
+  digest=b3:54ad0deba1488220a758c17afed265d341109c41cb6ca8990dea3e0eee515a7f file=router/internal/exa/model.go range=102:102 lang=go exported=true byte_range=3556:3609
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/router/internal/exa.Output
+
+NODE id=matrix/router/internal/exa.Output#Grounding kind=field
+  digest=b3:e4591de7540210b9ca8b7454fd70ceb3d2d341e2d2012a513d0500a40bb13735 file=router/internal/exa/model.go range=105:105 lang=go exported=true byte_range=3721:3776
+  sig=[]exa.Grounding
+EDGES
+  ^contains=matrix/router/internal/exa.Output
+
+NODE id=matrix/router/internal/exa.Output#Structured kind=field
+  digest=b3:a73d0a25c71e2637deef503ba4e2ef4f30121374cea3cd60cc8f07bc44d68afc file=router/internal/exa/model.go range=104:104 lang=go exported=true byte_range=3663:3719
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/router/internal/exa.Output
+
+NODE id=matrix/router/internal/exa.Output#Text kind=field
+  digest=b3:e5383a291272014b5f9e361686a9a66c098f0aeefa7d3d4f09d3c4c16e619c9b file=router/internal/exa/model.go range=103:103 lang=go exported=true byte_range=3611:3661
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Output
+
+NODE id=matrix/router/internal/exa.ResponseMeta kind=type
+  digest=b3:d6d509a6e1dd541ae5d46587126319481683719041fad8d213e67bc5b28c4ee7 file=router/internal/exa/service.go range=50:53 lang=go exported=true byte_range=958:1073
+  sig=type ResponseMeta struct {\n	CacheHit	bool		`json:"cache_hit"`\n	RetrievedAt	time.Time	`json:"retrieved_at"`\n}
+EDGES
+  contains=matrix/router/internal/exa.ResponseMeta#CacheHit,matrix/router/internal/exa.ResponseMeta#RetrievedAt
+  ^references=matrix/router/internal/exa.ContentsEnvelope,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.SearchEnvelope,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.ResponseMeta#CacheHit kind=field
+  digest=b3:27b75f86354714053c08faa0a3128149065f95e940d8b154c249dbf645d73722 file=router/internal/exa/service.go range=51:51 lang=go exported=true byte_range=986:1026
+  sig=bool
+EDGES
+  ^contains=matrix/router/internal/exa.ResponseMeta
+
+NODE id=matrix/router/internal/exa.ResponseMeta#RetrievedAt kind=field
+  digest=b3:d05b23cddc9f8a17c2b738e53a1bf9145ce7caf256e9ca8217c43e23357616bf file=router/internal/exa/service.go range=52:52 lang=go exported=true byte_range=1028:1071
+  sig=time.Time
+EDGES
+  ^contains=matrix/router/internal/exa.ResponseMeta
+
+NODE id=matrix/router/internal/exa.Result kind=type
+  digest=b3:93d0d4b056e7e7ddb5bf539b6b58434210016bce2f2e958660e5247b8fdc1f3b file=router/internal/exa/model.go range=87:99 lang=go exported=true byte_range=2936:3532
+  sig=type Result struct {\n	Title		string		`json:"title"`\n	URL		string		`json:"url"`\n	ID		string		`json:"id,omitempty"`\n	PublishedDate	string		`json:"publishedDate,omitempty"`\n	Author		string		`json:"author,omitempty"`\n	Image		string		`json:"image,omitempty"`\n	Favicon		string		`json:"favicon,omitempty"`\n	Text		string		`json:"text,omitempty"`\n	Highlights	[]string	`json:"highlights,omitempty"`\n	HighlightScores	[]float64	`json:"highlightScores,omitempty"`\n	Summary		any		`json:"summary,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.Result#Author,matrix/router/internal/exa.Result#Favicon,matrix/router/internal/exa.Result#HighlightScores,matrix/router/internal/exa.Result#Highlights,matrix/router/internal/exa.Result#ID,matrix/router/internal/exa.Result#Image,matrix/router/internal/exa.Result#PublishedDate,matrix/router/internal/exa.Result#Summary,matrix/router/internal/exa.Result#Text,matrix/router/internal/exa.Result#Title,matrix/router/internal/exa.Result#URL
+  ^references=matrix/router/internal/exa.ContentsResponse,matrix/router/internal/exa.SearchResponse
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.Result#Author kind=field
+  digest=b3:c217194637578b4a3a946211e1266ad0c4d7313f3bf8e20292ded2c22db974bb file=router/internal/exa/model.go range=92:92 lang=go exported=true byte_range=3149:3200
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Result
+
+NODE id=matrix/router/internal/exa.Result#Favicon kind=field
+  digest=b3:21fd5679bc60b97e4a55efc0c3f83a1bc875f70f4adf65881098f01d51169e3d file=router/internal/exa/model.go range=94:94 lang=go exported=true byte_range=3254:3306
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Result
+
+NODE id=matrix/router/internal/exa.Result#HighlightScores kind=field
+  digest=b3:5eec7c54cbd30c109b0b573721164b17d50dbb204fdf1cd5a13561197f471fde file=router/internal/exa/model.go range=97:97 lang=go exported=true byte_range=3416:3476
+  sig=[]float64
+EDGES
+  ^contains=matrix/router/internal/exa.Result
+
+NODE id=matrix/router/internal/exa.Result#Highlights kind=field
+  digest=b3:cac7448debbee86a5e1f103f3cc104476b2f4a958b4d093f73c6df2a1f97f3cf file=router/internal/exa/model.go range=96:96 lang=go exported=true byte_range=3359:3414
+  sig=[]string
+EDGES
+  ^contains=matrix/router/internal/exa.Result
+
+NODE id=matrix/router/internal/exa.Result#ID kind=field
+  digest=b3:3192288a7fdcdb5f23d424291d601e53541f468bf4a3d2d8aaceb7da8509bd20 file=router/internal/exa/model.go range=90:90 lang=go exported=true byte_range=3040:3087
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Result
+
+NODE id=matrix/router/internal/exa.Result#Image kind=field
+  digest=b3:d49288c99ab8eeee9bdd7e1c15d116b246b1916ae45aa2082725dfa367cef7fa file=router/internal/exa/model.go range=93:93 lang=go exported=true byte_range=3202:3252
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Result
+
+NODE id=matrix/router/internal/exa.Result#PublishedDate kind=field
+  digest=b3:c0900ddcd43efa4fadfc5ad88dbb59e92107bf5551ee37175cfb3517e7d78333 file=router/internal/exa/model.go range=91:91 lang=go exported=true byte_range=3089:3147
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Result
+
+NODE id=matrix/router/internal/exa.Result#Summary kind=field
+  digest=b3:20f17125a14e7c25a067d1b546fabf9fa524cd669d7059feb42cc86527f2783f file=router/internal/exa/model.go range=98:98 lang=go exported=true byte_range=3478:3530
+  sig=any
+EDGES
+  ^contains=matrix/router/internal/exa.Result
+
+NODE id=matrix/router/internal/exa.Result#Text kind=field
+  digest=b3:13ed11d3ebef4f16bf69a741e943969f4278da6a45f9895e94e7d76f42264ada file=router/internal/exa/model.go range=95:95 lang=go exported=true byte_range=3308:3357
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Result
+
+NODE id=matrix/router/internal/exa.Result#Title kind=field
+  digest=b3:628e7429539736c8649a6b1acc13b8e7b9258706abae0422c5be440baec9e651 file=router/internal/exa/model.go range=88:88 lang=go exported=true byte_range=2958:2998
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Result
+
+NODE id=matrix/router/internal/exa.Result#URL kind=field
+  digest=b3:7a5b5273b03cba6f604beb679dbf4e9ed63585f0f5a22dd2d2a121fa0aa483ec file=router/internal/exa/model.go range=89:89 lang=go exported=true byte_range=3000:3038
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.Result
+
+NODE id=matrix/router/internal/exa.RunEnvelope kind=type
+  digest=b3:92d5c3b5a9bad69471abf272c20c53fc640b5c2cd7ad5e5b8ab2ab2447c60ab5 file=router/internal/exa/service.go range=66:71 lang=go exported=true byte_range=1361:1562
+  sig=type RunEnvelope struct {\n	Run		*AgentRun	`json:"run"`\n	Workflow	string		`json:"workflow,omitempty"`\n	Subject		string		`json:"subject,omitempty"`\n	Meta		ResponseMeta	`json:"meta"`\n}
+EDGES
+  contains=matrix/router/internal/exa.RunEnvelope#Meta,matrix/router/internal/exa.RunEnvelope#Run,matrix/router/internal/exa.RunEnvelope#Subject,matrix/router/internal/exa.RunEnvelope#Workflow
+  references=matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.ResponseMeta
+  ^references=matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.StartRun
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.RunEnvelope#Meta kind=field
+  digest=b3:d8fdf5dd6fba3345852a0ceef3638b20c79f7b0f91f84b3e9a5bba99a7d33c82 file=router/internal/exa/service.go range=70:70 lang=go exported=true byte_range=1525:1560
+  sig=exa.ResponseMeta
+EDGES
+  ^contains=matrix/router/internal/exa.RunEnvelope
+
+NODE id=matrix/router/internal/exa.RunEnvelope#Run kind=field
+  digest=b3:94d7bf68b81c321519e9ccbc6dd2d744635f20d4b5c510f70849103afbad6a2d file=router/internal/exa/service.go range=67:67 lang=go exported=true byte_range=1388:1422
+  sig=*exa.AgentRun
+EDGES
+  ^contains=matrix/router/internal/exa.RunEnvelope
+
+NODE id=matrix/router/internal/exa.RunEnvelope#Subject kind=field
+  digest=b3:2b1ec5ac43e48075e6b8d82488f97a980b368182932fbf7523a2674b265b025c file=router/internal/exa/service.go range=69:69 lang=go exported=true byte_range=1475:1523
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.RunEnvelope
+
+NODE id=matrix/router/internal/exa.RunEnvelope#Workflow kind=field
+  digest=b3:cef7448db0484222818630bae1f4652fb1646f547c989e50bdde2fb5036c0786 file=router/internal/exa/service.go range=68:68 lang=go exported=true byte_range=1424:1473
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.RunEnvelope
+
+NODE id=matrix/router/internal/exa.RunRecord kind=type
+  digest=b3:8db6aa8d553c53023064e0afb7b62d433e28b3441426464d92d66cc471e56090 file=router/internal/exa/store.go range=12:22 lang=go exported=true byte_range=221:415
+  sig=type RunRecord struct {\n	ID		string\n	User		string\n	Workflow	string\n	Subject		string\n	CacheKey	string\n	Status		string\n	Cost		float64\n	CreatedAt	time.Time\n	UpdatedAt	time.Time\n}
+EDGES
+  contains=matrix/router/internal/exa.RunRecord#CacheKey,matrix/router/internal/exa.RunRecord#Cost,matrix/router/internal/exa.RunRecord#CreatedAt,matrix/router/internal/exa.RunRecord#ID,matrix/router/internal/exa.RunRecord#Status,matrix/router/internal/exa.RunRecord#Subject,matrix/router/internal/exa.RunRecord#UpdatedAt,matrix/router/internal/exa.RunRecord#User,matrix/router/internal/exa.RunRecord#Workflow
+  ^references=matrix/router/internal/db.DB.GetRun,matrix/router/internal/db.DB.PutRun,matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.NewMemoryStore,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Store
+  ^defines=matrix/router/internal/exa/store.go
+
+NODE id=matrix/router/internal/exa.RunRecord#CacheKey kind=field
+  digest=b3:d1768e1da623fa8f64c6079ee73b2d064bc832f6bcf0241e488be7a625df6e8f file=router/internal/exa/store.go range=17:17 lang=go exported=true byte_range=318:334
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.RunRecord
+
+NODE id=matrix/router/internal/exa.RunRecord#Cost kind=field
+  digest=b3:fe12f01f60d61f5b444992e690c4be30223330a2b269882dba3efd0e113b9fc6 file=router/internal/exa/store.go range=19:19 lang=go exported=true byte_range=354:371
+  sig=float64
+EDGES
+  ^contains=matrix/router/internal/exa.RunRecord
+
+NODE id=matrix/router/internal/exa.RunRecord#CreatedAt kind=field
+  digest=b3:1be360bb554bbd8c1ee43cbc19d360bda0dc86a46e24f6dc1aef1dd44d692f41 file=router/internal/exa/store.go range=20:20 lang=go exported=true byte_range=373:392
+  sig=time.Time
+EDGES
+  ^contains=matrix/router/internal/exa.RunRecord
+
+NODE id=matrix/router/internal/exa.RunRecord#ID kind=field
+  digest=b3:811a6f49bf21cbb805cfbc56119f52523810506cc773372d7af4efe5eb94332e file=router/internal/exa/store.go range=13:13 lang=go exported=true byte_range=246:262
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.RunRecord
+
+NODE id=matrix/router/internal/exa.RunRecord#Status kind=field
+  digest=b3:64c825eedeeed836b9c0f2880b216cd442803be1563549f39c7a26b358f04f26 file=router/internal/exa/store.go range=18:18 lang=go exported=true byte_range=336:352
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.RunRecord
+
+NODE id=matrix/router/internal/exa.RunRecord#Subject kind=field
+  digest=b3:ac2cc3e60867f12886decb3e5d1285fb04c833d595d2d6f136986f2fee3f3ead file=router/internal/exa/store.go range=16:16 lang=go exported=true byte_range=300:316
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.RunRecord
+
+NODE id=matrix/router/internal/exa.RunRecord#UpdatedAt kind=field
+  digest=b3:820db45784b303682bb7e344e8b0856b546ba3c4fe386e4e67414fa08b55d59a file=router/internal/exa/store.go range=21:21 lang=go exported=true byte_range=394:413
+  sig=time.Time
+EDGES
+  ^contains=matrix/router/internal/exa.RunRecord
+
+NODE id=matrix/router/internal/exa.RunRecord#User kind=field
+  digest=b3:54c23b1964ee4582bbfb0fbda50218b119c34fcc671a501893b675532182b465 file=router/internal/exa/store.go range=14:14 lang=go exported=true byte_range=264:280
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.RunRecord
+
+NODE id=matrix/router/internal/exa.RunRecord#Workflow kind=field
+  digest=b3:eba88c1ec7cccb2fa837d0c35e95eb86642f3a0fb21116a1d4eb44186ace913b file=router/internal/exa/store.go range=15:15 lang=go exported=true byte_range=282:298
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.RunRecord
+
+NODE id=matrix/router/internal/exa.SearchEnvelope kind=type
+  digest=b3:ca906fa1be97d705d36626444972c8ca3d30879c81fa56e6a2389f72da6457e5 file=router/internal/exa/service.go range=55:58 lang=go exported=true byte_range=1075:1187
+  sig=type SearchEnvelope struct {\n	Data	*SearchResponse	`json:"data,omitempty"`\n	Meta	ResponseMeta	`json:"meta"`\n}
+EDGES
+  contains=matrix/router/internal/exa.SearchEnvelope#Data,matrix/router/internal/exa.SearchEnvelope#Meta
+  references=matrix/router/internal/exa.ResponseMeta,matrix/router/internal/exa.SearchResponse
+  ^references=matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.VerifyFinance
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.SearchEnvelope#Data kind=field
+  digest=b3:77c208366ad2a7f11d8f50b3c851813b6b2b5587c0ece0ba39a81e790e103aab file=router/internal/exa/service.go range=56:56 lang=go exported=true byte_range=1105:1149
+  sig=*exa.SearchResponse
+EDGES
+  ^contains=matrix/router/internal/exa.SearchEnvelope
+
+NODE id=matrix/router/internal/exa.SearchEnvelope#Meta kind=field
+  digest=b3:b8254eeef3af49fa760e9447168f6650e08365d743629c083da7d0bfe3110051 file=router/internal/exa/service.go range=57:57 lang=go exported=true byte_range=1151:1185
+  sig=exa.ResponseMeta
+EDGES
+  ^contains=matrix/router/internal/exa.SearchEnvelope
+
+NODE id=matrix/router/internal/exa.SearchRequest kind=type
+  digest=b3:8c2a101ae33db68cdeeae93a5fce3e360832385fb7b7ecb5d72cb4934bcf7b4f file=router/internal/exa/model.go range=70:85 lang=go exported=true byte_range=1995:2934
+  sig=type SearchRequest struct {\n	Query			string		`json:"query"`\n	Type			string		`json:"type,omitempty"`\n	NumResults		int		`json:"numResults,omitempty"`\n	Category		string		`json:"category,omitempty"`\n	UserLocation		string		`json:"userLocation,omitempty"`\n	IncludeDomains		[]string	`json:"includeDomains,omitempty"`\n	ExcludeDomains		[]string	`json:"excludeDomains,omitempty"`\n	StartPublishedDate	string		`json:"startPublishedDate,omitempty"`\n	EndPublishedDate	string		`json:"endPublishedDate,omitempty"`\n	Moderation		bool		`json:"moderation,omitempty"`\n	AdditionalQueries	[]string	`json:"additionalQueries,omitempty"`\n	SystemPrompt		string		`json:"systemPrompt,omitempty"`\n	OutputSchema		map[string]any	`json:"outputSchema,omitempty"`\n	Contents		ContentOptions	`json:"contents"`\n}
+EDGES
+  contains=matrix/router/internal/exa.SearchRequest#AdditionalQueries,matrix/router/internal/exa.SearchRequest#Category,matrix/router/internal/exa.SearchRequest#Contents,matrix/router/internal/exa.SearchRequest#EndPublishedDate,matrix/router/internal/exa.SearchRequest#ExcludeDomains,matrix/router/internal/exa.SearchRequest#IncludeDomains,matrix/router/internal/exa.SearchRequest#Moderation,matrix/router/internal/exa.SearchRequest#NumResults,matrix/router/internal/exa.SearchRequest#OutputSchema,matrix/router/internal/exa.SearchRequest#Query,matrix/router/internal/exa.SearchRequest#StartPublishedDate,matrix/router/internal/exa.SearchRequest#SystemPrompt,matrix/router/internal/exa.SearchRequest#Type,matrix/router/internal/exa.SearchRequest#UserLocation
+  references=matrix/router/internal/exa.ContentOptions
+  ^references=matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.validateSearch
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.SearchRequest#AdditionalQueries kind=field
+  digest=b3:0bcb63f9cc2ae89d44f72c98a64cfdd51dbf9684405fd711788fdb867d035f21 file=router/internal/exa/model.go range=81:81 lang=go exported=true byte_range=2675:2745
+  sig=[]string
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#Category kind=field
+  digest=b3:4001b124de96a6a1021ac393ee42363b815bea29c4d67d64087a1c7e9a5e6442 file=router/internal/exa/model.go range=74:74 lang=go exported=true byte_range=2198:2259
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#Contents kind=field
+  digest=b3:c51641e7a8e6b51e46c68a24a7a406aaf73b13b41f67d2b7c985953dabb53962 file=router/internal/exa/model.go range=84:84 lang=go exported=true byte_range=2881:2932
+  sig=exa.ContentOptions
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#EndPublishedDate kind=field
+  digest=b3:beccafba9f31ce9e8f1c8092fc80e5baba8530842f25796815cecf8831d6473a file=router/internal/exa/model.go range=79:79 lang=go exported=true byte_range=2539:2608
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#ExcludeDomains kind=field
+  digest=b3:c92e89d746874bc2870f948fd0f3b1fc6b829f71ef0f0e7583580f444a5184c2 file=router/internal/exa/model.go range=77:77 lang=go exported=true byte_range=2397:2464
+  sig=[]string
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#IncludeDomains kind=field
+  digest=b3:07df4bd4040f76a990f716d0238bc75ca09efa16b450ead0ca5a38d090f19dd5 file=router/internal/exa/model.go range=76:76 lang=go exported=true byte_range=2328:2395
+  sig=[]string
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#Moderation kind=field
+  digest=b3:2cf6bd6211d4b4ea3d8edd48da081ec33d5df66dd117239affcb15819b87bb09 file=router/internal/exa/model.go range=80:80 lang=go exported=true byte_range=2610:2673
+  sig=bool
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#NumResults kind=field
+  digest=b3:866986fec23c3c3db4817b29ad6c100806c70fa18fe2e703c2ce8ef6b8a1fb44 file=router/internal/exa/model.go range=73:73 lang=go exported=true byte_range=2133:2196
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#OutputSchema kind=field
+  digest=b3:54a721567abfd4f2649ca50e67bdb38b05e18cd07e18779057639cbb632a572b file=router/internal/exa/model.go range=83:83 lang=go exported=true byte_range=2814:2879
+  sig=map[string]any
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#Query kind=field
+  digest=b3:c5fb78f7a9d48ef2c1b94f8f058e21220deee41d13bf6fc34fd57ce695a8cef9 file=router/internal/exa/model.go range=71:71 lang=go exported=true byte_range=2024:2072
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#StartPublishedDate kind=field
+  digest=b3:143dcc25d335d3ada99ede2e211f8792ea85d547f24af17f0056239e40229c83 file=router/internal/exa/model.go range=78:78 lang=go exported=true byte_range=2466:2537
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#SystemPrompt kind=field
+  digest=b3:932c4a4df93e83508523ceb072ffcd1c2c31ec740e67048fc078c54c3ef2a793 file=router/internal/exa/model.go range=82:82 lang=go exported=true byte_range=2747:2812
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#Type kind=field
+  digest=b3:38831da53a81b9346c4dd5bdb2c3d84a9dce4040b44423c962e5ed77ea0460e9 file=router/internal/exa/model.go range=72:72 lang=go exported=true byte_range=2074:2131
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchRequest#UserLocation kind=field
+  digest=b3:6ea2b12038697dd690670b50cb57d9d7db7fa56c4010ce39717ba2dc8d17c223 file=router/internal/exa/model.go range=75:75 lang=go exported=true byte_range=2261:2326
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.SearchRequest
+
+NODE id=matrix/router/internal/exa.SearchResponse kind=type
+  digest=b3:14bc280426fda51cc8f217dd55f6d8a84cbaa1e75a13e3b885351b9afd2233d3 file=router/internal/exa/model.go range=108:114 lang=go exported=true byte_range=3780:4018
+  sig=type SearchResponse struct {\n	RequestID	string		`json:"requestId"`\n	SearchType	string		`json:"searchType"`\n	Results		[]Result	`json:"results"`\n	Output		*Output		`json:"output,omitempty"`\n	Cost		Cost		`json:"costDollars"`\n}
+EDGES
+  contains=matrix/router/internal/exa.SearchResponse#Cost,matrix/router/internal/exa.SearchResponse#Output,matrix/router/internal/exa.SearchResponse#RequestID,matrix/router/internal/exa.SearchResponse#Results,matrix/router/internal/exa.SearchResponse#SearchType
+  references=matrix/router/internal/exa.Cost,matrix/router/internal/exa.Output,matrix/router/internal/exa.Result
+  ^references=matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.SearchEnvelope,matrix/router/internal/exa.Service.Search
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.SearchResponse#Cost kind=field
+  digest=b3:374a23d5ceab36734457379bde3f861a8bd161ae3a73576400c5ff8cedff7480 file=router/internal/exa/model.go range=113:113 lang=go exported=true byte_range=3976:4016
+  sig=exa.Cost
+EDGES
+  ^contains=matrix/router/internal/exa.SearchResponse
+
+NODE id=matrix/router/internal/exa.SearchResponse#Output kind=field
+  digest=b3:a6d5b7512097d7a1b2873c6461529ce351e6d9509557f22b4bb3110e6909cec8 file=router/internal/exa/model.go range=112:112 lang=go exported=true byte_range=3929:3974
+  sig=*exa.Output
+EDGES
+  ^contains=matrix/router/internal/exa.SearchResponse
+
+NODE id=matrix/router/internal/exa.SearchResponse#RequestID kind=field
+  digest=b3:d8e6c5d570b32cd6e306c5760dce4b2310b4de0e0cc55d67b031bb67c7c68871 file=router/internal/exa/model.go range=109:109 lang=go exported=true byte_range=3810:3848
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.SearchResponse
+
+NODE id=matrix/router/internal/exa.SearchResponse#Results kind=field
+  digest=b3:282e953c75dc57d6add0c2dcb6a97ebf28b76efcd77bc986f3d3d2ab705f93f4 file=router/internal/exa/model.go range=111:111 lang=go exported=true byte_range=3891:3927
+  sig=[]exa.Result
+EDGES
+  ^contains=matrix/router/internal/exa.SearchResponse
+
+NODE id=matrix/router/internal/exa.SearchResponse#SearchType kind=field
+  digest=b3:a78b1a3a0d27b66049b6cdb711450520bac918932b9ac4b49f2145cedf1b88f1 file=router/internal/exa/model.go range=110:110 lang=go exported=true byte_range=3850:3889
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.SearchResponse
+
+NODE id=matrix/router/internal/exa.Service kind=type
+  digest=b3:353bed2c1496e5466fd516f2431723bf4ce7f02f401c600e4905f66e93ad710b file=router/internal/exa/service.go range=29:42 lang=go exported=true byte_range=547:887
+  sig=type Service struct {\n	client		*Client\n	store		Store\n	now		func() time.Time\n	dailyLimit	float64\n	searchTTL	time.Duration\n	contentsTTL	time.Duration\n	researchTTL	time.Duration\n	meter		*Meter\n	mu		sync.Mutex\n	activeByUser	map[string]int\n	maxConcurrent	int\n	inflight	map[string]*flight\n}
+EDGES
+  contains=matrix/router/internal/exa.Service#activeByUser,matrix/router/internal/exa.Service#client,matrix/router/internal/exa.Service#contentsTTL,matrix/router/internal/exa.Service#dailyLimit,matrix/router/internal/exa.Service#inflight,matrix/router/internal/exa.Service#maxConcurrent,matrix/router/internal/exa.Service#meter,matrix/router/internal/exa.Service#mu,matrix/router/internal/exa.Service#now,matrix/router/internal/exa.Service#researchTTL,matrix/router/internal/exa.Service#searchTTL,matrix/router/internal/exa.Service#store,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.Stats,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.Service.release
+  references=matrix/router/internal/exa.Client,matrix/router/internal/exa.Meter,matrix/router/internal/exa.Store,matrix/router/internal/exa.flight
+  ^references=matrix/router/internal/exa.Handler,matrix/router/internal/exa.NewFinanceHandler,matrix/router/internal/exa.NewHandler,matrix/router/internal/exa.NewInternalHandler,matrix/router/internal/exa.NewService,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.Stats,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.Service.release
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.Service#activeByUser kind=field
+  digest=b3:32251bbaa5b1cb5128a8bf5c65d89c0b2b935800cf7a2fd3c1a59c74ddddbf7e file=router/internal/exa/service.go range=39:39 lang=go exported=false byte_range=804:832
+  sig=map[string]int
+EDGES
+  ^contains=matrix/router/internal/exa.Service
+
+NODE id=matrix/router/internal/exa.Service#client kind=field
+  digest=b3:a26f0b6d502ad2077a069563acb6a3a10f082dc23e5060abe07ca7551edb5e5f file=router/internal/exa/service.go range=30:30 lang=go exported=false byte_range=570:591
+  sig=*exa.Client
+EDGES
+  ^contains=matrix/router/internal/exa.Service
+
+NODE id=matrix/router/internal/exa.Service#contentsTTL kind=field
+  digest=b3:41f4b93762102b851a2fb7d360985e6eafd84f71224f75ca6f49deae2d8d6959 file=router/internal/exa/service.go range=35:35 lang=go exported=false byte_range=698:725
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/exa.Service
+
+NODE id=matrix/router/internal/exa.Service#dailyLimit kind=field
+  digest=b3:673d10a1f31cb6303fe3f7e8346b8a9ad8b1a199599d5c77e5c2222a60ddcbb2 file=router/internal/exa/service.go range=33:33 lang=go exported=false byte_range=646:667
+  sig=float64
+EDGES
+  ^contains=matrix/router/internal/exa.Service
+
+NODE id=matrix/router/internal/exa.Service#inflight kind=field
+  digest=b3:1f0d2f6a10000ef648024cea0ca469309f22c2527bc1f1e28776193226f8b657 file=router/internal/exa/service.go range=41:41 lang=go exported=false byte_range=853:885
+  sig=map[string]*exa.flight
+EDGES
+  ^contains=matrix/router/internal/exa.Service
+
+NODE id=matrix/router/internal/exa.Service#maxConcurrent kind=field
+  digest=b3:f54d3183082ddbf81ce9fdf6b740be54f831d55a7c429a9ce9b543d95e41b4ed file=router/internal/exa/service.go range=40:40 lang=go exported=false byte_range=834:851
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/exa.Service
+
+NODE id=matrix/router/internal/exa.Service#meter kind=field
+  digest=b3:bdc235f089e9e0d8c8eb37fd97577f8e18d494b426417366a79dc73324185294 file=router/internal/exa/service.go range=37:37 lang=go exported=false byte_range=756:776
+  sig=*exa.Meter
+EDGES
+  ^contains=matrix/router/internal/exa.Service
+
+NODE id=matrix/router/internal/exa.Service#mu kind=field
+  digest=b3:4f9de9bb8e2c012ce0501727be99a2044b79093cbb3ff96866ae6a7ffde78728 file=router/internal/exa/service.go range=38:38 lang=go exported=false byte_range=778:802
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/router/internal/exa.Service
+
+NODE id=matrix/router/internal/exa.Service#now kind=field
+  digest=b3:b334fd2e70a1fabd6be089f4ef0dc08d1d8bf6b7eb38650f56f70abe40ba7406 file=router/internal/exa/service.go range=32:32 lang=go exported=false byte_range=614:644
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/router/internal/exa.Service
+
+NODE id=matrix/router/internal/exa.Service#researchTTL kind=field
+  digest=b3:9a845b43bb94a8e57def5890413f5126c731d7af6f660794a832d6a936749ee5 file=router/internal/exa/service.go range=36:36 lang=go exported=false byte_range=727:754
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/exa.Service
+
+NODE id=matrix/router/internal/exa.Service#searchTTL kind=field
+  digest=b3:23184874e8bd5a350b1e09f5fd64c248c5290c93666c9c8fc679069a70cf4533 file=router/internal/exa/service.go range=34:34 lang=go exported=false byte_range=669:696
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/exa.Service
+
+NODE id=matrix/router/internal/exa.Service#store kind=field
+  digest=b3:41eac7112a4618286adf7185aef3f124f1a26bcbf49bffad9a934e627cb97594 file=router/internal/exa/service.go range=31:31 lang=go exported=false byte_range=593:612
+  sig=exa.Store
+EDGES
+  ^contains=matrix/router/internal/exa.Service
+
+NODE id=matrix/router/internal/exa.Service.CancelRun kind=method
+  digest=b3:9e223358549cefd8031d5c82408c42bffbb0728353f36e08783a4557080acddf file=router/internal/exa/service.go range=237:250 lang=go exported=true byte_range=8223:8924
+  sig=func (s *Service) CancelRun(ctx context.Context, user, id string) (*RunEnvelope, error)
+EDGES
+  calls=matrix/router/internal/db.DB.GetRun,matrix/router/internal/db.DB.PutRun,matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.Meter.Observe
+  references=matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.MeterRecord,matrix/router/internal/exa.ResponseMeta,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.Service,matrix/router/internal/exa.Store.GetRun,matrix/router/internal/exa.Store.PutRun,matrix/router/internal/exa.callErr,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.id,matrix/router/internal/exa.ok,matrix/router/internal/exa.record,matrix/router/internal/exa.run,matrix/router/internal/exa.s,matrix/router/internal/exa.user
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveRun
+  ^references=matrix/router/internal/exa.Handler.serveRun
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.Service.Contents kind=method
+  digest=b3:57deee103d787322fdd1957c885a0a33591f887ba035ab73bc724f866af5f207 file=router/internal/exa/service.go range=127:146 lang=go exported=true byte_range=3147:3870
+  sig=func (s *Service) Contents(ctx context.Context, user string, input ContentsRequest) (*ContentsEnvelope, error)
+EDGES
+  calls=matrix/router/internal/exa.KindOf,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.validateContents
+  references=matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.ContentsEnvelope,matrix/router/internal/exa.ContentsRequest,matrix/router/internal/exa.ContentsResponse,matrix/router/internal/exa.FailurePartial,matrix/router/internal/exa.KindOf,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.callErr,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.input,matrix/router/internal/exa.meta,matrix/router/internal/exa.out,matrix/router/internal/exa.response,matrix/router/internal/exa.s,matrix/router/internal/exa.user,matrix/router/internal/exa.validateContents
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.ExtractFinanceNews
+  ^references=matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.ExtractFinanceNews
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.Service.ContinueRun kind=method
+  digest=b3:24093590932ff50d45b433539c60cdd23faa6134fba8f1878627b712a2195596 file=router/internal/exa/service.go range=229:235 lang=go exported=true byte_range=7759:8221
+  sig=func (s *Service) ContinueRun(ctx context.Context, user, id, query, effort string) (*RunEnvelope, error)
+EDGES
+  calls=matrix/router/internal/db.DB.GetRun,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.Service.StartRun
+  references=matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Store.GetRun,matrix/router/internal/exa.ctx,matrix/router/internal/exa.effort,matrix/router/internal/exa.err,matrix/router/internal/exa.id,matrix/router/internal/exa.ok,matrix/router/internal/exa.query,matrix/router/internal/exa.record,matrix/router/internal/exa.s,matrix/router/internal/exa.user
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveRun
+  ^references=matrix/router/internal/exa.Handler.serveRun
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.Service.ExtractFinanceNews kind=method
+  digest=b3:a7537e8ba0e76ce010c699dd307b102e0f50eac621a1dd038a97f203bfb3c7fd file=router/internal/exa/workflow.go range=69:93 lang=go exported=true byte_range=2668:3689
+  sig=func (s *Service) ExtractFinanceNews(ctx context.Context, user string, request FinanceNewsRequest) (*ContentsEnvelope, error)
+EDGES
+  calls=matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.canonicalURL
+  references=matrix/router/internal/exa.ContentsEnvelope,matrix/router/internal/exa.ContentsRequest,matrix/router/internal/exa.FinanceNewsRequest,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.canonical,matrix/router/internal/exa.canonicalURL,matrix/router/internal/exa.ctx,matrix/router/internal/exa.raw,matrix/router/internal/exa.request,matrix/router/internal/exa.s,matrix/router/internal/exa.seen,matrix/router/internal/exa.urls,matrix/router/internal/exa.user
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveFinance
+  ^references=matrix/router/internal/exa.Handler.serveFinance
+  ^defines=matrix/router/internal/exa/workflow.go
+
+NODE id=matrix/router/internal/exa.Service.GetRun kind=method
+  digest=b3:41183aa3fda55157ef86a7d52d1acd60cc440ead53d9884b3c96f079a5082575 file=router/internal/exa/service.go range=194:227 lang=go exported=true byte_range=6168:7757
+  sig=func (s *Service) GetRun(ctx context.Context, user, id string) (*RunEnvelope, error)
+EDGES
+  calls=matrix/router/internal/db.DB.GetRun,matrix/router/internal/db.DB.PutCache,matrix/router/internal/db.DB.PutRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.KindOf,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.MemoryStore.PutCache,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.Meter.Observe
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.FailureUngrounded,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.KindOf,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.MeterRecord,matrix/router/internal/exa.ResponseMeta,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.Service,matrix/router/internal/exa.Store.GetRun,matrix/router/internal/exa.Store.PutCache,matrix/router/internal/exa.Store.PutRun,matrix/router/internal/exa.callErr,matrix/router/internal/exa.cost,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.id,matrix/router/internal/exa.ok,matrix/router/internal/exa.payload,matrix/router/internal/exa.record,matrix/router/internal/exa.run,matrix/router/internal/exa.s,matrix/router/internal/exa.started,matrix/router/internal/exa.user
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveRun
+  ^references=matrix/router/internal/exa.Handler.serveRun
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.Service.Search kind=method
+  digest=b3:45c7d389b99b01bd3ecf6c6c289db941fa3c7ac4b7c72eba95a94731e0e8832b file=router/internal/exa/service.go range=109:125 lang=go exported=true byte_range=2596:3145
+  sig=func (s *Service) Search(ctx context.Context, user string, input SearchRequest) (*SearchEnvelope, error)
+EDGES
+  calls=matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.validateSearch
+  references=matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.SearchEnvelope,matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.SearchResponse,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.callErr,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.input,matrix/router/internal/exa.meta,matrix/router/internal/exa.out,matrix/router/internal/exa.response,matrix/router/internal/exa.s,matrix/router/internal/exa.user,matrix/router/internal/exa.validateSearch
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.VerifyFinance
+  ^references=matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.VerifyFinance
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.Service.StartFinance kind=method
+  digest=b3:3d8c52d24630ceb37a0ddea7eb30b311611ea2c2013ec7b7f0c40688e7efb6a0 file=router/internal/exa/workflow.go range=32:45 lang=go exported=true byte_range=783:1320
+  sig=func (s *Service) StartFinance(ctx context.Context, user string, request FinanceRequest) (*RunEnvelope, error)
+EDGES
+  calls=matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.financeAgentRequest
+  references=matrix/router/internal/exa.FinanceRequest,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.agent,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.financeAgentRequest,matrix/router/internal/exa.request,matrix/router/internal/exa.s,matrix/router/internal/exa.user,matrix/router/internal/exa.workflow
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveFinance
+  ^references=matrix/router/internal/exa.Handler.serveFinance
+  ^defines=matrix/router/internal/exa/workflow.go
+
+NODE id=matrix/router/internal/exa.Service.StartRun kind=method
+  digest=b3:022c868729facf6864c6bb843bf23e480553c4bb04e7c72d488e85ea54a9a6d4 file=router/internal/exa/service.go range=148:192 lang=go exported=true byte_range=3872:6166
+  sig=func (s *Service) StartRun(ctx context.Context, user, workflow, subject string, input AgentRequest) (*RunEnvelope, error)
+EDGES
+  calls=matrix/router/internal/db.DB.GetCache,matrix/router/internal/db.DB.PutRun,matrix/router/internal/db.DB.ReserveSpend,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.MemoryStore.GetCache,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.MemoryStore.ReserveSpend,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.release,matrix/router/internal/exa.effortReserve,matrix/router/internal/exa.hashRequest,matrix/router/internal/exa.validateAgent
+  references=matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureRateLimited,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.MeterRecord,matrix/router/internal/exa.ResponseMeta,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.RunRecord,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.release,matrix/router/internal/exa.Store.GetCache,matrix/router/internal/exa.Store.PutRun,matrix/router/internal/exa.Store.ReserveSpend,matrix/router/internal/exa.acquireErr,matrix/router/internal/exa.acquired,matrix/router/internal/exa.allowed,matrix/router/internal/exa.cacheKey,matrix/router/internal/exa.cached,matrix/router/internal/exa.callErr,matrix/router/internal/exa.ctx,matrix/router/internal/exa.effortReserve,matrix/router/internal/exa.err,matrix/router/internal/exa.hashRequest,matrix/router/internal/exa.input,matrix/router/internal/exa.ok,matrix/router/internal/exa.record,matrix/router/internal/exa.reserve,matrix/router/internal/exa.run,matrix/router/internal/exa.s,matrix/router/internal/exa.started,matrix/router/internal/exa.storeErr,matrix/router/internal/exa.subject,matrix/router/internal/exa.user,matrix/router/internal/exa.validateAgent,matrix/router/internal/exa.workflow
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.StartFinance
+  ^references=matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.StartFinance
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.Service.Stats kind=method
+  digest=b3:4f333da9c9726de315578a63fe4cc6ed55e18c4c9518671c41bd78daee18a53a file=router/internal/exa/service.go range=107:107 lang=go exported=true byte_range=2533:2594
+  sig=func (s *Service) Stats() Stats
+EDGES
+  calls=matrix/router/internal/exa.Meter.Snapshot
+  references=matrix/router/internal/exa.Meter.Snapshot,matrix/router/internal/exa.Service,matrix/router/internal/exa.Stats,matrix/router/internal/exa.s
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveGeneral
+  ^references=matrix/router/internal/exa.Handler.serveGeneral
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.Service.VerifyFinance kind=method
+  digest=b3:d4cec9720ffa42fd487ed31aed83ff3338d0deffb2537c9356513012f223e684 file=router/internal/exa/workflow.go range=47:67 lang=go exported=true byte_range=1322:2666
+  sig=func (s *Service) VerifyFinance(ctx context.Context, user string, request VerifyRequest) (*SearchEnvelope, error)
+EDGES
+  calls=matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.emptyAsCurrent,matrix/router/internal/exa.safeField,matrix/router/internal/exa.typedFactSchema
+  references=matrix/router/internal/exa.ContentOptions,matrix/router/internal/exa.SearchEnvelope,matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.VerifyRequest,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.ctx,matrix/router/internal/exa.emptyAsCurrent,matrix/router/internal/exa.field,matrix/router/internal/exa.name,matrix/router/internal/exa.properties,matrix/router/internal/exa.request,matrix/router/internal/exa.s,matrix/router/internal/exa.safeField,matrix/router/internal/exa.typedFactSchema,matrix/router/internal/exa.user
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveFinance
+  ^references=matrix/router/internal/exa.Handler.serveFinance
+  ^defines=matrix/router/internal/exa/workflow.go
+
+NODE id=matrix/router/internal/exa.Service.acquire kind=method
+  digest=b3:cfce7be317b6ecaceb1bf227041f9fc3f2f3b0af0f0c90b1b4aa1db7c72f1e72 file=router/internal/exa/service.go range=312:324 lang=go exported=false byte_range=11265:11708
+  sig=func (s *Service) acquire(ctx context.Context, user string) (bool, error)
+EDGES
+  calls=matrix/router/internal/db.DB.ActiveRuns,matrix/router/internal/exa.MemoryStore.ActiveRuns
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.Service,matrix/router/internal/exa.Store.ActiveRuns,matrix/router/internal/exa.active,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.s,matrix/router/internal/exa.user
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Service.StartRun
+  ^references=matrix/router/internal/exa.Service.StartRun
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.Service.cached kind=method
+  digest=b3:fe479270243cbc5fb7803258fd1005836e5a1c313ea12648da74967af84c5d59 file=router/internal/exa/service.go range=252:310 lang=go exported=false byte_range=8926:11263
+  sig=func (s *Service) cached(ctx context.Context, user, endpoint string, request any, ttl time.Duration, reserve float64, load func() (any, float64, error), output any) (ResponseMeta, error)
+EDGES
+  calls=matrix/router/internal/db.DB.GetCache,matrix/router/internal/db.DB.PutCache,matrix/router/internal/db.DB.ReserveSpend,matrix/router/internal/exa.MemoryStore.GetCache,matrix/router/internal/exa.MemoryStore.PutCache,matrix/router/internal/exa.MemoryStore.ReserveSpend,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.hashRequest
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureRateLimited,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.MeterRecord,matrix/router/internal/exa.ResponseMeta,matrix/router/internal/exa.Service,matrix/router/internal/exa.Store.GetCache,matrix/router/internal/exa.Store.PutCache,matrix/router/internal/exa.Store.ReserveSpend,matrix/router/internal/exa.allowed,matrix/router/internal/exa.callErr,matrix/router/internal/exa.cost,matrix/router/internal/exa.ctx,matrix/router/internal/exa.data,matrix/router/internal/exa.endpoint,matrix/router/internal/exa.err,matrix/router/internal/exa.existing,matrix/router/internal/exa.f,matrix/router/internal/exa.flight,matrix/router/internal/exa.hashRequest,matrix/router/internal/exa.key,matrix/router/internal/exa.load,matrix/router/internal/exa.marshalErr,matrix/router/internal/exa.ok,matrix/router/internal/exa.output,matrix/router/internal/exa.record,matrix/router/internal/exa.request,matrix/router/internal/exa.reserve,matrix/router/internal/exa.s,matrix/router/internal/exa.spendErr,matrix/router/internal/exa.started,matrix/router/internal/exa.storeErr,matrix/router/internal/exa.ttl,matrix/router/internal/exa.user,matrix/router/internal/exa.value
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.Search
+  ^references=matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.Search
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.Service.release kind=method
+  digest=b3:16f300efb2e2e5eab0f85de44470ce256583e155e7f1f99a177a001adbd50d74 file=router/internal/exa/service.go range=325:331 lang=go exported=false byte_range=11709:11844
+  sig=func (s *Service) release(user string)
+EDGES
+  references=matrix/router/internal/exa.Service,matrix/router/internal/exa.s,matrix/router/internal/exa.user
+  ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Service.StartRun
+  ^references=matrix/router/internal/exa.Service.StartRun
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.ServiceConfig kind=type
+  digest=b3:cd57fb32f3e1f84d399ad1a45239d19a22fd819d8b69b577276d4cc1267d17cd file=router/internal/exa/service.go range=18:27 lang=go exported=true byte_range=295:545
+  sig=type ServiceConfig struct {\n	Client		*Client\n	Store		Store\n	Now		func() time.Time\n	DailySpendLimit	float64\n	MaxConcurrent	int\n	SearchTTL	time.Duration\n	ContentsTTL	time.Duration\n	ResearchTTL	time.Duration\n}
+EDGES
+  contains=matrix/router/internal/exa.ServiceConfig#Client,matrix/router/internal/exa.ServiceConfig#ContentsTTL,matrix/router/internal/exa.ServiceConfig#DailySpendLimit,matrix/router/internal/exa.ServiceConfig#MaxConcurrent,matrix/router/internal/exa.ServiceConfig#Now,matrix/router/internal/exa.ServiceConfig#ResearchTTL,matrix/router/internal/exa.ServiceConfig#SearchTTL,matrix/router/internal/exa.ServiceConfig#Store
+  references=matrix/router/internal/exa.Client,matrix/router/internal/exa.Store
+  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/exa.NewService
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.ServiceConfig#Client kind=field
+  digest=b3:3b35b12aebfd16556b7592e103c4128dc38c08bcb50d4509651e48ed46932fc3 file=router/internal/exa/service.go range=19:19 lang=go exported=true byte_range=324:347
+  sig=*exa.Client
+EDGES
+  ^contains=matrix/router/internal/exa.ServiceConfig
+
+NODE id=matrix/router/internal/exa.ServiceConfig#ContentsTTL kind=field
+  digest=b3:f18fbd4aa4dd982610bef393cecb3d81fcb7e2d0aabc9438e907aefddcc14777 file=router/internal/exa/service.go range=25:25 lang=go exported=true byte_range=483:512
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/exa.ServiceConfig
+
+NODE id=matrix/router/internal/exa.ServiceConfig#DailySpendLimit kind=field
+  digest=b3:f6fad80cd63664113a7859cc3b6b26378bee8cee9f30f2f748fc46a21c808070 file=router/internal/exa/service.go range=22:22 lang=go exported=true byte_range=406:429
+  sig=float64
+EDGES
+  ^contains=matrix/router/internal/exa.ServiceConfig
+
+NODE id=matrix/router/internal/exa.ServiceConfig#MaxConcurrent kind=field
+  digest=b3:8dda108f44e2e855462afb9a37f782d2edef98106e728129560a145908a25aaf file=router/internal/exa/service.go range=23:23 lang=go exported=true byte_range=431:450
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/exa.ServiceConfig
+
+NODE id=matrix/router/internal/exa.ServiceConfig#Now kind=field
+  digest=b3:9b7e32534db2efc789e18e4f051b5df80588534602f6bcce13eb44d3f852851b file=router/internal/exa/service.go range=21:21 lang=go exported=true byte_range=372:404
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/router/internal/exa.ServiceConfig
+
+NODE id=matrix/router/internal/exa.ServiceConfig#ResearchTTL kind=field
+  digest=b3:5a9bb0ab09bba484ce6d5dfc981d8cc66bd49ab968e51e06d8c1d7639276e811 file=router/internal/exa/service.go range=26:26 lang=go exported=true byte_range=514:543
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/exa.ServiceConfig
+
+NODE id=matrix/router/internal/exa.ServiceConfig#SearchTTL kind=field
+  digest=b3:057a2b356f4b1685dc99147d372b03e8358527ccb3b3875b5e79b120ffd7bb75 file=router/internal/exa/service.go range=24:24 lang=go exported=true byte_range=452:481
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/exa.ServiceConfig
+
+NODE id=matrix/router/internal/exa.ServiceConfig#Store kind=field
+  digest=b3:e3846f907fa96c8fb6759055f6cf53e3effd04a63b41b53ef8e2259c7d5a1cdf file=router/internal/exa/service.go range=20:20 lang=go exported=true byte_range=349:370
+  sig=exa.Store
+EDGES
+  ^contains=matrix/router/internal/exa.ServiceConfig
+
+NODE id=matrix/router/internal/exa.Stats kind=type
+  digest=b3:ab04e6ee5d91da3929787b070f8a7d15afee027b3dd22d0b05d073a8f7382657 file=router/internal/exa/meter.go range=31:39 lang=go exported=true byte_range=644:979
+  sig=type Stats struct {\n	Since		time.Time	`json:"since"`\n	Requests	int64		`json:"requests"`\n	CacheHits	int64		`json:"cache_hits"`\n	Errors		int64		`json:"errors"`\n	Cost		float64		`json:"cost_dollars"`\n	Users		int		`json:"users"`\n	Endpoints	[]EndpointStats	`json:"endpoints"`\n}
+EDGES
+  contains=matrix/router/internal/exa.Stats#CacheHits,matrix/router/internal/exa.Stats#Cost,matrix/router/internal/exa.Stats#Endpoints,matrix/router/internal/exa.Stats#Errors,matrix/router/internal/exa.Stats#Requests,matrix/router/internal/exa.Stats#Since,matrix/router/internal/exa.Stats#Users
+  references=matrix/router/internal/exa.EndpointStats
+  ^references=matrix/router/internal/exa.Meter.Snapshot,matrix/router/internal/exa.Service.Stats
+  ^defines=matrix/router/internal/exa/meter.go
+
+NODE id=matrix/router/internal/exa.Stats#CacheHits kind=field
+  digest=b3:30bdf730864114f35aa04ad1a963ddc1ded23a62214b276b47580631eb83a9a1 file=router/internal/exa/meter.go range=34:34 lang=go exported=true byte_range=752:797
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/exa.Stats
+
+NODE id=matrix/router/internal/exa.Stats#Cost kind=field
+  digest=b3:bbb9548a170d0aa07ffcc5cf2c7d912479738128cc63bed0526483454d29fa87 file=router/internal/exa/meter.go range=36:36 lang=go exported=true byte_range=842:889
+  sig=float64
+EDGES
+  ^contains=matrix/router/internal/exa.Stats
+
+NODE id=matrix/router/internal/exa.Stats#Endpoints kind=field
+  digest=b3:d65cca94bfd92383263766955706b05cc2c35c619c2f086ab4c365ba30a29a9c file=router/internal/exa/meter.go range=38:38 lang=go exported=true byte_range=933:977
+  sig=[]exa.EndpointStats
+EDGES
+  ^contains=matrix/router/internal/exa.Stats
+
+NODE id=matrix/router/internal/exa.Stats#Errors kind=field
+  digest=b3:fe9cd27f0ced5103955ea199ff83aa0f865287de8417e657dbbf8e889760940e file=router/internal/exa/meter.go range=35:35 lang=go exported=true byte_range=799:840
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/exa.Stats
+
+NODE id=matrix/router/internal/exa.Stats#Requests kind=field
+  digest=b3:56622f40a2c0b970e3ade62b46f9004ece2104581b3b1ad14d269e7042e730d8 file=router/internal/exa/meter.go range=33:33 lang=go exported=true byte_range=707:750
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/exa.Stats
+
+NODE id=matrix/router/internal/exa.Stats#Since kind=field
+  digest=b3:b6cfba51689cd5d5d34fa3ccce22e7eedb25792889a83668b1224a96dd677278 file=router/internal/exa/meter.go range=32:32 lang=go exported=true byte_range=665:705
+  sig=time.Time
+EDGES
+  ^contains=matrix/router/internal/exa.Stats
+
+NODE id=matrix/router/internal/exa.Stats#Users kind=field
+  digest=b3:bd90a3eb5e40ef9524edf88a89d5bff9769e0d8c6fe678f83f4cafd96a47800e file=router/internal/exa/meter.go range=37:37 lang=go exported=true byte_range=891:931
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/exa.Stats
+
+NODE id=matrix/router/internal/exa.Store kind=interface
+  digest=b3:b72eafb41e1be364e409986c1b4981aa0dc8ee571a6c2e7a5424df15b624e283 file=router/internal/exa/store.go range=32:39 lang=go exported=true byte_range=540:931
+  sig=type Store interface {\n	PutRun(context.Context, RunRecord) error\n	GetRun(context.Context, string, string) (RunRecord, bool, error)\n	ActiveRuns(context.Context, string) (int, error)\n	PutCache(context.Context, CacheRecord) error\n	GetCache(context.Context, string, string, time.Time) (CacheRecord, bool, error)\n	ReserveSpend(context.Context, string, time.Time, float64, float64) (bool, error)\n}
+EDGES
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.RunRecord
+  ^implements=matrix/router/internal/db.DB,matrix/router/internal/exa.MemoryStore
+  ^references=matrix/router/internal/exa.Service,matrix/router/internal/exa.ServiceConfig
+  ^defines=matrix/router/internal/exa/store.go
+
+NODE id=matrix/router/internal/exa.SubjectHeader kind=const
+  digest=b3:661cc2d0a3fc7762d13ee17e732dd748c11c0b681de5f1341a89f34eb4910961 file=router/internal/exa/handler.go range=14:14 lang=go exported=true byte_range=262:296
+  sig=untyped string
+EDGES
+  ^references=matrix/router/internal/exa.Handler.ServeHTTP
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.VerifyRequest kind=type
+  digest=b3:e14f9cd25a0a4eef7b5df10b68504e576abcd597ce6c68b481979ad1908cc868 file=router/internal/exa/workflow.go range=21:25 lang=go exported=true byte_range=544:681
+  sig=type VerifyRequest struct {\n	Symbol	string		`json:"symbol"`\n	Fields	[]string	`json:"fields"`\n	AsOf	string		`json:"as_of,omitempty"`\n}
+EDGES
+  contains=matrix/router/internal/exa.VerifyRequest#AsOf,matrix/router/internal/exa.VerifyRequest#Fields,matrix/router/internal/exa.VerifyRequest#Symbol
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Service.VerifyFinance
+  ^defines=matrix/router/internal/exa/workflow.go
+
+NODE id=matrix/router/internal/exa.VerifyRequest#AsOf kind=field
+  digest=b3:3599b085cc18c63de5744905fd93329eaacee12548cc2407f0f09a4b52fa4459 file=router/internal/exa/workflow.go range=24:24 lang=go exported=true byte_range=639:679
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.VerifyRequest
+
+NODE id=matrix/router/internal/exa.VerifyRequest#Fields kind=field
+  digest=b3:38f57017a16c4e1950655d96f045f0abd2fbf05c93943b2bacc16b89b8bb605e file=router/internal/exa/workflow.go range=23:23 lang=go exported=true byte_range=606:637
+  sig=[]string
+EDGES
+  ^contains=matrix/router/internal/exa.VerifyRequest
+
+NODE id=matrix/router/internal/exa.VerifyRequest#Symbol kind=field
+  digest=b3:e08f212f3b5bd5cc95bb4700f59c3399fc1389ead0517e287090453f5798fb5d file=router/internal/exa/workflow.go range=22:22 lang=go exported=true byte_range=573:604
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/exa.VerifyRequest
+
+NODE id=matrix/router/internal/exa.badRequest kind=func
+  digest=b3:fc5587c3d6e434bf583f27f926b70ddaef6fde4edd04aa68dab70fee07779501 file=router/internal/exa/client.go range=195:197 lang=go exported=false byte_range=6932:7066
+  sig=func badRequest(endpoint, message string) *Failure
+EDGES
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.endpoint,matrix/router/internal/exa.message
+  ^calls=matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest,matrix/router/internal/exa.hashRequest,matrix/router/internal/exa.validateAgent,matrix/router/internal/exa.validateContents,matrix/router/internal/exa.validateSearch
+  ^references=matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest,matrix/router/internal/exa.hashRequest,matrix/router/internal/exa.validateAgent,matrix/router/internal/exa.validateContents,matrix/router/internal/exa.validateSearch
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.canonicalURL kind=func
+  digest=b3:16312625fda468d7844b92edc75a40b509df101e443da6c736dd7a8c788722ab file=router/internal/exa/model.go range=200:216 lang=go exported=false byte_range=6737:7182
+  sig=func canonicalURL(raw string) string
+EDGES
+  references=matrix/router/internal/exa.err,matrix/router/internal/exa.key,matrix/router/internal/exa.lower,matrix/router/internal/exa.q,matrix/router/internal/exa.raw,matrix/router/internal/exa.u
+  ^calls=matrix/router/internal/exa.EvidenceFromGrounding,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.validateContents
+  ^references=matrix/router/internal/exa.EvidenceFromGrounding,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.validateContents
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.defaultBaseURL kind=const
+  digest=b3:07cc84ec9f6b228ae76b025d52d1f1126f6b1e5f00dc8e68db55d9c34fba183b file=router/internal/exa/client.go range=21:21 lang=go exported=false byte_range=338:376
+  sig=untyped string
+EDGES
+  ^references=matrix/router/internal/exa.NewClient
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.defaultTimeout kind=const
+  digest=b3:9d4c1507b25161367aeb35baea6b7972a84eb2f38edbd73721b9d8779be8360a file=router/internal/exa/client.go range=22:22 lang=go exported=false byte_range=378:412
+  sig=time.Duration
+EDGES
+  ^references=matrix/router/internal/exa.NewClient
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.effortReserve kind=func
+  digest=b3:5b357396fbe6c167ae2edd84e472c63f2cf3926757bdc1f4073a18083f45dc30 file=router/internal/exa/service.go range=333:346 lang=go exported=false byte_range=11846:12046
+  sig=func effortReserve(effort string) float64
+EDGES
+  references=matrix/router/internal/exa.effort
+  ^calls=matrix/router/internal/exa.Service.StartRun
+  ^references=matrix/router/internal/exa.Service.StartRun
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.emptyAsCurrent kind=func
+  digest=b3:9d80fd9aebb27881751cde30991ba81320249fcab87fa3a47c6be936584f45bf file=router/internal/exa/workflow.go range=158:163 lang=go exported=false byte_range=10536:10681
+  sig=func emptyAsCurrent(value string) string
+EDGES
+  references=matrix/router/internal/exa.value
+  ^calls=matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest
+  ^references=matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest
+  ^defines=matrix/router/internal/exa/workflow.go
+
+NODE id=matrix/router/internal/exa.errorBody kind=func
+  digest=b3:5cf391b99b4dec5a6ce9682ca96aa8449691efe6cc78aea9b6ce376ea8832159 file=router/internal/exa/handler.go range=179:189 lang=go exported=false byte_range=5959:6309
+  sig=func errorBody(err error) *ErrorBody
+EDGES
+  calls=matrix/router/internal/exa.FailureOf
+  references=matrix/router/internal/exa.ErrorBody,matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.body,matrix/router/internal/exa.err,matrix/router/internal/exa.failure
+  ^calls=matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.Contents
+  ^references=matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.Contents
+  ^defines=matrix/router/internal/exa/handler.go
+
+NODE id=matrix/router/internal/exa.financeAgentRequest kind=func
+  digest=b3:771d05c40fefc7f31e526ec511c09f52d1a95279e25a00d70c97401a95c0b889 file=router/internal/exa/workflow.go range=95:139 lang=go exported=false byte_range=3691:9400
+  sig=func financeAgentRequest(request FinanceRequest) (AgentRequest, string, error)
+EDGES
+  calls=matrix/router/internal/exa.badRequest,matrix/router/internal/exa.emptyAsCurrent,matrix/router/internal/exa.safeField,matrix/router/internal/exa.typedFactSchema
+  references=matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.FinanceRequest,matrix/router/internal/exa.asOf,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.dimensionProperties,matrix/router/internal/exa.dimensions,matrix/router/internal/exa.emptyAsCurrent,matrix/router/internal/exa.name,matrix/router/internal/exa.properties,matrix/router/internal/exa.raw,matrix/router/internal/exa.request,matrix/router/internal/exa.safeField,matrix/router/internal/exa.schema,matrix/router/internal/exa.sourced,matrix/router/internal/exa.sources,matrix/router/internal/exa.symbol,matrix/router/internal/exa.typedFactSchema,matrix/router/internal/exa.version
+  ^calls=matrix/router/internal/exa.Service.StartFinance
+  ^references=matrix/router/internal/exa.Service.StartFinance
+  ^defines=matrix/router/internal/exa/workflow.go
+
+NODE id=matrix/router/internal/exa.flight kind=type
+  digest=b3:1c941c278247f101d0d1e9aa4f7eb54bb5471b2b6b3bdb8627060bc99e6c6551 file=router/internal/exa/service.go range=44:48 lang=go exported=false byte_range=889:956
+  sig=type flight struct {\n	done	chan struct{}\n	data	[]byte\n	err	error\n}
+EDGES
+  contains=matrix/router/internal/exa.flight#data,matrix/router/internal/exa.flight#done,matrix/router/internal/exa.flight#err
+  ^references=matrix/router/internal/exa.NewService,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.cached
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.flight#data kind=field
+  digest=b3:48daf5c6e1f2fa008863481dcf2da431a59569ae71a3ed1629cf5989c8a54952 file=router/internal/exa/service.go range=46:46 lang=go exported=false byte_range=931:942
+  sig=[]byte
+EDGES
+  ^contains=matrix/router/internal/exa.flight
+
+NODE id=matrix/router/internal/exa.flight#done kind=field
+  digest=b3:d4d7e8e48eb17441bde55a62c4dd939444579d8aebe666fc3cc1890ecede7445 file=router/internal/exa/service.go range=45:45 lang=go exported=false byte_range=911:929
+  sig=chan struct{}
+EDGES
+  ^contains=matrix/router/internal/exa.flight
+
+NODE id=matrix/router/internal/exa.flight#err kind=field
+  digest=b3:ea69639d9bd0c414b495c6a288ee3f12e2fead1780082602d3f82d6238dcf190 file=router/internal/exa/service.go range=47:47 lang=go exported=false byte_range=944:954
+  sig=error
+EDGES
+  ^contains=matrix/router/internal/exa.flight
+
+NODE id=matrix/router/internal/exa.hashRequest kind=func
+  digest=b3:cc49a6541938d224e511e3bc123b47d78ec683cb9ae01c1f44d4b7a536ecb1dd file=router/internal/exa/service.go range=348:355 lang=go exported=false byte_range=12048:12337
+  sig=func hashRequest(prefix string, value any) (string, error)
+EDGES
+  calls=matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.badRequest,matrix/router/internal/exa.data,matrix/router/internal/exa.err,matrix/router/internal/exa.prefix,matrix/router/internal/exa.sum,matrix/router/internal/exa.value
+  ^calls=matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
+  ^references=matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.maxResponseSize kind=const
+  digest=b3:e54be7cb7f8394706f2a841e6661990c7139474482299f47361a0eb13c2c058b file=router/internal/exa/client.go range=23:23 lang=go exported=false byte_range=414:440
+  sig=untyped int
+EDGES
+  ^references=matrix/router/internal/exa.Client.do
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.meterRow kind=type
+  digest=b3:85b5f8c4e3a9731d34d8e265b0db8d572d69d1c2abf0c22af0cbd240f6257aba file=router/internal/exa/meter.go range=41:45 lang=go exported=false byte_range=981:1122
+  sig=type meterRow struct {\n	requests, cacheHits, errors	int64\n	cost				float64\n	latencies			[]time.Duration\n}
+EDGES
+  contains=matrix/router/internal/exa.meterRow#cacheHits,matrix/router/internal/exa.meterRow#cost,matrix/router/internal/exa.meterRow#errors,matrix/router/internal/exa.meterRow#latencies,matrix/router/internal/exa.meterRow#requests
+  ^references=matrix/router/internal/exa.Meter,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.NewMeter
+  ^defines=matrix/router/internal/exa/meter.go
+
+NODE id=matrix/router/internal/exa.meterRow#cacheHits kind=field
+  digest=b3:54daacfe99c88be2eb403797588d0e464c7b0ebf7e5a0b423a0296265ef969aa file=router/internal/exa/meter.go range=42:42 lang=go exported=false byte_range=1005:1038
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/exa.meterRow
+
+NODE id=matrix/router/internal/exa.meterRow#cost kind=field
+  digest=b3:cd948e471a572e37dc582f868e5775d2d964f710a9930b92964b500456fb728a file=router/internal/exa/meter.go range=43:43 lang=go exported=false byte_range=1040:1075
+  sig=float64
+EDGES
+  ^contains=matrix/router/internal/exa.meterRow
+
+NODE id=matrix/router/internal/exa.meterRow#errors kind=field
+  digest=b3:54daacfe99c88be2eb403797588d0e464c7b0ebf7e5a0b423a0296265ef969aa file=router/internal/exa/meter.go range=42:42 lang=go exported=false byte_range=1005:1038
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/exa.meterRow
+
+NODE id=matrix/router/internal/exa.meterRow#latencies kind=field
+  digest=b3:af085283745e1e069b4c481bb6c3be1a4dccae9308eb06ab8f62d4836e8b6abb file=router/internal/exa/meter.go range=44:44 lang=go exported=false byte_range=1077:1120
+  sig=[]time.Duration
+EDGES
+  ^contains=matrix/router/internal/exa.meterRow
+
+NODE id=matrix/router/internal/exa.meterRow#requests kind=field
+  digest=b3:54daacfe99c88be2eb403797588d0e464c7b0ebf7e5a0b423a0296265ef969aa file=router/internal/exa/meter.go range=42:42 lang=go exported=false byte_range=1005:1038
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/exa.meterRow
+
+NODE id=matrix/router/internal/exa.parseRetryAfter kind=func
+  digest=b3:fd7196b0c2afc7329d428b0c83cfa840235830211854735f626934d93f76a3f7 file=router/internal/exa/client.go range=199:205 lang=go exported=false byte_range=7068:7264
+  sig=func parseRetryAfter(raw string) time.Duration
+EDGES
+  references=matrix/router/internal/exa.err,matrix/router/internal/exa.raw,matrix/router/internal/exa.seconds
+  ^calls=matrix/router/internal/exa.statusFailure
+  ^references=matrix/router/internal/exa.statusFailure
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.primarySource kind=func
+  digest=b3:348245a3dc6030fff39b8b36c7f7898ce8bdf42cf64901c4827126e0ec115479 file=router/internal/exa/model.go range=218:227 lang=go exported=false byte_range=7184:7559
+  sig=func primarySource(raw string) bool
+EDGES
+  references=matrix/router/internal/exa.err,matrix/router/internal/exa.host,matrix/router/internal/exa.raw,matrix/router/internal/exa.u
+  ^calls=matrix/router/internal/exa.EvidenceFromGrounding
+  ^references=matrix/router/internal/exa.EvidenceFromGrounding
+  ^defines=matrix/router/internal/exa/model.go
+
+NODE id=matrix/router/internal/exa.redact kind=func
+  digest=b3:ce099dd685d31e957929b3285937bbd770b89072f7321f45de98d5388731c48f file=router/internal/exa/client.go range=215:230 lang=go exported=false byte_range=7416:7834
+  sig=func redact(value string) string
+EDGES
+  references=matrix/router/internal/exa.end,matrix/router/internal/exa.index,matrix/router/internal/exa.marker,matrix/router/internal/exa.value
+  ^calls=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.snippet
+  ^references=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.snippet
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.safeField kind=func
+  digest=b3:3634553a9aa18ac0b7f1b3f55c31ae60a6771475dbfed5df5ec469c31a033d37 file=router/internal/exa/workflow.go range=145:156 lang=go exported=false byte_range=10283:10534
+  sig=func safeField(raw string) string
+EDGES
+  references=matrix/router/internal/exa.ch,matrix/router/internal/exa.raw,matrix/router/internal/exa.value
+  ^calls=matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest
+  ^references=matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest
+  ^defines=matrix/router/internal/exa/workflow.go
+
+NODE id=matrix/router/internal/exa.serviceError kind=func
+  digest=b3:f2c3a32608f50e244b6e5b45e12aae7dc60a96fdb68afc49db563ab8629a3048 file=router/internal/exa/service.go range=414:422 lang=go exported=false byte_range=14472:14743
+  sig=func serviceError(err error, endpoint string) error
+EDGES
+  calls=matrix/router/internal/exa.FailureOf
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.endpoint,matrix/router/internal/exa.err
+  ^calls=matrix/router/internal/exa.Handler.writeError
+  ^references=matrix/router/internal/exa.Handler.writeError
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.snippet kind=func
+  digest=b3:f5f27c4364aca22ceeaa340097313a275132a0984f684e977ddd1db79500b733 file=router/internal/exa/client.go range=207:213 lang=go exported=false byte_range=7266:7414
+  sig=func snippet(data []byte) string
+EDGES
+  calls=matrix/router/internal/exa.redact
+  references=matrix/router/internal/exa.data,matrix/router/internal/exa.redact,matrix/router/internal/exa.value
+  ^calls=matrix/router/internal/exa.statusFailure
+  ^references=matrix/router/internal/exa.statusFailure
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.statusFailure kind=func
+  digest=b3:d6663a87d3aef15e21dee3af564dca8ff4fa1c78aa6d5c03f3683d088e0e2565 file=router/internal/exa/client.go range=179:193 lang=go exported=false byte_range=6034:6930
+  sig=func statusFailure(endpoint string, res *http.Response, body []byte) *Failure
+EDGES
+  calls=matrix/router/internal/exa.parseRetryAfter,matrix/router/internal/exa.snippet
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.FailureNotConfigured,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.FailureRateLimited,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.body,matrix/router/internal/exa.endpoint,matrix/router/internal/exa.kind,matrix/router/internal/exa.message,matrix/router/internal/exa.parseRetryAfter,matrix/router/internal/exa.res,matrix/router/internal/exa.snippet
+  ^calls=matrix/router/internal/exa.Client.do
+  ^references=matrix/router/internal/exa.Client.do
+  ^defines=matrix/router/internal/exa/client.go
+
+NODE id=matrix/router/internal/exa.typedFactSchema kind=func
+  digest=b3:24a60f497f5714740254c80882e17875845876f07fc807ca522c303256b984ef file=router/internal/exa/workflow.go range=141:143 lang=go exported=false byte_range=9402:10281
+  sig=func typedFactSchema() map[string]any
+EDGES
+  ^calls=matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest
+  ^references=matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest
+  ^defines=matrix/router/internal/exa/workflow.go
+
+NODE id=matrix/router/internal/exa.validateAgent kind=func
+  digest=b3:527a61a000c4b041957f1c506345af3a5627e0428d9cac4d3fa7bd99d5f5b33f file=router/internal/exa/service.go range=396:412 lang=go exported=false byte_range=13786:14470
+  sig=func validateAgent(input *AgentRequest) error
+EDGES
+  calls=matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.allowed,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.data,matrix/router/internal/exa.input
+  ^calls=matrix/router/internal/exa.Service.StartRun
+  ^references=matrix/router/internal/exa.Service.StartRun
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.validateContents kind=func
+  digest=b3:f4d54a91d74b86398358bb13ba3129b8855ee193c1c6da48c3c2cf74bbd60c6f file=router/internal/exa/service.go range=378:394 lang=go exported=false byte_range=13131:13784
+  sig=func validateContents(input *ContentsRequest) error
+EDGES
+  calls=matrix/router/internal/exa.badRequest,matrix/router/internal/exa.canonicalURL
+  references=matrix/router/internal/exa.ContentsRequest,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.canonicalURL,matrix/router/internal/exa.input,matrix/router/internal/exa.raw
+  ^calls=matrix/router/internal/exa.Service.Contents
+  ^references=matrix/router/internal/exa.Service.Contents
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa.validateSearch kind=func
+  digest=b3:8c19c27df0713ee04d79f6c552a1dbe341699a2e7ed158cce4fa0d832263a2ef file=router/internal/exa/service.go range=357:376 lang=go exported=false byte_range=12339:13129
+  sig=func validateSearch(input *SearchRequest) error
+EDGES
+  calls=matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.allowed,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.data,matrix/router/internal/exa.input
+  ^calls=matrix/router/internal/exa.Service.Search
+  ^references=matrix/router/internal/exa.Service.Search
+  ^defines=matrix/router/internal/exa/service.go
+
+NODE id=matrix/router/internal/exa/client.go kind=file
+  digest=b3:59112371966b2e96581d2db5ee7c116750d7a2bc2ceb6c179fe0587736e54c7b file=router/internal/exa/client.go range=1:230 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/exa.APIKeyEnv,matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Configured,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.ClientConfig,matrix/router/internal/exa.NewClient,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.defaultBaseURL,matrix/router/internal/exa.defaultTimeout,matrix/router/internal/exa.maxResponseSize,matrix/router/internal/exa.parseRetryAfter,matrix/router/internal/exa.redact,matrix/router/internal/exa.snippet,matrix/router/internal/exa.statusFailure
+  ^contains=matrix/router/internal/exa
+
+NODE id=matrix/router/internal/exa/failure.go kind=file
+  digest=b3:706a53ea6e58b3dd0ca8a379c95ff72b4f5b045062f288ee26e846ba6f9ae77f file=router/internal/exa/failure.go range=1:61 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/exa.Failure,matrix/router/internal/exa.Failure.Error,matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.FailureConflict,matrix/router/internal/exa.FailureKind,matrix/router/internal/exa.FailureNotConfigured,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.FailurePartial,matrix/router/internal/exa.FailureRateLimited,matrix/router/internal/exa.FailureTimeout,matrix/router/internal/exa.FailureUngrounded,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.KindOf
+  ^contains=matrix/router/internal/exa
+
+NODE id=matrix/router/internal/exa/handler.go kind=file
+  digest=b3:6aecf41a4571398799afb778db9f988dddc348cac921beca17a2bf4d571ea03c file=router/internal/exa/handler.go range=1:223 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/exa.ErrorBody,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.NewFinanceHandler,matrix/router/internal/exa.NewHandler,matrix/router/internal/exa.NewInternalHandler,matrix/router/internal/exa.SubjectHeader,matrix/router/internal/exa.errorBody
+  ^contains=matrix/router/internal/exa
+
+NODE id=matrix/router/internal/exa/meter.go kind=file
+  digest=b3:92c87967a95db2699a9b746d5aed404c833be956babc074050b085dbf7c26373 file=router/internal/exa/meter.go range=1:113 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/exa.EndpointStats,matrix/router/internal/exa.Meter,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.Meter.Snapshot,matrix/router/internal/exa.MeterRecord,matrix/router/internal/exa.NewMeter,matrix/router/internal/exa.Stats,matrix/router/internal/exa.meterRow
+  ^contains=matrix/router/internal/exa
+
+NODE id=matrix/router/internal/exa/model.go kind=file
+  digest=b3:6e838d89f9c6d189082d8abba0f9f07a646ca83c67da4cc8a5799c2d590fc1b2 file=router/internal/exa/model.go range=1:227 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/exa.AgentError,matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.AgentRun.Terminal,matrix/router/internal/exa.Citation,matrix/router/internal/exa.ClaimConflict,matrix/router/internal/exa.ClaimInconclusive,matrix/router/internal/exa.ClaimState,matrix/router/internal/exa.ClaimVerified,matrix/router/internal/exa.ContentError,matrix/router/internal/exa.ContentOptions,matrix/router/internal/exa.ContentStatus,matrix/router/internal/exa.ContentsRequest,matrix/router/internal/exa.ContentsResponse,matrix/router/internal/exa.Cost,matrix/router/internal/exa.Evidence,matrix/router/internal/exa.EvidenceFromGrounding,matrix/router/internal/exa.GroundedClaim,matrix/router/internal/exa.Grounding,matrix/router/internal/exa.Output,matrix/router/internal/exa.Result,matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.SearchResponse,matrix/router/internal/exa.canonicalURL,matrix/router/internal/exa.primarySource
+  ^contains=matrix/router/internal/exa
+
+NODE id=matrix/router/internal/exa/service.go kind=file
+  digest=b3:a517986a260b935a4a4c8acd2dd31c4ff5f39eeb723210e8a225570552220396 file=router/internal/exa/service.go range=1:422 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/exa.ContentsEnvelope,matrix/router/internal/exa.NewService,matrix/router/internal/exa.ResponseMeta,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.SearchEnvelope,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.Stats,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.Service.release,matrix/router/internal/exa.ServiceConfig,matrix/router/internal/exa.effortReserve,matrix/router/internal/exa.flight,matrix/router/internal/exa.hashRequest,matrix/router/internal/exa.serviceError,matrix/router/internal/exa.validateAgent,matrix/router/internal/exa.validateContents,matrix/router/internal/exa.validateSearch
+  ^contains=matrix/router/internal/exa
+
+NODE id=matrix/router/internal/exa/store.go kind=file
+  digest=b3:f6b885869d8a719b425535f76e41e1594535a2f0aeaba798b7e0312eae3ef740 file=router/internal/exa/store.go range=1:108 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.MemoryStore.ActiveRuns,matrix/router/internal/exa.MemoryStore.GetCache,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.MemoryStore.PutCache,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.MemoryStore.ReserveSpend,matrix/router/internal/exa.NewMemoryStore,matrix/router/internal/exa.RunRecord,matrix/router/internal/exa.Store
+  ^contains=matrix/router/internal/exa
+
+NODE id=matrix/router/internal/exa/workflow.go kind=file
+  digest=b3:32bccfe239dbd03cd41a0dde51f211f3d4dfab1488baa6cea3c1ab7e9c1ec7d7 file=router/internal/exa/workflow.go range=1:163 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/exa.FinanceNewsRequest,matrix/router/internal/exa.FinanceRequest,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.VerifyRequest,matrix/router/internal/exa.emptyAsCurrent,matrix/router/internal/exa.financeAgentRequest,matrix/router/internal/exa.safeField,matrix/router/internal/exa.typedFactSchema
+  ^contains=matrix/router/internal/exa

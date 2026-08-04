@@ -406,7 +406,8 @@ func (c *AlphaVantage) NewsSentiment(ctx context.Context, tickers []string, topi
 		}
 	}
 	out := &NewsFeed{Source: c.source()}
-	for _, r := range decoded.Feed {
+	for index := range decoded.Feed {
+		r := &decoded.Feed[index]
 		item := NewsItem{
 			Title: r.Title, URL: r.URL, Publisher: r.Source,
 			Summary: r.Summary, ImageURL: r.BannerImage,

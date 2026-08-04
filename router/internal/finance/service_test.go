@@ -92,13 +92,13 @@ func (u *upstream) Set(path, body string, status int) {
 }
 
 // newTestService wires the REAL service against real local upstreams.
-func newTestService(t *testing.T, fmpBodies, alphaBodies map[string]string) (*Service, *upstream, *upstream, *testClock) {
+func newTestService(t *testing.T, fmpBodies, alphaBodies map[string]string) (service *Service, fmp, alpha *upstream, clock *testClock) {
 	t.Helper()
 	fmpUp := newUpstream(fmpBodies)
 	alphaUp := newUpstream(alphaBodies)
 	t.Cleanup(fmpUp.Close)
 	t.Cleanup(alphaUp.Close)
-	clock := newClock()
+	clock = newClock()
 	svc := NewService(Config{
 		FMPKey: "fmp-key", AlphaKey: "alpha-key",
 		FMPBaseURL: fmpUp.URL, AlphaBaseURL: alphaUp.URL,
@@ -255,7 +255,7 @@ func TestServiceServesStaleWhenTheUpstreamStartsRefusing(t *testing.T) {
 		t.Fatalf("stale quote returned an error instead of the last good value: %v", err)
 	}
 	if !stale.Source.Stale {
-		t.Fatal("the stale answer is not labelled stale")
+		t.Fatal("the stale answer is not labeled stale")
 	}
 	if stale.Price == nil || *stale.Price != 232.8 {
 		t.Fatalf("stale price = %v, want the last good value", stale.Price)

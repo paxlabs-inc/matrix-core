@@ -101,7 +101,7 @@ func (r *Registry) IngressKeys(id string) (map[string][]byte, bool) {
 	k, ok := r.ingress[id]
 	return k, ok
 }
-func (r *Registry) CurrentIngress(id string) (string, []byte, bool) {
+func (r *Registry) CurrentIngress(id string) (ingressURL string, credentials []byte, ok bool) {
 	keys, ok := r.ingress[id]
 	if !ok || len(keys) == 0 {
 		return "", nil, false

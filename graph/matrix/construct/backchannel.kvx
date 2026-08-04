@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/construct/backchannel kind=package
-  digest=b3:3903344eeb5aac7310b6d6f76433a69ef31820102176f22c042297ff2f86b99b file=construct/backchannel range=0:0 lang=go exported=true
+  digest=b3:469d60725d030406c1b62ad60751ea3998b49818785af697f174bd85bb2f8367 file=construct/backchannel range=0:0 lang=go exported=true
 EDGES
   contains=matrix/construct/backchannel/backchannel.go
   imports=matrix/construct/schema,matrix/construct/schema/primitives
@@ -9,7 +9,7 @@ EDGES
   ^imports=matrix/neo/internal/server,matrix/neo/internal/tools
 
 NODE id=matrix/construct/backchannel.Answered kind=func
-  digest=b3:1dd1bc10d65bff154d664e8ad11206e3bbdea8303e900b6e9831e1112d3bcd50 file=construct/backchannel/backchannel.go range=109:130 lang=go exported=true byte_range=4656:5470
+  digest=b3:1dd1bc10d65bff154d664e8ad11206e3bbdea8303e900b6e9831e1112d3bcd50 file=construct/backchannel/backchannel.go range=110:131 lang=go exported=true byte_range=4674:5488
   sig=func Answered(orig *schema.Surface, resp *primitives.AskResponse) (*schema.Surface, error)
   doc=Answered folds a validated response onto a COPY of the original Ask surface,\nreturning a surface suitable for a construct.surface.patch emit: the renderer\nreads Ask.Response and flips from the live control to its settled state. The\noriginal surface is never mutated (the patch is a clean clone).
 EDGES
@@ -20,7 +20,7 @@ EDGES
   ^defines=matrix/construct/backchannel/backchannel.go
 
 NODE id=matrix/construct/backchannel.Summarize kind=func
-  digest=b3:eecbf116bf3adb092cf878a7d3e05a46b88465e8fd0ab7e95d88024b2f621e7d file=construct/backchannel/backchannel.go range=74:107 lang=go exported=true byte_range=3286:4654
+  digest=b3:eecbf116bf3adb092cf878a7d3e05a46b88465e8fd0ab7e95d88024b2f621e7d file=construct/backchannel/backchannel.go range=75:108 lang=go exported=true byte_range=3304:4672
   sig=func Summarize(ask *primitives.Ask, resp *primitives.AskResponse) string
   doc=Summarize renders the human's answer as a short, agent-readable line — the\ntool result the parked agent reads to resume its reasoning. It mirrors the\nclient renderer's settled state so the agent and the screen agree on what\nwas answered. Caller has already validated the response.
 EDGES
@@ -31,18 +31,18 @@ EDGES
   ^defines=matrix/construct/backchannel/backchannel.go
 
 NODE id=matrix/construct/backchannel.ValidateResponse kind=func
-  digest=b3:b80dac95a958416a09ffd142d1b627589c03c6b93fdc871eab5b8021f8746818 file=construct/backchannel/backchannel.go range=28:72 lang=go exported=true byte_range=1259:3284
+  digest=b3:72857ac76e3b2ce92f8d9efc6fe57fb2fbf29931b6c3b9a75a6098ca81c2a44c file=construct/backchannel/backchannel.go range=28:73 lang=go exported=true byte_range=1259:3302
   sig=func ValidateResponse(ask *primitives.Ask, resp *primitives.AskResponse) error
   doc=ValidateResponse checks a posted AskResponse against the Ask it answers, per\nthe Ask kind's expected-response contract. It is the trust gate the receiver\nruns BEFORE delivering the answer to the parked agent: a malformed or\noff-contract response is rejected (the run stays parked) rather than feeding\nthe agent garbage. A nil/unknown ask or response is an error.
 EDGES
-  calls=matrix/construct/backchannel.confirmedTrue,matrix/construct/backchannel.hasOption,matrix/construct/schema/primitives.ValidAskKind
-  references=matrix/construct/backchannel.ask,matrix/construct/backchannel.confirmedTrue,matrix/construct/backchannel.hasOption,matrix/construct/backchannel.resp,matrix/construct/schema/primitives.Ask,matrix/construct/schema/primitives.AskChoose,matrix/construct/schema/primitives.AskConfirm,matrix/construct/schema/primitives.AskInput,matrix/construct/schema/primitives.AskResponse,matrix/construct/schema/primitives.AskSign,matrix/construct/schema/primitives.AskUpload,matrix/construct/schema/primitives.ValidAskKind
-  ^calls=matrix/neo/internal/server.Server.handleAskAnswer
-  ^references=matrix/neo/internal/server.Server.handleAskAnswer
+  calls=matrix/construct/backchannel.hasOption,matrix/construct/schema/primitives.ValidAskKind
+  references=matrix/construct/backchannel.ask,matrix/construct/backchannel.hasOption,matrix/construct/backchannel.resp,matrix/construct/schema/primitives.Ask,matrix/construct/schema/primitives.AskChoose,matrix/construct/schema/primitives.AskConfirm,matrix/construct/schema/primitives.AskInput,matrix/construct/schema/primitives.AskResponse,matrix/construct/schema/primitives.AskSign,matrix/construct/schema/primitives.AskUpload,matrix/construct/schema/primitives.ValidAskKind
+  ^calls=matrix/neo/internal/server.Server.handleAskAnswer,matrix/neo/internal/server.telegramBridge.deliverAskResponse
+  ^references=matrix/neo/internal/server.Server.handleAskAnswer,matrix/neo/internal/server.telegramBridge.deliverAskResponse
   ^defines=matrix/construct/backchannel/backchannel.go
 
 NODE id=matrix/construct/backchannel.clip kind=func
-  digest=b3:d2721606708cab0ad10703407a18d94b416f97e66f1ae178ae49a32fb62827f7 file=construct/backchannel/backchannel.go range=154:159 lang=go exported=false byte_range=5874:5965
+  digest=b3:d2721606708cab0ad10703407a18d94b416f97e66f1ae178ae49a32fb62827f7 file=construct/backchannel/backchannel.go range=155:160 lang=go exported=false byte_range=5892:5983
   sig=func clip(s string, n int) string
 EDGES
   references=matrix/construct/backchannel.n,matrix/construct/backchannel.s
@@ -51,16 +51,16 @@ EDGES
   ^defines=matrix/construct/backchannel/backchannel.go
 
 NODE id=matrix/construct/backchannel.confirmedTrue kind=func
-  digest=b3:29e1363be1b94d1f67c3a0f00aad1fb11b3d61c7ad74756bfaa847ea6f3cd53b file=construct/backchannel/backchannel.go range=150:152 lang=go exported=false byte_range=5766:5872
+  digest=b3:29e1363be1b94d1f67c3a0f00aad1fb11b3d61c7ad74756bfaa847ea6f3cd53b file=construct/backchannel/backchannel.go range=151:153 lang=go exported=false byte_range=5784:5890
   sig=func confirmedTrue(resp *primitives.AskResponse) bool
 EDGES
   references=matrix/construct/backchannel.resp,matrix/construct/schema/primitives.AskResponse
-  ^calls=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse
-  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse
+  ^calls=matrix/construct/backchannel.Summarize
+  ^references=matrix/construct/backchannel.Summarize
   ^defines=matrix/construct/backchannel/backchannel.go
 
 NODE id=matrix/construct/backchannel.hasOption kind=func
-  digest=b3:95fe6b7fe10d2c24ef53c2a4b2c2f0c932b4fd83d4727d39019066a2dde3b516 file=construct/backchannel/backchannel.go range=132:139 lang=go exported=false byte_range=5472:5615
+  digest=b3:95fe6b7fe10d2c24ef53c2a4b2c2f0c932b4fd83d4727d39019066a2dde3b516 file=construct/backchannel/backchannel.go range=133:140 lang=go exported=false byte_range=5490:5633
   sig=func hasOption(opts []primitives.AskOption, id string) bool
 EDGES
   references=matrix/construct/backchannel.id,matrix/construct/backchannel.o,matrix/construct/backchannel.opts,matrix/construct/schema/primitives.AskOption
@@ -69,7 +69,7 @@ EDGES
   ^defines=matrix/construct/backchannel/backchannel.go
 
 NODE id=matrix/construct/backchannel.optionLabel kind=func
-  digest=b3:b6b3f1ddbdce2ed04f7c299d742b43837272d3e548384fce5f0a2022c3480490 file=construct/backchannel/backchannel.go range=141:148 lang=go exported=false byte_range=5617:5764
+  digest=b3:b6b3f1ddbdce2ed04f7c299d742b43837272d3e548384fce5f0a2022c3480490 file=construct/backchannel/backchannel.go range=142:149 lang=go exported=false byte_range=5635:5782
   sig=func optionLabel(opts []primitives.AskOption, id string) string
 EDGES
   references=matrix/construct/backchannel.id,matrix/construct/backchannel.o,matrix/construct/backchannel.opts,matrix/construct/schema/primitives.AskOption
@@ -78,7 +78,7 @@ EDGES
   ^defines=matrix/construct/backchannel/backchannel.go
 
 NODE id=matrix/construct/backchannel/backchannel.go kind=file
-  digest=b3:604ac8cde83e39eb5eae6cdeb13c99a7c1c396deb336e4ab0b4ae17f2e0bccdf file=construct/backchannel/backchannel.go range=1:159 lang=go exported=true
+  digest=b3:d5a4f9b39b7b558602346d6ab859b6030b35afc8944a4fa06aa9671bb72a2844 file=construct/backchannel/backchannel.go range=1:160 lang=go exported=true
 EDGES
   defines=matrix/construct/backchannel.Answered,matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/backchannel.clip,matrix/construct/backchannel.confirmedTrue,matrix/construct/backchannel.hasOption,matrix/construct/backchannel.optionLabel
   ^contains=matrix/construct/backchannel

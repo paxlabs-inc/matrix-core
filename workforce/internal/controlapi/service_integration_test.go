@@ -178,7 +178,7 @@ func TestIntegration_ActivationAndWorkOrderUseExactRuntimeModel(t *testing.T) {
 	); err != nil {
 		t.Fatal(err)
 	}
-	if authorityRecords != 4 || v2Projection != 1 {
+	if authorityRecords != 5 || v2Projection != 1 {
 		t.Fatalf("company authority=%d organization-v2=%d", authorityRecords, v2Projection)
 	}
 	order := fixture.order("one", "mimo", "mimo-v2.5-pro")
@@ -237,25 +237,28 @@ func TestIntegration_ActivationAndWorkOrderUseExactRuntimeModel(t *testing.T) {
 	); err == nil {
 		t.Fatal("stale Work Order time was accepted")
 	}
-	noModel := *fixture.service
-	noModel.runtimeModelProvider = ""
-	noModel.runtimeModelID = ""
+	runtimeModelProvider, runtimeModelID := fixture.service.runtimeModelProvider, fixture.service.runtimeModelID
+	fixture.service.runtimeModelProvider = ""
+	fixture.service.runtimeModelID = ""
 	missingModel := fixture.order("no-model", "mimo", "mimo-v2.5-pro")
 	if err := SignWorkOrder(&missingModel, fixture.ownerKeyID, fixture.ownerPrivate); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := noModel.CreateWorkOrder(
+	if _, err := fixture.service.CreateWorkOrder(
 		context.Background(), fixture.principal, missingModel,
 	); err == nil {
 		t.Fatal("Work Order without executable runtime model was accepted")
 	}
-	noScheduler := *fixture.service
-	noScheduler.scheduler = nil
-	if _, err := noScheduler.CreateWorkOrder(
+	fixture.service.runtimeModelProvider = runtimeModelProvider
+	fixture.service.runtimeModelID = runtimeModelID
+	scheduler := fixture.service.scheduler
+	fixture.service.scheduler = nil
+	if _, err := fixture.service.CreateWorkOrder(
 		context.Background(), fixture.principal, missingModel,
 	); !errors.Is(err, ErrUnauthorized) {
 		t.Fatalf("Work Order without scheduler = %v", err)
 	}
+	fixture.service.scheduler = scheduler
 	var goals, intents, wakes, events int
 	if err := controlPool.QueryRow(context.Background(), `
 		SELECT
@@ -491,7 +494,7 @@ func TestIntegration_V1MigrationPreservesLegacyAuthorityAndRejectsStaleVersion(t
 	}
 	if preview.Impact.CurrentDepartments != 7 || preview.Impact.CurrentSeats != 21 ||
 		preview.Impact.TargetTemplateID != "organization-template:default-v1" ||
-		len(preview.Impact.NewAuthorityKinds) != 4 ||
+		len(preview.Impact.NewAuthorityKinds) != 5 ||
 		len(preview.Impact.IrreversibleConsequences) != 3 ||
 		preview.Impact.StartingMicrounits != testActivationDraft().StartingMicrounits {
 		t.Fatalf("migration impact = %#v", preview.Impact)
@@ -533,7 +536,7 @@ func TestIntegration_V1MigrationPreservesLegacyAuthorityAndRejectsStaleVersion(t
 	); err != nil {
 		t.Fatal(err)
 	}
-	if preservedHash != legacyHash || companyRows != 4 {
+	if preservedHash != legacyHash || companyRows != 5 {
 		t.Fatalf("legacy hash changed=%v company rows=%d", preservedHash != legacyHash, companyRows)
 	}
 }
@@ -646,7 +649,7 @@ func TestIntegration_MaterialCompanyAuthorityChangeVersionsAndPauses(t *testing.
 	); err != nil {
 		t.Fatal(err)
 	}
-	if records != 8 || receipts != 4 || state != "paused" || missionVersion != 2 {
+	if records != 10 || receipts != 5 || state != "paused" || missionVersion != 2 {
 		t.Fatalf("records=%d receipts=%d state=%s mission=%d", records, receipts, state, missionVersion)
 	}
 	if _, err := fixture.service.ChangeAuthority(
@@ -872,10 +875,14 @@ func TestIntegration_ClosedRealDatabaseFailsEveryControlWriteClosed(t *testing.T
 		t.Fatal(err)
 	}
 	closedPool.Close()
-	closed := *fixture.service
-	closed.pool = closedPool
-	closed.broker = newBroker(4)
-	server := httptest.NewServer(closed.Handler())
+	pool, broker := fixture.service.pool, fixture.service.broker
+	fixture.service.pool = closedPool
+	fixture.service.broker = newBroker(4)
+	defer func() {
+		fixture.service.pool = pool
+		fixture.service.broker = broker
+	}()
+	server := httptest.NewServer(fixture.service.Handler())
 	defer server.Close()
 	for _, path := range []string{
 		"/v1/workforce/departments?limit=1",
@@ -929,37 +936,37 @@ func TestIntegration_ClosedRealDatabaseFailsEveryControlWriteClosed(t *testing.T
 		name string
 		run  func() error
 	}{
-		{"runtime root", func() error { _, err := closed.RuntimeOwnerRoot(ctx, fixture.principal); return err }},
+		{"runtime root", func() error { _, err := fixture.service.RuntimeOwnerRoot(ctx, fixture.principal); return err }},
 		{"authority preview", func() error {
-			_, err := closed.PreviewAuthorityChange(ctx, fixture.principal, AuthorityChangePreviewRequest{KeyID: fixture.ownerKeyID, ExpectedVersion: 1, EffectiveAt: fixture.now, Authority: testActivationDraft()})
+			_, err := fixture.service.PreviewAuthorityChange(ctx, fixture.principal, AuthorityChangePreviewRequest{KeyID: fixture.ownerKeyID, ExpectedVersion: 1, EffectiveAt: fixture.now, Authority: testActivationDraft()})
 			return err
 		}},
 		{"rotation preview", func() error {
-			_, err := closed.PreviewFounderKeyRotation(ctx, fixture.principal, FounderKeyRotationPreviewRequest{OldKeyID: fixture.ownerKeyID, NewKeyID: "key:new", NewPublicKey: base64.RawURLEncoding.EncodeToString(newPublic), ExpectedVersion: 1, EffectiveAt: fixture.now, Authority: testActivationDraft()})
+			_, err := fixture.service.PreviewFounderKeyRotation(ctx, fixture.principal, FounderKeyRotationPreviewRequest{OldKeyID: fixture.ownerKeyID, NewKeyID: "key:new", NewPublicKey: base64.RawURLEncoding.EncodeToString(newPublic), ExpectedVersion: 1, EffectiveAt: fixture.now, Authority: testActivationDraft()})
 			return err
 		}},
 		{"register key", func() error {
-			return closed.RegisterControlKey(ctx, fixture.principal, ControlKeyRegistration{KeyID: "key:closed", PublicKey: base64.RawURLEncoding.EncodeToString(newPublic)})
+			return fixture.service.RegisterControlKey(ctx, fixture.principal, ControlKeyRegistration{KeyID: "key:closed", PublicKey: base64.RawURLEncoding.EncodeToString(newPublic)})
 		}},
-		{"list", func() error { _, err := closed.List(ctx, fixture.principal, "departments", "", 1); return err }},
-		{"events", func() error { _, err := closed.Events(ctx, fixture.principal, 0, 1); return err }},
-		{"publish", func() error { _, err := closed.Publish(ctx, fixture.principal, event); return err }},
-		{"command", func() error { _, err := closed.ApplyCommand(ctx, fixture.principal, command); return err }},
-		{"work order", func() error { _, err := closed.CreateWorkOrder(ctx, fixture.principal, order); return err }},
+		{"list", func() error { _, err := fixture.service.List(ctx, fixture.principal, "departments", "", 1); return err }},
+		{"events", func() error { _, err := fixture.service.Events(ctx, fixture.principal, 0, 1); return err }},
+		{"publish", func() error { _, err := fixture.service.Publish(ctx, fixture.principal, event); return err }},
+		{"command", func() error { _, err := fixture.service.ApplyCommand(ctx, fixture.principal, command); return err }},
+		{"work order", func() error { _, err := fixture.service.CreateWorkOrder(ctx, fixture.principal, order); return err }},
 		{"activation", func() error {
-			_, err := closed.ActivateOrganization(ctx, fixture.principal, ActivationBundle{Seed: activation.Seed, Authority: activation.Authority, SkillContracts: activation.SkillContracts})
+			_, err := fixture.service.ActivateOrganization(ctx, fixture.principal, ActivationBundle{Seed: activation.Seed, Authority: activation.Authority, SkillContracts: activation.SkillContracts})
 			return err
 		}},
 		{"migration", func() error {
-			_, err := closed.MigrateOrganization(ctx, fixture.principal, MigrationBundle{Authority: activation.Authority, LegacyOrganizationVersion: 1})
+			_, err := fixture.service.MigrateOrganization(ctx, fixture.principal, MigrationBundle{Authority: activation.Authority, LegacyOrganizationVersion: 1})
 			return err
 		}},
 		{"authority change", func() error {
-			_, err := closed.ChangeAuthority(ctx, fixture.principal, AuthorityChangeBundle{ExpectedVersion: 1, Authority: signedAuthority.Authority})
+			_, err := fixture.service.ChangeAuthority(ctx, fixture.principal, AuthorityChangeBundle{ExpectedVersion: 1, Authority: signedAuthority.Authority})
 			return err
 		}},
 		{"rotation", func() error {
-			_, err := closed.RotateFounderKey(ctx, fixture.principal, FounderKeyRotationBundle{Rotation: rotationPreview.Rotation, Authority: rotationPreview.Authority})
+			_, err := fixture.service.RotateFounderKey(ctx, fixture.principal, FounderKeyRotationBundle{Rotation: rotationPreview.Rotation, Authority: rotationPreview.Authority})
 			return err
 		}},
 	}
@@ -990,18 +997,22 @@ func TestIntegration_ControlBoundaryFailuresFailClosedBeforeMutation(t *testing.
 	if _, err := fixture.service.PreviewActivation(ctx, fixture.principal, unauthorized); !errors.Is(err, ErrUnauthorized) {
 		t.Fatalf("unknown activation key = %v", err)
 	}
-	noRuntime := *fixture.service
-	noRuntime.runtimeKeyID = ""
-	noRuntime.runtimePublic = nil
-	if _, err := noRuntime.PreviewActivation(ctx, fixture.principal, request); err == nil {
+	runtimeKeyID, runtimePublic := fixture.service.runtimeKeyID, fixture.service.runtimePublic
+	fixture.service.runtimeKeyID = ""
+	fixture.service.runtimePublic = nil
+	if _, err := fixture.service.PreviewActivation(ctx, fixture.principal, request); err == nil {
 		t.Fatal("activation without runtime authority was accepted")
 	}
-	noIssuer := *fixture.service
-	noIssuer.companyIssuerKeyID = ""
-	noIssuer.companyIssuerPublic = nil
-	if _, err := noIssuer.PreviewActivation(ctx, fixture.principal, request); err == nil {
+	fixture.service.runtimeKeyID = runtimeKeyID
+	fixture.service.runtimePublic = runtimePublic
+	issuerKeyID, issuerPublic := fixture.service.companyIssuerKeyID, fixture.service.companyIssuerPublic
+	fixture.service.companyIssuerKeyID = ""
+	fixture.service.companyIssuerPublic = nil
+	if _, err := fixture.service.PreviewActivation(ctx, fixture.principal, request); err == nil {
 		t.Fatal("activation without company issuer was accepted")
 	}
+	fixture.service.companyIssuerKeyID = issuerKeyID
+	fixture.service.companyIssuerPublic = issuerPublic
 	migrationRequest := MigrationPreviewRequest{
 		KeyID: fixture.ownerKeyID, EffectiveAt: fixture.now, Authority: testActivationDraft(),
 	}
@@ -1012,11 +1023,15 @@ func TestIntegration_ControlBoundaryFailuresFailClosedBeforeMutation(t *testing.
 	); err == nil {
 		t.Fatal("migration with invalid effective time was accepted")
 	}
-	if _, err := noIssuer.PreviewMigration(
+	fixture.service.companyIssuerKeyID = ""
+	fixture.service.companyIssuerPublic = nil
+	if _, err := fixture.service.PreviewMigration(
 		ctx, fixture.principal, migrationRequest,
 	); err == nil {
 		t.Fatal("migration without company issuer was accepted")
 	}
+	fixture.service.companyIssuerKeyID = issuerKeyID
+	fixture.service.companyIssuerPublic = issuerPublic
 
 	if _, err := fixture.service.PreviewMigration(
 		ctx, fixture.principal, migrationRequest,
@@ -1080,18 +1095,19 @@ func TestIntegration_ControlBoundaryFailuresFailClosedBeforeMutation(t *testing.
 	); !errors.Is(err, ErrUnauthorized) {
 		t.Fatalf("empty rotation = %v", err)
 	}
-	withoutVault := *fixture.service
-	withoutVault.vault = nil
-	if _, err := withoutVault.MigrateOrganization(
+	vault := fixture.service.vault
+	fixture.service.vault = nil
+	if _, err := fixture.service.MigrateOrganization(
 		ctx, fixture.principal, MigrationBundle{},
 	); err == nil {
 		t.Fatal("migration without Vault was accepted")
 	}
-	if _, err := withoutVault.ActivateOrganization(
+	if _, err := fixture.service.ActivateOrganization(
 		ctx, fixture.principal, ActivationBundle{},
 	); err == nil {
 		t.Fatal("activation without Vault was accepted")
 	}
+	fixture.service.vault = vault
 
 	if err := fixture.service.RegisterControlKey(
 		ctx, Principal{}, ControlKeyRegistration{},
@@ -1120,15 +1136,16 @@ func TestIntegration_ControlBoundaryFailuresFailClosedBeforeMutation(t *testing.
 		t.Fatalf("tampered command = %v", err)
 	}
 
-	badClock := *fixture.service
-	badClock.now = func() time.Time { return time.Time{} }
-	if _, err := badClock.Publish(ctx, fixture.principal, LifecycleEvent{
+	now := fixture.service.now
+	fixture.service.now = func() time.Time { return time.Time{} }
+	if _, err := fixture.service.Publish(ctx, fixture.principal, LifecycleEvent{
 		ID: "event:bad-clock", OrganizationID: fixture.principal.OrganizationID,
 		Type: "clock.checked", ResourceKind: "clock", ResourceID: "utc",
 		ResourceVersion: 1, Fields: map[string]any{"state": "invalid"},
 	}); err == nil {
 		t.Fatal("zero control-plane clock was accepted")
 	}
+	fixture.service.now = now
 }
 
 type controlFixture struct {
@@ -1312,6 +1329,11 @@ func signControlActivation(
 	); err != nil {
 		return err
 	}
+	if err := mission.SignOrganizationV2(
+		&preview.Authority.Organization, keyID, privateKey,
+	); err != nil {
+		return err
+	}
 	for index := range preview.SkillContracts {
 		if err := skills.SignContract(
 			&preview.SkillContracts[index], keyID, privateKey,
@@ -1336,7 +1358,10 @@ func signMigrationPreview(
 	if err := mission.SignCapitalEnvelope(&preview.Authority.Capital, keyID, privateKey); err != nil {
 		return err
 	}
-	return mission.SignCompanyIssuerPolicy(&preview.Authority.IssuerPolicy, keyID, privateKey)
+	if err := mission.SignCompanyIssuerPolicy(&preview.Authority.IssuerPolicy, keyID, privateKey); err != nil {
+		return err
+	}
+	return mission.SignOrganizationV2(&preview.Authority.Organization, keyID, privateKey)
 }
 
 func testActivationDraft() mission.ActivationDraft {
@@ -1352,12 +1377,19 @@ func testActivationDraft() mission.ActivationDraft {
 		PermittedJurisdictions:   []string{"DE"},
 		DataBoundaries:           []string{"purpose-bound customer data"},
 		PermittedCounterparties:  []string{"owner-approved"},
-		RiskTolerance:            mission.RiskToleranceLow,
-		Autonomy:                 mission.AutonomyReviewRequired,
-		EscalationConditions:     []string{"unverifiable material claim"},
-		PauseConditions:          []string{"authority uncertainty"},
-		ShutdownConditions:       []string{"founder emergency stop"},
-		Currency:                 "EUR", StartingMicrounits: 1_000_000_000,
+		OperatingScopes: []mission.OperatingScope{{
+			Kind: mission.OperatingScopeProject, ScopeID: "project:matrix",
+			Purpose:             "Build and verify the approved Matrix workspace",
+			AllowedActions:      []string{"build", "read", "test", "write"},
+			DataClassifications: []string{"internal-source"},
+			Jurisdictions:       []string{"DE"},
+		}},
+		RiskTolerance:        mission.RiskToleranceLow,
+		Autonomy:             mission.AutonomyReviewRequired,
+		EscalationConditions: []string{"unverifiable material claim"},
+		PauseConditions:      []string{"authority uncertainty"},
+		ShutdownConditions:   []string{"founder emergency stop"},
+		Currency:             "EUR", StartingMicrounits: 1_000_000_000,
 		SpendCeilingMicrounits:    100_000_000,
 		ExposureCeilingMicrounits: 100_000_000,
 		MinimumRunwayDays:         180, MaxWorkOrderMicrounits: 10_000_000,

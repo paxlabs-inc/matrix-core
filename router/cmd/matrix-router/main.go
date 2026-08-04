@@ -572,7 +572,7 @@ func main() {
 		logf("wake: DISABLED (ROUTER_WAKE_TOKEN unset)")
 	}
 	if cfg.WorkforceEnabled {
-		workforceWakeHandler := http.Handler(proxyH.WorkforceWakeHandler())
+		workforceWakeHandler := proxyH.WorkforceWakeHandler()
 		if centralProxy != nil {
 			workforceWakeHandler = centralProxy.WorkforceWakeHandler()
 		}

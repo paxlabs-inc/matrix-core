@@ -1,0 +1,151 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=matrix/workforce/internal/provider/developer kind=package
+  digest=b3:bf9a52ebf1505e2497e36cf4a8eac02a76534ddcd4d208698d9852fbcb19a691 file=workforce/internal/provider/developer range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/workforce/internal/provider/developer/adapter.go
+  imports=matrix/workforce/internal/effect,matrix/workforce/internal/lease,matrix/workforce/internal/skills
+  ^contains=mod:matrix/workforce
+
+NODE id=matrix/workforce/internal/provider/developer.Adapter kind=type
+  digest=b3:0f20d549aa66e1819634630ba614a3705aee42e6ba61d7b25f6feebf2c7abad1 file=workforce/internal/provider/developer/adapter.go range=20:24 lang=go exported=true byte_range=449:539
+  sig=type Adapter struct {\n	repository	string\n	cg		string\n	now		func() time.Time\n}
+EDGES
+  contains=matrix/workforce/internal/provider/developer.Adapter#cg,matrix/workforce/internal/provider/developer.Adapter#now,matrix/workforce/internal/provider/developer.Adapter#repository,matrix/workforce/internal/provider/developer.Adapter.Dispatch,matrix/workforce/internal/provider/developer.Adapter.Name,matrix/workforce/internal/provider/developer.Adapter.Probe,matrix/workforce/internal/provider/developer.Adapter.authorize
+  implements=matrix/workforce/internal/effect.Adapter
+  ^references=matrix/workforce/internal/provider/developer.Adapter.Dispatch,matrix/workforce/internal/provider/developer.Adapter.Name,matrix/workforce/internal/provider/developer.Adapter.Probe,matrix/workforce/internal/provider/developer.Adapter.authorize,matrix/workforce/internal/provider/developer.New
+  ^defines=matrix/workforce/internal/provider/developer/adapter.go
+
+NODE id=matrix/workforce/internal/provider/developer.Adapter#cg kind=field
+  digest=b3:0c3c320f104f429da91d7ebaa52e2927f6c9b992f901066a681b9f91a80404fa file=workforce/internal/provider/developer/adapter.go range=22:22 lang=go exported=false byte_range=491:508
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/provider/developer.Adapter
+
+NODE id=matrix/workforce/internal/provider/developer.Adapter#now kind=field
+  digest=b3:ab164b8c526402b25272859be473701fa2e89126053edc800a2cf5b79925b423 file=workforce/internal/provider/developer/adapter.go range=23:23 lang=go exported=false byte_range=510:537
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/workforce/internal/provider/developer.Adapter
+
+NODE id=matrix/workforce/internal/provider/developer.Adapter#repository kind=field
+  digest=b3:676f8f00e3012355be3e7e7715ced74a2a966f36d235259ac65a1756feddc90f file=workforce/internal/provider/developer/adapter.go range=21:21 lang=go exported=false byte_range=472:489
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/provider/developer.Adapter
+
+NODE id=matrix/workforce/internal/provider/developer.Adapter.Dispatch kind=method
+  digest=b3:3622b1793440793c93fbf16fb79fd2161818083980b4f0173511c8cb6ac95d60 file=workforce/internal/provider/developer/adapter.go range=52:103 lang=go exported=true byte_range=1427:2966
+  sig=func (adapter *Adapter) Dispatch(\n	ctx context.Context,\n	operation effect.Operation,\n) (effect.DispatchResult, error)
+EDGES
+  calls=matrix/workforce/internal/provider/developer.Adapter.authorize
+  references=matrix/workforce/internal/effect.DispatchResult,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/provider/developer.Adapter,matrix/workforce/internal/provider/developer.Adapter.authorize,matrix/workforce/internal/provider/developer.adapter,matrix/workforce/internal/provider/developer.args,matrix/workforce/internal/provider/developer.command,matrix/workforce/internal/provider/developer.ctx,matrix/workforce/internal/provider/developer.encoded,matrix/workforce/internal/provider/developer.err,matrix/workforce/internal/provider/developer.input,matrix/workforce/internal/provider/developer.now,matrix/workforce/internal/provider/developer.observation,matrix/workforce/internal/provider/developer.operation,matrix/workforce/internal/provider/developer.output
+  ^contains=matrix/workforce/internal/provider/developer.Adapter
+  ^calls=matrix/workforce/internal/provider/developer.Adapter.Probe
+  ^references=matrix/workforce/internal/provider/developer.Adapter.Probe
+  ^defines=matrix/workforce/internal/provider/developer/adapter.go
+
+NODE id=matrix/workforce/internal/provider/developer.Adapter.Name kind=method
+  digest=b3:6da18b0d63d73eb8b00e33a2049522a33f99f699bdcc78e0cd5a19b805c5e28d file=workforce/internal/provider/developer/adapter.go range=50:50 lang=go exported=true byte_range=1373:1425
+  sig=func (*Adapter) Name() string
+EDGES
+  references=matrix/workforce/internal/provider/developer.Adapter
+  ^contains=matrix/workforce/internal/provider/developer.Adapter
+  ^defines=matrix/workforce/internal/provider/developer/adapter.go
+
+NODE id=matrix/workforce/internal/provider/developer.Adapter.Probe kind=method
+  digest=b3:ef758b4eceef9b430bb8b95fb1f8c5c3ac63d77906d15500d3dd4014a24d0ced file=workforce/internal/provider/developer/adapter.go range=105:121 lang=go exported=true byte_range=2968:3425
+  sig=func (adapter *Adapter) Probe(\n	ctx context.Context,\n	operation effect.Operation,\n) (effect.ProbeResult, error)
+EDGES
+  calls=matrix/workforce/internal/provider/developer.Adapter.Dispatch
+  references=matrix/workforce/internal/effect.Operation,matrix/workforce/internal/effect.ProbeResult,matrix/workforce/internal/provider/developer.Adapter,matrix/workforce/internal/provider/developer.Adapter.Dispatch,matrix/workforce/internal/provider/developer.adapter,matrix/workforce/internal/provider/developer.ctx,matrix/workforce/internal/provider/developer.err,matrix/workforce/internal/provider/developer.operation,matrix/workforce/internal/provider/developer.result,matrix/workforce/internal/skills.ProbeCompletedOutOfBand,matrix/workforce/internal/skills.ProbeUnknown
+  ^contains=matrix/workforce/internal/provider/developer.Adapter
+  ^defines=matrix/workforce/internal/provider/developer/adapter.go
+
+NODE id=matrix/workforce/internal/provider/developer.Adapter.authorize kind=method
+  digest=b3:4c060661575bcd39bce5c5e81a32cd5c024682e8f00487e39f144a0f51ed827f file=workforce/internal/provider/developer/adapter.go range=123:143 lang=go exported=false byte_range=3427:4111
+  sig=func (adapter *Adapter) authorize(\n	operation effect.Operation,\n) (inputEnvelope, error)
+EDGES
+  references=matrix/workforce/internal/effect.Operation,matrix/workforce/internal/lease.StateActive,matrix/workforce/internal/provider/developer.Adapter,matrix/workforce/internal/provider/developer.err,matrix/workforce/internal/provider/developer.input,matrix/workforce/internal/provider/developer.inputEnvelope,matrix/workforce/internal/provider/developer.operation
+  ^contains=matrix/workforce/internal/provider/developer.Adapter
+  ^calls=matrix/workforce/internal/provider/developer.Adapter.Dispatch
+  ^references=matrix/workforce/internal/provider/developer.Adapter.Dispatch
+  ^defines=matrix/workforce/internal/provider/developer/adapter.go
+
+NODE id=matrix/workforce/internal/provider/developer.New kind=func
+  digest=b3:e339d1784fdab5320739142e3c3843c85425837b896c72fff40bfa9bb9fc6791 file=workforce/internal/provider/developer/adapter.go range=40:48 lang=go exported=true byte_range=961:1371
+  sig=func New(repository, codegraph string, now func() time.Time) (*Adapter, error)
+EDGES
+  references=matrix/workforce/internal/provider/developer.Adapter,matrix/workforce/internal/provider/developer.codegraph,matrix/workforce/internal/provider/developer.err,matrix/workforce/internal/provider/developer.now,matrix/workforce/internal/provider/developer.repository,matrix/workforce/internal/provider/developer.root
+  ^defines=matrix/workforce/internal/provider/developer/adapter.go
+
+NODE id=matrix/workforce/internal/provider/developer.inputEnvelope kind=type
+  digest=b3:e0fc374340050cd642e345e6edb367652d3ffeff2e42e352bd6ae78c3d980b2f file=workforce/internal/provider/developer/adapter.go range=26:30 lang=go exported=false byte_range=541:705
+  sig=type inputEnvelope struct {\n	SchemaVersion	string		`json:"schema_version"`\n	Grant		lease.Grant	`json:"grant"`\n	Query		string		`json:"query"`\n}
+EDGES
+  contains=matrix/workforce/internal/provider/developer.inputEnvelope#Grant,matrix/workforce/internal/provider/developer.inputEnvelope#Query,matrix/workforce/internal/provider/developer.inputEnvelope#SchemaVersion
+  references=matrix/workforce/internal/lease.Grant
+  ^references=matrix/workforce/internal/provider/developer.Adapter.authorize
+  ^defines=matrix/workforce/internal/provider/developer/adapter.go
+
+NODE id=matrix/workforce/internal/provider/developer.inputEnvelope#Grant kind=field
+  digest=b3:ca81c742bcd43e6b7dd26f10b393c0326f96b34b091ebf309fc2677461b5c478 file=workforce/internal/provider/developer/adapter.go range=28:28 lang=go exported=true byte_range=621:661
+  sig=lease.Grant
+EDGES
+  ^contains=matrix/workforce/internal/provider/developer.inputEnvelope
+
+NODE id=matrix/workforce/internal/provider/developer.inputEnvelope#Query kind=field
+  digest=b3:68d4a0ec37e0a4ebe56f1510952602019f917d385cb6e49837d58293a4f7cfae file=workforce/internal/provider/developer/adapter.go range=29:29 lang=go exported=true byte_range=663:703
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/provider/developer.inputEnvelope
+
+NODE id=matrix/workforce/internal/provider/developer.inputEnvelope#SchemaVersion kind=field
+  digest=b3:d60c3563528e0139b44a37f7868705d5dbc8d26b72cd0df5b9b8995cc93f4234 file=workforce/internal/provider/developer/adapter.go range=27:27 lang=go exported=true byte_range=570:619
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/provider/developer.inputEnvelope
+
+NODE id=matrix/workforce/internal/provider/developer.observation kind=type
+  digest=b3:330e0a7cc449e63429c1c484a23b545a58d3c956106503087ce85ffcda1599c7 file=workforce/internal/provider/developer/adapter.go range=32:38 lang=go exported=false byte_range=707:959
+  sig=type observation struct {\n	SchemaVersion	string		`json:"schema_version"`\n	Operation	string		`json:"operation"`\n	Repository	string		`json:"repository"`\n	Output		string		`json:"output"`\n	ObservedAt	time.Time	`json:"observed_at"`\n}
+EDGES
+  contains=matrix/workforce/internal/provider/developer.observation#ObservedAt,matrix/workforce/internal/provider/developer.observation#Operation,matrix/workforce/internal/provider/developer.observation#Output,matrix/workforce/internal/provider/developer.observation#Repository,matrix/workforce/internal/provider/developer.observation#SchemaVersion
+  ^references=matrix/workforce/internal/provider/developer.Adapter.Dispatch
+  ^defines=matrix/workforce/internal/provider/developer/adapter.go
+
+NODE id=matrix/workforce/internal/provider/developer.observation#ObservedAt kind=field
+  digest=b3:761d4597907bd03012637356cc61f64b4f76f2fa739380886d125ce998cb35dc file=workforce/internal/provider/developer/adapter.go range=37:37 lang=go exported=true byte_range=913:957
+  sig=time.Time
+EDGES
+  ^contains=matrix/workforce/internal/provider/developer.observation
+
+NODE id=matrix/workforce/internal/provider/developer.observation#Operation kind=field
+  digest=b3:cc3e6e945e28b650d344dddb51cbb10986d17acb40afe9eb53744f6fb8a29888 file=workforce/internal/provider/developer/adapter.go range=34:34 lang=go exported=true byte_range=783:825
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/provider/developer.observation
+
+NODE id=matrix/workforce/internal/provider/developer.observation#Output kind=field
+  digest=b3:0ee35e380f6cc787bc923ec93597463be43657096f5e1bbd86c2f08d0bb7c7fe file=workforce/internal/provider/developer/adapter.go range=36:36 lang=go exported=true byte_range=872:911
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/provider/developer.observation
+
+NODE id=matrix/workforce/internal/provider/developer.observation#Repository kind=field
+  digest=b3:8b154454da17b8fe7bd6f1c184431a3abb761641df5cf7d7d991a0cd5ff85b1b file=workforce/internal/provider/developer/adapter.go range=35:35 lang=go exported=true byte_range=827:870
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/provider/developer.observation
+
+NODE id=matrix/workforce/internal/provider/developer.observation#SchemaVersion kind=field
+  digest=b3:50b723988f423a9cec0c8fe401f3feefaa39d5d23aad626c4aaf978d0e2fdfc0 file=workforce/internal/provider/developer/adapter.go range=33:33 lang=go exported=true byte_range=734:781
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/provider/developer.observation
+
+NODE id=matrix/workforce/internal/provider/developer/adapter.go kind=file
+  digest=b3:81d247d803bc2f0c8439e6c31e1892f7cdccc54cf8028a66139d84c050784d24 file=workforce/internal/provider/developer/adapter.go range=1:143 lang=go exported=true
+EDGES
+  defines=matrix/workforce/internal/provider/developer.Adapter,matrix/workforce/internal/provider/developer.Adapter.Dispatch,matrix/workforce/internal/provider/developer.Adapter.Name,matrix/workforce/internal/provider/developer.Adapter.Probe,matrix/workforce/internal/provider/developer.Adapter.authorize,matrix/workforce/internal/provider/developer.New,matrix/workforce/internal/provider/developer.inputEnvelope,matrix/workforce/internal/provider/developer.observation
+  ^contains=matrix/workforce/internal/provider/developer

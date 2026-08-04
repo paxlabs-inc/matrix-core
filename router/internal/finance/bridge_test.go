@@ -282,7 +282,7 @@ func TestBridgeSeriesIsSummarisedForAModel(t *testing.T) {
 		t.Fatalf("no points: %+v", series)
 	}
 	if len(points) > 45 {
-		t.Fatalf("points = %d — the series was dumped, not summarised", len(points))
+		t.Fatalf("points = %d — the series was dumped, not summarized", len(points))
 	}
 	if series["bars"] == nil {
 		t.Fatal("the bar count was lost")

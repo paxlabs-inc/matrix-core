@@ -1,9 +1,9 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:8087349d214ea6556bd1e327d9b1cfe401192e02e5c71997ca02544fd4c21fca
+# GENERATED gen=codegraph do-not-edit merkle=b3:b9753067b0143b05d9e59aa7d4582f8ecc4f32217fc185000bee971850caf585
 
 NODE id=matrix/neo/internal/preview kind=package
-  digest=b3:e9cbe88baafff803279614ce128abb0c0ba52f23b91c8113a09bc82a3e2f1c00 file=neo/internal/preview range=0:0 lang=go exported=true
+  digest=b3:00e9ec088426385fe9b14037bb3bff382bbd937cda422683d5d7e2c5ef6efd1b file=neo/internal/preview range=0:0 lang=go exported=true
 EDGES
-  contains=matrix/neo/internal/preview/detect.go,matrix/neo/internal/preview/preview.go
+  contains=matrix/neo/internal/preview/detect.go,matrix/neo/internal/preview/preview.go,matrix/neo/internal/preview/router.go
   ^contains=mod:matrix/neo
 
 NODE id=matrix/neo/internal/preview.Config kind=type
@@ -324,6 +324,12 @@ NODE id=matrix/neo/internal/preview.New kind=func
 EDGES
   ^defines=matrix/neo/internal/preview/preview.go
 
+NODE id=matrix/neo/internal/preview.NewRouterRegistrar kind=func
+  digest=b3:fb5f1dcff12f4afadac2393c567c5036a5c82f4f8be8019857874a3e95dad2b9 file=neo/internal/preview/router.go range=28:35 lang=go exported=true byte_range=517:962
+  sig=func NewRouterRegistrar(cfg Config, privateHost string) *RouterRegistrar
+EDGES
+  ^defines=matrix/neo/internal/preview/router.go
+
 NODE id=matrix/neo/internal/preview.Request kind=type
   digest=b3:498c5168ddcf43e068b580446779975cb7b7bb36e51c599aa3e777fa9db67b90 file=neo/internal/preview/preview.go range=167:171 lang=go exported=true byte_range=5370:5564
   sig=type Request struct {\n	ConvID	string	// the conversation whose topic carries the preview.* events\n	Root	string	// the project's workspace root to deploy\n}
@@ -343,6 +349,78 @@ NODE id=matrix/neo/internal/preview.Request#Root kind=field
   sig=string
 EDGES
   ^contains=matrix/neo/internal/preview.Request
+
+NODE id=matrix/neo/internal/preview.RouterRegistrar kind=type
+  digest=b3:d626c1040250cc976b248dd29e924960bc6ed8d3dfcfa51dbc574b744399f090 file=neo/internal/preview/router.go range=16:26 lang=go exported=true byte_range=132:515
+  sig=type RouterRegistrar struct {\n	userID		string\n	privateHost	string\n	internalURL	string\n	token		string\n	publicBase	string\n	client		*http.Client\n}
+  doc=RouterRegistrar exposes an already-running dev server through Matrix's\nexisting authenticated /preview/{user}/ reverse proxy. It owns no sandbox\nand starts no process; the private coding worker owns the local server.
+EDGES
+  contains=matrix/neo/internal/preview.RouterRegistrar#client,matrix/neo/internal/preview.RouterRegistrar#internalURL,matrix/neo/internal/preview.RouterRegistrar#privateHost,matrix/neo/internal/preview.RouterRegistrar#publicBase,matrix/neo/internal/preview.RouterRegistrar#token,matrix/neo/internal/preview.RouterRegistrar#userID,matrix/neo/internal/preview.RouterRegistrar.Deregister,matrix/neo/internal/preview.RouterRegistrar.Enabled,matrix/neo/internal/preview.RouterRegistrar.Register,matrix/neo/internal/preview.RouterRegistrar.call
+  ^defines=matrix/neo/internal/preview/router.go
+
+NODE id=matrix/neo/internal/preview.RouterRegistrar#client kind=field
+  digest=b3:4b9890c46eaccbad26e23cf4e81852087a5b4644824b6f8b10ebb0a26cb8b852 file=neo/internal/preview/router.go range=25:25 lang=go exported=false byte_range=489:513
+  sig=*http.Client
+EDGES
+  ^contains=matrix/neo/internal/preview.RouterRegistrar
+
+NODE id=matrix/neo/internal/preview.RouterRegistrar#internalURL kind=field
+  digest=b3:8550452cd2234d3f10ae79a3b985e77e32db256217920955fc985b8790ed3593 file=neo/internal/preview/router.go range=22:22 lang=go exported=false byte_range=429:447
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.RouterRegistrar
+
+NODE id=matrix/neo/internal/preview.RouterRegistrar#privateHost kind=field
+  digest=b3:47a9e65696a41097c949ec811633b0c18ba55d42fecb00a2f49de3c63edf94fe file=neo/internal/preview/router.go range=21:21 lang=go exported=false byte_range=409:427
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.RouterRegistrar
+
+NODE id=matrix/neo/internal/preview.RouterRegistrar#publicBase kind=field
+  digest=b3:ca8344cde3671ee0d5527a20ff31bcf3c96fd7707e0311bb41ff3e54df72ed91 file=neo/internal/preview/router.go range=24:24 lang=go exported=false byte_range=469:487
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.RouterRegistrar
+
+NODE id=matrix/neo/internal/preview.RouterRegistrar#token kind=field
+  digest=b3:709e40c7f625e2491b497a3ce5cce735e1715f685782aac30e880d8a84b58a05 file=neo/internal/preview/router.go range=23:23 lang=go exported=false byte_range=449:467
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.RouterRegistrar
+
+NODE id=matrix/neo/internal/preview.RouterRegistrar#userID kind=field
+  digest=b3:1bb597f18ea2fa84865fd970d85cbb86e6ee8c109658adfccb38ad59f9f00829 file=neo/internal/preview/router.go range=20:20 lang=go exported=false byte_range=389:407
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.RouterRegistrar
+
+NODE id=matrix/neo/internal/preview.RouterRegistrar.Deregister kind=method
+  digest=b3:3ded644926a6f424cd4f2b2a30e7f1b2488104b426a51d04701d751a6bb3c626 file=neo/internal/preview/router.go range=61:67 lang=go exported=true byte_range=1800:2012
+  sig=func (r *RouterRegistrar) Deregister(ctx context.Context) error
+EDGES
+  ^contains=matrix/neo/internal/preview.RouterRegistrar
+  ^defines=matrix/neo/internal/preview/router.go
+
+NODE id=matrix/neo/internal/preview.RouterRegistrar.Enabled kind=method
+  digest=b3:408aa5d3a1652865c21774517428f0d796f1d8ebd61d877969e101aba42beb15 file=neo/internal/preview/router.go range=37:39 lang=go exported=true byte_range=964:1106
+  sig=func (r *RouterRegistrar) Enabled() bool
+EDGES
+  ^contains=matrix/neo/internal/preview.RouterRegistrar
+  ^defines=matrix/neo/internal/preview/router.go
+
+NODE id=matrix/neo/internal/preview.RouterRegistrar.Register kind=method
+  digest=b3:e7bbae237ca6cab8182b753201500987cae3e57a5dc74097bf3aaf36c35f58ea file=neo/internal/preview/router.go range=41:59 lang=go exported=true byte_range=1108:1798
+  sig=func (r *RouterRegistrar) Register(ctx context.Context, port int) (string, error)
+EDGES
+  ^contains=matrix/neo/internal/preview.RouterRegistrar
+  ^defines=matrix/neo/internal/preview/router.go
+
+NODE id=matrix/neo/internal/preview.RouterRegistrar.call kind=method
+  digest=b3:973ee7c162dd6e63e375fd4bf4471f1bd0a8eee96464fcb52fcf7328c6d68c04 file=neo/internal/preview/router.go range=69:85 lang=go exported=false byte_range=2014:2650
+  sig=func (r *RouterRegistrar) call(ctx context.Context, method string, body []byte) error
+EDGES
+  ^contains=matrix/neo/internal/preview.RouterRegistrar
+  ^defines=matrix/neo/internal/preview/router.go
 
 NODE id=matrix/neo/internal/preview.StartSpec kind=type
   digest=b3:1d45a4b0b112e28659bc37168939c9994952326eb37dc776d6f4334715a9b8ad file=neo/internal/preview/detect.go range=13:26 lang=go exported=true byte_range=249:945
@@ -602,6 +680,12 @@ NODE id=matrix/neo/internal/preview.userReason kind=func
 EDGES
   ^defines=matrix/neo/internal/preview/preview.go
 
+NODE id=matrix/neo/internal/preview.validPreviewHost kind=func
+  digest=b3:945e05ac92af875a8190524d9417e464870999c7ef94dd1a03bc4c27ddb73c0f file=neo/internal/preview/router.go range=87:103 lang=go exported=false byte_range=2652:3197
+  sig=func validPreviewHost(value string) bool
+EDGES
+  ^defines=matrix/neo/internal/preview/router.go
+
 NODE id=matrix/neo/internal/preview/detect.go kind=file
   digest=b3:173c0b88e96a45c72b9ae0fc1c0990074ec2bf05779aa77746c4ae24bee2e5a9 file=neo/internal/preview/detect.go range=1:168 lang=go exported=true
 EDGES
@@ -612,4 +696,10 @@ NODE id=matrix/neo/internal/preview/preview.go kind=file
   digest=b3:93809056f632dcbfb44c79a1ed7eeca81e56fc00572a7c8f7e4564289f7a5e65 file=neo/internal/preview/preview.go range=1:531 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/preview.Config,matrix/neo/internal/preview.Emit,matrix/neo/internal/preview.EvtExpired,matrix/neo/internal/preview.EvtFailed,matrix/neo/internal/preview.EvtPending,matrix/neo/internal/preview.EvtReady,matrix/neo/internal/preview.Info,matrix/neo/internal/preview.Manager,matrix/neo/internal/preview.Manager.Close,matrix/neo/internal/preview.Manager.Enabled,matrix/neo/internal/preview.Manager.Provision,matrix/neo/internal/preview.Manager.StartReaper,matrix/neo/internal/preview.Manager.Teardown,matrix/neo/internal/preview.Manager.Touch,matrix/neo/internal/preview.Manager.deregister,matrix/neo/internal/preview.Manager.evictForCap,matrix/neo/internal/preview.Manager.healthProbe,matrix/neo/internal/preview.Manager.logf,matrix/neo/internal/preview.Manager.previewURL,matrix/neo/internal/preview.Manager.provision,matrix/neo/internal/preview.Manager.reapOnce,matrix/neo/internal/preview.Manager.register,matrix/neo/internal/preview.Manager.routerCall,matrix/neo/internal/preview.Manager.teardownConv,matrix/neo/internal/preview.New,matrix/neo/internal/preview.Request,matrix/neo/internal/preview.State,matrix/neo/internal/preview.StateExpired,matrix/neo/internal/preview.StateFailed,matrix/neo/internal/preview.StatePending,matrix/neo/internal/preview.StateReady,matrix/neo/internal/preview.collectFiles,matrix/neo/internal/preview.defaultImage,matrix/neo/internal/preview.defaultTTL,matrix/neo/internal/preview.healthProbeGap,matrix/neo/internal/preview.healthProbeTries,matrix/neo/internal/preview.isBinary,matrix/neo/internal/preview.live,matrix/neo/internal/preview.maxDeployBytes,matrix/neo/internal/preview.maxDeployFiles,matrix/neo/internal/preview.maxFileBytes,matrix/neo/internal/preview.shell,matrix/neo/internal/preview.skipDir,matrix/neo/internal/preview.userReason
+  ^contains=matrix/neo/internal/preview
+
+NODE id=matrix/neo/internal/preview/router.go kind=file
+  digest=b3:20431f8d658940c698d9d804978cbb636ad4057688933b8a36aceb50b079e3db file=neo/internal/preview/router.go range=1:103 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/preview.NewRouterRegistrar,matrix/neo/internal/preview.RouterRegistrar,matrix/neo/internal/preview.RouterRegistrar.Deregister,matrix/neo/internal/preview.RouterRegistrar.Enabled,matrix/neo/internal/preview.RouterRegistrar.Register,matrix/neo/internal/preview.RouterRegistrar.call,matrix/neo/internal/preview.validPreviewHost
   ^contains=matrix/neo/internal/preview

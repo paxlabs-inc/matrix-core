@@ -271,8 +271,8 @@ func (c *FMP) BatchQuote(ctx context.Context, symbols []string) ([]Quote, error)
 	}
 	src := c.source()
 	out := make([]Quote, 0, len(rows))
-	for _, r := range rows {
-		out = append(out, r.normalize(src))
+	for index := range rows {
+		out = append(out, rows[index].normalize(src))
 	}
 	return out, nil
 }
@@ -572,7 +572,8 @@ func (c *FMP) Search(ctx context.Context, query string, limit int) (*SearchResul
 		return nil, err
 	}
 	out := &SearchResults{Query: query, Source: c.source()}
-	for _, r := range rows {
+	for index := range rows {
+		r := &rows[index]
 		out.Matches = append(out.Matches, SearchMatch{
 			Symbol: r.Symbol, Name: r.Name, Exchange: r.Exchange,
 			ExchangeName: r.ExchangeFullName, Currency: r.Currency,
@@ -614,7 +615,8 @@ func (c *FMP) Movers(ctx context.Context, kind MoverKind) (*MoverList, error) {
 		return nil, err
 	}
 	out := &MoverList{Kind: kind, Source: c.source()}
-	for _, r := range rows {
+	for index := range rows {
+		r := &rows[index]
 		out.Movers = append(out.Movers, Mover{
 			Symbol: r.Symbol, Name: r.Name, Exchange: r.Exchange,
 			Price: r.Price, Change: r.Change, ChangePercent: r.ChangesPercentage,
@@ -674,7 +676,8 @@ func (c *FMP) news(ctx context.Context, endpoint, path string, params map[string
 		return nil, err
 	}
 	out := &NewsFeed{Source: c.source()}
-	for _, r := range rows {
+	for index := range rows {
+		r := &rows[index]
 		item := NewsItem{
 			Title: r.Title, URL: r.URL, Publisher: r.Publisher,
 			Site: r.Site, Summary: r.Text, ImageURL: r.Image,

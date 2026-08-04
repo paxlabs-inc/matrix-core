@@ -1,11 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/cortex/memory kind=package
-  digest=b3:5e92d760f8f71cacf1fd86d4dbffe96e86ee272b897ba524d92a719ebaa66e57 file=cortex/memory range=0:0 lang=go exported=true
+  digest=b3:2acadb4d9cb7b27d12cc1b14a9cdc40038a1a50530bcd431fdbe3525621f01b1 file=cortex/memory range=0:0 lang=go exported=true
 EDGES
-  contains=matrix/cortex/memory/codec.go,matrix/cortex/memory/data.go,matrix/cortex/memory/edge.go,matrix/cortex/memory/types.go,matrix/cortex/memory/validate.go,matrix/cortex/memory/verb.go
+  contains=matrix/cortex/memory/codec.go,matrix/cortex/memory/data.go,matrix/cortex/memory/edge.go,matrix/cortex/memory/truth.go,matrix/cortex/memory/types.go,matrix/cortex/memory/validate.go,matrix/cortex/memory/verb.go
   ^contains=mod:matrix/cortex
-  ^imports=matrix/bridge,matrix/cortex,matrix/cortex/cmd/cortex-shell,matrix/cortex/cmd/two-model-smoke,matrix/cortex/forms,matrix/cortex/query,matrix/cortex/replay,matrix/cortex/salience,matrix/cortex/scope,matrix/executor/cmd/gideon-ingest,matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/executor/runtime,matrix/neo/internal/agent,matrix/neo/internal/memory
+  ^imports=matrix/bridge,matrix/cortex,matrix/cortex/cmd/cortex-shell,matrix/cortex/cmd/two-model-smoke,matrix/cortex/forms,matrix/cortex/query,matrix/cortex/replay,matrix/cortex/salience,matrix/cortex/scope,matrix/cortex/self,matrix/cortexclient/export,matrix/executor/cmd/gideon-ingest,matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/executor/runtime,matrix/neo/internal/agent,matrix/neo/internal/memory,matrix/neo/internal/runtime/loop
 
 NODE id=matrix/cortex/memory.AssetAmount kind=type
   digest=b3:9daa6f4d035a357ed994d52fc93d3cc61aa9fe067245c59ad3cb8a9ccc678470 file=cortex/memory/data.go range=96:100 lang=go exported=true byte_range=2331:2542
@@ -36,7 +36,7 @@ EDGES
   contains=matrix/cortex/memory.BeliefData#EvidenceAgainst,matrix/cortex/memory.BeliefData#EvidenceFor,matrix/cortex/memory.BeliefData#SchemaVersion,matrix/cortex/memory.BeliefData#Stance,matrix/cortex/memory.BeliefData#Statement,matrix/cortex/memory.BeliefData#Subject,matrix/cortex/memory.BeliefData.memoryType
   implements=matrix/cortex/memory.TypedData
   references=matrix/cortex/memory.Stance
-  ^references=matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderBelief,matrix/cortex/forms.renderForType,matrix/cortex/memory.BeliefData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.SelfModel,matrix/neo/internal/memory.Pager.WriteFailurePattern
+  ^references=matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderBelief,matrix/cortex/forms.renderForType,matrix/cortex/memory.BeliefData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/cortex/self.Resolve,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.WriteFailurePattern,matrix/neo/internal/memory.Pager.reinforceFailurePattern,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.primaryMutationText
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.BeliefData#EvidenceAgainst kind=field
@@ -99,7 +99,7 @@ NODE id=matrix/cortex/memory.CapabilityData kind=type
 EDGES
   contains=matrix/cortex/memory.CapabilityData#Capability,matrix/cortex/memory.CapabilityData#LastObserved,matrix/cortex/memory.CapabilityData#Parameters,matrix/cortex/memory.CapabilityData#SchemaVersion,matrix/cortex/memory.CapabilityData#Subject,matrix/cortex/memory.CapabilityData#Verified,matrix/cortex/memory.CapabilityData.memoryType
   implements=matrix/cortex/memory.TypedData
-  ^references=matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderCapability,matrix/cortex/forms.renderForType,matrix/cortex/memory.CapabilityData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.SelfModel,matrix/neo/internal/memory.Pager.WriteStructuralSelf,matrix/neo/internal/memory.Pager.structuralSelfMemory
+  ^references=matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderCapability,matrix/cortex/forms.renderForType,matrix/cortex/memory.CapabilityData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/cortex/self.Resolve,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.WriteStructuralSelf,matrix/neo/internal/memory.Pager.WriteSurfaceFacts,matrix/neo/internal/memory.Pager.currentStructural,matrix/neo/internal/memory.Pager.structuralSelfMemory
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.CapabilityData#Capability kind=field
@@ -155,7 +155,7 @@ EDGES
   contains=matrix/cortex/memory.ConstraintData#Polarity,matrix/cortex/memory.ConstraintData#SchemaVersion,matrix/cortex/memory.ConstraintData#Source,matrix/cortex/memory.ConstraintData#Statement,matrix/cortex/memory.ConstraintData#StrengthVal,matrix/cortex/memory.ConstraintData#Trigger,matrix/cortex/memory.ConstraintData.memoryType
   implements=matrix/cortex/memory.TypedData
   references=matrix/cortex/memory.ConstraintSource,matrix/cortex/memory.Polarity,matrix/cortex/memory.Strength
-  ^references=matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderConstraint,matrix/cortex/forms.renderForType,matrix/cortex/memory.ConstraintData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.RememberConstraintRelated,matrix/neo/internal/memory.Pager.hardConstraints,matrix/neo/internal/memory.triggerLine
+  ^references=matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderConstraint,matrix/cortex/forms.renderForType,matrix/cortex/memory.ConstraintData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.RememberConstraintRelated,matrix/neo/internal/memory.Pager.UpsertConstraint,matrix/neo/internal/memory.Pager.hardConstraints,matrix/neo/internal/memory.asConstraint,matrix/neo/internal/memory.canonicalRetrievalIdentity,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.primaryMutationText,matrix/neo/internal/memory.triggerLine
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.ConstraintData#Polarity kind=field
@@ -223,7 +223,7 @@ NODE id=matrix/cortex/memory.ConstraintSourceLearned kind=const
   sig=memory.ConstraintSource
 EDGES
   references=matrix/cortex/memory.ConstraintSource
-  ^references=matrix/neo/internal/memory.Pager.RememberConstraintRelated
+  ^references=matrix/neo/internal/memory.Pager.RememberConstraintRelated,matrix/neo/internal/memory.Pager.UpsertConstraint
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.ConstraintSourceUserDeclared kind=const
@@ -231,7 +231,7 @@ NODE id=matrix/cortex/memory.ConstraintSourceUserDeclared kind=const
   sig=memory.ConstraintSource
 EDGES
   references=matrix/cortex/memory.ConstraintSource
-  ^references=matrix/executor/cmd/mcl-e2e.SeedCortex
+  ^references=matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/neo/internal/memory.mutationData
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.CountTokens kind=func
@@ -244,14 +244,25 @@ EDGES
   ^references=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.descentState.leaf,matrix/cortex/forms.TruncateToTokens,matrix/cortex/memory.validateForms,matrix/cortex/query.renderResults
   ^defines=matrix/cortex/memory/validate.go
 
+NODE id=matrix/cortex/memory.CurrentTruthAt kind=func
+  digest=b3:3af28179dd301c40a1b2cff08e53adda58f5640ea4ab960d209b69c8a2d31e23 file=cortex/memory/truth.go range=21:32 lang=go exported=true byte_range=616:1065
+  sig=func CurrentTruthAt(h *Head, v *Version, asOf time.Time) (bool, TruthStatus)
+  doc=CurrentTruthAt applies the canonical current-truth policy shared by every\nretrieval lane. The valid interval is half-open [ValidFrom, ValidUntil),\nwith ValidFrom defaulting to the version transaction time.
+EDGES
+  calls=matrix/cortex/memory.VersionCurrentAt
+  references=matrix/cortex/memory.Head,matrix/cortex/memory.TruthMissing,matrix/cortex/memory.TruthStatus,matrix/cortex/memory.TruthTombstoned,matrix/cortex/memory.Version,matrix/cortex/memory.VersionCurrentAt,matrix/cortex/memory.asOf,matrix/cortex/memory.h,matrix/cortex/memory.v
+  ^calls=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.descentState.leaf,matrix/cortex/query.Run,matrix/neo/internal/memory.Pager.ExportMemories,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.findMemoryConsent,matrix/neo/internal/memory.Pager.lexicalExcerptMatchesTruth
+  ^references=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.descentState.leaf,matrix/cortex/query.Run,matrix/neo/internal/memory.Pager.ExportMemories,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.findMemoryConsent,matrix/neo/internal/memory.Pager.lexicalExcerptMatchesTruth
+  ^defines=matrix/cortex/memory/truth.go
+
 NODE id=matrix/cortex/memory.DecodeData kind=func
   digest=b3:3c9eaeb63f3b4537f396513bab636e74e82fff4c5f22d318be973550336cf85d file=cortex/memory/codec.go range=51:116 lang=go exported=true byte_range=1394:2943
   sig=func DecodeData(t Type, raw []byte) (TypedData, error)
   doc=DecodeData decodes raw canonical CBOR bytes into the Go struct that\nmatches the given Type. Returns a TypedData. Mirrors the type table in\ndata.go.
 EDGES
   references=matrix/cortex/memory.BeliefData,matrix/cortex/memory.CapabilityData,matrix/cortex/memory.ConstraintData,matrix/cortex/memory.ErrEmptyData,matrix/cortex/memory.ErrUnknownDataKind,matrix/cortex/memory.EventData,matrix/cortex/memory.FactData,matrix/cortex/memory.GoalData,matrix/cortex/memory.IdentityData,matrix/cortex/memory.PatternData,matrix/cortex/memory.PreferenceData,matrix/cortex/memory.Type,matrix/cortex/memory.TypeBelief,matrix/cortex/memory.TypeCapability,matrix/cortex/memory.TypeConstraint,matrix/cortex/memory.TypeEvent,matrix/cortex/memory.TypeFact,matrix/cortex/memory.TypeGoal,matrix/cortex/memory.TypeIdentity,matrix/cortex/memory.TypePattern,matrix/cortex/memory.TypePreference,matrix/cortex/memory.TypedData,matrix/cortex/memory.canonicalDec,matrix/cortex/memory.d,matrix/cortex/memory.err,matrix/cortex/memory.raw,matrix/cortex/memory.t
-  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.renderForBundle,matrix/cortex/cmd/cortex-shell.printMemory,matrix/cortex/memory.ValidateMemory,matrix/cortex/query.Run,matrix/cortex/query.renderMemory,matrix/executor/cmd/mcl-execute.daemonState.getProfile,matrix/neo/internal/memory.Pager.FailOpportunityAttempt,matrix/neo/internal/memory.Pager.InProgressOpportunities,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.OpportunityByURI,matrix/neo/internal/memory.Pager.PendingOpportunities,matrix/neo/internal/memory.Pager.Procedural,matrix/neo/internal/memory.Pager.QueuedOpportunities,matrix/neo/internal/memory.Pager.ReinforcePattern,matrix/neo/internal/memory.Pager.SelfModel,matrix/neo/internal/memory.Pager.SetOpportunityStatus,matrix/neo/internal/memory.Pager.TriggeredGuidance,matrix/neo/internal/memory.Pager.UserProfile,matrix/neo/internal/memory.Pager.hardConstraints,matrix/neo/internal/memory.Pager.identityDID,matrix/neo/internal/memory.Pager.pendingOpportunities,matrix/neo/internal/memory.Pager.structuralSelfMemory
-  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.renderForBundle,matrix/cortex/cmd/cortex-shell.printMemory,matrix/cortex/memory.ValidateMemory,matrix/cortex/query.Run,matrix/cortex/query.renderMemory,matrix/executor/cmd/mcl-execute.daemonState.getProfile,matrix/neo/internal/memory.Pager.FailOpportunityAttempt,matrix/neo/internal/memory.Pager.InProgressOpportunities,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.OpportunityByURI,matrix/neo/internal/memory.Pager.PendingOpportunities,matrix/neo/internal/memory.Pager.Procedural,matrix/neo/internal/memory.Pager.QueuedOpportunities,matrix/neo/internal/memory.Pager.ReinforcePattern,matrix/neo/internal/memory.Pager.SelfModel,matrix/neo/internal/memory.Pager.SetOpportunityStatus,matrix/neo/internal/memory.Pager.TriggeredGuidance,matrix/neo/internal/memory.Pager.UserProfile,matrix/neo/internal/memory.Pager.hardConstraints,matrix/neo/internal/memory.Pager.identityDID,matrix/neo/internal/memory.Pager.pendingOpportunities,matrix/neo/internal/memory.Pager.structuralSelfMemory
+  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.prepareValidityClose,matrix/cortex.renderForBundle,matrix/cortex/cmd/cortex-shell.printMemory,matrix/cortex/memory.ValidateMemory,matrix/cortex/query.Run,matrix/cortex/query.renderMemory,matrix/cortex/self.Resolve,matrix/executor/cmd/mcl-execute.daemonState.getProfile,matrix/executor/cmd/mcl-execute.decodePersonalization,matrix/neo/internal/memory.Pager.DeathJournal,matrix/neo/internal/memory.Pager.ExportMemories,matrix/neo/internal/memory.Pager.FailOpportunityAttempt,matrix/neo/internal/memory.Pager.InProgressOpportunities,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.MemoryConsent,matrix/neo/internal/memory.Pager.OpportunityByURI,matrix/neo/internal/memory.Pager.PendingOpportunities,matrix/neo/internal/memory.Pager.Procedural,matrix/neo/internal/memory.Pager.QueuedOpportunities,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.ReinforcePattern,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.SetOpportunityStatus,matrix/neo/internal/memory.Pager.TriggeredGuidance,matrix/neo/internal/memory.Pager.UserProfile,matrix/neo/internal/memory.Pager.currentStructural,matrix/neo/internal/memory.Pager.hardConstraints,matrix/neo/internal/memory.Pager.identityDID,matrix/neo/internal/memory.Pager.pendingOpportunities,matrix/neo/internal/memory.Pager.structuralSelfMemory,matrix/neo/internal/memory.Pager.upsertCurrent,matrix/neo/internal/memory.decodePersonalizationGoal,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.primaryMutationText
+  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.prepareValidityClose,matrix/cortex.renderForBundle,matrix/cortex/cmd/cortex-shell.printMemory,matrix/cortex/memory.ValidateMemory,matrix/cortex/query.Run,matrix/cortex/query.renderMemory,matrix/cortex/self.Resolve,matrix/executor/cmd/mcl-execute.daemonState.getProfile,matrix/executor/cmd/mcl-execute.decodePersonalization,matrix/neo/internal/memory.Pager.DeathJournal,matrix/neo/internal/memory.Pager.ExportMemories,matrix/neo/internal/memory.Pager.FailOpportunityAttempt,matrix/neo/internal/memory.Pager.InProgressOpportunities,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.MemoryConsent,matrix/neo/internal/memory.Pager.OpportunityByURI,matrix/neo/internal/memory.Pager.PendingOpportunities,matrix/neo/internal/memory.Pager.Procedural,matrix/neo/internal/memory.Pager.QueuedOpportunities,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.ReinforcePattern,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.SetOpportunityStatus,matrix/neo/internal/memory.Pager.TriggeredGuidance,matrix/neo/internal/memory.Pager.UserProfile,matrix/neo/internal/memory.Pager.currentStructural,matrix/neo/internal/memory.Pager.hardConstraints,matrix/neo/internal/memory.Pager.identityDID,matrix/neo/internal/memory.Pager.pendingOpportunities,matrix/neo/internal/memory.Pager.structuralSelfMemory,matrix/neo/internal/memory.Pager.upsertCurrent,matrix/neo/internal/memory.decodePersonalizationGoal,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.primaryMutationText
   ^defines=matrix/cortex/memory/codec.go
 
 NODE id=matrix/cortex/memory.DecodeEdge kind=func
@@ -261,7 +272,7 @@ NODE id=matrix/cortex/memory.DecodeEdge kind=func
 EDGES
   references=matrix/cortex/memory.EdgeRecord,matrix/cortex/memory.b,matrix/cortex/memory.canonicalDec,matrix/cortex/memory.out
   ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.RemoveEdge
-  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.iterEdges,matrix/cortex/query.planCandidatesGraph
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.iterEdges,matrix/cortex/query.planCandidatesGraph,matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortex/memory/edge.go
 
 NODE id=matrix/cortex/memory.DecodeHead kind=func
@@ -271,7 +282,7 @@ NODE id=matrix/cortex/memory.DecodeHead kind=func
 EDGES
   references=matrix/cortex/memory.Head,matrix/cortex/memory.b,matrix/cortex/memory.canonicalDec,matrix/cortex/memory.h
   ^calls=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.loadHead,matrix/cortex/query.Run,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
-  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.loadHead,matrix/cortex/query.Run,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.backfillMemoryBatch,matrix/cortex.loadHead,matrix/cortex/query.Run,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory,matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortex/memory/codec.go
 
 NODE id=matrix/cortex/memory.DecodeVectorMeta kind=func
@@ -291,7 +302,7 @@ NODE id=matrix/cortex/memory.DecodeVersion kind=func
 EDGES
   references=matrix/cortex/memory.Version,matrix/cortex/memory.b,matrix/cortex/memory.canonicalDec,matrix/cortex/memory.v
   ^calls=matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.loadVersion,matrix/cortex/query.Run,matrix/cortex/replay.readVersion
-  ^references=matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.loadVersion,matrix/cortex/query.Run,matrix/cortex/replay.readVersion
+  ^references=matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.Versions,matrix/cortex.loadVersion,matrix/cortex/query.Run,matrix/cortex/replay.readVersion,matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortex/memory/codec.go
 
 NODE id=matrix/cortex/memory.EdgeAttestedBy kind=const
@@ -331,7 +342,7 @@ NODE id=matrix/cortex/memory.EdgeContradicts kind=const
   sig=memory.EdgeType
 EDGES
   references=matrix/cortex/memory.EdgeType
-  ^references=matrix/cortex/memory.EdgeType.String,matrix/cortex/memory.ParseEdgeType,matrix/neo/internal/memory.Pager.contradictsAnyOf,matrix/neo/internal/memory.Relation.edgeType,matrix/neo/internal/memory.cascadeFollowTypes
+  ^references=matrix/cortex/memory.EdgeType.String,matrix/cortex/memory.ParseEdgeType,matrix/cortexclient/export.run.exportMemories,matrix/neo/internal/memory.Pager.contradictsAnyOf,matrix/neo/internal/memory.Relation.edgeType,matrix/neo/internal/memory.cascadeFollowTypes
   ^defines=matrix/cortex/memory/edge.go
 
 NODE id=matrix/cortex/memory.EdgeCorroborates kind=const
@@ -347,7 +358,7 @@ NODE id=matrix/cortex/memory.EdgeDerivedFrom kind=const
   sig=memory.EdgeType
 EDGES
   references=matrix/cortex/memory.EdgeType
-  ^references=matrix/cortex/memory.EdgeType.String,matrix/cortex/memory.EdgeType.Valid,matrix/cortex/memory.ParseEdgeType,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/neo/internal/memory.cascadeFollowTypes
+  ^references=matrix/cortex.Cortex.ExpandToTranscript,matrix/cortex.Cortex.addSessionProvenance,matrix/cortex.Cortex.hasSessionProvenance,matrix/cortex/memory.EdgeType.String,matrix/cortex/memory.EdgeType.Valid,matrix/cortex/memory.ParseEdgeType,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/neo/internal/memory.cascadeFollowTypes
   ^defines=matrix/cortex/memory/edge.go
 
 NODE id=matrix/cortex/memory.EdgeDispatchedTo kind=const
@@ -389,7 +400,7 @@ NODE id=matrix/cortex/memory.EdgeRecord kind=type
 EDGES
   contains=matrix/cortex/memory.EdgeRecord#CreatedAt,matrix/cortex/memory.EdgeRecord#CreatedBy,matrix/cortex/memory.EdgeRecord#Data,matrix/cortex/memory.EdgeRecord#Dst,matrix/cortex/memory.EdgeRecord#Src,matrix/cortex/memory.EdgeRecord#Tombstoned,matrix/cortex/memory.EdgeRecord#TombstonedAt,matrix/cortex/memory.EdgeRecord#TombstonedBy,matrix/cortex/memory.EdgeRecord#TombstonedReason,matrix/cortex/memory.EdgeRecord#Type,matrix/cortex/memory.EdgeRecord#Weight
   references=matrix/cortex/memory.EdgeType,matrix/cortex/memory.ID
-  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.iterEdges,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges,matrix/cortex/memory.DecodeEdge,matrix/cortex/memory.EncodeEdge,matrix/cortex/query.planCandidatesGraph,matrix/neo/internal/memory.Pager.contradictsAnyOf
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.ExpandToTranscript,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.hasSessionProvenance,matrix/cortex.Cortex.iterEdges,matrix/cortex.Cortex.prepareSupersedesEdge,matrix/cortex.Cortex.stageSupersedesEdge,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges,matrix/cortex/memory.DecodeEdge,matrix/cortex/memory.EncodeEdge,matrix/cortex/query.planCandidatesGraph,matrix/cortexclient/export.run.exportMemories,matrix/neo/internal/memory.Pager.contradictsAnyOf
   ^defines=matrix/cortex/memory/edge.go
 
 NODE id=matrix/cortex/memory.EdgeRecord#CreatedAt kind=field
@@ -472,7 +483,7 @@ NODE id=matrix/cortex/memory.EdgeSupersedes kind=const
   sig=memory.EdgeType
 EDGES
   references=matrix/cortex/memory.EdgeType
-  ^references=matrix/cortex/memory.EdgeType.String,matrix/cortex/memory.ParseEdgeType,matrix/neo/internal/memory.Pager.relate,matrix/neo/internal/memory.Relation.edgeType,matrix/neo/internal/memory.cascadeFollowTypes
+  ^references=matrix/cortex.Cortex.prepareSupersedesEdge,matrix/cortex/memory.EdgeType.String,matrix/cortex/memory.ParseEdgeType,matrix/cortexclient/export.run.exportMemories,matrix/neo/internal/memory.Pager.relate,matrix/neo/internal/memory.Relation.edgeType,matrix/neo/internal/memory.cascadeFollowTypes
   ^defines=matrix/cortex/memory/edge.go
 
 NODE id=matrix/cortex/memory.EdgeTombstones kind=const
@@ -489,7 +500,7 @@ NODE id=matrix/cortex/memory.EdgeType kind=type
   doc=EdgeType is the 1-byte edge discriminator from §5.
 EDGES
   contains=matrix/cortex/memory.EdgeType.String,matrix/cortex/memory.EdgeType.Valid
-  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.IterEdgesOptions,matrix/cortex.edgeTypeSet,matrix/cortex/memory.EdgeAttestedBy,matrix/cortex/memory.EdgeCausedBy,matrix/cortex/memory.EdgeCitedIn,matrix/cortex/memory.EdgeConsentsTo,matrix/cortex/memory.EdgeContradicts,matrix/cortex/memory.EdgeCorroborates,matrix/cortex/memory.EdgeDerivedFrom,matrix/cortex/memory.EdgeDispatchedTo,matrix/cortex/memory.EdgeInstanceOf,matrix/cortex/memory.EdgeObservedBy,matrix/cortex/memory.EdgePartOf,matrix/cortex/memory.EdgeRecord,matrix/cortex/memory.EdgeReferences,matrix/cortex/memory.EdgeSupersedes,matrix/cortex/memory.EdgeTombstones,matrix/cortex/memory.EdgeType.String,matrix/cortex/memory.EdgeType.Valid,matrix/cortex/memory.ParseEdgeType,matrix/cortex/query.EdgeExpr,matrix/cortex/query.edgeTypeSet,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/neo/internal/memory.Pager.contradictsAnyOf,matrix/neo/internal/memory.Relation.edgeType,matrix/neo/internal/memory.cascadeFollowTypes
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.ExpandToTranscript,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.hasSessionProvenance,matrix/cortex.IterEdgesOptions,matrix/cortex.edgeTypeSet,matrix/cortex/memory.EdgeAttestedBy,matrix/cortex/memory.EdgeCausedBy,matrix/cortex/memory.EdgeCitedIn,matrix/cortex/memory.EdgeConsentsTo,matrix/cortex/memory.EdgeContradicts,matrix/cortex/memory.EdgeCorroborates,matrix/cortex/memory.EdgeDerivedFrom,matrix/cortex/memory.EdgeDispatchedTo,matrix/cortex/memory.EdgeInstanceOf,matrix/cortex/memory.EdgeObservedBy,matrix/cortex/memory.EdgePartOf,matrix/cortex/memory.EdgeRecord,matrix/cortex/memory.EdgeReferences,matrix/cortex/memory.EdgeSupersedes,matrix/cortex/memory.EdgeTombstones,matrix/cortex/memory.EdgeType.String,matrix/cortex/memory.EdgeType.Valid,matrix/cortex/memory.ParseEdgeType,matrix/cortex/query.EdgeExpr,matrix/cortex/query.edgeTypeSet,matrix/cortexclient/export.run.exportMemories,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/neo/internal/memory.Pager.contradictsAnyOf,matrix/neo/internal/memory.Relation.edgeType,matrix/neo/internal/memory.cascadeFollowTypes
   ^defines=matrix/cortex/memory/edge.go
 
 NODE id=matrix/cortex/memory.EdgeType.String kind=method
@@ -519,8 +530,8 @@ NODE id=matrix/cortex/memory.EncodeData kind=func
   doc=EncodeData canonical-CBOR-encodes a typed Data struct. Returns the bytes\nto be stored in Version.Data.
 EDGES
   references=matrix/cortex/memory.ErrEmptyData,matrix/cortex/memory.TypedData,matrix/cortex/memory.canonicalEnc,matrix/cortex/memory.d
-  ^calls=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/executor/cmd/gideon-ingest.ingester.upsertNode
-  ^references=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/executor/cmd/gideon-ingest.ingester.upsertNode
+  ^calls=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/neo/internal/memory.Pager.upsertCurrent,matrix/neo/internal/memory.mutationDescription
+  ^references=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/neo/internal/memory.Pager.upsertCurrent,matrix/neo/internal/memory.mutationDescription
   ^defines=matrix/cortex/memory/codec.go
 
 NODE id=matrix/cortex/memory.EncodeEdge kind=func
@@ -529,8 +540,8 @@ NODE id=matrix/cortex/memory.EncodeEdge kind=func
   doc=EncodeEdge returns canonical CBOR of e.
 EDGES
   references=matrix/cortex/memory.EdgeRecord,matrix/cortex/memory.canonicalEnc,matrix/cortex/memory.e
-  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge
-  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge
+  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.prepareSupersedesEdge
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.prepareSupersedesEdge
   ^defines=matrix/cortex/memory/edge.go
 
 NODE id=matrix/cortex/memory.EncodeHead kind=func
@@ -539,8 +550,8 @@ NODE id=matrix/cortex/memory.EncodeHead kind=func
   doc=EncodeHead returns canonical CBOR of h.
 EDGES
   references=matrix/cortex/memory.Head,matrix/cortex/memory.canonicalEnc,matrix/cortex/memory.h
-  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.embedderState.processWriteEntry
-  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.embedderState.processWriteEntry
+  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.embedderState.commitEmbedding
+  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.embedderState.commitEmbedding
   ^defines=matrix/cortex/memory/codec.go
 
 NODE id=matrix/cortex/memory.EncodeVectorMeta kind=func
@@ -549,8 +560,8 @@ NODE id=matrix/cortex/memory.EncodeVectorMeta kind=func
   doc=EncodeVectorMeta returns canonical CBOR of m. Used by the embedding\nworker when persisting to vec/meta/<id> (Phase 5).
 EDGES
   references=matrix/cortex/memory.VectorMeta,matrix/cortex/memory.canonicalEnc,matrix/cortex/memory.m
-  ^calls=matrix/cortex.embedderState.processWriteEntry
-  ^references=matrix/cortex.embedderState.processWriteEntry
+  ^calls=matrix/cortex.embedderState.commitEmbedding
+  ^references=matrix/cortex.embedderState.commitEmbedding
   ^defines=matrix/cortex/memory/codec.go
 
 NODE id=matrix/cortex/memory.EncodeVersion kind=func
@@ -559,8 +570,8 @@ NODE id=matrix/cortex/memory.EncodeVersion kind=func
   doc=EncodeVersion returns canonical CBOR of v.
 EDGES
   references=matrix/cortex/memory.Version,matrix/cortex/memory.canonicalEnc,matrix/cortex/memory.v
-  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write
-  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write
+  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement
+  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement
   ^defines=matrix/cortex/memory/codec.go
 
 NODE id=matrix/cortex/memory.ErrBadURI kind=var
@@ -576,7 +587,7 @@ NODE id=matrix/cortex/memory.ErrEmptyData kind=var
   sig=error
   doc=Errors used across writes / reads / validation.
 EDGES
-  ^references=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex/memory.DecodeData,matrix/cortex/memory.EncodeData,matrix/cortex/memory.ValidateMemory
+  ^references=matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex/memory.DecodeData,matrix/cortex/memory.EncodeData,matrix/cortex/memory.ValidateMemory
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.ErrEmptyObjRef kind=var
@@ -648,7 +659,7 @@ NODE id=matrix/cortex/memory.ErrNotFound kind=var
   sig=error
   doc=Errors used across writes / reads / validation.
 EDGES
-  ^references=matrix/bridge.Adapter.Resolve,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.LoadCheckpoint,matrix/cortex.Cortex.LoadEnrichment,matrix/cortex.Cortex.LoadRollup,matrix/cortex.Cortex.LoadRollupEnriched,matrix/cortex.Cortex.LoadStorySoFar,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveToolResult,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.cascadeHours,matrix/cortex.Cortex.loadOrRepairStorySoFar,matrix/cortex.Cortex.repairCoarseRollup,matrix/cortex.Cortex.repairHourRollup,matrix/cortex.Cortex.tierPinned,matrix/cortex.descentState.descend,matrix/cortex.descentState.leaf,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.isSkippable,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/mcl-execute.daemonState.findProfileMemory,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryResolve
+  ^references=matrix/bridge.Adapter.Resolve,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.LoadCheckpoint,matrix/cortex.Cortex.LoadEnrichment,matrix/cortex.Cortex.LoadRollup,matrix/cortex.Cortex.LoadRollupEnriched,matrix/cortex.Cortex.LoadStorySoFar,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveToolResult,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.cascadeHours,matrix/cortex.Cortex.loadOrRepairStorySoFar,matrix/cortex.Cortex.repairCoarseRollup,matrix/cortex.Cortex.repairHourRollup,matrix/cortex.Cortex.tierPinned,matrix/cortex.descentState.descend,matrix/cortex.descentState.leaf,matrix/cortex.embedderState.commitEmbedding,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.isSkippable,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/mcl-execute.daemonState.findPersonalizationMemory,matrix/executor/cmd/mcl-execute.daemonState.findProfileMemory,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryResolve,matrix/neo/internal/memory.Pager.findMemoryConsent,matrix/neo/internal/memory.Pager.findPersonalizationMemory
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.ErrSelfEdge kind=var
@@ -656,7 +667,7 @@ NODE id=matrix/cortex/memory.ErrSelfEdge kind=var
   sig=error
   doc=Errors exported for AddEdge / RemoveEdge callers.
 EDGES
-  ^references=matrix/cortex.Cortex.AddEdge
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.Cortex.prepareSupersedesEdge
   ^defines=matrix/cortex/memory/edge.go
 
 NODE id=matrix/cortex/memory.ErrTagTooLong kind=var
@@ -672,7 +683,7 @@ NODE id=matrix/cortex/memory.ErrTombstoned kind=var
   sig=error
   doc=Errors used across writes / reads / validation.
 EDGES
-  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead
+  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.prepareSupersedeReplacement
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.ErrTooManyFrames kind=var
@@ -696,7 +707,7 @@ NODE id=matrix/cortex/memory.ErrTypeDataMismatch kind=var
   sig=error
   doc=Errors used across writes / reads / validation.
 EDGES
-  ^references=matrix/cortex.Cortex.Update,matrix/cortex/memory.ValidateMemory
+  ^references=matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex/memory.ValidateMemory
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.ErrUnknownDataKind kind=var
@@ -722,7 +733,7 @@ EDGES
   contains=matrix/cortex/memory.EventData#Artifacts,matrix/cortex/memory.EventData#Cost,matrix/cortex/memory.EventData#Counterparty,matrix/cortex/memory.EventData#Duration,matrix/cortex/memory.EventData#IntentRef,matrix/cortex/memory.EventData#Kind,matrix/cortex/memory.EventData#OutcomeVal,matrix/cortex/memory.EventData#SchemaVersion,matrix/cortex/memory.EventData#Summary,matrix/cortex/memory.EventData.memoryType
   implements=matrix/cortex/memory.TypedData
   references=matrix/cortex/memory.AssetAmount,matrix/cortex/memory.EventKind,matrix/cortex/memory.Outcome
-  ^references=matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderEvent,matrix/cortex/forms.renderForType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.EventData.memoryType,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/runtime.Walker.writeEventMemory,matrix/neo/internal/memory.Pager.RecordLoopDeath,matrix/neo/internal/memory.Pager.RecordOutcome
+  ^references=matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderEvent,matrix/cortex/forms.renderForType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.EventData.memoryType,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/runtime.Walker.writeEventMemory,matrix/neo/internal/memory.Pager.RecordOutcome,matrix/neo/internal/memory.Pager.UpsertOutcome,matrix/neo/internal/memory.asEvent,matrix/neo/internal/memory.canonicalEventRetrievalIdentity,matrix/neo/internal/memory.canonicalRetrievalIdentity
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.EventData#Artifacts kind=field
@@ -830,7 +841,7 @@ NODE id=matrix/cortex/memory.EventObservation kind=const
   sig=memory.EventKind
 EDGES
   references=matrix/cortex/memory.EventKind
-  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/neo/internal/memory.Pager.RecordLoopDeath,matrix/neo/internal/memory.Pager.RecordOutcome
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/neo/internal/memory.Pager.RecordOutcome,matrix/neo/internal/memory.Pager.UpsertOutcome
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.EventPayment kind=const
@@ -847,7 +858,7 @@ NODE id=matrix/cortex/memory.FactData kind=type
 EDGES
   contains=matrix/cortex/memory.FactData#AsOf,matrix/cortex/memory.FactData#Object,matrix/cortex/memory.FactData#Predicate,matrix/cortex/memory.FactData#SchemaVersion,matrix/cortex/memory.FactData#Source,matrix/cortex/memory.FactData#Statement,matrix/cortex/memory.FactData#Subject,matrix/cortex/memory.FactData.memoryType
   implements=matrix/cortex/memory.TypedData
-  ^references=matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderFact,matrix/cortex/forms.renderForType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.FactData.memoryType,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.RememberFactRelated,matrix/neo/internal/memory.Pager.RememberUserFact,matrix/neo/internal/memory.Pager.UserProfile
+  ^references=matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderFact,matrix/cortex/forms.renderForType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.FactData.memoryType,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.RememberFactRelated,matrix/neo/internal/memory.Pager.RememberUserFact,matrix/neo/internal/memory.Pager.UserProfile,matrix/neo/internal/memory.Pager.upsertFact,matrix/neo/internal/memory.asFact,matrix/neo/internal/memory.canonicalFactRetrievalIdentity,matrix/neo/internal/memory.canonicalRetrievalIdentity,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.primaryMutationText
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.FactData#AsOf kind=field
@@ -907,7 +918,7 @@ NODE id=matrix/cortex/memory.Forms kind=type
   doc=Forms are the three render granularities per §9. `Full` is the canonical\nrender of typed Data and is never overridden — only Short and Medium can\nbe supplied via FormsOverride.
 EDGES
   contains=matrix/cortex/memory.Forms#Medium,matrix/cortex/memory.Forms#Short
-  ^references=matrix/cortex.WriteMeta,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/forms.Render,matrix/cortex/memory.Head,matrix/cortex/memory.Version,matrix/cortex/memory.validateForms
+  ^references=matrix/cortex.WriteMeta,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/forms.Render,matrix/cortex/memory.Head,matrix/cortex/memory.Version,matrix/cortex/memory.validateForms,matrix/neo/internal/memory.replacementHead
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.Forms#Medium kind=field
@@ -958,8 +969,8 @@ EDGES
   calls=matrix/cortex/memory.ObjHash
   references=matrix/cortex/memory.FrameRef,matrix/cortex/memory.ObjHash,matrix/cortex/memory.ObjHashSize,matrix/cortex/memory.f
   ^contains=matrix/cortex/memory.FrameRef
-  ^calls=matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/scope.Selector.Matches
-  ^references=matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/scope.Selector.Matches
+  ^calls=matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/scope.Selector.Matches
+  ^references=matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/scope.Selector.Matches
   ^defines=matrix/cortex/memory/verb.go
 
 NODE id=matrix/cortex/memory.FrameRef.Validate kind=method
@@ -986,7 +997,7 @@ NODE id=matrix/cortex/memory.GoalActive kind=const
   sig=memory.GoalStatus
 EDGES
   references=matrix/cortex/memory.GoalStatus
-  ^references=matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/executor/cmd/mcl-e2e.SeedCortex
+  ^references=matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.daemonState.putPersonalization,matrix/neo/internal/memory.Pager.SavePersonalizationProfile,matrix/neo/internal/memory.mutationData
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.GoalBudget kind=type
@@ -1070,7 +1081,7 @@ EDGES
   contains=matrix/cortex/memory.GoalData#Budget,matrix/cortex/memory.GoalData#Constraints,matrix/cortex/memory.GoalData#CreatedBy,matrix/cortex/memory.GoalData#HorizonEnd,matrix/cortex/memory.GoalData#Objects,matrix/cortex/memory.GoalData#Persistent,matrix/cortex/memory.GoalData#SchemaVersion,matrix/cortex/memory.GoalData#Statement,matrix/cortex/memory.GoalData#Status,matrix/cortex/memory.GoalData#Subgoals,matrix/cortex/memory.GoalData#SuccessCriteria,matrix/cortex/memory.GoalData#VerbHint,matrix/cortex/memory.GoalData.memoryType
   implements=matrix/cortex/memory.TypedData
   references=matrix/cortex/memory.GoalBudget,matrix/cortex/memory.GoalConstraint,matrix/cortex/memory.GoalObjRef,matrix/cortex/memory.GoalStatus
-  ^references=matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderForType,matrix/cortex/forms.renderGoal,matrix/cortex/memory.DecodeData,matrix/cortex/memory.GoalData.memoryType,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.asGoalData,matrix/neo/internal/memory.decodeOpportunityGoal,matrix/neo/internal/memory.encodeOpportunityGoal
+  ^references=matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderForType,matrix/cortex/forms.renderGoal,matrix/cortex/memory.DecodeData,matrix/cortex/memory.GoalData.memoryType,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.daemonState.putPersonalization,matrix/executor/cmd/mcl-execute.decodePersonalization,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.SavePersonalizationProfile,matrix/neo/internal/memory.asGoalData,matrix/neo/internal/memory.decodeOpportunityGoal,matrix/neo/internal/memory.encodeOpportunityGoal,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.primaryMutationText
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.GoalData#Budget kind=field
@@ -1221,8 +1232,8 @@ NODE id=matrix/cortex/memory.HashVersion kind=func
   doc=HashVersion computes the version's content hash. The hash inputs are:\n  - HashDomain string\n  - the Type byte\n  - the canonical CBOR of a "hashable view" of the Version: every field\n    EXCEPT Hash itself (otherwise we'd need to hash a struct that contains\n    its own hash — chicken-and-egg).\n\nWe achieve "every field except Hash" by zeroing Hash before encode and\nrestoring it after.
 EDGES
   references=matrix/cortex/memory.HashDomain,matrix/cortex/memory.Version,matrix/cortex/memory.canonicalEnc,matrix/cortex/memory.enc,matrix/cortex/memory.err,matrix/cortex/memory.h,matrix/cortex/memory.out,matrix/cortex/memory.saved,matrix/cortex/memory.v
-  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write
-  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write
+  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.prepareValidityClose
+  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.prepareValidityClose
   ^defines=matrix/cortex/memory/codec.go
 
 NODE id=matrix/cortex/memory.Head kind=type
@@ -1232,7 +1243,7 @@ NODE id=matrix/cortex/memory.Head kind=type
 EDGES
   contains=matrix/cortex/memory.Head#ActorScope,matrix/cortex/memory.Head#CurrentVersion,matrix/cortex/memory.Head#DeclaredImportance,matrix/cortex/memory.Head#EmbeddingRef,matrix/cortex/memory.Head#Forms,matrix/cortex/memory.Head#Frames,matrix/cortex/memory.Head#ID,matrix/cortex/memory.Head#LastUpdatedAt,matrix/cortex/memory.Head#Tags,matrix/cortex/memory.Head#Tombstoned,matrix/cortex/memory.Head#Type,matrix/cortex/memory.Head#Visibility
   references=matrix/cortex/memory.Forms,matrix/cortex/memory.FrameRef,matrix/cortex/memory.ID,matrix/cortex/memory.Tag,matrix/cortex/memory.Tombstone,matrix/cortex/memory.Type,matrix/cortex/memory.VectorRef,matrix/cortex/memory.Visibility
-  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.enforceRead,matrix/cortex.Cortex.enforceWrite,matrix/cortex.loadHead,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/forms.Render,matrix/cortex/forms.RenderFull,matrix/cortex/forms.renderForType,matrix/cortex/forms.renderFullForType,matrix/cortex/memory.DecodeHead,matrix/cortex/memory.EncodeHead,matrix/cortex/memory.Memory,matrix/cortex/memory.ValidateMemory,matrix/cortex/query.Run,matrix/cortex/query.headField,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/scope.Scope.Allows,matrix/cortex/scope.Selector.Matches,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryWrite,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/executor/cmd/mcl-execute.daemonState.putProfile,matrix/executor/runtime.Walker.writeEventMemory,matrix/neo/internal/memory.Pager.head,matrix/neo/internal/memory.Pager.opportunityHead,matrix/neo/internal/memory.Pager.writeWithRelations,matrix/neo/internal/memory.headHasOpportunityTag
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.backfillMemoryBatch,matrix/cortex.Cortex.enforceRead,matrix/cortex.Cortex.enforceWrite,matrix/cortex.SupersedeOptions,matrix/cortex.loadHead,matrix/cortex.prepareValidityClose,matrix/cortex.preparedSupersedeMemory,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/forms.Render,matrix/cortex/forms.RenderFull,matrix/cortex/forms.renderForType,matrix/cortex/forms.renderFullForType,matrix/cortex/memory.CurrentTruthAt,matrix/cortex/memory.DecodeHead,matrix/cortex/memory.EncodeHead,matrix/cortex/memory.Memory,matrix/cortex/memory.ValidateMemory,matrix/cortex/query.Run,matrix/cortex/query.headField,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/scope.Scope.Allows,matrix/cortex/scope.Selector.Matches,matrix/cortexclient/export.run.exportMemories,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryWrite,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/executor/cmd/mcl-execute.daemonState.putPersonalization,matrix/executor/cmd/mcl-execute.daemonState.putProfile,matrix/executor/runtime.Walker.writeEventMemory,matrix/neo/internal/memory.Pager.SavePersonalizationProfile,matrix/neo/internal/memory.Pager.SetMemoryConsent,matrix/neo/internal/memory.Pager.head,matrix/neo/internal/memory.Pager.opportunityHead,matrix/neo/internal/memory.Pager.writeWithRelations,matrix/neo/internal/memory.hasMemoryTag,matrix/neo/internal/memory.headHasDeathJournalTag,matrix/neo/internal/memory.headHasOpportunityTag,matrix/neo/internal/memory.preparedMutation,matrix/neo/internal/memory.replacementHead
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.Head#ActorScope kind=field
@@ -1316,7 +1327,7 @@ NODE id=matrix/cortex/memory.ID kind=type
   doc=ID is a 16-byte binary ULID. Mirrors keys.ULID. Textual rendering uses\nCrockford-base32 via oklog/ulid; binary in keys (§2.1).
 EDGES
   contains=matrix/cortex/memory.ID.IsZero,matrix/cortex/memory.ID.String
-  ^references=matrix/bridge.writeTier,matrix/cortex.AttestResult,matrix/cortex.BuildURI,matrix/cortex.Bundle,matrix/cortex.Cortex,matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.DeleteGoalState,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.ReadGoalState,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.Cortex.enforceWrite,matrix/cortex.Cortex.findIdxActorObjKey,matrix/cortex.Cortex.findIdxTagKey,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.Cortex.tierFrameRelevant,matrix/cortex.Cortex.tierOutcomes,matrix/cortex.Cortex.tierPinned,matrix/cortex.GoalRuntimeState,matrix/cortex.ParseURI,matrix/cortex.WithIDGen,matrix/cortex.buildReachableURIs,matrix/cortex.embedderState.processTombstoneEntry,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.id16,matrix/cortex.idLess,matrix/cortex.intersect,matrix/cortex.loadHead,matrix/cortex.loadOrBuildIndex,matrix/cortex.loadVersion,matrix/cortex.makeCreatedDescOrder,matrix/cortex.makeSalienceDescOrder,matrix/cortex.orderByTier,matrix/cortex.orderFn,matrix/cortex.rebuildEntry,matrix/cortex.scoredMember,matrix/cortex.toFixed16,matrix/cortex.toKeysULID,matrix/cortex.trimContextByBudget,matrix/cortex/cmd/cortex-shell.edgeURIToID,matrix/cortex/cmd/two-model-smoke.hexID,matrix/cortex/memory.EdgeRecord,matrix/cortex/memory.Head,matrix/cortex/memory.ID.IsZero,matrix/cortex/memory.ID.String,matrix/cortex/memory.NewID,matrix/cortex/memory.ParseID,matrix/cortex/memory.Version,matrix/cortex/query.Result,matrix/cortex/query.Run,matrix/cortex/query.compareForOrderFull,matrix/cortex/query.lessULID,matrix/cortex/query.parseFromURI,matrix/cortex/query.planCandidates,matrix/cortex/query.planCandidatesGraph,matrix/cortex/query.scanByNear,matrix/cortex/query.scanByTags,matrix/cortex/query.scanByTypes,matrix/cortex/query.scanIdxTag,matrix/cortex/query.sortByULID,matrix/cortex/replay.readVersion,matrix/cortex/replay.rebuildEdgesSMT,matrix/cortex/replay.rebuildMemoriesIndexes,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/replay.toKeysULID,matrix/cortex/salience.Read,matrix/cortex/scope.Selector,matrix/cortex/scope.memoryIDToBytes,matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.ingester.matchFailures,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/gideon-ingest.keyID,matrix/executor/cmd/gideon-ingest.keywordRef,matrix/executor/cmd/gideon-ingest.moduleInfo,matrix/executor/cmd/gideon-ingest.newIngester,matrix/executor/cmd/gideon-ingest.patternRef,matrix/executor/cmd/mcl-e2e.SeededIDGen,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.contradictsAnyOf,matrix/neo/internal/memory.Pager.lastUsedNano
+  ^references=matrix/bridge.writeTier,matrix/cortex.AttestResult,matrix/cortex.BuildURI,matrix/cortex.Bundle,matrix/cortex.Cortex,matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AddSessionProvenance,matrix/cortex.Cortex.AddSessionProvenanceHeuristic,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.DeleteGoalState,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.ReadGoalState,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.Versions,matrix/cortex.Cortex.addSessionProvenance,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.Cortex.enforceWrite,matrix/cortex.Cortex.findIdxActorObjKey,matrix/cortex.Cortex.findIdxTagKey,matrix/cortex.Cortex.hasSessionProvenance,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.Cortex.prepareSupersedesEdge,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.Cortex.tierFrameRelevant,matrix/cortex.Cortex.tierOutcomes,matrix/cortex.Cortex.tierPinned,matrix/cortex.Cortex.transcriptSliceApprox,matrix/cortex.GoalRuntimeState,matrix/cortex.ParseURI,matrix/cortex.WithIDGen,matrix/cortex.buildReachableURIs,matrix/cortex.embedderState.commitEmbedding,matrix/cortex.embedderState.processTombstoneEntry,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.id16,matrix/cortex.idLess,matrix/cortex.intersect,matrix/cortex.loadHead,matrix/cortex.loadOrBuildIndex,matrix/cortex.loadVersion,matrix/cortex.makeCreatedDescOrder,matrix/cortex.makeSalienceDescOrder,matrix/cortex.orderByTier,matrix/cortex.orderFn,matrix/cortex.preparedSupersedeMemory,matrix/cortex.rebuildEntry,matrix/cortex.scoredMember,matrix/cortex.sessionProvenanceDstID,matrix/cortex.toFixed16,matrix/cortex.toKeysULID,matrix/cortex.trimContextByBudget,matrix/cortex/cmd/cortex-shell.edgeURIToID,matrix/cortex/cmd/two-model-smoke.hexID,matrix/cortex/memory.EdgeRecord,matrix/cortex/memory.Head,matrix/cortex/memory.ID.IsZero,matrix/cortex/memory.ID.String,matrix/cortex/memory.NewID,matrix/cortex/memory.ParseID,matrix/cortex/memory.Version,matrix/cortex/query.Result,matrix/cortex/query.Run,matrix/cortex/query.compareForOrderFull,matrix/cortex/query.lessULID,matrix/cortex/query.parseFromURI,matrix/cortex/query.planCandidates,matrix/cortex/query.planCandidatesGraph,matrix/cortex/query.scanByNear,matrix/cortex/query.scanByTags,matrix/cortex/query.scanByTypes,matrix/cortex/query.scanIdxTag,matrix/cortex/query.sortByULID,matrix/cortex/replay.readVersion,matrix/cortex/replay.rebuildEdgesSMT,matrix/cortex/replay.rebuildMemoriesIndexes,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/replay.toKeysULID,matrix/cortex/salience.Read,matrix/cortex/scope.Selector,matrix/cortex/scope.memoryIDToBytes,matrix/cortexclient/export.memoryGroup,matrix/cortexclient/export.memoryVersion,matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.ingester.matchFailures,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/gideon-ingest.keyID,matrix/executor/cmd/gideon-ingest.keywordRef,matrix/executor/cmd/gideon-ingest.moduleInfo,matrix/executor/cmd/gideon-ingest.newIngester,matrix/executor/cmd/gideon-ingest.patternRef,matrix/executor/cmd/mcl-e2e.SeededIDGen,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.contradictsAnyOf,matrix/neo/internal/memory.Pager.lastUsedNano,matrix/neo/internal/memory.replacementHead
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.ID.IsZero kind=method
@@ -1326,8 +1337,8 @@ NODE id=matrix/cortex/memory.ID.IsZero kind=method
 EDGES
   references=matrix/cortex/memory.ID,matrix/cortex/memory.b,matrix/cortex/memory.i
   ^contains=matrix/cortex/memory.ID
-  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.WriteGoalState,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.lastUsedNano
-  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.WriteGoalState,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.lastUsedNano
+  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.WriteGoalState,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.Cortex.prepareSupersedesEdge,matrix/cortex.sessionProvenanceDstID,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.lastUsedNano
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.WriteGoalState,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.Cortex.prepareSupersedesEdge,matrix/cortex.sessionProvenanceDstID,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.lastUsedNano
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.ID.String kind=method
@@ -1528,7 +1539,7 @@ NODE id=matrix/cortex/memory.Memory kind=type
 EDGES
   contains=matrix/cortex/memory.Memory#Head,matrix/cortex/memory.Memory#Version
   references=matrix/cortex/memory.Head,matrix/cortex/memory.Version
-  ^references=matrix/bridge.memoryToResult,matrix/bridge.selectSummary,matrix/bridge.writeTier,matrix/cortex.ActivationBundle,matrix/cortex.Bundle,matrix/cortex.CompactOpts,matrix/cortex.CompactResult,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveScoped,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.RecallHit,matrix/cortex.buildReachableURIs,matrix/cortex.orderByTier,matrix/cortex.renderForBundle,matrix/cortex.trimContextByBudget,matrix/cortex/cmd/cortex-shell.printMemory,matrix/cortex/cmd/cortex-shell.runCompact,matrix/cortex/cmd/cortex-shell.runContext,matrix/cortex/cmd/two-model-smoke.memorySummary,matrix/cortex/query.Result,matrix/cortex/query.Run,matrix/cortex/query.compareForOrderFull,matrix/cortex/query.evaluator.cmp,matrix/cortex/query.evaluator.eval,matrix/cortex/query.evaluator.matches,matrix/cortex/query.renderMemory,matrix/cortex/query.resolveField,matrix/cortex/query.trimByBudget,matrix/executor/cmd/mcl-execute.daemonState.findProfileMemory,matrix/executor/cmd/mcl-execute.memToDetail,matrix/executor/cmd/mcl-execute.memToSummary,matrix/neo/internal/agent.renderPinnedMemory,matrix/neo/internal/memory.Pager.structuralSelfMemory
+  ^references=matrix/bridge.memoryToResult,matrix/bridge.selectSummary,matrix/bridge.writeTier,matrix/cortex.ActivationBundle,matrix/cortex.Bundle,matrix/cortex.CompactOpts,matrix/cortex.CompactResult,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveScoped,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.RecallHit,matrix/cortex.buildReachableURIs,matrix/cortex.orderByTier,matrix/cortex.prepareValidityClose,matrix/cortex.renderForBundle,matrix/cortex.trimContextByBudget,matrix/cortex/cmd/cortex-shell.printMemory,matrix/cortex/cmd/cortex-shell.runCompact,matrix/cortex/cmd/cortex-shell.runContext,matrix/cortex/cmd/two-model-smoke.memorySummary,matrix/cortex/query.Result,matrix/cortex/query.Run,matrix/cortex/query.compareForOrderFull,matrix/cortex/query.evaluator.cmp,matrix/cortex/query.evaluator.eval,matrix/cortex/query.evaluator.matches,matrix/cortex/query.renderMemory,matrix/cortex/query.resolveField,matrix/cortex/query.trimByBudget,matrix/executor/cmd/mcl-execute.daemonState.findPersonalizationMemory,matrix/executor/cmd/mcl-execute.daemonState.findProfileMemory,matrix/executor/cmd/mcl-execute.decodePersonalization,matrix/executor/cmd/mcl-execute.memToDetail,matrix/executor/cmd/mcl-execute.memToSummary,matrix/neo/internal/agent.renderPinnedMemory,matrix/neo/internal/memory.Pager.findMemoryConsent,matrix/neo/internal/memory.Pager.findPersonalizationMemory,matrix/neo/internal/memory.Pager.lexicalExcerptMatchesTruth,matrix/neo/internal/memory.Pager.resolveExactCurrentMutationTarget,matrix/neo/internal/memory.Pager.resolveMutationTarget,matrix/neo/internal/memory.Pager.structuralSelfMemory,matrix/neo/internal/memory.decodePersonalizationGoal,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.mutationDescription,matrix/neo/internal/memory.preparedMutation,matrix/neo/internal/memory.primaryMutationText,matrix/neo/internal/runtime/loop.renderPinned
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.Memory#Head kind=field
@@ -1549,7 +1560,7 @@ NODE id=matrix/cortex/memory.NewID kind=func
   doc=NewID returns a random ULID with the current wallclock timestamp. ULIDs\nare 80 bits of entropy + 48 bits of millis, so collisions are negligible.
 EDGES
   references=matrix/cortex/memory.ID,matrix/cortex/memory.out,matrix/cortex/memory.u
-  ^calls=matrix/cortex.Cortex.Write
+  ^calls=matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement
   ^references=matrix/cortex.New
   ^defines=matrix/cortex/memory/types.go
 
@@ -1605,7 +1616,7 @@ NODE id=matrix/cortex/memory.Outcome kind=type
   sig=type Outcome string
   doc=Outcome is the success/failure tag on Events.
 EDGES
-  ^references=matrix/cortex/memory.EventData,matrix/cortex/memory.OutcomeFailure,matrix/cortex/memory.OutcomePartial,matrix/cortex/memory.OutcomeSuccess,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/neo/internal/memory.Outcome,matrix/neo/internal/memory.Pager.RecordOutcome
+  ^references=matrix/cortex/memory.EventData,matrix/cortex/memory.OutcomeFailure,matrix/cortex/memory.OutcomePartial,matrix/cortex/memory.OutcomeSuccess,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/neo/internal/memory.Outcome,matrix/neo/internal/memory.Pager.RecordOutcome,matrix/neo/internal/memory.Pager.UpsertOutcome
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.OutcomeFailure kind=const
@@ -1613,7 +1624,7 @@ NODE id=matrix/cortex/memory.OutcomeFailure kind=const
   sig=memory.Outcome
 EDGES
   references=matrix/cortex/memory.Outcome
-  ^references=matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute.daemonState.runGideonSweep,matrix/executor/runtime.Walker.writeEventMemory,matrix/neo/internal/memory.OutcomeFailure,matrix/neo/internal/memory.Pager.RecordLoopDeath
+  ^references=matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute.daemonState.runGideonSweep,matrix/executor/runtime.Walker.writeEventMemory,matrix/neo/internal/memory.OutcomeFailure
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.OutcomePartial kind=const
@@ -1679,7 +1690,7 @@ NODE id=matrix/cortex/memory.PatternData kind=type
 EDGES
   contains=matrix/cortex/memory.PatternData#Coverage,matrix/cortex/memory.PatternData#DerivedFrom,matrix/cortex/memory.PatternData#SchemaVersion,matrix/cortex/memory.PatternData#Statement,matrix/cortex/memory.PatternData#Strength,matrix/cortex/memory.PatternData.memoryType
   implements=matrix/cortex/memory.TypedData
-  ^references=matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderForType,matrix/cortex/forms.renderPattern,matrix/cortex/memory.DecodeData,matrix/cortex/memory.PatternData.memoryType,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.Procedural,matrix/neo/internal/memory.Pager.ReinforcePattern,matrix/neo/internal/memory.Pager.WritePattern,matrix/neo/internal/memory.triggerLine
+  ^references=matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderForType,matrix/cortex/forms.renderPattern,matrix/cortex/memory.DecodeData,matrix/cortex/memory.PatternData.memoryType,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.Procedural,matrix/neo/internal/memory.Pager.ReinforcePattern,matrix/neo/internal/memory.Pager.WritePattern,matrix/neo/internal/memory.canonicalRetrievalIdentity,matrix/neo/internal/memory.triggerLine
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.PatternData#Coverage kind=field
@@ -1734,7 +1745,7 @@ NODE id=matrix/cortex/memory.PolarityAvoid kind=const
   sig=memory.Polarity
 EDGES
   references=matrix/cortex/memory.Polarity
-  ^references=matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/neo/internal/memory.normalizePolarity,matrix/neo/internal/memory.renderPreference
+  ^references=matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/neo/internal/memory.Pager.SetMemoryConsent,matrix/neo/internal/memory.normalizePolarity,matrix/neo/internal/memory.renderPreference
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.PolarityDo kind=const
@@ -1742,7 +1753,7 @@ NODE id=matrix/cortex/memory.PolarityDo kind=const
   sig=memory.Polarity
 EDGES
   references=matrix/cortex/memory.Polarity
-  ^references=matrix/neo/internal/memory.Pager.RememberConstraintRelated,matrix/neo/internal/memory.normalizePolarity,matrix/neo/internal/memory.renderPreference
+  ^references=matrix/neo/internal/memory.Pager.RememberConstraintRelated,matrix/neo/internal/memory.Pager.UpsertConstraint,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.normalizePolarity,matrix/neo/internal/memory.renderPreference
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.PolarityDont kind=const
@@ -1766,7 +1777,7 @@ NODE id=matrix/cortex/memory.PolarityPrefer kind=const
   sig=memory.Polarity
 EDGES
   references=matrix/cortex/memory.Polarity
-  ^references=matrix/neo/internal/memory.Pager.RememberPreferenceRelated,matrix/neo/internal/memory.normalizePolarity
+  ^references=matrix/neo/internal/memory.Pager.RememberPreferenceRelated,matrix/neo/internal/memory.Pager.SetMemoryConsent,matrix/neo/internal/memory.Pager.UpsertPreference,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.normalizePolarity
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.PreferenceData kind=type
@@ -1777,7 +1788,7 @@ EDGES
   contains=matrix/cortex/memory.PreferenceData#Polarity,matrix/cortex/memory.PreferenceData#Rationale,matrix/cortex/memory.PreferenceData#SchemaVersion,matrix/cortex/memory.PreferenceData#StrengthVal,matrix/cortex/memory.PreferenceData#Topic,matrix/cortex/memory.PreferenceData#Value,matrix/cortex/memory.PreferenceData.memoryType
   implements=matrix/cortex/memory.TypedData
   references=matrix/cortex/memory.Polarity
-  ^references=matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderForType,matrix/cortex/forms.renderPreference,matrix/cortex/memory.DecodeData,matrix/cortex/memory.PreferenceData.memoryType,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.RememberPreferenceRelated,matrix/neo/internal/memory.renderPreference
+  ^references=matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.renderForType,matrix/cortex/forms.renderPreference,matrix/cortex/memory.DecodeData,matrix/cortex/memory.PreferenceData.memoryType,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.MemoryConsent,matrix/neo/internal/memory.Pager.RememberPreferenceRelated,matrix/neo/internal/memory.Pager.SetMemoryConsent,matrix/neo/internal/memory.Pager.UpsertPreference,matrix/neo/internal/memory.asPreference,matrix/neo/internal/memory.canonicalRetrievalIdentity,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.primaryMutationText,matrix/neo/internal/memory.renderPreference
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.PreferenceData#Polarity kind=field
@@ -1832,7 +1843,7 @@ NODE id=matrix/cortex/memory.Provenance kind=type
 EDGES
   contains=matrix/cortex/memory.Provenance#Attestations,matrix/cortex/memory.Provenance#DerivedFrom,matrix/cortex/memory.Provenance#Sig,matrix/cortex/memory.Provenance#SignedAt,matrix/cortex/memory.Provenance#SignedBy,matrix/cortex/memory.Provenance#Source
   references=matrix/cortex/memory.SourceKind
-  ^references=matrix/cortex.WriteMeta,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/memory.Version,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryWrite,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/executor/cmd/mcl-execute.daemonState.putProfile,matrix/executor/runtime.Walker.writeEventMemory,matrix/neo/internal/memory.Pager.writeMeta
+  ^references=matrix/cortex.WriteMeta,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/memory.Version,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryWrite,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/executor/cmd/mcl-execute.daemonState.putPersonalization,matrix/executor/cmd/mcl-execute.daemonState.putProfile,matrix/executor/runtime.Walker.writeEventMemory,matrix/neo/internal/memory.Pager.SavePersonalizationProfile,matrix/neo/internal/memory.Pager.SetMemoryConsent,matrix/neo/internal/memory.Pager.applyMutation,matrix/neo/internal/memory.Pager.writeMeta
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.Provenance#Attestations kind=field
@@ -1927,7 +1938,7 @@ NODE id=matrix/cortex/memory.SourceUserInput kind=const
   sig=memory.SourceKind
 EDGES
   references=matrix/cortex/memory.SourceKind
-  ^references=matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/memory.SourceKind.Valid,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.daemonState.putProfile
+  ^references=matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/memory.SourceKind.Valid,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.daemonState.putPersonalization,matrix/executor/cmd/mcl-execute.daemonState.putProfile,matrix/neo/internal/memory.Pager.SavePersonalizationProfile,matrix/neo/internal/memory.Pager.SetMemoryConsent,matrix/neo/internal/memory.Pager.applyMutation
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.Stance kind=type
@@ -1954,7 +1965,7 @@ NODE id=matrix/cortex/memory.StanceBelieve kind=const
   sig=memory.Stance
 EDGES
   references=matrix/cortex/memory.Stance
-  ^references=matrix/cortex/memory.Stance.Valid,matrix/neo/internal/memory.Pager.WriteFailurePattern
+  ^references=matrix/cortex/memory.Stance.Valid,matrix/neo/internal/memory.Pager.WriteFailurePattern,matrix/neo/internal/memory.Pager.reinforceFailurePattern,matrix/neo/internal/memory.mutationData
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.StanceDoubt kind=const
@@ -1986,7 +1997,7 @@ NODE id=matrix/cortex/memory.StrengthFirm kind=const
   sig=memory.Strength
 EDGES
   references=matrix/cortex/memory.Strength
-  ^references=matrix/neo/internal/memory.normalizeStrength
+  ^references=matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.normalizeStrength
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.StrengthHard kind=const
@@ -2010,7 +2021,7 @@ NODE id=matrix/cortex/memory.Tag kind=type
   sig=type Tag string
   doc=Tag is a bounded-length actor-meaningful label.
 EDGES
-  ^references=matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.findIdxTagKey,matrix/cortex.HeadPatch,matrix/cortex.diffTags,matrix/cortex/cmd/cortex-shell.runUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/memory.Head,matrix/cortex/scope.Selector,matrix/executor/cmd/gideon-ingest.buildTags,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryWrite,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/executor/cmd/mcl-execute.daemonState.putProfile,matrix/executor/cmd/mcl-execute.profileTag,matrix/executor/runtime.Walker.writeEventMemory,matrix/neo/internal/memory.Pager.opportunityHead,matrix/neo/internal/memory.opportunityTag
+  ^references=matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.findIdxTagKey,matrix/cortex.HeadPatch,matrix/cortex.diffTags,matrix/cortex/cmd/cortex-shell.runUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/memory.Head,matrix/cortex/scope.Selector,matrix/executor/cmd/gideon-ingest.buildTags,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryWrite,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/executor/cmd/mcl-execute.daemonState.putPersonalization,matrix/executor/cmd/mcl-execute.daemonState.putProfile,matrix/executor/cmd/mcl-execute.personalizationTag,matrix/executor/cmd/mcl-execute.profileTag,matrix/executor/runtime.Walker.writeEventMemory,matrix/neo/internal/memory.Pager.SavePersonalizationProfile,matrix/neo/internal/memory.Pager.SetMemoryConsent,matrix/neo/internal/memory.Pager.opportunityHead,matrix/neo/internal/memory.deathJournalTag,matrix/neo/internal/memory.hasMemoryTag,matrix/neo/internal/memory.memoryConsentTag,matrix/neo/internal/memory.opportunityTag,matrix/neo/internal/memory.personalizationTag
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.Tombstone kind=type
@@ -2040,13 +2051,69 @@ NODE id=matrix/cortex/memory.Tombstone#Reason kind=field
 EDGES
   ^contains=matrix/cortex/memory.Tombstone
 
+NODE id=matrix/cortex/memory.TruthCurrent kind=const
+  digest=b3:bfb83e41c55c04db07acf29f787ad5557b7e0cde791a44d103c2c4f76dc32453 file=cortex/memory/truth.go range=13:13 lang=go exported=true byte_range=350:390
+  sig=memory.TruthStatus
+EDGES
+  references=matrix/cortex/memory.TruthStatus
+  ^references=matrix/cortex/memory.VersionCurrentAt
+  ^defines=matrix/cortex/memory/truth.go
+
+NODE id=matrix/cortex/memory.TruthExpired kind=const
+  digest=b3:233212fed893e694be0c7ac4db6922e2024800f1d04d78d4a6722fc296ea8b2d file=cortex/memory/truth.go range=18:18 lang=go exported=true byte_range=572:612
+  sig=memory.TruthStatus
+EDGES
+  references=matrix/cortex/memory.TruthStatus
+  ^references=matrix/cortex/memory.VersionCurrentAt
+  ^defines=matrix/cortex/memory/truth.go
+
+NODE id=matrix/cortex/memory.TruthMissing kind=const
+  digest=b3:c27217a433c65373198290a3bddb4e4dc064b46b0ab9fc761f623f0af1f378b1 file=cortex/memory/truth.go range=14:14 lang=go exported=true byte_range=392:432
+  sig=memory.TruthStatus
+EDGES
+  references=matrix/cortex/memory.TruthStatus
+  ^references=matrix/cortex/memory.CurrentTruthAt,matrix/cortex/memory.VersionCurrentAt
+  ^defines=matrix/cortex/memory/truth.go
+
+NODE id=matrix/cortex/memory.TruthNotYetValid kind=const
+  digest=b3:7454c0d1796e2739cf7f8dd6f795a30349802a0799a932389c5ea15cdef1aa12 file=cortex/memory/truth.go range=16:16 lang=go exported=true byte_range=479:525
+  sig=memory.TruthStatus
+EDGES
+  references=matrix/cortex/memory.TruthStatus
+  ^references=matrix/cortex/memory.VersionCurrentAt
+  ^defines=matrix/cortex/memory/truth.go
+
+NODE id=matrix/cortex/memory.TruthStatus kind=type
+  digest=b3:1edadf89f820ab1453a8834eff60bf6748945f71744b06ad972960ee95627f4e file=cortex/memory/truth.go range=8:10 lang=go exported=true byte_range=200:339
+  sig=type TruthStatus string
+  doc=TruthStatus is the non-sensitive reason a memory is included or excluded\nfrom a current-truth retrieval lane.
+EDGES
+  ^references=matrix/cortex/memory.CurrentTruthAt,matrix/cortex/memory.TruthCurrent,matrix/cortex/memory.TruthExpired,matrix/cortex/memory.TruthMissing,matrix/cortex/memory.TruthNotYetValid,matrix/cortex/memory.TruthSuperseded,matrix/cortex/memory.TruthTombstoned,matrix/cortex/memory.VersionCurrentAt
+  ^defines=matrix/cortex/memory/truth.go
+
+NODE id=matrix/cortex/memory.TruthSuperseded kind=const
+  digest=b3:45fed41bdd2e9fe8bc301dee7bbe23938bbf1ed88b64f3740d0e73ed8c7ae1bd file=cortex/memory/truth.go range=17:17 lang=go exported=true byte_range=527:570
+  sig=memory.TruthStatus
+EDGES
+  references=matrix/cortex/memory.TruthStatus
+  ^references=matrix/cortex/memory.VersionCurrentAt
+  ^defines=matrix/cortex/memory/truth.go
+
+NODE id=matrix/cortex/memory.TruthTombstoned kind=const
+  digest=b3:085d6ec714a076f1798a724de8193b08e1ab790034ee0d4bb2a38928dea678dc file=cortex/memory/truth.go range=15:15 lang=go exported=true byte_range=434:477
+  sig=memory.TruthStatus
+EDGES
+  references=matrix/cortex/memory.TruthStatus
+  ^references=matrix/cortex/memory.CurrentTruthAt
+  ^defines=matrix/cortex/memory/truth.go
+
 NODE id=matrix/cortex/memory.Type kind=type
   digest=b3:a5d7b00151cedc3b7ee1dbe556b0abe815cd8ff955518037ce6b52f2365c28e3 file=cortex/memory/types.go range=22:24 lang=go exported=true byte_range=676:811
   sig=type Type byte
   doc=Type is the 1-byte memory type discriminator (§3, "Type code" column).\nHigher bits reserved for future expansion.
 EDGES
   contains=matrix/cortex/memory.Type.String,matrix/cortex/memory.Type.Valid
-  ^references=matrix/bridge.parseTypeName,matrix/cortex.BuildURI,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.ParseURI,matrix/cortex.RecallOpts,matrix/cortex.descentState,matrix/cortex.parseTypeName,matrix/cortex.typeInSet,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/cortex-shell.runFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.BeliefData.memoryType,matrix/cortex/memory.CapabilityData.memoryType,matrix/cortex/memory.ConstraintData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.EventData.memoryType,matrix/cortex/memory.FactData.memoryType,matrix/cortex/memory.GoalData.memoryType,matrix/cortex/memory.Head,matrix/cortex/memory.IdentityData.memoryType,matrix/cortex/memory.PatternData.memoryType,matrix/cortex/memory.PreferenceData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.Type.Valid,matrix/cortex/memory.TypeBelief,matrix/cortex/memory.TypeCapability,matrix/cortex/memory.TypeConstraint,matrix/cortex/memory.TypeEvent,matrix/cortex/memory.TypeFact,matrix/cortex/memory.TypeGoal,matrix/cortex/memory.TypeIdentity,matrix/cortex/memory.TypeOf,matrix/cortex/memory.TypePattern,matrix/cortex/memory.TypePreference,matrix/cortex/memory.TypedData,matrix/cortex/memory.Version,matrix/cortex/memory.missingField,matrix/cortex/query.Query,matrix/cortex/query.scanByTypes,matrix/cortex/query.typeMatches,matrix/cortex/scope.Selector,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.Procedural,matrix/neo/internal/memory.Pager.ReinforcePattern,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.SelfModel,matrix/neo/internal/memory.Pager.UserProfile,matrix/neo/internal/memory.Pager.hardConstraints,matrix/neo/internal/memory.Pager.neighbors,matrix/neo/internal/memory.Pager.structuralSelfMemory,matrix/neo/internal/memory.Pager.writeWithRelations,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.parseRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.triggerLine
+  ^references=matrix/bridge.parseTypeName,matrix/cortex.BuildURI,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.ParseURI,matrix/cortex.RecallOpts,matrix/cortex.descentState,matrix/cortex.parseTypeName,matrix/cortex.preparedSupersedeMemory,matrix/cortex.typeInSet,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/cortex-shell.runFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.BeliefData.memoryType,matrix/cortex/memory.CapabilityData.memoryType,matrix/cortex/memory.ConstraintData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.EventData.memoryType,matrix/cortex/memory.FactData.memoryType,matrix/cortex/memory.GoalData.memoryType,matrix/cortex/memory.Head,matrix/cortex/memory.IdentityData.memoryType,matrix/cortex/memory.PatternData.memoryType,matrix/cortex/memory.PreferenceData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.Type.Valid,matrix/cortex/memory.TypeBelief,matrix/cortex/memory.TypeCapability,matrix/cortex/memory.TypeConstraint,matrix/cortex/memory.TypeEvent,matrix/cortex/memory.TypeFact,matrix/cortex/memory.TypeGoal,matrix/cortex/memory.TypeIdentity,matrix/cortex/memory.TypeOf,matrix/cortex/memory.TypePattern,matrix/cortex/memory.TypePreference,matrix/cortex/memory.TypedData,matrix/cortex/memory.Version,matrix/cortex/memory.missingField,matrix/cortex/query.Query,matrix/cortex/query.scanByTypes,matrix/cortex/query.typeMatches,matrix/cortex/scope.Selector,matrix/cortex/self.Resolve,matrix/cortexclient/export.beliefType,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.Procedural,matrix/neo/internal/memory.Pager.ReinforcePattern,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.Timeline,matrix/neo/internal/memory.Pager.UserProfile,matrix/neo/internal/memory.Pager.hardConstraints,matrix/neo/internal/memory.Pager.neighbors,matrix/neo/internal/memory.Pager.resolveExactCurrentMutationTarget,matrix/neo/internal/memory.Pager.structuralSelfMemory,matrix/neo/internal/memory.Pager.upsertCurrent,matrix/neo/internal/memory.Pager.writeWithRelations,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.parseRecallTypes,matrix/neo/internal/memory.parseTimelineTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.timelineTypes,matrix/neo/internal/memory.triggerLine
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.Type.String kind=method
@@ -2056,8 +2123,8 @@ NODE id=matrix/cortex/memory.Type.String kind=method
 EDGES
   references=matrix/cortex/memory.Type,matrix/cortex/memory.TypeBelief,matrix/cortex/memory.TypeCapability,matrix/cortex/memory.TypeConstraint,matrix/cortex/memory.TypeEvent,matrix/cortex/memory.TypeFact,matrix/cortex/memory.TypeGoal,matrix/cortex/memory.TypeIdentity,matrix/cortex/memory.TypePattern,matrix/cortex/memory.TypePreference,matrix/cortex/memory.t
   ^contains=matrix/cortex/memory.Type
-  ^calls=matrix/bridge.Adapter.Find,matrix/bridge.memoryToResult,matrix/cortex.BuildURI,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.memorySummary,matrix/cortex/query.headField,matrix/executor/cmd/mcl-execute.daemonState.handleCortexStats,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryTypes,matrix/executor/cmd/mcl-execute.memToSummary,matrix/neo/internal/memory.Pager.PendingOpportunities,matrix/neo/internal/memory.Pager.QueuedOpportunities,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.TriggeredGuidance,matrix/neo/internal/memory.Pager.cascadeNeighbors,matrix/neo/internal/memory.Pager.neighbors,matrix/neo/internal/memory.Pager.recallRecursive,matrix/neo/internal/memory.rejectableType,matrix/neo/internal/memory.renderScoredSnippets,matrix/neo/internal/memory.typeHalfLife
-  ^references=matrix/bridge.Adapter.Find,matrix/bridge.memoryToResult,matrix/cortex.BuildURI,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.memorySummary,matrix/cortex/query.headField,matrix/executor/cmd/mcl-execute.daemonState.handleCortexStats,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryTypes,matrix/executor/cmd/mcl-execute.memToSummary,matrix/neo/internal/memory.Pager.PendingOpportunities,matrix/neo/internal/memory.Pager.QueuedOpportunities,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.TriggeredGuidance,matrix/neo/internal/memory.Pager.cascadeNeighbors,matrix/neo/internal/memory.Pager.neighbors,matrix/neo/internal/memory.Pager.recallRecursive,matrix/neo/internal/memory.rejectableType,matrix/neo/internal/memory.renderScoredSnippets,matrix/neo/internal/memory.typeHalfLife
+  ^calls=matrix/bridge.Adapter.Find,matrix/bridge.memoryToResult,matrix/cortex.BuildURI,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.memorySummary,matrix/cortex/query.headField,matrix/executor/cmd/mcl-execute.daemonState.handleCortexStats,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryTypes,matrix/executor/cmd/mcl-execute.memToSummary,matrix/neo/internal/memory.Pager.ExportMemories,matrix/neo/internal/memory.Pager.PendingOpportunities,matrix/neo/internal/memory.Pager.QueuedOpportunities,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.Timeline,matrix/neo/internal/memory.Pager.TimelineTypes,matrix/neo/internal/memory.Pager.TriggeredGuidance,matrix/neo/internal/memory.Pager.cascadeNeighbors,matrix/neo/internal/memory.Pager.neighbors,matrix/neo/internal/memory.Pager.recallRecursive,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.mutationDescription,matrix/neo/internal/memory.rejectableType,matrix/neo/internal/memory.renderScoredSnippets,matrix/neo/internal/memory.typeHalfLife
+  ^references=matrix/bridge.Adapter.Find,matrix/bridge.memoryToResult,matrix/cortex.BuildURI,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.memorySummary,matrix/cortex/query.headField,matrix/executor/cmd/mcl-execute.daemonState.handleCortexStats,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryTypes,matrix/executor/cmd/mcl-execute.memToSummary,matrix/neo/internal/memory.Pager.ExportMemories,matrix/neo/internal/memory.Pager.PendingOpportunities,matrix/neo/internal/memory.Pager.QueuedOpportunities,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.Timeline,matrix/neo/internal/memory.Pager.TimelineTypes,matrix/neo/internal/memory.Pager.TriggeredGuidance,matrix/neo/internal/memory.Pager.cascadeNeighbors,matrix/neo/internal/memory.Pager.neighbors,matrix/neo/internal/memory.Pager.recallRecursive,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.mutationDescription,matrix/neo/internal/memory.rejectableType,matrix/neo/internal/memory.renderScoredSnippets,matrix/neo/internal/memory.typeHalfLife
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.Type.Valid kind=method
@@ -2076,7 +2143,7 @@ NODE id=matrix/cortex/memory.TypeBelief kind=const
   sig=memory.Type
 EDGES
   references=matrix/cortex/memory.Type
-  ^references=matrix/bridge.parseTypeName,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.BeliefData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.SelfModel,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.rejectableType,matrix/neo/internal/memory.typeHalfLife
+  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.BeliefData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/cortex/self.Resolve,matrix/cortexclient/export.beliefType,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.resolveExactCurrentMutationTarget,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.rejectableType,matrix/neo/internal/memory.timelineTypes,matrix/neo/internal/memory.typeHalfLife
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.TypeCapability kind=const
@@ -2084,7 +2151,7 @@ NODE id=matrix/cortex/memory.TypeCapability kind=const
   sig=memory.Type
 EDGES
   references=matrix/cortex/memory.Type
-  ^references=matrix/bridge.parseTypeName,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.CapabilityData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.SelfModel,matrix/neo/internal/memory.Pager.structuralSelfMemory,matrix/neo/internal/memory.recallTypeAliases
+  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.CapabilityData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/cortex/self.Resolve,matrix/cortexclient/export.beliefType,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.structuralSelfMemory,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.timelineTypes
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.TypeConstraint kind=const
@@ -2092,7 +2159,7 @@ NODE id=matrix/cortex/memory.TypeConstraint kind=const
   sig=memory.Type
 EDGES
   references=matrix/cortex/memory.Type
-  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.ConstraintData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.RememberConstraintRelated,matrix/neo/internal/memory.Pager.TriggeredGuidance,matrix/neo/internal/memory.Pager.hardConstraints,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.triggerLine,matrix/neo/internal/memory.typeHalfLife
+  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.ConstraintData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/cortexclient/export.beliefType,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.RememberConstraintRelated,matrix/neo/internal/memory.Pager.TriggeredGuidance,matrix/neo/internal/memory.Pager.UpsertConstraint,matrix/neo/internal/memory.Pager.hardConstraints,matrix/neo/internal/memory.Pager.resolveExactCurrentMutationTarget,matrix/neo/internal/memory.defaultMutationImportance,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.timelineTypes,matrix/neo/internal/memory.triggerLine,matrix/neo/internal/memory.typeHalfLife
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.TypeEvent kind=const
@@ -2100,7 +2167,7 @@ NODE id=matrix/cortex/memory.TypeEvent kind=const
   sig=memory.Type
 EDGES
   references=matrix/cortex/memory.Type
-  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.DecodeData,matrix/cortex/memory.EventData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/cortex/replay.rebuildOneMemory,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.rejectableType
+  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.DecodeData,matrix/cortex/memory.EventData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/cortex/replay.rebuildOneMemory,matrix/cortexclient/export.beliefType,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.UpsertOutcome,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.rejectableType,matrix/neo/internal/memory.timelineTypes
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.TypeFact kind=const
@@ -2108,7 +2175,7 @@ NODE id=matrix/cortex/memory.TypeFact kind=const
   sig=memory.Type
 EDGES
   references=matrix/cortex/memory.Type
-  ^references=matrix/bridge.parseTypeName,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.DecodeData,matrix/cortex/memory.FactData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.RememberFactRelated,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.UserProfile,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.rejectableType,matrix/neo/internal/memory.typeHalfLife
+  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.DecodeData,matrix/cortex/memory.FactData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/cortexclient/export.beliefType,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.RememberFactRelated,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.UserProfile,matrix/neo/internal/memory.Pager.resolveExactCurrentMutationTarget,matrix/neo/internal/memory.Pager.upsertFact,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.rejectableType,matrix/neo/internal/memory.timelineTypes,matrix/neo/internal/memory.typeHalfLife
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.TypeGoal kind=const
@@ -2116,7 +2183,7 @@ NODE id=matrix/cortex/memory.TypeGoal kind=const
   sig=memory.Type
 EDGES
   references=matrix/cortex/memory.Type
-  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.DecodeData,matrix/cortex/memory.GoalData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.FailOpportunityAttempt,matrix/neo/internal/memory.Pager.InProgressOpportunities,matrix/neo/internal/memory.Pager.OpportunityByURI,matrix/neo/internal/memory.Pager.PendingOpportunities,matrix/neo/internal/memory.Pager.QueuedOpportunities,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.SetOpportunityStatus,matrix/neo/internal/memory.Pager.pendingOpportunities,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.typeHalfLife
+  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.DecodeData,matrix/cortex/memory.GoalData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/cortexclient/export.beliefType,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.daemonState.deletePersonalization,matrix/executor/cmd/mcl-execute.daemonState.findPersonalizationMemory,matrix/executor/cmd/mcl-execute.daemonState.getPersonalization,matrix/executor/cmd/mcl-execute.daemonState.handlePersonalizationExport,matrix/executor/cmd/mcl-execute.daemonState.putPersonalization,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.DeletePersonalization,matrix/neo/internal/memory.Pager.FailOpportunityAttempt,matrix/neo/internal/memory.Pager.InProgressOpportunities,matrix/neo/internal/memory.Pager.OpportunityByURI,matrix/neo/internal/memory.Pager.PendingOpportunities,matrix/neo/internal/memory.Pager.PersonalizationExport,matrix/neo/internal/memory.Pager.PersonalizationProfile,matrix/neo/internal/memory.Pager.QueuedOpportunities,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.SavePersonalizationProfile,matrix/neo/internal/memory.Pager.SetOpportunityStatus,matrix/neo/internal/memory.Pager.findPersonalizationMemory,matrix/neo/internal/memory.Pager.pendingOpportunities,matrix/neo/internal/memory.Pager.resolveExactCurrentMutationTarget,matrix/neo/internal/memory.defaultMutationImportance,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.timelineTypes,matrix/neo/internal/memory.typeHalfLife
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.TypeIdentity kind=const
@@ -2124,7 +2191,7 @@ NODE id=matrix/cortex/memory.TypeIdentity kind=const
   sig=memory.Type
 EDGES
   references=matrix/cortex/memory.Type
-  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.DecodeData,matrix/cortex/memory.IdentityData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.Type.Valid,matrix/cortex/memory.validateTypedData,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.daemonState.findProfileMemory,matrix/executor/cmd/mcl-execute.daemonState.getProfile,matrix/executor/cmd/mcl-execute.daemonState.putProfile,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.identityDID,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.typeHalfLife
+  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.tierPinned,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.DecodeData,matrix/cortex/memory.IdentityData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.Type.Valid,matrix/cortex/memory.validateTypedData,matrix/cortexclient/export.beliefType,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.daemonState.findProfileMemory,matrix/executor/cmd/mcl-execute.daemonState.getProfile,matrix/executor/cmd/mcl-execute.daemonState.putProfile,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.identityDID,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.timelineTypes,matrix/neo/internal/memory.typeHalfLife
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.TypeOf kind=func
@@ -2134,8 +2201,8 @@ NODE id=matrix/cortex/memory.TypeOf kind=func
 EDGES
   calls=matrix/cortex/memory.BeliefData.memoryType,matrix/cortex/memory.CapabilityData.memoryType,matrix/cortex/memory.ConstraintData.memoryType,matrix/cortex/memory.EventData.memoryType,matrix/cortex/memory.FactData.memoryType,matrix/cortex/memory.GoalData.memoryType,matrix/cortex/memory.IdentityData.memoryType,matrix/cortex/memory.PatternData.memoryType,matrix/cortex/memory.PreferenceData.memoryType
   references=matrix/cortex/memory.Type,matrix/cortex/memory.TypedData,matrix/cortex/memory.TypedData.memoryType,matrix/cortex/memory.d
-  ^calls=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/executor/cmd/gideon-ingest.ingester.upsertNode
-  ^references=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/executor/cmd/gideon-ingest.ingester.upsertNode
+  ^calls=matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/neo/internal/memory.defaultMutationImportance,matrix/neo/internal/memory.mutationDescription
+  ^references=matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/neo/internal/memory.defaultMutationImportance,matrix/neo/internal/memory.mutationDescription
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.TypePattern kind=const
@@ -2143,7 +2210,7 @@ NODE id=matrix/cortex/memory.TypePattern kind=const
   sig=memory.Type
 EDGES
   references=matrix/cortex/memory.Type
-  ^references=matrix/bridge.parseTypeName,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.DecodeData,matrix/cortex/memory.PatternData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.Type.Valid,matrix/cortex/memory.validateTypedData,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.Procedural,matrix/neo/internal/memory.Pager.ReinforcePattern,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.TriggeredGuidance,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.triggerLine
+  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.DecodeData,matrix/cortex/memory.PatternData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.Type.Valid,matrix/cortex/memory.validateTypedData,matrix/cortexclient/export.beliefType,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.Procedural,matrix/neo/internal/memory.Pager.ReinforcePattern,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.TriggeredGuidance,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.timelineTypes,matrix/neo/internal/memory.triggerLine
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.TypePreference kind=const
@@ -2151,7 +2218,7 @@ NODE id=matrix/cortex/memory.TypePreference kind=const
   sig=memory.Type
 EDGES
   references=matrix/cortex/memory.Type
-  ^references=matrix/bridge.parseTypeName,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.DecodeData,matrix/cortex/memory.PreferenceData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.RememberPreferenceRelated,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.typeHalfLife
+  ^references=matrix/bridge.parseTypeName,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.DecodeData,matrix/cortex/memory.PreferenceData.memoryType,matrix/cortex/memory.Type.String,matrix/cortex/memory.validateTypedData,matrix/cortexclient/export.beliefType,matrix/executor/cmd/mcl-execute.allMemoryTypes,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/executor/cmd/mcl-execute.parseTypeNameDTO,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.RememberPreferenceRelated,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.TimelineTypes,matrix/neo/internal/memory.Pager.UpsertPreference,matrix/neo/internal/memory.Pager.findMemoryConsent,matrix/neo/internal/memory.Pager.resolveExactCurrentMutationTarget,matrix/neo/internal/memory.defaultMutationImportance,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.timelineTypes,matrix/neo/internal/memory.typeHalfLife
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.TypedData kind=interface
@@ -2161,7 +2228,7 @@ NODE id=matrix/cortex/memory.TypedData kind=interface
 EDGES
   references=matrix/cortex/memory.Type
   ^implements=matrix/cortex/memory.BeliefData,matrix/cortex/memory.CapabilityData,matrix/cortex/memory.ConstraintData,matrix/cortex/memory.EventData,matrix/cortex/memory.FactData,matrix/cortex/memory.GoalData,matrix/cortex/memory.IdentityData,matrix/cortex/memory.PatternData,matrix/cortex/memory.PreferenceData
-  ^references=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.Render,matrix/cortex/forms.RenderFull,matrix/cortex/forms.renderForType,matrix/cortex/forms.renderFullForType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.EncodeData,matrix/cortex/memory.TypeOf,matrix/cortex/memory.ValidateMemory,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/cortex/query.evaluator.cmp,matrix/cortex/query.evaluator.eval,matrix/cortex/query.evaluator.matches,matrix/cortex/query.resolveField,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.writeWithRelations,matrix/neo/internal/memory.asGoalData,matrix/neo/internal/memory.triggerLine
+  ^references=matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/forms.Render,matrix/cortex/forms.RenderFull,matrix/cortex/forms.renderForType,matrix/cortex/forms.renderFullForType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.EncodeData,matrix/cortex/memory.TypeOf,matrix/cortex/memory.ValidateMemory,matrix/cortex/memory.validateTypedData,matrix/cortex/query.dataField,matrix/cortex/query.evaluator.cmp,matrix/cortex/query.evaluator.eval,matrix/cortex/query.evaluator.matches,matrix/cortex/query.resolveField,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-execute.decodeTypedData,matrix/neo/internal/memory.Pager.UpsertConstraint,matrix/neo/internal/memory.Pager.UpsertOutcome,matrix/neo/internal/memory.Pager.UpsertPreference,matrix/neo/internal/memory.Pager.upsertCurrent,matrix/neo/internal/memory.Pager.upsertFact,matrix/neo/internal/memory.Pager.writeWithRelations,matrix/neo/internal/memory.asConstraint,matrix/neo/internal/memory.asEvent,matrix/neo/internal/memory.asFact,matrix/neo/internal/memory.asGoalData,matrix/neo/internal/memory.asPreference,matrix/neo/internal/memory.canonicalRetrievalIdentity,matrix/neo/internal/memory.defaultMutationImportance,matrix/neo/internal/memory.mutationData,matrix/neo/internal/memory.mutationDescription,matrix/neo/internal/memory.preparedMutation,matrix/neo/internal/memory.triggerLine
   ^defines=matrix/cortex/memory/data.go
 
 NODE id=matrix/cortex/memory.URI kind=type
@@ -2169,7 +2236,7 @@ NODE id=matrix/cortex/memory.URI kind=type
   sig=type URI string
   doc=URI is the canonical pointer matrix://cortex/<type>/<id>#<version>.
 EDGES
-  ^references=matrix/bridge.Adapter.Resolve,matrix/cortex.ActivationBundle,matrix/cortex.AttestOpts,matrix/cortex.AttestResult,matrix/cortex.BuildCheckpointURI,matrix/cortex.BuildEnrichURI,matrix/cortex.BuildRollupURI,matrix/cortex.BuildSessionURI,matrix/cortex.BuildStorySoFarURI,matrix/cortex.BuildURI,matrix/cortex.Bundle,matrix/cortex.CheckpointRecord,matrix/cortex.CompactOpts,matrix/cortex.CompactResult,matrix/cortex.CompactedItem,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.RecallDescend,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveScoped,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.ParseURI,matrix/cortex.RecallHit,matrix/cortex.Ref,matrix/cortex.activationItem,matrix/cortex.buildReachableURIs,matrix/cortex.descentState,matrix/cortex.descentState.leaf,matrix/cortex.parseRollupRef,matrix/cortex.scoredMember,matrix/cortex.trimActivationItems,matrix/cortex/cmd/cortex-shell.edgeURIToID,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.runAttest,matrix/cortex/cmd/cortex-shell.runCompact,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/cmd/cortex-shell.runFind,matrix/cortex/cmd/cortex-shell.runUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexAddEdge,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexResolve,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexTombstone,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/query.Query,matrix/cortex/query.parseFromURI,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.WalkResult,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute._,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryResolve,matrix/executor/cmd/mcl-execute.daemonState.handleMemorySearch,matrix/executor/cmd/mcl-execute.toMemoryURIs,matrix/executor/runtime.WalkResult,matrix/executor/runtime.Walker.writeEventMemory,matrix/neo/internal/memory.Pager.AppendMessage,matrix/neo/internal/memory.Pager.AttestRejected,matrix/neo/internal/memory.Pager.AttestUsed,matrix/neo/internal/memory.Pager.FailOpportunityAttempt,matrix/neo/internal/memory.Pager.OpportunityByURI,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.SetOpportunityStatus,matrix/neo/internal/memory.Pager.cascadeNeighbors,matrix/neo/internal/memory.Pager.relate
+  ^references=matrix/bridge.Adapter.Resolve,matrix/cortex.ActivationBundle,matrix/cortex.AttestOpts,matrix/cortex.AttestResult,matrix/cortex.BuildCheckpointURI,matrix/cortex.BuildEnrichURI,matrix/cortex.BuildRollupURI,matrix/cortex.BuildSessionURI,matrix/cortex.BuildStorySoFarURI,matrix/cortex.BuildURI,matrix/cortex.Bundle,matrix/cortex.CheckpointRecord,matrix/cortex.CompactOpts,matrix/cortex.CompactResult,matrix/cortex.CompactedItem,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.ExpandToTranscript,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.RecallDescend,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveScoped,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.ParseSessionURI,matrix/cortex.ParseURI,matrix/cortex.RecallHit,matrix/cortex.Ref,matrix/cortex.SupersedeOptions,matrix/cortex.activationItem,matrix/cortex.buildReachableURIs,matrix/cortex.descentState,matrix/cortex.descentState.leaf,matrix/cortex.parseRollupRef,matrix/cortex.preparedSupersedeMemory,matrix/cortex.scoredMember,matrix/cortex.trimActivationItems,matrix/cortex/cmd/cortex-shell.edgeURIToID,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.runAttest,matrix/cortex/cmd/cortex-shell.runCompact,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/cmd/cortex-shell.runFind,matrix/cortex/cmd/cortex-shell.runUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexAddEdge,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexResolve,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexTombstone,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/query.Query,matrix/cortex/query.parseFromURI,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.WalkResult,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute._,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryResolve,matrix/executor/cmd/mcl-execute.daemonState.handleMemorySearch,matrix/executor/cmd/mcl-execute.toMemoryURIs,matrix/executor/runtime.WalkResult,matrix/executor/runtime.Walker.writeEventMemory,matrix/neo/internal/memory.Pager.AppendMessage,matrix/neo/internal/memory.Pager.AttestRejected,matrix/neo/internal/memory.Pager.AttestUsed,matrix/neo/internal/memory.Pager.ExpandToTranscript,matrix/neo/internal/memory.Pager.FailOpportunityAttempt,matrix/neo/internal/memory.Pager.LinkSessionProvenance,matrix/neo/internal/memory.Pager.OpportunityByURI,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.SetOpportunityStatus,matrix/neo/internal/memory.Pager.applyMutation,matrix/neo/internal/memory.Pager.cascadeNeighbors,matrix/neo/internal/memory.Pager.reinforceFailurePattern,matrix/neo/internal/memory.Pager.relate,matrix/neo/internal/memory.Pager.resolveExactCurrentMutationTarget,matrix/neo/internal/memory.Pager.resolveMutationTarget,matrix/neo/internal/memory.Pager.upsertCurrent,matrix/neo/internal/memory.Pager.writeWithRelations,matrix/neo/internal/memory.preparedMutation
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.ValidateMemory kind=func
@@ -2179,8 +2246,8 @@ NODE id=matrix/cortex/memory.ValidateMemory kind=func
 EDGES
   calls=matrix/cortex/memory.BeliefData.memoryType,matrix/cortex/memory.CapabilityData.memoryType,matrix/cortex/memory.ConstraintData.memoryType,matrix/cortex/memory.DecodeData,matrix/cortex/memory.EventData.memoryType,matrix/cortex/memory.FactData.memoryType,matrix/cortex/memory.FrameRef.Validate,matrix/cortex/memory.GoalData.memoryType,matrix/cortex/memory.IdentityData.memoryType,matrix/cortex/memory.PatternData.memoryType,matrix/cortex/memory.PreferenceData.memoryType,matrix/cortex/memory.SourceKind.Valid,matrix/cortex/memory.Type.Valid,matrix/cortex/memory.Visibility.Valid,matrix/cortex/memory.validateForms,matrix/cortex/memory.validateTypedData
   references=matrix/cortex/memory.DecodeData,matrix/cortex/memory.ErrEmptyData,matrix/cortex/memory.ErrInvalidSource,matrix/cortex/memory.ErrInvalidType,matrix/cortex/memory.ErrInvalidVisibility,matrix/cortex/memory.ErrTagTooLong,matrix/cortex/memory.ErrTooManyFrames,matrix/cortex/memory.ErrTooManyTags,matrix/cortex/memory.ErrTypeDataMismatch,matrix/cortex/memory.FrameRef.Validate,matrix/cortex/memory.Head,matrix/cortex/memory.MaxFramesPerMemory,matrix/cortex/memory.MaxTagLen,matrix/cortex/memory.MaxTagsPerMemory,matrix/cortex/memory.SourceKind.Valid,matrix/cortex/memory.Type.Valid,matrix/cortex/memory.TypedData,matrix/cortex/memory.TypedData.memoryType,matrix/cortex/memory.Version,matrix/cortex/memory.Visibility.Valid,matrix/cortex/memory.data,matrix/cortex/memory.decoded,matrix/cortex/memory.err,matrix/cortex/memory.h,matrix/cortex/memory.i,matrix/cortex/memory.t,matrix/cortex/memory.v,matrix/cortex/memory.validateForms,matrix/cortex/memory.validateTypedData
-  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write
-  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write
+  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.prepareValidityClose
+  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.prepareValidityClose
   ^defines=matrix/cortex/memory/validate.go
 
 NODE id=matrix/cortex/memory.VectorHashDomain kind=const
@@ -2197,7 +2264,7 @@ NODE id=matrix/cortex/memory.VectorMeta kind=type
   doc=VectorMeta is the per-memory entry stored at vec/meta/<id:16>. Carries\nthe full embedding vector (as float32 components) so the HNSW graph file\nunder indexes/vector/<actor>/ can be dropped and rebuilt purely from\nPebble without re-running the (potentially network-bound) embedder.\n\nSpec: research/04-cortex.md §2.3 ("vec/meta/  VectorMeta  Memory ↔ HNSW\nvertex mapping") and §13.1 ("Per-vertex metadata (memory_id ↔ vertex_id\nmapping, version, embedding model) lives in Pebble at vec/meta/<id>").\n\nDeterminism: same (Memory text, Model, Dim) → same Vector bytes when the\nEmbedder is itself deterministic (the Phase 5 HashEmbedder satisfies\nthis; production HTTP-bound embedders are deterministic in practice).\nVector is stored as a slice of float32 components in the CBOR map so it\ndecodes without manual byte-arithmetic on the consumer side.
 EDGES
   contains=matrix/cortex/memory.VectorMeta#Dim,matrix/cortex/memory.VectorMeta#EmbeddedAt,matrix/cortex/memory.VectorMeta#Model,matrix/cortex/memory.VectorMeta#SourceVersion,matrix/cortex/memory.VectorMeta#Vector,matrix/cortex/memory.VectorMeta#VectorHash,matrix/cortex/memory.VectorMeta#VertexID
-  ^references=matrix/cortex.Cortex.resolveNear,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.loadOrBuildIndex,matrix/cortex.pebbleVectorStore.GetVector,matrix/cortex/memory.DecodeVectorMeta,matrix/cortex/memory.EncodeVectorMeta
+  ^references=matrix/cortex.Cortex.resolveNear,matrix/cortex.embedderState.commitEmbedding,matrix/cortex.loadOrBuildIndex,matrix/cortex.pebbleVectorStore.GetVector,matrix/cortex/memory.DecodeVectorMeta,matrix/cortex/memory.EncodeVectorMeta
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.VectorMeta#Dim kind=field
@@ -2249,7 +2316,7 @@ NODE id=matrix/cortex/memory.VectorRef kind=type
   doc=VectorRef points into the vec/ namespace; opaque to Phase 2 callers.\nLives on Head so a Find result can decide "embedded?" without fetching\nvec/meta. The full vector bytes live in VectorMeta at vec/meta/<id>.
 EDGES
   contains=matrix/cortex/memory.VectorRef#Dim,matrix/cortex/memory.VectorRef#Model,matrix/cortex/memory.VectorRef#Stale,matrix/cortex/memory.VectorRef#VertexID
-  ^references=matrix/cortex.embedderState.processWriteEntry,matrix/cortex/memory.Head
+  ^references=matrix/cortex.embedderState.commitEmbedding,matrix/cortex/memory.Head
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.VectorRef#Dim kind=field
@@ -2392,7 +2459,7 @@ NODE id=matrix/cortex/memory.Version kind=type
 EDGES
   contains=matrix/cortex/memory.Version#Confidence,matrix/cortex/memory.Version#CreatedAt,matrix/cortex/memory.Version#CreatedBy,matrix/cortex/memory.Version#Data,matrix/cortex/memory.Version#ExpiresAt,matrix/cortex/memory.Version#Forms,matrix/cortex/memory.Version#FormsOverride,matrix/cortex/memory.Version#Hash,matrix/cortex/memory.Version#ID,matrix/cortex/memory.Version#Provenance,matrix/cortex/memory.Version#Type,matrix/cortex/memory.Version#ValidFrom,matrix/cortex/memory.Version#ValidUntil,matrix/cortex/memory.Version#Version
   references=matrix/cortex/memory.Forms,matrix/cortex/memory.ID,matrix/cortex/memory.Provenance,matrix/cortex/memory.Type
-  ^references=matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.loadVersion,matrix/cortex.versionValidAt,matrix/cortex/memory.DecodeVersion,matrix/cortex/memory.EncodeVersion,matrix/cortex/memory.HashVersion,matrix/cortex/memory.Memory,matrix/cortex/memory.ValidateMemory,matrix/cortex/query.Run,matrix/cortex/query.versionField,matrix/cortex/query.withinValidity,matrix/cortex/replay.readVersion
+  ^references=matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Versions,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.loadVersion,matrix/cortex.prepareValidityClose,matrix/cortex.versionValidAt,matrix/cortex/memory.CurrentTruthAt,matrix/cortex/memory.DecodeVersion,matrix/cortex/memory.EncodeVersion,matrix/cortex/memory.HashVersion,matrix/cortex/memory.Memory,matrix/cortex/memory.ValidateMemory,matrix/cortex/memory.VersionCurrentAt,matrix/cortex/query.Run,matrix/cortex/query.versionField,matrix/cortex/query.withinValidity,matrix/cortex/replay.readVersion,matrix/cortexclient/export.assertionValue,matrix/cortexclient/export.memoryVersion,matrix/cortexclient/export.run.exportMemories,matrix/neo/internal/memory.Pager.lexicalExcerptMatchesTruth,matrix/neo/internal/memory.mutationDescription
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.Version#Confidence kind=field
@@ -2480,6 +2547,16 @@ NODE id=matrix/cortex/memory.Version#Version kind=field
 EDGES
   ^contains=matrix/cortex/memory.Version
 
+NODE id=matrix/cortex/memory.VersionCurrentAt kind=func
+  digest=b3:cb2e288d6f446c0d099e5db2b62a3c3e9fc812a69467e5cfabec5ec070b23d7b file=cortex/memory/truth.go range=34:54 lang=go exported=true byte_range=1067:1647
+  sig=func VersionCurrentAt(v *Version, asOf time.Time) (bool, TruthStatus)
+  doc=VersionCurrentAt is the validity-only half of CurrentTruthAt for callers\nthat intentionally audit a head separately.
+EDGES
+  references=matrix/cortex/memory.TruthCurrent,matrix/cortex/memory.TruthExpired,matrix/cortex/memory.TruthMissing,matrix/cortex/memory.TruthNotYetValid,matrix/cortex/memory.TruthStatus,matrix/cortex/memory.TruthSuperseded,matrix/cortex/memory.Version,matrix/cortex/memory.asOf,matrix/cortex/memory.from,matrix/cortex/memory.v
+  ^calls=matrix/cortex.versionValidAt,matrix/cortex/memory.CurrentTruthAt,matrix/cortex/query.withinValidity
+  ^references=matrix/cortex.versionValidAt,matrix/cortex/memory.CurrentTruthAt,matrix/cortex/query.withinValidity
+  ^defines=matrix/cortex/memory/truth.go
+
 NODE id=matrix/cortex/memory.VisActorPublic kind=const
   digest=b3:ca3bbb1907037f2be112b6bc53f1b6c5a74fbae200d6291dad15b5c072d469e0 file=cortex/memory/types.go range=73:73 lang=go exported=true byte_range=1879:1908
   sig=memory.Visibility
@@ -2493,7 +2570,7 @@ NODE id=matrix/cortex/memory.VisPrivate kind=const
   sig=memory.Visibility
 EDGES
   references=matrix/cortex/memory.Visibility
-  ^references=matrix/cortex.Cortex.Write,matrix/cortex/cmd/cortex-shell.runUpdateHead,matrix/cortex/memory.Visibility.Valid,matrix/cortex/query.headField,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryWrite,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/executor/cmd/mcl-execute.daemonState.putProfile,matrix/executor/cmd/mcl-execute.memToDetail
+  ^references=matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex/cmd/cortex-shell.runUpdateHead,matrix/cortex/memory.Visibility.Valid,matrix/cortex/query.headField,matrix/executor/cmd/mcl-execute.daemonState.handleMemoryWrite,matrix/executor/cmd/mcl-execute.daemonState.persistSweepEvent,matrix/executor/cmd/mcl-execute.daemonState.putPersonalization,matrix/executor/cmd/mcl-execute.daemonState.putProfile,matrix/executor/cmd/mcl-execute.memToDetail,matrix/neo/internal/memory.Pager.SavePersonalizationProfile,matrix/neo/internal/memory.Pager.SetMemoryConsent
   ^defines=matrix/cortex/memory/types.go
 
 NODE id=matrix/cortex/memory.VisScoped kind=const
@@ -2591,6 +2668,12 @@ NODE id=matrix/cortex/memory/edge.go kind=file
   digest=b3:b0cbbd9544f4341ab94b5dd8f87004d69d7eea34774035a5e9a50aaad02e4164 file=cortex/memory/edge.go range=1:170 lang=go exported=true
 EDGES
   defines=matrix/cortex/memory.DecodeEdge,matrix/cortex/memory.EdgeAttestedBy,matrix/cortex/memory.EdgeCausedBy,matrix/cortex/memory.EdgeCitedIn,matrix/cortex/memory.EdgeConsentsTo,matrix/cortex/memory.EdgeContradicts,matrix/cortex/memory.EdgeCorroborates,matrix/cortex/memory.EdgeDerivedFrom,matrix/cortex/memory.EdgeDispatchedTo,matrix/cortex/memory.EdgeInstanceOf,matrix/cortex/memory.EdgeObservedBy,matrix/cortex/memory.EdgePartOf,matrix/cortex/memory.EdgeRecord,matrix/cortex/memory.EdgeReferences,matrix/cortex/memory.EdgeSupersedes,matrix/cortex/memory.EdgeTombstones,matrix/cortex/memory.EdgeType,matrix/cortex/memory.EdgeType.String,matrix/cortex/memory.EdgeType.Valid,matrix/cortex/memory.EncodeEdge,matrix/cortex/memory.ErrInvalidEdgeType,matrix/cortex/memory.ErrSelfEdge,matrix/cortex/memory.ParseEdgeType
+  ^contains=matrix/cortex/memory
+
+NODE id=matrix/cortex/memory/truth.go kind=file
+  digest=b3:6d8ff49c4d32d35acf7d97dbe9159ff2e36008022dd014a327883d5b058baba0 file=cortex/memory/truth.go range=1:54 lang=go exported=true
+EDGES
+  defines=matrix/cortex/memory.CurrentTruthAt,matrix/cortex/memory.TruthCurrent,matrix/cortex/memory.TruthExpired,matrix/cortex/memory.TruthMissing,matrix/cortex/memory.TruthNotYetValid,matrix/cortex/memory.TruthStatus,matrix/cortex/memory.TruthSuperseded,matrix/cortex/memory.TruthTombstoned,matrix/cortex/memory.VersionCurrentAt
   ^contains=matrix/cortex/memory
 
 NODE id=matrix/cortex/memory/types.go kind=file

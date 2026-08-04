@@ -1,4 +1,4 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/construct/schema/primitives kind=package
   digest=b3:1aa3f09404b899ec1a5d257419112dce3f96d240941a2147bd662a8dc9910498 file=construct/schema/primitives range=0:0 lang=go exported=true
@@ -91,7 +91,7 @@ NODE id=matrix/construct/schema/primitives.Ask kind=type
 EDGES
   contains=matrix/construct/schema/primitives.Ask#AskKind,matrix/construct/schema/primitives.Ask#Expected,matrix/construct/schema/primitives.Ask#Options,matrix/construct/schema/primitives.Ask#Prompt,matrix/construct/schema/primitives.Ask#Required,matrix/construct/schema/primitives.Ask#Response
   references=matrix/construct/schema/primitives.AskKind,matrix/construct/schema/primitives.AskOption,matrix/construct/schema/primitives.AskResponse
-  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/internal/codegen.structs,matrix/construct/projection.buildSurface,matrix/construct/schema.NewAsk,matrix/construct/schema.Surface,matrix/neo/internal/server.askWaiter,matrix/neo/internal/server.session.pendingAsk,matrix/neo/internal/server.session.registerAsk
+  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/internal/codegen.structs,matrix/construct/projection.buildSurface,matrix/construct/schema.NewAsk,matrix/construct/schema.Surface,matrix/neo/internal/server.askWaiter,matrix/neo/internal/server.session.pendingAsk,matrix/neo/internal/server.session.registerAsk,matrix/neo/internal/server.telegramAskCallbackResponse,matrix/neo/internal/server.telegramAskKeyboard,matrix/neo/internal/server.telegramAskTextResponse,matrix/neo/internal/server.telegramPending
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.Ask#AskKind kind=field
@@ -141,7 +141,7 @@ NODE id=matrix/construct/schema/primitives.AskChoose kind=const
   sig=primitives.AskKind
 EDGES
   references=matrix/construct/schema/primitives.AskKind
-  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind
+  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind,matrix/neo/internal/server.telegramAskCallbackResponse,matrix/neo/internal/server.telegramAskKeyboard,matrix/neo/internal/server.telegramAskTextResponse
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskConfirm kind=const
@@ -149,7 +149,7 @@ NODE id=matrix/construct/schema/primitives.AskConfirm kind=const
   sig=primitives.AskKind
 EDGES
   references=matrix/construct/schema/primitives.AskKind
-  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind
+  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind,matrix/neo/internal/server.telegramAskCallbackResponse,matrix/neo/internal/server.telegramAskKeyboard,matrix/neo/internal/server.telegramAskTextResponse
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskInput kind=const
@@ -157,7 +157,7 @@ NODE id=matrix/construct/schema/primitives.AskInput kind=const
   sig=primitives.AskKind
 EDGES
   references=matrix/construct/schema/primitives.AskKind
-  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind
+  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind,matrix/neo/internal/server.telegramAskTextResponse
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskKind kind=type
@@ -204,7 +204,7 @@ NODE id=matrix/construct/schema/primitives.AskResponse kind=type
   doc=AskResponse is the typed human reply to an Ask. It is filled in when the\nhuman answers and flows back to the agent as an INPUT on the same footing as\na user message (replayable, deterministic) — NEVER a mutation of plan/walk/\ncortex. The relevant field is set per AskKind: Choice (choose), Value\n(input), Confirmed (confirm), Signature (sign), UploadRef (upload).
 EDGES
   contains=matrix/construct/schema/primitives.AskResponse#AnsweredAt,matrix/construct/schema/primitives.AskResponse#Choice,matrix/construct/schema/primitives.AskResponse#Confirmed,matrix/construct/schema/primitives.AskResponse#Signature,matrix/construct/schema/primitives.AskResponse#UploadRef,matrix/construct/schema/primitives.AskResponse#Value
-  ^references=matrix/construct/backchannel.Answered,matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/backchannel.confirmedTrue,matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Ask,matrix/neo/internal/server.Engine.respondAsk,matrix/neo/internal/server.Server.handleAskAnswer,matrix/neo/internal/server.askWaiter,matrix/neo/internal/server.session.answerAsk,matrix/neo/internal/server.session.registerAsk,matrix/neo/internal/tools.AskFunc
+  ^references=matrix/construct/backchannel.Answered,matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/backchannel.confirmedTrue,matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Ask,matrix/neo/internal/server.Engine.respondAsk,matrix/neo/internal/server.Server.handleAskAnswer,matrix/neo/internal/server.askWaiter,matrix/neo/internal/server.session.answerAsk,matrix/neo/internal/server.session.registerAsk,matrix/neo/internal/server.telegramAskCallbackResponse,matrix/neo/internal/server.telegramAskTextResponse,matrix/neo/internal/server.telegramBridge.deliverAskResponse,matrix/neo/internal/tools.AskFunc
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskResponse#AnsweredAt kind=field
@@ -248,7 +248,7 @@ NODE id=matrix/construct/schema/primitives.AskSign kind=const
   sig=primitives.AskKind
 EDGES
   references=matrix/construct/schema/primitives.AskKind
-  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind
+  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind,matrix/neo/internal/server.telegramAskCallbackResponse,matrix/neo/internal/server.telegramAskKeyboard,matrix/neo/internal/server.telegramAskTextResponse
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskUpload kind=const
@@ -256,7 +256,7 @@ NODE id=matrix/construct/schema/primitives.AskUpload kind=const
   sig=primitives.AskKind
 EDGES
   references=matrix/construct/schema/primitives.AskKind
-  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind
+  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind,matrix/neo/internal/server.telegramAskTextResponse
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.Canvas kind=type

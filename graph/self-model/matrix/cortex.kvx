@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:8087349d214ea6556bd1e327d9b1cfe401192e02e5c71997ca02544fd4c21fca
+# GENERATED gen=codegraph do-not-edit merkle=b3:b9753067b0143b05d9e59aa7d4582f8ecc4f32217fc185000bee971850caf585
 
 NODE id=matrix/cortex kind=package
-  digest=b3:a53ea5d9fbb2ae317688d736302d2cbb893be4007b16d3aa91233ad0a8e6fb45 file=cortex range=0:0 lang=go exported=true
+  digest=b3:202e539c54bb4558dd51a80a648eb898db2f46b883de8dd45df1a4361a748014 file=cortex range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/activate.go,matrix/cortex/attest.go,matrix/cortex/cascade.go,matrix/cortex/compact.go,matrix/cortex/context.go,matrix/cortex/cortex.go,matrix/cortex/edges.go,matrix/cortex/embedder.go,matrix/cortex/episodic_backfill.go,matrix/cortex/goal_state.go,matrix/cortex/lexical.go,matrix/cortex/provenance.go,matrix/cortex/ratelimit.go,matrix/cortex/rebuild.go,matrix/cortex/recall.go,matrix/cortex/recent.go,matrix/cortex/repair.go,matrix/cortex/rollup.go,matrix/cortex/rollup_enrich.go,matrix/cortex/scope_enforce.go,matrix/cortex/session.go,matrix/cortex/story.go,matrix/cortex/supersede.go,matrix/cortex/sweep.go,matrix/cortex/tool_event.go,matrix/cortex/update_head.go
   ^contains=mod:matrix/cortex
@@ -640,7 +640,7 @@ NODE id=matrix/cortex.Cortex kind=type
   sig=type Cortex struct {\n	s	*store.Store\n	now	func() time.Time	// overridable for tests\n	idGen	func() memory.ID\n\n	// embed holds the async embedding worker state when StartEmbedder is\n	// called. Nil when no worker is running (the default). All access\n	// goes through helpers in embedder.go.\n	embed	*embedderState\n\n	// snap holds the journal MMR + per-namespace SMTs (Phase 7). Always\n	// constructed in New; the MMRHook is installed on the underlying\n	// Store so every journal entry contributes a leaf transparently.\n	// SMT updates are staged explicitly by Write/Update/Tombstone/AddEdge/\n	// RemoveEdge and the embedder.\n	snap	*snapshot.State\n\n	// keyResolver is used by Phase 10 scope verification (sub-agent\n	// CortexScope reads/writes). nil means scoped calls are rejected\n	// with ErrNoKeyResolver. Cortex never holds key material itself\n	// (D4); the resolver is plumbed in by the agent runtime.\n	keyResolver	scope.KeyResolver\n\n	// rl holds the Phase 14 token buckets gating\n	// (1) cortex.logScopeViolation journal writes (R5 DoS surface)\n	// (2) cortex.Attest entry (R3b DoS surface).\n	// Always non-nil after New; never persisted (runtime policy state,\n	// not memory data — see ratelimit.go Q4 lock).\n	rl	*rateLimiter\n\n	// pinnedMu/pinnedCache* back the continuous-memory task 4.1 per-turn\n	// Pinned-tier cache consulted by Activate (activate.go), fixing audit\n	// finding NE-7 (the per-step idx/type pinned rescan). PURELY IN-MEMORY\n	// runtime state — like rl above and embed above, it is NEVER persisted\n	// or journaled, so (stronger than "lives in the derived lane") it\n	// cannot perturb ANY lane, anchored or derived. Valid for exactly as\n	// long as c.s.NextSeq() (the journal head) hasn't advanced since it was\n	// computed — any mutating call bumps that seq, so the cache spans\n	// precisely "since the last cortex write", the same window as one turn\n	// in a turn loop that doesn't write to cortex mid-turn.\n	pinnedMu	sync.Mutex\n	pinnedCacheSeq	uint64\n	pinnedCacheIDs	[]memory.ID\n	pinnedCacheOK	bool\n}
   doc=Cortex wraps a per-actor store.Store and exposes the §11–12 API.
 EDGES
-  contains=matrix/cortex.Cortex#embed,matrix/cortex.Cortex#idGen,matrix/cortex.Cortex#keyResolver,matrix/cortex.Cortex#now,matrix/cortex.Cortex#pinnedCacheIDs,matrix/cortex.Cortex#pinnedCacheOK,matrix/cortex.Cortex#pinnedCacheSeq,matrix/cortex.Cortex#pinnedMu,matrix/cortex.Cortex#rl,matrix/cortex.Cortex#s,matrix/cortex.Cortex#snap,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AddSessionProvenance,matrix/cortex.Cortex.AddSessionProvenanceHeuristic,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.Cascade,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.DeleteGoalState,matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.EmbedText,matrix/cortex.Cortex.EmbedderModel,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.EpisodicBackfill,matrix/cortex.Cortex.ExpandToTranscript,matrix/cortex.Cortex.Find,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.Index,matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.ListGoalStates,matrix/cortex.Cortex.LoadCheckpoint,matrix/cortex.Cortex.LoadEnrichment,matrix/cortex.Cortex.LoadRollup,matrix/cortex.Cortex.LoadRollupEnriched,matrix/cortex.Cortex.LoadStorySoFar,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.QueryLexical,matrix/cortex.Cortex.ReadGoalState,matrix/cortex.Cortex.Rebuild,matrix/cortex.Cortex.RebuildLexicalIndex,matrix/cortex.Cortex.RecallDescend,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.RecordToolEvent,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.RepairRollup,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveScoped,matrix/cortex.Cortex.ResolveToolResult,matrix/cortex.Cortex.Rollups,matrix/cortex.Cortex.Snap,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.Cortex.StopEmbedder,matrix/cortex.Cortex.Store,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.SweepNow,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Transcript,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Verify,matrix/cortex.Cortex.VerifyScope,matrix/cortex.Cortex.VerifyToolEventCitation,matrix/cortex.Cortex.Versions,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.WriteGoalState,matrix/cortex.Cortex.addSessionProvenance,matrix/cortex.Cortex.backfillMemoryBatch,matrix/cortex.Cortex.backfillSessionBatch,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.Cortex.cascadeCoarse,matrix/cortex.Cortex.cascadeHours,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.Cortex.enforceContextBudget,matrix/cortex.Cortex.enforceRead,matrix/cortex.Cortex.enforceWrite,matrix/cortex.Cortex.findIdxActorObjKey,matrix/cortex.Cortex.findIdxTagKey,matrix/cortex.Cortex.findToolEventByIdempotency,matrix/cortex.Cortex.hasSessionProvenance,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.iterEdges,matrix/cortex.Cortex.journalEntryAt,matrix/cortex.Cortex.loadOrRepairStorySoFar,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.Cortex.notifyEmbedder,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.Cortex.prepareSupersedesEdge,matrix/cortex.Cortex.repairCoarseRollup,matrix/cortex.Cortex.repairHourRollup,matrix/cortex.Cortex.resolveNear,matrix/cortex.Cortex.saveEpisodicBackfill,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.Cortex.stageLexicalMessage,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.Cortex.stageSupersedesEdge,matrix/cortex.Cortex.tierFrameRelevant,matrix/cortex.Cortex.tierOutcomes,matrix/cortex.Cortex.tierPinned,matrix/cortex.Cortex.transcriptSliceApprox,matrix/cortex.Cortex.transcriptSliceExact
+  contains=matrix/cortex.Cortex#embed,matrix/cortex.Cortex#idGen,matrix/cortex.Cortex#keyResolver,matrix/cortex.Cortex#now,matrix/cortex.Cortex#pinnedCacheIDs,matrix/cortex.Cortex#pinnedCacheOK,matrix/cortex.Cortex#pinnedCacheSeq,matrix/cortex.Cortex#pinnedMu,matrix/cortex.Cortex#rl,matrix/cortex.Cortex#s,matrix/cortex.Cortex#snap,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AddSessionProvenance,matrix/cortex.Cortex.AddSessionProvenanceHeuristic,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.Cascade,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.DeleteGoalState,matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.EmbedText,matrix/cortex.Cortex.EmbedderModel,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.EpisodicBackfill,matrix/cortex.Cortex.ExpandToTranscript,matrix/cortex.Cortex.Find,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.Index,matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.ListGoalStates,matrix/cortex.Cortex.LoadCheckpoint,matrix/cortex.Cortex.LoadEnrichment,matrix/cortex.Cortex.LoadRollup,matrix/cortex.Cortex.LoadRollupEnriched,matrix/cortex.Cortex.LoadStorySoFar,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.QueryLexical,matrix/cortex.Cortex.QueryLexicalConversation,matrix/cortex.Cortex.ReadGoalState,matrix/cortex.Cortex.Rebuild,matrix/cortex.Cortex.RebuildLexicalIndex,matrix/cortex.Cortex.RecallDescend,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.RecordToolEvent,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.RepairRollup,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveScoped,matrix/cortex.Cortex.ResolveToolResult,matrix/cortex.Cortex.Rollups,matrix/cortex.Cortex.Snap,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.Cortex.StopEmbedder,matrix/cortex.Cortex.Store,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.SweepNow,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Transcript,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Verify,matrix/cortex.Cortex.VerifyScope,matrix/cortex.Cortex.VerifyToolEventCitation,matrix/cortex.Cortex.Versions,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.WriteGoalState,matrix/cortex.Cortex.addSessionProvenance,matrix/cortex.Cortex.backfillMemoryBatch,matrix/cortex.Cortex.backfillSessionBatch,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.Cortex.cascadeCoarse,matrix/cortex.Cortex.cascadeHours,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.Cortex.enforceContextBudget,matrix/cortex.Cortex.enforceRead,matrix/cortex.Cortex.enforceWrite,matrix/cortex.Cortex.findIdxActorObjKey,matrix/cortex.Cortex.findIdxTagKey,matrix/cortex.Cortex.findToolEventByIdempotency,matrix/cortex.Cortex.hasSessionProvenance,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.iterEdges,matrix/cortex.Cortex.journalEntryAt,matrix/cortex.Cortex.loadOrRepairStorySoFar,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.Cortex.notifyEmbedder,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.Cortex.prepareSupersedesEdge,matrix/cortex.Cortex.queryLexical,matrix/cortex.Cortex.repairCoarseRollup,matrix/cortex.Cortex.repairHourRollup,matrix/cortex.Cortex.resolveNear,matrix/cortex.Cortex.saveEpisodicBackfill,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.Cortex.stageLexicalMessage,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.Cortex.stageSupersedesEdge,matrix/cortex.Cortex.tierFrameRelevant,matrix/cortex.Cortex.tierOutcomes,matrix/cortex.Cortex.tierPinned,matrix/cortex.Cortex.transcriptSliceApprox,matrix/cortex.Cortex.transcriptSliceExact
   ^defines=matrix/cortex/cortex.go
 
 NODE id=matrix/cortex.Cortex#embed kind=field
@@ -977,8 +977,16 @@ EDGES
   ^defines=matrix/cortex/cortex.go
 
 NODE id=matrix/cortex.Cortex.QueryLexical kind=method
-  digest=b3:8dbdc7358925e9d22134c07caa8369fa867a6fa588de4ac6ba1a7f86f6eb2a9f file=cortex/lexical.go range=154:239 lang=go exported=true byte_range=3831:6062
+  digest=b3:2441b7d135ee8c9547efa3ff211e75dcca132d74a1c269438f62ff86da7537a1 file=cortex/lexical.go range=154:156 lang=go exported=true byte_range=3831:3988
   sig=func (c *Cortex) QueryLexical(queryText string, from, until time.Time, k int) ([]LexicalHit, error)
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/lexical.go
+
+NODE id=matrix/cortex.Cortex.QueryLexicalConversation kind=method
+  digest=b3:4ee9a5b66a6a74e2ea3202b86eb32871a5eee3736eaf59d5f98dbee9e836cda0 file=cortex/lexical.go range=158:172 lang=go exported=true byte_range=3990:4551
+  sig=func (c *Cortex) QueryLexicalConversation(\n	queryText string,\n	conversationID string,\n	from, until time.Time,\n	k int,\n) ([]LexicalHit, error)
+  doc=QueryLexicalConversation searches only one conversation transcript. Ambient\nactivation must use this scoped form; the global form is reserved for an\nexplicit cross-thread recall request where every hit carries provenance.
 EDGES
   ^contains=matrix/cortex.Cortex
   ^defines=matrix/cortex/lexical.go
@@ -1397,6 +1405,13 @@ NODE id=matrix/cortex.Cortex.prepareSupersedesEdge kind=method
 EDGES
   ^contains=matrix/cortex.Cortex
   ^defines=matrix/cortex/supersede.go
+
+NODE id=matrix/cortex.Cortex.queryLexical kind=method
+  digest=b3:0e7955e3389d710d2b80ec0954ac925e83c3a7b40629c29a760067e7f9eb609f file=cortex/lexical.go range=174:267 lang=go exported=false byte_range=4553:6901
+  sig=func (c *Cortex) queryLexical(\n	queryText string,\n	conversationID string,\n	from, until time.Time,\n	k int,\n) ([]LexicalHit, error)
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/lexical.go
 
 NODE id=matrix/cortex.Cortex.repairCoarseRollup kind=method
   digest=b3:9527479d205a807fcf3230cb43576f2a40a45ada32f50c8c74e5a87500d8a37f file=cortex/repair.go range=83:104 lang=go exported=false byte_range=3584:4600
@@ -3430,7 +3445,7 @@ NODE id=matrix/cortex.embedderState kind=type
   sig=type embedderState struct {\n	c		*Cortex\n	embedder	embed.Embedder\n	index		*vector.Index\n	store		*pebbleVectorStore\n	opts		EmbedderOptions\n\n	cursor		uint64	// next journal seq to process\n	vertexNext	uint64	// next HNSW vertex id to allocate\n\n	notifyCh	chan struct{}\n	doneCh		chan struct{}\n	drainCh		chan chan struct{}	// requests for a drain barrier\n	wg		sync.WaitGroup\n\n	stopped	atomic.Bool\n}
   doc=embedderState holds the running worker. Stored on Cortex.embed.
 EDGES
-  contains=matrix/cortex.embedderState#c,matrix/cortex.embedderState#cursor,matrix/cortex.embedderState#doneCh,matrix/cortex.embedderState#drainCh,matrix/cortex.embedderState#embedder,matrix/cortex.embedderState#index,matrix/cortex.embedderState#notifyCh,matrix/cortex.embedderState#opts,matrix/cortex.embedderState#stopped,matrix/cortex.embedderState#store,matrix/cortex.embedderState#vertexNext,matrix/cortex.embedderState#wg,matrix/cortex.embedderState.drainPending,matrix/cortex.embedderState.processTombstoneEntry,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.embedderState.run,matrix/cortex.embedderState.serviceDrainRequests
+  contains=matrix/cortex.embedderState#c,matrix/cortex.embedderState#cursor,matrix/cortex.embedderState#doneCh,matrix/cortex.embedderState#drainCh,matrix/cortex.embedderState#embedder,matrix/cortex.embedderState#index,matrix/cortex.embedderState#notifyCh,matrix/cortex.embedderState#opts,matrix/cortex.embedderState#stopped,matrix/cortex.embedderState#store,matrix/cortex.embedderState#vertexNext,matrix/cortex.embedderState#wg,matrix/cortex.embedderState.commitEmbedding,matrix/cortex.embedderState.drainPending,matrix/cortex.embedderState.processTombstoneEntry,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.embedderState.run,matrix/cortex.embedderState.serviceDrainRequests
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.embedderState#c kind=field
@@ -3505,6 +3520,14 @@ NODE id=matrix/cortex.embedderState#wg kind=field
 EDGES
   ^contains=matrix/cortex.embedderState
 
+NODE id=matrix/cortex.embedderState.commitEmbedding kind=method
+  digest=b3:074848badcd582a5a888c874ac3fcfcf713dc340f513ab053c2f9fe970d83e84 file=cortex/embedder.go range=489:624 lang=go exported=false byte_range=16210:20607
+  sig=func (s *embedderState) commitEmbedding(\n	p journal.WritePayload,\n	mid memory.ID,\n	sourceVersion uint64,\n	vec []float32,\n	vecHash [32]byte,\n) error
+  doc=commitEmbedding performs the durable half of processWriteEntry. Vector\ncomputation intentionally happens before this method so a slow provider\nnever holds the store write lock. Once the vector is ready, BeginWrite\nexcludes every other journaled writer while the Head is reloaded and the\natomic vec/meta + Head + journal batch is committed.
+EDGES
+  ^contains=matrix/cortex.embedderState
+  ^defines=matrix/cortex/embedder.go
+
 NODE id=matrix/cortex.embedderState.drainPending kind=method
   digest=b3:9fbe35444e5c24e5d31862a3000ece61baa4f5b90871383fe2b6f4e30c303991 file=cortex/embedder.go range=358:404 lang=go exported=false byte_range=11564:13024
   sig=func (s *embedderState) drainPending() error
@@ -3514,7 +3537,7 @@ EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.embedderState.processTombstoneEntry kind=method
-  digest=b3:2a7a776be7652267e9a67edc05a7660d590344d01aa195998bc1ae2eaa8c6f19 file=cortex/embedder.go range=584:595 lang=go exported=false byte_range=18873:19362
+  digest=b3:2a7a776be7652267e9a67edc05a7660d590344d01aa195998bc1ae2eaa8c6f19 file=cortex/embedder.go range=626:637 lang=go exported=false byte_range=20609:21098
   sig=func (s *embedderState) processTombstoneEntry(entry *journal.Entry)
   doc=processTombstoneEntry marks the HNSW node tombstoned so subsequent\nSearch calls skip it. The vec/meta entry is left in place so a future\nun-tombstone path can re-index; only the in-memory HNSW flag is set.
 EDGES
@@ -3522,7 +3545,7 @@ EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.embedderState.processWriteEntry kind=method
-  digest=b3:155d4b2339d94f74854403a1812b50ede92d69bd67b4de16480f4134ced8f89f file=cortex/embedder.go range=416:582 lang=go exported=false byte_range=13463:18871
+  digest=b3:caec773d8758762c625fe810dd20ea82eb739d345b8bd8971686602a436a9e32 file=cortex/embedder.go range=423:487 lang=go exported=false byte_range=13925:16208
   sig=func (s *embedderState) processWriteEntry(entry *journal.Entry) error
   doc=processWriteEntry embeds the memory referenced by entry and persists\nvec/meta + Head.EmbeddingRef + KindEmbed journal entry atomically.
 EDGES
@@ -3537,7 +3560,7 @@ EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.embedderState.serviceDrainRequests kind=method
-  digest=b3:34f59c0701d6960ce42965a906aabe6c5cf0044aa1ff4ad382ec0bfb7b3c4e51 file=cortex/embedder.go range=597:614 lang=go exported=false byte_range=19364:19761
+  digest=b3:34f59c0701d6960ce42965a906aabe6c5cf0044aa1ff4ad382ec0bfb7b3c4e51 file=cortex/embedder.go range=639:656 lang=go exported=false byte_range=21100:21497
   sig=func (s *embedderState) serviceDrainRequests()
   doc=serviceDrainRequests responds to any pending drain requests whose\ntarget seq has been reached.
 EDGES
@@ -3600,6 +3623,13 @@ NODE id=matrix/cortex.epochNanos kind=const
   sig=int64
 EDGES
   ^defines=matrix/cortex/rollup.go
+
+NODE id=matrix/cortex.errEmbedderHeadChanged kind=var
+  digest=b3:3eadd909129a888f77fa1828915bcf43697e5f873e9b16dedb810a6afd2cd143 file=cortex/embedder.go range=416:421 lang=go exported=false byte_range=13463:13923
+  sig=error
+  doc=errEmbedderHeadChanged leaves the journal cursor on the current entry so\nthe worker recomputes the vector from the memory's new current version.\nIt is deliberately not skippable: attaching a vector computed from an old\nversion to a concurrently advanced Head would make vec/meta lie about its\nSourceVersion, while writing the old Head back would lose the update.
+EDGES
+  ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.errEmbedderSkip kind=var
   digest=b3:d035ebf54108db059ee407b6235f788a39930916d6f76afcff571210008fba12 file=cortex/embedder.go range=412:414 lang=go exported=false byte_range=13270:13461
@@ -3793,21 +3823,21 @@ EDGES
   ^defines=matrix/cortex/lexical.go
 
 NODE id=matrix/cortex.loadHead kind=func
-  digest=b3:447af41358b16191451806abd8fb441b7742dfa70aa6915c06bcec2a18a389b6 file=cortex/embedder.go range=678:691 lang=go exported=false byte_range=22045:22427
+  digest=b3:447af41358b16191451806abd8fb441b7742dfa70aa6915c06bcec2a18a389b6 file=cortex/embedder.go range=720:733 lang=go exported=false byte_range=23781:24163
   sig=func loadHead(s *store.Store, id memory.ID) (memory.Head, bool, error)
   doc=loadHead reads m/<id> and decodes it.
 EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.loadOrBuildIndex kind=func
-  digest=b3:fce04f5840f3a2875c734b646dae4608af9e9acc9232b7a0a9ad847e3eb267a9 file=cortex/embedder.go range=618:666 lang=go exported=false byte_range=19841:21750
+  digest=b3:fce04f5840f3a2875c734b646dae4608af9e9acc9232b7a0a9ad847e3eb267a9 file=cortex/embedder.go range=660:708 lang=go exported=false byte_range=21577:23486
   sig=func loadOrBuildIndex(s *store.Store, opts EmbedderOptions) (*vector.Index, error)
   doc=loadOrBuildIndex opens IndexPath if it exists; otherwise builds an empty\nindex and rebuilds it from any existing vec/meta entries (so a startup\nwith a deleted index file recovers without re-embedding).
 EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.loadVersion kind=func
-  digest=b3:45375ee2375073bf35fa4fda4a6b8212e8695fe4d020a4d301511ce2c91c885f file=cortex/embedder.go range=693:706 lang=go exported=false byte_range=22429:22859
+  digest=b3:45375ee2375073bf35fa4fda4a6b8212e8695fe4d020a4d301511ce2c91c885f file=cortex/embedder.go range=735:748 lang=go exported=false byte_range=24165:24595
   sig=func loadVersion(s *store.Store, id memory.ID, ver uint64) (memory.Version, bool, error)
   doc=loadVersion reads mv/<id>/v/<n> and decodes it.
 EDGES
@@ -3863,7 +3893,7 @@ EDGES
   ^defines=matrix/cortex/cascade.go
 
 NODE id=matrix/cortex.newPebbleVectorStore kind=func
-  digest=b3:b0354decb5fc4fe3a14eecd1f3871325ada1c8ba4874b2111b5a34767227b406 file=cortex/embedder.go range=763:765 lang=go exported=false byte_range=24811:24939
+  digest=b3:b0354decb5fc4fe3a14eecd1f3871325ada1c8ba4874b2111b5a34767227b406 file=cortex/embedder.go range=805:807 lang=go exported=false byte_range=26547:26675
   sig=func newPebbleVectorStore(s *store.Store) *pebbleVectorStore
 EDGES
   ^defines=matrix/cortex/embedder.go
@@ -3943,7 +3973,7 @@ EDGES
   ^defines=matrix/cortex/cortex.go
 
 NODE id=matrix/cortex.pebbleVectorStore kind=type
-  digest=b3:aa5c8e77c188bca30ab7f195e73fd88fcfb25ec8b9a86f1c9711144a68c8aa32 file=cortex/embedder.go range=754:761 lang=go exported=false byte_range=24491:24809
+  digest=b3:aa5c8e77c188bca30ab7f195e73fd88fcfb25ec8b9a86f1c9711144a68c8aa32 file=cortex/embedder.go range=796:803 lang=go exported=false byte_range=26227:26545
   sig=type pebbleVectorStore struct {\n	s	*store.Store\n	mu	sync.RWMutex\n	cache	map[uint64][]float32\n}
   doc=pebbleVectorStore reads vectors from vec/meta in the per-actor Pebble\nDB. It caches recently-read vectors so HNSW search doesn't pay a\ndecode hit per neighbor distance probe — caches are small and bounded.
 EDGES
@@ -3952,25 +3982,25 @@ EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.pebbleVectorStore#cache kind=field
-  digest=b3:7d17e53feadb4fc3457fd68219741addeb78bfc989120061a061f0b45c94669d file=cortex/embedder.go range=760:760 lang=go exported=false byte_range=24781:24807
+  digest=b3:7d17e53feadb4fc3457fd68219741addeb78bfc989120061a061f0b45c94669d file=cortex/embedder.go range=802:802 lang=go exported=false byte_range=26517:26543
   sig=map[uint64][]float32
 EDGES
   ^contains=matrix/cortex.pebbleVectorStore
 
 NODE id=matrix/cortex.pebbleVectorStore#mu kind=field
-  digest=b3:1ac8e52b327492c9f05a05166545d5f3f7008498a3a2991ae1ddd4a50fe367de file=cortex/embedder.go range=759:759 lang=go exported=false byte_range=24761:24779
+  digest=b3:1ac8e52b327492c9f05a05166545d5f3f7008498a3a2991ae1ddd4a50fe367de file=cortex/embedder.go range=801:801 lang=go exported=false byte_range=26497:26515
   sig=sync.RWMutex
 EDGES
   ^contains=matrix/cortex.pebbleVectorStore
 
 NODE id=matrix/cortex.pebbleVectorStore#s kind=field
-  digest=b3:fae897ee434faf22c93d1ddbc0307f756e93db21305edc3af3f248941cb3e077 file=cortex/embedder.go range=758:758 lang=go exported=false byte_range=24741:24759
+  digest=b3:fae897ee434faf22c93d1ddbc0307f756e93db21305edc3af3f248941cb3e077 file=cortex/embedder.go range=800:800 lang=go exported=false byte_range=26477:26495
   sig=*store.Store
 EDGES
   ^contains=matrix/cortex.pebbleVectorStore
 
 NODE id=matrix/cortex.pebbleVectorStore.GetVector kind=method
-  digest=b3:57db393d0cf3f87169ad028ec4c50bb9c88fe219430c408c721c1153aa0539b7 file=cortex/embedder.go range=778:812 lang=go exported=true byte_range=25273:26271
+  digest=b3:57db393d0cf3f87169ad028ec4c50bb9c88fe219430c408c721c1153aa0539b7 file=cortex/embedder.go range=820:854 lang=go exported=true byte_range=27009:28007
   sig=func (p *pebbleVectorStore) GetVector(vid uint64) ([]float32, bool)
   doc=GetVector implements vector.VectorStore by reading vec/meta and\ndecoding the Vector field. Cache-on-read.
 EDGES
@@ -3978,7 +4008,7 @@ EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.pebbleVectorStore.put kind=method
-  digest=b3:6af0b8c3285dea214b4901e66019102b93bf79e3325b5579e00850866b54bb53 file=cortex/embedder.go range=767:776 lang=go exported=false byte_range=24941:25271
+  digest=b3:6af0b8c3285dea214b4901e66019102b93bf79e3325b5579e00850866b54bb53 file=cortex/embedder.go range=809:818 lang=go exported=false byte_range=26677:27007
   sig=func (p *pebbleVectorStore) put(vid uint64, vec []float32)
   doc=put inserts vec into the cache. Called by the embedder after computing\na new vector so subsequent neighbor probes during Add don't have to\nhit Pebble for it.
 EDGES
@@ -4135,21 +4165,21 @@ EDGES
   ^defines=matrix/cortex/ratelimit.go
 
 NODE id=matrix/cortex.readJournalEntry kind=func
-  digest=b3:af89eb7ce7988d7f01b370cdf55f4914a829924ffa51d138f252da969d1b2a5e file=cortex/embedder.go range=708:721 lang=go exported=false byte_range=22861:23377
+  digest=b3:af89eb7ce7988d7f01b370cdf55f4914a829924ffa51d138f252da969d1b2a5e file=cortex/embedder.go range=750:763 lang=go exported=false byte_range=24597:25113
   sig=func readJournalEntry(s *store.Store, seq uint64) (*journal.Entry, bool, error)
   doc=readJournalEntry reads j/<seq> directly. The Phase 1 store didn't expose\na point-read on the journal (it shipped only IterJournal); this is a\nthin helper so the embedder doesn't have to walk from seq=0 every tick.
 EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.readMetaUint64 kind=func
-  digest=b3:7f81eb7414a944357e2855fa1e0cb33d9e33eb3388d1d6da6b30fd820f564e41 file=cortex/embedder.go range=723:736 lang=go exported=false byte_range=23379:23750
+  digest=b3:7f81eb7414a944357e2855fa1e0cb33d9e33eb3388d1d6da6b30fd820f564e41 file=cortex/embedder.go range=765:778 lang=go exported=false byte_range=25115:25486
   sig=func readMetaUint64(s *store.Store, key []byte) (uint64, error)
   doc=readMetaUint64 reads a uint64 from meta/<key>. Returns 0 if absent.
 EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.rebuildEntry kind=type
-  digest=b3:93abaebe7bd431dcd62680d50735dc264b5815b168a0f688c85eb22ee625f670 file=cortex/embedder.go range=668:674 lang=go exported=false byte_range=21752:21965
+  digest=b3:93abaebe7bd431dcd62680d50735dc264b5815b168a0f688c85eb22ee625f670 file=cortex/embedder.go range=710:716 lang=go exported=false byte_range=23488:23701
   sig=type rebuildEntry struct {\n	vid	uint64\n	mid	memory.ID\n	vec	[]float32\n}
   doc=rebuildEntry is a small named type the rebuild scan uses instead of an\nanonymous-struct slice; named so sort.Slice can index it cleanly.
 EDGES
@@ -4157,19 +4187,19 @@ EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.rebuildEntry#mid kind=field
-  digest=b3:6a0bbf104f16f14c8fe15ab6019eef007da9326a1b73c4ed4d9b2e53860e4345 file=cortex/embedder.go range=672:672 lang=go exported=false byte_range=21935:21948
+  digest=b3:6a0bbf104f16f14c8fe15ab6019eef007da9326a1b73c4ed4d9b2e53860e4345 file=cortex/embedder.go range=714:714 lang=go exported=false byte_range=23671:23684
   sig=memory.ID
 EDGES
   ^contains=matrix/cortex.rebuildEntry
 
 NODE id=matrix/cortex.rebuildEntry#vec kind=field
-  digest=b3:a58142a49fe5825d014180319e95f7841e189952b4ae8ed2c6b33f311ed90b9a file=cortex/embedder.go range=673:673 lang=go exported=false byte_range=21950:21963
+  digest=b3:a58142a49fe5825d014180319e95f7841e189952b4ae8ed2c6b33f311ed90b9a file=cortex/embedder.go range=715:715 lang=go exported=false byte_range=23686:23699
   sig=[]float32
 EDGES
   ^contains=matrix/cortex.rebuildEntry
 
 NODE id=matrix/cortex.rebuildEntry#vid kind=field
-  digest=b3:f748125570e6773747d39be2170ca8ca47c73604c098947adf2c0cad855bb869 file=cortex/embedder.go range=671:671 lang=go exported=false byte_range=21923:21933
+  digest=b3:f748125570e6773747d39be2170ca8ca47c73604c098947adf2c0cad855bb869 file=cortex/embedder.go range=713:713 lang=go exported=false byte_range=23659:23669
   sig=uint64
 EDGES
   ^contains=matrix/cortex.rebuildEntry
@@ -4405,7 +4435,7 @@ EDGES
   ^defines=matrix/cortex/compact.go
 
 NODE id=matrix/cortex.writeMetaUint64 kind=func
-  digest=b3:cbecd8763feb47b2e7d74912e0b9b1c5cef4262a916519b0966363ca3a2b2af7 file=cortex/embedder.go range=738:750 lang=go exported=false byte_range=23752:24412
+  digest=b3:cbecd8763feb47b2e7d74912e0b9b1c5cef4262a916519b0966363ca3a2b2af7 file=cortex/embedder.go range=780:792 lang=go exported=false byte_range=25488:26148
   sig=func writeMetaUint64(s *store.Store, key []byte, v uint64) error
   doc=writeMetaUint64 writes v to meta/<key>. NOT wrapped in a journaled\nbatch — meta keys used here (embed_cursor, embed_vertex_next) are\nderived state, recomputable from the journal. Writing them outside the\nbatch keeps the embedder's progress note independent of any specific\ncommit.
 EDGES
@@ -4454,9 +4484,9 @@ EDGES
   ^contains=matrix/cortex
 
 NODE id=matrix/cortex/embedder.go kind=file
-  digest=b3:ba362bb5e25499b462dc2070a2ddf01da1d87a8cb115fb3fa0a78d919e29e33c file=cortex/embedder.go range=1:814 lang=go exported=true
+  digest=b3:91fdadb122fac4e8b1f17fe42bcd8abe3647f202a8e359ec672a81a273da0fce file=cortex/embedder.go range=1:856 lang=go exported=true
 EDGES
-  defines=matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.EmbedText,matrix/cortex.Cortex.EmbedderModel,matrix/cortex.Cortex.Index,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.Cortex.StopEmbedder,matrix/cortex.Cortex.notifyEmbedder,matrix/cortex.EmbedderOptions,matrix/cortex.embedderState,matrix/cortex.embedderState.drainPending,matrix/cortex.embedderState.processTombstoneEntry,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.embedderState.run,matrix/cortex.embedderState.serviceDrainRequests,matrix/cortex.errEmbedderSkip,matrix/cortex.isSkippable,matrix/cortex.loadHead,matrix/cortex.loadOrBuildIndex,matrix/cortex.loadVersion,matrix/cortex.metaEmbedCursor,matrix/cortex.metaEmbedModel,matrix/cortex.metaEmbedVertexNext,matrix/cortex.newPebbleVectorStore,matrix/cortex.pebbleVectorStore,matrix/cortex.pebbleVectorStore.GetVector,matrix/cortex.pebbleVectorStore.put,matrix/cortex.readJournalEntry,matrix/cortex.readMetaUint64,matrix/cortex.rebuildEntry,matrix/cortex.writeMetaUint64
+  defines=matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.EmbedText,matrix/cortex.Cortex.EmbedderModel,matrix/cortex.Cortex.Index,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.Cortex.StopEmbedder,matrix/cortex.Cortex.notifyEmbedder,matrix/cortex.EmbedderOptions,matrix/cortex.embedderState,matrix/cortex.embedderState.commitEmbedding,matrix/cortex.embedderState.drainPending,matrix/cortex.embedderState.processTombstoneEntry,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.embedderState.run,matrix/cortex.embedderState.serviceDrainRequests,matrix/cortex.errEmbedderHeadChanged,matrix/cortex.errEmbedderSkip,matrix/cortex.isSkippable,matrix/cortex.loadHead,matrix/cortex.loadOrBuildIndex,matrix/cortex.loadVersion,matrix/cortex.metaEmbedCursor,matrix/cortex.metaEmbedModel,matrix/cortex.metaEmbedVertexNext,matrix/cortex.newPebbleVectorStore,matrix/cortex.pebbleVectorStore,matrix/cortex.pebbleVectorStore.GetVector,matrix/cortex.pebbleVectorStore.put,matrix/cortex.readJournalEntry,matrix/cortex.readMetaUint64,matrix/cortex.rebuildEntry,matrix/cortex.writeMetaUint64
   ^contains=matrix/cortex
 
 NODE id=matrix/cortex/episodic_backfill.go kind=file
@@ -4472,9 +4502,9 @@ EDGES
   ^contains=matrix/cortex
 
 NODE id=matrix/cortex/lexical.go kind=file
-  digest=b3:238d15f7dee9bf624794332a79765718c2e8c862ac8e2b110040e194e502569c file=cortex/lexical.go range=1:239 lang=go exported=true
+  digest=b3:3b70e272a3e098c1acf291707bb49811b6d020038a8d908218be9ca6cac72478 file=cortex/lexical.go range=1:267 lang=go exported=true
 EDGES
-  defines=matrix/cortex.Cortex.QueryLexical,matrix/cortex.Cortex.RebuildLexicalIndex,matrix/cortex.Cortex.stageLexicalMessage,matrix/cortex.LexicalHit,matrix/cortex.LexicalSchemaVersion,matrix/cortex.lexicalDoc,matrix/cortex.lexicalDocKey,matrix/cortex.lexicalPosting,matrix/cortex.lexicalPostingKey,matrix/cortex.lexicalRows,matrix/cortex.lexicalTermHash,matrix/cortex.lexicalTermPrefix,matrix/cortex.lexicalTokens
+  defines=matrix/cortex.Cortex.QueryLexical,matrix/cortex.Cortex.QueryLexicalConversation,matrix/cortex.Cortex.RebuildLexicalIndex,matrix/cortex.Cortex.queryLexical,matrix/cortex.Cortex.stageLexicalMessage,matrix/cortex.LexicalHit,matrix/cortex.LexicalSchemaVersion,matrix/cortex.lexicalDoc,matrix/cortex.lexicalDocKey,matrix/cortex.lexicalPosting,matrix/cortex.lexicalPostingKey,matrix/cortex.lexicalRows,matrix/cortex.lexicalTermHash,matrix/cortex.lexicalTermPrefix,matrix/cortex.lexicalTokens
   ^contains=matrix/cortex
 
 NODE id=matrix/cortex/provenance.go kind=file

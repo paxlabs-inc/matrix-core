@@ -45,7 +45,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "voice is not configured", http.StatusServiceUnavailable)
 		return
 	}
-	probe := httptest.NewRequest(http.MethodGet, "/conversations/"+url.PathEscape(conversationID), nil).WithContext(r.Context())
+	probe := httptest.NewRequest(http.MethodGet, "/conversations/"+url.PathEscape(conversationID), http.NoBody).WithContext(r.Context())
 	probe.Header = r.Header.Clone()
 	recorder := httptest.NewRecorder()
 	h.Proxy.ServeHTTP(recorder, probe)

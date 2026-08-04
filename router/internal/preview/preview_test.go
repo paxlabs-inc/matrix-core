@@ -17,7 +17,7 @@ import (
 // withSubject drives the public Handler with a request whose context
 // carries the given verified subject (as mw.JWT would have stashed it).
 func serveWithSubject(h *Handler, sub, target string) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(http.MethodGet, target, nil)
+	req := httptest.NewRequest(http.MethodGet, target, http.NoBody)
 	req = req.WithContext(proxy.WithSubject(req.Context(), sub))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
@@ -42,7 +42,7 @@ func TestHandler_ProxiesToRegisteredTarget(t *testing.T) {
 
 	h := &Handler{Reg: reg, Logf: func(string, ...any) {}}
 
-	req := httptest.NewRequest(http.MethodGet, "/preview/alice/app/page?x=1&access_token=private-jwt", nil)
+	req := httptest.NewRequest(http.MethodGet, "/preview/alice/app/page?x=1&access_token=private-jwt", http.NoBody)
 	req.Header.Set("Cookie", "app_session=allowed; mx_pv=private-jwt")
 	req.Header.Set("Authorization", "Bearer private-jwt")
 	req = req.WithContext(proxy.WithSubject(req.Context(), "alice"))
@@ -92,7 +92,7 @@ func TestHandler_UnregisteredNotFound(t *testing.T) {
 
 func TestHandler_MissingSubjectServerError(t *testing.T) {
 	h := &Handler{Reg: NewRegistry()}
-	req := httptest.NewRequest(http.MethodGet, "/preview/alice/x", nil)
+	req := httptest.NewRequest(http.MethodGet, "/preview/alice/x", http.NoBody)
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusInternalServerError {
@@ -124,7 +124,7 @@ func TestRegisterHandler_RoundTrip(t *testing.T) {
 	}
 
 	// Deregister via query param.
-	req = httptest.NewRequest(http.MethodDelete, "/internal/preview/register?user_id=alice", nil)
+	req = httptest.NewRequest(http.MethodDelete, "/internal/preview/register?user_id=alice", http.NoBody)
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
@@ -159,7 +159,7 @@ func TestRegisterHandler_BadRequests(t *testing.T) {
 	}
 
 	// Unsupported method.
-	req = httptest.NewRequest(http.MethodGet, "/internal/preview/register", nil)
+	req = httptest.NewRequest(http.MethodGet, "/internal/preview/register", http.NoBody)
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusMethodNotAllowed {

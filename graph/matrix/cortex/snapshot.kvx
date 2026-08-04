@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/cortex/snapshot kind=package
-  digest=b3:a993cebd2f71bf977449de842e7de43aecf0a068b4540a8026482b66e8923e65 file=cortex/snapshot range=0:0 lang=go exported=true
+  digest=b3:b7414a5d335fc2e0d74f893a24e174fab624ed91e4e53f152dac9b9cdb2731d2 file=cortex/snapshot range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/snapshot/errors.go,matrix/cortex/snapshot/mmr.go,matrix/cortex/snapshot/multiproof.go,matrix/cortex/snapshot/smt.go,matrix/cortex/snapshot/snapshot.go
   imports=matrix/cortex/keys,matrix/cortex/store
@@ -86,7 +86,7 @@ NODE id=matrix/cortex/snapshot.EmptyMMRRoot kind=var
   doc=EmptyMMRRoot is the canonical "no journal entries" MMR root. Computed\nas hashMMRRoot(0, zeros). Cached so callers don't need to re-derive.
 EDGES
   references=matrix/cortex/snapshot.hashMMRRoot
-  ^references=matrix/cortex/snapshot.MMR.Root
+  ^references=matrix/cortex/snapshot.MMR.RootAt,matrix/cortex/snapshot.RootForLeaves
   ^defines=matrix/cortex/snapshot/mmr.go
 
 NODE id=matrix/cortex/snapshot.EmptyRoot kind=var
@@ -190,9 +190,9 @@ NODE id=matrix/cortex/snapshot.MMR kind=type
   sig=type MMR struct {\n	s *store.Store\n}
   doc=MMR is a thin handle over the underlying store. It does not cache state\nin memory; each method reads what it needs from accum/. This keeps the\nin-memory model trivially correct under concurrent commits — the only\nauthority is the persisted accum/ keys, which advance atomically with\nthe journal write that triggered them.
 EDGES
-  contains=matrix/cortex/snapshot.MMR#s,matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.MMR.Reset,matrix/cortex/snapshot.MMR.Root,matrix/cortex/snapshot.MMR.StageAppend,matrix/cortex/snapshot.MMR.leafCountVia,matrix/cortex/snapshot.MMR.nodeVia
+  contains=matrix/cortex/snapshot.MMR#s,matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.MMR.Reset,matrix/cortex/snapshot.MMR.Root,matrix/cortex/snapshot.MMR.RootAt,matrix/cortex/snapshot.MMR.StageAppend,matrix/cortex/snapshot.MMR.leafCountVia,matrix/cortex/snapshot.MMR.nodeVia
   references=matrix/cortex/store.Store
-  ^references=matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.MMR.Reset,matrix/cortex/snapshot.MMR.Root,matrix/cortex/snapshot.MMR.StageAppend,matrix/cortex/snapshot.MMR.leafCountVia,matrix/cortex/snapshot.MMR.nodeVia,matrix/cortex/snapshot.NewMMR,matrix/cortex/snapshot.State,matrix/cortex/snapshot.State.MMR
+  ^references=matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.MMR.Reset,matrix/cortex/snapshot.MMR.Root,matrix/cortex/snapshot.MMR.RootAt,matrix/cortex/snapshot.MMR.StageAppend,matrix/cortex/snapshot.MMR.leafCountVia,matrix/cortex/snapshot.MMR.nodeVia,matrix/cortex/snapshot.NewMMR,matrix/cortex/snapshot.State,matrix/cortex/snapshot.State.MMR
   ^defines=matrix/cortex/snapshot/mmr.go
 
 NODE id=matrix/cortex/snapshot.MMR#s kind=field
@@ -221,12 +221,12 @@ EDGES
   calls=matrix/cortex/keys.AccumMMRNodeKey,matrix/cortex/store.Store.Get
   references=matrix/cortex/keys.AccumMMRNodeKey,matrix/cortex/snapshot.ErrNodeMissing,matrix/cortex/snapshot.MMR,matrix/cortex/snapshot.err,matrix/cortex/snapshot.m,matrix/cortex/snapshot.ok,matrix/cortex/snapshot.out,matrix/cortex/snapshot.pos,matrix/cortex/snapshot.raw,matrix/cortex/store.Store.Get
   ^contains=matrix/cortex/snapshot.MMR
-  ^calls=matrix/cortex/snapshot.MMR.Root,matrix/cortex/snapshot.MMR.nodeVia
-  ^references=matrix/cortex/snapshot.MMR.Root,matrix/cortex/snapshot.MMR.nodeVia
+  ^calls=matrix/cortex/snapshot.MMR.RootAt,matrix/cortex/snapshot.MMR.nodeVia
+  ^references=matrix/cortex/snapshot.MMR.RootAt,matrix/cortex/snapshot.MMR.nodeVia
   ^defines=matrix/cortex/snapshot/mmr.go
 
 NODE id=matrix/cortex/snapshot.MMR.Reset kind=method
-  digest=b3:854e32da5a7d0a76d780e72f49b7470846ef2cc7b9b5c774453ff5413e4ceb7d file=cortex/snapshot/mmr.go range=346:367 lang=go exported=true byte_range=12218:13123
+  digest=b3:854e32da5a7d0a76d780e72f49b7470846ef2cc7b9b5c774453ff5413e4ceb7d file=cortex/snapshot/mmr.go range=392:413 lang=go exported=true byte_range=13989:14894
   sig=func (m *MMR) Reset() error
   doc=Reset clears the persisted MMR state (leafcount + every accum/mmr/n/\nnode key). Used by the replay harness (Phase 11) and by tests that\ndrop+rebuild the accumulator. Not exposed in the public Cortex API.\n\nThe caller is responsible for sequencing this OUTSIDE any batch and\nfor re-running StageAppend over journal leaves to repopulate the\nstate.
 EDGES
@@ -236,15 +236,27 @@ EDGES
   ^defines=matrix/cortex/snapshot/mmr.go
 
 NODE id=matrix/cortex/snapshot.MMR.Root kind=method
-  digest=b3:4ae9b428186f3eb8d7a24029b40ff5e21d8c4c346a178cd3074eb8d0e352fa76 file=cortex/snapshot/mmr.go range=311:344 lang=go exported=true byte_range=11125:12216
+  digest=b3:06588fdeafe4a87c8e770fe024188c7fb365adfafe407647921b458b713f252c file=cortex/snapshot/mmr.go range=311:324 lang=go exported=true byte_range=11125:11627
   sig=func (m *MMR) Root() ([32]byte, error)
   doc=Root returns the current MMR root over the committed leaves. For an\nempty MMR (no leaves) returns EmptyMMRRoot.\n\nAlgorithm: read the peak hashes in left-to-right order, fold them\nright-to-left via hashMMRBag (so the leftmost peak ends up "outermost"\nin the bag spine), then wrap the result with hashMMRRoot(leafCount, _)\nto commit to the leaf count.
 EDGES
-  calls=matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.hashMMRBag,matrix/cortex/snapshot.hashMMRRoot,matrix/cortex/snapshot.peakPositions
-  references=matrix/cortex/snapshot.EmptyMMRRoot,matrix/cortex/snapshot.MMR,matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.acc,matrix/cortex/snapshot.err,matrix/cortex/snapshot.h,matrix/cortex/snapshot.hashMMRBag,matrix/cortex/snapshot.hashMMRRoot,matrix/cortex/snapshot.hashes,matrix/cortex/snapshot.i,matrix/cortex/snapshot.m,matrix/cortex/snapshot.n,matrix/cortex/snapshot.p,matrix/cortex/snapshot.peakPositions,matrix/cortex/snapshot.peaks
+  calls=matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.RootAt
+  references=matrix/cortex/snapshot.MMR,matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.RootAt,matrix/cortex/snapshot.err,matrix/cortex/snapshot.m,matrix/cortex/snapshot.n
   ^contains=matrix/cortex/snapshot.MMR
   ^calls=matrix/cortex/snapshot.State.CurrentRoots
   ^references=matrix/cortex/snapshot.State.CurrentRoots
+  ^defines=matrix/cortex/snapshot/mmr.go
+
+NODE id=matrix/cortex/snapshot.MMR.RootAt kind=method
+  digest=b3:d177c666cf69aa85df193545644b163adf4a96799a90e28e4ed65c2de4406071 file=cortex/snapshot/mmr.go range=326:360 lang=go exported=true byte_range=11629:13055
+  sig=func (m *MMR) RootAt(n uint64) ([32]byte, error)
+  doc=RootAt returns the canonical MMR root over the first n leaves, read from\nthe persisted accumulator rather than from the current leaf count. MMR\nnode positions are write-once — appending leaf n+1 only writes positions\nabove mmrSize(n) — so every peak position for n stays byte-identical for\nthe life of the journal. That makes a historical root derivable in\nO(log n) reads after any number of later appends, and lets a caller pin\nthe root for exactly the prefix it committed without racing a concurrent\nwriter (the async embedder journals KindEmbed entries on its own\ngoroutine; Root() alone would fold those in).\n\nReturns EmptyMMRRoot for n == 0. Returns ErrNodeMissing (wrapped) when n\nexceeds the leaves actually persisted.
+EDGES
+  calls=matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.hashMMRBag,matrix/cortex/snapshot.hashMMRRoot,matrix/cortex/snapshot.peakPositions
+  references=matrix/cortex/snapshot.EmptyMMRRoot,matrix/cortex/snapshot.MMR,matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.acc,matrix/cortex/snapshot.err,matrix/cortex/snapshot.h,matrix/cortex/snapshot.hashMMRBag,matrix/cortex/snapshot.hashMMRRoot,matrix/cortex/snapshot.hashes,matrix/cortex/snapshot.i,matrix/cortex/snapshot.m,matrix/cortex/snapshot.n,matrix/cortex/snapshot.p,matrix/cortex/snapshot.peakPositions,matrix/cortex/snapshot.peaks
+  ^contains=matrix/cortex/snapshot.MMR
+  ^calls=matrix/cortex.Cortex.RecordToolEvent,matrix/cortex.Cortex.VerifyToolEventCitation,matrix/cortex.Cortex.findToolEventByIdempotency,matrix/cortex/snapshot.MMR.Root
+  ^references=matrix/cortex.Cortex.RecordToolEvent,matrix/cortex.Cortex.VerifyToolEventCitation,matrix/cortex.Cortex.findToolEventByIdempotency,matrix/cortex/snapshot.MMR.Root
   ^defines=matrix/cortex/snapshot/mmr.go
 
 NODE id=matrix/cortex/snapshot.MMR.StageAppend kind=method
@@ -598,6 +610,15 @@ EDGES
   ^calls=matrix/cortex/snapshot.MMR.StageAppend,matrix/cortex/snapshot.SMT.stageNode
   ^defines=matrix/cortex/snapshot/snapshot.go
 
+NODE id=matrix/cortex/snapshot.RootForLeaves kind=func
+  digest=b3:8d644591b8126d75105bcdfd3715cc400eae8edc8305c57f7f24e5bd85e6ae1b file=cortex/snapshot/mmr.go range=362:390 lang=go exported=true byte_range=13057:13987
+  sig=func RootForLeaves(leaves [][32]byte) [32]byte
+  doc=RootForLeaves computes the canonical MMR root for an ordered leaf prefix\nwithout touching persisted accumulator state. Citation verification uses it\nto prove a historical journal root after later leaves have been appended.
+EDGES
+  calls=matrix/cortex/snapshot.hashMMRBag,matrix/cortex/snapshot.hashMMRNode,matrix/cortex/snapshot.hashMMRRoot
+  references=matrix/cortex/snapshot.EmptyMMRRoot,matrix/cortex/snapshot.acc,matrix/cortex/snapshot.current,matrix/cortex/snapshot.hashMMRBag,matrix/cortex/snapshot.hashMMRNode,matrix/cortex/snapshot.hashMMRRoot,matrix/cortex/snapshot.index,matrix/cortex/snapshot.leaf,matrix/cortex/snapshot.leaves,matrix/cortex/snapshot.left,matrix/cortex/snapshot.peak,matrix/cortex/snapshot.peaks
+  ^defines=matrix/cortex/snapshot/mmr.go
+
 NODE id=matrix/cortex/snapshot.SMT kind=type
   digest=b3:75b3b2cda341f199ad4d894536b7aabb77974b494af30dfecb404b932a151ee2 file=cortex/snapshot/smt.go range=188:195 lang=go exported=true byte_range=6593:6895
   sig=type SMT struct {\n	s	*store.Store\n	ns	string\n}
@@ -881,8 +902,8 @@ NODE id=matrix/cortex/snapshot.State.MMR kind=method
 EDGES
   references=matrix/cortex/snapshot.MMR,matrix/cortex/snapshot.State,matrix/cortex/snapshot.st
   ^contains=matrix/cortex/snapshot.State
-  ^calls=matrix/cortex/replay.rebuildJournalMMR
-  ^references=matrix/cortex/replay.rebuildJournalMMR
+  ^calls=matrix/cortex.Cortex.RecordToolEvent,matrix/cortex.Cortex.VerifyToolEventCitation,matrix/cortex.Cortex.findToolEventByIdempotency,matrix/cortex/replay.rebuildJournalMMR
+  ^references=matrix/cortex.Cortex.RecordToolEvent,matrix/cortex.Cortex.VerifyToolEventCitation,matrix/cortex.Cortex.findToolEventByIdempotency,matrix/cortex/replay.rebuildJournalMMR
   ^defines=matrix/cortex/snapshot/snapshot.go
 
 NODE id=matrix/cortex/snapshot.State.MMRHook kind=method
@@ -927,8 +948,8 @@ EDGES
   calls=matrix/cortex/snapshot.HashEdgeKey,matrix/cortex/snapshot.HashValue,matrix/cortex/snapshot.SMT.StageUpdate
   references=matrix/cortex/snapshot.HashEdgeKey,matrix/cortex/snapshot.HashValue,matrix/cortex/snapshot.SMT.StageUpdate,matrix/cortex/snapshot.Setter,matrix/cortex/snapshot.State,matrix/cortex/snapshot.canonicalEdge,matrix/cortex/snapshot.dst,matrix/cortex/snapshot.edgeType,matrix/cortex/snapshot.keyHash,matrix/cortex/snapshot.setter,matrix/cortex/snapshot.src,matrix/cortex/snapshot.st,matrix/cortex/snapshot.valueHash
   ^contains=matrix/cortex/snapshot.State
-  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex/replay.rebuildEdgesSMT
-  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex/replay.rebuildEdgesSMT
+  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.stageSupersedesEdge,matrix/cortex/replay.rebuildEdgesSMT
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.stageSupersedesEdge,matrix/cortex/replay.rebuildEdgesSMT
   ^defines=matrix/cortex/snapshot/snapshot.go
 
 NODE id=matrix/cortex/snapshot.State.StageJournalLeaf kind=method
@@ -949,8 +970,8 @@ EDGES
   calls=matrix/cortex/snapshot.HashMemoryKey,matrix/cortex/snapshot.HashValue,matrix/cortex/snapshot.SMT.StageUpdate
   references=matrix/cortex/snapshot.HashMemoryKey,matrix/cortex/snapshot.HashValue,matrix/cortex/snapshot.SMT.StageUpdate,matrix/cortex/snapshot.Setter,matrix/cortex/snapshot.State,matrix/cortex/snapshot.canonicalHead,matrix/cortex/snapshot.id,matrix/cortex/snapshot.keyHash,matrix/cortex/snapshot.setter,matrix/cortex/snapshot.st,matrix/cortex/snapshot.valueHash
   ^contains=matrix/cortex/snapshot.State
-  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/replay.rebuildOneMemory
-  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/replay.rebuildOneMemory
+  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.embedderState.commitEmbedding,matrix/cortex/replay.rebuildOneMemory
+  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.embedderState.commitEmbedding,matrix/cortex/replay.rebuildOneMemory
   ^defines=matrix/cortex/snapshot/snapshot.go
 
 NODE id=matrix/cortex/snapshot.State.Store kind=method
@@ -1038,7 +1059,7 @@ EDGES
   ^defines=matrix/cortex/snapshot/snapshot.go
 
 NODE id=matrix/cortex/snapshot.copyHash kind=func
-  digest=b3:6a0e60ebf8f0f02d124d91e87a02f028b29d70c6dd71437242a3248bac2bb89b file=cortex/snapshot/mmr.go range=369:377 lang=go exported=false byte_range=13125:13461
+  digest=b3:6a0e60ebf8f0f02d124d91e87a02f028b29d70c6dd71437242a3248bac2bb89b file=cortex/snapshot/mmr.go range=415:423 lang=go exported=false byte_range=14896:15232
   sig=func copyHash(h [32]byte) []byte
   doc=copyHash returns a fresh slice from h so callers can mutate the\noriginal after staging. wb.Set retains the slice (Pebble batches copy\nat commit, but explicit copy makes intent obvious and resilient to\nfuture Pebble-internal changes).
 EDGES
@@ -1083,8 +1104,8 @@ NODE id=matrix/cortex/snapshot.hashMMRBag kind=func
   doc=hashMMRBag = sha256(MMRBagDomain || left || right). Used for the\nright-to-left peak fold so internal merge nodes and bag spine nodes\ncan never collide.
 EDGES
   references=matrix/cortex/snapshot.MMRBagDomain,matrix/cortex/snapshot.h,matrix/cortex/snapshot.left,matrix/cortex/snapshot.out,matrix/cortex/snapshot.right
-  ^calls=matrix/cortex/snapshot.MMR.Root
-  ^references=matrix/cortex/snapshot.MMR.Root
+  ^calls=matrix/cortex/snapshot.MMR.RootAt,matrix/cortex/snapshot.RootForLeaves
+  ^references=matrix/cortex/snapshot.MMR.RootAt,matrix/cortex/snapshot.RootForLeaves
   ^defines=matrix/cortex/snapshot/mmr.go
 
 NODE id=matrix/cortex/snapshot.hashMMRNode kind=func
@@ -1093,8 +1114,8 @@ NODE id=matrix/cortex/snapshot.hashMMRNode kind=func
   doc=hashMMRNode = sha256(MMRNodeDomain || left || right).
 EDGES
   references=matrix/cortex/snapshot.MMRNodeDomain,matrix/cortex/snapshot.h,matrix/cortex/snapshot.left,matrix/cortex/snapshot.out,matrix/cortex/snapshot.right
-  ^calls=matrix/cortex/snapshot.MMR.StageAppend
-  ^references=matrix/cortex/snapshot.MMR.StageAppend
+  ^calls=matrix/cortex/snapshot.MMR.StageAppend,matrix/cortex/snapshot.RootForLeaves
+  ^references=matrix/cortex/snapshot.MMR.StageAppend,matrix/cortex/snapshot.RootForLeaves
   ^defines=matrix/cortex/snapshot/mmr.go
 
 NODE id=matrix/cortex/snapshot.hashMMRRoot kind=func
@@ -1103,8 +1124,8 @@ NODE id=matrix/cortex/snapshot.hashMMRRoot kind=func
   doc=hashMMRRoot = sha256(MMRRootDomain || u64BE(leafCount) || bag). The\nfinal wrap pins the leaf count into the root so the journal commitment\ncan't be confused with a smaller or larger journal sharing the same\npeak structure.
 EDGES
   references=matrix/cortex/snapshot.MMRRootDomain,matrix/cortex/snapshot.bag,matrix/cortex/snapshot.h,matrix/cortex/snapshot.leafCount,matrix/cortex/snapshot.n,matrix/cortex/snapshot.out
-  ^calls=matrix/cortex/snapshot.MMR.Root
-  ^references=matrix/cortex/snapshot.EmptyMMRRoot,matrix/cortex/snapshot.MMR.Root
+  ^calls=matrix/cortex/snapshot.MMR.RootAt,matrix/cortex/snapshot.RootForLeaves
+  ^references=matrix/cortex/snapshot.EmptyMMRRoot,matrix/cortex/snapshot.MMR.RootAt,matrix/cortex/snapshot.RootForLeaves
   ^defines=matrix/cortex/snapshot/mmr.go
 
 NODE id=matrix/cortex/snapshot.hashSMTLeaf kind=func
@@ -1170,8 +1191,8 @@ NODE id=matrix/cortex/snapshot.peakPositions kind=func
   doc=peakPositions returns the 1-indexed positions of MMR peaks for n leaves\nin DESCENDING height order (tallest peak first). For n=4 → [7]. For\nn=3 → [3, 4]. For n=7 → [7, 10, 11].\n\nThe high-bit-first walk gives us peak positions in left-to-right\norder (the tallest tree is leftmost in the MMR), which is what\nbag-of-peaks consumes from-the-right-end.
 EDGES
   references=matrix/cortex/snapshot.bit,matrix/cortex/snapshot.h,matrix/cortex/snapshot.n,matrix/cortex/snapshot.peaks,matrix/cortex/snapshot.pos,matrix/cortex/snapshot.size
-  ^calls=matrix/cortex/snapshot.MMR.Root
-  ^references=matrix/cortex/snapshot.MMR.Root
+  ^calls=matrix/cortex/snapshot.MMR.RootAt
+  ^references=matrix/cortex/snapshot.MMR.RootAt
   ^defines=matrix/cortex/snapshot/mmr.go
 
 NODE id=matrix/cortex/snapshot.setBitAt kind=func
@@ -1191,9 +1212,9 @@ EDGES
   ^contains=matrix/cortex/snapshot
 
 NODE id=matrix/cortex/snapshot/mmr.go kind=file
-  digest=b3:02e80cfa371b192313e060d1b8c5d79d0437c55ddd7f0def8d8424b549ea6527 file=cortex/snapshot/mmr.go range=1:379 lang=go exported=true
+  digest=b3:79f4f8dc077c0f5c7e8460cfccf61d106f2a93ab876d27a0f5fa647247f040d5 file=cortex/snapshot/mmr.go range=1:425 lang=go exported=true
 EDGES
-  defines=matrix/cortex/snapshot.EmptyMMRRoot,matrix/cortex/snapshot.MMR,matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.MMR.Reset,matrix/cortex/snapshot.MMR.Root,matrix/cortex/snapshot.MMR.StageAppend,matrix/cortex/snapshot.MMR.leafCountVia,matrix/cortex/snapshot.MMR.nodeVia,matrix/cortex/snapshot.MMRBagDomain,matrix/cortex/snapshot.MMRNodeDomain,matrix/cortex/snapshot.MMRRootDomain,matrix/cortex/snapshot.NewMMR,matrix/cortex/snapshot.copyHash,matrix/cortex/snapshot.hashMMRBag,matrix/cortex/snapshot.hashMMRNode,matrix/cortex/snapshot.hashMMRRoot,matrix/cortex/snapshot.mmrSize,matrix/cortex/snapshot.peakPositions
+  defines=matrix/cortex/snapshot.EmptyMMRRoot,matrix/cortex/snapshot.MMR,matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.MMR.Reset,matrix/cortex/snapshot.MMR.Root,matrix/cortex/snapshot.MMR.RootAt,matrix/cortex/snapshot.MMR.StageAppend,matrix/cortex/snapshot.MMR.leafCountVia,matrix/cortex/snapshot.MMR.nodeVia,matrix/cortex/snapshot.MMRBagDomain,matrix/cortex/snapshot.MMRNodeDomain,matrix/cortex/snapshot.MMRRootDomain,matrix/cortex/snapshot.NewMMR,matrix/cortex/snapshot.RootForLeaves,matrix/cortex/snapshot.copyHash,matrix/cortex/snapshot.hashMMRBag,matrix/cortex/snapshot.hashMMRNode,matrix/cortex/snapshot.hashMMRRoot,matrix/cortex/snapshot.mmrSize,matrix/cortex/snapshot.peakPositions
   ^contains=matrix/cortex/snapshot
 
 NODE id=matrix/cortex/snapshot/multiproof.go kind=file

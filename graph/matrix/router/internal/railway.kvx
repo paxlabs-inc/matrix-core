@@ -1,102 +1,126 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/router/internal/railway kind=package
-  digest=b3:667c25f434a3f2df92e8f6271f4b3533629f76634b069ec9fb483279550558f5 file=router/internal/railway range=0:0 lang=go exported=true
+  digest=b3:6acfd034cc8a97c120cd80a4b2628b214f75d78cd2e718e60a3c899fe1ac900d file=router/internal/railway range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/railway/provisioner.go,matrix/router/internal/railway/railway.go
   imports=matrix/router/internal/provision
   ^contains=mod:matrix/router
-  ^imports=matrix/router/cmd/matrix-router
+  ^imports=matrix/router/cmd/matrix-router,matrix/router/internal/shard
 
 NODE id=matrix/router/internal/railway.Client kind=type
-  digest=b3:136e4c5f6594aa4ceec3eb31822f6d64039d2e2a0e5502127f106083d4f19de5 file=router/internal/railway/railway.go range=52:60 lang=go exported=true byte_range=1930:2172
+  digest=b3:136e4c5f6594aa4ceec3eb31822f6d64039d2e2a0e5502127f106083d4f19de5 file=router/internal/railway/railway.go range=53:61 lang=go exported=true byte_range=1999:2241
   sig=type Client struct {\n	endpoint	string\n	token		string\n	projectID	string\n	environmentID	string\n	hc		*http.Client\n}
   doc=Client makes authenticated calls to the Railway GraphQL API, scoped\nto one project + environment.
 EDGES
-  contains=matrix/router/internal/railway.Client#endpoint,matrix/router/internal/railway.Client#environmentID,matrix/router/internal/railway.Client#hc,matrix/router/internal/railway.Client#projectID,matrix/router/internal/railway.Client#token,matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.WithEndpoint,matrix/router/internal/railway.Client.do
-  ^references=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.WithEndpoint,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.New,matrix/router/internal/railway.Provisioner
+  contains=matrix/router/internal/railway.Client#endpoint,matrix/router/internal/railway.Client#environmentID,matrix/router/internal/railway.Client#hc,matrix/router/internal/railway.Client#projectID,matrix/router/internal/railway.Client#token,matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.Client.Volume,matrix/router/internal/railway.Client.WithEndpoint,matrix/router/internal/railway.Client.do
+  ^references=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.Client.Volume,matrix/router/internal/railway.Client.WithEndpoint,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.New,matrix/router/internal/railway.Provisioner
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client#endpoint kind=field
-  digest=b3:011079a4fe96aea8d7768a0b3fc1d31441122fba404ae0c7a53a671478e97f81 file=router/internal/railway/railway.go range=55:55 lang=go exported=false byte_range=2056:2076
+  digest=b3:011079a4fe96aea8d7768a0b3fc1d31441122fba404ae0c7a53a671478e97f81 file=router/internal/railway/railway.go range=56:56 lang=go exported=false byte_range=2125:2145
   sig=string
 EDGES
   ^contains=matrix/router/internal/railway.Client
 
 NODE id=matrix/router/internal/railway.Client#environmentID kind=field
-  digest=b3:4a1310101a261aa23479e45954a617552704e95e895675ff6d858dfcc55a8711 file=router/internal/railway/railway.go range=58:58 lang=go exported=false byte_range=2122:2142
+  digest=b3:4a1310101a261aa23479e45954a617552704e95e895675ff6d858dfcc55a8711 file=router/internal/railway/railway.go range=59:59 lang=go exported=false byte_range=2191:2211
   sig=string
 EDGES
   ^contains=matrix/router/internal/railway.Client
 
 NODE id=matrix/router/internal/railway.Client#hc kind=field
-  digest=b3:f3b262454b75f50e8e4bdd6fbb368d92e1b7730d0496e4b3a3845be0b5a9e140 file=router/internal/railway/railway.go range=59:59 lang=go exported=false byte_range=2144:2170
+  digest=b3:f3b262454b75f50e8e4bdd6fbb368d92e1b7730d0496e4b3a3845be0b5a9e140 file=router/internal/railway/railway.go range=60:60 lang=go exported=false byte_range=2213:2239
   sig=*http.Client
 EDGES
   ^contains=matrix/router/internal/railway.Client
 
 NODE id=matrix/router/internal/railway.Client#projectID kind=field
-  digest=b3:96da3a375faa786dba87395212359fe3e9cd313a32a97bb507ef3ff2dda8df9e file=router/internal/railway/railway.go range=57:57 lang=go exported=false byte_range=2100:2120
+  digest=b3:96da3a375faa786dba87395212359fe3e9cd313a32a97bb507ef3ff2dda8df9e file=router/internal/railway/railway.go range=58:58 lang=go exported=false byte_range=2169:2189
   sig=string
 EDGES
   ^contains=matrix/router/internal/railway.Client
 
 NODE id=matrix/router/internal/railway.Client#token kind=field
-  digest=b3:49f3d9b26bee68520e03f1879d790a89aaa09e0eaf1a9a04f3fc6298b799d786 file=router/internal/railway/railway.go range=56:56 lang=go exported=false byte_range=2078:2098
+  digest=b3:49f3d9b26bee68520e03f1879d790a89aaa09e0eaf1a9a04f3fc6298b799d786 file=router/internal/railway/railway.go range=57:57 lang=go exported=false byte_range=2147:2167
   sig=string
 EDGES
   ^contains=matrix/router/internal/railway.Client
 
 NODE id=matrix/router/internal/railway.Client.CreateService kind=method
-  digest=b3:4512ab3aedecb0ce8e7332897783f977bfedb84d27523365fcca78f430d07725 file=router/internal/railway/railway.go range=120:144 lang=go exported=true byte_range=3986:4839
+  digest=b3:4512ab3aedecb0ce8e7332897783f977bfedb84d27523365fcca78f430d07725 file=router/internal/railway/railway.go range=245:269 lang=go exported=true byte_range=7617:8470
   sig=func (c *Client) CreateService(ctx context.Context, name, image string, env map[string]string) (*Service, error)
   doc=CreateService provisions a new service in the client's\nproject/environment from an image source, with the given\nenvironment variables baked in at create time (one deployment, not\na create-then-redeploy pair).
 EDGES
   calls=matrix/router/internal/railway.Client.do
   references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.Service,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.env,matrix/router/internal/railway.err,matrix/router/internal/railway.image,matrix/router/internal/railway.name,matrix/router/internal/railway.out,matrix/router/internal/railway.q,matrix/router/internal/railway.vars
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.Ensure
-  ^references=matrix/router/internal/railway.Provisioner.Ensure
+  ^calls=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure
+  ^references=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.CreateVolume kind=method
-  digest=b3:11216254dcd62c3e046085ef5fd8f3dfb326c2968fb550f7fd3a095d6fae5f7b file=router/internal/railway/railway.go range=146:167 lang=go exported=true byte_range=4841:5545
+  digest=b3:11216254dcd62c3e046085ef5fd8f3dfb326c2968fb550f7fd3a095d6fae5f7b file=router/internal/railway/railway.go range=290:311 lang=go exported=true byte_range=9242:9946
   sig=func (c *Client) CreateVolume(ctx context.Context, serviceID, mountPath string) (*Volume, error)
   doc=CreateVolume attaches a fresh persistent volume to the service at\nmountPath. Railway allows exactly ONE volume mount per service.
 EDGES
   calls=matrix/router/internal/railway.Client.do
   references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.Volume,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mountPath,matrix/router/internal/railway.out,matrix/router/internal/railway.q,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.vars
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.Ensure
-  ^references=matrix/router/internal/railway.Provisioner.Ensure
+  ^calls=matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.Ensure
+  ^references=matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.Ensure
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.DeleteService kind=method
-  digest=b3:f93100902ea38e756af1ac29b3193875039ee65f633fabb420cb91dcacf447c1 file=router/internal/railway/railway.go range=201:207 lang=go exported=true byte_range=6482:6740
+  digest=b3:f93100902ea38e756af1ac29b3193875039ee65f633fabb420cb91dcacf447c1 file=router/internal/railway/railway.go range=345:351 lang=go exported=true byte_range=10883:11141
   sig=func (c *Client) DeleteService(ctx context.Context, serviceID string) error
   doc=DeleteService tears the service down.
 EDGES
   calls=matrix/router/internal/railway.Client.do
   references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.q,matrix/router/internal/railway.serviceID
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.Destroy
-  ^references=matrix/router/internal/railway.Provisioner.Destroy
+  ^calls=matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.Destroy
+  ^references=matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.Destroy
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.DeleteVolume kind=method
-  digest=b3:596c12ab2ed18ac2849c6918298e314aca402b23be509d711f64f533ca04d999 file=router/internal/railway/railway.go range=209:215 lang=go exported=true byte_range=6742:7017
+  digest=b3:596c12ab2ed18ac2849c6918298e314aca402b23be509d711f64f533ca04d999 file=router/internal/railway/railway.go range=353:359 lang=go exported=true byte_range=11143:11418
   sig=func (c *Client) DeleteVolume(ctx context.Context, volumeID string) error
   doc=DeleteVolume tears the volume down.
 EDGES
   calls=matrix/router/internal/railway.Client.do
   references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.q,matrix/router/internal/railway.volumeID
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.Destroy
-  ^references=matrix/router/internal/railway.Provisioner.Destroy
+  ^calls=matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy
+  ^references=matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy
+  ^defines=matrix/router/internal/railway/railway.go
+
+NODE id=matrix/router/internal/railway.Client.FindService kind=method
+  digest=b3:1c8d9d0f4d0f5179b40ce4aa6e39f68f0df58c7dc1e0e46665b54e6477c4731d file=router/internal/railway/railway.go range=99:131 lang=go exported=true byte_range=3362:4281
+  sig=func (c *Client) FindService(ctx context.Context, name string) (*Service, error)
+  doc=FindService returns the uniquely named service in this client's project.
+EDGES
+  calls=matrix/router/internal/railway.Client.do
+  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.ErrUpstream,matrix/router/internal/railway.Service,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.edge,matrix/router/internal/railway.err,matrix/router/internal/railway.found,matrix/router/internal/railway.name,matrix/router/internal/railway.out,matrix/router/internal/railway.q,matrix/router/internal/railway.svc
+  ^contains=matrix/router/internal/railway.Client
+  ^calls=matrix/router/internal/railway.Provisioner.FindService
+  ^references=matrix/router/internal/railway.Provisioner.FindService
+  ^defines=matrix/router/internal/railway/railway.go
+
+NODE id=matrix/router/internal/railway.Client.FindVolume kind=method
+  digest=b3:9118ae89f0974d5b4fb08cb3fb6ccac413290a11ac6a4d8361f26916c4f7d566 file=router/internal/railway/railway.go range=133:185 lang=go exported=true byte_range=4283:5950
+  sig=func (c *Client) FindVolume(ctx context.Context, serviceID, mountPath string) (*Volume, error)
+  doc=FindVolume returns the one volume attached to serviceID at mountPath in\nthis client's environment.
+EDGES
+  calls=matrix/router/internal/railway.Client.do
+  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.ErrUpstream,matrix/router/internal/railway.Volume,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.found,matrix/router/internal/railway.instance,matrix/router/internal/railway.instanceEdge,matrix/router/internal/railway.mountPath,matrix/router/internal/railway.out,matrix/router/internal/railway.q,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.volume,matrix/router/internal/railway.volumeEdge
+  ^contains=matrix/router/internal/railway.Client
+  ^calls=matrix/router/internal/railway.Provisioner.FindVolume
+  ^references=matrix/router/internal/railway.Provisioner.FindVolume
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.LatestDeployment kind=method
-  digest=b3:61dcfbe55078cc9787f4bb5d47d14e4885904ad121a8a58c1512567cd9271bca file=router/internal/railway/railway.go range=169:199 lang=go exported=true byte_range=5547:6480
+  digest=b3:61dcfbe55078cc9787f4bb5d47d14e4885904ad121a8a58c1512567cd9271bca file=router/internal/railway/railway.go range=313:343 lang=go exported=true byte_range=9948:10881
   sig=func (c *Client) LatestDeployment(ctx context.Context, serviceID string) (*Deployment, error)
   doc=LatestDeployment returns the service's most recent deployment, or\nErrNotFound when the service has none yet.
 EDGES
@@ -107,8 +131,42 @@ EDGES
   ^references=matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.waitDeployed
   ^defines=matrix/router/internal/railway/railway.go
 
+NODE id=matrix/router/internal/railway.Client.Service kind=method
+  digest=b3:e8b8484101a1cc65a26fdace0918c3db488caa86d92a93943d87bfdb233820e6 file=router/internal/railway/railway.go range=187:196 lang=go exported=true byte_range=5952:6277
+  sig=func (c *Client) Service(ctx context.Context, id string) (*Service, error)
+EDGES
+  calls=matrix/router/internal/railway.Client.do
+  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.Service,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.id,matrix/router/internal/railway.out,matrix/router/internal/railway.q
+  ^contains=matrix/router/internal/railway.Client
+  ^calls=matrix/router/internal/railway.Provisioner.ServiceAbsent
+  ^references=matrix/router/internal/railway.Provisioner.ServiceAbsent
+  ^defines=matrix/router/internal/railway/railway.go
+
+NODE id=matrix/router/internal/railway.Client.UpsertVariables kind=method
+  digest=b3:24c7bca17936292358ff7a6b481c04d8dd6dc0a6b82b21d691d668ec33c0ee43 file=router/internal/railway/railway.go range=271:288 lang=go exported=true byte_range=8472:9240
+  sig=func (c *Client) UpsertVariables(ctx context.Context, serviceID string, env map[string]string) error
+  doc=UpsertVariables merges variables into an existing service instance. Railway\ndeploys the resulting staged change by default; replace is deliberately\nomitted so unrelated user-service configuration is preserved.
+EDGES
+  calls=matrix/router/internal/railway.Client.do
+  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.env,matrix/router/internal/railway.q,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.vars
+  ^contains=matrix/router/internal/railway.Client
+  ^calls=matrix/router/internal/railway.Provisioner.UpdateVariables
+  ^references=matrix/router/internal/railway.Provisioner.UpdateVariables
+  ^defines=matrix/router/internal/railway/railway.go
+
+NODE id=matrix/router/internal/railway.Client.Volume kind=method
+  digest=b3:6a7f2fbd3d63401deb0a5f2b76401a1cf02bffc4e785ea2cb81155fdeca62078 file=router/internal/railway/railway.go range=198:221 lang=go exported=true byte_range=6279:6922
+  sig=func (c *Client) Volume(ctx context.Context, id string) (*Volume, error)
+EDGES
+  calls=matrix/router/internal/railway.Client.do
+  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.Volume,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.edge,matrix/router/internal/railway.err,matrix/router/internal/railway.id,matrix/router/internal/railway.out,matrix/router/internal/railway.q,matrix/router/internal/railway.v
+  ^contains=matrix/router/internal/railway.Client
+  ^calls=matrix/router/internal/railway.Provisioner.VolumeAbsent
+  ^references=matrix/router/internal/railway.Provisioner.VolumeAbsent
+  ^defines=matrix/router/internal/railway/railway.go
+
 NODE id=matrix/router/internal/railway.Client.WithEndpoint kind=method
-  digest=b3:9a8e77150402e31405abe3fa366c9331c9de25720428bb3024814fb504e9ab50 file=router/internal/railway/railway.go range=77:82 lang=go exported=true byte_range=2717:2909
+  digest=b3:9a8e77150402e31405abe3fa366c9331c9de25720428bb3024814fb504e9ab50 file=router/internal/railway/railway.go range=78:83 lang=go exported=true byte_range=2786:2978
   sig=func (c *Client) WithEndpoint(ep string) *Client
   doc=WithEndpoint overrides the API base URL — used by tests with mock\nservers. Returns *Client for chaining.
 EDGES
@@ -117,15 +175,15 @@ EDGES
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.do kind=method
-  digest=b3:8c2e4017cfccc99475e5ba5ace2c7c25e3042816963198235a43461357b6c31c file=router/internal/railway/railway.go range=228:284 lang=go exported=false byte_range=7311:9538
+  digest=b3:6930011f753d15a36a6371201ec5eb4b2c0f08c7075abdf4962453cd78acad04 file=router/internal/railway/railway.go range=372:431 lang=go exported=false byte_range=11712:14103
   sig=func (c *Client) do(ctx context.Context, query string, variables map[string]any, out any) error
   doc=do executes a GraphQL request, decoding response.data into out (nil\nto discard). Maps HTTP 401/403 and "not authorized"/"not found"\nGraphQL errors to sentinel errors for clean callsite branching —\nRailway returns most application errors as 200s with an errors\narray.
 EDGES
   calls=matrix/router/internal/railway.truncate
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.ErrUnauthorized,matrix/router/internal/railway.ErrUpstream,matrix/router/internal/railway.buf,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.envelope,matrix/router/internal/railway.err,matrix/router/internal/railway.gqlError,matrix/router/internal/railway.gqlRequest,matrix/router/internal/railway.lower,matrix/router/internal/railway.msg,matrix/router/internal/railway.out,matrix/router/internal/railway.query,matrix/router/internal/railway.req,matrix/router/internal/railway.resp,matrix/router/internal/railway.respBody,matrix/router/internal/railway.truncate,matrix/router/internal/railway.variables
+  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.ErrUnauthorized,matrix/router/internal/railway.ErrUncertain,matrix/router/internal/railway.ErrUpstream,matrix/router/internal/railway.buf,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.envelope,matrix/router/internal/railway.err,matrix/router/internal/railway.gqlError,matrix/router/internal/railway.gqlRequest,matrix/router/internal/railway.lower,matrix/router/internal/railway.msg,matrix/router/internal/railway.out,matrix/router/internal/railway.query,matrix/router/internal/railway.req,matrix/router/internal/railway.resp,matrix/router/internal/railway.respBody,matrix/router/internal/railway.truncate,matrix/router/internal/railway.variables
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.LatestDeployment
-  ^references=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.LatestDeployment
+  ^calls=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.Client.Volume
+  ^references=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.Client.Volume
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.DefaultEndpoint kind=const
@@ -137,7 +195,7 @@ EDGES
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.DeployStatusCrashed kind=const
-  digest=b3:ce4ec323c95b4ba1b65fb0e4309929a56a55151c2fa5d6dde552ba01d5f91cf4 file=router/internal/railway/railway.go range=98:103 lang=go exported=true byte_range=3293:3510
+  digest=b3:ce4ec323c95b4ba1b65fb0e4309929a56a55151c2fa5d6dde552ba01d5f91cf4 file=router/internal/railway/railway.go range=223:228 lang=go exported=true byte_range=6924:7141
   sig=untyped string
   doc=Deployment statuses Railway reports (subset the router dispatches on).
 EDGES
@@ -145,7 +203,7 @@ EDGES
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.DeployStatusFailed kind=const
-  digest=b3:d1245a95f8686673fcf60c078c52765c1916a3b9e8b340185e6ea56e49b07658 file=router/internal/railway/railway.go range=98:102 lang=go exported=true byte_range=3293:3476
+  digest=b3:d1245a95f8686673fcf60c078c52765c1916a3b9e8b340185e6ea56e49b07658 file=router/internal/railway/railway.go range=223:227 lang=go exported=true byte_range=6924:7107
   sig=untyped string
   doc=Deployment statuses Railway reports (subset the router dispatches on).
 EDGES
@@ -153,7 +211,7 @@ EDGES
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.DeployStatusSleeping kind=const
-  digest=b3:be8f1377687fae75428f21530b0c2d7de1876eb09dec9617a1a393975d54c424 file=router/internal/railway/railway.go range=98:101 lang=go exported=true byte_range=3293:3443
+  digest=b3:be8f1377687fae75428f21530b0c2d7de1876eb09dec9617a1a393975d54c424 file=router/internal/railway/railway.go range=223:226 lang=go exported=true byte_range=6924:7074
   sig=untyped string
   doc=Deployment statuses Railway reports (subset the router dispatches on).
 EDGES
@@ -161,7 +219,7 @@ EDGES
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.DeployStatusSuccess kind=const
-  digest=b3:5ba16298bfb54d45bfc6fd9a13413bbabea5b7d29b03679cca3df97d09d1e38c file=router/internal/railway/railway.go range=98:100 lang=go exported=true byte_range=3293:3408
+  digest=b3:5ba16298bfb54d45bfc6fd9a13413bbabea5b7d29b03679cca3df97d09d1e38c file=router/internal/railway/railway.go range=223:225 lang=go exported=true byte_range=6924:7039
   sig=untyped string
   doc=Deployment statuses Railway reports (subset the router dispatches on).
 EDGES
@@ -169,7 +227,7 @@ EDGES
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Deployment kind=type
-  digest=b3:f718e096a50988830adde6cd50bc18070efd4c6c2dba08f6b0164a7f7967070a file=router/internal/railway/railway.go range=106:111 lang=go exported=true byte_range=3514:3684
+  digest=b3:f718e096a50988830adde6cd50bc18070efd4c6c2dba08f6b0164a7f7967070a file=router/internal/railway/railway.go range=231:236 lang=go exported=true byte_range=7145:7315
   sig=type Deployment struct {\n	ID	string	`json:"id"`\n	Status	string	`json:"status"`\n}
   doc=Deployment is the subset of Railway's deployment object the router\ncares about.
 EDGES
@@ -178,19 +236,19 @@ EDGES
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Deployment#ID kind=field
-  digest=b3:6a2b7044ff8651d70421d9c41868e649254783ae14d48480137391fbd191809b file=router/internal/railway/railway.go range=109:109 lang=go exported=true byte_range=3626:3651
+  digest=b3:6a2b7044ff8651d70421d9c41868e649254783ae14d48480137391fbd191809b file=router/internal/railway/railway.go range=234:234 lang=go exported=true byte_range=7257:7282
   sig=string
 EDGES
   ^contains=matrix/router/internal/railway.Deployment
 
 NODE id=matrix/router/internal/railway.Deployment#Status kind=field
-  digest=b3:606cbffea1b434934d3d0449aadd8fa5c4323434ff7f6aa076c4922497a82a3b file=router/internal/railway/railway.go range=110:110 lang=go exported=true byte_range=3653:3682
+  digest=b3:606cbffea1b434934d3d0449aadd8fa5c4323434ff7f6aa076c4922497a82a3b file=router/internal/railway/railway.go range=235:235 lang=go exported=true byte_range=7284:7313
   sig=string
 EDGES
   ^contains=matrix/router/internal/railway.Deployment
 
 NODE id=matrix/router/internal/railway.Deployment.Live kind=method
-  digest=b3:c9668d17b6816f6433916801b34ab0568195a793894422515b5e07d2eeb82554 file=router/internal/railway/railway.go range=113:118 lang=go exported=true byte_range=3686:3984
+  digest=b3:c9668d17b6816f6433916801b34ab0568195a793894422515b5e07d2eeb82554 file=router/internal/railway/railway.go range=238:243 lang=go exported=true byte_range=7317:7615
   sig=func (d *Deployment) Live() bool
   doc=Live reports whether the deployment serves (or will serve on wake)\ntraffic: SUCCESS is running; SLEEPING is a Serverless-slept service\nthat revives on the first inbound packet.
 EDGES
@@ -205,11 +263,19 @@ NODE id=matrix/router/internal/railway.ErrNotFound kind=var
   sig=error
   doc=Sentinel errors. Callers errors.Is to dispatch on these; the\nProvisioner maps them onto the provision package's neutral ones.
 EDGES
-  ^references=matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.waitDeployed,matrix/router/internal/railway.mapErr
+  ^references=matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.Volume,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.ServiceAbsent,matrix/router/internal/railway.Provisioner.VolumeAbsent,matrix/router/internal/railway.Provisioner.waitDeployed,matrix/router/internal/railway.mapErr
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.ErrUnauthorized kind=var
   digest=b3:6563bd30831836c5f448412f1198a2452a7cb14be71657304d1a38b3f3fa557f file=router/internal/railway/railway.go range=44:48 lang=go exported=true byte_range=1599:1869
+  sig=error
+  doc=Sentinel errors. Callers errors.Is to dispatch on these; the\nProvisioner maps them onto the provision package's neutral ones.
+EDGES
+  ^references=matrix/router/internal/railway.Client.do,matrix/router/internal/railway.mapErr
+  ^defines=matrix/router/internal/railway/railway.go
+
+NODE id=matrix/router/internal/railway.ErrUncertain kind=var
+  digest=b3:f7973665ab7e672aa55da2146a774fd9bedf035f80a228f3a5a94e665c5a1501 file=router/internal/railway/railway.go range=44:50 lang=go exported=true byte_range=1599:1995
   sig=error
   doc=Sentinel errors. Callers errors.Is to dispatch on these; the\nProvisioner maps them onto the provision package's neutral ones.
 EDGES
@@ -221,17 +287,17 @@ NODE id=matrix/router/internal/railway.ErrUpstream kind=var
   sig=error
   doc=Sentinel errors. Callers errors.Is to dispatch on these; the\nProvisioner maps them onto the provision package's neutral ones.
 EDGES
-  ^references=matrix/router/internal/railway.Client.do
+  ^references=matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.do
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.New kind=func
-  digest=b3:aef0a1a815efdbb97aceb13e51abcafac7f589c76adfa5fb21de82b28418449b file=router/internal/railway/railway.go range=62:75 lang=go exported=true byte_range=2174:2715
+  digest=b3:aef0a1a815efdbb97aceb13e51abcafac7f589c76adfa5fb21de82b28418449b file=router/internal/railway/railway.go range=63:76 lang=go exported=true byte_range=2243:2784
   sig=func New(token, projectID, environmentID string) *Client
   doc=New constructs a Client. token is the RAILWAY_API_TOKEN; projectID +\nenvironmentID scope every operation (RAILWAY_PROJECT_ID /\nRAILWAY_ENVIRONMENT_ID). Uses an internal http.Client with 30s\ndefault timeout; long waits (deployment readiness) poll with their\nown context.
 EDGES
   references=matrix/router/internal/railway.Client,matrix/router/internal/railway.DefaultEndpoint,matrix/router/internal/railway.environmentID,matrix/router/internal/railway.projectID,matrix/router/internal/railway.token
-  ^calls=matrix/router/cmd/matrix-router.main
-  ^references=matrix/router/cmd/matrix-router.main
+  ^calls=matrix/router/cmd/matrix-router.main,matrix/router/internal/shard.Load
+  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/shard.Load
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Provisioner kind=type
@@ -239,10 +305,10 @@ NODE id=matrix/router/internal/railway.Provisioner kind=type
   sig=type Provisioner struct {\n	Client	*Client\n	// Image is the environment OCI image every new service runs\n	// (ROUTER_DAEMON_IMAGE). Empty disables Ensure with a config error.\n	Image	string\n	// ProbeInterval is the deployment-readiness poll cadence inside\n	// Ensure; <=0 defaults to 2s (deployments take tens of seconds —\n	// no point polling faster).\n	ProbeInterval	time.Duration\n}
   doc=Provisioner adapts *Client to provision.Provisioner.
 EDGES
-  contains=matrix/router/internal/railway.Provisioner#Client,matrix/router/internal/railway.Provisioner#Image,matrix/router/internal/railway.Provisioner#ProbeInterval,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake,matrix/router/internal/railway.Provisioner.WakeOnRequest,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.Provisioner.waitDeployed
-  implements=matrix/router/internal/provision.Provisioner
+  contains=matrix/router/internal/railway.Provisioner#Client,matrix/router/internal/railway.Provisioner#Image,matrix/router/internal/railway.Provisioner#ProbeInterval,matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.FindVolume,matrix/router/internal/railway.Provisioner.ServiceAbsent,matrix/router/internal/railway.Provisioner.ServiceName,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.UpdateVariables,matrix/router/internal/railway.Provisioner.VolumeAbsent,matrix/router/internal/railway.Provisioner.WaitReady,matrix/router/internal/railway.Provisioner.Wake,matrix/router/internal/railway.Provisioner.WakeOnRequest,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.Provisioner.waitDeployed
+  implements=matrix/router/internal/provision.Provisioner,matrix/router/internal/provision.Recoverable,matrix/router/internal/provision.VariableUpdater
   references=matrix/router/internal/railway.Client
-  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake,matrix/router/internal/railway.Provisioner.WakeOnRequest,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.Provisioner.waitDeployed,matrix/router/internal/railway._
+  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.FindVolume,matrix/router/internal/railway.Provisioner.ServiceAbsent,matrix/router/internal/railway.Provisioner.ServiceName,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.UpdateVariables,matrix/router/internal/railway.Provisioner.VolumeAbsent,matrix/router/internal/railway.Provisioner.WaitReady,matrix/router/internal/railway.Provisioner.Wake,matrix/router/internal/railway.Provisioner.WakeOnRequest,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.Provisioner.waitDeployed,matrix/router/internal/railway._,matrix/router/internal/shard.Load
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner#Client kind=field
@@ -265,8 +331,48 @@ NODE id=matrix/router/internal/railway.Provisioner#ProbeInterval kind=field
 EDGES
   ^contains=matrix/router/internal/railway.Provisioner
 
+NODE id=matrix/router/internal/railway.Provisioner.CreateService kind=method
+  digest=b3:179ee6ca527d3156679ccc77499871c24ba67f9a9e780040de146fdf8fbd5298 file=router/internal/railway/provisioner.go range=101:110 lang=go exported=true byte_range=3489:3898
+  sig=func (p *Provisioner) CreateService(ctx context.Context, req provision.CreateRequest) (*provision.Env, error)
+EDGES
+  calls=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway.mapErr
+  references=matrix/router/internal/provision.CreateRequest,matrix/router/internal/provision.Env,matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.req,matrix/router/internal/railway.svc
+  ^contains=matrix/router/internal/railway.Provisioner
+  ^calls=matrix/router/internal/admin.Handler.ensureRailway
+  ^defines=matrix/router/internal/railway/provisioner.go
+
+NODE id=matrix/router/internal/railway.Provisioner.CreateVolume kind=method
+  digest=b3:70229b07add3ab3ac27f1ca3009b434cf7b195cf449dcee2d07ada0e02780368 file=router/internal/railway/provisioner.go range=112:118 lang=go exported=true byte_range=3900:4131
+  sig=func (p *Provisioner) CreateVolume(ctx context.Context, serviceID, mountPath string) (string, error)
+EDGES
+  calls=matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.mapErr
+  references=matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.mountPath,matrix/router/internal/railway.p,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.vol
+  ^contains=matrix/router/internal/railway.Provisioner
+  ^calls=matrix/router/internal/admin.Handler.ensureRailway
+  ^defines=matrix/router/internal/railway/provisioner.go
+
+NODE id=matrix/router/internal/railway.Provisioner.DeleteService kind=method
+  digest=b3:fba05e16b4eb40434aab7aed52f1374cfdf9343756891caaff6220a87da35077 file=router/internal/railway/provisioner.go range=147:149 lang=go exported=true byte_range=4954:5093
+  sig=func (p *Provisioner) DeleteService(ctx context.Context, serviceID string) error
+EDGES
+  calls=matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.mapErr
+  references=matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.serviceID
+  ^contains=matrix/router/internal/railway.Provisioner
+  ^calls=matrix/router/internal/admin.Handler.destroyRailway
+  ^defines=matrix/router/internal/railway/provisioner.go
+
+NODE id=matrix/router/internal/railway.Provisioner.DeleteVolume kind=method
+  digest=b3:391db3fac740c7b430810817cfed67c6374fe48a875e0119a9922749b8b87e3f file=router/internal/railway/provisioner.go range=151:153 lang=go exported=true byte_range=5095:5230
+  sig=func (p *Provisioner) DeleteVolume(ctx context.Context, volumeID string) error
+EDGES
+  calls=matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.mapErr
+  references=matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.volumeID
+  ^contains=matrix/router/internal/railway.Provisioner
+  ^calls=matrix/router/internal/admin.Handler.destroyRailway
+  ^defines=matrix/router/internal/railway/provisioner.go
+
 NODE id=matrix/router/internal/railway.Provisioner.Destroy kind=method
-  digest=b3:79d0527a4c345dcdc8e376c862b9ea322ff5cf6f3f90590e1b9fc16846efbafb file=router/internal/railway/provisioner.go range=107:119 lang=go exported=true byte_range=3832:4329
+  digest=b3:79d0527a4c345dcdc8e376c862b9ea322ff5cf6f3f90590e1b9fc16846efbafb file=router/internal/railway/provisioner.go range=181:193 lang=go exported=true byte_range=6225:6722
   sig=func (p *Provisioner) Destroy(ctx context.Context, ref provision.Ref) error
   doc=Destroy deletes the service, then best-effort deletes the volume\n(Railway does not cascade volume deletion with the service).
 EDGES
@@ -277,7 +383,7 @@ EDGES
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.Ensure kind=method
-  digest=b3:db5d8c44bc8cbc4f87bdba3bd92d48778021e060d525dc80bc25265e808328c9 file=router/internal/railway/provisioner.go range=45:79 lang=go exported=true byte_range=1537:2837
+  digest=b3:db5d8c44bc8cbc4f87bdba3bd92d48778021e060d525dc80bc25265e808328c9 file=router/internal/railway/provisioner.go range=49:83 lang=go exported=true byte_range=1729:3029
   sig=func (p *Provisioner) Ensure(ctx context.Context, req provision.CreateRequest) (*provision.Env, error)
   doc=Ensure provisions the per-user service + volume and blocks until the\nfirst deployment is live (or ctx expires). The caller's provision\nbudget (admin.ProvisionTimeout) bounds the wait.
 EDGES
@@ -287,8 +393,48 @@ EDGES
   ^calls=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/railway/provisioner.go
 
+NODE id=matrix/router/internal/railway.Provisioner.FindService kind=method
+  digest=b3:2b8fb73369f937f78e16a17c98c171f4728c8857ddbba60413bd499480b6adda file=router/internal/railway/provisioner.go range=85:91 lang=go exported=true byte_range=3031:3258
+  sig=func (p *Provisioner) FindService(ctx context.Context, name string) (*provision.Env, error)
+EDGES
+  calls=matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.mapErr
+  references=matrix/router/internal/provision.Env,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.name,matrix/router/internal/railway.p,matrix/router/internal/railway.svc
+  ^contains=matrix/router/internal/railway.Provisioner
+  ^calls=matrix/router/internal/admin.Handler.ensureRailway
+  ^defines=matrix/router/internal/railway/provisioner.go
+
+NODE id=matrix/router/internal/railway.Provisioner.FindVolume kind=method
+  digest=b3:d0ef32adfcb0632884e86f42b3f7cb715ca0887eb871fcddce14df2dbb0fdcff file=router/internal/railway/provisioner.go range=93:99 lang=go exported=true byte_range=3260:3487
+  sig=func (p *Provisioner) FindVolume(ctx context.Context, serviceID, mountPath string) (string, error)
+EDGES
+  calls=matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.mapErr
+  references=matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.mountPath,matrix/router/internal/railway.p,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.vol
+  ^contains=matrix/router/internal/railway.Provisioner
+  ^calls=matrix/router/internal/admin.Handler.ensureRailway
+  ^defines=matrix/router/internal/railway/provisioner.go
+
+NODE id=matrix/router/internal/railway.Provisioner.ServiceAbsent kind=method
+  digest=b3:5612ffc7bacc28ab652665e62edee9d71023ebb886060dd282640e6e057dcee7 file=router/internal/railway/provisioner.go range=131:137 lang=go exported=true byte_range=4516:4735
+  sig=func (p *Provisioner) ServiceAbsent(ctx context.Context, serviceID string) (bool, error)
+EDGES
+  calls=matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.mapErr
+  references=matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.serviceID
+  ^contains=matrix/router/internal/railway.Provisioner
+  ^calls=matrix/router/internal/admin.Handler.destroyRailway
+  ^defines=matrix/router/internal/railway/provisioner.go
+
+NODE id=matrix/router/internal/railway.Provisioner.ServiceName kind=method
+  digest=b3:3df5667bf64bcaa8e019f6ae9fdf0e153d93048399c5c734fcb1d7ea8fbd1f3c file=router/internal/railway/provisioner.go range=47:47 lang=go exported=true byte_range=1641:1727
+  sig=func (p *Provisioner) ServiceName(userID string) string
+EDGES
+  calls=matrix/router/internal/railway.ServiceName
+  references=matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway.userID
+  ^contains=matrix/router/internal/railway.Provisioner
+  ^calls=matrix/router/internal/admin.Handler.ensureRailway
+  ^defines=matrix/router/internal/railway/provisioner.go
+
 NODE id=matrix/router/internal/railway.Provisioner.Status kind=method
-  digest=b3:cbe5320693d41aac90d3e349c8fd78131d42357f8f0ed101522d9f14b5c43f59 file=router/internal/railway/provisioner.go range=81:94 lang=go exported=true byte_range=2839:3331
+  digest=b3:cbe5320693d41aac90d3e349c8fd78131d42357f8f0ed101522d9f14b5c43f59 file=router/internal/railway/provisioner.go range=155:168 lang=go exported=true byte_range=5232:5724
   sig=func (p *Provisioner) Status(ctx context.Context, ref provision.Ref) (*provision.Env, error)
   doc=Status reports the latest deployment state; Live (SUCCESS or\nSLEEPING) counts as ready — a slept service revives on the first\ninbound packet.
 EDGES
@@ -297,112 +443,142 @@ EDGES
   ^contains=matrix/router/internal/railway.Provisioner
   ^defines=matrix/router/internal/railway/provisioner.go
 
+NODE id=matrix/router/internal/railway.Provisioner.UpdateVariables kind=method
+  digest=b3:cc53bf4ac829b3c2722d1fb309ce68a3d70d23e456223e05edc9bf587accd292 file=router/internal/railway/provisioner.go range=120:125 lang=go exported=true byte_range=4133:4393
+  sig=func (p *Provisioner) UpdateVariables(ctx context.Context, ref provision.Ref, env map[string]string) error
+EDGES
+  calls=matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.mapErr
+  references=matrix/router/internal/provision.Ref,matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.env,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.ref
+  ^contains=matrix/router/internal/railway.Provisioner
+  ^calls=matrix/router/internal/admin.Handler.updateWorkforceEnvironment
+  ^defines=matrix/router/internal/railway/provisioner.go
+
+NODE id=matrix/router/internal/railway.Provisioner.VolumeAbsent kind=method
+  digest=b3:1d0ffb3e4c5d134a8286fd8afd387a5c2ceea8d7a56cf319841f5a0f55ec0ad2 file=router/internal/railway/provisioner.go range=139:145 lang=go exported=true byte_range=4737:4952
+  sig=func (p *Provisioner) VolumeAbsent(ctx context.Context, volumeID string) (bool, error)
+EDGES
+  calls=matrix/router/internal/railway.Client.Volume,matrix/router/internal/railway.mapErr
+  references=matrix/router/internal/railway.Client.Volume,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.volumeID
+  ^contains=matrix/router/internal/railway.Provisioner
+  ^calls=matrix/router/internal/admin.Handler.destroyRailway
+  ^defines=matrix/router/internal/railway/provisioner.go
+
+NODE id=matrix/router/internal/railway.Provisioner.WaitReady kind=method
+  digest=b3:6c9576f109ec31cade431769e32822f732468595e37bbb715492d39d236a34d4 file=router/internal/railway/provisioner.go range=127:129 lang=go exported=true byte_range=4395:4514
+  sig=func (p *Provisioner) WaitReady(ctx context.Context, serviceID string) error
+EDGES
+  calls=matrix/router/internal/railway.Provisioner.waitDeployed
+  references=matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.Provisioner.waitDeployed,matrix/router/internal/railway.ctx,matrix/router/internal/railway.p,matrix/router/internal/railway.serviceID
+  ^contains=matrix/router/internal/railway.Provisioner
+  ^calls=matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.ensureRailway
+  ^defines=matrix/router/internal/railway/provisioner.go
+
 NODE id=matrix/router/internal/railway.Provisioner.Wake kind=method
-  digest=b3:a3add3ddb378e7f5e5b7dcd3ae6e952cedf893cbdda1f6a2c2a3596febd58fda file=router/internal/railway/provisioner.go range=96:105 lang=go exported=true byte_range=3333:3830
+  digest=b3:a3add3ddb378e7f5e5b7dcd3ae6e952cedf893cbdda1f6a2c2a3596febd58fda file=router/internal/railway/provisioner.go range=170:179 lang=go exported=true byte_range=5726:6223
   sig=func (p *Provisioner) Wake(ctx context.Context, ref provision.Ref) (*provision.Env, error)
   doc=Wake is a NO-OP by design: Railway Serverless wakes the service on\nthe first inbound private-network packet, so the forwarded request\nitself is the wake signal. No API call — the request hot path stays\nfree of provider round-trips; waitDaemonReady absorbs the cold boot.
 EDGES
   calls=matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.ServiceName
   references=matrix/router/internal/provision.Env,matrix/router/internal/provision.Ref,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway.env,matrix/router/internal/railway.p,matrix/router/internal/railway.ref
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/proxy.Handler.forward
+  ^calls=matrix/router/internal/proxy.Handler.forwardWith
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.WakeOnRequest kind=method
-  digest=b3:44b1f432c229cc0d6ea6fe3dda34be635578b2ada47c2e3197154e4acdfbb948 file=router/internal/railway/provisioner.go range=121:125 lang=go exported=true byte_range=4331:4638
+  digest=b3:44b1f432c229cc0d6ea6fe3dda34be635578b2ada47c2e3197154e4acdfbb948 file=router/internal/railway/provisioner.go range=195:199 lang=go exported=true byte_range=6724:7031
   sig=func (p *Provisioner) WakeOnRequest() bool
   doc=WakeOnRequest is true: waking is platform-managed by inbound\ntraffic, and the readiness probe must absorb the whole cold boot\n(including the documented possible first-request 502 from the\nprivate-network edge while the service revives).
 EDGES
   references=matrix/router/internal/railway.Provisioner
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/proxy.Handler.waitDaemonReady
+  ^calls=matrix/router/internal/proxy.Handler.waitDaemonReadyWith
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.env kind=method
-  digest=b3:1d40e41f60f20fdc99f7b6350191acda73d493de8b2ce14b9034f31349bcd255 file=router/internal/railway/provisioner.go range=157:168 lang=go exported=false byte_range=5530:5940
+  digest=b3:1d40e41f60f20fdc99f7b6350191acda73d493de8b2ce14b9034f31349bcd255 file=router/internal/railway/provisioner.go range=231:242 lang=go exported=false byte_range=7923:8333
   sig=func (p *Provisioner) env(id, name, region string) *provision.Env
   doc=env builds the neutral view. The endpoint is the service's private\nhostname; the port is left empty so the router's configured daemon\nport applies (the daemon binds the same port on every provider).
 EDGES
   references=matrix/router/internal/provision.Endpoint,matrix/router/internal/provision.Env,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.id,matrix/router/internal/railway.name,matrix/router/internal/railway.region
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
-  ^references=matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
+  ^calls=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
+  ^references=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.waitDeployed kind=method
-  digest=b3:5596ca2a2b14564ab40466228ec05b036b884132e76995c85052b3f104bf522c file=router/internal/railway/provisioner.go range=127:155 lang=go exported=false byte_range=4640:5528
+  digest=b3:5596ca2a2b14564ab40466228ec05b036b884132e76995c85052b3f104bf522c file=router/internal/railway/provisioner.go range=201:229 lang=go exported=false byte_range=7033:7921
   sig=func (p *Provisioner) waitDeployed(ctx context.Context, serviceID string) error
   doc=waitDeployed polls the service's latest deployment until Live, a\nterminal failure, or ctx expiry. A service created moments ago may\nbriefly report no deployments — treated as not-ready, not an error.
 EDGES
   calls=matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Deployment.Live,matrix/router/internal/railway.mapErr
   references=matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.DeployStatusCrashed,matrix/router/internal/railway.DeployStatusFailed,matrix/router/internal/railway.Deployment.Live,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.d,matrix/router/internal/railway.err,matrix/router/internal/railway.interval,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.t
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/railway.Provisioner.Ensure
-  ^references=matrix/router/internal/railway.Provisioner.Ensure
+  ^calls=matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.WaitReady
+  ^references=matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.WaitReady
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Service kind=type
-  digest=b3:3fc0a54410df583414bd020d6e097b42c45a51e6cfbf8079234f98009b601d1e file=router/internal/railway/railway.go range=84:90 lang=go exported=true byte_range=2911:3140
+  digest=b3:3fc0a54410df583414bd020d6e097b42c45a51e6cfbf8079234f98009b601d1e file=router/internal/railway/railway.go range=85:91 lang=go exported=true byte_range=2980:3209
   sig=type Service struct {\n	ID	string	`json:"id"`\n	Name	string	`json:"name"`\n}
   doc=Service is the subset of Railway's service object the router cares\nabout. Name matters: the private-network hostname is\n<name>.railway.internal.
 EDGES
   contains=matrix/router/internal/railway.Service#ID,matrix/router/internal/railway.Service#Name
-  ^references=matrix/router/internal/railway.Client.CreateService
+  ^references=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.Service
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Service#ID kind=field
-  digest=b3:a42c2e38df1a2924e7c191c3f90bafa960867e2d3022ab211ef77f3d3362a6d2 file=router/internal/railway/railway.go range=88:88 lang=go exported=true byte_range=3088:3111
+  digest=b3:a42c2e38df1a2924e7c191c3f90bafa960867e2d3022ab211ef77f3d3362a6d2 file=router/internal/railway/railway.go range=89:89 lang=go exported=true byte_range=3157:3180
   sig=string
 EDGES
   ^contains=matrix/router/internal/railway.Service
 
 NODE id=matrix/router/internal/railway.Service#Name kind=field
-  digest=b3:2d390795a9e5cdd6bc9c3b1c29e12bf1c52bf837f56a33e9b003aabce2f2f5da file=router/internal/railway/railway.go range=89:89 lang=go exported=true byte_range=3113:3138
+  digest=b3:2d390795a9e5cdd6bc9c3b1c29e12bf1c52bf837f56a33e9b003aabce2f2f5da file=router/internal/railway/railway.go range=90:90 lang=go exported=true byte_range=3182:3207
   sig=string
 EDGES
   ^contains=matrix/router/internal/railway.Service
 
 NODE id=matrix/router/internal/railway.ServiceName kind=func
-  digest=b3:e0d558b8abf0dbabab05a035c61d0d57989289beb9816d562f8ec6d2d4b8fdce file=router/internal/railway/provisioner.go range=170:176 lang=go exported=true byte_range=5942:6263
+  digest=b3:e0d558b8abf0dbabab05a035c61d0d57989289beb9816d562f8ec6d2d4b8fdce file=router/internal/railway/provisioner.go range=244:250 lang=go exported=true byte_range=8335:8656
   sig=func ServiceName(userID string) string
   doc=ServiceName derives the deterministic per-user service name — and\ntherefore the <name>.railway.internal private hostname — from the\nuser id, mirroring the fly machine-name convention\n("matrix-" + DNS-safe user id prefix).
 EDGES
   calls=matrix/router/internal/railway.safeName
   references=matrix/router/internal/railway.safeName,matrix/router/internal/railway.userID
-  ^calls=matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
-  ^references=matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
+  ^calls=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.ServiceName,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
+  ^references=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.ServiceName,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Volume kind=type
-  digest=b3:40e75a948ef0887fc55620228a761741c0f001acf32e475365e6f9f919ead47d file=router/internal/railway/railway.go range=92:96 lang=go exported=true byte_range=3142:3291
+  digest=b3:40e75a948ef0887fc55620228a761741c0f001acf32e475365e6f9f919ead47d file=router/internal/railway/railway.go range=93:97 lang=go exported=true byte_range=3211:3360
   sig=type Volume struct {\n	ID	string	`json:"id"`\n	Name	string	`json:"name"`\n}
   doc=Volume is the subset of Railway's volume object the router cares about.
 EDGES
   contains=matrix/router/internal/railway.Volume#ID,matrix/router/internal/railway.Volume#Name
-  ^references=matrix/router/internal/railway.Client.CreateVolume
+  ^references=matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.Volume
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Volume#ID kind=field
-  digest=b3:a42c2e38df1a2924e7c191c3f90bafa960867e2d3022ab211ef77f3d3362a6d2 file=router/internal/railway/railway.go range=94:94 lang=go exported=true byte_range=3239:3262
+  digest=b3:a42c2e38df1a2924e7c191c3f90bafa960867e2d3022ab211ef77f3d3362a6d2 file=router/internal/railway/railway.go range=95:95 lang=go exported=true byte_range=3308:3331
   sig=string
 EDGES
   ^contains=matrix/router/internal/railway.Volume
 
 NODE id=matrix/router/internal/railway.Volume#Name kind=field
-  digest=b3:2d390795a9e5cdd6bc9c3b1c29e12bf1c52bf837f56a33e9b003aabce2f2f5da file=router/internal/railway/railway.go range=95:95 lang=go exported=true byte_range=3264:3289
+  digest=b3:2d390795a9e5cdd6bc9c3b1c29e12bf1c52bf837f56a33e9b003aabce2f2f5da file=router/internal/railway/railway.go range=96:96 lang=go exported=true byte_range=3333:3358
   sig=string
 EDGES
   ^contains=matrix/router/internal/railway.Volume
 
 NODE id=matrix/router/internal/railway._ kind=var
-  digest=b3:a45902ed0d1abfdb7afde66643111bdb895451eb445078b34ccf45e7931e1214 file=router/internal/railway/provisioner.go range=43:43 lang=go exported=false byte_range=1490:1535
-  sig=provision.Provisioner
+  digest=b3:26985b56982da316f4ee979cb949112d8716164043f2ab6621f48adf450bb03d file=router/internal/railway/provisioner.go range=45:45 lang=go exported=false byte_range=1590:1639
+  sig=provision.VariableUpdater
 EDGES
-  references=matrix/router/internal/provision.Provisioner,matrix/router/internal/railway.Provisioner
+  references=matrix/router/internal/provision.Provisioner,matrix/router/internal/provision.Recoverable,matrix/router/internal/provision.VariableUpdater,matrix/router/internal/railway.Provisioner
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.gqlError kind=type
-  digest=b3:754addd96f3ff7afba5a40e659062c60820043d7880892384f0c3ec9d41a3c9c file=router/internal/railway/railway.go range=223:226 lang=go exported=false byte_range=7196:7309
+  digest=b3:754addd96f3ff7afba5a40e659062c60820043d7880892384f0c3ec9d41a3c9c file=router/internal/railway/railway.go range=367:370 lang=go exported=false byte_range=11597:11710
   sig=type gqlError struct {\n	Message string `json:"message"`\n}
   doc=gqlError is one entry of the GraphQL "errors" array.
 EDGES
@@ -411,13 +587,13 @@ EDGES
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.gqlError#Message kind=field
-  digest=b3:d7a0704d4d1cdf051b9f61d5a005f6a0c1ada9b90dd901fab6b0e03fad711a42 file=router/internal/railway/railway.go range=225:225 lang=go exported=true byte_range=7276:7307
+  digest=b3:d7a0704d4d1cdf051b9f61d5a005f6a0c1ada9b90dd901fab6b0e03fad711a42 file=router/internal/railway/railway.go range=369:369 lang=go exported=true byte_range=11677:11708
   sig=string
 EDGES
   ^contains=matrix/router/internal/railway.gqlError
 
 NODE id=matrix/router/internal/railway.gqlRequest kind=type
-  digest=b3:713a29601f237347e5b09f63f0fa788f7ef2b4547c2c70adb59f4d7652d26592 file=router/internal/railway/railway.go range=217:221 lang=go exported=false byte_range=7019:7194
+  digest=b3:713a29601f237347e5b09f63f0fa788f7ef2b4547c2c70adb59f4d7652d26592 file=router/internal/railway/railway.go range=361:365 lang=go exported=false byte_range=11420:11595
   sig=type gqlRequest struct {\n	Query		string		`json:"query"`\n	Variables	map[string]any	`json:"variables,omitempty"`\n}
   doc=gqlRequest is the GraphQL-over-HTTP request body.
 EDGES
@@ -426,29 +602,29 @@ EDGES
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.gqlRequest#Query kind=field
-  digest=b3:328b0094cd6fe40dfb66c1935ead4fb5608c4707a202c2ac3ae10c0764ea04b5 file=router/internal/railway/railway.go range=219:219 lang=go exported=true byte_range=7098:7137
+  digest=b3:328b0094cd6fe40dfb66c1935ead4fb5608c4707a202c2ac3ae10c0764ea04b5 file=router/internal/railway/railway.go range=363:363 lang=go exported=true byte_range=11499:11538
   sig=string
 EDGES
   ^contains=matrix/router/internal/railway.gqlRequest
 
 NODE id=matrix/router/internal/railway.gqlRequest#Variables kind=field
-  digest=b3:b2f642e3b82b8a5d2be4b6ad47dae9540b448f41aa4f071d48a965f2971f2b13 file=router/internal/railway/railway.go range=220:220 lang=go exported=true byte_range=7139:7192
+  digest=b3:b2f642e3b82b8a5d2be4b6ad47dae9540b448f41aa4f071d48a965f2971f2b13 file=router/internal/railway/railway.go range=364:364 lang=go exported=true byte_range=11540:11593
   sig=map[string]any
 EDGES
   ^contains=matrix/router/internal/railway.gqlRequest
 
 NODE id=matrix/router/internal/railway.mapErr kind=func
-  digest=b3:4ff7a6e5eb3a549aa715bd02f15d9191a6d595e261f2999b3cf98a96bccd3efa file=router/internal/railway/provisioner.go range=178:191 lang=go exported=false byte_range=6265:6746
+  digest=b3:7c5c48a1ca47ba43bd12c536ff12242110165d3c9ad83d51b0dc44e833d8f748 file=router/internal/railway/provisioner.go range=252:267 lang=go exported=false byte_range=8658:9234
   sig=func mapErr(err error) error
   doc=mapErr translates the client's sentinel errors onto the neutral ones\nso interface consumers dispatch without importing railway.\nEverything else (including context.DeadlineExceeded) passes through\nunchanged.
 EDGES
-  references=matrix/router/internal/provision.ErrNotFound,matrix/router/internal/provision.ErrUnauthorized,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.ErrUnauthorized,matrix/router/internal/railway.err
-  ^calls=matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.waitDeployed
-  ^references=matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.waitDeployed
+  references=matrix/router/internal/provision.ErrNotFound,matrix/router/internal/provision.ErrUnauthorized,matrix/router/internal/provision.ErrUncertain,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.ErrUnauthorized,matrix/router/internal/railway.ErrUncertain,matrix/router/internal/railway.err
+  ^calls=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.FindVolume,matrix/router/internal/railway.Provisioner.ServiceAbsent,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.UpdateVariables,matrix/router/internal/railway.Provisioner.VolumeAbsent,matrix/router/internal/railway.Provisioner.waitDeployed
+  ^references=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.FindVolume,matrix/router/internal/railway.Provisioner.ServiceAbsent,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.UpdateVariables,matrix/router/internal/railway.Provisioner.VolumeAbsent,matrix/router/internal/railway.Provisioner.waitDeployed
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.safeName kind=func
-  digest=b3:5010a43c887320f8413e25eb806af1f64135f4f73d096cf1e1d9ca97e94e8943 file=router/internal/railway/provisioner.go range=193:213 lang=go exported=false byte_range=6748:7321
+  digest=b3:5010a43c887320f8413e25eb806af1f64135f4f73d096cf1e1d9ca97e94e8943 file=router/internal/railway/provisioner.go range=269:289 lang=go exported=false byte_range=9236:9809
   sig=func safeName(s string, n int) string
   doc=safeName returns a DNS-safe lowercase prefix of s, max length n —\nthe same sanitization the fly provisioner applies to machine names,\nso a user keeps the same environment name across providers.
 EDGES
@@ -458,7 +634,7 @@ EDGES
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.truncate kind=func
-  digest=b3:d038c6baadf2855160d8075de00c6bd33e0a384c6564931f9316678c40ddb4d1 file=router/internal/railway/railway.go range=286:293 lang=go exported=false byte_range=9540:9774
+  digest=b3:d038c6baadf2855160d8075de00c6bd33e0a384c6564931f9316678c40ddb4d1 file=router/internal/railway/railway.go range=433:440 lang=go exported=false byte_range=14105:14339
   sig=func truncate(b []byte, n int) string
   doc=truncate trims b for error-message inclusion so we don't dump the\nupstream payload into application logs.
 EDGES
@@ -468,13 +644,13 @@ EDGES
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway/provisioner.go kind=file
-  digest=b3:a1d886ae4ae4e69976a7d8fe173a4fe34dc1486d97090e87804a66fe0a668b70 file=router/internal/railway/provisioner.go range=1:215 lang=go exported=true
+  digest=b3:8d90d42a2f05b352bd7d2a4d139e2ee50df360a89541aac020b41dca12a5b6f8 file=router/internal/railway/provisioner.go range=1:291 lang=go exported=true
 EDGES
-  defines=matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake,matrix/router/internal/railway.Provisioner.WakeOnRequest,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.Provisioner.waitDeployed,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway._,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.safeName
+  defines=matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.FindVolume,matrix/router/internal/railway.Provisioner.ServiceAbsent,matrix/router/internal/railway.Provisioner.ServiceName,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.UpdateVariables,matrix/router/internal/railway.Provisioner.VolumeAbsent,matrix/router/internal/railway.Provisioner.WaitReady,matrix/router/internal/railway.Provisioner.Wake,matrix/router/internal/railway.Provisioner.WakeOnRequest,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.Provisioner.waitDeployed,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway._,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.safeName
   ^contains=matrix/router/internal/railway
 
 NODE id=matrix/router/internal/railway/railway.go kind=file
-  digest=b3:ad9c75db1015a2cca2b2058561f1d2a32c6c875c24c0ceb2a9329bb0323845ef file=router/internal/railway/railway.go range=1:295 lang=go exported=true
+  digest=b3:b1e4fd4792887112d3ecf2282f131ab8f81cabadf700c82e9234d3437a76dff0 file=router/internal/railway/railway.go range=1:442 lang=go exported=true
 EDGES
-  defines=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.WithEndpoint,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.DefaultEndpoint,matrix/router/internal/railway.DeployStatusCrashed,matrix/router/internal/railway.DeployStatusFailed,matrix/router/internal/railway.DeployStatusSleeping,matrix/router/internal/railway.DeployStatusSuccess,matrix/router/internal/railway.Deployment,matrix/router/internal/railway.Deployment.Live,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.ErrUnauthorized,matrix/router/internal/railway.ErrUpstream,matrix/router/internal/railway.New,matrix/router/internal/railway.Service,matrix/router/internal/railway.Volume,matrix/router/internal/railway.gqlError,matrix/router/internal/railway.gqlRequest,matrix/router/internal/railway.truncate
+  defines=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.Client.Volume,matrix/router/internal/railway.Client.WithEndpoint,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.DefaultEndpoint,matrix/router/internal/railway.DeployStatusCrashed,matrix/router/internal/railway.DeployStatusFailed,matrix/router/internal/railway.DeployStatusSleeping,matrix/router/internal/railway.DeployStatusSuccess,matrix/router/internal/railway.Deployment,matrix/router/internal/railway.Deployment.Live,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.ErrUnauthorized,matrix/router/internal/railway.ErrUncertain,matrix/router/internal/railway.ErrUpstream,matrix/router/internal/railway.New,matrix/router/internal/railway.Service,matrix/router/internal/railway.Volume,matrix/router/internal/railway.gqlError,matrix/router/internal/railway.gqlRequest,matrix/router/internal/railway.truncate
   ^contains=matrix/router/internal/railway

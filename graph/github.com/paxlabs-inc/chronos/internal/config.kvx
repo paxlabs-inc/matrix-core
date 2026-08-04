@@ -1,17 +1,17 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config kind=package
-  digest=b3:b9442d40a6977c801d3b86dabbe17eadb208652b8d6afb803142fd7fc7741688 file=chronos/internal/config range=0:0 lang=go exported=true
+  digest=b3:5971eb75855442a89275d016ba6fdc18084e97836de305ab9d3c02321722b653 file=chronos/internal/config range=0:0 lang=go exported=true
 EDGES
   contains=github.com/paxlabs-inc/chronos/internal/config/config.go,github.com/paxlabs-inc/chronos/internal/config/kvx.go
   ^contains=mod:github.com/paxlabs-inc/chronos
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.Config kind=type
-  digest=b3:4ae231ac52809370611ce3be16e897f59a8254ca2fd4c358b7ab13915040b181 file=chronos/internal/config/config.go range=13:50 lang=go exported=true byte_range=280:1790
-  sig=type Config struct {\n	// Port is the box-local listen port (default 9096).\n	Port	int\n	// PostgresURI is the shared matrix DB DSN on the box (db=matrix). Required.\n	PostgresURI	string\n	// MigrationsDir holds the forward-only SQL migrations (default "migrations").\n	MigrationsDir	string\n\n	// TransportToken is the shared bearer the MCP proxy must present\n	// (= MATRIX_CHRONOS_TOKEN on the daemon side). Empty disables transport\n	// auth (loopback/dev only — logged as a warning).\n	TransportToken	string\n	// AgentAuthSecret keys the agent-DID nonces + principal tokens (HMAC).\n	AgentAuthSecret	string\n	// ChallengeTTL bounds how long an agent-auth nonce stays valid.\n	ChallengeTTL	time.Duration\n	// TokenTTL bounds how long a minted principal token stays valid.\n	TokenTTL	time.Duration\n\n	// RouterWakeURL is the router internal wake endpoint.\n	RouterWakeURL	string\n	// WakeToken is the shared secret matching the router's ROUTER_WAKE_TOKEN.\n	WakeToken	string\n\n	// Tick is the dispatch worker poll interval (default 1s).\n	Tick	time.Duration\n	// MaxFailures is the default wake-delivery retry ceiling per alarm.\n	MaxFailures	int\n	// ClaimLease is how long a claimed-but-unfinished alarm stays leased before\n	// another worker may reclaim it (at-least-once safety on a crash mid-fire).\n	ClaimLease	time.Duration\n	// ClaimBatch is the max alarms claimed per tick.\n	ClaimBatch	int\n\n	// Dev relaxes prod fail-closed secret checks (CHRONOS_DEV=1).\n	Dev	bool\n}
+  digest=b3:4e3e93a574b2e1eca8b983c6883453aef48987d99af0c749ca983b5a6cbe9d4a file=chronos/internal/config/config.go range=13:54 lang=go exported=true byte_range=280:1979
+  sig=type Config struct {\n	// Port is the box-local listen port (default 9096).\n	Port	int\n	// PostgresURI is the shared matrix DB DSN on the box (db=matrix). Required.\n	PostgresURI	string\n	// MigrationsDir holds the forward-only SQL migrations (default "migrations").\n	MigrationsDir	string\n\n	// TransportToken is the shared bearer the MCP proxy must present\n	// (= MATRIX_CHRONOS_TOKEN on the daemon side). Empty disables transport\n	// auth (loopback/dev only — logged as a warning).\n	TransportToken	string\n	// AgentAuthSecret keys the agent-DID nonces + principal tokens (HMAC).\n	AgentAuthSecret	string\n	// ChallengeTTL bounds how long an agent-auth nonce stays valid.\n	ChallengeTTL	time.Duration\n	// TokenTTL bounds how long a minted principal token stays valid.\n	TokenTTL	time.Duration\n\n	// RouterWakeURL is the router internal wake endpoint.\n	RouterWakeURL	string\n	// WakeToken is the shared secret matching the router's ROUTER_WAKE_TOKEN.\n	WakeToken	string\n	// WorkforcedWakeURL is the typed Workforce scheduler delivery endpoint.\n	WorkforcedWakeURL	string\n	// WorkforcedWakeToken authenticates Chronos to workforced.\n	WorkforcedWakeToken	string\n\n	// Tick is the dispatch worker poll interval (default 1s).\n	Tick	time.Duration\n	// MaxFailures is the default wake-delivery retry ceiling per alarm.\n	MaxFailures	int\n	// ClaimLease is how long a claimed-but-unfinished alarm stays leased before\n	// another worker may reclaim it (at-least-once safety on a crash mid-fire).\n	ClaimLease	time.Duration\n	// ClaimBatch is the max alarms claimed per tick.\n	ClaimBatch	int\n\n	// Dev relaxes prod fail-closed secret checks (CHRONOS_DEV=1).\n	Dev	bool\n}
   doc=Config is the resolved chronosd runtime configuration.
 EDGES
-  contains=github.com/paxlabs-inc/chronos/internal/config.Config#AgentAuthSecret,github.com/paxlabs-inc/chronos/internal/config.Config#ChallengeTTL,github.com/paxlabs-inc/chronos/internal/config.Config#ClaimBatch,github.com/paxlabs-inc/chronos/internal/config.Config#ClaimLease,github.com/paxlabs-inc/chronos/internal/config.Config#Dev,github.com/paxlabs-inc/chronos/internal/config.Config#MaxFailures,github.com/paxlabs-inc/chronos/internal/config.Config#MigrationsDir,github.com/paxlabs-inc/chronos/internal/config.Config#Port,github.com/paxlabs-inc/chronos/internal/config.Config#PostgresURI,github.com/paxlabs-inc/chronos/internal/config.Config#RouterWakeURL,github.com/paxlabs-inc/chronos/internal/config.Config#Tick,github.com/paxlabs-inc/chronos/internal/config.Config#TokenTTL,github.com/paxlabs-inc/chronos/internal/config.Config#TransportToken,github.com/paxlabs-inc/chronos/internal/config.Config#WakeToken
+  contains=github.com/paxlabs-inc/chronos/internal/config.Config#AgentAuthSecret,github.com/paxlabs-inc/chronos/internal/config.Config#ChallengeTTL,github.com/paxlabs-inc/chronos/internal/config.Config#ClaimBatch,github.com/paxlabs-inc/chronos/internal/config.Config#ClaimLease,github.com/paxlabs-inc/chronos/internal/config.Config#Dev,github.com/paxlabs-inc/chronos/internal/config.Config#MaxFailures,github.com/paxlabs-inc/chronos/internal/config.Config#MigrationsDir,github.com/paxlabs-inc/chronos/internal/config.Config#Port,github.com/paxlabs-inc/chronos/internal/config.Config#PostgresURI,github.com/paxlabs-inc/chronos/internal/config.Config#RouterWakeURL,github.com/paxlabs-inc/chronos/internal/config.Config#Tick,github.com/paxlabs-inc/chronos/internal/config.Config#TokenTTL,github.com/paxlabs-inc/chronos/internal/config.Config#TransportToken,github.com/paxlabs-inc/chronos/internal/config.Config#WakeToken,github.com/paxlabs-inc/chronos/internal/config.Config#WorkforcedWakeToken,github.com/paxlabs-inc/chronos/internal/config.Config#WorkforcedWakeURL
   ^defines=github.com/paxlabs-inc/chronos/internal/config/config.go
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.Config#AgentAuthSecret kind=field
@@ -29,28 +29,28 @@ EDGES
   ^contains=github.com/paxlabs-inc/chronos/internal/config.Config
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.Config#ClaimBatch kind=field
-  digest=b3:c4c2e9c9a7f0c3e868cf63955d658854e11b4b69f99d69f48650f3fd6e9c0c59 file=chronos/internal/config/config.go range=45:46 lang=go exported=true byte_range=1648:1713
+  digest=b3:c4c2e9c9a7f0c3e868cf63955d658854e11b4b69f99d69f48650f3fd6e9c0c59 file=chronos/internal/config/config.go range=49:50 lang=go exported=true byte_range=1837:1902
   sig=int
   doc=ClaimBatch is the max alarms claimed per tick.
 EDGES
   ^contains=github.com/paxlabs-inc/chronos/internal/config.Config
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.Config#ClaimLease kind=field
-  digest=b3:d29911cce716a9d21def58991819da8199b6651bf21f3c1bdff189f048f6d990 file=chronos/internal/config/config.go range=42:44 lang=go exported=true byte_range=1466:1646
+  digest=b3:d29911cce716a9d21def58991819da8199b6651bf21f3c1bdff189f048f6d990 file=chronos/internal/config/config.go range=46:48 lang=go exported=true byte_range=1655:1835
   sig=time.Duration
   doc=ClaimLease is how long a claimed-but-unfinished alarm stays leased before\nanother worker may reclaim it (at-least-once safety on a crash mid-fire).
 EDGES
   ^contains=github.com/paxlabs-inc/chronos/internal/config.Config
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.Config#Dev kind=field
-  digest=b3:69b09359f99284d6b78a01940c70cc28b8914b15f112118ae2e0149f1d6bbfed file=chronos/internal/config/config.go range=48:49 lang=go exported=true byte_range=1716:1788
+  digest=b3:69b09359f99284d6b78a01940c70cc28b8914b15f112118ae2e0149f1d6bbfed file=chronos/internal/config/config.go range=52:53 lang=go exported=true byte_range=1905:1977
   sig=bool
   doc=Dev relaxes prod fail-closed secret checks (CHRONOS_DEV=1).
 EDGES
   ^contains=github.com/paxlabs-inc/chronos/internal/config.Config
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.Config#MaxFailures kind=field
-  digest=b3:9e0cce9004a5caf7c04ca8aeac7d4e4ba161dddadd4168ade14404a1b848209d file=chronos/internal/config/config.go range=40:41 lang=go exported=true byte_range=1379:1464
+  digest=b3:9e0cce9004a5caf7c04ca8aeac7d4e4ba161dddadd4168ade14404a1b848209d file=chronos/internal/config/config.go range=44:45 lang=go exported=true byte_range=1568:1653
   sig=int
   doc=MaxFailures is the default wake-delivery retry ceiling per alarm.
 EDGES
@@ -85,7 +85,7 @@ EDGES
   ^contains=github.com/paxlabs-inc/chronos/internal/config.Config
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.Config#Tick kind=field
-  digest=b3:4f38d1df3e399a8b3909cdfaac577dc6964a2b1d32edca2b65e34351f7182896 file=chronos/internal/config/config.go range=38:39 lang=go exported=true byte_range=1299:1377
+  digest=b3:4f38d1df3e399a8b3909cdfaac577dc6964a2b1d32edca2b65e34351f7182896 file=chronos/internal/config/config.go range=42:43 lang=go exported=true byte_range=1488:1566
   sig=time.Duration
   doc=Tick is the dispatch worker poll interval (default 1s).
 EDGES
@@ -112,58 +112,78 @@ NODE id=github.com/paxlabs-inc/chronos/internal/config.Config#WakeToken kind=fie
 EDGES
   ^contains=github.com/paxlabs-inc/chronos/internal/config.Config
 
+NODE id=github.com/paxlabs-inc/chronos/internal/config.Config#WorkforcedWakeToken kind=field
+  digest=b3:fa59f3657720bda7de0d282a853647cc16d21e07d3174b2571af26107a12c2aa file=chronos/internal/config/config.go range=39:40 lang=go exported=true byte_range=1398:1485
+  sig=string
+  doc=WorkforcedWakeToken authenticates Chronos to workforced.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/chronos/internal/config.Config#WorkforcedWakeURL kind=field
+  digest=b3:c35c7a6fadb834b42dc2641df0e7962b5d796ab03cb5286442c704efbda6b5cd file=chronos/internal/config/config.go range=37:38 lang=go exported=true byte_range=1298:1396
+  sig=string
+  doc=WorkforcedWakeURL is the typed Workforce scheduler delivery endpoint.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/config.Config
+
 NODE id=github.com/paxlabs-inc/chronos/internal/config.Load kind=func
-  digest=b3:4f873f3070b8750a1565cf66dbe18970e8abc0899bd51b3b162593a22df21358 file=chronos/internal/config/config.go range=63:130 lang=go exported=true byte_range=2105:5040
+  digest=b3:b71b0d661b230c06a865ea24f025b419a690749488c645f2a191a1ee968e0fd6 file=chronos/internal/config/config.go range=68:142 lang=go exported=true byte_range=2402:5687
   sig=func Load() (*Config, error)
   doc=Load resolves configuration: kvx overlay first, env overrides, then defaults.
 EDGES
   ^defines=github.com/paxlabs-inc/chronos/internal/config/config.go
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.defaultChallengeTTL kind=const
-  digest=b3:229f8ffbf949fe32c5a8b3fe85b607d5d0a5de1bbfffc79447a444a9c881efa8 file=chronos/internal/config/config.go range=54:54 lang=go exported=false byte_range=1830:1870
+  digest=b3:253d8f3a50e5f95aa77f18b89bc1719749c9e9cc08a240bf95405fa01521e909 file=chronos/internal/config/config.go range=58:58 lang=go exported=false byte_range=2023:2067
   sig=time.Duration
 EDGES
   ^defines=github.com/paxlabs-inc/chronos/internal/config/config.go
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.defaultClaimBatch kind=const
-  digest=b3:b5dbfb00e6f1f7c74edffc81f8037e6fea38b9f782296cb7834b2978a80cfa0b file=chronos/internal/config/config.go range=59:59 lang=go exported=false byte_range=2013:2039
+  digest=b3:c930ac871842995a876edc249851be9c412d9baee7aefd5650f8d4278548bf9c file=chronos/internal/config/config.go range=63:63 lang=go exported=false byte_range=2226:2256
   sig=untyped int
 EDGES
   ^defines=github.com/paxlabs-inc/chronos/internal/config/config.go
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.defaultClaimLease kind=const
-  digest=b3:032fb5923ac2af1f385ecd2801b2764bfc928909a8e88c57ae664a8c7bf3b4ea file=chronos/internal/config/config.go range=58:58 lang=go exported=false byte_range=1973:2011
+  digest=b3:4e06b9c2c72e80854fb7687259f0d72e00a9333c690f4ea79c1cadaee10df101 file=chronos/internal/config/config.go range=62:62 lang=go exported=false byte_range=2182:2224
   sig=time.Duration
 EDGES
   ^defines=github.com/paxlabs-inc/chronos/internal/config/config.go
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.defaultMaxFailures kind=const
-  digest=b3:76da53cf6a796885b6f47e8bffd50f7e70220f961aec87b2fc8a975e4acf1e86 file=chronos/internal/config/config.go range=57:57 lang=go exported=false byte_range=1947:1971
+  digest=b3:77a194cb8495fed83a2c0925d5ca3663e9417878401720e87e2d0d8cd01c0e30 file=chronos/internal/config/config.go range=61:61 lang=go exported=false byte_range=2152:2180
   sig=untyped int
 EDGES
   ^defines=github.com/paxlabs-inc/chronos/internal/config/config.go
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.defaultPort kind=const
-  digest=b3:9565b61b7360443e680530a8fe3ea5aafb8245e6231eb0c07b3b757019ea2d52 file=chronos/internal/config/config.go range=53:53 lang=go exported=false byte_range=1801:1828
+  digest=b3:0a67a0ca92f61ee368279ac2598b6204036c1402c599bc328892eee21ec9aec9 file=chronos/internal/config/config.go range=57:57 lang=go exported=false byte_range=1990:2021
   sig=untyped int
 EDGES
   ^defines=github.com/paxlabs-inc/chronos/internal/config/config.go
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.defaultRouterWakeURL kind=const
-  digest=b3:cd7480dd2e12adc0df674334ede77553942a024028c94f5d5c27b260aaf6d7aa file=chronos/internal/config/config.go range=60:60 lang=go exported=false byte_range=2041:2101
+  digest=b3:03b45a278b7383bad1fbc3075cc3a83fef988d2e68ea3117dff03a71d33c9a77 file=chronos/internal/config/config.go range=64:64 lang=go exported=false byte_range=2258:2322
   sig=untyped string
 EDGES
   ^defines=github.com/paxlabs-inc/chronos/internal/config/config.go
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.defaultTick kind=const
-  digest=b3:e97d9230122c0ce39895583e430837cb86c23406065b9c03f61f0ac28f52ebe6 file=chronos/internal/config/config.go range=56:56 lang=go exported=false byte_range=1911:1945
+  digest=b3:c9def52242cad4f5c32a1527f438285fcdf0a6d148af8699c71fe8d2c7e00115 file=chronos/internal/config/config.go range=60:60 lang=go exported=false byte_range=2112:2150
   sig=time.Duration
 EDGES
   ^defines=github.com/paxlabs-inc/chronos/internal/config/config.go
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.defaultTokenTTL kind=const
-  digest=b3:aee207d3ce6025eccd122f7476db5255ec590734e6cb64024777404558c05a5a file=chronos/internal/config/config.go range=55:55 lang=go exported=false byte_range=1872:1909
+  digest=b3:31c5523de41ab72b9938aa4cc577bd2596f167ad363c4b39a6863986120a1660 file=chronos/internal/config/config.go range=59:59 lang=go exported=false byte_range=2069:2110
   sig=time.Duration
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/config.defaultWorkforcedWakeURL kind=const
+  digest=b3:96c95dc0bc134664627b8c18c59e197ea18f58996969773279b0e55125d8fc6b file=chronos/internal/config/config.go range=65:65 lang=go exported=false byte_range=2324:2398
+  sig=untyped string
 EDGES
   ^defines=github.com/paxlabs-inc/chronos/internal/config/config.go
 
@@ -236,14 +256,14 @@ EDGES
   ^defines=github.com/paxlabs-inc/chronos/internal/config/kvx.go
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.pick kind=func
-  digest=b3:954a97a368f77af2a859c7e4f09a81f312abe1d62e3851d92b5d0ebcb6ede5a5 file=chronos/internal/config/config.go range=132:141 lang=go exported=false byte_range=5042:5254
+  digest=b3:954a97a368f77af2a859c7e4f09a81f312abe1d62e3851d92b5d0ebcb6ede5a5 file=chronos/internal/config/config.go range=144:153 lang=go exported=false byte_range=5689:5901
   sig=func pick(envKey, kvxVal, def string) string
   doc=pick returns the first non-empty of env[key], kvxVal, def.
 EDGES
   ^defines=github.com/paxlabs-inc/chronos/internal/config/config.go
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config.pickUint kind=func
-  digest=b3:a2e1992c1eb7a685b648c3767de710caff673ca3356b5bb954093f562d5533de file=chronos/internal/config/config.go range=143:155 lang=go exported=false byte_range=5256:5607
+  digest=b3:a2e1992c1eb7a685b648c3767de710caff673ca3356b5bb954093f562d5533de file=chronos/internal/config/config.go range=155:167 lang=go exported=false byte_range=5903:6254
   sig=func pickUint(envKey string, fallback, def uint64) uint64
   doc=pickUint returns the env value (parsed as uint64) when set + valid, else the\nalready-resolved kvx/default fallback.
 EDGES
@@ -263,9 +283,9 @@ EDGES
   ^defines=github.com/paxlabs-inc/chronos/internal/config/kvx.go
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config/config.go kind=file
-  digest=b3:352f4705764e00f858ba6efd595371add178e329746ee76176009faad32e6fbe file=chronos/internal/config/config.go range=1:155 lang=go exported=true
+  digest=b3:287987f3808b5c0f9ac241e079ac59ffe6bb6f942a98d3c25c4ee18a8b6d8fae file=chronos/internal/config/config.go range=1:167 lang=go exported=true
 EDGES
-  defines=github.com/paxlabs-inc/chronos/internal/config.Config,github.com/paxlabs-inc/chronos/internal/config.Load,github.com/paxlabs-inc/chronos/internal/config.defaultChallengeTTL,github.com/paxlabs-inc/chronos/internal/config.defaultClaimBatch,github.com/paxlabs-inc/chronos/internal/config.defaultClaimLease,github.com/paxlabs-inc/chronos/internal/config.defaultMaxFailures,github.com/paxlabs-inc/chronos/internal/config.defaultPort,github.com/paxlabs-inc/chronos/internal/config.defaultRouterWakeURL,github.com/paxlabs-inc/chronos/internal/config.defaultTick,github.com/paxlabs-inc/chronos/internal/config.defaultTokenTTL,github.com/paxlabs-inc/chronos/internal/config.pick,github.com/paxlabs-inc/chronos/internal/config.pickUint
+  defines=github.com/paxlabs-inc/chronos/internal/config.Config,github.com/paxlabs-inc/chronos/internal/config.Load,github.com/paxlabs-inc/chronos/internal/config.defaultChallengeTTL,github.com/paxlabs-inc/chronos/internal/config.defaultClaimBatch,github.com/paxlabs-inc/chronos/internal/config.defaultClaimLease,github.com/paxlabs-inc/chronos/internal/config.defaultMaxFailures,github.com/paxlabs-inc/chronos/internal/config.defaultPort,github.com/paxlabs-inc/chronos/internal/config.defaultRouterWakeURL,github.com/paxlabs-inc/chronos/internal/config.defaultTick,github.com/paxlabs-inc/chronos/internal/config.defaultTokenTTL,github.com/paxlabs-inc/chronos/internal/config.defaultWorkforcedWakeURL,github.com/paxlabs-inc/chronos/internal/config.pick,github.com/paxlabs-inc/chronos/internal/config.pickUint
   ^contains=github.com/paxlabs-inc/chronos/internal/config
 
 NODE id=github.com/paxlabs-inc/chronos/internal/config/kvx.go kind=file

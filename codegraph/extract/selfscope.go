@@ -8,7 +8,6 @@ import (
 
 var SelfModelModules = []string{
 	"neo",
-	"cody",
 	"executor",
 	"cortex",
 }
@@ -18,8 +17,6 @@ var SelfModelRequiredPackages = []string{
 	"neo/internal/memory",
 	"neo/internal/server",
 	"neo/internal/tools",
-	"cody/internal/worker",
-	"cody/internal/orchestrator",
 	"executor/cmd/mcl-execute",
 	"cortex",
 }

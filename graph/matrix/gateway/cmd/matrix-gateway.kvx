@@ -1,14 +1,61 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/gateway/cmd/matrix-gateway kind=package
-  digest=b3:c12a47364b6d92fd01e805d6cdf85d57793a41b46c322b85fecf78b7f3da7166 file=gateway/cmd/matrix-gateway range=0:0 lang=go exported=true
+  digest=b3:f84b03751b262adf37cfdeffdc0c2e3e640ee630d30b24bd6ff340c6b642684a file=gateway/cmd/matrix-gateway range=0:0 lang=go exported=true
 EDGES
-  contains=matrix/gateway/cmd/matrix-gateway/driver.go,matrix/gateway/cmd/matrix-gateway/main.go
+  contains=matrix/gateway/cmd/matrix-gateway/agentcore_token.go,matrix/gateway/cmd/matrix-gateway/driver.go,matrix/gateway/cmd/matrix-gateway/main.go
   imports=matrix/gateway/internal/auth,matrix/gateway/internal/ledger,matrix/gateway/internal/proxy,matrix/gateway/internal/ratelimit,matrix/gateway/internal/routing
   ^contains=mod:matrix/gateway
 
+NODE id=matrix/gateway/cmd/matrix-gateway.agentCoreActiveKeyIDEnv kind=const
+  digest=b3:ded271d4358299ade38aab8d5878978d92264f26e7cbd4e5a1f196eeec3bde7e file=gateway/cmd/matrix-gateway/agentcore_token.go range=16:16 lang=go exported=false byte_range=136:204
+  sig=untyped string
+EDGES
+  ^references=matrix/gateway/cmd/matrix-gateway.loadAgentCoreVerificationKeys,matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken
+  ^defines=matrix/gateway/cmd/matrix-gateway/agentcore_token.go
+
+NODE id=matrix/gateway/cmd/matrix-gateway.agentCoreSigningKeyEnv kind=const
+  digest=b3:a9fd61b686e5df8d1f3c4e6d50074c2261ff1c1b79f60c92a75f3326f9887abd file=gateway/cmd/matrix-gateway/agentcore_token.go range=17:17 lang=go exported=false byte_range=206:275
+  sig=untyped string
+EDGES
+  ^references=matrix/gateway/cmd/matrix-gateway.loadAgentCoreVerificationKeys,matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken
+  ^defines=matrix/gateway/cmd/matrix-gateway/agentcore_token.go
+
+NODE id=matrix/gateway/cmd/matrix-gateway.agentCoreVerificationKeysEnv kind=const
+  digest=b3:df9ff4d6e13b94f98050e117c7825c7567d4d8ed2ab4183e0ec45ef1dbd13554 file=gateway/cmd/matrix-gateway/agentcore_token.go range=18:18 lang=go exported=false byte_range=277:352
+  sig=untyped string
+EDGES
+  ^references=matrix/gateway/cmd/matrix-gateway.loadAgentCoreVerificationKeys
+  ^defines=matrix/gateway/cmd/matrix-gateway/agentcore_token.go
+
+NODE id=matrix/gateway/cmd/matrix-gateway.decodeAgentCoreKey kind=func
+  digest=b3:58860ac15fac911c79d8610128993ba9064e751ac8a0a5187f10e1e1f2804b0c file=gateway/cmd/matrix-gateway/agentcore_token.go range=105:114 lang=go exported=false byte_range=3256:3563
+  sig=func decodeAgentCoreKey(value string) ([]byte, error)
+EDGES
+  references=matrix/gateway/cmd/matrix-gateway.err,matrix/gateway/cmd/matrix-gateway.key,matrix/gateway/cmd/matrix-gateway.value
+  ^calls=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken
+  ^references=matrix/gateway/cmd/matrix-gateway.loadAgentCoreVerificationKeys,matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken
+  ^defines=matrix/gateway/cmd/matrix-gateway/agentcore_token.go
+
+NODE id=matrix/gateway/cmd/matrix-gateway.loadAgentCoreVerificationKeys kind=func
+  digest=b3:007b3ce62ba537a3212c29f0d82d5885cb1e147934b09794f39d3cdbb9804f05 file=gateway/cmd/matrix-gateway/agentcore_token.go range=59:103 lang=go exported=false byte_range=1731:3254
+  sig=func loadAgentCoreVerificationKeys(getenv func(string) string) (map[string][]byte, error)
+EDGES
+  references=matrix/gateway/cmd/matrix-gateway.activeID,matrix/gateway/cmd/matrix-gateway.activeKey,matrix/gateway/cmd/matrix-gateway.add,matrix/gateway/cmd/matrix-gateway.agentCoreActiveKeyIDEnv,matrix/gateway/cmd/matrix-gateway.agentCoreSigningKeyEnv,matrix/gateway/cmd/matrix-gateway.agentCoreVerificationKeysEnv,matrix/gateway/cmd/matrix-gateway.decodeAgentCoreKey,matrix/gateway/cmd/matrix-gateway.encoded,matrix/gateway/cmd/matrix-gateway.entry,matrix/gateway/cmd/matrix-gateway.err,matrix/gateway/cmd/matrix-gateway.exists,matrix/gateway/cmd/matrix-gateway.getenv,matrix/gateway/cmd/matrix-gateway.key,matrix/gateway/cmd/matrix-gateway.keyID,matrix/gateway/cmd/matrix-gateway.keys,matrix/gateway/cmd/matrix-gateway.ok,matrix/gateway/cmd/matrix-gateway.prior,matrix/gateway/cmd/matrix-gateway.verification
+  ^calls=matrix/gateway/cmd/matrix-gateway.run
+  ^references=matrix/gateway/cmd/matrix-gateway.run
+  ^defines=matrix/gateway/cmd/matrix-gateway/agentcore_token.go
+
+NODE id=matrix/gateway/cmd/matrix-gateway.logEventFailed kind=func
+  digest=b3:91193d3f6ef2b9aa8586e4960a93d964b422cfdf42f7610c1d26ac0df6232850 file=gateway/cmd/matrix-gateway/main.go range=321:328 lang=go exported=false byte_range=11542:11818
+  sig=func logEventFailed(event string, fields map[string]any) bool
+EDGES
+  references=matrix/gateway/cmd/matrix-gateway.event,matrix/gateway/cmd/matrix-gateway.fields,matrix/gateway/cmd/matrix-gateway.hasError,matrix/gateway/cmd/matrix-gateway.lower
+  ^references=matrix/gateway/cmd/matrix-gateway.newLogger
+  ^defines=matrix/gateway/cmd/matrix-gateway/main.go
+
 NODE id=matrix/gateway/cmd/matrix-gateway.main kind=func
-  digest=b3:349082b203b753e2e2f891e4c67a42185c7ac6fa7521c040772a4efb172bb6c4 file=gateway/cmd/matrix-gateway/main.go range=87:92 lang=go exported=false byte_range=3231:3358
+  digest=b3:349082b203b753e2e2f891e4c67a42185c7ac6fa7521c040772a4efb172bb6c4 file=gateway/cmd/matrix-gateway/main.go range=97:102 lang=go exported=false byte_range=3778:3905
   sig=func main()
 EDGES
   calls=matrix/gateway/cmd/matrix-gateway.run
@@ -16,24 +63,40 @@ EDGES
   ^defines=matrix/gateway/cmd/matrix-gateway/main.go
 
 NODE id=matrix/gateway/cmd/matrix-gateway.newLogger kind=func
-  digest=b3:4638fbeaea2b569e38f6100da74168d5d7c549cf2e1c763dbb822325150175fa file=gateway/cmd/matrix-gateway/main.go range=248:282 lang=go exported=false byte_range=8928:10002
+  digest=b3:6eade622f267a3f7e39b249697e7ed806c827239a2d4a4507478fda403415a90 file=gateway/cmd/matrix-gateway/main.go range=278:319 lang=go exported=false byte_range=10314:11540
   sig=func newLogger(format string) func(string, map[string]any)
   doc=newLogger returns a logging function. text emits one event per line\nin `key=value` shape; json emits a single-line JSON object per event.\nLogging is deliberately minimal — operators rely on Prometheus +\nthe box's nginx access log for the bulk of observability; this\ndaemon-side logger is for state transitions only.
 EDGES
-  references=matrix/gateway/cmd/matrix-gateway.b,matrix/gateway/cmd/matrix-gateway.enc,matrix/gateway/cmd/matrix-gateway.err,matrix/gateway/cmd/matrix-gateway.event,matrix/gateway/cmd/matrix-gateway.fields,matrix/gateway/cmd/matrix-gateway.format,matrix/gateway/cmd/matrix-gateway.k,matrix/gateway/cmd/matrix-gateway.l,matrix/gateway/cmd/matrix-gateway.row,matrix/gateway/cmd/matrix-gateway.v
+  references=matrix/gateway/cmd/matrix-gateway.b,matrix/gateway/cmd/matrix-gateway.err,matrix/gateway/cmd/matrix-gateway.event,matrix/gateway/cmd/matrix-gateway.fields,matrix/gateway/cmd/matrix-gateway.format,matrix/gateway/cmd/matrix-gateway.k,matrix/gateway/cmd/matrix-gateway.l,matrix/gateway/cmd/matrix-gateway.logEventFailed,matrix/gateway/cmd/matrix-gateway.row,matrix/gateway/cmd/matrix-gateway.v,matrix/gateway/cmd/matrix-gateway.w
   ^calls=matrix/gateway/cmd/matrix-gateway.run
   ^references=matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/cmd/matrix-gateway/main.go
 
 NODE id=matrix/gateway/cmd/matrix-gateway.run kind=func
-  digest=b3:c91e1b50d6e85e670eb5fabd6ea3c5def6ad925c8e36a3c95e9bd88df67e8e5c file=gateway/cmd/matrix-gateway/main.go range=94:246 lang=go exported=false byte_range=3360:8926
+  digest=b3:94570ae3342951b5808bae41eda3748b5b181463b3ad92b19350700980767b1b file=gateway/cmd/matrix-gateway/main.go range=104:276 lang=go exported=false byte_range=3907:10312
   sig=func run(args []string) error
 EDGES
-  calls=matrix/gateway/cmd/matrix-gateway.newLogger,matrix/gateway/internal/auth.New,matrix/gateway/internal/ledger.Memory.Close,matrix/gateway/internal/ledger.NewMemory,matrix/gateway/internal/ledger.NewPostgres,matrix/gateway/internal/ledger.Postgres.Close,matrix/gateway/internal/proxy.New,matrix/gateway/internal/proxy.Server.Mux,matrix/gateway/internal/ratelimit.New,matrix/gateway/internal/routing.New
-  references=matrix/gateway/cmd/matrix-gateway.addr,matrix/gateway/cmd/matrix-gateway.args,matrix/gateway/cmd/matrix-gateway.authn,matrix/gateway/cmd/matrix-gateway.b,matrix/gateway/cmd/matrix-gateway.cancel,matrix/gateway/cmd/matrix-gateway.ctx,matrix/gateway/cmd/matrix-gateway.db,matrix/gateway/cmd/matrix-gateway.defaultCap,matrix/gateway/cmd/matrix-gateway.disabled,matrix/gateway/cmd/matrix-gateway.err,matrix/gateway/cmd/matrix-gateway.freeTierOnly,matrix/gateway/cmd/matrix-gateway.fs,matrix/gateway/cmd/matrix-gateway.httpSrv,matrix/gateway/cmd/matrix-gateway.lg,matrix/gateway/cmd/matrix-gateway.listenErr,matrix/gateway/cmd/matrix-gateway.logFormat,matrix/gateway/cmd/matrix-gateway.logf,matrix/gateway/cmd/matrix-gateway.newLogger,matrix/gateway/cmd/matrix-gateway.postgresDriver,matrix/gateway/cmd/matrix-gateway.postgresURI,matrix/gateway/cmd/matrix-gateway.preEstimate,matrix/gateway/cmd/matrix-gateway.rateBurst,matrix/gateway/cmd/matrix-gateway.ratePerSec,matrix/gateway/cmd/matrix-gateway.readHeader,matrix/gateway/cmd/matrix-gateway.rl,matrix/gateway/cmd/matrix-gateway.router,matrix/gateway/cmd/matrix-gateway.shutdownTimeout,matrix/gateway/cmd/matrix-gateway.sig,matrix/gateway/cmd/matrix-gateway.sigCh,matrix/gateway/cmd/matrix-gateway.srv,matrix/gateway/cmd/matrix-gateway.v,matrix/gateway/internal/auth.New,matrix/gateway/internal/auth.Options,matrix/gateway/internal/ledger.DefaultDailyPaxCap,matrix/gateway/internal/ledger.Ledger,matrix/gateway/internal/ledger.Ledger.Close,matrix/gateway/internal/ledger.NewMemory,matrix/gateway/internal/ledger.NewPostgres,matrix/gateway/internal/proxy.New,matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.ProviderKeys,matrix/gateway/internal/proxy.Server.Mux,matrix/gateway/internal/ratelimit.New,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Options
+  calls=matrix/gateway/cmd/matrix-gateway.decodeAgentCoreKey,matrix/gateway/cmd/matrix-gateway.loadAgentCoreVerificationKeys,matrix/gateway/cmd/matrix-gateway.newLogger,matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken,matrix/gateway/internal/auth.New,matrix/gateway/internal/auth.NewAgentCoreIssuer,matrix/gateway/internal/ledger.Memory.Close,matrix/gateway/internal/ledger.NewMemory,matrix/gateway/internal/ledger.NewPostgres,matrix/gateway/internal/ledger.Postgres.Close,matrix/gateway/internal/proxy.New,matrix/gateway/internal/proxy.Server.Mux,matrix/gateway/internal/ratelimit.New,matrix/gateway/internal/routing.New
+  references=matrix/gateway/cmd/matrix-gateway.activeID,matrix/gateway/cmd/matrix-gateway.activeKey,matrix/gateway/cmd/matrix-gateway.addr,matrix/gateway/cmd/matrix-gateway.agentCoreActiveKeyIDEnv,matrix/gateway/cmd/matrix-gateway.agentCoreIssuer,matrix/gateway/cmd/matrix-gateway.agentCoreKeys,matrix/gateway/cmd/matrix-gateway.agentCoreSigningKeyEnv,matrix/gateway/cmd/matrix-gateway.args,matrix/gateway/cmd/matrix-gateway.authn,matrix/gateway/cmd/matrix-gateway.b,matrix/gateway/cmd/matrix-gateway.cancel,matrix/gateway/cmd/matrix-gateway.ctx,matrix/gateway/cmd/matrix-gateway.db,matrix/gateway/cmd/matrix-gateway.decodeAgentCoreKey,matrix/gateway/cmd/matrix-gateway.defaultCap,matrix/gateway/cmd/matrix-gateway.disabled,matrix/gateway/cmd/matrix-gateway.err,matrix/gateway/cmd/matrix-gateway.freeTierOnly,matrix/gateway/cmd/matrix-gateway.fs,matrix/gateway/cmd/matrix-gateway.httpSrv,matrix/gateway/cmd/matrix-gateway.lg,matrix/gateway/cmd/matrix-gateway.listenErr,matrix/gateway/cmd/matrix-gateway.loadAgentCoreVerificationKeys,matrix/gateway/cmd/matrix-gateway.logFormat,matrix/gateway/cmd/matrix-gateway.logf,matrix/gateway/cmd/matrix-gateway.newLogger,matrix/gateway/cmd/matrix-gateway.postgresDriver,matrix/gateway/cmd/matrix-gateway.postgresURI,matrix/gateway/cmd/matrix-gateway.preEstimate,matrix/gateway/cmd/matrix-gateway.rateBurst,matrix/gateway/cmd/matrix-gateway.ratePerSec,matrix/gateway/cmd/matrix-gateway.readHeader,matrix/gateway/cmd/matrix-gateway.rl,matrix/gateway/cmd/matrix-gateway.router,matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken,matrix/gateway/cmd/matrix-gateway.shutdownTimeout,matrix/gateway/cmd/matrix-gateway.sig,matrix/gateway/cmd/matrix-gateway.sigCh,matrix/gateway/cmd/matrix-gateway.srv,matrix/gateway/cmd/matrix-gateway.v,matrix/gateway/internal/auth.AgentCoreIssuer,matrix/gateway/internal/auth.AgentCoreIssuerOptions,matrix/gateway/internal/auth.New,matrix/gateway/internal/auth.NewAgentCoreIssuer,matrix/gateway/internal/auth.Options,matrix/gateway/internal/ledger.DefaultDailyPaxCap,matrix/gateway/internal/ledger.Ledger,matrix/gateway/internal/ledger.Ledger.Close,matrix/gateway/internal/ledger.NewMemory,matrix/gateway/internal/ledger.NewPostgres,matrix/gateway/internal/proxy.New,matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.ProviderKeys,matrix/gateway/internal/proxy.Server.Mux,matrix/gateway/internal/ratelimit.New,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Options
   ^calls=matrix/gateway/cmd/matrix-gateway.main
   ^references=matrix/gateway/cmd/matrix-gateway.main
   ^defines=matrix/gateway/cmd/matrix-gateway/main.go
+
+NODE id=matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken kind=func
+  digest=b3:0fad0240c91612f101c8eb62a9c4bf91f9eefa746f97bd44b19a052bc7a9e411 file=gateway/cmd/matrix-gateway/agentcore_token.go range=21:57 lang=go exported=false byte_range=356:1729
+  sig=func runMintAgentCoreToken(args []string, stdout io.Writer, getenv func(string) string, now func() time.Time) error
+EDGES
+  calls=matrix/gateway/cmd/matrix-gateway.decodeAgentCoreKey,matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.NewAgentCoreIssuer
+  references=matrix/gateway/cmd/matrix-gateway.actor,matrix/gateway/cmd/matrix-gateway.agentCoreActiveKeyIDEnv,matrix/gateway/cmd/matrix-gateway.agentCoreSigningKeyEnv,matrix/gateway/cmd/matrix-gateway.args,matrix/gateway/cmd/matrix-gateway.decodeAgentCoreKey,matrix/gateway/cmd/matrix-gateway.encodedKey,matrix/gateway/cmd/matrix-gateway.err,matrix/gateway/cmd/matrix-gateway.fs,matrix/gateway/cmd/matrix-gateway.getenv,matrix/gateway/cmd/matrix-gateway.issuer,matrix/gateway/cmd/matrix-gateway.key,matrix/gateway/cmd/matrix-gateway.keyID,matrix/gateway/cmd/matrix-gateway.now,matrix/gateway/cmd/matrix-gateway.stdout,matrix/gateway/cmd/matrix-gateway.token,matrix/gateway/cmd/matrix-gateway.ttl,matrix/gateway/internal/auth.AgentCoreIssuer.Mint,matrix/gateway/internal/auth.AgentCoreIssuerOptions,matrix/gateway/internal/auth.AgentCoreTokenTTL,matrix/gateway/internal/auth.NewAgentCoreIssuer
+  ^calls=matrix/gateway/cmd/matrix-gateway.run
+  ^references=matrix/gateway/cmd/matrix-gateway.run
+  ^defines=matrix/gateway/cmd/matrix-gateway/agentcore_token.go
+
+NODE id=matrix/gateway/cmd/matrix-gateway/agentcore_token.go kind=file
+  digest=b3:de925c892cd84fcd745f5eb26f88830c04ab5ba52644cbc5e0ad2fe21c28715a file=gateway/cmd/matrix-gateway/agentcore_token.go range=1:114 lang=go exported=true
+EDGES
+  defines=matrix/gateway/cmd/matrix-gateway.agentCoreActiveKeyIDEnv,matrix/gateway/cmd/matrix-gateway.agentCoreSigningKeyEnv,matrix/gateway/cmd/matrix-gateway.agentCoreVerificationKeysEnv,matrix/gateway/cmd/matrix-gateway.decodeAgentCoreKey,matrix/gateway/cmd/matrix-gateway.loadAgentCoreVerificationKeys,matrix/gateway/cmd/matrix-gateway.runMintAgentCoreToken
+  ^contains=matrix/gateway/cmd/matrix-gateway
 
 NODE id=matrix/gateway/cmd/matrix-gateway/driver.go kind=file
   digest=b3:1d9bb0df9610ee361b8d5ed26cc6df2bd5cc77a336c53aa681b07440754502dc file=gateway/cmd/matrix-gateway/driver.go range=1:23 lang=go exported=true
@@ -41,7 +104,7 @@ EDGES
   ^contains=matrix/gateway/cmd/matrix-gateway
 
 NODE id=matrix/gateway/cmd/matrix-gateway/main.go kind=file
-  digest=b3:0953d5059fbb8643a0e28c3ba08f323212a990704fb4e9c9b6ce8178c6819019 file=gateway/cmd/matrix-gateway/main.go range=1:284 lang=go exported=true
+  digest=b3:8dc7accd4043fb4122a6c77b4d10ce898a7eee7193225feedd3e5b2b4538591b file=gateway/cmd/matrix-gateway/main.go range=1:330 lang=go exported=true
 EDGES
-  defines=matrix/gateway/cmd/matrix-gateway.main,matrix/gateway/cmd/matrix-gateway.newLogger,matrix/gateway/cmd/matrix-gateway.run
+  defines=matrix/gateway/cmd/matrix-gateway.logEventFailed,matrix/gateway/cmd/matrix-gateway.main,matrix/gateway/cmd/matrix-gateway.newLogger,matrix/gateway/cmd/matrix-gateway.run
   ^contains=matrix/gateway/cmd/matrix-gateway

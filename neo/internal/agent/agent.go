@@ -966,15 +966,15 @@ func (a *Agent) prepareWindow(cmTail string) (window []llm.Message, tail string,
 		}
 	}
 	pct = a.budgetPct(baseSystem)
-	tail = cmTail + checkpointTail + a.epistemicTail() + a.budgetTail(pct)
 	if a.cfg.SessionExactProjection {
 		if !a.turn.projectionFrozen {
-			a.turn.projection = tail
+			a.turn.projection = cmTail + checkpointTail
 			a.turn.projectionFrozen = true
 		}
-		tail = a.turn.projection
+		tail = a.turn.projection + a.epistemicTail() + a.budgetTail(pct)
 		window = assembleWindowContextSidecar(a.stableSystem(), a.working, tail)
 	} else {
+		tail = cmTail + checkpointTail + a.epistemicTail() + a.budgetTail(pct)
 		window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
 	}
 	a.windowAssemblies++
@@ -982,9 +982,7 @@ func (a *Agent) prepareWindow(cmTail string) (window []llm.Message, tail string,
 }
 
 // generate is the generate stage (MORPHEUS req.3.1): one model call with live
-// buffered streaming and 413 oversize recovery. Epistemic observations remain
-// diagnostic; they do not strip tools or force a private revision call before
-// ordinary execution.
+// buffered streaming, forced epistemic revision, and 413 oversize recovery.
 func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []llm.Message, tail string) (res *llm.ChatResult, streamedReasoning, proceed bool, err error) {
 	// Model text is classified only after generation settles. A tool-calling
 	// turn's prose/reasoning is private working state; publishing fragments
@@ -1004,6 +1002,15 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 		if d.Tool != nil {
 			typer.feed(d.Tool)
 		}
+	}
+
+	// A pending epistemic revision must run without tools before another batch
+	// can dispatch. Its private reasoning stays off the public activity stream.
+	if _, due := a.governEpistemic(); due {
+		if revisionErr := a.forcedRevisionStep(ctx, window, onDelta); revisionErr != nil {
+			return nil, streamedReasoning, false, revisionErr
+		}
+		return nil, streamedReasoning, false, nil
 	}
 
 	schemas := a.schemas
@@ -1282,6 +1289,9 @@ func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) err
 	}
 
 	allowed := res.Message.ToolCalls
+	if a.executionPosture() {
+		allowed, _ = a.checkBeforeAct(res.Message.ToolCalls)
+	}
 	// Emit a deterministic public milestone only for the calls that survived
 	// admission and are actually about to enter dispatch. Refused calls are
 	// private diagnostics, not user-visible work.

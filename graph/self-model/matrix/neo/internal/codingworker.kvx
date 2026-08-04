@@ -1,0 +1,1520 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:b9753067b0143b05d9e59aa7d4582f8ecc4f32217fc185000bee971850caf585
+
+NODE id=matrix/neo/internal/codingworker kind=package
+  digest=b3:16e1a4e4e5d975ef8ab9e02849f5b0842f847f9455ef2070e00d7cb1b2c4d7f4 file=neo/internal/codingworker range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/neo/internal/codingworker/client.go,matrix/neo/internal/codingworker/credential.go,matrix/neo/internal/codingworker/supervisor.go,matrix/neo/internal/codingworker/types.go,matrix/neo/internal/codingworker/websocket.go
+  ^contains=mod:matrix/neo
+
+NODE id=matrix/neo/internal/codingworker.ApprovalChoice kind=type
+  digest=b3:741a56424cc50cb25c5dc499c8d344f96f6427eb934d83176cb80a4a79c350a8 file=neo/internal/codingworker/types.go range=99:99 lang=go exported=true byte_range=2714:2740
+  sig=type ApprovalChoice string
+EDGES
+  contains=matrix/neo/internal/codingworker.ApprovalChoice.Valid
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.ApprovalChoice.Valid kind=method
+  digest=b3:537bbfc040d8900027413374a88691fb9bce87dacf984947b886b8efab87c28e file=neo/internal/codingworker/types.go range=108:115 lang=go exported=true byte_range=2918:3086
+  sig=func (choice ApprovalChoice) Valid() bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ApprovalChoice
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.ApprovalResult kind=type
+  digest=b3:a3c91941591b1c9ab11e3d327bfb6a0266fac865fbcee6f3fb61d70b9d14b661 file=neo/internal/codingworker/types.go range=95:97 lang=go exported=true byte_range=2649:2712
+  sig=type ApprovalResult struct {\n	Resolved bool `json:"resolved"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.ApprovalResult#Resolved
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.ApprovalResult#Resolved kind=field
+  digest=b3:9f32107b6582eab9dc0a3fc1ee253dbf43fc6a3edbd1ecc00e460032a37dc576 file=neo/internal/codingworker/types.go range=96:96 lang=go exported=true byte_range=2679:2710
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ApprovalResult
+
+NODE id=matrix/neo/internal/codingworker.ApproveAlways kind=const
+  digest=b3:d065910e91c1fe09e013d2be51d586167ec769b9c34970f767bea0f311ee7b8f file=neo/internal/codingworker/types.go range=104:104 lang=go exported=true byte_range=2834:2874
+  sig=codingworker.ApprovalChoice
+EDGES
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.ApproveOnce kind=const
+  digest=b3:9ad30f012784597e650ef08896c6070daba1870145ddcf5d15bbebd913d54077 file=neo/internal/codingworker/types.go range=102:102 lang=go exported=true byte_range=2751:2789
+  sig=codingworker.ApprovalChoice
+EDGES
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.ApproveSession kind=const
+  digest=b3:047d1e49657b2e0859d7f5a9a36b8bab54dd46dcc1621362a0c525efebff9e13 file=neo/internal/codingworker/types.go range=103:103 lang=go exported=true byte_range=2791:2832
+  sig=codingworker.ApprovalChoice
+EDGES
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.BranchOptions kind=type
+  digest=b3:fbc3065ef76a0184ba7e02bcdc2b58602c638dde8f79e7bf46a9010235af2363 file=neo/internal/codingworker/types.go range=86:89 lang=go exported=true byte_range=2480:2586
+  sig=type BranchOptions struct {\n	Name	string	`json:"name,omitempty"`\n	Count	int	`json:"count,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.BranchOptions#Count,matrix/neo/internal/codingworker.BranchOptions#Name
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.BranchOptions#Count kind=field
+  digest=b3:75e812723d50138556a074461eadee640617a075d6855009d00f76fee9e96a59 file=neo/internal/codingworker/types.go range=88:88 lang=go exported=true byte_range=2547:2584
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/codingworker.BranchOptions
+
+NODE id=matrix/neo/internal/codingworker.BranchOptions#Name kind=field
+  digest=b3:5baebf1414aca4da5308ceada7a98a120c6db82ef924fcb955a5e2db9e98189b file=neo/internal/codingworker/types.go range=87:87 lang=go exported=true byte_range=2509:2545
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.BranchOptions
+
+NODE id=matrix/neo/internal/codingworker.Client kind=type
+  digest=b3:ad2f559c099eb50beb6af2e435b5bff20d22478025adf51bf5e02988a577fed2 file=neo/internal/codingworker/client.go range=34:45 lang=go exported=true byte_range=622:881
+  sig=type Client struct {\n	cfg		ClientConfig\n	ws		*wsConn\n	events		chan Event\n	done		chan struct{}\n	ready		chan struct{}\n	closeOnce	sync.Once\n	mu		sync.Mutex\n	pending		map[RequestID]pendingCall\n	readErr		error\n	nextID		atomic.Uint64\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.Client#cfg,matrix/neo/internal/codingworker.Client#closeOnce,matrix/neo/internal/codingworker.Client#done,matrix/neo/internal/codingworker.Client#events,matrix/neo/internal/codingworker.Client#mu,matrix/neo/internal/codingworker.Client#nextID,matrix/neo/internal/codingworker.Client#pending,matrix/neo/internal/codingworker.Client#readErr,matrix/neo/internal/codingworker.Client#ready,matrix/neo/internal/codingworker.Client#ws,matrix/neo/internal/codingworker.Client.Approve,matrix/neo/internal/codingworker.Client.Branch,matrix/neo/internal/codingworker.Client.Close,matrix/neo/internal/codingworker.Client.CloseSession,matrix/neo/internal/codingworker.Client.Create,matrix/neo/internal/codingworker.Client.Done,matrix/neo/internal/codingworker.Client.Err,matrix/neo/internal/codingworker.Client.Events,matrix/neo/internal/codingworker.Client.Interrupt,matrix/neo/internal/codingworker.Client.Prompt,matrix/neo/internal/codingworker.Client.ReconnectAndResume,matrix/neo/internal/codingworker.Client.Resume,matrix/neo/internal/codingworker.Client.VerificationStatus,matrix/neo/internal/codingworker.Client.finish,matrix/neo/internal/codingworker.Client.readLoop,matrix/neo/internal/codingworker.Client.removePending,matrix/neo/internal/codingworker.Client.request
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client#cfg kind=field
+  digest=b3:7d6e404f191f87e9ba0638f648ba516460bb5722960398c33be26f78da5a81fa file=neo/internal/codingworker/client.go range=35:35 lang=go exported=false byte_range=644:666
+  sig=codingworker.ClientConfig
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+
+NODE id=matrix/neo/internal/codingworker.Client#closeOnce kind=field
+  digest=b3:eaa5c6ba16dad180f0ef15b9c6493f5a2f0d94591c58c6b5409945290477325f file=neo/internal/codingworker/client.go range=40:40 lang=go exported=false byte_range=759:778
+  sig=sync.Once
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+
+NODE id=matrix/neo/internal/codingworker.Client#done kind=field
+  digest=b3:cf98a6cade6b74b5c74f8c6dac80a7f25bfe3039b5c97e77281672ec0b7e1600 file=neo/internal/codingworker/client.go range=38:38 lang=go exported=false byte_range=709:732
+  sig=chan struct{}
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+
+NODE id=matrix/neo/internal/codingworker.Client#events kind=field
+  digest=b3:21c9bdb54dedc036810c6146efb4c068dafe2fbbf53e87318ab4e0c0f74681a7 file=neo/internal/codingworker/client.go range=37:37 lang=go exported=false byte_range=687:707
+  sig=chan codingworker.Event
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+
+NODE id=matrix/neo/internal/codingworker.Client#mu kind=field
+  digest=b3:0aa00f6d3fe7dfd37ad133cc169e895abed638bd6a316df5a7beeb8dc3ece394 file=neo/internal/codingworker/client.go range=41:41 lang=go exported=false byte_range=780:800
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+
+NODE id=matrix/neo/internal/codingworker.Client#nextID kind=field
+  digest=b3:1241b5ab624a3deb44d153d848b63247c5b2d00171113f0ac1bb767df0b1abbd file=neo/internal/codingworker/client.go range=44:44 lang=go exported=false byte_range=856:879
+  sig=atomic.Uint64
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+
+NODE id=matrix/neo/internal/codingworker.Client#pending kind=field
+  digest=b3:c253c54241ee343bd48a617f6156d8da6dfd078181c940e5094f2f8505e84e05 file=neo/internal/codingworker/client.go range=42:42 lang=go exported=false byte_range=802:837
+  sig=map[codingworker.RequestID]codingworker.pendingCall
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+
+NODE id=matrix/neo/internal/codingworker.Client#readErr kind=field
+  digest=b3:4afe5faa51075df6268ebaeb4963dcd9cef24d78b44da49298a52c5d72cb957a file=neo/internal/codingworker/client.go range=43:43 lang=go exported=false byte_range=839:854
+  sig=error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+
+NODE id=matrix/neo/internal/codingworker.Client#ready kind=field
+  digest=b3:e5b7fe319b72ec08b631b3f675a5e176ac385a83ab31bb01897b79402e63d6f5 file=neo/internal/codingworker/client.go range=39:39 lang=go exported=false byte_range=734:757
+  sig=chan struct{}
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+
+NODE id=matrix/neo/internal/codingworker.Client#ws kind=field
+  digest=b3:d6225cb8e43361c40cb8414e45a41ca3a7eb41e0aa43a90a92cd2909746f3bb1 file=neo/internal/codingworker/client.go range=36:36 lang=go exported=false byte_range=668:685
+  sig=*codingworker.wsConn
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+
+NODE id=matrix/neo/internal/codingworker.Client.Approve kind=method
+  digest=b3:25f23294c4773d7ed0ca5b089d729c5847b88e3fc09320fa3ad2de0def76d37d file=neo/internal/codingworker/client.go range=329:336 lang=go exported=true byte_range=8193:8630
+  sig=func (c *Client) Approve(ctx context.Context, runtimeID SessionID, choice ApprovalChoice, all bool) (ApprovalResult, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.Branch kind=method
+  digest=b3:3825b73a08ea4f38ee2039d3e1db941db6dd3c17279bb9a6134fbff97b89df90 file=neo/internal/codingworker/client.go range=299:318 lang=go exported=true byte_range=7125:7792
+  sig=func (c *Client) Branch(ctx context.Context, runtimeID SessionID, options BranchOptions) (Session, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.Close kind=method
+  digest=b3:a977b4a1b3ec1f8c65ea2e83ef5ed1b3ee3d84bf503af7af7c439d413646ac0b file=neo/internal/codingworker/client.go range=87:90 lang=go exported=true byte_range=1869:1936
+  sig=func (c *Client) Close() error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.CloseSession kind=method
+  digest=b3:096189da79f9683562fb6baac3c6fc6ce077e544d1c0d9e6d52e79e93906c26b file=neo/internal/codingworker/client.go range=347:354 lang=go exported=true byte_range=8974:9301
+  sig=func (c *Client) CloseSession(ctx context.Context, runtimeID SessionID) (CloseResult, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.Create kind=method
+  digest=b3:b814abefa7fae1e2b8abbc96812cb020312cdb677decc2cdf30504bfe38eed93 file=neo/internal/codingworker/client.go range=241:253 lang=go exported=true byte_range=5287:5713
+  sig=func (c *Client) Create(ctx context.Context, options CreateOptions) (Session, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.Done kind=method
+  digest=b3:fe97a5a03e1f19cc890d53c56f46099dc8cb307f49ffbb504ac268174ae8dbb9 file=neo/internal/codingworker/client.go range=76:76 lang=go exported=true byte_range=1679:1736
+  sig=func (c *Client) Done() <-chan struct{}
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.Err kind=method
+  digest=b3:1a4513bc257ab31495c93597e4e0be14a36012939ddfffd4f4991b3e1ed4a7e5 file=neo/internal/codingworker/client.go range=78:85 lang=go exported=true byte_range=1738:1867
+  sig=func (c *Client) Err() error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.Events kind=method
+  digest=b3:75668b066391e2477ad2ec0226bdf118f30a890ae18851590de7c470b91ef9d6 file=neo/internal/codingworker/client.go range=75:75 lang=go exported=true byte_range=1619:1678
+  sig=func (c *Client) Events() <-chan Event
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.Interrupt kind=method
+  digest=b3:0e430e82281f14336988d6703e13f71a01127a0b42d1aab3d9e07dda26cddf3f file=neo/internal/codingworker/client.go range=338:345 lang=go exported=true byte_range=8632:8972
+  sig=func (c *Client) Interrupt(ctx context.Context, runtimeID SessionID) (InterruptResult, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.Prompt kind=method
+  digest=b3:9a632f0eab843da13b75fad900d9e668e7c6bbc9f64ba306937413721a46b767 file=neo/internal/codingworker/client.go range=320:327 lang=go exported=true byte_range=7794:8191
+  sig=func (c *Client) Prompt(ctx context.Context, runtimeID SessionID, text string) (PromptResult, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.ReconnectAndResume kind=method
+  digest=b3:87f3603e980446af0c6896a8e0b46b7556b6f7f579ed11ff162283e8ef1ddd11 file=neo/internal/codingworker/client.go range=293:297 lang=go exported=true byte_range=6920:7123
+  sig=func (c *Client) ReconnectAndResume(ctx context.Context, id StoredSessionID, options ResumeOptions) (*Client, Session, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.Resume kind=method
+  digest=b3:1523090961752d396977e4c7f0bd4bc4b7f77d84ddcbd5291e5d5108ca5b7077 file=neo/internal/codingworker/client.go range=255:278 lang=go exported=true byte_range=5715:6558
+  sig=func (c *Client) Resume(ctx context.Context, id StoredSessionID, options ResumeOptions) (Session, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.VerificationStatus kind=method
+  digest=b3:40cb3f3a7527bb5eea3a00e72457f9ee670539062483569532d2d63909f59cd9 file=neo/internal/codingworker/client.go range=356:369 lang=go exported=true byte_range=9303:10002
+  sig=func (c *Client) VerificationStatus(ctx context.Context, sessionID StoredSessionID, cwd string) (Verification, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.finish kind=method
+  digest=b3:7968f279da9cfd6953f9d113f78d8b2bda46cca075748dc8745ac738bd527fe9 file=neo/internal/codingworker/client.go range=92:104 lang=go exported=false byte_range=1938:2177
+  sig=func (c *Client) finish(err error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.readLoop kind=method
+  digest=b3:bff6d6909052e258fcc509c31be30ecc2f1b682a311aa43908cf42e529a15f04 file=neo/internal/codingworker/client.go range=106:160 lang=go exported=false byte_range=2179:3328
+  sig=func (c *Client) readLoop()
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.removePending kind=method
+  digest=b3:97b9237db87addf01ae21405d281fba21418c25bf63348d72e6609233eb5450e file=neo/internal/codingworker/client.go range=226:230 lang=go exported=false byte_range=5019:5118
+  sig=func (c *Client) removePending(id RequestID)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.Client.request kind=method
+  digest=b3:6777f4942342b748f6d30a0a0c1a3acc11527a28d96d86c20d13d07c7a0a97ab file=neo/internal/codingworker/client.go range=162:224 lang=go exported=false byte_range=3330:5017
+  sig=func (c *Client) request(ctx context.Context, method string, params any, out any) error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Client
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.ClientConfig kind=type
+  digest=b3:c5421508917ee43d3b564f9db9b8ee3e2dce8203d729d30668e028ce8011fdd4 file=neo/internal/codingworker/types.go range=140:148 lang=go exported=true byte_range=3560:3766
+  sig=type ClientConfig struct {\n	Endpoint	string\n	Token		[]byte\n	ConnectTimeout	time.Duration\n	RequestTimeout	time.Duration\n	HealthTimeout	time.Duration\n	EventBuffer	int\n	MaxFrameBytes	int64\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.ClientConfig#ConnectTimeout,matrix/neo/internal/codingworker.ClientConfig#Endpoint,matrix/neo/internal/codingworker.ClientConfig#EventBuffer,matrix/neo/internal/codingworker.ClientConfig#HealthTimeout,matrix/neo/internal/codingworker.ClientConfig#MaxFrameBytes,matrix/neo/internal/codingworker.ClientConfig#RequestTimeout,matrix/neo/internal/codingworker.ClientConfig#Token,matrix/neo/internal/codingworker.ClientConfig.normalized
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.ClientConfig#ConnectTimeout kind=field
+  digest=b3:40484c3a26de8aec70b4bb957981738141ca3f5ef5a16de502bd440d59d8e349 file=neo/internal/codingworker/types.go range=143:143 lang=go exported=true byte_range=3634:3662
+  sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ClientConfig
+
+NODE id=matrix/neo/internal/codingworker.ClientConfig#Endpoint kind=field
+  digest=b3:bdcbab242089b89ba64c059860deeadfed63447768c01493a83d1e1c719c8d2c file=neo/internal/codingworker/types.go range=141:141 lang=go exported=true byte_range=3588:3609
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ClientConfig
+
+NODE id=matrix/neo/internal/codingworker.ClientConfig#EventBuffer kind=field
+  digest=b3:7bca53a73ad5f7e9a51713abdd2e726524fcb8d3789fd6f5e6513447160c8171 file=neo/internal/codingworker/types.go range=146:146 lang=go exported=true byte_range=3724:3742
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ClientConfig
+
+NODE id=matrix/neo/internal/codingworker.ClientConfig#HealthTimeout kind=field
+  digest=b3:b76410998f9c9161f967a5303ff9fd89818a22d0d2ab4fd7908ff09e22dfc391 file=neo/internal/codingworker/types.go range=145:145 lang=go exported=true byte_range=3694:3722
+  sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ClientConfig
+
+NODE id=matrix/neo/internal/codingworker.ClientConfig#MaxFrameBytes kind=field
+  digest=b3:724bf9e4b578a467b313b868fca9cb62db484d2ea01e9ef2728f8192553c2112 file=neo/internal/codingworker/types.go range=147:147 lang=go exported=true byte_range=3744:3764
+  sig=int64
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ClientConfig
+
+NODE id=matrix/neo/internal/codingworker.ClientConfig#RequestTimeout kind=field
+  digest=b3:2afab861cf49f37db06b577f2091fdbe2aa2f2544c601cd4414d769cce9adb51 file=neo/internal/codingworker/types.go range=144:144 lang=go exported=true byte_range=3664:3692
+  sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ClientConfig
+
+NODE id=matrix/neo/internal/codingworker.ClientConfig#Token kind=field
+  digest=b3:f8277d1bbfa8222d1db486fedf3d8be92ece65f31442cb9fb98ea6c0f7d193d5 file=neo/internal/codingworker/types.go range=142:142 lang=go exported=true byte_range=3611:3632
+  sig=[]byte
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ClientConfig
+
+NODE id=matrix/neo/internal/codingworker.ClientConfig.normalized kind=method
+  digest=b3:fbe2a4e89cf66562f4bb5b310bd5b5bcccaf02da5f90b4dc53227e09a4ccc2cb file=neo/internal/codingworker/types.go range=150:167 lang=go exported=false byte_range=3768:4142
+  sig=func (c ClientConfig) normalized() ClientConfig
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ClientConfig
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.CloseResult kind=type
+  digest=b3:289e9b49ef0a475131ec44f34dc544320d4e817239d9c13d5630c101c66c482f file=neo/internal/codingworker/types.go range=121:123 lang=go exported=true byte_range=3152:3208
+  sig=type CloseResult struct {\n	Closed bool `json:"closed"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.CloseResult#Closed
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.CloseResult#Closed kind=field
+  digest=b3:225740cc5433a525dbe0c5298878c78dfae387779c6053d064cb231a1ffdc84d file=neo/internal/codingworker/types.go range=122:122 lang=go exported=true byte_range=3179:3206
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.CloseResult
+
+NODE id=matrix/neo/internal/codingworker.CreateOptions kind=type
+  digest=b3:8db9d649ceddd5e9b01750a7df86b928e816316eaa7c433849190e50ad4a428a file=neo/internal/codingworker/types.go range=68:78 lang=go exported=true byte_range=1713:2291
+  sig=type CreateOptions struct {\n	CWD			string		`json:"cwd"`\n	Title			string		`json:"title,omitempty"`\n	Source			string		`json:"source,omitempty"`\n	Model			string		`json:"model,omitempty"`\n	Provider		string		`json:"provider,omitempty"`\n	ReasoningEffort		string		`json:"reasoning_effort,omitempty"`\n	Fast			*bool		`json:"fast,omitempty"`\n	CloseOnDisconnect	bool		`json:"close_on_disconnect"`\n	Messages		json.RawMessage	`json:"messages,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.CreateOptions#CWD,matrix/neo/internal/codingworker.CreateOptions#CloseOnDisconnect,matrix/neo/internal/codingworker.CreateOptions#Fast,matrix/neo/internal/codingworker.CreateOptions#Messages,matrix/neo/internal/codingworker.CreateOptions#Model,matrix/neo/internal/codingworker.CreateOptions#Provider,matrix/neo/internal/codingworker.CreateOptions#ReasoningEffort,matrix/neo/internal/codingworker.CreateOptions#Source,matrix/neo/internal/codingworker.CreateOptions#Title
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.CreateOptions#CWD kind=field
+  digest=b3:0d02c856d4313accf89f85b2047ad076b474c1c5a6cea50b9c7c9c5b21482af1 file=neo/internal/codingworker/types.go range=69:69 lang=go exported=true byte_range=1742:1788
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.CreateOptions
+
+NODE id=matrix/neo/internal/codingworker.CreateOptions#CloseOnDisconnect kind=field
+  digest=b3:aea6d611967201fdc678ae03a1fb8f87bc3d70b8e4b2e3c49c58c14a7bbd8a83 file=neo/internal/codingworker/types.go range=76:76 lang=go exported=true byte_range=2164:2226
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.CreateOptions
+
+NODE id=matrix/neo/internal/codingworker.CreateOptions#Fast kind=field
+  digest=b3:1d0b8234fb0bfbfb66b06278115aa59939d4c33dcdbdb8f23d9363d0f0bf9d00 file=neo/internal/codingworker/types.go range=75:75 lang=go exported=true byte_range=2105:2162
+  sig=*bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.CreateOptions
+
+NODE id=matrix/neo/internal/codingworker.CreateOptions#Messages kind=field
+  digest=b3:4a1de106e4ecd050a4b6f4e6992c7c5d60a22302f1146e5f0d27be4a3729d7eb file=neo/internal/codingworker/types.go range=77:77 lang=go exported=true byte_range=2228:2289
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/codingworker.CreateOptions
+
+NODE id=matrix/neo/internal/codingworker.CreateOptions#Model kind=field
+  digest=b3:d358f2e7254e206f8cce0861e3417d6b934c9ca04b1e8d899ea9a19b861474e4 file=neo/internal/codingworker/types.go range=72:72 lang=go exported=true byte_range=1911:1969
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.CreateOptions
+
+NODE id=matrix/neo/internal/codingworker.CreateOptions#Provider kind=field
+  digest=b3:9213d2aac6320cffb93e0dee9d805d165e7758f149930005c88613b0ebb3a173 file=neo/internal/codingworker/types.go range=73:73 lang=go exported=true byte_range=1971:2032
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.CreateOptions
+
+NODE id=matrix/neo/internal/codingworker.CreateOptions#ReasoningEffort kind=field
+  digest=b3:199c01a6ad7a8f20516d96e1d738fdc3a25352c5305a6df254f4cfe2385e8a59 file=neo/internal/codingworker/types.go range=74:74 lang=go exported=true byte_range=2034:2103
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.CreateOptions
+
+NODE id=matrix/neo/internal/codingworker.CreateOptions#Source kind=field
+  digest=b3:9cf4f3b9c30d95445309ba573d995e7867d7553bf8d4fc2c5506fc8accaedd5a file=neo/internal/codingworker/types.go range=71:71 lang=go exported=true byte_range=1850:1909
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.CreateOptions
+
+NODE id=matrix/neo/internal/codingworker.CreateOptions#Title kind=field
+  digest=b3:9ca5061cd0035cd052cfc9f101827f345911184d4b550774cc78aa591b8137db file=neo/internal/codingworker/types.go range=70:70 lang=go exported=true byte_range=1790:1848
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.CreateOptions
+
+NODE id=matrix/neo/internal/codingworker.CredentialSource kind=interface
+  digest=b3:e75ebaa2f0b2d1d8fa22735e8a207d2e0c3b8f26b0e52beb171b7ad44856ad10 file=neo/internal/codingworker/supervisor.go range=35:37 lang=go exported=true byte_range=374:492
+  sig=type CredentialSource interface {\n	IssueCodingCredential(context.Context, UserKey, string) (ScopedCredential, error)\n}
+EDGES
+  ^implements=matrix/neo/internal/codingworker.CredentialSourceFunc,matrix/neo/internal/codingworker.GatewayCredentialSource
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.CredentialSourceFunc kind=type
+  digest=b3:b173fd1fa80fa413f1f9dbd8c5c09747080da4c2538948217421d654bc5b5175 file=neo/internal/codingworker/supervisor.go range=39:39 lang=go exported=true byte_range=494:584
+  sig=type CredentialSourceFunc func(context.Context, UserKey, string) (ScopedCredential, error)
+EDGES
+  contains=matrix/neo/internal/codingworker.CredentialSourceFunc.IssueCodingCredential
+  implements=matrix/neo/internal/codingworker.CredentialSource
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.CredentialSourceFunc.IssueCodingCredential kind=method
+  digest=b3:60f6e78c53f427396ccb2a227c662cc6703b55c7ece0b350a83566430893c52f file=neo/internal/codingworker/supervisor.go range=41:43 lang=go exported=true byte_range=586:750
+  sig=func (f CredentialSourceFunc) IssueCodingCredential(ctx context.Context, user UserKey, actorDID string) (ScopedCredential, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.CredentialSourceFunc
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.DenyApproval kind=const
+  digest=b3:059dafac8a24a30325007c72a1e902d84d6cb21b62e4caa570dcf9117d76a2d1 file=neo/internal/codingworker/types.go range=105:105 lang=go exported=true byte_range=2876:2914
+  sig=codingworker.ApprovalChoice
+EDGES
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.Dial kind=func
+  digest=b3:26d717c20b40cbf2ccaf5ae99be8ce4394342d19f2a235dce0a588abfa3e1269 file=neo/internal/codingworker/client.go range=47:73 lang=go exported=true byte_range=883:1617
+  sig=func Dial(ctx context.Context, cfg ClientConfig) (*Client, error)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.DialAndResume kind=func
+  digest=b3:179fe9362a49aad679e46fe0d3ecab0f12581cccaccdd63e0a7c09c593920a50 file=neo/internal/codingworker/client.go range=280:291 lang=go exported=true byte_range=6560:6918
+  sig=func DialAndResume(ctx context.Context, cfg ClientConfig, id StoredSessionID, options ResumeOptions) (*Client, Session, error)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.ErrClosed kind=var
+  digest=b3:79767f94721130f95416f0af569348a13a236de4bc88fc916f31daecf2320455 file=neo/internal/codingworker/types.go range=170:170 lang=go exported=true byte_range=4151:4215
+  sig=error
+EDGES
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.ErrEventBackpressure kind=var
+  digest=b3:5246569cfdd7efb1ccd612df5c0ec0223aab9cbc54d76707a21d5311fef750fb file=neo/internal/codingworker/types.go range=171:171 lang=go exported=true byte_range=4217:4290
+  sig=error
+EDGES
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.ErrSessionMismatch kind=var
+  digest=b3:4a1b01ee87415b0ff04c389982e8fda27b2f46ea8177e94dfd48d09f62274511 file=neo/internal/codingworker/types.go range=172:172 lang=go exported=true byte_range=4292:4374
+  sig=error
+EDGES
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.Event kind=type
+  digest=b3:4b3131956b71b0a04d296eb22268c1ba412309d176a372f62cc231862af3d500 file=neo/internal/codingworker/types.go range=34:38 lang=go exported=true byte_range=661:834
+  sig=type Event struct {\n	Type		string		`json:"type"`\n	SessionID	SessionID	`json:"session_id,omitempty"`\n	Payload		json.RawMessage	`json:"payload,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.Event#Payload,matrix/neo/internal/codingworker.Event#SessionID,matrix/neo/internal/codingworker.Event#Type
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.Event#Payload kind=field
+  digest=b3:428d4b83d48b8632f4dded295ffe482f8609a304d6ed090787acfa4dd2c72aee file=neo/internal/codingworker/types.go range=37:37 lang=go exported=true byte_range=780:832
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Event
+
+NODE id=matrix/neo/internal/codingworker.Event#SessionID kind=field
+  digest=b3:ffeaf7eb807e973ccb9cf12dfcaec98fd0bbc7708633dcadff001ac6a108a29e file=neo/internal/codingworker/types.go range=36:36 lang=go exported=true byte_range=723:778
+  sig=codingworker.SessionID
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Event
+
+NODE id=matrix/neo/internal/codingworker.Event#Type kind=field
+  digest=b3:9bcf70e5b3e3a3e1cb2d17190f379a4c78626f6876b143ea60bc315f8b3aea3e file=neo/internal/codingworker/types.go range=35:35 lang=go exported=true byte_range=682:721
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Event
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSource kind=type
+  digest=b3:2d55f8f7b29c64940ffe4ac12a04b9742838520332dec7bfa26cdd8f175b8898 file=neo/internal/codingworker/credential.go range=28:36 lang=go exported=true byte_range=394:598
+  sig=type GatewayCredentialSource struct {\n	endpoint	string\n	client		*http.Client\n	now		func() time.Time\n	minValidity	time.Duration\n	mu		sync.Mutex\n	bearer		[]byte\n	closed		bool\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.GatewayCredentialSource#bearer,matrix/neo/internal/codingworker.GatewayCredentialSource#client,matrix/neo/internal/codingworker.GatewayCredentialSource#closed,matrix/neo/internal/codingworker.GatewayCredentialSource#endpoint,matrix/neo/internal/codingworker.GatewayCredentialSource#minValidity,matrix/neo/internal/codingworker.GatewayCredentialSource#mu,matrix/neo/internal/codingworker.GatewayCredentialSource#now,matrix/neo/internal/codingworker.GatewayCredentialSource.Close,matrix/neo/internal/codingworker.GatewayCredentialSource.IssueCodingCredential
+  implements=matrix/neo/internal/codingworker.CredentialSource
+  ^defines=matrix/neo/internal/codingworker/credential.go
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSource#bearer kind=field
+  digest=b3:845e95728c8df64003b88a0e916f280da2967cede1cecef847ab914e18f465cd file=neo/internal/codingworker/credential.go range=34:34 lang=go exported=false byte_range=560:578
+  sig=[]byte
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSource
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSource#client kind=field
+  digest=b3:4b9890c46eaccbad26e23cf4e81852087a5b4644824b6f8b10ebb0a26cb8b852 file=neo/internal/codingworker/credential.go range=30:30 lang=go exported=false byte_range=453:477
+  sig=*http.Client
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSource
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSource#closed kind=field
+  digest=b3:8ca9b730516dcf29962b2f3b9f51aeab8cf2cf3ed5b91de94d86e972467b3d29 file=neo/internal/codingworker/credential.go range=35:35 lang=go exported=false byte_range=580:596
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSource
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSource#endpoint kind=field
+  digest=b3:79f3f4cb754ccf67a0792fe070e41b06dcb560a219329bdcc4d6b7504cf065e5 file=neo/internal/codingworker/credential.go range=29:29 lang=go exported=false byte_range=433:451
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSource
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSource#minValidity kind=field
+  digest=b3:b8ef3c1dd9f5fb0194339383f2ace7bbd3732d13ec53f30d87b208c6c654dfc6 file=neo/internal/codingworker/credential.go range=32:32 lang=go exported=false byte_range=509:534
+  sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSource
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSource#mu kind=field
+  digest=b3:a580abe8bc8198b98487987f7f8c951328178338748fa33293c89dab68b19adf file=neo/internal/codingworker/credential.go range=33:33 lang=go exported=false byte_range=536:558
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSource
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSource#now kind=field
+  digest=b3:2a3cf05c9901f4f801ed61de59e47eec11e8fc90602120d2b784a923b87b26d9 file=neo/internal/codingworker/credential.go range=31:31 lang=go exported=false byte_range=479:507
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSource
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSource.Close kind=method
+  digest=b3:e82b1ae4da8c08c2c3fb69248a0e093aa83c1de020c0b95f87f63c16c60a2930 file=neo/internal/codingworker/credential.go range=99:108 lang=go exported=true byte_range=2496:2670
+  sig=func (s *GatewayCredentialSource) Close() error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSource
+  ^defines=matrix/neo/internal/codingworker/credential.go
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSource.IssueCodingCredential kind=method
+  digest=b3:f61305dd1f4b38c52207ce032d6ce3c95becfd2a68b6860eed63af4e7795e587 file=neo/internal/codingworker/credential.go range=110:183 lang=go exported=true byte_range=2672:5964
+  sig=func (s *GatewayCredentialSource) IssueCodingCredential(ctx context.Context, user UserKey, actorDID string) (ScopedCredential, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSource
+  ^defines=matrix/neo/internal/codingworker/credential.go
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig kind=type
+  digest=b3:c80d8e572ee618ba81e6704e9480a4c010fde8693347d05919aca643bbfe0432 file=neo/internal/codingworker/credential.go range=19:26 lang=go exported=true byte_range=186:392
+  sig=type GatewayCredentialSourceConfig struct {\n	GatewayURL	string\n	LegacyBearer	[]byte\n	Timeout		time.Duration\n	MinValidity	time.Duration\n	Transport	http.RoundTripper\n	Now		func() time.Time\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig#GatewayURL,matrix/neo/internal/codingworker.GatewayCredentialSourceConfig#LegacyBearer,matrix/neo/internal/codingworker.GatewayCredentialSourceConfig#MinValidity,matrix/neo/internal/codingworker.GatewayCredentialSourceConfig#Now,matrix/neo/internal/codingworker.GatewayCredentialSourceConfig#Timeout,matrix/neo/internal/codingworker.GatewayCredentialSourceConfig#Transport
+  ^defines=matrix/neo/internal/codingworker/credential.go
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig#GatewayURL kind=field
+  digest=b3:1056179a9f9c9b3eb4001531b62849c87d62a43a4c878591332ac32f7bf71dcf file=neo/internal/codingworker/credential.go range=20:20 lang=go exported=true byte_range=231:250
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig#LegacyBearer kind=field
+  digest=b3:227ed9e2003a3626cc58dca29cb0c4d4da7ea7442e1154c037b8eee789d39d39 file=neo/internal/codingworker/credential.go range=21:21 lang=go exported=true byte_range=252:271
+  sig=[]byte
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig#MinValidity kind=field
+  digest=b3:3d7ca589cc850fb7dd431bcb022a1760924dd49600722712c07cfe6d96e68e2a file=neo/internal/codingworker/credential.go range=23:23 lang=go exported=true byte_range=301:327
+  sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig#Now kind=field
+  digest=b3:22c8d437dab52a14bedb516f6c38dc3641005c4df241ed35f70e311c2c36d4ce file=neo/internal/codingworker/credential.go range=25:25 lang=go exported=true byte_range=361:390
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig#Timeout kind=field
+  digest=b3:153fb60ca418363f59459ea970983858647d8f0564ff5f4fc3dbb0ad90fab229 file=neo/internal/codingworker/credential.go range=22:22 lang=go exported=true byte_range=273:299
+  sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig
+
+NODE id=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig#Transport kind=field
+  digest=b3:47df9894c1ce3d1efe4599016734381fe3ff971b0963f94f2d754d5eccbfa360 file=neo/internal/codingworker/credential.go range=24:24 lang=go exported=true byte_range=329:359
+  sig=http.RoundTripper
+EDGES
+  ^contains=matrix/neo/internal/codingworker.GatewayCredentialSourceConfig
+
+NODE id=matrix/neo/internal/codingworker.Health kind=type
+  digest=b3:870da0ec6cf246c1667b04c1d62aa44985bc0bdb8503ff8dfe9e8e83e7d95e3e file=neo/internal/codingworker/types.go range=134:138 lang=go exported=true byte_range=3421:3558
+  sig=type Health struct {\n	OK		bool	`json:"ok"`\n	Version		string	`json:"version"`\n	AuthRequired	bool	`json:"auth_required"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.Health#AuthRequired,matrix/neo/internal/codingworker.Health#OK,matrix/neo/internal/codingworker.Health#Version
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.Health#AuthRequired kind=field
+  digest=b3:1ccc7a554aa01759f4835e31bad89e390511c6cb9ff64a84cd1d2f09ba9f8624 file=neo/internal/codingworker/types.go range=137:137 lang=go exported=true byte_range=3514:3556
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Health
+
+NODE id=matrix/neo/internal/codingworker.Health#OK kind=field
+  digest=b3:80609ca7e83836f24305e28cf6ad765b3534d3582676b8b2c0438843286bab37 file=neo/internal/codingworker/types.go range=135:135 lang=go exported=true byte_range=3443:3474
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Health
+
+NODE id=matrix/neo/internal/codingworker.Health#Version kind=field
+  digest=b3:8502203691a1caeb9296ac143798c433f7c314d47d9e98b35bfde9146a04e567 file=neo/internal/codingworker/types.go range=136:136 lang=go exported=true byte_range=3476:3512
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Health
+
+NODE id=matrix/neo/internal/codingworker.HealthCheck kind=func
+  digest=b3:50ad9e69685dea7cb9d9d009c61a479586ee5ad669066833ce76f9e83f37b848 file=neo/internal/codingworker/client.go range=371:401 lang=go exported=true byte_range=10004:11011
+  sig=func HealthCheck(ctx context.Context, cfg ClientConfig) (Health, error)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.InterruptResult kind=type
+  digest=b3:aa13ac96f9e05afe519baa889b2a7fcfe9da254e1c10a8dda0434c66ffc56406 file=neo/internal/codingworker/types.go range=117:119 lang=go exported=true byte_range=3088:3150
+  sig=type InterruptResult struct {\n	Status string `json:"status"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.InterruptResult#Status
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.InterruptResult#Status kind=field
+  digest=b3:606cbffea1b434934d3d0449aadd8fa5c4323434ff7f6aa076c4922497a82a3b file=neo/internal/codingworker/types.go range=118:118 lang=go exported=true byte_range=3119:3148
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.InterruptResult
+
+NODE id=matrix/neo/internal/codingworker.LaunchSpec kind=type
+  digest=b3:7eae69a1be2c10be87a2c43b7c055775fd0e71e4e0a666074c936bd7261c4861 file=neo/internal/codingworker/supervisor.go range=59:69 lang=go exported=true byte_range=1117:1323
+  sig=type LaunchSpec struct {\n	User		UserKey\n	ActorDID	string\n	GatewayURL	string\n	Workspace	string\n	Home		string\n	Port		int\n	UID		uint32\n	GID		uint32\n	ExtraEnv	map[string]string\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.LaunchSpec#ActorDID,matrix/neo/internal/codingworker.LaunchSpec#ExtraEnv,matrix/neo/internal/codingworker.LaunchSpec#GID,matrix/neo/internal/codingworker.LaunchSpec#GatewayURL,matrix/neo/internal/codingworker.LaunchSpec#Home,matrix/neo/internal/codingworker.LaunchSpec#Port,matrix/neo/internal/codingworker.LaunchSpec#UID,matrix/neo/internal/codingworker.LaunchSpec#User,matrix/neo/internal/codingworker.LaunchSpec#Workspace
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.LaunchSpec#ActorDID kind=field
+  digest=b3:b4461a98d6dfa68b918ad0f2daf600dac8432bd0e20727920ad186e2a92b2b2a file=neo/internal/codingworker/supervisor.go range=61:61 lang=go exported=true byte_range=1163:1180
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.LaunchSpec
+
+NODE id=matrix/neo/internal/codingworker.LaunchSpec#ExtraEnv kind=field
+  digest=b3:cb0c457362f9cda4ab7e4c348d6997c843cbba33e24c69708d3bf8ccf5c7da89 file=neo/internal/codingworker/supervisor.go range=68:68 lang=go exported=true byte_range=1293:1321
+  sig=map[string]string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.LaunchSpec
+
+NODE id=matrix/neo/internal/codingworker.LaunchSpec#GID kind=field
+  digest=b3:d2818787d57642b023b40aa6967869180d10803cf4f798776b274143dafa7df1 file=neo/internal/codingworker/supervisor.go range=67:67 lang=go exported=true byte_range=1274:1291
+  sig=uint32
+EDGES
+  ^contains=matrix/neo/internal/codingworker.LaunchSpec
+
+NODE id=matrix/neo/internal/codingworker.LaunchSpec#GatewayURL kind=field
+  digest=b3:60d4157a600b0698ab5aac98e22614e078854b17c3bd7ac235efb3512e6bbf1f file=neo/internal/codingworker/supervisor.go range=62:62 lang=go exported=true byte_range=1182:1199
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.LaunchSpec
+
+NODE id=matrix/neo/internal/codingworker.LaunchSpec#Home kind=field
+  digest=b3:e975603925161f927dc2ef3ab80bed6b59386108da822b6f7b48e4d44d25936a file=neo/internal/codingworker/supervisor.go range=64:64 lang=go exported=true byte_range=1220:1237
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.LaunchSpec
+
+NODE id=matrix/neo/internal/codingworker.LaunchSpec#Port kind=field
+  digest=b3:323b248f1363c4921d3b2f376464cc9fe4e6a46bb873ef2c27833966938674dd file=neo/internal/codingworker/supervisor.go range=65:65 lang=go exported=true byte_range=1239:1253
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/codingworker.LaunchSpec
+
+NODE id=matrix/neo/internal/codingworker.LaunchSpec#UID kind=field
+  digest=b3:62b18838a08b348a0e2ecf7c2f528a2057ec69e024994d20b81a603c06298e19 file=neo/internal/codingworker/supervisor.go range=66:66 lang=go exported=true byte_range=1255:1272
+  sig=uint32
+EDGES
+  ^contains=matrix/neo/internal/codingworker.LaunchSpec
+
+NODE id=matrix/neo/internal/codingworker.LaunchSpec#User kind=field
+  digest=b3:8bb680a81b28ea2376446dc1aa3d94ec1cfd21e60d23738eaea0736da83f828d file=neo/internal/codingworker/supervisor.go range=60:60 lang=go exported=true byte_range=1143:1161
+  sig=codingworker.UserKey
+EDGES
+  ^contains=matrix/neo/internal/codingworker.LaunchSpec
+
+NODE id=matrix/neo/internal/codingworker.LaunchSpec#Workspace kind=field
+  digest=b3:15309eb3aa3aba01106754e47ce28c3a4a4c0dc961cd42a803c0f8843e301b2f file=neo/internal/codingworker/supervisor.go range=63:63 lang=go exported=true byte_range=1201:1218
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.LaunchSpec
+
+NODE id=matrix/neo/internal/codingworker.NewGatewayCredentialSource kind=func
+  digest=b3:5c0ce52630772d664c7bb99f3426ad8dd15f842389a3488a40240353765e47ee file=neo/internal/codingworker/credential.go range=38:80 lang=go exported=true byte_range=600:1870
+  sig=func NewGatewayCredentialSource(cfg GatewayCredentialSourceConfig) (*GatewayCredentialSource, error)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/credential.go
+
+NODE id=matrix/neo/internal/codingworker.NewProcessSupervisor kind=func
+  digest=b3:a74ece1e6df7e9a9bfbdcf7c4df339bf7e4a13676ca1adf9ef19f4f80d329889 file=neo/internal/codingworker/supervisor.go range=105:140 lang=go exported=true byte_range=1972:3304
+  sig=func NewProcessSupervisor(cfg SupervisorConfig) (*ProcessSupervisor, error)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessHandle kind=type
+  digest=b3:3561d31fc3a460071671dd195d0c485dd8f7fd2411937441f1d56ea85853ecc3 file=neo/internal/codingworker/supervisor.go range=71:77 lang=go exported=true byte_range=1325:1440
+  sig=type ProcessHandle struct {\n	User		UserKey\n	Endpoint	string\n	Token		[]byte\n	PID		int\n	Started		time.Time\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.ProcessHandle#Endpoint,matrix/neo/internal/codingworker.ProcessHandle#PID,matrix/neo/internal/codingworker.ProcessHandle#Started,matrix/neo/internal/codingworker.ProcessHandle#Token,matrix/neo/internal/codingworker.ProcessHandle#User,matrix/neo/internal/codingworker.ProcessHandle.ClientConfig,matrix/neo/internal/codingworker.ProcessHandle.erase
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessHandle#Endpoint kind=field
+  digest=b3:d9a2c994cff4c8ebf4c47abe4385e940d598e14ca14d94ac18957cac1691e298 file=neo/internal/codingworker/supervisor.go range=73:73 lang=go exported=true byte_range=1372:1387
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessHandle
+
+NODE id=matrix/neo/internal/codingworker.ProcessHandle#PID kind=field
+  digest=b3:0e0507fc32ca693b8def42603c1d4ee94fbc4dbb90a69021a0b149149429de86 file=neo/internal/codingworker/supervisor.go range=75:75 lang=go exported=true byte_range=1406:1418
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessHandle
+
+NODE id=matrix/neo/internal/codingworker.ProcessHandle#Started kind=field
+  digest=b3:8c140404ecd24fe760492a4bc0495a64790bf3dbd3d252caa497aa3dd67b8332 file=neo/internal/codingworker/supervisor.go range=76:76 lang=go exported=true byte_range=1420:1438
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessHandle
+
+NODE id=matrix/neo/internal/codingworker.ProcessHandle#Token kind=field
+  digest=b3:6248f23ba9804796ed2f10479654ed6bc5573f5d9d5645d7e3b676bc4f379ded file=neo/internal/codingworker/supervisor.go range=74:74 lang=go exported=true byte_range=1389:1404
+  sig=[]byte
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessHandle
+
+NODE id=matrix/neo/internal/codingworker.ProcessHandle#User kind=field
+  digest=b3:94bd9afe217d0722d8677ed5f9d708475eb0acce095a36907d85a939ac1f8264 file=neo/internal/codingworker/supervisor.go range=72:72 lang=go exported=true byte_range=1354:1370
+  sig=codingworker.UserKey
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessHandle
+
+NODE id=matrix/neo/internal/codingworker.ProcessHandle.ClientConfig kind=method
+  digest=b3:802b8928d51b0c459205196ff6e6c8cf0284050258467729ed4d456dd1bb346b file=neo/internal/codingworker/supervisor.go range=79:81 lang=go exported=true byte_range=1442:1579
+  sig=func (h ProcessHandle) ClientConfig() ClientConfig
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessHandle
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessHandle.erase kind=method
+  digest=b3:a97ecdc2330d242cfd66eb78bc290069813ca5d84c5e320babb4addd20949f45 file=neo/internal/codingworker/supervisor.go range=83:88 lang=go exported=false byte_range=1581:1677
+  sig=func (h *ProcessHandle) erase()
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessHandle
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor kind=type
+  digest=b3:6ed660077f1fcedfce73a2e83d819f203b2bc5e76309f38434ffc9dda6d1a9f9 file=neo/internal/codingworker/supervisor.go range=99:103 lang=go exported=true byte_range=1848:1970
+  sig=type ProcessSupervisor struct {\n	cfg		SupervisorConfig\n	mu		sync.Mutex\n	processes	map[UserKey]*managedProcess\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.ProcessSupervisor#cfg,matrix/neo/internal/codingworker.ProcessSupervisor#mu,matrix/neo/internal/codingworker.ProcessSupervisor#processes,matrix/neo/internal/codingworker.ProcessSupervisor.ForceDeath,matrix/neo/internal/codingworker.ProcessSupervisor.Handle,matrix/neo/internal/codingworker.ProcessSupervisor.Health,matrix/neo/internal/codingworker.ProcessSupervisor.ReapIdle,matrix/neo/internal/codingworker.ProcessSupervisor.Restart,matrix/neo/internal/codingworker.ProcessSupervisor.RotateCredential,matrix/neo/internal/codingworker.ProcessSupervisor.RunIdleReaper,matrix/neo/internal/codingworker.ProcessSupervisor.Start,matrix/neo/internal/codingworker.ProcessSupervisor.Stop,matrix/neo/internal/codingworker.ProcessSupervisor.Touch,matrix/neo/internal/codingworker.ProcessSupervisor.buildEnvironment,matrix/neo/internal/codingworker.ProcessSupervisor.stopProcess,matrix/neo/internal/codingworker.ProcessSupervisor.validateSpec,matrix/neo/internal/codingworker.ProcessSupervisor.waitHealthy,matrix/neo/internal/codingworker.ProcessSupervisor.waitProcess
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor#cfg kind=field
+  digest=b3:e55a93d7015e3b217e3bff2be8eb4f7eba327aa4289fdf78aaf43d21ca65f441 file=neo/internal/codingworker/supervisor.go range=100:100 lang=go exported=false byte_range=1881:1907
+  sig=codingworker.SupervisorConfig
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor#mu kind=field
+  digest=b3:0aa00f6d3fe7dfd37ad133cc169e895abed638bd6a316df5a7beeb8dc3ece394 file=neo/internal/codingworker/supervisor.go range=101:101 lang=go exported=false byte_range=1909:1929
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor#processes kind=field
+  digest=b3:fdf6b44848736175c1361d100a899a060997bd2a0cd1be9c310ee9e477e8293c file=neo/internal/codingworker/supervisor.go range=102:102 lang=go exported=false byte_range=1931:1968
+  sig=map[codingworker.UserKey]*codingworker.managedProcess
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.ForceDeath kind=method
+  digest=b3:b6038ba8defd161580293f1dfae255f7d60561ee0feac9acb072aaeb2bf20722 file=neo/internal/codingworker/supervisor.go range=502:519 lang=go exported=true byte_range=14694:15195
+  sig=func (s *ProcessSupervisor) ForceDeath(ctx context.Context, user UserKey, restart bool) (ProcessHandle, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.Handle kind=method
+  digest=b3:4f4930d0ea219d00f20d20659b8985e32d995b17b1fc1900c6e6f9ef0fbf0717 file=neo/internal/codingworker/supervisor.go range=404:412 lang=go exported=true byte_range=12144:12408
+  sig=func (s *ProcessSupervisor) Handle(user UserKey) (ProcessHandle, bool)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.Health kind=method
+  digest=b3:1c1fb18ecf2dac6e6e16fc66a30759fe2ecf608df7d14fb51af8853cb49f8b2f file=neo/internal/codingworker/supervisor.go range=425:435 lang=go exported=true byte_range=12651:13001
+  sig=func (s *ProcessSupervisor) Health(ctx context.Context, user UserKey) (Health, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.ReapIdle kind=method
+  digest=b3:caedfd7d5197ccaf08830625e90ef0ebfcb147943da90d8bdd0cf2a8beecbb09 file=neo/internal/codingworker/supervisor.go range=521:537 lang=go exported=true byte_range=15197:15686
+  sig=func (s *ProcessSupervisor) ReapIdle(ctx context.Context, now time.Time) []UserKey
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.Restart kind=method
+  digest=b3:a284b4e858d2622216529d6f5a1bcbe6763e1b9d7b41ac4abb0e5c97a2d81e0a file=neo/internal/codingworker/supervisor.go range=482:496 lang=go exported=true byte_range=14105:14555
+  sig=func (s *ProcessSupervisor) Restart(ctx context.Context, user UserKey) (ProcessHandle, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.RotateCredential kind=method
+  digest=b3:6a72572177ae7804a3ad62c2ffd7422f6bc4a9dff32ba5763dfbc0a93803eef8 file=neo/internal/codingworker/supervisor.go range=498:500 lang=go exported=true byte_range=14557:14692
+  sig=func (s *ProcessSupervisor) RotateCredential(ctx context.Context, user UserKey) (ProcessHandle, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.RunIdleReaper kind=method
+  digest=b3:54cbbbd421437fdd3b902819e31706457b34cbd92367d479f6bb0c3ed5000b51 file=neo/internal/codingworker/supervisor.go range=539:554 lang=go exported=true byte_range=15688:16009
+  sig=func (s *ProcessSupervisor) RunIdleReaper(ctx context.Context)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.Start kind=method
+  digest=b3:74ea5498608752d7f2e14efaf880d0dab2cf83e8f037e1daa99d0e8cc09971b8 file=neo/internal/codingworker/supervisor.go range=160:238 lang=go exported=true byte_range=3626:6312
+  sig=func (s *ProcessSupervisor) Start(ctx context.Context, spec LaunchSpec) (ProcessHandle, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.Stop kind=method
+  digest=b3:6c0ce6660e42097c18f18ccb2c914c48fb5f5c9e9c59fb2f826f97c379998272 file=neo/internal/codingworker/supervisor.go range=437:448 lang=go exported=true byte_range=13003:13270
+  sig=func (s *ProcessSupervisor) Stop(ctx context.Context, user UserKey) error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.Touch kind=method
+  digest=b3:bb44fea79116617e8a3479a6022e6ebf2de8e423b4c2421f7d84fddc388f7b98 file=neo/internal/codingworker/supervisor.go range=414:423 lang=go exported=true byte_range=12410:12649
+  sig=func (s *ProcessSupervisor) Touch(user UserKey) bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.buildEnvironment kind=method
+  digest=b3:d1732a732c4b4c2ba47616625eb2cee1080348bd1095f52a0bdd155d32874c2b file=neo/internal/codingworker/supervisor.go range=281:334 lang=go exported=false byte_range=8147:10496
+  sig=func (s *ProcessSupervisor) buildEnvironment(spec LaunchSpec, credential, token []byte) ([]string, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.stopProcess kind=method
+  digest=b3:d558c108560f058410be643d707506c571ad6c44e17ee4e31ad1b97e3dad7438 file=neo/internal/codingworker/supervisor.go range=450:480 lang=go exported=false byte_range=13272:14103
+  sig=func (s *ProcessSupervisor) stopProcess(ctx context.Context, process *managedProcess, force bool) error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.validateSpec kind=method
+  digest=b3:63346e9d3c68584f1f2ce31bc472462932707ddde8e10277d8bc4ee6260cd0ca file=neo/internal/codingworker/supervisor.go range=240:274 lang=go exported=false byte_range=6314:7948
+  sig=func (s *ProcessSupervisor) validateSpec(spec LaunchSpec) error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.waitHealthy kind=method
+  digest=b3:c28a33681e6d3cd1922fdba23f2c0f2d0194f70de34d20f451cbe17810a96c38 file=neo/internal/codingworker/supervisor.go range=382:402 lang=go exported=false byte_range=11431:12142
+  sig=func (s *ProcessSupervisor) waitHealthy(ctx context.Context, process *managedProcess) error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ProcessSupervisor.waitProcess kind=method
+  digest=b3:8b7a7e9dfcffc34ceb0a12f1656db257f1b6ec9c4f671560c8fe4e0b1f8ad950 file=neo/internal/codingworker/supervisor.go range=374:380 lang=go exported=false byte_range=11248:11429
+  sig=func (s *ProcessSupervisor) waitProcess(user UserKey, process *managedProcess)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ProcessSupervisor
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.PromptResult kind=type
+  digest=b3:6f3f92c9be39bcd67cd501a343cd29300c557be2c173c5efd90dfc4e52802161 file=neo/internal/codingworker/types.go range=91:93 lang=go exported=true byte_range=2588:2647
+  sig=type PromptResult struct {\n	Status string `json:"status"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.PromptResult#Status
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.PromptResult#Status kind=field
+  digest=b3:606cbffea1b434934d3d0449aadd8fa5c4323434ff7f6aa076c4922497a82a3b file=neo/internal/codingworker/types.go range=92:92 lang=go exported=true byte_range=2616:2645
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.PromptResult
+
+NODE id=matrix/neo/internal/codingworker.RPCError kind=type
+  digest=b3:320e404effe54c05f7c8a93a6ae6d13c6ecc5611b55f25bef5ccfe23539e467c file=neo/internal/codingworker/types.go range=18:22 lang=go exported=true byte_range=333:487
+  sig=type RPCError struct {\n	Code	int		`json:"code"`\n	Message	string		`json:"message"`\n	Data	json.RawMessage	`json:"data,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.RPCError#Code,matrix/neo/internal/codingworker.RPCError#Data,matrix/neo/internal/codingworker.RPCError#Message,matrix/neo/internal/codingworker.RPCError.Error
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.RPCError#Code kind=field
+  digest=b3:2d55c34991d1cc1f02d8a04ba3ea5ea9a86a04a7e746488fc151f69c574cb853 file=neo/internal/codingworker/types.go range=19:19 lang=go exported=true byte_range=357:394
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/codingworker.RPCError
+
+NODE id=matrix/neo/internal/codingworker.RPCError#Data kind=field
+  digest=b3:865bfe50bc91bbd0653b678642df200f0cd732fb5be61464553a34252ab30c86 file=neo/internal/codingworker/types.go range=21:21 lang=go exported=true byte_range=438:485
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/codingworker.RPCError
+
+NODE id=matrix/neo/internal/codingworker.RPCError#Message kind=field
+  digest=b3:27e36cb159bac0626da12a0528f92de3e6ee56f2b7c8d9d1bb1d591523f036bf file=neo/internal/codingworker/types.go range=20:20 lang=go exported=true byte_range=396:436
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.RPCError
+
+NODE id=matrix/neo/internal/codingworker.RPCError.Error kind=method
+  digest=b3:fba11af6a06c5c02f539e1467271838fdb3628680b343b9f1a01da5a0074e3e7 file=neo/internal/codingworker/types.go range=24:32 lang=go exported=true byte_range=489:659
+  sig=func (e *RPCError) Error() string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.RPCError
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.RequestID kind=type
+  digest=b3:160c473ea1f843f3851018807dd5e74c9751ace3497a22a6c92f62bb49b5e5cf file=neo/internal/codingworker/types.go range=13:13 lang=go exported=true byte_range=137:158
+  sig=type RequestID string
+EDGES
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.ResumeOptions kind=type
+  digest=b3:64f1744901de0169439b40a70d7b2c7b2d42d2d8b181ffce16945b9be5ed2a3e file=neo/internal/codingworker/types.go range=80:84 lang=go exported=true byte_range=2293:2478
+  sig=type ResumeOptions struct {\n	CWD			string	`json:"cwd,omitempty"`\n	Source			string	`json:"source,omitempty"`\n	CloseOnDisconnect	bool	`json:"close_on_disconnect"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.ResumeOptions#CWD,matrix/neo/internal/codingworker.ResumeOptions#CloseOnDisconnect,matrix/neo/internal/codingworker.ResumeOptions#Source
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.ResumeOptions#CWD kind=field
+  digest=b3:e16191c97d501193c85939aaf5453efe089a9d02fee5558faf2b09042218a966 file=neo/internal/codingworker/types.go range=81:81 lang=go exported=true byte_range=2322:2369
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ResumeOptions
+
+NODE id=matrix/neo/internal/codingworker.ResumeOptions#CloseOnDisconnect kind=field
+  digest=b3:eb9a8d9321347671932e4163a9fe0f851d99ed378f87f010db72e911a7a0436e file=neo/internal/codingworker/types.go range=83:83 lang=go exported=true byte_range=2423:2476
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ResumeOptions
+
+NODE id=matrix/neo/internal/codingworker.ResumeOptions#Source kind=field
+  digest=b3:4fc24e7f8ba2d1ad6bd02dc7b0732de4f6e4c795cb11752f250d188a63d63fa9 file=neo/internal/codingworker/types.go range=82:82 lang=go exported=true byte_range=2371:2421
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ResumeOptions
+
+NODE id=matrix/neo/internal/codingworker.ScopedCredential kind=type
+  digest=b3:296b91feeba811c97af8f5ee50d30547f54697501146a7e6f999fbf2d16af7cc file=neo/internal/codingworker/supervisor.go range=24:26 lang=go exported=true byte_range=225:271
+  sig=type ScopedCredential struct {\n	Model []byte\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.ScopedCredential#Model,matrix/neo/internal/codingworker.ScopedCredential.erase
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.ScopedCredential#Model kind=field
+  digest=b3:f312484b8c9053ec11052881defc8ed456cd28eff750b5881fe9fec8b97df9b8 file=neo/internal/codingworker/supervisor.go range=25:25 lang=go exported=true byte_range=257:269
+  sig=[]byte
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ScopedCredential
+
+NODE id=matrix/neo/internal/codingworker.ScopedCredential.erase kind=method
+  digest=b3:ba6048518a459dbe2a46f56c431a7c02e62ef9ba6d8776542260b47d96640748 file=neo/internal/codingworker/supervisor.go range=28:33 lang=go exported=false byte_range=273:372
+  sig=func (c *ScopedCredential) erase()
+EDGES
+  ^contains=matrix/neo/internal/codingworker.ScopedCredential
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.Session kind=type
+  digest=b3:f9ed27e3dc3645c966b529158029e0f59523d58d93a0219098961e22c9f91a4e file=neo/internal/codingworker/types.go range=40:50 lang=go exported=true byte_range=836:1382
+  sig=type Session struct {\n	RuntimeID	SessionID	`json:"session_id"`\n	StoredID	StoredSessionID	`json:"stored_session_id,omitempty"`\n	ResumedID	StoredSessionID	`json:"resumed,omitempty"`\n	SessionKey	StoredSessionID	`json:"session_key,omitempty"`\n	Status		string		`json:"status,omitempty"`\n	Running		bool		`json:"running,omitempty"`\n	MessageCount	int		`json:"message_count,omitempty"`\n	Messages	json.RawMessage	`json:"messages,omitempty"`\n	Info		json.RawMessage	`json:"info,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.Session#Info,matrix/neo/internal/codingworker.Session#MessageCount,matrix/neo/internal/codingworker.Session#Messages,matrix/neo/internal/codingworker.Session#ResumedID,matrix/neo/internal/codingworker.Session#Running,matrix/neo/internal/codingworker.Session#RuntimeID,matrix/neo/internal/codingworker.Session#SessionKey,matrix/neo/internal/codingworker.Session#Status,matrix/neo/internal/codingworker.Session#StoredID,matrix/neo/internal/codingworker.Session.DurableID,matrix/neo/internal/codingworker.Session.validate
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.Session#Info kind=field
+  digest=b3:8105532bb8e70956423c4a7d3e4b45422012b9ac45389dd15e1118f9c11effce file=neo/internal/codingworker/types.go range=49:49 lang=go exported=true byte_range=1328:1380
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Session
+
+NODE id=matrix/neo/internal/codingworker.Session#MessageCount kind=field
+  digest=b3:346e46492dd392c2e2f2518964918757286f68b68d31890a5f4a9e3e77003a7a file=neo/internal/codingworker/types.go range=47:47 lang=go exported=true byte_range=1207:1268
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Session
+
+NODE id=matrix/neo/internal/codingworker.Session#Messages kind=field
+  digest=b3:fca4d86fd138ee543e9b44372173afbb857a61e888af90089a7f75f788eadcae file=neo/internal/codingworker/types.go range=48:48 lang=go exported=true byte_range=1270:1326
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Session
+
+NODE id=matrix/neo/internal/codingworker.Session#ResumedID kind=field
+  digest=b3:a7fab6e75573397ec8192f1307200db3d2cb1de9cdbf8ad0dfb4775b40c6a11b file=neo/internal/codingworker/types.go range=43:43 lang=go exported=true byte_range=976:1031
+  sig=codingworker.StoredSessionID
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Session
+
+NODE id=matrix/neo/internal/codingworker.Session#Running kind=field
+  digest=b3:971c733a79ece7b79368ff84de66f73ffe7a03af68bf7582d88ecbd2c721c29d file=neo/internal/codingworker/types.go range=46:46 lang=go exported=true byte_range=1150:1205
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Session
+
+NODE id=matrix/neo/internal/codingworker.Session#RuntimeID kind=field
+  digest=b3:b6658c8e236b6d56c585d39c3a2b98a13914d27e83405adbd59bd03dd94f424e file=neo/internal/codingworker/types.go range=41:41 lang=go exported=true byte_range=859:907
+  sig=codingworker.SessionID
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Session
+
+NODE id=matrix/neo/internal/codingworker.Session#SessionKey kind=field
+  digest=b3:01337336e820e55a3a0875a1e13fe25987da6af4fbf005cb06890b6e31b5fdfd file=neo/internal/codingworker/types.go range=44:44 lang=go exported=true byte_range=1033:1092
+  sig=codingworker.StoredSessionID
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Session
+
+NODE id=matrix/neo/internal/codingworker.Session#Status kind=field
+  digest=b3:5fce18c2b345ea7ed5315647ee5a8dbee73f09b9412e7757d8bda6278ed3d6e9 file=neo/internal/codingworker/types.go range=45:45 lang=go exported=true byte_range=1094:1148
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Session
+
+NODE id=matrix/neo/internal/codingworker.Session#StoredID kind=field
+  digest=b3:0f0d044d17b6adbfde37fbadc4ac8b9672e6777f346086894b235be2732f5400 file=neo/internal/codingworker/types.go range=42:42 lang=go exported=true byte_range=909:974
+  sig=codingworker.StoredSessionID
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Session
+
+NODE id=matrix/neo/internal/codingworker.Session.DurableID kind=method
+  digest=b3:ad223fa63c23d07d32fd3886195dd943179a90f1d30a3ac011e26d714989e8df file=neo/internal/codingworker/types.go range=52:59 lang=go exported=true byte_range=1384:1560
+  sig=func (s Session) DurableID() StoredSessionID
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Session
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.Session.validate kind=method
+  digest=b3:7f75ef28553c60942f2f4d74517ed0a8a4bd05bb30a7d7d5bea39bfeebf06bb9 file=neo/internal/codingworker/types.go range=61:66 lang=go exported=false byte_range=1562:1711
+  sig=func (s Session) validate() error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Session
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.SessionID kind=type
+  digest=b3:13904bdb9ff8dc2c5be087a6628ac357be01594ee734a4db6db739c8d9308471 file=neo/internal/codingworker/types.go range=11:11 lang=go exported=true byte_range=87:108
+  sig=type SessionID string
+EDGES
+  contains=matrix/neo/internal/codingworker.SessionID.Valid
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.SessionID.Valid kind=method
+  digest=b3:3949835432c7a4000ea8346ee12840b648a3bc50e6b4b28b50d42fbba7718ca7 file=neo/internal/codingworker/types.go range=15:15 lang=go exported=true byte_range=160:245
+  sig=func (id SessionID) Valid() bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.SessionID
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.StoredSessionID kind=type
+  digest=b3:d5311165e4f368a725e4dc50b07a1132e8727d453c632ad43adea3fc240e3ce1 file=neo/internal/codingworker/types.go range=12:12 lang=go exported=true byte_range=109:136
+  sig=type StoredSessionID string
+EDGES
+  contains=matrix/neo/internal/codingworker.StoredSessionID.Valid
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.StoredSessionID.Valid kind=method
+  digest=b3:bbda36a87d2d0325af93ddda52e29d3f84d557144ba1316a24dfa9f3a387b376 file=neo/internal/codingworker/types.go range=16:16 lang=go exported=true byte_range=246:331
+  sig=func (id StoredSessionID) Valid() bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.StoredSessionID
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.SupervisorConfig kind=type
+  digest=b3:f50fee4cfb172bba699f558adee66f3f6764a7cccadb065a52db632b737dc35f file=neo/internal/codingworker/supervisor.go range=45:57 lang=go exported=true byte_range=752:1115
+  sig=type SupervisorConfig struct {\n	Binary			string\n	Arguments		[]string\n	ManagedDir		string\n	PATH			string\n	AllowedExtraEnv		map[string]struct{}\n	CredentialSource	CredentialSource\n	StartupTimeout		time.Duration\n	HealthTimeout		time.Duration\n	StopTimeout		time.Duration\n	IdleTimeout		time.Duration\n	Output			io.Writer\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.SupervisorConfig#AllowedExtraEnv,matrix/neo/internal/codingworker.SupervisorConfig#Arguments,matrix/neo/internal/codingworker.SupervisorConfig#Binary,matrix/neo/internal/codingworker.SupervisorConfig#CredentialSource,matrix/neo/internal/codingworker.SupervisorConfig#HealthTimeout,matrix/neo/internal/codingworker.SupervisorConfig#IdleTimeout,matrix/neo/internal/codingworker.SupervisorConfig#ManagedDir,matrix/neo/internal/codingworker.SupervisorConfig#Output,matrix/neo/internal/codingworker.SupervisorConfig#PATH,matrix/neo/internal/codingworker.SupervisorConfig#StartupTimeout,matrix/neo/internal/codingworker.SupervisorConfig#StopTimeout
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.SupervisorConfig#AllowedExtraEnv kind=field
+  digest=b3:8e1dfee95e419ebb3bcc92bcabf8064119387245c9d45c2ee1d11dd2d840a189 file=neo/internal/codingworker/supervisor.go range=50:50 lang=go exported=true byte_range=886:922
+  sig=map[string]struct{}
+EDGES
+  ^contains=matrix/neo/internal/codingworker.SupervisorConfig
+
+NODE id=matrix/neo/internal/codingworker.SupervisorConfig#Arguments kind=field
+  digest=b3:9bdadd1eb5e44eef7fef2cd90dc892598f8e538cd7c5a3c51a2e0d5d1c8c5eec file=neo/internal/codingworker/supervisor.go range=47:47 lang=go exported=true byte_range=809:834
+  sig=[]string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.SupervisorConfig
+
+NODE id=matrix/neo/internal/codingworker.SupervisorConfig#Binary kind=field
+  digest=b3:a452e5c5c406b24e9da69592bd89dc5d81bf11c5601fb1877c1af6ceb7ebbcc1 file=neo/internal/codingworker/supervisor.go range=46:46 lang=go exported=true byte_range=784:807
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.SupervisorConfig
+
+NODE id=matrix/neo/internal/codingworker.SupervisorConfig#CredentialSource kind=field
+  digest=b3:dda46d39fb8c0b77e9b1ab423c5e9e69c7e173411566c90d09fc580c9d8d8df7 file=neo/internal/codingworker/supervisor.go range=51:51 lang=go exported=true byte_range=924:957
+  sig=codingworker.CredentialSource
+EDGES
+  ^contains=matrix/neo/internal/codingworker.SupervisorConfig
+
+NODE id=matrix/neo/internal/codingworker.SupervisorConfig#HealthTimeout kind=field
+  digest=b3:7eb3f74a606a3b1e929c2b57d62bd9882adf907c1cfd611ff6b67a4b2c59cb58 file=neo/internal/codingworker/supervisor.go range=53:53 lang=go exported=true byte_range=991:1021
+  sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/codingworker.SupervisorConfig
+
+NODE id=matrix/neo/internal/codingworker.SupervisorConfig#IdleTimeout kind=field
+  digest=b3:da39de1b83083e79ac20f8794db2e50ee7d4e404eeae8608c1df2f95c1c04b16 file=neo/internal/codingworker/supervisor.go range=55:55 lang=go exported=true byte_range=1055:1085
+  sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/codingworker.SupervisorConfig
+
+NODE id=matrix/neo/internal/codingworker.SupervisorConfig#ManagedDir kind=field
+  digest=b3:c3e09a23a809b422c72a2f65088c25d0dea2bc0fe6985498534aa27cda3babb0 file=neo/internal/codingworker/supervisor.go range=48:48 lang=go exported=true byte_range=836:859
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.SupervisorConfig
+
+NODE id=matrix/neo/internal/codingworker.SupervisorConfig#Output kind=field
+  digest=b3:51b89addcdca52ef06cfdcd93519de2d4854071551925a24371b3a795c2b7a64 file=neo/internal/codingworker/supervisor.go range=56:56 lang=go exported=true byte_range=1087:1113
+  sig=io.Writer
+EDGES
+  ^contains=matrix/neo/internal/codingworker.SupervisorConfig
+
+NODE id=matrix/neo/internal/codingworker.SupervisorConfig#PATH kind=field
+  digest=b3:60a09faf42024ca9a68690bb30d67cfe7b197000d0cb60e8aaf1b0256b6b1ba0 file=neo/internal/codingworker/supervisor.go range=49:49 lang=go exported=true byte_range=861:884
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.SupervisorConfig
+
+NODE id=matrix/neo/internal/codingworker.SupervisorConfig#StartupTimeout kind=field
+  digest=b3:3d9b5d4c8bd515a7754ab568bae75f394eac2b0a7b2fa77f729e513606eaafcc file=neo/internal/codingworker/supervisor.go range=52:52 lang=go exported=true byte_range=959:989
+  sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/codingworker.SupervisorConfig
+
+NODE id=matrix/neo/internal/codingworker.SupervisorConfig#StopTimeout kind=field
+  digest=b3:22838e00f7f580896697edc300ec96e282914544a800fcadedbff3de8114a1db file=neo/internal/codingworker/supervisor.go range=54:54 lang=go exported=true byte_range=1023:1053
+  sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/codingworker.SupervisorConfig
+
+NODE id=matrix/neo/internal/codingworker.UserKey kind=type
+  digest=b3:aa867fbf9e7b6184035c2512cb4c25bf01b0b65cae79779d424a654480fcfacf file=neo/internal/codingworker/supervisor.go range=22:22 lang=go exported=true byte_range=204:223
+  sig=type UserKey string
+EDGES
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.Verification kind=type
+  digest=b3:01391842748d475a02b5a357110ff73b3f01b2a492a25574bd9e31fa4d9dcb14 file=neo/internal/codingworker/types.go range=125:128 lang=go exported=true byte_range=3210:3334
+  sig=type Verification struct {\n	Status		string		`json:"status"`\n	Evidence	json.RawMessage	`json:"evidence,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.Verification#Evidence,matrix/neo/internal/codingworker.Verification#Status
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.Verification#Evidence kind=field
+  digest=b3:1007cd318db4a7317988a7f740b3872b67ea23bcddcf512a2586510632ee1374 file=neo/internal/codingworker/types.go range=127:127 lang=go exported=true byte_range=3280:3332
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Verification
+
+NODE id=matrix/neo/internal/codingworker.Verification#Status kind=field
+  digest=b3:bd4ff3ffb62966de3bb80de40db64b5c3301c513428e0537ff2110d3ad77d1b3 file=neo/internal/codingworker/types.go range=126:126 lang=go exported=true byte_range=3238:3278
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.Verification
+
+NODE id=matrix/neo/internal/codingworker.VerificationResult kind=type
+  digest=b3:d4818977e6f063919b7b1a8847f4e7994916129f1b8163c777dda9ed639361ce file=neo/internal/codingworker/types.go range=130:132 lang=go exported=true byte_range=3336:3419
+  sig=type VerificationResult struct {\n	Verification Verification `json:"verification"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.VerificationResult#Verification
+  ^defines=matrix/neo/internal/codingworker/types.go
+
+NODE id=matrix/neo/internal/codingworker.VerificationResult#Verification kind=field
+  digest=b3:2190bfcf4d6aefbbb7e68c53dceda1a2d8e447b9d9aee937899007ee2ce16fe4 file=neo/internal/codingworker/types.go range=131:131 lang=go exported=true byte_range=3370:3417
+  sig=codingworker.Verification
+EDGES
+  ^contains=matrix/neo/internal/codingworker.VerificationResult
+
+NODE id=matrix/neo/internal/codingworker.actorHeader kind=const
+  digest=b3:00648aae20b9c415fe4365df103fa9dff464729c80b0317aeb4451c7a567bfb4 file=neo/internal/codingworker/credential.go range=17:17 lang=go exported=false byte_range=150:184
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/codingworker/credential.go
+
+NODE id=matrix/neo/internal/codingworker.cloneHandle kind=func
+  digest=b3:5174b4e140ea643839861b6802a30515cad64bba276ae0b055684366f8ab84da file=neo/internal/codingworker/supervisor.go range=359:363 lang=go exported=false byte_range=10981:11117
+  sig=func cloneHandle(handle ProcessHandle) ProcessHandle
+EDGES
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.containsArg kind=func
+  digest=b3:6bee9241d480682cc153989597f0a50de5f13aa2f5f202b4330b59adc0ecd2ac file=neo/internal/codingworker/supervisor.go range=142:149 lang=go exported=false byte_range=3306:3446
+  sig=func containsArg(args []string, target string) bool
+EDGES
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.credentialEndpoint kind=func
+  digest=b3:5645f9b88d5755530b058a592ad7103a52e9a530701f4b694cfe7fc36753098d file=neo/internal/codingworker/credential.go range=82:97 lang=go exported=false byte_range=1872:2494
+  sig=func credentialEndpoint(raw string) (string, error)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/credential.go
+
+NODE id=matrix/neo/internal/codingworker.dialWebSocket kind=func
+  digest=b3:d813bf5f30e4b1cf7a63bffc1efeab0274b27a488ecfb3a3808cf3dce6feb26a file=neo/internal/codingworker/websocket.go range=52:133 lang=go exported=false byte_range=1032:3734
+  sig=func dialWebSocket(ctx context.Context, raw string, token []byte, timeout time.Duration, maxFrame int64) (*wsConn, error)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker.eraseBytes kind=func
+  digest=b3:9ddc4f11102e7a3ed2a43cd6059665cce458eea83605c4bda160c964063d5de5 file=neo/internal/codingworker/supervisor.go range=347:351 lang=go exported=false byte_range=10819:10894
+  sig=func eraseBytes(value []byte)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.eraseStrings kind=func
+  digest=b3:100985e6a5cf921a4ca0cb6411c225af292ee8aacb4106c046f3dc67caa86a3b file=neo/internal/codingworker/supervisor.go range=353:357 lang=go exported=false byte_range=10896:10979
+  sig=func eraseStrings(values []string)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.hasExactLoopbackHost kind=func
+  digest=b3:7a854ef11375fb17dd8b49fd82bc21d2f29a5216a83407fa55108a424b403642 file=neo/internal/codingworker/supervisor.go range=151:158 lang=go exported=false byte_range=3448:3624
+  sig=func hasExactLoopbackHost(args []string) bool
+EDGES
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.headerHasToken kind=func
+  digest=b3:ae46cf10b35268471866ba93d2d62126dfe48c877f6ef3546b2f1522e215c42f file=neo/internal/codingworker/websocket.go range=135:142 lang=go exported=false byte_range=3736:3928
+  sig=func headerHasToken(value, token string) bool
+EDGES
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker.looksLikeDID kind=func
+  digest=b3:9f31d795747df7148d0cf8553278df5b4d2631096bee7a1a3823e8ca82c544c5 file=neo/internal/codingworker/credential.go range=185:191 lang=go exported=false byte_range=5966:6236
+  sig=func looksLikeDID(value string) bool
+EDGES
+  ^defines=matrix/neo/internal/codingworker/credential.go
+
+NODE id=matrix/neo/internal/codingworker.managedProcess kind=type
+  digest=b3:1d55912c11df19b1fdf357017c4b7ccb7bcf6ef23837f0f2c5644656f7f5956a file=neo/internal/codingworker/supervisor.go range=90:97 lang=go exported=false byte_range=1679:1846
+  sig=type managedProcess struct {\n	spec		LaunchSpec\n	cmd		*exec.Cmd\n	handle		ProcessHandle\n	exit		chan struct{}\n	exitErr		error\n	lastActive	time.Time\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.managedProcess#cmd,matrix/neo/internal/codingworker.managedProcess#exit,matrix/neo/internal/codingworker.managedProcess#exitErr,matrix/neo/internal/codingworker.managedProcess#handle,matrix/neo/internal/codingworker.managedProcess#lastActive,matrix/neo/internal/codingworker.managedProcess#spec
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.managedProcess#cmd kind=field
+  digest=b3:fe015bddd74cd4b626262e5e8830df8b24ee472b5030d450926002200a7356f0 file=neo/internal/codingworker/supervisor.go range=92:92 lang=go exported=false byte_range=1732:1752
+  sig=*exec.Cmd
+EDGES
+  ^contains=matrix/neo/internal/codingworker.managedProcess
+
+NODE id=matrix/neo/internal/codingworker.managedProcess#exit kind=field
+  digest=b3:e35e9359655614b03c188bdfd63f750f3b531fb50723fae43fa080a97dc24841 file=neo/internal/codingworker/supervisor.go range=94:94 lang=go exported=false byte_range=1780:1804
+  sig=chan struct{}
+EDGES
+  ^contains=matrix/neo/internal/codingworker.managedProcess
+
+NODE id=matrix/neo/internal/codingworker.managedProcess#exitErr kind=field
+  digest=b3:ee6652a6e5fff8c92e5b200ff9c8958384f3ea92a5f92cb43daddd958fadfe60 file=neo/internal/codingworker/supervisor.go range=95:95 lang=go exported=false byte_range=1806:1822
+  sig=error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.managedProcess
+
+NODE id=matrix/neo/internal/codingworker.managedProcess#handle kind=field
+  digest=b3:43da0a134079d8e7320921ab8868de9b2a67e35bc6b1f0cc8dd70568e8611fcd file=neo/internal/codingworker/supervisor.go range=93:93 lang=go exported=false byte_range=1754:1778
+  sig=codingworker.ProcessHandle
+EDGES
+  ^contains=matrix/neo/internal/codingworker.managedProcess
+
+NODE id=matrix/neo/internal/codingworker.managedProcess#lastActive kind=field
+  digest=b3:7a6563186180d2a6c28a1fc33165152a00fb746c7c199a34522e39bd9bb40d13 file=neo/internal/codingworker/supervisor.go range=96:96 lang=go exported=false byte_range=1824:1844
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/codingworker.managedProcess
+
+NODE id=matrix/neo/internal/codingworker.managedProcess#spec kind=field
+  digest=b3:b3b9a9bafc6d5c16e25c013bf66084f7dd5f5270eaad6dcd29fc8eb4e249ac50 file=neo/internal/codingworker/supervisor.go range=91:91 lang=go exported=false byte_range=1709:1730
+  sig=codingworker.LaunchSpec
+EDGES
+  ^contains=matrix/neo/internal/codingworker.managedProcess
+
+NODE id=matrix/neo/internal/codingworker.pathWithin kind=func
+  digest=b3:ae417a0344a445b7f541bdfda2a1ba69250d788be0c88cd51c1eae0be633008c file=neo/internal/codingworker/supervisor.go range=276:279 lang=go exported=false byte_range=7950:8145
+  sig=func pathWithin(parent, child string) bool
+EDGES
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.pendingCall kind=type
+  digest=b3:8848189f8a210dc836d633bb55ec37ab8188dbf5a9fe13fd480b5c3e515c446a file=neo/internal/codingworker/client.go range=30:32 lang=go exported=false byte_range=566:620
+  sig=type pendingCall struct {\n	response chan rpcResponse\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.pendingCall#response
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.pendingCall#response kind=field
+  digest=b3:544983035d886fc7a8e1d5e8f0e041582d0866a448737e696ad33a24f78e6ebd file=neo/internal/codingworker/client.go range=31:31 lang=go exported=false byte_range=593:618
+  sig=chan codingworker.rpcResponse
+EDGES
+  ^contains=matrix/neo/internal/codingworker.pendingCall
+
+NODE id=matrix/neo/internal/codingworker.portFromEndpoint kind=func
+  digest=b3:6ebd011333e3940d7b0ff25063715ede53f3a95e447737e4eb0a159daf1cad29 file=neo/internal/codingworker/websocket.go range=298:311 lang=go exported=false byte_range=7810:8053
+  sig=func portFromEndpoint(raw string) (int, error)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker.processRunning kind=func
+  digest=b3:99ca7fbc56a99e7845811b262dda08550f1650f645c61f7159447c8abe3075db file=neo/internal/codingworker/supervisor.go range=365:372 lang=go exported=false byte_range=11119:11246
+  sig=func processRunning(process *managedProcess) bool
+EDGES
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.randomToken kind=func
+  digest=b3:aaacc76a1017a5c5dace25cb104c1916bef8fe9802ee71a6b25c5b4f27dc055c file=neo/internal/codingworker/supervisor.go range=336:345 lang=go exported=false byte_range=10498:10817
+  sig=func randomToken() ([]byte, error)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/supervisor.go
+
+NODE id=matrix/neo/internal/codingworker.rpcFrame kind=type
+  digest=b3:452d8cf83505f5d9b32c8d8e653a87ad1ee92c1f74c3c134f8dfe61b8f1004c7 file=neo/internal/codingworker/client.go range=23:28 lang=go exported=false byte_range=349:564
+  sig=type rpcFrame struct {\n	JSONRPC	string		`json:"jsonrpc"`\n	ID	RequestID	`json:"id,omitempty"`\n	Method	string		`json:"method,omitempty"`\n	Params	json.RawMessage	`json:"params,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.rpcFrame#ID,matrix/neo/internal/codingworker.rpcFrame#JSONRPC,matrix/neo/internal/codingworker.rpcFrame#Method,matrix/neo/internal/codingworker.rpcFrame#Params
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.rpcFrame#ID kind=field
+  digest=b3:83da05c3c599812e7137d549c4de57c8b6d1c9c39f7ed6912d8e865439f55ae1 file=neo/internal/codingworker/client.go range=25:25 lang=go exported=true byte_range=415:460
+  sig=codingworker.RequestID
+EDGES
+  ^contains=matrix/neo/internal/codingworker.rpcFrame
+
+NODE id=matrix/neo/internal/codingworker.rpcFrame#JSONRPC kind=field
+  digest=b3:e922b6deddabec44b26208ae989c23f029415d4258b8fa54aeb4a41c3dd567f3 file=neo/internal/codingworker/client.go range=24:24 lang=go exported=true byte_range=373:413
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.rpcFrame
+
+NODE id=matrix/neo/internal/codingworker.rpcFrame#Method kind=field
+  digest=b3:5d084904cfe97d911b875be205da2fbb463fb9bec9e4f3a9f553d910fc7c90f1 file=neo/internal/codingworker/client.go range=26:26 lang=go exported=true byte_range=462:511
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.rpcFrame
+
+NODE id=matrix/neo/internal/codingworker.rpcFrame#Params kind=field
+  digest=b3:5f2f2f30caac193d23dbca1d876fd43d5aee08e3429721cabe41f9f6ed5ad461 file=neo/internal/codingworker/client.go range=27:27 lang=go exported=true byte_range=513:562
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/codingworker.rpcFrame
+
+NODE id=matrix/neo/internal/codingworker.rpcResponse kind=type
+  digest=b3:25d3fb32f72d08410404d1667e8eacfe53cd25ae5068d0c2e913cb1c59fe40d0 file=neo/internal/codingworker/client.go range=16:21 lang=go exported=false byte_range=140:347
+  sig=type rpcResponse struct {\n	JSONRPC	string		`json:"jsonrpc"`\n	ID	RequestID	`json:"id"`\n	Result	json.RawMessage	`json:"result,omitempty"`\n	Error	*RPCError	`json:"error,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.rpcResponse#Error,matrix/neo/internal/codingworker.rpcResponse#ID,matrix/neo/internal/codingworker.rpcResponse#JSONRPC,matrix/neo/internal/codingworker.rpcResponse#Result
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.rpcResponse#Error kind=field
+  digest=b3:119285c49e36fc5379ee9acbebc17d2523e7200d367f237087b5ff6a3e77b6bd file=neo/internal/codingworker/client.go range=20:20 lang=go exported=true byte_range=297:345
+  sig=*codingworker.RPCError
+EDGES
+  ^contains=matrix/neo/internal/codingworker.rpcResponse
+
+NODE id=matrix/neo/internal/codingworker.rpcResponse#ID kind=field
+  digest=b3:b94436f64cbb5219a59bf017fe3cd7375c3ab20c07943d3f521402e40b8d5b6e file=neo/internal/codingworker/client.go range=18:18 lang=go exported=true byte_range=209:244
+  sig=codingworker.RequestID
+EDGES
+  ^contains=matrix/neo/internal/codingworker.rpcResponse
+
+NODE id=matrix/neo/internal/codingworker.rpcResponse#JSONRPC kind=field
+  digest=b3:e922b6deddabec44b26208ae989c23f029415d4258b8fa54aeb4a41c3dd567f3 file=neo/internal/codingworker/client.go range=17:17 lang=go exported=true byte_range=167:207
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/codingworker.rpcResponse
+
+NODE id=matrix/neo/internal/codingworker.rpcResponse#Result kind=field
+  digest=b3:2ac6b6c9ad3239d7c5917dcb11746bd554a4cbe96e7877d4291f75a92d67d791 file=neo/internal/codingworker/client.go range=19:19 lang=go exported=true byte_range=246:295
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/codingworker.rpcResponse
+
+NODE id=matrix/neo/internal/codingworker.stringsTrimmedEmpty kind=func
+  digest=b3:9dcf5c681ba749adb0cd96f188b6bc43c84670e71f47ce4f8d3b3d3f99a7c349 file=neo/internal/codingworker/client.go range=232:239 lang=go exported=false byte_range=5120:5285
+  sig=func stringsTrimmedEmpty(value string) bool
+EDGES
+  ^defines=matrix/neo/internal/codingworker/client.go
+
+NODE id=matrix/neo/internal/codingworker.validateLoopbackURL kind=func
+  digest=b3:62795cad4181a92c7674a40aa51131ce0adb8379b86c95f2973b5968c258dd70 file=neo/internal/codingworker/websocket.go range=33:50 lang=go exported=false byte_range=428:1030
+  sig=func validateLoopbackURL(raw string) (*url.URL, error)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker.websocketGUID kind=const
+  digest=b3:a56acb4706d64e6c15a6d01b3519ada81794a5890a6146ab8fc8ab7fe1da6214 file=neo/internal/codingworker/websocket.go range=23:23 lang=go exported=false byte_range=233:287
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker.wsConn kind=type
+  digest=b3:34c8ec0a99a033bec9511683c6503333f76cc807d96515b74619aa47288b1367 file=neo/internal/codingworker/websocket.go range=25:31 lang=go exported=false byte_range=289:426
+  sig=type wsConn struct {\n	conn		net.Conn\n	reader		*bufio.Reader\n	writeMu		sync.Mutex\n	maxFrame	int64\n	expectMasked	bool\n}
+EDGES
+  contains=matrix/neo/internal/codingworker.wsConn#conn,matrix/neo/internal/codingworker.wsConn#expectMasked,matrix/neo/internal/codingworker.wsConn#maxFrame,matrix/neo/internal/codingworker.wsConn#reader,matrix/neo/internal/codingworker.wsConn#writeMu,matrix/neo/internal/codingworker.wsConn.close,matrix/neo/internal/codingworker.wsConn.readFrame,matrix/neo/internal/codingworker.wsConn.readMessage,matrix/neo/internal/codingworker.wsConn.writeFrame,matrix/neo/internal/codingworker.wsConn.writePong,matrix/neo/internal/codingworker.wsConn.writeText
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker.wsConn#conn kind=field
+  digest=b3:72cf1c007a7c2917b508e4d39e2a07ba91904d25459bb0cdf35810c98bd885cf file=neo/internal/codingworker/websocket.go range=26:26 lang=go exported=false byte_range=311:332
+  sig=net.Conn
+EDGES
+  ^contains=matrix/neo/internal/codingworker.wsConn
+
+NODE id=matrix/neo/internal/codingworker.wsConn#expectMasked kind=field
+  digest=b3:7869777a4c99ef4d524619fcfe20771fb9a70f1babe1b0d33ea21a6b0b5388b4 file=neo/internal/codingworker/websocket.go range=30:30 lang=go exported=false byte_range=407:424
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/codingworker.wsConn
+
+NODE id=matrix/neo/internal/codingworker.wsConn#maxFrame kind=field
+  digest=b3:ffb14066a7a76bc3c4c2b1a5ae484600152d79a23f6393def4bf6b83f70741ba file=neo/internal/codingworker/websocket.go range=29:29 lang=go exported=false byte_range=387:405
+  sig=int64
+EDGES
+  ^contains=matrix/neo/internal/codingworker.wsConn
+
+NODE id=matrix/neo/internal/codingworker.wsConn#reader kind=field
+  digest=b3:87a48fb4c01fe01dd063d1dcd47ee7e0ced2489ca42c11ee3598ac349176e92c file=neo/internal/codingworker/websocket.go range=27:27 lang=go exported=false byte_range=334:360
+  sig=*bufio.Reader
+EDGES
+  ^contains=matrix/neo/internal/codingworker.wsConn
+
+NODE id=matrix/neo/internal/codingworker.wsConn#writeMu kind=field
+  digest=b3:03cb74e317a787cf8bad7a9780a39de2b3714fe805e847609911c66895123f5d file=neo/internal/codingworker/websocket.go range=28:28 lang=go exported=false byte_range=362:385
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/codingworker.wsConn
+
+NODE id=matrix/neo/internal/codingworker.wsConn.close kind=method
+  digest=b3:118083180d077a12060155bbc7cc0d77a2ee193391be091eb4aa4dd234908ddd file=neo/internal/codingworker/websocket.go range=144:144 lang=go exported=false byte_range=3930:3986
+  sig=func (w *wsConn) close() error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.wsConn
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker.wsConn.readFrame kind=method
+  digest=b3:4ca76204fdaef2090912caf19b0609d16c5cc076c82df25e9532431af3be22f8 file=neo/internal/codingworker/websocket.go range=226:280 lang=go exported=false byte_range=5952:7527
+  sig=func (w *wsConn) readFrame() (bool, byte, []byte, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.wsConn
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker.wsConn.readMessage kind=method
+  digest=b3:895535b421085280b7b094804df61a0c97ac1ca494fb8f03d5ad1e22b5e4b1a5 file=neo/internal/codingworker/websocket.go range=186:224 lang=go exported=false byte_range=5087:5950
+  sig=func (w *wsConn) readMessage() ([]byte, error)
+EDGES
+  ^contains=matrix/neo/internal/codingworker.wsConn
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker.wsConn.writeFrame kind=method
+  digest=b3:e12f26a59021a5c891cdad0e596d3af99a24eab722581901ffaa1d4ac84df873 file=neo/internal/codingworker/websocket.go range=149:184 lang=go exported=false byte_range=4163:5085
+  sig=func (w *wsConn) writeFrame(opcode byte, payload []byte) error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.wsConn
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker.wsConn.writePong kind=method
+  digest=b3:107c6bec5629b4846e71eb11400db95499707279fd4e6c4a95023352624ec079 file=neo/internal/codingworker/websocket.go range=147:147 lang=go exported=false byte_range=4075:4161
+  sig=func (w *wsConn) writePong(payload []byte) error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.wsConn
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker.wsConn.writeText kind=method
+  digest=b3:9ebf4706d68fa2068faf0fc1c1885541f3c5236798977b24249359346c56f6ca file=neo/internal/codingworker/websocket.go range=146:146 lang=go exported=false byte_range=3988:4074
+  sig=func (w *wsConn) writeText(payload []byte) error
+EDGES
+  ^contains=matrix/neo/internal/codingworker.wsConn
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker.wsHTTPURL kind=func
+  digest=b3:3b40fdc2b3241b5cf460c9a2dd4d7025e9a514b0393e66c047cb20513b276ad8 file=neo/internal/codingworker/websocket.go range=282:296 lang=go exported=false byte_range=7529:7808
+  sig=func wsHTTPURL(raw string) (string, error)
+EDGES
+  ^defines=matrix/neo/internal/codingworker/websocket.go
+
+NODE id=matrix/neo/internal/codingworker/client.go kind=file
+  digest=b3:630d14684da3764250fa5c9edd40815fd401a74bc99eff9304563d87f0b441de file=neo/internal/codingworker/client.go range=1:401 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/codingworker.Client,matrix/neo/internal/codingworker.Client.Approve,matrix/neo/internal/codingworker.Client.Branch,matrix/neo/internal/codingworker.Client.Close,matrix/neo/internal/codingworker.Client.CloseSession,matrix/neo/internal/codingworker.Client.Create,matrix/neo/internal/codingworker.Client.Done,matrix/neo/internal/codingworker.Client.Err,matrix/neo/internal/codingworker.Client.Events,matrix/neo/internal/codingworker.Client.Interrupt,matrix/neo/internal/codingworker.Client.Prompt,matrix/neo/internal/codingworker.Client.ReconnectAndResume,matrix/neo/internal/codingworker.Client.Resume,matrix/neo/internal/codingworker.Client.VerificationStatus,matrix/neo/internal/codingworker.Client.finish,matrix/neo/internal/codingworker.Client.readLoop,matrix/neo/internal/codingworker.Client.removePending,matrix/neo/internal/codingworker.Client.request,matrix/neo/internal/codingworker.Dial,matrix/neo/internal/codingworker.DialAndResume,matrix/neo/internal/codingworker.HealthCheck,matrix/neo/internal/codingworker.pendingCall,matrix/neo/internal/codingworker.rpcFrame,matrix/neo/internal/codingworker.rpcResponse,matrix/neo/internal/codingworker.stringsTrimmedEmpty
+  ^contains=matrix/neo/internal/codingworker
+
+NODE id=matrix/neo/internal/codingworker/credential.go kind=file
+  digest=b3:0b5c1b03078ba31494fb4d3a3c0e2af959f83aba4b0e67c105f15b7c10926b2e file=neo/internal/codingworker/credential.go range=1:191 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/codingworker.GatewayCredentialSource,matrix/neo/internal/codingworker.GatewayCredentialSource.Close,matrix/neo/internal/codingworker.GatewayCredentialSource.IssueCodingCredential,matrix/neo/internal/codingworker.GatewayCredentialSourceConfig,matrix/neo/internal/codingworker.NewGatewayCredentialSource,matrix/neo/internal/codingworker.actorHeader,matrix/neo/internal/codingworker.credentialEndpoint,matrix/neo/internal/codingworker.looksLikeDID
+  ^contains=matrix/neo/internal/codingworker
+
+NODE id=matrix/neo/internal/codingworker/supervisor.go kind=file
+  digest=b3:37fdd92a6ec218cbf560f5a5705d624a13ceb8511395603ba9d42b8522b2ba5c file=neo/internal/codingworker/supervisor.go range=1:554 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/codingworker.CredentialSource,matrix/neo/internal/codingworker.CredentialSourceFunc,matrix/neo/internal/codingworker.CredentialSourceFunc.IssueCodingCredential,matrix/neo/internal/codingworker.LaunchSpec,matrix/neo/internal/codingworker.NewProcessSupervisor,matrix/neo/internal/codingworker.ProcessHandle,matrix/neo/internal/codingworker.ProcessHandle.ClientConfig,matrix/neo/internal/codingworker.ProcessHandle.erase,matrix/neo/internal/codingworker.ProcessSupervisor,matrix/neo/internal/codingworker.ProcessSupervisor.ForceDeath,matrix/neo/internal/codingworker.ProcessSupervisor.Handle,matrix/neo/internal/codingworker.ProcessSupervisor.Health,matrix/neo/internal/codingworker.ProcessSupervisor.ReapIdle,matrix/neo/internal/codingworker.ProcessSupervisor.Restart,matrix/neo/internal/codingworker.ProcessSupervisor.RotateCredential,matrix/neo/internal/codingworker.ProcessSupervisor.RunIdleReaper,matrix/neo/internal/codingworker.ProcessSupervisor.Start,matrix/neo/internal/codingworker.ProcessSupervisor.Stop,matrix/neo/internal/codingworker.ProcessSupervisor.Touch,matrix/neo/internal/codingworker.ProcessSupervisor.buildEnvironment,matrix/neo/internal/codingworker.ProcessSupervisor.stopProcess,matrix/neo/internal/codingworker.ProcessSupervisor.validateSpec,matrix/neo/internal/codingworker.ProcessSupervisor.waitHealthy,matrix/neo/internal/codingworker.ProcessSupervisor.waitProcess,matrix/neo/internal/codingworker.ScopedCredential,matrix/neo/internal/codingworker.ScopedCredential.erase,matrix/neo/internal/codingworker.SupervisorConfig,matrix/neo/internal/codingworker.UserKey,matrix/neo/internal/codingworker.cloneHandle,matrix/neo/internal/codingworker.containsArg,matrix/neo/internal/codingworker.eraseBytes,matrix/neo/internal/codingworker.eraseStrings,matrix/neo/internal/codingworker.hasExactLoopbackHost,matrix/neo/internal/codingworker.managedProcess,matrix/neo/internal/codingworker.pathWithin,matrix/neo/internal/codingworker.processRunning,matrix/neo/internal/codingworker.randomToken
+  ^contains=matrix/neo/internal/codingworker
+
+NODE id=matrix/neo/internal/codingworker/types.go kind=file
+  digest=b3:5dabeb0fe98cfc95c064f731b1c939b8e5e67d3d470f782775cf3fde29b5e321 file=neo/internal/codingworker/types.go range=1:173 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/codingworker.ApprovalChoice,matrix/neo/internal/codingworker.ApprovalChoice.Valid,matrix/neo/internal/codingworker.ApprovalResult,matrix/neo/internal/codingworker.ApproveAlways,matrix/neo/internal/codingworker.ApproveOnce,matrix/neo/internal/codingworker.ApproveSession,matrix/neo/internal/codingworker.BranchOptions,matrix/neo/internal/codingworker.ClientConfig,matrix/neo/internal/codingworker.ClientConfig.normalized,matrix/neo/internal/codingworker.CloseResult,matrix/neo/internal/codingworker.CreateOptions,matrix/neo/internal/codingworker.DenyApproval,matrix/neo/internal/codingworker.ErrClosed,matrix/neo/internal/codingworker.ErrEventBackpressure,matrix/neo/internal/codingworker.ErrSessionMismatch,matrix/neo/internal/codingworker.Event,matrix/neo/internal/codingworker.Health,matrix/neo/internal/codingworker.InterruptResult,matrix/neo/internal/codingworker.PromptResult,matrix/neo/internal/codingworker.RPCError,matrix/neo/internal/codingworker.RPCError.Error,matrix/neo/internal/codingworker.RequestID,matrix/neo/internal/codingworker.ResumeOptions,matrix/neo/internal/codingworker.Session,matrix/neo/internal/codingworker.Session.DurableID,matrix/neo/internal/codingworker.Session.validate,matrix/neo/internal/codingworker.SessionID,matrix/neo/internal/codingworker.SessionID.Valid,matrix/neo/internal/codingworker.StoredSessionID,matrix/neo/internal/codingworker.StoredSessionID.Valid,matrix/neo/internal/codingworker.Verification,matrix/neo/internal/codingworker.VerificationResult
+  ^contains=matrix/neo/internal/codingworker
+
+NODE id=matrix/neo/internal/codingworker/websocket.go kind=file
+  digest=b3:789d1b9ec655570893415547f40a5aa35250f87426acab13c101f7889229fcc2 file=neo/internal/codingworker/websocket.go range=1:311 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/codingworker.dialWebSocket,matrix/neo/internal/codingworker.headerHasToken,matrix/neo/internal/codingworker.portFromEndpoint,matrix/neo/internal/codingworker.validateLoopbackURL,matrix/neo/internal/codingworker.websocketGUID,matrix/neo/internal/codingworker.wsConn,matrix/neo/internal/codingworker.wsConn.close,matrix/neo/internal/codingworker.wsConn.readFrame,matrix/neo/internal/codingworker.wsConn.readMessage,matrix/neo/internal/codingworker.wsConn.writeFrame,matrix/neo/internal/codingworker.wsConn.writePong,matrix/neo/internal/codingworker.wsConn.writeText,matrix/neo/internal/codingworker.wsHTTPURL
+  ^contains=matrix/neo/internal/codingworker

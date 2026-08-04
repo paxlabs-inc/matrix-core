@@ -28,7 +28,7 @@ func RepoFiles(cfg Config) (map[string][]byte, error) {
 			}
 			if d.IsDir() {
 				switch d.Name() {
-				case ".git", "node_modules", "vendor", "testdata":
+				case ".git", "node_modules", "vendor", "third_party", "testdata":
 					return fs.SkipDir
 				}
 				return nil

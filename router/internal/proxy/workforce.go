@@ -40,7 +40,7 @@ func (h *CentralProxy) WorkforceWakeHandler() http.Handler {
 	})
 }
 
-func workforceWakeSubject(w http.ResponseWriter, r *http.Request) (string, []byte, bool) {
+func workforceWakeSubject(w http.ResponseWriter, r *http.Request) (subject string, body []byte, ok bool) {
 	if r.Method != http.MethodPost || r.URL.Path != "/internal/workforce/wake" {
 		http.NotFound(w, r)
 		return "", nil, false

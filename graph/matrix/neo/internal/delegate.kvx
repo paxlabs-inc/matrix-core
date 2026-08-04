@@ -1,4 +1,4 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/neo/internal/delegate kind=package
   digest=b3:95be87bfa9f34060f6c7b195903120f2366ac85cf7fbfc0141fb40bbb52b6c19 file=neo/internal/delegate range=0:0 lang=go exported=true
@@ -28,7 +28,7 @@ NODE id=matrix/neo/internal/delegate.ClassDeterministic kind=const
   sig=delegate.FailureClass
   doc=ClassDeterministic will recur identically on a re-submit of the same\nrequest: a validation reject, a leash/mode/cap denial (403), a\nwrong-strategy / not-owner rejection, or an unparseable intent. It is\nNEVER retried and NEVER respawned over — it is surfaced as a terminal\nresult so the agent stops-and-asks or reports an honest partial.
 EDGES
-  ^references=matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.escalateGuidance,matrix/neo/internal/delegate.FailureClass.String,matrix/neo/internal/delegate.classifyHTTP,matrix/neo/internal/server.superviseDecision
+  ^references=matrix/neo/internal/agent.Agent.chatResurrectionWithGuidance,matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.escalateGuidance,matrix/neo/internal/agent.Agent.noteNormalizedFailure,matrix/neo/internal/agent.normalizedRecoveryClass,matrix/neo/internal/agent.runtimeFailureClass,matrix/neo/internal/delegate.FailureClass.String,matrix/neo/internal/delegate.classifyHTTP,matrix/neo/internal/server.superviseDecision
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.ClassNone kind=const
@@ -37,7 +37,7 @@ NODE id=matrix/neo/internal/delegate.ClassNone kind=const
   doc=ClassNone means there is no failure to classify (a clean outcome, or an\nerror shape the seam does not recognize — left to the existing path).
 EDGES
   references=matrix/neo/internal/delegate.FailureClass
-  ^references=matrix/neo/internal/agent.Agent.Chat,matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.noteFailureClass,matrix/neo/internal/delegate.ClassOf,matrix/neo/internal/delegate.classifyHTTP
+  ^references=matrix/neo/internal/agent.Agent.Reset,matrix/neo/internal/agent.Agent.chatResurrectionWithGuidance,matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.noteFailureClass,matrix/neo/internal/agent.normalizedRecoveryClass,matrix/neo/internal/delegate.ClassOf,matrix/neo/internal/delegate.classifyHTTP
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.ClassOf kind=func
@@ -64,7 +64,7 @@ NODE id=matrix/neo/internal/delegate.ClassTransient kind=const
   sig=delegate.FailureClass
   doc=ClassTransient is safe to retry with bounded backoff: a connection\nrefusal, a timeout, a 5xx, or a rate-limit (429). The single-flight 409\n("another intent is in flight; retry") is transient too — it clears once\nthe in-flight intent completes.
 EDGES
-  ^references=matrix/neo/internal/delegate.ClassOf,matrix/neo/internal/delegate.FailureClass.String,matrix/neo/internal/delegate.classifyHTTP
+  ^references=matrix/neo/internal/agent.normalizedRecoveryClass,matrix/neo/internal/agent.runtimeFailureClass,matrix/neo/internal/delegate.ClassOf,matrix/neo/internal/delegate.FailureClass.String,matrix/neo/internal/delegate.classifyHTTP
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.Client kind=type
@@ -295,7 +295,7 @@ NODE id=matrix/neo/internal/delegate.FailureClass kind=type
   doc=FailureClass is the single shared taxonomy for an outcome crossing the\nNeo<->MCL seam. Both the tool-dispatch ladder (agent.dispatchWithRetry) and\nthe task supervisor (server.superviseDecision) read THIS classification, so\nthe retry / stop / attach / ask decision is made once, never re-guessed per\nlayer.
 EDGES
   contains=matrix/neo/internal/delegate.FailureClass.String
-  ^references=matrix/neo/internal/agent.Agent,matrix/neo/internal/agent.Agent.LastFailureClass,matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.noteFailureClass,matrix/neo/internal/agent.Agent.runToolCalls,matrix/neo/internal/agent.Agent.runToolCallsSerial,matrix/neo/internal/delegate.ClassNone,matrix/neo/internal/delegate.ClassOf,matrix/neo/internal/delegate.FailureClass.String,matrix/neo/internal/delegate.classifyHTTP,matrix/neo/internal/server.session.recordLoopDeath,matrix/neo/internal/server.superviseDecision
+  ^references=matrix/neo/internal/agent.Agent,matrix/neo/internal/agent.Agent.LastFailureClass,matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.noteFailureClass,matrix/neo/internal/agent.Agent.noteNormalizedFailure,matrix/neo/internal/agent.Agent.runToolCalls,matrix/neo/internal/agent.Agent.runToolCallsSerial,matrix/neo/internal/agent.normalizedRecoveryClass,matrix/neo/internal/agent.runtimeFailureClass,matrix/neo/internal/agent.turn,matrix/neo/internal/delegate.ClassNone,matrix/neo/internal/delegate.ClassOf,matrix/neo/internal/delegate.FailureClass.String,matrix/neo/internal/delegate.classifyHTTP,matrix/neo/internal/server.deathEntry,matrix/neo/internal/server.newDeathEntry,matrix/neo/internal/server.session.recordLoopDeath,matrix/neo/internal/server.superviseDecision
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.FailureClass.String kind=method

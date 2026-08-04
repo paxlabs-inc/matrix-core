@@ -66,7 +66,8 @@ func (h *Handler) writeShardMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 	pending := map[string]int{}
 	var oldest time.Duration
-	for _, op := range ops {
+	for index := range ops {
+		op := &ops[index]
 		pending[op.ShardID]++
 		age := time.Since(op.UpdatedAt)
 		if age > oldest {

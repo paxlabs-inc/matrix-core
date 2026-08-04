@@ -95,9 +95,9 @@ func newTestServer(t *testing.T, fakeURL string, freeTierOnly bool) *Server {
 	return srv
 }
 
-func configureScopedAgentCoreAuth(t *testing.T, srv *Server, now time.Time) (string, []byte) {
+func configureScopedAgentCoreAuth(t *testing.T, srv *Server, now time.Time) (token string, key []byte) {
 	t.Helper()
-	key := bytes.Repeat([]byte("agentcore-test-key-material-"), 2)
+	key = bytes.Repeat([]byte("agentcore-test-key-material-"), 2)
 	authenticator, err := auth.New(auth.Options{
 		Token:                     "shh",
 		AgentCoreVerificationKeys: map[string][]byte{"active-test": key},
@@ -114,7 +114,7 @@ func configureScopedAgentCoreAuth(t *testing.T, srv *Server, now time.Time) (str
 	if err != nil {
 		t.Fatalf("NewAgentCoreIssuer: %v", err)
 	}
-	token, _, err := issuer.Mint("did:matrix:user-scoped:cody", auth.AgentCoreTokenTTL)
+	token, _, err = issuer.Mint("did:matrix:user-scoped:cody", auth.AgentCoreTokenTTL)
 	if err != nil {
 		t.Fatalf("Mint: %v", err)
 	}

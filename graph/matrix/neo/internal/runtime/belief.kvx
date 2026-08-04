@@ -1,0 +1,404 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=matrix/neo/internal/runtime/belief kind=package
+  digest=b3:b6df4379dd523e56f10c3b708293262efe62fe6933d1df91383bfec9b0a23e0c file=neo/internal/runtime/belief range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/neo/internal/runtime/belief/state.go
+  imports=matrix/cortex,matrix/cortex/journal,matrix/neo/internal/runtime/liveness,matrix/neo/internal/runtime/loop
+  ^contains=mod:matrix/neo
+  ^imports=matrix/neo/internal/agent
+
+NODE id=matrix/neo/internal/runtime/belief.Capability kind=type
+  digest=b3:fc7da699567e780600ce6bafb845f66ed422f3b7d3e3deae09067951616ab2d2 file=neo/internal/runtime/belief/state.go range=55:58 lang=go exported=true byte_range=1551:1676
+  sig=type Capability struct {\n	ToolName		string	`json:"tool_name"`\n	VerifiedSuccesses	int	`json:"verified_successes"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/belief.Capability#ToolName,matrix/neo/internal/runtime/belief.Capability#VerifiedSuccesses
+  ^references=matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.emptyState,matrix/neo/internal/runtime/belief.normalizeState
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.Capability#ToolName kind=field
+  digest=b3:f41f40fae69d12c1fbceb0e62a91fb483987e384213e6e6978df82fa0c02c240 file=neo/internal/runtime/belief/state.go range=56:56 lang=go exported=true byte_range=1577:1620
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Capability
+
+NODE id=matrix/neo/internal/runtime/belief.Capability#VerifiedSuccesses kind=field
+  digest=b3:17ab6e2280492a5b3d248b14e1f1d95bb7c5d43c25d0261349fd01878efef857 file=neo/internal/runtime/belief/state.go range=57:57 lang=go exported=true byte_range=1622:1674
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Capability
+
+NODE id=matrix/neo/internal/runtime/belief.CitationVerifier kind=interface
+  digest=b3:f2699c806953884e35c6527e6659276a8bfb39a51450419c008db13d4b02a6ad file=neo/internal/runtime/belief/state.go range=67:71 lang=go exported=true byte_range=1931:2057
+  sig=type CitationVerifier interface {\n	VerifyToolEventCitation(\n		cortex.ToolEventCitation,\n	) (journal.ToolEventPayload, error)\n}
+EDGES
+  references=matrix/cortex.ToolEventCitation,matrix/cortex/journal.ToolEventPayload
+  ^implements=matrix/neo/internal/runtime/loop.NeocortexAdapter
+  ^references=matrix/neo/internal/agent.Agent.chatResurrectionWithGuidance,matrix/neo/internal/agent.Agent.openBeliefState,matrix/neo/internal/runtime/belief.New,matrix/neo/internal/runtime/belief.State
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.CognitionStore kind=interface
+  digest=b3:ed060a949a9d9f5100ae3c850bf967aa7abd2adb2e0bf19ac43b9e1a220c1acb file=neo/internal/runtime/belief/state.go range=73:76 lang=go exported=true byte_range=2059:2230
+  sig=type CognitionStore interface {\n	SaveCognitionState(context.Context, string, json.RawMessage) error\n	LoadCognitionState(context.Context, string) (json.RawMessage, error)\n}
+EDGES
+  ^implements=matrix/neo/internal/runtime/turnstate.Store
+  ^references=matrix/neo/internal/runtime/belief.New,matrix/neo/internal/runtime/belief.State
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.DurableState kind=type
+  digest=b3:2bd90819a7c46b0c323f6b79e97f227ef99db384a1d5db779ac67a85bff8f07d file=neo/internal/runtime/belief/state.go range=60:65 lang=go exported=true byte_range=1678:1929
+  sig=type DurableState struct {\n	Premises	map[string]Premise	`json:"premises"`\n	Predictions	[]Prediction		`json:"predictions"`\n	Subgoals	map[string]Subgoal	`json:"subgoals"`\n	Capabilities	map[string]Capability	`json:"capabilities"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/belief.DurableState#Capabilities,matrix/neo/internal/runtime/belief.DurableState#Predictions,matrix/neo/internal/runtime/belief.DurableState#Premises,matrix/neo/internal/runtime/belief.DurableState#Subgoals
+  references=matrix/neo/internal/runtime/belief.Capability,matrix/neo/internal/runtime/belief.Prediction,matrix/neo/internal/runtime/belief.Premise,matrix/neo/internal/runtime/belief.Subgoal
+  ^references=matrix/neo/internal/runtime/belief.State,matrix/neo/internal/runtime/belief.State.AddPremise,matrix/neo/internal/runtime/belief.State.CitePremise,matrix/neo/internal/runtime/belief.State.ObserveToolExecution,matrix/neo/internal/runtime/belief.State.RefutePremise,matrix/neo/internal/runtime/belief.State.Restore,matrix/neo/internal/runtime/belief.State.Snapshot,matrix/neo/internal/runtime/belief.State.mutate,matrix/neo/internal/runtime/belief.cloneState,matrix/neo/internal/runtime/belief.emptyState,matrix/neo/internal/runtime/belief.normalizeState
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.DurableState#Capabilities kind=field
+  digest=b3:ea4ffbb6e5e47961c75a8182efabcc441e57dbf1c382741a4020407ed64c3b7b file=neo/internal/runtime/belief/state.go range=64:64 lang=go exported=true byte_range=1871:1927
+  sig=map[string]belief.Capability
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.DurableState
+
+NODE id=matrix/neo/internal/runtime/belief.DurableState#Predictions kind=field
+  digest=b3:4ff2ee3e88179cee39e03bef1435b6a2b2021b62f8f0155e1e3d03a3a405fb04 file=neo/internal/runtime/belief/state.go range=62:62 lang=go exported=true byte_range=1760:1815
+  sig=[]belief.Prediction
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.DurableState
+
+NODE id=matrix/neo/internal/runtime/belief.DurableState#Premises kind=field
+  digest=b3:e1a1dc47df97a66903473dcbcdd8c241ba28d1b636d6f25469e80014bf442a31 file=neo/internal/runtime/belief/state.go range=61:61 lang=go exported=true byte_range=1706:1758
+  sig=map[string]belief.Premise
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.DurableState
+
+NODE id=matrix/neo/internal/runtime/belief.DurableState#Subgoals kind=field
+  digest=b3:970bb3239d97e0bcde7e1a7d1db94df8adabf0f1abd65a1076e2b9856e7b48f4 file=neo/internal/runtime/belief/state.go range=63:63 lang=go exported=true byte_range=1817:1869
+  sig=map[string]belief.Subgoal
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.DurableState
+
+NODE id=matrix/neo/internal/runtime/belief.ErrCitationRequired kind=var
+  digest=b3:e367ac1bd689bdfaa206dcad3b4da4d9b19f49282b9aafafbbc33a9b915e3595 file=neo/internal/runtime/belief/state.go range=30:30 lang=go exported=true byte_range=590:672
+  sig=error
+EDGES
+  ^references=matrix/neo/internal/runtime/belief.State.CitePremise,matrix/neo/internal/runtime/belief.State.ObserveToolExecution,matrix/neo/internal/runtime/belief.State.RefutePremise,matrix/neo/internal/runtime/belief.executionMatchesPayload
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.ErrEvidenceInsufficient kind=var
+  digest=b3:601fdfc3af3a700e16b48648b26ea5be694d3a8261eda6ba87c1ff1d1aab99f7 file=neo/internal/runtime/belief/state.go range=32:32 lang=go exported=true byte_range=775:863
+  sig=error
+EDGES
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.ErrPremiseBlocked kind=var
+  digest=b3:79bee427da0add4731c8b57c03e918996fdaa515c2e74960803f57103326b8da file=neo/internal/runtime/belief/state.go range=31:31 lang=go exported=true byte_range=674:773
+  sig=error
+EDGES
+  ^references=matrix/neo/internal/runtime/belief.State.CanAct
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.New kind=func
+  digest=b3:ea68b0845f924bfcbd858a024aeca4609726cfc6c3df39780782861178f6554f file=neo/internal/runtime/belief/state.go range=86:103 lang=go exported=true byte_range=2373:2797
+  sig=func New(\n	sessionID string,\n	verifier CitationVerifier,\n	store CognitionStore,\n) (*State, error)
+EDGES
+  calls=matrix/neo/internal/runtime/belief.emptyState
+  references=matrix/neo/internal/runtime/belief.CitationVerifier,matrix/neo/internal/runtime/belief.CognitionStore,matrix/neo/internal/runtime/belief.State,matrix/neo/internal/runtime/belief.emptyState,matrix/neo/internal/runtime/belief.sessionID,matrix/neo/internal/runtime/belief.store,matrix/neo/internal/runtime/belief.verifier
+  ^calls=matrix/neo/internal/agent.Agent.openBeliefState
+  ^references=matrix/neo/internal/agent.Agent.openBeliefState
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.Prediction kind=type
+  digest=b3:249bcaa987af76b00c808eff21e5ff4a382e58c6df581ac427a525be1e576004 file=neo/internal/runtime/belief/state.go range=42:47 lang=go exported=true byte_range=1115:1351
+  sig=type Prediction struct {\n	ToolName	string				`json:"tool_name"`\n	Expect		string				`json:"expect"`\n	Verdict		string				`json:"verdict"`\n	Citation	cortex.ToolEventCitation	`json:"citation"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/belief.Prediction#Citation,matrix/neo/internal/runtime/belief.Prediction#Expect,matrix/neo/internal/runtime/belief.Prediction#ToolName,matrix/neo/internal/runtime/belief.Prediction#Verdict
+  references=matrix/cortex.ToolEventCitation
+  ^references=matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.State.ObserveToolExecution
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.Prediction#Citation kind=field
+  digest=b3:c32699feaa856cecb5714d54aa910e3ab14c8fe8dcd29279fc67d4befd65648c file=neo/internal/runtime/belief/state.go range=46:46 lang=go exported=true byte_range=1298:1349
+  sig=cortex.ToolEventCitation
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Prediction
+
+NODE id=matrix/neo/internal/runtime/belief.Prediction#Expect kind=field
+  digest=b3:ecbd3a71188c0486cb1a6ed5c54f5543a7ce857c87878b4f8ea91e91ab83f032 file=neo/internal/runtime/belief/state.go range=44:44 lang=go exported=true byte_range=1195:1244
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Prediction
+
+NODE id=matrix/neo/internal/runtime/belief.Prediction#ToolName kind=field
+  digest=b3:13dbc225afd4efb2a94e235f720e9f27f7ffaf3d560c1b2308ccbecef712df2d file=neo/internal/runtime/belief/state.go range=43:43 lang=go exported=true byte_range=1141:1193
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Prediction
+
+NODE id=matrix/neo/internal/runtime/belief.Prediction#Verdict kind=field
+  digest=b3:c6dc943e920fb7ad399460f211151c7ff728e99c6f3e9c8f197963db967ff80d file=neo/internal/runtime/belief/state.go range=45:45 lang=go exported=true byte_range=1246:1296
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Prediction
+
+NODE id=matrix/neo/internal/runtime/belief.Premise kind=type
+  digest=b3:ef3b163c9e0f8dd4e3f0fd5b307c943be609630dd3557d21fe457ca4792b8656 file=neo/internal/runtime/belief/state.go range=35:40 lang=go exported=true byte_range=867:1113
+  sig=type Premise struct {\n	ID		string				`json:"id"`\n	Statement	string				`json:"statement"`\n	Status		PremiseStatus			`json:"status"`\n	Citation	*cortex.ToolEventCitation	`json:"citation,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/belief.Premise#Citation,matrix/neo/internal/runtime/belief.Premise#ID,matrix/neo/internal/runtime/belief.Premise#Statement,matrix/neo/internal/runtime/belief.Premise#Status
+  references=matrix/cortex.ToolEventCitation,matrix/neo/internal/runtime/belief.PremiseStatus
+  ^references=matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.State.AddPremise,matrix/neo/internal/runtime/belief.State.ObserveToolExecution,matrix/neo/internal/runtime/belief.emptyState,matrix/neo/internal/runtime/belief.normalizeState
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.Premise#Citation kind=field
+  digest=b3:34f993a3c592ace639f96c77f61b11ab5fa3bbcb73933c0ab91ebb7a481f63ed file=neo/internal/runtime/belief/state.go range=39:39 lang=go exported=true byte_range=1048:1111
+  sig=*cortex.ToolEventCitation
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Premise
+
+NODE id=matrix/neo/internal/runtime/belief.Premise#ID kind=field
+  digest=b3:f958d6f05094800bb4f29a6b3b1d088c4b645ce66259a43d1961a25de922df24 file=neo/internal/runtime/belief/state.go range=36:36 lang=go exported=true byte_range=890:937
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Premise
+
+NODE id=matrix/neo/internal/runtime/belief.Premise#Statement kind=field
+  digest=b3:7fdb065b98d6f7918f7c6543e808621a04f60288c0d0e950d2d1198cde9465dc file=neo/internal/runtime/belief/state.go range=37:37 lang=go exported=true byte_range=939:993
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Premise
+
+NODE id=matrix/neo/internal/runtime/belief.Premise#Status kind=field
+  digest=b3:fac9e67036597e39364dc72230162fffecca5e5dd911ab5f4ab2e412962b32d0 file=neo/internal/runtime/belief/state.go range=38:38 lang=go exported=true byte_range=995:1046
+  sig=belief.PremiseStatus
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Premise
+
+NODE id=matrix/neo/internal/runtime/belief.PremiseAssumption kind=const
+  digest=b3:e590ef35fad224d0c94226e6671dd33b89af188570afd3fdb405651f8cbbf186 file=neo/internal/runtime/belief/state.go range=24:24 lang=go exported=true byte_range=445:491
+  sig=belief.PremiseStatus
+EDGES
+  references=matrix/neo/internal/runtime/belief.PremiseStatus
+  ^references=matrix/neo/internal/runtime/belief.State.AddPremise
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.PremiseCited kind=const
+  digest=b3:935e7268cc2a7128afd6d7b29ee1aabddafe5dfd92cb07ddcb7359d43e50fc39 file=neo/internal/runtime/belief/state.go range=25:25 lang=go exported=true byte_range=493:534
+  sig=belief.PremiseStatus
+EDGES
+  references=matrix/neo/internal/runtime/belief.PremiseStatus
+  ^references=matrix/neo/internal/agent.beliefPremises.ActivePremises,matrix/neo/internal/runtime/belief.State.CanAct,matrix/neo/internal/runtime/belief.State.CitePremise,matrix/neo/internal/runtime/belief.State.MeasuredContext
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.PremiseRefuted kind=const
+  digest=b3:867d2a403ad7a214adf96e55bb0cf5a8ff96e994a8f5ac636b46317f344fca13 file=neo/internal/runtime/belief/state.go range=26:26 lang=go exported=true byte_range=536:579
+  sig=belief.PremiseStatus
+EDGES
+  references=matrix/neo/internal/runtime/belief.PremiseStatus
+  ^references=matrix/neo/internal/runtime/belief.State.ObserveToolExecution,matrix/neo/internal/runtime/belief.State.RefutePremise
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.PremiseStatus kind=type
+  digest=b3:775d58d26f102acb28a3607979406a9c5e8066053843d2f1a89bf201c4fcbe2d file=neo/internal/runtime/belief/state.go range=21:21 lang=go exported=true byte_range=409:434
+  sig=type PremiseStatus string
+EDGES
+  ^references=matrix/neo/internal/runtime/belief.Premise,matrix/neo/internal/runtime/belief.PremiseAssumption,matrix/neo/internal/runtime/belief.PremiseCited,matrix/neo/internal/runtime/belief.PremiseRefuted
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.State kind=type
+  digest=b3:2bb78e67edd2ecb48041f1deefd59303aa7b296316503769386ca61d42a5d7f1 file=neo/internal/runtime/belief/state.go range=78:84 lang=go exported=true byte_range=2232:2371
+  sig=type State struct {\n	mu		sync.Mutex\n	sessionID	string\n	verifier	CitationVerifier\n	store		CognitionStore\n	durable		DurableState\n}
+EDGES
+  contains=matrix/neo/internal/runtime/belief.State#durable,matrix/neo/internal/runtime/belief.State#mu,matrix/neo/internal/runtime/belief.State#sessionID,matrix/neo/internal/runtime/belief.State#store,matrix/neo/internal/runtime/belief.State#verifier,matrix/neo/internal/runtime/belief.State.AddPremise,matrix/neo/internal/runtime/belief.State.CanAct,matrix/neo/internal/runtime/belief.State.CitePremise,matrix/neo/internal/runtime/belief.State.MeasuredContext,matrix/neo/internal/runtime/belief.State.ObserveToolExecution,matrix/neo/internal/runtime/belief.State.RefutePremise,matrix/neo/internal/runtime/belief.State.Restore,matrix/neo/internal/runtime/belief.State.Snapshot,matrix/neo/internal/runtime/belief.State.mutate
+  implements=matrix/neo/internal/runtime/loop.EvidenceObserver,matrix/neo/internal/runtime/loop.LivenessSource
+  references=matrix/neo/internal/runtime/belief.CitationVerifier,matrix/neo/internal/runtime/belief.CognitionStore,matrix/neo/internal/runtime/belief.DurableState
+  ^references=matrix/neo/internal/agent.Agent.openBeliefState,matrix/neo/internal/agent.beliefPremises,matrix/neo/internal/runtime/belief.New,matrix/neo/internal/runtime/belief.State.AddPremise,matrix/neo/internal/runtime/belief.State.CanAct,matrix/neo/internal/runtime/belief.State.CitePremise,matrix/neo/internal/runtime/belief.State.MeasuredContext,matrix/neo/internal/runtime/belief.State.ObserveToolExecution,matrix/neo/internal/runtime/belief.State.RefutePremise,matrix/neo/internal/runtime/belief.State.Restore,matrix/neo/internal/runtime/belief.State.Snapshot,matrix/neo/internal/runtime/belief.State.mutate
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.State#durable kind=field
+  digest=b3:a5c593b775a3bc003c0db878e1e2bdd071a22f21796af9da9882391e947dfc93 file=neo/internal/runtime/belief/state.go range=83:83 lang=go exported=false byte_range=2347:2369
+  sig=belief.DurableState
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.State
+
+NODE id=matrix/neo/internal/runtime/belief.State#mu kind=field
+  digest=b3:0aa00f6d3fe7dfd37ad133cc169e895abed638bd6a316df5a7beeb8dc3ece394 file=neo/internal/runtime/belief/state.go range=79:79 lang=go exported=false byte_range=2253:2273
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.State
+
+NODE id=matrix/neo/internal/runtime/belief.State#sessionID kind=field
+  digest=b3:2fcc00864e90f8ead10374fee768e9f2c61ee3d64506893f452fdd37812fbcbd file=neo/internal/runtime/belief/state.go range=80:80 lang=go exported=false byte_range=2275:2291
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.State
+
+NODE id=matrix/neo/internal/runtime/belief.State#store kind=field
+  digest=b3:4735a2c53380f7df95c39bda2d4341d500fa832868332383c2538731c2fd123c file=neo/internal/runtime/belief/state.go range=82:82 lang=go exported=false byte_range=2321:2345
+  sig=belief.CognitionStore
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.State
+
+NODE id=matrix/neo/internal/runtime/belief.State#verifier kind=field
+  digest=b3:0c60cc9a69dfeca42f25bc7f8834b24a3f98067ccd2d58a5305f80bf944b2fa5 file=neo/internal/runtime/belief/state.go range=81:81 lang=go exported=false byte_range=2293:2319
+  sig=belief.CitationVerifier
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.State
+
+NODE id=matrix/neo/internal/runtime/belief.State.AddPremise kind=method
+  digest=b3:0f076a0ea2e599ac5af308fc258ada9b2dd3a847738625ad839d50fcf1db742b file=neo/internal/runtime/belief/state.go range=121:140 lang=go exported=true byte_range=3216:3787
+  sig=func (state *State) AddPremise(\n	ctx context.Context,\n	id string,\n	statement string,\n) error
+EDGES
+  calls=matrix/neo/internal/runtime/belief.State.mutate
+  references=matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.Premise,matrix/neo/internal/runtime/belief.PremiseAssumption,matrix/neo/internal/runtime/belief.State,matrix/neo/internal/runtime/belief.State.mutate,matrix/neo/internal/runtime/belief.ctx,matrix/neo/internal/runtime/belief.exists,matrix/neo/internal/runtime/belief.id,matrix/neo/internal/runtime/belief.next,matrix/neo/internal/runtime/belief.state,matrix/neo/internal/runtime/belief.statement
+  ^contains=matrix/neo/internal/runtime/belief.State
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.State.CanAct kind=method
+  digest=b3:4e295762737bb03f339985150a48006ed3213f6cb2551334449bb65201742b56 file=neo/internal/runtime/belief/state.go range=192:202 lang=go exported=true byte_range=5102:5397
+  sig=func (state *State) CanAct(premiseIDs ...string) error
+EDGES
+  references=matrix/neo/internal/runtime/belief.ErrPremiseBlocked,matrix/neo/internal/runtime/belief.PremiseCited,matrix/neo/internal/runtime/belief.State,matrix/neo/internal/runtime/belief.id,matrix/neo/internal/runtime/belief.ok,matrix/neo/internal/runtime/belief.premise,matrix/neo/internal/runtime/belief.premiseIDs,matrix/neo/internal/runtime/belief.state
+  ^contains=matrix/neo/internal/runtime/belief.State
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.State.CitePremise kind=method
+  digest=b3:39b9a6e3a3fe1c739be514d7bcdc6163e8787a858a6116065e9f627b69861feb file=neo/internal/runtime/belief/state.go range=142:165 lang=go exported=true byte_range=3789:4440
+  sig=func (state *State) CitePremise(\n	ctx context.Context,\n	id string,\n	citation cortex.ToolEventCitation,\n) error
+EDGES
+  calls=matrix/cortex.Cortex.VerifyToolEventCitation,matrix/neo/internal/runtime/belief.State.mutate,matrix/neo/internal/runtime/loop.NeocortexAdapter.VerifyToolEventCitation
+  references=matrix/cortex.ToolEventCitation,matrix/cortex.ToolMatchMatched,matrix/neo/internal/runtime/belief.CitationVerifier.VerifyToolEventCitation,matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.ErrCitationRequired,matrix/neo/internal/runtime/belief.PremiseCited,matrix/neo/internal/runtime/belief.State,matrix/neo/internal/runtime/belief.State.mutate,matrix/neo/internal/runtime/belief.citation,matrix/neo/internal/runtime/belief.ctx,matrix/neo/internal/runtime/belief.err,matrix/neo/internal/runtime/belief.id,matrix/neo/internal/runtime/belief.next,matrix/neo/internal/runtime/belief.ok,matrix/neo/internal/runtime/belief.payload,matrix/neo/internal/runtime/belief.premise,matrix/neo/internal/runtime/belief.state
+  ^contains=matrix/neo/internal/runtime/belief.State
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.State.MeasuredContext kind=method
+  digest=b3:cd4281e65bf8650898afdffbd6e1f0b20582646821251774565e0c7bfec71c53 file=neo/internal/runtime/belief/state.go range=253:276 lang=go exported=true byte_range=6898:7824
+  sig=func (state *State) MeasuredContext() liveness.MeasuredContext
+  doc=MeasuredContext is the loop's LivenessSource adapter: it reports counters,\nnever premise text. UnsupportedPremises counts every premise the belief state\ndoes not hold a verified citation for — assumptions and refutations alike,\nwhich is what raises verification depth. ActionsWithoutGrowth counts the\ntrailing run of prediction records that produced no matched evidence, which\nis the runtime's no-progress read.
+EDGES
+  references=matrix/cortex.ToolMatchMatched,matrix/neo/internal/runtime/belief.PremiseCited,matrix/neo/internal/runtime/belief.State,matrix/neo/internal/runtime/belief.index,matrix/neo/internal/runtime/belief.measured,matrix/neo/internal/runtime/belief.premise,matrix/neo/internal/runtime/belief.state,matrix/neo/internal/runtime/liveness.MeasuredContext
+  ^contains=matrix/neo/internal/runtime/belief.State
+  ^calls=matrix/neo/internal/runtime/loop.Loop.derivePolicy
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.State.ObserveToolExecution kind=method
+  digest=b3:4c1238ea1c3132ee9bc745a6afaee0349998df73a4eb3c7763717d42ad1fdf90 file=neo/internal/runtime/belief/state.go range=204:251 lang=go exported=true byte_range=5399:6896
+  sig=func (state *State) ObserveToolExecution(\n	ctx context.Context,\n	execution runtimeloop.ToolExecution,\n) error
+EDGES
+  calls=matrix/cortex.Cortex.VerifyToolEventCitation,matrix/neo/internal/runtime/belief.State.mutate,matrix/neo/internal/runtime/belief.executionMatchesPayload,matrix/neo/internal/runtime/loop.NeocortexAdapter.VerifyToolEventCitation
+  references=matrix/cortex.ToolMatchMatched,matrix/cortex.ToolMatchMismatched,matrix/neo/internal/runtime/belief.CitationVerifier.VerifyToolEventCitation,matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.ErrCitationRequired,matrix/neo/internal/runtime/belief.Prediction,matrix/neo/internal/runtime/belief.Premise,matrix/neo/internal/runtime/belief.PremiseRefuted,matrix/neo/internal/runtime/belief.State,matrix/neo/internal/runtime/belief.State.mutate,matrix/neo/internal/runtime/belief.capability,matrix/neo/internal/runtime/belief.citation,matrix/neo/internal/runtime/belief.ctx,matrix/neo/internal/runtime/belief.err,matrix/neo/internal/runtime/belief.execution,matrix/neo/internal/runtime/belief.executionMatchesPayload,matrix/neo/internal/runtime/belief.id,matrix/neo/internal/runtime/belief.next,matrix/neo/internal/runtime/belief.payload,matrix/neo/internal/runtime/belief.state,matrix/neo/internal/runtime/belief.subgoal,matrix/neo/internal/runtime/loop.ToolExecution
+  ^contains=matrix/neo/internal/runtime/belief.State
+  ^calls=matrix/neo/internal/agent.runtimeEvidenceObserver.ObserveToolExecution
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.State.RefutePremise kind=method
+  digest=b3:a13df4243df3cfa1cc2be96c6396256f13216c2bf66bab6cbe97ef126cc62bd4 file=neo/internal/runtime/belief/state.go range=167:190 lang=go exported=true byte_range=4442:5100
+  sig=func (state *State) RefutePremise(\n	ctx context.Context,\n	id string,\n	citation cortex.ToolEventCitation,\n) error
+EDGES
+  calls=matrix/cortex.Cortex.VerifyToolEventCitation,matrix/neo/internal/runtime/belief.State.mutate,matrix/neo/internal/runtime/loop.NeocortexAdapter.VerifyToolEventCitation
+  references=matrix/cortex.ToolEventCitation,matrix/cortex.ToolMatchMismatched,matrix/neo/internal/runtime/belief.CitationVerifier.VerifyToolEventCitation,matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.ErrCitationRequired,matrix/neo/internal/runtime/belief.PremiseRefuted,matrix/neo/internal/runtime/belief.State,matrix/neo/internal/runtime/belief.State.mutate,matrix/neo/internal/runtime/belief.citation,matrix/neo/internal/runtime/belief.ctx,matrix/neo/internal/runtime/belief.err,matrix/neo/internal/runtime/belief.id,matrix/neo/internal/runtime/belief.next,matrix/neo/internal/runtime/belief.ok,matrix/neo/internal/runtime/belief.payload,matrix/neo/internal/runtime/belief.premise,matrix/neo/internal/runtime/belief.state
+  ^contains=matrix/neo/internal/runtime/belief.State
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.State.Restore kind=method
+  digest=b3:15baad1b2edfd22ffa290b354543d56e65cf354695e12f53282196bf3bc7fe89 file=neo/internal/runtime/belief/state.go range=105:119 lang=go exported=true byte_range=2799:3214
+  sig=func (state *State) Restore(ctx context.Context) error
+EDGES
+  calls=matrix/neo/internal/runtime/belief.normalizeState,matrix/neo/internal/runtime/turnstate.Store.LoadCognitionState
+  references=matrix/neo/internal/runtime/belief.CognitionStore.LoadCognitionState,matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.State,matrix/neo/internal/runtime/belief.ctx,matrix/neo/internal/runtime/belief.err,matrix/neo/internal/runtime/belief.normalizeState,matrix/neo/internal/runtime/belief.raw,matrix/neo/internal/runtime/belief.restored,matrix/neo/internal/runtime/belief.state
+  ^contains=matrix/neo/internal/runtime/belief.State
+  ^calls=matrix/neo/internal/agent.Agent.openBeliefState
+  ^references=matrix/neo/internal/agent.Agent.openBeliefState
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.State.Snapshot kind=method
+  digest=b3:f8d85ad43e6badb66a7e8b138170f2b91c063344f35708e0f3ee1920d2420643 file=neo/internal/runtime/belief/state.go range=278:282 lang=go exported=true byte_range=7826:7949
+  sig=func (state *State) Snapshot() DurableState
+EDGES
+  calls=matrix/neo/internal/runtime/belief.cloneState
+  references=matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.State,matrix/neo/internal/runtime/belief.cloneState,matrix/neo/internal/runtime/belief.state
+  ^contains=matrix/neo/internal/runtime/belief.State
+  ^calls=matrix/neo/internal/agent.beliefPremises.ActivePremises
+  ^references=matrix/neo/internal/agent.beliefPremises.ActivePremises
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.State.mutate kind=method
+  digest=b3:92456defb7366a39af25370e3473beb580eb23ad6c8d8e2affb684a25de84192 file=neo/internal/runtime/belief/state.go range=284:305 lang=go exported=false byte_range=7951:8440
+  sig=func (state *State) mutate(\n	ctx context.Context,\n	apply func(*DurableState) error,\n) error
+EDGES
+  calls=matrix/neo/internal/runtime/belief.cloneState,matrix/neo/internal/runtime/turnstate.Store.SaveCognitionState
+  references=matrix/neo/internal/runtime/belief.CognitionStore.SaveCognitionState,matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.State,matrix/neo/internal/runtime/belief.apply,matrix/neo/internal/runtime/belief.cloneState,matrix/neo/internal/runtime/belief.ctx,matrix/neo/internal/runtime/belief.err,matrix/neo/internal/runtime/belief.next,matrix/neo/internal/runtime/belief.raw,matrix/neo/internal/runtime/belief.state
+  ^contains=matrix/neo/internal/runtime/belief.State
+  ^calls=matrix/neo/internal/runtime/belief.State.AddPremise,matrix/neo/internal/runtime/belief.State.CitePremise,matrix/neo/internal/runtime/belief.State.ObserveToolExecution,matrix/neo/internal/runtime/belief.State.RefutePremise
+  ^references=matrix/neo/internal/runtime/belief.State.AddPremise,matrix/neo/internal/runtime/belief.State.CitePremise,matrix/neo/internal/runtime/belief.State.ObserveToolExecution,matrix/neo/internal/runtime/belief.State.RefutePremise
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.Subgoal kind=type
+  digest=b3:5991d0d7697c98b4c08422387c9bc51dabbb9191c471effac869f77438a298c6 file=neo/internal/runtime/belief/state.go range=49:53 lang=go exported=true byte_range=1353:1549
+  sig=type Subgoal struct {\n	ID		string				`json:"id"`\n	Completed	bool				`json:"completed"`\n	Evidence	[]cortex.ToolEventCitation	`json:"evidence,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/belief.Subgoal#Completed,matrix/neo/internal/runtime/belief.Subgoal#Evidence,matrix/neo/internal/runtime/belief.Subgoal#ID
+  references=matrix/cortex.ToolEventCitation
+  ^references=matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.emptyState,matrix/neo/internal/runtime/belief.normalizeState
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.Subgoal#Completed kind=field
+  digest=b3:f483bdb68ab451b6b9976bfeab9c520579c263eeeb831a81e859a19a355c4e97 file=neo/internal/runtime/belief/state.go range=51:51 lang=go exported=true byte_range=1426:1481
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Subgoal
+
+NODE id=matrix/neo/internal/runtime/belief.Subgoal#Evidence kind=field
+  digest=b3:f3aae091fa1b39f707e297eca3ab122dc0869fb002374bc2a1fb4650fe17ecc9 file=neo/internal/runtime/belief/state.go range=52:52 lang=go exported=true byte_range=1483:1547
+  sig=[]cortex.ToolEventCitation
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Subgoal
+
+NODE id=matrix/neo/internal/runtime/belief.Subgoal#ID kind=field
+  digest=b3:2d9ad5fc4071f065ca97aba5c763c8e13f8df3f5082ef3f0651da126e7f9070c file=neo/internal/runtime/belief/state.go range=50:50 lang=go exported=true byte_range=1376:1424
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/belief.Subgoal
+
+NODE id=matrix/neo/internal/runtime/belief.cloneState kind=func
+  digest=b3:a2de18eb279522fdbbf695aaf9c52df7cba1e3cd92ef0dba86d2dedaf8727845 file=neo/internal/runtime/belief/state.go range=345:351 lang=go exported=false byte_range=9521:9705
+  sig=func cloneState(source DurableState) DurableState
+EDGES
+  calls=matrix/neo/internal/runtime/belief.normalizeState
+  references=matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.cloned,matrix/neo/internal/runtime/belief.normalizeState,matrix/neo/internal/runtime/belief.raw,matrix/neo/internal/runtime/belief.source
+  ^calls=matrix/neo/internal/runtime/belief.State.Snapshot,matrix/neo/internal/runtime/belief.State.mutate
+  ^references=matrix/neo/internal/runtime/belief.State.Snapshot,matrix/neo/internal/runtime/belief.State.mutate
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.emptyState kind=func
+  digest=b3:0c53ce51823c9835929291fbc701e3e27dc5a959470a21d8ef2be9572d6c4ea7 file=neo/internal/runtime/belief/state.go range=325:331 lang=go exported=false byte_range=9049:9237
+  sig=func emptyState() DurableState
+EDGES
+  references=matrix/neo/internal/runtime/belief.Capability,matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.Premise,matrix/neo/internal/runtime/belief.Subgoal
+  ^calls=matrix/neo/internal/runtime/belief.New
+  ^references=matrix/neo/internal/runtime/belief.New
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.executionMatchesPayload kind=func
+  digest=b3:090103663b30b05f2a61b6a409e89b117111c54d37e54260632c37c8c284116d file=neo/internal/runtime/belief/state.go range=307:323 lang=go exported=false byte_range=8442:9047
+  sig=func executionMatchesPayload(\n	execution runtimeloop.ToolExecution,\n	payload journal.ToolEventPayload,\n) error
+EDGES
+  references=matrix/cortex/journal.ToolEventPayload,matrix/neo/internal/runtime/belief.ErrCitationRequired,matrix/neo/internal/runtime/belief.execution,matrix/neo/internal/runtime/belief.payload,matrix/neo/internal/runtime/loop.ToolExecution
+  ^calls=matrix/neo/internal/runtime/belief.State.ObserveToolExecution
+  ^references=matrix/neo/internal/runtime/belief.State.ObserveToolExecution
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief.normalizeState kind=func
+  digest=b3:e0993bc31ae39004e2d37d5ae77cbe87aedb019e0e1898416f77ad4d6baac427 file=neo/internal/runtime/belief/state.go range=333:343 lang=go exported=false byte_range=9239:9519
+  sig=func normalizeState(state *DurableState)
+EDGES
+  references=matrix/neo/internal/runtime/belief.Capability,matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.Premise,matrix/neo/internal/runtime/belief.Subgoal,matrix/neo/internal/runtime/belief.state
+  ^calls=matrix/neo/internal/runtime/belief.State.Restore,matrix/neo/internal/runtime/belief.cloneState
+  ^references=matrix/neo/internal/runtime/belief.State.Restore,matrix/neo/internal/runtime/belief.cloneState
+  ^defines=matrix/neo/internal/runtime/belief/state.go
+
+NODE id=matrix/neo/internal/runtime/belief/state.go kind=file
+  digest=b3:9a800d5b57ef57cea05ced43541c0fc307814c0c7eee45e14aceb8059e6dca5a file=neo/internal/runtime/belief/state.go range=1:351 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/belief.Capability,matrix/neo/internal/runtime/belief.CitationVerifier,matrix/neo/internal/runtime/belief.CognitionStore,matrix/neo/internal/runtime/belief.DurableState,matrix/neo/internal/runtime/belief.ErrCitationRequired,matrix/neo/internal/runtime/belief.ErrEvidenceInsufficient,matrix/neo/internal/runtime/belief.ErrPremiseBlocked,matrix/neo/internal/runtime/belief.New,matrix/neo/internal/runtime/belief.Prediction,matrix/neo/internal/runtime/belief.Premise,matrix/neo/internal/runtime/belief.PremiseAssumption,matrix/neo/internal/runtime/belief.PremiseCited,matrix/neo/internal/runtime/belief.PremiseRefuted,matrix/neo/internal/runtime/belief.PremiseStatus,matrix/neo/internal/runtime/belief.State,matrix/neo/internal/runtime/belief.State.AddPremise,matrix/neo/internal/runtime/belief.State.CanAct,matrix/neo/internal/runtime/belief.State.CitePremise,matrix/neo/internal/runtime/belief.State.MeasuredContext,matrix/neo/internal/runtime/belief.State.ObserveToolExecution,matrix/neo/internal/runtime/belief.State.RefutePremise,matrix/neo/internal/runtime/belief.State.Restore,matrix/neo/internal/runtime/belief.State.Snapshot,matrix/neo/internal/runtime/belief.State.mutate,matrix/neo/internal/runtime/belief.Subgoal,matrix/neo/internal/runtime/belief.cloneState,matrix/neo/internal/runtime/belief.emptyState,matrix/neo/internal/runtime/belief.executionMatchesPayload,matrix/neo/internal/runtime/belief.normalizeState
+  ^contains=matrix/neo/internal/runtime/belief

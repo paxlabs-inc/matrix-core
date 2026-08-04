@@ -19,7 +19,7 @@ import (
 
 var agentCoreTestNow = time.Date(2026, 8, 2, 12, 0, 0, 0, time.UTC)
 
-func newAgentCoreAuth(t *testing.T, keyID string, key []byte, now time.Time) (*Authenticator, string) {
+func newAgentCoreAuth(t *testing.T, keyID string, key []byte, now time.Time) (authenticator *Authenticator, token string) {
 	t.Helper()
 	issuer, err := NewAgentCoreIssuer(AgentCoreIssuerOptions{
 		KeyID: keyID,
@@ -30,11 +30,11 @@ func newAgentCoreAuth(t *testing.T, keyID string, key []byte, now time.Time) (*A
 	if err != nil {
 		t.Fatalf("NewAgentCoreIssuer: %v", err)
 	}
-	token, _, err := issuer.Mint("did:matrix:user-1:cody", AgentCoreTokenTTL)
+	token, _, err = issuer.Mint("did:matrix:user-1:cody", AgentCoreTokenTTL)
 	if err != nil {
 		t.Fatalf("Mint: %v", err)
 	}
-	authenticator, err := New(Options{
+	authenticator, err = New(Options{
 		Token:                     "legacy",
 		AgentCoreVerificationKeys: map[string][]byte{keyID: key},
 		Now:                       func() time.Time { return now },

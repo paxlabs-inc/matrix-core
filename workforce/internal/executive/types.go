@@ -446,7 +446,7 @@ func (value CompiledAuthority) Validate() error {
 		!validUTC(value.CompiledAt) || value.CompiledAt.Before(value.EffectiveAt) {
 		return fmt.Errorf("executive: compiled authority identity, roots, or times are invalid")
 	}
-	for name, hash := range []struct {
+	for _, item := range []struct {
 		name string
 		hash contracts.ContentHash
 	}{
@@ -454,8 +454,8 @@ func (value CompiledAuthority) Validate() error {
 		{"constitution", value.ConstitutionHash}, {"capital", value.CapitalEnvelopeHash},
 		{"issuer policy", value.IssuerPolicyHash},
 	} {
-		if err := hash.Validate(); err != nil {
-			return fmt.Errorf("executive: compiled %s hash: %w", name, err)
+		if err := item.hash.Validate(); err != nil {
+			return fmt.Errorf("executive: compiled %s hash: %w", item.name, err)
 		}
 	}
 	if err := validateDecisionMakers(value.DecisionMakers); err != nil {

@@ -1,542 +1,580 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:8087349d214ea6556bd1e327d9b1cfe401192e02e5c71997ca02544fd4c21fca
+# GENERATED gen=codegraph do-not-edit merkle=b3:b9753067b0143b05d9e59aa7d4582f8ecc4f32217fc185000bee971850caf585
 
 NODE id=matrix/neo/internal/config kind=package
-  digest=b3:4a6499ff102b2f69efc62a7bbd3b7ae7226dd8e42ecd8d032def849f1715ebaa file=neo/internal/config range=0:0 lang=go exported=true
+  digest=b3:f000c01677341b2e939c2e0a49c627ec2f6ebba53d16dedc93edeb5d01dd2393 file=neo/internal/config range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/config/config.go,matrix/neo/internal/config/kvx.go
   ^contains=mod:matrix/neo
 
 NODE id=matrix/neo/internal/config.Config kind=type
-  digest=b3:1468633139b3a018482758b55ebb407494290cac6945d60c0c9c67d299462eca file=neo/internal/config/config.go range=26:273 lang=go exported=true byte_range=888:15824
-  sig=type Config struct {\n	// --- identity / runtime wiring ---\n	AgentName	string	// human label, "Morpheus" (the market identity; "Neo" stays a valid configured name)\n	CortexRoot	string	// root dir of the cortex brain (per-actor stores live under it)\n	CortexActor	string	// actor scope for Neo's memory store\n	DaemonURL	string	// base URL of the MCL daemon for core_execute delegation\n	ManifestPath	string	// agent manifest declaring MCP servers (agents/default.json)\n	SkillsRoot	string	// skills corpus root (procedural-pattern promotion target)\n	SelfModelGraph	string\n\n	// --- models (provider-qualified ids; see matrix/mcl/llm DetectProvider) ---\n	MainModel	string	// the conversational tool-calling loop\n	CheapModel	string	// compaction + summary validation + cheap relation-classify\n	// ConsolidationModel extracts durable learnings from each turn's transcript\n	// into cortex (memory write-back). A stronger model than CheapModel because\n	// extraction quality directly sets memory quality; still cheap-tier (it runs\n	// once per turn in the background). Must be on the gateway neo-slot whitelist.\n	ConsolidationModel	string\n	EmbedModel		string	// semantic page-fault embeddings (gateway /v1/embeddings or direct provider)\n	// CassandraModel is the cheap/fast Cassandra completeness auditor (the\n	// completion-gate adjudicator, metered on the dedicated "cassandra" slot);\n	// CassandraEscalateModel is the stronger second-opinion model consulted on\n	// low-certainty high-stakes audits ("" disables escalation). Both must be on\n	// the gateway's cassandra-slot whitelist.\n	CassandraModel		string\n	CassandraEscalateModel	string\n\n	// --- memory budget (context window = RAM; cortex = disk) ---\n	ContextWindowTokens	int	// total model context window, for budget math\n	SoftPct			int	// cooperative compaction threshold (finish atomic step, then compact)\n	HardPct			int	// forced compaction threshold (runaway backstop)\n	RetrievalTopK		int	// page-fault: top-K cortex records per retrieval\n	RetrievalBudgetTokens	int	// token ceiling for retrieved records\n	// AmbientRetrievalTopK caps the ambient (push) memory seed injected into\n	// the system block each turn (v3 #1: reasoning-time retrieval). 0 = fully\n	// tool-driven (no forced seed and no mid-turn refault — the model pulls\n	// with memory_recall); N = a thin top-N seed plus the pinned tier. The\n	// pinned tier (identity, hard rules, learned guidance, active goal, user\n	// profile) is ALWAYS injected and is unaffected by this knob.\n	AmbientRetrievalTopK	int\n	PinnedBudgetTokens	int	// token ceiling for the always-injected pinned block\n	RecallTopK		int	// conversational recall: top-K relevant past turns per turn\n	RecallBudgetTokens	int	// token ceiling for the recalled past-turns block\n	// ActivationBudgetTokens caps the per-turn cortex activation bundle (the\n	// continuous-memory trailing tail: pinned + timeline + recent + transcript\n	// slice + story-so-far). 0 = derive from the window via ActivationBudget()\n	// — window-proportional so a 1M window carries a rich bundle while a 32K\n	// local-model override keeps the old 3K behavior byte-identical.\n	ActivationBudgetTokens	int\n\n	// FirstTurnRelevancePush injects a bounded RELEVANCE retrieval into the\n	// activation window on the FIRST turn of a conversation only. cortex.Activate's\n	// pushed tiers (Pinned/Timeline/Recent) are recency-based and query-INDEPENDENT\n	// (activate.go: the query arg is unused), so on the opening message the agent\n	// carries recency but NOT relevance-to-the-ask unless it reactively calls\n	// memory_recall. With this on, Neo runs pager.Retrieve(query) once on turn 1\n	// and injects the hits, so the opening turn has relevance-matched memory with\n	// no reactive tool call. After turn 1 the pull-not-push philosophy resumes.\n	FirstTurnRelevancePush	bool\n	// WarmOnOpen makes the FIRST inbound HTTP request spin up the embedder + HNSW\n	// semantic substrate in the background (one-shot). Activate + StorySoFar are\n	// already cheap (materialized scans, deterministic, no LLM); the only real\n	// cold-start is the embedder/HNSW that the relevance push depends on, so\n	// warming it on app-open keeps the first message's recall off the cold path.\n	WarmOnOpen	bool\n\n	// --- loop discipline ---\n	StepBudget	int	// max tool-call iterations per turn (anti-infinite); the configured ceiling\n	StepBudgetMin	int	// P2-7: adaptive floor. 0 = adaptation disabled (effective budget = StepBudgetMax, today's fixed behavior). When >0 the effective budget scales within [StepBudgetMin, StepBudgetMax] based on turn complexity.\n	StepBudgetMax	int	// P2-7: adaptive ceiling. Defaults to StepBudget (50) so behavior is unchanged when adaptation is off.\n	NoProgressStall	int	// identical-failing-call / no-state-change count that trips a stall\n	// SemanticStallSimilarityPct is the word-overlap threshold (0–100) at which\n	// two consecutive tool-call batches at the SAME operation (same tool shape +\n	// same target identifiers) are treated as a no-progress repeat even when\n	// their argument WORDING differs — so a cosmetic reword cannot defeat the\n	// stall guard. The repeat counter still trips at NoProgressStall. 0 disables\n	// semantic detection (exact batch-signature matching only — legacy behavior).\n	SemanticStallSimilarityPct	int\n	MaxRetriesPerTool		int	// recovery ladder rung 1: bounded retries for transient failures\n	MaxAdaptAttempts		int	// recovery ladder rung 2: bounded approach revisions\n	// MaxGuidanceNudges caps how many CONSECUTIVE system-guidance nudges the\n	// loop may inject (completion-gate rejections, read-full steers) before it\n	// escalates to an honest stop-and-ask instead of re-nudging indefinitely\n	// (neo-smoothness req.1.5). The counter resets on genuine progress (a tool\n	// dispatch / accepted completion). 0 disables the cap (unbounded nudging).\n	MaxGuidanceNudges	int\n\n	// --- sub-agent swarm (task-scoped concurrent helpers; see [swarm]) ---\n	MaxSubagents		int	// hard cap on sub-agents spawned in one spawn_subagents call\n	MaxConcurrentSubagents	int	// semaphore: how many sub-agents run at once (the rest queue)\n	SubagentStepBudget	int	// per-sub-agent tool-call iteration budget (smaller than the parent's)\n\n	// --- browser filmstrip (BROWSER-FILMSTRIP; see [browser] / NEO_BROWSER_*) ---\n	// BrowserAutoshot deterministically captures a viewport JPEG after each\n	// view-changing browser action (navigate/back/click/form submit) so the\n	// "Neo's Computer" browsing surface reads as a live filmstrip without\n	// relying on the model choosing to screenshot. Default ON; a capture failure\n	// never blocks the navigation or the turn (best-effort). BrowserAutoshotMax\n	// caps captures per run so a long browsing turn can't grow media without\n	// bound. MediaRetentionHours bounds screenshot/media growth on the volume:\n	// the GC sweep deletes served media files older than this (0 disables).\n	BrowserAutoshot		bool\n	BrowserAutoshotMax	int\n	MediaRetentionHours	int\n\n	// --- voice (VOICE; [voice] / NEO_VOICE_*) ---\n	VoiceEnabled		bool\n	VoiceMode		string\n	VoiceASRDeadline	time.Duration\n	VoiceTTSVoice		string\n	VoiceTTSStyle		string\n	VoiceTTSDeadline	time.Duration\n	VoiceIdleDisconnect	time.Duration\n\n	// --- task supervisor (durability: a dispatched task runs to completion\n	// across model errors, tool failures, early loop-ends, user disconnects,\n	// and even daemon restart/suspend — at least one agent stays on it until\n	// the objective is met to standard; see the Task Durability Rule) ---\n	SuperviseTasks		bool		// master switch: wrap each turn in the persistent supervisor\n	TaskMaxWall		time.Duration	// hard wall-clock ceiling for one supervised task (generous; anti-runaway)\n	TaskAttemptTimeout	time.Duration	// ceiling for a single supervised attempt (one agent run)\n	TaskMaxRespawns		int		// max fresh-agent respawns before delivering an honest partial\n\n	// DeathConsolidateEvery is the bounded cadence for the self-authoring\n	// consolidation pass (self-model task 3.2, req.5.2): after this many recorded\n	// loop deaths, the agent reads its death journal and writes/reinforces durable\n	// how-I-fail failure-pattern memories, deduplicating recurrences of the same\n	// mode into ONE reinforced belief. It runs on this cadence, NEVER every turn;\n	// <= 0 disables the pass.\n	DeathConsolidateEvery	int\n\n	// --- procedural memory guards ---\n	MinPatternSuccesses	int	// successes required before a candidate pattern is injected\n\n	// --- cassandra 2.0 (the silent-voice controller) ---\n	// Cassandra 2.0 replaces the retired proof-of-work completion gate with a\n	// silent, first-person feedback controller that edits the agent's OWN prior\n	// assistant-message content in place (folding in Doubt / Questioning /\n	// Curiosity / Assurance / Urge-to-verify) so the model reads it as its own\n	// emerging thought. It is a two-sided damping loop and a self-healing loop\n	// killer; it is SILENT on a clean run. These knobs gate it. Config:\n	// [cassandra] block / NEO_CASSANDRA_* env.\n	//\n	// CassandraEnabled is the master switch: when false the controller is a\n	// COMPLETE no-op and the window is byte-identical to the pre-feature loop.\n	CassandraEnabled	bool\n	// CassandraMinStep is the first loop step at which a mod may fire — there is\n	// no prior assistant turn to edit before step 2 (default 2).\n	CassandraMinStep	int\n	// CassandraMaxModsPerTurn caps total modifications in one Chat turn (anti-nag;\n	// default 3).\n	CassandraMaxModsPerTurn	int\n	// CassandraLoopThreshold is the repeat count that arms the doubt side, chosen\n	// to fire ONE step BEFORE the hard no-progress stall (NoProgressStall). 0 (the\n	// default) derives it as NoProgressStall-1 so it tracks the stall bound when\n	// unset; a positive value overrides.\n	CassandraLoopThreshold	int\n	// CassandraCooldownSteps is the minimum number of steps between mods of the\n	// same trigger class, so the controller never nags the same drift every step\n	// (default 2).\n	CassandraCooldownSteps	int\n\n	// --- epistemic core (EPISTEMIC-CORE; [epistemic] block / NEO_EPISTEMIC_*) ---\n	// EpistemicPremises arms Mechanism 1 (premise ledger + check-before-act\n	// gate): a plan's load-bearing premises are extracted with provenance and\n	// no action dispatches on a cheaply-checkable unverified assumption.\n	EpistemicPremises	bool\n	// EpistemicPredictions arms Mechanism 3 (prediction-carrying dispatch):\n	// probe-class tool calls state an expectation; mismatch is a first-class\n	// belief-update event.\n	EpistemicPredictions	bool\n	// EpistemicMismatchLimit is the consecutive per-strategy mismatch count\n	// that forces a tools-stripped revision step (default 3).\n	EpistemicMismatchLimit	int\n	// EpistemicConvergenceWindow is how many consecutive actions without\n	// evidence growth count as measured non-convergence (default 4).\n	EpistemicConvergenceWindow	int\n\n	// O1ConstrainTools gates Architect O1's closed-world capability narrowing\n	// (req.3 O1-CAP): when true, each turn advertises only the task-contract's\n	// minimal selected tool subset (o1.CompileRuntimeCapabilities). When false\n	// (the DEFAULT) Neo advertises its FULL bound tool surface every turn — the\n	// O1 manifests/verifiers/ledger/preflight still compile over that full\n	// surface, but no tool is hidden from the model. Default off because the\n	// contract's request->capability mapping is a text heuristic that silently\n	// strips essential tools (e.g. fetch) whenever the request does not name\n	// the server alias verbatim, leaving the model unable to act. Config:\n	// [o1] block / env NEO_O1_CONSTRAIN_TOOLS.\n	O1ConstrainTools	bool\n\n	// --- heartbeat (P1-4: Chronos-driven proactive turn convention) ---\n	// HeartbeatInterval is the recurring-alarm interval (minutes) for Neo's\n	// proactive self-review of active goals/constraints. 0 = disabled (the\n	// default: no wakeups occur). When >0, a Chronos recurring alarm fires at\n	// this interval; its wake_message tells Neo to review active goals and\n	// reply with the HEARTBEAT_OK sentinel when nothing needs attention (the\n	// turn is then suppressed — no user-facing output). Config: [heartbeat]\n	// section in neo.frozen.kvx / env NEO_HEARTBEAT_INTERVAL.\n	HeartbeatInterval	int\n\n	// --- MCP tool result cache + parallel dispatch (P2-5) ---\n	// MCPCacheTTL is the TTL for the idempotent-read result cache. Zero\n	// disables caching (the default). When >0, successful results for\n	// explicitly-idempotent read tools (web_search, web_news) are served\n	// from cache within the TTL; side-effecting and money tools are never\n	// cached. Config: env NEO_MCP_CACHE_TTL_SECONDS.\n	MCPCacheTTL	time.Duration\n	// ToolDispatchConcurrency bounds how many INDEPENDENT tool calls in one\n	// turn dispatch concurrently. Zero disables parallel dispatch (calls run\n	// serially, the legacy behaviour). Results are always assembled in call\n	// order regardless of completion order (determinism, i6). Config: env\n	// NEO_TOOL_DISPATCH_CONCURRENCY.\n	ToolDispatchConcurrency	int\n\n	// --- automatrix (proactive surprise tasks; see [automatrix] / NEO_AUTOMATRIX_*) ---\n	// AutomatrixEnabled is the build-level master switch; a per-user opt-in\n	// (stored in the daemon settings) is STILL required before Neo wakes to\n	// work. AutomatrixBaseIntervalMinutes is the base wake cadence (0 =\n	// disabled); AutomatrixJitterMinutes is the ± randomization window that\n	// gives wakes their "random" feel; AutomatrixMaxTasksPerDay caps proactive\n	// tasks per day (anti-spam); AutomatrixMinConfidence is the capture floor an\n	// opportunity must clear. NtfyServer/NtfyTopic and AppriseURL configure the\n	// completion-ping Notifier (a blank NtfyTopic is derived from ActorDID).\n	AutomatrixEnabled		bool\n	AutomatrixBaseIntervalMinutes	int\n	AutomatrixJitterMinutes		int\n	AutomatrixMaxTasksPerDay	int\n	AutomatrixMinConfidence		float32\n	NtfyServer			string\n	NtfyTopic			string\n	AppriseURL			string\n\n	// --- execution surface ---\n	NaturalAllow	[]string	// reversible actions Neo performs directly (no wallet signature)\n	EscalateActions	[]string	// actions that cross into MCL (require a user wallet signature)\n\n	// --- LLM transport ---\n	GatewayURL	string	// optional metered-LLM gateway (empty = direct provider)\n	ActorDID	string	// actor DID stamped on gateway calls\n	AgentRuntime	string\n	RuntimeProvider	RuntimeProviderConfig\n\n	// --- data-at-rest vault (set programmatically by runServe after\n	// vault.Boot, never from env; nil = legacy plaintext dev/CLI) ---\n	Vault		*vault.Session	// fail-closed sealing session for every store incl. cortex\n	VaultUser	string		// user DID bound into sealed objects' associated data\n}
+  digest=b3:813ee8999d3c3d8baf2c926a19b0b0ebb327355dece38a484e7056e239277270 file=neo/internal/config/config.go range=33:295 lang=go exported=true byte_range=1118:16884
+  sig=type Config struct {\n	// --- identity / runtime wiring ---\n	AgentName	string	// human label, "Morpheus" (the market identity; "Neo" stays a valid configured name)\n	CortexRoot	string	// root dir of the cortex brain (per-actor stores live under it)\n	CortexActor	string	// actor scope for Neo's memory store\n	// MemorySubstrate selects the memory backend for the resurrection loop\n	// seam: "cortex" (the live default) or "neocortex" (cortexd side-by-side\n	// qualification). The default never flips without an explicit owner\n	// decision; any unrecognized value resolves to "cortex".\n	MemorySubstrate	string\n	CortexdSocket	string	// unix socket path of the per-user cortexd daemon\n	CortexdToken	string	// hex capability token scoping this actor's cortexd namespace\n	DaemonURL	string	// base URL of the MCL daemon for core_execute delegation\n	ManifestPath	string	// agent manifest declaring MCP servers (agents/default.json)\n	SkillsRoot	string	// skills corpus root (procedural-pattern promotion target)\n	SelfModelGraph	string\n\n	// --- models (provider-qualified ids; see matrix/mcl/llm DetectProvider) ---\n	MainModel	string	// the conversational tool-calling loop\n	CheapModel	string	// compaction + summary validation + cheap relation-classify\n	// ConsolidationModel extracts durable learnings from each turn's transcript\n	// into cortex (memory write-back). A stronger model than CheapModel because\n	// extraction quality directly sets memory quality; still cheap-tier (it runs\n	// once per turn in the background). Must be on the gateway neo-slot whitelist.\n	ConsolidationModel	string\n	EmbedModel		string	// semantic page-fault embeddings (gateway /v1/embeddings or direct provider)\n	// CassandraModel is the cheap/fast Cassandra completeness auditor (the\n	// completion-gate adjudicator, metered on the dedicated "cassandra" slot);\n	// CassandraEscalateModel is the stronger second-opinion model consulted on\n	// low-certainty high-stakes audits ("" disables escalation). Both must be on\n	// the gateway's cassandra-slot whitelist.\n	CassandraModel		string\n	CassandraEscalateModel	string\n\n	// --- memory budget (context window = RAM; cortex = disk) ---\n	ContextWindowTokens	int	// total model context window, for budget math\n	SoftPct			int	// cooperative compaction threshold (finish atomic step, then compact)\n	HardPct			int	// forced compaction threshold (runaway backstop)\n	RetrievalTopK		int	// page-fault: top-K cortex records per retrieval\n	RetrievalBudgetTokens	int	// token ceiling for retrieved records\n	// AmbientRetrievalTopK caps the ambient (push) memory seed injected into\n	// the system block each turn (v3 #1: reasoning-time retrieval). 0 = fully\n	// tool-driven (no forced seed and no mid-turn refault — the model pulls\n	// with memory_recall); N = a thin top-N seed plus the pinned tier. The\n	// pinned tier (identity, hard rules, learned guidance, active goal, user\n	// profile) is ALWAYS injected and is unaffected by this knob.\n	AmbientRetrievalTopK	int\n	PinnedBudgetTokens	int	// token ceiling for the always-injected pinned block\n	RecallTopK		int	// conversational recall: top-K relevant past turns per turn\n	RecallBudgetTokens	int	// token ceiling for the recalled past-turns block\n	// ActivationBudgetTokens caps the per-turn cortex activation bundle (the\n	// continuous-memory trailing tail: pinned + timeline + recent + transcript\n	// slice + story-so-far). 0 = derive from the window via ActivationBudget()\n	// — window-proportional so a 1M window carries a rich bundle while a 32K\n	// local-model override keeps the old 3K behavior byte-identical.\n	ActivationBudgetTokens	int\n\n	// FirstTurnRelevancePush injects a bounded RELEVANCE retrieval into the\n	// activation window on the FIRST turn of a conversation only. cortex.Activate's\n	// pushed tiers (Pinned/Timeline/Recent) are recency-based and query-INDEPENDENT\n	// (activate.go: the query arg is unused), so on the opening message the agent\n	// carries recency but NOT relevance-to-the-ask unless it reactively calls\n	// memory_recall. With this on, Neo runs pager.Retrieve(query) once on turn 1\n	// and injects the hits, so the opening turn has relevance-matched memory with\n	// no reactive tool call. After turn 1 the pull-not-push philosophy resumes.\n	FirstTurnRelevancePush	bool\n	// WarmOnOpen makes the FIRST inbound HTTP request spin up the embedder + HNSW\n	// semantic substrate in the background (one-shot). Activate + StorySoFar are\n	// already cheap (materialized scans, deterministic, no LLM); the only real\n	// cold-start is the embedder/HNSW that the relevance push depends on, so\n	// warming it on app-open keeps the first message's recall off the cold path.\n	WarmOnOpen	bool\n\n	// --- hello-world session substrate (all flags default off) ---\n	// SessionCurrentIntent replaces the set-once standing objective with the\n	// latest real user request plus explicit persistent goals and open loops.\n	// When false, the legacy activeGoal path remains byte-identical.\n	SessionCurrentIntent	bool\n	SessionExactProjection	bool\n	InteractionPosture	bool\n\n	// --- loop discipline ---\n	StepBudget	int	// max tool-call iterations per turn (anti-infinite); the configured ceiling\n	StepBudgetMin	int	// P2-7: adaptive floor. 0 = adaptation disabled (effective budget = StepBudgetMax, today's fixed behavior). When >0 the effective budget scales within [StepBudgetMin, StepBudgetMax] based on turn complexity.\n	StepBudgetMax	int	// P2-7: adaptive ceiling. Defaults to StepBudget (50) so behavior is unchanged when adaptation is off.\n	NoProgressStall	int	// identical-failing-call / no-state-change count that trips a stall\n	// SemanticStallSimilarityPct is the word-overlap threshold (0–100) at which\n	// two consecutive tool-call batches at the SAME operation (same tool shape +\n	// same target identifiers) are treated as a no-progress repeat even when\n	// their argument WORDING differs — so a cosmetic reword cannot defeat the\n	// stall guard. The repeat counter still trips at NoProgressStall. 0 disables\n	// semantic detection (exact batch-signature matching only — legacy behavior).\n	SemanticStallSimilarityPct	int\n	MaxRetriesPerTool		int	// recovery ladder rung 1: bounded retries for transient failures\n	MaxAdaptAttempts		int	// recovery ladder rung 2: bounded approach revisions\n	// MaxGuidanceNudges caps how many CONSECUTIVE system-guidance nudges the\n	// loop may inject (completion-gate rejections, read-full steers) before it\n	// escalates to an honest stop-and-ask instead of re-nudging indefinitely\n	// (neo-smoothness req.1.5). The counter resets on genuine progress (a tool\n	// dispatch / accepted completion). 0 disables the cap (unbounded nudging).\n	MaxGuidanceNudges	int\n\n	// --- sub-agent swarm (task-scoped concurrent helpers; see [swarm]) ---\n	MaxSubagents		int	// hard cap on sub-agents spawned in one spawn_subagents call\n	MaxConcurrentSubagents	int	// semaphore: how many sub-agents run at once (the rest queue)\n	SubagentStepBudget	int	// per-sub-agent tool-call iteration budget (smaller than the parent's)\n\n	// --- browser filmstrip (BROWSER-FILMSTRIP; see [browser] / NEO_BROWSER_*) ---\n	// BrowserAutoshot deterministically captures a viewport JPEG after each\n	// view-changing browser action (navigate/back/click/form submit) so the\n	// "Neo's Computer" browsing surface reads as a live filmstrip without\n	// relying on the model choosing to screenshot. Default ON; a capture failure\n	// never blocks the navigation or the turn (best-effort). BrowserAutoshotMax\n	// caps captures per run so a long browsing turn can't grow media without\n	// bound. MediaRetentionHours bounds screenshot/media growth on the volume:\n	// the GC sweep deletes served media files older than this (0 disables).\n	BrowserAutoshot		bool\n	BrowserAutoshotMax	int\n	MediaRetentionHours	int\n\n	// --- voice (VOICE; [voice] / NEO_VOICE_*) ---\n	VoiceEnabled		bool\n	VoiceMode		string\n	VoiceASRDeadline	time.Duration\n	VoiceTTSVoice		string\n	VoiceTTSStyle		string\n	VoiceTTSDeadline	time.Duration\n	VoiceIdleDisconnect	time.Duration\n\n	// --- task supervisor (durability: a dispatched task runs to completion\n	// across model errors, tool failures, early loop-ends, user disconnects,\n	// and even daemon restart/suspend — at least one agent stays on it until\n	// the objective is met to standard; see the Task Durability Rule) ---\n	SuperviseTasks		bool		// master switch: wrap each turn in the persistent supervisor\n	TaskMaxWall		time.Duration	// hard wall-clock ceiling for one supervised task (generous; anti-runaway)\n	TaskAttemptTimeout	time.Duration	// ceiling for a single supervised attempt (one agent run)\n	TaskMaxRespawns		int		// max fresh-agent respawns before delivering an honest partial\n\n	// DeathConsolidateEvery is the bounded cadence for the self-authoring\n	// consolidation pass (self-model task 3.2, req.5.2): after this many recorded\n	// loop deaths, the agent reads its death journal and writes/reinforces durable\n	// how-I-fail failure-pattern memories, deduplicating recurrences of the same\n	// mode into ONE reinforced belief. It runs on this cadence, NEVER every turn;\n	// <= 0 disables the pass.\n	DeathConsolidateEvery	int\n\n	// --- procedural memory guards ---\n	MinPatternSuccesses	int	// successes required before a candidate pattern is injected\n\n	// --- cassandra 2.0 (the silent-voice controller) ---\n	// Cassandra 2.0 replaces the retired proof-of-work completion gate with a\n	// silent, first-person feedback controller that edits the agent's OWN prior\n	// assistant-message content in place (folding in Doubt / Questioning /\n	// Curiosity / Assurance / Urge-to-verify) so the model reads it as its own\n	// emerging thought. It is a two-sided damping loop and a self-healing loop\n	// killer; it is SILENT on a clean run. These knobs gate it. Config:\n	// [cassandra] block / NEO_CASSANDRA_* env.\n	//\n	// CassandraEnabled is the master switch: when false the controller is a\n	// COMPLETE no-op and the window is byte-identical to the pre-feature loop.\n	CassandraEnabled	bool\n	// CassandraMinStep is the first loop step at which a mod may fire — there is\n	// no prior assistant turn to edit before step 2 (default 2).\n	CassandraMinStep	int\n	// CassandraMaxModsPerTurn caps total modifications in one Chat turn (anti-nag;\n	// default 3).\n	CassandraMaxModsPerTurn	int\n	// CassandraLoopThreshold is the repeat count that arms the doubt side, chosen\n	// to fire ONE step BEFORE the hard no-progress stall (NoProgressStall). 0 (the\n	// default) derives it as NoProgressStall-1 so it tracks the stall bound when\n	// unset; a positive value overrides.\n	CassandraLoopThreshold	int\n	// CassandraCooldownSteps is the minimum number of steps between mods of the\n	// same trigger class, so the controller never nags the same drift every step\n	// (default 2).\n	CassandraCooldownSteps	int\n\n	// --- epistemic core (EPISTEMIC-CORE; [epistemic] block / NEO_EPISTEMIC_*) ---\n	// EpistemicPremises arms Mechanism 1 (premise ledger + check-before-act\n	// gate): a plan's load-bearing premises are extracted with provenance and\n	// no action dispatches on a cheaply-checkable unverified assumption.\n	EpistemicPremises	bool\n	// EpistemicPredictions arms Mechanism 3 (prediction-carrying dispatch):\n	// probe-class tool calls state an expectation; mismatch is a first-class\n	// belief-update event.\n	EpistemicPredictions	bool\n	// EpistemicMismatchLimit is the consecutive per-strategy mismatch count\n	// that forces a tools-stripped revision step (default 3).\n	EpistemicMismatchLimit	int\n	// EpistemicConvergenceWindow is how many consecutive actions without\n	// evidence growth count as measured non-convergence (default 4).\n	EpistemicConvergenceWindow	int\n\n	// O1ConstrainTools gates Architect O1's closed-world capability narrowing\n	// (req.3 O1-CAP): when true, each turn advertises only the task-contract's\n	// minimal selected tool subset (o1.CompileRuntimeCapabilities). When false\n	// (the DEFAULT) Neo advertises its FULL bound tool surface every turn — the\n	// O1 manifests/verifiers/ledger/preflight still compile over that full\n	// surface, but no tool is hidden from the model. Default off because the\n	// contract's request->capability mapping is a text heuristic that silently\n	// strips essential tools (e.g. fetch) whenever the request does not name\n	// the server alias verbatim, leaving the model unable to act. Config:\n	// [o1] block / env NEO_O1_CONSTRAIN_TOOLS.\n	O1ConstrainTools	bool\n\n	// --- heartbeat (P1-4: Chronos-driven proactive turn convention) ---\n	// HeartbeatInterval is the recurring-alarm interval (minutes) for Neo's\n	// proactive self-review of active goals/constraints. 0 = disabled (the\n	// default: no wakeups occur). When >0, a Chronos recurring alarm fires at\n	// this interval; its wake_message tells Neo to review active goals and\n	// reply with the HEARTBEAT_OK sentinel when nothing needs attention (the\n	// turn is then suppressed — no user-facing output). Config: [heartbeat]\n	// section in neo.frozen.kvx / env NEO_HEARTBEAT_INTERVAL.\n	HeartbeatInterval	int\n\n	// --- MCP tool result cache + parallel dispatch (P2-5) ---\n	// MCPCacheTTL is the TTL for the idempotent-read result cache. Zero\n	// disables caching (the default). When >0, successful results for\n	// explicitly-idempotent read tools (web_search, web_news) are served\n	// from cache within the TTL; side-effecting and money tools are never\n	// cached. Config: env NEO_MCP_CACHE_TTL_SECONDS.\n	MCPCacheTTL	time.Duration\n	// ToolDispatchConcurrency bounds how many INDEPENDENT tool calls in one\n	// turn dispatch concurrently. Zero disables parallel dispatch (calls run\n	// serially, the legacy behaviour). Results are always assembled in call\n	// order regardless of completion order (determinism, i6). Config: env\n	// NEO_TOOL_DISPATCH_CONCURRENCY.\n	ToolDispatchConcurrency	int\n\n	// --- automatrix (proactive surprise tasks; see [automatrix] / NEO_AUTOMATRIX_*) ---\n	// AutomatrixEnabled is the build-level master switch; a per-user opt-in\n	// (stored in the daemon settings) is STILL required before Neo wakes to\n	// work. AutomatrixBaseIntervalMinutes is the base wake cadence (0 =\n	// disabled); AutomatrixJitterMinutes is the ± randomization window that\n	// gives wakes their "random" feel; AutomatrixMaxTasksPerDay caps proactive\n	// tasks per day (anti-spam); AutomatrixMinConfidence is the capture floor an\n	// opportunity must clear. NtfyServer/NtfyTopic and AppriseURL configure the\n	// completion-ping Notifier (a blank NtfyTopic is derived from ActorDID).\n	AutomatrixEnabled		bool\n	AutomatrixBaseIntervalMinutes	int\n	AutomatrixJitterMinutes		int\n	AutomatrixMaxTasksPerDay	int\n	AutomatrixMinConfidence		float32\n	NtfyServer			string\n	NtfyTopic			string\n	AppriseURL			string\n\n	// --- execution surface ---\n	NaturalAllow	[]string	// reversible actions Neo performs directly (no wallet signature)\n	EscalateActions	[]string	// actions that cross into MCL (require a user wallet signature)\n\n	// --- LLM transport ---\n	GatewayURL	string	// optional metered-LLM gateway (empty = direct provider)\n	ActorDID	string	// actor DID stamped on gateway calls\n	AgentRuntime	string\n	RuntimeProvider	RuntimeProviderConfig\n\n	// --- data-at-rest vault (set programmatically by runServe after\n	// vault.Boot, never from env; nil = legacy plaintext dev/CLI) ---\n	Vault		*vault.Session	// fail-closed sealing session for every store incl. cortex\n	VaultUser	string		// user DID bound into sealed objects' associated data\n}
   doc=Config is Neo's fully-resolved runtime configuration.
 EDGES
-  contains=matrix/neo/internal/config.Config#ActivationBudgetTokens,matrix/neo/internal/config.Config#ActorDID,matrix/neo/internal/config.Config#AgentName,matrix/neo/internal/config.Config#AgentRuntime,matrix/neo/internal/config.Config#AmbientRetrievalTopK,matrix/neo/internal/config.Config#AppriseURL,matrix/neo/internal/config.Config#AutomatrixBaseIntervalMinutes,matrix/neo/internal/config.Config#AutomatrixEnabled,matrix/neo/internal/config.Config#AutomatrixJitterMinutes,matrix/neo/internal/config.Config#AutomatrixMaxTasksPerDay,matrix/neo/internal/config.Config#AutomatrixMinConfidence,matrix/neo/internal/config.Config#BrowserAutoshot,matrix/neo/internal/config.Config#BrowserAutoshotMax,matrix/neo/internal/config.Config#CassandraCooldownSteps,matrix/neo/internal/config.Config#CassandraEnabled,matrix/neo/internal/config.Config#CassandraEscalateModel,matrix/neo/internal/config.Config#CassandraLoopThreshold,matrix/neo/internal/config.Config#CassandraMaxModsPerTurn,matrix/neo/internal/config.Config#CassandraMinStep,matrix/neo/internal/config.Config#CassandraModel,matrix/neo/internal/config.Config#CheapModel,matrix/neo/internal/config.Config#ConsolidationModel,matrix/neo/internal/config.Config#ContextWindowTokens,matrix/neo/internal/config.Config#CortexActor,matrix/neo/internal/config.Config#CortexRoot,matrix/neo/internal/config.Config#DaemonURL,matrix/neo/internal/config.Config#DeathConsolidateEvery,matrix/neo/internal/config.Config#EmbedModel,matrix/neo/internal/config.Config#EpistemicConvergenceWindow,matrix/neo/internal/config.Config#EpistemicMismatchLimit,matrix/neo/internal/config.Config#EpistemicPredictions,matrix/neo/internal/config.Config#EpistemicPremises,matrix/neo/internal/config.Config#EscalateActions,matrix/neo/internal/config.Config#FirstTurnRelevancePush,matrix/neo/internal/config.Config#GatewayURL,matrix/neo/internal/config.Config#HardPct,matrix/neo/internal/config.Config#HeartbeatInterval,matrix/neo/internal/config.Config#MCPCacheTTL,matrix/neo/internal/config.Config#MainModel,matrix/neo/internal/config.Config#ManifestPath,matrix/neo/internal/config.Config#MaxAdaptAttempts,matrix/neo/internal/config.Config#MaxConcurrentSubagents,matrix/neo/internal/config.Config#MaxGuidanceNudges,matrix/neo/internal/config.Config#MaxRetriesPerTool,matrix/neo/internal/config.Config#MaxSubagents,matrix/neo/internal/config.Config#MediaRetentionHours,matrix/neo/internal/config.Config#MinPatternSuccesses,matrix/neo/internal/config.Config#NaturalAllow,matrix/neo/internal/config.Config#NoProgressStall,matrix/neo/internal/config.Config#NtfyServer,matrix/neo/internal/config.Config#NtfyTopic,matrix/neo/internal/config.Config#O1ConstrainTools,matrix/neo/internal/config.Config#PinnedBudgetTokens,matrix/neo/internal/config.Config#RecallBudgetTokens,matrix/neo/internal/config.Config#RecallTopK,matrix/neo/internal/config.Config#RetrievalBudgetTokens,matrix/neo/internal/config.Config#RetrievalTopK,matrix/neo/internal/config.Config#RuntimeProvider,matrix/neo/internal/config.Config#SelfModelGraph,matrix/neo/internal/config.Config#SemanticStallSimilarityPct,matrix/neo/internal/config.Config#SkillsRoot,matrix/neo/internal/config.Config#SoftPct,matrix/neo/internal/config.Config#StepBudget,matrix/neo/internal/config.Config#StepBudgetMax,matrix/neo/internal/config.Config#StepBudgetMin,matrix/neo/internal/config.Config#SubagentStepBudget,matrix/neo/internal/config.Config#SuperviseTasks,matrix/neo/internal/config.Config#TaskAttemptTimeout,matrix/neo/internal/config.Config#TaskMaxRespawns,matrix/neo/internal/config.Config#TaskMaxWall,matrix/neo/internal/config.Config#ToolDispatchConcurrency,matrix/neo/internal/config.Config#Vault,matrix/neo/internal/config.Config#VaultUser,matrix/neo/internal/config.Config#VoiceASRDeadline,matrix/neo/internal/config.Config#VoiceEnabled,matrix/neo/internal/config.Config#VoiceIdleDisconnect,matrix/neo/internal/config.Config#VoiceMode,matrix/neo/internal/config.Config#VoiceTTSDeadline,matrix/neo/internal/config.Config#VoiceTTSStyle,matrix/neo/internal/config.Config#VoiceTTSVoice,matrix/neo/internal/config.Config#WarmOnOpen,matrix/neo/internal/config.Config.ActivationBudget,matrix/neo/internal/config.Config.HardBudgetTokens,matrix/neo/internal/config.Config.IsEscalateAction,matrix/neo/internal/config.Config.SoftBudgetTokens,matrix/neo/internal/config.Config.applyDoc,matrix/neo/internal/config.Config.applyEnv
+  contains=matrix/neo/internal/config.Config#ActivationBudgetTokens,matrix/neo/internal/config.Config#ActorDID,matrix/neo/internal/config.Config#AgentName,matrix/neo/internal/config.Config#AgentRuntime,matrix/neo/internal/config.Config#AmbientRetrievalTopK,matrix/neo/internal/config.Config#AppriseURL,matrix/neo/internal/config.Config#AutomatrixBaseIntervalMinutes,matrix/neo/internal/config.Config#AutomatrixEnabled,matrix/neo/internal/config.Config#AutomatrixJitterMinutes,matrix/neo/internal/config.Config#AutomatrixMaxTasksPerDay,matrix/neo/internal/config.Config#AutomatrixMinConfidence,matrix/neo/internal/config.Config#BrowserAutoshot,matrix/neo/internal/config.Config#BrowserAutoshotMax,matrix/neo/internal/config.Config#CassandraCooldownSteps,matrix/neo/internal/config.Config#CassandraEnabled,matrix/neo/internal/config.Config#CassandraEscalateModel,matrix/neo/internal/config.Config#CassandraLoopThreshold,matrix/neo/internal/config.Config#CassandraMaxModsPerTurn,matrix/neo/internal/config.Config#CassandraMinStep,matrix/neo/internal/config.Config#CassandraModel,matrix/neo/internal/config.Config#CheapModel,matrix/neo/internal/config.Config#ConsolidationModel,matrix/neo/internal/config.Config#ContextWindowTokens,matrix/neo/internal/config.Config#CortexActor,matrix/neo/internal/config.Config#CortexRoot,matrix/neo/internal/config.Config#CortexdSocket,matrix/neo/internal/config.Config#CortexdToken,matrix/neo/internal/config.Config#DaemonURL,matrix/neo/internal/config.Config#DeathConsolidateEvery,matrix/neo/internal/config.Config#EmbedModel,matrix/neo/internal/config.Config#EpistemicConvergenceWindow,matrix/neo/internal/config.Config#EpistemicMismatchLimit,matrix/neo/internal/config.Config#EpistemicPredictions,matrix/neo/internal/config.Config#EpistemicPremises,matrix/neo/internal/config.Config#EscalateActions,matrix/neo/internal/config.Config#FirstTurnRelevancePush,matrix/neo/internal/config.Config#GatewayURL,matrix/neo/internal/config.Config#HardPct,matrix/neo/internal/config.Config#HeartbeatInterval,matrix/neo/internal/config.Config#InteractionPosture,matrix/neo/internal/config.Config#MCPCacheTTL,matrix/neo/internal/config.Config#MainModel,matrix/neo/internal/config.Config#ManifestPath,matrix/neo/internal/config.Config#MaxAdaptAttempts,matrix/neo/internal/config.Config#MaxConcurrentSubagents,matrix/neo/internal/config.Config#MaxGuidanceNudges,matrix/neo/internal/config.Config#MaxRetriesPerTool,matrix/neo/internal/config.Config#MaxSubagents,matrix/neo/internal/config.Config#MediaRetentionHours,matrix/neo/internal/config.Config#MemorySubstrate,matrix/neo/internal/config.Config#MinPatternSuccesses,matrix/neo/internal/config.Config#NaturalAllow,matrix/neo/internal/config.Config#NoProgressStall,matrix/neo/internal/config.Config#NtfyServer,matrix/neo/internal/config.Config#NtfyTopic,matrix/neo/internal/config.Config#O1ConstrainTools,matrix/neo/internal/config.Config#PinnedBudgetTokens,matrix/neo/internal/config.Config#RecallBudgetTokens,matrix/neo/internal/config.Config#RecallTopK,matrix/neo/internal/config.Config#RetrievalBudgetTokens,matrix/neo/internal/config.Config#RetrievalTopK,matrix/neo/internal/config.Config#RuntimeProvider,matrix/neo/internal/config.Config#SelfModelGraph,matrix/neo/internal/config.Config#SemanticStallSimilarityPct,matrix/neo/internal/config.Config#SessionCurrentIntent,matrix/neo/internal/config.Config#SessionExactProjection,matrix/neo/internal/config.Config#SkillsRoot,matrix/neo/internal/config.Config#SoftPct,matrix/neo/internal/config.Config#StepBudget,matrix/neo/internal/config.Config#StepBudgetMax,matrix/neo/internal/config.Config#StepBudgetMin,matrix/neo/internal/config.Config#SubagentStepBudget,matrix/neo/internal/config.Config#SuperviseTasks,matrix/neo/internal/config.Config#TaskAttemptTimeout,matrix/neo/internal/config.Config#TaskMaxRespawns,matrix/neo/internal/config.Config#TaskMaxWall,matrix/neo/internal/config.Config#ToolDispatchConcurrency,matrix/neo/internal/config.Config#Vault,matrix/neo/internal/config.Config#VaultUser,matrix/neo/internal/config.Config#VoiceASRDeadline,matrix/neo/internal/config.Config#VoiceEnabled,matrix/neo/internal/config.Config#VoiceIdleDisconnect,matrix/neo/internal/config.Config#VoiceMode,matrix/neo/internal/config.Config#VoiceTTSDeadline,matrix/neo/internal/config.Config#VoiceTTSStyle,matrix/neo/internal/config.Config#VoiceTTSVoice,matrix/neo/internal/config.Config#WarmOnOpen,matrix/neo/internal/config.Config.ActivationBudget,matrix/neo/internal/config.Config.HardBudgetTokens,matrix/neo/internal/config.Config.IsEscalateAction,matrix/neo/internal/config.Config.SoftBudgetTokens,matrix/neo/internal/config.Config.applyDoc,matrix/neo/internal/config.Config.applyEnv
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Config#ActivationBudgetTokens kind=field
-  digest=b3:aceee3234527411a7313da512c27eed6f755f1073acf065bb50fc96624ed6f84 file=neo/internal/config/config.go range=70:75 lang=go exported=true byte_range=3780:4179
+  digest=b3:aceee3234527411a7313da512c27eed6f755f1073acf065bb50fc96624ed6f84 file=neo/internal/config/config.go range=84:89 lang=go exported=true byte_range=4468:4867
   sig=int
   doc=ActivationBudgetTokens caps the per-turn cortex activation bundle (the\ncontinuous-memory trailing tail: pinned + timeline + recent + transcript\nslice + story-so-far). 0 = derive from the window via ActivationBudget()\n— window-proportional so a 1M window carries a rich bundle while a 32K\nlocal-model override keeps the old 3K behavior byte-identical.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#ActorDID kind=field
-  digest=b3:f7f38e307c4f4e83b1c5e68f5d6fdea0d42f3f15a2fcca3e2bf75ba808abcddf file=neo/internal/config/config.go range=265:265 lang=go exported=true byte_range=15396:15418
+  digest=b3:f7f38e307c4f4e83b1c5e68f5d6fdea0d42f3f15a2fcca3e2bf75ba808abcddf file=neo/internal/config/config.go range=287:287 lang=go exported=true byte_range=16456:16478
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#AgentName kind=field
-  digest=b3:c7036703f5b68e9a62a023a90e8f22ce78dd93bb02c753316126b2a7a873319a file=neo/internal/config/config.go range=28:29 lang=go exported=true byte_range=967:1026
+  digest=b3:0555890763651df6f3ed9473ef824f97b6b0e3de5bd5317cef4143ff5c5b15e9 file=neo/internal/config/config.go range=35:36 lang=go exported=true byte_range=1197:1253
   sig=string
   doc=--- identity / runtime wiring ---
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#AgentRuntime kind=field
-  digest=b3:a7d878b8b7439121d9a2ebb3350d9998e3856ca34e70f877db62fea2c4bbd6d4 file=neo/internal/config/config.go range=266:266 lang=go exported=true byte_range=15458:15480
+  digest=b3:a7d878b8b7439121d9a2ebb3350d9998e3856ca34e70f877db62fea2c4bbd6d4 file=neo/internal/config/config.go range=288:288 lang=go exported=true byte_range=16518:16540
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#AmbientRetrievalTopK kind=field
-  digest=b3:991022282571d8f1e40283d3b32a79a6c63053189d2e796f098ebd61bd119217 file=neo/internal/config/config.go range=60:66 lang=go exported=true byte_range=3071:3534
+  digest=b3:991022282571d8f1e40283d3b32a79a6c63053189d2e796f098ebd61bd119217 file=neo/internal/config/config.go range=74:80 lang=go exported=true byte_range=3759:4222
   sig=int
   doc=AmbientRetrievalTopK caps the ambient (push) memory seed injected into\nthe system block each turn (v3 #1: reasoning-time retrieval). 0 = fully\ntool-driven (no forced seed and no mid-turn refault — the model pulls\nwith memory_recall); N = a thin top-N seed plus the pinned tier. The\npinned tier (identity, hard rules, learned guidance, active goal, user\nprofile) is ALWAYS injected and is unaffected by this knob.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#AppriseURL kind=field
-  digest=b3:5b146aa0478572f0e1f7f8967cc77928415b36f77904225e0ce4c2316d67740b file=neo/internal/config/config.go range=257:257 lang=go exported=true byte_range=15035:15071
+  digest=b3:5b146aa0478572f0e1f7f8967cc77928415b36f77904225e0ce4c2316d67740b file=neo/internal/config/config.go range=279:279 lang=go exported=true byte_range=16095:16131
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#AutomatrixBaseIntervalMinutes kind=field
-  digest=b3:0cd2e130fd047213c7f1f5af82bb44d9833ac849df43dbc8c89c09a0d5347926 file=neo/internal/config/config.go range=251:251 lang=go exported=true byte_range=14815:14848
+  digest=b3:0cd2e130fd047213c7f1f5af82bb44d9833ac849df43dbc8c89c09a0d5347926 file=neo/internal/config/config.go range=273:273 lang=go exported=true byte_range=15875:15908
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#AutomatrixEnabled kind=field
-  digest=b3:968c321450660d8b98392c6fc2d2f0d2da5506cbf0dbe18ee0f836f9d7228470 file=neo/internal/config/config.go range=241:250 lang=go exported=true byte_range=14090:14813
+  digest=b3:968c321450660d8b98392c6fc2d2f0d2da5506cbf0dbe18ee0f836f9d7228470 file=neo/internal/config/config.go range=263:272 lang=go exported=true byte_range=15150:15873
   sig=bool
   doc=--- automatrix (proactive surprise tasks; see [automatrix] / NEO_AUTOMATRIX_*) ---\nAutomatrixEnabled is the build-level master switch; a per-user opt-in\n(stored in the daemon settings) is STILL required before Neo wakes to\nwork. AutomatrixBaseIntervalMinutes is the base wake cadence (0 =\ndisabled); AutomatrixJitterMinutes is the ± randomization window that\ngives wakes their "random" feel; AutomatrixMaxTasksPerDay caps proactive\ntasks per day (anti-spam); AutomatrixMinConfidence is the capture floor an\nopportunity must clear. NtfyServer/NtfyTopic and AppriseURL configure the\ncompletion-ping Notifier (a blank NtfyTopic is derived from ActorDID).
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#AutomatrixJitterMinutes kind=field
-  digest=b3:bfaba0386d7e80a8577247cb9089faf7944308dc8ceb3bd88ab4282aed17dcb3 file=neo/internal/config/config.go range=252:252 lang=go exported=true byte_range=14850:14883
+  digest=b3:bfaba0386d7e80a8577247cb9089faf7944308dc8ceb3bd88ab4282aed17dcb3 file=neo/internal/config/config.go range=274:274 lang=go exported=true byte_range=15910:15943
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#AutomatrixMaxTasksPerDay kind=field
-  digest=b3:89bf824931e7c5708b3ee741db6d28b6de9518b89389777e5d3475c20a0cadc1 file=neo/internal/config/config.go range=253:253 lang=go exported=true byte_range=14885:14918
+  digest=b3:89bf824931e7c5708b3ee741db6d28b6de9518b89389777e5d3475c20a0cadc1 file=neo/internal/config/config.go range=275:275 lang=go exported=true byte_range=15945:15978
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#AutomatrixMinConfidence kind=field
-  digest=b3:8bcf2656f3456ba2d8fa7fde47ca941cdc96edf2e956ab02eb5a592478e38834 file=neo/internal/config/config.go range=254:254 lang=go exported=true byte_range=14920:14957
+  digest=b3:8bcf2656f3456ba2d8fa7fde47ca941cdc96edf2e956ab02eb5a592478e38834 file=neo/internal/config/config.go range=276:276 lang=go exported=true byte_range=15980:16017
   sig=float32
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#BrowserAutoshot kind=field
-  digest=b3:a1a34fbe8da374bbb34c0efd364e521abd4de26c39c8d6215edea686a9a2c883 file=neo/internal/config/config.go range=119:128 lang=go exported=true byte_range=7271:7979
+  digest=b3:a1a34fbe8da374bbb34c0efd364e521abd4de26c39c8d6215edea686a9a2c883 file=neo/internal/config/config.go range=141:150 lang=go exported=true byte_range=8331:9039
   sig=bool
   doc=--- browser filmstrip (BROWSER-FILMSTRIP; see [browser] / NEO_BROWSER_*) ---\nBrowserAutoshot deterministically captures a viewport JPEG after each\nview-changing browser action (navigate/back/click/form submit) so the\n"Neo's Computer" browsing surface reads as a live filmstrip without\nrelying on the model choosing to screenshot. Default ON; a capture failure\nnever blocks the navigation or the turn (best-effort). BrowserAutoshotMax\ncaps captures per run so a long browsing turn can't grow media without\nbound. MediaRetentionHours bounds screenshot/media growth on the volume:\nthe GC sweep deletes served media files older than this (0 disables).
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#BrowserAutoshotMax kind=field
-  digest=b3:fb32beb0bb5454ddfc6327e85709410a2cfe5ff65c91f799fc2e555e49b7c488 file=neo/internal/config/config.go range=129:129 lang=go exported=true byte_range=7981:8004
+  digest=b3:fb32beb0bb5454ddfc6327e85709410a2cfe5ff65c91f799fc2e555e49b7c488 file=neo/internal/config/config.go range=151:151 lang=go exported=true byte_range=9041:9064
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#CassandraCooldownSteps kind=field
-  digest=b3:1aec5b83897d7bebc4afcb6c24a74bbb64666c9a1d92f1d011c9d5ed85222f26 file=neo/internal/config/config.go range=184:187 lang=go exported=true byte_range=10894:11094
+  digest=b3:1aec5b83897d7bebc4afcb6c24a74bbb64666c9a1d92f1d011c9d5ed85222f26 file=neo/internal/config/config.go range=206:209 lang=go exported=true byte_range=11954:12154
   sig=int
   doc=CassandraCooldownSteps is the minimum number of steps between mods of the\nsame trigger class, so the controller never nags the same drift every step\n(default 2).
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#CassandraEnabled kind=field
-  digest=b3:a0d01843cb87a1e8482c7fd72c9d57b4ce8e086d868efb467bb8584194e68bd6 file=neo/internal/config/config.go range=161:172 lang=go exported=true byte_range=9565:10293
+  digest=b3:a0d01843cb87a1e8482c7fd72c9d57b4ce8e086d868efb467bb8584194e68bd6 file=neo/internal/config/config.go range=183:194 lang=go exported=true byte_range=10625:11353
   sig=bool
   doc=--- cassandra 2.0 (the silent-voice controller) ---\nCassandra 2.0 replaces the retired proof-of-work completion gate with a\nsilent, first-person feedback controller that edits the agent's OWN prior\nassistant-message content in place (folding in Doubt / Questioning /\nCuriosity / Assurance / Urge-to-verify) so the model reads it as its own\nemerging thought. It is a two-sided damping loop and a self-healing loop\nkiller; it is SILENT on a clean run. These knobs gate it. Config:\n[cassandra] block / NEO_CASSANDRA_* env.\n\nCassandraEnabled is the master switch: when false the controller is a\nCOMPLETE no-op and the window is byte-identical to the pre-feature loop.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#CassandraEscalateModel kind=field
-  digest=b3:b668d06d2a95eb1ed35e035fe8bca10cb5a5863099433c7cb6e43d1d94a2fc13 file=neo/internal/config/config.go range=52:52 lang=go exported=true byte_range=2583:2612
+  digest=b3:b668d06d2a95eb1ed35e035fe8bca10cb5a5863099433c7cb6e43d1d94a2fc13 file=neo/internal/config/config.go range=66:66 lang=go exported=true byte_range=3271:3300
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#CassandraLoopThreshold kind=field
-  digest=b3:e28e54787242bc4a829d783896f3d1671b15bea8be84433b163a17cd23baccd6 file=neo/internal/config/config.go range=179:183 lang=go exported=true byte_range=10587:10892
+  digest=b3:e28e54787242bc4a829d783896f3d1671b15bea8be84433b163a17cd23baccd6 file=neo/internal/config/config.go range=201:205 lang=go exported=true byte_range=11647:11952
   sig=int
   doc=CassandraLoopThreshold is the repeat count that arms the doubt side, chosen\nto fire ONE step BEFORE the hard no-progress stall (NoProgressStall). 0 (the\ndefault) derives it as NoProgressStall-1 so it tracks the stall bound when\nunset; a positive value overrides.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#CassandraMaxModsPerTurn kind=field
-  digest=b3:1ab1c1537f0a8cbb0da41baa6e411fedfa34bbbaa7abc4266420e2fcfa087e8d file=neo/internal/config/config.go range=176:178 lang=go exported=true byte_range=10461:10585
+  digest=b3:1ab1c1537f0a8cbb0da41baa6e411fedfa34bbbaa7abc4266420e2fcfa087e8d file=neo/internal/config/config.go range=198:200 lang=go exported=true byte_range=11521:11645
   sig=int
   doc=CassandraMaxModsPerTurn caps total modifications in one Chat turn (anti-nag;\ndefault 3).
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#CassandraMinStep kind=field
-  digest=b3:423d40155f7d2040bf4af27586b86c5d9317dd2689769b1078d37d58a778efad file=neo/internal/config/config.go range=173:175 lang=go exported=true byte_range=10295:10459
+  digest=b3:423d40155f7d2040bf4af27586b86c5d9317dd2689769b1078d37d58a778efad file=neo/internal/config/config.go range=195:197 lang=go exported=true byte_range=11355:11519
   sig=int
   doc=CassandraMinStep is the first loop step at which a mod may fire — there is\nno prior assistant turn to edit before step 2 (default 2).
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#CassandraModel kind=field
-  digest=b3:063dbed7317c9cd3ad8819e6431cb51ef716d2a7ac205ce29fd7c742aa962f09 file=neo/internal/config/config.go range=46:51 lang=go exported=true byte_range=2202:2581
+  digest=b3:063dbed7317c9cd3ad8819e6431cb51ef716d2a7ac205ce29fd7c742aa962f09 file=neo/internal/config/config.go range=60:65 lang=go exported=true byte_range=2890:3269
   sig=string
   doc=CassandraModel is the cheap/fast Cassandra completeness auditor (the\ncompletion-gate adjudicator, metered on the dedicated "cassandra" slot);\nCassandraEscalateModel is the stronger second-opinion model consulted on\nlow-certainty high-stakes audits ("" disables escalation). Both must be on\nthe gateway's cassandra-slot whitelist.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#CheapModel kind=field
-  digest=b3:0b80c6d8a8fbf8c23458b32a8abc2a803102d3629115a8c5429a13a6a8b41edd file=neo/internal/config/config.go range=39:39 lang=go exported=true byte_range=1674:1691
+  digest=b3:0b80c6d8a8fbf8c23458b32a8abc2a803102d3629115a8c5429a13a6a8b41edd file=neo/internal/config/config.go range=53:53 lang=go exported=true byte_range=2362:2379
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#ConsolidationModel kind=field
-  digest=b3:0b3c7774ef40ad84affa5f005cbc8c23e823b69cd20166615bcbd718bae4907c file=neo/internal/config/config.go range=40:44 lang=go exported=true byte_range=1754:2095
+  digest=b3:0b3c7774ef40ad84affa5f005cbc8c23e823b69cd20166615bcbd718bae4907c file=neo/internal/config/config.go range=54:58 lang=go exported=true byte_range=2442:2783
   sig=string
   doc=ConsolidationModel extracts durable learnings from each turn's transcript\ninto cortex (memory write-back). A stronger model than CheapModel because\nextraction quality directly sets memory quality; still cheap-tier (it runs\nonce per turn in the background). Must be on the gateway neo-slot whitelist.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#ContextWindowTokens kind=field
-  digest=b3:604aaf1ce2bd8803d1bc4f4c830ea8da8abfee7215d6405b5a01f49bfde7b869 file=neo/internal/config/config.go range=54:55 lang=go exported=true byte_range=2615:2704
+  digest=b3:604aaf1ce2bd8803d1bc4f4c830ea8da8abfee7215d6405b5a01f49bfde7b869 file=neo/internal/config/config.go range=68:69 lang=go exported=true byte_range=3303:3392
   sig=int
   doc=--- memory budget (context window = RAM; cortex = disk) ---
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#CortexActor kind=field
-  digest=b3:3552b5a5891d6125d6f4fa24cc504c6e7b3a640d9e9743ca430cd1b02248fda5 file=neo/internal/config/config.go range=31:31 lang=go exported=true byte_range=1202:1223
+  digest=b3:72d4f3b7e6d2f4a887aa6e231949a9701eb76f05f8de9a5d4de7f23590b09144 file=neo/internal/config/config.go range=38:38 lang=go exported=true byte_range=1426:1444
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#CortexRoot kind=field
-  digest=b3:c7809d3bf8cc35bbfe1f3636c208fb4f4040558703ce4ecb9699e5a3358fa886 file=neo/internal/config/config.go range=30:30 lang=go exported=true byte_range=1114:1135
+  digest=b3:cf6d9df03e66d3a4c9a40e42a1743f64f5b438028f73df42b10906e4c4b0951c file=neo/internal/config/config.go range=37:37 lang=go exported=true byte_range=1341:1359
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/config.Config
+
+NODE id=matrix/neo/internal/config.Config#CortexdSocket kind=field
+  digest=b3:5466bb5d6c7d3409db97a4437474d21359cabdf36c77dddcbbf49dae5b3aaad4 file=neo/internal/config/config.go range=44:44 lang=go exported=true byte_range=1785:1807
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/config.Config
+
+NODE id=matrix/neo/internal/config.Config#CortexdToken kind=field
+  digest=b3:326e6aeff827b459e585f115e2c7609683f64d936d2d6d25349d4bc3f387b2e2 file=neo/internal/config/config.go range=45:45 lang=go exported=true byte_range=1860:1882
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#DaemonURL kind=field
-  digest=b3:0fcf9bd4505f51d54dcb86809e2c1ed1dabc1f4c9f15647a3c8b133b8a6076eb file=neo/internal/config/config.go range=32:32 lang=go exported=true byte_range=1263:1284
+  digest=b3:d32e40ab69c61d090ae62f46895552e73d2033c2d2202ab8e49503494539b99b file=neo/internal/config/config.go range=46:46 lang=go exported=true byte_range=1947:1969
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#DeathConsolidateEvery kind=field
-  digest=b3:2d0e5075881040403c885773ce4d556ed0a372cc29f057fe44ba6e8312edc581 file=neo/internal/config/config.go range=150:156 lang=go exported=true byte_range=8993:9438
+  digest=b3:2d0e5075881040403c885773ce4d556ed0a372cc29f057fe44ba6e8312edc581 file=neo/internal/config/config.go range=172:178 lang=go exported=true byte_range=10053:10498
   sig=int
   doc=DeathConsolidateEvery is the bounded cadence for the self-authoring\nconsolidation pass (self-model task 3.2, req.5.2): after this many recorded\nloop deaths, the agent reads its death journal and writes/reinforces durable\nhow-I-fail failure-pattern memories, deduplicating recurrences of the same\nmode into ONE reinforced belief. It runs on this cadence, NEVER every turn;\n<= 0 disables the pass.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#EmbedModel kind=field
-  digest=b3:ffa9ed1b21e14cb0357a008633fc49d1bb5a2f31167513eacb33b77cd2230b11 file=neo/internal/config/config.go range=45:45 lang=go exported=true byte_range=2097:2122
+  digest=b3:ffa9ed1b21e14cb0357a008633fc49d1bb5a2f31167513eacb33b77cd2230b11 file=neo/internal/config/config.go range=59:59 lang=go exported=true byte_range=2785:2810
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#EpistemicConvergenceWindow kind=field
-  digest=b3:8fe6a3a39fe8fc9752c602e66f56a9c15d05654985722376e9dc7b3ad7120c55 file=neo/internal/config/config.go range=201:203 lang=go exported=true byte_range=11786:11954
+  digest=b3:8fe6a3a39fe8fc9752c602e66f56a9c15d05654985722376e9dc7b3ad7120c55 file=neo/internal/config/config.go range=223:225 lang=go exported=true byte_range=12846:13014
   sig=int
   doc=EpistemicConvergenceWindow is how many consecutive actions without\nevidence growth count as measured non-convergence (default 4).
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#EpistemicMismatchLimit kind=field
-  digest=b3:0e3584a12b91bbdfa8ec159517fd019edfc80339827040c00c73234f3c07a7ab file=neo/internal/config/config.go range=198:200 lang=go exported=true byte_range=11624:11784
+  digest=b3:0e3584a12b91bbdfa8ec159517fd019edfc80339827040c00c73234f3c07a7ab file=neo/internal/config/config.go range=220:222 lang=go exported=true byte_range=12684:12844
   sig=int
   doc=EpistemicMismatchLimit is the consecutive per-strategy mismatch count\nthat forces a tools-stripped revision step (default 3).
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#EpistemicPredictions kind=field
-  digest=b3:b8fe6ada61081a2a7db150e9738189486f9000c05ca8d9a170803906d3477120 file=neo/internal/config/config.go range=194:197 lang=go exported=true byte_range=11423:11622
+  digest=b3:b8fe6ada61081a2a7db150e9738189486f9000c05ca8d9a170803906d3477120 file=neo/internal/config/config.go range=216:219 lang=go exported=true byte_range=12483:12682
   sig=bool
   doc=EpistemicPredictions arms Mechanism 3 (prediction-carrying dispatch):\nprobe-class tool calls state an expectation; mismatch is a first-class\nbelief-update event.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#EpistemicPremises kind=field
-  digest=b3:3a8cbfceeb34ceee2d9721cb160d86b80a01dd5f6c9722961b37e5d03331fcac file=neo/internal/config/config.go range=189:193 lang=go exported=true byte_range=11097:11421
+  digest=b3:3a8cbfceeb34ceee2d9721cb160d86b80a01dd5f6c9722961b37e5d03331fcac file=neo/internal/config/config.go range=211:215 lang=go exported=true byte_range=12157:12481
   sig=bool
   doc=--- epistemic core (EPISTEMIC-CORE; [epistemic] block / NEO_EPISTEMIC_*) ---\nEpistemicPremises arms Mechanism 1 (premise ledger + check-before-act\ngate): a plan's load-bearing premises are extracted with provenance and\nno action dispatches on a cheaply-checkable unverified assumption.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#EscalateActions kind=field
-  digest=b3:452c661eba23f949e58afc6faa032b62cbebf9517002550abcc5d38b829990a5 file=neo/internal/config/config.go range=261:261 lang=go exported=true byte_range=15196:15220
+  digest=b3:452c661eba23f949e58afc6faa032b62cbebf9517002550abcc5d38b829990a5 file=neo/internal/config/config.go range=283:283 lang=go exported=true byte_range=16256:16280
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#FirstTurnRelevancePush kind=field
-  digest=b3:86c50068b22b8d5a2c7da2a0cf36c0b286b96ca521fdec3f12e1c5e080110431 file=neo/internal/config/config.go range=77:85 lang=go exported=true byte_range=4182:4840
+  digest=b3:86c50068b22b8d5a2c7da2a0cf36c0b286b96ca521fdec3f12e1c5e080110431 file=neo/internal/config/config.go range=91:99 lang=go exported=true byte_range=4870:5528
   sig=bool
   doc=FirstTurnRelevancePush injects a bounded RELEVANCE retrieval into the\nactivation window on the FIRST turn of a conversation only. cortex.Activate's\npushed tiers (Pinned/Timeline/Recent) are recency-based and query-INDEPENDENT\n(activate.go: the query arg is unused), so on the opening message the agent\ncarries recency but NOT relevance-to-the-ask unless it reactively calls\nmemory_recall. With this on, Neo runs pager.Retrieve(query) once on turn 1\nand injects the hits, so the opening turn has relevance-matched memory with\nno reactive tool call. After turn 1 the pull-not-push philosophy resumes.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#GatewayURL kind=field
-  digest=b3:e7027e3380d61706b092904da23450e154da2b42ec990a40860344ca25fcaddf file=neo/internal/config/config.go range=263:264 lang=go exported=true byte_range=15288:15336
+  digest=b3:e7027e3380d61706b092904da23450e154da2b42ec990a40860344ca25fcaddf file=neo/internal/config/config.go range=285:286 lang=go exported=true byte_range=16348:16396
   sig=string
   doc=--- LLM transport ---
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#HardPct kind=field
-  digest=b3:4b8be490d56bc8befe63cc22ad57db92c9dd9f1125a49fda813731057a4a0c3f file=neo/internal/config/config.go range=57:57 lang=go exported=true byte_range=2851:2876
+  digest=b3:4b8be490d56bc8befe63cc22ad57db92c9dd9f1125a49fda813731057a4a0c3f file=neo/internal/config/config.go range=71:71 lang=go exported=true byte_range=3539:3564
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#HeartbeatInterval kind=field
-  digest=b3:029895108f6d412f7cdac6fc5e8f6d2360d27126df109d27c0e9287ca19bee3a file=neo/internal/config/config.go range=217:225 lang=go exported=true byte_range=12708:13307
+  digest=b3:029895108f6d412f7cdac6fc5e8f6d2360d27126df109d27c0e9287ca19bee3a file=neo/internal/config/config.go range=239:247 lang=go exported=true byte_range=13768:14367
   sig=int
   doc=--- heartbeat (P1-4: Chronos-driven proactive turn convention) ---\nHeartbeatInterval is the recurring-alarm interval (minutes) for Neo's\nproactive self-review of active goals/constraints. 0 = disabled (the\ndefault: no wakeups occur). When >0, a Chronos recurring alarm fires at\nthis interval; its wake_message tells Neo to review active goals and\nreply with the HEARTBEAT_OK sentinel when nothing needs attention (the\nturn is then suppressed — no user-facing output). Config: [heartbeat]\nsection in neo.frozen.kvx / env NEO_HEARTBEAT_INTERVAL.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
+NODE id=matrix/neo/internal/config.Config#InteractionPosture kind=field
+  digest=b3:48c3d48e49fe3e095108330f0d02ffd0ca63fcdf0f0c6cc74195c911eba25a98 file=neo/internal/config/config.go range=113:113 lang=go exported=true byte_range=6280:6307
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/config.Config
+
 NODE id=matrix/neo/internal/config.Config#MCPCacheTTL kind=field
-  digest=b3:a6f0d790b90cf3d1af2f8684b328435164891692b45ee67f57f56e0f2d772488 file=neo/internal/config/config.go range=227:233 lang=go exported=true byte_range=13310:13728
+  digest=b3:a6f0d790b90cf3d1af2f8684b328435164891692b45ee67f57f56e0f2d772488 file=neo/internal/config/config.go range=249:255 lang=go exported=true byte_range=14370:14788
   sig=time.Duration
   doc=--- MCP tool result cache + parallel dispatch (P2-5) ---\nMCPCacheTTL is the TTL for the idempotent-read result cache. Zero\ndisables caching (the default). When >0, successful results for\nexplicitly-idempotent read tools (web_search, web_news) are served\nfrom cache within the TTL; side-effecting and money tools are never\ncached. Config: env NEO_MCP_CACHE_TTL_SECONDS.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#MainModel kind=field
-  digest=b3:c60dc395d43c1105a120d747c56f9b788d189559377bf49cc69b09101627ea17 file=neo/internal/config/config.go range=37:38 lang=go exported=true byte_range=1536:1632
+  digest=b3:c60dc395d43c1105a120d747c56f9b788d189559377bf49cc69b09101627ea17 file=neo/internal/config/config.go range=51:52 lang=go exported=true byte_range=2224:2320
   sig=string
   doc=--- models (provider-qualified ids; see matrix/mcl/llm DetectProvider) ---
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#ManifestPath kind=field
-  digest=b3:ab2d629ce91909e760946254fa552fc6ce6ced591ab183e424c6a18fcce3c310 file=neo/internal/config/config.go range=33:33 lang=go exported=true byte_range=1344:1365
+  digest=b3:ad8e63b67b382246198409ccc93996d3ca04b7fadc3878f2e67abd2aca086d0f file=neo/internal/config/config.go range=47:47 lang=go exported=true byte_range=2029:2051
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#MaxAdaptAttempts kind=field
-  digest=b3:c1322d0c1da2afc86dde1a9ad5366b9fefca80519e57ce9c66ce380722f8ee52 file=neo/internal/config/config.go range=106:106 lang=go exported=true byte_range=6424:6454
+  digest=b3:c1322d0c1da2afc86dde1a9ad5366b9fefca80519e57ce9c66ce380722f8ee52 file=neo/internal/config/config.go range=128:128 lang=go exported=true byte_range=7484:7514
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#MaxConcurrentSubagents kind=field
-  digest=b3:4328713baab19f35ccbba509bee076e9c8f3bb1ba11e15cf51d078eeb27ebe2d file=neo/internal/config/config.go range=116:116 lang=go exported=true byte_range=7079:7105
+  digest=b3:4328713baab19f35ccbba509bee076e9c8f3bb1ba11e15cf51d078eeb27ebe2d file=neo/internal/config/config.go range=138:138 lang=go exported=true byte_range=8139:8165
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#MaxGuidanceNudges kind=field
-  digest=b3:6c5c72b4e086e7a61b9c329be9d9e038f6172d44392eefcafbffa20c9aeb2346 file=neo/internal/config/config.go range=107:112 lang=go exported=true byte_range=6510:6912
+  digest=b3:6c5c72b4e086e7a61b9c329be9d9e038f6172d44392eefcafbffa20c9aeb2346 file=neo/internal/config/config.go range=129:134 lang=go exported=true byte_range=7570:7972
   sig=int
   doc=MaxGuidanceNudges caps how many CONSECUTIVE system-guidance nudges the\nloop may inject (completion-gate rejections, read-full steers) before it\nescalates to an honest stop-and-ask instead of re-nudging indefinitely\n(neo-smoothness req.1.5). The counter resets on genuine progress (a tool\ndispatch / accepted completion). 0 disables the cap (unbounded nudging).
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#MaxRetriesPerTool kind=field
-  digest=b3:a2cd1064eec6326b598139430bc4a553c9ec5282083634cccded1966831ecc5c file=neo/internal/config/config.go range=105:105 lang=go exported=true byte_range=6326:6356
+  digest=b3:a2cd1064eec6326b598139430bc4a553c9ec5282083634cccded1966831ecc5c file=neo/internal/config/config.go range=127:127 lang=go exported=true byte_range=7386:7416
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#MaxSubagents kind=field
-  digest=b3:e4991b887ddf9aad72cd9f0fcac7dbb7cd581cbfa8bc99c6a17a44110abe33ff file=neo/internal/config/config.go range=114:115 lang=go exported=true byte_range=6915:7015
+  digest=b3:e4991b887ddf9aad72cd9f0fcac7dbb7cd581cbfa8bc99c6a17a44110abe33ff file=neo/internal/config/config.go range=136:137 lang=go exported=true byte_range=7975:8075
   sig=int
   doc=--- sub-agent swarm (task-scoped concurrent helpers; see [swarm]) ---
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#MediaRetentionHours kind=field
-  digest=b3:3395f4eb8bc032ebe2d8ddbb0501d74d48b37976c98999daa28d33504ade6d15 file=neo/internal/config/config.go range=130:130 lang=go exported=true byte_range=8006:8029
+  digest=b3:3395f4eb8bc032ebe2d8ddbb0501d74d48b37976c98999daa28d33504ade6d15 file=neo/internal/config/config.go range=152:152 lang=go exported=true byte_range=9066:9089
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
+NODE id=matrix/neo/internal/config.Config#MemorySubstrate kind=field
+  digest=b3:b94b044403f3f7b7168fd5b12885fa5de1cc4ec983082187fee590caf02c3fa5 file=neo/internal/config/config.go range=39:43 lang=go exported=true byte_range=1484:1783
+  sig=string
+  doc=MemorySubstrate selects the memory backend for the resurrection loop\nseam: "cortex" (the live default) or "neocortex" (cortexd side-by-side\nqualification). The default never flips without an explicit owner\ndecision; any unrecognized value resolves to "cortex".
+EDGES
+  ^contains=matrix/neo/internal/config.Config
+
 NODE id=matrix/neo/internal/config.Config#MinPatternSuccesses kind=field
-  digest=b3:8924900444eb13407b491a20a0b3b3e44d4d0fbd2ce46b82a4b4e0293a55acd5 file=neo/internal/config/config.go range=158:159 lang=go exported=true byte_range=9441:9501
+  digest=b3:8924900444eb13407b491a20a0b3b3e44d4d0fbd2ce46b82a4b4e0293a55acd5 file=neo/internal/config/config.go range=180:181 lang=go exported=true byte_range=10501:10561
   sig=int
   doc=--- procedural memory guards ---
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#NaturalAllow kind=field
-  digest=b3:99a66ff9af4ab61046130855a94c70eca38b3d1b8072f1577f20ebc0ed7d6883 file=neo/internal/config/config.go range=259:260 lang=go exported=true byte_range=15074:15128
+  digest=b3:99a66ff9af4ab61046130855a94c70eca38b3d1b8072f1577f20ebc0ed7d6883 file=neo/internal/config/config.go range=281:282 lang=go exported=true byte_range=16134:16188
   sig=[]string
   doc=--- execution surface ---
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#NoProgressStall kind=field
-  digest=b3:896aa737d7604bcd0e9657751fc82c44ddd2e344ce170f363724774d15590bc5 file=neo/internal/config/config.go range=97:97 lang=go exported=true byte_range=5731:5750
+  digest=b3:896aa737d7604bcd0e9657751fc82c44ddd2e344ce170f363724774d15590bc5 file=neo/internal/config/config.go range=119:119 lang=go exported=true byte_range=6791:6810
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#NtfyServer kind=field
-  digest=b3:39cbcbbb155adb3564f81369251f332e9fe5b4532cf84d692a627148de47ad8d file=neo/internal/config/config.go range=255:255 lang=go exported=true byte_range=14959:14995
+  digest=b3:39cbcbbb155adb3564f81369251f332e9fe5b4532cf84d692a627148de47ad8d file=neo/internal/config/config.go range=277:277 lang=go exported=true byte_range=16019:16055
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#NtfyTopic kind=field
-  digest=b3:6df39e1cec312cfdff3d0c33c963b0df5429fa1aa25f394eac23e84ce2d2a84c file=neo/internal/config/config.go range=256:256 lang=go exported=true byte_range=14997:15033
+  digest=b3:6df39e1cec312cfdff3d0c33c963b0df5429fa1aa25f394eac23e84ce2d2a84c file=neo/internal/config/config.go range=278:278 lang=go exported=true byte_range=16057:16093
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#O1ConstrainTools kind=field
-  digest=b3:d5bcd0a265ec1a878aedd77b22083872c2733413c2fb946c75207174a6b49a01 file=neo/internal/config/config.go range=205:215 lang=go exported=true byte_range=11957:12705
+  digest=b3:d5bcd0a265ec1a878aedd77b22083872c2733413c2fb946c75207174a6b49a01 file=neo/internal/config/config.go range=227:237 lang=go exported=true byte_range=13017:13765
   sig=bool
   doc=O1ConstrainTools gates Architect O1's closed-world capability narrowing\n(req.3 O1-CAP): when true, each turn advertises only the task-contract's\nminimal selected tool subset (o1.CompileRuntimeCapabilities). When false\n(the DEFAULT) Neo advertises its FULL bound tool surface every turn — the\nO1 manifests/verifiers/ledger/preflight still compile over that full\nsurface, but no tool is hidden from the model. Default off because the\ncontract's request->capability mapping is a text heuristic that silently\nstrips essential tools (e.g. fetch) whenever the request does not name\nthe server alias verbatim, leaving the model unable to act. Config:\n[o1] block / env NEO_O1_CONSTRAIN_TOOLS.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#PinnedBudgetTokens kind=field
-  digest=b3:ba70c8d05563e2089cefff33364ef23a62b21bdb1f873e249e7952847892a08b file=neo/internal/config/config.go range=67:67 lang=go exported=true byte_range=3536:3560
+  digest=b3:ba70c8d05563e2089cefff33364ef23a62b21bdb1f873e249e7952847892a08b file=neo/internal/config/config.go range=81:81 lang=go exported=true byte_range=4224:4248
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#RecallBudgetTokens kind=field
-  digest=b3:91a66d5f617bfa852933b8f7e6dc854f10d6703c39ecdb1dd7e88d042a85e14f file=neo/internal/config/config.go range=69:69 lang=go exported=true byte_range=3703:3727
+  digest=b3:91a66d5f617bfa852933b8f7e6dc854f10d6703c39ecdb1dd7e88d042a85e14f file=neo/internal/config/config.go range=83:83 lang=go exported=true byte_range=4391:4415
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#RecallTopK kind=field
-  digest=b3:b4ebd3fbf86b9a20b728553311009abe49fe5e4d196d007b70c863f0f997433a file=neo/internal/config/config.go range=68:68 lang=go exported=true byte_range=3616:3640
+  digest=b3:b4ebd3fbf86b9a20b728553311009abe49fe5e4d196d007b70c863f0f997433a file=neo/internal/config/config.go range=82:82 lang=go exported=true byte_range=4304:4328
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#RetrievalBudgetTokens kind=field
-  digest=b3:9049710c4ebed101e7db5e09397b6392aeef03481371546f24879c30e907de90 file=neo/internal/config/config.go range=59:59 lang=go exported=true byte_range=3005:3030
+  digest=b3:9049710c4ebed101e7db5e09397b6392aeef03481371546f24879c30e907de90 file=neo/internal/config/config.go range=73:73 lang=go exported=true byte_range=3693:3718
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#RetrievalTopK kind=field
-  digest=b3:e830c59dee48d718c0c897bbc52b497a468345ef97a20b394672b04b5468b3d4 file=neo/internal/config/config.go range=58:58 lang=go exported=true byte_range=2928:2953
+  digest=b3:e830c59dee48d718c0c897bbc52b497a468345ef97a20b394672b04b5468b3d4 file=neo/internal/config/config.go range=72:72 lang=go exported=true byte_range=3616:3641
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#RuntimeProvider kind=field
-  digest=b3:70eca9d15a4df9377bba227caad1f4399945e75f150508d02fab16f47299ba74 file=neo/internal/config/config.go range=267:267 lang=go exported=true byte_range=15482:15519
+  digest=b3:70eca9d15a4df9377bba227caad1f4399945e75f150508d02fab16f47299ba74 file=neo/internal/config/config.go range=289:289 lang=go exported=true byte_range=16542:16579
   sig=config.RuntimeProviderConfig
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#SelfModelGraph kind=field
-  digest=b3:0b992928bba57757b15298ff2b78252bb0129a4ef27b98d3afe74bda8f43e479 file=neo/internal/config/config.go range=35:35 lang=go exported=true byte_range=1512:1533
+  digest=b3:73fb2dcb6bd43ab388614de85d602a16ab4f53a0a74d017ce740d84a0b5598ff file=neo/internal/config/config.go range=49:49 lang=go exported=true byte_range=2199:2221
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#SemanticStallSimilarityPct kind=field
-  digest=b3:b8a488c012216c1e824716c2d082852581feb2ad538ed324f03d1f00dc53ba62 file=neo/internal/config/config.go range=98:104 lang=go exported=true byte_range=5821:6324
+  digest=b3:b8a488c012216c1e824716c2d082852581feb2ad538ed324f03d1f00dc53ba62 file=neo/internal/config/config.go range=120:126 lang=go exported=true byte_range=6881:7384
   sig=int
   doc=SemanticStallSimilarityPct is the word-overlap threshold (0–100) at which\ntwo consecutive tool-call batches at the SAME operation (same tool shape +\nsame target identifiers) are treated as a no-progress repeat even when\ntheir argument WORDING differs — so a cosmetic reword cannot defeat the\nstall guard. The repeat counter still trips at NoProgressStall. 0 disables\nsemantic detection (exact batch-signature matching only — legacy behavior).
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
+NODE id=matrix/neo/internal/config.Config#SessionCurrentIntent kind=field
+  digest=b3:9622da29e33c0ca76e5fb60cd8b27fb14a82c3dc43108e6740bd3d29b4fadf58 file=neo/internal/config/config.go range=107:111 lang=go exported=true byte_range=5938:6249
+  sig=bool
+  doc=--- hello-world session substrate (all flags default off) ---\nSessionCurrentIntent replaces the set-once standing objective with the\nlatest real user request plus explicit persistent goals and open loops.\nWhen false, the legacy activeGoal path remains byte-identical.
+EDGES
+  ^contains=matrix/neo/internal/config.Config
+
+NODE id=matrix/neo/internal/config.Config#SessionExactProjection kind=field
+  digest=b3:5e2e184c49669fcec91b7e37ae8f3643b839fee4cf02360e591bff74b1c3ee19 file=neo/internal/config/config.go range=112:112 lang=go exported=true byte_range=6251:6278
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/config.Config
+
 NODE id=matrix/neo/internal/config.Config#SkillsRoot kind=field
-  digest=b3:3677aadd14280ddbc7a719bade4651271028facd0cbf3d145e3cd02e9421b66f file=neo/internal/config/config.go range=34:34 lang=go exported=true byte_range=1429:1450
+  digest=b3:acf8b2534853bacafdf3207656d0e3b807b1cbcb4d3a8616e50db9e8cb2fb6e6 file=neo/internal/config/config.go range=48:48 lang=go exported=true byte_range=2115:2137
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#SoftPct kind=field
-  digest=b3:8c82fec611669929f69e39e560d4191af87e7416851fd1fb2deedfdcb3bdc8e7 file=neo/internal/config/config.go range=56:56 lang=go exported=true byte_range=2753:2778
+  digest=b3:8c82fec611669929f69e39e560d4191af87e7416851fd1fb2deedfdcb3bdc8e7 file=neo/internal/config/config.go range=70:70 lang=go exported=true byte_range=3441:3466
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#StepBudget kind=field
-  digest=b3:218105beaac952798832070d71c52fd8e1bd74365e1777da3c04a21312f5c685 file=neo/internal/config/config.go range=93:94 lang=go exported=true byte_range=5250:5297
+  digest=b3:218105beaac952798832070d71c52fd8e1bd74365e1777da3c04a21312f5c685 file=neo/internal/config/config.go range=115:116 lang=go exported=true byte_range=6310:6357
   sig=int
   doc=--- loop discipline ---
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#StepBudgetMax kind=field
-  digest=b3:18dcab77929f243855d919db194595dc4e0e08042161bcf7d76f75bf981bdf76 file=neo/internal/config/config.go range=96:96 lang=go exported=true byte_range=5606:5625
+  digest=b3:18dcab77929f243855d919db194595dc4e0e08042161bcf7d76f75bf981bdf76 file=neo/internal/config/config.go range=118:118 lang=go exported=true byte_range=6666:6685
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#StepBudgetMin kind=field
-  digest=b3:e89a031bb0ed9e31f9b99f5302b59b18306dc943b2d619b1f2fd6ddd3b1494f6 file=neo/internal/config/config.go range=95:95 lang=go exported=true byte_range=5376:5395
+  digest=b3:e89a031bb0ed9e31f9b99f5302b59b18306dc943b2d619b1f2fd6ddd3b1494f6 file=neo/internal/config/config.go range=117:117 lang=go exported=true byte_range=6436:6455
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#SubagentStepBudget kind=field
-  digest=b3:43e77c8442602c6729136e3cf396724f1222e17bd9c4f09e447bee6dc8ae1300 file=neo/internal/config/config.go range=117:117 lang=go exported=true byte_range=7170:7196
+  digest=b3:43e77c8442602c6729136e3cf396724f1222e17bd9c4f09e447bee6dc8ae1300 file=neo/internal/config/config.go range=139:139 lang=go exported=true byte_range=8230:8256
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#SuperviseTasks kind=field
-  digest=b3:aa68bddce3120de26d72368d75e575ea3cf7a76feb10916ab1f6061a4a311e37 file=neo/internal/config/config.go range=141:145 lang=go exported=true byte_range=8297:8618
+  digest=b3:aa68bddce3120de26d72368d75e575ea3cf7a76feb10916ab1f6061a4a311e37 file=neo/internal/config/config.go range=163:167 lang=go exported=true byte_range=9357:9678
   sig=bool
   doc=--- task supervisor (durability: a dispatched task runs to completion\nacross model errors, tool failures, early loop-ends, user disconnects,\nand even daemon restart/suspend — at least one agent stays on it until\nthe objective is met to standard; see the Task Durability Rule) ---
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#TaskAttemptTimeout kind=field
-  digest=b3:7d1fb248bb410631472c8176b181ab0c5e916005b45b4e3022eac08ed1903e0d file=neo/internal/config/config.go range=147:147 lang=go exported=true byte_range=8801:8833
+  digest=b3:7d1fb248bb410631472c8176b181ab0c5e916005b45b4e3022eac08ed1903e0d file=neo/internal/config/config.go range=169:169 lang=go exported=true byte_range=9861:9893
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#TaskMaxRespawns kind=field
-  digest=b3:9b2cee349d0b80a14aaf882c58bef5d722adbda0c98c710eb0dd88d7944a0cd8 file=neo/internal/config/config.go range=148:148 lang=go exported=true byte_range=8894:8916
+  digest=b3:9b2cee349d0b80a14aaf882c58bef5d722adbda0c98c710eb0dd88d7944a0cd8 file=neo/internal/config/config.go range=170:170 lang=go exported=true byte_range=9954:9976
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#TaskMaxWall kind=field
-  digest=b3:2d4ab61e2995492ebe037a6af94af87e099eabac04e831837bba5d5c47a6cc43 file=neo/internal/config/config.go range=146:146 lang=go exported=true byte_range=8691:8723
+  digest=b3:2d4ab61e2995492ebe037a6af94af87e099eabac04e831837bba5d5c47a6cc43 file=neo/internal/config/config.go range=168:168 lang=go exported=true byte_range=9751:9783
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#ToolDispatchConcurrency kind=field
-  digest=b3:096d05f69771254e83524e159a37d61d1cfb69287066cff4e19c27947b366e12 file=neo/internal/config/config.go range=234:239 lang=go exported=true byte_range=13730:14087
+  digest=b3:096d05f69771254e83524e159a37d61d1cfb69287066cff4e19c27947b366e12 file=neo/internal/config/config.go range=256:261 lang=go exported=true byte_range=14790:15147
   sig=int
   doc=ToolDispatchConcurrency bounds how many INDEPENDENT tool calls in one\nturn dispatch concurrently. Zero disables parallel dispatch (calls run\nserially, the legacy behaviour). Results are always assembled in call\norder regardless of completion order (determinism, i6). Config: env\nNEO_TOOL_DISPATCH_CONCURRENCY.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#Vault kind=field
-  digest=b3:9eba1d38314bbc32d8bbab036265812bfb093edb5fb098c3d89c5125f5126136 file=neo/internal/config/config.go range=269:271 lang=go exported=true byte_range=15522:15681
+  digest=b3:9eba1d38314bbc32d8bbab036265812bfb093edb5fb098c3d89c5125f5126136 file=neo/internal/config/config.go range=291:293 lang=go exported=true byte_range=16582:16741
   sig=*vault.Session
   doc=--- data-at-rest vault (set programmatically by runServe after\nvault.Boot, never from env; nil = legacy plaintext dev/CLI) ---
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#VaultUser kind=field
-  digest=b3:24f9ab45251a6897fae1cd560e8adddc26b861ebf1ba540fab04bc606113b2ea file=neo/internal/config/config.go range=272:272 lang=go exported=true byte_range=15743:15759
+  digest=b3:24f9ab45251a6897fae1cd560e8adddc26b861ebf1ba540fab04bc606113b2ea file=neo/internal/config/config.go range=294:294 lang=go exported=true byte_range=16803:16819
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#VoiceASRDeadline kind=field
-  digest=b3:ad736cfc7ef5889557bbbbe15b96e4e4f5e4baa1fd4692e060d88c2de9fa21df file=neo/internal/config/config.go range=135:135 lang=go exported=true byte_range=8135:8168
+  digest=b3:ad736cfc7ef5889557bbbbe15b96e4e4f5e4baa1fd4692e060d88c2de9fa21df file=neo/internal/config/config.go range=157:157 lang=go exported=true byte_range=9195:9228
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#VoiceEnabled kind=field
-  digest=b3:154972b78206e52c3eb1f63165c74069f9d0a4d61f3e9e4bf219612d05667d61 file=neo/internal/config/config.go range=132:133 lang=go exported=true byte_range=8032:8105
+  digest=b3:154972b78206e52c3eb1f63165c74069f9d0a4d61f3e9e4bf219612d05667d61 file=neo/internal/config/config.go range=154:155 lang=go exported=true byte_range=9092:9165
   sig=bool
   doc=--- voice (VOICE; [voice] / NEO_VOICE_*) ---
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#VoiceIdleDisconnect kind=field
-  digest=b3:464e7296480e5561bb7a60b68e582c1b409885ef29c1f1772dc487a55f52b511 file=neo/internal/config/config.go range=139:139 lang=go exported=true byte_range=8261:8294
+  digest=b3:464e7296480e5561bb7a60b68e582c1b409885ef29c1f1772dc487a55f52b511 file=neo/internal/config/config.go range=161:161 lang=go exported=true byte_range=9321:9354
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#VoiceMode kind=field
-  digest=b3:9fb6d7339cc48a35662b79ce710c8222ddc7d585618abb2d31f576cc355e8db9 file=neo/internal/config/config.go range=134:134 lang=go exported=true byte_range=8107:8133
+  digest=b3:9fb6d7339cc48a35662b79ce710c8222ddc7d585618abb2d31f576cc355e8db9 file=neo/internal/config/config.go range=156:156 lang=go exported=true byte_range=9167:9193
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#VoiceTTSDeadline kind=field
-  digest=b3:333940c8b8ad2db46a66b3ddc0445d677fb389fb84d89706f70e4995f4a67cc9 file=neo/internal/config/config.go range=138:138 lang=go exported=true byte_range=8226:8259
+  digest=b3:333940c8b8ad2db46a66b3ddc0445d677fb389fb84d89706f70e4995f4a67cc9 file=neo/internal/config/config.go range=160:160 lang=go exported=true byte_range=9286:9319
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#VoiceTTSStyle kind=field
-  digest=b3:1746ae6a1284edf13a03de036b71a8493d7a8b1f7627f8ba07803678baf9457c file=neo/internal/config/config.go range=137:137 lang=go exported=true byte_range=8198:8224
+  digest=b3:1746ae6a1284edf13a03de036b71a8493d7a8b1f7627f8ba07803678baf9457c file=neo/internal/config/config.go range=159:159 lang=go exported=true byte_range=9258:9284
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#VoiceTTSVoice kind=field
-  digest=b3:b22864867087dc365a600a35ec39217e0d131fe2a9448022777b16b15fee895f file=neo/internal/config/config.go range=136:136 lang=go exported=true byte_range=8170:8196
+  digest=b3:b22864867087dc365a600a35ec39217e0d131fe2a9448022777b16b15fee895f file=neo/internal/config/config.go range=158:158 lang=go exported=true byte_range=9230:9256
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config#WarmOnOpen kind=field
-  digest=b3:0620992be37cf1732ce71d0255a5e613b3b28b5e6a0c07e2e62da98a881e76a9 file=neo/internal/config/config.go range=86:91 lang=go exported=true byte_range=4842:5247
+  digest=b3:0620992be37cf1732ce71d0255a5e613b3b28b5e6a0c07e2e62da98a881e76a9 file=neo/internal/config/config.go range=100:105 lang=go exported=true byte_range=5530:5935
   sig=bool
   doc=WarmOnOpen makes the FIRST inbound HTTP request spin up the embedder + HNSW\nsemantic substrate in the background (one-shot). Activate + StorySoFar are\nalready cheap (materialized scans, deterministic, no LLM); the only real\ncold-start is the embedder/HNSW that the relevance push depends on, so\nwarming it on app-open keeps the first message's recall off the cold path.
 EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config.ActivationBudget kind=method
-  digest=b3:703f03a8e55c2e037d5cfc45bb3a806414ad906dcaf94be933bda11458ac6570 file=neo/internal/config/config.go range=866:883 lang=go exported=true byte_range=43295:43962
+  digest=b3:703f03a8e55c2e037d5cfc45bb3a806414ad906dcaf94be933bda11458ac6570 file=neo/internal/config/config.go range=909:926 lang=go exported=true byte_range=45440:46107
   sig=func (c Config) ActivationBudget() int
   doc=ActivationBudget returns the per-turn cortex activation-bundle token budget.\nAn explicit ActivationBudgetTokens wins verbatim; otherwise it derives\nwindow-proportionally (2% of the context window) clamped to\n[activationBudgetFloorTokens, activationBudgetCapTokens] — 1M → 20000,\n256K → 5120, and any window ≤ 150K keeps the historical 3000.
 EDGES
@@ -544,14 +582,14 @@ EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Config.HardBudgetTokens kind=method
-  digest=b3:79bc0728ebdaab6b8c4240fe339cb56df2c6acd216994a716187436861d2780e file=neo/internal/config/config.go range=854:856 lang=go exported=true byte_range=42858:42978
+  digest=b3:79bc0728ebdaab6b8c4240fe339cb56df2c6acd216994a716187436861d2780e file=neo/internal/config/config.go range=897:899 lang=go exported=true byte_range=45003:45123
   sig=func (c Config) HardBudgetTokens() int
 EDGES
   ^contains=matrix/neo/internal/config.Config
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Config.IsEscalateAction kind=method
-  digest=b3:d993c56f58da58e2c20c0b69dc7cc415b52c728f8d540c3db9e00e1df362a42e file=neo/internal/config/config.go range=823:832 lang=go exported=true byte_range=41567:41861
+  digest=b3:d993c56f58da58e2c20c0b69dc7cc415b52c728f8d540c3db9e00e1df362a42e file=neo/internal/config/config.go range=866:875 lang=go exported=true byte_range=43712:44006
   sig=func (c Config) IsEscalateAction(action string) bool
   doc=IsEscalateAction reports whether the named action crosses the wall into\nMCL (requires a user wallet signature) per the execution surface.
 EDGES
@@ -559,7 +597,7 @@ EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Config.SoftBudgetTokens kind=method
-  digest=b3:8503b0cc4f281e582ad30ba88389676a89a0b4d0819cca516f09c67456f683c8 file=neo/internal/config/config.go range=845:852 lang=go exported=true byte_range=42371:42856
+  digest=b3:8503b0cc4f281e582ad30ba88389676a89a0b4d0819cca516f09c67456f683c8 file=neo/internal/config/config.go range=888:895 lang=go exported=true byte_range=44516:45001
   sig=func (c Config) SoftBudgetTokens() int
   doc=SoftBudgetTokens / HardBudgetTokens derive the compaction thresholds from\nthe configured context window: the percentage-derived budget, raised to\nwindow-minus-capped-headroom when the percentage would reserve more than the\nabsolute cap — so trimming fires only near true pressure at 1M scale while\nsmall windows keep the exact percentage behavior.
 EDGES
@@ -567,7 +605,7 @@ EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Config.applyDoc kind=method
-  digest=b3:e7b0c081c04389a490a32c55b015fd5bf09f56dafdc964fc1c31dc5654105234 file=neo/internal/config/config.go range=489:619 lang=go exported=false byte_range=24160:31496
+  digest=b3:8465443d7287147c1717c8286c730ee4837dc6728492a1e4e1647c946372ef7a file=neo/internal/config/config.go range=516:651 lang=go exported=false byte_range=25418:33054
   sig=func (c *Config) applyDoc(d *kvxDoc)
   doc=applyDoc overlays a parsed runtime .kvx document onto c. Absent keys keep\ntheir current (default) value.
 EDGES
@@ -575,7 +613,7 @@ EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Config.applyEnv kind=method
-  digest=b3:51f4e552cc9363acdce1f2fb099cbb9ac5689b0e9e7a32bf55208c94fb0dde41 file=neo/internal/config/config.go range=621:755 lang=go exported=false byte_range=31498:39660
+  digest=b3:696371255bc4f23b596407592bea3e76451c1b6645e7d4f901447c7b10257c0c file=neo/internal/config/config.go range=653:798 lang=go exported=false byte_range=33056:41805
   sig=func (c *Config) applyEnv()
   doc=applyEnv overlays environment variables (highest precedence).
 EDGES
@@ -583,119 +621,133 @@ EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Default kind=func
-  digest=b3:daeb6512ca28143bd695458ed55a439b5168cea7880ad8609b1af72f9515dd19 file=neo/internal/config/config.go range=284:421 lang=go exported=true byte_range=16021:21655
+  digest=b3:c2512489711b77b36cf24d09ba09df03eac015139856f81a3102f5b010394388 file=neo/internal/config/config.go range=306:448 lang=go exported=true byte_range=17081:22913
   sig=func Default() Config
   doc=Default returns Neo's defaults, encoding the frozen spec's locked\noperational contract (neo/neo.frozen.kvx).
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Load kind=func
-  digest=b3:f6ec19efc029c3ce6bef206542420bce06e9a8158946836fa5c3a6b437959749 file=neo/internal/config/config.go range=471:487 lang=go exported=true byte_range=23752:24158
+  digest=b3:f6ec19efc029c3ce6bef206542420bce06e9a8158946836fa5c3a6b437959749 file=neo/internal/config/config.go range=498:514 lang=go exported=true byte_range=25010:25416
   sig=func Load(path string) (Config, error)
   doc=Load returns Default(), overlaid with an optional runtime .kvx file (path\nmay be empty or point at a missing file — both are non-fatal), then\noverlaid with environment variables.
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.RuntimeProviderConfig kind=type
-  digest=b3:0a0496d4c5174f4b91c57a70476876f3aa8d5a32149e3fc350e05e37a470ae22 file=neo/internal/config/config.go range=275:282 lang=go exported=true byte_range=15826:16019
+  digest=b3:0a0496d4c5174f4b91c57a70476876f3aa8d5a32149e3fc350e05e37a470ae22 file=neo/internal/config/config.go range=297:304 lang=go exported=true byte_range=16886:17079
   sig=type RuntimeProviderConfig struct {\n	GatewayURL	string\n	BearerEnv	string\n	MaxAttempts	int\n	BackoffInitial	time.Duration\n	BackoffMax	time.Duration\n	IdleTimeout	time.Duration\n}
 EDGES
   contains=matrix/neo/internal/config.RuntimeProviderConfig#BackoffInitial,matrix/neo/internal/config.RuntimeProviderConfig#BackoffMax,matrix/neo/internal/config.RuntimeProviderConfig#BearerEnv,matrix/neo/internal/config.RuntimeProviderConfig#GatewayURL,matrix/neo/internal/config.RuntimeProviderConfig#IdleTimeout,matrix/neo/internal/config.RuntimeProviderConfig#MaxAttempts
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.RuntimeProviderConfig#BackoffInitial kind=field
-  digest=b3:b69748c464d9a00fd610c75b44b97f0c3d762749c2f6122149ae8ead0fd54861 file=neo/internal/config/config.go range=279:279 lang=go exported=true byte_range=15929:15957
+  digest=b3:b69748c464d9a00fd610c75b44b97f0c3d762749c2f6122149ae8ead0fd54861 file=neo/internal/config/config.go range=301:301 lang=go exported=true byte_range=16989:17017
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/config.RuntimeProviderConfig
 
 NODE id=matrix/neo/internal/config.RuntimeProviderConfig#BackoffMax kind=field
-  digest=b3:7583ef7ef59662c08b3eb5f4d23e48fd8168ccedb6332f6fb4c7bd1f16240acb file=neo/internal/config/config.go range=280:280 lang=go exported=true byte_range=15959:15987
+  digest=b3:7583ef7ef59662c08b3eb5f4d23e48fd8168ccedb6332f6fb4c7bd1f16240acb file=neo/internal/config/config.go range=302:302 lang=go exported=true byte_range=17019:17047
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/config.RuntimeProviderConfig
 
 NODE id=matrix/neo/internal/config.RuntimeProviderConfig#BearerEnv kind=field
-  digest=b3:dcb69a691bc69bd40938b0e88d5fece1cc4f8d180deb109531298f9bc6fb8783 file=neo/internal/config/config.go range=277:277 lang=go exported=true byte_range=15886:15907
+  digest=b3:dcb69a691bc69bd40938b0e88d5fece1cc4f8d180deb109531298f9bc6fb8783 file=neo/internal/config/config.go range=299:299 lang=go exported=true byte_range=16946:16967
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.RuntimeProviderConfig
 
 NODE id=matrix/neo/internal/config.RuntimeProviderConfig#GatewayURL kind=field
-  digest=b3:f63799a6e7b9e5680cf929ef3633ca3b65dd5e6de121ac3cbc57ce7b3376bc95 file=neo/internal/config/config.go range=276:276 lang=go exported=true byte_range=15863:15884
+  digest=b3:f63799a6e7b9e5680cf929ef3633ca3b65dd5e6de121ac3cbc57ce7b3376bc95 file=neo/internal/config/config.go range=298:298 lang=go exported=true byte_range=16923:16944
   sig=string
 EDGES
   ^contains=matrix/neo/internal/config.RuntimeProviderConfig
 
 NODE id=matrix/neo/internal/config.RuntimeProviderConfig#IdleTimeout kind=field
-  digest=b3:37e8aa4a2277f0c4ba9e650211daa74b5e76eb2539e4093ddfc3a13ce489a6c8 file=neo/internal/config/config.go range=281:281 lang=go exported=true byte_range=15989:16017
+  digest=b3:37e8aa4a2277f0c4ba9e650211daa74b5e76eb2539e4093ddfc3a13ce489a6c8 file=neo/internal/config/config.go range=303:303 lang=go exported=true byte_range=17049:17077
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/config.RuntimeProviderConfig
 
 NODE id=matrix/neo/internal/config.RuntimeProviderConfig#MaxAttempts kind=field
-  digest=b3:7f9989025f14b3a1731a4d166ab9f46bd95efb5edc4188970fe42cbf08106de6 file=neo/internal/config/config.go range=278:278 lang=go exported=true byte_range=15909:15927
+  digest=b3:7f9989025f14b3a1731a4d166ab9f46bd95efb5edc4188970fe42cbf08106de6 file=neo/internal/config/config.go range=300:300 lang=go exported=true byte_range=16969:16987
   sig=int
 EDGES
   ^contains=matrix/neo/internal/config.RuntimeProviderConfig
 
 NODE id=matrix/neo/internal/config.Sandbox kind=func
-  digest=b3:b1dbec3062e1617bfcc00707754ad0a430391b9953ffb5fe9d065e32f1ad8517 file=neo/internal/config/config.go range=423:469 lang=go exported=true byte_range=21657:23750
+  digest=b3:b1dbec3062e1617bfcc00707754ad0a430391b9953ffb5fe9d065e32f1ad8517 file=neo/internal/config/config.go range=450:496 lang=go exported=true byte_range=22915:25008
   sig=func Sandbox() Config
   doc=Sandbox returns a hermetic local-dev preset that wires a throwaway temp\ncortex, the existing Hash embedder stub, a no-op chain RPC (empty\nDaemonURL), and metering disabled (empty GatewayURL) — by composing the\nEXISTING override points (Config struct fields) only. No new runtime\npaths are introduced; every field set here is one a kvx profile or env\nvar could already set.\n\nThe preset composes Default() and overrides the hermetic-surface fields\non the returned copy. Default() itself is never mutated.\n\nLaunch command (one command, zero external deps):\n\n	neo serve -sandbox\n\nor for the MCL executor daemon:\n\n	mcl-execute daemon -sandbox\n\nThe Hash embedder stub is selected because pickEmbedder() (see\nneo/internal/memory/embedder.go) falls through to embed.NewHashEmbedder()\nwhen GatewayURL is empty and no provider API key env is set — both\nguaranteed by this preset.
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
+NODE id=matrix/neo/internal/config.SubstrateCortex kind=const
+  digest=b3:3eccc9557ef3a705a32d2451849276a0bb668ee401ec31d941db9b729597de5d file=neo/internal/config/config.go range=26:29 lang=go exported=true byte_range=888:1080
+  sig=untyped string
+  doc=Memory substrate values for Config.MemorySubstrate. The resurrection loop\nruns on the old cortex until the owner flips the flag (NEOCORTEX wave 7).
+EDGES
+  ^defines=matrix/neo/internal/config/config.go
+
+NODE id=matrix/neo/internal/config.SubstrateNeocortex kind=const
+  digest=b3:60fa63bed4753bef431a6fc213f64dc45a33df3efbfed0a259126a06a7fd44e6 file=neo/internal/config/config.go range=26:30 lang=go exported=true byte_range=888:1114
+  sig=untyped string
+  doc=Memory substrate values for Config.MemorySubstrate. The resurrection loop\nruns on the old cortex until the owner flips the flag (NEOCORTEX wave 7).
+EDGES
+  ^defines=matrix/neo/internal/config/config.go
+
 NODE id=matrix/neo/internal/config.activationBudgetCapTokens kind=const
-  digest=b3:ac5a5d2dbb6e169f84a7b82b62676d88270240f04ffae275b7e9037f5ea302b7 file=neo/internal/config/config.go range=858:863 lang=go exported=false byte_range=42980:43291
+  digest=b3:ac5a5d2dbb6e169f84a7b82b62676d88270240f04ffae275b7e9037f5ea302b7 file=neo/internal/config/config.go range=901:906 lang=go exported=false byte_range=45125:45436
   sig=untyped int
   doc=Bounds for the derived activation-bundle budget (ActivationBudget below).\nThe floor is the historical cortex default (small windows keep their exact\nprior behavior); the ceiling stays under cortex.MaxActivateBudgetTokens.
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.activationBudgetFloorTokens kind=const
-  digest=b3:352958eee67ffe6579fac9489069f4e9356d60d0f73feb3cb0e27668698d300f file=neo/internal/config/config.go range=858:862 lang=go exported=false byte_range=42980:43254
+  digest=b3:352958eee67ffe6579fac9489069f4e9356d60d0f73feb3cb0e27668698d300f file=neo/internal/config/config.go range=901:905 lang=go exported=false byte_range=45125:45399
   sig=untyped int
   doc=Bounds for the derived activation-bundle budget (ActivationBudget below).\nThe floor is the historical cortex default (small windows keep their exact\nprior behavior); the ceiling stays under cortex.MaxActivateBudgetTokens.
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.budgetTokens kind=func
-  digest=b3:4157a994a1b8f215ff222ae1094efa9206a040680759744c06d00499052fede5 file=neo/internal/config/config.go range=885:891 lang=go exported=false byte_range=43964:44119
+  digest=b3:4157a994a1b8f215ff222ae1094efa9206a040680759744c06d00499052fede5 file=neo/internal/config/config.go range=928:934 lang=go exported=false byte_range=46109:46264
   sig=func budgetTokens(window, pct, headroomCap int) int
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.envBool kind=func
-  digest=b3:4dc067f137a53f4189c423b5b72c0e300a7a740547058c27d04a988e0e6bdac5 file=neo/internal/config/config.go range=810:821 lang=go exported=false byte_range=41158:41565
+  digest=b3:4dc067f137a53f4189c423b5b72c0e300a7a740547058c27d04a988e0e6bdac5 file=neo/internal/config/config.go range=853:864 lang=go exported=false byte_range=43303:43710
   sig=func envBool(key string, fallback bool) bool
   doc=envBool overlays a boolean from the environment, keeping the fallback when\nthe var is absent or unrecognized. Truthy: 1/true/yes/on; falsy:\n0/false/no/off (case-insensitive).
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.envFloat32 kind=func
-  digest=b3:730e19dad842d521c93d7b27cd67fe8f3fe1addf539ea9d09137c6195b17d23c file=neo/internal/config/config.go range=799:808 lang=go exported=false byte_range=40821:41156
+  digest=b3:730e19dad842d521c93d7b27cd67fe8f3fe1addf539ea9d09137c6195b17d23c file=neo/internal/config/config.go range=842:851 lang=go exported=false byte_range=42966:43301
   sig=func envFloat32(key string, fallback float32) float32
   doc=envFloat32 overlays a float32 from the environment, keeping the fallback when\nthe var is absent or not a valid float.
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.envInt kind=func
-  digest=b3:f0435f7bcbfd08453d5126f3d993c566e19544093a25deb944f7133034180a4b file=neo/internal/config/config.go range=757:766 lang=go exported=false byte_range=39662:39985
+  digest=b3:f0435f7bcbfd08453d5126f3d993c566e19544093a25deb944f7133034180a4b file=neo/internal/config/config.go range=800:809 lang=go exported=false byte_range=41807:42130
   sig=func envInt(key string, fallback int) int
   doc=envInt overlays a positive integer from the environment, keeping the\nfallback when the var is absent or not a positive integer.
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.envIntNonNeg kind=func
-  digest=b3:45d7a67ea60e91d1c56256ded6d6a80a84b7d175cc0b1a34e77dddecd3742a64 file=neo/internal/config/config.go range=768:779 lang=go exported=false byte_range=39987:40479
+  digest=b3:45d7a67ea60e91d1c56256ded6d6a80a84b7d175cc0b1a34e77dddecd3742a64 file=neo/internal/config/config.go range=811:822 lang=go exported=false byte_range=42132:42624
   sig=func envIntNonNeg(key string, fallback int) int
   doc=envIntNonNeg overlays a non-negative integer from the environment, keeping\nthe fallback when the var is absent or not a non-negative integer. Unlike\nenvInt it accepts 0 — used for knobs where zero is a meaningful setting\n(e.g. AmbientRetrievalTopK=0 = fully tool-driven retrieval).
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.envOr kind=func
-  digest=b3:e2ad6bd1a486daab04d32004a1f88b30c1b78d50db5a35bd8f8f0f942da35a95 file=neo/internal/config/config.go range=781:786 lang=go exported=false byte_range=40481:40609
+  digest=b3:e2ad6bd1a486daab04d32004a1f88b30c1b78d50db5a35bd8f8f0f942da35a95 file=neo/internal/config/config.go range=824:829 lang=go exported=false byte_range=42626:42754
   sig=func envOr(key, fallback string) string
 EDGES
   ^defines=matrix/neo/internal/config/config.go
@@ -707,7 +759,7 @@ EDGES
   ^defines=matrix/neo/internal/config/kvx.go
 
 NODE id=matrix/neo/internal/config.hardHeadroomCapTokens kind=const
-  digest=b3:671a9a4c7b6a15a795b9095a5cdfeefd808cbc910db68eefd8a20caa61b999fb file=neo/internal/config/config.go range=834:842 lang=go exported=false byte_range=41863:42367
+  digest=b3:671a9a4c7b6a15a795b9095a5cdfeefd808cbc910db68eefd8a20caa61b999fb file=neo/internal/config/config.go range=877:885 lang=go exported=false byte_range=44008:44512
   sig=untyped int
   doc=Headroom caps for the budget derivation below: at large windows a percentage\nthreshold reserves an absurd absolute slice (80% of 1M leaves 200K tokens\nidle), so the reserved headroom is the SMALLER of the percentage-derived\nslice and these absolute caps. Below ~320K windows the caps never bind, so\nsmall local-model configurations (32K via NEO_CONTEXT_WINDOW_TOKENS) keep\ntheir exact prior trim/compaction behavior.
 EDGES
@@ -816,7 +868,7 @@ EDGES
   ^defines=matrix/neo/internal/config/kvx.go
 
 NODE id=matrix/neo/internal/config.softHeadroomCapTokens kind=const
-  digest=b3:d000455921b9e16b66b75f29314f0b3516dcf68aa4f6464d7bbc3aedd3441643 file=neo/internal/config/config.go range=834:841 lang=go exported=false byte_range=41863:42336
+  digest=b3:d000455921b9e16b66b75f29314f0b3516dcf68aa4f6464d7bbc3aedd3441643 file=neo/internal/config/config.go range=877:884 lang=go exported=false byte_range=44008:44481
   sig=untyped int
   doc=Headroom caps for the budget derivation below: at large windows a percentage\nthreshold reserves an absurd absolute slice (80% of 1M leaves 200K tokens\nidle), so the reserved headroom is the SMALLER of the percentage-derived\nslice and these absolute caps. Below ~320K windows the caps never bind, so\nsmall local-model configurations (32K via NEO_CONTEXT_WINDOW_TOKENS) keep\ntheir exact prior trim/compaction behavior.
 EDGES
@@ -842,15 +894,15 @@ EDGES
   ^defines=matrix/neo/internal/config/kvx.go
 
 NODE id=matrix/neo/internal/config.voiceModeOr kind=func
-  digest=b3:28e913be3f385211deabe2290cf6e68adc5dd4f720ad40831bb86be41e3c6502 file=neo/internal/config/config.go range=788:797 lang=go exported=false byte_range=40611:40819
+  digest=b3:28e913be3f385211deabe2290cf6e68adc5dd4f720ad40831bb86be41e3c6502 file=neo/internal/config/config.go range=831:840 lang=go exported=false byte_range=42756:42964
   sig=func voiceModeOr(value, fallback string) string
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config/config.go kind=file
-  digest=b3:ab3cce349c9b47dadeb4e78c43387a433c0821c4a87435061b24c9e0a1d8c896 file=neo/internal/config/config.go range=1:891 lang=go exported=true
+  digest=b3:1fa87e7bf7753e597edb30ba5638834d2b7a5661e9d90299d28769fa8e9a107e file=neo/internal/config/config.go range=1:934 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/config.Config,matrix/neo/internal/config.Config.ActivationBudget,matrix/neo/internal/config.Config.HardBudgetTokens,matrix/neo/internal/config.Config.IsEscalateAction,matrix/neo/internal/config.Config.SoftBudgetTokens,matrix/neo/internal/config.Config.applyDoc,matrix/neo/internal/config.Config.applyEnv,matrix/neo/internal/config.Default,matrix/neo/internal/config.Load,matrix/neo/internal/config.RuntimeProviderConfig,matrix/neo/internal/config.Sandbox,matrix/neo/internal/config.activationBudgetCapTokens,matrix/neo/internal/config.activationBudgetFloorTokens,matrix/neo/internal/config.budgetTokens,matrix/neo/internal/config.envBool,matrix/neo/internal/config.envFloat32,matrix/neo/internal/config.envInt,matrix/neo/internal/config.envIntNonNeg,matrix/neo/internal/config.envOr,matrix/neo/internal/config.hardHeadroomCapTokens,matrix/neo/internal/config.softHeadroomCapTokens,matrix/neo/internal/config.voiceModeOr
+  defines=matrix/neo/internal/config.Config,matrix/neo/internal/config.Config.ActivationBudget,matrix/neo/internal/config.Config.HardBudgetTokens,matrix/neo/internal/config.Config.IsEscalateAction,matrix/neo/internal/config.Config.SoftBudgetTokens,matrix/neo/internal/config.Config.applyDoc,matrix/neo/internal/config.Config.applyEnv,matrix/neo/internal/config.Default,matrix/neo/internal/config.Load,matrix/neo/internal/config.RuntimeProviderConfig,matrix/neo/internal/config.Sandbox,matrix/neo/internal/config.SubstrateCortex,matrix/neo/internal/config.SubstrateNeocortex,matrix/neo/internal/config.activationBudgetCapTokens,matrix/neo/internal/config.activationBudgetFloorTokens,matrix/neo/internal/config.budgetTokens,matrix/neo/internal/config.envBool,matrix/neo/internal/config.envFloat32,matrix/neo/internal/config.envInt,matrix/neo/internal/config.envIntNonNeg,matrix/neo/internal/config.envOr,matrix/neo/internal/config.hardHeadroomCapTokens,matrix/neo/internal/config.softHeadroomCapTokens,matrix/neo/internal/config.voiceModeOr
   ^contains=matrix/neo/internal/config
 
 NODE id=matrix/neo/internal/config/kvx.go kind=file

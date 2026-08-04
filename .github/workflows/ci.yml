@@ -240,6 +240,15 @@ jobs:
           cache: true
           cache-dependency-path: ${{ matrix.module }}/go.sum
 
+      - uses: astral-sh/setup-uv@v7
+        if: matrix.module == 'neo'
+        with:
+          version: "0.11.6"
+
+      - name: install Neo fetch runtime
+        if: matrix.module == 'neo'
+        run: uv tool install --with "mcp==1.29.0" mcp-server-fetch==2025.4.7
+
       - name: go mod download
         working-directory: ${{ matrix.module }}
         run: go mod download

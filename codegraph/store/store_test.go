@@ -9,7 +9,7 @@ import (
 	"matrix/codegraph/model"
 )
 
-const goldenPath = "../../graph/matrix/cortex.kvx"
+const goldenPath = "testdata/cortex.kvx"
 
 func TestGolden_RoundTripByteIdentical(t *testing.T) {
 	want, err := os.ReadFile(goldenPath)

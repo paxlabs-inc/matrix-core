@@ -1,0 +1,56 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=codegraph-ultra/internal/salience kind=package
+  digest=b3:01d3c73a776f23a2ba31268adb1f1bbf1ac12e22c6eaa99da69bb89d7df89df1 file=codegraph-ultra/internal/salience range=0:0 lang=go exported=true
+EDGES
+  contains=codegraph-ultra/internal/salience/salience.go
+  ^contains=mod:codegraph-ultra
+
+NODE id=codegraph-ultra/internal/salience.ComputeForIndex kind=func
+  digest=b3:230ba2797da4f1847bf6039d5ae0f22ff7e041ee696b6bba03324e637ebdb6fa file=codegraph-ultra/internal/salience/salience.go range=96:122 lang=go exported=true byte_range=2137:2737
+  sig=func ComputeForIndex(ix *model.Index) map[string]float64
+  doc=ComputeForIndex computes salience scores for an in-memory index.\nReturns the salience map without persisting.
+EDGES
+  ^defines=codegraph-ultra/internal/salience/salience.go
+
+NODE id=codegraph-ultra/internal/salience.ImpactEdges kind=var
+  digest=b3:b6444ee39baa321e38f187437ca779d06c402d3ac9f8511fe755cf2f3b2b5b25 file=codegraph-ultra/internal/salience/salience.go range=14:19 lang=go exported=true byte_range=325:491
+  sig=[]model.EdgeType
+  doc=ImpactEdges are the edge types used for salience computation.
+EDGES
+  ^defines=codegraph-ultra/internal/salience/salience.go
+
+NODE id=codegraph-ultra/internal/salience.New kind=func
+  digest=b3:4ff305671538f1069a4da440e1e0a27072c5a540a182f3e38c85e05734ae3991 file=codegraph-ultra/internal/salience/salience.go range=26:29 lang=go exported=true byte_range=605:701
+  sig=func New(db *store.DB) *Scorer
+  doc=New creates a new salience scorer.
+EDGES
+  ^defines=codegraph-ultra/internal/salience/salience.go
+
+NODE id=codegraph-ultra/internal/salience.Scorer kind=type
+  digest=b3:1fcb7123efad84a97aadf52f2bbcab2f0582b28dea3fd3eb181656d36cc14149 file=codegraph-ultra/internal/salience/salience.go range=21:24 lang=go exported=true byte_range=493:603
+  sig=type Scorer struct {\n	db *store.DB\n}
+  doc=Scorer computes and stores salience scores for all symbol-level nodes.
+EDGES
+  contains=codegraph-ultra/internal/salience.Scorer#db,codegraph-ultra/internal/salience.Scorer.Compute
+  ^defines=codegraph-ultra/internal/salience/salience.go
+
+NODE id=codegraph-ultra/internal/salience.Scorer#db kind=field
+  digest=b3:8e0a0520f9bf9cff7a08254f630d9f2afe4549ddc1438434847f9e1b65021746 file=codegraph-ultra/internal/salience/salience.go range=23:23 lang=go exported=false byte_range=589:601
+  sig=*store.DB
+EDGES
+  ^contains=codegraph-ultra/internal/salience.Scorer
+
+NODE id=codegraph-ultra/internal/salience.Scorer.Compute kind=method
+  digest=b3:f7bf6963686baebb1bd69d240174ca1959306195aab3bfae9a5ddaaaf53b813b file=codegraph-ultra/internal/salience/salience.go range=31:94 lang=go exported=true byte_range=703:2135
+  sig=func (s *Scorer) Compute() (int, error)
+  doc=Compute calculates salience for all enrichable node kinds and stores them.\nSalience is based on reverse fan-in (how many nodes depend on this one).\nThe score is normalized to [0,1] and blended with any prior salience via EMA.
+EDGES
+  ^contains=codegraph-ultra/internal/salience.Scorer
+  ^defines=codegraph-ultra/internal/salience/salience.go
+
+NODE id=codegraph-ultra/internal/salience/salience.go kind=file
+  digest=b3:94f6a0a286d2290272ca9591e9b82bf0bba45a1b9baa5712ff7895e003e45689 file=codegraph-ultra/internal/salience/salience.go range=1:122 lang=go exported=true
+EDGES
+  defines=codegraph-ultra/internal/salience.ComputeForIndex,codegraph-ultra/internal/salience.ImpactEdges,codegraph-ultra/internal/salience.New,codegraph-ultra/internal/salience.Scorer,codegraph-ultra/internal/salience.Scorer.Compute
+  ^contains=codegraph-ultra/internal/salience

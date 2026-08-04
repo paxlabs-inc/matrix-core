@@ -303,7 +303,7 @@ func discoverModules(root string) ([]string, error) {
 		}
 		if d.IsDir() {
 			switch d.Name() {
-			case ".git", "node_modules", "vendor", "testdata":
+			case ".git", "node_modules", "vendor", "third_party", "testdata":
 				return fs.SkipDir
 			}
 			return nil

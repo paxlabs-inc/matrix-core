@@ -1,0 +1,112 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief kind=package
+  digest=b3:d4050a134d02c4d662c5000653e57855155332045961bb0adde86131f0cfa89a file=chronos/internal/morningbrief range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/morningbrief/morningbrief.go
+  ^contains=mod:github.com/paxlabs-inc/chronos
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.BuildAlarm kind=func
+  digest=b3:efcf4e655ff688d20c98d819b1c20a5039d807af6b76e5e3cee3ef65ccf83b46 file=chronos/internal/morningbrief/morningbrief.go range=107:139 lang=go exported=true byte_range=3987:5129
+  sig=func BuildAlarm(spec Spec, now time.Time) (types.Alarm, error)
+  doc=BuildAlarm assembles a Chronos MORNING_BRIEF alarm (a cron recurring alarm at\nthe user's local delivery time on the selected days, carrying the canonical\nMORNING_BRIEF wake_message). The caller sets OwnerDID + UserID before\npersisting (the server does this from the authenticated principal).
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/morningbrief/morningbrief.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.CronExpr kind=func
+  digest=b3:88ed8e0c866d8d0c58eb51d5a7143ee21060342fd133470d848beb4572ea8e80 file=chronos/internal/morningbrief/morningbrief.go range=59:75 lang=go exported=true byte_range=2554:3349
+  sig=func CronExpr(deliveryTime string, days []time.Weekday) (string, error)
+  doc=CronExpr renders the standard 5-field cron expression ("M H * * DOW") for a\nlocal delivery time and weekday set. An empty/whole day set yields "*" for\nthe day-of-week field (every day). Weekdays follow cron's Sunday=0..Saturday=6.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/morningbrief/morningbrief.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.DefaultDeliveryTime kind=const
+  digest=b3:670c0e5c2ddab8fbd978f38e80019f3619eb001299594d4d3d45744584f284bf file=chronos/internal/morningbrief/morningbrief.go range=36:37 lang=go exported=true byte_range=1640:1754
+  sig=untyped string
+  doc=DefaultDeliveryTime is the local delivery time used when none is specified.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/morningbrief/morningbrief.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.Marker kind=const
+  digest=b3:99d066cf3c6d46b5827dc268492a773326e6a3fad2f9bafd67409fd4b210dc3e file=chronos/internal/morningbrief/morningbrief.go range=32:34 lang=go exported=true byte_range=1507:1638
+  sig=untyped string
+  doc=Marker is the token every MORNING_BRIEF wake_message carries so the agent can\ndetect the wake.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/morningbrief/morningbrief.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec kind=type
+  digest=b3:482bbdf47426c1265fb3006327ffe04bbff08886366714d14b0d8c7f527e0fb9 file=chronos/internal/morningbrief/morningbrief.go range=39:57 lang=go exported=true byte_range=1756:2552
+  sig=type Spec struct {\n	// ConversationID is the conversation the wake resumes into (required).\n	ConversationID	string\n	// DeliveryTime is the local delivery time as "HH:MM" (24h). Defaults to\n	// DefaultDeliveryTime when empty.\n	DeliveryTime	string\n	// Days restricts delivery to these weekdays. Empty = every day.\n	Days	[]time.Weekday\n	// Timezone is the IANA timezone the delivery time is evaluated in\n	// (default UTC). DST correctness comes from cron+timezone evaluation.\n	Timezone	string\n	// Label is an optional human-readable label for the alarm.\n	Label	string\n	// IdempotencyKey deduplicates the alarm (a user enables the brief once).\n	IdempotencyKey	string\n	// MaxFailures is the wake-delivery retry ceiling (0 = server default).\n	MaxFailures	int\n}
+  doc=Spec configures a MORNING_BRIEF alarm.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#ConversationID,github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#Days,github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#DeliveryTime,github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#IdempotencyKey,github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#Label,github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#MaxFailures,github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#Timezone
+  ^defines=github.com/paxlabs-inc/chronos/internal/morningbrief/morningbrief.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#ConversationID kind=field
+  digest=b3:bcff8424774aad6485f5f6251adb8fe18b6c26eaf288a17d8043fb3b8a37d617 file=chronos/internal/morningbrief/morningbrief.go range=41:42 lang=go exported=true byte_range=1818:1912
+  sig=string
+  doc=ConversationID is the conversation the wake resumes into (required).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#Days kind=field
+  digest=b3:c99d9f49472c184933671931a81fc60b73557fe1a262280543e38a1a2caf5fa4 file=chronos/internal/morningbrief/morningbrief.go range=46:47 lang=go exported=true byte_range=2045:2130
+  sig=[]time.Weekday
+  doc=Days restricts delivery to these weekdays. Empty = every day.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#DeliveryTime kind=field
+  digest=b3:39095b003b75ed9726505357a96f46810b3215d3710b19e9175813279e0377be file=chronos/internal/morningbrief/morningbrief.go range=43:45 lang=go exported=true byte_range=1914:2043
+  sig=string
+  doc=DeliveryTime is the local delivery time as "HH:MM" (24h). Defaults to\nDefaultDeliveryTime when empty.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#IdempotencyKey kind=field
+  digest=b3:44075f080f4259dee423c4f9d57689a020cdaace4a21aaa26427aa70c3c597c3 file=chronos/internal/morningbrief/morningbrief.go range=53:54 lang=go exported=true byte_range=2364:2460
+  sig=string
+  doc=IdempotencyKey deduplicates the alarm (a user enables the brief once).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#Label kind=field
+  digest=b3:fce7566067af6464fca03764bfa69fc4dd26eb7143b9dfe503330e8e8292bab2 file=chronos/internal/morningbrief/morningbrief.go range=51:52 lang=go exported=true byte_range=2289:2362
+  sig=string
+  doc=Label is an optional human-readable label for the alarm.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#MaxFailures kind=field
+  digest=b3:4835b162761bd5ce8cf69474f857d10828d3752df594bb06b2c546e445d0a3ee file=chronos/internal/morningbrief/morningbrief.go range=55:56 lang=go exported=true byte_range=2462:2550
+  sig=int
+  doc=MaxFailures is the wake-delivery retry ceiling (0 = server default).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec#Timezone kind=field
+  digest=b3:a31b85344843c98880e3a4e8beb017fcf597da361449e7bcb9f0c87076939465 file=chronos/internal/morningbrief/morningbrief.go range=48:50 lang=go exported=true byte_range=2132:2287
+  sig=string
+  doc=Timezone is the IANA timezone the delivery time is evaluated in\n(default UTC). DST correctness comes from cron+timezone evaluation.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/morningbrief.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.WakeMessage kind=const
+  digest=b3:094838ec6c10cbd2378bfaad89b664d26aaeef1b8062c55203bcd5e0cb7e62d4 file=chronos/internal/morningbrief/morningbrief.go range=25:30 lang=go exported=true byte_range=935:1505
+  sig=untyped string
+  doc=WakeMessage is the canonical wake_message a Chronos MORNING_BRIEF alarm\ndelivers. It carries the MORNING_BRIEF marker the agent uses to detect a brief\nwake (which routes to the restricted, supervised brief runner rather than a\nnormal conversational dispatch). It MUST stay in sync with the agent-side\nmarker constant.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/morningbrief/morningbrief.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief.dowField kind=func
+  digest=b3:9ab3db5a865c0a7c5155c1679d1b23600f24e54071c2970eabca242b0e16d311 file=chronos/internal/morningbrief/morningbrief.go range=77:105 lang=go exported=false byte_range=3351:3985
+  sig=func dowField(days []time.Weekday) string
+  doc=dowField renders the day-of-week cron field: "*" for an empty/full set, else\na sorted, deduped comma list of 0-6.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/morningbrief/morningbrief.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/morningbrief/morningbrief.go kind=file
+  digest=b3:8a9de26954e7af661d0756231ba05ffac0841a617771d38bd61c0a4954dc4cf8 file=chronos/internal/morningbrief/morningbrief.go range=1:139 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/chronos/internal/morningbrief.BuildAlarm,github.com/paxlabs-inc/chronos/internal/morningbrief.CronExpr,github.com/paxlabs-inc/chronos/internal/morningbrief.DefaultDeliveryTime,github.com/paxlabs-inc/chronos/internal/morningbrief.Marker,github.com/paxlabs-inc/chronos/internal/morningbrief.Spec,github.com/paxlabs-inc/chronos/internal/morningbrief.WakeMessage,github.com/paxlabs-inc/chronos/internal/morningbrief.dowField
+  ^contains=github.com/paxlabs-inc/chronos/internal/morningbrief

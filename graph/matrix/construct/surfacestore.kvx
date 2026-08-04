@@ -1,15 +1,15 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/construct/surfacestore kind=package
-  digest=b3:20bd252c8d34bffdeaa92cb9f37e252cc58ca0c68cb2f2339e168ea7f580c366 file=construct/surfacestore range=0:0 lang=go exported=true
+  digest=b3:000f174924bfbbeacc0c2c8026a47869d2d864782a57233fb37bffdb785a5c9c file=construct/surfacestore range=0:0 lang=go exported=true
 EDGES
   contains=matrix/construct/surfacestore/surfacestore.go
-  imports=matrix/construct/schema
+  imports=matrix/construct/schema,matrix/vault
   ^contains=mod:matrix/construct
   ^imports=matrix/executor/cmd/mcl-execute
 
 NODE id=matrix/construct/surfacestore.DefaultRetainedFrames kind=const
-  digest=b3:edde81b457bb378338b8fb9df44508c8d5a490fed3ce8f4e61d633863b7292ed file=construct/surfacestore/surfacestore.go range=57:62 lang=go exported=true byte_range=2699:3110
+  digest=b3:edde81b457bb378338b8fb9df44508c8d5a490fed3ce8f4e61d633863b7292ed file=construct/surfacestore/surfacestore.go range=65:70 lang=go exported=true byte_range=2947:3358
   sig=untyped int
   doc=DefaultRetainedFrames caps how many surface frames are retained per\nconversation on disk. Larger than the broker's live replay buffer because\nthis is the durable record a reopen rebuilds from; still bounded so a runaway\nconversation can't grow the file without limit. It is also the bound the\nrehydration read path returns (R16.4), so cold-open cost is bounded.
 EDGES
@@ -17,7 +17,7 @@ EDGES
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.Dir kind=func
-  digest=b3:a0476f2feda573075fe317f51435d2b313aea87ca071983f73e3a9bca15767cb file=construct/surfacestore/surfacestore.go range=379:392 lang=go exported=true byte_range=13596:14167
+  digest=b3:a0476f2feda573075fe317f51435d2b313aea87ca071983f73e3a9bca15767cb file=construct/surfacestore/surfacestore.go range=447:460 lang=go exported=true byte_range=16103:16674
   sig=func Dir(override, cortexRoot string) string
   doc=Dir resolves the surface-store directory. An explicit override wins; else it\nis derived from the cortex root's parent (matching the conversation, task,\nand trace stores, so the surface record shares the per-user /data volume with\nthem and survives suspend / redeploy). Returns "" when neither is available\n(persistence disabled).
 EDGES
@@ -27,16 +27,16 @@ EDGES
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.Frame kind=type
-  digest=b3:520052ec4156c64d156c06af44c7e60ddba248d958563fa74ea4e67041df1aab file=construct/surfacestore/surfacestore.go range=70:81 lang=go exported=true byte_range=3443:4141
+  digest=b3:520052ec4156c64d156c06af44c7e60ddba248d958563fa74ea4e67041df1aab file=construct/surfacestore/surfacestore.go range=78:89 lang=go exported=true byte_range=3691:4389
   sig=type Frame schema.Frame
   doc=Frame is one persisted Construct surface event. It is an alias of the\ncanonical wire type schema.Frame, which is the single source of truth that\nthe codegen mirrors into the client's types.gen.ts — so the persisted shape\ncan never drift from the generated client type. Its shape mirrors the daemon\nSSE Event ({seq,ts,phase,type,fields}) — and neo/internal/trace.Event — so\nthe persisted stream replays through the client's existing reducer\nbyte-for-byte on a reopen.\n\nPhase is always transport.Phase ("construct"); Type is one of\ntransport.EventSurface ("construct.surface") or transport.EventSurfacePatch\n("construct.surface.patch").
 EDGES
   references=matrix/construct/schema.Frame
-  ^references=matrix/construct/surfacestore.Store.Load,matrix/construct/surfacestore.Store.Record,matrix/construct/surfacestore.appendJSONL,matrix/construct/surfacestore.readJSONL,matrix/construct/surfacestore.record
+  ^references=matrix/construct/surfacestore.Store.Load,matrix/construct/surfacestore.Store.Record,matrix/construct/surfacestore.Store.appendFrame,matrix/construct/surfacestore.Store.readFrames,matrix/construct/surfacestore.record
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.Open kind=func
-  digest=b3:28db05bca8b089e63a0f0774a0179da9f54d286bbd84ca9456680566a1750e43 file=construct/surfacestore/surfacestore.go range=108:116 lang=go exported=true byte_range=4959:5437
+  digest=b3:28db05bca8b089e63a0f0774a0179da9f54d286bbd84ca9456680566a1750e43 file=construct/surfacestore/surfacestore.go range=140:148 lang=go exported=true byte_range=6218:6696
   sig=func Open(dir string) *Store
   doc=Open builds a store rooted at dir (shares the per-user /data volume with the\ncortex, conversation, task, and trace stores) and starts its background\nwriter. An empty dir yields a disabled store (every method is a safe no-op)\nso dev/CLI runs work unchanged. The retained-frame cap defaults to\nDefaultRetainedFrames and can be overridden via CONSTRUCT_SURFACE_RETAIN\n(read once at Open).
 EDGES
@@ -47,53 +47,66 @@ EDGES
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.Store kind=type
-  digest=b3:bab37f8f240de0b71bf885d2dae7d37411cd8dd37d0625773dac83b07ae6ca4c file=construct/surfacestore/surfacestore.go range=92:106 lang=go exported=true byte_range=4420:4957
-  sig=type Store struct {\n	dir	string\n	retain	int\n\n	ch	chan record\n	stop	chan struct{}\n	closed	chan struct{}\n	once	sync.Once\n}
+  digest=b3:1dba74f37f3d118e8a7a40bfd4d6b2629138c4fb935670c6bde1bfd45c751171 file=construct/surfacestore/surfacestore.go range=100:121 lang=go exported=true byte_range=4668:5535
+  sig=type Store struct {\n	dir	string\n	retain	int\n\n	ch	chan record\n	stop	chan struct{}\n	closed	chan struct{}\n	once	sync.Once\n\n	// vault seals each JSONL frame when encrypting; nil = plaintext dev/CLI.\n	// user is the DID bound into each frame's associated data. Set once at engine\n	// assembly (before any Record) so the writer/Load goroutines observe it via\n	// the channel/serving happens-before edge without a lock.\n	vault	*vault.Session\n	user	string\n}
   doc=Store is the Construct OS Shell's durable per-conversation surface timeline. A\nsingle background writer goroutine owns all disk writes (and the per-\nconversation frame counts), so the only shared state is the enqueue channel;\nreads (Load) go straight to the filesystem and are safe against the writer\nbecause every write is atomic (an O_APPEND single-line write, or a\ntmp+rename rollup).
 EDGES
-  contains=matrix/construct/surfacestore.Store#ch,matrix/construct/surfacestore.Store#closed,matrix/construct/surfacestore.Store#dir,matrix/construct/surfacestore.Store#once,matrix/construct/surfacestore.Store#retain,matrix/construct/surfacestore.Store#stop,matrix/construct/surfacestore.Store.Close,matrix/construct/surfacestore.Store.Enabled,matrix/construct/surfacestore.Store.Flush,matrix/construct/surfacestore.Store.Load,matrix/construct/surfacestore.Store.Record,matrix/construct/surfacestore.Store.handle,matrix/construct/surfacestore.Store.rollLocked,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.Store.writer
-  references=matrix/construct/surfacestore.record
-  ^references=matrix/construct/surfacestore.Open,matrix/construct/surfacestore.Store.Close,matrix/construct/surfacestore.Store.Enabled,matrix/construct/surfacestore.Store.Flush,matrix/construct/surfacestore.Store.Load,matrix/construct/surfacestore.Store.Record,matrix/construct/surfacestore.Store.handle,matrix/construct/surfacestore.Store.rollLocked,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.Store.writer,matrix/construct/surfacestore.openWithCap,matrix/executor/cmd/mcl-execute.daemonState,matrix/executor/cmd/mcl-execute.serveConstructState
+  contains=matrix/construct/surfacestore.Store#ch,matrix/construct/surfacestore.Store#closed,matrix/construct/surfacestore.Store#dir,matrix/construct/surfacestore.Store#once,matrix/construct/surfacestore.Store#retain,matrix/construct/surfacestore.Store#stop,matrix/construct/surfacestore.Store#user,matrix/construct/surfacestore.Store#vault,matrix/construct/surfacestore.Store.Close,matrix/construct/surfacestore.Store.Enabled,matrix/construct/surfacestore.Store.Flush,matrix/construct/surfacestore.Store.Load,matrix/construct/surfacestore.Store.Record,matrix/construct/surfacestore.Store.SetVault,matrix/construct/surfacestore.Store.ad,matrix/construct/surfacestore.Store.appendFrame,matrix/construct/surfacestore.Store.handle,matrix/construct/surfacestore.Store.readFrames,matrix/construct/surfacestore.Store.rollLocked,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.Store.writer
+  references=matrix/construct/surfacestore.record,matrix/vault.Session
+  ^references=matrix/construct/surfacestore.Open,matrix/construct/surfacestore.Store.Close,matrix/construct/surfacestore.Store.Enabled,matrix/construct/surfacestore.Store.Flush,matrix/construct/surfacestore.Store.Load,matrix/construct/surfacestore.Store.Record,matrix/construct/surfacestore.Store.SetVault,matrix/construct/surfacestore.Store.ad,matrix/construct/surfacestore.Store.appendFrame,matrix/construct/surfacestore.Store.handle,matrix/construct/surfacestore.Store.readFrames,matrix/construct/surfacestore.Store.rollLocked,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.Store.writer,matrix/construct/surfacestore.openWithCap,matrix/executor/cmd/mcl-execute.daemonState,matrix/executor/cmd/mcl-execute.serveConstructState
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.Store#ch kind=field
-  digest=b3:79c9fcf75b77b85054de7e1d859ef52aa80bd647cdb8bf675c1fdb21d0e792a3 file=construct/surfacestore/surfacestore.go range=102:102 lang=go exported=false byte_range=4875:4893
+  digest=b3:79c9fcf75b77b85054de7e1d859ef52aa80bd647cdb8bf675c1fdb21d0e792a3 file=construct/surfacestore/surfacestore.go range=110:110 lang=go exported=false byte_range=5123:5141
   sig=chan surfacestore.record
 EDGES
   ^contains=matrix/construct/surfacestore.Store
 
 NODE id=matrix/construct/surfacestore.Store#closed kind=field
-  digest=b3:8b6335e2bc47898c382469e4d651bf5a31a4c65a2aa3eb02dbdfafbd0df0f3a1 file=construct/surfacestore/surfacestore.go range=104:104 lang=go exported=false byte_range=4917:4937
+  digest=b3:8b6335e2bc47898c382469e4d651bf5a31a4c65a2aa3eb02dbdfafbd0df0f3a1 file=construct/surfacestore/surfacestore.go range=112:112 lang=go exported=false byte_range=5165:5185
   sig=chan struct{}
 EDGES
   ^contains=matrix/construct/surfacestore.Store
 
 NODE id=matrix/construct/surfacestore.Store#dir kind=field
-  digest=b3:6f3d75fd9de2145916a05b955f0a88d84360f2a3b50e4d3f92de2abe144448ba file=construct/surfacestore/surfacestore.go range=99:99 lang=go exported=false byte_range=4847:4860
+  digest=b3:6f3d75fd9de2145916a05b955f0a88d84360f2a3b50e4d3f92de2abe144448ba file=construct/surfacestore/surfacestore.go range=107:107 lang=go exported=false byte_range=5095:5108
   sig=string
 EDGES
   ^contains=matrix/construct/surfacestore.Store
 
 NODE id=matrix/construct/surfacestore.Store#once kind=field
-  digest=b3:bfde5dceb61663a0a8fec9b0d8deb2c2f36a28de62877c8cec230829de812dc9 file=construct/surfacestore/surfacestore.go range=105:105 lang=go exported=false byte_range=4939:4955
+  digest=b3:bfde5dceb61663a0a8fec9b0d8deb2c2f36a28de62877c8cec230829de812dc9 file=construct/surfacestore/surfacestore.go range=113:113 lang=go exported=false byte_range=5187:5203
   sig=sync.Once
 EDGES
   ^contains=matrix/construct/surfacestore.Store
 
 NODE id=matrix/construct/surfacestore.Store#retain kind=field
-  digest=b3:ccc6b887dbabc356616397e3eabbdded60c35a23fb8c6e50bbecaa4ed8dff05b file=construct/surfacestore/surfacestore.go range=100:100 lang=go exported=false byte_range=4862:4872
+  digest=b3:ccc6b887dbabc356616397e3eabbdded60c35a23fb8c6e50bbecaa4ed8dff05b file=construct/surfacestore/surfacestore.go range=108:108 lang=go exported=false byte_range=5110:5120
   sig=int
 EDGES
   ^contains=matrix/construct/surfacestore.Store
 
 NODE id=matrix/construct/surfacestore.Store#stop kind=field
-  digest=b3:b6c906ed8ebde95e53cd7860b3022c4675318fcb7c5d7f8078d9ccae18d64cda file=construct/surfacestore/surfacestore.go range=103:103 lang=go exported=false byte_range=4895:4915
+  digest=b3:b6c906ed8ebde95e53cd7860b3022c4675318fcb7c5d7f8078d9ccae18d64cda file=construct/surfacestore/surfacestore.go range=111:111 lang=go exported=false byte_range=5143:5163
   sig=chan struct{}
 EDGES
   ^contains=matrix/construct/surfacestore.Store
 
+NODE id=matrix/construct/surfacestore.Store#user kind=field
+  digest=b3:d6e3aa39dcac5194e82f4d88b0e0a05b1aa2e4c600d380e23a30f8afcefb41c5 file=construct/surfacestore/surfacestore.go range=120:120 lang=go exported=false byte_range=5521:5533
+  sig=string
+EDGES
+  ^contains=matrix/construct/surfacestore.Store
+
+NODE id=matrix/construct/surfacestore.Store#vault kind=field
+  digest=b3:74bead15eb2cc9f12339b5babf4ad2fdcfa6c6c3df67784beae237c7b18aeefe file=construct/surfacestore/surfacestore.go range=115:119 lang=go exported=false byte_range=5206:5519
+  sig=*vault.Session
+  doc=vault seals each JSONL frame when encrypting; nil = plaintext dev/CLI.\nuser is the DID bound into each frame's associated data. Set once at engine\nassembly (before any Record) so the writer/Load goroutines observe it via\nthe channel/serving happens-before edge without a lock.
+EDGES
+  ^contains=matrix/construct/surfacestore.Store
+
 NODE id=matrix/construct/surfacestore.Store.Close kind=method
-  digest=b3:430288e8b1b787898eff8261cc4513f0fc54d94a05c335dc0541a0fb00296089 file=construct/surfacestore/surfacestore.go range=189:196 lang=go exported=true byte_range=7725:7907
+  digest=b3:430288e8b1b787898eff8261cc4513f0fc54d94a05c335dc0541a0fb00296089 file=construct/surfacestore/surfacestore.go range=221:228 lang=go exported=true byte_range=8984:9166
   sig=func (s *Store) Close()
   doc=Close stops the background writer after draining the queue. Idempotent.
 EDGES
@@ -105,7 +118,7 @@ EDGES
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.Store.Enabled kind=method
-  digest=b3:7ee9e38ccc8392a851473d2022e1d350a39a14aa9839d862e6605b5c0828361a file=construct/surfacestore/surfacestore.go range=151:152 lang=go exported=true byte_range=6213:6348
+  digest=b3:7ee9e38ccc8392a851473d2022e1d350a39a14aa9839d862e6605b5c0828361a file=construct/surfacestore/surfacestore.go range=183:184 lang=go exported=true byte_range=7472:7607
   sig=func (s *Store) Enabled() bool
   doc=Enabled reports whether persistence is on (a non-empty directory).
 EDGES
@@ -116,7 +129,7 @@ EDGES
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.Store.Flush kind=method
-  digest=b3:47b2d32de0de0528f84ff5efbb7e0c3de28fe40818542cf95eb09391c389d859 file=construct/surfacestore/surfacestore.go range=173:187 lang=go exported=true byte_range=7267:7723
+  digest=b3:47b2d32de0de0528f84ff5efbb7e0c3de28fe40818542cf95eb09391c389d859 file=construct/surfacestore/surfacestore.go range=205:219 lang=go exported=true byte_range=8526:8982
   sig=func (s *Store) Flush()
   doc=Flush blocks until the writer has drained every record enqueued before this\ncall. Used by tests (to make the async write deterministic) and by graceful\nshutdown; it uses a blocking send, so it must NOT be called on the publish\nhot path. A disabled/closed store returns immediately.
 EDGES
@@ -128,19 +141,19 @@ EDGES
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.Store.Load kind=method
-  digest=b3:c2508dc9c47c788f13d9cfb4f3a7064470b581db8d4382e52862bf88c991f4dc file=construct/surfacestore/surfacestore.go range=261:278 lang=go exported=true byte_range=9939:10780
+  digest=b3:2b897f1b1417f0b432058377cc5d243bb9202579b0961b5462f67cbe4de4d68e file=construct/surfacestore/surfacestore.go range=293:310 lang=go exported=true byte_range=11276:12136
   sig=func (s *Store) Load(conversationID string) []Frame
   doc=Load returns the persisted surface frames for one conversation, oldest-first,\nor nil when there are none / persistence is disabled / the conversation id is\ninvalid (contains a path separator). Safe to call concurrently with the\nwriter: every write is atomic, so a read sees a consistent file.
 EDGES
-  calls=matrix/construct/surfacestore.Store.Enabled,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.readJSONL,matrix/construct/surfacestore.validConversationID
-  references=matrix/construct/surfacestore.Frame,matrix/construct/surfacestore.Store,matrix/construct/surfacestore.Store.Enabled,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.conversationID,matrix/construct/surfacestore.frames,matrix/construct/surfacestore.readJSONL,matrix/construct/surfacestore.s,matrix/construct/surfacestore.validConversationID
+  calls=matrix/construct/surfacestore.Store.Enabled,matrix/construct/surfacestore.Store.readFrames,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.validConversationID
+  references=matrix/construct/surfacestore.Frame,matrix/construct/surfacestore.Store,matrix/construct/surfacestore.Store.Enabled,matrix/construct/surfacestore.Store.readFrames,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.conversationID,matrix/construct/surfacestore.frames,matrix/construct/surfacestore.s,matrix/construct/surfacestore.validConversationID
   ^contains=matrix/construct/surfacestore.Store
   ^calls=matrix/executor/cmd/mcl-execute.serveConstructState
   ^references=matrix/executor/cmd/mcl-execute.serveConstructState
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.Store.Record kind=method
-  digest=b3:834df03ea63c6d5de0024a00214c224ba2f6682ebc86e22c76c1f4e475d82ea8 file=construct/surfacestore/surfacestore.go range=154:171 lang=go exported=true byte_range=6350:7265
+  digest=b3:834df03ea63c6d5de0024a00214c224ba2f6682ebc86e22c76c1f4e475d82ea8 file=construct/surfacestore/surfacestore.go range=186:203 lang=go exported=true byte_range=7609:8524
   sig=func (s *Store) Record(conversationID string, fr Frame)
   doc=Record enqueues one surface frame for asynchronous persistence. It NEVER\nblocks (the broker publish path calls it): if the writer queue is saturated,\nthe frame is dropped, exactly like the broker drops events to slow\nsubscribers. A disabled store, a blank conversation id, or a conversation id\ncontaining a path separator is ignored (never persisted) — the latter both\nas input validation and as a path-traversal guard.
 EDGES
@@ -151,32 +164,78 @@ EDGES
   ^references=matrix/executor/cmd/mcl-execute.daemonState.recordSurfaceFrame
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
+NODE id=matrix/construct/surfacestore.Store.SetVault kind=method
+  digest=b3:016c1165f9a860e3016ef606fbd2cbeb2e3292e195b4ddd7fb1b45071a0819a1 file=construct/surfacestore/surfacestore.go range=123:132 lang=go exported=true byte_range=5537:5875
+  sig=func (s *Store) SetVault(sess *vault.Session, user string)
+  doc=SetVault wires the fail-closed data-at-rest session and owning user DID into\nthe store. Called once at assembly before any frame is recorded; a nil session\nleaves the store writing legacy plaintext (dev/CLI).
+EDGES
+  references=matrix/construct/surfacestore.Store,matrix/construct/surfacestore.s,matrix/construct/surfacestore.sess,matrix/construct/surfacestore.user,matrix/vault.Session
+  ^contains=matrix/construct/surfacestore.Store
+  ^calls=matrix/executor/cmd/mcl-execute.runDaemon
+  ^references=matrix/executor/cmd/mcl-execute.runDaemon
+  ^defines=matrix/construct/surfacestore/surfacestore.go
+
+NODE id=matrix/construct/surfacestore.Store.ad kind=method
+  digest=b3:631ca72d5ed019bb6b3b6b389854bc9dfa5d69b9be7395438ae9b72414e8ae8f file=construct/surfacestore/surfacestore.go range=134:138 lang=go exported=false byte_range=5877:6216
+  sig=func (s *Store) ad(conversationID string, seq uint64) vault.AD
+  doc=ad reconstructs the associated data for a frame from where it lives — never\nstored, so a frame moved between users, conversations, or positions fails auth.
+EDGES
+  references=matrix/construct/surfacestore.Store,matrix/construct/surfacestore.conversationID,matrix/construct/surfacestore.s,matrix/construct/surfacestore.schemaFrameV1,matrix/construct/surfacestore.seq,matrix/construct/surfacestore.storeSurface,matrix/vault.AD
+  ^contains=matrix/construct/surfacestore.Store
+  ^calls=matrix/construct/surfacestore.Store.appendFrame,matrix/construct/surfacestore.Store.readFrames,matrix/construct/surfacestore.Store.rollLocked
+  ^references=matrix/construct/surfacestore.Store.appendFrame,matrix/construct/surfacestore.Store.readFrames,matrix/construct/surfacestore.Store.rollLocked
+  ^defines=matrix/construct/surfacestore/surfacestore.go
+
+NODE id=matrix/construct/surfacestore.Store.appendFrame kind=method
+  digest=b3:c34783d732bb4b32bb96f875620e1f4adb00876dd7ad9a75284dd3d4a5856ae0 file=construct/surfacestore/surfacestore.go range=360:383 lang=go exported=false byte_range=13702:14481
+  sig=func (s *Store) appendFrame(conversationID string, seq uint64, path string, fr Frame) error
+  doc=appendFrame appends one frame as a single (sealed, when encrypting) JSONL\nline. O_APPEND + a single Write makes the line atomically visible (POSIX); a\ntorn write yields an unparseable final line that readFrames skips\n(crash-atomic). seq binds the frame to its position in the conversation.
+EDGES
+  calls=matrix/construct/surfacestore.Store.ad,matrix/vault.Session.EncodeLine
+  references=matrix/construct/surfacestore.Frame,matrix/construct/surfacestore.Store,matrix/construct/surfacestore.Store.ad,matrix/construct/surfacestore.b,matrix/construct/surfacestore.conversationID,matrix/construct/surfacestore.err,matrix/construct/surfacestore.f,matrix/construct/surfacestore.fr,matrix/construct/surfacestore.line,matrix/construct/surfacestore.path,matrix/construct/surfacestore.s,matrix/construct/surfacestore.seq,matrix/vault.Session.EncodeLine
+  ^contains=matrix/construct/surfacestore.Store
+  ^calls=matrix/construct/surfacestore.Store.handle
+  ^references=matrix/construct/surfacestore.Store.handle
+  ^defines=matrix/construct/surfacestore/surfacestore.go
+
 NODE id=matrix/construct/surfacestore.Store.handle kind=method
-  digest=b3:6781f2a9bbb6c71f2601de3af8ca442fedfcd3b086fbf56a85d873ead2c23ea0 file=construct/surfacestore/surfacestore.go range=222:259 lang=go exported=false byte_range=8438:9937
+  digest=b3:007360f3f185a8b998cd1a0641baae806c41ad09f6e72fd6dfa86387faff7aef file=construct/surfacestore/surfacestore.go range=254:291 lang=go exported=false byte_range=9697:11274
   sig=func (s *Store) handle(rec record, counts map[string]int)
   doc=handle persists one queued record (or resolves a flush sentinel). Runs only\non the writer goroutine, so `counts` needs no lock.
 EDGES
-  calls=matrix/construct/surfacestore.Store.rollLocked,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.appendJSONL,matrix/construct/surfacestore.countLines
-  references=matrix/construct/surfacestore.Store,matrix/construct/surfacestore.Store.rollLocked,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.appendJSONL,matrix/construct/surfacestore.countLines,matrix/construct/surfacestore.counts,matrix/construct/surfacestore.err,matrix/construct/surfacestore.kept,matrix/construct/surfacestore.ok,matrix/construct/surfacestore.path,matrix/construct/surfacestore.rec,matrix/construct/surfacestore.record,matrix/construct/surfacestore.s
+  calls=matrix/construct/surfacestore.Store.appendFrame,matrix/construct/surfacestore.Store.rollLocked,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.countLines
+  references=matrix/construct/surfacestore.Store,matrix/construct/surfacestore.Store.appendFrame,matrix/construct/surfacestore.Store.rollLocked,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.countLines,matrix/construct/surfacestore.counts,matrix/construct/surfacestore.err,matrix/construct/surfacestore.kept,matrix/construct/surfacestore.ok,matrix/construct/surfacestore.path,matrix/construct/surfacestore.rec,matrix/construct/surfacestore.record,matrix/construct/surfacestore.s
   ^contains=matrix/construct/surfacestore.Store
   ^calls=matrix/construct/surfacestore.Store.writer
   ^references=matrix/construct/surfacestore.Store.writer
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
+NODE id=matrix/construct/surfacestore.Store.readFrames kind=method
+  digest=b3:24275c6d04eee09c70dec3fadb703a0a59bdc1fc51e13a13e5a27dfbb0d5ae19 file=construct/surfacestore/surfacestore.go range=385:420 lang=go exported=false byte_range=14483:15489
+  sig=func (s *Store) readFrames(conversationID, path string) []Frame
+  doc=readFrames parses a newline-delimited frame file, decrypting each record under\nthe reconstructed associated data (legacy plaintext lines pass through until\nmigrated). A line that fails to decrypt or unmarshal — including a wrong-key,\ntampered, or crash-truncated final line — is skipped; the record sequence\nstill advances so surviving frames stay bound to their positions.
+EDGES
+  calls=matrix/construct/surfacestore.Store.ad,matrix/vault.Session.DecodeLine
+  references=matrix/construct/surfacestore.Frame,matrix/construct/surfacestore.Store,matrix/construct/surfacestore.Store.ad,matrix/construct/surfacestore.conversationID,matrix/construct/surfacestore.derr,matrix/construct/surfacestore.err,matrix/construct/surfacestore.f,matrix/construct/surfacestore.fr,matrix/construct/surfacestore.line,matrix/construct/surfacestore.out,matrix/construct/surfacestore.path,matrix/construct/surfacestore.plain,matrix/construct/surfacestore.s,matrix/construct/surfacestore.sc,matrix/construct/surfacestore.seq,matrix/vault.Session.DecodeLine
+  ^contains=matrix/construct/surfacestore.Store
+  ^calls=matrix/construct/surfacestore.Store.Load,matrix/construct/surfacestore.Store.rollLocked
+  ^references=matrix/construct/surfacestore.Store.Load,matrix/construct/surfacestore.Store.rollLocked
+  ^defines=matrix/construct/surfacestore/surfacestore.go
+
 NODE id=matrix/construct/surfacestore.Store.rollLocked kind=method
-  digest=b3:080b73cd3d9c2cb23d83ff5ee682c870b888fb32ddb74257a18963c2f55f1e58 file=construct/surfacestore/surfacestore.go range=294:322 lang=go exported=false byte_range=11342:12201
-  sig=func (s *Store) rollLocked(path string) int
+  digest=b3:a5ba451f5ffbd4f5ab55afefc438f5e89bcd4a66d67620ab95bba266bbd5abb9 file=construct/surfacestore/surfacestore.go range=326:358 lang=go exported=false byte_range=12698:13700
+  sig=func (s *Store) rollLocked(conversationID, path string) int
   doc=rollLocked trims the conversation's JSONL to the newest `retain` frames via an\natomic tmp+rename rewrite. Returns the number of frames kept, or -1 on error.
 EDGES
-  calls=matrix/construct/surfacestore.readJSONL
-  references=matrix/construct/surfacestore.Store,matrix/construct/surfacestore.b,matrix/construct/surfacestore.buf,matrix/construct/surfacestore.err,matrix/construct/surfacestore.fr,matrix/construct/surfacestore.frames,matrix/construct/surfacestore.keep,matrix/construct/surfacestore.path,matrix/construct/surfacestore.readJSONL,matrix/construct/surfacestore.s,matrix/construct/surfacestore.tmp
+  calls=matrix/construct/surfacestore.Store.ad,matrix/construct/surfacestore.Store.readFrames,matrix/vault.Session.EncodeLine
+  references=matrix/construct/surfacestore.Store,matrix/construct/surfacestore.Store.ad,matrix/construct/surfacestore.Store.readFrames,matrix/construct/surfacestore.b,matrix/construct/surfacestore.buf,matrix/construct/surfacestore.conversationID,matrix/construct/surfacestore.err,matrix/construct/surfacestore.fr,matrix/construct/surfacestore.frames,matrix/construct/surfacestore.i,matrix/construct/surfacestore.keep,matrix/construct/surfacestore.line,matrix/construct/surfacestore.path,matrix/construct/surfacestore.s,matrix/construct/surfacestore.tmp,matrix/vault.Session.EncodeLine
   ^contains=matrix/construct/surfacestore.Store
   ^calls=matrix/construct/surfacestore.Store.handle
   ^references=matrix/construct/surfacestore.Store.handle
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.Store.surfacePath kind=method
-  digest=b3:bca98c0d6292d616918507ca171ecc40c65ab88e50a9239961d9ea63569cd603 file=construct/surfacestore/surfacestore.go range=287:292 lang=go exported=false byte_range=11142:11340
+  digest=b3:bca98c0d6292d616918507ca171ecc40c65ab88e50a9239961d9ea63569cd603 file=construct/surfacestore/surfacestore.go range=319:324 lang=go exported=false byte_range=12498:12696
   sig=func (s *Store) surfacePath(conversationID string) string
 EDGES
   calls=matrix/construct/surfacestore.Store.Enabled,matrix/construct/surfacestore.validConversationID
@@ -187,7 +246,7 @@ EDGES
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.Store.writer kind=method
-  digest=b3:25dc611c59ca63ca2a60311539384d720e26b58873bc58df1a54a6076683033a file=construct/surfacestore/surfacestore.go range=198:220 lang=go exported=false byte_range=7909:8436
+  digest=b3:25dc611c59ca63ca2a60311539384d720e26b58873bc58df1a54a6076683033a file=construct/surfacestore/surfacestore.go range=230:252 lang=go exported=false byte_range=9168:9695
   sig=func (s *Store) writer()
   doc=writer is the single goroutine that owns all disk writes and the per-\nconversation frame counts. It drains the queue until Close, persisting each\nframe and enforcing the retained-frame cap.
 EDGES
@@ -198,29 +257,18 @@ EDGES
   ^references=matrix/construct/surfacestore.openWithCap
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
-NODE id=matrix/construct/surfacestore.appendJSONL kind=func
-  digest=b3:3a54cba145dc8921fca161885e038fe23d697bc67740ffa3f98c11ad67424ad8 file=construct/surfacestore/surfacestore.go range=324:342 lang=go exported=false byte_range=12203:12743
-  sig=func appendJSONL(path string, fr Frame) error
-  doc=appendJSONL appends one frame as a single JSON line. O_APPEND + a single\nWrite makes the line atomically visible (POSIX); a torn write yields an\nunparseable final line that readJSONL skips (crash-atomic).
-EDGES
-  references=matrix/construct/surfacestore.Frame,matrix/construct/surfacestore.b,matrix/construct/surfacestore.err,matrix/construct/surfacestore.f,matrix/construct/surfacestore.fr,matrix/construct/surfacestore.path
-  ^calls=matrix/construct/surfacestore.Store.handle
-  ^references=matrix/construct/surfacestore.Store.handle
-  ^defines=matrix/construct/surfacestore/surfacestore.go
-
 NODE id=matrix/construct/surfacestore.countLines kind=func
-  digest=b3:7807675d14633864953364a07bb756755ce772553c0aac07e15735b9507b8947 file=construct/surfacestore/surfacestore.go range=372:377 lang=go exported=false byte_range=13364:13594
+  digest=b3:c0b8fff9bb25ae2a5e708b907c121b7cb9fe9e47246ee71f51adbdac81985fb0 file=construct/surfacestore/surfacestore.go range=422:445 lang=go exported=false byte_range=15491:16101
   sig=func countLines(path string) int
-  doc=countLines returns the number of parseable JSONL frames in a file (0 if\nmissing). Used to seed the writer's per-conversation count for a pre-existing\nfile.
+  doc=countLines returns the number of non-empty JSONL lines in a file (0 if\nmissing). Used to seed the writer's per-conversation next-sequence for a\npre-existing file; it counts raw lines (no decryption) so it stays cheap and\nmatches how readFrames advances the sequence per line.
 EDGES
-  calls=matrix/construct/surfacestore.readJSONL
-  references=matrix/construct/surfacestore.path,matrix/construct/surfacestore.readJSONL
+  references=matrix/construct/surfacestore.err,matrix/construct/surfacestore.f,matrix/construct/surfacestore.n,matrix/construct/surfacestore.path,matrix/construct/surfacestore.sc
   ^calls=matrix/construct/surfacestore.Store.handle
   ^references=matrix/construct/surfacestore.Store.handle
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.openWithCap kind=func
-  digest=b3:0dea391fa647fed4b46ff235d6647c59e8e6cb3f3c866bff30365926de316a96 file=construct/surfacestore/surfacestore.go range=118:135 lang=go exported=false byte_range=5439:5894
+  digest=b3:0dea391fa647fed4b46ff235d6647c59e8e6cb3f3c866bff30365926de316a96 file=construct/surfacestore/surfacestore.go range=150:167 lang=go exported=false byte_range=6698:7153
   sig=func openWithCap(dir string, cap int) *Store
   doc=openWithCap is the test seam that sets an explicit retained-frame cap.
 EDGES
@@ -231,25 +279,15 @@ EDGES
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.queueDepth kind=const
-  digest=b3:a7a7edf39731b10121704224b97f499f79878166dfd122a675b86743ff34c540 file=construct/surfacestore/surfacestore.go range=64:68 lang=go exported=false byte_range=3112:3441
+  digest=b3:a7a7edf39731b10121704224b97f499f79878166dfd122a675b86743ff34c540 file=construct/surfacestore/surfacestore.go range=72:76 lang=go exported=false byte_range=3360:3689
   sig=untyped int
   doc=queueDepth is how many pending frames the async writer buffers before Record\nstarts dropping. Generous: a single user's single daemon emits tens-to-low-\nhundreds of surface frames per run, so this is never reached in practice; it\nexists only so a pathological burst can't block broker.publish.
 EDGES
   ^references=matrix/construct/surfacestore.openWithCap
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
-NODE id=matrix/construct/surfacestore.readJSONL kind=func
-  digest=b3:2c40055b62c61458047897de5939f26667290e462a6626ee246466db7e1d7a23 file=construct/surfacestore/surfacestore.go range=344:370 lang=go exported=false byte_range=12745:13362
-  sig=func readJSONL(path string) []Frame
-  doc=readJSONL parses a newline-delimited JSON frame file. A line that fails to\nunmarshal (including a crash-truncated final line) is skipped — crash-atomic.
-EDGES
-  references=matrix/construct/surfacestore.Frame,matrix/construct/surfacestore.err,matrix/construct/surfacestore.f,matrix/construct/surfacestore.fr,matrix/construct/surfacestore.line,matrix/construct/surfacestore.out,matrix/construct/surfacestore.path,matrix/construct/surfacestore.sc
-  ^calls=matrix/construct/surfacestore.Store.Load,matrix/construct/surfacestore.Store.rollLocked,matrix/construct/surfacestore.countLines
-  ^references=matrix/construct/surfacestore.Store.Load,matrix/construct/surfacestore.Store.rollLocked,matrix/construct/surfacestore.countLines
-  ^defines=matrix/construct/surfacestore/surfacestore.go
-
 NODE id=matrix/construct/surfacestore.record kind=type
-  digest=b3:0722b6b557613fa458ea7c7981f641838b00dfe326200696d0a2d66628c169cb file=construct/surfacestore/surfacestore.go range=83:90 lang=go exported=false byte_range=4143:4418
+  digest=b3:0722b6b557613fa458ea7c7981f641838b00dfe326200696d0a2d66628c169cb file=construct/surfacestore/surfacestore.go range=91:98 lang=go exported=false byte_range=4391:4666
   sig=type record struct {\n	conversationID	string\n	fr		Frame\n	flush		chan struct{}\n}
   doc=record is one queued write. A non-nil flush channel marks a flush sentinel\n(no frame payload); the writer closes it once it has drained every record\nenqueued before it.
 EDGES
@@ -259,25 +297,25 @@ EDGES
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore.record#conversationID kind=field
-  digest=b3:028e2ad445412e6c4ebe9b000a3b1667d122b11984f928af46c8a2f2c8d742bf file=construct/surfacestore/surfacestore.go range=87:87 lang=go exported=false byte_range=4343:4364
+  digest=b3:028e2ad445412e6c4ebe9b000a3b1667d122b11984f928af46c8a2f2c8d742bf file=construct/surfacestore/surfacestore.go range=95:95 lang=go exported=false byte_range=4591:4612
   sig=string
 EDGES
   ^contains=matrix/construct/surfacestore.record
 
 NODE id=matrix/construct/surfacestore.record#flush kind=field
-  digest=b3:5db8e01a43dc518edc6ae72ba792e631e427fbad01565ed82f56979d952c5251 file=construct/surfacestore/surfacestore.go range=89:89 lang=go exported=false byte_range=4388:4416
+  digest=b3:5db8e01a43dc518edc6ae72ba792e631e427fbad01565ed82f56979d952c5251 file=construct/surfacestore/surfacestore.go range=97:97 lang=go exported=false byte_range=4636:4664
   sig=chan struct{}
 EDGES
   ^contains=matrix/construct/surfacestore.record
 
 NODE id=matrix/construct/surfacestore.record#fr kind=field
-  digest=b3:8fcf4b901bc42fc755df9efceaafab9c600f5a532af070a2d88e7e6fd02d99b5 file=construct/surfacestore/surfacestore.go range=88:88 lang=go exported=false byte_range=4366:4386
+  digest=b3:8fcf4b901bc42fc755df9efceaafab9c600f5a532af070a2d88e7e6fd02d99b5 file=construct/surfacestore/surfacestore.go range=96:96 lang=go exported=false byte_range=4614:4634
   sig=surfacestore.Frame
 EDGES
   ^contains=matrix/construct/surfacestore.record
 
 NODE id=matrix/construct/surfacestore.retainFromEnv kind=func
-  digest=b3:c0f56ccf49dbed573b785c3dbccbe71aea02e5fadfa1343c2e5e7bcf4cfe8b38 file=construct/surfacestore/surfacestore.go range=137:149 lang=go exported=false byte_range=5896:6211
+  digest=b3:c0f56ccf49dbed573b785c3dbccbe71aea02e5fadfa1343c2e5e7bcf4cfe8b38 file=construct/surfacestore/surfacestore.go range=169:181 lang=go exported=false byte_range=7155:7470
   sig=func retainFromEnv() int
   doc=retainFromEnv reads CONSTRUCT_SURFACE_RETAIN; an absent/invalid value yields 0\n(Open then applies the default).
 EDGES
@@ -286,8 +324,24 @@ EDGES
   ^references=matrix/construct/surfacestore.Open
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
+NODE id=matrix/construct/surfacestore.schemaFrameV1 kind=const
+  digest=b3:1cddf10ac686c9589e62b8785041d7beb893c6e5b728ef3b3c51f0cb3428969b file=construct/surfacestore/surfacestore.go range=58:62 lang=go exported=false byte_range=2715:2943
+  sig=untyped string
+  doc=Store type and schema bound into each frame's associated data, so a sealed\nsurface line cannot be replayed across users, conversations, or positions.
+EDGES
+  ^references=matrix/construct/surfacestore.Store.ad
+  ^defines=matrix/construct/surfacestore/surfacestore.go
+
+NODE id=matrix/construct/surfacestore.storeSurface kind=const
+  digest=b3:0b496d36f09803ab9481175c5aa001cb39f102a9a1aa0677b7e3e1e7181a7245 file=construct/surfacestore/surfacestore.go range=58:61 lang=go exported=false byte_range=2715:2915
+  sig=untyped string
+  doc=Store type and schema bound into each frame's associated data, so a sealed\nsurface line cannot be replayed across users, conversations, or positions.
+EDGES
+  ^references=matrix/construct/surfacestore.Store.ad
+  ^defines=matrix/construct/surfacestore/surfacestore.go
+
 NODE id=matrix/construct/surfacestore.validConversationID kind=func
-  digest=b3:92641fad50844609cbaf726ca362a78fc9f905bfde9be5cce9d1f04f7cc7f7b4 file=construct/surfacestore/surfacestore.go range=280:285 lang=go exported=false byte_range=10782:11140
+  digest=b3:92641fad50844609cbaf726ca362a78fc9f905bfde9be5cce9d1f04f7cc7f7b4 file=construct/surfacestore/surfacestore.go range=312:317 lang=go exported=false byte_range=12138:12496
   sig=func validConversationID(conversationID string) bool
   doc=validConversationID rejects a blank id or one containing a path separator\n(both POSIX "/" and Windows "\\\\"), so a conversation id can never escape the\nstore directory (R15: per-user isolation / conversation scoping).
 EDGES
@@ -297,7 +351,7 @@ EDGES
   ^defines=matrix/construct/surfacestore/surfacestore.go
 
 NODE id=matrix/construct/surfacestore/surfacestore.go kind=file
-  digest=b3:afa2a3ede2971c985fd54b2c953e44b11d2a7497202c1157f8c9db391d095f3a file=construct/surfacestore/surfacestore.go range=1:392 lang=go exported=true
+  digest=b3:ae22c624dcc9c30f95c5743107ad100a86de3964e3b9ca10b5f8db4b75070cca file=construct/surfacestore/surfacestore.go range=1:460 lang=go exported=true
 EDGES
-  defines=matrix/construct/surfacestore.DefaultRetainedFrames,matrix/construct/surfacestore.Dir,matrix/construct/surfacestore.Frame,matrix/construct/surfacestore.Open,matrix/construct/surfacestore.Store,matrix/construct/surfacestore.Store.Close,matrix/construct/surfacestore.Store.Enabled,matrix/construct/surfacestore.Store.Flush,matrix/construct/surfacestore.Store.Load,matrix/construct/surfacestore.Store.Record,matrix/construct/surfacestore.Store.handle,matrix/construct/surfacestore.Store.rollLocked,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.Store.writer,matrix/construct/surfacestore.appendJSONL,matrix/construct/surfacestore.countLines,matrix/construct/surfacestore.openWithCap,matrix/construct/surfacestore.queueDepth,matrix/construct/surfacestore.readJSONL,matrix/construct/surfacestore.record,matrix/construct/surfacestore.retainFromEnv,matrix/construct/surfacestore.validConversationID
+  defines=matrix/construct/surfacestore.DefaultRetainedFrames,matrix/construct/surfacestore.Dir,matrix/construct/surfacestore.Frame,matrix/construct/surfacestore.Open,matrix/construct/surfacestore.Store,matrix/construct/surfacestore.Store.Close,matrix/construct/surfacestore.Store.Enabled,matrix/construct/surfacestore.Store.Flush,matrix/construct/surfacestore.Store.Load,matrix/construct/surfacestore.Store.Record,matrix/construct/surfacestore.Store.SetVault,matrix/construct/surfacestore.Store.ad,matrix/construct/surfacestore.Store.appendFrame,matrix/construct/surfacestore.Store.handle,matrix/construct/surfacestore.Store.readFrames,matrix/construct/surfacestore.Store.rollLocked,matrix/construct/surfacestore.Store.surfacePath,matrix/construct/surfacestore.Store.writer,matrix/construct/surfacestore.countLines,matrix/construct/surfacestore.openWithCap,matrix/construct/surfacestore.queueDepth,matrix/construct/surfacestore.record,matrix/construct/surfacestore.retainFromEnv,matrix/construct/surfacestore.schemaFrameV1,matrix/construct/surfacestore.storeSurface,matrix/construct/surfacestore.validConversationID
   ^contains=matrix/construct/surfacestore

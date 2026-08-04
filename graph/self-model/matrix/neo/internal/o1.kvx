@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:8087349d214ea6556bd1e327d9b1cfe401192e02e5c71997ca02544fd4c21fca
+# GENERATED gen=codegraph do-not-edit merkle=b3:b9753067b0143b05d9e59aa7d4582f8ecc4f32217fc185000bee971850caf585
 
 NODE id=matrix/neo/internal/o1 kind=package
-  digest=b3:3482cdb5e0592ddea6d56d01f07ebff141002fe74622e97237e962f72ada86d2 file=neo/internal/o1 range=0:0 lang=go exported=true
+  digest=b3:2dbf8e1f45537febfe506cce9e3f4e1c9bafab18a424895beb0b5d995e35009e file=neo/internal/o1 range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/o1/context.go,matrix/neo/internal/o1/contract.go,matrix/neo/internal/o1/ledger.go,matrix/neo/internal/o1/manifest.go,matrix/neo/internal/o1/mutation.go,matrix/neo/internal/o1/outcome.go,matrix/neo/internal/o1/protocol.go,matrix/neo/internal/o1/qualification.go,matrix/neo/internal/o1/recovery.go,matrix/neo/internal/o1/registry.go,matrix/neo/internal/o1/runtime.go,matrix/neo/internal/o1/supervisor.go,matrix/neo/internal/o1/verifier.go
   ^contains=mod:matrix/neo
@@ -195,13 +195,13 @@ EDGES
   ^contains=matrix/neo/internal/o1.Clause
 
 NODE id=matrix/neo/internal/o1.Compile kind=func
-  digest=b3:f9a764053270d0c5e15194cc95d7157e10077a7e0ddd3595a91bbef81e23c448 file=neo/internal/o1/contract.go range=79:121 lang=go exported=true byte_range=2118:4545
+  digest=b3:921ff13ba157e74d8aec930bb363a37973a24cc83797215b67ef3d7037fab4ec file=neo/internal/o1/contract.go range=79:127 lang=go exported=true byte_range=2118:4914
   sig=func Compile(in CompileInput) TaskContract
 EDGES
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.CompileAllCapabilities kind=func
-  digest=b3:207e8e1bda096ff202d4a8c2d39c8a65547b6a32ec532859934d8df676de2d24 file=neo/internal/o1/runtime.go range=82:123 lang=go exported=true byte_range=2968:4829
+  digest=b3:207e8e1bda096ff202d4a8c2d39c8a65547b6a32ec532859934d8df676de2d24 file=neo/internal/o1/runtime.go range=79:120 lang=go exported=true byte_range=2802:4663
   sig=func CompileAllCapabilities(available []llm.Tool) (RuntimeCapabilities, error)
   doc=CompileAllCapabilities is the FULL-SURFACE compilation: it derives an\nOperationManifest for every live, already-bound tool schema and exposes them\nall, without the task-contract minimal narrowing. The O1 evidence machinery\n(typed manifests, deterministic preflight over the whole surface) still runs,\nbut no tool is hidden from the model — the request->capability text heuristic\ncannot silently strip an essential tool (e.g. fetch) it failed to name. Used\nwhen O1ConstrainTools is off (the default). A schema that cannot be\nrepresented as a bounded object is still rejected before it can reach the\nmodel.
 EDGES
@@ -233,7 +233,7 @@ EDGES
   ^contains=matrix/neo/internal/o1.CompileInput
 
 NODE id=matrix/neo/internal/o1.CompileRuntimeCapabilities kind=func
-  digest=b3:5592900c13bd94fccb844d00f4e7d922bba8d8a7217582279443c9e9846f732b file=neo/internal/o1/runtime.go range=23:80 lang=go exported=true byte_range=558:2966
+  digest=b3:37f7000b5ab5c8bbcccdb7fbe77191b8fddf6cbb6d5d90e505fda4c9f82da85d file=neo/internal/o1/runtime.go range=23:77 lang=go exported=true byte_range=558:2800
   sig=func CompileRuntimeCapabilities(contract TaskContract, available []llm.Tool) (RuntimeCapabilities, error)
   doc=CompileRuntimeCapabilities derives manifests from the live, already-bound\nproduction tool schemas and selects the smallest contract-authorized set.\nA schema that cannot be represented as a bounded object is rejected before\nit can reach the model.
 EDGES
@@ -253,7 +253,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.ConformChatResult kind=func
-  digest=b3:4776894cd5555bf94b9c50f135f0a1b63882008f36ef4c3a366e11909bcb0307 file=neo/internal/o1/runtime.go range=159:188 lang=go exported=true byte_range=5760:6898
+  digest=b3:4776894cd5555bf94b9c50f135f0a1b63882008f36ef4c3a366e11909bcb0307 file=neo/internal/o1/runtime.go range=156:185 lang=go exported=true byte_range=5594:6732
   sig=func ConformChatResult(result *llm.ChatResult, budget RepresentationBudget, dialect ...ProviderDialect) error
   doc=ConformChatResult validates the production provider result against the O1\nnormalized protocol and representation budget before any call can dispatch.
 EDGES
@@ -544,7 +544,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectForProvider kind=func
-  digest=b3:3e397c643520042f96d783c35064ba4ccd6abd4c996cd9613d7f14f0d8b8b739 file=neo/internal/o1/runtime.go range=190:203 lang=go exported=true byte_range=6900:7207
+  digest=b3:3e397c643520042f96d783c35064ba4ccd6abd4c996cd9613d7f14f0d8b8b739 file=neo/internal/o1/runtime.go range=187:200 lang=go exported=true byte_range=6734:7041
   sig=func DialectForProvider(provider string) ProviderDialect
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
@@ -662,21 +662,21 @@ EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.EvaluateFailureReplay kind=func
-  digest=b3:579d61af1281e60a65cb55b576ce39d9f9f23e4b82ed4310ffbd6e5b48787c7e file=neo/internal/o1/qualification.go range=128:155 lang=go exported=true byte_range=6436:7437
+  digest=b3:579d61af1281e60a65cb55b576ce39d9f9f23e4b82ed4310ffbd6e5b48787c7e file=neo/internal/o1/qualification.go range=128:155 lang=go exported=true byte_range=6370:7371
   sig=func EvaluateFailureReplay(cases []FailureReplayCase) QualificationResult
   doc=EvaluateFailureReplay derives pass/fail from a valid typed outcome and the\nexpected prevention/recovery posture. Static Passed fields are ignored.
 EDGES
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.EvaluateQualification kind=func
-  digest=b3:244e50cbb02e298e8e1ecc5e4c42864f4bc59be6d63505348126734ca8ee4530 file=neo/internal/o1/qualification.go range=107:126 lang=go exported=true byte_range=5673:6434
+  digest=b3:244e50cbb02e298e8e1ecc5e4c42864f4bc59be6d63505348126734ca8ee4530 file=neo/internal/o1/qualification.go range=107:126 lang=go exported=true byte_range=5607:6368
   sig=func EvaluateQualification(cases []QualificationCase) QualificationResult
   doc=EvaluateQualification derives the aggregate solely from durable proof\nmanifests. Caller-supplied Passed booleans are ignored so a catalog entry\ncannot manufacture release evidence.
 EDGES
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.ExtensionGate kind=type
-  digest=b3:fea8aea8f3c04cd11a4169c8117cb53fb07af90bc38090ee3cbf05e6b680dc2f file=neo/internal/o1/qualification.go range=157:167 lang=go exported=true byte_range=7439:7939
+  digest=b3:fea8aea8f3c04cd11a4169c8117cb53fb07af90bc38090ee3cbf05e6b680dc2f file=neo/internal/o1/qualification.go range=157:167 lang=go exported=true byte_range=7373:7873
   sig=type ExtensionGate struct {\n	Manifest	OperationManifest	`json:"manifest"`\n	Registry	*Registry		`json:"registry"`\n	Preflight	PreflightResult		`json:"preflight"`\n	Outcomes	[]OperationOutcome	`json:"outcomes"`\n	Recovery	RecoveryAutomaton	`json:"recovery"`\n	Conformance	QualificationCase	`json:"conformance"`\n}
   doc=ExtensionGate checks a new or changed capability from the same concrete\nevidence used by execution. No caller-supplied compliance boolean can clear\nthe gate.
 EDGES
@@ -684,43 +684,43 @@ EDGES
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.ExtensionGate#Conformance kind=field
-  digest=b3:c9aab0302b74b0b5799b81f4d7fde331835365d404390be10b49eb979f2ac6f4 file=neo/internal/o1/qualification.go range=166:166 lang=go exported=true byte_range=7886:7937
+  digest=b3:c9aab0302b74b0b5799b81f4d7fde331835365d404390be10b49eb979f2ac6f4 file=neo/internal/o1/qualification.go range=166:166 lang=go exported=true byte_range=7820:7871
   sig=o1.QualificationCase
 EDGES
   ^contains=matrix/neo/internal/o1.ExtensionGate
 
 NODE id=matrix/neo/internal/o1.ExtensionGate#Manifest kind=field
-  digest=b3:0f3537a14abd7969f480655e707b9ad8ae211d519b38df0279c391bebb50a048 file=neo/internal/o1/qualification.go range=161:161 lang=go exported=true byte_range=7635:7683
+  digest=b3:0f3537a14abd7969f480655e707b9ad8ae211d519b38df0279c391bebb50a048 file=neo/internal/o1/qualification.go range=161:161 lang=go exported=true byte_range=7569:7617
   sig=o1.OperationManifest
 EDGES
   ^contains=matrix/neo/internal/o1.ExtensionGate
 
 NODE id=matrix/neo/internal/o1.ExtensionGate#Outcomes kind=field
-  digest=b3:cd407008b9faf65c964ceb534652b7fdb705dd67a3bf0cf6275dc87c948e43d9 file=neo/internal/o1/qualification.go range=164:164 lang=go exported=true byte_range=7786:7834
+  digest=b3:cd407008b9faf65c964ceb534652b7fdb705dd67a3bf0cf6275dc87c948e43d9 file=neo/internal/o1/qualification.go range=164:164 lang=go exported=true byte_range=7720:7768
   sig=[]o1.OperationOutcome
 EDGES
   ^contains=matrix/neo/internal/o1.ExtensionGate
 
 NODE id=matrix/neo/internal/o1.ExtensionGate#Preflight kind=field
-  digest=b3:369ac7fa99d4ad7fcfe8e5e526487c3a7c8304564ee6f74d30acde2defdfc0a4 file=neo/internal/o1/qualification.go range=163:163 lang=go exported=true byte_range=7735:7784
+  digest=b3:369ac7fa99d4ad7fcfe8e5e526487c3a7c8304564ee6f74d30acde2defdfc0a4 file=neo/internal/o1/qualification.go range=163:163 lang=go exported=true byte_range=7669:7718
   sig=o1.PreflightResult
 EDGES
   ^contains=matrix/neo/internal/o1.ExtensionGate
 
 NODE id=matrix/neo/internal/o1.ExtensionGate#Recovery kind=field
-  digest=b3:b5ae366218e6421e2dc9e50c07a308189c1d47d91cd132fbe42f0197311ef2e7 file=neo/internal/o1/qualification.go range=165:165 lang=go exported=true byte_range=7836:7884
+  digest=b3:b5ae366218e6421e2dc9e50c07a308189c1d47d91cd132fbe42f0197311ef2e7 file=neo/internal/o1/qualification.go range=165:165 lang=go exported=true byte_range=7770:7818
   sig=o1.RecoveryAutomaton
 EDGES
   ^contains=matrix/neo/internal/o1.ExtensionGate
 
 NODE id=matrix/neo/internal/o1.ExtensionGate#Registry kind=field
-  digest=b3:b5d3ea7488e29dc07d1c410c8f72f55a5ad06fc6873d004960edfb32cf5c2250 file=neo/internal/o1/qualification.go range=162:162 lang=go exported=true byte_range=7685:7733
+  digest=b3:b5d3ea7488e29dc07d1c410c8f72f55a5ad06fc6873d004960edfb32cf5c2250 file=neo/internal/o1/qualification.go range=162:162 lang=go exported=true byte_range=7619:7667
   sig=*o1.Registry
 EDGES
   ^contains=matrix/neo/internal/o1.ExtensionGate
 
 NODE id=matrix/neo/internal/o1.ExtensionGate.IsClear kind=method
-  digest=b3:fd73520f4e5748c1bfce6417e54ad51683c91b65662de0435709d85137a21a16 file=neo/internal/o1/qualification.go range=169:173 lang=go exported=true byte_range=7941:8126
+  digest=b3:fd73520f4e5748c1bfce6417e54ad51683c91b65662de0435709d85137a21a16 file=neo/internal/o1/qualification.go range=169:173 lang=go exported=true byte_range=7875:8060
   sig=func (g ExtensionGate) IsClear() bool
   doc=IsClear returns true only when every extension requirement is supported by\nvalid operation-specific evidence.
 EDGES
@@ -728,7 +728,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.ExtensionGate.Unmet kind=method
-  digest=b3:36c38d710b16ad38efd2920a90a8e3d4a424ea3a2372829c4aa777ffbde16264 file=neo/internal/o1/qualification.go range=175:208 lang=go exported=true byte_range=8128:9363
+  digest=b3:36c38d710b16ad38efd2920a90a8e3d4a424ea3a2372829c4aa777ffbde16264 file=neo/internal/o1/qualification.go range=175:208 lang=go exported=true byte_range=8062:9297
   sig=func (g ExtensionGate) Unmet() []string
   doc=Unmet returns the list of requirements not yet satisfied.
 EDGES
@@ -1094,7 +1094,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.ManifestSet.Validate kind=method
-  digest=b3:4b1851855d97f5a1e5940ca1c2355952ddcb6a79c022b3c77f0e4f775d7e6c4c file=neo/internal/o1/manifest.go range=310:341 lang=go exported=true byte_range=9840:10807
+  digest=b3:4b1851855d97f5a1e5940ca1c2355952ddcb6a79c022b3c77f0e4f775d7e6c4c file=neo/internal/o1/manifest.go range=310:341 lang=go exported=true byte_range=10138:11105
   sig=func (ms *ManifestSet) Validate() error
   doc=Validate checks a manifest set for completeness and consistency.
 EDGES
@@ -1348,7 +1348,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.NewRunLedger kind=func
-  digest=b3:e0554812a27547627da2028a0ca4efc8d0f2fbf0eb8bfa3199ada4550535a91e file=neo/internal/o1/ledger.go range=101:114 lang=go exported=true byte_range=3562:3999
+  digest=b3:e0554812a27547627da2028a0ca4efc8d0f2fbf0eb8bfa3199ada4550535a91e file=neo/internal/o1/ledger.go range=118:131 lang=go exported=true byte_range=4082:4519
   sig=func NewRunLedger(runID, contractID string, contractVer uint64) *RunLedger
   doc=NewRunLedger creates a fresh ledger for a run.
 EDGES
@@ -1737,7 +1737,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.PreflightEnvironment kind=type
-  digest=b3:d74dff10eb8212db5496fdf197f12f12b66b12393766463c585c0ee53d54c3a9 file=neo/internal/o1/manifest.go range=171:182 lang=go exported=true byte_range=5287:5980
+  digest=b3:d74dff10eb8212db5496fdf197f12f12b66b12393766463c585c0ee53d54c3a9 file=neo/internal/o1/manifest.go range=171:182 lang=go exported=true byte_range=5585:6278
   sig=type PreflightEnvironment struct {\n	InstalledTools		map[string]bool		`json:"installed_tools"`\n	ToolVersions		map[string]string	`json:"tool_versions"`\n	CredentialsPresent	map[string]bool		`json:"credentials_present"`\n	Permissions		map[string]bool		`json:"permissions"`\n	NetworkReachable	bool			`json:"network_reachable"`\n	StorageAvailable	int64			`json:"storage_available_bytes"`\n	MaxPayloadBytes		int64			`json:"max_payload_bytes"`\n	ProjectRoot		string			`json:"project_root"`\n	FrameworkVersion	string			`json:"framework_version"`\n}
   doc=PreflightEnvironment describes the runtime state needed for preflight checks.
 EDGES
@@ -1745,61 +1745,61 @@ EDGES
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.PreflightEnvironment#CredentialsPresent kind=field
-  digest=b3:85d17f760b49c335f537a22a33f8d272fdec9e06bc43061a79d4131b81bda5a8 file=neo/internal/o1/manifest.go range=175:175 lang=go exported=true byte_range=5528:5593
+  digest=b3:85d17f760b49c335f537a22a33f8d272fdec9e06bc43061a79d4131b81bda5a8 file=neo/internal/o1/manifest.go range=175:175 lang=go exported=true byte_range=5826:5891
   sig=map[string]bool
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightEnvironment
 
 NODE id=matrix/neo/internal/o1.PreflightEnvironment#FrameworkVersion kind=field
-  digest=b3:c36e5e918f205ca5770fe6df322a4144d9ac25d1b6d86c954d6fe8de10cbface file=neo/internal/o1/manifest.go range=181:181 lang=go exported=true byte_range=5915:5978
+  digest=b3:c36e5e918f205ca5770fe6df322a4144d9ac25d1b6d86c954d6fe8de10cbface file=neo/internal/o1/manifest.go range=181:181 lang=go exported=true byte_range=6213:6276
   sig=string
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightEnvironment
 
 NODE id=matrix/neo/internal/o1.PreflightEnvironment#InstalledTools kind=field
-  digest=b3:ae2dc80f9dd29a8e1cb2b85f0cb4930d049ad0906d39120e28f6f9b88713cc47 file=neo/internal/o1/manifest.go range=173:173 lang=go exported=true byte_range=5404:5465
+  digest=b3:ae2dc80f9dd29a8e1cb2b85f0cb4930d049ad0906d39120e28f6f9b88713cc47 file=neo/internal/o1/manifest.go range=173:173 lang=go exported=true byte_range=5702:5763
   sig=map[string]bool
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightEnvironment
 
 NODE id=matrix/neo/internal/o1.PreflightEnvironment#MaxPayloadBytes kind=field
-  digest=b3:5861205233d58d6cb4c967c57f43967c6f9f60d240602f81f711544d98cd4cde file=neo/internal/o1/manifest.go range=179:179 lang=go exported=true byte_range=5790:5853
+  digest=b3:5861205233d58d6cb4c967c57f43967c6f9f60d240602f81f711544d98cd4cde file=neo/internal/o1/manifest.go range=179:179 lang=go exported=true byte_range=6088:6151
   sig=int64
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightEnvironment
 
 NODE id=matrix/neo/internal/o1.PreflightEnvironment#NetworkReachable kind=field
-  digest=b3:afe47776a1b5da44cfaca575fd3a3f926c33b5a00e13dc046fe28300b3a47c18 file=neo/internal/o1/manifest.go range=177:177 lang=go exported=true byte_range=5654:5717
+  digest=b3:afe47776a1b5da44cfaca575fd3a3f926c33b5a00e13dc046fe28300b3a47c18 file=neo/internal/o1/manifest.go range=177:177 lang=go exported=true byte_range=5952:6015
   sig=bool
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightEnvironment
 
 NODE id=matrix/neo/internal/o1.PreflightEnvironment#Permissions kind=field
-  digest=b3:9e67bd2f5de50b564dbaece2f6f5c6601d1f9200ce1707013f0b15d45fe4d8fd file=neo/internal/o1/manifest.go range=176:176 lang=go exported=true byte_range=5595:5652
+  digest=b3:9e67bd2f5de50b564dbaece2f6f5c6601d1f9200ce1707013f0b15d45fe4d8fd file=neo/internal/o1/manifest.go range=176:176 lang=go exported=true byte_range=5893:5950
   sig=map[string]bool
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightEnvironment
 
 NODE id=matrix/neo/internal/o1.PreflightEnvironment#ProjectRoot kind=field
-  digest=b3:77f677f84af99c83ffff7397bde08b23e84c3c9b2dcd8c92ce51e84293668e75 file=neo/internal/o1/manifest.go range=180:180 lang=go exported=true byte_range=5855:5913
+  digest=b3:77f677f84af99c83ffff7397bde08b23e84c3c9b2dcd8c92ce51e84293668e75 file=neo/internal/o1/manifest.go range=180:180 lang=go exported=true byte_range=6153:6211
   sig=string
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightEnvironment
 
 NODE id=matrix/neo/internal/o1.PreflightEnvironment#StorageAvailable kind=field
-  digest=b3:310b11953572ea392d787c43bad31efc6c6bd12d6925d1249a610c57feb56792 file=neo/internal/o1/manifest.go range=178:178 lang=go exported=true byte_range=5719:5788
+  digest=b3:310b11953572ea392d787c43bad31efc6c6bd12d6925d1249a610c57feb56792 file=neo/internal/o1/manifest.go range=178:178 lang=go exported=true byte_range=6017:6086
   sig=int64
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightEnvironment
 
 NODE id=matrix/neo/internal/o1.PreflightEnvironment#ToolVersions kind=field
-  digest=b3:e2164042277fad9bfcf4246dff2a81561b475ef37e7583272886f1a8bf16bfd2 file=neo/internal/o1/manifest.go range=174:174 lang=go exported=true byte_range=5467:5526
+  digest=b3:e2164042277fad9bfcf4246dff2a81561b475ef37e7583272886f1a8bf16bfd2 file=neo/internal/o1/manifest.go range=174:174 lang=go exported=true byte_range=5765:5824
   sig=map[string]string
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightEnvironment
 
 NODE id=matrix/neo/internal/o1.PreflightResult kind=type
-  digest=b3:38d0b4eb29c759363a187466461a0d919368231760e9072a3e0f687686469de2 file=neo/internal/o1/manifest.go range=184:191 lang=go exported=true byte_range=5982:6303
+  digest=b3:38d0b4eb29c759363a187466461a0d919368231760e9072a3e0f687686469de2 file=neo/internal/o1/manifest.go range=184:191 lang=go exported=true byte_range=6280:6601
   sig=type PreflightResult struct {\n	OK		bool		`json:"ok"`\n	Operation	string		`json:"operation"`\n	Failed		[]string	`json:"failed_preconditions,omitempty"`\n	Repairs		[]string	`json:"authorized_repairs,omitempty"`\n}
   doc=PreflightResult is the deterministic outcome of a preflight check.\nPer O1 req.3 ac.3 and ac.4.
 EDGES
@@ -1807,25 +1807,25 @@ EDGES
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.PreflightResult#Failed kind=field
-  digest=b3:e76625314787bb90264d0e03d86edb9bac8cb4ea5423a18689ae37e4a9999ed0 file=neo/internal/o1/manifest.go range=189:189 lang=go exported=true byte_range=6185:6243
+  digest=b3:e76625314787bb90264d0e03d86edb9bac8cb4ea5423a18689ae37e4a9999ed0 file=neo/internal/o1/manifest.go range=189:189 lang=go exported=true byte_range=6483:6541
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightResult
 
 NODE id=matrix/neo/internal/o1.PreflightResult#OK kind=field
-  digest=b3:5ff1c41d1a25728774f2dd57e047727e64e37a30e9f568b31e45f220f7d37c61 file=neo/internal/o1/manifest.go range=187:187 lang=go exported=true byte_range=6114:6144
+  digest=b3:5ff1c41d1a25728774f2dd57e047727e64e37a30e9f568b31e45f220f7d37c61 file=neo/internal/o1/manifest.go range=187:187 lang=go exported=true byte_range=6412:6442
   sig=bool
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightResult
 
 NODE id=matrix/neo/internal/o1.PreflightResult#Operation kind=field
-  digest=b3:3b7a45dd2a6bfecae724318c3370874088f4e98c521d2935aaa0644476855b46 file=neo/internal/o1/manifest.go range=188:188 lang=go exported=true byte_range=6146:6183
+  digest=b3:3b7a45dd2a6bfecae724318c3370874088f4e98c521d2935aaa0644476855b46 file=neo/internal/o1/manifest.go range=188:188 lang=go exported=true byte_range=6444:6481
   sig=string
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightResult
 
 NODE id=matrix/neo/internal/o1.PreflightResult#Repairs kind=field
-  digest=b3:e6fc07d7096f082808c459be6aea8f0de164a34b5af34d9234218d38f1d542f6 file=neo/internal/o1/manifest.go range=190:190 lang=go exported=true byte_range=6245:6301
+  digest=b3:e6fc07d7096f082808c459be6aea8f0de164a34b5af34d9234218d38f1d542f6 file=neo/internal/o1/manifest.go range=190:190 lang=go exported=true byte_range=6543:6599
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/o1.PreflightResult
@@ -2372,7 +2372,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.RenderTerminalMessage kind=func
-  digest=b3:bbeae812471736263486f3d70b0298fa72986f594abd5585197292547c5fe4f4 file=neo/internal/o1/supervisor.go range=144:172 lang=go exported=true byte_range=4949:6213
+  digest=b3:bbeae812471736263486f3d70b0298fa72986f594abd5585197292547c5fe4f4 file=neo/internal/o1/supervisor.go range=145:173 lang=go exported=true byte_range=5039:6303
   sig=func RenderTerminalMessage(dec SupervisorDecision, proof *ProofManifest) string
   doc=RenderTerminalMessage produces user-facing terminal prose from verified state.\nPer O1 req.10 ac.4: terminal communication is generated from verified data\nand accurately distinguishes completed work, residual effects, etc.
 EDGES
@@ -2467,7 +2467,7 @@ NODE id=matrix/neo/internal/o1.RunLedger kind=type
   sig=type RunLedger struct {\n	mu			sync.Mutex\n	RunID			string				`json:"run_id"`\n	ContractID		string				`json:"contract_id"`\n	ContractVer		uint64				`json:"contract_version"`\n	Attempts		[]AttemptRecord			`json:"attempts"`\n	Satisfied		map[string]bool			`json:"satisfied_criteria"`\n	CriterionProof		map[string]string		`json:"criterion_evidence"`\n	Effects			[]EffectRecord			`json:"effects"`\n	EffectsReconciled	bool				`json:"effects_reconciled"`\n	Recovery		map[string]RecoveryRecord	`json:"recovery_state"`\n	OpenHazards		[]string			`json:"open_hazards"`\n	TerminalProof		*TerminalProof			`json:"terminal_proof,omitempty"`\n	CreatedAt		time.Time			`json:"created_at"`\n	LastModified		time.Time			`json:"last_modified"`\n}
   doc=RunLedger is the authoritative state ledger for a single run.\nPer O1 req.7 ac.1: persists contract version, operation attempts, observed\npre/post state, evidence, effects, open hazards, satisfied criteria,\nrecovery state, and terminal proof under stable run/operation ids.
 EDGES
-  contains=matrix/neo/internal/o1.RunLedger#Attempts,matrix/neo/internal/o1.RunLedger#ContractID,matrix/neo/internal/o1.RunLedger#ContractVer,matrix/neo/internal/o1.RunLedger#CreatedAt,matrix/neo/internal/o1.RunLedger#CriterionProof,matrix/neo/internal/o1.RunLedger#Effects,matrix/neo/internal/o1.RunLedger#EffectsReconciled,matrix/neo/internal/o1.RunLedger#LastModified,matrix/neo/internal/o1.RunLedger#OpenHazards,matrix/neo/internal/o1.RunLedger#Recovery,matrix/neo/internal/o1.RunLedger#RunID,matrix/neo/internal/o1.RunLedger#Satisfied,matrix/neo/internal/o1.RunLedger#TerminalProof,matrix/neo/internal/o1.RunLedger#mu,matrix/neo/internal/o1.RunLedger.AddHazard,matrix/neo/internal/o1.RunLedger.AttemptCount,matrix/neo/internal/o1.RunLedger.CausalDeltas,matrix/neo/internal/o1.RunLedger.CloseCriterion,matrix/neo/internal/o1.RunLedger.CloseHazard,matrix/neo/internal/o1.RunLedger.HasSuccessfulOperation,matrix/neo/internal/o1.RunLedger.HasUnreconciledEffect,matrix/neo/internal/o1.RunLedger.IsCriterionClosed,matrix/neo/internal/o1.RunLedger.ReconcileEffect,matrix/neo/internal/o1.RunLedger.RecordAttempt,matrix/neo/internal/o1.RunLedger.RecordEffect,matrix/neo/internal/o1.RunLedger.RecordRecovery,matrix/neo/internal/o1.RunLedger.SetTerminal,matrix/neo/internal/o1.RunLedger.SnapshotJSON,matrix/neo/internal/o1.RunLedger.SuccessfulAttempt
+  contains=matrix/neo/internal/o1.RunLedger#Attempts,matrix/neo/internal/o1.RunLedger#ContractID,matrix/neo/internal/o1.RunLedger#ContractVer,matrix/neo/internal/o1.RunLedger#CreatedAt,matrix/neo/internal/o1.RunLedger#CriterionProof,matrix/neo/internal/o1.RunLedger#Effects,matrix/neo/internal/o1.RunLedger#EffectsReconciled,matrix/neo/internal/o1.RunLedger#LastModified,matrix/neo/internal/o1.RunLedger#OpenHazards,matrix/neo/internal/o1.RunLedger#Recovery,matrix/neo/internal/o1.RunLedger#RunID,matrix/neo/internal/o1.RunLedger#Satisfied,matrix/neo/internal/o1.RunLedger#TerminalProof,matrix/neo/internal/o1.RunLedger#mu,matrix/neo/internal/o1.RunLedger.AddHazard,matrix/neo/internal/o1.RunLedger.AttemptCount,matrix/neo/internal/o1.RunLedger.CausalDeltas,matrix/neo/internal/o1.RunLedger.CloseCriterion,matrix/neo/internal/o1.RunLedger.CloseHazard,matrix/neo/internal/o1.RunLedger.EvidenceSnapshot,matrix/neo/internal/o1.RunLedger.HasSuccessfulOperation,matrix/neo/internal/o1.RunLedger.HasUnreconciledEffect,matrix/neo/internal/o1.RunLedger.IsCriterionClosed,matrix/neo/internal/o1.RunLedger.ReconcileEffect,matrix/neo/internal/o1.RunLedger.RecordAttempt,matrix/neo/internal/o1.RunLedger.RecordEffect,matrix/neo/internal/o1.RunLedger.RecordRecovery,matrix/neo/internal/o1.RunLedger.SetTerminal,matrix/neo/internal/o1.RunLedger.SnapshotJSON,matrix/neo/internal/o1.RunLedger.SuccessfulAttempt
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger#Attempts kind=field
@@ -2555,7 +2555,7 @@ EDGES
   ^contains=matrix/neo/internal/o1.RunLedger
 
 NODE id=matrix/neo/internal/o1.RunLedger.AddHazard kind=method
-  digest=b3:6de69145aed645d4b013568c361a7fa8725c5ba4f340aed1e46adc4d7f624a3d file=neo/internal/o1/ledger.go range=238:249 lang=go exported=true byte_range=7678:7988
+  digest=b3:6de69145aed645d4b013568c361a7fa8725c5ba4f340aed1e46adc4d7f624a3d file=neo/internal/o1/ledger.go range=255:266 lang=go exported=true byte_range=8198:8508
   sig=func (l *RunLedger) AddHazard(hazardID string)
   doc=AddHazard records an open hazard that must be closed before completion.
 EDGES
@@ -2563,7 +2563,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.AttemptCount kind=method
-  digest=b3:2c348b4f96f089df00e7cf4d6736f1f001c99256b9bda11fea56326375385d32 file=neo/internal/o1/ledger.go range=294:299 lang=go exported=true byte_range=9380:9543
+  digest=b3:2c348b4f96f089df00e7cf4d6736f1f001c99256b9bda11fea56326375385d32 file=neo/internal/o1/ledger.go range=311:316 lang=go exported=true byte_range=9900:10063
   sig=func (l *RunLedger) AttemptCount() int
   doc=AttemptCount returns the total number of recorded attempts.
 EDGES
@@ -2571,7 +2571,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.CausalDeltas kind=method
-  digest=b3:1d54250d3d18c6a4090235d7769c346e19434ef2488a22a00c779509c1bd86bb file=neo/internal/o1/ledger.go range=332:343 lang=go exported=true byte_range=10448:10772
+  digest=b3:1d54250d3d18c6a4090235d7769c346e19434ef2488a22a00c779509c1bd86bb file=neo/internal/o1/ledger.go range=349:360 lang=go exported=true byte_range=10968:11292
   sig=func (l *RunLedger) CausalDeltas() int
   doc=CausalDeltas returns the count of attempts that represented actual progress.
 EDGES
@@ -2579,7 +2579,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.CloseCriterion kind=method
-  digest=b3:18ad9c9049cbd77fac02d3715ea974f0dd6a6839af71d54afbe7240da466edf8 file=neo/internal/o1/ledger.go range=168:178 lang=go exported=true byte_range=5837:6159
+  digest=b3:18ad9c9049cbd77fac02d3715ea974f0dd6a6839af71d54afbe7240da466edf8 file=neo/internal/o1/ledger.go range=185:195 lang=go exported=true byte_range=6357:6679
   sig=func (l *RunLedger) CloseCriterion(criterionID, evidence string)
   doc=CloseCriterion marks an acceptance criterion as satisfied.
 EDGES
@@ -2587,29 +2587,37 @@ EDGES
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.CloseHazard kind=method
-  digest=b3:e8f7adcc0e4bac2d7c242053a6b08c59d37699b73a208f79ccbd6a79669849e1 file=neo/internal/o1/ledger.go range=251:262 lang=go exported=true byte_range=7990:8288
+  digest=b3:e8f7adcc0e4bac2d7c242053a6b08c59d37699b73a208f79ccbd6a79669849e1 file=neo/internal/o1/ledger.go range=268:279 lang=go exported=true byte_range=8510:8808
   sig=func (l *RunLedger) CloseHazard(hazardID string)
   doc=CloseHazard removes a resolved hazard.
 EDGES
   ^contains=matrix/neo/internal/o1.RunLedger
   ^defines=matrix/neo/internal/o1/ledger.go
 
+NODE id=matrix/neo/internal/o1.RunLedger.EvidenceSnapshot kind=method
+  digest=b3:b07b9f4b5df52e81e476c911bf1e2e48fb1acd38a65db99a7d3faa2c83e2ee4b file=neo/internal/o1/ledger.go range=101:116 lang=go exported=true byte_range=3562:4080
+  sig=func (l *RunLedger) EvidenceSnapshot() ([]AttemptRecord, *TerminalProof)
+  doc=EvidenceSnapshot returns a detached, consistent copy of the ledger evidence\nthat is safe to hand to background memory consolidation.
+EDGES
+  ^contains=matrix/neo/internal/o1.RunLedger
+  ^defines=matrix/neo/internal/o1/ledger.go
+
 NODE id=matrix/neo/internal/o1.RunLedger.HasSuccessfulOperation kind=method
-  digest=b3:42259a4f7406a228aa38d83e27f2bf0ac1ea46c8a6ab71342094c4a8c939944a file=neo/internal/o1/ledger.go range=316:330 lang=go exported=true byte_range=10093:10446
+  digest=b3:42259a4f7406a228aa38d83e27f2bf0ac1ea46c8a6ab71342094c4a8c939944a file=neo/internal/o1/ledger.go range=333:347 lang=go exported=true byte_range=10613:10966
   sig=func (l *RunLedger) HasSuccessfulOperation(prefixes ...string) bool
 EDGES
   ^contains=matrix/neo/internal/o1.RunLedger
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.HasUnreconciledEffect kind=method
-  digest=b3:fb321e71282a5b8c4ff58a3c99f7df1e1d4f6413f6900f1debd3f963bfced3fd file=neo/internal/o1/ledger.go range=227:236 lang=go exported=true byte_range=7414:7676
+  digest=b3:fb321e71282a5b8c4ff58a3c99f7df1e1d4f6413f6900f1debd3f963bfced3fd file=neo/internal/o1/ledger.go range=244:253 lang=go exported=true byte_range=7934:8196
   sig=func (l *RunLedger) HasUnreconciledEffect(op, effect string) bool
 EDGES
   ^contains=matrix/neo/internal/o1.RunLedger
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.IsCriterionClosed kind=method
-  digest=b3:8e879b9eb0853895618ecc0297f082ae1842f598af42ad4f22b0e8a797c18a4c file=neo/internal/o1/ledger.go range=180:185 lang=go exported=true byte_range=6161:6359
+  digest=b3:8e879b9eb0853895618ecc0297f082ae1842f598af42ad4f22b0e8a797c18a4c file=neo/internal/o1/ledger.go range=197:202 lang=go exported=true byte_range=6681:6879
   sig=func (l *RunLedger) IsCriterionClosed(criterionID string) bool
   doc=IsCriterionClosed checks whether a criterion has been closed.
 EDGES
@@ -2617,7 +2625,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.ReconcileEffect kind=method
-  digest=b3:d1c60f82706949e324655b4ea6e6cc9cbc75ce6f3fe11a56a8ec9bf6969022d8 file=neo/internal/o1/ledger.go range=201:225 lang=go exported=true byte_range=6733:7412
+  digest=b3:d1c60f82706949e324655b4ea6e6cc9cbc75ce6f3fe11a56a8ec9bf6969022d8 file=neo/internal/o1/ledger.go range=218:242 lang=go exported=true byte_range=7253:7932
   sig=func (l *RunLedger) ReconcileEffect(op, effect string) error
   doc=ReconcileEffect marks a recorded effect reconciled from authoritative\npostcondition evidence. Unknown operations/effects fail closed.
 EDGES
@@ -2625,7 +2633,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.RecordAttempt kind=method
-  digest=b3:e6e62f199bb625af51c5b0645a7819be87656767a8b2d27fe17b69b497980856 file=neo/internal/o1/ledger.go range=116:156 lang=go exported=true byte_range=4001:5629
+  digest=b3:e6e62f199bb625af51c5b0645a7819be87656767a8b2d27fe17b69b497980856 file=neo/internal/o1/ledger.go range=133:173 lang=go exported=true byte_range=4521:6149
   sig=func (l *RunLedger) RecordAttempt(a AttemptRecord) (causalDelta bool, err error)
   doc=RecordAttempt logs an operation attempt and returns whether it represents\na causal delta (new state, not a repetition of unchanged state).\nPer O1 req.7 ac.2: progress requires at least one causal delta.\nPer O1 req.7 ac.4: repeating from the same state with the same evidence\nand no allowed transition is rejected.
 EDGES
@@ -2633,7 +2641,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.RecordEffect kind=method
-  digest=b3:811878c55c0ffb1e521c21b3ec09eb3459b8a89002eeff22b32c9182b8e53d28 file=neo/internal/o1/ledger.go range=187:199 lang=go exported=true byte_range=6361:6731
+  digest=b3:811878c55c0ffb1e521c21b3ec09eb3459b8a89002eeff22b32c9182b8e53d28 file=neo/internal/o1/ledger.go range=204:216 lang=go exported=true byte_range=6881:7251
   sig=func (l *RunLedger) RecordEffect(op, effect string, reversible bool)
   doc=RecordEffect logs a state-changing effect for reconciliation.
 EDGES
@@ -2641,14 +2649,14 @@ EDGES
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.RecordRecovery kind=method
-  digest=b3:f528dbfd9600f9f6990e9a9107a44bf3984eb151fc0b7f1d2ae10111bbd6af5e file=neo/internal/o1/ledger.go range=158:166 lang=go exported=true byte_range=5631:5835
+  digest=b3:f528dbfd9600f9f6990e9a9107a44bf3984eb151fc0b7f1d2ae10111bbd6af5e file=neo/internal/o1/ledger.go range=175:183 lang=go exported=true byte_range=6151:6355
   sig=func (l *RunLedger) RecordRecovery(record RecoveryRecord)
 EDGES
   ^contains=matrix/neo/internal/o1.RunLedger
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.SetTerminal kind=method
-  digest=b3:2fb16a46ee16a4d58a343cede954d4796880b9f2689b3f4d886c3267135d8eb7 file=neo/internal/o1/ledger.go range=264:292 lang=go exported=true byte_range=8290:9378
+  digest=b3:2fb16a46ee16a4d58a343cede954d4796880b9f2689b3f4d886c3267135d8eb7 file=neo/internal/o1/ledger.go range=281:309 lang=go exported=true byte_range=8810:9898
   sig=func (l *RunLedger) SetTerminal(proof TerminalProof) error
   doc=SetTerminal records the final proof and returns an error if the run\ncannot complete (unclosed hazards, unsatisfied criteria, un-reconciled effects).
 EDGES
@@ -2664,7 +2672,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.SuccessfulAttempt kind=method
-  digest=b3:ea8b7079e9e62216319de5c5dbf150f7bdc47c8e1d73972f89384cb4224f737c file=neo/internal/o1/ledger.go range=301:314 lang=go exported=true byte_range=9545:10091
+  digest=b3:ea8b7079e9e62216319de5c5dbf150f7bdc47c8e1d73972f89384cb4224f737c file=neo/internal/o1/ledger.go range=318:331 lang=go exported=true byte_range=10065:10611
   sig=func (l *RunLedger) SuccessfulAttempt(operation, preState string) (AttemptRecord, bool)
   doc=SuccessfulAttempt returns the authoritative prior success for the same\noperation and expected pre-state. It is the idempotency join used before a\nduplicate state-changing dispatch.
 EDGES
@@ -2672,7 +2680,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunPreflight kind=func
-  digest=b3:9ec0023a38fa8f8dde69f18d00353bbf799fe2bd244c38ee02de1cf2283270cd file=neo/internal/o1/manifest.go range=193:223 lang=go exported=true byte_range=6305:7455
+  digest=b3:9ec0023a38fa8f8dde69f18d00353bbf799fe2bd244c38ee02de1cf2283270cd file=neo/internal/o1/manifest.go range=193:223 lang=go exported=true byte_range=6603:7753
   sig=func RunPreflight(env PreflightEnvironment, manifest OperationManifest) PreflightResult
   doc=RunPreflight checks all manifest preconditions against the environment.\nReturns OK=true when the operation is safe to expose, or a list of failed\npreconditions. Per O1 req.3 ac.3: every knowable prerequisite is verified\nbefore the model attempts the operation.
 EDGES
@@ -2712,14 +2720,14 @@ EDGES
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.StandardFailureCorpus kind=func
-  digest=b3:a0d9dceb63a7cacaa4a921bcbcee4966f3c562e8ed31285d613c8c814b6b2d68 file=neo/internal/o1/qualification.go range=85:105 lang=go exported=true byte_range=4294:5671
+  digest=b3:a0d9dceb63a7cacaa4a921bcbcee4966f3c562e8ed31285d613c8c814b6b2d68 file=neo/internal/o1/qualification.go range=85:105 lang=go exported=true byte_range=4228:5605
   sig=func StandardFailureCorpus() []FailureReplayCase
   doc=StandardFailureCorpus returns the representative failure replay cases.
 EDGES
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.StandardQualificationCorpus kind=func
-  digest=b3:99b5c43e423f22a5297b23f1cc545d658e4ad831266f1140c198e16a6d96f190 file=neo/internal/o1/qualification.go range=48:83 lang=go exported=true byte_range=1798:4292
+  digest=b3:a5bbc82763736782938c5c73e72d2d53f78f81395fd521030be7a7b6efa38e52 file=neo/internal/o1/qualification.go range=48:83 lang=go exported=true byte_range=1798:4226
   sig=func StandardQualificationCorpus() []QualificationCase
   doc=StandardQualificationCorpus returns the representative qualification cases\nthat the O1 release gate requires.
 EDGES
@@ -2812,7 +2820,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.Supervisor.Evaluate kind=method
-  digest=b3:5f4090719395c6d33e27ae863310e6ba036b3a0af4eb1595828336053e2e5e02 file=neo/internal/o1/supervisor.go range=54:124 lang=go exported=true byte_range=2009:4561
+  digest=b3:d78478e733b065a33e372f0912c30633f6ed1a962999e0e353857fb0885dc68d file=neo/internal/o1/supervisor.go range=54:125 lang=go exported=true byte_range=2009:4651
   sig=func (s *Supervisor) Evaluate(\n	contract TaskContract,\n	ledger *RunLedger,\n	graph *VerifierGraph,\n	proof *ProofManifest,\n	lastOutcome *OperationOutcome,\n) SupervisorDecision
   doc=Evaluate produces a supervisor decision from the current run state.
 EDGES
@@ -2944,21 +2952,21 @@ EDGES
   ^contains=matrix/neo/internal/o1.TaskContract
 
 NODE id=matrix/neo/internal/o1.TaskContract.ReadyForMutation kind=method
-  digest=b3:95bd2c2996f0ed497a03e4ae64080ea8a4138a4cdd2cc83b715cb4ba2f43b868 file=neo/internal/o1/contract.go range=218:228 lang=go exported=true byte_range=8062:8329
+  digest=b3:95bd2c2996f0ed497a03e4ae64080ea8a4138a4cdd2cc83b715cb4ba2f43b868 file=neo/internal/o1/contract.go range=224:234 lang=go exported=true byte_range=8431:8698
   sig=func (c TaskContract) ReadyForMutation() bool
 EDGES
   ^contains=matrix/neo/internal/o1.TaskContract
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.TaskContract.Render kind=method
-  digest=b3:c3ab3e54485a6f18610f80b8fcbb99daa38d90a6fcffedbf6785b8e4ff85e421 file=neo/internal/o1/contract.go range=253:256 lang=go exported=true byte_range=9004:9143
+  digest=b3:c3ab3e54485a6f18610f80b8fcbb99daa38d90a6fcffedbf6785b8e4ff85e421 file=neo/internal/o1/contract.go range=259:262 lang=go exported=true byte_range=9373:9512
   sig=func (c TaskContract) Render() string
 EDGES
   ^contains=matrix/neo/internal/o1.TaskContract
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.TaskContract.Revise kind=method
-  digest=b3:80b4dd76ec0d1f3e599cc46357181e94d671753d1ab2c732d9cc0042bed60e07 file=neo/internal/o1/contract.go range=230:251 lang=go exported=true byte_range=8331:9002
+  digest=b3:80b4dd76ec0d1f3e599cc46357181e94d671753d1ab2c732d9cc0042bed60e07 file=neo/internal/o1/contract.go range=236:257 lang=go exported=true byte_range=8700:9371
   sig=func (c TaskContract) Revise(steering string) TaskContract
 EDGES
   ^contains=matrix/neo/internal/o1.TaskContract
@@ -3319,68 +3327,68 @@ EDGES
   ^contains=matrix/neo/internal/o1.agentManifest
 
 NODE id=matrix/neo/internal/o1.boundedInputs kind=func
-  digest=b3:b8201e38eb640a26674186ad258b8e67629154a3e6abdcd842b3bff9586a02d9 file=neo/internal/o1/qualification.go range=243:253 lang=go exported=false byte_range=10406:10606
+  digest=b3:b8201e38eb640a26674186ad258b8e67629154a3e6abdcd842b3bff9586a02d9 file=neo/internal/o1/qualification.go range=243:253 lang=go exported=false byte_range=10340:10540
   sig=func boundedInputs(bounds map[string]string) bool
 EDGES
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.capabilityGroups kind=var
-  digest=b3:2c9974a2683538d3185f4a1685eca95a034a1250475826d51138ceff039da849 file=neo/internal/o1/manifest.go range=135:152 lang=go exported=false byte_range=3971:4946
+  digest=b3:1155f2f4630cd1a365bc53480d0ff64a13a125f8f5ff69155b86cb8f997bab08 file=neo/internal/o1/manifest.go range=135:152 lang=go exported=false byte_range=3971:5244
   sig=map[string][]string
   doc=capabilityGroups maps capability names to operation prefixes.\nSynthetic tools map to their constant names; MCP tools map by alias prefix.
 EDGES
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.checkPrecondition kind=func
-  digest=b3:8a9734972cefb6a9cfc139ceffa72d3736da58938e75f6e82808604f2b1daafd file=neo/internal/o1/manifest.go range=225:261 lang=go exported=false byte_range=7457:9023
+  digest=b3:8a9734972cefb6a9cfc139ceffa72d3736da58938e75f6e82808604f2b1daafd file=neo/internal/o1/manifest.go range=225:261 lang=go exported=false byte_range=7755:9321
   sig=func checkPrecondition(env PreflightEnvironment, pre string) bool
 EDGES
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.classifyTerminal kind=func
-  digest=b3:452a536fb1a1fe2745304f64941d775ee90e108036ca907a2a7eb4beecbbef45 file=neo/internal/o1/supervisor.go range=126:142 lang=go exported=false byte_range=4563:4947
+  digest=b3:452a536fb1a1fe2745304f64941d775ee90e108036ca907a2a7eb4beecbbef45 file=neo/internal/o1/supervisor.go range=127:143 lang=go exported=false byte_range=4653:5037
   sig=func classifyTerminal(o *OperationOutcome) TerminalClass
 EDGES
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.cleanRules kind=func
-  digest=b3:40efe5eda5cdabeb3ca0252a54be2f39f77fada0143cb3bdf70f7a6c1a2930c7 file=neo/internal/o1/contract.go range=258:270 lang=go exported=false byte_range=9145:9410
+  digest=b3:40efe5eda5cdabeb3ca0252a54be2f39f77fada0143cb3bdf70f7a6c1a2930c7 file=neo/internal/o1/contract.go range=264:276 lang=go exported=false byte_range=9514:9779
   sig=func cleanRules(in []string) []string
 EDGES
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.containsAny kind=func
-  digest=b3:bb091454b506e2e60686dca2ed7e90f94f6f7c9422156787752bebbd01dff0c7 file=neo/internal/o1/runtime.go range=272:279 lang=go exported=false byte_range=9788:9955
+  digest=b3:bb091454b506e2e60686dca2ed7e90f94f6f7c9422156787752bebbd01dff0c7 file=neo/internal/o1/runtime.go range=271:278 lang=go exported=false byte_range=9730:9897
   sig=func containsAny(value string, needles ...string) bool
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.containsString kind=func
-  digest=b3:c2bfebfdf012390d93518384759b2a3504822df4c6bc47567f67216465e75e10 file=neo/internal/o1/qualification.go range=255:262 lang=go exported=false byte_range=10608:10755
+  digest=b3:c2bfebfdf012390d93518384759b2a3504822df4c6bc47567f67216465e75e10 file=neo/internal/o1/qualification.go range=255:262 lang=go exported=false byte_range=10542:10689
   sig=func containsString(values []string, want string) bool
 EDGES
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.criteriaForCapabilities kind=func
-  digest=b3:5c053e1b38e4c5c86cfb229fa8c4559c9a2c86cffa49dbc82f106be4d6880f92 file=neo/internal/o1/contract.go range=123:154 lang=go exported=false byte_range=4547:5824
+  digest=b3:5c053e1b38e4c5c86cfb229fa8c4559c9a2c86cffa49dbc82f106be4d6880f92 file=neo/internal/o1/contract.go range=129:160 lang=go exported=false byte_range=4916:6193
   sig=func criteriaForCapabilities(capabilities []string) []Criterion
 EDGES
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.extensionHazardsCovered kind=func
-  digest=b3:920bacfe24c2fa6733faa923fccfe1fecb5281fec579ec6226ea27f0d23e5648 file=neo/internal/o1/qualification.go range=210:225 lang=go exported=false byte_range=9365:9862
+  digest=b3:920bacfe24c2fa6733faa923fccfe1fecb5281fec579ec6226ea27f0d23e5648 file=neo/internal/o1/qualification.go range=210:225 lang=go exported=false byte_range=9299:9796
   sig=func extensionHazardsCovered(registry *Registry, operation string) bool
 EDGES
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.extensionOutcomesCovered kind=func
-  digest=b3:6c297b5d75e8f0696dc0f01227164f955aa4fa48adafc5ff32c600a0f930f322 file=neo/internal/o1/qualification.go range=227:241 lang=go exported=false byte_range=9864:10404
+  digest=b3:6c297b5d75e8f0696dc0f01227164f955aa4fa48adafc5ff32c600a0f930f322 file=neo/internal/o1/qualification.go range=227:241 lang=go exported=false byte_range=9798:10338
   sig=func extensionOutcomesCovered(operation string, variants []string, outcomes []OperationOutcome) bool
 EDGES
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.hasManifest kind=func
-  digest=b3:dbb482f66e20be1197525220417c27ee0524e686aa6f9d20bbe3f8f2fec71000 file=neo/internal/o1/runtime.go range=150:157 lang=go exported=false byte_range=5571:5758
+  digest=b3:dbb482f66e20be1197525220417c27ee0524e686aa6f9d20bbe3f8f2fec71000 file=neo/internal/o1/runtime.go range=147:154 lang=go exported=false byte_range=5405:5592
   sig=func hasManifest(manifests []OperationManifest, operation string) bool
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
@@ -3392,55 +3400,55 @@ EDGES
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.itoa kind=func
-  digest=b3:5010656ea8566951a4222ef93746755bac8babee3af293a75d04ca0a431432ab file=neo/internal/o1/contract.go range=272:284 lang=go exported=false byte_range=9412:9577
+  digest=b3:5010656ea8566951a4222ef93746755bac8babee3af293a75d04ca0a431432ab file=neo/internal/o1/contract.go range=278:290 lang=go exported=false byte_range=9781:9946
   sig=func itoa(v int) string
 EDGES
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.manifestFromTool kind=func
-  digest=b3:63a372da357e0fd20573ad8cf247f73b7a902c7956b9713faa5f01171c667cca file=neo/internal/o1/runtime.go range=218:252 lang=go exported=false byte_range=7781:9266
+  digest=b3:be2f60a7c72cb532eff7243d0961ad15e9ab1dd5533f6adf3510e13b95b7b657 file=neo/internal/o1/runtime.go range=215:251 lang=go exported=false byte_range=7615:9208
   sig=func manifestFromTool(schema llm.Tool) OperationManifest
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.matchesCapability kind=func
-  digest=b3:1495da2da7fe6d132d096d07612c2cd6c8ca40ca1e432aff70016acc8f6b79ec file=neo/internal/o1/manifest.go range=154:169 lang=go exported=false byte_range=4948:5285
+  digest=b3:1495da2da7fe6d132d096d07612c2cd6c8ca40ca1e432aff70016acc8f6b79ec file=neo/internal/o1/manifest.go range=154:169 lang=go exported=false byte_range=5246:5583
   sig=func matchesCapability(operation string, need map[string]bool) bool
 EDGES
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.requestContainsTerm kind=func
-  digest=b3:893470f487e2dff94aab62b3113257a4e9f09aa04e6cb723a484b3949251d2be file=neo/internal/o1/contract.go range=192:216 lang=go exported=false byte_range=7411:8060
+  digest=b3:893470f487e2dff94aab62b3113257a4e9f09aa04e6cb723a484b3949251d2be file=neo/internal/o1/contract.go range=198:222 lang=go exported=false byte_range=7780:8429
   sig=func requestContainsTerm(request, term string) bool
 EDGES
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.requiredCapabilities kind=func
-  digest=b3:28ec39fb4da3451664a8c7b4e92c0ef44f338fee8f40da1b78b242ce261df41d file=neo/internal/o1/contract.go range=156:190 lang=go exported=false byte_range=5826:7409
+  digest=b3:28ec39fb4da3451664a8c7b4e92c0ef44f338fee8f40da1b78b242ce261df41d file=neo/internal/o1/contract.go range=162:196 lang=go exported=false byte_range=6195:7778
   sig=func requiredCapabilities(request string) []string
 EDGES
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.schemaBounds kind=func
-  digest=b3:8ecad1f159ce52d930eebad1e79b8f4929586b3ae17be4a1cc7cdf5436539c02 file=neo/internal/o1/runtime.go range=254:270 lang=go exported=false byte_range=9268:9786
+  digest=b3:8ecad1f159ce52d930eebad1e79b8f4929586b3ae17be4a1cc7cdf5436539c02 file=neo/internal/o1/runtime.go range=253:269 lang=go exported=false byte_range=9210:9728
   sig=func schemaBounds(parameters map[string]interface{}) map[string]string
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.selectExplicitProvider kind=func
-  digest=b3:b84b62d4d98292b2d6353a2fb76a8a2b47e5ecba06527fced7490797ad6f7798 file=neo/internal/o1/runtime.go range=125:148 lang=go exported=false byte_range=4831:5569
+  digest=b3:b84b62d4d98292b2d6353a2fb76a8a2b47e5ecba06527fced7490797ad6f7798 file=neo/internal/o1/runtime.go range=122:145 lang=go exported=false byte_range=4665:5403
   sig=func selectExplicitProvider(objective string, manifests *ManifestSet) []OperationManifest
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.validateToolSchema kind=func
-  digest=b3:f2c79361f577c6d43717a1068e760a00d888f1447fa55a7700e89a0c17be68f2 file=neo/internal/o1/runtime.go range=205:216 lang=go exported=false byte_range=7209:7779
+  digest=b3:f2c79361f577c6d43717a1068e760a00d888f1447fa55a7700e89a0c17be68f2 file=neo/internal/o1/runtime.go range=202:213 lang=go exported=false byte_range=7043:7613
   sig=func validateToolSchema(schema llm.Tool) error
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.versionAtLeast kind=func
-  digest=b3:ffa355e4fd90d10e6e84c9046ef7b3fdf20f2872c3fe4d063d21c226cea9ae7e file=neo/internal/o1/manifest.go range=263:308 lang=go exported=false byte_range=9025:9838
+  digest=b3:ffa355e4fd90d10e6e84c9046ef7b3fdf20f2872c3fe4d063d21c226cea9ae7e file=neo/internal/o1/manifest.go range=263:308 lang=go exported=false byte_range=9323:10136
   sig=func versionAtLeast(actual, minimum string) bool
 EDGES
   ^defines=matrix/neo/internal/o1/manifest.go
@@ -3452,19 +3460,19 @@ EDGES
   ^contains=matrix/neo/internal/o1
 
 NODE id=matrix/neo/internal/o1/contract.go kind=file
-  digest=b3:301f0b7e8c8e4d96e42221b55482abd35756aa25e833e30c5cf296d50349da0b file=neo/internal/o1/contract.go range=1:284 lang=go exported=true
+  digest=b3:7fff977c1eb7f60a3f00f54a8bc54a9ec828641fa6e2765b43cd4e0645154ca1 file=neo/internal/o1/contract.go range=1:290 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/o1.Ambiguity,matrix/neo/internal/o1.Clause,matrix/neo/internal/o1.Compile,matrix/neo/internal/o1.CompileInput,matrix/neo/internal/o1.Criterion,matrix/neo/internal/o1.Framework,matrix/neo/internal/o1.Gate,matrix/neo/internal/o1.Inferred,matrix/neo/internal/o1.Provenance,matrix/neo/internal/o1.Repository,matrix/neo/internal/o1.Revision,matrix/neo/internal/o1.Runtime,matrix/neo/internal/o1.TaskContract,matrix/neo/internal/o1.TaskContract.ReadyForMutation,matrix/neo/internal/o1.TaskContract.Render,matrix/neo/internal/o1.TaskContract.Revise,matrix/neo/internal/o1.User,matrix/neo/internal/o1.cleanRules,matrix/neo/internal/o1.criteriaForCapabilities,matrix/neo/internal/o1.itoa,matrix/neo/internal/o1.requestContainsTerm,matrix/neo/internal/o1.requiredCapabilities
   ^contains=matrix/neo/internal/o1
 
 NODE id=matrix/neo/internal/o1/ledger.go kind=file
-  digest=b3:ee07017253bf6f51a9b11ed7c7291d85439cf639b2280c0d563ae102dd5df6ba file=neo/internal/o1/ledger.go range=1:343 lang=go exported=true
+  digest=b3:bf352ba6c078dc275c3716ced76492a0314c3dab312efbba9d93550a650a7e0c file=neo/internal/o1/ledger.go range=1:360 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/o1.AttemptRecord,matrix/neo/internal/o1.EffectRecord,matrix/neo/internal/o1.NewRunLedger,matrix/neo/internal/o1.RecoveryRecord,matrix/neo/internal/o1.RestoreRunLedger,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.RunLedger.AddHazard,matrix/neo/internal/o1.RunLedger.AttemptCount,matrix/neo/internal/o1.RunLedger.CausalDeltas,matrix/neo/internal/o1.RunLedger.CloseCriterion,matrix/neo/internal/o1.RunLedger.CloseHazard,matrix/neo/internal/o1.RunLedger.HasSuccessfulOperation,matrix/neo/internal/o1.RunLedger.HasUnreconciledEffect,matrix/neo/internal/o1.RunLedger.IsCriterionClosed,matrix/neo/internal/o1.RunLedger.ReconcileEffect,matrix/neo/internal/o1.RunLedger.RecordAttempt,matrix/neo/internal/o1.RunLedger.RecordEffect,matrix/neo/internal/o1.RunLedger.RecordRecovery,matrix/neo/internal/o1.RunLedger.SetTerminal,matrix/neo/internal/o1.RunLedger.SnapshotJSON,matrix/neo/internal/o1.RunLedger.SuccessfulAttempt,matrix/neo/internal/o1.TerminalProof
+  defines=matrix/neo/internal/o1.AttemptRecord,matrix/neo/internal/o1.EffectRecord,matrix/neo/internal/o1.NewRunLedger,matrix/neo/internal/o1.RecoveryRecord,matrix/neo/internal/o1.RestoreRunLedger,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.RunLedger.AddHazard,matrix/neo/internal/o1.RunLedger.AttemptCount,matrix/neo/internal/o1.RunLedger.CausalDeltas,matrix/neo/internal/o1.RunLedger.CloseCriterion,matrix/neo/internal/o1.RunLedger.CloseHazard,matrix/neo/internal/o1.RunLedger.EvidenceSnapshot,matrix/neo/internal/o1.RunLedger.HasSuccessfulOperation,matrix/neo/internal/o1.RunLedger.HasUnreconciledEffect,matrix/neo/internal/o1.RunLedger.IsCriterionClosed,matrix/neo/internal/o1.RunLedger.ReconcileEffect,matrix/neo/internal/o1.RunLedger.RecordAttempt,matrix/neo/internal/o1.RunLedger.RecordEffect,matrix/neo/internal/o1.RunLedger.RecordRecovery,matrix/neo/internal/o1.RunLedger.SetTerminal,matrix/neo/internal/o1.RunLedger.SnapshotJSON,matrix/neo/internal/o1.RunLedger.SuccessfulAttempt,matrix/neo/internal/o1.TerminalProof
   ^contains=matrix/neo/internal/o1
 
 NODE id=matrix/neo/internal/o1/manifest.go kind=file
-  digest=b3:6dbf2c4d5e50609fe9707af72a90274532e3484749e8912eb6aa069655a67da0 file=neo/internal/o1/manifest.go range=1:341 lang=go exported=true
+  digest=b3:4bbd8b1f8ae3325d76fa65e67ffa9e0d5bc1546e6ad2da7c485df39a5b66dda8 file=neo/internal/o1/manifest.go range=1:341 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/o1.Conditional,matrix/neo/internal/o1.EffectClass,matrix/neo/internal/o1.EffectDestructive,matrix/neo/internal/o1.EffectExternal,matrix/neo/internal/o1.EffectMoney,matrix/neo/internal/o1.EffectNotification,matrix/neo/internal/o1.EffectReadOnly,matrix/neo/internal/o1.EffectWrite,matrix/neo/internal/o1.Irreversible,matrix/neo/internal/o1.LoadManifests,matrix/neo/internal/o1.ManifestSet,matrix/neo/internal/o1.ManifestSet.Get,matrix/neo/internal/o1.ManifestSet.Operations,matrix/neo/internal/o1.ManifestSet.SelectMinimal,matrix/neo/internal/o1.ManifestSet.Validate,matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.PreflightEnvironment,matrix/neo/internal/o1.PreflightResult,matrix/neo/internal/o1.RecoverySpec,matrix/neo/internal/o1.Reversibility,matrix/neo/internal/o1.Reversible,matrix/neo/internal/o1.RunPreflight,matrix/neo/internal/o1.capabilityGroups,matrix/neo/internal/o1.checkPrecondition,matrix/neo/internal/o1.matchesCapability,matrix/neo/internal/o1.versionAtLeast
   ^contains=matrix/neo/internal/o1
@@ -3488,7 +3496,7 @@ EDGES
   ^contains=matrix/neo/internal/o1
 
 NODE id=matrix/neo/internal/o1/qualification.go kind=file
-  digest=b3:565dd59f6860ca9af6346c1653c87ed3344b996df5389abb0e1a632f8f8080be file=neo/internal/o1/qualification.go range=1:262 lang=go exported=true
+  digest=b3:399dd259197de9018626158a6ae388fbbdb6e0be3756f65f5d7101b96ae9342d file=neo/internal/o1/qualification.go range=1:262 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/o1.EvaluateFailureReplay,matrix/neo/internal/o1.EvaluateQualification,matrix/neo/internal/o1.ExtensionGate,matrix/neo/internal/o1.ExtensionGate.IsClear,matrix/neo/internal/o1.ExtensionGate.Unmet,matrix/neo/internal/o1.FailureReplayCase,matrix/neo/internal/o1.QualificationCase,matrix/neo/internal/o1.QualificationResult,matrix/neo/internal/o1.StandardFailureCorpus,matrix/neo/internal/o1.StandardQualificationCorpus,matrix/neo/internal/o1.boundedInputs,matrix/neo/internal/o1.containsString,matrix/neo/internal/o1.extensionHazardsCovered,matrix/neo/internal/o1.extensionOutcomesCovered
   ^contains=matrix/neo/internal/o1
@@ -3506,13 +3514,13 @@ EDGES
   ^contains=matrix/neo/internal/o1
 
 NODE id=matrix/neo/internal/o1/runtime.go kind=file
-  digest=b3:a33dd0e9cb65adf1265740986f7dd305f8a41c09fc5ddf5c191c6a0149fed4ed file=neo/internal/o1/runtime.go range=1:279 lang=go exported=true
+  digest=b3:36362dee8539f70c2b9961f5f0a13929648c195e6ffefb7726fd3d233192daeb file=neo/internal/o1/runtime.go range=1:278 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/o1.CompileAllCapabilities,matrix/neo/internal/o1.CompileRuntimeCapabilities,matrix/neo/internal/o1.ConformChatResult,matrix/neo/internal/o1.DialectForProvider,matrix/neo/internal/o1.RuntimeCapabilities,matrix/neo/internal/o1.containsAny,matrix/neo/internal/o1.hasManifest,matrix/neo/internal/o1.manifestFromTool,matrix/neo/internal/o1.schemaBounds,matrix/neo/internal/o1.selectExplicitProvider,matrix/neo/internal/o1.validateToolSchema
   ^contains=matrix/neo/internal/o1
 
 NODE id=matrix/neo/internal/o1/supervisor.go kind=file
-  digest=b3:f268ecf4b4903e0fa3bbe6e8abf94c9ca5df87f61bca9b813cd243e57ae98e99 file=neo/internal/o1/supervisor.go range=1:172 lang=go exported=true
+  digest=b3:9ded457293f8b3a0d012abd231687b1316ef154d1c6ad7ec0642c9ed3ec5d155 file=neo/internal/o1/supervisor.go range=1:173 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/o1.RenderTerminalMessage,matrix/neo/internal/o1.SupAskUser,matrix/neo/internal/o1.SupComplete,matrix/neo/internal/o1.SupContinue,matrix/neo/internal/o1.SupReconcile,matrix/neo/internal/o1.SupRepair,matrix/neo/internal/o1.SupStop,matrix/neo/internal/o1.Supervisor,matrix/neo/internal/o1.Supervisor.Evaluate,matrix/neo/internal/o1.SupervisorAction,matrix/neo/internal/o1.SupervisorDecision,matrix/neo/internal/o1.TermBudgetExhausted,matrix/neo/internal/o1.TermComplete,matrix/neo/internal/o1.TermExternalUnavail,matrix/neo/internal/o1.TermInternalFailure,matrix/neo/internal/o1.TermIrreducibleAmbiguity,matrix/neo/internal/o1.TermMissingAuth,matrix/neo/internal/o1.TermSafePartial,matrix/neo/internal/o1.TerminalClass,matrix/neo/internal/o1.classifyTerminal
   ^contains=matrix/neo/internal/o1

@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/construct/projection kind=package
-  digest=b3:0d975ded7315cb79ee73c60f9eb43115d78e21913af6911aedc85931ecc397cd file=construct/projection range=0:0 lang=go exported=true
+  digest=b3:c0380041564a89d9ce8e5fd97c6fa37fe4c2924d70dc558ecab92a4be9401b7c file=construct/projection range=0:0 lang=go exported=true
 EDGES
   contains=matrix/construct/projection/doc.go,matrix/construct/projection/project.go,matrix/construct/projection/render.go
   imports=matrix/construct/schema,matrix/construct/schema/primitives
@@ -72,7 +72,7 @@ EDGES
   ^defines=matrix/construct/projection/project.go
 
 NODE id=matrix/construct/projection.ParseRender kind=func
-  digest=b3:b3d18df4fa4a45e2027d5dec6eb3be493fdb926e4f7cff2fa41f84a3eb09a0f1 file=construct/projection/render.go range=99:130 lang=go exported=true byte_range=5876:7070
+  digest=b3:b3d18df4fa4a45e2027d5dec6eb3be493fdb926e4f7cff2fa41f84a3eb09a0f1 file=construct/projection/render.go range=319:350 lang=go exported=true byte_range=12811:14005
   sig=func ParseRender(args map[string]interface{}) (*schema.Surface, error)
   doc=ParseRender maps a construct_render tool-call's arguments into a validated\nschema.Surface. It is the active-tier counterpart to ProjectEvent: the agent\nfills a trusted primitive and this function rejects anything that does not\nsatisfy the frozen contract (invariant i2 — no arbitrary UI). A returned\nerror is meant to flow back to the model so it can correct and retry.
 EDGES
@@ -131,8 +131,17 @@ NODE id=matrix/construct/projection.ToolSpec#Params kind=field
 EDGES
   ^contains=matrix/construct/projection.ToolSpec
 
+NODE id=matrix/construct/projection.arraySchema kind=func
+  digest=b3:220a9dfed1f79a189795fcd9a91294e91b1c59e57a5f380fe06ee0a3b7529494 file=construct/projection/render.go range=315:317 lang=go exported=false byte_range=12672:12809
+  sig=func arraySchema(items map[string]interface{}) map[string]interface{}
+EDGES
+  references=matrix/construct/projection.items
+  ^calls=matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.renderToolParams,matrix/construct/projection.structureRecordSchemaAtDepth
+  ^references=matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.renderToolParams,matrix/construct/projection.structureRecordSchemaAtDepth
+  ^defines=matrix/construct/projection/render.go
+
 NODE id=matrix/construct/projection.asString kind=func
-  digest=b3:e58ed4036624483bddf2e4274c0adf5def0900a320fdf6287aa5443b2e5d8795 file=construct/projection/render.go range=252:255 lang=go exported=false byte_range=10927:10996
+  digest=b3:e58ed4036624483bddf2e4274c0adf5def0900a320fdf6287aa5443b2e5d8795 file=construct/projection/render.go range=472:475 lang=go exported=false byte_range=17862:17931
   sig=func asString(v interface{}) string
 EDGES
   references=matrix/construct/projection.s,matrix/construct/projection.v
@@ -140,8 +149,18 @@ EDGES
   ^references=matrix/construct/projection.ParseRender
   ^defines=matrix/construct/projection/render.go
 
+NODE id=matrix/construct/projection.attributesSchema kind=func
+  digest=b3:c010a19b58a456597bbadd698a88ed4459dada6159f2815de88e0c1c5182c3a6 file=construct/projection/render.go range=190:204 lang=go exported=false byte_range=8752:9233
+  sig=func attributesSchema() map[string]interface{}
+EDGES
+  calls=matrix/construct/projection.enumSchema,matrix/construct/projection.numberSchema,matrix/construct/projection.objectSchema,matrix/construct/projection.stringSchema
+  references=matrix/construct/projection.enumSchema,matrix/construct/projection.numberSchema,matrix/construct/projection.objectSchema,matrix/construct/projection.stringSchema
+  ^calls=matrix/construct/projection.renderToolParams,matrix/construct/projection.renderVariant
+  ^references=matrix/construct/projection.renderToolParams,matrix/construct/projection.renderVariant
+  ^defines=matrix/construct/projection/render.go
+
 NODE id=matrix/construct/projection.autoID kind=func
-  digest=b3:a0923cca960eeab083c39abd0ec966c20523846e03a79f5594e1a5c363994a55 file=construct/projection/render.go range=243:250 lang=go exported=false byte_range=10593:10925
+  digest=b3:a0923cca960eeab083c39abd0ec966c20523846e03a79f5594e1a5c363994a55 file=construct/projection/render.go range=463:470 lang=go exported=false byte_range=17528:17860
   sig=func autoID(kind schema.Kind, payload []byte) string
   doc=autoID derives a stable id from the kind + payload content when the agent\ndid not supply one, so an identical re-render coalesces onto one surface.
 EDGES
@@ -150,8 +169,16 @@ EDGES
   ^references=matrix/construct/projection.buildSurface
   ^defines=matrix/construct/projection/render.go
 
+NODE id=matrix/construct/projection.boolSchema kind=func
+  digest=b3:20d407307e2465ee1ed3615efef463b2951b9cf5dbdd34cbd42aaec2a5d518df file=construct/projection/render.go range=300:300 lang=go exported=false byte_range=12121:12216
+  sig=func boolSchema() map[string]interface{}
+EDGES
+  ^calls=matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.renderToolParams,matrix/construct/projection.scalarSchema
+  ^references=matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.renderToolParams,matrix/construct/projection.scalarSchema
+  ^defines=matrix/construct/projection/render.go
+
 NODE id=matrix/construct/projection.buildSurface kind=func
-  digest=b3:c73b28e657341e8868e241a4d6fa7cc495fa398bbfd54d263d9c2e7d2c78b378 file=construct/projection/render.go range=132:190 lang=go exported=false byte_range=7072:8908
+  digest=b3:c73b28e657341e8868e241a4d6fa7cc495fa398bbfd54d263d9c2e7d2c78b378 file=construct/projection/render.go range=352:410 lang=go exported=false byte_range=14007:15843
   sig=func buildSurface(kind schema.Kind, id string, payload []byte) (*schema.Surface, error)
   doc=buildSurface constructs the kind-matched surface from the payload bytes. An\nempty/null payload leaves a zero-value primitive, which Validate then rejects\nif the primitive has required fields — surfacing a clear error to the model.
 EDGES
@@ -159,6 +186,16 @@ EDGES
   references=matrix/construct/projection.autoID,matrix/construct/projection.err,matrix/construct/projection.id,matrix/construct/projection.kind,matrix/construct/projection.p,matrix/construct/projection.payload,matrix/construct/projection.unmarshalPayload,matrix/construct/schema.Kind,matrix/construct/schema.KindAsk,matrix/construct/schema.KindCanvas,matrix/construct/schema.KindEntity,matrix/construct/schema.KindMetric,matrix/construct/schema.KindNarration,matrix/construct/schema.KindStream,matrix/construct/schema.KindStructure,matrix/construct/schema.KindTimeline,matrix/construct/schema.NewAsk,matrix/construct/schema.NewCanvas,matrix/construct/schema.NewEntity,matrix/construct/schema.NewMetric,matrix/construct/schema.NewNarration,matrix/construct/schema.NewStream,matrix/construct/schema.NewStructure,matrix/construct/schema.NewTimeline,matrix/construct/schema.Surface,matrix/construct/schema/primitives.Ask,matrix/construct/schema/primitives.Canvas,matrix/construct/schema/primitives.Entity,matrix/construct/schema/primitives.Metric,matrix/construct/schema/primitives.Narration,matrix/construct/schema/primitives.Stream,matrix/construct/schema/primitives.Structure,matrix/construct/schema/primitives.Timeline
   ^calls=matrix/construct/projection.ParseRender
   ^references=matrix/construct/projection.ParseRender
+  ^defines=matrix/construct/projection/render.go
+
+NODE id=matrix/construct/projection.canvasPayloadSchema kind=func
+  digest=b3:57fbd7aaeecd2b1c1d81592427ce1b342bdaff50aa5bb63c75c28fcf2df409b8 file=construct/projection/render.go range=206:259 lang=go exported=false byte_range=9235:10915
+  sig=func canvasPayloadSchema() map[string]interface{}
+EDGES
+  calls=matrix/construct/projection.arraySchema,matrix/construct/projection.boolSchema,matrix/construct/projection.cloneProperties,matrix/construct/projection.constStringSchema,matrix/construct/projection.enumSchema,matrix/construct/projection.numberSchema,matrix/construct/projection.objectSchema,matrix/construct/projection.stringSchema
+  references=matrix/construct/projection.arraySchema,matrix/construct/projection.boolSchema,matrix/construct/projection.chartProperties,matrix/construct/projection.cloneProperties,matrix/construct/projection.common,matrix/construct/projection.constStringSchema,matrix/construct/projection.enumSchema,matrix/construct/projection.mediaProperties,matrix/construct/projection.numberSchema,matrix/construct/projection.objectSchema,matrix/construct/projection.stringSchema
+  ^calls=matrix/construct/projection.renderToolParams
+  ^references=matrix/construct/projection.renderToolParams
   ^defines=matrix/construct/projection/render.go
 
 NODE id=matrix/construct/projection.clip kind=func
@@ -170,8 +207,26 @@ EDGES
   ^references=matrix/construct/projection.entityFromObject,matrix/construct/projection.projectToolResult,matrix/construct/projection.structureFromArray
   ^defines=matrix/construct/projection/project.go
 
+NODE id=matrix/construct/projection.cloneProperties kind=func
+  digest=b3:2fa8c4c7e96a549eaee35176e54f2fdb39e61885a607b09b8eefef05e9947e59 file=construct/projection/render.go range=261:267 lang=go exported=false byte_range=10917:11103
+  sig=func cloneProperties(in map[string]interface{}) map[string]interface{}
+EDGES
+  references=matrix/construct/projection.in,matrix/construct/projection.key,matrix/construct/projection.out,matrix/construct/projection.value
+  ^calls=matrix/construct/projection.canvasPayloadSchema
+  ^references=matrix/construct/projection.canvasPayloadSchema
+  ^defines=matrix/construct/projection/render.go
+
+NODE id=matrix/construct/projection.constStringSchema kind=func
+  digest=b3:e550f0ed000a0ff9fd205f78da265296c15a3ce576820f156bb63e39225605ba file=construct/projection/render.go range=312:314 lang=go exported=false byte_range=12543:12671
+  sig=func constStringSchema(value string) map[string]interface{}
+EDGES
+  references=matrix/construct/projection.value
+  ^calls=matrix/construct/projection.canvasPayloadSchema
+  ^references=matrix/construct/projection.canvasPayloadSchema
+  ^defines=matrix/construct/projection/render.go
+
 NODE id=matrix/construct/projection.encodePayload kind=func
-  digest=b3:dcdbc00dd074bd8a728cdfc7ecc7242ff4b12d68486c6cf57860e68bb211c327 file=construct/projection/render.go range=192:208 lang=go exported=false byte_range=8910:9721
+  digest=b3:dcdbc00dd074bd8a728cdfc7ecc7242ff4b12d68486c6cf57860e68bb211c327 file=construct/projection/render.go range=412:428 lang=go exported=false byte_range=15845:16656
   sig=func encodePayload(v interface{}) ([]byte, error)
   doc=encodePayload turns the render arguments' `payload` into the JSON bytes the\nkind-matched primitive is decoded from. The payload is normally a nested JSON\nobject, but models frequently DOUBLE-ENCODE it as a JSON string (the whole\nobject stringified). In that case args["payload"] arrives as a Go string, and\nre-marshaling it would quote it AGAIN — yielding "cannot unmarshal string into\nGo value of type primitives.X" when buildSurface decodes it. Detect the string\ncase and use its bytes directly so a double-encoded payload still parses.
 EDGES
@@ -190,6 +245,15 @@ EDGES
   ^calls=matrix/construct/projection.projectToolResult
   ^references=matrix/construct/projection.projectToolResult
   ^defines=matrix/construct/projection/project.go
+
+NODE id=matrix/construct/projection.enumSchema kind=func
+  digest=b3:37d1aa53860f0363cb102b0d5aab80d3f86cb94a52f4cb680b2362e7db65a8cd file=construct/projection/render.go range=309:311 lang=go exported=false byte_range=12417:12542
+  sig=func enumSchema(values ...string) map[string]interface{}
+EDGES
+  references=matrix/construct/projection.values
+  ^calls=matrix/construct/projection.attributesSchema,matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.renderToolParams
+  ^references=matrix/construct/projection.attributesSchema,matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.renderToolParams
+  ^defines=matrix/construct/projection/render.go
 
 NODE id=matrix/construct/projection.firstNonEmpty kind=func
   digest=b3:82d99bbb2781eb36826cb3f792a24b6df5f2357e2b32ed831f6d18229ee87394 file=construct/projection/project.go range=256:263 lang=go exported=false byte_range=7685:7801
@@ -243,8 +307,25 @@ EDGES
   ^references=matrix/construct/projection.structureFromArray
   ^defines=matrix/construct/projection/project.go
 
+NODE id=matrix/construct/projection.numberSchema kind=func
+  digest=b3:e1d11141e71618f062dcffb8f63791be0c1abe8f29b9af560568add9666f2267 file=construct/projection/render.go range=299:299 lang=go exported=false byte_range=12026:12120
+  sig=func numberSchema() map[string]interface{}
+EDGES
+  ^calls=matrix/construct/projection.attributesSchema,matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.renderToolParams,matrix/construct/projection.scalarSchema
+  ^references=matrix/construct/projection.attributesSchema,matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.renderToolParams,matrix/construct/projection.scalarSchema
+  ^defines=matrix/construct/projection/render.go
+
+NODE id=matrix/construct/projection.objectSchema kind=func
+  digest=b3:b73905c600c7079ffa371cd33368311dbc09026278f5a393465a73c558c6e1b6 file=construct/projection/render.go range=269:279 lang=go exported=false byte_range=11105:11414
+  sig=func objectSchema(properties map[string]interface{}, required ...string) map[string]interface{}
+EDGES
+  references=matrix/construct/projection.out,matrix/construct/projection.properties,matrix/construct/projection.required
+  ^calls=matrix/construct/projection.attributesSchema,matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.renderToolParams,matrix/construct/projection.structureRecordSchemaAtDepth
+  ^references=matrix/construct/projection.attributesSchema,matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.renderToolParams,matrix/construct/projection.structureRecordSchemaAtDepth
+  ^defines=matrix/construct/projection/render.go
+
 NODE id=matrix/construct/projection.parseAttributes kind=func
-  digest=b3:c075c55fd642f65f79f75938b06ccfa6379ebbd0fc01f5c227555b461ad85fce file=construct/projection/render.go range=223:241 lang=go exported=false byte_range=10150:10591
+  digest=b3:c075c55fd642f65f79f75938b06ccfa6379ebbd0fc01f5c227555b461ad85fce file=construct/projection/render.go range=443:461 lang=go exported=false byte_range=17085:17526
   sig=func parseAttributes(v interface{}) *schema.Attributes
   doc=parseAttributes decodes the optional attribute decoration; nil when absent or\nempty so an undecorated surface carries no attribute block.
 EDGES
@@ -294,20 +375,49 @@ EDGES
   ^defines=matrix/construct/projection/project.go
 
 NODE id=matrix/construct/projection.renderToolDescription kind=const
-  digest=b3:9216a77dc2c717e5962add7c1dab694abd12ee7e6287baa43616fa635097d19c file=construct/projection/render.go range=45:59 lang=go exported=false byte_range=1807:4420
+  digest=b3:28630c63e7dfe2bd8ff53618bddd31156bae2838d5dcd33a6b2221538d599917 file=construct/projection/render.go range=45:59 lang=go exported=false byte_range=1807:4445
   sig=untyped string
 EDGES
   ^references=matrix/construct/projection.RenderTools
   ^defines=matrix/construct/projection/render.go
 
 NODE id=matrix/construct/projection.renderToolParams kind=func
-  digest=b3:fe41b69a7df7a0bdfd595c7034e72c77ba98406b466dce14175d6ab352207f16 file=construct/projection/render.go range=61:97 lang=go exported=false byte_range=4422:5874
+  digest=b3:20ebcbd676916d5b020341bf31b888dba6c3285703f383efbdd48e1a949336d5 file=construct/projection/render.go range=61:173 lang=go exported=false byte_range=4447:8254
   sig=func renderToolParams() map[string]interface{}
-  doc=renderToolParams is the JSON-Schema object for the construct_render function\narguments. payload is left an open object (its shape depends on kind, taught\nin the description); the typed contract is enforced by ParseRender +\nschema.Validate, which is the i2 security gate.
+  doc=renderToolParams is the discriminated JSON-Schema union for construct_render.\nThe model cannot pair a kind with another primitive's payload shape: each\noneOf branch fixes kind with const and carries that primitive's required\nfields. ParseRender + schema.Validate remain the authoritative i2 gate.
 EDGES
-  references=matrix/construct/projection.k,matrix/construct/projection.kinds,matrix/construct/schema.Kinds
+  calls=matrix/construct/projection.arraySchema,matrix/construct/projection.attributesSchema,matrix/construct/projection.boolSchema,matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.enumSchema,matrix/construct/projection.numberSchema,matrix/construct/projection.objectSchema,matrix/construct/projection.renderVariant,matrix/construct/projection.stringSchema,matrix/construct/projection.structureRecordSchema
+  references=matrix/construct/projection.arraySchema,matrix/construct/projection.attributesSchema,matrix/construct/projection.boolSchema,matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.enumSchema,matrix/construct/projection.numberSchema,matrix/construct/projection.objectSchema,matrix/construct/projection.renderVariant,matrix/construct/projection.stringSchema,matrix/construct/projection.structureRecordSchema,matrix/construct/projection.variants,matrix/construct/schema.KindAsk,matrix/construct/schema.KindCanvas,matrix/construct/schema.KindEntity,matrix/construct/schema.KindMetric,matrix/construct/schema.KindNarration,matrix/construct/schema.KindStream,matrix/construct/schema.KindStructure,matrix/construct/schema.KindTimeline
   ^calls=matrix/construct/projection.RenderTools
   ^references=matrix/construct/projection.RenderTools
+  ^defines=matrix/construct/projection/render.go
+
+NODE id=matrix/construct/projection.renderVariant kind=func
+  digest=b3:79ec0793e1c24eaf7c941000ce3a7077d1125407106711cd02bf32604c5d5d18 file=construct/projection/render.go range=175:188 lang=go exported=false byte_range=8256:8750
+  sig=func renderVariant(kind schema.Kind, payload map[string]interface{}) map[string]interface{}
+EDGES
+  calls=matrix/construct/projection.attributesSchema,matrix/construct/projection.stringSchema
+  references=matrix/construct/projection.attributesSchema,matrix/construct/projection.kind,matrix/construct/projection.payload,matrix/construct/projection.stringSchema,matrix/construct/schema.Kind
+  ^calls=matrix/construct/projection.renderToolParams
+  ^references=matrix/construct/projection.renderToolParams
+  ^defines=matrix/construct/projection/render.go
+
+NODE id=matrix/construct/projection.scalarSchema kind=func
+  digest=b3:ddb36862d2a01d4cdb5566806f7ece3d12d5c2d363f8f3e6e6a42fa06b7eab1f file=construct/projection/render.go range=301:308 lang=go exported=false byte_range=12217:12416
+  sig=func scalarSchema() map[string]interface{}
+EDGES
+  calls=matrix/construct/projection.boolSchema,matrix/construct/projection.numberSchema,matrix/construct/projection.stringSchema
+  references=matrix/construct/projection.boolSchema,matrix/construct/projection.numberSchema,matrix/construct/projection.stringSchema
+  ^calls=matrix/construct/projection.structureRecordSchemaAtDepth
+  ^references=matrix/construct/projection.structureRecordSchemaAtDepth
+  ^defines=matrix/construct/projection/render.go
+
+NODE id=matrix/construct/projection.stringSchema kind=func
+  digest=b3:d40b6c7d7e9ffd1ab75501745ecc77e30396bd2aefd1ce73cf2360db1787b480 file=construct/projection/render.go range=298:298 lang=go exported=false byte_range=11931:12025
+  sig=func stringSchema() map[string]interface{}
+EDGES
+  ^calls=matrix/construct/projection.attributesSchema,matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.renderToolParams,matrix/construct/projection.renderVariant,matrix/construct/projection.scalarSchema,matrix/construct/projection.structureRecordSchemaAtDepth
+  ^references=matrix/construct/projection.attributesSchema,matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.renderToolParams,matrix/construct/projection.renderVariant,matrix/construct/projection.scalarSchema,matrix/construct/projection.structureRecordSchemaAtDepth
   ^defines=matrix/construct/projection/render.go
 
 NODE id=matrix/construct/projection.structureFromArray kind=func
@@ -321,8 +431,28 @@ EDGES
   ^references=matrix/construct/projection.projectToolResult
   ^defines=matrix/construct/projection/project.go
 
+NODE id=matrix/construct/projection.structureRecordSchema kind=func
+  digest=b3:497f66b84f4b9594937c94b8efbb6d2b2abba2212f3feae5bfd51e171ddecae4 file=construct/projection/render.go range=281:283 lang=go exported=false byte_range=11416:11511
+  sig=func structureRecordSchema() map[string]interface{}
+EDGES
+  calls=matrix/construct/projection.structureRecordSchemaAtDepth
+  references=matrix/construct/projection.structureRecordSchemaAtDepth
+  ^calls=matrix/construct/projection.renderToolParams
+  ^references=matrix/construct/projection.renderToolParams
+  ^defines=matrix/construct/projection/render.go
+
+NODE id=matrix/construct/projection.structureRecordSchemaAtDepth kind=func
+  digest=b3:dad969c290b1e420698d1e9e3928e355d1f6c85f01120d69253e13e719631dbd file=construct/projection/render.go range=285:296 lang=go exported=false byte_range=11513:11929
+  sig=func structureRecordSchemaAtDepth(depth int) map[string]interface{}
+EDGES
+  calls=matrix/construct/projection.arraySchema,matrix/construct/projection.objectSchema,matrix/construct/projection.scalarSchema,matrix/construct/projection.stringSchema
+  references=matrix/construct/projection.arraySchema,matrix/construct/projection.depth,matrix/construct/projection.objectSchema,matrix/construct/projection.properties,matrix/construct/projection.scalarSchema,matrix/construct/projection.stringSchema
+  ^calls=matrix/construct/projection.structureRecordSchema
+  ^references=matrix/construct/projection.structureRecordSchema
+  ^defines=matrix/construct/projection/render.go
+
 NODE id=matrix/construct/projection.unmarshalPayload kind=func
-  digest=b3:8885a95dda9934e55dcc7e8e3ec32575c742b450ec0cc225e90cfee6f52edf79 file=construct/projection/render.go range=210:221 lang=go exported=false byte_range=9723:10148
+  digest=b3:8885a95dda9934e55dcc7e8e3ec32575c742b450ec0cc225e90cfee6f52edf79 file=construct/projection/render.go range=430:441 lang=go exported=false byte_range=16658:17083
   sig=func unmarshalPayload(payload []byte, dst interface{}) error
   doc=unmarshalPayload decodes the payload into dst, tolerating an empty or null\npayload (left as the zero value for Validate to judge).
 EDGES
@@ -353,7 +483,7 @@ EDGES
   ^contains=matrix/construct/projection
 
 NODE id=matrix/construct/projection/render.go kind=file
-  digest=b3:23dcc0b379e513940088c57d58ee36cbec15064113401541726d551764544e73 file=construct/projection/render.go range=1:255 lang=go exported=true
+  digest=b3:36d88c8ac65464d31adddbf6aed8299f03becb9452e06bac4ef97639d9ae5130 file=construct/projection/render.go range=1:475 lang=go exported=true
 EDGES
-  defines=matrix/construct/projection.ConstructRenderTool,matrix/construct/projection.ParseRender,matrix/construct/projection.RenderTools,matrix/construct/projection.ToolSpec,matrix/construct/projection.asString,matrix/construct/projection.autoID,matrix/construct/projection.buildSurface,matrix/construct/projection.encodePayload,matrix/construct/projection.parseAttributes,matrix/construct/projection.renderToolDescription,matrix/construct/projection.renderToolParams,matrix/construct/projection.unmarshalPayload
+  defines=matrix/construct/projection.ConstructRenderTool,matrix/construct/projection.ParseRender,matrix/construct/projection.RenderTools,matrix/construct/projection.ToolSpec,matrix/construct/projection.arraySchema,matrix/construct/projection.asString,matrix/construct/projection.attributesSchema,matrix/construct/projection.autoID,matrix/construct/projection.boolSchema,matrix/construct/projection.buildSurface,matrix/construct/projection.canvasPayloadSchema,matrix/construct/projection.cloneProperties,matrix/construct/projection.constStringSchema,matrix/construct/projection.encodePayload,matrix/construct/projection.enumSchema,matrix/construct/projection.numberSchema,matrix/construct/projection.objectSchema,matrix/construct/projection.parseAttributes,matrix/construct/projection.renderToolDescription,matrix/construct/projection.renderToolParams,matrix/construct/projection.renderVariant,matrix/construct/projection.scalarSchema,matrix/construct/projection.stringSchema,matrix/construct/projection.structureRecordSchema,matrix/construct/projection.structureRecordSchemaAtDepth,matrix/construct/projection.unmarshalPayload
   ^contains=matrix/construct/projection

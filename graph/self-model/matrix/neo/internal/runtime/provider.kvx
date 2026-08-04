@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:8087349d214ea6556bd1e327d9b1cfe401192e02e5c71997ca02544fd4c21fca
+# GENERATED gen=codegraph do-not-edit merkle=b3:b9753067b0143b05d9e59aa7d4582f8ecc4f32217fc185000bee971850caf585
 
 NODE id=matrix/neo/internal/runtime/provider kind=package
-  digest=b3:dc6d93b9799f1b9080d7bd01691180a7bdd5f0bd069b8899f1881cedd077874d file=neo/internal/runtime/provider range=0:0 lang=go exported=true
+  digest=b3:fcc98fd5f22826c73c428c1b6dead0e9ed2a110d68eeee8ce7d9adca8bdc67c4 file=neo/internal/runtime/provider range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/runtime/provider/adapter.go,matrix/neo/internal/runtime/provider/client.go,matrix/neo/internal/runtime/provider/mimo.go,matrix/neo/internal/runtime/provider/openai.go
   ^contains=mod:matrix/neo
@@ -14,123 +14,142 @@ EDGES
   ^defines=matrix/neo/internal/runtime/provider/adapter.go
 
 NODE id=matrix/neo/internal/runtime/provider.Client kind=type
-  digest=b3:1b6db04d8dcec673ecec736f4dec6f982c4c9d668fcb405437df79b88eefd6a3 file=neo/internal/runtime/provider/client.go range=81:92 lang=go exported=true byte_range=1683:1960
-  sig=type Client struct {\n	adapter		Adapter\n	endpoint	string\n	bearer		string\n	actorDID	string\n	slotLabel	string\n	maxAttempts	int\n	backoffInitial	time.Duration\n	backoffMax	time.Duration\n	idleTimeout	time.Duration\n	httpClient	*http.Client\n}
+  digest=b3:4eaf632b01389d68422d2cd99f2296acb11938d8d6427423d44870965cec11a4 file=neo/internal/runtime/provider/client.go range=83:95 lang=go exported=true byte_range=1753:2077
+  sig=type Client struct {\n	adapter		Adapter\n	endpoint	string\n	bearer		string\n	actorDID	string\n	slotLabel	string\n	maxAttempts	int\n	backoffInitial	time.Duration\n	backoffMax	time.Duration\n	idleTimeout	time.Duration\n	httpClient	*http.Client\n	onRawExchange	func(request, response []byte)\n}
 EDGES
-  contains=matrix/neo/internal/runtime/provider.Client#actorDID,matrix/neo/internal/runtime/provider.Client#adapter,matrix/neo/internal/runtime/provider.Client#backoffInitial,matrix/neo/internal/runtime/provider.Client#backoffMax,matrix/neo/internal/runtime/provider.Client#bearer,matrix/neo/internal/runtime/provider.Client#endpoint,matrix/neo/internal/runtime/provider.Client#httpClient,matrix/neo/internal/runtime/provider.Client#idleTimeout,matrix/neo/internal/runtime/provider.Client#maxAttempts,matrix/neo/internal/runtime/provider.Client#slotLabel,matrix/neo/internal/runtime/provider.Client.Generate,matrix/neo/internal/runtime/provider.Client.backoff,matrix/neo/internal/runtime/provider.Client.decodeStream,matrix/neo/internal/runtime/provider.Client.generateAttempt
+  contains=matrix/neo/internal/runtime/provider.Client#actorDID,matrix/neo/internal/runtime/provider.Client#adapter,matrix/neo/internal/runtime/provider.Client#backoffInitial,matrix/neo/internal/runtime/provider.Client#backoffMax,matrix/neo/internal/runtime/provider.Client#bearer,matrix/neo/internal/runtime/provider.Client#endpoint,matrix/neo/internal/runtime/provider.Client#httpClient,matrix/neo/internal/runtime/provider.Client#idleTimeout,matrix/neo/internal/runtime/provider.Client#maxAttempts,matrix/neo/internal/runtime/provider.Client#onRawExchange,matrix/neo/internal/runtime/provider.Client#slotLabel,matrix/neo/internal/runtime/provider.Client.Generate,matrix/neo/internal/runtime/provider.Client.backoff,matrix/neo/internal/runtime/provider.Client.decodeStream,matrix/neo/internal/runtime/provider.Client.generateAttempt,matrix/neo/internal/runtime/provider.Client.recordRawExchange
   implements=matrix/neo/internal/runtime/loop.Generator
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
 NODE id=matrix/neo/internal/runtime/provider.Client#actorDID kind=field
-  digest=b3:eae3a44f8d0369040f75a9bb5a201875c3c7e0bbce5dd5b0326b5712a21efe55 file=neo/internal/runtime/provider/client.go range=85:85 lang=go exported=false byte_range=1775:1796
+  digest=b3:eae3a44f8d0369040f75a9bb5a201875c3c7e0bbce5dd5b0326b5712a21efe55 file=neo/internal/runtime/provider/client.go range=87:87 lang=go exported=false byte_range=1845:1866
   sig=string
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
 
 NODE id=matrix/neo/internal/runtime/provider.Client#adapter kind=field
-  digest=b3:3043ce1caf5ff2fefd37b346507488bd3a04680f5ad2d8eec973f13be7fb5cb9 file=neo/internal/runtime/provider/client.go range=82:82 lang=go exported=false byte_range=1705:1727
+  digest=b3:3043ce1caf5ff2fefd37b346507488bd3a04680f5ad2d8eec973f13be7fb5cb9 file=neo/internal/runtime/provider/client.go range=84:84 lang=go exported=false byte_range=1775:1797
   sig=provider.Adapter
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
 
 NODE id=matrix/neo/internal/runtime/provider.Client#backoffInitial kind=field
-  digest=b3:cf61ae77cae3b590ab562b8b948b9666e60d6634a8c2cc066225ce45946566e4 file=neo/internal/runtime/provider/client.go range=88:88 lang=go exported=false byte_range=1841:1869
+  digest=b3:cf61ae77cae3b590ab562b8b948b9666e60d6634a8c2cc066225ce45946566e4 file=neo/internal/runtime/provider/client.go range=90:90 lang=go exported=false byte_range=1911:1939
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
 
 NODE id=matrix/neo/internal/runtime/provider.Client#backoffMax kind=field
-  digest=b3:53562aae92bc2b3d6d3091bfbd9e58b62b07ab36180fd16b619899d4927cd72a file=neo/internal/runtime/provider/client.go range=89:89 lang=go exported=false byte_range=1871:1899
+  digest=b3:53562aae92bc2b3d6d3091bfbd9e58b62b07ab36180fd16b619899d4927cd72a file=neo/internal/runtime/provider/client.go range=91:91 lang=go exported=false byte_range=1941:1969
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
 
 NODE id=matrix/neo/internal/runtime/provider.Client#bearer kind=field
-  digest=b3:6d8fddddddd33726f36e902bd0cfe400df3f981c02144383298a0d8c252ded01 file=neo/internal/runtime/provider/client.go range=84:84 lang=go exported=false byte_range=1752:1773
+  digest=b3:6d8fddddddd33726f36e902bd0cfe400df3f981c02144383298a0d8c252ded01 file=neo/internal/runtime/provider/client.go range=86:86 lang=go exported=false byte_range=1822:1843
   sig=string
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
 
 NODE id=matrix/neo/internal/runtime/provider.Client#endpoint kind=field
-  digest=b3:0f647bb7d23246fb185218a0b574e659b761bcaaede9a58ec028f6847be8a063 file=neo/internal/runtime/provider/client.go range=83:83 lang=go exported=false byte_range=1729:1750
+  digest=b3:0f647bb7d23246fb185218a0b574e659b761bcaaede9a58ec028f6847be8a063 file=neo/internal/runtime/provider/client.go range=85:85 lang=go exported=false byte_range=1799:1820
   sig=string
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
 
 NODE id=matrix/neo/internal/runtime/provider.Client#httpClient kind=field
-  digest=b3:7c74982381e0ef39e2b5c029ae2179a2755728511e95e33fcec927c6525d2247 file=neo/internal/runtime/provider/client.go range=91:91 lang=go exported=false byte_range=1931:1958
+  digest=b3:7c74982381e0ef39e2b5c029ae2179a2755728511e95e33fcec927c6525d2247 file=neo/internal/runtime/provider/client.go range=93:93 lang=go exported=false byte_range=2001:2028
   sig=*http.Client
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
 
 NODE id=matrix/neo/internal/runtime/provider.Client#idleTimeout kind=field
-  digest=b3:ecfcbf4866bb460faede4a0e135ff48b6179b9d7038723d32d75336564af3ce8 file=neo/internal/runtime/provider/client.go range=90:90 lang=go exported=false byte_range=1901:1929
+  digest=b3:ecfcbf4866bb460faede4a0e135ff48b6179b9d7038723d32d75336564af3ce8 file=neo/internal/runtime/provider/client.go range=92:92 lang=go exported=false byte_range=1971:1999
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
 
 NODE id=matrix/neo/internal/runtime/provider.Client#maxAttempts kind=field
-  digest=b3:cbfd6260427aadfab94609e65b5bcb92a67f22bc8e3b4ce1349b09fc1d18921a file=neo/internal/runtime/provider/client.go range=87:87 lang=go exported=false byte_range=1821:1839
+  digest=b3:cbfd6260427aadfab94609e65b5bcb92a67f22bc8e3b4ce1349b09fc1d18921a file=neo/internal/runtime/provider/client.go range=89:89 lang=go exported=false byte_range=1891:1909
   sig=int
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
 
+NODE id=matrix/neo/internal/runtime/provider.Client#onRawExchange kind=field
+  digest=b3:5ebe7bca5954c558bea788255635aaa5dc4c926db9568a5c1ecbd24aa527e127 file=neo/internal/runtime/provider/client.go range=94:94 lang=go exported=false byte_range=2030:2075
+  sig=func(request []byte, response []byte)
+EDGES
+  ^contains=matrix/neo/internal/runtime/provider.Client
+
 NODE id=matrix/neo/internal/runtime/provider.Client#slotLabel kind=field
-  digest=b3:1671566d46ea8c2d0538ce5fd88c93647836f688337afa832ddd2dd720231498 file=neo/internal/runtime/provider/client.go range=86:86 lang=go exported=false byte_range=1798:1819
+  digest=b3:1671566d46ea8c2d0538ce5fd88c93647836f688337afa832ddd2dd720231498 file=neo/internal/runtime/provider/client.go range=88:88 lang=go exported=false byte_range=1868:1889
   sig=string
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
 
 NODE id=matrix/neo/internal/runtime/provider.Client.Generate kind=method
-  digest=b3:6b813f42acff5a575ffc965745aaaa0c8c7c0238aa0e1781a37557f0ad66a114 file=neo/internal/runtime/provider/client.go range=155:206 lang=go exported=true byte_range=3964:5613
+  digest=b3:6b813f42acff5a575ffc965745aaaa0c8c7c0238aa0e1781a37557f0ad66a114 file=neo/internal/runtime/provider/client.go range=162:213 lang=go exported=true byte_range=4187:5836
   sig=func (client *Client) Generate(\n	ctx context.Context,\n	request protocol.GenerationRequest,\n	turnUsage *TurnUsage,\n) (protocol.NormalizedGeneration, error)
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
 NODE id=matrix/neo/internal/runtime/provider.Client.backoff kind=method
-  digest=b3:d42ee10fb1b3b5eaf738792a7931f16b8f6fbc5b6b3f8c44e12bf891ed52320b file=neo/internal/runtime/provider/client.go range=367:379 lang=go exported=false byte_range=10243:10564
+  digest=b3:d42ee10fb1b3b5eaf738792a7931f16b8f6fbc5b6b3f8c44e12bf891ed52320b file=neo/internal/runtime/provider/client.go range=387:399 lang=go exported=false byte_range=10934:11255
   sig=func (client *Client) backoff(attempt int) time.Duration
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
 NODE id=matrix/neo/internal/runtime/provider.Client.decodeStream kind=method
-  digest=b3:033fe2052b2e02e3eeafe241552f1b7d5cf4ae4295a59da7fdf8eddf51775e8c file=neo/internal/runtime/provider/client.go range=290:365 lang=go exported=false byte_range=8203:10241
+  digest=b3:033fe2052b2e02e3eeafe241552f1b7d5cf4ae4295a59da7fdf8eddf51775e8c file=neo/internal/runtime/provider/client.go range=310:385 lang=go exported=false byte_range=8894:10932
   sig=func (client *Client) decodeStream(reader io.Reader) (protocol.NormalizedGeneration, error)
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
 NODE id=matrix/neo/internal/runtime/provider.Client.generateAttempt kind=method
-  digest=b3:da7da45945d8191ac1dc2bd3c393d714ef16152edf99cbbe5db0116117799299 file=neo/internal/runtime/provider/client.go range=208:288 lang=go exported=false byte_range=5615:8201
+  digest=b3:7bd0b96658512ccdbb30f9cb7530d883bdcf5cbefe5c9d46cd0fe15d3708bdb7 file=neo/internal/runtime/provider/client.go range=215:298 lang=go exported=false byte_range=5838:8577
   sig=func (client *Client) generateAttempt(\n	ctx context.Context,\n	body []byte,\n	stream bool,\n) (protocol.NormalizedGeneration, *Failure)
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Client
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
-NODE id=matrix/neo/internal/runtime/provider.Config kind=type
-  digest=b3:f70e89c25a28d789bb6a53f1d43eb16b953f07705a737a47c655c27f893a2307 file=neo/internal/runtime/provider/client.go range=69:79 lang=go exported=true byte_range=1428:1681
-  sig=type Config struct {\n	GatewayURL	string\n	BearerEnv	string\n	ActorDID	string\n	SlotLabel	string\n	MaxAttempts	int\n	BackoffInitial	time.Duration\n	BackoffMax	time.Duration\n	IdleTimeout	time.Duration\n	HTTPClient	*http.Client\n}
+NODE id=matrix/neo/internal/runtime/provider.Client.recordRawExchange kind=method
+  digest=b3:119f75f9ed42780df58f385b06c68732030652fffd32fd7a33313f7128b11883 file=neo/internal/runtime/provider/client.go range=300:308 lang=go exported=false byte_range=8579:8892
+  sig=func (client *Client) recordRawExchange(request, response []byte)
 EDGES
-  contains=matrix/neo/internal/runtime/provider.Config#ActorDID,matrix/neo/internal/runtime/provider.Config#BackoffInitial,matrix/neo/internal/runtime/provider.Config#BackoffMax,matrix/neo/internal/runtime/provider.Config#BearerEnv,matrix/neo/internal/runtime/provider.Config#GatewayURL,matrix/neo/internal/runtime/provider.Config#HTTPClient,matrix/neo/internal/runtime/provider.Config#IdleTimeout,matrix/neo/internal/runtime/provider.Config#MaxAttempts,matrix/neo/internal/runtime/provider.Config#SlotLabel
+  ^contains=matrix/neo/internal/runtime/provider.Client
+  ^defines=matrix/neo/internal/runtime/provider/client.go
+
+NODE id=matrix/neo/internal/runtime/provider.Config kind=type
+  digest=b3:35765ee300d598e06fcaa9f6d69839200bf04352f479d44447a3a2b0b407e58a file=neo/internal/runtime/provider/client.go range=69:81 lang=go exported=true byte_range=1428:1751
+  sig=type Config struct {\n	GatewayURL	string\n	BearerEnv	string\n	Bearer		string\n	ActorDID	string\n	SlotLabel	string\n	MaxAttempts	int\n	BackoffInitial	time.Duration\n	BackoffMax	time.Duration\n	IdleTimeout	time.Duration\n	HTTPClient	*http.Client\n	OnRawExchange	func(request, response []byte)\n}
+EDGES
+  contains=matrix/neo/internal/runtime/provider.Config#ActorDID,matrix/neo/internal/runtime/provider.Config#BackoffInitial,matrix/neo/internal/runtime/provider.Config#BackoffMax,matrix/neo/internal/runtime/provider.Config#Bearer,matrix/neo/internal/runtime/provider.Config#BearerEnv,matrix/neo/internal/runtime/provider.Config#GatewayURL,matrix/neo/internal/runtime/provider.Config#HTTPClient,matrix/neo/internal/runtime/provider.Config#IdleTimeout,matrix/neo/internal/runtime/provider.Config#MaxAttempts,matrix/neo/internal/runtime/provider.Config#OnRawExchange,matrix/neo/internal/runtime/provider.Config#SlotLabel
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
 NODE id=matrix/neo/internal/runtime/provider.Config#ActorDID kind=field
-  digest=b3:cf5b6acb356cdb7444bdbc31d984ca69efba23c93618f104525921b9ce32db4a file=neo/internal/runtime/provider/client.go range=72:72 lang=go exported=true byte_range=1496:1517
+  digest=b3:cf5b6acb356cdb7444bdbc31d984ca69efba23c93618f104525921b9ce32db4a file=neo/internal/runtime/provider/client.go range=73:73 lang=go exported=true byte_range=1519:1540
   sig=string
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Config
 
 NODE id=matrix/neo/internal/runtime/provider.Config#BackoffInitial kind=field
-  digest=b3:b69748c464d9a00fd610c75b44b97f0c3d762749c2f6122149ae8ead0fd54861 file=neo/internal/runtime/provider/client.go range=75:75 lang=go exported=true byte_range=1562:1590
+  digest=b3:b69748c464d9a00fd610c75b44b97f0c3d762749c2f6122149ae8ead0fd54861 file=neo/internal/runtime/provider/client.go range=76:76 lang=go exported=true byte_range=1585:1613
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Config
 
 NODE id=matrix/neo/internal/runtime/provider.Config#BackoffMax kind=field
-  digest=b3:7583ef7ef59662c08b3eb5f4d23e48fd8168ccedb6332f6fb4c7bd1f16240acb file=neo/internal/runtime/provider/client.go range=76:76 lang=go exported=true byte_range=1592:1620
+  digest=b3:7583ef7ef59662c08b3eb5f4d23e48fd8168ccedb6332f6fb4c7bd1f16240acb file=neo/internal/runtime/provider/client.go range=77:77 lang=go exported=true byte_range=1615:1643
   sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/runtime/provider.Config
+
+NODE id=matrix/neo/internal/runtime/provider.Config#Bearer kind=field
+  digest=b3:3d83525059649a6c8dd406b8f5200a969e3ced16f469756cc260b14842b61337 file=neo/internal/runtime/provider/client.go range=72:72 lang=go exported=true byte_range=1496:1517
+  sig=string
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Config
 
@@ -147,25 +166,31 @@ EDGES
   ^contains=matrix/neo/internal/runtime/provider.Config
 
 NODE id=matrix/neo/internal/runtime/provider.Config#HTTPClient kind=field
-  digest=b3:b14467003ca4d5ae8fd9097b626cf537df476dcaa164b3221ffe72fc3fd5fd57 file=neo/internal/runtime/provider/client.go range=78:78 lang=go exported=true byte_range=1652:1679
+  digest=b3:b14467003ca4d5ae8fd9097b626cf537df476dcaa164b3221ffe72fc3fd5fd57 file=neo/internal/runtime/provider/client.go range=79:79 lang=go exported=true byte_range=1675:1702
   sig=*http.Client
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Config
 
 NODE id=matrix/neo/internal/runtime/provider.Config#IdleTimeout kind=field
-  digest=b3:37e8aa4a2277f0c4ba9e650211daa74b5e76eb2539e4093ddfc3a13ce489a6c8 file=neo/internal/runtime/provider/client.go range=77:77 lang=go exported=true byte_range=1622:1650
+  digest=b3:37e8aa4a2277f0c4ba9e650211daa74b5e76eb2539e4093ddfc3a13ce489a6c8 file=neo/internal/runtime/provider/client.go range=78:78 lang=go exported=true byte_range=1645:1673
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Config
 
 NODE id=matrix/neo/internal/runtime/provider.Config#MaxAttempts kind=field
-  digest=b3:7f9989025f14b3a1731a4d166ab9f46bd95efb5edc4188970fe42cbf08106de6 file=neo/internal/runtime/provider/client.go range=74:74 lang=go exported=true byte_range=1542:1560
+  digest=b3:7f9989025f14b3a1731a4d166ab9f46bd95efb5edc4188970fe42cbf08106de6 file=neo/internal/runtime/provider/client.go range=75:75 lang=go exported=true byte_range=1565:1583
   sig=int
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Config
 
+NODE id=matrix/neo/internal/runtime/provider.Config#OnRawExchange kind=field
+  digest=b3:cdfe13058f729643fd233b365e817c571ebc2e61c786b9891f39e256de0fc1ef file=neo/internal/runtime/provider/client.go range=80:80 lang=go exported=true byte_range=1704:1749
+  sig=func(request []byte, response []byte)
+EDGES
+  ^contains=matrix/neo/internal/runtime/provider.Config
+
 NODE id=matrix/neo/internal/runtime/provider.Config#SlotLabel kind=field
-  digest=b3:208e35f577c91cebcb590212db51a1d3e7886a9ad71102e1c13ba0cb01d7b819 file=neo/internal/runtime/provider/client.go range=73:73 lang=go exported=true byte_range=1519:1540
+  digest=b3:208e35f577c91cebcb590212db51a1d3e7886a9ad71102e1c13ba0cb01d7b819 file=neo/internal/runtime/provider/client.go range=74:74 lang=go exported=true byte_range=1542:1563
   sig=string
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Config
@@ -222,7 +247,7 @@ EDGES
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
 NODE id=matrix/neo/internal/runtime/provider.Failure.transient kind=method
-  digest=b3:be238e5880eeb8db4f73ed13ff380191d98dbfec608f304068cb711f437f8e4d file=neo/internal/runtime/provider/client.go range=392:399 lang=go exported=false byte_range=10769:10950
+  digest=b3:be238e5880eeb8db4f73ed13ff380191d98dbfec608f304068cb711f437f8e4d file=neo/internal/runtime/provider/client.go range=412:419 lang=go exported=false byte_range=11460:11641
   sig=func (failure *Failure) transient() bool
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.Failure
@@ -482,7 +507,7 @@ EDGES
   ^defines=matrix/neo/internal/runtime/provider/mimo.go
 
 NODE id=matrix/neo/internal/runtime/provider.New kind=func
-  digest=b3:6b3c60fbaabbe9f8b42708da1f2dba5e6c9158eda29f00be0b30b902e0950d50 file=neo/internal/runtime/provider/client.go range=94:153 lang=go exported=true byte_range=1962:3962
+  digest=b3:dd6efdffc5dc9c76312269e94cc38288f762c5433bb96a569cdd79cda8e6648b file=neo/internal/runtime/provider/client.go range=97:160 lang=go exported=true byte_range=2079:4185
   sig=func New(adapter Adapter, config Config) (*Client, error)
 EDGES
   ^defines=matrix/neo/internal/runtime/provider/client.go
@@ -536,59 +561,59 @@ EDGES
   ^defines=matrix/neo/internal/runtime/provider/mimo.go
 
 NODE id=matrix/neo/internal/runtime/provider.TurnUsage kind=type
-  digest=b3:80ee34c3110439f4fa53e5007b7092d2705730cbeaa4f7e55db662634d6796fa file=neo/internal/runtime/provider/client.go range=401:405 lang=go exported=true byte_range=10952:11033
+  digest=b3:80ee34c3110439f4fa53e5007b7092d2705730cbeaa4f7e55db662634d6796fa file=neo/internal/runtime/provider/client.go range=421:425 lang=go exported=true byte_range=11643:11724
   sig=type TurnUsage struct {\n	mu	sync.Mutex\n	calls	int\n	usage	protocol.TokenUsage\n}
 EDGES
   contains=matrix/neo/internal/runtime/provider.TurnUsage#calls,matrix/neo/internal/runtime/provider.TurnUsage#mu,matrix/neo/internal/runtime/provider.TurnUsage#usage,matrix/neo/internal/runtime/provider.TurnUsage.Add,matrix/neo/internal/runtime/provider.TurnUsage.Snapshot
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
 NODE id=matrix/neo/internal/runtime/provider.TurnUsage#calls kind=field
-  digest=b3:ec28e283ff775594bae5c3c165e0f9d6a400f8e463f1ce181e53dfe7187584b2 file=neo/internal/runtime/provider/client.go range=403:403 lang=go exported=false byte_range=10995:11004
+  digest=b3:ec28e283ff775594bae5c3c165e0f9d6a400f8e463f1ce181e53dfe7187584b2 file=neo/internal/runtime/provider/client.go range=423:423 lang=go exported=false byte_range=11686:11695
   sig=int
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.TurnUsage
 
 NODE id=matrix/neo/internal/runtime/provider.TurnUsage#mu kind=field
-  digest=b3:310fe5057943da02eaa2bd692fe105426780237e3a3659c4f6ff79923e64a299 file=neo/internal/runtime/provider/client.go range=402:402 lang=go exported=false byte_range=10977:10993
+  digest=b3:310fe5057943da02eaa2bd692fe105426780237e3a3659c4f6ff79923e64a299 file=neo/internal/runtime/provider/client.go range=422:422 lang=go exported=false byte_range=11668:11684
   sig=sync.Mutex
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.TurnUsage
 
 NODE id=matrix/neo/internal/runtime/provider.TurnUsage#usage kind=field
-  digest=b3:6be7fc8e68c5e0d2d7755c1d81fdeeb4949a3a6861724ce0cf8933ecb46517c7 file=neo/internal/runtime/provider/client.go range=404:404 lang=go exported=false byte_range=11006:11031
+  digest=b3:6be7fc8e68c5e0d2d7755c1d81fdeeb4949a3a6861724ce0cf8933ecb46517c7 file=neo/internal/runtime/provider/client.go range=424:424 lang=go exported=false byte_range=11697:11722
   sig=protocol.TokenUsage
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.TurnUsage
 
 NODE id=matrix/neo/internal/runtime/provider.TurnUsage.Add kind=method
-  digest=b3:1ee220b58e51cb7cb3d68ff0a8829eda2bc0488ce966e4de8e9551b2f48c7af2 file=neo/internal/runtime/provider/client.go range=412:430 lang=go exported=true byte_range=11104:11915
+  digest=b3:1ee220b58e51cb7cb3d68ff0a8829eda2bc0488ce966e4de8e9551b2f48c7af2 file=neo/internal/runtime/provider/client.go range=432:450 lang=go exported=true byte_range=11795:12606
   sig=func (usage *TurnUsage) Add(next protocol.TokenUsage)
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.TurnUsage
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
 NODE id=matrix/neo/internal/runtime/provider.TurnUsage.Snapshot kind=method
-  digest=b3:e67b26f910d68af35eaaaf0f394d7e3303f400221aa062656ad78fa646762576 file=neo/internal/runtime/provider/client.go range=432:436 lang=go exported=true byte_range=11917:12073
+  digest=b3:e67b26f910d68af35eaaaf0f394d7e3303f400221aa062656ad78fa646762576 file=neo/internal/runtime/provider/client.go range=452:456 lang=go exported=true byte_range=12608:12764
   sig=func (usage *TurnUsage) Snapshot() UsageSnapshot
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.TurnUsage
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
 NODE id=matrix/neo/internal/runtime/provider.UsageSnapshot kind=type
-  digest=b3:cfb611af40f0495441f4b40d0a03f906563c509f34b4c8c4caa2a623c4968652 file=neo/internal/runtime/provider/client.go range=407:410 lang=go exported=true byte_range=11035:11102
+  digest=b3:cfb611af40f0495441f4b40d0a03f906563c509f34b4c8c4caa2a623c4968652 file=neo/internal/runtime/provider/client.go range=427:430 lang=go exported=true byte_range=11726:11793
   sig=type UsageSnapshot struct {\n	Calls	int\n	Usage	protocol.TokenUsage\n}
 EDGES
   contains=matrix/neo/internal/runtime/provider.UsageSnapshot#Calls,matrix/neo/internal/runtime/provider.UsageSnapshot#Usage
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
 NODE id=matrix/neo/internal/runtime/provider.UsageSnapshot#Calls kind=field
-  digest=b3:c8deeac635a24ab272bb89de19f1bcf7e1d1977f3a5720cef4c836621a5605cc file=neo/internal/runtime/provider/client.go range=408:408 lang=go exported=true byte_range=11064:11073
+  digest=b3:c8deeac635a24ab272bb89de19f1bcf7e1d1977f3a5720cef4c836621a5605cc file=neo/internal/runtime/provider/client.go range=428:428 lang=go exported=true byte_range=11755:11764
   sig=int
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.UsageSnapshot
 
 NODE id=matrix/neo/internal/runtime/provider.UsageSnapshot#Usage kind=field
-  digest=b3:b4e3d827c1daf39d04fa52524124ba685c42619a696299ad361fb28ffed620f1 file=neo/internal/runtime/provider/client.go range=409:409 lang=go exported=true byte_range=11075:11100
+  digest=b3:b4e3d827c1daf39d04fa52524124ba685c42619a696299ad361fb28ffed620f1 file=neo/internal/runtime/provider/client.go range=429:429 lang=go exported=true byte_range=11766:11791
   sig=protocol.TokenUsage
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.UsageSnapshot
@@ -600,39 +625,39 @@ EDGES
   ^defines=matrix/neo/internal/runtime/provider/openai.go
 
 NODE id=matrix/neo/internal/runtime/provider.idleReader kind=type
-  digest=b3:1dab4564e1c444a591deb28e73967b926887acfb13615bd28897196b38302582 file=neo/internal/runtime/provider/client.go range=438:442 lang=go exported=false byte_range=12075:12161
+  digest=b3:1dab4564e1c444a591deb28e73967b926887acfb13615bd28897196b38302582 file=neo/internal/runtime/provider/client.go range=458:462 lang=go exported=false byte_range=12766:12852
   sig=type idleReader struct {\n	reader	io.Reader\n	idle	time.Duration\n	timer	*time.Timer\n}
 EDGES
   contains=matrix/neo/internal/runtime/provider.idleReader#idle,matrix/neo/internal/runtime/provider.idleReader#reader,matrix/neo/internal/runtime/provider.idleReader#timer,matrix/neo/internal/runtime/provider.idleReader.Read,matrix/neo/internal/runtime/provider.idleReader.Stop
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
 NODE id=matrix/neo/internal/runtime/provider.idleReader#idle kind=field
-  digest=b3:9b71b3b6a1c39bcc9fdf1e183f6b97b0b961ffbe39dcd1a0c4f81a23701d751c file=neo/internal/runtime/provider/client.go range=440:440 lang=go exported=false byte_range=12119:12139
+  digest=b3:9b71b3b6a1c39bcc9fdf1e183f6b97b0b961ffbe39dcd1a0c4f81a23701d751c file=neo/internal/runtime/provider/client.go range=460:460 lang=go exported=false byte_range=12810:12830
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.idleReader
 
 NODE id=matrix/neo/internal/runtime/provider.idleReader#reader kind=field
-  digest=b3:093bd68c2558211dc3abe7b7d45f6a902b9017fee8d13ab8c5731e948ec22f10 file=neo/internal/runtime/provider/client.go range=439:439 lang=go exported=false byte_range=12101:12117
+  digest=b3:093bd68c2558211dc3abe7b7d45f6a902b9017fee8d13ab8c5731e948ec22f10 file=neo/internal/runtime/provider/client.go range=459:459 lang=go exported=false byte_range=12792:12808
   sig=io.Reader
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.idleReader
 
 NODE id=matrix/neo/internal/runtime/provider.idleReader#timer kind=field
-  digest=b3:e63f396224872a5d01dd09ac511746c1a5e0ab1c1fc8a1e1a99b39ab81becfd0 file=neo/internal/runtime/provider/client.go range=441:441 lang=go exported=false byte_range=12141:12159
+  digest=b3:e63f396224872a5d01dd09ac511746c1a5e0ab1c1fc8a1e1a99b39ab81becfd0 file=neo/internal/runtime/provider/client.go range=461:461 lang=go exported=false byte_range=12832:12850
   sig=*time.Timer
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.idleReader
 
 NODE id=matrix/neo/internal/runtime/provider.idleReader.Read kind=method
-  digest=b3:622c5c4ffe3b6191bd36437d24bc293c2acb7e929a3ab8b11241220b19c7df2c file=neo/internal/runtime/provider/client.go range=450:455 lang=go exported=true byte_range=12367:12536
+  digest=b3:622c5c4ffe3b6191bd36437d24bc293c2acb7e929a3ab8b11241220b19c7df2c file=neo/internal/runtime/provider/client.go range=470:475 lang=go exported=true byte_range=13058:13227
   sig=func (reader *idleReader) Read(buffer []byte) (int, error)
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.idleReader
   ^defines=matrix/neo/internal/runtime/provider/client.go
 
 NODE id=matrix/neo/internal/runtime/provider.idleReader.Stop kind=method
-  digest=b3:c51c37c11a399fd990e7c93b13473a72746a92b70a1cd6d3faa0f44b9cbce17e file=neo/internal/runtime/provider/client.go range=457:459 lang=go exported=true byte_range=12538:12595
+  digest=b3:c51c37c11a399fd990e7c93b13473a72746a92b70a1cd6d3faa0f44b9cbce17e file=neo/internal/runtime/provider/client.go range=477:479 lang=go exported=true byte_range=13229:13286
   sig=func (reader *idleReader) Stop()
 EDGES
   ^contains=matrix/neo/internal/runtime/provider.idleReader
@@ -681,7 +706,7 @@ EDGES
   ^defines=matrix/neo/internal/runtime/provider/mimo.go
 
 NODE id=matrix/neo/internal/runtime/provider.newIdleReader kind=func
-  digest=b3:f17aebbbef0019fcf9b76cc0d2424991b6cae565722a89924670cbbc8345103d file=neo/internal/runtime/provider/client.go range=444:448 lang=go exported=false byte_range=12163:12365
+  digest=b3:f17aebbbef0019fcf9b76cc0d2424991b6cae565722a89924670cbbc8345103d file=neo/internal/runtime/provider/client.go range=464:468 lang=go exported=false byte_range=12854:13056
   sig=func newIdleReader(reader io.Reader, idle time.Duration, onIdle func()) *idleReader
 EDGES
   ^defines=matrix/neo/internal/runtime/provider/client.go
@@ -859,7 +884,7 @@ EDGES
   ^defines=matrix/neo/internal/runtime/provider/mimo.go
 
 NODE id=matrix/neo/internal/runtime/provider.waitBackoff kind=func
-  digest=b3:56b94ef34b3606c275e8f89ff7580dcdcc213e0b9d30f6a36b0720e31c96691c file=neo/internal/runtime/provider/client.go range=381:390 lang=go exported=false byte_range=10566:10767
+  digest=b3:56b94ef34b3606c275e8f89ff7580dcdcc213e0b9d30f6a36b0720e31c96691c file=neo/internal/runtime/provider/client.go range=401:410 lang=go exported=false byte_range=11257:11458
   sig=func waitBackoff(ctx context.Context, delay time.Duration) error
 EDGES
   ^defines=matrix/neo/internal/runtime/provider/client.go
@@ -871,9 +896,9 @@ EDGES
   ^contains=matrix/neo/internal/runtime/provider
 
 NODE id=matrix/neo/internal/runtime/provider/client.go kind=file
-  digest=b3:16f4afd065503ed843ce622bbf0b15c3a9487d54742a100e6180939dadfd8a06 file=neo/internal/runtime/provider/client.go range=1:459 lang=go exported=true
+  digest=b3:3fdcfa264a85093f8731a31745726801202a70494c2c413d39286792c648a10e file=neo/internal/runtime/provider/client.go range=1:479 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/runtime/provider.Client,matrix/neo/internal/runtime/provider.Client.Generate,matrix/neo/internal/runtime/provider.Client.backoff,matrix/neo/internal/runtime/provider.Client.decodeStream,matrix/neo/internal/runtime/provider.Client.generateAttempt,matrix/neo/internal/runtime/provider.Config,matrix/neo/internal/runtime/provider.Failure,matrix/neo/internal/runtime/provider.Failure.Error,matrix/neo/internal/runtime/provider.Failure.Unwrap,matrix/neo/internal/runtime/provider.Failure.transient,matrix/neo/internal/runtime/provider.FailureIdle,matrix/neo/internal/runtime/provider.FailureKind,matrix/neo/internal/runtime/provider.FailureProtocol,matrix/neo/internal/runtime/provider.FailureRateLimited,matrix/neo/internal/runtime/provider.FailureRejected,matrix/neo/internal/runtime/provider.FailureServer,matrix/neo/internal/runtime/provider.FailureTransport,matrix/neo/internal/runtime/provider.IsFailureKind,matrix/neo/internal/runtime/provider.New,matrix/neo/internal/runtime/provider.TurnUsage,matrix/neo/internal/runtime/provider.TurnUsage.Add,matrix/neo/internal/runtime/provider.TurnUsage.Snapshot,matrix/neo/internal/runtime/provider.UsageSnapshot,matrix/neo/internal/runtime/provider.idleReader,matrix/neo/internal/runtime/provider.idleReader.Read,matrix/neo/internal/runtime/provider.idleReader.Stop,matrix/neo/internal/runtime/provider.newIdleReader,matrix/neo/internal/runtime/provider.waitBackoff
+  defines=matrix/neo/internal/runtime/provider.Client,matrix/neo/internal/runtime/provider.Client.Generate,matrix/neo/internal/runtime/provider.Client.backoff,matrix/neo/internal/runtime/provider.Client.decodeStream,matrix/neo/internal/runtime/provider.Client.generateAttempt,matrix/neo/internal/runtime/provider.Client.recordRawExchange,matrix/neo/internal/runtime/provider.Config,matrix/neo/internal/runtime/provider.Failure,matrix/neo/internal/runtime/provider.Failure.Error,matrix/neo/internal/runtime/provider.Failure.Unwrap,matrix/neo/internal/runtime/provider.Failure.transient,matrix/neo/internal/runtime/provider.FailureIdle,matrix/neo/internal/runtime/provider.FailureKind,matrix/neo/internal/runtime/provider.FailureProtocol,matrix/neo/internal/runtime/provider.FailureRateLimited,matrix/neo/internal/runtime/provider.FailureRejected,matrix/neo/internal/runtime/provider.FailureServer,matrix/neo/internal/runtime/provider.FailureTransport,matrix/neo/internal/runtime/provider.IsFailureKind,matrix/neo/internal/runtime/provider.New,matrix/neo/internal/runtime/provider.TurnUsage,matrix/neo/internal/runtime/provider.TurnUsage.Add,matrix/neo/internal/runtime/provider.TurnUsage.Snapshot,matrix/neo/internal/runtime/provider.UsageSnapshot,matrix/neo/internal/runtime/provider.idleReader,matrix/neo/internal/runtime/provider.idleReader.Read,matrix/neo/internal/runtime/provider.idleReader.Stop,matrix/neo/internal/runtime/provider.newIdleReader,matrix/neo/internal/runtime/provider.waitBackoff
   ^contains=matrix/neo/internal/runtime/provider
 
 NODE id=matrix/neo/internal/runtime/provider/mimo.go kind=file

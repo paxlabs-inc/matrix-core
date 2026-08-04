@@ -1,4 +1,4 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/gateway/internal/types kind=package
   digest=b3:03d2a9a24147a460ce421fad1014af4f853291f2bc6ea69e1f73aa96138e51c2 file=gateway/internal/types range=0:0 lang=go exported=true
@@ -60,7 +60,7 @@ NODE id=matrix/gateway/internal/types.HeaderActorDID kind=const
   sig=untyped string
   doc=HeaderActorDID identifies the wallet/DID making the request.\nRequired. Used as the credit_ledger.actor_did key for rate-limit\n+ budget bookkeeping.
 EDGES
-  ^references=matrix/gateway/internal/auth.Authenticator.Verify
+  ^references=matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/auth.Authenticator.verifyAgentCore,matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/types/types.go
 
 NODE id=matrix/gateway/internal/types.HeaderAuthorization kind=const
@@ -68,7 +68,7 @@ NODE id=matrix/gateway/internal/types.HeaderAuthorization kind=const
   sig=untyped string
   doc=HeaderAuthorization carries the Bearer ${MATRIX_GATEWAY_TOKEN}\nshared secret. Required on every gateway request.
 EDGES
-  ^references=matrix/gateway/internal/auth.Authenticator.Verify
+  ^references=matrix/gateway/internal/auth.Authenticator.Authenticate
   ^defines=matrix/gateway/internal/types/types.go
 
 NODE id=matrix/gateway/internal/types.HeaderBYOAPIKey kind=const
@@ -76,7 +76,7 @@ NODE id=matrix/gateway/internal/types.HeaderBYOAPIKey kind=const
   sig=untyped string
   doc=HeaderBYOAPIKey is "true" when the caller wants to bypass\nmetering using their own provider API key. The actual key is\npassed in HeaderUserAPIKey.
 EDGES
-  ^references=matrix/gateway/internal/routing.readBYO
+  ^references=matrix/gateway/internal/auth.Authenticator.verifyAgentCore,matrix/gateway/internal/routing.readBYO
   ^defines=matrix/gateway/internal/types/types.go
 
 NODE id=matrix/gateway/internal/types.HeaderCostPax kind=const
@@ -140,7 +140,7 @@ NODE id=matrix/gateway/internal/types.HeaderSlot kind=const
   sig=untyped string
   doc=HeaderSlot identifies the model slot the daemon resolved for\nthis call: compiler|planner|executor|liaison|neo. Drives the\nfree-tier whitelist in routing.go.
 EDGES
-  ^references=matrix/gateway/internal/routing.Decider.Decide
+  ^references=matrix/gateway/internal/auth.Authenticator.Authenticate,matrix/gateway/internal/auth.Authenticator.verifyAgentCore,matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/routing.Decider.Decide
   ^defines=matrix/gateway/internal/types/types.go
 
 NODE id=matrix/gateway/internal/types.HeaderUserAPIKey kind=const
@@ -148,7 +148,7 @@ NODE id=matrix/gateway/internal/types.HeaderUserAPIKey kind=const
   sig=untyped string
   doc=HeaderUserAPIKey carries the caller's BYO Fireworks/Together\nAPI key when HeaderBYOAPIKey == "true". Never logged.
 EDGES
-  ^references=matrix/gateway/internal/routing.readBYO
+  ^references=matrix/gateway/internal/auth.Authenticator.verifyAgentCore,matrix/gateway/internal/routing.readBYO
   ^defines=matrix/gateway/internal/types/types.go
 
 NODE id=matrix/gateway/internal/types.SlotCassandra kind=const
@@ -229,7 +229,7 @@ NODE id=matrix/gateway/internal/types.UpstreamUsage kind=type
   doc=UpstreamUsage mirrors the OpenAI-compat usage trailer present in\nnon-streaming responses and the FINAL chunk of streaming responses\n(Fireworks + Together both emit it). Decoded for cost computation.
 EDGES
   contains=matrix/gateway/internal/types.UpstreamUsage#CompletionTokens,matrix/gateway/internal/types.UpstreamUsage#PromptTokens,matrix/gateway/internal/types.UpstreamUsage#TotalTokens
-  ^references=matrix/gateway/internal/proxy.Server.handleStreaming,matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/proxy.extractUsage,matrix/gateway/internal/proxy.scanUsageFromChunk,matrix/gateway/internal/types.UpstreamResponseEnvelope
+  ^references=matrix/gateway/internal/proxy.Server.handleStreaming,matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/proxy.drainStreamUsageBounded,matrix/gateway/internal/proxy.extractUsage,matrix/gateway/internal/proxy.scanUsageFromChunk,matrix/gateway/internal/types.UpstreamResponseEnvelope
   ^defines=matrix/gateway/internal/types/types.go
 
 NODE id=matrix/gateway/internal/types.UpstreamUsage#CompletionTokens kind=field

@@ -10,7 +10,7 @@ parent:
   <a href="https://labs.paxeer.app"><img src="https://img.shields.io/badge/Project-Matrix-0A0A0A?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxwYXRoIGQ9Ik0xMiAxNnYtNCIvPjxwYXRoIGQ9Ik0xMiA4aC4wMSIvPjwvc3ZnPg==&logoColor=white" alt="Project: Matrix" /></a>
   <a href="https://labs.paxeer.app"><img src="https://img.shields.io/badge/Built%20by-PaxLabs-0A0A0A?style=flat-square&logoColor=white" alt="Built by PaxLabs" /></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Matrix--Protocol-0A0A0A?style=flat-square" alt="License: Matrix-Protocol" /></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-0.65.0-0A0A0A?style=flat-square" alt="Version: 0.65.0" /></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-1.0.0-0A0A0A?style=flat-square" alt="Version: 1.0.0" /></a>
   <a href="#"><img src="https://img.shields.io/badge/Status-Active-0A0A0A?style=flat-square" alt="Status: Active" /></a>
   <a href="https://paxeer.app"><img src="https://img.shields.io/badge/Layer-Paxeer%20Network-0A0A0A?style=flat-square" alt="Paxeer Network" /></a>
 </p>
@@ -45,7 +45,7 @@ parent:
 
 Matrix is an agent framework, built by PaxLabs, that takes an LLM past chat and into real execution: files, code, web, on-chain operations, payments, and smart contracts, all driven by natural language.
 
-Two things sit at the **core of the system**: **Neo**, the default agent you talk to, and the **Cortex**, the persistent memory every agent runs on. Everything else — the MCL rigor pipeline, the executor, settlement, scheduling, the tool ecosystem — hangs off that core.
+Two things sit at the **core of the system**: **Neo**, the default agent you talk to, and **Neocortex**, the deterministic evidence engine that preserves what Neo saw, did, and still owes the user. The existing Go Cortex remains available as a compatibility and rollback substrate until the explicit cutover gate. Everything else — the MCL rigor pipeline, the executor, settlement, scheduling, and the tool ecosystem — hangs off that core.
 
 Most agent stacks break on consequential work because they carry natural language all the way down, and prose is a leaky channel: fine for chat, not fine when an agent is moving funds, performing an irreversible write, or holding something confidential. Matrix keeps everyday reversible work in the Neo loop and escalates — the moment work becomes monetary, irreversible, or compliance-sensitive — to the MCL pipeline, where intents are compiled, typed, signed, and replayed, so ambiguity never reaches the parts that must be exact.
 
@@ -54,18 +54,20 @@ Most agent stacks break on consequential work because they carry natural languag
 Neo is the entry point. You talk to Neo; Neo does the work.
 
 - **Recursive tool-calling loop.** The model emits text and tool-call intents; the harness dispatches tools (shell, code, web search, files, browser, chain reads, media) and feeds results back. Per-turn step budgets, stall detection, and honest partials on exhaustion — never fabricated success.
-- **Persistent memory via Cortex.** Every actor gets an append-only, Merkle-anchored memory graph — facts, preferences, goals, events, procedural patterns — with salience-ranked recall, semantic search via HNSW, and byte-deterministic replay. Neo does not wake up empty.
+- **Continuous evidence via Neocortex.** A per-user `cortexd` process records typed conversation, intent, work, tool, and memory events in one append-only log. Deterministic projections reconstruct the active thread, open loops, work ledger, beliefs, exact entity/vector/lexical recall, and temporal descent after a crash or respawn.
 - **Agent swarms.** Neo can spawn concurrent sub-agents for parallel work, each with an isolated context window, a restricted tool surface, and a bounded timeout. No recursion, no fork-bombs.
 - **Automatrix.** Autonomous execution: Neo can schedule proactive tasks, wake on timers, and run background work on a restricted surface with no value-moving tools.
 - **Tool transparency.** Every tool call is surfaced as a ToolEvent with its name, arguments, and result — users see the real evidence behind an answer, not just a synthesized paragraph.
 
-## The Cortex — the memory core
+## Neocortex — the evidence core
 
-The Cortex is what makes an agent continuous. It is a per-actor typed memory graph on Pebble: an append-only journal, salience scoring, an HNSW vector index for semantic recall, and Merkle-anchored snapshots with byte-deterministic replay. Continuity stops being an illusion the model fakes each session — it is real for the user and unbreakable for the agent. Neo, its sub-agents, and the MCL pipeline all read and write the same substrate.
+Neocortex was built because Neo's reliability problem was not simply model intelligence: conversation, intent, tool evidence, and unfinished work could be fragmented or distorted across context-window assembly, overflow, crash, and respawn boundaries. Neocortex makes those boundaries deterministic. Its C++23 single-writer engine treats one typed event log per actor as the only ground truth; LMDB projections rebuild the conversation, intent frame, work ledger, beliefs, indexes, and checkpoints from that log. A BLAKE3 MMR provides tamper evidence, XChaCha20-Poly1305 seals records below the hash boundary, and the activation composer guarantees that resident identity, current intent, and the work-ledger tail are never trimmed.
+
+Neo connects through the Go `cortexclient` seam over a capability-scoped Unix socket. `cortexd` has no model and no network client. It is supervised independently, and acknowledged writes, checkpoints, citations, and recovery survive process restart. The Go Cortex remains intact as the default compatibility path until the owner-approved production cutover; select Neocortex explicitly with `NEO_MEMORY_SUBSTRATE=neocortex`.
 
 ## Two rails, one substrate
 
-Matrix runs two execution rails over the shared Cortex memory and MCP tool substrate:
+Matrix runs two execution rails over the shared evidence and tool substrate:
 
 - **Neo (conversational).** The default agent. A recursive tool-calling loop with persistent memory, permissive on reversible work — shell, code, web search, file operations, browser, media — that delegates high-stakes work to the MCL rail automatically. The conversation transcript *is* the state; the harness is the only effector.
 - **MCL (rigorous).** Compiles natural language into a typed Intent IR, synthesizes a plan, and walks it deterministically. Every step is signed, journaled, and replayable. Used for on-chain transactions, irreversible operations, and monetary work.
@@ -90,7 +92,7 @@ Escalation is a tool call: when a task crosses into the consequential, Neo invok
                        work         |        |
                           v         v        v
                      +--------+ +--------+ +-----------+
-                     | Tools  | | Cortex | |    MCL    |
+                     | Tools  | |Neocortex| |    MCL    |
                      | shell  | | memory | | typed IR  |
                      | code   | | graph  | | signed    |
                      | web/fs | | (the   | | replayed  |
@@ -98,7 +100,7 @@ Escalation is a tool call: when a task crosses into the consequential, Neo invok
                      +--------+ +--------+ +-----------+
 ```
 
-Neo runs the conversation and reversible tools, reads and writes the Cortex on every turn, and escalates to MCL the instant work becomes consequential — control returns to Neo once rigor is no longer required. The Cortex sits under both rails as the single source of durable state.
+Neo runs the conversation and reversible tools, records its active thread and evidence through the selected memory seam, and escalates to MCL when work becomes consequential. Neocortex is the new deterministic substrate; the Go Cortex remains the rollback-compatible path pending the explicit production cutover.
 
 ## The Modules
 
@@ -132,6 +134,8 @@ The root Makefile drives its sibling Go modules — each independently `go build
 │   └── _..._
 ├── 📁 neo
 │   └── _..._
+├── 📁 neocortex    C++23 deterministic evidence engine and cortexd
+├── 📁 cortexclient Go client, migration, and resurrection-loop seam
 ├── 📁 router
 │   └── _..._
 ├── 📁 sandboxd
@@ -145,7 +149,9 @@ The root Makefile drives its sibling Go modules — each independently `go build
 | Module | Role |
 |--------|------|
 | **neo** | **The core agent** — the entry point you talk to. Recursive tool-calling loop, paged Cortex memory, conversational recall, swarms, Automatrix, writeback consolidation, and a full-duplex voice mode (MiMo-native hearing + streaming synthesis over LiveKit). Escalates to MCL for consequential operations. |
-| **cortex** | **The memory core.** Per-actor typed memory engine on Pebble: append-only journal, salience scoring, HNSW vector index, Merkle-anchored snapshots, byte-deterministic replay. Persistent, immutable, durable. |
+| **neocortex** | **The deterministic evidence core.** C++23 `cortexd`, one typed append-only log per actor, BLAKE3 MMR checkpoints, sealed records, replay-built LMDB projections, exact deterministic-first recall, intent/work continuity, and a capability-scoped local protocol. |
+| **cortexclient** | Go client for `cortexd`: protocol framing, activation/recording/evidence/checkpoint interfaces, bounded reconnect semantics, and legacy Cortex export/import tooling. |
+| **cortex** | Compatibility and rollback memory substrate on Pebble. It remains operational until the separately approved Neocortex cutover and supplies the legacy export source. |
 | **MCL** | The Matrix Compiler cohort. Three rigorous closed-verb agents that plan and act on high-risk, sensitive tasks with machine exactness. |
 | **executor** | The Loop Manager. Per-agent loop engine, lifecycle state machine, MCP dispatch, per-user daemon, Liaison narrator, end-to-end test harness. |
 | **bridge** | MCL-to-cortex adapter. Separate Go module for clean interface boundaries. |
@@ -184,7 +190,8 @@ repo. Neo reaches both through the `layerx` and `deus` MCP bridges in `tools/`.
 
 In production Matrix runs **one agent per user**, each in its own isolated machine.
 
-- **One image, two processes.** The per-user container (`deploy/railway`) boots the MCL daemon in the background and `neo serve` as the front. Neo owns `POST /chat` and the SSE event stream; every other route is reverse-proxied to the daemon, which handles `core_execute` and the plumbing (memory / profile stores, snapshots). If either process exits, the pair restarts together under `tini`.
+- **One image, supervised processes.** The per-user container (`deploy/railway`) boots the MCL daemon and `neo serve`; when Neocortex is selected it also starts and supervises `cortexd` before Neo. Neo owns `POST /chat` and the SSE event stream; every other route is reverse-proxied to the daemon. A required-process exit tears down the group so the platform can restart it cleanly.
+- **Neo owns coding.** The former private AgentCore Build worker is packaged only as dormant compatibility utility and is disabled by default. It is not wired into Neo's model-facing tool inventory; Neo uses its native filesystem, bounded shell, durable service, read-only Git, task-list, and coding-checkpoint paths for project work.
 - **A real dev environment, baked in.** The image ships the toolchain Neo actually uses through its exec tool: git, Node 22 + pnpm, Go, Python 3.12 + uv, Rust, and Foundry; local PostgreSQL / Redis / SQLite as native binaries; the quality toolchain Neo verifies with (golangci-lint, ruff, eslint, prettier, tsc, vitest, clippy); and a per-user headless Chromium (Playwright) for browsing and screenshot filmstrips.
 - **The router is the front door.** `matrix/router` authenticates each request (JWT / Supabase bearer), looks up the caller's machine, wakes it if asleep, and reverse-proxies over the private network. It also mints LiveKit join tokens for voice sessions.
 - **Cost-neutral while idle.** On wake-on-request platforms the machine sleeps when network-quiet; the periodic snapshot ticker is disabled so nothing keeps it awake, and durable state (the Cortex volume) is snapshotted to object storage on boot and shutdown. An agent wakes on the next request with its full memory intact — it never starts empty.

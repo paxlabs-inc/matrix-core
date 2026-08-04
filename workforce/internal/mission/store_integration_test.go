@@ -132,7 +132,7 @@ func TestIntegration_StoreCommitsActivationAndMaterialVersion(t *testing.T) {
 	`, store.tenantID, store.organizationID).Scan(&records, &receipts, &state); err != nil {
 		t.Fatal(err)
 	}
-	if records != 8 || receipts != 4 || state != "paused" {
+	if records != 10 || receipts != 5 || state != "paused" {
 		t.Fatalf("records=%d receipts=%d state=%s", records, receipts, state)
 	}
 }

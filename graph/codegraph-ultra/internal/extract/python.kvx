@@ -1,0 +1,149 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=codegraph-ultra/internal/extract/python kind=package
+  digest=b3:77c17ba5d5565f4b716dcd39e3f7ff497504cc13f9026506281ac8909f6292f6 file=codegraph-ultra/internal/extract/python range=0:0 lang=go exported=true
+EDGES
+  contains=codegraph-ultra/internal/extract/python/extract.go
+  ^contains=mod:codegraph-ultra
+
+NODE id=codegraph-ultra/internal/extract/python.Config kind=type
+  digest=b3:f17eac61d17114f7eb8cbd9f5cb4b9c7541c09556a327cde94695776474ec66b file=codegraph-ultra/internal/extract/python/extract.go range=44:49 lang=go exported=true byte_range=1198:1329
+  sig=type Config struct {\n	RepoRoot	string\n	RepoName	string\n	Paths		[]string	// directories to scan\n}
+  doc=Config for Python extraction.
+EDGES
+  contains=codegraph-ultra/internal/extract/python.Config#Paths,codegraph-ultra/internal/extract/python.Config#RepoName,codegraph-ultra/internal/extract/python.Config#RepoRoot
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.Config#Paths kind=field
+  digest=b3:9c34058e8f61e59b248113a9a9f98320b5f35ac368ff07f5e1d1ba9061e38f03 file=codegraph-ultra/internal/extract/python/extract.go range=48:48 lang=go exported=true byte_range=1287:1304
+  sig=[]string
+EDGES
+  ^contains=codegraph-ultra/internal/extract/python.Config
+
+NODE id=codegraph-ultra/internal/extract/python.Config#RepoName kind=field
+  digest=b3:9e90d7811b010ac233a7774ceb5e78afa0740dd2df1a7ae1c37b57a037cd3aa1 file=codegraph-ultra/internal/extract/python/extract.go range=47:47 lang=go exported=true byte_range=1270:1285
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/extract/python.Config
+
+NODE id=codegraph-ultra/internal/extract/python.Config#RepoRoot kind=field
+  digest=b3:52045924d8d657a3bdd8fe4d25faf650af8386ea157929e5f65a6e4cb0eab1a0 file=codegraph-ultra/internal/extract/python/extract.go range=46:46 lang=go exported=true byte_range=1253:1268
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/extract/python.Config
+
+NODE id=codegraph-ultra/internal/extract/python.Extract kind=func
+  digest=b3:8ad0b44b322828b680c91b4613c3f7b2a1eb1c28183b052217562d21f3b1d0ea file=codegraph-ultra/internal/extract/python/extract.go range=57:285 lang=go exported=true byte_range=1438:7211
+  sig=func Extract(cfg Config) (*Result, error)
+  doc=Extract parses Python files and returns graph nodes and edges.
+EDGES
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.Result kind=type
+  digest=b3:2a78bb1dd67fd366f833d26880d06f71845639b9a00d6e086b49ca80587869c6 file=codegraph-ultra/internal/extract/python/extract.go range=51:55 lang=go exported=true byte_range=1331:1436
+  sig=type Result struct {\n	Nodes	[]*model.Node\n	Edges	[]model.Edge\n}
+  doc=Result holds extracted graph elements.
+EDGES
+  contains=codegraph-ultra/internal/extract/python.Result#Edges,codegraph-ultra/internal/extract/python.Result#Nodes
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.Result#Edges kind=field
+  digest=b3:5de5ada4aad4ef77973ad0dc85876389ed7c80f6d24f6e8303312f49cacb8c38 file=codegraph-ultra/internal/extract/python/extract.go range=54:54 lang=go exported=true byte_range=1416:1434
+  sig=[]model.Edge
+EDGES
+  ^contains=codegraph-ultra/internal/extract/python.Result
+
+NODE id=codegraph-ultra/internal/extract/python.Result#Nodes kind=field
+  digest=b3:4a6a808ece308d86784e2fd1b6b8a8a5fbb0e098016294857dd593d164af84af file=codegraph-ultra/internal/extract/python/extract.go range=53:53 lang=go exported=true byte_range=1395:1414
+  sig=[]*model.Node
+EDGES
+  ^contains=codegraph-ultra/internal/extract/python.Result
+
+NODE id=codegraph-ultra/internal/extract/python.ScanImports kind=func
+  digest=b3:4083db49f78b1f23f82c3ff6dfab3922850e605e2ecdeea4e69dafe83a1a07e4 file=codegraph-ultra/internal/extract/python/extract.go range=325:350 lang=go exported=true byte_range=8129:8895
+  sig=func ScanImports(filePath string) ([]string, error)
+  doc=ScanImports extracts import lines from a Python file for quick dependency scanning.
+EDGES
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.findPythonFiles kind=func
+  digest=b3:ed9e88a5d58c2cabe4b61240eca8cb528436edcdbe3d486452f5c59c2f9b048c file=codegraph-ultra/internal/extract/python/extract.go range=287:311 lang=go exported=false byte_range=7213:7828
+  sig=func findPythonFiles(dirs []string) ([]string, error)
+EDGES
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.init kind=func
+  digest=b3:a09783541637c204c58c3653c67b97d7aae0f32f00589f93c4deb908c6bcaf91 file=codegraph-ultra/internal/extract/python/extract.go range=16:18 lang=go exported=false byte_range=301:400
+  sig=func init()
+EDGES
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.isLocalImport kind=func
+  digest=b3:91f7927b862f13fc6b011d17395906278cbc92ce0c30379dc1589f7d2531f2ec file=codegraph-ultra/internal/extract/python/extract.go range=313:315 lang=go exported=false byte_range=7830:7951
+  sig=func isLocalImport(imp, repoName string) bool
+EDGES
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.pythonExtractor kind=type
+  digest=b3:c5af44334f16ee2d1546f6a9571fdb08cd92322b66387677dae7a135d00e62c1 file=codegraph-ultra/internal/extract/python/extract.go range=20:21 lang=go exported=false byte_range=402:520
+  sig=type pythonExtractor struct{}
+  doc=pythonExtractor adapts the package-level Extract function to the Extractor interface.
+EDGES
+  contains=codegraph-ultra/internal/extract/python.pythonExtractor.Extract
+  implements=codegraph-ultra/internal/extract.Extractor
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.pythonExtractor.Extract kind=method
+  digest=b3:64174b023f2f5d96094bda52fe55b65667f26341f5f4c47de2cf57d149351ef3 file=codegraph-ultra/internal/extract/python/extract.go range=23:33 lang=go exported=true byte_range=522:811
+  sig=func (p *pythonExtractor) Extract(cfg extract.Config) (*extract.Result, error)
+EDGES
+  ^contains=codegraph-ultra/internal/extract/python.pythonExtractor
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.reCall kind=var
+  digest=b3:446c213601324998414519b9128714e9f1d129c0e6ed0f7ad85d0c4e7ed767e5 file=codegraph-ultra/internal/extract/python/extract.go range=41:41 lang=go exported=false byte_range=1139:1194
+  sig=*regexp.Regexp
+EDGES
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.reClass kind=var
+  digest=b3:068aee1a81d7bb73a059c33342e30dd874574607e2ce84baecfe731de79af0f2 file=codegraph-ultra/internal/extract/python/extract.go range=36:36 lang=go exported=false byte_range=820:886
+  sig=*regexp.Regexp
+EDGES
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.reDecorator kind=var
+  digest=b3:1d1649433fa9b5fd44b4d8973be855a05a1adba35b70f01495dbd653fdd3583e file=codegraph-ultra/internal/extract/python/extract.go range=40:40 lang=go exported=false byte_range=1084:1137
+  sig=*regexp.Regexp
+EDGES
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.reFrom kind=var
+  digest=b3:a85fa025ad0caa8aa209130dedd428d49efd628626b23aa935f11c390a6572fe file=codegraph-ultra/internal/extract/python/extract.go range=39:39 lang=go exported=false byte_range=1015:1082
+  sig=*regexp.Regexp
+EDGES
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.reFunc kind=var
+  digest=b3:09072443aef07ffe470a77f7f01892b32d6ebfb0c79c48653147485a4dd49770 file=codegraph-ultra/internal/extract/python/extract.go range=37:37 lang=go exported=false byte_range=888:962
+  sig=*regexp.Regexp
+EDGES
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.reImport kind=var
+  digest=b3:f6d0d0ae88dea620271c4afa4e43caf6215b4e6c53b9fd0d0a78fd8d78fa31b8 file=codegraph-ultra/internal/extract/python/extract.go range=38:38 lang=go exported=false byte_range=964:1013
+  sig=*regexp.Regexp
+EDGES
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python.resolveLocalImport kind=func
+  digest=b3:de2f657126e714e96e76e56ac8abd3565712001694b82a3a6d0a942915250aeb file=codegraph-ultra/internal/extract/python/extract.go range=317:323 lang=go exported=false byte_range=7953:8127
+  sig=func resolveLocalImport(imp, repoName string) string
+EDGES
+  ^defines=codegraph-ultra/internal/extract/python/extract.go
+
+NODE id=codegraph-ultra/internal/extract/python/extract.go kind=file
+  digest=b3:8a4455eec0857ee7148401c48c1a66316b210086375821c5d0fdce191a3878ed file=codegraph-ultra/internal/extract/python/extract.go range=1:350 lang=go exported=true
+EDGES
+  defines=codegraph-ultra/internal/extract/python.Config,codegraph-ultra/internal/extract/python.Extract,codegraph-ultra/internal/extract/python.Result,codegraph-ultra/internal/extract/python.ScanImports,codegraph-ultra/internal/extract/python.findPythonFiles,codegraph-ultra/internal/extract/python.init,codegraph-ultra/internal/extract/python.isLocalImport,codegraph-ultra/internal/extract/python.pythonExtractor,codegraph-ultra/internal/extract/python.pythonExtractor.Extract,codegraph-ultra/internal/extract/python.reCall,codegraph-ultra/internal/extract/python.reClass,codegraph-ultra/internal/extract/python.reDecorator,codegraph-ultra/internal/extract/python.reFrom,codegraph-ultra/internal/extract/python.reFunc,codegraph-ultra/internal/extract/python.reImport,codegraph-ultra/internal/extract/python.resolveLocalImport
+  ^contains=codegraph-ultra/internal/extract/python

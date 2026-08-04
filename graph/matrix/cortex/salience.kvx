@@ -1,4 +1,4 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/cortex/salience kind=package
   digest=b3:0f092d243dab6cc9d63865facafbc29fdfec9c3be8196a01f2743631f57f0ea5 file=cortex/salience range=0:0 lang=go exported=true
@@ -45,8 +45,8 @@ NODE id=matrix/cortex/salience.BumpForUpdate kind=func
 EDGES
   calls=matrix/cortex/salience.ColdScore
   references=matrix/cortex/salience.ColdScore,matrix/cortex/salience.Score,matrix/cortex/salience.importance,matrix/cortex/salience.now,matrix/cortex/salience.s
-  ^calls=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead
-  ^references=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead
+  ^calls=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.prepareSupersedeReplacement
+  ^references=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.prepareSupersedeReplacement
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.ColdScore kind=func
@@ -137,8 +137,8 @@ NODE id=matrix/cortex/salience.Encode kind=func
   doc=Encode returns the canonical CBOR encoding of s.
 EDGES
   references=matrix/cortex/salience.Score,matrix/cortex/salience.canonicalEnc,matrix/cortex/salience.s
-  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
-  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
+  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.EncodeWeights kind=func
@@ -166,8 +166,8 @@ NODE id=matrix/cortex/salience.NewForWrite kind=func
 EDGES
   calls=matrix/cortex/salience.ColdScore
   references=matrix/cortex/salience.ColdScore,matrix/cortex/salience.SchemaVersion,matrix/cortex/salience.Score,matrix/cortex/salience.importance,matrix/cortex/salience.now,matrix/cortex/salience.s
-  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
-  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
+  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.PinnedFloor kind=const
@@ -185,8 +185,8 @@ NODE id=matrix/cortex/salience.Read kind=func
 EDGES
   calls=matrix/cortex/keys.SalienceKey,matrix/cortex/salience.Decode,matrix/cortex/store.Store.Get
   references=matrix/cortex/keys.SalienceKey,matrix/cortex/keys.ULID,matrix/cortex/memory.ID,matrix/cortex/salience.Decode,matrix/cortex/salience.Score,matrix/cortex/salience.err,matrix/cortex/salience.id,matrix/cortex/salience.ok,matrix/cortex/salience.raw,matrix/cortex/salience.s,matrix/cortex/salience.sc,matrix/cortex/salience.u,matrix/cortex/store.Store,matrix/cortex/store.Store.Get
-  ^calls=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.descentState.leaf,matrix/cortex/query.Run,matrix/neo/internal/memory.Pager.lastUsedNano
-  ^references=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.descentState.leaf,matrix/cortex/query.Run,matrix/neo/internal/memory.Pager.lastUsedNano
+  ^calls=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.descentState.leaf,matrix/cortex/query.Run,matrix/neo/internal/memory.Pager.lastUsedNano
+  ^references=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.descentState.leaf,matrix/cortex/query.Run,matrix/neo/internal/memory.Pager.lastUsedNano
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.ReadWeights kind=func
@@ -214,7 +214,7 @@ NODE id=matrix/cortex/salience.Score kind=type
   doc=Score is the cached salience record at salience/<id>.\n\nAll factor inputs are stored alongside the cached score so a recompute\ntriggered by a single input change (e.g. attestation citation update) is\nO(1) without needing to re-scan the head/version.
 EDGES
   contains=matrix/cortex/salience.Score#AccessCount,matrix/cortex/salience.Score#Cached,matrix/cortex/salience.Score#Citations,matrix/cortex/salience.Score#ComputedAt,matrix/cortex/salience.Score#Importance,matrix/cortex/salience.Score#LastUsed,matrix/cortex/salience.Score#Pinned,matrix/cortex/salience.Score#SchemaVersion
-  ^references=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.descentState.leaf,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/query.Run,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/salience.BumpForAccess,matrix/cortex/salience.BumpForCitation,matrix/cortex/salience.BumpForUpdate,matrix/cortex/salience.ColdScore,matrix/cortex/salience.ColdScoreWith,matrix/cortex/salience.ColdScoreWithV,matrix/cortex/salience.Decode,matrix/cortex/salience.DecrementCitation,matrix/cortex/salience.Encode,matrix/cortex/salience.NewForWrite,matrix/cortex/salience.Read,matrix/cortex/salience.UpdateWeightsEMA,matrix/cortex/salience.ZeroForTombstone,matrix/cortex/salience.factorProfile
+  ^references=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.descentState.leaf,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/query.Run,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/salience.BumpForAccess,matrix/cortex/salience.BumpForCitation,matrix/cortex/salience.BumpForUpdate,matrix/cortex/salience.ColdScore,matrix/cortex/salience.ColdScoreWith,matrix/cortex/salience.ColdScoreWithV,matrix/cortex/salience.Decode,matrix/cortex/salience.DecrementCitation,matrix/cortex/salience.Encode,matrix/cortex/salience.NewForWrite,matrix/cortex/salience.Read,matrix/cortex/salience.UpdateWeightsEMA,matrix/cortex/salience.ZeroForTombstone,matrix/cortex/salience.factorProfile
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Score#AccessCount kind=field

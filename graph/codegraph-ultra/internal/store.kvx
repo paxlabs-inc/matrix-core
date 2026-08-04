@@ -1,0 +1,239 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=codegraph-ultra/internal/store kind=package
+  digest=b3:d6350253c65daf3771a0e2403dfbb6d1c5398c73ef895a29c7c237b0011cd53d file=codegraph-ultra/internal/store range=0:0 lang=go exported=true
+EDGES
+  contains=codegraph-ultra/internal/store/store.go
+  ^contains=mod:codegraph-ultra
+
+NODE id=codegraph-ultra/internal/store.DB kind=type
+  digest=b3:13a5f7bcdab9520da7e9a949d1195842ea8987f37801c8f761cbdcbe77a3ebff file=codegraph-ultra/internal/store/store.go range=19:23 lang=go exported=true byte_range=328:428
+  sig=type DB struct {\n	conn	*sql.DB\n	path	string\n}
+  doc=DB wraps the SQLite database with the graph schema.
+EDGES
+  contains=codegraph-ultra/internal/store.DB#conn,codegraph-ultra/internal/store.DB#path,codegraph-ultra/internal/store.DB.Clear,codegraph-ultra/internal/store.DB.Close,codegraph-ultra/internal/store.DB.Edges,codegraph-ultra/internal/store.DB.ExportJSON,codegraph-ultra/internal/store.DB.Forward,codegraph-ultra/internal/store.DB.ForwardAll,codegraph-ultra/internal/store.DB.GetMeta,codegraph-ultra/internal/store.DB.GetNode,codegraph-ultra/internal/store.DB.Impact,codegraph-ultra/internal/store.DB.LoadIndex,codegraph-ultra/internal/store.DB.Neighbors,codegraph-ultra/internal/store.DB.Nodes,codegraph-ultra/internal/store.DB.Path,codegraph-ultra/internal/store.DB.Reverse,codegraph-ultra/internal/store.DB.ReverseAll,codegraph-ultra/internal/store.DB.Search,codegraph-ultra/internal/store.DB.SetMeta,codegraph-ultra/internal/store.DB.Stats,codegraph-ultra/internal/store.DB.Transaction,codegraph-ultra/internal/store.DB.UpsertEdge,codegraph-ultra/internal/store.DB.UpsertNode,codegraph-ultra/internal/store.DB.edgeQuery
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB#conn kind=field
+  digest=b3:eeef69251bdd6967b4888ea1bc8677534bda422d1acc2b52a0a642c386415dd4 file=codegraph-ultra/internal/store/store.go range=21:21 lang=go exported=false byte_range=401:413
+  sig=*sql.DB
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+
+NODE id=codegraph-ultra/internal/store.DB#path kind=field
+  digest=b3:bdb7185b3c90108e622530e83a5f70b46c38952a627f61b9f43359a52ca5fb60 file=codegraph-ultra/internal/store/store.go range=22:22 lang=go exported=false byte_range=415:426
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+
+NODE id=codegraph-ultra/internal/store.DB.Clear kind=method
+  digest=b3:43b7f40c3582171c2be7d1521e051b81df77c0153a29e758bd1f1eb44d99acb1 file=codegraph-ultra/internal/store/store.go range=354:358 lang=go exported=true byte_range=11120:11284
+  sig=func (db *DB) Clear() error
+  doc=Clear removes all nodes and edges.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.Close kind=method
+  digest=b3:375a76f5383f41dbe2e8206f5c5a6e558d74bd727ae2c1c2ec86dd1273f6fc1e file=codegraph-ultra/internal/store/store.go range=116:117 lang=go exported=true byte_range=3620:3715
+  sig=func (db *DB) Close() error
+  doc=Close closes the database connection.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.Edges kind=method
+  digest=b3:040b42ecf8cda8e3296f7f245af88fdcad8785f923721ed3687315359f1b9f35 file=codegraph-ultra/internal/store/store.go range=246:267 lang=go exported=true byte_range=8070:8691
+  sig=func (db *DB) Edges(typ model.EdgeType) []model.Edge
+  doc=Edges returns all edges, optionally filtered by type.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.ExportJSON kind=method
+  digest=b3:3a343704867bd044e64814f6698db9b74c6dde9b0752d62aee37cd3ab60a69d5 file=codegraph-ultra/internal/store/store.go range=385:393 lang=go exported=true byte_range=11805:12044
+  sig=func (db *DB) ExportJSON() ([]byte, error)
+  doc=ExportJSON exports the full graph as JSON.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.Forward kind=method
+  digest=b3:cad6e393d0a8bc66b6b51d24364f925cc6b07dac657a57aa683b27f1c466c72b file=codegraph-ultra/internal/store/store.go range=182:185 lang=go exported=true byte_range=6062:6297
+  sig=func (db *DB) Forward(src string, typ model.EdgeType) []string
+  doc=Forward returns destination node IDs for a source node and edge type.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.ForwardAll kind=method
+  digest=b3:a8c6a23156ab75c25fad79d4424102caaecd104df72fa991eab4126c16a950d4 file=codegraph-ultra/internal/store/store.go range=192:195 lang=go exported=true byte_range=6536:6744
+  sig=func (db *DB) ForwardAll(src string) []string
+  doc=ForwardAll returns all destination IDs for a source node (any edge type).
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.GetMeta kind=method
+  digest=b3:8366ae18742900eae94c455c8d86b3367131dcc62ff5f85fe3fd308bb10e47ed file=codegraph-ultra/internal/store/store.go range=128:136 lang=go exported=true byte_range=4015:4279
+  sig=func (db *DB) GetMeta(key string) (string, error)
+  doc=GetMeta retrieves a value from the meta table.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.GetNode kind=method
+  digest=b3:1dcb29c68ef257877a808e0d9635eb4736d344ef63e093a5f8a77b23cea64da4 file=codegraph-ultra/internal/store/store.go range=165:180 lang=go exported=true byte_range=5469:6060
+  sig=func (db *DB) GetNode(id string) *model.Node
+  doc=GetNode returns a node by ID, or nil if not found.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.Impact kind=method
+  digest=b3:2bcc00aa93f85d598b52d8e66fbc000bf2123e4991f71f5072fbcd09f7404ae4 file=codegraph-ultra/internal/store/store.go range=456:492 lang=go exported=true byte_range=13468:14423
+  sig=func (db *DB) Impact(id string, maxDepth int) []*model.Node
+  doc=Impact returns the reverse transitive closure (callers, references, implementors).
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.LoadIndex kind=method
+  digest=b3:eadd7ad1ba4b5d1bf891142f79d9fc80c0278af7bb69f604445409415fbb0141 file=codegraph-ultra/internal/store/store.go range=373:383 lang=go exported=true byte_range=11536:11803
+  sig=func (db *DB) LoadIndex() *model.Index
+  doc=LoadIndex reads the full graph into an in-memory model.Index for fast traversal.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.Neighbors kind=method
+  digest=b3:9e7066bc3821497306c1fe781cba2ac0702edec46ff8eac2a4ce3dca0a1885af file=codegraph-ultra/internal/store/store.go range=417:454 lang=go exported=true byte_range=12552:13466
+  sig=func (db *DB) Neighbors(id string, typ model.EdgeType, depth int) []*model.Node
+  doc=Neighbors returns the bounded subgraph around a node ID.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.Nodes kind=method
+  digest=b3:8466eb0f08c84c714b4d9947556abf2758b86d9cab855eb5c57e2f7c18b1d161 file=codegraph-ultra/internal/store/store.go range=224:244 lang=go exported=true byte_range=7416:8068
+  sig=func (db *DB) Nodes(kind model.Kind) []*model.Node
+  doc=Nodes returns all nodes, optionally filtered by kind.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.Path kind=method
+  digest=b3:208bdde96b73f161f8020343153ad567e971223cd52540fcacc57bb279155fd1 file=codegraph-ultra/internal/store/store.go range=119:120 lang=go exported=true byte_range=3717:3803
+  sig=func (db *DB) Path() string
+  doc=Path returns the database file path.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.Reverse kind=method
+  digest=b3:b8e618ead188452e5285ffe527f815087dd0e1530871e0008280f8aa5dc58f5c file=codegraph-ultra/internal/store/store.go range=187:190 lang=go exported=true byte_range=6299:6534
+  sig=func (db *DB) Reverse(dst string, typ model.EdgeType) []string
+  doc=Reverse returns source node IDs for a destination node and edge type.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.ReverseAll kind=method
+  digest=b3:67de5404c2b4a48eca7924181ca837392867016c02a8f5782fc47a3712cf0b5f file=codegraph-ultra/internal/store/store.go range=197:200 lang=go exported=true byte_range=6746:6954
+  sig=func (db *DB) ReverseAll(dst string) []string
+  doc=ReverseAll returns all source IDs for a destination node (any edge type).
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.Search kind=method
+  digest=b3:c66ce91526d67438f3c35ad319857688bed004392de5c0c172aa418788ae6b02 file=codegraph-ultra/internal/store/store.go range=269:309 lang=go exported=true byte_range=8693:9970
+  sig=func (db *DB) Search(query string, limit int) []*model.Node
+  doc=Search performs full-text search across node IDs, names, docs, sigs, and summaries.\nFalls back to LIKE queries if FTS5 is not available.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.SetMeta kind=method
+  digest=b3:889d9a9ceb9f2908ac7b043f1260453e995bf54c74ff392c117456107b7bd108 file=codegraph-ultra/internal/store/store.go range=122:126 lang=go exported=true byte_range=3805:4013
+  sig=func (db *DB) SetMeta(key, value string) error
+  doc=SetMeta stores a key-value pair in the meta table.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.Stats kind=method
+  digest=b3:5847518d16f415b469b8f0e86e53abe28accbe1ccc5dbed5f9440b82a2723c93 file=codegraph-ultra/internal/store/store.go range=311:352 lang=go exported=true byte_range=9972:11118
+  sig=func (db *DB) Stats() model.GraphStats
+  doc=Stats returns aggregate graph statistics.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.Transaction kind=method
+  digest=b3:65f8e1b361c769755125de7680bb6e259c0f796a8d2fcf378682beb8725ff5dc file=codegraph-ultra/internal/store/store.go range=360:371 lang=go exported=true byte_range=11286:11534
+  sig=func (db *DB) Transaction(fn func(tx *sql.Tx) error) error
+  doc=Transaction runs fn in a transaction.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.UpsertEdge kind=method
+  digest=b3:127ee126e50bf884e590e9d12a2de470845e0034f328b7fe3f14786275eb51b9 file=codegraph-ultra/internal/store/store.go range=156:163 lang=go exported=true byte_range=5179:5467
+  sig=func (db *DB) UpsertEdge(e model.Edge) error
+  doc=UpsertEdge inserts or updates an edge.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.UpsertNode kind=method
+  digest=b3:60d385b77ba5156b4b527f779d4f3690e7308721c12dfb8f18513dd4de7c3cc7 file=codegraph-ultra/internal/store/store.go range=138:154 lang=go exported=true byte_range=4281:5177
+  sig=func (db *DB) UpsertNode(n *model.Node) error
+  doc=UpsertNode inserts or updates a node.
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.DB.edgeQuery kind=method
+  digest=b3:c09af3dad5813a84b176edf18d7da69111e9325c14169bcdea81785f14b8bf82 file=codegraph-ultra/internal/store/store.go range=202:222 lang=go exported=false byte_range=6956:7414
+  sig=func (db *DB) edgeQuery(query, id string, typ model.EdgeType) []string
+EDGES
+  ^contains=codegraph-ultra/internal/store.DB
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.Open kind=func
+  digest=b3:9963bfd2a47ed4513f5bd9c793aebb6c8cadcffdc0cfcdb2d6afb9b828bdd21e file=codegraph-ultra/internal/store/store.go range=93:114 lang=go exported=true byte_range=2775:3618
+  sig=func Open(dbPath string) (*DB, error)
+  doc=Open creates or opens a SQLite graph store at the given path.
+EDGES
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.boolToInt kind=func
+  digest=b3:6cad4bfc31813985f4c9b34ca5540625aa47e1588050811c7b5ebbe5aa29c904 file=codegraph-ultra/internal/store/store.go range=410:415 lang=go exported=false byte_range=12488:12550
+  sig=func boolToInt(b bool) int
+EDGES
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.ftsSchema kind=const
+  digest=b3:d149f8e6853cd68b9bfe408670aed6801e18e6e13a372f9e67c0d188f181c3cd file=codegraph-ultra/internal/store/store.go range=68:91 lang=go exported=false byte_range=1774:2773
+  sig=untyped string
+EDGES
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.scanNodes kind=func
+  digest=b3:4fb38106786245b692f7ee4392969cbb4fa4069e80bc8b3bbe2acccedb40c2a4 file=codegraph-ultra/internal/store/store.go range=395:408 lang=go exported=false byte_range=12046:12486
+  sig=func scanNodes(rows *sql.Rows) []*model.Node
+EDGES
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store.schema kind=const
+  digest=b3:1630568ea11d97d36a4650fef7764cf69f2c97511ff2a2e100375dcee9676770 file=codegraph-ultra/internal/store/store.go range=25:66 lang=go exported=false byte_range=436:1766
+  sig=untyped string
+EDGES
+  ^defines=codegraph-ultra/internal/store/store.go
+
+NODE id=codegraph-ultra/internal/store/store.go kind=file
+  digest=b3:ebb6451bf120e9d26728df4844bc5b0525a7a3d7d3ffb1eeba176be41253f436 file=codegraph-ultra/internal/store/store.go range=1:492 lang=go exported=true
+EDGES
+  defines=codegraph-ultra/internal/store.DB,codegraph-ultra/internal/store.DB.Clear,codegraph-ultra/internal/store.DB.Close,codegraph-ultra/internal/store.DB.Edges,codegraph-ultra/internal/store.DB.ExportJSON,codegraph-ultra/internal/store.DB.Forward,codegraph-ultra/internal/store.DB.ForwardAll,codegraph-ultra/internal/store.DB.GetMeta,codegraph-ultra/internal/store.DB.GetNode,codegraph-ultra/internal/store.DB.Impact,codegraph-ultra/internal/store.DB.LoadIndex,codegraph-ultra/internal/store.DB.Neighbors,codegraph-ultra/internal/store.DB.Nodes,codegraph-ultra/internal/store.DB.Path,codegraph-ultra/internal/store.DB.Reverse,codegraph-ultra/internal/store.DB.ReverseAll,codegraph-ultra/internal/store.DB.Search,codegraph-ultra/internal/store.DB.SetMeta,codegraph-ultra/internal/store.DB.Stats,codegraph-ultra/internal/store.DB.Transaction,codegraph-ultra/internal/store.DB.UpsertEdge,codegraph-ultra/internal/store.DB.UpsertNode,codegraph-ultra/internal/store.DB.edgeQuery,codegraph-ultra/internal/store.Open,codegraph-ultra/internal/store.boolToInt,codegraph-ultra/internal/store.ftsSchema,codegraph-ultra/internal/store.scanNodes,codegraph-ultra/internal/store.schema
+  ^contains=codegraph-ultra/internal/store

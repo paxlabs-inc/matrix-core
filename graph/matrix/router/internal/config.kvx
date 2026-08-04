@@ -1,173 +1,218 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/router/internal/config kind=package
-  digest=b3:0198ad51854e8866bd865566108d5fba3bd86b62db353f59ce62e24e54153660 file=router/internal/config range=0:0 lang=go exported=true
+  digest=b3:4bb3194dc55da20bfe95f79127947386bc23c97d79661d12f0facdb3ed50ded8 file=router/internal/config range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/config/config.go
   ^contains=mod:matrix/router
   ^imports=matrix/router/cmd/matrix-router
 
 NODE id=matrix/router/internal/config.Config kind=type
-  digest=b3:8f8b1a7eb04a6040e9573835185ea1cdf96383157c5eff9c3975f508ad70ed55 file=router/internal/config/config.go range=56:118 lang=go exported=true byte_range=2301:4612
-  sig=type Config struct {\n	PublicAddr	string\n	InternalAddr	string\n	AdminToken	string\n\n	// SupabaseURL is the project URL (e.g. https://xxx.supabase.co).\n	// JWKS endpoint = SupabaseURL + "/auth/v1/.well-known/jwks.json".\n	// Required: the asymmetric JWT path is now the canonical one.\n	SupabaseURL	string\n\n	// SupabaseLegacyJWTSecret is the project's "JWT secret" used to\n	// verify HS256-signed tokens issued before the asymmetric\n	// rollout. Optional once Supabase finishes the migration; left\n	// non-empty during the overlap window.\n	SupabaseLegacyJWTSecret	string\n\n	// Provider selects the environment provisioner: ProviderFly\n	// (default) or ProviderRailway. Fly stays intact as the fallback;\n	// cutover is per-deployment config, never code.\n	Provider	string\n\n	FlyAPIToken	string\n	FlyApp		string\n	FlyRegion	string\n\n	RailwayAPIToken		string\n	RailwayProjectID	string\n	RailwayEnvironmentID	string\n\n	DatabaseURL	string\n\n	S3Endpoint	string\n	S3Bucket	string\n\n	DaemonPort		string\n	CodyPort		string\n	WakeTimeout		time.Duration\n	ProxyTimeout		time.Duration\n	ProbeInterval		time.Duration\n	DaemonReadyTimeout	time.Duration\n\n	// WakeToken authenticates the internal POST /internal/wake endpoint used\n	// by chronosd (the centralized scheduler) to wake a user's Machine and\n	// deliver a timer-triggered chat turn. Empty disables /internal/wake.\n	WakeToken	string\n\n	// PreviewToken authenticates the internal /internal/preview/* endpoints\n	// used by codyd (inside a user's VM) to register/deregister the private\n	// host:port of its preview server. Empty disables preview registration\n	// (the public /preview/ mount then serves 404 for every user).\n	PreviewToken	string\n\n	// CORSOrigins is the browser cross-origin allow-list for the public API\n	// (ROUTER_CORS_ORIGINS, comma-separated). The Next.js client is served from\n	// a different origin than this API and needs CORS to connect. Empty or "*"\n	// allows any origin (safe here: auth is a Bearer token, no cookies).\n	CORSOrigins	[]string\n}
+  digest=b3:a5b6897692cc7a7d662984522159798d715a29a9b58c8fdf89cbaeaa82b241d1 file=router/internal/config/config.go range=56:137 lang=go exported=true byte_range=2315:5462
+  sig=type Config struct {\n	PublicAddr	string\n	InternalAddr	string\n	AdminToken	string\n\n	// SupabaseURL is the project URL (e.g. https://xxx.supabase.co).\n	// JWKS endpoint = SupabaseURL + "/auth/v1/.well-known/jwks.json".\n	// Required: the asymmetric JWT path is now the canonical one.\n	SupabaseURL	string\n\n	// SupabaseLegacyJWTSecret is the project's "JWT secret" used to\n	// verify HS256-signed tokens issued before the asymmetric\n	// rollout. Optional once Supabase finishes the migration; left\n	// non-empty during the overlap window.\n	SupabaseLegacyJWTSecret	string\n\n	// Provider selects the environment provisioner: ProviderFly\n	// (default) or ProviderRailway. Fly stays intact as the fallback;\n	// cutover is per-deployment config, never code.\n	Provider	string\n\n	FlyAPIToken	string\n	FlyApp		string\n	FlyRegion	string\n\n	RailwayAPIToken		string\n	RailwayProjectID	string\n	RailwayEnvironmentID	string\n\n	DatabaseURL	string\n\n	S3Endpoint	string\n	S3Bucket	string\n\n	DaemonPort		string\n	CodyPort		string\n	WakeTimeout		time.Duration\n	ProxyTimeout		time.Duration\n	ProbeInterval		time.Duration\n	DaemonReadyTimeout	time.Duration\n\n	// WakeToken authenticates the internal POST /internal/wake endpoint used\n	// by chronosd (the centralized scheduler) to wake a user's Machine and\n	// deliver a timer-triggered chat turn. Empty disables /internal/wake.\n	WakeToken	string\n\n	// PreviewToken authenticates the internal /internal/preview/* endpoints\n	// used by codyd (inside a user's VM) to register/deregister the private\n	// host:port of its preview server. Empty disables preview registration\n	// (the public /preview/ mount then serves 404 for every user).\n	PreviewToken	string\n\n	// FinanceToken authenticates the internal /internal/finance/* endpoints\n	// used by a per-user daemon's finance bridge, so the agent reads market\n	// data through the SAME cache, quota and metering as the browser instead of\n	// holding a vendor key of its own. Empty disables the internal mount; the\n	// public JWT-authed /finance/* lane is unaffected.\n	FinanceToken	string\n\n	// ResearchToken authenticates the general internal /internal/exa/* lane\n	// used by Neo's Exa MCP. The Exa vendor key remains router-only.\n	ResearchToken	string\n\n	// WorkforceEnabled turns on the per-user co-located workforced runtime,\n	// the JWT-authenticated public proxy, and the Chronos internal wake route.\n	WorkforceEnabled	bool\n	WorkforceRootSecret	string\n	WorkforcePostgresURI	string\n	WorkforceWakeToken	string\n	WorkforcePort		string\n\n	// CORSOrigins is the browser cross-origin allow-list for the public API\n	// (ROUTER_CORS_ORIGINS, comma-separated). The Next.js client is served from\n	// a different origin than this API and needs CORS to connect. Empty or "*"\n	// allows any origin (safe here: auth is a Bearer token, no cookies).\n	CORSOrigins	[]string\n}
   doc=Config aggregates every env-driven setting matrix-router needs.\n\nEmpty optional fields fall back to package-level defaults; required\nfields are validated by Load and surface as errors with the offending\nenv-var name so operators see the missing key directly.
 EDGES
-  contains=matrix/router/internal/config.Config#AdminToken,matrix/router/internal/config.Config#CORSOrigins,matrix/router/internal/config.Config#CodyPort,matrix/router/internal/config.Config#DaemonPort,matrix/router/internal/config.Config#DaemonReadyTimeout,matrix/router/internal/config.Config#DatabaseURL,matrix/router/internal/config.Config#FlyAPIToken,matrix/router/internal/config.Config#FlyApp,matrix/router/internal/config.Config#FlyRegion,matrix/router/internal/config.Config#InternalAddr,matrix/router/internal/config.Config#PreviewToken,matrix/router/internal/config.Config#ProbeInterval,matrix/router/internal/config.Config#Provider,matrix/router/internal/config.Config#ProxyTimeout,matrix/router/internal/config.Config#PublicAddr,matrix/router/internal/config.Config#RailwayAPIToken,matrix/router/internal/config.Config#RailwayEnvironmentID,matrix/router/internal/config.Config#RailwayProjectID,matrix/router/internal/config.Config#S3Bucket,matrix/router/internal/config.Config#S3Endpoint,matrix/router/internal/config.Config#SupabaseLegacyJWTSecret,matrix/router/internal/config.Config#SupabaseURL,matrix/router/internal/config.Config#WakeTimeout,matrix/router/internal/config.Config#WakeToken,matrix/router/internal/config.Config.AdminEnabled
+  contains=matrix/router/internal/config.Config#AdminToken,matrix/router/internal/config.Config#CORSOrigins,matrix/router/internal/config.Config#CodyPort,matrix/router/internal/config.Config#DaemonPort,matrix/router/internal/config.Config#DaemonReadyTimeout,matrix/router/internal/config.Config#DatabaseURL,matrix/router/internal/config.Config#FinanceToken,matrix/router/internal/config.Config#FlyAPIToken,matrix/router/internal/config.Config#FlyApp,matrix/router/internal/config.Config#FlyRegion,matrix/router/internal/config.Config#InternalAddr,matrix/router/internal/config.Config#PreviewToken,matrix/router/internal/config.Config#ProbeInterval,matrix/router/internal/config.Config#Provider,matrix/router/internal/config.Config#ProxyTimeout,matrix/router/internal/config.Config#PublicAddr,matrix/router/internal/config.Config#RailwayAPIToken,matrix/router/internal/config.Config#RailwayEnvironmentID,matrix/router/internal/config.Config#RailwayProjectID,matrix/router/internal/config.Config#ResearchToken,matrix/router/internal/config.Config#S3Bucket,matrix/router/internal/config.Config#S3Endpoint,matrix/router/internal/config.Config#SupabaseLegacyJWTSecret,matrix/router/internal/config.Config#SupabaseURL,matrix/router/internal/config.Config#WakeTimeout,matrix/router/internal/config.Config#WakeToken,matrix/router/internal/config.Config#WorkforceEnabled,matrix/router/internal/config.Config#WorkforcePort,matrix/router/internal/config.Config#WorkforcePostgresURI,matrix/router/internal/config.Config#WorkforceRootSecret,matrix/router/internal/config.Config#WorkforceWakeToken,matrix/router/internal/config.Config.AdminEnabled
   ^references=matrix/router/internal/config.Config.AdminEnabled,matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.Config#AdminToken kind=field
-  digest=b3:dd6837193c3fa5ca304b19648bd945d2c49be757b386c9910ddd6bad6f6dfbf6 file=router/internal/config/config.go range=64:64 lang=go exported=true byte_range=2638:2657
+  digest=b3:dd6837193c3fa5ca304b19648bd945d2c49be757b386c9910ddd6bad6f6dfbf6 file=router/internal/config/config.go range=64:64 lang=go exported=true byte_range=2652:2671
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#CORSOrigins kind=field
-  digest=b3:9909061aaa28b2820b9f9252cee1e2668f5c40490a0d1fdfb5240a4efab5f850 file=router/internal/config/config.go range=113:117 lang=go exported=true byte_range=4290:4610
+  digest=b3:9909061aaa28b2820b9f9252cee1e2668f5c40490a0d1fdfb5240a4efab5f850 file=router/internal/config/config.go range=132:136 lang=go exported=true byte_range=5140:5460
   sig=[]string
   doc=CORSOrigins is the browser cross-origin allow-list for the public API\n(ROUTER_CORS_ORIGINS, comma-separated). The Next.js client is served from\na different origin than this API and needs CORS to connect. Empty or "*"\nallows any origin (safe here: auth is a Bearer token, no cookies).
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#CodyPort kind=field
-  digest=b3:92fd0abd964298c7b8d952ab304eeeb2e10914c7136b05662cc4be4f86ee8ecb file=router/internal/config/config.go range=96:96 lang=go exported=true byte_range=3579:3604
+  digest=b3:92fd0abd964298c7b8d952ab304eeeb2e10914c7136b05662cc4be4f86ee8ecb file=router/internal/config/config.go range=96:96 lang=go exported=true byte_range=3593:3618
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#DaemonPort kind=field
-  digest=b3:878e028ba030cb60a29774fcd18c2e8c6ce93dc9a65fdd3ebca717b940a68ca0 file=router/internal/config/config.go range=95:95 lang=go exported=true byte_range=3552:3577
+  digest=b3:878e028ba030cb60a29774fcd18c2e8c6ce93dc9a65fdd3ebca717b940a68ca0 file=router/internal/config/config.go range=95:95 lang=go exported=true byte_range=3566:3591
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#DaemonReadyTimeout kind=field
-  digest=b3:12c74d4e37ca859d016647d524442fca0b1943717041885536f79dbe0880a4bd file=router/internal/config/config.go range=100:100 lang=go exported=true byte_range=3708:3740
+  digest=b3:12c74d4e37ca859d016647d524442fca0b1943717041885536f79dbe0880a4bd file=router/internal/config/config.go range=100:100 lang=go exported=true byte_range=3722:3754
   sig=time.Duration
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#DatabaseURL kind=field
-  digest=b3:2387deb2a19c4783b47742224d0ad9291806a0caac30083376021c041f46a169 file=router/internal/config/config.go range=90:90 lang=go exported=true byte_range=3492:3510
+  digest=b3:2387deb2a19c4783b47742224d0ad9291806a0caac30083376021c041f46a169 file=router/internal/config/config.go range=90:90 lang=go exported=true byte_range=3506:3524
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
+NODE id=matrix/router/internal/config.Config#FinanceToken kind=field
+  digest=b3:4f64712237ef185d3dcdddf7c9d614c1335ef0422afe6c6adce299815fb455a1 file=router/internal/config/config.go range=113:118 lang=go exported=true byte_range=4304:4678
+  sig=string
+  doc=FinanceToken authenticates the internal /internal/finance/* endpoints\nused by a per-user daemon's finance bridge, so the agent reads market\ndata through the SAME cache, quota and metering as the browser instead of\nholding a vendor key of its own. Empty disables the internal mount; the\npublic JWT-authed /finance/* lane is unaffected.
+EDGES
+  ^contains=matrix/router/internal/config.Config
+
 NODE id=matrix/router/internal/config.Config#FlyAPIToken kind=field
-  digest=b3:86036cd3258fe414abd5a3e4498b75c89ed0993a98dab04f913a2db546525077 file=router/internal/config/config.go range=82:82 lang=go exported=true byte_range=3343:3361
+  digest=b3:86036cd3258fe414abd5a3e4498b75c89ed0993a98dab04f913a2db546525077 file=router/internal/config/config.go range=82:82 lang=go exported=true byte_range=3357:3375
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#FlyApp kind=field
-  digest=b3:afb05e570118514602ed47061a2332c70d1f5f876b23e07ac101213aa2bf5fa3 file=router/internal/config/config.go range=83:83 lang=go exported=true byte_range=3363:3381
+  digest=b3:afb05e570118514602ed47061a2332c70d1f5f876b23e07ac101213aa2bf5fa3 file=router/internal/config/config.go range=83:83 lang=go exported=true byte_range=3377:3395
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#FlyRegion kind=field
-  digest=b3:42f7897e2b50b47919139563d053ff8083d88f149bea11cd9a0eb1eb6d08c8f5 file=router/internal/config/config.go range=84:84 lang=go exported=true byte_range=3383:3401
+  digest=b3:42f7897e2b50b47919139563d053ff8083d88f149bea11cd9a0eb1eb6d08c8f5 file=router/internal/config/config.go range=84:84 lang=go exported=true byte_range=3397:3415
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#InternalAddr kind=field
-  digest=b3:2992aa4575208461f71da8ba557897ea20ec541eccd96010af6a048930b7530c file=router/internal/config/config.go range=63:63 lang=go exported=true byte_range=2617:2636
+  digest=b3:2992aa4575208461f71da8ba557897ea20ec541eccd96010af6a048930b7530c file=router/internal/config/config.go range=63:63 lang=go exported=true byte_range=2631:2650
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#PreviewToken kind=field
-  digest=b3:df9f13890d986777a5995268f6dc038cf04284241d5908969db780d2f10102d1 file=router/internal/config/config.go range=107:111 lang=go exported=true byte_range=3982:4287
+  digest=b3:df9f13890d986777a5995268f6dc038cf04284241d5908969db780d2f10102d1 file=router/internal/config/config.go range=107:111 lang=go exported=true byte_range=3996:4301
   sig=string
   doc=PreviewToken authenticates the internal /internal/preview/* endpoints\nused by codyd (inside a user's VM) to register/deregister the private\nhost:port of its preview server. Empty disables preview registration\n(the public /preview/ mount then serves 404 for every user).
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#ProbeInterval kind=field
-  digest=b3:66440508a50ec2940707817b92f59f291db3e565c0f198d58dcaec46398a9b39 file=router/internal/config/config.go range=99:99 lang=go exported=true byte_range=3674:3706
+  digest=b3:66440508a50ec2940707817b92f59f291db3e565c0f198d58dcaec46398a9b39 file=router/internal/config/config.go range=99:99 lang=go exported=true byte_range=3688:3720
   sig=time.Duration
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#Provider kind=field
-  digest=b3:ac8a993ce18877fcbf20779990cbe63e7a2fddb4a05975953fcde532d5962252 file=router/internal/config/config.go range=77:80 lang=go exported=true byte_range=3145:3340
+  digest=b3:ac8a993ce18877fcbf20779990cbe63e7a2fddb4a05975953fcde532d5962252 file=router/internal/config/config.go range=77:80 lang=go exported=true byte_range=3159:3354
   sig=string
   doc=Provider selects the environment provisioner: ProviderFly\n(default) or ProviderRailway. Fly stays intact as the fallback;\ncutover is per-deployment config, never code.
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#ProxyTimeout kind=field
-  digest=b3:e5976ee392b6d45a731e23b3815960da94605bc14ed9bd60be6523de781fc033 file=router/internal/config/config.go range=98:98 lang=go exported=true byte_range=3640:3672
+  digest=b3:e5976ee392b6d45a731e23b3815960da94605bc14ed9bd60be6523de781fc033 file=router/internal/config/config.go range=98:98 lang=go exported=true byte_range=3654:3686
   sig=time.Duration
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#PublicAddr kind=field
-  digest=b3:dca78caa7d9bbc459c40095157b69b4c6c7190b1508eb1121bb6a0354501616e file=router/internal/config/config.go range=62:62 lang=go exported=true byte_range=2596:2615
+  digest=b3:dca78caa7d9bbc459c40095157b69b4c6c7190b1508eb1121bb6a0354501616e file=router/internal/config/config.go range=62:62 lang=go exported=true byte_range=2610:2629
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#RailwayAPIToken kind=field
-  digest=b3:d4c2db89a697d8d8c84980e5b600bcde5521929f7d9b38d8aa9f1a4057a25e2b file=router/internal/config/config.go range=86:86 lang=go exported=true byte_range=3404:3431
+  digest=b3:d4c2db89a697d8d8c84980e5b600bcde5521929f7d9b38d8aa9f1a4057a25e2b file=router/internal/config/config.go range=86:86 lang=go exported=true byte_range=3418:3445
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#RailwayEnvironmentID kind=field
-  digest=b3:8ada0d001e951146ad3ee3b3eaa49b6836ce451ccc2e5c8e6cfc62cfb942a94d file=router/internal/config/config.go range=88:88 lang=go exported=true byte_range=3462:3489
+  digest=b3:8ada0d001e951146ad3ee3b3eaa49b6836ce451ccc2e5c8e6cfc62cfb942a94d file=router/internal/config/config.go range=88:88 lang=go exported=true byte_range=3476:3503
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#RailwayProjectID kind=field
-  digest=b3:83b3ac4a0a39a5c87ffa9a361d3b37cebfd245dab9988125e1f85cf545937ac0 file=router/internal/config/config.go range=87:87 lang=go exported=true byte_range=3433:3460
+  digest=b3:83b3ac4a0a39a5c87ffa9a361d3b37cebfd245dab9988125e1f85cf545937ac0 file=router/internal/config/config.go range=87:87 lang=go exported=true byte_range=3447:3474
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
+NODE id=matrix/router/internal/config.Config#ResearchToken kind=field
+  digest=b3:95df34e819c1d3146393d1f12aaec4cc3ebef60a3f5c6da9dddcbb07d9798a50 file=router/internal/config/config.go range=120:122 lang=go exported=true byte_range=4681:4842
+  sig=string
+  doc=ResearchToken authenticates the general internal /internal/exa/* lane\nused by Neo's Exa MCP. The Exa vendor key remains router-only.
+EDGES
+  ^contains=matrix/router/internal/config.Config
+
 NODE id=matrix/router/internal/config.Config#S3Bucket kind=field
-  digest=b3:8ce97bc5cbec2e86998fd7660b6501ffbfe0d718a666278a348186f9a3fbdaff file=router/internal/config/config.go range=93:93 lang=go exported=true byte_range=3532:3549
+  digest=b3:8ce97bc5cbec2e86998fd7660b6501ffbfe0d718a666278a348186f9a3fbdaff file=router/internal/config/config.go range=93:93 lang=go exported=true byte_range=3546:3563
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#S3Endpoint kind=field
-  digest=b3:0c0ee8143cee48e7e9e4e287c4a79069384125a1b8c8935eae3a3d399615e579 file=router/internal/config/config.go range=92:92 lang=go exported=true byte_range=3513:3530
+  digest=b3:0c0ee8143cee48e7e9e4e287c4a79069384125a1b8c8935eae3a3d399615e579 file=router/internal/config/config.go range=92:92 lang=go exported=true byte_range=3527:3544
   sig=string
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#SupabaseLegacyJWTSecret kind=field
-  digest=b3:cf777a5100882621c2237c891835e67840baf707df53f26e5d3f7e4263b4d037 file=router/internal/config/config.go range=71:75 lang=go exported=true byte_range=2880:3142
+  digest=b3:cf777a5100882621c2237c891835e67840baf707df53f26e5d3f7e4263b4d037 file=router/internal/config/config.go range=71:75 lang=go exported=true byte_range=2894:3156
   sig=string
   doc=SupabaseLegacyJWTSecret is the project's "JWT secret" used to\nverify HS256-signed tokens issued before the asymmetric\nrollout. Optional once Supabase finishes the migration; left\nnon-empty during the overlap window.
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#SupabaseURL kind=field
-  digest=b3:79351b20e89815e3e45f11ea1f700011bf9fa26a779f5a5f341c41371bebe344 file=router/internal/config/config.go range=66:69 lang=go exported=true byte_range=2660:2877
+  digest=b3:79351b20e89815e3e45f11ea1f700011bf9fa26a779f5a5f341c41371bebe344 file=router/internal/config/config.go range=66:69 lang=go exported=true byte_range=2674:2891
   sig=string
   doc=SupabaseURL is the project URL (e.g. https://xxx.supabase.co).\nJWKS endpoint = SupabaseURL + "/auth/v1/.well-known/jwks.json".\nRequired: the asymmetric JWT path is now the canonical one.
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#WakeTimeout kind=field
-  digest=b3:c015190644cc66918b29262ba2ae2914447a7be71b8c79719f50eb60e8bd6090 file=router/internal/config/config.go range=97:97 lang=go exported=true byte_range=3606:3638
+  digest=b3:c015190644cc66918b29262ba2ae2914447a7be71b8c79719f50eb60e8bd6090 file=router/internal/config/config.go range=97:97 lang=go exported=true byte_range=3620:3652
   sig=time.Duration
 EDGES
   ^contains=matrix/router/internal/config.Config
 
 NODE id=matrix/router/internal/config.Config#WakeToken kind=field
-  digest=b3:2672ea9548ff9bf0d7c9056dac38387303e712c2683a7005413e76e794a6cbaa file=router/internal/config/config.go range=102:105 lang=go exported=true byte_range=3743:3979
+  digest=b3:2672ea9548ff9bf0d7c9056dac38387303e712c2683a7005413e76e794a6cbaa file=router/internal/config/config.go range=102:105 lang=go exported=true byte_range=3757:3993
   sig=string
   doc=WakeToken authenticates the internal POST /internal/wake endpoint used\nby chronosd (the centralized scheduler) to wake a user's Machine and\ndeliver a timer-triggered chat turn. Empty disables /internal/wake.
 EDGES
   ^contains=matrix/router/internal/config.Config
 
+NODE id=matrix/router/internal/config.Config#WorkforceEnabled kind=field
+  digest=b3:5a2cdef74e3abda5a0b8d0ce5a524a86443129aca350ac0779c8c2403f36e801 file=router/internal/config/config.go range=124:126 lang=go exported=true byte_range=4845:5021
+  sig=bool
+  doc=WorkforceEnabled turns on the per-user co-located workforced runtime,\nthe JWT-authenticated public proxy, and the Chronos internal wake route.
+EDGES
+  ^contains=matrix/router/internal/config.Config
+
+NODE id=matrix/router/internal/config.Config#WorkforcePort kind=field
+  digest=b3:76d6851afd843e2f734a9dd86689f9816b435f4cb7007ae8c37de0db712a607d file=router/internal/config/config.go range=130:130 lang=go exported=true byte_range=5110:5137
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/config.Config
+
+NODE id=matrix/router/internal/config.Config#WorkforcePostgresURI kind=field
+  digest=b3:114e75f2ff50602790fd3be0a67465fe110cfd7f7e04f3ec4adad9a756c6567b file=router/internal/config/config.go range=128:128 lang=go exported=true byte_range=5052:5079
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/config.Config
+
+NODE id=matrix/router/internal/config.Config#WorkforceRootSecret kind=field
+  digest=b3:9703e426bfb95a7c687182a78e1aee6b0cee710b3ebf4acabcce9d02db14838d file=router/internal/config/config.go range=127:127 lang=go exported=true byte_range=5023:5050
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/config.Config
+
+NODE id=matrix/router/internal/config.Config#WorkforceWakeToken kind=field
+  digest=b3:879f200fd9c022982fb14ddf5f5c7473b5652d3fdfeb848646584d144ef410b5 file=router/internal/config/config.go range=129:129 lang=go exported=true byte_range=5081:5108
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/config.Config
+
 NODE id=matrix/router/internal/config.Config.AdminEnabled kind=method
-  digest=b3:3551215621255d3dd659a9891f0a66bb736ab812e316bc92f357a126ab87a735 file=router/internal/config/config.go range=250:255 lang=go exported=true byte_range=8809:9078
+  digest=b3:3551215621255d3dd659a9891f0a66bb736ab812e316bc92f357a126ab87a735 file=router/internal/config/config.go range=306:311 lang=go exported=true byte_range=11014:11283
   sig=func (c *Config) AdminEnabled() bool
   doc=AdminEnabled reports whether the admin endpoints should be mounted.\nWe require a non-empty token to mount admin routes at all so a\nmisconfigured deploy can't accidentally expose user-creation.
 EDGES
@@ -178,7 +223,7 @@ EDGES
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.DefaultDaemonPort kind=const
-  digest=b3:5edec64ced7c733e8869f9d915f1ea780def7cd70a6e5f1206508ef2a448c613 file=router/internal/config/config.go range=126:128 lang=go exported=true byte_range=4737:4841
+  digest=b3:5edec64ced7c733e8869f9d915f1ea780def7cd70a6e5f1206508ef2a448c613 file=router/internal/config/config.go range=145:147 lang=go exported=true byte_range=5587:5691
   sig=untyped string
   doc=Defaults — applied when an env value is unset or empty.
 EDGES
@@ -186,7 +231,7 @@ EDGES
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.DefaultDaemonReadyTimeout kind=const
-  digest=b3:192f3a8fc687a4a31482f8e021296aa77aedbab1b31dab4bf5733cfe40da95d8 file=router/internal/config/config.go range=126:132 lang=go exported=true byte_range=4737:5030
+  digest=b3:192f3a8fc687a4a31482f8e021296aa77aedbab1b31dab4bf5733cfe40da95d8 file=router/internal/config/config.go range=145:151 lang=go exported=true byte_range=5587:5880
   sig=time.Duration
   doc=Defaults — applied when an env value is unset or empty.
 EDGES
@@ -194,7 +239,7 @@ EDGES
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.DefaultProbeInterval kind=const
-  digest=b3:0b9fab520294013654b75d31c57c4b678b2f5ba48272985d6b6594e0bce2c2f8 file=router/internal/config/config.go range=126:131 lang=go exported=true byte_range=4737:4984
+  digest=b3:0b9fab520294013654b75d31c57c4b678b2f5ba48272985d6b6594e0bce2c2f8 file=router/internal/config/config.go range=145:150 lang=go exported=true byte_range=5587:5834
   sig=time.Duration
   doc=Defaults — applied when an env value is unset or empty.
 EDGES
@@ -202,7 +247,7 @@ EDGES
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.DefaultProxyTimeout kind=const
-  digest=b3:f4a9d46aaac4f38e060fd9ec0869a7ef9b052b2e40e8c197b0b974dc5a3688d0 file=router/internal/config/config.go range=126:130 lang=go exported=true byte_range=4737:4932
+  digest=b3:f4a9d46aaac4f38e060fd9ec0869a7ef9b052b2e40e8c197b0b974dc5a3688d0 file=router/internal/config/config.go range=145:149 lang=go exported=true byte_range=5587:5782
   sig=time.Duration
   doc=Defaults — applied when an env value is unset or empty.
 EDGES
@@ -210,33 +255,41 @@ EDGES
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.DefaultWakeTimeout kind=const
-  digest=b3:fb9b1d790b821b03d515135ea108876e584c8fb98fc00e877a1b20c828b41a16 file=router/internal/config/config.go range=126:129 lang=go exported=true byte_range=4737:4887
+  digest=b3:fb9b1d790b821b03d515135ea108876e584c8fb98fc00e877a1b20c828b41a16 file=router/internal/config/config.go range=145:148 lang=go exported=true byte_range=5587:5737
   sig=time.Duration
   doc=Defaults — applied when an env value is unset or empty.
 EDGES
   ^references=matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
+NODE id=matrix/router/internal/config.DefaultWorkforcePort kind=const
+  digest=b3:e565e1c5eccf51ba8dabb54949e6f6e964de47b237476177c8f453ac993df414 file=router/internal/config/config.go range=145:152 lang=go exported=true byte_range=5587:5916
+  sig=untyped string
+  doc=Defaults — applied when an env value is unset or empty.
+EDGES
+  ^references=matrix/router/internal/config.Load
+  ^defines=matrix/router/internal/config/config.go
+
 NODE id=matrix/router/internal/config.ErrAdminDisabled kind=var
-  digest=b3:760b17273f211f5e622b59c7f2638921a06d61da46da142b92a9b8b3b0f13a07 file=router/internal/config/config.go range=257:259 lang=go exported=true byte_range=9080:9274
+  digest=b3:760b17273f211f5e622b59c7f2638921a06d61da46da142b92a9b8b3b0f13a07 file=router/internal/config/config.go range=313:315 lang=go exported=true byte_range=11285:11479
   sig=error
   doc=ErrAdminDisabled is returned by handlers when admin endpoints are\nhit but no ROUTER_ADMIN_TOKEN is configured.
 EDGES
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.Load kind=func
-  digest=b3:0492a1f6a04e160920f7c7c04c130428cf1cfc703f683d89de645a09179bf20f file=router/internal/config/config.go range=135:213 lang=go exported=true byte_range=5034:8020
+  digest=b3:8f244fabc6e654e7d4c17344e96dd9b6bcf87d25bfbae0699b15e9463440c445 file=router/internal/config/config.go range=155:260 lang=go exported=true byte_range=5920:10053
   sig=func Load() (*Config, error)
   doc=Load reads from os.Getenv. Returns aggregate error listing every\nmissing required field. ParseDuration failures are also surfaced.
 EDGES
-  calls=matrix/router/internal/config.getOrDefault,matrix/router/internal/config.parseCSV,matrix/router/internal/config.parseDurationOr
-  references=matrix/router/internal/config.Config,matrix/router/internal/config.DefaultDaemonPort,matrix/router/internal/config.DefaultDaemonReadyTimeout,matrix/router/internal/config.DefaultProbeInterval,matrix/router/internal/config.DefaultProxyTimeout,matrix/router/internal/config.DefaultWakeTimeout,matrix/router/internal/config.ProviderFly,matrix/router/internal/config.ProviderRailway,matrix/router/internal/config.c,matrix/router/internal/config.err,matrix/router/internal/config.getOrDefault,matrix/router/internal/config.missing,matrix/router/internal/config.parseCSV,matrix/router/internal/config.parseDurationOr
+  calls=matrix/router/internal/config.envTrue,matrix/router/internal/config.getOrDefault,matrix/router/internal/config.parseCSV,matrix/router/internal/config.parseDurationOr
+  references=matrix/router/internal/config.Config,matrix/router/internal/config.DefaultDaemonPort,matrix/router/internal/config.DefaultDaemonReadyTimeout,matrix/router/internal/config.DefaultProbeInterval,matrix/router/internal/config.DefaultProxyTimeout,matrix/router/internal/config.DefaultWakeTimeout,matrix/router/internal/config.DefaultWorkforcePort,matrix/router/internal/config.ProviderFly,matrix/router/internal/config.ProviderRailway,matrix/router/internal/config.c,matrix/router/internal/config.envTrue,matrix/router/internal/config.err,matrix/router/internal/config.getOrDefault,matrix/router/internal/config.missing,matrix/router/internal/config.parseCSV,matrix/router/internal/config.parseDurationOr
   ^calls=matrix/router/cmd/matrix-router.main
   ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.ProviderFly kind=const
-  digest=b3:c29fadec1743c7419bc54360d0ebe07f40696abb93e4ab7900bb9d61d7ef8fa0 file=router/internal/config/config.go range=120:122 lang=go exported=true byte_range=4614:4704
+  digest=b3:c29fadec1743c7419bc54360d0ebe07f40696abb93e4ab7900bb9d61d7ef8fa0 file=router/internal/config/config.go range=139:141 lang=go exported=true byte_range=5464:5554
   sig=untyped string
   doc=Provider values for Config.Provider (ROUTER_PROVIDER).
 EDGES
@@ -244,15 +297,24 @@ EDGES
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.ProviderRailway kind=const
-  digest=b3:6cf8b85b82ba775d39c223c5544ee052b2a849c72d2442ab9b3e7fa9f00f733f file=router/internal/config/config.go range=120:123 lang=go exported=true byte_range=4614:4733
+  digest=b3:6cf8b85b82ba775d39c223c5544ee052b2a849c72d2442ab9b3e7fa9f00f733f file=router/internal/config/config.go range=139:142 lang=go exported=true byte_range=5464:5583
   sig=untyped string
   doc=Provider values for Config.Provider (ROUTER_PROVIDER).
 EDGES
   ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
+NODE id=matrix/router/internal/config.envTrue kind=func
+  digest=b3:b6ae0dd20f879f05e72f72f5fc48e4a20969451dd2b57393d2a16dfc7cd7040d file=router/internal/config/config.go range=262:269 lang=go exported=false byte_range=10055:10225
+  sig=func envTrue(name string) bool
+EDGES
+  references=matrix/router/internal/config.name
+  ^calls=matrix/router/internal/config.Load
+  ^references=matrix/router/internal/config.Load
+  ^defines=matrix/router/internal/config/config.go
+
 NODE id=matrix/router/internal/config.getOrDefault kind=func
-  digest=b3:2c464053e57dd7472a07d344ee519268cf3b58954a62d9070746f6dfd2db4e6f file=router/internal/config/config.go range=215:220 lang=go exported=false byte_range=8022:8128
+  digest=b3:2c464053e57dd7472a07d344ee519268cf3b58954a62d9070746f6dfd2db4e6f file=router/internal/config/config.go range=271:276 lang=go exported=false byte_range=10227:10333
   sig=func getOrDefault(env, def string) string
 EDGES
   references=matrix/router/internal/config.def,matrix/router/internal/config.env,matrix/router/internal/config.v
@@ -261,7 +323,7 @@ EDGES
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.parseCSV kind=func
-  digest=b3:0b065b553db181285e3931aa63fe49d6c7f30f86cb0915aa58efd0890be4380f file=router/internal/config/config.go range=222:236 lang=go exported=false byte_range=8130:8552
+  digest=b3:0b065b553db181285e3931aa63fe49d6c7f30f86cb0915aa58efd0890be4380f file=router/internal/config/config.go range=278:292 lang=go exported=false byte_range=10335:10757
   sig=func parseCSV(v string) []string
   doc=parseCSV splits a comma-separated env value into trimmed, non-empty entries.\nAn empty input yields nil (the CORS middleware treats nil as allow-any).
 EDGES
@@ -271,7 +333,7 @@ EDGES
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.parseDurationOr kind=func
-  digest=b3:8d14acccff9148b914e658fab154d7fff0d10c41d58bcc8a5b59d5afd105da4a file=router/internal/config/config.go range=238:248 lang=go exported=false byte_range=8554:8807
+  digest=b3:8d14acccff9148b914e658fab154d7fff0d10c41d58bcc8a5b59d5afd105da4a file=router/internal/config/config.go range=294:304 lang=go exported=false byte_range=10759:11012
   sig=func parseDurationOr(env string, def time.Duration) (time.Duration, error)
 EDGES
   references=matrix/router/internal/config.d,matrix/router/internal/config.def,matrix/router/internal/config.env,matrix/router/internal/config.err,matrix/router/internal/config.v
@@ -280,7 +342,7 @@ EDGES
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config/config.go kind=file
-  digest=b3:8b31eb69d772433bd37b3ee7acd91b4b857de71d486029f3cf7ffdb989ef22ee file=router/internal/config/config.go range=1:261 lang=go exported=true
+  digest=b3:f2e65a751815fcaa2c7785cb9a920b6635245435a3968a9cae875bc60abe4162 file=router/internal/config/config.go range=1:317 lang=go exported=true
 EDGES
-  defines=matrix/router/internal/config.Config,matrix/router/internal/config.Config.AdminEnabled,matrix/router/internal/config.DefaultDaemonPort,matrix/router/internal/config.DefaultDaemonReadyTimeout,matrix/router/internal/config.DefaultProbeInterval,matrix/router/internal/config.DefaultProxyTimeout,matrix/router/internal/config.DefaultWakeTimeout,matrix/router/internal/config.ErrAdminDisabled,matrix/router/internal/config.Load,matrix/router/internal/config.ProviderFly,matrix/router/internal/config.ProviderRailway,matrix/router/internal/config.getOrDefault,matrix/router/internal/config.parseCSV,matrix/router/internal/config.parseDurationOr
+  defines=matrix/router/internal/config.Config,matrix/router/internal/config.Config.AdminEnabled,matrix/router/internal/config.DefaultDaemonPort,matrix/router/internal/config.DefaultDaemonReadyTimeout,matrix/router/internal/config.DefaultProbeInterval,matrix/router/internal/config.DefaultProxyTimeout,matrix/router/internal/config.DefaultWakeTimeout,matrix/router/internal/config.DefaultWorkforcePort,matrix/router/internal/config.ErrAdminDisabled,matrix/router/internal/config.Load,matrix/router/internal/config.ProviderFly,matrix/router/internal/config.ProviderRailway,matrix/router/internal/config.envTrue,matrix/router/internal/config.getOrDefault,matrix/router/internal/config.parseCSV,matrix/router/internal/config.parseDurationOr
   ^contains=matrix/router/internal/config

@@ -143,7 +143,7 @@ func desktopOnlyManifest(t *testing.T) string {
 	t.Helper()
 	src := os.Getenv("MATRIX_NEO_MANIFEST")
 	if src == "" {
-		src = "/root/matrix/agents/neo.json"
+		src = filepath.Clean("../../../agents/neo.json")
 	}
 	raw, err := os.ReadFile(src)
 	if err != nil {

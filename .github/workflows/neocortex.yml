@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update
-      - run: sudo apt-get install -y clang-18 clang-tidy-18 lld-18 libc++-18-dev libc++abi-18-dev cmake ninja-build
+      - run: sudo apt-get install -y clang-18 clang-tidy-18 llvm-18 lld-18 libc++-18-dev libc++abi-18-dev cmake ninja-build
       - working-directory: neocortex
         run: cmake --preset ${{ matrix.preset }}
       - working-directory: neocortex
@@ -42,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update
-      - run: sudo apt-get install -y clang-18 lld-18 libc++-18-dev libc++abi-18-dev cmake ninja-build
+      - run: sudo apt-get install -y clang-18 llvm-18 lld-18 libc++-18-dev libc++abi-18-dev cmake ninja-build
       - working-directory: neocortex
         run: cmake --preset fuzz && cmake --build --preset fuzz
       - working-directory: neocortex
@@ -53,7 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update
-      - run: sudo apt-get install -y clang-18 lld-18 libc++-18-dev libc++abi-18-dev cmake ninja-build
+      - run: sudo apt-get install -y clang-18 llvm-18 lld-18 libc++-18-dev libc++abi-18-dev cmake ninja-build
       - working-directory: neocortex
         run: cmake --fresh --preset release -B build/repro-a && cmake --build build/repro-a
       - working-directory: neocortex
@@ -66,7 +66,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update
-      - run: sudo apt-get install -y clang-18 lld-18 cmake ninja-build
+      - run: sudo apt-get install -y clang-18 llvm-18 lld-18 cmake ninja-build
       - working-directory: neocortex
         run: python3 toolchain/verify_sysroot.py
       - working-directory: neocortex

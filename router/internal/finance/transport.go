@@ -126,7 +126,7 @@ func newTransport(client *http.Client) *transport {
 // path becomes a *Failure carrying a plain-language message; the request URL —
 // which holds the API key — never reaches the message, the detail, or the logs.
 func (t *transport) get(ctx context.Context, provider Provider, endpoint, rawURL string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, http.NoBody)
 	if err != nil {
 		return nil, &Failure{
 			Kind: FailureBadRequest, Provider: provider, Endpoint: endpoint,

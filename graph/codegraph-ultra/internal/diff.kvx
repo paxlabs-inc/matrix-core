@@ -1,0 +1,160 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=codegraph-ultra/internal/diff kind=package
+  digest=b3:51861468d74040a2813e28807dfc11b6e2b858485c4529ff6b27038ddd64dfc1 file=codegraph-ultra/internal/diff range=0:0 lang=go exported=true
+EDGES
+  contains=codegraph-ultra/internal/diff/diff.go
+  ^contains=mod:codegraph-ultra
+
+NODE id=codegraph-ultra/internal/diff.Compare kind=func
+  digest=b3:b08d83e9e348c2c873d0595848361ff6aedf9f6fe726554ceeee11bbb2322c63 file=codegraph-ultra/internal/diff/diff.go range=40:110 lang=go exported=true byte_range=831:2894
+  sig=func Compare(oldIX, newIX *model.Index) *Delta
+  doc=Compare performs a structural diff between two in-memory graph indices.
+EDGES
+  ^defines=codegraph-ultra/internal/diff/diff.go
+
+NODE id=codegraph-ultra/internal/diff.Delta kind=type
+  digest=b3:1f814a8d87ba6066c288f105765cb98d4c396c8bf9a099673679178d1d307b76 file=codegraph-ultra/internal/diff/diff.go range=13:21 lang=go exported=true byte_range=229:479
+  sig=type Delta struct {\n	AddedNodes	[]*model.Node\n	RemovedNodes	[]*model.Node\n	ChangedNodes	[]NodeChange\n	AddedEdges	[]model.Edge\n	RemovedEdges	[]model.Edge\n	Stats		DeltaStats\n}
+  doc=Delta represents the difference between two graph builds.
+EDGES
+  contains=codegraph-ultra/internal/diff.Delta#AddedEdges,codegraph-ultra/internal/diff.Delta#AddedNodes,codegraph-ultra/internal/diff.Delta#ChangedNodes,codegraph-ultra/internal/diff.Delta#RemovedEdges,codegraph-ultra/internal/diff.Delta#RemovedNodes,codegraph-ultra/internal/diff.Delta#Stats,codegraph-ultra/internal/diff.Delta.FormatKVX
+  ^defines=codegraph-ultra/internal/diff/diff.go
+
+NODE id=codegraph-ultra/internal/diff.Delta#AddedEdges kind=field
+  digest=b3:4824d5ed4b58fb7b383140ec1278d19a0d1a3cdffaa6d5d7344f2307fa28f23b file=codegraph-ultra/internal/diff/diff.go range=18:18 lang=go exported=true byte_range=397:423
+  sig=[]model.Edge
+EDGES
+  ^contains=codegraph-ultra/internal/diff.Delta
+
+NODE id=codegraph-ultra/internal/diff.Delta#AddedNodes kind=field
+  digest=b3:78b1ed132e15d03922841f109c4a5836cd0f292125f6cfec6b157415d28ab821 file=codegraph-ultra/internal/diff/diff.go range=15:15 lang=go exported=true byte_range=311:338
+  sig=[]*model.Node
+EDGES
+  ^contains=codegraph-ultra/internal/diff.Delta
+
+NODE id=codegraph-ultra/internal/diff.Delta#ChangedNodes kind=field
+  digest=b3:d4ed44cd7d4717d1b41cc01cef73f517205bb5fc2fe76b3c83802ec60eb9f53f file=codegraph-ultra/internal/diff/diff.go range=17:17 lang=go exported=true byte_range=369:395
+  sig=[]diff.NodeChange
+EDGES
+  ^contains=codegraph-ultra/internal/diff.Delta
+
+NODE id=codegraph-ultra/internal/diff.Delta#RemovedEdges kind=field
+  digest=b3:0de9cf860fc1e2a7de9e9b49b5d092a0ba199a0e99957438bc3f6c7621fc58f0 file=codegraph-ultra/internal/diff/diff.go range=19:19 lang=go exported=true byte_range=425:451
+  sig=[]model.Edge
+EDGES
+  ^contains=codegraph-ultra/internal/diff.Delta
+
+NODE id=codegraph-ultra/internal/diff.Delta#RemovedNodes kind=field
+  digest=b3:7409066cb529a1beeb91bce573a6fb7a011c90be64db60c96455c79f883ca3fc file=codegraph-ultra/internal/diff/diff.go range=16:16 lang=go exported=true byte_range=340:367
+  sig=[]*model.Node
+EDGES
+  ^contains=codegraph-ultra/internal/diff.Delta
+
+NODE id=codegraph-ultra/internal/diff.Delta#Stats kind=field
+  digest=b3:9c9c936a739c8f5816cb22ca7a5fa1fd920b0f7be3ce2bd99c037d1a6d63ea00 file=codegraph-ultra/internal/diff/diff.go range=20:20 lang=go exported=true byte_range=453:477
+  sig=diff.DeltaStats
+EDGES
+  ^contains=codegraph-ultra/internal/diff.Delta
+
+NODE id=codegraph-ultra/internal/diff.Delta.FormatKVX kind=method
+  digest=b3:07bc92b5eb6b54cd23a975a4494d856eb0a9ef82192f153c5fcb0abbf8045350 file=codegraph-ultra/internal/diff/diff.go range=112:152 lang=go exported=true byte_range=2896:4200
+  sig=func (d *Delta) FormatKVX() string
+  doc=FormatKVX renders the delta as a .kvx fragment.
+EDGES
+  ^contains=codegraph-ultra/internal/diff.Delta
+  ^defines=codegraph-ultra/internal/diff/diff.go
+
+NODE id=codegraph-ultra/internal/diff.DeltaStats kind=type
+  digest=b3:d49f23e8fc49bf337b0d37b5b7fd3e7d076823b2ded71ae2cb6f1174115fb069 file=codegraph-ultra/internal/diff/diff.go range=31:38 lang=go exported=true byte_range=667:829
+  sig=type DeltaStats struct {\n	NodesAdded	int\n	NodesRemoved	int\n	NodesChanged	int\n	EdgesAdded	int\n	EdgesRemoved	int\n}
+  doc=DeltaStats provides aggregate counts.
+EDGES
+  contains=codegraph-ultra/internal/diff.DeltaStats#EdgesAdded,codegraph-ultra/internal/diff.DeltaStats#EdgesRemoved,codegraph-ultra/internal/diff.DeltaStats#NodesAdded,codegraph-ultra/internal/diff.DeltaStats#NodesChanged,codegraph-ultra/internal/diff.DeltaStats#NodesRemoved
+  ^defines=codegraph-ultra/internal/diff/diff.go
+
+NODE id=codegraph-ultra/internal/diff.DeltaStats#EdgesAdded kind=field
+  digest=b3:38719e23288b1298eafe3afb50a3436ddd4a25acb92d4da0efa5500c6d50e870 file=codegraph-ultra/internal/diff/diff.go range=36:36 lang=go exported=true byte_range=791:808
+  sig=int
+EDGES
+  ^contains=codegraph-ultra/internal/diff.DeltaStats
+
+NODE id=codegraph-ultra/internal/diff.DeltaStats#EdgesRemoved kind=field
+  digest=b3:986e98dce27b7542760ec1876d6a9fed1a25f54315ab643c30eb25737db81998 file=codegraph-ultra/internal/diff/diff.go range=37:37 lang=go exported=true byte_range=810:827
+  sig=int
+EDGES
+  ^contains=codegraph-ultra/internal/diff.DeltaStats
+
+NODE id=codegraph-ultra/internal/diff.DeltaStats#NodesAdded kind=field
+  digest=b3:a527400145b1abf41d5726cf7caa3469af01949130a7100e619575d4217860be file=codegraph-ultra/internal/diff/diff.go range=33:33 lang=go exported=true byte_range=734:751
+  sig=int
+EDGES
+  ^contains=codegraph-ultra/internal/diff.DeltaStats
+
+NODE id=codegraph-ultra/internal/diff.DeltaStats#NodesChanged kind=field
+  digest=b3:372f8dc3460b31801b240d330daf1447ecdd927f85ae6d6e8d04f9d6ef78e544 file=codegraph-ultra/internal/diff/diff.go range=35:35 lang=go exported=true byte_range=772:789
+  sig=int
+EDGES
+  ^contains=codegraph-ultra/internal/diff.DeltaStats
+
+NODE id=codegraph-ultra/internal/diff.DeltaStats#NodesRemoved kind=field
+  digest=b3:3c7af77d480a4cfae6c1281920a1acae81b12aee451a2e853e343a2af9976a04 file=codegraph-ultra/internal/diff/diff.go range=34:34 lang=go exported=true byte_range=753:770
+  sig=int
+EDGES
+  ^contains=codegraph-ultra/internal/diff.DeltaStats
+
+NODE id=codegraph-ultra/internal/diff.NodeChange kind=type
+  digest=b3:9f397fa12269abdc08ba910e90481025b4103b0ea90d1a63477e2fcff26bc417 file=codegraph-ultra/internal/diff/diff.go range=23:29 lang=go exported=true byte_range=481:665
+  sig=type NodeChange struct {\n	ID	string\n	Old	*model.Node\n	New	*model.Node\n	Fields	[]string	// changed field names\n}
+  doc=NodeChange describes how a node changed between builds.
+EDGES
+  contains=codegraph-ultra/internal/diff.NodeChange#Fields,codegraph-ultra/internal/diff.NodeChange#ID,codegraph-ultra/internal/diff.NodeChange#New,codegraph-ultra/internal/diff.NodeChange#Old
+  ^defines=codegraph-ultra/internal/diff/diff.go
+
+NODE id=codegraph-ultra/internal/diff.NodeChange#Fields kind=field
+  digest=b3:5ae8649456f239fe42de469bfc22fb528b397c4e6d506bdad79ba9eb996c9e8f file=codegraph-ultra/internal/diff/diff.go range=28:28 lang=go exported=true byte_range=624:640
+  sig=[]string
+EDGES
+  ^contains=codegraph-ultra/internal/diff.NodeChange
+
+NODE id=codegraph-ultra/internal/diff.NodeChange#ID kind=field
+  digest=b3:846b2338dd0b9ef623a8b0579a24ab912ee611789d6179a9f3ae399d16b9f098 file=codegraph-ultra/internal/diff/diff.go range=25:25 lang=go exported=true byte_range=566:580
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/diff.NodeChange
+
+NODE id=codegraph-ultra/internal/diff.NodeChange#New kind=field
+  digest=b3:851579125adcc9f5bc9caa0013abf2d0b00e4728aaabf4e9aa3e03474aa3c5cf file=codegraph-ultra/internal/diff/diff.go range=27:27 lang=go exported=true byte_range=603:622
+  sig=*model.Node
+EDGES
+  ^contains=codegraph-ultra/internal/diff.NodeChange
+
+NODE id=codegraph-ultra/internal/diff.NodeChange#Old kind=field
+  digest=b3:a5fe0b22261f8c007b40f6824086fee2b2c93a5409a7a4ecab1477f131d5a2e2 file=codegraph-ultra/internal/diff/diff.go range=26:26 lang=go exported=true byte_range=582:601
+  sig=*model.Node
+EDGES
+  ^contains=codegraph-ultra/internal/diff.NodeChange
+
+NODE id=codegraph-ultra/internal/diff.edgeSet kind=func
+  digest=b3:b2c4d0da22b3286edb4e0da7a8c5a1aab7485bfb208c590822ec53956db8c3de file=codegraph-ultra/internal/diff/diff.go range=154:164 lang=go exported=false byte_range=4202:4456
+  sig=func edgeSet(ix *model.Index) map[string]bool
+EDGES
+  ^defines=codegraph-ultra/internal/diff/diff.go
+
+NODE id=codegraph-ultra/internal/diff.parseEdgeKey kind=func
+  digest=b3:059e07ffbfd0df56f4bb1b5fa85f6b6afb65594451046d28279de3e94d2ac0bc file=codegraph-ultra/internal/diff/diff.go range=166:172 lang=go exported=false byte_range=4458:4668
+  sig=func parseEdgeKey(key string) model.Edge
+EDGES
+  ^defines=codegraph-ultra/internal/diff/diff.go
+
+NODE id=codegraph-ultra/internal/diff.sortEdges kind=func
+  digest=b3:07b9b7daf49df138bf9e8aacceda81b702db2efb6811f8d5ce962e67e9c4554c file=codegraph-ultra/internal/diff/diff.go range=174:184 lang=go exported=false byte_range=4670:4950
+  sig=func sortEdges(edges []model.Edge)
+EDGES
+  ^defines=codegraph-ultra/internal/diff/diff.go
+
+NODE id=codegraph-ultra/internal/diff/diff.go kind=file
+  digest=b3:7c09470ad45258b1b6a49ca4c5dd2956908aa2fd12e872c8cc798f611041d044 file=codegraph-ultra/internal/diff/diff.go range=1:184 lang=go exported=true
+EDGES
+  defines=codegraph-ultra/internal/diff.Compare,codegraph-ultra/internal/diff.Delta,codegraph-ultra/internal/diff.Delta.FormatKVX,codegraph-ultra/internal/diff.DeltaStats,codegraph-ultra/internal/diff.NodeChange,codegraph-ultra/internal/diff.edgeSet,codegraph-ultra/internal/diff.parseEdgeKey,codegraph-ultra/internal/diff.sortEdges
+  ^contains=codegraph-ultra/internal/diff

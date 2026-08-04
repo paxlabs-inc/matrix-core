@@ -70,7 +70,8 @@ func (s *MemoryStore) ActiveRuns(_ context.Context, user string) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	count := 0
-	for _, record := range s.runs {
+	for id := range s.runs {
+		record := s.runs[id]
 		if record.User == user && (record.Status == "queued" || record.Status == "running") {
 			count++
 		}

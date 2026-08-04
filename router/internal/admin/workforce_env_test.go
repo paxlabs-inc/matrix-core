@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"encoding/base64"
 	"testing"
@@ -70,7 +71,7 @@ func TestInstanceEnvAddsPerUserWorkforceCredentialsWithoutRootSecret(t *testing.
 	if err != nil || len(companyIssuerKey) != ed25519.PrivateKeySize {
 		t.Fatalf("company issuer key invalid: bytes=%d err=%v", len(companyIssuerKey), err)
 	}
-	if string(privateKey) == string(companyIssuerKey) ||
+	if bytes.Equal(privateKey, companyIssuerKey) ||
 		envA["WORKFORCE_RUNTIME_KEY_ID"] == envA["WORKFORCE_COMPANY_ISSUER_KEY_ID"] {
 		t.Fatal("company issuer and runtime authority were not separated")
 	}

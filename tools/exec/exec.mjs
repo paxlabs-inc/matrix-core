@@ -59,7 +59,9 @@ const SERVER_VERSION = '0.1.0'
 
 // ── config (env-overridable) ──────────────────────────────────────────────────
 const DATA_DIR = process.env.MATRIX_DATA_DIR || '/data'
-const DEFAULT_STATE_DIR = join(DATA_DIR, 'services')
+const DEFAULT_STATE_DIR = existsSync(DATA_DIR)
+  ? join(DATA_DIR, 'services')
+  : join(tmpdir(), `matrix-exec-services-${process.pid}`)
 
 // Default cwd: the persisted, git-initialised workspace. Falls back sensibly
 // when neither /workspace nor /data/workspace exists (dev box / selftest).

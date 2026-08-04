@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
 
 NODE id=matrix/gateway/internal/routing kind=package
-  digest=b3:ac57b65ba0a43fe2e2d92fdeac160f9906fba5d02f1bae64d44333f4d76fa6f8 file=gateway/internal/routing range=0:0 lang=go exported=true
+  digest=b3:7776e460219fea59afb9939eedeea337d1daf53befe5d62b3bb2c7da5d52b149 file=gateway/internal/routing range=0:0 lang=go exported=true
 EDGES
   contains=matrix/gateway/internal/routing/routing.go
   imports=matrix/gateway/internal/rates,matrix/gateway/internal/types
@@ -9,7 +9,7 @@ EDGES
   ^imports=matrix/gateway/cmd/matrix-gateway,matrix/gateway/internal/proxy
 
 NODE id=matrix/gateway/internal/routing.Decider kind=type
-  digest=b3:061f9c2906db2080e0cfcb4817c9a22200cbfd1915ce2534ebed70d64de805bb file=gateway/internal/routing/routing.go range=122:131 lang=go exported=true byte_range=3942:4267
+  digest=b3:061f9c2906db2080e0cfcb4817c9a22200cbfd1915ce2534ebed70d64de805bb file=gateway/internal/routing/routing.go range=122:131 lang=go exported=true byte_range=3931:4256
   sig=type Decider struct {\n	freeTierOnly	bool\n\n	// chatURL / embeddingURL are per-provider override hooks for\n	// tests. Map from Provider value to upstream URL.\n	chatURL		map[Provider]string\n	embeddingURL	map[Provider]string\n}
   doc=Decider is the routing brain. Construct via New; safe for concurrent\nuse after construction.
 EDGES
@@ -19,26 +19,26 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Decider#chatURL kind=field
-  digest=b3:223a88c83c687045a5a0cbcd38b6038af356b4e855d52b21ee6e16bd62149498 file=gateway/internal/routing/routing.go range=127:129 lang=go exported=false byte_range=4084:4231
+  digest=b3:223a88c83c687045a5a0cbcd38b6038af356b4e855d52b21ee6e16bd62149498 file=gateway/internal/routing/routing.go range=127:129 lang=go exported=false byte_range=4073:4220
   sig=map[routing.Provider]string
   doc=chatURL / embeddingURL are per-provider override hooks for\ntests. Map from Provider value to upstream URL.
 EDGES
   ^contains=matrix/gateway/internal/routing.Decider
 
 NODE id=matrix/gateway/internal/routing.Decider#embeddingURL kind=field
-  digest=b3:bd53de4b0e5602a4a3938ea4adfd00d14fbb9ecb171c600fb566617e67643d0b file=gateway/internal/routing/routing.go range=130:130 lang=go exported=false byte_range=4233:4265
+  digest=b3:bd53de4b0e5602a4a3938ea4adfd00d14fbb9ecb171c600fb566617e67643d0b file=gateway/internal/routing/routing.go range=130:130 lang=go exported=false byte_range=4222:4254
   sig=map[routing.Provider]string
 EDGES
   ^contains=matrix/gateway/internal/routing.Decider
 
 NODE id=matrix/gateway/internal/routing.Decider#freeTierOnly kind=field
-  digest=b3:902e9bfcf790776a7461710f446b12e6d3db9438d2b6729378ebf2568371cde1 file=gateway/internal/routing/routing.go range=125:125 lang=go exported=false byte_range=4064:4081
+  digest=b3:902e9bfcf790776a7461710f446b12e6d3db9438d2b6729378ebf2568371cde1 file=gateway/internal/routing/routing.go range=125:125 lang=go exported=false byte_range=4053:4070
   sig=bool
 EDGES
   ^contains=matrix/gateway/internal/routing.Decider
 
 NODE id=matrix/gateway/internal/routing.Decider.Decide kind=method
-  digest=b3:b4a45abc2ce41e357527fa6685e0bb97d40d1afb3d4ca5b3b0dac0f4c5fcfe65 file=gateway/internal/routing/routing.go range=181:232 lang=go exported=true byte_range=5957:7368
+  digest=b3:b4a45abc2ce41e357527fa6685e0bb97d40d1afb3d4ca5b3b0dac0f4c5fcfe65 file=gateway/internal/routing/routing.go range=181:232 lang=go exported=true byte_range=5946:7357
   sig=func (d *Decider) Decide(r *http.Request, model string, ep Endpoint) (*Decision, error)
   doc=Decide computes the routing outcome for a request. Returns a typed\nerror on rejection so callers can map specific failure modes to\ndistinct HTTP status codes (free-tier rejections are 403,\nmissing-key bypasses are 400, unknown providers are 502).
 EDGES
@@ -50,7 +50,7 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Decision kind=type
-  digest=b3:b411c06f45470a7a63bc36ad935d1700c6ee63e874078fe1862c9e361aebd3c1 file=gateway/internal/routing/routing.go range=84:112 lang=go exported=true byte_range=2515:3463
+  digest=b3:b411c06f45470a7a63bc36ad935d1700c6ee63e874078fe1862c9e361aebd3c1 file=gateway/internal/routing/routing.go range=84:112 lang=go exported=true byte_range=2504:3452
   sig=type Decision struct {\n	// Provider selected upstream.\n	Provider	Provider\n\n	// UpstreamURL is the full URL the proxy will forward to.\n	UpstreamURL	string\n\n	// Model is the model id from the request body (passes through\n	// unchanged so upstream sees the same value).\n	Model	string\n\n	// FreeTier indicates the call counts against the actor's PAX\n	// budget (true) vs uses the caller's BYO API key (false).\n	FreeTier	bool\n\n	// UserAPIKey carries the BYO key when FreeTier == false. Empty\n	// when FreeTier == true. The proxy uses this for the upstream\n	// Authorization header when present; otherwise it falls back to\n	// the gateway's own provider-side API key.\n	UserAPIKey	string\n\n	// Slot is the requested ModelSlot label (compiler|planner|\n	// executor|liaison|neo). Echoed for downstream metrics.\n	Slot	string\n\n	// KindRoute is the executor sub-route label, optional.\n	KindRoute	string\n}
   doc=Decision captures the routing outcome for one request.
 EDGES
@@ -60,49 +60,49 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Decision#FreeTier kind=field
-  digest=b3:475fff1a64ba5eedaaeea402e81b8dd4ee8baac2f12225f12e5be5ff5cc1a8a3 file=gateway/internal/routing/routing.go range=96:98 lang=go exported=true byte_range=2856:2992
+  digest=b3:475fff1a64ba5eedaaeea402e81b8dd4ee8baac2f12225f12e5be5ff5cc1a8a3 file=gateway/internal/routing/routing.go range=96:98 lang=go exported=true byte_range=2845:2981
   sig=bool
   doc=FreeTier indicates the call counts against the actor's PAX\nbudget (true) vs uses the caller's BYO API key (false).
 EDGES
   ^contains=matrix/gateway/internal/routing.Decision
 
 NODE id=matrix/gateway/internal/routing.Decision#KindRoute kind=field
-  digest=b3:b0f232636a8a2fe3db324f25845b27f97e0ea7d383c21d9d068b1cc948be3e27 file=gateway/internal/routing/routing.go range=110:111 lang=go exported=true byte_range=3388:3461
+  digest=b3:b0f232636a8a2fe3db324f25845b27f97e0ea7d383c21d9d068b1cc948be3e27 file=gateway/internal/routing/routing.go range=110:111 lang=go exported=true byte_range=3377:3450
   sig=string
   doc=KindRoute is the executor sub-route label, optional.
 EDGES
   ^contains=matrix/gateway/internal/routing.Decision
 
 NODE id=matrix/gateway/internal/routing.Decision#Model kind=field
-  digest=b3:9d1cc0e75c250f51859753f713d703a7ffeacbb024c9c49e7751b47df886a820 file=gateway/internal/routing/routing.go range=92:94 lang=go exported=true byte_range=2729:2853
+  digest=b3:9d1cc0e75c250f51859753f713d703a7ffeacbb024c9c49e7751b47df886a820 file=gateway/internal/routing/routing.go range=92:94 lang=go exported=true byte_range=2718:2842
   sig=string
   doc=Model is the model id from the request body (passes through\nunchanged so upstream sees the same value).
 EDGES
   ^contains=matrix/gateway/internal/routing.Decision
 
 NODE id=matrix/gateway/internal/routing.Decision#Provider kind=field
-  digest=b3:a944c44ac51fdb79b49fb1f1f8a43be490d693137f3ee42b43b58f0799fc1c65 file=gateway/internal/routing/routing.go range=86:87 lang=go exported=true byte_range=2597:2646
+  digest=b3:a944c44ac51fdb79b49fb1f1f8a43be490d693137f3ee42b43b58f0799fc1c65 file=gateway/internal/routing/routing.go range=86:87 lang=go exported=true byte_range=2586:2635
   sig=routing.Provider
   doc=Provider selected upstream.
 EDGES
   ^contains=matrix/gateway/internal/routing.Decision
 
 NODE id=matrix/gateway/internal/routing.Decision#Slot kind=field
-  digest=b3:a219d97971eb7592a40adf2687668445c13cc149fac35a667a7b17642ae83f29 file=gateway/internal/routing/routing.go range=106:108 lang=go exported=true byte_range=3255:3385
+  digest=b3:a219d97971eb7592a40adf2687668445c13cc149fac35a667a7b17642ae83f29 file=gateway/internal/routing/routing.go range=106:108 lang=go exported=true byte_range=3244:3374
   sig=string
   doc=Slot is the requested ModelSlot label (compiler|planner|\nexecutor|liaison|neo). Echoed for downstream metrics.
 EDGES
   ^contains=matrix/gateway/internal/routing.Decision
 
 NODE id=matrix/gateway/internal/routing.Decision#UpstreamURL kind=field
-  digest=b3:5f978ace12178136ca18e4a3e2630409c02ed03288315d7c9e7706950908ea7b file=gateway/internal/routing/routing.go range=89:90 lang=go exported=true byte_range=2649:2726
+  digest=b3:5f978ace12178136ca18e4a3e2630409c02ed03288315d7c9e7706950908ea7b file=gateway/internal/routing/routing.go range=89:90 lang=go exported=true byte_range=2638:2715
   sig=string
   doc=UpstreamURL is the full URL the proxy will forward to.
 EDGES
   ^contains=matrix/gateway/internal/routing.Decision
 
 NODE id=matrix/gateway/internal/routing.Decision#UserAPIKey kind=field
-  digest=b3:62eb6c9b24a2d7ea4fb897fb730b61531a63c43a86a7740080a6e4768284d5dc file=gateway/internal/routing/routing.go range=100:104 lang=go exported=true byte_range=2995:3252
+  digest=b3:62eb6c9b24a2d7ea4fb897fb730b61531a63c43a86a7740080a6e4768284d5dc file=gateway/internal/routing/routing.go range=100:104 lang=go exported=true byte_range=2984:3241
   sig=string
   doc=UserAPIKey carries the BYO key when FreeTier == false. Empty\nwhen FreeTier == true. The proxy uses this for the upstream\nAuthorization header when present; otherwise it falls back to\nthe gateway's own provider-side API key.
 EDGES
@@ -140,14 +140,6 @@ EDGES
   ^references=matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
-NODE id=matrix/gateway/internal/routing.DefaultNovitaChat kind=const
-  digest=b3:21806f76bdae74ee82586b2b7fd8bdaebbc8b90aed79e6e8252b6f5fed161e94 file=gateway/internal/routing/routing.go range=72:73 lang=go exported=true byte_range=2198:2342
-  sig=untyped string
-  doc=Novita serves the Xiaomi MiMo family on an OpenAI-compatible surface.
-EDGES
-  ^references=matrix/gateway/internal/routing.New
-  ^defines=matrix/gateway/internal/routing/routing.go
-
 NODE id=matrix/gateway/internal/routing.DefaultTogetherChat kind=const
   digest=b3:6c5fe9eeeaee093f7cc6968c8fb8bad63af21cd60e39f6fd72e3ee564fba4c3e file=gateway/internal/routing/routing.go range=61:65 lang=go exported=true byte_range=1452:1774
   sig=untyped string
@@ -180,8 +172,16 @@ EDGES
   ^references=matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
+NODE id=matrix/gateway/internal/routing.DefaultXiaomiChat kind=const
+  digest=b3:9149939dd76ff0ea96de163371e129470e467538fce116587f1120cc11c96fd5 file=gateway/internal/routing/routing.go range=72:73 lang=go exported=true byte_range=2198:2331
+  sig=untyped string
+  doc=Xiaomi serves MiMo directly on an OpenAI-compatible surface.
+EDGES
+  ^references=matrix/gateway/internal/routing.New
+  ^defines=matrix/gateway/internal/routing/routing.go
+
 NODE id=matrix/gateway/internal/routing.Endpoint kind=type
-  digest=b3:bd36319d9d63ba63682956d67a47cf4d77035043fab56759d1166fd2a3528223 file=gateway/internal/routing/routing.go range=76:77 lang=go exported=true byte_range=2346:2423
+  digest=b3:bd36319d9d63ba63682956d67a47cf4d77035043fab56759d1166fd2a3528223 file=gateway/internal/routing/routing.go range=76:77 lang=go exported=true byte_range=2335:2412
   sig=type Endpoint string
   doc=Endpoint identifies which upstream URL to forward to.
 EDGES
@@ -189,7 +189,7 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.EndpointChat kind=const
-  digest=b3:7394f193cb303ee5149b40ef0084c19c5a8a73bb36286c69d7c56ebccc80be86 file=gateway/internal/routing/routing.go range=80:80 lang=go exported=true byte_range=2434:2469
+  digest=b3:7394f193cb303ee5149b40ef0084c19c5a8a73bb36286c69d7c56ebccc80be86 file=gateway/internal/routing/routing.go range=80:80 lang=go exported=true byte_range=2423:2458
   sig=routing.Endpoint
 EDGES
   references=matrix/gateway/internal/routing.Endpoint
@@ -197,7 +197,7 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.EndpointEmbedding kind=const
-  digest=b3:f23d9dccb6810eab8d9f8aed93c5e1516c04de844656029b51dacebe5e5c69bf file=gateway/internal/routing/routing.go range=81:81 lang=go exported=true byte_range=2471:2511
+  digest=b3:f23d9dccb6810eab8d9f8aed93c5e1516c04de844656029b51dacebe5e5c69bf file=gateway/internal/routing/routing.go range=81:81 lang=go exported=true byte_range=2460:2500
   sig=routing.Endpoint
 EDGES
   references=matrix/gateway/internal/routing.Endpoint
@@ -205,7 +205,7 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ErrBYOMissingKey kind=var
-  digest=b3:c4dfcdbcdafdfde28fbdec7917e69f06e6b409d2b9da46a0fa0a0327e937f90c file=gateway/internal/routing/routing.go range=114:119 lang=go exported=true byte_range=3465:3938
+  digest=b3:c4dfcdbcdafdfde28fbdec7917e69f06e6b409d2b9da46a0fa0a0327e937f90c file=gateway/internal/routing/routing.go range=114:119 lang=go exported=true byte_range=3454:3927
   sig=error
   doc=Errors surfaced by Decide. Callers map to HTTP status codes.
 EDGES
@@ -213,7 +213,7 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ErrFreeTierNotWhitelisted kind=var
-  digest=b3:0040359a21854f32173c77379db649da52e4f7fd91560716ac4d735d29727ac4 file=gateway/internal/routing/routing.go range=114:116 lang=go exported=true byte_range=3465:3636
+  digest=b3:0040359a21854f32173c77379db649da52e4f7fd91560716ac4d735d29727ac4 file=gateway/internal/routing/routing.go range=114:116 lang=go exported=true byte_range=3454:3625
   sig=error
   doc=Errors surfaced by Decide. Callers map to HTTP status codes.
 EDGES
@@ -221,7 +221,7 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ErrInvalidSlot kind=var
-  digest=b3:d24ba7ea93ba4c680e73e6f464f983e034a45a46c281821880658b3ce289f16b file=gateway/internal/routing/routing.go range=114:118 lang=go exported=true byte_range=3465:3817
+  digest=b3:d24ba7ea93ba4c680e73e6f464f983e034a45a46c281821880658b3ce289f16b file=gateway/internal/routing/routing.go range=114:118 lang=go exported=true byte_range=3454:3806
   sig=error
   doc=Errors surfaced by Decide. Callers map to HTTP status codes.
 EDGES
@@ -229,7 +229,7 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ErrUnknownProvider kind=var
-  digest=b3:ee1370c83ab6a9cfd5c450bd643c3a39a90f1695964a832c190edb88ecc708d4 file=gateway/internal/routing/routing.go range=114:117 lang=go exported=true byte_range=3465:3729
+  digest=b3:ee1370c83ab6a9cfd5c450bd643c3a39a90f1695964a832c190edb88ecc708d4 file=gateway/internal/routing/routing.go range=114:117 lang=go exported=true byte_range=3454:3718
   sig=error
   doc=Errors surfaced by Decide. Callers map to HTTP status codes.
 EDGES
@@ -237,82 +237,82 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.New kind=func
-  digest=b3:c2f744129fd067eca8be34c973b755fc4d7035fb9916fe86409fc5e467de14ed file=gateway/internal/routing/routing.go range=155:179 lang=go exported=true byte_range=4972:5955
+  digest=b3:920fc3e3dca71e62a48a76282ec2099f562465856d7c24255c500822e6737ab9 file=gateway/internal/routing/routing.go range=155:179 lang=go exported=true byte_range=4961:5944
   sig=func New(opts Options) *Decider
   doc=New constructs a Decider with the supplied options.
 EDGES
-  references=matrix/gateway/internal/routing.Decider,matrix/gateway/internal/routing.DefaultBasetenChat,matrix/gateway/internal/routing.DefaultBasetenEmbeddings,matrix/gateway/internal/routing.DefaultFireworksChat,matrix/gateway/internal/routing.DefaultFireworksEmbeddings,matrix/gateway/internal/routing.DefaultNovitaChat,matrix/gateway/internal/routing.DefaultTogetherChat,matrix/gateway/internal/routing.DefaultTogetherEmbeddings,matrix/gateway/internal/routing.DefaultXaiChat,matrix/gateway/internal/routing.DefaultXaiEmbeddings,matrix/gateway/internal/routing.Options,matrix/gateway/internal/routing.Provider,matrix/gateway/internal/routing.ProviderBaseten,matrix/gateway/internal/routing.ProviderFireworks,matrix/gateway/internal/routing.ProviderNovita,matrix/gateway/internal/routing.ProviderTogether,matrix/gateway/internal/routing.ProviderXai,matrix/gateway/internal/routing.fallback,matrix/gateway/internal/routing.opts,matrix/gateway/internal/routing.pick,matrix/gateway/internal/routing.s
+  references=matrix/gateway/internal/routing.Decider,matrix/gateway/internal/routing.DefaultBasetenChat,matrix/gateway/internal/routing.DefaultBasetenEmbeddings,matrix/gateway/internal/routing.DefaultFireworksChat,matrix/gateway/internal/routing.DefaultFireworksEmbeddings,matrix/gateway/internal/routing.DefaultTogetherChat,matrix/gateway/internal/routing.DefaultTogetherEmbeddings,matrix/gateway/internal/routing.DefaultXaiChat,matrix/gateway/internal/routing.DefaultXaiEmbeddings,matrix/gateway/internal/routing.DefaultXiaomiChat,matrix/gateway/internal/routing.Options,matrix/gateway/internal/routing.Provider,matrix/gateway/internal/routing.ProviderBaseten,matrix/gateway/internal/routing.ProviderFireworks,matrix/gateway/internal/routing.ProviderTogether,matrix/gateway/internal/routing.ProviderXai,matrix/gateway/internal/routing.ProviderXiaomi,matrix/gateway/internal/routing.fallback,matrix/gateway/internal/routing.opts,matrix/gateway/internal/routing.pick,matrix/gateway/internal/routing.s
   ^calls=matrix/gateway/cmd/matrix-gateway.run
   ^references=matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Options kind=type
-  digest=b3:f781507f202f001ce9b816f86ed1d7bd038e73a59824406322a1393306991c1f file=gateway/internal/routing/routing.go range=133:153 lang=go exported=true byte_range=4269:4970
-  sig=type Options struct {\n	// FreeTierOnly, when true, rejects every BYO request (forcing\n	// every call to use the metered free tier). Useful for the\n	// initial alpha posture; flip to false once BYO keys are\n	// supported.\n	FreeTierOnly	bool\n\n	// FireworksChatURL / FireworksEmbeddingsURL override the default\n	// upstream URLs for tests. Empty falls back to the package\n	// defaults.\n	FireworksChatURL	string\n	FireworksEmbeddingsURL	string\n	TogetherChatURL		string\n	TogetherEmbeddingsURL	string\n	BasetenChatURL		string\n	BasetenEmbeddingsURL	string\n	XaiChatURL		string\n	XaiEmbeddingsURL	string\n	NovitaChatURL		string\n}
+  digest=b3:cd1b43b52c635cbe6b7adaa61f255746b468c74b1fa4d46b871a912ffd036b1f file=gateway/internal/routing/routing.go range=133:153 lang=go exported=true byte_range=4258:4959
+  sig=type Options struct {\n	// FreeTierOnly, when true, rejects every BYO request (forcing\n	// every call to use the metered free tier). Useful for the\n	// initial alpha posture; flip to false once BYO keys are\n	// supported.\n	FreeTierOnly	bool\n\n	// FireworksChatURL / FireworksEmbeddingsURL override the default\n	// upstream URLs for tests. Empty falls back to the package\n	// defaults.\n	FireworksChatURL	string\n	FireworksEmbeddingsURL	string\n	TogetherChatURL		string\n	TogetherEmbeddingsURL	string\n	BasetenChatURL		string\n	BasetenEmbeddingsURL	string\n	XaiChatURL		string\n	XaiEmbeddingsURL	string\n	XiaomiChatURL		string\n}
   doc=Options controls Decider behavior.
 EDGES
-  contains=matrix/gateway/internal/routing.Options#BasetenChatURL,matrix/gateway/internal/routing.Options#BasetenEmbeddingsURL,matrix/gateway/internal/routing.Options#FireworksChatURL,matrix/gateway/internal/routing.Options#FireworksEmbeddingsURL,matrix/gateway/internal/routing.Options#FreeTierOnly,matrix/gateway/internal/routing.Options#NovitaChatURL,matrix/gateway/internal/routing.Options#TogetherChatURL,matrix/gateway/internal/routing.Options#TogetherEmbeddingsURL,matrix/gateway/internal/routing.Options#XaiChatURL,matrix/gateway/internal/routing.Options#XaiEmbeddingsURL
+  contains=matrix/gateway/internal/routing.Options#BasetenChatURL,matrix/gateway/internal/routing.Options#BasetenEmbeddingsURL,matrix/gateway/internal/routing.Options#FireworksChatURL,matrix/gateway/internal/routing.Options#FireworksEmbeddingsURL,matrix/gateway/internal/routing.Options#FreeTierOnly,matrix/gateway/internal/routing.Options#TogetherChatURL,matrix/gateway/internal/routing.Options#TogetherEmbeddingsURL,matrix/gateway/internal/routing.Options#XaiChatURL,matrix/gateway/internal/routing.Options#XaiEmbeddingsURL,matrix/gateway/internal/routing.Options#XiaomiChatURL
   ^references=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Options#BasetenChatURL kind=field
-  digest=b3:93b2c738e502e3d7d0b3657f8cff8eb3eae8d3f1dce922369b916d03343f0484 file=gateway/internal/routing/routing.go range=148:148 lang=go exported=true byte_range=4815:4844
+  digest=b3:93b2c738e502e3d7d0b3657f8cff8eb3eae8d3f1dce922369b916d03343f0484 file=gateway/internal/routing/routing.go range=148:148 lang=go exported=true byte_range=4804:4833
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/routing.Options
 
 NODE id=matrix/gateway/internal/routing.Options#BasetenEmbeddingsURL kind=field
-  digest=b3:307838e125d1e3958c872d09db74caca3b685a0affdd8c5d0f3e0a82c4942931 file=gateway/internal/routing/routing.go range=149:149 lang=go exported=true byte_range=4846:4875
+  digest=b3:307838e125d1e3958c872d09db74caca3b685a0affdd8c5d0f3e0a82c4942931 file=gateway/internal/routing/routing.go range=149:149 lang=go exported=true byte_range=4835:4864
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/routing.Options
 
 NODE id=matrix/gateway/internal/routing.Options#FireworksChatURL kind=field
-  digest=b3:e76e6f93519c0632647bf981aeb1c46921469ffc281632300250eefcd4951640 file=gateway/internal/routing/routing.go range=141:144 lang=go exported=true byte_range=4549:4720
+  digest=b3:e76e6f93519c0632647bf981aeb1c46921469ffc281632300250eefcd4951640 file=gateway/internal/routing/routing.go range=141:144 lang=go exported=true byte_range=4538:4709
   sig=string
   doc=FireworksChatURL / FireworksEmbeddingsURL override the default\nupstream URLs for tests. Empty falls back to the package\ndefaults.
 EDGES
   ^contains=matrix/gateway/internal/routing.Options
 
 NODE id=matrix/gateway/internal/routing.Options#FireworksEmbeddingsURL kind=field
-  digest=b3:1f5598b1129ea7b3f2397efba8295df28f480fa339241679a7ef544c9f25f10d file=gateway/internal/routing/routing.go range=145:145 lang=go exported=true byte_range=4722:4751
+  digest=b3:1f5598b1129ea7b3f2397efba8295df28f480fa339241679a7ef544c9f25f10d file=gateway/internal/routing/routing.go range=145:145 lang=go exported=true byte_range=4711:4740
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/routing.Options
 
 NODE id=matrix/gateway/internal/routing.Options#FreeTierOnly kind=field
-  digest=b3:8fd73aafa5580c8ed8821a85ee863cbfb3242fee6c6d85ed6794c84e470165d0 file=gateway/internal/routing/routing.go range=135:139 lang=go exported=true byte_range=4330:4546
+  digest=b3:8fd73aafa5580c8ed8821a85ee863cbfb3242fee6c6d85ed6794c84e470165d0 file=gateway/internal/routing/routing.go range=135:139 lang=go exported=true byte_range=4319:4535
   sig=bool
   doc=FreeTierOnly, when true, rejects every BYO request (forcing\nevery call to use the metered free tier). Useful for the\ninitial alpha posture; flip to false once BYO keys are\nsupported.
 EDGES
   ^contains=matrix/gateway/internal/routing.Options
 
-NODE id=matrix/gateway/internal/routing.Options#NovitaChatURL kind=field
-  digest=b3:e8da7d1bdd02541311e5f9cb6dcf0852efb0e17372afa2e49ed4b5e8329522ba file=gateway/internal/routing/routing.go range=152:152 lang=go exported=true byte_range=4939:4968
-  sig=string
-EDGES
-  ^contains=matrix/gateway/internal/routing.Options
-
 NODE id=matrix/gateway/internal/routing.Options#TogetherChatURL kind=field
-  digest=b3:3bd5b6925e984d397433578929c311cfbe3b37568113a2e98286ff5d8edb0db2 file=gateway/internal/routing/routing.go range=146:146 lang=go exported=true byte_range=4753:4782
+  digest=b3:3bd5b6925e984d397433578929c311cfbe3b37568113a2e98286ff5d8edb0db2 file=gateway/internal/routing/routing.go range=146:146 lang=go exported=true byte_range=4742:4771
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/routing.Options
 
 NODE id=matrix/gateway/internal/routing.Options#TogetherEmbeddingsURL kind=field
-  digest=b3:94d388c2af05a90fc294bbf0b4b048c3dcda1b696bd1c394897b79c897585b37 file=gateway/internal/routing/routing.go range=147:147 lang=go exported=true byte_range=4784:4813
+  digest=b3:94d388c2af05a90fc294bbf0b4b048c3dcda1b696bd1c394897b79c897585b37 file=gateway/internal/routing/routing.go range=147:147 lang=go exported=true byte_range=4773:4802
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/routing.Options
 
 NODE id=matrix/gateway/internal/routing.Options#XaiChatURL kind=field
-  digest=b3:5cfa63a0db2e2dd5742604282ece28ef4e42af9c101edbe73eb76a1d98ca65b4 file=gateway/internal/routing/routing.go range=150:150 lang=go exported=true byte_range=4877:4906
+  digest=b3:5cfa63a0db2e2dd5742604282ece28ef4e42af9c101edbe73eb76a1d98ca65b4 file=gateway/internal/routing/routing.go range=150:150 lang=go exported=true byte_range=4866:4895
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/routing.Options
 
 NODE id=matrix/gateway/internal/routing.Options#XaiEmbeddingsURL kind=field
-  digest=b3:85068ec37b337fdf75b6c4d72443e65b9829fde73c045032bdceb7e3f7de755f file=gateway/internal/routing/routing.go range=151:151 lang=go exported=true byte_range=4908:4937
+  digest=b3:85068ec37b337fdf75b6c4d72443e65b9829fde73c045032bdceb7e3f7de755f file=gateway/internal/routing/routing.go range=151:151 lang=go exported=true byte_range=4897:4926
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/routing.Options
+
+NODE id=matrix/gateway/internal/routing.Options#XiaomiChatURL kind=field
+  digest=b3:33005448c1756ede8c1dada109a4f255b1b2444f757a4298b0623459ba6fea1e file=gateway/internal/routing/routing.go range=152:152 lang=go exported=true byte_range=4928:4957
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/routing.Options
@@ -327,11 +327,13 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Provider.String kind=method
-  digest=b3:3de8ce65f96fdfef72d95d39ea78229b77833998120046b7e1d2a60dbb0f8237 file=gateway/internal/routing/routing.go range=45:59 lang=go exported=true byte_range=1174:1450
+  digest=b3:fd66de7ddc9d62f10494de7aa0695a1c2bde5bf07a0e64453c55b471a1ae7052 file=gateway/internal/routing/routing.go range=45:59 lang=go exported=true byte_range=1174:1450
   sig=func (p Provider) String() string
 EDGES
-  references=matrix/gateway/internal/routing.Provider,matrix/gateway/internal/routing.ProviderBaseten,matrix/gateway/internal/routing.ProviderFireworks,matrix/gateway/internal/routing.ProviderNovita,matrix/gateway/internal/routing.ProviderTogether,matrix/gateway/internal/routing.ProviderXai,matrix/gateway/internal/routing.p
+  references=matrix/gateway/internal/routing.Provider,matrix/gateway/internal/routing.ProviderBaseten,matrix/gateway/internal/routing.ProviderFireworks,matrix/gateway/internal/routing.ProviderTogether,matrix/gateway/internal/routing.ProviderXai,matrix/gateway/internal/routing.ProviderXiaomi,matrix/gateway/internal/routing.p
   ^contains=matrix/gateway/internal/routing.Provider
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
+  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ProviderBaseten kind=const
@@ -343,13 +345,6 @@ EDGES
 
 NODE id=matrix/gateway/internal/routing.ProviderFireworks kind=const
   digest=b3:906d42b70b0109e12f9dabe4706424283267d48e9366a8ecfdf9690d9fa38e42 file=gateway/internal/routing/routing.go range=38:38 lang=go exported=true byte_range=1089:1106
-  sig=routing.Provider
-EDGES
-  ^references=matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Provider.String,matrix/gateway/internal/routing.detectProvider
-  ^defines=matrix/gateway/internal/routing/routing.go
-
-NODE id=matrix/gateway/internal/routing.ProviderNovita kind=const
-  digest=b3:7d410aa10c4bfd421e23dd1c6e5902f9d47ac839c0778a45b72019d18b8657aa file=gateway/internal/routing/routing.go range=42:42 lang=go exported=true byte_range=1156:1170
   sig=routing.Provider
 EDGES
   ^references=matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Provider.String,matrix/gateway/internal/routing.detectProvider
@@ -377,18 +372,25 @@ EDGES
   ^references=matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Provider.String,matrix/gateway/internal/routing.detectProvider
   ^defines=matrix/gateway/internal/routing/routing.go
 
+NODE id=matrix/gateway/internal/routing.ProviderXiaomi kind=const
+  digest=b3:e506c87ab99a9070b7e170770dedcfb67ca0b784d6c256151103eba57661cfb8 file=gateway/internal/routing/routing.go range=42:42 lang=go exported=true byte_range=1156:1170
+  sig=routing.Provider
+EDGES
+  ^references=matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleStreaming,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Provider.String,matrix/gateway/internal/routing.detectProvider
+  ^defines=matrix/gateway/internal/routing/routing.go
+
 NODE id=matrix/gateway/internal/routing.detectProvider kind=func
-  digest=b3:732f932d9e328af0d6f4bd6011be0cc3dfd60022b2d0a2415776f324b71cf639 file=gateway/internal/routing/routing.go range=271:295 lang=go exported=false byte_range=8629:9878
+  digest=b3:bc16fb5aa7c95808a577944f2ea75b7b3718c1747fe31d5a79c8fa2b3765e7bb file=gateway/internal/routing/routing.go range=271:295 lang=go exported=false byte_range=8618:9944
   sig=func detectProvider(model string) (Provider, error)
   doc=detectProvider mirrors MCL/llm.DetectProvider. Fireworks gets the\n"accounts/fireworks/" prefix; Grok ("grok-*", e.g. "grok-4.3") routes to xAI\n— the primary chat provider — on its OpenAI-compatible /v1 surface, with the\nbare fleet id passed through unchanged (no native-id rewrite); the remaining\ngeneric "<vendor>/<model>" shape routes to Baseten. Bare non-grok model ids\n(no slash) are an error.
 EDGES
-  references=matrix/gateway/internal/routing.ErrUnknownProvider,matrix/gateway/internal/routing.Provider,matrix/gateway/internal/routing.ProviderBaseten,matrix/gateway/internal/routing.ProviderFireworks,matrix/gateway/internal/routing.ProviderNovita,matrix/gateway/internal/routing.ProviderUnknown,matrix/gateway/internal/routing.ProviderXai,matrix/gateway/internal/routing.model
+  references=matrix/gateway/internal/routing.ErrUnknownProvider,matrix/gateway/internal/routing.Provider,matrix/gateway/internal/routing.ProviderBaseten,matrix/gateway/internal/routing.ProviderFireworks,matrix/gateway/internal/routing.ProviderUnknown,matrix/gateway/internal/routing.ProviderXai,matrix/gateway/internal/routing.ProviderXiaomi,matrix/gateway/internal/routing.model
   ^calls=matrix/gateway/internal/routing.Decider.Decide
   ^references=matrix/gateway/internal/routing.Decider.Decide
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.enforceFreeTier kind=func
-  digest=b3:6329fdad5f5d759aaf3dcc0c19b71be432331f08698e14c1c2f2d2d90222f242 file=gateway/internal/routing/routing.go range=243:258 lang=go exported=false byte_range=7751:8236
+  digest=b3:6329fdad5f5d759aaf3dcc0c19b71be432331f08698e14c1c2f2d2d90222f242 file=gateway/internal/routing/routing.go range=243:258 lang=go exported=false byte_range=7740:8225
   sig=func enforceFreeTier(slot, model string) error
   doc=enforceFreeTier rejects models outside the per-slot whitelist.
 EDGES
@@ -399,7 +401,7 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.readBYO kind=func
-  digest=b3:49d86c9d6a816b827a8504fa62b76965c92f87262a6fc75d899729cdb6c3e5cc file=gateway/internal/routing/routing.go range=234:241 lang=go exported=false byte_range=7370:7749
+  digest=b3:49d86c9d6a816b827a8504fa62b76965c92f87262a6fc75d899729cdb6c3e5cc file=gateway/internal/routing/routing.go range=234:241 lang=go exported=false byte_range=7359:7738
   sig=func readBYO(r *http.Request) (byoFlag bool, userKey string)
   doc=readBYO returns (byoFlag, userKey). Both empty/absent → metered.
 EDGES
@@ -409,7 +411,7 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.validSlot kind=func
-  digest=b3:4a6338f47ab2d7a7a765ae9658cd3b6e508a3891832c3e451888926e3254a0b4 file=gateway/internal/routing/routing.go range=260:269 lang=go exported=false byte_range=8238:8627
+  digest=b3:4a6338f47ab2d7a7a765ae9658cd3b6e508a3891832c3e451888926e3254a0b4 file=gateway/internal/routing/routing.go range=260:269 lang=go exported=false byte_range=8227:8616
   sig=func validSlot(s string) bool
   doc=validSlot reports whether s is one of the known ModelSlot strings.\nEmpty is invalid — every gateway request MUST declare a slot so\nthe metering audit has provenance.
 EDGES
@@ -419,7 +421,7 @@ EDGES
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing/routing.go kind=file
-  digest=b3:50da100aa7602c678491ecd84c8ffb6f271bd669d4c68d5d3907d0bdeacccf09 file=gateway/internal/routing/routing.go range=1:297 lang=go exported=true
+  digest=b3:dc1069eac1a6a899eb3acbb677665c8d2d60118ff285e9fbb8621b0fc888d4c1 file=gateway/internal/routing/routing.go range=1:297 lang=go exported=true
 EDGES
-  defines=matrix/gateway/internal/routing.Decider,matrix/gateway/internal/routing.Decider.Decide,matrix/gateway/internal/routing.Decision,matrix/gateway/internal/routing.DefaultBasetenChat,matrix/gateway/internal/routing.DefaultBasetenEmbeddings,matrix/gateway/internal/routing.DefaultFireworksChat,matrix/gateway/internal/routing.DefaultFireworksEmbeddings,matrix/gateway/internal/routing.DefaultNovitaChat,matrix/gateway/internal/routing.DefaultTogetherChat,matrix/gateway/internal/routing.DefaultTogetherEmbeddings,matrix/gateway/internal/routing.DefaultXaiChat,matrix/gateway/internal/routing.DefaultXaiEmbeddings,matrix/gateway/internal/routing.Endpoint,matrix/gateway/internal/routing.EndpointChat,matrix/gateway/internal/routing.EndpointEmbedding,matrix/gateway/internal/routing.ErrBYOMissingKey,matrix/gateway/internal/routing.ErrFreeTierNotWhitelisted,matrix/gateway/internal/routing.ErrInvalidSlot,matrix/gateway/internal/routing.ErrUnknownProvider,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Options,matrix/gateway/internal/routing.Provider,matrix/gateway/internal/routing.Provider.String,matrix/gateway/internal/routing.ProviderBaseten,matrix/gateway/internal/routing.ProviderFireworks,matrix/gateway/internal/routing.ProviderNovita,matrix/gateway/internal/routing.ProviderTogether,matrix/gateway/internal/routing.ProviderUnknown,matrix/gateway/internal/routing.ProviderXai,matrix/gateway/internal/routing.detectProvider,matrix/gateway/internal/routing.enforceFreeTier,matrix/gateway/internal/routing.readBYO,matrix/gateway/internal/routing.validSlot
+  defines=matrix/gateway/internal/routing.Decider,matrix/gateway/internal/routing.Decider.Decide,matrix/gateway/internal/routing.Decision,matrix/gateway/internal/routing.DefaultBasetenChat,matrix/gateway/internal/routing.DefaultBasetenEmbeddings,matrix/gateway/internal/routing.DefaultFireworksChat,matrix/gateway/internal/routing.DefaultFireworksEmbeddings,matrix/gateway/internal/routing.DefaultTogetherChat,matrix/gateway/internal/routing.DefaultTogetherEmbeddings,matrix/gateway/internal/routing.DefaultXaiChat,matrix/gateway/internal/routing.DefaultXaiEmbeddings,matrix/gateway/internal/routing.DefaultXiaomiChat,matrix/gateway/internal/routing.Endpoint,matrix/gateway/internal/routing.EndpointChat,matrix/gateway/internal/routing.EndpointEmbedding,matrix/gateway/internal/routing.ErrBYOMissingKey,matrix/gateway/internal/routing.ErrFreeTierNotWhitelisted,matrix/gateway/internal/routing.ErrInvalidSlot,matrix/gateway/internal/routing.ErrUnknownProvider,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Options,matrix/gateway/internal/routing.Provider,matrix/gateway/internal/routing.Provider.String,matrix/gateway/internal/routing.ProviderBaseten,matrix/gateway/internal/routing.ProviderFireworks,matrix/gateway/internal/routing.ProviderTogether,matrix/gateway/internal/routing.ProviderUnknown,matrix/gateway/internal/routing.ProviderXai,matrix/gateway/internal/routing.ProviderXiaomi,matrix/gateway/internal/routing.detectProvider,matrix/gateway/internal/routing.enforceFreeTier,matrix/gateway/internal/routing.readBYO,matrix/gateway/internal/routing.validSlot
   ^contains=matrix/gateway/internal/routing

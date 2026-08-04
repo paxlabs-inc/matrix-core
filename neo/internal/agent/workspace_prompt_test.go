@@ -30,8 +30,7 @@ func TestSystemPromptWorkspaceSection(t *testing.T) {
 		"/data/workspace",
 		"\"LinkedIn Clone\"",
 		"/data/workspace/linkedin-clone",
-		"plain static files are only right",
-		"Local workspace tools and the durable Build worker are unavailable",
+		"Local workspace tools are unavailable",
 		"Deploying is NOT how you show work",
 	} {
 		if !strings.Contains(sp, want) {
@@ -42,6 +41,9 @@ func TestSystemPromptWorkspaceSection(t *testing.T) {
 	// interactive preview tool must not be presented as a substitute.
 	if strings.Contains(sp, "workspace_preview") {
 		t.Error("preview tool must not be mentioned when no launcher is wired")
+	}
+	if strings.Contains(sp, "Build worker") || strings.Contains(sp, "build_project") || strings.Contains(sp, "native tools") {
+		t.Error("inactive coding runtimes leaked into the workspace prompt")
 	}
 }
 

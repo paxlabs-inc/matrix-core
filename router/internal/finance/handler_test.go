@@ -17,7 +17,7 @@ import (
 // middleware supplies it upstream.
 func get(t *testing.T, h *Handler, target, user string) *httptest.ResponseRecorder {
 	t.Helper()
-	r := httptest.NewRequest(http.MethodGet, target, nil)
+	r := httptest.NewRequest(http.MethodGet, target, http.NoBody)
 	r = r.WithContext(proxy.WithSubject(r.Context(), user))
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, r)

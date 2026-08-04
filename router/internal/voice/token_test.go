@@ -38,7 +38,7 @@ func TestTokenRoundTripAndCrossUserDenial(t *testing.T) {
 	now := time.Unix(1_800_000_000, 0).UTC()
 	h := &Handler{Proxy: backend, ServerURL: "wss://voice.example", APIKey: "api-key", Secret: "secret", TTL: 5 * time.Minute, Now: func() time.Time { return now }}
 
-	req := httptest.NewRequest(http.MethodGet, "/voice/token?conversation_id=conv-owned&voice=Chloe&style=Calm+and+concise.", nil)
+	req := httptest.NewRequest(http.MethodGet, "/voice/token?conversation_id=conv-owned&voice=Chloe&style=Calm+and+concise.", http.NoBody)
 	req = req.WithContext(proxy.WithSubject(context.Background(), "user-a"))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
@@ -65,7 +65,7 @@ func TestTokenRoundTripAndCrossUserDenial(t *testing.T) {
 		t.Fatalf("claims=%#v", claims)
 	}
 
-	req = httptest.NewRequest(http.MethodGet, "/voice/token?conversation_id=conv-owned", nil)
+	req = httptest.NewRequest(http.MethodGet, "/voice/token?conversation_id=conv-owned", http.NoBody)
 	req = req.WithContext(proxy.WithSubject(context.Background(), "user-b"))
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
@@ -77,7 +77,7 @@ func TestTokenRoundTripAndCrossUserDenial(t *testing.T) {
 func TestTokenRequiresConfiguredSecretAndSafeConversationID(t *testing.T) {
 	h := &Handler{Proxy: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })}
 	for _, id := range []string{"../other", "voice:other", ""} {
-		req := httptest.NewRequest(http.MethodGet, "/voice/token?conversation_id="+id, nil)
+		req := httptest.NewRequest(http.MethodGet, "/voice/token?conversation_id="+id, http.NoBody)
 		req = req.WithContext(proxy.WithSubject(context.Background(), "user"))
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)

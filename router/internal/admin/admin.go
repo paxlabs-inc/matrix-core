@@ -494,7 +494,8 @@ func (h *Handler) ResumeRailwayOperations(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	for _, op := range ops {
+	for index := range ops {
+		op := &ops[index]
 		prov, ok := h.ShardProviders.Provider(op.ShardID)
 		if !ok {
 			h.logf("reconcile %s: assigned shard %s unavailable", op.OperationKey, op.ShardID)
@@ -527,7 +528,7 @@ func (h *Handler) ResumeRailwayOperations(ctx context.Context) error {
 				continue
 			}
 			ref := provision.Ref{UserID: op.UserID, EnvID: op.ServiceID, VolumeID: op.VolumeID}
-			if err := h.destroyRailway(ctx, &op, recoverable, ref); err != nil {
+			if err := h.destroyRailway(ctx, op, recoverable, ref); err != nil {
 				h.logf("reconcile %s: %v", op.OperationKey, err)
 				continue
 			}
@@ -683,8 +684,8 @@ func (h *Handler) handleWorkforceFleetReconcile(w http.ResponseWriter, r *http.R
 			}
 		}()
 	}
-	for _, user := range users {
-		jobs <- user
+	for index := range users {
+		jobs <- users[index]
 	}
 	close(jobs)
 	workers.Wait()

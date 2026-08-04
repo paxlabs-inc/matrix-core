@@ -122,7 +122,7 @@ func TestInternalHandlersEnforceRunOwnershipAndFinanceWorkflow(t *testing.T) {
 		t.Fatalf("start status=%d body=%s", recorder.Code, recorder.Body.String())
 	}
 
-	other := httptest.NewRequest(http.MethodGet, "/internal/finance/research/agent_run_finance", nil)
+	other := httptest.NewRequest(http.MethodGet, "/internal/finance/research/agent_run_finance", http.NoBody)
 	other.Header.Set(SubjectHeader, "user-b")
 	otherRecorder := httptest.NewRecorder()
 	handler.ServeHTTP(otherRecorder, other)
@@ -130,7 +130,7 @@ func TestInternalHandlersEnforceRunOwnershipAndFinanceWorkflow(t *testing.T) {
 		t.Fatalf("cross-user status=%d body=%s", otherRecorder.Code, otherRecorder.Body.String())
 	}
 
-	get := httptest.NewRequest(http.MethodGet, "/internal/finance/research/agent_run_finance", nil)
+	get := httptest.NewRequest(http.MethodGet, "/internal/finance/research/agent_run_finance", http.NoBody)
 	get.Header.Set(SubjectHeader, "user-a")
 	getRecorder := httptest.NewRecorder()
 	handler.ServeHTTP(getRecorder, get)

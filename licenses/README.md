@@ -40,6 +40,28 @@ used by the Matrix Protocol monorepo. Paxlabs code is covered separately by
 |---------|---------|---------|
 | `@modelcontextprotocol/sdk` | MIT | `tools/paxeer/paxeer-net.mjs` |
 
+## Neocortex Native Sources
+
+Neocortex builds without downloading packages: its exact sources and digests
+are recorded in `neocortex/third_party/LOCK.json`, and the corresponding
+license files remain beside each vendored source tree.
+
+| Component | Version | License | Vendored path |
+|-----------|---------|---------|---------------|
+| liburing | 2.15 | MIT (library); GPL-2.0 material is separately identified upstream | `neocortex/third_party/liburing` |
+| LMDB | 1.0.0 | OpenLDAP Public License 2.8 | `neocortex/third_party/lmdb` |
+| BLAKE3 | 1.8.5 | CC0-1.0 / Apache-2.0 / Apache-2.0 with LLVM exceptions | `neocortex/third_party/blake3` |
+| libsodium | 1.0.22 | ISC, with separately identified bundled material | `neocortex/third_party/libsodium` |
+| FlatBuffers | 25.12.19 | Apache-2.0 | `neocortex/third_party/flatbuffers` |
+| CRoaring | 4.7.2 | Apache-2.0 or MIT | `neocortex/third_party/croaring` |
+| Highway | 1.4.0 | Apache-2.0 or BSD-3-Clause, with separately identified CC0 material | `neocortex/third_party/highway` |
+| xxHash | 0.8.3 | BSD-2-Clause library; GPL-2.0 command-line/test material | `neocortex/third_party/hash/xxhash` |
+| crc32c | 1.1.2 | BSD-3-Clause | `neocortex/third_party/hash/crc32c` |
+| LLVM compiler-rt | 18.1.3 | Apache-2.0 with LLVM exceptions and component notices | `neocortex/toolchain/compiler-rt` |
+
+The pinned cross-build sysroots under `neocortex/toolchain/sysroots/` retain
+their package-level notices and applicable GNU runtime/library terms in-tree.
+
 ---
 
 ## License Texts
@@ -50,3 +72,8 @@ Full license texts are in this directory:
 - [`MIT.txt`](./MIT.txt)
 - [`BSD-3-Clause.txt`](./BSD-3-Clause.txt)
 - [`BSD-2-Clause.txt`](./BSD-2-Clause.txt)
+- [`Apache-2.0 with LLVM exceptions`](./Apache-2.0-LLVM.txt)
+- [`CC0-1.0`](./CC0-1.0.txt)
+- [`GPL-2.0`](./GPL-2.txt)
+- [`LGPL-2.1`](./LGPL-2.1.txt)
+- [`OpenLDAP Public License`](./OpenLDAP-Public-License.txt)

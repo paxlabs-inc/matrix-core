@@ -1,0 +1,668 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=codegraph-ultra/internal/mcp kind=package
+  digest=b3:b782127ad8e98aa374c31b97ae7ac67188f11b259c88e7a1b689f6b34c7e1ebf file=codegraph-ultra/internal/mcp range=0:0 lang=go exported=true
+EDGES
+  contains=codegraph-ultra/internal/mcp/guard.go,codegraph-ultra/internal/mcp/server.go
+  ^contains=mod:codegraph-ultra
+
+NODE id=codegraph-ultra/internal/mcp.New kind=func
+  digest=b3:ee0a5aad7f7b67d42b4bb875b0ac810e4884637136d6b487d67676add4adcb69 file=codegraph-ultra/internal/mcp/server.go range=40:47 lang=go exported=true byte_range=1003:1204
+  sig=func New(db *store.DB, r io.Reader, w io.Writer) *Server
+  doc=New creates an MCP server that reads from r and writes to w.
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.RunStdio kind=func
+  digest=b3:f6ab3a2d70caa417d8544737f1e6941507e1a3f8cefe9e2570395dff988153df file=codegraph-ultra/internal/mcp/server.go range=49:53 lang=go exported=true byte_range=1206:1359
+  sig=func RunStdio(db *store.DB) error
+  doc=RunStdio is a convenience constructor that uses stdin/stdout.
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server kind=type
+  digest=b3:697b84bac8984fe1188dda0ba0ecb8750b3a9dcc07bb14b471dcc2f51b4b815f file=codegraph-ultra/internal/mcp/server.go range=33:38 lang=go exported=true byte_range=865:1001
+  sig=type Server struct {\n	db	*store.DB\n	reader	*bufio.Reader\n	writer	io.Writer\n}
+  doc=Server is an MCP server backed by a CodeGraph store.
+EDGES
+  contains=codegraph-ultra/internal/mcp.Server#db,codegraph-ultra/internal/mcp.Server#reader,codegraph-ultra/internal/mcp.Server#writer,codegraph-ultra/internal/mcp.Server.Run,codegraph-ultra/internal/mcp.Server.dispatch,codegraph-ultra/internal/mcp.Server.findPath,codegraph-ultra/internal/mcp.Server.handleInitialize,codegraph-ultra/internal/mcp.Server.handleToolsCall,codegraph-ultra/internal/mcp.Server.handleToolsList,codegraph-ultra/internal/mcp.Server.toolCallChain,codegraph-ultra/internal/mcp.Server.toolFileSymbols,codegraph-ultra/internal/mcp.Server.toolGraphDiff,codegraph-ultra/internal/mcp.Server.toolImpact,codegraph-ultra/internal/mcp.Server.toolNeighbors,codegraph-ultra/internal/mcp.Server.toolSearch,codegraph-ultra/internal/mcp.Server.toolStats,codegraph-ultra/internal/mcp.Server.toolSubgraph,codegraph-ultra/internal/mcp.Server.toolSymbolLookup,codegraph-ultra/internal/mcp.Server.toolTypeHierarchy,codegraph-ultra/internal/mcp.Server.writeError,codegraph-ultra/internal/mcp.Server.writeJSON,codegraph-ultra/internal/mcp.Server.writeResult
+  implements=codegraph-ultra/internal/cli.runner
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server#db kind=field
+  digest=b3:79c302cfef8255ca0e0ba189220c6dd0044c48b4723df9a84edef3436ea4fe92 file=codegraph-ultra/internal/mcp/server.go range=35:35 lang=go exported=false byte_range=943:959
+  sig=*store.DB
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+
+NODE id=codegraph-ultra/internal/mcp.Server#reader kind=field
+  digest=b3:737ede1e14b4b638498b995a74b93653eaa833ee5ebf1d70090d523e34368441 file=codegraph-ultra/internal/mcp/server.go range=36:36 lang=go exported=false byte_range=961:981
+  sig=*bufio.Reader
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+
+NODE id=codegraph-ultra/internal/mcp.Server#writer kind=field
+  digest=b3:96eeb4ccba6e489b2cd652837e0176d0f65da9162fc8df5b93f56b90a328376b file=codegraph-ultra/internal/mcp/server.go range=37:37 lang=go exported=false byte_range=983:999
+  sig=io.Writer
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+
+NODE id=codegraph-ultra/internal/mcp.Server.Run kind=method
+  digest=b3:78f760fdda4b9c8285268f40fa5d07b8cf9d7d0f4105966349635e4ef7ff776c file=codegraph-ultra/internal/mcp/server.go range=165:188 lang=go exported=true byte_range=4322:4825
+  sig=func (s *Server) Run() error
+  doc=Run reads JSON-RPC messages from the input and writes responses until EOF.
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.dispatch kind=method
+  digest=b3:4b513d9030d568f5d38f1fba38b55e532f7c805aa6d7422c1ba7023812370d98 file=codegraph-ultra/internal/mcp/server.go range=200:215 lang=go exported=false byte_range=5110:5519
+  sig=func (s *Server) dispatch(req *jsonrpcRequest)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.findPath kind=method
+  digest=b3:512f7c589bf3324b91f4caacd025296067320989e16691d9baf0b369b32ceef4 file=codegraph-ultra/internal/mcp/server.go range=544:583 lang=go exported=false byte_range=17219:18018
+  sig=func (s *Server) findPath(from, to string, edgeType model.EdgeType) []string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.handleInitialize kind=method
+  digest=b3:648c6ae619bc44cae6e0e1db0ffcd58963e533c4f6fdc9c62ed932758a9d46ea file=codegraph-ultra/internal/mcp/server.go range=219:225 lang=go exported=false byte_range=5710:5987
+  sig=func (s *Server) handleInitialize(req *jsonrpcRequest)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.handleToolsCall kind=method
+  digest=b3:57c0f13093ebf5d466c3fe85eda01707568f15ed0c3ceac862df75813b25fdf1 file=codegraph-ultra/internal/mcp/server.go range=283:327 lang=go exported=false byte_range=9955:11197
+  sig=func (s *Server) handleToolsCall(req *jsonrpcRequest)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.handleToolsList kind=method
+  digest=b3:4970b9be33970b447c09eae4d20e51b2ac8a0e06fb5953edbda8a25d69356a0f file=codegraph-ultra/internal/mcp/server.go range=227:281 lang=go exported=false byte_range=5989:9953
+  sig=func (s *Server) handleToolsList(req *jsonrpcRequest)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.toolCallChain kind=method
+  digest=b3:ab35c8f639345ef5a256927f904c9e02d74ad1eec8e1ccf374e6517b661e07c4 file=codegraph-ultra/internal/mcp/server.go range=495:542 lang=go exported=false byte_range=15825:17217
+  sig=func (s *Server) toolCallChain(raw json.RawMessage) (toolCallResult, error)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.toolFileSymbols kind=method
+  digest=b3:21e7f218e862ce3ac2d56a481bb9bf12bbf7d1ecca0c86c144807ed09ec33f66 file=codegraph-ultra/internal/mcp/server.go range=674:723 lang=go exported=false byte_range=20326:21693
+  sig=func (s *Server) toolFileSymbols(raw json.RawMessage) (toolCallResult, error)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.toolGraphDiff kind=method
+  digest=b3:c944e5cbc7d2e0dc81abbdc0281c67f10f6ea654a0745997e13ccc9073b7a4a2 file=codegraph-ultra/internal/mcp/server.go range=725:798 lang=go exported=false byte_range=21695:23618
+  sig=func (s *Server) toolGraphDiff(raw json.RawMessage) (toolCallResult, error)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.toolImpact kind=method
+  digest=b3:0af0b7481118a6a1905084670467080b980aa753d79f7944b0e9debf46623047 file=codegraph-ultra/internal/mcp/server.go range=373:392 lang=go exported=false byte_range=12532:13135
+  sig=func (s *Server) toolImpact(raw json.RawMessage) (toolCallResult, error)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.toolNeighbors kind=method
+  digest=b3:4f19ad18219a09fc933b8b9fc6559792a18d211520901c83781746f4d70034b0 file=codegraph-ultra/internal/mcp/server.go range=349:371 lang=go exported=false byte_range=11883:12530
+  sig=func (s *Server) toolNeighbors(raw json.RawMessage) (toolCallResult, error)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.toolSearch kind=method
+  digest=b3:d080d325820f47a0f7167c67071d3e597fb57efccbd40743c91e8366be3270dd file=codegraph-ultra/internal/mcp/server.go range=394:413 lang=go exported=false byte_range=13137:13686
+  sig=func (s *Server) toolSearch(raw json.RawMessage) (toolCallResult, error)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.toolStats kind=method
+  digest=b3:b2f991a824ff37d55e9f07fb811739df4332384e88f3869c45618519b518a85f file=codegraph-ultra/internal/mcp/server.go range=415:440 lang=go exported=false byte_range=13688:14442
+  sig=func (s *Server) toolStats() (toolCallResult, error)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.toolSubgraph kind=method
+  digest=b3:8b029c15957ec20bc945ea1700e16b6c6686dc357457ff6cc5a50516c242adef file=codegraph-ultra/internal/mcp/server.go range=442:491 lang=go exported=false byte_range=14444:15654
+  sig=func (s *Server) toolSubgraph(raw json.RawMessage) (toolCallResult, error)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.toolSymbolLookup kind=method
+  digest=b3:833aeaca7ac7c66f82d42c55998c3f7b9aef438b347b854e8d3d25fe45f382df file=codegraph-ultra/internal/mcp/server.go range=331:347 lang=go exported=false byte_range=11364:11881
+  sig=func (s *Server) toolSymbolLookup(raw json.RawMessage) (toolCallResult, error)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.toolTypeHierarchy kind=method
+  digest=b3:4ffc9afc41d6e06a765f09331afc1612df7fadf683c0c3196036e2744a123175 file=codegraph-ultra/internal/mcp/server.go range=585:672 lang=go exported=false byte_range=18020:20324
+  sig=func (s *Server) toolTypeHierarchy(raw json.RawMessage) (toolCallResult, error)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.writeError kind=method
+  digest=b3:f96b79a4a69ce7197509893173a0ae3d4bf84c2cccff77b95bb92f88fb44b7f7 file=codegraph-ultra/internal/mcp/server.go range=858:861 lang=go exported=false byte_range=25406:25595
+  sig=func (s *Server) writeError(id json.RawMessage, code int, msg string)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.writeJSON kind=method
+  digest=b3:86e38f689eafec9dd9223f3e3f8577643fa9ab34758817d95b49c0d09371e9a2 file=codegraph-ultra/internal/mcp/server.go range=863:870 lang=go exported=false byte_range=25597:25742
+  sig=func (s *Server) writeJSON(v any)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.Server.writeResult kind=method
+  digest=b3:8561e10943f5a4dae659c4fb47d8b5c540ab327710c6748e7de7339b15fc0d26 file=codegraph-ultra/internal/mcp/server.go range=853:856 lang=go exported=false byte_range=25256:25404
+  sig=func (s *Server) writeResult(id json.RawMessage, result any)
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.Server
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.allKinds kind=var
+  digest=b3:241a32f8524bc5ebf13c28ebe96ebdaf90fd79a21705caf45c6a23a685d05cd0 file=codegraph-ultra/internal/mcp/server.go range=25:31 lang=go exported=false byte_range=506:863
+  sig=[]model.Kind
+  doc=allKinds is a deterministic iteration order for stats display.
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.callChainArgs kind=type
+  digest=b3:83d8d29a8edc020086f83bdd7372ddb052db9723493a1bf37dc4dedaf4a99d23 file=codegraph-ultra/internal/mcp/server.go range=145:148 lang=go exported=false byte_range=3859:3940
+  sig=type callChainArgs struct {\n	From	string	`json:"from"`\n	To	string	`json:"to"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.callChainArgs#From,codegraph-ultra/internal/mcp.callChainArgs#To
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.callChainArgs#From kind=field
+  digest=b3:51eb06bd1cf821d41e30bcf9463cc877b7d6e965129ced577e6e82f9689ee089 file=codegraph-ultra/internal/mcp/server.go range=146:146 lang=go exported=true byte_range=3888:3913
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.callChainArgs
+
+NODE id=codegraph-ultra/internal/mcp.callChainArgs#To kind=field
+  digest=b3:016f94ce71ea28e56f77aea4a26770410fcb0ae92039c5e525f2b80b72c9f45c file=codegraph-ultra/internal/mcp/server.go range=147:147 lang=go exported=true byte_range=3915:3938
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.callChainArgs
+
+NODE id=codegraph-ultra/internal/mcp.fileSymbolsArgs kind=type
+  digest=b3:d6cacea4522fd70798932f6b683c21237769cf9e8462e5ca6640ca913ef9ccda file=codegraph-ultra/internal/mcp/server.go range=154:156 lang=go exported=false byte_range=4000:4058
+  sig=type fileSymbolsArgs struct {\n	File string `json:"file"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.fileSymbolsArgs#File
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.fileSymbolsArgs#File kind=field
+  digest=b3:5f8e0a87e6354beb262d54176a93247de77294ff950501a3cb0979139c91ec95 file=codegraph-ultra/internal/mcp/server.go range=155:155 lang=go exported=true byte_range=4031:4056
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.fileSymbolsArgs
+
+NODE id=codegraph-ultra/internal/mcp.firstLine kind=func
+  digest=b3:a9d484250888c7f8a764b96efb75cd8df3247c532882fe0ce2457c99e9f850ef file=codegraph-ultra/internal/mcp/server.go range=844:849 lang=go exported=false byte_range=24972:25081
+  sig=func firstLine(s string) string
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.formatNode kind=func
+  digest=b3:8735cc7258190e404522961c50a3b634917dabb1c3afb24f09943064e1fa79b9 file=codegraph-ultra/internal/mcp/server.go range=802:823 lang=go exported=false byte_range=23779:24537
+  sig=func formatNode(n *model.Node) string
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.graphDiffArgs kind=type
+  digest=b3:2f9cb494541807d55cd6474b185df29133b7e238e4e372d5ff5f30adeef7cfba file=codegraph-ultra/internal/mcp/server.go range=158:161 lang=go exported=false byte_range=4060:4131
+  sig=type graphDiffArgs struct {\n	A	string	`json:"a"`\n	B	string	`json:"b"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.graphDiffArgs#A,codegraph-ultra/internal/mcp.graphDiffArgs#B
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.graphDiffArgs#A kind=field
+  digest=b3:4cfc3df9afa1e2ab3604f1d827eaec3901f96a48e6e442d9c0482ff1050557b3 file=codegraph-ultra/internal/mcp/server.go range=159:159 lang=go exported=true byte_range=4089:4108
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.graphDiffArgs
+
+NODE id=codegraph-ultra/internal/mcp.graphDiffArgs#B kind=field
+  digest=b3:57063e477a0249abe7fe28c6430b81da1bc9d00058012f2472f039b43466ac54 file=codegraph-ultra/internal/mcp/server.go range=160:160 lang=go exported=true byte_range=4110:4129
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.graphDiffArgs
+
+NODE id=codegraph-ultra/internal/mcp.guardFragment kind=func
+  digest=b3:7ea19cec78d509314e1af1e0ca97130256d8390d062c9e753d5c0a3ffbcf06d2 file=codegraph-ultra/internal/mcp/guard.go range=11:79 lang=go exported=false byte_range=239:2296
+  sig=func guardFragment(fragment string) (string, error)
+  doc=guardFragment validates that a tool output fragment contains only structural\nmetadata (NODE/EDGE lines with key=value pairs) and no raw source code.\nReturns the fragment unchanged if valid, or an error if source leak detected.
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/guard.go
+
+NODE id=codegraph-ultra/internal/mcp.guardFragmentSafe kind=func
+  digest=b3:5222cf5161c36a034c05b22003a80305fd1651f9cf94406c1fc2c84c0f79632e file=codegraph-ultra/internal/mcp/guard.go range=81:88 lang=go exported=false byte_range=2298:2590
+  sig=func guardFragmentSafe(fragment string) string
+  doc=guardFragmentSafe wraps guardFragment, returning an error message fragment instead of an error.
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/guard.go
+
+NODE id=codegraph-ultra/internal/mcp.impactArgs kind=type
+  digest=b3:94029654a91049a26cb7d27cd0aec2c7d211c0706f4fdf2b754442f0cc628451 file=codegraph-ultra/internal/mcp/server.go range=130:133 lang=go exported=false byte_range=3547:3648
+  sig=type impactArgs struct {\n	ID		string	`json:"id"`\n	MaxDepth	int	`json:"max_depth,omitempty"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.impactArgs#ID,codegraph-ultra/internal/mcp.impactArgs#MaxDepth
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.impactArgs#ID kind=field
+  digest=b3:08097a0cfb41ec14fac3cc851309e5db544bb2ba48eb8fa0c63d64efa46d12be file=codegraph-ultra/internal/mcp/server.go range=131:131 lang=go exported=true byte_range=3573:3600
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.impactArgs
+
+NODE id=codegraph-ultra/internal/mcp.impactArgs#MaxDepth kind=field
+  digest=b3:c779588fcc4807500285ccf4aa6474580e9bd084b0614832b5140a5406373c35 file=codegraph-ultra/internal/mcp/server.go range=132:132 lang=go exported=true byte_range=3602:3646
+  sig=int
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.impactArgs
+
+NODE id=codegraph-ultra/internal/mcp.initializeResult kind=type
+  digest=b3:1bb0f352e76563dc82858733ba9b940e64904924478d471d6cc71520f7df8fd9 file=codegraph-ultra/internal/mcp/server.go range=78:82 lang=go exported=false byte_range=2218:2425
+  sig=type initializeResult struct {\n	ProtocolVersion	string			`json:"protocolVersion"`\n	Capabilities	serverCapabilities	`json:"capabilities"`\n	ServerInfo	serverInfo		`json:"serverInfo"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.initializeResult#Capabilities,codegraph-ultra/internal/mcp.initializeResult#ProtocolVersion,codegraph-ultra/internal/mcp.initializeResult#ServerInfo
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.initializeResult#Capabilities kind=field
+  digest=b3:542d84fb30b5f3d9ce9a1fcb6f3309b047aa76afdba1a4388a33c9b88ff98b76 file=codegraph-ultra/internal/mcp/server.go range=80:80 lang=go exported=true byte_range=2311:2367
+  sig=mcp.serverCapabilities
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.initializeResult
+
+NODE id=codegraph-ultra/internal/mcp.initializeResult#ProtocolVersion kind=field
+  digest=b3:65982230dc2c573f5440a80d0bcde1ce6f6d70a2702dfe2765968eed98c87ef1 file=codegraph-ultra/internal/mcp/server.go range=79:79 lang=go exported=true byte_range=2250:2309
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.initializeResult
+
+NODE id=codegraph-ultra/internal/mcp.initializeResult#ServerInfo kind=field
+  digest=b3:cd7cc5b9b919a0a7105883f3d551adaf05fef4756eac230d82960c2da0fd2d5b file=codegraph-ultra/internal/mcp/server.go range=81:81 lang=go exported=true byte_range=2369:2423
+  sig=mcp.serverInfo
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.initializeResult
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcError kind=type
+  digest=b3:ee3941244955b9cbef38ee09a7695e903d2211fbc536a8e828bf11cf5fe566bf file=codegraph-ultra/internal/mcp/server.go range=71:74 lang=go exported=false byte_range=1956:2047
+  sig=type jsonrpcError struct {\n	Code	int	`json:"code"`\n	Message	string	`json:"message"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.jsonrpcError#Code,codegraph-ultra/internal/mcp.jsonrpcError#Message
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcError#Code kind=field
+  digest=b3:dde9d5cab8f9649709a8d979ffc01d5de00e36427983df7beb8f943272d01635 file=codegraph-ultra/internal/mcp/server.go range=72:72 lang=go exported=true byte_range=1984:2012
+  sig=int
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.jsonrpcError
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcError#Message kind=field
+  digest=b3:d7a0704d4d1cdf051b9f61d5a005f6a0c1ada9b90dd901fab6b0e03fad711a42 file=codegraph-ultra/internal/mcp/server.go range=73:73 lang=go exported=true byte_range=2014:2045
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.jsonrpcError
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcRequest kind=type
+  digest=b3:7d8ac72b16de177657cdcb6e0215147aa6d5ee24628e32dceb4d122fe480ac46 file=codegraph-ultra/internal/mcp/server.go range=57:62 lang=go exported=false byte_range=1530:1741
+  sig=type jsonrpcRequest struct {\n	JSONRPC	string		`json:"jsonrpc"`\n	ID	json.RawMessage	`json:"id,omitempty"`\n	Method	string		`json:"method"`\n	Params	json.RawMessage	`json:"params,omitempty"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.jsonrpcRequest#ID,codegraph-ultra/internal/mcp.jsonrpcRequest#JSONRPC,codegraph-ultra/internal/mcp.jsonrpcRequest#Method,codegraph-ultra/internal/mcp.jsonrpcRequest#Params
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcRequest#ID kind=field
+  digest=b3:f4623268392bce33f5bc42fd1930ad31693bc1f53df93b86de60c569e274b28e file=codegraph-ultra/internal/mcp/server.go range=59:59 lang=go exported=true byte_range=1602:1647
+  sig=json.RawMessage
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.jsonrpcRequest
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcRequest#JSONRPC kind=field
+  digest=b3:e922b6deddabec44b26208ae989c23f029415d4258b8fa54aeb4a41c3dd567f3 file=codegraph-ultra/internal/mcp/server.go range=58:58 lang=go exported=true byte_range=1560:1600
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.jsonrpcRequest
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcRequest#Method kind=field
+  digest=b3:1645cedaaf7f1d03700c8acfad2ffa5b60299f417245b9bc3aaa87f673aaa6c0 file=codegraph-ultra/internal/mcp/server.go range=60:60 lang=go exported=true byte_range=1649:1688
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.jsonrpcRequest
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcRequest#Params kind=field
+  digest=b3:5f2f2f30caac193d23dbca1d876fd43d5aee08e3429721cabe41f9f6ed5ad461 file=codegraph-ultra/internal/mcp/server.go range=61:61 lang=go exported=true byte_range=1690:1739
+  sig=json.RawMessage
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.jsonrpcRequest
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcResponse kind=type
+  digest=b3:89c799e765cfe6463724b24bb7b683256507d50e7d6becad55e7a7650fe4f9bf file=codegraph-ultra/internal/mcp/server.go range=64:69 lang=go exported=false byte_range=1743:1954
+  sig=type jsonrpcResponse struct {\n	JSONRPC	string		`json:"jsonrpc"`\n	ID	json.RawMessage	`json:"id"`\n	Result	any		`json:"result,omitempty"`\n	Error	*jsonrpcError	`json:"error,omitempty"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.jsonrpcResponse#Error,codegraph-ultra/internal/mcp.jsonrpcResponse#ID,codegraph-ultra/internal/mcp.jsonrpcResponse#JSONRPC,codegraph-ultra/internal/mcp.jsonrpcResponse#Result
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcResponse#Error kind=field
+  digest=b3:d873a39fbc2cfccd57b6443e4e88e525e41d5e5d744d7c84385a8a614f4de8f3 file=codegraph-ultra/internal/mcp/server.go range=68:68 lang=go exported=true byte_range=1904:1952
+  sig=*mcp.jsonrpcError
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.jsonrpcResponse
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcResponse#ID kind=field
+  digest=b3:7513b6d4f428f10100e5553e4e456ea33cd3706148078274cb2d11cefaa9d5dc file=codegraph-ultra/internal/mcp/server.go range=66:66 lang=go exported=true byte_range=1816:1851
+  sig=json.RawMessage
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.jsonrpcResponse
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcResponse#JSONRPC kind=field
+  digest=b3:e922b6deddabec44b26208ae989c23f029415d4258b8fa54aeb4a41c3dd567f3 file=codegraph-ultra/internal/mcp/server.go range=65:65 lang=go exported=true byte_range=1774:1814
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.jsonrpcResponse
+
+NODE id=codegraph-ultra/internal/mcp.jsonrpcResponse#Result kind=field
+  digest=b3:ec3c4be1112dd22e74feba8ce1e6d591fecd3d518dfb1204c0ced04e92033f89 file=codegraph-ultra/internal/mcp/server.go range=67:67 lang=go exported=true byte_range=1853:1902
+  sig=any
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.jsonrpcResponse
+
+NODE id=codegraph-ultra/internal/mcp.neighborsArgs kind=type
+  digest=b3:04a54ab78cf0020d4551b3b09cfa80c50d79fd7429a22802fc27ad22c7c90044 file=codegraph-ultra/internal/mcp/server.go range=124:128 lang=go exported=false byte_range=3413:3545
+  sig=type neighborsArgs struct {\n	ID	string	`json:"id"`\n	Type	string	`json:"type,omitempty"`\n	Depth	int	`json:"depth,omitempty"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.neighborsArgs#Depth,codegraph-ultra/internal/mcp.neighborsArgs#ID,codegraph-ultra/internal/mcp.neighborsArgs#Type
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.neighborsArgs#Depth kind=field
+  digest=b3:29372830b8625e47de442b8cd40f3890ce2198d3ecf05947d9f8875c4305c53d file=codegraph-ultra/internal/mcp/server.go range=127:127 lang=go exported=true byte_range=3506:3543
+  sig=int
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.neighborsArgs
+
+NODE id=codegraph-ultra/internal/mcp.neighborsArgs#ID kind=field
+  digest=b3:21837bfa23165b15d59200bdca299e691b71e13fca8f5765d291781e29d2d3e7 file=codegraph-ultra/internal/mcp/server.go range=125:125 lang=go exported=true byte_range=3442:3466
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.neighborsArgs
+
+NODE id=codegraph-ultra/internal/mcp.neighborsArgs#Type kind=field
+  digest=b3:86a0ed48f002b1ccf515b847a37bd5e373651c3a3040dc5cb1c72d84a6dbea4a file=codegraph-ultra/internal/mcp/server.go range=126:126 lang=go exported=true byte_range=3468:3504
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.neighborsArgs
+
+NODE id=codegraph-ultra/internal/mcp.nodesResult kind=func
+  digest=b3:61c2725cb9d1531406df7e275189409204c996caadc078540980f156c811a12d file=codegraph-ultra/internal/mcp/server.go range=831:842 lang=go exported=false byte_range=24686:24970
+  sig=func nodesResult(nodes []*model.Node) toolCallResult
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.protocolVersion kind=const
+  digest=b3:ecf1e8f556bfa98011325658e2b0d8bd1c1312aff8a4623234d7fc756ff4e538 file=codegraph-ultra/internal/mcp/server.go range=20:20 lang=go exported=false byte_range=408:438
+  sig=untyped string
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.sanitizeKVXValue kind=func
+  digest=b3:222f50b15f2be9759fe416bacdad86cd945f606d57d3dc159ce66ce5eeaf2ca0 file=codegraph-ultra/internal/mcp/guard.go range=90:100 lang=go exported=false byte_range=2592:2939
+  sig=func sanitizeKVXValue(s string) string
+  doc=sanitizeKVXValue escapes a value for safe inclusion in a .kvx line.\nPrevents newlines that could break the fragment grammar.
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/guard.go
+
+NODE id=codegraph-ultra/internal/mcp.searchArgs kind=type
+  digest=b3:ef1361d6debb8cdc2086ad121fe820aed314e894e6e4f79e5d2555d1610b53aa file=codegraph-ultra/internal/mcp/server.go range=135:138 lang=go exported=false byte_range=3650:3744
+  sig=type searchArgs struct {\n	Query	string	`json:"query"`\n	Limit	int	`json:"limit,omitempty"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.searchArgs#Limit,codegraph-ultra/internal/mcp.searchArgs#Query
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.searchArgs#Limit kind=field
+  digest=b3:f3c8291754ae229eff48e89c05085a6a35cc937eb40bb975a616c0315f8edd9d file=codegraph-ultra/internal/mcp/server.go range=137:137 lang=go exported=true byte_range=3705:3742
+  sig=int
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.searchArgs
+
+NODE id=codegraph-ultra/internal/mcp.searchArgs#Query kind=field
+  digest=b3:4872b175477ddc87c67f0d7f5b4938ec13cb33be58661bc324c984b95da09222 file=codegraph-ultra/internal/mcp/server.go range=136:136 lang=go exported=true byte_range=3676:3703
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.searchArgs
+
+NODE id=codegraph-ultra/internal/mcp.serverCapabilities kind=type
+  digest=b3:d1d3ddb81ef9a232248cbec309aac36b6bfa9a18099ec25ada4e044cb80c9ffd file=codegraph-ultra/internal/mcp/server.go range=84:86 lang=go exported=false byte_range=2427:2499
+  sig=type serverCapabilities struct {\n	Tools toolsCapability `json:"tools"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.serverCapabilities#Tools
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.serverCapabilities#Tools kind=field
+  digest=b3:af5716af90deb97bebdb6ce7639897c0f34ed913fedc024ad3b414dd8ca469ec file=codegraph-ultra/internal/mcp/server.go range=85:85 lang=go exported=true byte_range=2461:2497
+  sig=mcp.toolsCapability
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.serverCapabilities
+
+NODE id=codegraph-ultra/internal/mcp.serverInfo kind=type
+  digest=b3:84925839ed4ba4481d82d9e6d91ec35d88d9b2e2e38b9da937303ca9f36e7802 file=codegraph-ultra/internal/mcp/server.go range=92:95 lang=go exported=false byte_range=2583:2672
+  sig=type serverInfo struct {\n	Name	string	`json:"name"`\n	Version	string	`json:"version"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.serverInfo#Name,codegraph-ultra/internal/mcp.serverInfo#Version
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.serverInfo#Name kind=field
+  digest=b3:794a1ede203fe985a48518448e5f8659b78a74b26db55472037cd4f60e2527d8 file=codegraph-ultra/internal/mcp/server.go range=93:93 lang=go exported=true byte_range=2609:2637
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.serverInfo
+
+NODE id=codegraph-ultra/internal/mcp.serverInfo#Version kind=field
+  digest=b3:b2750f0e9c8cf542ea516e77edc45a7f8042513b06ac839302251c1738181a0d file=codegraph-ultra/internal/mcp/server.go range=94:94 lang=go exported=true byte_range=2639:2670
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.serverInfo
+
+NODE id=codegraph-ultra/internal/mcp.serverName kind=const
+  digest=b3:81b5f425fce2d930b66f9597062ac70e0e115437863fa15ace85f1ce1df1e45e file=codegraph-ultra/internal/mcp/server.go range=21:21 lang=go exported=false byte_range=440:475
+  sig=untyped string
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.serverVersion kind=const
+  digest=b3:b0bd3cfc8139f0d3c2683de4d240d8e01581b437ff02ae06f8e0295277a64be2 file=codegraph-ultra/internal/mcp/server.go range=22:22 lang=go exported=false byte_range=477:502
+  sig=untyped string
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.singleNodeResult kind=func
+  digest=b3:03aafd588410797ad6a128d3d57ba4bf67b1c73091ebc4f56e365b49b7502dc5 file=codegraph-ultra/internal/mcp/server.go range=825:829 lang=go exported=false byte_range=24539:24684
+  sig=func singleNodeResult(n *model.Node) toolCallResult
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.subgraphArgs kind=type
+  digest=b3:4fe135e4e94d0b3a5b7badf29abb739d819b8d09ad72c5aec73d4071b588f196 file=codegraph-ultra/internal/mcp/server.go range=140:143 lang=go exported=false byte_range=3746:3857
+  sig=type subgraphArgs struct {\n	IDs		[]string	`json:"ids"`\n	EdgeTypes	[]string	`json:"edge_types,omitempty"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.subgraphArgs#EdgeTypes,codegraph-ultra/internal/mcp.subgraphArgs#IDs
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.subgraphArgs#EdgeTypes kind=field
+  digest=b3:ecb8c235ea6b576a6fa0a01247a844296c48ac99dd967250fbeae8ce34b1c1d4 file=codegraph-ultra/internal/mcp/server.go range=142:142 lang=go exported=true byte_range=3807:3855
+  sig=[]string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.subgraphArgs
+
+NODE id=codegraph-ultra/internal/mcp.subgraphArgs#IDs kind=field
+  digest=b3:e8ef5879f2d256771ba0f505f1c00ed123c389cc07f744cb493320a876f4dde0 file=codegraph-ultra/internal/mcp/server.go range=141:141 lang=go exported=true byte_range=3774:3805
+  sig=[]string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.subgraphArgs
+
+NODE id=codegraph-ultra/internal/mcp.symbolLookupArgs kind=type
+  digest=b3:348a7f8221757b19180e8e7de8649b3edc831c013923d196d2f41a794cddb5fb file=codegraph-ultra/internal/mcp/server.go range=120:122 lang=go exported=false byte_range=3356:3411
+  sig=type symbolLookupArgs struct {\n	ID string `json:"id"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.symbolLookupArgs#ID
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.symbolLookupArgs#ID kind=field
+  digest=b3:310a945b6bf8dcbac033f5ddd9817a6ff2ccae4adf5874d95de1d6fd46859454 file=codegraph-ultra/internal/mcp/server.go range=121:121 lang=go exported=true byte_range=3388:3409
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.symbolLookupArgs
+
+NODE id=codegraph-ultra/internal/mcp.textContent kind=type
+  digest=b3:3a60475905a9e88b3fdd60c85edc96781857993232047a282d1b0aa262914333 file=codegraph-ultra/internal/mcp/server.go range=108:111 lang=go exported=false byte_range=2971:3069
+  sig=type textContent struct {\n	Type	string	`json:"type"`	// always "text"\n	Text	string	`json:"text"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.textContent#Text,codegraph-ultra/internal/mcp.textContent#Type
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.textContent#Text kind=field
+  digest=b3:8569e5ba0dee79081322c8d6ad5c9d26490bcb47e81b5a3918617ae20c5ff77c file=codegraph-ultra/internal/mcp/server.go range=110:110 lang=go exported=true byte_range=3042:3067
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.textContent
+
+NODE id=codegraph-ultra/internal/mcp.textContent#Type kind=field
+  digest=b3:b534c428e65aa3fcac1331240852454e3f85c1d3244dee98a5b4d92aed30a5b0 file=codegraph-ultra/internal/mcp/server.go range=109:109 lang=go exported=true byte_range=2998:3023
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.textContent
+
+NODE id=codegraph-ultra/internal/mcp.toolCallParams kind=type
+  digest=b3:a02fd42e22f2deb7b23dae0034f3dd34339f6040edcb1ea3c282d34957df7cc6 file=codegraph-ultra/internal/mcp/server.go range=103:106 lang=go exported=false byte_range=2842:2969
+  sig=type toolCallParams struct {\n	Name		string		`json:"name"`\n	Arguments	json.RawMessage	`json:"arguments,omitempty"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.toolCallParams#Arguments,codegraph-ultra/internal/mcp.toolCallParams#Name
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.toolCallParams#Arguments kind=field
+  digest=b3:e0ec4e2d6464bb0b2d0877941509adf9d318a48e0da79f13ec9f7cde1f755e06 file=codegraph-ultra/internal/mcp/server.go range=105:105 lang=go exported=true byte_range=2913:2967
+  sig=json.RawMessage
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.toolCallParams
+
+NODE id=codegraph-ultra/internal/mcp.toolCallParams#Name kind=field
+  digest=b3:d9af1bb8ee8a39278449abfc91141476473559e505e91a5e1547ee6dcfc3eaa3 file=codegraph-ultra/internal/mcp/server.go range=104:104 lang=go exported=true byte_range=2872:2911
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.toolCallParams
+
+NODE id=codegraph-ultra/internal/mcp.toolCallResult kind=type
+  digest=b3:eb9b8779171786e8d4f8448780ca1a60d344149fe1a3db23b7ca33bea3102613 file=codegraph-ultra/internal/mcp/server.go range=113:116 lang=go exported=false byte_range=3071:3191
+  sig=type toolCallResult struct {\n	Content	[]textContent	`json:"content"`\n	IsError	bool		`json:"isError,omitempty"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.toolCallResult#Content,codegraph-ultra/internal/mcp.toolCallResult#IsError
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.toolCallResult#Content kind=field
+  digest=b3:87b45a6049b017adedb2ea77e37b8a60791394e218aacc1691b9940c8006f2eb file=codegraph-ultra/internal/mcp/server.go range=114:114 lang=go exported=true byte_range=3101:3139
+  sig=[]mcp.textContent
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.toolCallResult
+
+NODE id=codegraph-ultra/internal/mcp.toolCallResult#IsError kind=field
+  digest=b3:edb59c67495dc9e201069c441f12a5cc072bb79eaeb4240c3042bb63372039e7 file=codegraph-ultra/internal/mcp/server.go range=115:115 lang=go exported=true byte_range=3141:3189
+  sig=bool
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.toolCallResult
+
+NODE id=codegraph-ultra/internal/mcp.toolDef kind=type
+  digest=b3:152c673039e7d275667b694e1c43a677a6c7a1cb39693467abb47a056ce9142f file=codegraph-ultra/internal/mcp/server.go range=97:101 lang=go exported=false byte_range=2674:2840
+  sig=type toolDef struct {\n	Name		string		`json:"name"`\n	Description	string		`json:"description"`\n	InputSchema	json.RawMessage	`json:"inputSchema"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.toolDef#Description,codegraph-ultra/internal/mcp.toolDef#InputSchema,codegraph-ultra/internal/mcp.toolDef#Name
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.toolDef#Description kind=field
+  digest=b3:f2753961d05d03d27f62d03249c9af86027fe0bd7ac2b59a68ba5e0907c66754 file=codegraph-ultra/internal/mcp/server.go range=99:99 lang=go exported=true byte_range=2740:2788
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.toolDef
+
+NODE id=codegraph-ultra/internal/mcp.toolDef#InputSchema kind=field
+  digest=b3:f70717416082494444d70036744305bdd8a0149e8f662a2f230ba37a614eb00d file=codegraph-ultra/internal/mcp/server.go range=100:100 lang=go exported=true byte_range=2790:2838
+  sig=json.RawMessage
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.toolDef
+
+NODE id=codegraph-ultra/internal/mcp.toolDef#Name kind=field
+  digest=b3:9424ef0751b1bc99f0c5bfdd05dd953bf0f995149086f950841af8ac955fe9d7 file=codegraph-ultra/internal/mcp/server.go range=98:98 lang=go exported=true byte_range=2697:2738
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.toolDef
+
+NODE id=codegraph-ultra/internal/mcp.toolsCapability kind=type
+  digest=b3:bbb564f4343f684a2d318f73c7f4a28a628cfe862967e238e737d265bad43168 file=codegraph-ultra/internal/mcp/server.go range=88:90 lang=go exported=false byte_range=2501:2581
+  sig=type toolsCapability struct {\n	ListChanged bool `json:"listChanged,omitempty"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.toolsCapability#ListChanged
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.toolsCapability#ListChanged kind=field
+  digest=b3:550091f8c5a33863add477fe3413f38cb135d8a76ee2047bdc92c95eb6e235a6 file=codegraph-ultra/internal/mcp/server.go range=89:89 lang=go exported=true byte_range=2532:2579
+  sig=bool
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.toolsCapability
+
+NODE id=codegraph-ultra/internal/mcp.trimWhitespace kind=func
+  digest=b3:b9aec5193ffac82aa4ce168de73e69ca51e480fc10ac03b77f5f71fd232a2daf file=codegraph-ultra/internal/mcp/server.go range=190:198 lang=go exported=false byte_range=4827:5108
+  sig=func trimWhitespace(b []byte) []byte
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.truncateStr kind=func
+  digest=b3:8c781bbf5fa3e78e55ea41ea04c50da77e05f203601bd5f59d2747c80b4473a5 file=codegraph-ultra/internal/mcp/guard.go range=102:107 lang=go exported=false byte_range=2941:3041
+  sig=func truncateStr(s string, n int) string
+EDGES
+  ^defines=codegraph-ultra/internal/mcp/guard.go
+
+NODE id=codegraph-ultra/internal/mcp.typeHierarchyArgs kind=type
+  digest=b3:b140b0177dddd996ff7d00a84af7b7f3d7963af1e3613ccdf2cbe5e869ac40f2 file=codegraph-ultra/internal/mcp/server.go range=150:152 lang=go exported=false byte_range=3942:3998
+  sig=type typeHierarchyArgs struct {\n	ID string `json:"id"`\n}
+EDGES
+  contains=codegraph-ultra/internal/mcp.typeHierarchyArgs#ID
+  ^defines=codegraph-ultra/internal/mcp/server.go
+
+NODE id=codegraph-ultra/internal/mcp.typeHierarchyArgs#ID kind=field
+  digest=b3:310a945b6bf8dcbac033f5ddd9817a6ff2ccae4adf5874d95de1d6fd46859454 file=codegraph-ultra/internal/mcp/server.go range=151:151 lang=go exported=true byte_range=3975:3996
+  sig=string
+EDGES
+  ^contains=codegraph-ultra/internal/mcp.typeHierarchyArgs
+
+NODE id=codegraph-ultra/internal/mcp/guard.go kind=file
+  digest=b3:ba52e64d1d39763ace185e896145c1d1b80a7d77a3744944183604214f8066c5 file=codegraph-ultra/internal/mcp/guard.go range=1:107 lang=go exported=true
+EDGES
+  defines=codegraph-ultra/internal/mcp.guardFragment,codegraph-ultra/internal/mcp.guardFragmentSafe,codegraph-ultra/internal/mcp.sanitizeKVXValue,codegraph-ultra/internal/mcp.truncateStr
+  ^contains=codegraph-ultra/internal/mcp
+
+NODE id=codegraph-ultra/internal/mcp/server.go kind=file
+  digest=b3:adc7dce8fdf3280561c55055e48ffa8ddbd5eb1f654a610444af94eab4766a27 file=codegraph-ultra/internal/mcp/server.go range=1:870 lang=go exported=true
+EDGES
+  defines=codegraph-ultra/internal/mcp.New,codegraph-ultra/internal/mcp.RunStdio,codegraph-ultra/internal/mcp.Server,codegraph-ultra/internal/mcp.Server.Run,codegraph-ultra/internal/mcp.Server.dispatch,codegraph-ultra/internal/mcp.Server.findPath,codegraph-ultra/internal/mcp.Server.handleInitialize,codegraph-ultra/internal/mcp.Server.handleToolsCall,codegraph-ultra/internal/mcp.Server.handleToolsList,codegraph-ultra/internal/mcp.Server.toolCallChain,codegraph-ultra/internal/mcp.Server.toolFileSymbols,codegraph-ultra/internal/mcp.Server.toolGraphDiff,codegraph-ultra/internal/mcp.Server.toolImpact,codegraph-ultra/internal/mcp.Server.toolNeighbors,codegraph-ultra/internal/mcp.Server.toolSearch,codegraph-ultra/internal/mcp.Server.toolStats,codegraph-ultra/internal/mcp.Server.toolSubgraph,codegraph-ultra/internal/mcp.Server.toolSymbolLookup,codegraph-ultra/internal/mcp.Server.toolTypeHierarchy,codegraph-ultra/internal/mcp.Server.writeError,codegraph-ultra/internal/mcp.Server.writeJSON,codegraph-ultra/internal/mcp.Server.writeResult,codegraph-ultra/internal/mcp.allKinds,codegraph-ultra/internal/mcp.callChainArgs,codegraph-ultra/internal/mcp.fileSymbolsArgs,codegraph-ultra/internal/mcp.firstLine,codegraph-ultra/internal/mcp.formatNode,codegraph-ultra/internal/mcp.graphDiffArgs,codegraph-ultra/internal/mcp.impactArgs,codegraph-ultra/internal/mcp.initializeResult,codegraph-ultra/internal/mcp.jsonrpcError,codegraph-ultra/internal/mcp.jsonrpcRequest,codegraph-ultra/internal/mcp.jsonrpcResponse,codegraph-ultra/internal/mcp.neighborsArgs,codegraph-ultra/internal/mcp.nodesResult,codegraph-ultra/internal/mcp.protocolVersion,codegraph-ultra/internal/mcp.searchArgs,codegraph-ultra/internal/mcp.serverCapabilities,codegraph-ultra/internal/mcp.serverInfo,codegraph-ultra/internal/mcp.serverName,codegraph-ultra/internal/mcp.serverVersion,codegraph-ultra/internal/mcp.singleNodeResult,codegraph-ultra/internal/mcp.subgraphArgs,codegraph-ultra/internal/mcp.symbolLookupArgs,codegraph-ultra/internal/mcp.textContent,codegraph-ultra/internal/mcp.toolCallParams,codegraph-ultra/internal/mcp.toolCallResult,codegraph-ultra/internal/mcp.toolDef,codegraph-ultra/internal/mcp.toolsCapability,codegraph-ultra/internal/mcp.trimWhitespace,codegraph-ultra/internal/mcp.typeHierarchyArgs
+  ^contains=codegraph-ultra/internal/mcp

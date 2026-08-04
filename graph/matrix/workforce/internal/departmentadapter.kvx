@@ -1,0 +1,151 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=matrix/workforce/internal/departmentadapter kind=package
+  digest=b3:52eaf304de425b8dfdbc3e9df4ff7c6f52675b481e5e158474ae1805291a2a29 file=workforce/internal/departmentadapter range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/workforce/internal/departmentadapter/adapter.go
+  imports=matrix/workforce/internal/approval,matrix/workforce/internal/domainwork,matrix/workforce/internal/effect,matrix/workforce/internal/knowledgework,matrix/workforce/internal/lease,matrix/workforce/internal/operationswork,matrix/workforce/internal/skills
+  ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced
+
+NODE id=matrix/workforce/internal/departmentadapter.Adapter kind=type
+  digest=b3:2a4cee5d5b6517381890ca2ff8b208a4659370e3afa420549c47590f4e660b16 file=workforce/internal/departmentadapter/adapter.go range=30:36 lang=go exported=true byte_range=652:826
+  sig=type Adapter struct {\n	name		string\n	knowledge	*knowledgework.Service\n	domain		*domainwork.Service\n	operations	*operationswork.Service\n	now		func() time.Time\n}
+EDGES
+  contains=matrix/workforce/internal/departmentadapter.Adapter#domain,matrix/workforce/internal/departmentadapter.Adapter#knowledge,matrix/workforce/internal/departmentadapter.Adapter#name,matrix/workforce/internal/departmentadapter.Adapter#now,matrix/workforce/internal/departmentadapter.Adapter#operations,matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/departmentadapter.Adapter.Name,matrix/workforce/internal/departmentadapter.Adapter.Probe
+  implements=matrix/workforce/internal/effect.Adapter
+  references=matrix/workforce/internal/domainwork.Service,matrix/workforce/internal/knowledgework.Service,matrix/workforce/internal/operationswork.Service
+  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/departmentadapter.Adapter.Name,matrix/workforce/internal/departmentadapter.Adapter.Probe,matrix/workforce/internal/departmentadapter.New,matrix/workforce/internal/departmentadapter._
+  ^defines=matrix/workforce/internal/departmentadapter/adapter.go
+
+NODE id=matrix/workforce/internal/departmentadapter.Adapter#domain kind=field
+  digest=b3:16a7c13889dd562301b01519a432a8f4e907cc3a0c1df4d14d84ae101de22a75 file=workforce/internal/departmentadapter/adapter.go range=33:33 lang=go exported=false byte_range=729:759
+  sig=*domainwork.Service
+EDGES
+  ^contains=matrix/workforce/internal/departmentadapter.Adapter
+
+NODE id=matrix/workforce/internal/departmentadapter.Adapter#knowledge kind=field
+  digest=b3:c6c11ff78a53166b44ec7992919ebac0b2463f462b7daabbd167bb7858b86482 file=workforce/internal/departmentadapter/adapter.go range=32:32 lang=go exported=false byte_range=694:727
+  sig=*knowledgework.Service
+EDGES
+  ^contains=matrix/workforce/internal/departmentadapter.Adapter
+
+NODE id=matrix/workforce/internal/departmentadapter.Adapter#name kind=field
+  digest=b3:d213f7186bea3585c2559f18b82f55e7450957f3d3755697b2693a057525de33 file=workforce/internal/departmentadapter/adapter.go range=31:31 lang=go exported=false byte_range=675:692
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/departmentadapter.Adapter
+
+NODE id=matrix/workforce/internal/departmentadapter.Adapter#now kind=field
+  digest=b3:ab164b8c526402b25272859be473701fa2e89126053edc800a2cf5b79925b423 file=workforce/internal/departmentadapter/adapter.go range=35:35 lang=go exported=false byte_range=797:824
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/workforce/internal/departmentadapter.Adapter
+
+NODE id=matrix/workforce/internal/departmentadapter.Adapter#operations kind=field
+  digest=b3:e9cca354fa52609d689d16b84eba3bdb33ab3eb2bcd3a3bda2e9ed1681072e97 file=workforce/internal/departmentadapter/adapter.go range=34:34 lang=go exported=false byte_range=761:795
+  sig=*operationswork.Service
+EDGES
+  ^contains=matrix/workforce/internal/departmentadapter.Adapter
+
+NODE id=matrix/workforce/internal/departmentadapter.Adapter.Dispatch kind=method
+  digest=b3:8a6a3e73f2905c420c3bb880b4c24cf80597e7c08ca55e8685754ed45395e0d7 file=workforce/internal/departmentadapter/adapter.go range=68:113 lang=go exported=true byte_range=1523:2995
+  sig=func (adapter *Adapter) Dispatch(\n	ctx context.Context,\n	operation effect.Operation,\n) (effect.DispatchResult, error)
+EDGES
+  calls=matrix/workforce/internal/departmentadapter.decode,matrix/workforce/internal/departmentadapter.externalID,matrix/workforce/internal/departmentadapter.openPayload,matrix/workforce/internal/domainwork.Service.Execute,matrix/workforce/internal/knowledgework.Service.Execute,matrix/workforce/internal/operationswork.Service.Execute
+  references=matrix/workforce/internal/departmentadapter.Adapter,matrix/workforce/internal/departmentadapter.KnowledgeProvider,matrix/workforce/internal/departmentadapter.MarketingLegalProvider,matrix/workforce/internal/departmentadapter.OperationsProvider,matrix/workforce/internal/departmentadapter.adapter,matrix/workforce/internal/departmentadapter.ctx,matrix/workforce/internal/departmentadapter.decode,matrix/workforce/internal/departmentadapter.err,matrix/workforce/internal/departmentadapter.externalID,matrix/workforce/internal/departmentadapter.input,matrix/workforce/internal/departmentadapter.observation,matrix/workforce/internal/departmentadapter.openPayload,matrix/workforce/internal/departmentadapter.operation,matrix/workforce/internal/departmentadapter.payload,matrix/workforce/internal/departmentadapter.result,matrix/workforce/internal/domainwork.Input,matrix/workforce/internal/domainwork.Service.Execute,matrix/workforce/internal/effect.DispatchResult,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/knowledgework.Input,matrix/workforce/internal/knowledgework.Service.Execute,matrix/workforce/internal/operationswork.Input,matrix/workforce/internal/operationswork.Service.Execute
+  ^contains=matrix/workforce/internal/departmentadapter.Adapter
+  ^calls=matrix/workforce/internal/departmentadapter.Adapter.Probe,matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/provider/customer.Adapter.Dispatch,matrix/workforce/internal/provider/financial.Adapter.Dispatch
+  ^references=matrix/workforce/internal/departmentadapter.Adapter.Probe
+  ^defines=matrix/workforce/internal/departmentadapter/adapter.go
+
+NODE id=matrix/workforce/internal/departmentadapter.Adapter.Name kind=method
+  digest=b3:8226bcc11447dd4e1169d6a5d6c591832edb6496303da7c932742b5a44f32c7d file=workforce/internal/departmentadapter/adapter.go range=61:66 lang=go exported=true byte_range=1423:1521
+  sig=func (adapter *Adapter) Name() string
+EDGES
+  references=matrix/workforce/internal/departmentadapter.Adapter,matrix/workforce/internal/departmentadapter.adapter
+  ^contains=matrix/workforce/internal/departmentadapter.Adapter
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/effect.New,matrix/workforce/internal/provider/customer.Adapter.authorize,matrix/workforce/internal/provider/customer.LoadAdapters,matrix/workforce/internal/provider/customer.NewAdapter,matrix/workforce/internal/provider/financial.Adapter.authorize,matrix/workforce/internal/provider/financial.LoadAdapters,matrix/workforce/internal/provider/financial.NewAdapter
+  ^defines=matrix/workforce/internal/departmentadapter/adapter.go
+
+NODE id=matrix/workforce/internal/departmentadapter.Adapter.Probe kind=method
+  digest=b3:2118bbb241af0b3f0e22866428f59b8869f9a5e0dd7819c7b7bfce5d4ce19001 file=workforce/internal/departmentadapter/adapter.go range=115:130 lang=go exported=true byte_range=2997:3467
+  sig=func (adapter *Adapter) Probe(\n	ctx context.Context,\n	operation effect.Operation,\n) (effect.ProbeResult, error)
+EDGES
+  calls=matrix/workforce/internal/departmentadapter.Adapter.Dispatch
+  references=matrix/workforce/internal/departmentadapter.Adapter,matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/departmentadapter.adapter,matrix/workforce/internal/departmentadapter.ctx,matrix/workforce/internal/departmentadapter.err,matrix/workforce/internal/departmentadapter.operation,matrix/workforce/internal/departmentadapter.result,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/effect.ProbeResult,matrix/workforce/internal/skills.ProbeCompletedOutOfBand,matrix/workforce/internal/skills.ProbeUnknown
+  ^contains=matrix/workforce/internal/departmentadapter.Adapter
+  ^calls=matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/provider/customer.Adapter.Probe,matrix/workforce/internal/provider/financial.Adapter.Probe
+  ^defines=matrix/workforce/internal/departmentadapter/adapter.go
+
+NODE id=matrix/workforce/internal/departmentadapter.KnowledgeProvider kind=const
+  digest=b3:a375f63b61b4e13dbc5931346fdd6e14dfa344c09b55a8092d186a6e1e5009b8 file=workforce/internal/departmentadapter/adapter.go range=25:25 lang=go exported=true byte_range=529:565
+  sig=untyped string
+EDGES
+  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/departmentadapter.New
+  ^defines=matrix/workforce/internal/departmentadapter/adapter.go
+
+NODE id=matrix/workforce/internal/departmentadapter.MarketingLegalProvider kind=const
+  digest=b3:1055996eea6c63a2aaaebdeeff3cb700952aa7b0c05591cbc74f1f0a2a494994 file=workforce/internal/departmentadapter/adapter.go range=26:26 lang=go exported=true byte_range=567:609
+  sig=untyped string
+EDGES
+  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/departmentadapter.New
+  ^defines=matrix/workforce/internal/departmentadapter/adapter.go
+
+NODE id=matrix/workforce/internal/departmentadapter.New kind=func
+  digest=b3:df793c55265d1be290f56b9d538eb6d83d30ede8bfd488b98528a68647da7233 file=workforce/internal/departmentadapter/adapter.go range=38:59 lang=go exported=true byte_range=828:1421
+  sig=func New(\n	now func() time.Time,\n	approvals *approval.Store,\n) ([]effect.Adapter, error)
+EDGES
+  calls=matrix/workforce/internal/domainwork.New,matrix/workforce/internal/knowledgework.New,matrix/workforce/internal/operationswork.New
+  references=matrix/workforce/internal/approval.Store,matrix/workforce/internal/departmentadapter.Adapter,matrix/workforce/internal/departmentadapter.KnowledgeProvider,matrix/workforce/internal/departmentadapter.MarketingLegalProvider,matrix/workforce/internal/departmentadapter.OperationsProvider,matrix/workforce/internal/departmentadapter.approvals,matrix/workforce/internal/departmentadapter.domain,matrix/workforce/internal/departmentadapter.err,matrix/workforce/internal/departmentadapter.knowledge,matrix/workforce/internal/departmentadapter.now,matrix/workforce/internal/departmentadapter.operations,matrix/workforce/internal/domainwork.New,matrix/workforce/internal/effect.Adapter,matrix/workforce/internal/knowledgework.New,matrix/workforce/internal/operationswork.New
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^defines=matrix/workforce/internal/departmentadapter/adapter.go
+
+NODE id=matrix/workforce/internal/departmentadapter.OperationsProvider kind=const
+  digest=b3:7b2c08ec87f14212011c5311552ff4bac1592700ad184fd7e40a9147a0a24152 file=workforce/internal/departmentadapter/adapter.go range=27:27 lang=go exported=true byte_range=611:648
+  sig=untyped string
+EDGES
+  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/departmentadapter.New
+  ^defines=matrix/workforce/internal/departmentadapter/adapter.go
+
+NODE id=matrix/workforce/internal/departmentadapter._ kind=var
+  digest=b3:1a10e8f04da91dadcd31e908039b1298c6915a1066b84e4e93dceac52c791e9f file=workforce/internal/departmentadapter/adapter.go range=171:171 lang=go exported=false byte_range=4856:4890
+  sig=effect.Adapter
+EDGES
+  references=matrix/workforce/internal/departmentadapter.Adapter,matrix/workforce/internal/effect.Adapter
+  ^defines=matrix/workforce/internal/departmentadapter/adapter.go
+
+NODE id=matrix/workforce/internal/departmentadapter.decode kind=func
+  digest=b3:927519a7c14977e2096d793eb294e05ee54a73af2ae75b573fa2b1bf75e4a70b file=workforce/internal/departmentadapter/adapter.go range=154:164 lang=go exported=false byte_range=4330:4663
+  sig=func decode(value []byte, target any) error
+EDGES
+  references=matrix/workforce/internal/departmentadapter.decoder,matrix/workforce/internal/departmentadapter.err,matrix/workforce/internal/departmentadapter.target,matrix/workforce/internal/departmentadapter.value
+  ^calls=matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/departmentadapter.openPayload
+  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/departmentadapter.openPayload
+  ^defines=matrix/workforce/internal/departmentadapter/adapter.go
+
+NODE id=matrix/workforce/internal/departmentadapter.externalID kind=func
+  digest=b3:92d8787bde20a686f1c3395182da793d076eefcded38eadc36a17282ec247ba7 file=workforce/internal/departmentadapter/adapter.go range=166:169 lang=go exported=false byte_range=4665:4850
+  sig=func externalID(provider, idempotencyKey string) string
+EDGES
+  references=matrix/workforce/internal/departmentadapter.digest,matrix/workforce/internal/departmentadapter.idempotencyKey,matrix/workforce/internal/departmentadapter.provider
+  ^calls=matrix/workforce/internal/departmentadapter.Adapter.Dispatch
+  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch
+  ^defines=matrix/workforce/internal/departmentadapter/adapter.go
+
+NODE id=matrix/workforce/internal/departmentadapter.openPayload kind=func
+  digest=b3:23c5dce02c3bad5c55c4fc250b66864799c49485df1748a160e1e80f55d6c228 file=workforce/internal/departmentadapter/adapter.go range=132:152 lang=go exported=false byte_range=3469:4328
+  sig=func openPayload(operation effect.Operation) ([]byte, error)
+EDGES
+  calls=matrix/workforce/internal/contracts.FenceToken.Validate,matrix/workforce/internal/departmentadapter.decode,matrix/workforce/internal/lease.Request.Validate
+  references=matrix/workforce/internal/contracts.FenceToken.Validate,matrix/workforce/internal/departmentadapter.decode,matrix/workforce/internal/departmentadapter.envelope,matrix/workforce/internal/departmentadapter.err,matrix/workforce/internal/departmentadapter.grant,matrix/workforce/internal/departmentadapter.ok,matrix/workforce/internal/departmentadapter.operation,matrix/workforce/internal/departmentadapter.rawGrant,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/lease.Grant,matrix/workforce/internal/lease.Request.Validate,matrix/workforce/internal/lease.StateActive
+  ^calls=matrix/workforce/internal/departmentadapter.Adapter.Dispatch
+  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch
+  ^defines=matrix/workforce/internal/departmentadapter/adapter.go
+
+NODE id=matrix/workforce/internal/departmentadapter/adapter.go kind=file
+  digest=b3:d05fc07942919564691328b153bfe53d884a9330b2ba0c4e33f96542c53a824d file=workforce/internal/departmentadapter/adapter.go range=1:171 lang=go exported=true
+EDGES
+  defines=matrix/workforce/internal/departmentadapter.Adapter,matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/departmentadapter.Adapter.Name,matrix/workforce/internal/departmentadapter.Adapter.Probe,matrix/workforce/internal/departmentadapter.KnowledgeProvider,matrix/workforce/internal/departmentadapter.MarketingLegalProvider,matrix/workforce/internal/departmentadapter.New,matrix/workforce/internal/departmentadapter.OperationsProvider,matrix/workforce/internal/departmentadapter._,matrix/workforce/internal/departmentadapter.decode,matrix/workforce/internal/departmentadapter.externalID,matrix/workforce/internal/departmentadapter.openPayload
+  ^contains=matrix/workforce/internal/departmentadapter

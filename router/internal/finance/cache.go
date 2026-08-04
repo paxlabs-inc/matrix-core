@@ -54,7 +54,7 @@ func TTLFor(class Class) time.Duration {
 }
 
 // staleGrace is how long an expired entry is still allowed to answer AFTER the
-// upstream has refused a refresh. Serving a labelled stale price beats blanking
+// upstream has refused a refresh. Serving a labeled stale price beats blanking
 // a panel because the vendor is throttling — but only for a bounded while.
 const staleGrace = 30 * time.Minute
 
@@ -107,7 +107,7 @@ type Outcome struct {
 // exactly once across all concurrent callers for that key.
 //
 // When fn fails and a stale entry is still within the grace window, the stale
-// value answers instead of the error — labelled stale so the surface above can
+// value answers instead of the error — labeled stale so the surface above can
 // say so. That is the difference between a market page that degrades and one
 // that goes blank the moment a vendor hiccups.
 func (c *Cache) Do(ctx context.Context, key string, ttl time.Duration, fn func(context.Context) (any, error)) (any, Outcome, error) {
@@ -142,7 +142,7 @@ func (c *Cache) Do(ctx context.Context, key string, ttl time.Duration, fn func(c
 		c.evictLocked()
 	} else if stale, ok := c.entries[key]; ok && c.now().Sub(stale.storedAt) <= staleGrace {
 		// The upstream refused; the last good answer stands in, marked stale.
-		value, err = stale.value, nil
+		value = stale.value
 		leader.value, leader.err = value, nil
 		delete(c.calls, key)
 		close(leader.done)

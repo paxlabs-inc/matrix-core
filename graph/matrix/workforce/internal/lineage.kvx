@@ -1,0 +1,593 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+
+NODE id=matrix/workforce/internal/lineage kind=package
+  digest=b3:df96017d0ba9a6847957e297db8982225c5e41b6c7e89b6cb2a5118e8de6eb4a file=workforce/internal/lineage range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/workforce/internal/lineage/store.go
+  imports=matrix/vault,matrix/workforce/internal/contracts,matrix/workforce/internal/workcompile
+  ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/productexecution,matrix/workforce/internal/wakeruntime
+
+NODE id=matrix/workforce/internal/lineage.ErrConflict kind=var
+  digest=b3:f43bef58875a75761a106a83a4d999f59c28aa7cc4f508197255e8477a32529f file=workforce/internal/lineage/store.go range=25:25 lang=go exported=true byte_range=334:399
+  sig=error
+EDGES
+  ^references=matrix/workforce/internal/lineage.Store.BuildReceipt,matrix/workforce/internal/lineage.Store.OpenReceipt,matrix/workforce/internal/lineage.Store.PublishReceipt,matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.ErrIntegrity kind=var
+  digest=b3:4ac8766026c7238283959ee973a15a1167c35714fbc4ef1cd41068c733bdd791 file=workforce/internal/lineage/store.go range=26:26 lang=go exported=true byte_range=401:465
+  sig=error
+EDGES
+  ^references=matrix/workforce/internal/lineage.Store.OpenReceipt,matrix/workforce/internal/lineage.Store.openModelEnvelope,matrix/workforce/internal/lineage.Store.verifyModelEvidence,matrix/workforce/internal/lineage.Store.verifyReceipt,matrix/workforce/internal/lineage.decodeSignature
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence kind=type
+  digest=b3:21eef62a3a415ee2c4c9905d7fa100c967ea2d3ddaa91d45b049cbfce0341f6e file=workforce/internal/lineage/store.go range=29:43 lang=go exported=true byte_range=469:1293
+  sig=type ModelEvidence struct {\n	SchemaVersion	string				`json:"schema_version"`\n	ID		contracts.EvidenceID		`json:"evidence_id"`\n	OrganizationID	contracts.OrganizationID	`json:"organization_id"`\n	WakeID		contracts.WakeID		`json:"wake_id"`\n	Model		contracts.ModelBinding		`json:"model"`\n	MGS		contracts.MGSGenomeRef		`json:"mgs"`\n	Runtime		contracts.RuntimeBinding	`json:"runtime"`\n	RequestHash	contracts.ContentHash		`json:"request_hash"`\n	ResponseHash	contracts.ContentHash		`json:"response_hash"`\n	OutputHash	contracts.ContentHash		`json:"output_hash"`\n	ReplayRetained	bool				`json:"replay_retained"`\n	CreatedAt	time.Time			`json:"created_at"`\n	Signature	contracts.Signature		`json:"signature"`\n}
+EDGES
+  contains=matrix/workforce/internal/lineage.ModelEvidence#CreatedAt,matrix/workforce/internal/lineage.ModelEvidence#ID,matrix/workforce/internal/lineage.ModelEvidence#MGS,matrix/workforce/internal/lineage.ModelEvidence#Model,matrix/workforce/internal/lineage.ModelEvidence#OrganizationID,matrix/workforce/internal/lineage.ModelEvidence#OutputHash,matrix/workforce/internal/lineage.ModelEvidence#ReplayRetained,matrix/workforce/internal/lineage.ModelEvidence#RequestHash,matrix/workforce/internal/lineage.ModelEvidence#ResponseHash,matrix/workforce/internal/lineage.ModelEvidence#Runtime,matrix/workforce/internal/lineage.ModelEvidence#SchemaVersion,matrix/workforce/internal/lineage.ModelEvidence#Signature,matrix/workforce/internal/lineage.ModelEvidence#WakeID,matrix/workforce/internal/lineage.ModelEvidence.Validate
+  implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/contracts.MGSGenomeRef,matrix/workforce/internal/contracts.ModelBinding,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.RuntimeBinding,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/contracts.WakeID
+  ^references=matrix/workforce/internal/lineage.ModelEvidence.Validate,matrix/workforce/internal/lineage.ReceiptInput,matrix/workforce/internal/lineage.Store.OpenModelEvidence,matrix/workforce/internal/lineage.Store.OpenModelOutput,matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/lineage.Store.signModelEvidence,matrix/workforce/internal/lineage.Store.verifyModelEvidence,matrix/workforce/internal/lineage.modelEnvelope
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#CreatedAt kind=field
+  digest=b3:a737facfca7209c410a66adfeb770f72484f688a7fa53ee4d16ce4c3da185706 file=workforce/internal/lineage/store.go range=41:41 lang=go exported=true byte_range=1172:1231
+  sig=time.Time
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#ID kind=field
+  digest=b3:c352ca53f717096e1201a8d2aa34aed5b4b4c22cd0ae3688c36549ca7edaf85b file=workforce/internal/lineage/store.go range=31:31 lang=go exported=true byte_range=563:623
+  sig=contracts.EvidenceID
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#MGS kind=field
+  digest=b3:b8c106485c5a4c19edc56b01bc956a2971503cc3599df5ca966bad1c03688cd7 file=workforce/internal/lineage/store.go range=35:35 lang=go exported=true byte_range=805:857
+  sig=contracts.MGSGenomeRef
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#Model kind=field
+  digest=b3:00de86f352b25996dd88e9d9a9ff39694b7be45c9f4f68f2a9dc01e07d8bd61d file=workforce/internal/lineage/store.go range=34:34 lang=go exported=true byte_range=749:803
+  sig=contracts.ModelBinding
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#OrganizationID kind=field
+  digest=b3:7e4b5a680750e048559185c9a4b56f1679c22b7a73c63dce214c59a4bd70182e file=workforce/internal/lineage/store.go range=32:32 lang=go exported=true byte_range=625:689
+  sig=contracts.OrganizationID
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#OutputHash kind=field
+  digest=b3:1896a6e44af4463e6c60d4c50dc8194e43d69df8f208596b1296321f2e24e0c8 file=workforce/internal/lineage/store.go range=39:39 lang=go exported=true byte_range=1044:1104
+  sig=contracts.ContentHash
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#ReplayRetained kind=field
+  digest=b3:c578613bc813c5e2288fa2b068aa2339bd65eb20abc69c5791f2857f28d36003 file=workforce/internal/lineage/store.go range=40:40 lang=go exported=true byte_range=1106:1170
+  sig=bool
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#RequestHash kind=field
+  digest=b3:514644abab95c14e465f0add368c214c83c09660bd64c663185c49c22320f1cb file=workforce/internal/lineage/store.go range=37:37 lang=go exported=true byte_range=917:978
+  sig=contracts.ContentHash
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#ResponseHash kind=field
+  digest=b3:64bb4a08f6e2889c5fb471d95f5c2d421fb3d6996996917cf7121105a1c7202e file=workforce/internal/lineage/store.go range=38:38 lang=go exported=true byte_range=980:1042
+  sig=contracts.ContentHash
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#Runtime kind=field
+  digest=b3:aabce3f9d3acc8d30985cebd9e5350fe14fd2d6404beb17bd456161cd34d6426 file=workforce/internal/lineage/store.go range=36:36 lang=go exported=true byte_range=859:915
+  sig=contracts.RuntimeBinding
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#SchemaVersion kind=field
+  digest=b3:1685da8f2e24cd00fecc21729419f09689aba1572fdb95d165d83766e002c71c file=workforce/internal/lineage/store.go range=30:30 lang=go exported=true byte_range=498:561
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#Signature kind=field
+  digest=b3:f125931acfa489c40b834b7898211bfb9917757185e72cee745b502a85cdb1c1 file=workforce/internal/lineage/store.go range=42:42 lang=go exported=true byte_range=1233:1291
+  sig=contracts.Signature
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence#WakeID kind=field
+  digest=b3:1efd1db7ac11dbbb18aa684afdb401f18513f5de795847edaf7d800e954db04a file=workforce/internal/lineage/store.go range=33:33 lang=go exported=true byte_range=691:747
+  sig=contracts.WakeID
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+
+NODE id=matrix/workforce/internal/lineage.ModelEvidence.Validate kind=method
+  digest=b3:6be57c3e1697a0782515d7c924609c03cbf308de29583edd96758aa18957f1d7 file=workforce/internal/lineage/store.go range=45:70 lang=go exported=true byte_range=1295:2048
+  sig=func (value ModelEvidence) Validate() error
+EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.MGSGenomeRef.Validate,matrix/workforce/internal/contracts.ModelBinding.Validate,matrix/workforce/internal/contracts.RuntimeBinding.Validate,matrix/workforce/internal/contracts.Signature.Validate
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.MGSGenomeRef.Validate,matrix/workforce/internal/contracts.ModelBinding.Validate,matrix/workforce/internal/contracts.RuntimeBinding.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/lineage.ModelEvidence,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.value
+  ^contains=matrix/workforce/internal/lineage.ModelEvidence
+  ^calls=matrix/workforce/internal/lineage.Store.BuildReceipt,matrix/workforce/internal/lineage.Store.openModelEnvelope,matrix/workforce/internal/lineage.Store.signModelEvidence
+  ^references=matrix/workforce/internal/lineage.Store.BuildReceipt,matrix/workforce/internal/lineage.Store.openModelEnvelope,matrix/workforce/internal/lineage.Store.signModelEvidence
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.ModelExchange kind=type
+  digest=b3:e48074ba919d2954b6d1eb47afbeda6d8e5d924564badbee62c6bb7015073478 file=workforce/internal/lineage/store.go range=72:83 lang=go exported=true byte_range=2050:2399
+  sig=type ModelExchange struct {\n	ID		contracts.EvidenceID\n	OrganizationID	contracts.OrganizationID\n	WakeID		contracts.WakeID\n	Model		contracts.ModelBinding\n	MGS		contracts.MGSGenomeRef\n	Runtime		contracts.RuntimeBinding\n	Request		[]byte\n	Response	[]byte\n	Output		[]byte\n	ReplayRequired	bool\n}
+EDGES
+  contains=matrix/workforce/internal/lineage.ModelExchange#ID,matrix/workforce/internal/lineage.ModelExchange#MGS,matrix/workforce/internal/lineage.ModelExchange#Model,matrix/workforce/internal/lineage.ModelExchange#OrganizationID,matrix/workforce/internal/lineage.ModelExchange#Output,matrix/workforce/internal/lineage.ModelExchange#ReplayRequired,matrix/workforce/internal/lineage.ModelExchange#Request,matrix/workforce/internal/lineage.ModelExchange#Response,matrix/workforce/internal/lineage.ModelExchange#Runtime,matrix/workforce/internal/lineage.ModelExchange#WakeID
+  references=matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/contracts.MGSGenomeRef,matrix/workforce/internal/contracts.ModelBinding,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.RuntimeBinding,matrix/workforce/internal/contracts.WakeID
+  ^references=matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/wakeruntime.Runner.propose
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.ModelExchange#ID kind=field
+  digest=b3:9bb26d28df85a7a844ee4a5f6ba79df576e4261a7de10e8e1c638262e26068ca file=workforce/internal/lineage/store.go range=73:73 lang=go exported=true byte_range=2079:2114
+  sig=contracts.EvidenceID
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelExchange
+
+NODE id=matrix/workforce/internal/lineage.ModelExchange#MGS kind=field
+  digest=b3:46be1725a6eaf6a5477eeea3b47b220bb5ca7045beaa4f8c8d760af9161d1031 file=workforce/internal/lineage/store.go range=77:77 lang=go exported=true byte_range=2229:2266
+  sig=contracts.MGSGenomeRef
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelExchange
+
+NODE id=matrix/workforce/internal/lineage.ModelExchange#Model kind=field
+  digest=b3:ed8f876935ff6b382bd44c25e5cc306a6897115f0aa04ad5b74047cc055f31ee file=workforce/internal/lineage/store.go range=76:76 lang=go exported=true byte_range=2190:2227
+  sig=contracts.ModelBinding
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelExchange
+
+NODE id=matrix/workforce/internal/lineage.ModelExchange#OrganizationID kind=field
+  digest=b3:270d03d51a2c32876ed243db32a2af14452209a83f5dec9105fc50ab40623902 file=workforce/internal/lineage/store.go range=74:74 lang=go exported=true byte_range=2116:2155
+  sig=contracts.OrganizationID
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelExchange
+
+NODE id=matrix/workforce/internal/lineage.ModelExchange#Output kind=field
+  digest=b3:b0fbf2a30995b1932d923b2efd1274f0a074d6decb3d43ee6bc0fb8ba4f92b14 file=workforce/internal/lineage/store.go range=81:81 lang=go exported=true byte_range=2355:2376
+  sig=[]byte
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelExchange
+
+NODE id=matrix/workforce/internal/lineage.ModelExchange#ReplayRequired kind=field
+  digest=b3:37014edda7bde0e2c3faab3a1f224a0aa1d5e0ceab2861ebb9079e5d790c6511 file=workforce/internal/lineage/store.go range=82:82 lang=go exported=true byte_range=2378:2397
+  sig=bool
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelExchange
+
+NODE id=matrix/workforce/internal/lineage.ModelExchange#Request kind=field
+  digest=b3:0ec3353cdc7cb4f380f7f56cd4493e70a1154bfa09700c588fd6e502e9a21c86 file=workforce/internal/lineage/store.go range=79:79 lang=go exported=true byte_range=2309:2330
+  sig=[]byte
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelExchange
+
+NODE id=matrix/workforce/internal/lineage.ModelExchange#Response kind=field
+  digest=b3:f59ed57a1eb546ed4f8fce9fe2ab85c7fe75708c74d378ed19dd7a8389bdc72e file=workforce/internal/lineage/store.go range=80:80 lang=go exported=true byte_range=2332:2353
+  sig=[]byte
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelExchange
+
+NODE id=matrix/workforce/internal/lineage.ModelExchange#Runtime kind=field
+  digest=b3:b194ecf7bc8d921afb15a87041b3e72ee17823a4d06a416e150ffc6608188214 file=workforce/internal/lineage/store.go range=78:78 lang=go exported=true byte_range=2268:2307
+  sig=contracts.RuntimeBinding
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelExchange
+
+NODE id=matrix/workforce/internal/lineage.ModelExchange#WakeID kind=field
+  digest=b3:1dd18a20235131f12cf92a460c163920942217422b8749408e898a1e899196f4 file=workforce/internal/lineage/store.go range=75:75 lang=go exported=true byte_range=2157:2188
+  sig=contracts.WakeID
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ModelExchange
+
+NODE id=matrix/workforce/internal/lineage.New kind=func
+  digest=b3:93bc4d1c083fa747764ef2293eef66c160ee3c6b38c2da1874a6a0c7a08888f9 file=workforce/internal/lineage/store.go range=121:141 lang=go exported=true byte_range=3402:4168
+  sig=func New(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	tenantID, keyID string,\n	privateKey ed25519.PrivateKey,\n	now func() time.Time,\n) (*Store, error)
+EDGES
+  calls=matrix/vault.UserVault.User
+  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.keyID,matrix/workforce/internal/lineage.now,matrix/workforce/internal/lineage.pool,matrix/workforce/internal/lineage.privateKey,matrix/workforce/internal/lineage.publicKey,matrix/workforce/internal/lineage.tenantID,matrix/workforce/internal/lineage.userVault
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput kind=type
+  digest=b3:d45653cb84a561b2935ab40a1e2d62a66f71bc5a38182628e8f6423d1e2fa300 file=workforce/internal/lineage/store.go range=92:109 lang=go exported=true byte_range=2597:3194
+  sig=type ReceiptInput struct {\n	ID			contracts.ReceiptID\n	Packet			contracts.WorkPacket\n	Plan			workcompile.Plan\n	ModelEvidence		ModelEvidence\n	ChildIntentIDs		[]contracts.IntentID\n	Constraints		[]string\n	Approvals		[]contracts.ApprovalID\n	Artifacts		[]contracts.ArtifactRef\n	Evidence		[]contracts.EvidenceRef\n	Reconciliation		[]contracts.ReconciliationLineage\n	VerdictID		*contracts.VerdictID\n	CostMinor		int64\n	LatencyMillis		uint64\n	Disposition		contracts.WakeDisposition\n	UnresolvedRisk		string\n	OperationOutcome	string\n}
+EDGES
+  contains=matrix/workforce/internal/lineage.ReceiptInput#Approvals,matrix/workforce/internal/lineage.ReceiptInput#Artifacts,matrix/workforce/internal/lineage.ReceiptInput#ChildIntentIDs,matrix/workforce/internal/lineage.ReceiptInput#Constraints,matrix/workforce/internal/lineage.ReceiptInput#CostMinor,matrix/workforce/internal/lineage.ReceiptInput#Disposition,matrix/workforce/internal/lineage.ReceiptInput#Evidence,matrix/workforce/internal/lineage.ReceiptInput#ID,matrix/workforce/internal/lineage.ReceiptInput#LatencyMillis,matrix/workforce/internal/lineage.ReceiptInput#ModelEvidence,matrix/workforce/internal/lineage.ReceiptInput#OperationOutcome,matrix/workforce/internal/lineage.ReceiptInput#Packet,matrix/workforce/internal/lineage.ReceiptInput#Plan,matrix/workforce/internal/lineage.ReceiptInput#Reconciliation,matrix/workforce/internal/lineage.ReceiptInput#UnresolvedRisk,matrix/workforce/internal/lineage.ReceiptInput#VerdictID
+  references=matrix/workforce/internal/contracts.ApprovalID,matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.ReceiptID,matrix/workforce/internal/contracts.ReconciliationLineage,matrix/workforce/internal/contracts.VerdictID,matrix/workforce/internal/contracts.WakeDisposition,matrix/workforce/internal/contracts.WorkPacket,matrix/workforce/internal/lineage.ModelEvidence,matrix/workforce/internal/workcompile.Plan
+  ^references=matrix/workforce/internal/lineage.Store.BuildReceipt,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#Approvals kind=field
+  digest=b3:6659f905f0f786953cdc228f08fec3a570d61129b8c62c140bc93a94a84ff4ca file=workforce/internal/lineage/store.go range=99:99 lang=go exported=true byte_range=2835:2874
+  sig=[]contracts.ApprovalID
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#Artifacts kind=field
+  digest=b3:bc7dd38b4b2ebaa2ab4f5fd928dc594f6d670694c8bf7c2ad873c59c518cde8c file=workforce/internal/lineage/store.go range=100:100 lang=go exported=true byte_range=2876:2916
+  sig=[]contracts.ArtifactRef
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#ChildIntentIDs kind=field
+  digest=b3:5cdd34c963c3f81691bb03f9ea04eb069856624975b3770aee55357e4811d422 file=workforce/internal/lineage/store.go range=97:97 lang=go exported=true byte_range=2769:2806
+  sig=[]contracts.IntentID
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#Constraints kind=field
+  digest=b3:2f812ecc71b2d303257328da59ac37b15c1cf4219f4331fc71e083b998d6d105 file=workforce/internal/lineage/store.go range=98:98 lang=go exported=true byte_range=2808:2833
+  sig=[]string
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#CostMinor kind=field
+  digest=b3:ababe373204fd7a2c540511eaaa7bae0143a71cb2556b5548b05fc5650a2338b file=workforce/internal/lineage/store.go range=104:104 lang=go exported=true byte_range=3051:3073
+  sig=int64
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#Disposition kind=field
+  digest=b3:9a37b7d75efc8fbda8036f4698df96be850bd77bbae37f712dbeccb0206f162f file=workforce/internal/lineage/store.go range=106:106 lang=go exported=true byte_range=3100:3142
+  sig=contracts.WakeDisposition
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#Evidence kind=field
+  digest=b3:447b71d103f7a498d3a9af83b6b38701983124545fcbd831faad5384a986d925 file=workforce/internal/lineage/store.go range=101:101 lang=go exported=true byte_range=2918:2958
+  sig=[]contracts.EvidenceRef
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#ID kind=field
+  digest=b3:dc2b17f1a26a2be7d57b319578c1166493f59c03c60f9836a7cb94e36b52a3ad file=workforce/internal/lineage/store.go range=93:93 lang=go exported=true byte_range=2625:2661
+  sig=contracts.ReceiptID
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#LatencyMillis kind=field
+  digest=b3:d6458484d114a699d86ec2f3fde1e7561126b7b818a3413e2477298285628928 file=workforce/internal/lineage/store.go range=105:105 lang=go exported=true byte_range=3075:3098
+  sig=uint64
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#ModelEvidence kind=field
+  digest=b3:0d1822d8816c6a966f121f0c5bfe3d8fb785a027d1075e00768b4129644d6768 file=workforce/internal/lineage/store.go range=96:96 lang=go exported=true byte_range=2737:2767
+  sig=lineage.ModelEvidence
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#OperationOutcome kind=field
+  digest=b3:813d7d38ce88b8627f172119d89da78366fe74361d756a67cde88354f4937a3f file=workforce/internal/lineage/store.go range=108:108 lang=go exported=true byte_range=3169:3192
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#Packet kind=field
+  digest=b3:a39cccc81c5478f1380da58cb70dac9a13826c01fccd4c4762d9a3d908d25604 file=workforce/internal/lineage/store.go range=94:94 lang=go exported=true byte_range=2663:2700
+  sig=contracts.WorkPacket
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#Plan kind=field
+  digest=b3:5d173012004b73e6f714615bb1463f2461a2e8589775107a919a29cd6d52bc40 file=workforce/internal/lineage/store.go range=95:95 lang=go exported=true byte_range=2702:2735
+  sig=workcompile.Plan
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#Reconciliation kind=field
+  digest=b3:f4d75f0a838f63b1475cd1db4f62e05e656821bbda761c1d060a05d773350546 file=workforce/internal/lineage/store.go range=102:102 lang=go exported=true byte_range=2960:3010
+  sig=[]contracts.ReconciliationLineage
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#UnresolvedRisk kind=field
+  digest=b3:e4332c140313d145ba4e2f1261882f5c55e36b19e5cc54270f700b1ba5821384 file=workforce/internal/lineage/store.go range=107:107 lang=go exported=true byte_range=3144:3167
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.ReceiptInput#VerdictID kind=field
+  digest=b3:5a06b018aedc2798a7325d7065be263eca14b9616ef9a9d1c1223fa182682a02 file=workforce/internal/lineage/store.go range=103:103 lang=go exported=true byte_range=3012:3049
+  sig=*contracts.VerdictID
+EDGES
+  ^contains=matrix/workforce/internal/lineage.ReceiptInput
+
+NODE id=matrix/workforce/internal/lineage.Store kind=type
+  digest=b3:45101a3d739b9ba1ff7b3ee19929ad3ea4779b9c994b4d916c423551badb4a34 file=workforce/internal/lineage/store.go range=111:119 lang=go exported=true byte_range=3196:3400
+  sig=type Store struct {\n	pool		*pgxpool.Pool\n	vault		*vault.UserVault\n	tenantID	string\n	keyID		string\n	privateKey	ed25519.PrivateKey\n	publicKey	ed25519.PublicKey\n	now		func() time.Time\n}
+EDGES
+  contains=matrix/workforce/internal/lineage.Store#keyID,matrix/workforce/internal/lineage.Store#now,matrix/workforce/internal/lineage.Store#pool,matrix/workforce/internal/lineage.Store#privateKey,matrix/workforce/internal/lineage.Store#publicKey,matrix/workforce/internal/lineage.Store#tenantID,matrix/workforce/internal/lineage.Store#vault,matrix/workforce/internal/lineage.Store.BuildReceipt,matrix/workforce/internal/lineage.Store.OpenModelEvidence,matrix/workforce/internal/lineage.Store.OpenModelOutput,matrix/workforce/internal/lineage.Store.OpenReceipt,matrix/workforce/internal/lineage.Store.PublishReceipt,matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/lineage.Store.currentTime,matrix/workforce/internal/lineage.Store.modelAD,matrix/workforce/internal/lineage.Store.openModelEnvelope,matrix/workforce/internal/lineage.Store.receiptAD,matrix/workforce/internal/lineage.Store.signModelEvidence,matrix/workforce/internal/lineage.Store.signReceipt,matrix/workforce/internal/lineage.Store.verifyModelEvidence,matrix/workforce/internal/lineage.Store.verifyReceipt
+  references=matrix/vault.UserVault
+  ^references=matrix/workforce/internal/lineage.New,matrix/workforce/internal/lineage.Store.BuildReceipt,matrix/workforce/internal/lineage.Store.OpenModelEvidence,matrix/workforce/internal/lineage.Store.OpenModelOutput,matrix/workforce/internal/lineage.Store.OpenReceipt,matrix/workforce/internal/lineage.Store.PublishReceipt,matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/lineage.Store.currentTime,matrix/workforce/internal/lineage.Store.modelAD,matrix/workforce/internal/lineage.Store.openModelEnvelope,matrix/workforce/internal/lineage.Store.receiptAD,matrix/workforce/internal/lineage.Store.signModelEvidence,matrix/workforce/internal/lineage.Store.signReceipt,matrix/workforce/internal/lineage.Store.verifyModelEvidence,matrix/workforce/internal/lineage.Store.verifyReceipt,matrix/workforce/internal/productexecution.NewStore,matrix/workforce/internal/productexecution.Store,matrix/workforce/internal/wakeruntime.Runner
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store#keyID kind=field
+  digest=b3:b461c8562dd87831ae0a7b8f8dc929cf552f140a24fb8204f0e5a7e5d2495bdd file=workforce/internal/lineage/store.go range=115:115 lang=go exported=false byte_range=3291:3308
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/lineage.Store
+
+NODE id=matrix/workforce/internal/lineage.Store#now kind=field
+  digest=b3:ab164b8c526402b25272859be473701fa2e89126053edc800a2cf5b79925b423 file=workforce/internal/lineage/store.go range=118:118 lang=go exported=false byte_range=3371:3398
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/workforce/internal/lineage.Store
+
+NODE id=matrix/workforce/internal/lineage.Store#pool kind=field
+  digest=b3:477a75e18d79cd3c68985f904a63aee19201e0bac0a1eac2fc4b8b3c9093c194 file=workforce/internal/lineage/store.go range=112:112 lang=go exported=false byte_range=3217:3241
+  sig=*pgxpool.Pool
+EDGES
+  ^contains=matrix/workforce/internal/lineage.Store
+
+NODE id=matrix/workforce/internal/lineage.Store#privateKey kind=field
+  digest=b3:dd45047922384eac3fdfecdab069033d879ef3b36bbad4669ae409905543dac2 file=workforce/internal/lineage/store.go range=116:116 lang=go exported=false byte_range=3310:3339
+  sig=ed25519.PrivateKey
+EDGES
+  ^contains=matrix/workforce/internal/lineage.Store
+
+NODE id=matrix/workforce/internal/lineage.Store#publicKey kind=field
+  digest=b3:2549c99e21c1dc1524a88b380d1037172f6a730c6b3366100161e96d017d7242 file=workforce/internal/lineage/store.go range=117:117 lang=go exported=false byte_range=3341:3369
+  sig=ed25519.PublicKey
+EDGES
+  ^contains=matrix/workforce/internal/lineage.Store
+
+NODE id=matrix/workforce/internal/lineage.Store#tenantID kind=field
+  digest=b3:84175f32c0394472a023feb735aafd6f91c29058a5f5d271632a02d3a75c0a3b file=workforce/internal/lineage/store.go range=114:114 lang=go exported=false byte_range=3272:3289
+  sig=string
+EDGES
+  ^contains=matrix/workforce/internal/lineage.Store
+
+NODE id=matrix/workforce/internal/lineage.Store#vault kind=field
+  digest=b3:c1291d5365111ffa3255871122ec6810da956a3cb685af90d09949d2b3f998e4 file=workforce/internal/lineage/store.go range=113:113 lang=go exported=false byte_range=3243:3270
+  sig=*vault.UserVault
+EDGES
+  ^contains=matrix/workforce/internal/lineage.Store
+
+NODE id=matrix/workforce/internal/lineage.Store.BuildReceipt kind=method
+  digest=b3:b061284667d22a04f19867a3d9b3acba79a67cd5a0697c15dbacddbd3883ae1e file=workforce/internal/lineage/store.go range=301:357 lang=go exported=true byte_range=9696:12372
+  sig=func (store *Store) BuildReceipt(input ReceiptInput) (contracts.Receipt, error)
+EDGES
+  calls=matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/lineage.ModelEvidence.Validate,matrix/workforce/internal/lineage.Store.currentTime,matrix/workforce/internal/lineage.Store.signReceipt,matrix/workforce/internal/lineage.hasSkill,matrix/workforce/internal/workcompile.Plan.Validate
+  references=matrix/workforce/internal/contracts.ApprovalID,matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.OperationLineage,matrix/workforce/internal/contracts.PolicyRef,matrix/workforce/internal/contracts.Receipt,matrix/workforce/internal/contracts.ReconciliationLineage,matrix/workforce/internal/contracts.RecordRef,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/lineage.ErrConflict,matrix/workforce/internal/lineage.ModelEvidence.Validate,matrix/workforce/internal/lineage.ReceiptInput,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.Store.currentTime,matrix/workforce/internal/lineage.Store.signReceipt,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.hasSkill,matrix/workforce/internal/lineage.input,matrix/workforce/internal/lineage.now,matrix/workforce/internal/lineage.receipt,matrix/workforce/internal/lineage.store,matrix/workforce/internal/workcompile.Plan.Validate
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^references=matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.OpenModelEvidence kind=method
+  digest=b3:252a1de5516749178483e6626d3f9bcbb6bed0f51a265211a1fdbd1bd3259d22 file=workforce/internal/lineage/store.go range=233:243 lang=go exported=true byte_range=7277:7645
+  sig=func (store *Store) OpenModelEvidence(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	id contracts.EvidenceID,\n) (ModelEvidence, []byte, []byte, error)
+EDGES
+  calls=matrix/workforce/internal/lineage.Store.openModelEnvelope
+  references=matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/lineage.ModelEvidence,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.Store.openModelEnvelope,matrix/workforce/internal/lineage.ctx,matrix/workforce/internal/lineage.envelope,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.id,matrix/workforce/internal/lineage.organizationID,matrix/workforce/internal/lineage.store
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^references=matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.OpenModelOutput kind=method
+  digest=b3:49922374eeda934414a27472ed0593a2de0d9182a595cf0ab60acfccb3d44ba7 file=workforce/internal/lineage/store.go range=245:257 lang=go exported=true byte_range=7647:8149
+  sig=func (store *Store) OpenModelOutput(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	id contracts.EvidenceID,\n) (ModelEvidence, []byte, error)
+  doc=OpenModelOutput returns the exact seat-visible provider output bound into the\nsame signed and sealed lineage envelope as the raw exchange.
+EDGES
+  calls=matrix/workforce/internal/lineage.Store.openModelEnvelope
+  references=matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/lineage.ModelEvidence,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.Store.openModelEnvelope,matrix/workforce/internal/lineage.ctx,matrix/workforce/internal/lineage.envelope,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.id,matrix/workforce/internal/lineage.organizationID,matrix/workforce/internal/lineage.store
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.propose
+  ^references=matrix/workforce/internal/wakeruntime.Runner.propose
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.OpenReceipt kind=method
+  digest=b3:4a234897b03026681b37b84288a81cef00597953dbc264428b43e8b6b0e591dd file=workforce/internal/lineage/store.go range=401:434 lang=go exported=true byte_range=13520:14703
+  sig=func (store *Store) OpenReceipt(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	id contracts.ReceiptID,\n) (contracts.Receipt, error)
+EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/lineage.Store.verifyReceipt
+  references=matrix/vault.AD,matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Receipt,matrix/workforce/internal/contracts.ReceiptID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/lineage.ErrConflict,matrix/workforce/internal/lineage.ErrIntegrity,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.Store.verifyReceipt,matrix/workforce/internal/lineage.ad,matrix/workforce/internal/lineage.ctx,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.expectedHash,matrix/workforce/internal/lineage.id,matrix/workforce/internal/lineage.opened,matrix/workforce/internal/lineage.organizationID,matrix/workforce/internal/lineage.receipt,matrix/workforce/internal/lineage.sealed,matrix/workforce/internal/lineage.store
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/lineage.Store.PublishReceipt,matrix/workforce/internal/productexecution.Store.validateLaunchArtifacts,matrix/workforce/internal/productexecution.Store.validateReceiptEvidence,matrix/workforce/internal/productexecution.Store.validateStageReceipt,matrix/workforce/internal/wakeruntime.Runner.predecessorReceipts,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^references=matrix/workforce/internal/lineage.Store.PublishReceipt,matrix/workforce/internal/productexecution.Store.validateLaunchArtifacts,matrix/workforce/internal/productexecution.Store.validateReceiptEvidence,matrix/workforce/internal/productexecution.Store.validateStageReceipt,matrix/workforce/internal/wakeruntime.Runner.predecessorReceipts,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.PublishReceipt kind=method
+  digest=b3:210884b5497d718fab175c361f9883aad27ce4cf4d80a109b19dbfe1109c141b file=workforce/internal/lineage/store.go range=359:399 lang=go exported=true byte_range=12374:13518
+  sig=func (store *Store) PublishReceipt(\n	ctx context.Context,\n	receipt contracts.Receipt,\n) error
+EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Receipt.Validate,matrix/workforce/internal/lineage.Store.OpenReceipt,matrix/workforce/internal/lineage.Store.receiptAD,matrix/workforce/internal/lineage.Store.verifyReceipt
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Receipt,matrix/workforce/internal/contracts.Receipt.Validate,matrix/workforce/internal/lineage.ErrConflict,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.Store.OpenReceipt,matrix/workforce/internal/lineage.Store.receiptAD,matrix/workforce/internal/lineage.Store.verifyReceipt,matrix/workforce/internal/lineage.command,matrix/workforce/internal/lineage.ctx,matrix/workforce/internal/lineage.encoded,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.existing,matrix/workforce/internal/lineage.loadErr,matrix/workforce/internal/lineage.receipt,matrix/workforce/internal/lineage.sealed,matrix/workforce/internal/lineage.store
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^references=matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.PutModelEvidence kind=method
+  digest=b3:083366c6c91c46460886b83c37fa5dd1d3704d1e6b2e47297d0599b9fd59a3a9 file=workforce/internal/lineage/store.go range=143:231 lang=go exported=true byte_range=4170:7275
+  sig=func (store *Store) PutModelEvidence(\n	ctx context.Context,\n	exchange ModelExchange,\n) (ModelEvidence, error)
+EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.MGSGenomeRef.Validate,matrix/workforce/internal/contracts.ModelBinding.Validate,matrix/workforce/internal/contracts.RuntimeBinding.Validate,matrix/workforce/internal/lineage.Store.OpenModelEvidence,matrix/workforce/internal/lineage.Store.currentTime,matrix/workforce/internal/lineage.Store.modelAD,matrix/workforce/internal/lineage.Store.signModelEvidence,matrix/workforce/internal/lineage.canonicalJSON,matrix/workforce/internal/lineage.contentHash
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.MGSGenomeRef.Validate,matrix/workforce/internal/contracts.ModelBinding.Validate,matrix/workforce/internal/contracts.RuntimeBinding.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/lineage.ErrConflict,matrix/workforce/internal/lineage.ModelEvidence,matrix/workforce/internal/lineage.ModelExchange,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.Store.OpenModelEvidence,matrix/workforce/internal/lineage.Store.currentTime,matrix/workforce/internal/lineage.Store.modelAD,matrix/workforce/internal/lineage.Store.signModelEvidence,matrix/workforce/internal/lineage.canonicalJSON,matrix/workforce/internal/lineage.command,matrix/workforce/internal/lineage.contentHash,matrix/workforce/internal/lineage.ctx,matrix/workforce/internal/lineage.encoded,matrix/workforce/internal/lineage.envelope,matrix/workforce/internal/lineage.envelopeHash,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.evidence,matrix/workforce/internal/lineage.exchange,matrix/workforce/internal/lineage.existing,matrix/workforce/internal/lineage.loadErr,matrix/workforce/internal/lineage.modelEnvelope,matrix/workforce/internal/lineage.now,matrix/workforce/internal/lineage.outputHash,matrix/workforce/internal/lineage.request,matrix/workforce/internal/lineage.requestHash,matrix/workforce/internal/lineage.responseHash,matrix/workforce/internal/lineage.sealed,matrix/workforce/internal/lineage.store
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.propose
+  ^references=matrix/workforce/internal/wakeruntime.Runner.propose
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.currentTime kind=method
+  digest=b3:fb920598ecfe6dd02e5b8644f9f403718162a52a6626dbe65e229a92e10d7c62 file=workforce/internal/lineage/store.go range=569:575 lang=go exported=false byte_range=18506:18724
+  sig=func (store *Store) currentTime() (time.Time, error)
+EDGES
+  references=matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.now,matrix/workforce/internal/lineage.store
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/lineage.Store.BuildReceipt,matrix/workforce/internal/lineage.Store.PutModelEvidence
+  ^references=matrix/workforce/internal/lineage.Store.BuildReceipt,matrix/workforce/internal/lineage.Store.PutModelEvidence
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.modelAD kind=method
+  digest=b3:1bc8fa9db53808a82380ab78cf503ecaa2d9d5e42f3611a0fc15e8c1fcc1effe file=workforce/internal/lineage/store.go range=550:559 lang=go exported=false byte_range=17963:18244
+  sig=func (store *Store) modelAD(\n	organizationID contracts.OrganizationID,\n	id contracts.EvidenceID,\n) vault.AD
+EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.id,matrix/workforce/internal/lineage.organizationID,matrix/workforce/internal/lineage.store
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/lineage.Store.openModelEnvelope
+  ^references=matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/lineage.Store.openModelEnvelope
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.openModelEnvelope kind=method
+  digest=b3:557e71ac50faa58012d9cc216a1900a785c29972c094f0338cb4b917176d55dc file=workforce/internal/lineage/store.go range=259:299 lang=go exported=false byte_range=8151:9694
+  sig=func (store *Store) openModelEnvelope(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	id contracts.EvidenceID,\n) (modelEnvelope, error)
+EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/lineage.ModelEvidence.Validate,matrix/workforce/internal/lineage.Store.modelAD,matrix/workforce/internal/lineage.Store.verifyModelEvidence,matrix/workforce/internal/lineage.canonicalJSON,matrix/workforce/internal/lineage.contentHash
+  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/lineage.ErrIntegrity,matrix/workforce/internal/lineage.ModelEvidence.Validate,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.Store.modelAD,matrix/workforce/internal/lineage.Store.verifyModelEvidence,matrix/workforce/internal/lineage.canonicalJSON,matrix/workforce/internal/lineage.contentHash,matrix/workforce/internal/lineage.ctx,matrix/workforce/internal/lineage.envelope,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.expectedHash,matrix/workforce/internal/lineage.id,matrix/workforce/internal/lineage.modelEnvelope,matrix/workforce/internal/lineage.opened,matrix/workforce/internal/lineage.organizationID,matrix/workforce/internal/lineage.request,matrix/workforce/internal/lineage.sealed,matrix/workforce/internal/lineage.store
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/lineage.Store.OpenModelEvidence,matrix/workforce/internal/lineage.Store.OpenModelOutput
+  ^references=matrix/workforce/internal/lineage.Store.OpenModelEvidence,matrix/workforce/internal/lineage.Store.OpenModelOutput
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.receiptAD kind=method
+  digest=b3:f6c3d6dcb7b854bbe077cae3b8ef110e5a3e048dbfcae3e0cb6ff02a748b7c5f file=workforce/internal/lineage/store.go range=561:567 lang=go exported=false byte_range=18246:18504
+  sig=func (store *Store) receiptAD(receipt contracts.Receipt) vault.AD
+EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/contracts.Receipt,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.receipt,matrix/workforce/internal/lineage.store
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/lineage.Store.PublishReceipt
+  ^references=matrix/workforce/internal/lineage.Store.PublishReceipt
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.signModelEvidence kind=method
+  digest=b3:c7311d0747a30e5569f0a03a2122240b349f54417d70f68bed84bf35bd0cc39f file=workforce/internal/lineage/store.go range=436:447 lang=go exported=false byte_range=14705:15097
+  sig=func (store *Store) signModelEvidence(value *ModelEvidence) error
+EDGES
+  calls=matrix/workforce/internal/lineage.ModelEvidence.Validate,matrix/workforce/internal/lineage.signaturePlaceholder
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/lineage.ModelEvidence,matrix/workforce/internal/lineage.ModelEvidence.Validate,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.payload,matrix/workforce/internal/lineage.signaturePlaceholder,matrix/workforce/internal/lineage.store,matrix/workforce/internal/lineage.value
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/lineage.Store.PutModelEvidence
+  ^references=matrix/workforce/internal/lineage.Store.PutModelEvidence
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.signReceipt kind=method
+  digest=b3:f8e24bd3d4c31f16073ee6f4d335543ba57c0e5c433de3bf34902fd0da7d8b34 file=workforce/internal/lineage/store.go range=462:480 lang=go exported=false byte_range=15469:16068
+  sig=func (store *Store) signReceipt(value *contracts.Receipt) error
+EDGES
+  calls=matrix/workforce/internal/contracts.Receipt.Validate,matrix/workforce/internal/lineage.contentHash,matrix/workforce/internal/lineage.signaturePlaceholder
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.Receipt,matrix/workforce/internal/contracts.Receipt.Validate,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.contentHash,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.payload,matrix/workforce/internal/lineage.signaturePlaceholder,matrix/workforce/internal/lineage.store,matrix/workforce/internal/lineage.value
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/lineage.Store.BuildReceipt
+  ^references=matrix/workforce/internal/lineage.Store.BuildReceipt
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.verifyModelEvidence kind=method
+  digest=b3:31ac09f7390d6605ecba6385b7b4fadb6bfb1abceadefce6b66c224222de7995 file=workforce/internal/lineage/store.go range=449:460 lang=go exported=false byte_range=15099:15467
+  sig=func (store *Store) verifyModelEvidence(value ModelEvidence) error
+EDGES
+  calls=matrix/workforce/internal/lineage.decodeSignature,matrix/workforce/internal/lineage.signaturePlaceholder
+  references=matrix/workforce/internal/lineage.ErrIntegrity,matrix/workforce/internal/lineage.ModelEvidence,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.decodeSignature,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.payload,matrix/workforce/internal/lineage.signature,matrix/workforce/internal/lineage.signaturePlaceholder,matrix/workforce/internal/lineage.store,matrix/workforce/internal/lineage.value
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/lineage.Store.openModelEnvelope
+  ^references=matrix/workforce/internal/lineage.Store.openModelEnvelope
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.Store.verifyReceipt kind=method
+  digest=b3:bb725a663f4b2b6b20d8e45e6de839bd948952df791f5d7f5ba6b59b3e9db835 file=workforce/internal/lineage/store.go range=482:501 lang=go exported=false byte_range=16070:16711
+  sig=func (store *Store) verifyReceipt(value contracts.Receipt) error
+EDGES
+  calls=matrix/workforce/internal/lineage.contentHash,matrix/workforce/internal/lineage.decodeSignature,matrix/workforce/internal/lineage.signaturePlaceholder
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.Receipt,matrix/workforce/internal/lineage.ErrIntegrity,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.contentHash,matrix/workforce/internal/lineage.decodeSignature,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.hashValue,matrix/workforce/internal/lineage.payload,matrix/workforce/internal/lineage.signature,matrix/workforce/internal/lineage.signaturePlaceholder,matrix/workforce/internal/lineage.signing,matrix/workforce/internal/lineage.store,matrix/workforce/internal/lineage.value
+  ^contains=matrix/workforce/internal/lineage.Store
+  ^calls=matrix/workforce/internal/lineage.Store.OpenReceipt,matrix/workforce/internal/lineage.Store.PublishReceipt
+  ^references=matrix/workforce/internal/lineage.Store.OpenReceipt,matrix/workforce/internal/lineage.Store.PublishReceipt
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.canonicalJSON kind=func
+  digest=b3:78922b5890dc0a890830c43c1ad22ef21bc3c95fc67724d71153630f2d814140 file=workforce/internal/lineage/store.go range=503:514 lang=go exported=false byte_range=16713:17045
+  sig=func canonicalJSON(value []byte) ([]byte, error)
+EDGES
+  references=matrix/workforce/internal/lineage.decoded,matrix/workforce/internal/lineage.decoder,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.value
+  ^calls=matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/lineage.Store.openModelEnvelope
+  ^references=matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/lineage.Store.openModelEnvelope
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.contentHash kind=func
+  digest=b3:03d8e8fb08515a746ca6d592e73fedbd89b4654ff3acad39d8f52f75cfffaf27 file=workforce/internal/lineage/store.go range=525:530 lang=go exported=false byte_range=17218:17396
+  sig=func contentHash(value []byte) contracts.ContentHash
+EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/lineage.sum,matrix/workforce/internal/lineage.value
+  ^calls=matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/lineage.Store.openModelEnvelope,matrix/workforce/internal/lineage.Store.signReceipt,matrix/workforce/internal/lineage.Store.verifyReceipt
+  ^references=matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/lineage.Store.openModelEnvelope,matrix/workforce/internal/lineage.Store.signReceipt,matrix/workforce/internal/lineage.Store.verifyReceipt
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.decodeSignature kind=func
+  digest=b3:c0652e477fe5ecd7797c9d815bc9374701e2ee650bcd8372b7ddfaffdf36a0a9 file=workforce/internal/lineage/store.go range=539:548 lang=go exported=false byte_range=17617:17961
+  sig=func decodeSignature(value contracts.Signature, keyID string) ([]byte, error)
+EDGES
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/lineage.ErrIntegrity,matrix/workforce/internal/lineage.decoded,matrix/workforce/internal/lineage.err,matrix/workforce/internal/lineage.keyID,matrix/workforce/internal/lineage.value
+  ^calls=matrix/workforce/internal/lineage.Store.verifyModelEvidence,matrix/workforce/internal/lineage.Store.verifyReceipt
+  ^references=matrix/workforce/internal/lineage.Store.verifyModelEvidence,matrix/workforce/internal/lineage.Store.verifyReceipt
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.hasSkill kind=func
+  digest=b3:f04979aa98c9cefea3fff4ddb02741764ab8e8bd51b996fcecee4598d0841e09 file=workforce/internal/lineage/store.go range=516:523 lang=go exported=false byte_range=17047:17216
+  sig=func hasSkill(values []contracts.SkillRef, target contracts.SkillRef) bool
+EDGES
+  references=matrix/workforce/internal/contracts.SkillRef,matrix/workforce/internal/lineage.target,matrix/workforce/internal/lineage.value,matrix/workforce/internal/lineage.values
+  ^calls=matrix/workforce/internal/lineage.Store.BuildReceipt
+  ^references=matrix/workforce/internal/lineage.Store.BuildReceipt
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.modelEnvelope kind=type
+  digest=b3:3ed8616ed9ceec4a2301e98fffa2dc45a50ea8ea1aa816b3ede0cdb9858b26c1 file=workforce/internal/lineage/store.go range=85:90 lang=go exported=false byte_range=2401:2595
+  sig=type modelEnvelope struct {\n	Evidence	ModelEvidence	`json:"evidence"`\n	Request		[]byte		`json:"request"`\n	Response	[]byte		`json:"response"`\n	Output		[]byte		`json:"output"`\n}
+EDGES
+  contains=matrix/workforce/internal/lineage.modelEnvelope#Evidence,matrix/workforce/internal/lineage.modelEnvelope#Output,matrix/workforce/internal/lineage.modelEnvelope#Request,matrix/workforce/internal/lineage.modelEnvelope#Response
+  references=matrix/workforce/internal/lineage.ModelEvidence
+  ^references=matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/lineage.Store.openModelEnvelope
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage.modelEnvelope#Evidence kind=field
+  digest=b3:a43cb36fe2215d6c69c94acd9c192a2d2c53f9f92c42da8a9d3df823c0ed2979 file=workforce/internal/lineage/store.go range=86:86 lang=go exported=true byte_range=2430:2470
+  sig=lineage.ModelEvidence
+EDGES
+  ^contains=matrix/workforce/internal/lineage.modelEnvelope
+
+NODE id=matrix/workforce/internal/lineage.modelEnvelope#Output kind=field
+  digest=b3:1e5de47905bbf844469cf3c0030ab24a31f55dde22909cd7592044892fe79d39 file=workforce/internal/lineage/store.go range=89:89 lang=go exported=true byte_range=2555:2593
+  sig=[]byte
+EDGES
+  ^contains=matrix/workforce/internal/lineage.modelEnvelope
+
+NODE id=matrix/workforce/internal/lineage.modelEnvelope#Request kind=field
+  digest=b3:9c8c27e738fc891e62f8c3a001fb7c0c759b33cb0b6eb4034d28a4ebbf974184 file=workforce/internal/lineage/store.go range=87:87 lang=go exported=true byte_range=2472:2511
+  sig=[]byte
+EDGES
+  ^contains=matrix/workforce/internal/lineage.modelEnvelope
+
+NODE id=matrix/workforce/internal/lineage.modelEnvelope#Response kind=field
+  digest=b3:babf88cd4bcaceec6a199f994fced59038b535a02e4f0c744cc892dc4b627e5a file=workforce/internal/lineage/store.go range=88:88 lang=go exported=true byte_range=2513:2553
+  sig=[]byte
+EDGES
+  ^contains=matrix/workforce/internal/lineage.modelEnvelope
+
+NODE id=matrix/workforce/internal/lineage.signaturePlaceholder kind=func
+  digest=b3:a2184bfd239f38ddb59593be3209b43ced51a4934efd3fc309dd1e7353c3e09c file=workforce/internal/lineage/store.go range=532:537 lang=go exported=false byte_range=17398:17615
+  sig=func signaturePlaceholder(keyID string) contracts.Signature
+EDGES
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/lineage.keyID
+  ^calls=matrix/workforce/internal/lineage.Store.signModelEvidence,matrix/workforce/internal/lineage.Store.signReceipt,matrix/workforce/internal/lineage.Store.verifyModelEvidence,matrix/workforce/internal/lineage.Store.verifyReceipt
+  ^references=matrix/workforce/internal/lineage.Store.signModelEvidence,matrix/workforce/internal/lineage.Store.signReceipt,matrix/workforce/internal/lineage.Store.verifyModelEvidence,matrix/workforce/internal/lineage.Store.verifyReceipt
+  ^defines=matrix/workforce/internal/lineage/store.go
+
+NODE id=matrix/workforce/internal/lineage/store.go kind=file
+  digest=b3:16b0869fa1e6d5a477fbc51671e0d7e182f45d18ff0adc106a1fd0902b487b38 file=workforce/internal/lineage/store.go range=1:575 lang=go exported=true
+EDGES
+  defines=matrix/workforce/internal/lineage.ErrConflict,matrix/workforce/internal/lineage.ErrIntegrity,matrix/workforce/internal/lineage.ModelEvidence,matrix/workforce/internal/lineage.ModelEvidence.Validate,matrix/workforce/internal/lineage.ModelExchange,matrix/workforce/internal/lineage.New,matrix/workforce/internal/lineage.ReceiptInput,matrix/workforce/internal/lineage.Store,matrix/workforce/internal/lineage.Store.BuildReceipt,matrix/workforce/internal/lineage.Store.OpenModelEvidence,matrix/workforce/internal/lineage.Store.OpenModelOutput,matrix/workforce/internal/lineage.Store.OpenReceipt,matrix/workforce/internal/lineage.Store.PublishReceipt,matrix/workforce/internal/lineage.Store.PutModelEvidence,matrix/workforce/internal/lineage.Store.currentTime,matrix/workforce/internal/lineage.Store.modelAD,matrix/workforce/internal/lineage.Store.openModelEnvelope,matrix/workforce/internal/lineage.Store.receiptAD,matrix/workforce/internal/lineage.Store.signModelEvidence,matrix/workforce/internal/lineage.Store.signReceipt,matrix/workforce/internal/lineage.Store.verifyModelEvidence,matrix/workforce/internal/lineage.Store.verifyReceipt,matrix/workforce/internal/lineage.canonicalJSON,matrix/workforce/internal/lineage.contentHash,matrix/workforce/internal/lineage.decodeSignature,matrix/workforce/internal/lineage.hasSkill,matrix/workforce/internal/lineage.modelEnvelope,matrix/workforce/internal/lineage.signaturePlaceholder
+  ^contains=matrix/workforce/internal/lineage
