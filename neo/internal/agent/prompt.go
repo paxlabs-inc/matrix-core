@@ -192,12 +192,12 @@ func (a *Agent) systemPrompt() string {
 			b.WriteString("- Choose the stack and framework from the user's requirements, scaffold the real build setup with the native tools, and keep working through current verification and final delivery. Plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
 		} else if a.tools != nil && a.tools.BuildProjectEnabled() {
 			writeBuildOnlyPolicy(&b)
-			b.WriteString("- Put the stack choice and framework constraints into the Build brief. The private worker should scaffold the real framework and build setup that fits the requirements; plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
+			b.WriteString("- Put the stack choice and framework constraints into the Build brief. In your durable Build mode, scaffold the real framework and build setup that fits the requirements; plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
 		} else {
 			b.WriteString("- Local workspace tools are unavailable in this session. Do not attempt project work through integration adapters or a desktop session; explain the blocker honestly.\n")
 		}
-		b.WriteString("- Use the native service tools for long-running local processes so their identity, logs, stop, and restart state remain durable. Use the workbench Preview pane for runnable previews.\n")
-		b.WriteString("- Deploying is NOT how you show work. Never deploy or publish anything (paxc included) unless the user explicitly asks you to deploy — and when they do, use a preview deploy unless they say production.\n\n")
+		b.WriteString("- Use the native service tools for long-running local processes so their identity, logs, stop, and restart state remain durable. Do not use the workbench Preview sandbox to present a completed frontend app or site.\n")
+		b.WriteString("- Frontend delivery is an immediate post-build step: when a frontend app or site compiles successfully, deploy its compiled output to Paxeer Cloud with the paxc CLI and present the real URL returned by paxc. Use a Paxeer Cloud preview deployment by default; deploy to production only when the user explicitly asks for production. Skip deployment only when the user explicitly says not to deploy. If compilation or paxc fails, report the real failure instead of falling back to a sandbox preview or inventing a URL.\n\n")
 	}
 
 	if a.tools != nil && a.tools.RecallEnabled() {
@@ -287,15 +287,15 @@ func writeNativeLocalPolicy(b *strings.Builder, buildEnabled bool) {
 		b.WriteString("- Complete project work end to end in this Neo run with the native tools. For substantial work, keep the task list current, rely on the runtime-owned coding checkpoint for recovery, run the required verification, and deliver the verified result directly.\n")
 		return
 	}
-	b.WriteString("- Use build_project for substantial coding jobs that should survive this turn, need checkpoints and autonomous verification, or will involve many files and long-running work. Do not delegate simple file inspection, document handling, one-command diagnostics, or other ordinary local tasks.\n")
-	b.WriteString("- Give build_project the user's complete request, the selected project, constraints, relevant prior context, and observable acceptance criteria. The durable private worker owns its project cwd, verification, checkpoints, interruption, and resume.\n")
-	b.WriteString("- Once build_project reports that the durable job was accepted, STOP using coding tools, do not poll it, and end this turn with a short plain-language acknowledgement. The private worker continues from the selected project and you will be woken for a real question, blocker, interruption, failure, or verified completion.\n")
+	b.WriteString("- Use build_project to enter your durable Build mode for substantial coding that should survive this turn, needs checkpoints and autonomous verification, or will involve many files and long-running work. Handle simple file inspection, document work, one-command diagnostics, and ordinary local tasks directly.\n")
+	b.WriteString("- Give your durable Build run the user's complete request, the selected project, constraints, relevant prior context, and observable acceptance criteria. You remain the only builder; this is your persistent coding execution mode, owning the project cwd, verification, checkpoints, interruption, and resume.\n")
+	b.WriteString("- Once build_project reports that your durable job was accepted, STOP using coding tools, do not poll it, and end this turn with a short plain-language acknowledgement. Your Build run continues from the selected project and you will resume on a real question, blocker, interruption, failure, or verified completion.\n")
 	b.WriteString("- If no project is selected, state that blocker honestly. Do not improvise local coding through an integration adapter or desktop session.\n")
 }
 
 func writeBuildOnlyPolicy(b *strings.Builder) {
-	b.WriteString("- Native local tools are unavailable in this session. For substantial project coding, use build_project with the complete request and acceptance criteria; do not substitute integration adapters or a desktop session.\n")
-	b.WriteString("- Once build_project accepts the durable job, do not poll it or continue local work in this turn; the worker will wake you on a question, blocker, failure, or verified completion.\n")
+	b.WriteString("- Native local tools are unavailable in this session. For substantial project coding, enter your durable Build mode with build_project and provide the complete request and acceptance criteria; do not substitute integration adapters or a desktop session. You remain the only builder.\n")
+	b.WriteString("- Once build_project accepts your durable job, do not poll it or continue local work in this turn; you will resume on a question, blocker, failure, or verified completion.\n")
 }
 
 // groundTruthFor renders the embedded ground truth for the configured agent

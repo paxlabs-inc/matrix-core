@@ -87,16 +87,15 @@ const WriteSkillTool = "write_skill"
 // digest, not the user's checklist) and only when a todo emitter is wired.
 const TodoTool = "todo"
 
-// PreviewTool is the synthetic function Neo exposes to launch the workbench
-// preview: it provisions the active project's on-demand sandbox and the result
-// surfaces to the user in the workbench Preview pane via the durable preview.*
-// events (NEO-WORKBENCH req 7). Like todo it is NOT a real MCP server, so it
-// never enters the manifest tool-bijection check; it is advertised only when a
-// preview launcher is wired (sandbox previews configured on this daemon).
+// PreviewTool is the synthetic function Neo exposes for an explicitly requested
+// development sandbox. Successfully compiled frontends are delivered through
+// Paxeer Cloud instead. Like todo it is NOT a real MCP server, so it never enters
+// the manifest tool-bijection check; it is advertised only when a preview
+// launcher is wired (sandbox previews configured on this daemon).
 const PreviewTool = "workspace_preview"
 
-// BuildProjectTool is Neo's asynchronous coding delegation. It persists a
-// private Build job before returning and never exposes the worker runtime or
+// BuildProjectTool enters Neo's durable asynchronous Build mode. It persists a
+// Build job before returning and never exposes the execution runtime or
 // AgentCore protocol to the model or browser.
 const BuildProjectTool = "build_project"
 
@@ -1254,7 +1253,7 @@ func (m *Manager) dispatchPreview(ctx context.Context) (string, bool, error) {
 
 func (m *Manager) dispatchBuildProject(ctx context.Context, args map[string]interface{}) (string, bool, error) {
 	if m.build == nil {
-		return "the private Build worker is not available on this machine", true, nil
+		return "your durable Build mode is not available on this machine", true, nil
 	}
 	request := strings.TrimSpace(asString(args["request"]))
 	if request == "" {
@@ -1703,14 +1702,13 @@ func todoSchema() llm.Tool {
 	)
 }
 
-// previewSchema advertises the workbench preview launcher (NEO-WORKBENCH
-// req 7): fire-and-forget — provisioning is asynchronous and the user watches
-// the Preview pane, so the model calls it once when the project is runnable
-// and moves on.
+// previewSchema advertises the workbench preview launcher for explicit
+// development-sandbox requests. It is not the delivery path for compiled
+// frontend apps or sites.
 func previewSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		PreviewTool,
-		"Start (or restart) the live preview of the active project in the user's workbench: it provisions an isolated sandbox, runs the project's dev command there, and the running app appears in the workbench Preview pane. Call it ONCE when the project is in a runnable state (after your file writes and any install/build steps) so the user can see the app live — this is how you show working software; never deploy anywhere just to show work. It returns immediately: readiness or failure reaches the user through the Preview pane, so do not poll, wait for a URL, or call it repeatedly.",
+		"Start (or restart) an isolated development sandbox in the workbench Preview pane only when the user explicitly asks for a sandbox or dev-server preview. Never use this tool to present a frontend app or site after it compiles successfully; that result must be deployed through Paxeer Cloud with paxc and presented with the real paxc URL. Sandbox provisioning is asynchronous, so call this at most once for an explicit sandbox request and do not poll it.",
 		map[string]interface{}{
 			"type":       "object",
 			"properties": map[string]interface{}{},
@@ -1721,7 +1719,7 @@ func previewSchema() llm.Tool {
 func buildProjectSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		BuildProjectTool,
-		"Delegate a substantial or long-running project coding job to the durable private Build worker when it should survive this turn and carry checkpoints, autonomous verification, interruption, and resume. Use Neo's native local tools for bounded file work, diagnostics, shell commands, durable services, and read-only git inspection. Provide the complete user request, constraints, concrete acceptance criteria, and project when starting new work. A missing project is created and selected atomically with durable job admission; replays resolve the same project and job. The call returns as soon as the job is persisted and accepted; do not poll it or keep this turn open. Building never deploys the result.",
+		"Enter your durable Build mode for a substantial or long-running coding job that should survive this turn and carry checkpoints, autonomous verification, interruption, and resume. You remain the only builder; this is your persistent coding execution mode, not delegation to another agent. Use your native local tools for bounded file work, diagnostics, shell commands, durable services, and read-only git inspection. Provide the complete user request, constraints, concrete acceptance criteria, and project when starting new work. A missing project is created and selected atomically with durable job admission; replays resolve the same project and job. The call returns as soon as your job is persisted and accepted; do not poll it or keep this turn open. After a successful frontend compile, follow your Paxeer Cloud post-build delivery rule.",
 		map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{

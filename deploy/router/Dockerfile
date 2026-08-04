@@ -55,7 +55,8 @@ RUN set -eux; \
 
 COPY --from=builder /out/matrix-router /usr/local/bin/matrix-router
 COPY deploy/router/reconcile-workforce-fleet.sh /usr/local/bin/reconcile-workforce-fleet
-RUN chmod 0755 /usr/local/bin/reconcile-workforce-fleet
+COPY deploy/router/reconcile-neo-fleet.sh /usr/local/bin/reconcile-neo-fleet
+RUN chmod 0755 /usr/local/bin/reconcile-workforce-fleet /usr/local/bin/reconcile-neo-fleet
 
 # Public + internal listeners; the operator maps the real external ports.
 EXPOSE 8080 8088

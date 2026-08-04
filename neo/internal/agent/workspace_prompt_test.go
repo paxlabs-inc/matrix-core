@@ -14,9 +14,8 @@ import (
 
 // NEO-WORKBENCH prompt grounding: a daemon with no workspace injects no
 // coding-workspace section; SetWorkspace renders the root, the active
-// project's directory, the durable-Build boundary, and the no-deploy rule —
-// the exact gaps behind the LinkedIn-clone incident (wrong directory,
-// HTML/CSS/JS default, unasked paxc production deploy).
+// project's directory, the durable-Build boundary, and the Paxeer Cloud
+// frontend delivery rule.
 func TestSystemPromptWorkspaceSection(t *testing.T) {
 	a := New(Options{Config: config.Default()})
 	if strings.Contains(a.systemPrompt(), "Your coding workspace") {
@@ -31,7 +30,8 @@ func TestSystemPromptWorkspaceSection(t *testing.T) {
 		"\"LinkedIn Clone\"",
 		"/data/workspace/linkedin-clone",
 		"Local workspace tools are unavailable",
-		"Deploying is NOT how you show work",
+		"Frontend delivery is an immediate post-build step",
+		"deploy its compiled output to Paxeer Cloud with the paxc CLI",
 	} {
 		if !strings.Contains(sp, want) {
 			t.Errorf("workspace section missing %q", want)
@@ -44,6 +44,30 @@ func TestSystemPromptWorkspaceSection(t *testing.T) {
 	}
 	if strings.Contains(sp, "Build worker") || strings.Contains(sp, "build_project") || strings.Contains(sp, "native tools") {
 		t.Error("inactive coding runtimes leaked into the workspace prompt")
+	}
+}
+
+func TestSystemPromptDeliversCompiledFrontendsThroughPaxeerCloud(t *testing.T) {
+	a := New(Options{Config: config.Default()})
+	a.SetWorkspace("/data/workspace", "shop", "Shop", "/data/workspace/shop")
+	prompt := a.systemPrompt()
+	for _, want := range []string{
+		"when a frontend app or site compiles successfully",
+		"Use a Paxeer Cloud preview deployment by default",
+		"Skip deployment only when the user explicitly says not to deploy",
+		"do not fall back to the Preview sandbox",
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("frontend delivery policy missing %q", want)
+		}
+	}
+	for _, forbidden := range []string{
+		"Deploying is NOT how you show work",
+		"NEVER deploy to demonstrate work",
+	} {
+		if strings.Contains(prompt, forbidden) {
+			t.Errorf("obsolete sandbox-first policy remains in prompt: %q", forbidden)
+		}
 	}
 }
 
@@ -102,8 +126,9 @@ func TestNativeLocalPolicyKeepsBuildForSubstantialJobs(t *testing.T) {
 		"native file tools",
 		"service_start/list/logs/stop/restart",
 		"read-only git tools",
-		"substantial coding jobs",
-		"Do not delegate simple file inspection",
+		"enter your durable Build mode",
+		"You remain the only builder",
+		"Handle simple file inspection",
 		"Once build_project reports that the durable job was accepted, STOP",
 	} {
 		if !strings.Contains(policy, want) {

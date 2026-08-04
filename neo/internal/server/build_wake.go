@@ -94,9 +94,9 @@ func buildWakePrompt(job codingruntime.Job, wake codingruntime.WakeEnvelope) str
 		Status: string(public.Lifecycle), Outcome: string(public.Outcome),
 		Reason: truncateBuildText(wake.Reason, 2000), Evidence: evidence,
 	})
-	return strings.TrimSpace(fmt.Sprintf(`A private coding sub-agent for this conversation has produced a durable Build update.
+	return strings.TrimSpace(fmt.Sprintf(`Your durable Build run for this conversation has produced an update. You are resuming your own coding work; there is no separate builder.
 
-Present this update to the user in Neo's normal voice. If input or approval is needed, ask the exact question clearly. If it completed, summarize what was built and the recorded verification honestly. If blocked or failed, explain the actionable reason. Do not call build_project, do not start another coding job, do not invent files or checks, and do not expose internal worker architecture or identifiers beyond the public Build job id.
+Continue under Neo's normal system rules. If input or approval is needed, ask the exact question clearly. If the work completed, perform every applicable completion step before presenting it, including the frontend Paxeer Cloud post-build delivery rule, then summarize what you built and the recorded verification honestly. If blocked or failed, explain the actionable reason. Do not call build_project, do not start another coding job, do not invent files or checks, and do not expose internal execution architecture or identifiers beyond the public Build job id.
 
 Build update:
 %s`, payload))

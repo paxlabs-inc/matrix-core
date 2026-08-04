@@ -131,11 +131,11 @@ func (d *DB) LookupForRoute(ctx context.Context, supabaseUserID string) (*User, 
 	return &u, nil
 }
 
-// ListWorkforceReconcileUsers returns attached Railway runtimes that are
-// eligible for an explicit operator-triggered Workforce environment rollout.
+// ListRailwayReconcileUsers returns attached Railway runtimes that are
+// eligible for an explicit operator-triggered environment rollout.
 // Suspended, failed, and deleted users are excluded so a fleet reconciliation
 // never wakes or redeploys environments that are intentionally offline.
-func (d *DB) ListWorkforceReconcileUsers(ctx context.Context) ([]User, error) {
+func (d *DB) ListRailwayReconcileUsers(ctx context.Context) ([]User, error) {
 	const q = `
 		SELECT id, COALESCE(email,''), state, COALESCE(provider,'fly'),
 		       COALESCE(env_id, fly_machine_id, ''),
@@ -152,7 +152,7 @@ func (d *DB) ListWorkforceReconcileUsers(ctx context.Context) ([]User, error) {
 	`
 	rows, err := d.pool.Query(ctx, q)
 	if err != nil {
-		return nil, fmt.Errorf("db: list Workforce reconciliation users: %w", err)
+		return nil, fmt.Errorf("db: list Railway reconciliation users: %w", err)
 	}
 	defer rows.Close()
 	users := make([]User, 0)
@@ -164,14 +164,20 @@ func (d *DB) ListWorkforceReconcileUsers(ctx context.Context) ([]User, error) {
 			&u.S3AccessKey, &u.DailyBudget, &u.CreatedAt, &u.UpdatedAt,
 			&u.LastSeenAt,
 		); err != nil {
-			return nil, fmt.Errorf("db: scan Workforce reconciliation user: %w", err)
+			return nil, fmt.Errorf("db: scan Railway reconciliation user: %w", err)
 		}
 		users = append(users, u)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("db: list Workforce reconciliation users: %w", err)
+		return nil, fmt.Errorf("db: list Railway reconciliation users: %w", err)
 	}
 	return users, nil
+}
+
+// ListWorkforceReconcileUsers preserves the Workforce-specific API while both
+// fleet reconcilers share the same Railway runtime eligibility rules.
+func (d *DB) ListWorkforceReconcileUsers(ctx context.Context) ([]User, error) {
+	return d.ListRailwayReconcileUsers(ctx)
 }
 
 // CreateOrTouchUser inserts a row in 'provisioning' state if absent;

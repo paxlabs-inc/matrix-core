@@ -46,6 +46,16 @@ func TestPreviewToolWiringAndDispatch(t *testing.T) {
 	for _, s := range m.Schemas() {
 		if s.Function.Name == PreviewTool {
 			advertised = true
+			description := s.Function.Description
+			for _, want := range []string{
+				"only when the user explicitly asks",
+				"Never use this tool to present a frontend app or site after it compiles successfully",
+				"deployed through Paxeer Cloud with paxc",
+			} {
+				if !strings.Contains(description, want) {
+					t.Errorf("preview schema missing %q", want)
+				}
+			}
 		}
 	}
 	if !advertised {

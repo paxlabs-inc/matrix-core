@@ -13,6 +13,7 @@
 //	DELETE /admin/users/{id}         destroy environment + state=deleted
 //	GET    /admin/users/{id}         lookup row (debug aid)
 //	POST   /admin/workforce/reconcile reconcile every eligible Railway runtime
+//	POST   /admin/neo/reconcile       reconcile Neo variables on every eligible Railway runtime
 //
 // Provisioning is synchronous in v1 (the request blocks while we call
 // the provider API). v1 wakes < 1 user concurrently per box; if
@@ -22,6 +23,7 @@ package admin
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -62,6 +64,8 @@ type Handler struct {
 	// same user when a single-user command races a fleet rollout.
 	workforceReconcileMu       sync.Mutex
 	workforceReconcileInflight sync.Map
+	neoReconcileMu             sync.Mutex
+	neoReconcileInflight       sync.Map
 }
 
 // Mount registers the admin routes onto mux under "/admin/".
@@ -73,6 +77,7 @@ func (h *Handler) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/users", h.handleUsersCollection)
 	mux.HandleFunc("/admin/users/", h.handleUserItem)
 	mux.HandleFunc("/admin/workforce/reconcile", h.handleWorkforceFleetReconcile)
+	mux.HandleFunc("/admin/neo/reconcile", h.handleNeoFleetReconcile)
 	mux.HandleFunc("/admin/shards", h.handleShards)
 	mux.HandleFunc("/admin/shards/", h.handleShard)
 	h.MountBeta(mux)
@@ -764,6 +769,143 @@ func (h *Handler) workforceReconcileEnvironment(userID string) (map[string]strin
 		environment[name] = ""
 	}
 	return environment, nil
+}
+
+type neoFleetReconcileRequest struct {
+	Concurrency    int    `json:"concurrency,omitempty"`
+	NeocortexToken string `json:"neocortex_token"`
+}
+
+func (h *Handler) handleNeoFleetReconcile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if !h.neoReconcileMu.TryLock() {
+		http.Error(w, "Neo fleet reconciliation already in progress", http.StatusConflict)
+		return
+	}
+	defer h.neoReconcileMu.Unlock()
+	var request neoFleetReconcileRequest
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		http.Error(w, "bad json: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	concurrency, err := workforceReconcileConcurrency(request.Concurrency)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	environment, err := neoReconcileEnvironment(request.NeocortexToken)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), workforceFleetReconcileTimeout)
+	defer cancel()
+	users, err := h.DB.ListRailwayReconcileUsers(ctx)
+	if err != nil {
+		h.logf("list Neo reconciliation users: %v", err)
+		http.Error(w, "Neo reconciliation user listing failed", http.StatusInternalServerError)
+		return
+	}
+	if len(users) < concurrency {
+		concurrency = len(users)
+	}
+	response := workforceFleetReconcileResponse{
+		Eligible: len(users), Failures: make([]workforceFleetReconcileFailure, 0),
+	}
+	if len(users) == 0 {
+		writeJSON(w, http.StatusOK, response)
+		return
+	}
+	type result struct {
+		userID string
+		err    error
+	}
+	jobs := make(chan db.User, len(users))
+	results := make(chan result, len(users))
+	var workers sync.WaitGroup
+	for worker := 0; worker < concurrency; worker++ {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			for user := range jobs {
+				userCtx, userCancel := context.WithTimeout(ctx, h.timeout())
+				err := h.updateNeoEnvironment(userCtx, &user, environment)
+				userCancel()
+				results <- result{userID: user.ID, err: err}
+			}
+		}()
+	}
+	for index := range users {
+		jobs <- users[index]
+	}
+	close(jobs)
+	workers.Wait()
+	close(results)
+	for result := range results {
+		if result.err == nil {
+			response.Succeeded++
+			continue
+		}
+		response.Failed++
+		response.Failures = append(response.Failures, workforceFleetReconcileFailure{
+			UserID: result.userID, Error: result.err.Error(),
+		})
+	}
+	status := http.StatusOK
+	if response.Failed > 0 {
+		status = http.StatusMultiStatus
+	}
+	h.logf(
+		"Neo fleet reconciliation eligible=%d succeeded=%d failed=%d",
+		response.Eligible, response.Succeeded, response.Failed,
+	)
+	writeJSON(w, status, response)
+}
+
+func neoReconcileEnvironment(token string) (map[string]string, error) {
+	token = strings.TrimSpace(token)
+	decoded, err := hex.DecodeString(token)
+	if err != nil || len(decoded) != 32 {
+		return nil, errors.New("neocortex_token must be exactly 64 hexadecimal characters")
+	}
+	return map[string]string{
+		"NEO_MEMORY_SUBSTRATE": "neocortex",
+		"NEO_NEOCORTEX_TOKEN":  token,
+		"NEO_RUNTIME":          "LEGACY",
+	}, nil
+}
+
+func (h *Handler) updateNeoEnvironment(
+	ctx context.Context,
+	user *db.User,
+	environment map[string]string,
+) error {
+	if _, busy := h.neoReconcileInflight.LoadOrStore(user.ID, struct{}{}); busy {
+		return errors.New("Neo environment reconciliation already in progress")
+	}
+	defer h.neoReconcileInflight.Delete(user.ID)
+	provider := h.Prov
+	if user.Provider == "railway" && h.ShardProviders != nil {
+		var ok bool
+		provider, ok = h.ShardProviders.Provider(user.RailwayShardID)
+		if !ok {
+			return fmt.Errorf("assigned shard %q is unavailable", user.RailwayShardID)
+		}
+	}
+	updater, ok := provider.(provision.VariableUpdater)
+	if !ok {
+		return errors.New("provider does not support environment reconciliation")
+	}
+	ref := provision.Ref{UserID: user.ID, EnvID: user.EnvID, VolumeID: user.VolumeID}
+	if err := updater.UpdateVariables(ctx, ref, environment); err != nil {
+		return fmt.Errorf("update variables: %w", err)
+	}
+	return nil
 }
 
 func (h *Handler) getUser(ctx context.Context, w http.ResponseWriter, userID string) {
