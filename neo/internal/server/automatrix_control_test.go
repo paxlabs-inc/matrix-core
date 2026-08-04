@@ -7,7 +7,7 @@ package server
 //
 // Everything under test is REAL — no fakes/mocks of the code under test:
 //   - the production AutomatrixGovernor over a REAL durable opt-in store,
-//   - the REAL cortex pager (temp dir, hash embedder) for the queue,
+//   - the REAL Neocortex pager (temp dir, hash embedder) for the queue,
 //   - the REAL durable automatrixlog inbox,
 //   - the REAL HTTP handlers driven through httptest against the real server.
 //
@@ -62,14 +62,14 @@ func (c *recordingAlarmController) Cancel(_ context.Context, alarmID string) err
 	return c.cancelErr
 }
 
-// newControlTestEngine builds a real Engine with a real cortex pager + a real
+// newControlTestEngine builds a real Engine with a real Neocortex pager + a real
 // durable inbox, and installs the production governor backed by a recording
 // alarm controller. Returns the engine, the controller, and the governor.
 func newControlTestEngine(t *testing.T) (*Engine, *recordingAlarmController, *automatrixGovernor) {
 	t.Helper()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-automatrix-control-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-automatrix-control-test"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)
@@ -389,8 +389,8 @@ func TestInboxEndpointListsAndMarksRead(t *testing.T) {
 // fails cleanly (503) when no production governor is wired, rather than panics.
 func TestControlEndpointsUnavailableWithoutGovernor(t *testing.T) {
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-automatrix-nogov"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-automatrix-nogov"
 	e := NewEngine(EngineOptions{Config: cfg, BackendURL: "http://127.0.0.1:1"})
 	t.Cleanup(e.Close)
 	ts := newControlTestServer(t, e)

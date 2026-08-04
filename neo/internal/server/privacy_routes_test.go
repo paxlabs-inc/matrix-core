@@ -18,8 +18,8 @@ import (
 func newPrivacyServer(t *testing.T) (*Server, http.Handler, *neomemory.Pager) {
 	t.Helper()
 	cfg := neoconfig.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "privacy-route-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "privacy-route-test"
 	pager, err := neomemory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)

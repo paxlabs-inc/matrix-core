@@ -37,8 +37,8 @@ func TestAudioTurnWindowAndDurableTranscript(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "voice-window-actor"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "voice-window-actor"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -132,8 +132,8 @@ func TestTextTurnWireByteIdenticalWithVoiceEnabled(t *testing.T) {
 		cfg := config.Default()
 		cfg.CassandraEnabled = false
 		cfg.VoiceEnabled = enabled
-		cfg.CortexRoot = t.TempDir()
-		cfg.CortexActor = "voice-byte-actor"
+		cfg.DataRoot = t.TempDir()
+		cfg.NeocortexActor = "voice-byte-actor"
 		pager, err := memory.Open(cfg)
 		if err != nil {
 			t.Fatal(err)

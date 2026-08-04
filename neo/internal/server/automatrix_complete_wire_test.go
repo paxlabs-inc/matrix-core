@@ -12,7 +12,7 @@ package server
 //   • the autonomous run drives the REAL restricted agent + REAL supervised
 //     settle path through RunAutomatrixOpportunity, with the model behind an
 //     httptest server (the established neo seam);
-//   • the opportunity lifecycle is the REAL cortex pager (t.TempDir(), hash
+//   • the opportunity lifecycle is the REAL Neocortex pager (t.TempDir(), hash
 //     embedder, offline);
 //   • the durable record is the REAL automatrixlog store (AutomatrixDir set);
 //   • the notifier is a REAL notify.New ntfy backend pointed at an httptest
@@ -20,7 +20,7 @@ package server
 //
 // The assertions verify the seam's contract: a GENUINE gate-passed completion
 // writes the durable in-app record (unread) AND fires the out-of-app ping
-// (result-not-protocol copy, no Chronos/alarm/marker/cortex jargon); a
+// (result-not-protocol copy, no Chronos/alarm/marker/Neocortex jargon); a
 // FAILED/partial completion writes NO record and sends NO ping (req 8.3 — a
 // non-completed task is never announced).
 
@@ -86,15 +86,15 @@ func (c *ntfyCapture) all() []capturedPing {
 	return out
 }
 
-// newCompleteWireEngine builds a real Engine with a real cortex pager, a REAL
+// newCompleteWireEngine builds a real Engine with a real Neocortex pager, a REAL
 // durable Automatrix inbox (AutomatrixDir set), the model pointed at modelURL,
 // and a REAL ntfy notifier pointed at the httptest ntfy server. Returns the
 // engine, the pager, and the ntfy capture.
 func newCompleteWireEngine(t *testing.T, modelURL string) (*Engine, *memory.Pager, *ntfyCapture) {
 	t.Helper()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-automatrix-wire-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-automatrix-wire-test"
 
 	pager, err := memory.Open(cfg)
 	if err != nil {
@@ -164,7 +164,7 @@ func waitForPing(t *testing.T, cap *ntfyCapture, want int, timeout time.Duration
 
 // jargon enumerates the protocol terms the consumer-facing record + ping must
 // NEVER contain (req 6.5).
-var jargon = []string{"chronos", "alarm", "automatrix", "marker", "cortex", "heartbeat"}
+var jargon = []string{"chronos", "alarm", "automatrix", "marker", "Neocortex", "heartbeat"}
 
 func assertNoJargon(t *testing.T, label, text string) {
 	t.Helper()

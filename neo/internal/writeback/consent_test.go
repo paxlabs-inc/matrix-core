@@ -70,8 +70,8 @@ func newConsentClient(t *testing.T, srv *httptest.Server) *llm.Client {
 func newConsentPager(t *testing.T) *memory.Pager {
 	t.Helper()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-consent-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-consent-test"
 	p, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)

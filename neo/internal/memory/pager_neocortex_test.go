@@ -18,23 +18,22 @@ func TestDialNeocortexRejectsMissingOrMalformedCredentials(t *testing.T) {
 		token  string
 	}{
 		{name: "missing socket", token: validToken},
-		{name: "missing token", socket: "/tmp/cortexd.sock"},
-		{name: "short token", socket: "/tmp/cortexd.sock", token: "00"},
-		{name: "non-hex token", socket: "/tmp/cortexd.sock", token: strings.Repeat("zz", 32)},
+		{name: "missing token", socket: "/tmp/neocortex.sock"},
+		{name: "short token", socket: "/tmp/neocortex.sock", token: "00"},
+		{name: "non-hex token", socket: "/tmp/neocortex.sock", token: strings.Repeat("zz", 32)},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := dialNeocortex(config.Config{
-				MemorySubstrate: config.SubstrateNeocortex,
-				CortexdSocket:   test.socket,
-				CortexdToken:    test.token,
+			pager, err := Open(config.Config{
+				NeocortexSocket: test.socket,
+				NeocortexToken:  test.token,
 			})
-			if client != nil {
-				_ = client.Close()
-				t.Fatal("dialNeocortex returned a client for invalid credentials")
+			if pager != nil {
+				_ = pager.Close()
+				t.Fatal("Open returned a pager for invalid credentials")
 			}
-			if err == nil || !strings.Contains(err.Error(), "requires NEO_CORTEXD_SOCKET and a 64-hex NEO_CORTEXD_TOKEN") {
-				t.Fatalf("dialNeocortex error = %v", err)
+			if err == nil || !strings.Contains(err.Error(), "NEO_NEOCORTEX_") {
+				t.Fatalf("Open error = %v", err)
 			}
 		})
 	}

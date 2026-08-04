@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/mcl/mtx/ast kind=package
   digest=b3:a840e92e743148195f50b6eb4ead832aa09d26b4114ee369531574d4f9ce3ba2 file=MCL/mtx/ast range=0:0 lang=go exported=true
 EDGES
   contains=matrix/mcl/mtx/ast/ast.go
+  imports=matrix/mcl/mtx/token
   ^contains=mod:matrix/mcl
+  ^imports=matrix/executor/cmd/mcl-execute,matrix/executor/runtime,matrix/mcl/mtx/canonical,matrix/mcl/mtx/interpreter,matrix/mcl/mtx/parser,matrix/mcl/mtx/validator
 
 NODE id=matrix/mcl/mtx/ast.BoolValue kind=type
   digest=b3:e259050c98c2578893a37d9e27bce8a1aa9a2c400c3cb5c566654c7dd180af6f file=MCL/mtx/ast/ast.go range=305:309 lang=go exported=true byte_range=7972:8061
@@ -13,6 +15,8 @@ NODE id=matrix/mcl/mtx/ast.BoolValue kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.BoolValue#BoolPos,matrix/mcl/mtx/ast.BoolValue#Val,matrix/mcl/mtx/ast.BoolValue.Pos,matrix/mcl/mtx/ast.BoolValue.valueNode
   implements=matrix/mcl/mtx/ast.Node,matrix/mcl/mtx/ast.Value
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.BoolValue.Pos,matrix/mcl/mtx/ast.BoolValue.valueNode,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/interpreter.valueToString,matrix/mcl/mtx/parser.Parser.parseValue
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.BoolValue#BoolPos kind=field
@@ -31,13 +35,16 @@ NODE id=matrix/mcl/mtx/ast.BoolValue.Pos kind=method
   digest=b3:6914c5f005f8815e72eaf582b217f4b8963a3217434e7ae1786ba04543bbe771 file=MCL/mtx/ast/ast.go range=311:311 lang=go exported=true byte_range=8063:8121
   sig=func (bv *BoolValue) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.BoolValue,matrix/mcl/mtx/ast.bv,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.BoolValue
+  ^calls=matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.parseValueList
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.BoolValue.valueNode kind=method
   digest=b3:a90de9cbea42754989655c2a1175a3c7b85f7370c11959bd6947fd0e08912e56 file=MCL/mtx/ast/ast.go range=312:312 lang=go exported=false byte_range=8122:8161
   sig=func (bv *BoolValue) valueNode()
 EDGES
+  references=matrix/mcl/mtx/ast.BoolValue
   ^contains=matrix/mcl/mtx/ast.BoolValue
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -48,6 +55,8 @@ NODE id=matrix/mcl/mtx/ast.ClarifyBlock kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.ClarifyBlock#ClarifyPos,matrix/mcl/mtx/ast.ClarifyBlock#Modifiers,matrix/mcl/mtx/ast.ClarifyBlock#SlotName,matrix/mcl/mtx/ast.ClarifyBlock.Pos,matrix/mcl/mtx/ast.ClarifyBlock.entryNode
   implements=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.ClarifyModifier,matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.ClarifyBlock.Pos,matrix/mcl/mtx/ast.ClarifyBlock.entryNode,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/interpreter.Interpreter.execClarify,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/parser.Parser.parseClarifyBlock
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.ClarifyBlock#ClarifyPos kind=field
@@ -72,6 +81,7 @@ NODE id=matrix/mcl/mtx/ast.ClarifyBlock.Pos kind=method
   digest=b3:6d2a4e46f155fe3536f88f5635864fdfec1a6c637d29f6ffcc834799e5534d77 file=MCL/mtx/ast/ast.go range=222:222 lang=go exported=true byte_range=5814:5878
   sig=func (cb *ClarifyBlock) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.ClarifyBlock,matrix/mcl/mtx/ast.cb,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.ClarifyBlock
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -79,6 +89,7 @@ NODE id=matrix/mcl/mtx/ast.ClarifyBlock.entryNode kind=method
   digest=b3:4a682a0b56ead0e448e18987ff7a96a114897dea41290a05c33e5fd13cdf2337 file=MCL/mtx/ast/ast.go range=223:223 lang=go exported=false byte_range=5879:5921
   sig=func (cb *ClarifyBlock) entryNode()
 EDGES
+  references=matrix/mcl/mtx/ast.ClarifyBlock
   ^contains=matrix/mcl/mtx/ast.ClarifyBlock
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -89,6 +100,8 @@ NODE id=matrix/mcl/mtx/ast.ClarifyModifier kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.ClarifyModifier#Key,matrix/mcl/mtx/ast.ClarifyModifier#ModPos,matrix/mcl/mtx/ast.ClarifyModifier#Value,matrix/mcl/mtx/ast.ClarifyModifier.Pos
   implements=matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.ClarifyBlock,matrix/mcl/mtx/ast.ClarifyModifier.Pos,matrix/mcl/mtx/parser.Parser.parseClarifyBlock
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.ClarifyModifier#Key kind=field
@@ -113,6 +126,7 @@ NODE id=matrix/mcl/mtx/ast.ClarifyModifier.Pos kind=method
   digest=b3:e480b0ae9dd0eb1df382a1b37ca44e8b180284abf4367a35023bb33cc03489e1 file=MCL/mtx/ast/ast.go range=232:232 lang=go exported=true byte_range=6124:6187
   sig=func (cm *ClarifyModifier) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.ClarifyModifier,matrix/mcl/mtx/ast.cm,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.ClarifyModifier
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -123,6 +137,8 @@ NODE id=matrix/mcl/mtx/ast.Comment kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.Comment#Text,matrix/mcl/mtx/ast.Comment#TextPos,matrix/mcl/mtx/ast.Comment.Pos,matrix/mcl/mtx/ast.Comment.entryNode
   implements=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.Comment.Pos,matrix/mcl/mtx/ast.Comment.entryNode,matrix/mcl/mtx/ast.File,matrix/mcl/mtx/canonical.appendEntry
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.Comment#Text kind=field
@@ -141,6 +157,7 @@ NODE id=matrix/mcl/mtx/ast.Comment.Pos kind=method
   digest=b3:688bf2dbdfeb31a23180a797bc180dd0c65ccee16369b5afe863310286196885 file=MCL/mtx/ast/ast.go range=60:60 lang=go exported=true byte_range=1623:1677
   sig=func (c *Comment) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.Comment,matrix/mcl/mtx/ast.c,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.Comment
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -148,6 +165,7 @@ NODE id=matrix/mcl/mtx/ast.Comment.entryNode kind=method
   digest=b3:ad9b9242034b881dec35663a0492ce15c158d4398f517a251853b6804cde0a93 file=MCL/mtx/ast/ast.go range=61:61 lang=go exported=false byte_range=1678:1714
   sig=func (c *Comment) entryNode()
 EDGES
+  references=matrix/mcl/mtx/ast.Comment
   ^contains=matrix/mcl/mtx/ast.Comment
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -156,7 +174,10 @@ NODE id=matrix/mcl/mtx/ast.Condition kind=interface
   sig=type Condition interface {\n	Node\n	conditionNode()\n}
   doc=Condition is the interface for on-block conditions.
 EDGES
+  embeds=matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.Node
   ^implements=matrix/mcl/mtx/ast.ConfidenceCondition,matrix/mcl/mtx/ast.SlotValCondition,matrix/mcl/mtx/ast.UnknownCondition,matrix/mcl/mtx/ast.VerbCondition
+  ^references=matrix/mcl/mtx/ast.OnBlock,matrix/mcl/mtx/canonical.appendCondition,matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/parser.Parser.parseCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.ConfidenceCondition kind=type
@@ -166,6 +187,8 @@ NODE id=matrix/mcl/mtx/ast.ConfidenceCondition kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.ConfidenceCondition#CondPos,matrix/mcl/mtx/ast.ConfidenceCondition#Op,matrix/mcl/mtx/ast.ConfidenceCondition#Threshold,matrix/mcl/mtx/ast.ConfidenceCondition.Pos,matrix/mcl/mtx/ast.ConfidenceCondition.conditionNode
   implements=matrix/mcl/mtx/ast.Condition,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.ConfidenceCondition.Pos,matrix/mcl/mtx/ast.ConfidenceCondition.conditionNode,matrix/mcl/mtx/canonical.appendCondition,matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/parser.Parser.parseCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.ConfidenceCondition#CondPos kind=field
@@ -190,6 +213,7 @@ NODE id=matrix/mcl/mtx/ast.ConfidenceCondition.Pos kind=method
   digest=b3:d339b7c2067c49ff2c3d8d3682750a4610b125437d114489366f298236dca5b5 file=MCL/mtx/ast/ast.go range=137:137 lang=go exported=true byte_range=3503:3571
   sig=func (cc *ConfidenceCondition) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.ConfidenceCondition,matrix/mcl/mtx/ast.cc,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.ConfidenceCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -197,6 +221,7 @@ NODE id=matrix/mcl/mtx/ast.ConfidenceCondition.conditionNode kind=method
   digest=b3:f50c9df2f7b2dfcc63b03a2ab0c270888c76b40b6131a18a621f0564cedf9822 file=MCL/mtx/ast/ast.go range=138:138 lang=go exported=false byte_range=3572:3621
   sig=func (cc *ConfidenceCondition) conditionNode()
 EDGES
+  references=matrix/mcl/mtx/ast.ConfidenceCondition
   ^contains=matrix/mcl/mtx/ast.ConfidenceCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -207,6 +232,8 @@ NODE id=matrix/mcl/mtx/ast.CortexArg kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.CortexArg#ArgPos,matrix/mcl/mtx/ast.CortexArg#Name,matrix/mcl/mtx/ast.CortexArg#Value,matrix/mcl/mtx/ast.CortexArg.Pos
   implements=matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.CortexArg.Pos,matrix/mcl/mtx/ast.ResolveStmt,matrix/mcl/mtx/parser.Parser.parseResolveStmt
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.CortexArg#ArgPos kind=field
@@ -231,6 +258,7 @@ NODE id=matrix/mcl/mtx/ast.CortexArg.Pos kind=method
   digest=b3:9fefad9797f61d11955763a136d8d303a361880642f7dc82e885b77176119737 file=MCL/mtx/ast/ast.go range=194:194 lang=go exported=true byte_range=5083:5140
   sig=func (ca *CortexArg) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.CortexArg,matrix/mcl/mtx/ast.ca,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.CortexArg
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -239,7 +267,10 @@ NODE id=matrix/mcl/mtx/ast.Entry kind=interface
   sig=type Entry interface {\n	Node\n	entryNode()\n}
   doc=Entry is the interface for all section-level entries.
 EDGES
+  embeds=matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.Node
   ^implements=matrix/mcl/mtx/ast.ClarifyBlock,matrix/mcl/mtx/ast.Comment,matrix/mcl/mtx/ast.FailEntry,matrix/mcl/mtx/ast.KVPair,matrix/mcl/mtx/ast.NoneEntry,matrix/mcl/mtx/ast.OnBlock,matrix/mcl/mtx/ast.PromptBlock,matrix/mcl/mtx/ast.RefEntry,matrix/mcl/mtx/ast.ResolveStmt,matrix/mcl/mtx/ast.SlotDecl,matrix/mcl/mtx/ast.UnknownBlock
+  ^references=matrix/mcl/mtx/ast.OnBlock,matrix/mcl/mtx/ast.Section,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry,matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry,matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair,matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots,matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots,matrix/mcl/mtx/validator.validator.rule7PromptRoles,matrix/mcl/mtx/validator.validator.walkEntries,matrix/mcl/mtx/validator.validator.walkEntry
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.FailEntry kind=type
@@ -249,6 +280,8 @@ NODE id=matrix/mcl/mtx/ast.FailEntry kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.FailEntry#Modifiers,matrix/mcl/mtx/ast.FailEntry#Name,matrix/mcl/mtx/ast.FailEntry#NamePos,matrix/mcl/mtx/ast.FailEntry.Pos,matrix/mcl/mtx/ast.FailEntry.entryNode
   implements=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.FailModifier,matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.FailEntry.Pos,matrix/mcl/mtx/ast.FailEntry.entryNode,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/parser.Parser.parseFailEntry,matrix/mcl/mtx/validator.validator.rule8FailureReasons
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.FailEntry#Modifiers kind=field
@@ -273,6 +306,7 @@ NODE id=matrix/mcl/mtx/ast.FailEntry.Pos kind=method
   digest=b3:a029acca68530d1b808f365c3b1727ffe52beb8e70a7c00cfb708ea4f4963c7a file=MCL/mtx/ast/ast.go range=241:241 lang=go exported=true byte_range=6349:6407
   sig=func (fe *FailEntry) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.FailEntry,matrix/mcl/mtx/ast.fe,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.FailEntry
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -280,6 +314,7 @@ NODE id=matrix/mcl/mtx/ast.FailEntry.entryNode kind=method
   digest=b3:e7ed86d2ddbdd4f0a0c8470d92db79fc16d88e9d439609d0820e22d053349c9a file=MCL/mtx/ast/ast.go range=242:242 lang=go exported=false byte_range=6408:6447
   sig=func (fe *FailEntry) entryNode()
 EDGES
+  references=matrix/mcl/mtx/ast.FailEntry
   ^contains=matrix/mcl/mtx/ast.FailEntry
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -290,6 +325,8 @@ NODE id=matrix/mcl/mtx/ast.FailModifier kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.FailModifier#Key,matrix/mcl/mtx/ast.FailModifier#ModPos,matrix/mcl/mtx/ast.FailModifier#Value,matrix/mcl/mtx/ast.FailModifier.Pos
   implements=matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.FailEntry,matrix/mcl/mtx/ast.FailModifier.Pos,matrix/mcl/mtx/parser.Parser.parseFailEntry
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.FailModifier#Key kind=field
@@ -314,7 +351,10 @@ NODE id=matrix/mcl/mtx/ast.FailModifier.Pos kind=method
   digest=b3:e81aadc3c9f6f1d0d130b8be4c608f67afe7fa97177f9b7663d8e25d64a8934a file=MCL/mtx/ast/ast.go range=251:251 lang=go exported=true byte_range=6623:6683
   sig=func (fm *FailModifier) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.FailModifier,matrix/mcl/mtx/ast.fm,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.FailModifier
+  ^calls=matrix/mcl/mtx/validator.validator.rule8FailureReasons
+  ^references=matrix/mcl/mtx/validator.validator.rule8FailureReasons
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.File kind=type
@@ -324,6 +364,8 @@ NODE id=matrix/mcl/mtx/ast.File kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.File#Comments,matrix/mcl/mtx/ast.File#Sections,matrix/mcl/mtx/ast.File.Pos
   implements=matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.Comment,matrix/mcl/mtx/ast.Section
+  ^references=matrix/executor/runtime.LoadedSkill,matrix/executor/runtime.extractRefList,matrix/executor/runtime.extractSkillMeta,matrix/mcl/mtx/ast.File.Pos,matrix/mcl/mtx/canonical.Bytes,matrix/mcl/mtx/canonical.Hash,matrix/mcl/mtx/canonical.appendFile,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.New,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill,matrix/mcl/mtx/validator.validator
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.File#Comments kind=field
@@ -342,7 +384,11 @@ NODE id=matrix/mcl/mtx/ast.File.Pos kind=method
   digest=b3:ae2f4d72a00565c260ab69c93cc254e292059dcbf3d9276f648e05259659f7c2 file=MCL/mtx/ast/ast.go range=29:34 lang=go exported=true byte_range=879:1006
   sig=func (f *File) Pos() token.Pos
 EDGES
+  calls=matrix/mcl/mtx/ast.Section.Pos
+  references=matrix/mcl/mtx/ast.File,matrix/mcl/mtx/ast.Section.Pos,matrix/mcl/mtx/ast.f,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.File
+  ^calls=matrix/mcl/mtx/validator.validator.rule1RequiredSections
+  ^references=matrix/mcl/mtx/validator.validator.rule1RequiredSections
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.FloatValue kind=type
@@ -352,6 +398,8 @@ NODE id=matrix/mcl/mtx/ast.FloatValue kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.FloatValue#FloatPos,matrix/mcl/mtx/ast.FloatValue#Raw,matrix/mcl/mtx/ast.FloatValue.Pos,matrix/mcl/mtx/ast.FloatValue.valueNode
   implements=matrix/mcl/mtx/ast.Node,matrix/mcl/mtx/ast.Value
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.FloatValue.Pos,matrix/mcl/mtx/ast.FloatValue.valueNode,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/interpreter.valueToString,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.valueToString
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.FloatValue#FloatPos kind=field
@@ -370,13 +418,16 @@ NODE id=matrix/mcl/mtx/ast.FloatValue.Pos kind=method
   digest=b3:fe603479b64c9f28a8eefeb61050ca67d756c48fcf5f28d251a554ed5f29d771 file=MCL/mtx/ast/ast.go range=302:302 lang=go exported=true byte_range=7869:7929
   sig=func (fv *FloatValue) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.FloatValue,matrix/mcl/mtx/ast.fv,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.FloatValue
+  ^calls=matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.parseValueList
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.FloatValue.valueNode kind=method
   digest=b3:dfc5e3505ed420bfeb63a41022f370d6ddd2fd79ee7cc4f1aa86e53455b5d45b file=MCL/mtx/ast/ast.go range=303:303 lang=go exported=false byte_range=7930:7970
   sig=func (fv *FloatValue) valueNode()
 EDGES
+  references=matrix/mcl/mtx/ast.FloatValue
   ^contains=matrix/mcl/mtx/ast.FloatValue
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -387,6 +438,8 @@ NODE id=matrix/mcl/mtx/ast.IdentValue kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.IdentValue#IdentPos,matrix/mcl/mtx/ast.IdentValue#Name,matrix/mcl/mtx/ast.IdentValue.Pos,matrix/mcl/mtx/ast.IdentValue.valueNode
   implements=matrix/mcl/mtx/ast.Node,matrix/mcl/mtx/ast.Value
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/executor/runtime.kvIdentList,matrix/executor/runtime.kvString,matrix/mcl/mtx/ast.IdentValue.Pos,matrix/mcl/mtx/ast.IdentValue.valueNode,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/interpreter.ExtractKindValue,matrix/mcl/mtx/interpreter.valueToString,matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.parseDottedValue,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.Parser.parseValueList,matrix/mcl/mtx/parser.valueToString,matrix/mcl/mtx/validator.validator.rule2VerbVocab
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.IdentValue#IdentPos kind=field
@@ -405,13 +458,16 @@ NODE id=matrix/mcl/mtx/ast.IdentValue.Pos kind=method
   digest=b3:84fad4493b8deb1ab3a4cf4634e282537fc2de01eed2ff143314d3237cb73d76 file=MCL/mtx/ast/ast.go range=320:320 lang=go exported=true byte_range=8280:8340
   sig=func (iv *IdentValue) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.iv,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.IdentValue
+  ^calls=matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.parseValueList
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.IdentValue.valueNode kind=method
   digest=b3:b82ddb876e1b7959fed8e046986d94f170c50cb69722810b86d0d0ba9d333c71 file=MCL/mtx/ast/ast.go range=321:321 lang=go exported=false byte_range=8341:8381
   sig=func (iv *IdentValue) valueNode()
 EDGES
+  references=matrix/mcl/mtx/ast.IdentValue
   ^contains=matrix/mcl/mtx/ast.IdentValue
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -422,6 +478,8 @@ NODE id=matrix/mcl/mtx/ast.IntValue kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.IntValue#IntPos,matrix/mcl/mtx/ast.IntValue#Raw,matrix/mcl/mtx/ast.IntValue.Pos,matrix/mcl/mtx/ast.IntValue.valueNode
   implements=matrix/mcl/mtx/ast.Node,matrix/mcl/mtx/ast.Value
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.IntValue.Pos,matrix/mcl/mtx/ast.IntValue.valueNode,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/interpreter.ExtractPositiveIntValue,matrix/mcl/mtx/interpreter.valueToString,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.valueToString,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.IntValue#IntPos kind=field
@@ -440,13 +498,16 @@ NODE id=matrix/mcl/mtx/ast.IntValue.Pos kind=method
   digest=b3:fe7c184af1981b93f79fa9dc0a9a2f8eb5c9cabf445a3cb5e630d393a4dbe972 file=MCL/mtx/ast/ast.go range=293:293 lang=go exported=true byte_range=7640:7696
   sig=func (iv *IntValue) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.IntValue,matrix/mcl/mtx/ast.iv,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.IntValue
+  ^calls=matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.parseValueList
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.IntValue.valueNode kind=method
   digest=b3:5c3a3487cfe936fcc2adbfdfab938d55dc0f537029108d591080a917d8c82b8d file=MCL/mtx/ast/ast.go range=294:294 lang=go exported=false byte_range=7697:7735
   sig=func (iv *IntValue) valueNode()
 EDGES
+  references=matrix/mcl/mtx/ast.IntValue
   ^contains=matrix/mcl/mtx/ast.IntValue
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -457,6 +518,8 @@ NODE id=matrix/mcl/mtx/ast.KVPair kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.KVPair#Key,matrix/mcl/mtx/ast.KVPair#KeyPos,matrix/mcl/mtx/ast.KVPair#Value,matrix/mcl/mtx/ast.KVPair.Pos,matrix/mcl/mtx/ast.KVPair.entryNode
   implements=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/token.Pos
+  ^references=matrix/executor/cmd/mcl-execute.extractOnBlockHints,matrix/executor/runtime.extractSkillMeta,matrix/mcl/mtx/ast.KVPair.Pos,matrix/mcl/mtx/ast.KVPair.entryNode,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.rule2VerbVocab
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.KVPair#Key kind=field
@@ -481,13 +544,17 @@ NODE id=matrix/mcl/mtx/ast.KVPair.Pos kind=method
   digest=b3:896f92c02bde18faeea6dfb8a0a6bc703a94cbaea673b2b43b810a1aaa5f4e6b file=MCL/mtx/ast/ast.go range=71:71 lang=go exported=true byte_range=1905:1959
   sig=func (kv *KVPair) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.KVPair,matrix/mcl/mtx/ast.kv,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.KVPair
+  ^calls=matrix/mcl/mtx/validator.validator.rule2VerbVocab
+  ^references=matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.rule2VerbVocab
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.KVPair.entryNode kind=method
   digest=b3:8bea6d3a6526c9db4db83717f9f8265dadc25c05a0c3eb3fc7dbd9ee9c0c6e9d file=MCL/mtx/ast/ast.go range=72:72 lang=go exported=false byte_range=1960:1996
   sig=func (kv *KVPair) entryNode()
 EDGES
+  references=matrix/mcl/mtx/ast.KVPair
   ^contains=matrix/mcl/mtx/ast.KVPair
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -495,30 +562,36 @@ NODE id=matrix/mcl/mtx/ast.ModDefault kind=const
   digest=b3:f0ec18c242093f99a5045f1c0d44293801a1290091628515a8faa2490176e964 file=MCL/mtx/ast/ast.go range=100:100 lang=go exported=true byte_range=2666:2676
   sig=ast.SlotModKind
 EDGES
+  ^references=matrix/mcl/mtx/canonical.appendSlotModifier,matrix/mcl/mtx/interpreter.Interpreter.initSlots,matrix/mcl/mtx/parser.Parser.parseSlotModifier
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.ModHint kind=const
   digest=b3:cd5b2b20bc40b85f6c3d4e280d1624e3b9f0020216fdfcff007161911e302a61 file=MCL/mtx/ast/ast.go range=101:101 lang=go exported=true byte_range=2678:2685
   sig=ast.SlotModKind
 EDGES
+  ^references=matrix/mcl/mtx/canonical.appendSlotModifier,matrix/mcl/mtx/parser.Parser.parseSlotModifier
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.ModMax kind=const
   digest=b3:414211afc1450652fc2ac461d4998af3347c2f12ff192a3ddf56ac6b30a261a7 file=MCL/mtx/ast/ast.go range=102:102 lang=go exported=true byte_range=2687:2693
   sig=ast.SlotModKind
 EDGES
+  ^references=matrix/mcl/mtx/canonical.appendSlotModifier,matrix/mcl/mtx/parser.Parser.parseSlotModifier
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.ModOptional kind=const
   digest=b3:a5159c8f31f98b03b553b92bcadc9cb9de3be1aae50b3263d8f76e0964b9bd72 file=MCL/mtx/ast/ast.go range=99:99 lang=go exported=true byte_range=2653:2664
   sig=ast.SlotModKind
 EDGES
+  ^references=matrix/mcl/mtx/canonical.appendSlotModifier,matrix/mcl/mtx/interpreter.Interpreter.initSlots,matrix/mcl/mtx/parser.Parser.parseSlotModifier
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.ModRequired kind=const
   digest=b3:aa0d09b36c7521679074fe833fd0de0c24441097489bc3dc3c3f493f51d9e4ad file=MCL/mtx/ast/ast.go range=98:98 lang=go exported=true byte_range=2621:2651
   sig=ast.SlotModKind
 EDGES
+  references=matrix/mcl/mtx/ast.SlotModKind
+  ^references=matrix/mcl/mtx/canonical.appendSlotModifier,matrix/mcl/mtx/interpreter.Interpreter.initSlots,matrix/mcl/mtx/parser.Parser.parseSlotModifier
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.Node kind=interface
@@ -526,7 +599,10 @@ NODE id=matrix/mcl/mtx/ast.Node kind=interface
   sig=type Node interface {\n	Pos() token.Pos\n}
   doc=Node is the interface satisfied by every AST node.
 EDGES
+  references=matrix/mcl/mtx/token.Pos
   ^implements=matrix/mcl/mtx/ast.BoolValue,matrix/mcl/mtx/ast.ClarifyBlock,matrix/mcl/mtx/ast.ClarifyModifier,matrix/mcl/mtx/ast.Comment,matrix/mcl/mtx/ast.ConfidenceCondition,matrix/mcl/mtx/ast.CortexArg,matrix/mcl/mtx/ast.FailEntry,matrix/mcl/mtx/ast.FailModifier,matrix/mcl/mtx/ast.File,matrix/mcl/mtx/ast.FloatValue,matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.IntValue,matrix/mcl/mtx/ast.KVPair,matrix/mcl/mtx/ast.NoneEntry,matrix/mcl/mtx/ast.OnBlock,matrix/mcl/mtx/ast.OptionListValue,matrix/mcl/mtx/ast.PromptBlock,matrix/mcl/mtx/ast.PromptRole,matrix/mcl/mtx/ast.RefEntry,matrix/mcl/mtx/ast.ResolveStmt,matrix/mcl/mtx/ast.Section,matrix/mcl/mtx/ast.SlotDecl,matrix/mcl/mtx/ast.SlotExprValue,matrix/mcl/mtx/ast.SlotModifier,matrix/mcl/mtx/ast.SlotValCondition,matrix/mcl/mtx/ast.SpaceListValue,matrix/mcl/mtx/ast.StringValue,matrix/mcl/mtx/ast.TypeRef,matrix/mcl/mtx/ast.URIValue,matrix/mcl/mtx/ast.UnknownBlock,matrix/mcl/mtx/ast.UnknownCondition,matrix/mcl/mtx/ast.UnknownModifier,matrix/mcl/mtx/ast.VerbCondition
+  ^embeds=matrix/mcl/mtx/ast.Condition,matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Value
+  ^references=matrix/mcl/mtx/ast.Condition,matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Value
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.NoneEntry kind=type
@@ -536,6 +612,8 @@ NODE id=matrix/mcl/mtx/ast.NoneEntry kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.NoneEntry#NonePos,matrix/mcl/mtx/ast.NoneEntry.Pos,matrix/mcl/mtx/ast.NoneEntry.entryNode
   implements=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/executor/runtime.extractRefList,matrix/mcl/mtx/ast.NoneEntry.Pos,matrix/mcl/mtx/ast.NoneEntry.entryNode,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/parser.Parser.parseNoneEntry
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.NoneEntry#NonePos kind=field
@@ -548,6 +626,7 @@ NODE id=matrix/mcl/mtx/ast.NoneEntry.Pos kind=method
   digest=b3:0fdba0051137f5528d0d8552541b7a0ec71d74e5259ef35d291b1bff0ddf44af file=MCL/mtx/ast/ast.go range=267:267 lang=go exported=true byte_range=7002:7060
   sig=func (ne *NoneEntry) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.NoneEntry,matrix/mcl/mtx/ast.ne,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.NoneEntry
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -555,6 +634,7 @@ NODE id=matrix/mcl/mtx/ast.NoneEntry.entryNode kind=method
   digest=b3:4c0bde4d3735ce7d8b3800c602908c31b5d55f12f848326afb962f2666770ff2 file=MCL/mtx/ast/ast.go range=268:268 lang=go exported=false byte_range=7061:7100
   sig=func (ne *NoneEntry) entryNode()
 EDGES
+  references=matrix/mcl/mtx/ast.NoneEntry
   ^contains=matrix/mcl/mtx/ast.NoneEntry
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -565,6 +645,8 @@ NODE id=matrix/mcl/mtx/ast.OnBlock kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.OnBlock#Condition,matrix/mcl/mtx/ast.OnBlock#Entries,matrix/mcl/mtx/ast.OnBlock#OnPos,matrix/mcl/mtx/ast.OnBlock.Pos,matrix/mcl/mtx/ast.OnBlock.entryNode
   implements=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.Condition,matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/token.Pos
+  ^references=matrix/executor/cmd/mcl-execute.extractOnBlockHints,matrix/mcl/mtx/ast.OnBlock.Pos,matrix/mcl/mtx/ast.OnBlock.entryNode,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.walkEntry
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.OnBlock#Condition kind=field
@@ -589,6 +671,7 @@ NODE id=matrix/mcl/mtx/ast.OnBlock.Pos kind=method
   digest=b3:abf7db0672344fdc1d58035361a0d617b14b2ce3d5f8e482a92fb138d300d608 file=MCL/mtx/ast/ast.go range=112:112 lang=go exported=true byte_range=2880:2934
   sig=func (ob *OnBlock) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.OnBlock,matrix/mcl/mtx/ast.ob,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.OnBlock
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -596,6 +679,7 @@ NODE id=matrix/mcl/mtx/ast.OnBlock.entryNode kind=method
   digest=b3:39ee1e9a9c37afd745fae6dc61cb8937eb26c714cd7486ac7f1c7108821624f5 file=MCL/mtx/ast/ast.go range=113:113 lang=go exported=false byte_range=2935:2972
   sig=func (ob *OnBlock) entryNode()
 EDGES
+  references=matrix/mcl/mtx/ast.OnBlock
   ^contains=matrix/mcl/mtx/ast.OnBlock
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -606,6 +690,8 @@ NODE id=matrix/mcl/mtx/ast.OptionListValue kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.OptionListValue#Items,matrix/mcl/mtx/ast.OptionListValue#ListPos,matrix/mcl/mtx/ast.OptionListValue.Pos,matrix/mcl/mtx/ast.OptionListValue.valueNode
   implements=matrix/mcl/mtx/ast.Node,matrix/mcl/mtx/ast.Value
+  references=matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.OptionListValue.Pos,matrix/mcl/mtx/ast.OptionListValue.valueNode,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/interpreter.Interpreter.execClarify,matrix/mcl/mtx/interpreter.valueToString,matrix/mcl/mtx/parser.Parser.parseOptionList
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.OptionListValue#Items kind=field
@@ -624,13 +710,16 @@ NODE id=matrix/mcl/mtx/ast.OptionListValue.Pos kind=method
   digest=b3:f43e482cb171cde725194e918a9d94f3c98e112797139f12bc97c58cb7962863 file=MCL/mtx/ast/ast.go range=356:356 lang=go exported=true byte_range=9202:9266
   sig=func (ol *OptionListValue) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.OptionListValue,matrix/mcl/mtx/ast.ol,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.OptionListValue
+  ^calls=matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.parseValueList
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.OptionListValue.valueNode kind=method
   digest=b3:8de8cf37f49e9335e2b58796c85901c420e4b16d1c9bc21374f89601576536ac file=MCL/mtx/ast/ast.go range=357:357 lang=go exported=false byte_range=9267:9312
   sig=func (ol *OptionListValue) valueNode()
 EDGES
+  references=matrix/mcl/mtx/ast.OptionListValue
   ^contains=matrix/mcl/mtx/ast.OptionListValue
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -641,6 +730,8 @@ NODE id=matrix/mcl/mtx/ast.PromptBlock kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.PromptBlock#PromptPos,matrix/mcl/mtx/ast.PromptBlock#Roles,matrix/mcl/mtx/ast.PromptBlock.Pos,matrix/mcl/mtx/ast.PromptBlock.entryNode
   implements=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.PromptRole,matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.PromptBlock.Pos,matrix/mcl/mtx/ast.PromptBlock.entryNode,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/interpreter.Interpreter.execPrompt,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/validator.validator.rule7PromptRoles
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.PromptBlock#PromptPos kind=field
@@ -659,13 +750,16 @@ NODE id=matrix/mcl/mtx/ast.PromptBlock.Pos kind=method
   digest=b3:42864c690c2c504b7d86c428c07e82858b46b4a3d3f03c24ee83d40a9b909daa file=MCL/mtx/ast/ast.go range=164:164 lang=go exported=true byte_range=4222:4284
   sig=func (pb *PromptBlock) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.PromptBlock,matrix/mcl/mtx/ast.pb,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.PromptBlock
+  ^references=matrix/mcl/mtx/validator.validator.rule7PromptRoles
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.PromptBlock.entryNode kind=method
   digest=b3:d9221f93de3a40fc07e65b95f7e82af26412f6d3d5c9596fcfd864f46ebc3e79 file=MCL/mtx/ast/ast.go range=165:165 lang=go exported=false byte_range=4285:4326
   sig=func (pb *PromptBlock) entryNode()
 EDGES
+  references=matrix/mcl/mtx/ast.PromptBlock
   ^contains=matrix/mcl/mtx/ast.PromptBlock
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -676,6 +770,8 @@ NODE id=matrix/mcl/mtx/ast.PromptRole kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.PromptRole#Role,matrix/mcl/mtx/ast.PromptRole#RolePos,matrix/mcl/mtx/ast.PromptRole#Text,matrix/mcl/mtx/ast.PromptRole.Pos
   implements=matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.PromptBlock,matrix/mcl/mtx/ast.PromptRole.Pos,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.PromptRole#Role kind=field
@@ -700,6 +796,7 @@ NODE id=matrix/mcl/mtx/ast.PromptRole.Pos kind=method
   digest=b3:b0379b362be61bf02d2d88020a020a2dec775bd1bdf8003563e2f37497b1b8a3 file=MCL/mtx/ast/ast.go range=174:174 lang=go exported=true byte_range=4538:4597
   sig=func (pr *PromptRole) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.PromptRole,matrix/mcl/mtx/ast.pr,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.PromptRole
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -710,6 +807,8 @@ NODE id=matrix/mcl/mtx/ast.RefEntry kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.RefEntry#URI,matrix/mcl/mtx/ast.RefEntry#URIPos,matrix/mcl/mtx/ast.RefEntry.Pos,matrix/mcl/mtx/ast.RefEntry.entryNode
   implements=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/executor/runtime.extractRefList,matrix/mcl/mtx/ast.RefEntry.Pos,matrix/mcl/mtx/ast.RefEntry.entryNode,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/parser.Parser.parseRefEntry,matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.RefEntry#URI kind=field
@@ -728,13 +827,17 @@ NODE id=matrix/mcl/mtx/ast.RefEntry.Pos kind=method
   digest=b3:39c97187a107c6e1a7af5d489eead6163fd08425d6317cdcf25883bdfe76ef89 file=MCL/mtx/ast/ast.go range=259:259 lang=go exported=true byte_range=6818:6874
   sig=func (re *RefEntry) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.RefEntry,matrix/mcl/mtx/ast.re,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.RefEntry
+  ^calls=matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs
+  ^references=matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.RefEntry.entryNode kind=method
   digest=b3:dc9c3436883f53cbd09f03ff2523c4a9125fb4916ba3f41b4fe117c963b575c2 file=MCL/mtx/ast/ast.go range=260:260 lang=go exported=false byte_range=6875:6913
   sig=func (re *RefEntry) entryNode()
 EDGES
+  references=matrix/mcl/mtx/ast.RefEntry
   ^contains=matrix/mcl/mtx/ast.RefEntry
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -745,6 +848,8 @@ NODE id=matrix/mcl/mtx/ast.ResolveStmt kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.ResolveStmt#Args,matrix/mcl/mtx/ast.ResolveStmt#CortexFn,matrix/mcl/mtx/ast.ResolveStmt#ResolvePos,matrix/mcl/mtx/ast.ResolveStmt#SlotName,matrix/mcl/mtx/ast.ResolveStmt.Pos,matrix/mcl/mtx/ast.ResolveStmt.entryNode
   implements=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.CortexArg,matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.ResolveStmt.Pos,matrix/mcl/mtx/ast.ResolveStmt.entryNode,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/interpreter.Interpreter.execResolve,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.ResolveStmt#Args kind=field
@@ -775,13 +880,16 @@ NODE id=matrix/mcl/mtx/ast.ResolveStmt.Pos kind=method
   digest=b3:dfbb53f586737caee9e4254f133dc4bbda7b03394e5c3320753fb8eedd80369c file=MCL/mtx/ast/ast.go range=184:184 lang=go exported=true byte_range=4829:4892
   sig=func (rs *ResolveStmt) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.ResolveStmt,matrix/mcl/mtx/ast.rs,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.ResolveStmt
+  ^references=matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.ResolveStmt.entryNode kind=method
   digest=b3:e1bb1802eb64b92371db80b72f628c59e9d41c93187236e6f40587eea1f25738 file=MCL/mtx/ast/ast.go range=185:185 lang=go exported=false byte_range=4893:4934
   sig=func (rs *ResolveStmt) entryNode()
 EDGES
+  references=matrix/mcl/mtx/ast.ResolveStmt
   ^contains=matrix/mcl/mtx/ast.ResolveStmt
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -792,6 +900,8 @@ NODE id=matrix/mcl/mtx/ast.Section kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.Section#Entries,matrix/mcl/mtx/ast.Section#Name,matrix/mcl/mtx/ast.Section#NamePos,matrix/mcl/mtx/ast.Section.Pos
   implements=matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/token.Pos
+  ^references=matrix/executor/cmd/mcl-execute.extractOnBlockHints,matrix/executor/runtime.extractRefList,matrix/executor/runtime.extractSkillMeta,matrix/mcl/mtx/ast.File,matrix/mcl/mtx/ast.Section.Pos,matrix/mcl/mtx/canonical.appendSection,matrix/mcl/mtx/interpreter.Interpreter.findSection,matrix/mcl/mtx/parser.Parser.parseSection,matrix/mcl/mtx/validator.validator.findSection
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.Section#Entries kind=field
@@ -816,7 +926,10 @@ NODE id=matrix/mcl/mtx/ast.Section.Pos kind=method
   digest=b3:7158eb48a8fb5323191425b77f6c4b2128aedf0f72c475c93af2e5e0c6929400 file=MCL/mtx/ast/ast.go range=43:43 lang=go exported=true byte_range=1213:1267
   sig=func (s *Section) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.Section,matrix/mcl/mtx/ast.s,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.Section
+  ^calls=matrix/mcl/mtx/ast.File.Pos
+  ^references=matrix/mcl/mtx/ast.File.Pos
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.SlotDecl kind=type
@@ -826,6 +939,8 @@ NODE id=matrix/mcl/mtx/ast.SlotDecl kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.SlotDecl#Modifiers,matrix/mcl/mtx/ast.SlotDecl#Name,matrix/mcl/mtx/ast.SlotDecl#SlotPos,matrix/mcl/mtx/ast.SlotDecl#TypeRef,matrix/mcl/mtx/ast.SlotDecl.Pos,matrix/mcl/mtx/ast.SlotDecl.entryNode
   implements=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.SlotModifier,matrix/mcl/mtx/ast.TypeRef,matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.SlotDecl.Pos,matrix/mcl/mtx/ast.SlotDecl.entryNode,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/interpreter.Interpreter.initSlots,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody,matrix/mcl/mtx/validator.validator.collectInputSlots,matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.SlotDecl#Modifiers kind=field
@@ -856,13 +971,17 @@ NODE id=matrix/mcl/mtx/ast.SlotDecl.Pos kind=method
   digest=b3:387659fe26982cc91a3f05a049b74df6d349578d2907da3deadb3914bea20595 file=MCL/mtx/ast/ast.go range=82:82 lang=go exported=true byte_range=2155:2212
   sig=func (sd *SlotDecl) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.SlotDecl,matrix/mcl/mtx/ast.sd,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.SlotDecl
+  ^calls=matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames
+  ^references=matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.SlotDecl.entryNode kind=method
   digest=b3:74350bd1bb355b12b7c192486aa9a803c22d51f1636d430e157d8a51d642e4f5 file=MCL/mtx/ast/ast.go range=83:83 lang=go exported=false byte_range=2213:2251
   sig=func (sd *SlotDecl) entryNode()
 EDGES
+  references=matrix/mcl/mtx/ast.SlotDecl
   ^contains=matrix/mcl/mtx/ast.SlotDecl
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -873,6 +992,8 @@ NODE id=matrix/mcl/mtx/ast.SlotExprValue kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.SlotExprValue#ExprPos,matrix/mcl/mtx/ast.SlotExprValue#Parts,matrix/mcl/mtx/ast.SlotExprValue.Pos,matrix/mcl/mtx/ast.SlotExprValue.valueNode
   implements=matrix/mcl/mtx/ast.Node,matrix/mcl/mtx/ast.Value
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.SlotExprValue.Pos,matrix/mcl/mtx/ast.SlotExprValue.valueNode,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/interpreter.Interpreter.interpolateValue,matrix/mcl/mtx/interpreter.valueToString,matrix/mcl/mtx/parser.Parser.parseSlotExpr
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.SlotExprValue#ExprPos kind=field
@@ -891,13 +1012,16 @@ NODE id=matrix/mcl/mtx/ast.SlotExprValue.Pos kind=method
   digest=b3:4b84da3fa24e0f1aec2e74dff250da20728681fab0693d612528fb02bc20ed90 file=MCL/mtx/ast/ast.go range=347:347 lang=go exported=true byte_range=8980:9042
   sig=func (se *SlotExprValue) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.SlotExprValue,matrix/mcl/mtx/ast.se,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.SlotExprValue
+  ^calls=matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.parseValueList
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.SlotExprValue.valueNode kind=method
   digest=b3:b0d612cae7e30df0fe35948d497739dc6f3c5092f42cc261216f590614e42016 file=MCL/mtx/ast/ast.go range=348:348 lang=go exported=false byte_range=9043:9086
   sig=func (se *SlotExprValue) valueNode()
 EDGES
+  references=matrix/mcl/mtx/ast.SlotExprValue
   ^contains=matrix/mcl/mtx/ast.SlotExprValue
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -906,6 +1030,7 @@ NODE id=matrix/mcl/mtx/ast.SlotModKind kind=type
   sig=type SlotModKind int
   doc=SlotModKind is the kind of slot modifier.
 EDGES
+  ^references=matrix/mcl/mtx/ast.ModRequired,matrix/mcl/mtx/ast.SlotModifier
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.SlotModifier kind=type
@@ -915,6 +1040,8 @@ NODE id=matrix/mcl/mtx/ast.SlotModifier kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.SlotModifier#Kind,matrix/mcl/mtx/ast.SlotModifier#ModPos,matrix/mcl/mtx/ast.SlotModifier#Value,matrix/mcl/mtx/ast.SlotModifier.Pos
   implements=matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.SlotModKind,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.SlotDecl,matrix/mcl/mtx/ast.SlotModifier.Pos,matrix/mcl/mtx/canonical.appendSlotModifier,matrix/mcl/mtx/parser.Parser.parseSlotModifier
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.SlotModifier#Kind kind=field
@@ -939,6 +1066,7 @@ NODE id=matrix/mcl/mtx/ast.SlotModifier.Pos kind=method
   digest=b3:feb47f035965b53c5bcf1b244074f0b084731e788b5211ff2159549aab94acb6 file=MCL/mtx/ast/ast.go range=92:92 lang=go exported=true byte_range=2483:2543
   sig=func (sm *SlotModifier) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.SlotModifier,matrix/mcl/mtx/ast.sm,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.SlotModifier
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -949,6 +1077,8 @@ NODE id=matrix/mcl/mtx/ast.SlotValCondition kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.SlotValCondition#CondPos,matrix/mcl/mtx/ast.SlotValCondition#SlotName,matrix/mcl/mtx/ast.SlotValCondition#Value,matrix/mcl/mtx/ast.SlotValCondition.Pos,matrix/mcl/mtx/ast.SlotValCondition.conditionNode
   implements=matrix/mcl/mtx/ast.Condition,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.SlotValCondition.Pos,matrix/mcl/mtx/ast.SlotValCondition.conditionNode,matrix/mcl/mtx/canonical.appendCondition,matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/parser.Parser.parseCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.SlotValCondition#CondPos kind=field
@@ -973,6 +1103,7 @@ NODE id=matrix/mcl/mtx/ast.SlotValCondition.Pos kind=method
   digest=b3:c5841a95ce3a8228d0e4aa07f1198dde51bce707d408ffd70066be225297fd86 file=MCL/mtx/ast/ast.go range=147:147 lang=go exported=true byte_range=3756:3821
   sig=func (sc *SlotValCondition) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.SlotValCondition,matrix/mcl/mtx/ast.sc,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.SlotValCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -980,6 +1111,7 @@ NODE id=matrix/mcl/mtx/ast.SlotValCondition.conditionNode kind=method
   digest=b3:7614587919ed464e8f63d0e4fee54c5690061b768d9eed1922ee7ebe698b58c1 file=MCL/mtx/ast/ast.go range=148:148 lang=go exported=false byte_range=3822:3868
   sig=func (sc *SlotValCondition) conditionNode()
 EDGES
+  references=matrix/mcl/mtx/ast.SlotValCondition
   ^contains=matrix/mcl/mtx/ast.SlotValCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -990,6 +1122,8 @@ NODE id=matrix/mcl/mtx/ast.SpaceListValue kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.SpaceListValue#Items,matrix/mcl/mtx/ast.SpaceListValue#ListPos,matrix/mcl/mtx/ast.SpaceListValue.Pos,matrix/mcl/mtx/ast.SpaceListValue.valueNode
   implements=matrix/mcl/mtx/ast.Node,matrix/mcl/mtx/ast.Value
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/executor/runtime.kvIdentList,matrix/executor/runtime.kvString,matrix/mcl/mtx/ast.SpaceListValue.Pos,matrix/mcl/mtx/ast.SpaceListValue.valueNode,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/interpreter.valueToString,matrix/mcl/mtx/parser.Parser.parseValueList,matrix/mcl/mtx/validator.validator.rule2VerbVocab
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.SpaceListValue#Items kind=field
@@ -1008,6 +1142,7 @@ NODE id=matrix/mcl/mtx/ast.SpaceListValue.Pos kind=method
   digest=b3:ab8420825c62de14afea73c7f9a2313ddc5d3ce1f2b7e3ea8a8343c02fafb3f0 file=MCL/mtx/ast/ast.go range=338:338 lang=go exported=true byte_range=8708:8771
   sig=func (sl *SpaceListValue) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.SpaceListValue,matrix/mcl/mtx/ast.sl,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.SpaceListValue
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -1015,6 +1150,7 @@ NODE id=matrix/mcl/mtx/ast.SpaceListValue.valueNode kind=method
   digest=b3:e4244e19939ec7229a27f3c30abcd219cc645dba7d5b3ad2b22434bfbdd488e1 file=MCL/mtx/ast/ast.go range=339:339 lang=go exported=false byte_range=8772:8816
   sig=func (sl *SpaceListValue) valueNode()
 EDGES
+  references=matrix/mcl/mtx/ast.SpaceListValue
   ^contains=matrix/mcl/mtx/ast.SpaceListValue
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -1025,6 +1161,8 @@ NODE id=matrix/mcl/mtx/ast.StringValue kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.StringValue#Text,matrix/mcl/mtx/ast.StringValue#TextPos,matrix/mcl/mtx/ast.StringValue.Pos,matrix/mcl/mtx/ast.StringValue.valueNode
   implements=matrix/mcl/mtx/ast.Node,matrix/mcl/mtx/ast.Value
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/executor/runtime.kvString,matrix/mcl/mtx/ast.StringValue.Pos,matrix/mcl/mtx/ast.StringValue.valueNode,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/interpreter.ExtractKindValue,matrix/mcl/mtx/interpreter.valueToString,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.valueToString
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.StringValue#Text kind=field
@@ -1043,13 +1181,16 @@ NODE id=matrix/mcl/mtx/ast.StringValue.Pos kind=method
   digest=b3:c22c064b81d379ae5bc69ef38ca0c9f11622765746f6cac42a6b7616159288d6 file=MCL/mtx/ast/ast.go range=284:284 lang=go exported=true byte_range=7420:7480
   sig=func (sv *StringValue) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.StringValue,matrix/mcl/mtx/ast.sv,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.StringValue
+  ^calls=matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.parseValueList
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.StringValue.valueNode kind=method
   digest=b3:f344e4e70d261868f2ab069c788bf617538126c0942044fd577e4e9684f38045 file=MCL/mtx/ast/ast.go range=285:285 lang=go exported=false byte_range=7481:7522
   sig=func (sv *StringValue) valueNode()
 EDGES
+  references=matrix/mcl/mtx/ast.StringValue
   ^contains=matrix/mcl/mtx/ast.StringValue
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -1060,6 +1201,8 @@ NODE id=matrix/mcl/mtx/ast.TypeRef kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.TypeRef#EnumSet,matrix/mcl/mtx/ast.TypeRef#IsList,matrix/mcl/mtx/ast.TypeRef#Name,matrix/mcl/mtx/ast.TypeRef#TypePos,matrix/mcl/mtx/ast.TypeRef.Pos
   implements=matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.SlotDecl,matrix/mcl/mtx/ast.TypeRef.Pos,matrix/mcl/mtx/canonical.appendTypeRef,matrix/mcl/mtx/interpreter.formatTypeRef,matrix/mcl/mtx/parser.Parser.parseTypeRef
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.TypeRef#EnumSet kind=field
@@ -1090,6 +1233,7 @@ NODE id=matrix/mcl/mtx/ast.TypeRef.Pos kind=method
   digest=b3:301b3cd53ed11d45d78a05c3dfb8f46501795206682280d5d4e107d6fcfd61fa file=MCL/mtx/ast/ast.go range=369:369 lang=go exported=true byte_range=9610:9666
   sig=func (tr *TypeRef) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.TypeRef,matrix/mcl/mtx/ast.tr,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.TypeRef
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -1100,6 +1244,8 @@ NODE id=matrix/mcl/mtx/ast.URIValue kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.URIValue#URI,matrix/mcl/mtx/ast.URIValue#URIPos,matrix/mcl/mtx/ast.URIValue.Pos,matrix/mcl/mtx/ast.URIValue.valueNode
   implements=matrix/mcl/mtx/ast.Node,matrix/mcl/mtx/ast.Value
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.URIValue.Pos,matrix/mcl/mtx/ast.URIValue.valueNode,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/interpreter.valueToString,matrix/mcl/mtx/parser.Parser.parseValue
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.URIValue#URI kind=field
@@ -1118,13 +1264,16 @@ NODE id=matrix/mcl/mtx/ast.URIValue.Pos kind=method
   digest=b3:eece71a9cda981fb251150fc0683071fe11cfa337632983dd3ff90e849875149 file=MCL/mtx/ast/ast.go range=329:329 lang=go exported=true byte_range=8482:8538
   sig=func (uv *URIValue) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.URIValue,matrix/mcl/mtx/ast.uv,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.URIValue
+  ^calls=matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.parseValueList
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.URIValue.valueNode kind=method
   digest=b3:9fb059698e79bc9ee0d99ce0eb4cff2237afc136916a13188144845812d42b8c file=MCL/mtx/ast/ast.go range=330:330 lang=go exported=false byte_range=8539:8577
   sig=func (uv *URIValue) valueNode()
 EDGES
+  references=matrix/mcl/mtx/ast.URIValue
   ^contains=matrix/mcl/mtx/ast.URIValue
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -1135,6 +1284,8 @@ NODE id=matrix/mcl/mtx/ast.UnknownBlock kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.UnknownBlock#Modifiers,matrix/mcl/mtx/ast.UnknownBlock#SlotName,matrix/mcl/mtx/ast.UnknownBlock#UnknownPos,matrix/mcl/mtx/ast.UnknownBlock.Pos,matrix/mcl/mtx/ast.UnknownBlock.entryNode
   implements=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.UnknownModifier,matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.UnknownBlock.Pos,matrix/mcl/mtx/ast.UnknownBlock.entryNode,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/interpreter.Interpreter.execUnknown,matrix/mcl/mtx/parser.Parser.parseUnknownBlock,matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.UnknownBlock#Modifiers kind=field
@@ -1159,13 +1310,16 @@ NODE id=matrix/mcl/mtx/ast.UnknownBlock.Pos kind=method
   digest=b3:f0d5ad5034374adbcd46dc588617c7aa78aea5495ad24d3d00389797ed71bf95 file=MCL/mtx/ast/ast.go range=203:203 lang=go exported=true byte_range=5294:5358
   sig=func (ub *UnknownBlock) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.UnknownBlock,matrix/mcl/mtx/ast.ub,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.UnknownBlock
+  ^references=matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.UnknownBlock.entryNode kind=method
   digest=b3:ee06517c0ae0657eb66302d566a5d3e8df285e0e7fa2bd0f339defba1da3e288 file=MCL/mtx/ast/ast.go range=204:204 lang=go exported=false byte_range=5359:5401
   sig=func (ub *UnknownBlock) entryNode()
 EDGES
+  references=matrix/mcl/mtx/ast.UnknownBlock
   ^contains=matrix/mcl/mtx/ast.UnknownBlock
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -1176,6 +1330,8 @@ NODE id=matrix/mcl/mtx/ast.UnknownCondition kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.UnknownCondition#CondPos,matrix/mcl/mtx/ast.UnknownCondition.Pos,matrix/mcl/mtx/ast.UnknownCondition.conditionNode
   implements=matrix/mcl/mtx/ast.Condition,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.UnknownCondition.Pos,matrix/mcl/mtx/ast.UnknownCondition.conditionNode,matrix/mcl/mtx/canonical.appendCondition,matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/parser.Parser.parseCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.UnknownCondition#CondPos kind=field
@@ -1188,6 +1344,7 @@ NODE id=matrix/mcl/mtx/ast.UnknownCondition.Pos kind=method
   digest=b3:57511fa40f0fffa59d702799c494298671237a581a6fa37acf4056eff1466877 file=MCL/mtx/ast/ast.go range=155:155 lang=go exported=true byte_range=3979:4044
   sig=func (uc *UnknownCondition) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.UnknownCondition,matrix/mcl/mtx/ast.uc,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.UnknownCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -1195,6 +1352,7 @@ NODE id=matrix/mcl/mtx/ast.UnknownCondition.conditionNode kind=method
   digest=b3:a85473410a885841ce5a56949962dccc8a7d2e5598e26f5b41bd5f21b1ba95db file=MCL/mtx/ast/ast.go range=156:156 lang=go exported=false byte_range=4045:4091
   sig=func (uc *UnknownCondition) conditionNode()
 EDGES
+  references=matrix/mcl/mtx/ast.UnknownCondition
   ^contains=matrix/mcl/mtx/ast.UnknownCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -1205,6 +1363,8 @@ NODE id=matrix/mcl/mtx/ast.UnknownModifier kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.UnknownModifier#Key,matrix/mcl/mtx/ast.UnknownModifier#ModPos,matrix/mcl/mtx/ast.UnknownModifier#Value,matrix/mcl/mtx/ast.UnknownModifier.Pos
   implements=matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/ast.UnknownBlock,matrix/mcl/mtx/ast.UnknownModifier.Pos,matrix/mcl/mtx/parser.Parser.parseUnknownBlock
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.UnknownModifier#Key kind=field
@@ -1229,6 +1389,7 @@ NODE id=matrix/mcl/mtx/ast.UnknownModifier.Pos kind=method
   digest=b3:be07f6b580afad489922340394fa1a01d6242f4ee8fa161c0294580be8affea3 file=MCL/mtx/ast/ast.go range=213:213 lang=go exported=true byte_range=5597:5660
   sig=func (um *UnknownModifier) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.UnknownModifier,matrix/mcl/mtx/ast.um,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.UnknownModifier
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -1237,7 +1398,10 @@ NODE id=matrix/mcl/mtx/ast.Value kind=interface
   sig=type Value interface {\n	Node\n	valueNode()\n}
   doc=Value is the interface for all value expressions in the AST.
 EDGES
+  embeds=matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/ast.Node
   ^implements=matrix/mcl/mtx/ast.BoolValue,matrix/mcl/mtx/ast.FloatValue,matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.IntValue,matrix/mcl/mtx/ast.OptionListValue,matrix/mcl/mtx/ast.SlotExprValue,matrix/mcl/mtx/ast.SpaceListValue,matrix/mcl/mtx/ast.StringValue,matrix/mcl/mtx/ast.URIValue
+  ^references=matrix/executor/runtime.kvIdentList,matrix/executor/runtime.kvString,matrix/mcl/mtx/ast.ClarifyModifier,matrix/mcl/mtx/ast.CortexArg,matrix/mcl/mtx/ast.KVPair,matrix/mcl/mtx/ast.OptionListValue,matrix/mcl/mtx/ast.SlotModifier,matrix/mcl/mtx/ast.SlotValCondition,matrix/mcl/mtx/ast.UnknownModifier,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/interpreter.ExtractKindValue,matrix/mcl/mtx/interpreter.ExtractPositiveIntValue,matrix/mcl/mtx/interpreter.Interpreter.interpolateValue,matrix/mcl/mtx/interpreter.valueToString,matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.parseDottedValue,matrix/mcl/mtx/parser.Parser.parseOptionList,matrix/mcl/mtx/parser.Parser.parseSlotExpr,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.Parser.parseValueList,matrix/mcl/mtx/parser.valueToString
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.VerbCondition kind=type
@@ -1247,6 +1411,8 @@ NODE id=matrix/mcl/mtx/ast.VerbCondition kind=type
 EDGES
   contains=matrix/mcl/mtx/ast.VerbCondition#Verb,matrix/mcl/mtx/ast.VerbCondition#VerbPos,matrix/mcl/mtx/ast.VerbCondition.Pos,matrix/mcl/mtx/ast.VerbCondition.conditionNode
   implements=matrix/mcl/mtx/ast.Condition,matrix/mcl/mtx/ast.Node
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/executor/cmd/mcl-execute.extractOnBlockHints,matrix/mcl/mtx/ast.VerbCondition.Pos,matrix/mcl/mtx/ast.VerbCondition.conditionNode,matrix/mcl/mtx/canonical.appendCondition,matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/parser.Parser.parseCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 
 NODE id=matrix/mcl/mtx/ast.VerbCondition#Verb kind=field
@@ -1265,6 +1431,7 @@ NODE id=matrix/mcl/mtx/ast.VerbCondition.Pos kind=method
   digest=b3:c30d2e42639a2338dc4460ac4d1be34b818315b2c9bc2a9c73430c922c6a6594 file=MCL/mtx/ast/ast.go range=127:127 lang=go exported=true byte_range=3183:3245
   sig=func (vc *VerbCondition) Pos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/ast.VerbCondition,matrix/mcl/mtx/ast.vc,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/ast.VerbCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 
@@ -1272,6 +1439,7 @@ NODE id=matrix/mcl/mtx/ast.VerbCondition.conditionNode kind=method
   digest=b3:937c1fc017c4f4b99032446825a461bd80661d33e8f1670707716d1bc23bbf0e file=MCL/mtx/ast/ast.go range=128:128 lang=go exported=false byte_range=3246:3289
   sig=func (vc *VerbCondition) conditionNode()
 EDGES
+  references=matrix/mcl/mtx/ast.VerbCondition
   ^contains=matrix/mcl/mtx/ast.VerbCondition
   ^defines=matrix/mcl/mtx/ast/ast.go
 

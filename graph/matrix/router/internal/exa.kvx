@@ -1,15 +1,17 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/router/internal/exa kind=package
   digest=b3:bb77f888e1b186da2c64482bfab5b95ceec33c38a1915618fa1445833d8925bf file=router/internal/exa range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/exa/client.go,matrix/router/internal/exa/failure.go,matrix/router/internal/exa/handler.go,matrix/router/internal/exa/meter.go,matrix/router/internal/exa/model.go,matrix/router/internal/exa/service.go,matrix/router/internal/exa/store.go,matrix/router/internal/exa/workflow.go
   ^contains=mod:matrix/router
+  ^imports=matrix/router/cmd/matrix-router,matrix/router/internal/db
 
 NODE id=matrix/router/internal/exa.APIKeyEnv kind=const
   digest=b3:b164887f939fa14aa995ae9c75e90cfd38e584c5a55ab25b56c6929f81874020 file=router/internal/exa/client.go range=20:20 lang=go exported=true byte_range=305:336
   sig=untyped string
 EDGES
+  ^references=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.NewService
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.AgentError kind=type
@@ -17,6 +19,7 @@ NODE id=matrix/router/internal/exa.AgentError kind=type
   sig=type AgentError struct {\n	Code	string	`json:"code,omitempty"`\n	Message	string	`json:"message,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.AgentError#Code,matrix/router/internal/exa.AgentError#Message
+  ^references=matrix/router/internal/exa.AgentRun
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.AgentError#Code kind=field
@@ -36,6 +39,7 @@ NODE id=matrix/router/internal/exa.AgentRequest kind=type
   sig=type AgentRequest struct {\n	Query		string			`json:"query"`\n	Effort		string			`json:"effort,omitempty"`\n	OutputSchema	map[string]any		`json:"outputSchema,omitempty"`\n	PreviousRunID	string			`json:"previousRunId,omitempty"`\n	Input		map[string]any		`json:"input,omitempty"`\n	DataSources	[]map[string]any	`json:"dataSources,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.AgentRequest#DataSources,matrix/router/internal/exa.AgentRequest#Effort,matrix/router/internal/exa.AgentRequest#Input,matrix/router/internal/exa.AgentRequest#OutputSchema,matrix/router/internal/exa.AgentRequest#PreviousRunID,matrix/router/internal/exa.AgentRequest#Query
+  ^references=matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.financeAgentRequest,matrix/router/internal/exa.validateAgent
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.AgentRequest#DataSources kind=field
@@ -79,6 +83,8 @@ NODE id=matrix/router/internal/exa.AgentRun kind=type
   sig=type AgentRun struct {\n	ID		string		`json:"id"`\n	Status		string		`json:"status"`\n	CreatedAt	string		`json:"createdAt,omitempty"`\n	UpdatedAt	string		`json:"updatedAt,omitempty"`\n	Output		*Output		`json:"output,omitempty"`\n	Cost		Cost		`json:"costDollars"`\n	Error		*AgentError	`json:"error,omitempty"`\n	Request		json.RawMessage	`json:"request,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.AgentRun#Cost,matrix/router/internal/exa.AgentRun#CreatedAt,matrix/router/internal/exa.AgentRun#Error,matrix/router/internal/exa.AgentRun#ID,matrix/router/internal/exa.AgentRun#Output,matrix/router/internal/exa.AgentRun#Request,matrix/router/internal/exa.AgentRun#Status,matrix/router/internal/exa.AgentRun#UpdatedAt,matrix/router/internal/exa.AgentRun.Terminal
+  references=matrix/router/internal/exa.AgentError,matrix/router/internal/exa.Cost,matrix/router/internal/exa.Output
+  ^references=matrix/router/internal/exa.AgentRun.Terminal,matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.Service.StartRun
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.AgentRun#Cost kind=field
@@ -133,6 +139,7 @@ NODE id=matrix/router/internal/exa.AgentRun.Terminal kind=method
   digest=b3:1fb143746ac96d317441187e9374e1b4858399bdb049ca4ddf0accfa14060ae1 file=router/internal/exa/model.go range=170:177 lang=go exported=true byte_range=5904:6044
   sig=func (r AgentRun) Terminal() bool
 EDGES
+  references=matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.r
   ^contains=matrix/router/internal/exa.AgentRun
   ^defines=matrix/router/internal/exa/model.go
 
@@ -141,6 +148,7 @@ NODE id=matrix/router/internal/exa.CacheRecord kind=type
   sig=type CacheRecord struct {\n	Key		string\n	User		string\n	Payload		[]byte\n	Cost		float64\n	ExpiresAt	time.Time\n}
 EDGES
   contains=matrix/router/internal/exa.CacheRecord#Cost,matrix/router/internal/exa.CacheRecord#ExpiresAt,matrix/router/internal/exa.CacheRecord#Key,matrix/router/internal/exa.CacheRecord#Payload,matrix/router/internal/exa.CacheRecord#User
+  ^references=matrix/router/internal/db.DB.GetCache,matrix/router/internal/db.DB.PutCache,matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.MemoryStore.GetCache,matrix/router/internal/exa.MemoryStore.PutCache,matrix/router/internal/exa.NewMemoryStore,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.Store
   ^defines=matrix/router/internal/exa/store.go
 
 NODE id=matrix/router/internal/exa.CacheRecord#Cost kind=field
@@ -178,6 +186,7 @@ NODE id=matrix/router/internal/exa.Citation kind=type
   sig=type Citation struct {\n	URL	string	`json:"url"`\n	Title	string	`json:"title,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.Citation#Title,matrix/router/internal/exa.Citation#URL
+  ^references=matrix/router/internal/exa.Grounding
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.Citation#Title kind=field
@@ -196,24 +205,28 @@ NODE id=matrix/router/internal/exa.ClaimConflict kind=const
   digest=b3:57ca63f5cea94acdb00b8a70c895b771286eb29cf20e42a961541e34eec78e2f file=router/internal/exa/model.go range=45:45 lang=go exported=true byte_range=1014:1055
   sig=exa.ClaimState
 EDGES
+  references=matrix/router/internal/exa.ClaimState
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.ClaimInconclusive kind=const
   digest=b3:d5f577ec4f44194d3146acd3b9be2d1c8b85dd31090d008a181b17b9922ff885 file=router/internal/exa/model.go range=46:46 lang=go exported=true byte_range=1057:1102
   sig=exa.ClaimState
 EDGES
+  references=matrix/router/internal/exa.ClaimState
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.ClaimState kind=type
   digest=b3:8fa437dcc6149caba12779502715d799db6bb4e44aaa55d78eb55a73bd99b22b file=router/internal/exa/model.go range=41:41 lang=go exported=true byte_range=938:960
   sig=type ClaimState string
 EDGES
+  ^references=matrix/router/internal/exa.ClaimConflict,matrix/router/internal/exa.ClaimInconclusive,matrix/router/internal/exa.ClaimVerified,matrix/router/internal/exa.GroundedClaim
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.ClaimVerified kind=const
   digest=b3:a321b115b8e940fdfa7d028163c0330b2b4b1d7d7ee9c1232f7b368800468c8d file=router/internal/exa/model.go range=44:44 lang=go exported=true byte_range=971:1012
   sig=exa.ClaimState
 EDGES
+  references=matrix/router/internal/exa.ClaimState
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.Client kind=type
@@ -221,6 +234,7 @@ NODE id=matrix/router/internal/exa.Client kind=type
   sig=type Client struct {\n	apiKey	string\n	baseURL	string\n	http	*http.Client\n}
 EDGES
   contains=matrix/router/internal/exa.Client#apiKey,matrix/router/internal/exa.Client#baseURL,matrix/router/internal/exa.Client#http,matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Configured,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Client.do
+  ^references=matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Configured,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.NewClient,matrix/router/internal/exa.Service,matrix/router/internal/exa.ServiceConfig
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.Client#apiKey kind=field
@@ -245,49 +259,74 @@ NODE id=matrix/router/internal/exa.Client.CancelRun kind=method
   digest=b3:fd4c0ccfbbcb7db0fa499411dfca92c32bfe836aa53e8bbf9b68f4e5beac6040 file=router/internal/exa/client.go range=121:131 lang=go exported=true byte_range=3569:3940
   sig=func (c *Client) CancelRun(ctx context.Context, id string) (*AgentRun, error)
 EDGES
+  calls=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.c,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.id,matrix/router/internal/exa.out
   ^contains=matrix/router/internal/exa.Client
+  ^calls=matrix/router/internal/exa.Service.CancelRun
+  ^references=matrix/router/internal/exa.Service.CancelRun
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.Client.Configured kind=method
   digest=b3:0213c5de14d9ff45c5c89b3c5701756a346d9709042c19681e2124c13c18f5af file=router/internal/exa/client.go range=50:50 lang=go exported=true byte_range=967:1039
   sig=func (c *Client) Configured() bool
 EDGES
+  references=matrix/router/internal/exa.Client,matrix/router/internal/exa.c
   ^contains=matrix/router/internal/exa.Client
+  ^calls=matrix/router/internal/exa.Client.do
+  ^references=matrix/router/internal/exa.Client.do
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.Client.Contents kind=method
   digest=b3:705b74249d6a588d99c09d10598da6e23942a31643b473cf3a3745eec6ebe880 file=router/internal/exa/client.go range=69:90 lang=go exported=true byte_range=1728:2494
   sig=func (c *Client) Contents(ctx context.Context, input ContentsRequest) (*ContentsResponse, error)
 EDGES
+  calls=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.ContentsRequest,matrix/router/internal/exa.ContentsResponse,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailurePartial,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.c,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.failed,matrix/router/internal/exa.input,matrix/router/internal/exa.out,matrix/router/internal/exa.status
   ^contains=matrix/router/internal/exa.Client
+  ^references=matrix/router/internal/exa.Service.Contents
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.Client.CreateRun kind=method
   digest=b3:2f0b0c4ccaf6a7be87ae66fbb49af3183ab516d2dd0a59a3208b95b50371c42a file=router/internal/exa/client.go range=92:104 lang=go exported=true byte_range=2496:2995
   sig=func (c *Client) CreateRun(ctx context.Context, input AgentRequest) (*AgentRun, error)
 EDGES
+  calls=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.c,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.input,matrix/router/internal/exa.out
   ^contains=matrix/router/internal/exa.Client
+  ^calls=matrix/router/internal/exa.Service.StartRun
+  ^references=matrix/router/internal/exa.Service.StartRun
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.Client.GetRun kind=method
   digest=b3:a5eae7da721e86b98ea71b341c1b2cb3f22b52d2c4b6d21ef4d9524c62b63269 file=router/internal/exa/client.go range=106:119 lang=go exported=true byte_range=2997:3567
   sig=func (c *Client) GetRun(ctx context.Context, id string) (*AgentRun, error)
 EDGES
+  calls=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureUngrounded,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.c,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.id,matrix/router/internal/exa.out
   ^contains=matrix/router/internal/exa.Client
+  ^calls=matrix/router/internal/exa.Service.GetRun
+  ^references=matrix/router/internal/exa.Service.GetRun
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.Client.Search kind=method
   digest=b3:33dd1e768a81cebbb673d7c050cdb218fc7b5ca8e14372f24bda0e5dd71d30ad file=router/internal/exa/client.go range=52:67 lang=go exported=true byte_range=1041:1726
   sig=func (c *Client) Search(ctx context.Context, input SearchRequest) (*SearchResponse, error)
 EDGES
+  calls=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureUngrounded,matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.SearchResponse,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.c,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.input,matrix/router/internal/exa.out
   ^contains=matrix/router/internal/exa.Client
+  ^references=matrix/router/internal/exa.Service.Search
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.Client.do kind=method
   digest=b3:27760a02fb7f122001dcdb9fa381f29278e7dd8696b5bebc8b897ef23072cf04 file=router/internal/exa/client.go range=133:177 lang=go exported=false byte_range=3942:6032
   sig=func (c *Client) do(ctx context.Context, method, path string, input, output any) error
 EDGES
+  calls=matrix/router/internal/exa.Client.Configured,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.redact,matrix/router/internal/exa.statusFailure
+  references=matrix/router/internal/exa.APIKeyEnv,matrix/router/internal/exa.Client,matrix/router/internal/exa.Client.Configured,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotConfigured,matrix/router/internal/exa.FailureTimeout,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.body,matrix/router/internal/exa.c,matrix/router/internal/exa.ctx,matrix/router/internal/exa.data,matrix/router/internal/exa.encoded,matrix/router/internal/exa.err,matrix/router/internal/exa.input,matrix/router/internal/exa.kind,matrix/router/internal/exa.maxResponseSize,matrix/router/internal/exa.message,matrix/router/internal/exa.method,matrix/router/internal/exa.output,matrix/router/internal/exa.path,matrix/router/internal/exa.readErr,matrix/router/internal/exa.redact,matrix/router/internal/exa.req,matrix/router/internal/exa.res,matrix/router/internal/exa.statusFailure,matrix/router/internal/exa.timeout
   ^contains=matrix/router/internal/exa.Client
+  ^calls=matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search
+  ^references=matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.ClientConfig kind=type
@@ -295,6 +334,7 @@ NODE id=matrix/router/internal/exa.ClientConfig kind=type
   sig=type ClientConfig struct {\n	APIKey		string\n	BaseURL		string\n	HTTPClient	*http.Client\n}
 EDGES
   contains=matrix/router/internal/exa.ClientConfig#APIKey,matrix/router/internal/exa.ClientConfig#BaseURL,matrix/router/internal/exa.ClientConfig#HTTPClient
+  ^references=matrix/router/internal/exa.NewClient,matrix/router/internal/exa.NewService
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.ClientConfig#APIKey kind=field
@@ -320,6 +360,7 @@ NODE id=matrix/router/internal/exa.ContentError kind=type
   sig=type ContentError struct {\n	Tag		string	`json:"tag"`\n	HTTPStatusCode	*int	`json:"httpStatusCode,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.ContentError#HTTPStatusCode,matrix/router/internal/exa.ContentError#Tag
+  ^references=matrix/router/internal/exa.ContentStatus
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.ContentError#HTTPStatusCode kind=field
@@ -339,6 +380,7 @@ NODE id=matrix/router/internal/exa.ContentOptions kind=type
   sig=type ContentOptions struct {\n	Text			any		`json:"text,omitempty"`\n	Highlights		any		`json:"highlights,omitempty"`\n	Summary			any		`json:"summary,omitempty"`\n	MaxAgeHours		*int		`json:"maxAgeHours,omitempty"`\n	LivecrawlTimeout	int		`json:"livecrawlTimeout,omitempty"`\n	Subpages		int		`json:"subpages,omitempty"`\n	SubpageTarget		[]string	`json:"subpageTarget,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.ContentOptions#Highlights,matrix/router/internal/exa.ContentOptions#LivecrawlTimeout,matrix/router/internal/exa.ContentOptions#MaxAgeHours,matrix/router/internal/exa.ContentOptions#SubpageTarget,matrix/router/internal/exa.ContentOptions#Subpages,matrix/router/internal/exa.ContentOptions#Summary,matrix/router/internal/exa.ContentOptions#Text
+  ^references=matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.Service.VerifyFinance
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.ContentOptions#Highlights kind=field
@@ -388,6 +430,8 @@ NODE id=matrix/router/internal/exa.ContentStatus kind=type
   sig=type ContentStatus struct {\n	ID	string		`json:"id"`\n	Status	string		`json:"status"`\n	Error	*ContentError	`json:"error,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.ContentStatus#Error,matrix/router/internal/exa.ContentStatus#ID,matrix/router/internal/exa.ContentStatus#Status
+  references=matrix/router/internal/exa.ContentError
+  ^references=matrix/router/internal/exa.ContentsResponse
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.ContentStatus#Error kind=field
@@ -413,6 +457,8 @@ NODE id=matrix/router/internal/exa.ContentsEnvelope kind=type
   sig=type ContentsEnvelope struct {\n	Data	*ContentsResponse	`json:"data,omitempty"`\n	Meta	ResponseMeta		`json:"meta"`\n	Error	*ErrorBody		`json:"error,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.ContentsEnvelope#Data,matrix/router/internal/exa.ContentsEnvelope#Error,matrix/router/internal/exa.ContentsEnvelope#Meta
+  references=matrix/router/internal/exa.ContentsResponse,matrix/router/internal/exa.ErrorBody,matrix/router/internal/exa.ResponseMeta
+  ^references=matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.ExtractFinanceNews
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.ContentsEnvelope#Data kind=field
@@ -438,6 +484,7 @@ NODE id=matrix/router/internal/exa.ContentsRequest kind=type
   sig=type ContentsRequest struct {\n	URLs			[]string	`json:"urls"`\n	Text			any		`json:"text,omitempty"`\n	Highlights		any		`json:"highlights,omitempty"`\n	Summary			any		`json:"summary,omitempty"`\n	MaxAgeHours		*int		`json:"maxAgeHours,omitempty"`\n	LivecrawlTimeout	int		`json:"livecrawlTimeout,omitempty"`\n	Subpages		int		`json:"subpages,omitempty"`\n	SubpageTarget		[]string	`json:"subpageTarget,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.ContentsRequest#Highlights,matrix/router/internal/exa.ContentsRequest#LivecrawlTimeout,matrix/router/internal/exa.ContentsRequest#MaxAgeHours,matrix/router/internal/exa.ContentsRequest#SubpageTarget,matrix/router/internal/exa.ContentsRequest#Subpages,matrix/router/internal/exa.ContentsRequest#Summary,matrix/router/internal/exa.ContentsRequest#Text,matrix/router/internal/exa.ContentsRequest#URLs
+  ^references=matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.validateContents
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.ContentsRequest#Highlights kind=field
@@ -493,6 +540,8 @@ NODE id=matrix/router/internal/exa.ContentsResponse kind=type
   sig=type ContentsResponse struct {\n	RequestID	string		`json:"requestId"`\n	Results		[]Result	`json:"results"`\n	Statuses	[]ContentStatus	`json:"statuses"`\n	Cost		Cost		`json:"costDollars"`\n}
 EDGES
   contains=matrix/router/internal/exa.ContentsResponse#Cost,matrix/router/internal/exa.ContentsResponse#RequestID,matrix/router/internal/exa.ContentsResponse#Results,matrix/router/internal/exa.ContentsResponse#Statuses
+  references=matrix/router/internal/exa.ContentStatus,matrix/router/internal/exa.Cost,matrix/router/internal/exa.Result
+  ^references=matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.ContentsEnvelope,matrix/router/internal/exa.Service.Contents
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.ContentsResponse#Cost kind=field
@@ -524,6 +573,7 @@ NODE id=matrix/router/internal/exa.Cost kind=type
   sig=type Cost struct {\n	Total float64 `json:"total"`\n}
 EDGES
   contains=matrix/router/internal/exa.Cost#Total
+  ^references=matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.ContentsResponse,matrix/router/internal/exa.SearchResponse
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.Cost#Total kind=field
@@ -537,6 +587,7 @@ NODE id=matrix/router/internal/exa.EndpointStats kind=type
   sig=type EndpointStats struct {\n	Endpoint	string	`json:"endpoint"`\n	Requests	int64	`json:"requests"`\n	CacheHits	int64	`json:"cache_hits"`\n	Errors		int64	`json:"errors"`\n	Cost		float64	`json:"cost_dollars"`\n	P50ms		int64	`json:"p50_ms"`\n	P95ms		int64	`json:"p95_ms"`\n}
 EDGES
   contains=matrix/router/internal/exa.EndpointStats#CacheHits,matrix/router/internal/exa.EndpointStats#Cost,matrix/router/internal/exa.EndpointStats#Endpoint,matrix/router/internal/exa.EndpointStats#Errors,matrix/router/internal/exa.EndpointStats#P50ms,matrix/router/internal/exa.EndpointStats#P95ms,matrix/router/internal/exa.EndpointStats#Requests
+  ^references=matrix/router/internal/exa.Meter.Snapshot,matrix/router/internal/exa.Stats
   ^defines=matrix/router/internal/exa/meter.go
 
 NODE id=matrix/router/internal/exa.EndpointStats#CacheHits kind=field
@@ -586,6 +637,8 @@ NODE id=matrix/router/internal/exa.ErrorBody kind=type
   sig=type ErrorBody struct {\n	Kind		FailureKind	`json:"kind"`\n	Message		string		`json:"message"`\n	RetryAfter	int		`json:"retry_after_seconds,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.ErrorBody#Kind,matrix/router/internal/exa.ErrorBody#Message,matrix/router/internal/exa.ErrorBody#RetryAfter
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.ContentsEnvelope,matrix/router/internal/exa.errorBody
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.ErrorBody#Kind kind=field
@@ -611,6 +664,7 @@ NODE id=matrix/router/internal/exa.Evidence kind=type
   sig=type Evidence struct {\n	URL		string		`json:"url"`\n	Title		string		`json:"title,omitempty"`\n	PublishedAt	*time.Time	`json:"published_at,omitempty"`\n	RetrievedAt	time.Time	`json:"retrieved_at"`\n	Excerpt		string		`json:"excerpt,omitempty"`\n	Primary		bool		`json:"primary"`\n	ContentHash	string		`json:"content_hash"`\n}
 EDGES
   contains=matrix/router/internal/exa.Evidence#ContentHash,matrix/router/internal/exa.Evidence#Excerpt,matrix/router/internal/exa.Evidence#Primary,matrix/router/internal/exa.Evidence#PublishedAt,matrix/router/internal/exa.Evidence#RetrievedAt,matrix/router/internal/exa.Evidence#Title,matrix/router/internal/exa.Evidence#URL
+  ^references=matrix/router/internal/exa.EvidenceFromGrounding,matrix/router/internal/exa.GroundedClaim
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.Evidence#ContentHash kind=field
@@ -659,6 +713,8 @@ NODE id=matrix/router/internal/exa.EvidenceFromGrounding kind=func
   digest=b3:89f71edeb0d1d7d9125e519e8d387e405c853a5511854245142f218f4898b3b0 file=router/internal/exa/model.go range=179:198 lang=go exported=true byte_range=6046:6735
   sig=func EvidenceFromGrounding(grounding []Grounding, now time.Time) []Evidence
 EDGES
+  calls=matrix/router/internal/exa.canonicalURL,matrix/router/internal/exa.primarySource
+  references=matrix/router/internal/exa.Evidence,matrix/router/internal/exa.Grounding,matrix/router/internal/exa.canonical,matrix/router/internal/exa.canonicalURL,matrix/router/internal/exa.citation,matrix/router/internal/exa.grounding,matrix/router/internal/exa.group,matrix/router/internal/exa.hash,matrix/router/internal/exa.i,matrix/router/internal/exa.j,matrix/router/internal/exa.now,matrix/router/internal/exa.out,matrix/router/internal/exa.primarySource,matrix/router/internal/exa.seen
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.Failure kind=type
@@ -666,6 +722,8 @@ NODE id=matrix/router/internal/exa.Failure kind=type
   sig=type Failure struct {\n	Kind		FailureKind\n	Endpoint	string\n	Status		int\n	Message		string\n	Detail		string\n	RetryAfter	time.Duration\n}
 EDGES
   contains=matrix/router/internal/exa.Failure#Detail,matrix/router/internal/exa.Failure#Endpoint,matrix/router/internal/exa.Failure#Kind,matrix/router/internal/exa.Failure#Message,matrix/router/internal/exa.Failure#RetryAfter,matrix/router/internal/exa.Failure#Status,matrix/router/internal/exa.Failure.Error
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Failure.Error,matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.serviceError,matrix/router/internal/exa.statusFailure
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.Failure#Detail kind=field
@@ -708,6 +766,7 @@ NODE id=matrix/router/internal/exa.Failure.Error kind=method
   digest=b3:739135136ab25957bc6a8df628f98e8ce5140006de1f52dc2e8ba83984086c8b file=router/internal/exa/failure.go range=35:43 lang=go exported=true byte_range=840:1077
   sig=func (f *Failure) Error() string
 EDGES
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.f
   ^contains=matrix/router/internal/exa.Failure
   ^defines=matrix/router/internal/exa/failure.go
 
@@ -715,66 +774,88 @@ NODE id=matrix/router/internal/exa.FailureBadRequest kind=const
   digest=b3:99d2cc3fdda65cb090818f875f7f8ac21cd40eff0a8d02f0e6eeee7afca0608e file=router/internal/exa/failure.go range=20:20 lang=go exported=true byte_range=498:546
   sig=exa.FailureKind
 EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.statusFailure
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.FailureConflict kind=const
   digest=b3:d559850f95e92ce456d951f9a25fd53ba722bb45c624f504fb0edbed68a0068c file=router/internal/exa/failure.go range=23:23 lang=go exported=true byte_range=643:688
   sig=exa.FailureKind
 EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Handler.writeError
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.FailureKind kind=type
   digest=b3:fe26c29c36c2e67f0b9564540720e0023c3fe4d50c3846d4d442595e52d61b7c file=router/internal/exa/failure.go range=12:12 lang=go exported=true byte_range=219:242
   sig=type FailureKind string
 EDGES
+  ^references=matrix/router/internal/exa.ErrorBody,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.FailureConflict,matrix/router/internal/exa.FailureNotConfigured,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.FailurePartial,matrix/router/internal/exa.FailureRateLimited,matrix/router/internal/exa.FailureTimeout,matrix/router/internal/exa.FailureUngrounded,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.KindOf
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.FailureNotConfigured kind=const
   digest=b3:d5967c1ba2b0460db0616c67b5e1d16397beed753aa4068f115a97138aec37d9 file=router/internal/exa/failure.go range=15:15 lang=go exported=true byte_range=253:304
   sig=exa.FailureKind
 EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.statusFailure
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.FailureNotFound kind=const
   digest=b3:13c3f8c34bdc3f0c9053c90baaa0661223d25c21bd530ba96b08269524403812 file=router/internal/exa/failure.go range=19:19 lang=go exported=true byte_range=450:496
   sig=exa.FailureKind
 EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.statusFailure
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.FailureOf kind=func
   digest=b3:9999af891b6abcb6d3e8e6e7c037d88860793c13073f1aaea584f785eed134d0 file=router/internal/exa/failure.go range=45:51 lang=go exported=true byte_range=1079:1202
   sig=func FailureOf(err error) *Failure
 EDGES
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.err,matrix/router/internal/exa.failure
+  ^calls=matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.KindOf,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.serviceError
+  ^references=matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.KindOf,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.serviceError
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.FailurePartial kind=const
   digest=b3:c11bd49109e0edd77cf47d1a4aaa9b4b8c5bd8322300d48519b7c4530f5693b8 file=router/internal/exa/failure.go range=21:21 lang=go exported=true byte_range=548:592
   sig=exa.FailureKind
 EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.Contents
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.FailureRateLimited kind=const
   digest=b3:87e8fe910d60287c0eb36651d31ac8595bd191f0913bd168944a15cf756ff3bf file=router/internal/exa/failure.go range=16:16 lang=go exported=true byte_range=306:355
   sig=exa.FailureKind
 EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.statusFailure
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.FailureTimeout kind=const
   digest=b3:d8d058cec9a88761760bebc2b12fb72fac9293e3a00f398dfea8a81646063f39 file=router/internal/exa/failure.go range=18:18 lang=go exported=true byte_range=404:448
   sig=exa.FailureKind
 EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Handler.writeError
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.FailureUngrounded kind=const
   digest=b3:6df09083976f4c51c9816018f959aedc3b339ae0e40554b8a5a25b2701200a7c file=router/internal/exa/failure.go range=22:22 lang=go exported=true byte_range=594:641
   sig=exa.FailureKind
 EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.GetRun
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.FailureUpstream kind=const
   digest=b3:a8879160e0a5a2c8022ce4c5fdff82f59660746c923d693ffd9f2e20c62cd237 file=router/internal/exa/failure.go range=17:17 lang=go exported=true byte_range=357:402
   sig=exa.FailureKind
 EDGES
+  references=matrix/router/internal/exa.FailureKind
+  ^references=matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.KindOf,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.serviceError,matrix/router/internal/exa.statusFailure
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.FinanceNewsRequest kind=type
@@ -782,6 +863,7 @@ NODE id=matrix/router/internal/exa.FinanceNewsRequest kind=type
   sig=type FinanceNewsRequest struct {\n	Symbol	string		`json:"symbol"`\n	URLs	[]string	`json:"urls"`\n}
 EDGES
   contains=matrix/router/internal/exa.FinanceNewsRequest#Symbol,matrix/router/internal/exa.FinanceNewsRequest#URLs
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Service.ExtractFinanceNews
   ^defines=matrix/router/internal/exa/workflow.go
 
 NODE id=matrix/router/internal/exa.FinanceNewsRequest#Symbol kind=field
@@ -801,6 +883,7 @@ NODE id=matrix/router/internal/exa.FinanceRequest kind=type
   sig=type FinanceRequest struct {\n	Kind		string		`json:"kind"`\n	Symbol		string		`json:"symbol"`\n	AsOf		string		`json:"as_of,omitempty"`\n	Effort		string		`json:"effort,omitempty"`\n	RubricVersion	string		`json:"rubric_version,omitempty"`\n	Dimensions	[]string	`json:"dimensions,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.FinanceRequest#AsOf,matrix/router/internal/exa.FinanceRequest#Dimensions,matrix/router/internal/exa.FinanceRequest#Effort,matrix/router/internal/exa.FinanceRequest#Kind,matrix/router/internal/exa.FinanceRequest#RubricVersion,matrix/router/internal/exa.FinanceRequest#Symbol
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.financeAgentRequest
   ^defines=matrix/router/internal/exa/workflow.go
 
 NODE id=matrix/router/internal/exa.FinanceRequest#AsOf kind=field
@@ -844,6 +927,7 @@ NODE id=matrix/router/internal/exa.GroundedClaim kind=type
   sig=type GroundedClaim struct {\n	Value		json.RawMessage	`json:"value"`\n	AsOf		string		`json:"as_of,omitempty"`\n	FiscalPeriod	string		`json:"fiscal_period,omitempty"`\n	Unit		string		`json:"unit,omitempty"`\n	Currency	string		`json:"currency,omitempty"`\n	State		ClaimState	`json:"state"`\n	Confidence	string		`json:"confidence,omitempty"`\n	Evidence	[]Evidence	`json:"evidence"`\n}
 EDGES
   contains=matrix/router/internal/exa.GroundedClaim#AsOf,matrix/router/internal/exa.GroundedClaim#Confidence,matrix/router/internal/exa.GroundedClaim#Currency,matrix/router/internal/exa.GroundedClaim#Evidence,matrix/router/internal/exa.GroundedClaim#FiscalPeriod,matrix/router/internal/exa.GroundedClaim#State,matrix/router/internal/exa.GroundedClaim#Unit,matrix/router/internal/exa.GroundedClaim#Value
+  references=matrix/router/internal/exa.ClaimState,matrix/router/internal/exa.Evidence
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.GroundedClaim#AsOf kind=field
@@ -899,6 +983,8 @@ NODE id=matrix/router/internal/exa.Grounding kind=type
   sig=type Grounding struct {\n	Field		string		`json:"field"`\n	Citations	[]Citation	`json:"citations"`\n	Confidence	string		`json:"confidence,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.Grounding#Citations,matrix/router/internal/exa.Grounding#Confidence,matrix/router/internal/exa.Grounding#Field
+  references=matrix/router/internal/exa.Citation
+  ^references=matrix/router/internal/exa.EvidenceFromGrounding,matrix/router/internal/exa.Output
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.Grounding#Citations kind=field
@@ -924,6 +1010,8 @@ NODE id=matrix/router/internal/exa.Handler kind=type
   sig=type Handler struct {\n	Service			*Service\n	Finance			bool\n	TrustSubjectHeader	bool\n	Subject			func(context.Context) string\n	Log			func(string, ...any)\n}
 EDGES
   contains=matrix/router/internal/exa.Handler#Finance,matrix/router/internal/exa.Handler#Log,matrix/router/internal/exa.Handler#Service,matrix/router/internal/exa.Handler#Subject,matrix/router/internal/exa.Handler#TrustSubjectHeader,matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON
+  references=matrix/router/internal/exa.Service
+  ^references=matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.NewFinanceHandler,matrix/router/internal/exa.NewHandler,matrix/router/internal/exa.NewInternalHandler
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.Handler#Finance kind=field
@@ -960,6 +1048,8 @@ NODE id=matrix/router/internal/exa.Handler.ServeHTTP kind=method
   digest=b3:afe0c05d11479d455936dcfbf97db4f0c1b8ce7309ba4ed48b6abb584fe1852f file=router/internal/exa/handler.go range=40:67 lang=go exported=true byte_range=1229:2141
   sig=func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/proxy.Subject
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.FailureNotConfigured,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.SubjectHeader,matrix/router/internal/exa.h,matrix/router/internal/exa.path,matrix/router/internal/exa.r,matrix/router/internal/exa.user,matrix/router/internal/exa.w
   ^contains=matrix/router/internal/exa.Handler
   ^defines=matrix/router/internal/exa/handler.go
 
@@ -967,55 +1057,87 @@ NODE id=matrix/router/internal/exa.Handler.decode kind=method
   digest=b3:649dbfae7d960a64d84868221d44eea8737bd69b88206d9e4b5a482445bb5215 file=router/internal/exa/handler.go range=160:169 lang=go exported=false byte_range=5358:5789
   sig=func (h *Handler) decode(w http.ResponseWriter, r *http.Request, output any) bool
 EDGES
+  calls=matrix/router/internal/exa.Handler.writeError
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.decoder,matrix/router/internal/exa.err,matrix/router/internal/exa.h,matrix/router/internal/exa.output,matrix/router/internal/exa.r,matrix/router/internal/exa.w
   ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.Handler.respond kind=method
   digest=b3:fea6d3f5a1f55a90d1e46f21c84acfd0aa3d2aac7dc7816f66818a1ea8fc7fa3 file=router/internal/exa/handler.go range=171:177 lang=go exported=false byte_range=5791:5957
   sig=func (h *Handler) respond(w http.ResponseWriter, output any, err error)
 EDGES
+  calls=matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON
+  references=matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.err,matrix/router/internal/exa.h,matrix/router/internal/exa.output,matrix/router/internal/exa.w
   ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.Handler.serveFinance kind=method
   digest=b3:54d979d28bde5f718acbfe6c87b8328c17b2e5dc257b8e6c0012564319fcbc48 file=router/internal/exa/handler.go range=105:133 lang=go exported=false byte_range=3466:4409
   sig=func (h *Handler) serveFinance(w http.ResponseWriter, r *http.Request, user, path string)
 EDGES
+  calls=matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.VerifyFinance
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.FinanceNewsRequest,matrix/router/internal/exa.FinanceRequest,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.VerifyRequest,matrix/router/internal/exa.err,matrix/router/internal/exa.h,matrix/router/internal/exa.input,matrix/router/internal/exa.out,matrix/router/internal/exa.path,matrix/router/internal/exa.r,matrix/router/internal/exa.user,matrix/router/internal/exa.w
   ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.ServeHTTP
+  ^references=matrix/router/internal/exa.Handler.ServeHTTP
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.Handler.serveGeneral kind=method
   digest=b3:d04e38dcb3906dbe8dead110a35f33856789b679a5116c101cf1a72d232df276 file=router/internal/exa/handler.go range=69:103 lang=go exported=false byte_range=2143:3464
   sig=func (h *Handler) serveGeneral(w http.ResponseWriter, r *http.Request, user, path string)
 EDGES
+  calls=matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.Stats
+  references=matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.ContentsRequest,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveRun,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.Stats,matrix/router/internal/exa.err,matrix/router/internal/exa.h,matrix/router/internal/exa.input,matrix/router/internal/exa.out,matrix/router/internal/exa.path,matrix/router/internal/exa.r,matrix/router/internal/exa.user,matrix/router/internal/exa.w
   ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.ServeHTTP
+  ^references=matrix/router/internal/exa.Handler.ServeHTTP
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.Handler.serveRun kind=method
   digest=b3:afa91356c257b7cdebd725e62599e8a48343eb2de1e83cee3709a6e9d3f0e189 file=router/internal/exa/handler.go range=135:158 lang=go exported=false byte_range=4411:5356
   sig=func (h *Handler) serveRun(w http.ResponseWriter, r *http.Request, user, suffix string)
 EDGES
+  calls=matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.err,matrix/router/internal/exa.h,matrix/router/internal/exa.id,matrix/router/internal/exa.input,matrix/router/internal/exa.out,matrix/router/internal/exa.parts,matrix/router/internal/exa.r,matrix/router/internal/exa.suffix,matrix/router/internal/exa.user,matrix/router/internal/exa.w
   ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.Handler.writeError kind=method
   digest=b3:c017bfe94b677c4ab7a479f76b573ddabf555ed7daa981247f3879b8ec1b318c file=router/internal/exa/handler.go range=191:216 lang=go exported=false byte_range=6311:7200
   sig=func (h *Handler) writeError(w http.ResponseWriter, err error)
 EDGES
+  calls=matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.serviceError
+  references=matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.FailureConflict,matrix/router/internal/exa.FailureNotConfigured,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.FailurePartial,matrix/router/internal/exa.FailureRateLimited,matrix/router/internal/exa.FailureTimeout,matrix/router/internal/exa.FailureUngrounded,matrix/router/internal/exa.Handler,matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/exa.body,matrix/router/internal/exa.err,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.failure,matrix/router/internal/exa.h,matrix/router/internal/exa.serviceError,matrix/router/internal/exa.status,matrix/router/internal/exa.w
   ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun
+  ^references=matrix/router/internal/exa.Handler.ServeHTTP,matrix/router/internal/exa.Handler.decode,matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.serveRun
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.Handler.writeJSON kind=method
   digest=b3:8541963c03870d3a7e5f897a8dda8611f375ed34f7ca88e266f95fb080b50838 file=router/internal/exa/handler.go range=218:223 lang=go exported=false byte_range=7202:7446
   sig=func (h *Handler) writeJSON(w http.ResponseWriter, status int, value any)
 EDGES
+  calls=matrix/router/internal/mw.statusWriter.WriteHeader
+  references=matrix/router/internal/exa.Handler,matrix/router/internal/exa.status,matrix/router/internal/exa.value,matrix/router/internal/exa.w
   ^contains=matrix/router/internal/exa.Handler
+  ^calls=matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.writeError
+  ^references=matrix/router/internal/exa.Handler.respond,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Handler.writeError
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.KindOf kind=func
   digest=b3:9d31705515dd0847a1c648f945bc343d836affef96a04174fd6411500db8ed31 file=router/internal/exa/failure.go range=53:61 lang=go exported=true byte_range=1204:1371
   sig=func KindOf(err error) FailureKind
 EDGES
+  calls=matrix/router/internal/exa.FailureOf
+  references=matrix/router/internal/exa.FailureKind,matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.err,matrix/router/internal/exa.failure
+  ^calls=matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.GetRun
+  ^references=matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.GetRun
   ^defines=matrix/router/internal/exa/failure.go
 
 NODE id=matrix/router/internal/exa.MemoryStore kind=type
@@ -1024,6 +1146,8 @@ NODE id=matrix/router/internal/exa.MemoryStore kind=type
 EDGES
   contains=matrix/router/internal/exa.MemoryStore#cache,matrix/router/internal/exa.MemoryStore#mu,matrix/router/internal/exa.MemoryStore#runs,matrix/router/internal/exa.MemoryStore#spend,matrix/router/internal/exa.MemoryStore.ActiveRuns,matrix/router/internal/exa.MemoryStore.GetCache,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.MemoryStore.PutCache,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.MemoryStore.ReserveSpend
   implements=matrix/router/internal/exa.Store
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.RunRecord
+  ^references=matrix/router/internal/exa.MemoryStore.ActiveRuns,matrix/router/internal/exa.MemoryStore.GetCache,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.MemoryStore.PutCache,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.MemoryStore.ReserveSpend,matrix/router/internal/exa.NewMemoryStore
   ^defines=matrix/router/internal/exa/store.go
 
 NODE id=matrix/router/internal/exa.MemoryStore#cache kind=field
@@ -1054,42 +1178,54 @@ NODE id=matrix/router/internal/exa.MemoryStore.ActiveRuns kind=method
   digest=b3:fbb56f687959a4e7f6975952a0f38bec8e037af1e25d2074e78f0cc79cc7a198 file=router/internal/exa/store.go range=69:80 lang=go exported=true byte_range=1686:1987
   sig=func (s *MemoryStore) ActiveRuns(_ context.Context, user string) (int, error)
 EDGES
+  references=matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.count,matrix/router/internal/exa.id,matrix/router/internal/exa.record,matrix/router/internal/exa.s,matrix/router/internal/exa.user
   ^contains=matrix/router/internal/exa.MemoryStore
+  ^calls=matrix/router/internal/exa.Service.acquire
   ^defines=matrix/router/internal/exa/store.go
 
 NODE id=matrix/router/internal/exa.MemoryStore.GetCache kind=method
   digest=b3:acb2571a11713c3654d70cc823c14cbc3c8cee8a298992eaccc63e58c41d4297 file=router/internal/exa/store.go range=89:97 lang=go exported=true byte_range=2165:2458
   sig=func (s *MemoryStore) GetCache(_ context.Context, user, key string, now time.Time) (CacheRecord, bool, error)
 EDGES
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.key,matrix/router/internal/exa.now,matrix/router/internal/exa.ok,matrix/router/internal/exa.record,matrix/router/internal/exa.s,matrix/router/internal/exa.user
   ^contains=matrix/router/internal/exa.MemoryStore
+  ^calls=matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
   ^defines=matrix/router/internal/exa/store.go
 
 NODE id=matrix/router/internal/exa.MemoryStore.GetRun kind=method
   digest=b3:d7903508683a1b47ee14c2845e42e9c55d4ded0499171c14b4593fab02335e80 file=router/internal/exa/store.go range=62:67 lang=go exported=true byte_range=1484:1684
   sig=func (s *MemoryStore) GetRun(_ context.Context, user, id string) (RunRecord, bool, error)
 EDGES
+  references=matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.RunRecord,matrix/router/internal/exa.id,matrix/router/internal/exa.ok,matrix/router/internal/exa.record,matrix/router/internal/exa.s,matrix/router/internal/exa.user
   ^contains=matrix/router/internal/exa.MemoryStore
+  ^calls=matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun
   ^defines=matrix/router/internal/exa/store.go
 
 NODE id=matrix/router/internal/exa.MemoryStore.PutCache kind=method
   digest=b3:3985c5ee685d09bfd2c2ddab6ea66993b790269b44296360d7552dbde7f67123 file=router/internal/exa/store.go range=82:87 lang=go exported=true byte_range=1989:2163
   sig=func (s *MemoryStore) PutCache(_ context.Context, record CacheRecord) error
 EDGES
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.record,matrix/router/internal/exa.s
   ^contains=matrix/router/internal/exa.MemoryStore
+  ^calls=matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.cached
   ^defines=matrix/router/internal/exa/store.go
 
 NODE id=matrix/router/internal/exa.MemoryStore.PutRun kind=method
   digest=b3:702b9ea4ba8fdb7ff4def7d67aaad97d3d89fb0ceed35c3294f2e802112f8fcd file=router/internal/exa/store.go range=52:60 lang=go exported=true byte_range=1217:1482
   sig=func (s *MemoryStore) PutRun(_ context.Context, record RunRecord) error
 EDGES
+  references=matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.RunRecord,matrix/router/internal/exa.existing,matrix/router/internal/exa.ok,matrix/router/internal/exa.record,matrix/router/internal/exa.s
   ^contains=matrix/router/internal/exa.MemoryStore
+  ^calls=matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun
   ^defines=matrix/router/internal/exa/store.go
 
 NODE id=matrix/router/internal/exa.MemoryStore.ReserveSpend kind=method
   digest=b3:354a26f07327188ca9e3b76dee0a95e99dc890003bd0dc125f3690419f40119c file=router/internal/exa/store.go range=99:108 lang=go exported=true byte_range=2460:2770
   sig=func (s *MemoryStore) ReserveSpend(_ context.Context, user string, day time.Time, amount, limit float64) (bool, error)
 EDGES
+  references=matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.amount,matrix/router/internal/exa.day,matrix/router/internal/exa.key,matrix/router/internal/exa.limit,matrix/router/internal/exa.s,matrix/router/internal/exa.user
   ^contains=matrix/router/internal/exa.MemoryStore
+  ^calls=matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
   ^defines=matrix/router/internal/exa/store.go
 
 NODE id=matrix/router/internal/exa.Meter kind=type
@@ -1097,6 +1233,8 @@ NODE id=matrix/router/internal/exa.Meter kind=type
   sig=type Meter struct {\n	mu	sync.Mutex\n	since	time.Time\n	rows	map[string]*meterRow\n	users	map[string]bool\n}
 EDGES
   contains=matrix/router/internal/exa.Meter#mu,matrix/router/internal/exa.Meter#rows,matrix/router/internal/exa.Meter#since,matrix/router/internal/exa.Meter#users,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.Meter.Snapshot
+  references=matrix/router/internal/exa.meterRow
+  ^references=matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.Meter.Snapshot,matrix/router/internal/exa.NewMeter,matrix/router/internal/exa.Service
   ^defines=matrix/router/internal/exa/meter.go
 
 NODE id=matrix/router/internal/exa.Meter#mu kind=field
@@ -1127,14 +1265,20 @@ NODE id=matrix/router/internal/exa.Meter.Observe kind=method
   digest=b3:2ae1bdf723c7461471f53b1b28bd8cb69ae6a57f84bb7c1ac24fb3bbe3381c78 file=router/internal/exa/meter.go range=58:86 lang=go exported=true byte_range=1363:1936
   sig=func (m *Meter) Observe(record MeterRecord)
 EDGES
+  references=matrix/router/internal/exa.Meter,matrix/router/internal/exa.MeterRecord,matrix/router/internal/exa.m,matrix/router/internal/exa.meterRow,matrix/router/internal/exa.record,matrix/router/internal/exa.row
   ^contains=matrix/router/internal/exa.Meter
+  ^calls=matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
+  ^references=matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
   ^defines=matrix/router/internal/exa/meter.go
 
 NODE id=matrix/router/internal/exa.Meter.Snapshot kind=method
   digest=b3:ebe96dabbb91fe9ca72afe498ee378c0ae154e464f470f492799c408005b77de file=router/internal/exa/meter.go range=88:113 lang=go exported=true byte_range=1938:2879
   sig=func (m *Meter) Snapshot() Stats
 EDGES
+  references=matrix/router/internal/exa.EndpointStats,matrix/router/internal/exa.Meter,matrix/router/internal/exa.Stats,matrix/router/internal/exa.endpoint,matrix/router/internal/exa.i,matrix/router/internal/exa.index,matrix/router/internal/exa.j,matrix/router/internal/exa.latencies,matrix/router/internal/exa.m,matrix/router/internal/exa.out,matrix/router/internal/exa.p,matrix/router/internal/exa.q,matrix/router/internal/exa.row
   ^contains=matrix/router/internal/exa.Meter
+  ^calls=matrix/router/internal/exa.Service.Stats
+  ^references=matrix/router/internal/exa.Service.Stats
   ^defines=matrix/router/internal/exa/meter.go
 
 NODE id=matrix/router/internal/exa.MeterRecord kind=type
@@ -1142,6 +1286,7 @@ NODE id=matrix/router/internal/exa.MeterRecord kind=type
   sig=type MeterRecord struct {\n	Endpoint	string\n	User		string\n	CacheHit	bool\n	Latency		time.Duration\n	Cost		float64\n	Err		error\n}
 EDGES
   contains=matrix/router/internal/exa.MeterRecord#CacheHit,matrix/router/internal/exa.MeterRecord#Cost,matrix/router/internal/exa.MeterRecord#Endpoint,matrix/router/internal/exa.MeterRecord#Err,matrix/router/internal/exa.MeterRecord#Latency,matrix/router/internal/exa.MeterRecord#User
+  ^references=matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
   ^defines=matrix/router/internal/exa/meter.go
 
 NODE id=matrix/router/internal/exa.MeterRecord#CacheHit kind=field
@@ -1184,42 +1329,64 @@ NODE id=matrix/router/internal/exa.NewClient kind=func
   digest=b3:2ac4ed85c79055c828d036a893c7d71214d52cff5048affcc96bba9841512f02 file=router/internal/exa/client.go range=38:48 lang=go exported=true byte_range=615:965
   sig=func NewClient(cfg ClientConfig) *Client
 EDGES
+  references=matrix/router/internal/exa.Client,matrix/router/internal/exa.ClientConfig,matrix/router/internal/exa.base,matrix/router/internal/exa.cfg,matrix/router/internal/exa.defaultBaseURL,matrix/router/internal/exa.defaultTimeout,matrix/router/internal/exa.httpClient
+  ^calls=matrix/router/internal/exa.NewService
+  ^references=matrix/router/internal/exa.NewService
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.NewFinanceHandler kind=func
   digest=b3:7354ea1bb18fb705c2e33bb697d59498c0a0009465d2a708c2fae4b2126bfe43 file=router/internal/exa/handler.go range=36:38 lang=go exported=true byte_range=987:1227
   sig=func NewFinanceHandler(service *Service, internal bool, subject func(context.Context) string, log func(string, ...any)) *Handler
 EDGES
+  references=matrix/router/internal/exa.Handler,matrix/router/internal/exa.Service,matrix/router/internal/exa.internal,matrix/router/internal/exa.log,matrix/router/internal/exa.service,matrix/router/internal/exa.subject
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.NewHandler kind=func
   digest=b3:6d689bc400eec38cd255d681cea3b90df779cb172723d537f942bb25e0abec04 file=router/internal/exa/handler.go range=30:32 lang=go exported=true byte_range=661:834
   sig=func NewHandler(service *Service, subject func(context.Context) string, log func(string, ...any)) *Handler
 EDGES
+  references=matrix/router/internal/exa.Handler,matrix/router/internal/exa.Service,matrix/router/internal/exa.log,matrix/router/internal/exa.service,matrix/router/internal/exa.subject
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.NewInternalHandler kind=func
   digest=b3:db2a0ee4f25e5038fcea68060f9f0f280090d80abb8d092873bd0731ce02fd5c file=router/internal/exa/handler.go range=33:35 lang=go exported=true byte_range=835:986
   sig=func NewInternalHandler(service *Service, log func(string, ...any)) *Handler
 EDGES
+  references=matrix/router/internal/exa.Handler,matrix/router/internal/exa.Service,matrix/router/internal/exa.log,matrix/router/internal/exa.service
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.NewMemoryStore kind=func
   digest=b3:e4d386182f401ecd374665290495047cdda2fc72ba5a02fb8859b0a6dab614af file=router/internal/exa/store.go range=48:50 lang=go exported=true byte_range=1064:1215
   sig=func NewMemoryStore() *MemoryStore
 EDGES
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.RunRecord
+  ^calls=matrix/router/internal/exa.NewService
+  ^references=matrix/router/internal/exa.NewService
   ^defines=matrix/router/internal/exa/store.go
 
 NODE id=matrix/router/internal/exa.NewMeter kind=func
   digest=b3:823aaff6c2471f9de71a42ea177eb92b9da2a098df4d32fcbe812cfd52591871 file=router/internal/exa/meter.go range=54:56 lang=go exported=true byte_range=1233:1361
   sig=func NewMeter(now time.Time) *Meter
 EDGES
+  references=matrix/router/internal/exa.Meter,matrix/router/internal/exa.meterRow,matrix/router/internal/exa.now
+  ^calls=matrix/router/internal/exa.NewService
+  ^references=matrix/router/internal/exa.NewService
   ^defines=matrix/router/internal/exa/meter.go
 
 NODE id=matrix/router/internal/exa.NewService kind=func
   digest=b3:73a68c2090f804ef7e0a818aa6669202adcea9d572986ae48d2be0e24b8694b5 file=router/internal/exa/service.go range=73:105 lang=go exported=true byte_range=1564:2531
   sig=func NewService(cfg ServiceConfig) *Service
 EDGES
+  calls=matrix/router/internal/exa.NewClient,matrix/router/internal/exa.NewMemoryStore,matrix/router/internal/exa.NewMeter
+  references=matrix/router/internal/exa.APIKeyEnv,matrix/router/internal/exa.ClientConfig,matrix/router/internal/exa.NewClient,matrix/router/internal/exa.NewMemoryStore,matrix/router/internal/exa.NewMeter,matrix/router/internal/exa.Service,matrix/router/internal/exa.ServiceConfig,matrix/router/internal/exa.cfg,matrix/router/internal/exa.client,matrix/router/internal/exa.concurrent,matrix/router/internal/exa.contentsTTL,matrix/router/internal/exa.flight,matrix/router/internal/exa.limit,matrix/router/internal/exa.now,matrix/router/internal/exa.researchTTL,matrix/router/internal/exa.searchTTL,matrix/router/internal/exa.store
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.Output kind=type
@@ -1227,6 +1394,8 @@ NODE id=matrix/router/internal/exa.Output kind=type
   sig=type Output struct {\n	Content		json.RawMessage	`json:"content,omitempty"`\n	Text		string		`json:"text,omitempty"`\n	Structured	json.RawMessage	`json:"structured,omitempty"`\n	Grounding	[]Grounding	`json:"grounding,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.Output#Content,matrix/router/internal/exa.Output#Grounding,matrix/router/internal/exa.Output#Structured,matrix/router/internal/exa.Output#Text
+  references=matrix/router/internal/exa.Grounding
+  ^references=matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.SearchResponse
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.Output#Content kind=field
@@ -1258,6 +1427,7 @@ NODE id=matrix/router/internal/exa.ResponseMeta kind=type
   sig=type ResponseMeta struct {\n	CacheHit	bool		`json:"cache_hit"`\n	RetrievedAt	time.Time	`json:"retrieved_at"`\n}
 EDGES
   contains=matrix/router/internal/exa.ResponseMeta#CacheHit,matrix/router/internal/exa.ResponseMeta#RetrievedAt
+  ^references=matrix/router/internal/exa.ContentsEnvelope,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.SearchEnvelope,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.ResponseMeta#CacheHit kind=field
@@ -1277,6 +1447,7 @@ NODE id=matrix/router/internal/exa.Result kind=type
   sig=type Result struct {\n	Title		string		`json:"title"`\n	URL		string		`json:"url"`\n	ID		string		`json:"id,omitempty"`\n	PublishedDate	string		`json:"publishedDate,omitempty"`\n	Author		string		`json:"author,omitempty"`\n	Image		string		`json:"image,omitempty"`\n	Favicon		string		`json:"favicon,omitempty"`\n	Text		string		`json:"text,omitempty"`\n	Highlights	[]string	`json:"highlights,omitempty"`\n	HighlightScores	[]float64	`json:"highlightScores,omitempty"`\n	Summary		any		`json:"summary,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.Result#Author,matrix/router/internal/exa.Result#Favicon,matrix/router/internal/exa.Result#HighlightScores,matrix/router/internal/exa.Result#Highlights,matrix/router/internal/exa.Result#ID,matrix/router/internal/exa.Result#Image,matrix/router/internal/exa.Result#PublishedDate,matrix/router/internal/exa.Result#Summary,matrix/router/internal/exa.Result#Text,matrix/router/internal/exa.Result#Title,matrix/router/internal/exa.Result#URL
+  ^references=matrix/router/internal/exa.ContentsResponse,matrix/router/internal/exa.SearchResponse
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.Result#Author kind=field
@@ -1350,6 +1521,8 @@ NODE id=matrix/router/internal/exa.RunEnvelope kind=type
   sig=type RunEnvelope struct {\n	Run		*AgentRun	`json:"run"`\n	Workflow	string		`json:"workflow,omitempty"`\n	Subject		string		`json:"subject,omitempty"`\n	Meta		ResponseMeta	`json:"meta"`\n}
 EDGES
   contains=matrix/router/internal/exa.RunEnvelope#Meta,matrix/router/internal/exa.RunEnvelope#Run,matrix/router/internal/exa.RunEnvelope#Subject,matrix/router/internal/exa.RunEnvelope#Workflow
+  references=matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.ResponseMeta
+  ^references=matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.StartRun
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.RunEnvelope#Meta kind=field
@@ -1381,6 +1554,7 @@ NODE id=matrix/router/internal/exa.RunRecord kind=type
   sig=type RunRecord struct {\n	ID		string\n	User		string\n	Workflow	string\n	Subject		string\n	CacheKey	string\n	Status		string\n	Cost		float64\n	CreatedAt	time.Time\n	UpdatedAt	time.Time\n}
 EDGES
   contains=matrix/router/internal/exa.RunRecord#CacheKey,matrix/router/internal/exa.RunRecord#Cost,matrix/router/internal/exa.RunRecord#CreatedAt,matrix/router/internal/exa.RunRecord#ID,matrix/router/internal/exa.RunRecord#Status,matrix/router/internal/exa.RunRecord#Subject,matrix/router/internal/exa.RunRecord#UpdatedAt,matrix/router/internal/exa.RunRecord#User,matrix/router/internal/exa.RunRecord#Workflow
+  ^references=matrix/router/internal/db.DB.GetRun,matrix/router/internal/db.DB.PutRun,matrix/router/internal/exa.MemoryStore,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.NewMemoryStore,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Store
   ^defines=matrix/router/internal/exa/store.go
 
 NODE id=matrix/router/internal/exa.RunRecord#CacheKey kind=field
@@ -1442,6 +1616,8 @@ NODE id=matrix/router/internal/exa.SearchEnvelope kind=type
   sig=type SearchEnvelope struct {\n	Data	*SearchResponse	`json:"data,omitempty"`\n	Meta	ResponseMeta	`json:"meta"`\n}
 EDGES
   contains=matrix/router/internal/exa.SearchEnvelope#Data,matrix/router/internal/exa.SearchEnvelope#Meta
+  references=matrix/router/internal/exa.ResponseMeta,matrix/router/internal/exa.SearchResponse
+  ^references=matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.VerifyFinance
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.SearchEnvelope#Data kind=field
@@ -1461,6 +1637,8 @@ NODE id=matrix/router/internal/exa.SearchRequest kind=type
   sig=type SearchRequest struct {\n	Query			string		`json:"query"`\n	Type			string		`json:"type,omitempty"`\n	NumResults		int		`json:"numResults,omitempty"`\n	Category		string		`json:"category,omitempty"`\n	UserLocation		string		`json:"userLocation,omitempty"`\n	IncludeDomains		[]string	`json:"includeDomains,omitempty"`\n	ExcludeDomains		[]string	`json:"excludeDomains,omitempty"`\n	StartPublishedDate	string		`json:"startPublishedDate,omitempty"`\n	EndPublishedDate	string		`json:"endPublishedDate,omitempty"`\n	Moderation		bool		`json:"moderation,omitempty"`\n	AdditionalQueries	[]string	`json:"additionalQueries,omitempty"`\n	SystemPrompt		string		`json:"systemPrompt,omitempty"`\n	OutputSchema		map[string]any	`json:"outputSchema,omitempty"`\n	Contents		ContentOptions	`json:"contents"`\n}
 EDGES
   contains=matrix/router/internal/exa.SearchRequest#AdditionalQueries,matrix/router/internal/exa.SearchRequest#Category,matrix/router/internal/exa.SearchRequest#Contents,matrix/router/internal/exa.SearchRequest#EndPublishedDate,matrix/router/internal/exa.SearchRequest#ExcludeDomains,matrix/router/internal/exa.SearchRequest#IncludeDomains,matrix/router/internal/exa.SearchRequest#Moderation,matrix/router/internal/exa.SearchRequest#NumResults,matrix/router/internal/exa.SearchRequest#OutputSchema,matrix/router/internal/exa.SearchRequest#Query,matrix/router/internal/exa.SearchRequest#StartPublishedDate,matrix/router/internal/exa.SearchRequest#SystemPrompt,matrix/router/internal/exa.SearchRequest#Type,matrix/router/internal/exa.SearchRequest#UserLocation
+  references=matrix/router/internal/exa.ContentOptions
+  ^references=matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.validateSearch
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.SearchRequest#AdditionalQueries kind=field
@@ -1552,6 +1730,8 @@ NODE id=matrix/router/internal/exa.SearchResponse kind=type
   sig=type SearchResponse struct {\n	RequestID	string		`json:"requestId"`\n	SearchType	string		`json:"searchType"`\n	Results		[]Result	`json:"results"`\n	Output		*Output		`json:"output,omitempty"`\n	Cost		Cost		`json:"costDollars"`\n}
 EDGES
   contains=matrix/router/internal/exa.SearchResponse#Cost,matrix/router/internal/exa.SearchResponse#Output,matrix/router/internal/exa.SearchResponse#RequestID,matrix/router/internal/exa.SearchResponse#Results,matrix/router/internal/exa.SearchResponse#SearchType
+  references=matrix/router/internal/exa.Cost,matrix/router/internal/exa.Output,matrix/router/internal/exa.Result
+  ^references=matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.SearchEnvelope,matrix/router/internal/exa.Service.Search
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.SearchResponse#Cost kind=field
@@ -1589,6 +1769,8 @@ NODE id=matrix/router/internal/exa.Service kind=type
   sig=type Service struct {\n	client		*Client\n	store		Store\n	now		func() time.Time\n	dailyLimit	float64\n	searchTTL	time.Duration\n	contentsTTL	time.Duration\n	researchTTL	time.Duration\n	meter		*Meter\n	mu		sync.Mutex\n	activeByUser	map[string]int\n	maxConcurrent	int\n	inflight	map[string]*flight\n}
 EDGES
   contains=matrix/router/internal/exa.Service#activeByUser,matrix/router/internal/exa.Service#client,matrix/router/internal/exa.Service#contentsTTL,matrix/router/internal/exa.Service#dailyLimit,matrix/router/internal/exa.Service#inflight,matrix/router/internal/exa.Service#maxConcurrent,matrix/router/internal/exa.Service#meter,matrix/router/internal/exa.Service#mu,matrix/router/internal/exa.Service#now,matrix/router/internal/exa.Service#researchTTL,matrix/router/internal/exa.Service#searchTTL,matrix/router/internal/exa.Service#store,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.Stats,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.Service.release
+  references=matrix/router/internal/exa.Client,matrix/router/internal/exa.Meter,matrix/router/internal/exa.Store,matrix/router/internal/exa.flight
+  ^references=matrix/router/internal/exa.Handler,matrix/router/internal/exa.NewFinanceHandler,matrix/router/internal/exa.NewHandler,matrix/router/internal/exa.NewInternalHandler,matrix/router/internal/exa.NewService,matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.Stats,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.Service.release
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.Service#activeByUser kind=field
@@ -1667,91 +1849,142 @@ NODE id=matrix/router/internal/exa.Service.CancelRun kind=method
   digest=b3:9e223358549cefd8031d5c82408c42bffbb0728353f36e08783a4557080acddf file=router/internal/exa/service.go range=237:250 lang=go exported=true byte_range=8223:8924
   sig=func (s *Service) CancelRun(ctx context.Context, user, id string) (*RunEnvelope, error)
 EDGES
+  calls=matrix/router/internal/db.DB.GetRun,matrix/router/internal/db.DB.PutRun,matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.Meter.Observe
+  references=matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.MeterRecord,matrix/router/internal/exa.ResponseMeta,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.Service,matrix/router/internal/exa.Store.GetRun,matrix/router/internal/exa.Store.PutRun,matrix/router/internal/exa.callErr,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.id,matrix/router/internal/exa.ok,matrix/router/internal/exa.record,matrix/router/internal/exa.run,matrix/router/internal/exa.s,matrix/router/internal/exa.user
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveRun
+  ^references=matrix/router/internal/exa.Handler.serveRun
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.Service.Contents kind=method
   digest=b3:57deee103d787322fdd1957c885a0a33591f887ba035ab73bc724f866af5f207 file=router/internal/exa/service.go range=127:146 lang=go exported=true byte_range=3147:3870
   sig=func (s *Service) Contents(ctx context.Context, user string, input ContentsRequest) (*ContentsEnvelope, error)
 EDGES
+  calls=matrix/router/internal/exa.KindOf,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.validateContents
+  references=matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.ContentsEnvelope,matrix/router/internal/exa.ContentsRequest,matrix/router/internal/exa.ContentsResponse,matrix/router/internal/exa.FailurePartial,matrix/router/internal/exa.KindOf,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.callErr,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.errorBody,matrix/router/internal/exa.input,matrix/router/internal/exa.meta,matrix/router/internal/exa.out,matrix/router/internal/exa.response,matrix/router/internal/exa.s,matrix/router/internal/exa.user,matrix/router/internal/exa.validateContents
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.ExtractFinanceNews
+  ^references=matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.ExtractFinanceNews
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.Service.ContinueRun kind=method
   digest=b3:24093590932ff50d45b433539c60cdd23faa6134fba8f1878627b712a2195596 file=router/internal/exa/service.go range=229:235 lang=go exported=true byte_range=7759:8221
   sig=func (s *Service) ContinueRun(ctx context.Context, user, id, query, effort string) (*RunEnvelope, error)
 EDGES
+  calls=matrix/router/internal/db.DB.GetRun,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.Service.StartRun
+  references=matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Store.GetRun,matrix/router/internal/exa.ctx,matrix/router/internal/exa.effort,matrix/router/internal/exa.err,matrix/router/internal/exa.id,matrix/router/internal/exa.ok,matrix/router/internal/exa.query,matrix/router/internal/exa.record,matrix/router/internal/exa.s,matrix/router/internal/exa.user
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveRun
+  ^references=matrix/router/internal/exa.Handler.serveRun
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.Service.ExtractFinanceNews kind=method
   digest=b3:a7537e8ba0e76ce010c699dd307b102e0f50eac621a1dd038a97f203bfb3c7fd file=router/internal/exa/workflow.go range=69:93 lang=go exported=true byte_range=2668:3689
   sig=func (s *Service) ExtractFinanceNews(ctx context.Context, user string, request FinanceNewsRequest) (*ContentsEnvelope, error)
 EDGES
+  calls=matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.canonicalURL
+  references=matrix/router/internal/exa.ContentsEnvelope,matrix/router/internal/exa.ContentsRequest,matrix/router/internal/exa.FinanceNewsRequest,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.canonical,matrix/router/internal/exa.canonicalURL,matrix/router/internal/exa.ctx,matrix/router/internal/exa.raw,matrix/router/internal/exa.request,matrix/router/internal/exa.s,matrix/router/internal/exa.seen,matrix/router/internal/exa.urls,matrix/router/internal/exa.user
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveFinance
+  ^references=matrix/router/internal/exa.Handler.serveFinance
   ^defines=matrix/router/internal/exa/workflow.go
 
 NODE id=matrix/router/internal/exa.Service.GetRun kind=method
   digest=b3:41183aa3fda55157ef86a7d52d1acd60cc440ead53d9884b3c96f079a5082575 file=router/internal/exa/service.go range=194:227 lang=go exported=true byte_range=6168:7757
   sig=func (s *Service) GetRun(ctx context.Context, user, id string) (*RunEnvelope, error)
 EDGES
+  calls=matrix/router/internal/db.DB.GetRun,matrix/router/internal/db.DB.PutCache,matrix/router/internal/db.DB.PutRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.KindOf,matrix/router/internal/exa.MemoryStore.GetRun,matrix/router/internal/exa.MemoryStore.PutCache,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.Meter.Observe
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.FailureUngrounded,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.KindOf,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.MeterRecord,matrix/router/internal/exa.ResponseMeta,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.Service,matrix/router/internal/exa.Store.GetRun,matrix/router/internal/exa.Store.PutCache,matrix/router/internal/exa.Store.PutRun,matrix/router/internal/exa.callErr,matrix/router/internal/exa.cost,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.id,matrix/router/internal/exa.ok,matrix/router/internal/exa.payload,matrix/router/internal/exa.record,matrix/router/internal/exa.run,matrix/router/internal/exa.s,matrix/router/internal/exa.started,matrix/router/internal/exa.user
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveRun
+  ^references=matrix/router/internal/exa.Handler.serveRun
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.Service.Search kind=method
   digest=b3:45c7d389b99b01bd3ecf6c6c289db941fa3c7ac4b7c72eba95a94731e0e8832b file=router/internal/exa/service.go range=109:125 lang=go exported=true byte_range=2596:3145
   sig=func (s *Service) Search(ctx context.Context, user string, input SearchRequest) (*SearchEnvelope, error)
 EDGES
+  calls=matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.validateSearch
+  references=matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.SearchEnvelope,matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.SearchResponse,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.cached,matrix/router/internal/exa.callErr,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.input,matrix/router/internal/exa.meta,matrix/router/internal/exa.out,matrix/router/internal/exa.response,matrix/router/internal/exa.s,matrix/router/internal/exa.user,matrix/router/internal/exa.validateSearch
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.VerifyFinance
+  ^references=matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.VerifyFinance
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.Service.StartFinance kind=method
   digest=b3:3d8c52d24630ceb37a0ddea7eb30b311611ea2c2013ec7b7f0c40688e7efb6a0 file=router/internal/exa/workflow.go range=32:45 lang=go exported=true byte_range=783:1320
   sig=func (s *Service) StartFinance(ctx context.Context, user string, request FinanceRequest) (*RunEnvelope, error)
 EDGES
+  calls=matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.financeAgentRequest
+  references=matrix/router/internal/exa.FinanceRequest,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.agent,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.financeAgentRequest,matrix/router/internal/exa.request,matrix/router/internal/exa.s,matrix/router/internal/exa.user,matrix/router/internal/exa.workflow
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveFinance
+  ^references=matrix/router/internal/exa.Handler.serveFinance
   ^defines=matrix/router/internal/exa/workflow.go
 
 NODE id=matrix/router/internal/exa.Service.StartRun kind=method
   digest=b3:022c868729facf6864c6bb843bf23e480553c4bb04e7c72d488e85ea54a9a6d4 file=router/internal/exa/service.go range=148:192 lang=go exported=true byte_range=3872:6166
   sig=func (s *Service) StartRun(ctx context.Context, user, workflow, subject string, input AgentRequest) (*RunEnvelope, error)
 EDGES
+  calls=matrix/router/internal/db.DB.GetCache,matrix/router/internal/db.DB.PutRun,matrix/router/internal/db.DB.ReserveSpend,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.MemoryStore.GetCache,matrix/router/internal/exa.MemoryStore.PutRun,matrix/router/internal/exa.MemoryStore.ReserveSpend,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.release,matrix/router/internal/exa.effortReserve,matrix/router/internal/exa.hashRequest,matrix/router/internal/exa.validateAgent
+  references=matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.AgentRun,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureRateLimited,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.MeterRecord,matrix/router/internal/exa.ResponseMeta,matrix/router/internal/exa.RunEnvelope,matrix/router/internal/exa.RunRecord,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.acquire,matrix/router/internal/exa.Service.release,matrix/router/internal/exa.Store.GetCache,matrix/router/internal/exa.Store.PutRun,matrix/router/internal/exa.Store.ReserveSpend,matrix/router/internal/exa.acquireErr,matrix/router/internal/exa.acquired,matrix/router/internal/exa.allowed,matrix/router/internal/exa.cacheKey,matrix/router/internal/exa.cached,matrix/router/internal/exa.callErr,matrix/router/internal/exa.ctx,matrix/router/internal/exa.effortReserve,matrix/router/internal/exa.err,matrix/router/internal/exa.hashRequest,matrix/router/internal/exa.input,matrix/router/internal/exa.ok,matrix/router/internal/exa.record,matrix/router/internal/exa.reserve,matrix/router/internal/exa.run,matrix/router/internal/exa.s,matrix/router/internal/exa.started,matrix/router/internal/exa.storeErr,matrix/router/internal/exa.subject,matrix/router/internal/exa.user,matrix/router/internal/exa.validateAgent,matrix/router/internal/exa.workflow
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.StartFinance
+  ^references=matrix/router/internal/exa.Handler.serveGeneral,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.StartFinance
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.Service.Stats kind=method
   digest=b3:4f333da9c9726de315578a63fe4cc6ed55e18c4c9518671c41bd78daee18a53a file=router/internal/exa/service.go range=107:107 lang=go exported=true byte_range=2533:2594
   sig=func (s *Service) Stats() Stats
 EDGES
+  calls=matrix/router/internal/exa.Meter.Snapshot
+  references=matrix/router/internal/exa.Meter.Snapshot,matrix/router/internal/exa.Service,matrix/router/internal/exa.Stats,matrix/router/internal/exa.s
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveGeneral
+  ^references=matrix/router/internal/exa.Handler.serveGeneral
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.Service.VerifyFinance kind=method
   digest=b3:d4cec9720ffa42fd487ed31aed83ff3338d0deffb2537c9356513012f223e684 file=router/internal/exa/workflow.go range=47:67 lang=go exported=true byte_range=1322:2666
   sig=func (s *Service) VerifyFinance(ctx context.Context, user string, request VerifyRequest) (*SearchEnvelope, error)
 EDGES
+  calls=matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.emptyAsCurrent,matrix/router/internal/exa.safeField,matrix/router/internal/exa.typedFactSchema
+  references=matrix/router/internal/exa.ContentOptions,matrix/router/internal/exa.SearchEnvelope,matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.Search,matrix/router/internal/exa.VerifyRequest,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.ctx,matrix/router/internal/exa.emptyAsCurrent,matrix/router/internal/exa.field,matrix/router/internal/exa.name,matrix/router/internal/exa.properties,matrix/router/internal/exa.request,matrix/router/internal/exa.s,matrix/router/internal/exa.safeField,matrix/router/internal/exa.typedFactSchema,matrix/router/internal/exa.user
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Handler.serveFinance
+  ^references=matrix/router/internal/exa.Handler.serveFinance
   ^defines=matrix/router/internal/exa/workflow.go
 
 NODE id=matrix/router/internal/exa.Service.acquire kind=method
   digest=b3:cfce7be317b6ecaceb1bf227041f9fc3f2f3b0af0f0c90b1b4aa1db7c72f1e72 file=router/internal/exa/service.go range=312:324 lang=go exported=false byte_range=11265:11708
   sig=func (s *Service) acquire(ctx context.Context, user string) (bool, error)
 EDGES
+  calls=matrix/router/internal/db.DB.ActiveRuns,matrix/router/internal/exa.MemoryStore.ActiveRuns
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.Service,matrix/router/internal/exa.Store.ActiveRuns,matrix/router/internal/exa.active,matrix/router/internal/exa.ctx,matrix/router/internal/exa.err,matrix/router/internal/exa.s,matrix/router/internal/exa.user
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Service.StartRun
+  ^references=matrix/router/internal/exa.Service.StartRun
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.Service.cached kind=method
   digest=b3:fe479270243cbc5fb7803258fd1005836e5a1c313ea12648da74967af84c5d59 file=router/internal/exa/service.go range=252:310 lang=go exported=false byte_range=8926:11263
   sig=func (s *Service) cached(ctx context.Context, user, endpoint string, request any, ttl time.Duration, reserve float64, load func() (any, float64, error), output any) (ResponseMeta, error)
 EDGES
+  calls=matrix/router/internal/db.DB.GetCache,matrix/router/internal/db.DB.PutCache,matrix/router/internal/db.DB.ReserveSpend,matrix/router/internal/exa.MemoryStore.GetCache,matrix/router/internal/exa.MemoryStore.PutCache,matrix/router/internal/exa.MemoryStore.ReserveSpend,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.hashRequest
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureRateLimited,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.MeterRecord,matrix/router/internal/exa.ResponseMeta,matrix/router/internal/exa.Service,matrix/router/internal/exa.Store.GetCache,matrix/router/internal/exa.Store.PutCache,matrix/router/internal/exa.Store.ReserveSpend,matrix/router/internal/exa.allowed,matrix/router/internal/exa.callErr,matrix/router/internal/exa.cost,matrix/router/internal/exa.ctx,matrix/router/internal/exa.data,matrix/router/internal/exa.endpoint,matrix/router/internal/exa.err,matrix/router/internal/exa.existing,matrix/router/internal/exa.f,matrix/router/internal/exa.flight,matrix/router/internal/exa.hashRequest,matrix/router/internal/exa.key,matrix/router/internal/exa.load,matrix/router/internal/exa.marshalErr,matrix/router/internal/exa.ok,matrix/router/internal/exa.output,matrix/router/internal/exa.record,matrix/router/internal/exa.request,matrix/router/internal/exa.reserve,matrix/router/internal/exa.s,matrix/router/internal/exa.spendErr,matrix/router/internal/exa.started,matrix/router/internal/exa.storeErr,matrix/router/internal/exa.ttl,matrix/router/internal/exa.user,matrix/router/internal/exa.value
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.Search
+  ^references=matrix/router/internal/exa.Service.Contents,matrix/router/internal/exa.Service.Search
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.Service.release kind=method
   digest=b3:16f300efb2e2e5eab0f85de44470ce256583e155e7f1f99a177a001adbd50d74 file=router/internal/exa/service.go range=325:331 lang=go exported=false byte_range=11709:11844
   sig=func (s *Service) release(user string)
 EDGES
+  references=matrix/router/internal/exa.Service,matrix/router/internal/exa.s,matrix/router/internal/exa.user
   ^contains=matrix/router/internal/exa.Service
+  ^calls=matrix/router/internal/exa.Service.StartRun
+  ^references=matrix/router/internal/exa.Service.StartRun
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.ServiceConfig kind=type
@@ -1759,6 +1992,8 @@ NODE id=matrix/router/internal/exa.ServiceConfig kind=type
   sig=type ServiceConfig struct {\n	Client		*Client\n	Store		Store\n	Now		func() time.Time\n	DailySpendLimit	float64\n	MaxConcurrent	int\n	SearchTTL	time.Duration\n	ContentsTTL	time.Duration\n	ResearchTTL	time.Duration\n}
 EDGES
   contains=matrix/router/internal/exa.ServiceConfig#Client,matrix/router/internal/exa.ServiceConfig#ContentsTTL,matrix/router/internal/exa.ServiceConfig#DailySpendLimit,matrix/router/internal/exa.ServiceConfig#MaxConcurrent,matrix/router/internal/exa.ServiceConfig#Now,matrix/router/internal/exa.ServiceConfig#ResearchTTL,matrix/router/internal/exa.ServiceConfig#SearchTTL,matrix/router/internal/exa.ServiceConfig#Store
+  references=matrix/router/internal/exa.Client,matrix/router/internal/exa.Store
+  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/exa.NewService
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.ServiceConfig#Client kind=field
@@ -1814,6 +2049,8 @@ NODE id=matrix/router/internal/exa.Stats kind=type
   sig=type Stats struct {\n	Since		time.Time	`json:"since"`\n	Requests	int64		`json:"requests"`\n	CacheHits	int64		`json:"cache_hits"`\n	Errors		int64		`json:"errors"`\n	Cost		float64		`json:"cost_dollars"`\n	Users		int		`json:"users"`\n	Endpoints	[]EndpointStats	`json:"endpoints"`\n}
 EDGES
   contains=matrix/router/internal/exa.Stats#CacheHits,matrix/router/internal/exa.Stats#Cost,matrix/router/internal/exa.Stats#Endpoints,matrix/router/internal/exa.Stats#Errors,matrix/router/internal/exa.Stats#Requests,matrix/router/internal/exa.Stats#Since,matrix/router/internal/exa.Stats#Users
+  references=matrix/router/internal/exa.EndpointStats
+  ^references=matrix/router/internal/exa.Meter.Snapshot,matrix/router/internal/exa.Service.Stats
   ^defines=matrix/router/internal/exa/meter.go
 
 NODE id=matrix/router/internal/exa.Stats#CacheHits kind=field
@@ -1862,13 +2099,16 @@ NODE id=matrix/router/internal/exa.Store kind=interface
   digest=b3:b72eafb41e1be364e409986c1b4981aa0dc8ee571a6c2e7a5424df15b624e283 file=router/internal/exa/store.go range=32:39 lang=go exported=true byte_range=540:931
   sig=type Store interface {\n	PutRun(context.Context, RunRecord) error\n	GetRun(context.Context, string, string) (RunRecord, bool, error)\n	ActiveRuns(context.Context, string) (int, error)\n	PutCache(context.Context, CacheRecord) error\n	GetCache(context.Context, string, string, time.Time) (CacheRecord, bool, error)\n	ReserveSpend(context.Context, string, time.Time, float64, float64) (bool, error)\n}
 EDGES
+  references=matrix/router/internal/exa.CacheRecord,matrix/router/internal/exa.RunRecord
   ^implements=matrix/router/internal/db.DB,matrix/router/internal/exa.MemoryStore
+  ^references=matrix/router/internal/exa.Service,matrix/router/internal/exa.ServiceConfig
   ^defines=matrix/router/internal/exa/store.go
 
 NODE id=matrix/router/internal/exa.SubjectHeader kind=const
   digest=b3:661cc2d0a3fc7762d13ee17e732dd748c11c0b681de5f1341a89f34eb4910961 file=router/internal/exa/handler.go range=14:14 lang=go exported=true byte_range=262:296
   sig=untyped string
 EDGES
+  ^references=matrix/router/internal/exa.Handler.ServeHTTP
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.VerifyRequest kind=type
@@ -1876,6 +2116,7 @@ NODE id=matrix/router/internal/exa.VerifyRequest kind=type
   sig=type VerifyRequest struct {\n	Symbol	string		`json:"symbol"`\n	Fields	[]string	`json:"fields"`\n	AsOf	string		`json:"as_of,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/exa.VerifyRequest#AsOf,matrix/router/internal/exa.VerifyRequest#Fields,matrix/router/internal/exa.VerifyRequest#Symbol
+  ^references=matrix/router/internal/exa.Handler.serveFinance,matrix/router/internal/exa.Service.VerifyFinance
   ^defines=matrix/router/internal/exa/workflow.go
 
 NODE id=matrix/router/internal/exa.VerifyRequest#AsOf kind=field
@@ -1900,48 +2141,70 @@ NODE id=matrix/router/internal/exa.badRequest kind=func
   digest=b3:fc5587c3d6e434bf583f27f926b70ddaef6fde4edd04aa68dab70fee07779501 file=router/internal/exa/client.go range=195:197 lang=go exported=false byte_range=6932:7066
   sig=func badRequest(endpoint, message string) *Failure
 EDGES
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.endpoint,matrix/router/internal/exa.message
+  ^calls=matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest,matrix/router/internal/exa.hashRequest,matrix/router/internal/exa.validateAgent,matrix/router/internal/exa.validateContents,matrix/router/internal/exa.validateSearch
+  ^references=matrix/router/internal/exa.Client.CancelRun,matrix/router/internal/exa.Client.Contents,matrix/router/internal/exa.Client.CreateRun,matrix/router/internal/exa.Client.GetRun,matrix/router/internal/exa.Client.Search,matrix/router/internal/exa.Client.do,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.Service.StartFinance,matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest,matrix/router/internal/exa.hashRequest,matrix/router/internal/exa.validateAgent,matrix/router/internal/exa.validateContents,matrix/router/internal/exa.validateSearch
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.canonicalURL kind=func
   digest=b3:16312625fda468d7844b92edc75a40b509df101e443da6c736dd7a8c788722ab file=router/internal/exa/model.go range=200:216 lang=go exported=false byte_range=6737:7182
   sig=func canonicalURL(raw string) string
 EDGES
+  references=matrix/router/internal/exa.err,matrix/router/internal/exa.key,matrix/router/internal/exa.lower,matrix/router/internal/exa.q,matrix/router/internal/exa.raw,matrix/router/internal/exa.u
+  ^calls=matrix/router/internal/exa.EvidenceFromGrounding,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.validateContents
+  ^references=matrix/router/internal/exa.EvidenceFromGrounding,matrix/router/internal/exa.Service.ExtractFinanceNews,matrix/router/internal/exa.validateContents
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.defaultBaseURL kind=const
   digest=b3:07cc84ec9f6b228ae76b025d52d1f1126f6b1e5f00dc8e68db55d9c34fba183b file=router/internal/exa/client.go range=21:21 lang=go exported=false byte_range=338:376
   sig=untyped string
 EDGES
+  ^references=matrix/router/internal/exa.NewClient
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.defaultTimeout kind=const
   digest=b3:9d4c1507b25161367aeb35baea6b7972a84eb2f38edbd73721b9d8779be8360a file=router/internal/exa/client.go range=22:22 lang=go exported=false byte_range=378:412
   sig=time.Duration
 EDGES
+  ^references=matrix/router/internal/exa.NewClient
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.effortReserve kind=func
   digest=b3:5b357396fbe6c167ae2edd84e472c63f2cf3926757bdc1f4073a18083f45dc30 file=router/internal/exa/service.go range=333:346 lang=go exported=false byte_range=11846:12046
   sig=func effortReserve(effort string) float64
 EDGES
+  references=matrix/router/internal/exa.effort
+  ^calls=matrix/router/internal/exa.Service.StartRun
+  ^references=matrix/router/internal/exa.Service.StartRun
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.emptyAsCurrent kind=func
   digest=b3:9d80fd9aebb27881751cde30991ba81320249fcab87fa3a47c6be936584f45bf file=router/internal/exa/workflow.go range=158:163 lang=go exported=false byte_range=10536:10681
   sig=func emptyAsCurrent(value string) string
 EDGES
+  references=matrix/router/internal/exa.value
+  ^calls=matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest
+  ^references=matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest
   ^defines=matrix/router/internal/exa/workflow.go
 
 NODE id=matrix/router/internal/exa.errorBody kind=func
   digest=b3:5cf391b99b4dec5a6ce9682ca96aa8449691efe6cc78aea9b6ce376ea8832159 file=router/internal/exa/handler.go range=179:189 lang=go exported=false byte_range=5959:6309
   sig=func errorBody(err error) *ErrorBody
 EDGES
+  calls=matrix/router/internal/exa.FailureOf
+  references=matrix/router/internal/exa.ErrorBody,matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.body,matrix/router/internal/exa.err,matrix/router/internal/exa.failure
+  ^calls=matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.Contents
+  ^references=matrix/router/internal/exa.Handler.writeError,matrix/router/internal/exa.Service.Contents
   ^defines=matrix/router/internal/exa/handler.go
 
 NODE id=matrix/router/internal/exa.financeAgentRequest kind=func
   digest=b3:771d05c40fefc7f31e526ec511c09f52d1a95279e25a00d70c97401a95c0b889 file=router/internal/exa/workflow.go range=95:139 lang=go exported=false byte_range=3691:9400
   sig=func financeAgentRequest(request FinanceRequest) (AgentRequest, string, error)
 EDGES
+  calls=matrix/router/internal/exa.badRequest,matrix/router/internal/exa.emptyAsCurrent,matrix/router/internal/exa.safeField,matrix/router/internal/exa.typedFactSchema
+  references=matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.FinanceRequest,matrix/router/internal/exa.asOf,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.dimensionProperties,matrix/router/internal/exa.dimensions,matrix/router/internal/exa.emptyAsCurrent,matrix/router/internal/exa.name,matrix/router/internal/exa.properties,matrix/router/internal/exa.raw,matrix/router/internal/exa.request,matrix/router/internal/exa.safeField,matrix/router/internal/exa.schema,matrix/router/internal/exa.sourced,matrix/router/internal/exa.sources,matrix/router/internal/exa.symbol,matrix/router/internal/exa.typedFactSchema,matrix/router/internal/exa.version
+  ^calls=matrix/router/internal/exa.Service.StartFinance
+  ^references=matrix/router/internal/exa.Service.StartFinance
   ^defines=matrix/router/internal/exa/workflow.go
 
 NODE id=matrix/router/internal/exa.flight kind=type
@@ -1949,6 +2212,7 @@ NODE id=matrix/router/internal/exa.flight kind=type
   sig=type flight struct {\n	done	chan struct{}\n	data	[]byte\n	err	error\n}
 EDGES
   contains=matrix/router/internal/exa.flight#data,matrix/router/internal/exa.flight#done,matrix/router/internal/exa.flight#err
+  ^references=matrix/router/internal/exa.NewService,matrix/router/internal/exa.Service,matrix/router/internal/exa.Service.cached
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.flight#data kind=field
@@ -1973,12 +2237,17 @@ NODE id=matrix/router/internal/exa.hashRequest kind=func
   digest=b3:cc49a6541938d224e511e3bc123b47d78ec683cb9ae01c1f44d4b7a536ecb1dd file=router/internal/exa/service.go range=348:355 lang=go exported=false byte_range=12048:12337
   sig=func hashRequest(prefix string, value any) (string, error)
 EDGES
+  calls=matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.badRequest,matrix/router/internal/exa.data,matrix/router/internal/exa.err,matrix/router/internal/exa.prefix,matrix/router/internal/exa.sum,matrix/router/internal/exa.value
+  ^calls=matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
+  ^references=matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.maxResponseSize kind=const
   digest=b3:e54be7cb7f8394706f2a841e6661990c7139474482299f47361a0eb13c2c058b file=router/internal/exa/client.go range=23:23 lang=go exported=false byte_range=414:440
   sig=untyped int
 EDGES
+  ^references=matrix/router/internal/exa.Client.do
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.meterRow kind=type
@@ -1986,6 +2255,7 @@ NODE id=matrix/router/internal/exa.meterRow kind=type
   sig=type meterRow struct {\n	requests, cacheHits, errors	int64\n	cost				float64\n	latencies			[]time.Duration\n}
 EDGES
   contains=matrix/router/internal/exa.meterRow#cacheHits,matrix/router/internal/exa.meterRow#cost,matrix/router/internal/exa.meterRow#errors,matrix/router/internal/exa.meterRow#latencies,matrix/router/internal/exa.meterRow#requests
+  ^references=matrix/router/internal/exa.Meter,matrix/router/internal/exa.Meter.Observe,matrix/router/internal/exa.NewMeter
   ^defines=matrix/router/internal/exa/meter.go
 
 NODE id=matrix/router/internal/exa.meterRow#cacheHits kind=field
@@ -2022,66 +2292,104 @@ NODE id=matrix/router/internal/exa.parseRetryAfter kind=func
   digest=b3:fd7196b0c2afc7329d428b0c83cfa840235830211854735f626934d93f76a3f7 file=router/internal/exa/client.go range=199:205 lang=go exported=false byte_range=7068:7264
   sig=func parseRetryAfter(raw string) time.Duration
 EDGES
+  references=matrix/router/internal/exa.err,matrix/router/internal/exa.raw,matrix/router/internal/exa.seconds
+  ^calls=matrix/router/internal/exa.statusFailure
+  ^references=matrix/router/internal/exa.statusFailure
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.primarySource kind=func
   digest=b3:348245a3dc6030fff39b8b36c7f7898ce8bdf42cf64901c4827126e0ec115479 file=router/internal/exa/model.go range=218:227 lang=go exported=false byte_range=7184:7559
   sig=func primarySource(raw string) bool
 EDGES
+  references=matrix/router/internal/exa.err,matrix/router/internal/exa.host,matrix/router/internal/exa.raw,matrix/router/internal/exa.u
+  ^calls=matrix/router/internal/exa.EvidenceFromGrounding
+  ^references=matrix/router/internal/exa.EvidenceFromGrounding
   ^defines=matrix/router/internal/exa/model.go
 
 NODE id=matrix/router/internal/exa.redact kind=func
   digest=b3:ce099dd685d31e957929b3285937bbd770b89072f7321f45de98d5388731c48f file=router/internal/exa/client.go range=215:230 lang=go exported=false byte_range=7416:7834
   sig=func redact(value string) string
 EDGES
+  references=matrix/router/internal/exa.end,matrix/router/internal/exa.index,matrix/router/internal/exa.marker,matrix/router/internal/exa.value
+  ^calls=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.snippet
+  ^references=matrix/router/internal/exa.Client.do,matrix/router/internal/exa.snippet
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.safeField kind=func
   digest=b3:3634553a9aa18ac0b7f1b3f55c31ae60a6771475dbfed5df5ec469c31a033d37 file=router/internal/exa/workflow.go range=145:156 lang=go exported=false byte_range=10283:10534
   sig=func safeField(raw string) string
 EDGES
+  references=matrix/router/internal/exa.ch,matrix/router/internal/exa.raw,matrix/router/internal/exa.value
+  ^calls=matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest
+  ^references=matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest
   ^defines=matrix/router/internal/exa/workflow.go
 
 NODE id=matrix/router/internal/exa.serviceError kind=func
   digest=b3:f2c3a32608f50e244b6e5b45e12aae7dc60a96fdb68afc49db563ab8629a3048 file=router/internal/exa/service.go range=414:422 lang=go exported=false byte_range=14472:14743
   sig=func serviceError(err error, endpoint string) error
 EDGES
+  calls=matrix/router/internal/exa.FailureOf
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureOf,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.endpoint,matrix/router/internal/exa.err
+  ^calls=matrix/router/internal/exa.Handler.writeError
+  ^references=matrix/router/internal/exa.Handler.writeError
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.snippet kind=func
   digest=b3:f5f27c4364aca22ceeaa340097313a275132a0984f684e977ddd1db79500b733 file=router/internal/exa/client.go range=207:213 lang=go exported=false byte_range=7266:7414
   sig=func snippet(data []byte) string
 EDGES
+  calls=matrix/router/internal/exa.redact
+  references=matrix/router/internal/exa.data,matrix/router/internal/exa.redact,matrix/router/internal/exa.value
+  ^calls=matrix/router/internal/exa.statusFailure
+  ^references=matrix/router/internal/exa.statusFailure
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.statusFailure kind=func
   digest=b3:d6663a87d3aef15e21dee3af564dca8ff4fa1c78aa6d5c03f3683d088e0e2565 file=router/internal/exa/client.go range=179:193 lang=go exported=false byte_range=6034:6930
   sig=func statusFailure(endpoint string, res *http.Response, body []byte) *Failure
 EDGES
+  calls=matrix/router/internal/exa.parseRetryAfter,matrix/router/internal/exa.snippet
+  references=matrix/router/internal/exa.Failure,matrix/router/internal/exa.FailureBadRequest,matrix/router/internal/exa.FailureNotConfigured,matrix/router/internal/exa.FailureNotFound,matrix/router/internal/exa.FailureRateLimited,matrix/router/internal/exa.FailureUpstream,matrix/router/internal/exa.body,matrix/router/internal/exa.endpoint,matrix/router/internal/exa.kind,matrix/router/internal/exa.message,matrix/router/internal/exa.parseRetryAfter,matrix/router/internal/exa.res,matrix/router/internal/exa.snippet
+  ^calls=matrix/router/internal/exa.Client.do
+  ^references=matrix/router/internal/exa.Client.do
   ^defines=matrix/router/internal/exa/client.go
 
 NODE id=matrix/router/internal/exa.typedFactSchema kind=func
   digest=b3:24a60f497f5714740254c80882e17875845876f07fc807ca522c303256b984ef file=router/internal/exa/workflow.go range=141:143 lang=go exported=false byte_range=9402:10281
   sig=func typedFactSchema() map[string]any
 EDGES
+  ^calls=matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest
+  ^references=matrix/router/internal/exa.Service.VerifyFinance,matrix/router/internal/exa.financeAgentRequest
   ^defines=matrix/router/internal/exa/workflow.go
 
 NODE id=matrix/router/internal/exa.validateAgent kind=func
   digest=b3:527a61a000c4b041957f1c506345af3a5627e0428d9cac4d3fa7bd99d5f5b33f file=router/internal/exa/service.go range=396:412 lang=go exported=false byte_range=13786:14470
   sig=func validateAgent(input *AgentRequest) error
 EDGES
+  calls=matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.AgentRequest,matrix/router/internal/exa.allowed,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.data,matrix/router/internal/exa.input
+  ^calls=matrix/router/internal/exa.Service.StartRun
+  ^references=matrix/router/internal/exa.Service.StartRun
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.validateContents kind=func
   digest=b3:f4d54a91d74b86398358bb13ba3129b8855ee193c1c6da48c3c2cf74bbd60c6f file=router/internal/exa/service.go range=378:394 lang=go exported=false byte_range=13131:13784
   sig=func validateContents(input *ContentsRequest) error
 EDGES
+  calls=matrix/router/internal/exa.badRequest,matrix/router/internal/exa.canonicalURL
+  references=matrix/router/internal/exa.ContentsRequest,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.canonicalURL,matrix/router/internal/exa.input,matrix/router/internal/exa.raw
+  ^calls=matrix/router/internal/exa.Service.Contents
+  ^references=matrix/router/internal/exa.Service.Contents
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa.validateSearch kind=func
   digest=b3:8c19c27df0713ee04d79f6c552a1dbe341699a2e7ed158cce4fa0d832263a2ef file=router/internal/exa/service.go range=357:376 lang=go exported=false byte_range=12339:13129
   sig=func validateSearch(input *SearchRequest) error
 EDGES
+  calls=matrix/router/internal/exa.badRequest
+  references=matrix/router/internal/exa.SearchRequest,matrix/router/internal/exa.allowed,matrix/router/internal/exa.badRequest,matrix/router/internal/exa.data,matrix/router/internal/exa.input
+  ^calls=matrix/router/internal/exa.Service.Search
+  ^references=matrix/router/internal/exa.Service.Search
   ^defines=matrix/router/internal/exa/service.go
 
 NODE id=matrix/router/internal/exa/client.go kind=file

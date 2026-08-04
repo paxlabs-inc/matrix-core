@@ -29,8 +29,8 @@ func TestMeasurePromptSize(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-measure"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-measure"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)

@@ -169,7 +169,7 @@ func TestDeathDigest(t *testing.T) {
 
 // TestDeathPathsConsistent proves the two death-journal read paths describe the
 // SAME death (self-model task 3.1, req.4.3): the immediate successor-prime and
-// the durable cortex record are both rendered from the where-it-got-stuck digest
+// the durable Neocortex record are both rendered from the where-it-got-stuck digest
 // of the one attempt error, over the same objective — so a successor's prime and
 // the durable journal entry can never disagree about how the predecessor died.
 func TestDeathPathsConsistent(t *testing.T) {

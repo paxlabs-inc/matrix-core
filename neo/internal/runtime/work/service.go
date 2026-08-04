@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"matrix/cortex"
+	"matrix/cortexclient"
 	"matrix/neo/internal/runtime/loop"
 	"matrix/neo/internal/runtime/turnstate"
 )
@@ -850,7 +850,7 @@ func (service *Service) hasVerifiedEvidence(
 		}
 		if payload.SubgoalID != reference.Criterion ||
 			payload.Error != "" ||
-			payload.MatchVerdict != cortex.ToolMatchMatched {
+			payload.MatchVerdict != cortexclient.ToolMatchMatched {
 			continue
 		}
 		covered[reference.Criterion] = struct{}{}

@@ -71,8 +71,8 @@ func TestVoiceBridgeSubprocessAgainstRealNeoServer(t *testing.T) {
 	cfg.SuperviseTasks = false
 	cfg.VoiceEnabled = true
 	cfg.ActorDID = "did:matrix:voice-e2e"
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "voice-bridge-actor"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "voice-bridge-actor"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -202,8 +202,8 @@ func TestVoiceWorkerCrashMidTurnLeavesTextTurnRunning(t *testing.T) {
 	cfg.CassandraEnabled = false
 	cfg.SuperviseTasks = false
 	cfg.VoiceEnabled = true
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "voice-crash-actor"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "voice-crash-actor"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -309,8 +309,8 @@ func TestVoiceBargeInIsSingleFlightAndCancelsPriorRun(t *testing.T) {
 	cfg.CassandraEnabled = false
 	cfg.SuperviseTasks = false
 	cfg.VoiceEnabled = true
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "voice-barge-actor"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "voice-barge-actor"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatal(err)

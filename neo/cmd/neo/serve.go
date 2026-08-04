@@ -54,18 +54,18 @@ func runServe(args []string) {
 	var (
 		configPath = fs.String("config", "", "runtime neo.kvx config (optional)")
 		manifest   = fs.String("manifest", "", "agent manifest with MCP servers (overrides config)")
-		cortexRoot = fs.String("cortex-root", "", "cortex brain root dir (overrides config)")
-		actor      = fs.String("actor", "", "cortex actor name (overrides config; default neo)")
+		dataRoot   = fs.String("data-root", "", "Neo runtime data root (overrides config)")
+		actor      = fs.String("actor", "", "Neocortex actor name (overrides config; default neo)")
 		addr       = fs.String("addr", envOrDefault("NEO_ADDR", ":8080"), "listen address")
 		backend    = fs.String("backend", "", "co-located MCL daemon base URL for core_execute + proxy (overrides NEO_DAEMON_URL/config)")
 		noTools    = fs.Bool("no-tools", false, "skip native and integration tools (chat-only)")
 		// P2-4: one-command hermetic local-dev preset. Composes Default()
-		// with a temp cortex, the Hash embedder stub, no-op chain RPC,
+		// with a temp runtime root, the Hash embedder stub, no-op chain RPC,
 		// and metering disabled. Zero external deps. When set, -config,
-		// -cortex-root, -actor, and -backend are ignored (the preset is
+		// -data-root, -actor, and -backend are ignored (the preset is
 		// fully hermetic). Explicit -manifest still wins so a sandbox
 		// run can point at a test manifest.
-		sandbox = fs.Bool("sandbox", false, "hermetic local-dev preset: temp cortex, hash embedder stub, mock/no-op chain RPC, metering off (zero external deps). See config.Sandbox().")
+		sandbox = fs.Bool("sandbox", false, "local-dev preset: isolated runtime root, hash embedder, no chain RPC, metering off; Neocortex is still required")
 	)
 	_ = fs.Parse(args)
 
@@ -73,7 +73,7 @@ func runServe(args []string) {
 	var err error
 	if *sandbox {
 		cfg = config.Sandbox()
-		fmt.Fprintf(os.Stdout, "neo: sandbox preset active — temp cortex %s, hash embedder stub, no chain RPC, metering off\n", cfg.CortexRoot)
+		fmt.Fprintf(os.Stdout, "neo: sandbox preset active — isolated data root %s, hash embedder, no chain RPC, metering off\n", cfg.DataRoot)
 	} else {
 		cfg, err = config.Load(*configPath)
 		if err != nil {
@@ -84,11 +84,11 @@ func runServe(args []string) {
 		cfg.ManifestPath = *manifest
 	}
 	if !*sandbox {
-		if *cortexRoot != "" {
-			cfg.CortexRoot = *cortexRoot
+		if *dataRoot != "" {
+			cfg.DataRoot = *dataRoot
 		}
 		if *actor != "" {
-			cfg.CortexActor = *actor
+			cfg.NeocortexActor = *actor
 		}
 	}
 	backendURL := strings.TrimSpace(*backend)
@@ -101,8 +101,8 @@ func runServe(args []string) {
 	// =true) MUST bring up a usable per-user key or the daemon refuses to boot
 	// into plaintext — mirroring the main-model fail-closed posture, never the
 	// best-effort degrade path. The wrapped keyfile lives beside /data (the
-	// cortex root's parent). The hermetic sandbox preset runs plaintext.
-	vaultDataDir := filepath.Dir(cfg.CortexRoot)
+	// Neocortex root's parent). The hermetic sandbox preset runs plaintext.
+	vaultDataDir := filepath.Dir(cfg.DataRoot)
 	vaultUser := cfg.ActorDID
 	if vaultUser == "" {
 		vaultUser = os.Getenv("MATRIX_USER_ID")
@@ -123,17 +123,17 @@ func runServe(args []string) {
 	if vaultSess.Encrypting() {
 		fmt.Fprintf(os.Stdout, "neo: data-at-rest vault active for %s\n", cfg.ActorDID)
 	}
-	// Thread the session into cfg so memory.Open seals the cortex store from
+	// Thread the session into cfg so memory.Open seals the Neocortex store from
 	// its first write (encryption below the hash boundary; vaultseam.go).
 	cfg.Vault = vaultSess
 	cfg.VaultUser = vaultUser
 
 	// Media plane: generated + uploaded media live on the machine volume,
-	// derived from the cortex root's parent (e.g. /data/media) unless overridden
+	// derived from the Neocortex root's parent (e.g. /data/media) unless overridden
 	// by NEO_MEDIA_DIR. Export it (and the URL base) into the environment BEFORE
 	// spawning MCP servers so the co-located media bridge (tools/media) writes
 	// its outputs into the exact directory Neo serves from GET /media/.
-	mediaPath := server.MediaDir(os.Getenv("NEO_MEDIA_DIR"), cfg.CortexRoot)
+	mediaPath := server.MediaDir(os.Getenv("NEO_MEDIA_DIR"), cfg.DataRoot)
 	if mediaPath != "" {
 		_ = os.Setenv("MATRIX_MEDIA_DIR", mediaPath)
 		if os.Getenv("MATRIX_MEDIA_BASE") == "" {
@@ -169,7 +169,7 @@ func runServe(args []string) {
 		omni = nil
 	}
 
-	// --- memory (own cortex actor; separate Pebble DB under the shared root) ---
+	// --- memory (own Neocortex actor; separate Pebble DB under the shared root) ---
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "neo: memory unavailable (%v) — continuing without persistent recall\n", err)
@@ -214,7 +214,7 @@ func runServe(args []string) {
 			StderrSink:      os.Stderr,
 			NativeRoot:      workspaceDir,
 			NativeReadRoots: readRoots,
-			NativeStateDir:  filepath.Join(filepath.Dir(cfg.CortexRoot), "native-services"),
+			NativeStateDir:  filepath.Join(filepath.Dir(cfg.DataRoot), "native-services"),
 			NativeGitPath:   nativeGitPath,
 		})
 		if err != nil {
@@ -245,20 +245,20 @@ func runServe(args []string) {
 	}
 
 	// Durable conversation history: an explicit NEO_CONVERSATIONS_DIR wins,
-	// else it derives from the cortex root's parent — the SAME dir the MCL
+	// else it derives from the Neocortex root's parent — the SAME dir the MCL
 	// daemon uses (/data/conversations in prod), so Neo + daemon threads list
 	// as one unified history and survive reload / suspend / redeploy.
-	convDir := conversation.Dir(os.Getenv("NEO_CONVERSATIONS_DIR"), cfg.CortexRoot)
+	convDir := conversation.Dir(os.Getenv("NEO_CONVERSATIONS_DIR"), cfg.DataRoot)
 	// Durable task ledger: lives beside history on the machine volume so an
 	// in-flight task survives a restart / Fly suspend and the boot reaper can
 	// resume it (the Task Durability Rule).
-	taskDir := task.Dir(os.Getenv("NEO_TASKS_DIR"), cfg.CortexRoot)
-	runDir := runrecord.Dir(os.Getenv("NEO_RUNS_DIR"), cfg.CortexRoot)
+	taskDir := task.Dir(os.Getenv("NEO_TASKS_DIR"), cfg.DataRoot)
+	runDir := runrecord.Dir(os.Getenv("NEO_RUNS_DIR"), cfg.DataRoot)
 	buildDir := strings.TrimSpace(os.Getenv("NEO_BUILD_JOBS_DIR"))
 	if buildDir == "" {
-		buildDir = filepath.Join(filepath.Dir(cfg.CortexRoot), "build-jobs")
+		buildDir = filepath.Join(filepath.Dir(cfg.DataRoot), "build-jobs")
 	}
-	journalPath := sessionjournal.Dir(os.Getenv("NEO_SESSION_JOURNAL_PATH"), cfg.CortexRoot)
+	journalPath := sessionjournal.Dir(os.Getenv("NEO_SESSION_JOURNAL_PATH"), cfg.DataRoot)
 	journal, err := sessionjournal.Open(ctx, journalPath, vaultSess)
 	if err != nil {
 		fatal("cannot start session journal: %v", err)
@@ -267,12 +267,12 @@ func runServe(args []string) {
 	// media / surfaces / swarm windows) persisted per run beside history on the
 	// machine volume, so reopening a thread rebuilds the workspace instead of
 	// showing an empty computer (F3). Derives /data/trace; NEO_TRACE_DIR wins.
-	traceDir := trace.Dir(os.Getenv("NEO_TRACE_DIR"), cfg.CortexRoot)
+	traceDir := trace.Dir(os.Getenv("NEO_TRACE_DIR"), cfg.DataRoot)
 	// Durable Automatrix completion inbox: the in-app "Neo finished something
 	// for you" surprise results, persisted beside history on the machine volume
 	// so they survive reload / suspend / redeploy and are discoverable on next
 	// open. Derives /data/automatrix; NEO_AUTOMATRIX_DIR wins.
-	automatrixDir := automatrixlog.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot)
+	automatrixDir := automatrixlog.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.DataRoot)
 	// Coding workbench workspace: the same persisted root the fs/exec tools
 	// mutate (/workspace in prod). NEO_WORKSPACE_DIR wins; absent any root the
 	// workbench surface stays disabled.
@@ -371,11 +371,11 @@ func runServe(args []string) {
 		Journal:                journal,
 		TraceDir:               traceDir,
 		AutomatrixDir:          automatrixDir,
-		AutomatrixSettingsDir:  automatrixsettings.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot),
-		BriefSettingsDir:       briefsettings.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
-		BriefHistoryDir:        briefhistory.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
-		TelegramSettingsDir:    telegramsettings.Dir(os.Getenv("NEO_TELEGRAM_DIR"), cfg.CortexRoot),
-		MachineMailSettingsDir: machinemailsettings.Dir(os.Getenv("NEO_MACHINEMAIL_DIR"), cfg.CortexRoot),
+		AutomatrixSettingsDir:  automatrixsettings.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.DataRoot),
+		BriefSettingsDir:       briefsettings.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.DataRoot),
+		BriefHistoryDir:        briefhistory.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.DataRoot),
+		TelegramSettingsDir:    telegramsettings.Dir(os.Getenv("NEO_TELEGRAM_DIR"), cfg.DataRoot),
+		MachineMailSettingsDir: machinemailsettings.Dir(os.Getenv("NEO_MACHINEMAIL_DIR"), cfg.DataRoot),
 		MediaDir:               mediaPath,
 		NovitaAPIKey:           os.Getenv("NOVITA_API_KEY"),
 		VoiceASRURL:            envOrDefault("MATRIX_MIMO_ASR_URL", "https://api.xiaomimimo.com/v1/chat/completions"),
@@ -560,7 +560,7 @@ func runServe(args []string) {
 	<-ctx.Done()
 	fmt.Fprintln(os.Stdout, "neo: shutting down…")
 
-	// Graceful, ordered shutdown so Neo's cortex actor flushes before exit
+	// Graceful, ordered shutdown so Neo's Neocortex actor flushes before exit
 	// (the daemon snapshots the shared /data tree on ITS shutdown).
 	shutCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()

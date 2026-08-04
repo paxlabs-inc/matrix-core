@@ -1,27 +1,27 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:722a887a8e2a11f31226185a4f4b579d99c8d246ded95ccfe74a4ccc9b9805f6
+# GENERATED gen=codegraph do-not-edit merkle=b3:2eece1e371401718b5b83332ea874dc9d69dc31720a509148678833de7350783
 
 NODE id=matrix/neo/internal/trace kind=package
-  digest=b3:69b8fc860f0f66775c32ecfe6a572c80c8c5edd9e98fc045ca2891557c597d60 file=neo/internal/trace range=0:0 lang=go exported=true
+  digest=b3:ba2f6d10e67f3020ae2d4c59ca84f593563246eb4d4bcf7417926f6f18908d35 file=neo/internal/trace range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/trace/trace.go
   ^contains=mod:matrix/neo
 
 NODE id=matrix/neo/internal/trace.DefaultRetainedEvents kind=const
-  digest=b3:2e7371374092fe4313a98d7a530d7e4d5efcffef76ba0834920da73320f742f7 file=neo/internal/trace/trace.go range=55:59 lang=go exported=true byte_range=2286:2587
+  digest=b3:2e7371374092fe4313a98d7a530d7e4d5efcffef76ba0834920da73320f742f7 file=neo/internal/trace/trace.go range=55:59 lang=go exported=true byte_range=2289:2590
   sig=untyped int
   doc=DefaultRetainedEvents caps how many workspace events are retained per run on\ndisk. Larger than the broker's 512-event live buffer because this is the\ndurable record a reopen rebuilds from; still bounded so a runaway run can't\ngrow the file without limit.
 EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Dir kind=func
-  digest=b3:222f3b5ba15c55574f3935c3002fd4a10ed26b42c1be88088e92ec9bf3d28ad4 file=neo/internal/trace/trace.go range=461:473 lang=go exported=true byte_range=15064:15594
+  digest=b3:865529c478b1df6fcccf8f1c85ac50d4f19e04a2d7096785c5083ee894e38a69 file=neo/internal/trace/trace.go range=461:473 lang=go exported=true byte_range=15067:15600
   sig=func Dir(override, cortexRoot string) string
-  doc=Dir resolves Neo's trace directory. An explicit override wins; else it is\nderived from the cortex root's parent (matching the conversation + task\nstores, so the workspace trace shares /data with them and survives suspend /\nredeploy). Returns "" when neither is available (persistence disabled).
+  doc=Dir resolves Neo's trace directory. An explicit override wins; else it is\nderived from the Neocortex root's parent (matching the conversation + task\nstores, so the workspace trace shares /data with them and survives suspend /\nredeploy). Returns "" when neither is available (persistence disabled).
 EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Event kind=type
-  digest=b3:a3a0ad61d59a6bed0f58b24fd9785d735b3daf4386a7dd309b9cd150a7d6535b file=neo/internal/trace/trace.go range=67:76 lang=go exported=true byte_range=2922:3381
+  digest=b3:a3a0ad61d59a6bed0f58b24fd9785d735b3daf4386a7dd309b9cd150a7d6535b file=neo/internal/trace/trace.go range=67:76 lang=go exported=true byte_range=2925:3384
   sig=type Event struct {\n	Seq	int			`json:"seq"`\n	Ts	string			`json:"ts"`\n	Phase	string			`json:"phase"`\n	Type	string			`json:"type"`\n	Fields	map[string]interface{}	`json:"fields,omitempty"`\n}
   doc=Event is one persisted workspace frame. Its shape mirrors the server's SSE\nEvent ({seq,ts,phase,type,fields}) so the persisted trace replays through the\nclient's existing reducer byte-for-byte.
 EDGES
@@ -29,44 +29,44 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Event#Fields kind=field
-  digest=b3:cf9b044d9f109e1b9ea9f2a55be00e48e983e853ff75f076d48a686cda66d86a file=neo/internal/trace/trace.go range=75:75 lang=go exported=true byte_range=3324:3379
+  digest=b3:cf9b044d9f109e1b9ea9f2a55be00e48e983e853ff75f076d48a686cda66d86a file=neo/internal/trace/trace.go range=75:75 lang=go exported=true byte_range=3327:3382
   sig=map[string]interface{}
 EDGES
   ^contains=matrix/neo/internal/trace.Event
 
 NODE id=matrix/neo/internal/trace.Event#Phase kind=field
-  digest=b3:48c144bb95d42f35d95d62195717c7a2742f1d5ba3064594e7a20863f7d8f375 file=neo/internal/trace/trace.go range=73:73 lang=go exported=true byte_range=3233:3277
+  digest=b3:48c144bb95d42f35d95d62195717c7a2742f1d5ba3064594e7a20863f7d8f375 file=neo/internal/trace/trace.go range=73:73 lang=go exported=true byte_range=3236:3280
   sig=string
 EDGES
   ^contains=matrix/neo/internal/trace.Event
 
 NODE id=matrix/neo/internal/trace.Event#Seq kind=field
-  digest=b3:6e62b228b82ccdb5e0e2443a3917d60bfdcf622b611d748e76abbb0983f1b3b3 file=neo/internal/trace/trace.go range=71:71 lang=go exported=true byte_range=3146:3188
+  digest=b3:6e62b228b82ccdb5e0e2443a3917d60bfdcf622b611d748e76abbb0983f1b3b3 file=neo/internal/trace/trace.go range=71:71 lang=go exported=true byte_range=3149:3191
   sig=int
 EDGES
   ^contains=matrix/neo/internal/trace.Event
 
 NODE id=matrix/neo/internal/trace.Event#Ts kind=field
-  digest=b3:75eb072125331bf5536e290781005c5ac721f874041bd8024812e864543f8df1 file=neo/internal/trace/trace.go range=72:72 lang=go exported=true byte_range=3190:3231
+  digest=b3:75eb072125331bf5536e290781005c5ac721f874041bd8024812e864543f8df1 file=neo/internal/trace/trace.go range=72:72 lang=go exported=true byte_range=3193:3234
   sig=string
 EDGES
   ^contains=matrix/neo/internal/trace.Event
 
 NODE id=matrix/neo/internal/trace.Event#Type kind=field
-  digest=b3:b6d5ce39d7df74358f3e457063f6be63ddcc631cc8d9d894b0612dbfed6a9344 file=neo/internal/trace/trace.go range=74:74 lang=go exported=true byte_range=3279:3322
+  digest=b3:b6d5ce39d7df74358f3e457063f6be63ddcc631cc8d9d894b0612dbfed6a9344 file=neo/internal/trace/trace.go range=74:74 lang=go exported=true byte_range=3282:3325
   sig=string
 EDGES
   ^contains=matrix/neo/internal/trace.Event
 
 NODE id=matrix/neo/internal/trace.Open kind=func
-  digest=b3:7226422f4ed65e0360b8f08c100d33bc522085b01a0f0baa72ef6c54086fb16c file=neo/internal/trace/trace.go range=131:137 lang=go exported=true byte_range=5426:5801
+  digest=b3:7226422f4ed65e0360b8f08c100d33bc522085b01a0f0baa72ef6c54086fb16c file=neo/internal/trace/trace.go range=131:137 lang=go exported=true byte_range=5429:5804
   sig=func Open(dir string) *Store
   doc=Open builds a store rooted at dir and starts its background writer. An empty\ndir yields a disabled store (every method is a safe no-op) so dev/CLI runs\nwork unchanged. The retained-event cap defaults to DefaultRetainedEvents and\ncan be overridden via NEO_TRACE_RETAIN (read once at Open).
 EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store kind=type
-  digest=b3:7f17e76e246609419e2bc66393371f71edcd23da773a4441c105ef8f699c5afd file=neo/internal/trace/trace.go range=92:112 lang=go exported=true byte_range=3934:4763
+  digest=b3:7f17e76e246609419e2bc66393371f71edcd23da773a4441c105ef8f699c5afd file=neo/internal/trace/trace.go range=92:112 lang=go exported=true byte_range=3937:4766
   sig=type Store struct {\n	dir	string\n	retain	int\n\n	ch	chan record\n	stop	chan struct{}\n	closed	chan struct{}\n	once	sync.Once\n\n	// vault seals each JSONL event when encrypting; nil = plaintext dev/CLI.\n	// user is the DID bound into each event's associated data. Set once at engine\n	// assembly (before any Record), so the writer/Load goroutines observe it via\n	// the channel/serving happens-before edge without a lock.\n	vault	*vault.Session\n	user	string\n}
   doc=Store is Neo's durable per-run workspace timeline. A single background writer\ngoroutine owns all disk writes (and the per-run event counts), so the only\nshared state is the enqueue channel; reads (Load) go straight to the\nfilesystem and are safe against the writer because every write is atomic (an\nO_APPEND single-line write, or a tmp+rename rollup).
 EDGES
@@ -74,56 +74,56 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store#ch kind=field
-  digest=b3:79c9fcf75b77b85054de7e1d859ef52aa80bd647cdb8bf675c1fdb21d0e792a3 file=neo/internal/trace/trace.go range=101:101 lang=go exported=false byte_range=4350:4368
+  digest=b3:79c9fcf75b77b85054de7e1d859ef52aa80bd647cdb8bf675c1fdb21d0e792a3 file=neo/internal/trace/trace.go range=101:101 lang=go exported=false byte_range=4353:4371
   sig=chan trace.record
 EDGES
   ^contains=matrix/neo/internal/trace.Store
 
 NODE id=matrix/neo/internal/trace.Store#closed kind=field
-  digest=b3:8b6335e2bc47898c382469e4d651bf5a31a4c65a2aa3eb02dbdfafbd0df0f3a1 file=neo/internal/trace/trace.go range=103:103 lang=go exported=false byte_range=4392:4412
+  digest=b3:8b6335e2bc47898c382469e4d651bf5a31a4c65a2aa3eb02dbdfafbd0df0f3a1 file=neo/internal/trace/trace.go range=103:103 lang=go exported=false byte_range=4395:4415
   sig=chan struct{}
 EDGES
   ^contains=matrix/neo/internal/trace.Store
 
 NODE id=matrix/neo/internal/trace.Store#dir kind=field
-  digest=b3:6f3d75fd9de2145916a05b955f0a88d84360f2a3b50e4d3f92de2abe144448ba file=neo/internal/trace/trace.go range=98:98 lang=go exported=false byte_range=4322:4335
+  digest=b3:6f3d75fd9de2145916a05b955f0a88d84360f2a3b50e4d3f92de2abe144448ba file=neo/internal/trace/trace.go range=98:98 lang=go exported=false byte_range=4325:4338
   sig=string
 EDGES
   ^contains=matrix/neo/internal/trace.Store
 
 NODE id=matrix/neo/internal/trace.Store#once kind=field
-  digest=b3:bfde5dceb61663a0a8fec9b0d8deb2c2f36a28de62877c8cec230829de812dc9 file=neo/internal/trace/trace.go range=104:104 lang=go exported=false byte_range=4414:4430
+  digest=b3:bfde5dceb61663a0a8fec9b0d8deb2c2f36a28de62877c8cec230829de812dc9 file=neo/internal/trace/trace.go range=104:104 lang=go exported=false byte_range=4417:4433
   sig=sync.Once
 EDGES
   ^contains=matrix/neo/internal/trace.Store
 
 NODE id=matrix/neo/internal/trace.Store#retain kind=field
-  digest=b3:ccc6b887dbabc356616397e3eabbdded60c35a23fb8c6e50bbecaa4ed8dff05b file=neo/internal/trace/trace.go range=99:99 lang=go exported=false byte_range=4337:4347
+  digest=b3:ccc6b887dbabc356616397e3eabbdded60c35a23fb8c6e50bbecaa4ed8dff05b file=neo/internal/trace/trace.go range=99:99 lang=go exported=false byte_range=4340:4350
   sig=int
 EDGES
   ^contains=matrix/neo/internal/trace.Store
 
 NODE id=matrix/neo/internal/trace.Store#stop kind=field
-  digest=b3:b6c906ed8ebde95e53cd7860b3022c4675318fcb7c5d7f8078d9ccae18d64cda file=neo/internal/trace/trace.go range=102:102 lang=go exported=false byte_range=4370:4390
+  digest=b3:b6c906ed8ebde95e53cd7860b3022c4675318fcb7c5d7f8078d9ccae18d64cda file=neo/internal/trace/trace.go range=102:102 lang=go exported=false byte_range=4373:4393
   sig=chan struct{}
 EDGES
   ^contains=matrix/neo/internal/trace.Store
 
 NODE id=matrix/neo/internal/trace.Store#user kind=field
-  digest=b3:d6e3aa39dcac5194e82f4d88b0e0a05b1aa2e4c600d380e23a30f8afcefb41c5 file=neo/internal/trace/trace.go range=111:111 lang=go exported=false byte_range=4749:4761
+  digest=b3:d6e3aa39dcac5194e82f4d88b0e0a05b1aa2e4c600d380e23a30f8afcefb41c5 file=neo/internal/trace/trace.go range=111:111 lang=go exported=false byte_range=4752:4764
   sig=string
 EDGES
   ^contains=matrix/neo/internal/trace.Store
 
 NODE id=matrix/neo/internal/trace.Store#vault kind=field
-  digest=b3:5996c7ee97c341db6a4993c29c08d225e74b2436053c695ad19056e49e6be879 file=neo/internal/trace/trace.go range=106:110 lang=go exported=false byte_range=4433:4747
+  digest=b3:5996c7ee97c341db6a4993c29c08d225e74b2436053c695ad19056e49e6be879 file=neo/internal/trace/trace.go range=106:110 lang=go exported=false byte_range=4436:4750
   sig=*vault.Session
   doc=vault seals each JSONL event when encrypting; nil = plaintext dev/CLI.\nuser is the DID bound into each event's associated data. Set once at engine\nassembly (before any Record), so the writer/Load goroutines observe it via\nthe channel/serving happens-before edge without a lock.
 EDGES
   ^contains=matrix/neo/internal/trace.Store
 
 NODE id=matrix/neo/internal/trace.Store.Close kind=method
-  digest=b3:430288e8b1b787898eff8261cc4513f0fc54d94a05c335dc0541a0fb00296089 file=neo/internal/trace/trace.go range=230:237 lang=go exported=true byte_range=8475:8657
+  digest=b3:430288e8b1b787898eff8261cc4513f0fc54d94a05c335dc0541a0fb00296089 file=neo/internal/trace/trace.go range=230:237 lang=go exported=true byte_range=8478:8660
   sig=func (s *Store) Close()
   doc=Close stops the background writer after draining the queue. Idempotent.
 EDGES
@@ -131,7 +131,7 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.Enabled kind=method
-  digest=b3:7ee9e38ccc8392a851473d2022e1d350a39a14aa9839d862e6605b5c0828361a file=neo/internal/trace/trace.go range=172:173 lang=go exported=true byte_range=6561:6696
+  digest=b3:7ee9e38ccc8392a851473d2022e1d350a39a14aa9839d862e6605b5c0828361a file=neo/internal/trace/trace.go range=172:173 lang=go exported=true byte_range=6564:6699
   sig=func (s *Store) Enabled() bool
   doc=Enabled reports whether persistence is on (a non-empty directory).
 EDGES
@@ -139,7 +139,7 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.Flush kind=method
-  digest=b3:47b2d32de0de0528f84ff5efbb7e0c3de28fe40818542cf95eb09391c389d859 file=neo/internal/trace/trace.go range=192:206 lang=go exported=true byte_range=7394:7850
+  digest=b3:47b2d32de0de0528f84ff5efbb7e0c3de28fe40818542cf95eb09391c389d859 file=neo/internal/trace/trace.go range=192:206 lang=go exported=true byte_range=7397:7853
   sig=func (s *Store) Flush()
   doc=Flush blocks until the writer has drained every record enqueued before this\ncall. Used by tests (to make the async write deterministic) and by graceful\nshutdown; it uses a blocking send, so it must NOT be called on the publish\nhot path. A disabled/closed store returns immediately.
 EDGES
@@ -147,7 +147,7 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.Load kind=method
-  digest=b3:8c7ff3849092f50e4c3ede1a7aecd92116f34d6db25f234209d1729477fa025c file=neo/internal/trace/trace.go range=316:331 lang=go exported=true byte_range=10943:11584
+  digest=b3:8c7ff3849092f50e4c3ede1a7aecd92116f34d6db25f234209d1729477fa025c file=neo/internal/trace/trace.go range=316:331 lang=go exported=true byte_range=10946:11587
   sig=func (s *Store) Load(runID string) []Event
   doc=Load returns the persisted workspace events for one run, oldest-first, or nil\nwhen there are none / persistence is disabled. Safe to call concurrently with\nthe writer: every write is atomic, so a read sees a consistent file.
 EDGES
@@ -155,7 +155,7 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.Record kind=method
-  digest=b3:c7fd223193d1d8a9c06ca22ee26f542ba5fe157d8ff3eecd3d9a6ea34157a9be file=neo/internal/trace/trace.go range=175:190 lang=go exported=true byte_range=6698:7392
+  digest=b3:c7fd223193d1d8a9c06ca22ee26f542ba5fe157d8ff3eecd3d9a6ea34157a9be file=neo/internal/trace/trace.go range=175:190 lang=go exported=true byte_range=6701:7395
   sig=func (s *Store) Record(runID string, ev Event)
   doc=Record enqueues one workspace event for asynchronous persistence. It NEVER\nblocks (the broker publish path calls it): if the writer queue is saturated,\nthe event is dropped, exactly like the broker drops events to slow\nsubscribers. A blank run id or a disabled store is ignored.
 EDGES
@@ -163,7 +163,7 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.Remove kind=method
-  digest=b3:56baaf01a2e61c91108d8459db8b07e5fd215b5e4aed460795dc13cb1e9ee128 file=neo/internal/trace/trace.go range=208:228 lang=go exported=true byte_range=7852:8473
+  digest=b3:56baaf01a2e61c91108d8459db8b07e5fd215b5e4aed460795dc13cb1e9ee128 file=neo/internal/trace/trace.go range=208:228 lang=go exported=true byte_range=7855:8476
   sig=func (s *Store) Remove(runID string) bool
   doc=Remove deletes one run's durable trace (CHAT-01 conversation delete cleanup).\nThe removal runs on the writer goroutine so it cannot race an in-flight\nappend. It waits for the filesystem result so cleanup is never reported from\na merely queued request. A blank run id or disabled store returns false.
 EDGES
@@ -171,7 +171,7 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.SetVault kind=method
-  digest=b3:c99ee6e60bb5a075cac610fa1a2047656e2c91855e1f1173caae461fb0bcf8cd file=neo/internal/trace/trace.go range=114:123 lang=go exported=true byte_range=4765:5110
+  digest=b3:c99ee6e60bb5a075cac610fa1a2047656e2c91855e1f1173caae461fb0bcf8cd file=neo/internal/trace/trace.go range=114:123 lang=go exported=true byte_range=4768:5113
   sig=func (s *Store) SetVault(sess *vault.Session, user string)
   doc=SetVault wires the fail-closed data-at-rest session and owning user DID into\nthe store. Called once at engine assembly before any event is recorded; a nil\nsession leaves the store writing legacy plaintext (dev/CLI).
 EDGES
@@ -179,7 +179,7 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.ad kind=method
-  digest=b3:ccfc952699de2a6f5063e06a54c150adea46d5fc8a937ab63286dfb34bf84719 file=neo/internal/trace/trace.go range=125:129 lang=go exported=false byte_range=5112:5424
+  digest=b3:ccfc952699de2a6f5063e06a54c150adea46d5fc8a937ab63286dfb34bf84719 file=neo/internal/trace/trace.go range=125:129 lang=go exported=false byte_range=5115:5427
   sig=func (s *Store) ad(runID string, seq uint64) vault.AD
   doc=ad reconstructs the associated data for an event from where it lives — never\nstored, so an event moved between users, runs, or positions fails auth.
 EDGES
@@ -187,7 +187,7 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.appendEvent kind=method
-  digest=b3:f6e4d124661da7b9110ee44131dde4eaeea32028165f6ba96027020609db5960 file=neo/internal/trace/trace.go range=374:397 lang=go exported=false byte_range=12717:13469
+  digest=b3:f6e4d124661da7b9110ee44131dde4eaeea32028165f6ba96027020609db5960 file=neo/internal/trace/trace.go range=374:397 lang=go exported=false byte_range=12720:13472
   sig=func (s *Store) appendEvent(runID string, seq uint64, path string, ev Event) error
   doc=appendEvent appends one event as a single (sealed, when encrypting) JSONL\nline. O_APPEND + a single Write makes the line atomically visible (POSIX); a\ntorn write yields an unparseable final line that readEvents skips\n(crash-atomic). seq binds the event to its position in the run.
 EDGES
@@ -195,7 +195,7 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.handle kind=method
-  digest=b3:a2af2c71824053ec1b90c9626ecbb269d55cd17a9df13a4d5ef3dffb8979ed98 file=neo/internal/trace/trace.go range=263:314 lang=go exported=false byte_range=9178:10941
+  digest=b3:a2af2c71824053ec1b90c9626ecbb269d55cd17a9df13a4d5ef3dffb8979ed98 file=neo/internal/trace/trace.go range=263:314 lang=go exported=false byte_range=9181:10944
   sig=func (s *Store) handle(rec record, counts map[string]int)
   doc=handle persists one queued record (or resolves a flush sentinel). Runs only\non the writer goroutine, so `counts` needs no lock.
 EDGES
@@ -203,7 +203,7 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.readEvents kind=method
-  digest=b3:7005bd36432635afd8e264d7855d7e1ec150d8a4ab84dc06a05fe5de37be61c3 file=neo/internal/trace/trace.go range=399:434 lang=go exported=false byte_range=13471:14459
+  digest=b3:7005bd36432635afd8e264d7855d7e1ec150d8a4ab84dc06a05fe5de37be61c3 file=neo/internal/trace/trace.go range=399:434 lang=go exported=false byte_range=13474:14462
   sig=func (s *Store) readEvents(runID, path string) []Event
   doc=readEvents parses a newline-delimited event file, decrypting each record under\nthe reconstructed associated data (legacy plaintext lines pass through until\nmigrated). A line that fails to decrypt or unmarshal — including a wrong-key,\ntampered, or crash-truncated final line — is skipped; the record sequence\nstill advances so surviving events stay bound to their positions.
 EDGES
@@ -211,7 +211,7 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.rollLocked kind=method
-  digest=b3:31a19e1fd7d4092f985084d4683d3f8fb3f64856d1922326200145ebe7cfbc13 file=neo/internal/trace/trace.go range=340:372 lang=go exported=false byte_range=11775:12715
+  digest=b3:31a19e1fd7d4092f985084d4683d3f8fb3f64856d1922326200145ebe7cfbc13 file=neo/internal/trace/trace.go range=340:372 lang=go exported=false byte_range=11778:12718
   sig=func (s *Store) rollLocked(runID, path string) int
   doc=rollLocked trims the run's JSONL to the newest `retain` events via an atomic\ntmp+rename rewrite. Returns the number of events kept, or -1 on error.
 EDGES
@@ -219,14 +219,14 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.tracePath kind=method
-  digest=b3:3f8094bfea47a0234bff2496b60f014ab28f9065d3066e3041a3021b3ac37178 file=neo/internal/trace/trace.go range=333:338 lang=go exported=false byte_range=11586:11773
+  digest=b3:3f8094bfea47a0234bff2496b60f014ab28f9065d3066e3041a3021b3ac37178 file=neo/internal/trace/trace.go range=333:338 lang=go exported=false byte_range=11589:11776
   sig=func (s *Store) tracePath(runID string) string
 EDGES
   ^contains=matrix/neo/internal/trace.Store
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.writer kind=method
-  digest=b3:0145a3c76936d0bb05472471e0ded19f3a6597fa98f4bba4fa0b27058b4024d1 file=neo/internal/trace/trace.go range=239:261 lang=go exported=false byte_range=8659:9176
+  digest=b3:0145a3c76936d0bb05472471e0ded19f3a6597fa98f4bba4fa0b27058b4024d1 file=neo/internal/trace/trace.go range=239:261 lang=go exported=false byte_range=8662:9179
   sig=func (s *Store) writer()
   doc=writer is the single goroutine that owns all disk writes and the per-run\nevent counts. It drains the queue until Close, persisting each event and\nenforcing the retained-event cap.
 EDGES
@@ -234,28 +234,28 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.countLines kind=func
-  digest=b3:19f8fe90012c3086fc81fd613a2061438d3dfa8b6607f297f1b5674b53f9d605 file=neo/internal/trace/trace.go range=436:459 lang=go exported=false byte_range=14461:15062
+  digest=b3:19f8fe90012c3086fc81fd613a2061438d3dfa8b6607f297f1b5674b53f9d605 file=neo/internal/trace/trace.go range=436:459 lang=go exported=false byte_range=14464:15065
   sig=func countLines(path string) int
   doc=countLines returns the number of non-empty JSONL lines in a file (0 if\nmissing). Used to seed the writer's per-run next-sequence for a pre-existing\nfile; it counts raw lines (no decryption) so it stays cheap and matches how\nreadEvents advances the sequence per line.
 EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.openWithCap kind=func
-  digest=b3:23b9f2ab3ae55d19ad5c1c2218be1530250377220782862afc7dab9f3aecb5a0 file=neo/internal/trace/trace.go range=139:156 lang=go exported=false byte_range=5803:6258
+  digest=b3:23b9f2ab3ae55d19ad5c1c2218be1530250377220782862afc7dab9f3aecb5a0 file=neo/internal/trace/trace.go range=139:156 lang=go exported=false byte_range=5806:6261
   sig=func openWithCap(dir string, cap int) *Store
   doc=openWithCap is the test seam that sets an explicit retained-event cap.
 EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.queueDepth kind=const
-  digest=b3:81127d72058ce991f6e74a3c78fdcdabbbafcb25e5a0f3d1804cd0030fa75736 file=neo/internal/trace/trace.go range=61:65 lang=go exported=false byte_range=2589:2920
+  digest=b3:81127d72058ce991f6e74a3c78fdcdabbbafcb25e5a0f3d1804cd0030fa75736 file=neo/internal/trace/trace.go range=61:65 lang=go exported=false byte_range=2592:2923
   sig=untyped int
   doc=queueDepth is how many pending events the async writer buffers before Record\nstarts dropping. Generous: a single user's single daemon emits tens-to-low-\nhundreds of workspace events per run, so this is never reached in practice;\nit exists only so a pathological burst can't block broker.publish.
 EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.record kind=type
-  digest=b3:758063a86f34004e154d5d9a07c94330b93baaac2a2a838d795ab21478c53a46 file=neo/internal/trace/trace.go range=78:90 lang=go exported=false byte_range=3383:3932
+  digest=b3:758063a86f34004e154d5d9a07c94330b93baaac2a2a838d795ab21478c53a46 file=neo/internal/trace/trace.go range=78:90 lang=go exported=false byte_range=3386:3935
   sig=type record struct {\n	runID	string\n	ev	Event\n	flush	chan struct{}\n	// remove marks a deletion sentinel: the writer removes runID's trace file\n	// (and forgets its count) on its own goroutine, so a CHAT-01 conversation\n	// delete cannot race an in-flight append. The result channel makes cleanup\n	// disclosure wait for the real filesystem outcome.\n	remove	chan error\n}
   doc=record is one queued write. A non-nil flush channel marks a flush sentinel\n(no event payload); the writer closes it once it has drained every record\nenqueued before it.
 EDGES
@@ -263,53 +263,53 @@ EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.record#ev kind=field
-  digest=b3:c519a01b43a6b3237d0004e2a72d830d0c1dbbf0a41b883631df3eb879a5cc22 file=neo/internal/trace/trace.go range=83:83 lang=go exported=false byte_range=3597:3608
+  digest=b3:c519a01b43a6b3237d0004e2a72d830d0c1dbbf0a41b883631df3eb879a5cc22 file=neo/internal/trace/trace.go range=83:83 lang=go exported=false byte_range=3600:3611
   sig=trace.Event
 EDGES
   ^contains=matrix/neo/internal/trace.record
 
 NODE id=matrix/neo/internal/trace.record#flush kind=field
-  digest=b3:53ebac424fb92b0cc591838d89268701d4e149473f8dc825b1972de38dd638b6 file=neo/internal/trace/trace.go range=84:84 lang=go exported=false byte_range=3610:3629
+  digest=b3:53ebac424fb92b0cc591838d89268701d4e149473f8dc825b1972de38dd638b6 file=neo/internal/trace/trace.go range=84:84 lang=go exported=false byte_range=3613:3632
   sig=chan struct{}
 EDGES
   ^contains=matrix/neo/internal/trace.record
 
 NODE id=matrix/neo/internal/trace.record#remove kind=field
-  digest=b3:e33ac3de5987d7287b5ae9848d1ce93e5900e666eb4c488c40b8eff8609a34bb file=neo/internal/trace/trace.go range=85:89 lang=go exported=false byte_range=3631:3930
+  digest=b3:e33ac3de5987d7287b5ae9848d1ce93e5900e666eb4c488c40b8eff8609a34bb file=neo/internal/trace/trace.go range=85:89 lang=go exported=false byte_range=3634:3933
   sig=chan error
   doc=remove marks a deletion sentinel: the writer removes runID's trace file\n(and forgets its count) on its own goroutine, so a CHAT-01 conversation\ndelete cannot race an in-flight append. The result channel makes cleanup\ndisclosure wait for the real filesystem outcome.
 EDGES
   ^contains=matrix/neo/internal/trace.record
 
 NODE id=matrix/neo/internal/trace.record#runID kind=field
-  digest=b3:124a615d153742899c42f110e4d3dbf87cee53a12b8696f08c49aa2e3ee4b984 file=neo/internal/trace/trace.go range=82:82 lang=go exported=false byte_range=3583:3595
+  digest=b3:124a615d153742899c42f110e4d3dbf87cee53a12b8696f08c49aa2e3ee4b984 file=neo/internal/trace/trace.go range=82:82 lang=go exported=false byte_range=3586:3598
   sig=string
 EDGES
   ^contains=matrix/neo/internal/trace.record
 
 NODE id=matrix/neo/internal/trace.retainFromEnv kind=func
-  digest=b3:7daede46f9e0ff69bbf4f3e530a6e78ea9784439fe88e628c0f596a81bf2bdf8 file=neo/internal/trace/trace.go range=158:170 lang=go exported=false byte_range=6260:6559
+  digest=b3:7daede46f9e0ff69bbf4f3e530a6e78ea9784439fe88e628c0f596a81bf2bdf8 file=neo/internal/trace/trace.go range=158:170 lang=go exported=false byte_range=6263:6562
   sig=func retainFromEnv() int
   doc=retainFromEnv reads NEO_TRACE_RETAIN; an absent/invalid value yields 0 (Open\nthen applies the default).
 EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.schemaEventV1 kind=const
-  digest=b3:9bbdedac24640a57eaf8fd0d1ae29295da679bf6b9422f13bceb7f760fdac0e8 file=neo/internal/trace/trace.go range=48:52 lang=go exported=false byte_range=2073:2282
+  digest=b3:9bbdedac24640a57eaf8fd0d1ae29295da679bf6b9422f13bceb7f760fdac0e8 file=neo/internal/trace/trace.go range=48:52 lang=go exported=false byte_range=2076:2285
   sig=untyped string
   doc=Store type and schema bound into each event's associated data, so a sealed\ntrace line cannot be replayed across users, runs, or positions.
 EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.storeTrace kind=const
-  digest=b3:89520e7645f85ceb140f688781ea604453645375bfd79b24eda1ca60b3b11a4b file=neo/internal/trace/trace.go range=48:51 lang=go exported=false byte_range=2073:2254
+  digest=b3:89520e7645f85ceb140f688781ea604453645375bfd79b24eda1ca60b3b11a4b file=neo/internal/trace/trace.go range=48:51 lang=go exported=false byte_range=2076:2257
   sig=untyped string
   doc=Store type and schema bound into each event's associated data, so a sealed\ntrace line cannot be replayed across users, runs, or positions.
 EDGES
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace/trace.go kind=file
-  digest=b3:6009f758c84c144253a1c619e25e938eafd0c17f5d0a496a526d0a850ccf3267 file=neo/internal/trace/trace.go range=1:473 lang=go exported=true
+  digest=b3:2d8621f8e56eee1abc7be0f2444934de0ba9e206e183b8566894dee31b70eba9 file=neo/internal/trace/trace.go range=1:473 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/trace.DefaultRetainedEvents,matrix/neo/internal/trace.Dir,matrix/neo/internal/trace.Event,matrix/neo/internal/trace.Open,matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.Close,matrix/neo/internal/trace.Store.Enabled,matrix/neo/internal/trace.Store.Flush,matrix/neo/internal/trace.Store.Load,matrix/neo/internal/trace.Store.Record,matrix/neo/internal/trace.Store.Remove,matrix/neo/internal/trace.Store.SetVault,matrix/neo/internal/trace.Store.ad,matrix/neo/internal/trace.Store.appendEvent,matrix/neo/internal/trace.Store.handle,matrix/neo/internal/trace.Store.readEvents,matrix/neo/internal/trace.Store.rollLocked,matrix/neo/internal/trace.Store.tracePath,matrix/neo/internal/trace.Store.writer,matrix/neo/internal/trace.countLines,matrix/neo/internal/trace.openWithCap,matrix/neo/internal/trace.queueDepth,matrix/neo/internal/trace.record,matrix/neo/internal/trace.retainFromEnv,matrix/neo/internal/trace.schemaEventV1,matrix/neo/internal/trace.storeTrace
   ^contains=matrix/neo/internal/trace

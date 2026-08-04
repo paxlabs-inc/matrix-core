@@ -1,16 +1,20 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/modelclient kind=package
   digest=b3:4196ab14a1c4ba154b224f19fbbf5907365d5e42bb0038ba2d6e5159b0f21902 file=workforce/internal/modelclient range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/modelclient/client.go
+  imports=matrix/neo/provider,matrix/workforce/internal/contracts,matrix/workforce/internal/skills
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/wakeruntime
 
 NODE id=matrix/workforce/internal/modelclient.Client kind=type
   digest=b3:e27209fc300e39dd8c03e7a6e87b8e634a1c5ea3cb5bd0a9b6950d0af9c24d15 file=workforce/internal/modelclient/client.go range=37:42 lang=go exported=true byte_range=645:771
   sig=type Client struct {\n	config		Config\n	decoder		*neoprovider.MiMoClient\n	sampling	contracts.ContentHash\n	call		sync.Mutex\n}
 EDGES
   contains=matrix/workforce/internal/modelclient.Client#call,matrix/workforce/internal/modelclient.Client#config,matrix/workforce/internal/modelclient.Client#decoder,matrix/workforce/internal/modelclient.Client#sampling,matrix/workforce/internal/modelclient.Client.Binding,matrix/workforce/internal/modelclient.Client.Complete
+  references=matrix/neo/provider.MiMoClient,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/modelclient.Config
+  ^references=matrix/workforce/internal/modelclient.Client.Binding,matrix/workforce/internal/modelclient.Client.Complete,matrix/workforce/internal/modelclient.New,matrix/workforce/internal/wakeruntime.Runner
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.Client#call kind=field
@@ -41,14 +45,21 @@ NODE id=matrix/workforce/internal/modelclient.Client.Binding kind=method
   digest=b3:5a13bf5a35e72badfbef6d68777463595a64c8f437b8259daf3b3633c49098a0 file=workforce/internal/modelclient/client.go range=131:140 lang=go exported=true byte_range=4912:5277
   sig=func (client *Client) Binding(label string) contracts.ModelBinding
 EDGES
+  references=matrix/workforce/internal/contracts.ModelBinding,matrix/workforce/internal/contracts.ModelBindingID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/modelclient.Client,matrix/workforce/internal/modelclient.client,matrix/workforce/internal/modelclient.label
   ^contains=matrix/workforce/internal/modelclient.Client
+  ^calls=matrix/workforce/internal/modelclient.Client.Complete,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket
+  ^references=matrix/workforce/internal/modelclient.Client.Complete,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.Client.Complete kind=method
   digest=b3:32b2d140d1be8876511d9cfd4af2c41597ba5539c8427d581d490544b020152d file=workforce/internal/modelclient/client.go range=142:214 lang=go exported=true byte_range=5279:7857
   sig=func (client *Client) Complete(\n	ctx context.Context,\n	packet contracts.WorkPacket,\n	skillContracts []skills.SignedContract,\n) (Exchange, error)
 EDGES
+  calls=matrix/neo/provider.MiMoClient.Complete,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/modelclient.Client.Binding,matrix/workforce/internal/modelclient.authorizedOperations,matrix/workforce/internal/modelclient.canonicalModelOutput,matrix/workforce/internal/skills.SignedContract.Validate
+  references=matrix/neo/provider.MiMoClient.Complete,matrix/neo/provider.MiMoRequest,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WorkPacket,matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/modelclient.Client,matrix/workforce/internal/modelclient.Client.Binding,matrix/workforce/internal/modelclient.Exchange,matrix/workforce/internal/modelclient.authorizedOperations,matrix/workforce/internal/modelclient.canonicalModelOutput,matrix/workforce/internal/modelclient.client,matrix/workforce/internal/modelclient.ctx,matrix/workforce/internal/modelclient.err,matrix/workforce/internal/modelclient.evidence,matrix/workforce/internal/modelclient.expected,matrix/workforce/internal/modelclient.index,matrix/workforce/internal/modelclient.output,matrix/workforce/internal/modelclient.outputErr,matrix/workforce/internal/modelclient.packet,matrix/workforce/internal/modelclient.prefix,matrix/workforce/internal/modelclient.request,matrix/workforce/internal/modelclient.requestEvidence,matrix/workforce/internal/modelclient.response,matrix/workforce/internal/modelclient.signed,matrix/workforce/internal/modelclient.skillContracts,matrix/workforce/internal/modelclient.systemPrompt,matrix/workforce/internal/skills.SignedContract,matrix/workforce/internal/skills.SignedContract.Validate
   ^contains=matrix/workforce/internal/modelclient.Client
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.propose
+  ^references=matrix/workforce/internal/wakeruntime.Runner.propose
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.Config kind=type
@@ -56,6 +67,7 @@ NODE id=matrix/workforce/internal/modelclient.Config kind=type
   sig=type Config struct {\n	Provider	string\n	ModelID		string\n	ModelVersion	string\n	Endpoint	string\n	APIKey		string\n	ActorDID	string\n	Temperature	float64\n	MaxTokens	int\n	Timeout		time.Duration\n}
 EDGES
   contains=matrix/workforce/internal/modelclient.Config#APIKey,matrix/workforce/internal/modelclient.Config#ActorDID,matrix/workforce/internal/modelclient.Config#Endpoint,matrix/workforce/internal/modelclient.Config#MaxTokens,matrix/workforce/internal/modelclient.Config#ModelID,matrix/workforce/internal/modelclient.Config#ModelVersion,matrix/workforce/internal/modelclient.Config#Provider,matrix/workforce/internal/modelclient.Config#Temperature,matrix/workforce/internal/modelclient.Config#Timeout
+  ^references=matrix/workforce/cmd/workforced.loadConfig,matrix/workforce/cmd/workforced.runtimeConfig,matrix/workforce/internal/modelclient.Client,matrix/workforce/internal/modelclient.New
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.Config#APIKey kind=field
@@ -117,6 +129,7 @@ NODE id=matrix/workforce/internal/modelclient.Exchange kind=type
   sig=type Exchange struct {\n	Request		[]byte\n	Response	[]byte\n	Output		[]byte\n}
 EDGES
   contains=matrix/workforce/internal/modelclient.Exchange#Output,matrix/workforce/internal/modelclient.Exchange#Request,matrix/workforce/internal/modelclient.Exchange#Response
+  ^references=matrix/workforce/internal/modelclient.Client.Complete
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.Exchange#Output kind=field
@@ -141,6 +154,10 @@ NODE id=matrix/workforce/internal/modelclient.New kind=func
   digest=b3:eb5edd1c1fd2b3fb600c0bb85954b2ccd14f5289c88cdc1abfce9c1cf7f8d0b8 file=workforce/internal/modelclient/client.go range=74:121 lang=go exported=true byte_range=2915:4702
   sig=func New(config Config) (*Client, error)
 EDGES
+  calls=matrix/neo/provider.NewMiMo,matrix/workforce/internal/contracts.EncodeCanonical
+  references=matrix/neo/provider.MiMoConfig,matrix/neo/provider.MiMoTemperature,matrix/neo/provider.MiMoTopP,matrix/neo/provider.MiMoV25ProModel,matrix/neo/provider.NewMiMo,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/modelclient.Client,matrix/workforce/internal/modelclient.Config,matrix/workforce/internal/modelclient.config,matrix/workforce/internal/modelclient.decoder,matrix/workforce/internal/modelclient.encoded,matrix/workforce/internal/modelclient.err,matrix/workforce/internal/modelclient.samplingEnvelope,matrix/workforce/internal/modelclient.sum,matrix/workforce/internal/modelclient.validSampling
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.authorizedOperation kind=type
@@ -148,6 +165,8 @@ NODE id=matrix/workforce/internal/modelclient.authorizedOperation kind=type
   sig=type authorizedOperation struct {\n	SkillID		contracts.SkillID	`json:"skill_id"`\n	Operation	string			`json:"operation"`\n	Provider	string			`json:"provider"`\n	EffectClass	skills.EffectClass	`json:"effect_class"`\n	RuntimeInjects	[]string		`json:"runtime_injects"`\n	Preferred	bool			`json:"preferred"`\n	InputGuidance	string			`json:"input_guidance"`\n}
 EDGES
   contains=matrix/workforce/internal/modelclient.authorizedOperation#EffectClass,matrix/workforce/internal/modelclient.authorizedOperation#InputGuidance,matrix/workforce/internal/modelclient.authorizedOperation#Operation,matrix/workforce/internal/modelclient.authorizedOperation#Preferred,matrix/workforce/internal/modelclient.authorizedOperation#Provider,matrix/workforce/internal/modelclient.authorizedOperation#RuntimeInjects,matrix/workforce/internal/modelclient.authorizedOperation#SkillID
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.EffectClass
+  ^references=matrix/workforce/internal/modelclient.authorizedOperations,matrix/workforce/internal/modelclient.requestEvidence
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.authorizedOperation#EffectClass kind=field
@@ -196,24 +215,37 @@ NODE id=matrix/workforce/internal/modelclient.authorizedOperations kind=func
   digest=b3:5a02960acce1d4421f8de0c5d87da267e59f399631a2b7914ad73b7a898e2360 file=workforce/internal/modelclient/client.go range=232:253 lang=go exported=false byte_range=8393:9126
   sig=func authorizedOperations(\n	department contracts.DepartmentKind,\n	contracts []skills.SignedContract,\n) []authorizedOperation
 EDGES
+  calls=matrix/workforce/internal/modelclient.inputGuidance,matrix/workforce/internal/modelclient.preferredOperation
+  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/modelclient.authorizedOperation,matrix/workforce/internal/modelclient.contracts,matrix/workforce/internal/modelclient.department,matrix/workforce/internal/modelclient.inputGuidance,matrix/workforce/internal/modelclient.operation,matrix/workforce/internal/modelclient.preferredOperation,matrix/workforce/internal/modelclient.provider,matrix/workforce/internal/modelclient.result,matrix/workforce/internal/modelclient.signed,matrix/workforce/internal/skills.SignedContract
+  ^calls=matrix/workforce/internal/modelclient.Client.Complete
+  ^references=matrix/workforce/internal/modelclient.Client.Complete
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.canonicalModelOutput kind=func
   digest=b3:0f99683fccdc0663d342b7661c9332296b091ff8307b935d09ac1cbb0b9355e7 file=workforce/internal/modelclient/client.go range=216:230 lang=go exported=false byte_range=7859:8391
   sig=func canonicalModelOutput(content string) ([]byte, error)
 EDGES
+  references=matrix/workforce/internal/modelclient.content,matrix/workforce/internal/modelclient.decoder,matrix/workforce/internal/modelclient.err,matrix/workforce/internal/modelclient.value
+  ^calls=matrix/workforce/internal/modelclient.Client.Complete
+  ^references=matrix/workforce/internal/modelclient.Client.Complete
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.inputGuidance kind=func
   digest=b3:ad900b83801f8c2741ad7f981a08099fcefe05da5ae5bcf9a8da54b4ed1669e0 file=workforce/internal/modelclient/client.go range=283:302 lang=go exported=false byte_range=10406:14259
   sig=func inputGuidance(department contracts.DepartmentKind, provider string) string
 EDGES
+  references=matrix/workforce/internal/contracts.DepartmentAccounting,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.DepartmentMarketing,matrix/workforce/internal/modelclient.department,matrix/workforce/internal/modelclient.provider
+  ^calls=matrix/workforce/internal/modelclient.authorizedOperations
+  ^references=matrix/workforce/internal/modelclient.authorizedOperations
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.preferredOperation kind=func
   digest=b3:7de6c5b15fa1aa9e96f0c6fc584e8e43c85ac3d67ea47f2f60f7060089f2a83a file=workforce/internal/modelclient/client.go range=255:281 lang=go exported=false byte_range=9128:10404
   sig=func preferredOperation(\n	department contracts.DepartmentKind,\n	skillID contracts.SkillID,\n	operation, provider string,\n) bool
 EDGES
+  references=matrix/workforce/internal/contracts.DepartmentAccounting,matrix/workforce/internal/contracts.DepartmentBackOffice,matrix/workforce/internal/contracts.DepartmentDeveloper,matrix/workforce/internal/contracts.DepartmentExecutive,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.DepartmentLegal,matrix/workforce/internal/contracts.DepartmentMarketing,matrix/workforce/internal/contracts.DepartmentResearch,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/modelclient.department,matrix/workforce/internal/modelclient.operation,matrix/workforce/internal/modelclient.provider,matrix/workforce/internal/modelclient.skillID,matrix/workforce/internal/modelclient.wantProvider,matrix/workforce/internal/modelclient.wantSkill,matrix/workforce/internal/skills.CampaignResearchSkill,matrix/workforce/internal/skills.DeveloperImplementSkill,matrix/workforce/internal/skills.EvidenceReviewSkill,matrix/workforce/internal/skills.IssueSpottingSkill,matrix/workforce/internal/skills.RecordsSkill,matrix/workforce/internal/skills.ReportingSkill,matrix/workforce/internal/skills.ResearchAnalysisSkill
+  ^calls=matrix/workforce/internal/modelclient.authorizedOperations
+  ^references=matrix/workforce/internal/modelclient.authorizedOperations
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.requestEvidence kind=type
@@ -222,6 +254,8 @@ NODE id=matrix/workforce/internal/modelclient.requestEvidence kind=type
 EDGES
   contains=matrix/workforce/internal/modelclient.requestEvidence#AuthorizedOperations,matrix/workforce/internal/modelclient.requestEvidence#MGS,matrix/workforce/internal/modelclient.requestEvidence#Model,matrix/workforce/internal/modelclient.requestEvidence#Packet,matrix/workforce/internal/modelclient.requestEvidence#SchemaVersion,matrix/workforce/internal/modelclient.requestEvidence#Skills,matrix/workforce/internal/modelclient.requestEvidence#System,matrix/workforce/internal/modelclient.requestEvidence.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.MGSGenomeRef,matrix/workforce/internal/contracts.ModelBinding,matrix/workforce/internal/contracts.WorkPacket,matrix/workforce/internal/modelclient.authorizedOperation,matrix/workforce/internal/skills.SignedContract
+  ^references=matrix/workforce/internal/modelclient.Client.Complete,matrix/workforce/internal/modelclient.requestEvidence.Validate
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.requestEvidence#AuthorizedOperations kind=field
@@ -270,6 +304,7 @@ NODE id=matrix/workforce/internal/modelclient.requestEvidence.Validate kind=meth
   digest=b3:1353b72b596369af32f1a7e7390f6606f4d79d2fa2bf0c3771653096e096a521 file=workforce/internal/modelclient/client.go range=60:60 lang=go exported=true byte_range=1345:1399
   sig=func (requestEvidence) Validate() error
 EDGES
+  references=matrix/workforce/internal/modelclient.requestEvidence
   ^contains=matrix/workforce/internal/modelclient.requestEvidence
   ^defines=matrix/workforce/internal/modelclient/client.go
 
@@ -277,6 +312,7 @@ NODE id=matrix/workforce/internal/modelclient.systemPrompt kind=const
   digest=b3:3a9f4c44bc30ad5d67f1f99dc16a760c6f1661b9ee30000968a664b2443d47d4 file=workforce/internal/modelclient/client.go range=72:72 lang=go exported=false byte_range=1834:2913
   sig=untyped string
 EDGES
+  ^references=matrix/workforce/internal/modelclient.Client.Complete
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.validSampling kind=type
@@ -285,6 +321,7 @@ NODE id=matrix/workforce/internal/modelclient.validSampling kind=type
 EDGES
   contains=matrix/workforce/internal/modelclient.validSampling#MaxTokens,matrix/workforce/internal/modelclient.validSampling#Temperature,matrix/workforce/internal/modelclient.validSampling#TopP,matrix/workforce/internal/modelclient.validSampling.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  ^references=matrix/workforce/internal/modelclient.New,matrix/workforce/internal/modelclient.validSampling.Validate
   ^defines=matrix/workforce/internal/modelclient/client.go
 
 NODE id=matrix/workforce/internal/modelclient.validSampling#MaxTokens kind=field
@@ -309,6 +346,7 @@ NODE id=matrix/workforce/internal/modelclient.validSampling.Validate kind=method
   digest=b3:27a6581c87722d37db754c3987e5aae3e95f14ce1b2ffead8d3bafb6b9f2c1f7 file=workforce/internal/modelclient/client.go range=129:129 lang=go exported=true byte_range=4858:4910
   sig=func (validSampling) Validate() error
 EDGES
+  references=matrix/workforce/internal/modelclient.validSampling
   ^contains=matrix/workforce/internal/modelclient.validSampling
   ^defines=matrix/workforce/internal/modelclient/client.go
 

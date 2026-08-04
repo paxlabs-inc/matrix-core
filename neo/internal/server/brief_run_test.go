@@ -35,7 +35,7 @@ import (
 	"matrix/neo/internal/tools"
 )
 
-// newBriefRunTestEngine builds a real Engine with a real cortex pager, real
+// newBriefRunTestEngine builds a real Engine with a real Neocortex pager, real
 // durable task ledger + conversation store + inbox, a real tools.Manager, and
 // the main model pointed at modelURL ("" = no model). A real governor over the
 // recorded Chronos boundary is wired with an enabled-ready schedule delivering
@@ -43,8 +43,8 @@ import (
 func newBriefRunTestEngine(t *testing.T, modelURL string) (*Engine, *briefGovernor) {
 	t.Helper()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-brief-run-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-brief-run-test"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)

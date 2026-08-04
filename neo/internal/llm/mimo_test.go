@@ -48,8 +48,8 @@ func TestExtractTagToolCalls(t *testing.T) {
 			}},
 		},
 		{
-			name: "canonical shape: newlines and full closers",
-			content: "<tool_call>\n<function=read_overflow>\n<parameter=token>\novf-1\n</parameter>\n<parameter=offset>\n8000\n</parameter>\n</function>\n</tool_call>",
+			name:        "canonical shape: newlines and full closers",
+			content:     "<tool_call>\n<function=read_overflow>\n<parameter=token>\novf-1\n</parameter>\n<parameter=offset>\n8000\n</parameter>\n</function>\n</tool_call>",
 			wantContent: "",
 			wantCalls: []struct {
 				name string
@@ -144,7 +144,7 @@ func TestExtractTagToolCalls(t *testing.T) {
 // from content — before this fix the markup leaked into user-facing narration.
 func TestFromWireRespMessage_DuplicateTagMarkupStripped(t *testing.T) {
 	m := wireRespMessage{
-		Role: "assistant",
+		Role:    "assistant",
 		Content: "Let me check the releases.<tool_call>\n<function=exec__shell>\n<parameter=command>\ncurl -sL https://example.test\n</parameter>\n</function>\n</tool_call>",
 		ToolCalls: []ToolCall{{
 			ID:       "call_fb3142a8ef2b4ab28ccd7e98",

@@ -6,47 +6,15 @@ package loop
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"matrix/cortex"
+	"matrix/cortexclient"
 	"matrix/neo/internal/runtime/protocol"
 	"matrix/neo/internal/runtime/turnstate"
 )
-
-type CortexToolJournal struct {
-	Cortex    *cortex.Cortex
-	CreatedBy string
-}
-
-func (journal *CortexToolJournal) CommitToolExecution(
-	ctx context.Context,
-	execution ToolExecution,
-) (cortex.ToolEventCitation, error) {
-	if err := ctx.Err(); err != nil {
-		return cortex.ToolEventCitation{}, err
-	}
-	if journal == nil || journal.Cortex == nil {
-		return cortex.ToolEventCitation{}, fmt.Errorf(
-			"runtime loop: cortex tool journal unavailable",
-		)
-	}
-	return journal.Cortex.RecordToolEvent(cortex.ToolEvent{
-		CallID:         execution.Call.ID,
-		ToolName:       execution.Call.Name,
-		Arguments:      execution.Call.Arguments,
-		Result:         execution.Result,
-		Error:          execution.Error,
-		Expect:         execution.Expect,
-		MatchVerdict:   execution.MatchVerdict,
-		SubgoalID:      execution.SubgoalID,
-		IdempotencyKey: execution.IdempotencyKey,
-		CreatedBy:      journal.CreatedBy,
-	})
-}
 
 func (loop *Loop) commitEvidence(
 	ctx context.Context,
@@ -156,7 +124,7 @@ var evidenceWord = regexp.MustCompile(`[a-z0-9][a-z0-9._:/-]*`)
 func matchToolExpectation(expect string, result ToolResult) string {
 	expected := strings.ToLower(strings.TrimSpace(expect))
 	if expected == "" {
-		return cortex.ToolMatchUnknown
+		return cortexclient.ToolMatchUnknown
 	}
 	actual := strings.ToLower(strings.TrimSpace(string(result.Content)))
 	predictsFailure := strings.Contains(expected, "error") ||
@@ -166,27 +134,27 @@ func matchToolExpectation(expect string, result ToolResult) string {
 		strings.Contains(expected, "500")
 	if result.IsError {
 		if predictsFailure {
-			return cortex.ToolMatchMatched
+			return cortexclient.ToolMatchMatched
 		}
-		return cortex.ToolMatchMismatched
+		return cortexclient.ToolMatchMismatched
 	}
 	var envelope map[string]interface{}
 	if json.Unmarshal(result.Content, &envelope) == nil {
 		if timedOut, _ := envelope["timed_out"].(bool); timedOut {
-			return cortex.ToolMatchMismatched
+			return cortexclient.ToolMatchMismatched
 		}
 		if ok, exists := envelope["ok"].(bool); exists && !ok {
-			return cortex.ToolMatchMismatched
+			return cortexclient.ToolMatchMismatched
 		}
 		if exit, exists := numberAsInt(envelope["exit_code"]); exists {
 			if strings.Contains(expected, "exit 0") {
 				if exit == 0 {
-					return cortex.ToolMatchMatched
+					return cortexclient.ToolMatchMatched
 				}
-				return cortex.ToolMatchMismatched
+				return cortexclient.ToolMatchMismatched
 			}
 			if exit != 0 && !predictsFailure {
-				return cortex.ToolMatchMismatched
+				return cortexclient.ToolMatchMismatched
 			}
 		}
 	}
@@ -198,10 +166,10 @@ func matchToolExpectation(expect string, result ToolResult) string {
 			continue
 		}
 		if len(word) >= 3 && strings.Contains(actual, word) {
-			return cortex.ToolMatchMatched
+			return cortexclient.ToolMatchMatched
 		}
 	}
-	return cortex.ToolMatchUnknown
+	return cortexclient.ToolMatchUnknown
 }
 
 func numberAsInt(value interface{}) (int, bool) {

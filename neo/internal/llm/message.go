@@ -140,7 +140,7 @@ func UserMessage(content string) Message {
 
 // UserAudioMessage builds one user turn whose on-wire content contains the
 // visible transcript/marker and one MiMo input_audio part. AudioData is
-// process-only: durable transcript and cortex records store Content plus the
+// process-only: durable transcript and Neocortex records store Content plus the
 // sealed media reference, never raw audio bytes.
 func UserAudioMessage(content, dataURL string) Message {
 	return Message{Role: RoleUser, Content: content, AudioData: dataURL}

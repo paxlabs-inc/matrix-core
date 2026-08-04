@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/router/internal/shard kind=package
   digest=b3:3f372510b370c398154eff5447d92b6fbfcdf84a60fdad541fd5a28cfe6e7a20 file=router/internal/shard range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/shard/registry.go
+  imports=matrix/router/internal/db,matrix/router/internal/provision,matrix/router/internal/railway
   ^contains=mod:matrix/router
+  ^imports=matrix/router/cmd/matrix-router
 
 NODE id=matrix/router/internal/shard.Entry kind=type
   digest=b3:853d2a9e926de1544b488154db934e57f642f4a54a26fdef24e87579802c0643 file=router/internal/shard/registry.go range=17:24 lang=go exported=true byte_range=198:558
   sig=type Entry struct {\n	ID		string			`json:"id"`\n	ProjectID	string			`json:"project_id"`\n	EnvironmentID	string			`json:"environment_id"`\n	RouterURL	string			`json:"router_url"`\n	RailwayTokenEnv	string			`json:"railway_token_env"`\n	IngressKeys	map[string]string	`json:"ingress_key_envs"`\n}
 EDGES
   contains=matrix/router/internal/shard.Entry#EnvironmentID,matrix/router/internal/shard.Entry#ID,matrix/router/internal/shard.Entry#IngressKeys,matrix/router/internal/shard.Entry#ProjectID,matrix/router/internal/shard.Entry#RailwayTokenEnv,matrix/router/internal/shard.Entry#RouterURL
+  ^references=matrix/router/internal/shard.Load,matrix/router/internal/shard.Registry,matrix/router/internal/shard.Registry.Entry
   ^defines=matrix/router/internal/shard/registry.go
 
 NODE id=matrix/router/internal/shard.Entry#EnvironmentID kind=field
@@ -53,6 +56,10 @@ NODE id=matrix/router/internal/shard.Load kind=func
   digest=b3:e79dc85a88191961cec13d072e4e79f327889342a08b4d9b5c6163ef09b05078 file=router/internal/shard/registry.go range=32:72 lang=go exported=true byte_range=707:2360
   sig=func Load(raw, image string) (*Registry, error)
 EDGES
+  calls=matrix/router/internal/railway.New
+  references=matrix/router/internal/provision.Provisioner,matrix/router/internal/railway.New,matrix/router/internal/railway.Provisioner,matrix/router/internal/shard.Entry,matrix/router/internal/shard.Registry,matrix/router/internal/shard.e,matrix/router/internal/shard.entries,matrix/router/internal/shard.env,matrix/router/internal/shard.err,matrix/router/internal/shard.image,matrix/router/internal/shard.keys,matrix/router/internal/shard.kid,matrix/router/internal/shard.ok,matrix/router/internal/shard.r,matrix/router/internal/shard.raw,matrix/router/internal/shard.token,matrix/router/internal/shard.u,matrix/router/internal/shard.v
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/shard/registry.go
 
 NODE id=matrix/router/internal/shard.Registry kind=type
@@ -60,6 +67,8 @@ NODE id=matrix/router/internal/shard.Registry kind=type
   sig=type Registry struct {\n	entries		map[string]Entry\n	provisioners	map[string]provision.Provisioner\n	ingress		map[string]map[string][]byte\n}
 EDGES
   contains=matrix/router/internal/shard.Registry#entries,matrix/router/internal/shard.Registry#ingress,matrix/router/internal/shard.Registry#provisioners,matrix/router/internal/shard.Registry.CurrentIngress,matrix/router/internal/shard.Registry.Entry,matrix/router/internal/shard.Registry.IngressKeys,matrix/router/internal/shard.Registry.Provider,matrix/router/internal/shard.Registry.Provisioner,matrix/router/internal/shard.Registry.ValidateDB
+  references=matrix/router/internal/provision.Provisioner,matrix/router/internal/shard.Entry
+  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/shard.Load,matrix/router/internal/shard.Registry.CurrentIngress,matrix/router/internal/shard.Registry.Entry,matrix/router/internal/shard.Registry.IngressKeys,matrix/router/internal/shard.Registry.Provider,matrix/router/internal/shard.Registry.Provisioner,matrix/router/internal/shard.Registry.ValidateDB
   ^defines=matrix/router/internal/shard/registry.go
 
 NODE id=matrix/router/internal/shard.Registry#entries kind=field
@@ -84,42 +93,59 @@ NODE id=matrix/router/internal/shard.Registry.CurrentIngress kind=method
   digest=b3:76aaafca0f766c907863e2c27558a818e26ee5212aaa211954863c0e53f55b6a file=router/internal/shard/registry.go range=104:116 lang=go exported=true byte_range=3345:3696
   sig=func (r *Registry) CurrentIngress(id string) (ingressURL string, credentials []byte, ok bool)
 EDGES
+  references=matrix/router/internal/shard.Registry,matrix/router/internal/shard.id,matrix/router/internal/shard.ids,matrix/router/internal/shard.keyID,matrix/router/internal/shard.keys,matrix/router/internal/shard.ok,matrix/router/internal/shard.r
   ^contains=matrix/router/internal/shard.Registry
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/shard/registry.go
 
 NODE id=matrix/router/internal/shard.Registry.Entry kind=method
   digest=b3:80e8ba16f9248ab966ceecb4bde3ea6cdaa8ca8a17a0963aa978c5a164a0f8c9 file=router/internal/shard/registry.go range=99:99 lang=go exported=true byte_range=3125:3234
   sig=func (r *Registry) Entry(id string) (Entry, bool)
 EDGES
+  references=matrix/router/internal/shard.Entry,matrix/router/internal/shard.Registry,matrix/router/internal/shard.e,matrix/router/internal/shard.id,matrix/router/internal/shard.ok,matrix/router/internal/shard.r
   ^contains=matrix/router/internal/shard.Registry
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/shard/registry.go
 
 NODE id=matrix/router/internal/shard.Registry.IngressKeys kind=method
   digest=b3:a347c3c6c58ee071d746aa208ebd728f032072c58d39393d85740fccad4df5b7 file=router/internal/shard/registry.go range=100:103 lang=go exported=true byte_range=3235:3344
   sig=func (r *Registry) IngressKeys(id string) (map[string][]byte, bool)
 EDGES
+  references=matrix/router/internal/shard.Registry,matrix/router/internal/shard.id,matrix/router/internal/shard.k,matrix/router/internal/shard.ok,matrix/router/internal/shard.r
   ^contains=matrix/router/internal/shard.Registry
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/shard/registry.go
 
 NODE id=matrix/router/internal/shard.Registry.Provider kind=method
   digest=b3:45a214f1c94ae46ff5da36b642f0542dec585dfdf6dec2bb56f385bf19241a76 file=router/internal/shard/registry.go range=98:98 lang=go exported=true byte_range=3027:3124
   sig=func (r *Registry) Provider(id string) (provision.Provisioner, bool)
 EDGES
+  calls=matrix/router/internal/shard.Registry.Provisioner
+  references=matrix/router/internal/provision.Provisioner,matrix/router/internal/shard.Registry,matrix/router/internal/shard.Registry.Provisioner,matrix/router/internal/shard.id,matrix/router/internal/shard.r
   ^contains=matrix/router/internal/shard.Registry
+  ^calls=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.handleShard,matrix/router/internal/admin.Handler.updateWorkforceEnvironment,matrix/router/internal/proxy.Handler.ServeHTTP
   ^defines=matrix/router/internal/shard/registry.go
 
 NODE id=matrix/router/internal/shard.Registry.Provisioner kind=method
   digest=b3:3ccf950f7347e8c70f313ac09b2b510ae4be3b25ae115eccd96c89456c43894d file=router/internal/shard/registry.go range=94:97 lang=go exported=true byte_range=2908:3026
   sig=func (r *Registry) Provisioner(id string) (provision.Provisioner, bool)
 EDGES
+  references=matrix/router/internal/provision.Provisioner,matrix/router/internal/shard.Registry,matrix/router/internal/shard.id,matrix/router/internal/shard.ok,matrix/router/internal/shard.p,matrix/router/internal/shard.r
   ^contains=matrix/router/internal/shard.Registry
+  ^calls=matrix/router/cmd/matrix-router.main,matrix/router/internal/shard.Registry.Provider
+  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/shard.Registry.Provider
   ^defines=matrix/router/internal/shard/registry.go
 
 NODE id=matrix/router/internal/shard.Registry.ValidateDB kind=method
   digest=b3:351dfb1fc480410d296f68793c5b10694aa66bf95b344b38f002ca6cd24f0604 file=router/internal/shard/registry.go range=74:92 lang=go exported=true byte_range=2362:2906
   sig=func (r *Registry) ValidateDB(ctx context.Context, d *db.DB) error
 EDGES
+  calls=matrix/router/internal/db.DB.RailwayShards
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.DB.RailwayShards,matrix/router/internal/shard.Registry,matrix/router/internal/shard.ctx,matrix/router/internal/shard.d,matrix/router/internal/shard.e,matrix/router/internal/shard.err,matrix/router/internal/shard.ok,matrix/router/internal/shard.r,matrix/router/internal/shard.s,matrix/router/internal/shard.shards
   ^contains=matrix/router/internal/shard.Registry
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/shard/registry.go
 
 NODE id=matrix/router/internal/shard/registry.go kind=file

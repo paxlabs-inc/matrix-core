@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/neo/internal/sessionjournal kind=package
   digest=b3:b060a285da266ac6aefac3ad339e6e98a8ad306c7dc8c98a8bd7253606dab411 file=neo/internal/sessionjournal range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/sessionjournal/checkpoint.go,matrix/neo/internal/sessionjournal/model.go,matrix/neo/internal/sessionjournal/replay.go,matrix/neo/internal/sessionjournal/store.go
+  imports=matrix/vault
   ^contains=mod:matrix/neo
+  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/agent,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/sessionjournal.Approval kind=type
   digest=b3:fe1deb117b022505a3ec4f542b1849f9cefd9e1b3262d945011daf4c1751eab6 file=neo/internal/sessionjournal/model.go range=104:110 lang=go exported=true byte_range=3552:3781
   sig=type Approval struct {\n	ApprovalID	string	`json:"approval_id"`\n	Action		string	`json:"action"`\n	Decision	string	`json:"decision"`\n	Authority	string	`json:"authority,omitempty"`\n	Reason		string	`json:"reason,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.Approval#Action,matrix/neo/internal/sessionjournal.Approval#ApprovalID,matrix/neo/internal/sessionjournal.Approval#Authority,matrix/neo/internal/sessionjournal.Approval#Decision,matrix/neo/internal/sessionjournal.Approval#Reason
+  ^references=matrix/neo/internal/server.Engine.approverFor,matrix/neo/internal/sessionjournal.Event
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.Approval#Action kind=field
@@ -48,6 +51,7 @@ NODE id=matrix/neo/internal/sessionjournal.Artifact kind=type
   sig=type Artifact struct {\n	ArtifactID	string	`json:"artifact_id"`\n	Kind		string	`json:"kind"`\n	Path		string	`json:"path,omitempty"`\n	URI		string	`json:"uri,omitempty"`\n	Digest		string	`json:"digest,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.Artifact#ArtifactID,matrix/neo/internal/sessionjournal.Artifact#Digest,matrix/neo/internal/sessionjournal.Artifact#Kind,matrix/neo/internal/sessionjournal.Artifact#Path,matrix/neo/internal/sessionjournal.Artifact#URI
+  ^references=matrix/neo/internal/server.Engine.surfaceTool,matrix/neo/internal/sessionjournal.Event
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.Artifact#ArtifactID kind=field
@@ -84,6 +88,10 @@ NODE id=matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint kind=func
   digest=b3:c043d8b989fb0ec564b56fa8136b18d61a989c32e9b03d2c45c44d4b0bb95b72 file=neo/internal/sessionjournal/checkpoint.go range=24:64 lang=go exported=true byte_range=526:2309
   sig=func BuildSemanticCheckpoint(events []Event) SemanticCheckpoint
 EDGES
+  calls=matrix/neo/internal/sessionjournal.appendUniqueRecent,matrix/neo/internal/sessionjournal.checkpointStatements,matrix/neo/internal/sessionjournal.classifyCheckpointStatement
+  references=matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.KindApproval,matrix/neo/internal/sessionjournal.KindArtifact,matrix/neo/internal/sessionjournal.KindAssistantMessage,matrix/neo/internal/sessionjournal.KindRecovery,matrix/neo/internal/sessionjournal.KindToolResult,matrix/neo/internal/sessionjournal.KindUncertainEffect,matrix/neo/internal/sessionjournal.KindUserMessage,matrix/neo/internal/sessionjournal.SemanticCheckpoint,matrix/neo/internal/sessionjournal.appendUniqueRecent,matrix/neo/internal/sessionjournal.checkpoint,matrix/neo/internal/sessionjournal.checkpointStatements,matrix/neo/internal/sessionjournal.classifyCheckpointStatement,matrix/neo/internal/sessionjournal.entry,matrix/neo/internal/sessionjournal.event,matrix/neo/internal/sessionjournal.events,matrix/neo/internal/sessionjournal.finding,matrix/neo/internal/sessionjournal.location,matrix/neo/internal/sessionjournal.statement
+  ^calls=matrix/neo/internal/agent.Agent.compactExactWorking,matrix/neo/internal/server.Engine.buildRecoveryHandoff
+  ^references=matrix/neo/internal/agent.Agent.compactExactWorking,matrix/neo/internal/server.Engine.buildRecoveryHandoff
   ^defines=matrix/neo/internal/sessionjournal/checkpoint.go
 
 NODE id=matrix/neo/internal/sessionjournal.DefaultPath kind=const
@@ -96,18 +104,23 @@ NODE id=matrix/neo/internal/sessionjournal.Dir kind=func
   digest=b3:08140ee74d14cbf74486a52864eec05b50f0227b0ba77c87eaa4cfeb49dc3935 file=neo/internal/sessionjournal/store.go range=38:46 lang=go exported=true byte_range=622:886
   sig=func Dir(override, cortexRoot string) string
 EDGES
+  references=matrix/neo/internal/sessionjournal.cortexRoot,matrix/neo/internal/sessionjournal.override,matrix/neo/internal/sessionjournal.value
+  ^calls=matrix/neo/cmd/neo.runServe
+  ^references=matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.ErrClosed kind=var
   digest=b3:9625834ade06d7d415c1d69aa6eef204bfcb52541197cff7674771e146e1fe8b file=neo/internal/sessionjournal/model.go range=36:36 lang=go exported=true byte_range=825:879
   sig=error
 EDGES
+  ^references=matrix/neo/internal/sessionjournal.IsClosed,matrix/neo/internal/sessionjournal.Store.appendLocked,matrix/neo/internal/sessionjournal.Store.readLocked
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.ErrInvalidEvent kind=var
   digest=b3:88d9c472c1e2419a61649ad7fdaf91e21f24e019e821175dbbea96c4a4f1b449 file=neo/internal/sessionjournal/model.go range=37:37 lang=go exported=true byte_range=881:942
   sig=error
 EDGES
+  ^references=matrix/neo/internal/sessionjournal.Event.Validate
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.Event kind=type
@@ -115,6 +128,8 @@ NODE id=matrix/neo/internal/sessionjournal.Event kind=type
   sig=type Event struct {\n	ConversationID	string		`json:"conversation_id"`\n	Sequence	int64		`json:"sequence"`\n	TurnID		string		`json:"turn_id,omitempty"`\n	Attempt		int		`json:"attempt,omitempty"`\n	Kind		Kind		`json:"kind"`\n	CreatedAt	time.Time	`json:"created_at"`\n	DisplayContent	string		`json:"display_content,omitempty"`\n	APIContent	[]byte		`json:"api_content,omitempty"`\n\n	Message		*Message		`json:"message,omitempty"`\n	ToolCall	*ToolCall		`json:"tool_call,omitempty"`\n	ToolResult	*ToolResult		`json:"tool_result,omitempty"`\n	Reasoning	*Reasoning		`json:"reasoning,omitempty"`\n	ProviderReplay	*ProviderReplay		`json:"provider_replay,omitempty"`\n	Approval	*Approval		`json:"approval,omitempty"`\n	Artifact	*Artifact		`json:"artifact,omitempty"`\n	UncertainEffect	*UncertainEffect	`json:"uncertain_effect,omitempty"`\n	Supervisor	*Supervisor		`json:"supervisor,omitempty"`\n	Recovery	*Recovery		`json:"recovery,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.Event#APIContent,matrix/neo/internal/sessionjournal.Event#Approval,matrix/neo/internal/sessionjournal.Event#Artifact,matrix/neo/internal/sessionjournal.Event#Attempt,matrix/neo/internal/sessionjournal.Event#ConversationID,matrix/neo/internal/sessionjournal.Event#CreatedAt,matrix/neo/internal/sessionjournal.Event#DisplayContent,matrix/neo/internal/sessionjournal.Event#Kind,matrix/neo/internal/sessionjournal.Event#Message,matrix/neo/internal/sessionjournal.Event#ProviderReplay,matrix/neo/internal/sessionjournal.Event#Reasoning,matrix/neo/internal/sessionjournal.Event#Recovery,matrix/neo/internal/sessionjournal.Event#Sequence,matrix/neo/internal/sessionjournal.Event#Supervisor,matrix/neo/internal/sessionjournal.Event#ToolCall,matrix/neo/internal/sessionjournal.Event#ToolResult,matrix/neo/internal/sessionjournal.Event#TurnID,matrix/neo/internal/sessionjournal.Event#UncertainEffect,matrix/neo/internal/sessionjournal.Event.EqualProviderContent,matrix/neo/internal/sessionjournal.Event.Validate
+  references=matrix/neo/internal/sessionjournal.Approval,matrix/neo/internal/sessionjournal.Artifact,matrix/neo/internal/sessionjournal.Kind,matrix/neo/internal/sessionjournal.Message,matrix/neo/internal/sessionjournal.ProviderReplay,matrix/neo/internal/sessionjournal.Reasoning,matrix/neo/internal/sessionjournal.Recovery,matrix/neo/internal/sessionjournal.Supervisor,matrix/neo/internal/sessionjournal.ToolCall,matrix/neo/internal/sessionjournal.ToolResult,matrix/neo/internal/sessionjournal.UncertainEffect
+  ^references=matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/agent.Agent.journalAssistant,matrix/neo/internal/agent.Agent.journalRecovery,matrix/neo/internal/agent.Agent.journalToolCalls,matrix/neo/internal/agent.Agent.journalToolResult,matrix/neo/internal/agent.Agent.journalUncertainEffect,matrix/neo/internal/agent.Agent.journalUser,matrix/neo/internal/agent.Agent.providerRequest,matrix/neo/internal/server.Engine.approverFor,matrix/neo/internal/server.Engine.surfaceTool,matrix/neo/internal/server.session.appendRecoveryEvent,matrix/neo/internal/server.session.appendSupervisorEvent,matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint,matrix/neo/internal/sessionjournal.Event.EqualProviderContent,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Replay,matrix/neo/internal/sessionjournal.Store.Append,matrix/neo/internal/sessionjournal.Store.FinalizeTail,matrix/neo/internal/sessionjournal.Store.Read,matrix/neo/internal/sessionjournal.Store.appendLocked,matrix/neo/internal/sessionjournal.Store.openEvent,matrix/neo/internal/sessionjournal.Store.readLocked,matrix/neo/internal/sessionjournal.TailState,matrix/neo/internal/sessionjournal.inspectTail
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.Event#APIContent kind=field
@@ -229,6 +244,7 @@ NODE id=matrix/neo/internal/sessionjournal.Event.EqualProviderContent kind=metho
   digest=b3:428b1c1f03fbec2ea266ba86e3e6c514fdf85cf57ad7315e8e521ab2be8094ad file=neo/internal/sessionjournal/model.go range=256:258 lang=go exported=true byte_range=8844:8961
   sig=func (event Event) EqualProviderContent(other Event) bool
 EDGES
+  references=matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.event,matrix/neo/internal/sessionjournal.other
   ^contains=matrix/neo/internal/sessionjournal.Event
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
@@ -236,85 +252,113 @@ NODE id=matrix/neo/internal/sessionjournal.Event.Validate kind=method
   digest=b3:4bf94fd38d92933b8e14343389da4791b2ab4656deb6c34c8a4bed842458d2d1 file=neo/internal/sessionjournal/model.go range=158:228 lang=go exported=true byte_range=5108:8073
   sig=func (event Event) Validate() error
 EDGES
+  calls=matrix/neo/internal/sessionjournal.validateMessage,matrix/neo/internal/sessionjournal.validateToolCall,matrix/neo/internal/sessionjournal.validateToolResult
+  references=matrix/neo/internal/sessionjournal.ErrInvalidEvent,matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.KindApproval,matrix/neo/internal/sessionjournal.KindArtifact,matrix/neo/internal/sessionjournal.KindAssistantMessage,matrix/neo/internal/sessionjournal.KindProviderReplay,matrix/neo/internal/sessionjournal.KindReasoning,matrix/neo/internal/sessionjournal.KindRecovery,matrix/neo/internal/sessionjournal.KindSupervisor,matrix/neo/internal/sessionjournal.KindToolCall,matrix/neo/internal/sessionjournal.KindToolResult,matrix/neo/internal/sessionjournal.KindUncertainEffect,matrix/neo/internal/sessionjournal.KindUserMessage,matrix/neo/internal/sessionjournal.RoleAssistant,matrix/neo/internal/sessionjournal.RoleUser,matrix/neo/internal/sessionjournal.err,matrix/neo/internal/sessionjournal.event,matrix/neo/internal/sessionjournal.payloads,matrix/neo/internal/sessionjournal.present,matrix/neo/internal/sessionjournal.validateMessage,matrix/neo/internal/sessionjournal.validateToolCall,matrix/neo/internal/sessionjournal.validateToolResult
   ^contains=matrix/neo/internal/sessionjournal.Event
+  ^calls=matrix/neo/internal/sessionjournal.Store.appendLocked,matrix/neo/internal/sessionjournal.Store.openEvent
+  ^references=matrix/neo/internal/sessionjournal.Store.appendLocked,matrix/neo/internal/sessionjournal.Store.openEvent
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.IsClosed kind=func
   digest=b3:0d53990121f4f5187a38b5496b44340c866cad9e45ac72df286c71f12232fdb5 file=neo/internal/sessionjournal/store.go range=394:394 lang=go exported=true byte_range=11289:11355
   sig=func IsClosed(err error) bool
 EDGES
+  references=matrix/neo/internal/sessionjournal.ErrClosed,matrix/neo/internal/sessionjournal.err
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.Kind kind=type
   digest=b3:281f7a918830d5007c3ed551c522136130119b41fe0f026f72c15b960ab328a3 file=neo/internal/sessionjournal/model.go range=14:14 lang=go exported=true byte_range=250:266
   sig=type Kind string
 EDGES
+  ^references=matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.KindApproval,matrix/neo/internal/sessionjournal.KindArtifact,matrix/neo/internal/sessionjournal.KindAssistantMessage,matrix/neo/internal/sessionjournal.KindProviderReplay,matrix/neo/internal/sessionjournal.KindReasoning,matrix/neo/internal/sessionjournal.KindRecovery,matrix/neo/internal/sessionjournal.KindSupervisor,matrix/neo/internal/sessionjournal.KindToolCall,matrix/neo/internal/sessionjournal.KindToolResult,matrix/neo/internal/sessionjournal.KindUncertainEffect,matrix/neo/internal/sessionjournal.KindUserMessage,matrix/neo/internal/sessionjournal.ProviderFrame
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.KindApproval kind=const
   digest=b3:fa6cb6a25ab5967124a1f0ccf364394f1ecd1edb04c725282e3c6af43e552196 file=neo/internal/sessionjournal/model.go range=23:23 lang=go exported=true byte_range=542:580
   sig=sessionjournal.Kind
 EDGES
+  references=matrix/neo/internal/sessionjournal.Kind
+  ^references=matrix/neo/internal/server.Engine.approverFor,matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.KindArtifact kind=const
   digest=b3:2d7cf4f2a20920db97fd9ccdc0a70f5db8152d07c66db6f15f0511582626ffcb file=neo/internal/sessionjournal/model.go range=24:24 lang=go exported=true byte_range=582:620
   sig=sessionjournal.Kind
 EDGES
+  references=matrix/neo/internal/sessionjournal.Kind
+  ^references=matrix/neo/internal/server.Engine.surfaceTool,matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.KindAssistantMessage kind=const
   digest=b3:f4bc3d8865bdcb55d3a4ad622efc29b960567d445f34c1d6f6d02226f476c162 file=neo/internal/sessionjournal/model.go range=18:18 lang=go exported=true byte_range=321:368
   sig=sessionjournal.Kind
 EDGES
+  references=matrix/neo/internal/sessionjournal.Kind
+  ^references=matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/agent.Agent.journalAssistant,matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.Replay,matrix/neo/internal/sessionjournal.inspectTail
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.KindProviderReplay kind=const
   digest=b3:8ff1b9a8c99ddaf19990148a66af3330c5af25747f684418b8063d6416b5622a file=neo/internal/sessionjournal/model.go range=22:22 lang=go exported=true byte_range=495:540
   sig=sessionjournal.Kind
 EDGES
+  references=matrix/neo/internal/sessionjournal.Kind
+  ^references=matrix/neo/internal/agent.Agent.providerRequest,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.KindReasoning kind=const
   digest=b3:e25a2c48a0757b59996b2dc819d8305f8419918ea8ba21836e087832e86a1b56 file=neo/internal/sessionjournal/model.go range=21:21 lang=go exported=true byte_range=454:493
   sig=sessionjournal.Kind
 EDGES
+  references=matrix/neo/internal/sessionjournal.Kind
+  ^references=matrix/neo/internal/agent.Agent.journalAssistant,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.KindRecovery kind=const
   digest=b3:0c2d69e0939bb6c4b47f6f3331edfb1ef0adf2374b5418625de64cb502496f47 file=neo/internal/sessionjournal/model.go range=27:27 lang=go exported=true byte_range=712:750
   sig=sessionjournal.Kind
 EDGES
+  references=matrix/neo/internal/sessionjournal.Kind
+  ^references=matrix/neo/internal/agent.Agent.journalRecovery,matrix/neo/internal/server.session.appendRecoveryEvent,matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.FinalizeTail,matrix/neo/internal/sessionjournal.Store.Replay,matrix/neo/internal/sessionjournal.inspectTail
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.KindSupervisor kind=const
   digest=b3:5ef8a8e1cf29c3fd986988c409c087221090d056caab5c9715d05b849765ddd2 file=neo/internal/sessionjournal/model.go range=26:26 lang=go exported=true byte_range=670:710
   sig=sessionjournal.Kind
 EDGES
+  references=matrix/neo/internal/sessionjournal.Kind
+  ^references=matrix/neo/internal/server.session.appendSupervisorEvent,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.KindToolCall kind=const
   digest=b3:8302676b9181b47b33c2d1175104fe93a0ed251f17bc6e8d7e01d1733e4ac979 file=neo/internal/sessionjournal/model.go range=19:19 lang=go exported=true byte_range=370:409
   sig=sessionjournal.Kind
 EDGES
+  references=matrix/neo/internal/sessionjournal.Kind
+  ^references=matrix/neo/internal/agent.Agent.journalToolCalls,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.Replay,matrix/neo/internal/sessionjournal.inspectTail
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.KindToolResult kind=const
   digest=b3:078ed389c230778ff5b42ac5c5a4967e099bd6a83520142e4f71c220c4c90262 file=neo/internal/sessionjournal/model.go range=20:20 lang=go exported=true byte_range=411:452
   sig=sessionjournal.Kind
 EDGES
+  references=matrix/neo/internal/sessionjournal.Kind
+  ^references=matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/agent.Agent.journalToolResult,matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.Replay,matrix/neo/internal/sessionjournal.inspectTail
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.KindUncertainEffect kind=const
   digest=b3:03f56d44937b0f63ca1fe7656baf900ff7783a099441853872f7d429ce95c760 file=neo/internal/sessionjournal/model.go range=25:25 lang=go exported=true byte_range=622:668
   sig=sessionjournal.Kind
 EDGES
+  references=matrix/neo/internal/sessionjournal.Kind
+  ^references=matrix/neo/internal/agent.Agent.journalUncertainEffect,matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.KindUserMessage kind=const
   digest=b3:c89e9390751b904399b88ab25b35c42326586237d6be0fff241d5bad9d0ccd64 file=neo/internal/sessionjournal/model.go range=17:17 lang=go exported=true byte_range=277:319
   sig=sessionjournal.Kind
 EDGES
+  references=matrix/neo/internal/sessionjournal.Kind
+  ^references=matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/agent.Agent.journalUser,matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.Message kind=type
@@ -322,6 +366,8 @@ NODE id=matrix/neo/internal/sessionjournal.Message kind=type
   sig=type Message struct {\n	Role			string		`json:"role"`\n	Name			string		`json:"name,omitempty"`\n	ToolCallID		string		`json:"tool_call_id,omitempty"`\n	ToolCalls		[]ToolCall	`json:"tool_calls,omitempty"`\n	ProviderMetadata	[]byte		`json:"provider_metadata,omitempty"`\n	Partial			bool		`json:"partial,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.Message#Name,matrix/neo/internal/sessionjournal.Message#Partial,matrix/neo/internal/sessionjournal.Message#ProviderMetadata,matrix/neo/internal/sessionjournal.Message#Role,matrix/neo/internal/sessionjournal.Message#ToolCallID,matrix/neo/internal/sessionjournal.Message#ToolCalls
+  references=matrix/neo/internal/sessionjournal.ToolCall
+  ^references=matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/agent.Agent.journalAssistant,matrix/neo/internal/agent.Agent.journalUser,matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.validateMessage
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.Message#Name kind=field
@@ -364,6 +410,10 @@ NODE id=matrix/neo/internal/sessionjournal.Open kind=func
   digest=b3:2d9a9f7472781dc218a2d25badea246bde8b1ea9f1866a3bf150d91835a157d9 file=neo/internal/sessionjournal/store.go range=48:82 lang=go exported=true byte_range=888:1954
   sig=func Open(ctx context.Context, path string, session *vault.Session) (*Store, error)
 EDGES
+  calls=matrix/neo/internal/sessionjournal.migrate,matrix/neo/internal/sessionjournal.sqliteDSN,matrix/vault.Session.UserVault,matrix/vault.UserVault.User
+  references=matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.ctx,matrix/neo/internal/sessionjournal.db,matrix/neo/internal/sessionjournal.dsn,matrix/neo/internal/sessionjournal.err,matrix/neo/internal/sessionjournal.migrate,matrix/neo/internal/sessionjournal.path,matrix/neo/internal/sessionjournal.session,matrix/neo/internal/sessionjournal.sqliteDSN,matrix/neo/internal/sessionjournal.user,matrix/vault.Session,matrix/vault.Session.UserVault,matrix/vault.UserVault.User
+  ^calls=matrix/neo/cmd/neo.runServe
+  ^references=matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.ProtocolMessage kind=type
@@ -371,6 +421,8 @@ NODE id=matrix/neo/internal/sessionjournal.ProtocolMessage kind=type
   sig=type ProtocolMessage struct {\n	Sequence		int64		`json:"sequence"`\n	TurnID			string		`json:"turn_id,omitempty"`\n	Role			string		`json:"role"`\n	Content			string		`json:"content,omitempty"`\n	ToolCalls		[]ToolCall	`json:"tool_calls,omitempty"`\n	ToolCallID		string		`json:"tool_call_id,omitempty"`\n	Name			string		`json:"name,omitempty"`\n	Reasoning		string		`json:"reasoning,omitempty"`\n	ProviderMetadata	[]byte		`json:"provider_metadata,omitempty"`\n	APIContent		[]byte		`json:"api_content,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.ProtocolMessage#APIContent,matrix/neo/internal/sessionjournal.ProtocolMessage#Content,matrix/neo/internal/sessionjournal.ProtocolMessage#Name,matrix/neo/internal/sessionjournal.ProtocolMessage#ProviderMetadata,matrix/neo/internal/sessionjournal.ProtocolMessage#Reasoning,matrix/neo/internal/sessionjournal.ProtocolMessage#Role,matrix/neo/internal/sessionjournal.ProtocolMessage#Sequence,matrix/neo/internal/sessionjournal.ProtocolMessage#ToolCallID,matrix/neo/internal/sessionjournal.ProtocolMessage#ToolCalls,matrix/neo/internal/sessionjournal.ProtocolMessage#TurnID,matrix/neo/internal/sessionjournal.ProtocolMessage.DecodeAPIContent
+  references=matrix/neo/internal/sessionjournal.ToolCall
+  ^references=matrix/neo/internal/agent.protocolMessage,matrix/neo/internal/sessionjournal.ProtocolMessage.DecodeAPIContent,matrix/neo/internal/sessionjournal.Replay,matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/replay.go
 
 NODE id=matrix/neo/internal/sessionjournal.ProtocolMessage#APIContent kind=field
@@ -437,6 +489,7 @@ NODE id=matrix/neo/internal/sessionjournal.ProtocolMessage.DecodeAPIContent kind
   digest=b3:cba8a025377371965304412045ce5bf72dfa9fd85b2e1865137ad835e56c79d9 file=neo/internal/sessionjournal/replay.go range=129:131 lang=go exported=true byte_range=4608:4728
   sig=func (message ProtocolMessage) DecodeAPIContent(target any) error
 EDGES
+  references=matrix/neo/internal/sessionjournal.ProtocolMessage,matrix/neo/internal/sessionjournal.message,matrix/neo/internal/sessionjournal.target
   ^contains=matrix/neo/internal/sessionjournal.ProtocolMessage
   ^defines=matrix/neo/internal/sessionjournal/replay.go
 
@@ -445,6 +498,8 @@ NODE id=matrix/neo/internal/sessionjournal.ProviderFrame kind=type
   sig=type ProviderFrame struct {\n	Sequence	int64	`json:"sequence"`\n	TurnID		string	`json:"turn_id,omitempty"`\n	Kind		Kind	`json:"kind"`\n	Bytes		[]byte	`json:"bytes"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.ProviderFrame#Bytes,matrix/neo/internal/sessionjournal.ProviderFrame#Kind,matrix/neo/internal/sessionjournal.ProviderFrame#Sequence,matrix/neo/internal/sessionjournal.ProviderFrame#TurnID
+  references=matrix/neo/internal/sessionjournal.Kind
+  ^references=matrix/neo/internal/sessionjournal.Replay,matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/replay.go
 
 NODE id=matrix/neo/internal/sessionjournal.ProviderFrame#Bytes kind=field
@@ -476,6 +531,7 @@ NODE id=matrix/neo/internal/sessionjournal.ProviderReplay kind=type
   sig=type ProviderReplay struct {\n	Provider	string	`json:"provider,omitempty"`\n	Model		string	`json:"model,omitempty"`\n	RequestID	string	`json:"request_id,omitempty"`\n	ResponseID	string	`json:"response_id,omitempty"`\n	RequestBytes	[]byte	`json:"request_bytes"`\n	ResponseBytes	[]byte	`json:"response_bytes,omitempty"`\n	Metadata	[]byte	`json:"metadata,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.ProviderReplay#Metadata,matrix/neo/internal/sessionjournal.ProviderReplay#Model,matrix/neo/internal/sessionjournal.ProviderReplay#Provider,matrix/neo/internal/sessionjournal.ProviderReplay#RequestBytes,matrix/neo/internal/sessionjournal.ProviderReplay#RequestID,matrix/neo/internal/sessionjournal.ProviderReplay#ResponseBytes,matrix/neo/internal/sessionjournal.ProviderReplay#ResponseID
+  ^references=matrix/neo/internal/agent.Agent.providerRequest,matrix/neo/internal/sessionjournal.Event
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.ProviderReplay#Metadata kind=field
@@ -525,6 +581,7 @@ NODE id=matrix/neo/internal/sessionjournal.Reasoning kind=type
   sig=type Reasoning struct {\n	Text			string	`json:"text,omitempty"`\n	ProviderMetadata	[]byte	`json:"provider_metadata,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.Reasoning#ProviderMetadata,matrix/neo/internal/sessionjournal.Reasoning#Text
+  ^references=matrix/neo/internal/agent.Agent.journalAssistant,matrix/neo/internal/sessionjournal.Event
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.Reasoning#ProviderMetadata kind=field
@@ -544,6 +601,7 @@ NODE id=matrix/neo/internal/sessionjournal.Recovery kind=type
   sig=type Recovery struct {\n	State			string	`json:"state"`\n	Reason			string	`json:"reason"`\n	FinalizesSequence	int64	`json:"finalizes_sequence,omitempty"`\n	PendingCallID		string	`json:"pending_call_id,omitempty"`\n	Checkpoint		[]byte	`json:"checkpoint,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.Recovery#Checkpoint,matrix/neo/internal/sessionjournal.Recovery#FinalizesSequence,matrix/neo/internal/sessionjournal.Recovery#PendingCallID,matrix/neo/internal/sessionjournal.Recovery#Reason,matrix/neo/internal/sessionjournal.Recovery#State
+  ^references=matrix/neo/internal/agent.Agent.journalRecovery,matrix/neo/internal/server.session.appendRecoveryEvent,matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.Store.FinalizeTail
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.Recovery#Checkpoint kind=field
@@ -581,6 +639,8 @@ NODE id=matrix/neo/internal/sessionjournal.Replay kind=type
   sig=type Replay struct {\n	ConversationID	string\n	Messages	[]ProtocolMessage\n	ProviderFrames	[]ProviderFrame\n	Approvals	[]Event\n	Artifacts	[]Event\n	Effects		[]Event\n	Supervisor	[]Event\n	Recovery	[]Event\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.Replay#Approvals,matrix/neo/internal/sessionjournal.Replay#Artifacts,matrix/neo/internal/sessionjournal.Replay#ConversationID,matrix/neo/internal/sessionjournal.Replay#Effects,matrix/neo/internal/sessionjournal.Replay#Messages,matrix/neo/internal/sessionjournal.Replay#ProviderFrames,matrix/neo/internal/sessionjournal.Replay#Recovery,matrix/neo/internal/sessionjournal.Replay#Supervisor,matrix/neo/internal/sessionjournal.Replay.ExactProviderBytes
+  references=matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.ProtocolMessage,matrix/neo/internal/sessionjournal.ProviderFrame
+  ^references=matrix/neo/internal/agent.Agent,matrix/neo/internal/agent.Agent.ReplayState,matrix/neo/internal/agent.Agent.SeedReplay,matrix/neo/internal/sessionjournal.Replay.ExactProviderBytes,matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/replay.go
 
 NODE id=matrix/neo/internal/sessionjournal.Replay#Approvals kind=field
@@ -635,6 +695,7 @@ NODE id=matrix/neo/internal/sessionjournal.Replay.ExactProviderBytes kind=method
   digest=b3:f94fb05dc9cf3601e239939ed7b1ae153596a4cf5361b9493dfb67485ca8f891 file=neo/internal/sessionjournal/replay.go range=118:127 lang=go exported=true byte_range=4292:4606
   sig=func (replay Replay) ExactProviderBytes(turnID string) [][]byte
 EDGES
+  references=matrix/neo/internal/sessionjournal.Replay,matrix/neo/internal/sessionjournal.frame,matrix/neo/internal/sessionjournal.frames,matrix/neo/internal/sessionjournal.replay,matrix/neo/internal/sessionjournal.turnID
   ^contains=matrix/neo/internal/sessionjournal.Replay
   ^defines=matrix/neo/internal/sessionjournal/replay.go
 
@@ -642,12 +703,14 @@ NODE id=matrix/neo/internal/sessionjournal.RoleAssistant kind=const
   digest=b3:2b7f880e7e67769336b872ab3887fa7b420a8c7f41674e4f7ed0d4a32e1e074a file=neo/internal/sessionjournal/model.go range=32:32 lang=go exported=true byte_range=787:814
   sig=untyped string
 EDGES
+  ^references=matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/agent.Agent.journalAssistant,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.RoleUser kind=const
   digest=b3:b6d9fb8a03095ba4b2dd11902072859f9dcb7511ee5b1ded3980b61480f1f7e5 file=neo/internal/sessionjournal/model.go range=31:31 lang=go exported=true byte_range=763:785
   sig=untyped string
 EDGES
+  ^references=matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/agent.Agent.journalUser,matrix/neo/internal/sessionjournal.Event.Validate
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.SemanticCheckpoint kind=type
@@ -655,6 +718,7 @@ NODE id=matrix/neo/internal/sessionjournal.SemanticCheckpoint kind=type
   sig=type SemanticCheckpoint struct {\n	ThroughSequence		int64\n	Decisions		[]string\n	Corrections		[]string\n	OpenQuestions		[]string\n	Relationships		[]string\n	ToolFindings		[]string\n	FailedApproaches	[]string\n	Commitments		[]string\n	Artifacts		[]string\n	WorkState		[]string\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.SemanticCheckpoint#Artifacts,matrix/neo/internal/sessionjournal.SemanticCheckpoint#Commitments,matrix/neo/internal/sessionjournal.SemanticCheckpoint#Corrections,matrix/neo/internal/sessionjournal.SemanticCheckpoint#Decisions,matrix/neo/internal/sessionjournal.SemanticCheckpoint#FailedApproaches,matrix/neo/internal/sessionjournal.SemanticCheckpoint#OpenQuestions,matrix/neo/internal/sessionjournal.SemanticCheckpoint#Relationships,matrix/neo/internal/sessionjournal.SemanticCheckpoint#ThroughSequence,matrix/neo/internal/sessionjournal.SemanticCheckpoint#ToolFindings,matrix/neo/internal/sessionjournal.SemanticCheckpoint#WorkState,matrix/neo/internal/sessionjournal.SemanticCheckpoint.Empty,matrix/neo/internal/sessionjournal.SemanticCheckpoint.Render
+  ^references=matrix/neo/internal/agent.Agent,matrix/neo/internal/agent.Agent.Reset,matrix/neo/internal/agent.Agent.SemanticCheckpoint,matrix/neo/internal/server.Engine.buildRecoveryHandoff,matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint,matrix/neo/internal/sessionjournal.SemanticCheckpoint.Empty,matrix/neo/internal/sessionjournal.SemanticCheckpoint.Render,matrix/neo/internal/sessionjournal.classifyCheckpointStatement
   ^defines=matrix/neo/internal/sessionjournal/checkpoint.go
 
 NODE id=matrix/neo/internal/sessionjournal.SemanticCheckpoint#Artifacts kind=field
@@ -721,14 +785,21 @@ NODE id=matrix/neo/internal/sessionjournal.SemanticCheckpoint.Empty kind=method
   digest=b3:d91492060d43d9029cf52a419220a04e2f7c0f49b994e34de84c31376fdde21a file=neo/internal/sessionjournal/checkpoint.go range=66:68 lang=go exported=true byte_range=2311:2633
   sig=func (checkpoint SemanticCheckpoint) Empty() bool
 EDGES
+  references=matrix/neo/internal/sessionjournal.SemanticCheckpoint,matrix/neo/internal/sessionjournal.checkpoint
   ^contains=matrix/neo/internal/sessionjournal.SemanticCheckpoint
+  ^calls=matrix/neo/internal/sessionjournal.SemanticCheckpoint.Render
+  ^references=matrix/neo/internal/sessionjournal.SemanticCheckpoint.Render
   ^defines=matrix/neo/internal/sessionjournal/checkpoint.go
 
 NODE id=matrix/neo/internal/sessionjournal.SemanticCheckpoint.Render kind=method
   digest=b3:b4d59d0bc7bbaab799054f5016fedb2f1746f9e06a2d276b6103627aad09df1b file=neo/internal/sessionjournal/checkpoint.go range=70:86 lang=go exported=true byte_range=2635:3707
   sig=func (checkpoint SemanticCheckpoint) Render() string
 EDGES
+  calls=matrix/neo/internal/sessionjournal.SemanticCheckpoint.Empty,matrix/neo/internal/sessionjournal.checkpointSection
+  references=matrix/neo/internal/sessionjournal.SemanticCheckpoint,matrix/neo/internal/sessionjournal.SemanticCheckpoint.Empty,matrix/neo/internal/sessionjournal.builder,matrix/neo/internal/sessionjournal.checkpoint,matrix/neo/internal/sessionjournal.checkpointSection
   ^contains=matrix/neo/internal/sessionjournal.SemanticCheckpoint
+  ^calls=matrix/neo/internal/agent.Agent.prepareWindow
+  ^references=matrix/neo/internal/agent.Agent.prepareWindow
   ^defines=matrix/neo/internal/sessionjournal/checkpoint.go
 
 NODE id=matrix/neo/internal/sessionjournal.Store kind=type
@@ -736,6 +807,8 @@ NODE id=matrix/neo/internal/sessionjournal.Store kind=type
   sig=type Store struct {\n	mu	sync.Mutex\n	db	*sql.DB\n	vault	*vault.Session\n	user	string\n	now	func() time.Time\n	closed	bool\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.Store#closed,matrix/neo/internal/sessionjournal.Store#db,matrix/neo/internal/sessionjournal.Store#mu,matrix/neo/internal/sessionjournal.Store#now,matrix/neo/internal/sessionjournal.Store#user,matrix/neo/internal/sessionjournal.Store#vault,matrix/neo/internal/sessionjournal.Store.Append,matrix/neo/internal/sessionjournal.Store.Close,matrix/neo/internal/sessionjournal.Store.FinalizeTail,matrix/neo/internal/sessionjournal.Store.Read,matrix/neo/internal/sessionjournal.Store.Replay,matrix/neo/internal/sessionjournal.Store.Tail,matrix/neo/internal/sessionjournal.Store.ad,matrix/neo/internal/sessionjournal.Store.appendLocked,matrix/neo/internal/sessionjournal.Store.openEvent,matrix/neo/internal/sessionjournal.Store.readLocked,matrix/neo/internal/sessionjournal.Store.seal,matrix/neo/internal/sessionjournal.Store.tailLocked
+  references=matrix/vault.Session
+  ^references=matrix/neo/internal/agent.Agent,matrix/neo/internal/agent.Options,matrix/neo/internal/server.Engine,matrix/neo/internal/server.EngineOptions,matrix/neo/internal/sessionjournal.Open,matrix/neo/internal/sessionjournal.Store.Append,matrix/neo/internal/sessionjournal.Store.Close,matrix/neo/internal/sessionjournal.Store.FinalizeTail,matrix/neo/internal/sessionjournal.Store.Read,matrix/neo/internal/sessionjournal.Store.Replay,matrix/neo/internal/sessionjournal.Store.Tail,matrix/neo/internal/sessionjournal.Store.ad,matrix/neo/internal/sessionjournal.Store.appendLocked,matrix/neo/internal/sessionjournal.Store.openEvent,matrix/neo/internal/sessionjournal.Store.readLocked,matrix/neo/internal/sessionjournal.Store.seal,matrix/neo/internal/sessionjournal.Store.tailLocked
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.Store#closed kind=field
@@ -778,41 +851,62 @@ NODE id=matrix/neo/internal/sessionjournal.Store.Append kind=method
   digest=b3:8439a397b9c5f182ec47ca9e4f607afc3eb4e84676099f83692d9b37ff15fd7f file=neo/internal/sessionjournal/store.go range=128:132 lang=go exported=true byte_range=3264:3424
   sig=func (store *Store) Append(ctx context.Context, event Event) (Event, error)
 EDGES
+  calls=matrix/neo/internal/sessionjournal.Store.appendLocked
+  references=matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.Store.appendLocked,matrix/neo/internal/sessionjournal.ctx,matrix/neo/internal/sessionjournal.event,matrix/neo/internal/sessionjournal.store
   ^contains=matrix/neo/internal/sessionjournal.Store
+  ^calls=matrix/neo/internal/agent.Agent.journalAssistant,matrix/neo/internal/agent.Agent.journalRecovery,matrix/neo/internal/agent.Agent.journalToolCalls,matrix/neo/internal/agent.Agent.journalToolResult,matrix/neo/internal/agent.Agent.journalUncertainEffect,matrix/neo/internal/agent.Agent.journalUser,matrix/neo/internal/server.Engine.surfaceTool,matrix/neo/internal/server.session.appendRecoveryEvent,matrix/neo/internal/server.session.appendSupervisorEvent
+  ^references=matrix/neo/internal/agent.Agent.journalAssistant,matrix/neo/internal/agent.Agent.journalRecovery,matrix/neo/internal/agent.Agent.journalToolCalls,matrix/neo/internal/agent.Agent.journalToolResult,matrix/neo/internal/agent.Agent.journalUncertainEffect,matrix/neo/internal/agent.Agent.journalUser,matrix/neo/internal/agent.Agent.providerRequest,matrix/neo/internal/server.Engine.approverFor,matrix/neo/internal/server.Engine.surfaceTool,matrix/neo/internal/server.session.appendRecoveryEvent,matrix/neo/internal/server.session.appendSupervisorEvent
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.Store.Close kind=method
   digest=b3:957a2df336cc1c13ced52071d8f005da5c94c7bb7a61786ec2b81086c7461f27 file=neo/internal/sessionjournal/store.go range=340:348 lang=go exported=true byte_range=9785:9961
   sig=func (store *Store) Close() error
 EDGES
+  references=matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.store
   ^contains=matrix/neo/internal/sessionjournal.Store
+  ^calls=matrix/neo/internal/server.Engine.Close
+  ^references=matrix/neo/internal/server.Engine.Close
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.Store.FinalizeTail kind=method
   digest=b3:355edab7e3c903c587db5dc8ba367fdc937bd38aaef836ae213a06d0a0755aea file=neo/internal/sessionjournal/store.go range=264:294 lang=go exported=true byte_range=7650:8563
   sig=func (store *Store) FinalizeTail(ctx context.Context, conversationID, reason string) (Event, bool, error)
 EDGES
+  calls=matrix/neo/internal/sessionjournal.Store.appendLocked,matrix/neo/internal/sessionjournal.Store.tailLocked,matrix/neo/internal/sessionjournal.TailState.Abnormal
+  references=matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.KindRecovery,matrix/neo/internal/sessionjournal.Recovery,matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.Store.appendLocked,matrix/neo/internal/sessionjournal.Store.tailLocked,matrix/neo/internal/sessionjournal.TailState.Abnormal,matrix/neo/internal/sessionjournal.conversationID,matrix/neo/internal/sessionjournal.ctx,matrix/neo/internal/sessionjournal.err,matrix/neo/internal/sessionjournal.event,matrix/neo/internal/sessionjournal.reason,matrix/neo/internal/sessionjournal.recovery,matrix/neo/internal/sessionjournal.store,matrix/neo/internal/sessionjournal.tail
   ^contains=matrix/neo/internal/sessionjournal.Store
+  ^calls=matrix/neo/internal/server.session.rebuildAgent
+  ^references=matrix/neo/internal/server.session.rebuildAgent
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.Store.Read kind=method
   digest=b3:5a8bb9147c3d4c7f2d6d8b86f50506bed1708e2700c6bd6eee990c6a5d647172 file=neo/internal/sessionjournal/store.go range=194:198 lang=go exported=true byte_range=5310:5539
   sig=func (store *Store) Read(ctx context.Context, conversationID string, fromSequence int64, limit int) ([]Event, error)
 EDGES
+  calls=matrix/neo/internal/sessionjournal.Store.readLocked
+  references=matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.Store.readLocked,matrix/neo/internal/sessionjournal.conversationID,matrix/neo/internal/sessionjournal.ctx,matrix/neo/internal/sessionjournal.fromSequence,matrix/neo/internal/sessionjournal.limit,matrix/neo/internal/sessionjournal.store
   ^contains=matrix/neo/internal/sessionjournal.Store
+  ^calls=matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/server.Engine.buildRecoveryHandoff,matrix/neo/internal/sessionjournal.Store.Replay
+  ^references=matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/server.Engine.buildRecoveryHandoff,matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.Store.Replay kind=method
   digest=b3:46d84bb9bbaa9b380decb4b99dd8367ac67a2b43c638a4ef1c693d2ee96071e2 file=neo/internal/sessionjournal/replay.go range=42:116 lang=go exported=true byte_range=1231:4290
   sig=func (store *Store) Replay(ctx context.Context, conversationID string) (Replay, error)
 EDGES
+  calls=matrix/neo/internal/sessionjournal.Store.Read,matrix/neo/internal/sessionjournal.cloneToolCall,matrix/neo/internal/sessionjournal.cloneToolCalls
+  references=matrix/neo/internal/sessionjournal.KindApproval,matrix/neo/internal/sessionjournal.KindArtifact,matrix/neo/internal/sessionjournal.KindAssistantMessage,matrix/neo/internal/sessionjournal.KindProviderReplay,matrix/neo/internal/sessionjournal.KindReasoning,matrix/neo/internal/sessionjournal.KindRecovery,matrix/neo/internal/sessionjournal.KindSupervisor,matrix/neo/internal/sessionjournal.KindToolCall,matrix/neo/internal/sessionjournal.KindToolResult,matrix/neo/internal/sessionjournal.KindUncertainEffect,matrix/neo/internal/sessionjournal.KindUserMessage,matrix/neo/internal/sessionjournal.ProtocolMessage,matrix/neo/internal/sessionjournal.ProviderFrame,matrix/neo/internal/sessionjournal.Replay,matrix/neo/internal/sessionjournal.RoleAssistant,matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.Store.Read,matrix/neo/internal/sessionjournal.ToolCall,matrix/neo/internal/sessionjournal.call,matrix/neo/internal/sessionjournal.cloneToolCall,matrix/neo/internal/sessionjournal.cloneToolCalls,matrix/neo/internal/sessionjournal.conversationID,matrix/neo/internal/sessionjournal.ctx,matrix/neo/internal/sessionjournal.err,matrix/neo/internal/sessionjournal.event,matrix/neo/internal/sessionjournal.events,matrix/neo/internal/sessionjournal.exists,matrix/neo/internal/sessionjournal.index,matrix/neo/internal/sessionjournal.message,matrix/neo/internal/sessionjournal.messageByCall,matrix/neo/internal/sessionjournal.replay,matrix/neo/internal/sessionjournal.store
   ^contains=matrix/neo/internal/sessionjournal.Store
+  ^calls=matrix/neo/internal/server.session.rebuildAgent
+  ^references=matrix/neo/internal/server.session.rebuildAgent
   ^defines=matrix/neo/internal/sessionjournal/replay.go
 
 NODE id=matrix/neo/internal/sessionjournal.Store.Tail kind=method
   digest=b3:014584dbfc5d594e549632d7043887381c322f4939a5811959e892efa019d3a7 file=neo/internal/sessionjournal/store.go range=250:254 lang=go exported=true byte_range=7231:7410
   sig=func (store *Store) Tail(ctx context.Context, conversationID string) (TailState, error)
 EDGES
+  calls=matrix/neo/internal/sessionjournal.Store.tailLocked
+  references=matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.Store.tailLocked,matrix/neo/internal/sessionjournal.TailState,matrix/neo/internal/sessionjournal.conversationID,matrix/neo/internal/sessionjournal.ctx,matrix/neo/internal/sessionjournal.store
   ^contains=matrix/neo/internal/sessionjournal.Store
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
@@ -820,42 +914,65 @@ NODE id=matrix/neo/internal/sessionjournal.Store.ad kind=method
   digest=b3:d14821f5ce9f7ddd8b9d67ee894c5ab6d583ae057d489ea7b93e0bcc5c054dcd file=neo/internal/sessionjournal/store.go range=381:386 lang=go exported=false byte_range=11011:11211
   sig=func (store *Store) ad(conversationID string, sequence int64) vault.AD
 EDGES
+  references=matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.conversationID,matrix/neo/internal/sessionjournal.schemaV1,matrix/neo/internal/sessionjournal.sequence,matrix/neo/internal/sessionjournal.store,matrix/neo/internal/sessionjournal.storeName,matrix/vault.AD
   ^contains=matrix/neo/internal/sessionjournal.Store
+  ^calls=matrix/neo/internal/sessionjournal.Store.openEvent,matrix/neo/internal/sessionjournal.Store.seal
+  ^references=matrix/neo/internal/sessionjournal.Store.openEvent,matrix/neo/internal/sessionjournal.Store.seal
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.Store.appendLocked kind=method
   digest=b3:912cfc267c8e6547766f9dc2b4080dedd7aae8b7e3d3368821d3be2a5345688f file=neo/internal/sessionjournal/store.go range=134:192 lang=go exported=false byte_range=3426:5308
   sig=func (store *Store) appendLocked(ctx context.Context, event Event) (Event, error)
 EDGES
+  calls=matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.seal,matrix/neo/internal/sessionjournal.zero
+  references=matrix/neo/internal/sessionjournal.ErrClosed,matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.Store.seal,matrix/neo/internal/sessionjournal.committed,matrix/neo/internal/sessionjournal.ctx,matrix/neo/internal/sessionjournal.encoded,matrix/neo/internal/sessionjournal.err,matrix/neo/internal/sessionjournal.event,matrix/neo/internal/sessionjournal.sealed,matrix/neo/internal/sessionjournal.store,matrix/neo/internal/sessionjournal.tx,matrix/neo/internal/sessionjournal.zero
   ^contains=matrix/neo/internal/sessionjournal.Store
+  ^calls=matrix/neo/internal/sessionjournal.Store.Append,matrix/neo/internal/sessionjournal.Store.FinalizeTail
+  ^references=matrix/neo/internal/sessionjournal.Store.Append,matrix/neo/internal/sessionjournal.Store.FinalizeTail
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.Store.openEvent kind=method
   digest=b3:db4b8a5858dd7d174a00cfbc2e1dcadb6e3d0b1084cc0bbf2f9f7ebd3ae5b007 file=neo/internal/sessionjournal/store.go range=358:379 lang=go exported=false byte_range=10285:11009
   sig=func (store *Store) openEvent(conversationID string, sequence int64, sealed []byte) (Event, error)
 EDGES
+  calls=matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store.ad,matrix/neo/internal/sessionjournal.zero,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenRecord
+  references=matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.Store.ad,matrix/neo/internal/sessionjournal.conversationID,matrix/neo/internal/sessionjournal.err,matrix/neo/internal/sessionjournal.event,matrix/neo/internal/sessionjournal.plaintext,matrix/neo/internal/sessionjournal.sealed,matrix/neo/internal/sessionjournal.sequence,matrix/neo/internal/sessionjournal.store,matrix/neo/internal/sessionjournal.zero,matrix/vault.ErrVaultRequired,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenRecord
   ^contains=matrix/neo/internal/sessionjournal.Store
+  ^calls=matrix/neo/internal/sessionjournal.Store.readLocked
+  ^references=matrix/neo/internal/sessionjournal.Store.readLocked
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.Store.readLocked kind=method
   digest=b3:37d40429528844f44430c3b4bf4c0d26e8ede4fa59463162c295b4f333ff0648 file=neo/internal/sessionjournal/store.go range=200:248 lang=go exported=false byte_range=5541:7229
   sig=func (store *Store) readLocked(ctx context.Context, conversationID string, fromSequence int64, limit int) ([]Event, error)
 EDGES
+  calls=matrix/neo/internal/sessionjournal.Store.openEvent,matrix/neo/internal/sessionjournal.zero
+  references=matrix/neo/internal/sessionjournal.ErrClosed,matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.Store.openEvent,matrix/neo/internal/sessionjournal.arguments,matrix/neo/internal/sessionjournal.conversationID,matrix/neo/internal/sessionjournal.createdMicros,matrix/neo/internal/sessionjournal.ctx,matrix/neo/internal/sessionjournal.err,matrix/neo/internal/sessionjournal.event,matrix/neo/internal/sessionjournal.events,matrix/neo/internal/sessionjournal.fromSequence,matrix/neo/internal/sessionjournal.kind,matrix/neo/internal/sessionjournal.limit,matrix/neo/internal/sessionjournal.query,matrix/neo/internal/sessionjournal.rows,matrix/neo/internal/sessionjournal.sealed,matrix/neo/internal/sessionjournal.sequence,matrix/neo/internal/sessionjournal.store,matrix/neo/internal/sessionjournal.turnID,matrix/neo/internal/sessionjournal.zero
   ^contains=matrix/neo/internal/sessionjournal.Store
+  ^calls=matrix/neo/internal/sessionjournal.Store.Read,matrix/neo/internal/sessionjournal.Store.tailLocked
+  ^references=matrix/neo/internal/sessionjournal.Store.Read,matrix/neo/internal/sessionjournal.Store.tailLocked
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.Store.seal kind=method
   digest=b3:9bf7c526d767d638d9daf7496fa423a3edd5ad00a91489bdb2444ff7aae71631 file=neo/internal/sessionjournal/store.go range=350:356 lang=go exported=false byte_range=9963:10283
   sig=func (store *Store) seal(conversationID string, sequence int64, plaintext []byte) ([]byte, error)
 EDGES
+  calls=matrix/neo/internal/sessionjournal.Store.ad,matrix/vault.Session.MaybeSealRecord
+  references=matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.Store.ad,matrix/neo/internal/sessionjournal.conversationID,matrix/neo/internal/sessionjournal.err,matrix/neo/internal/sessionjournal.plaintext,matrix/neo/internal/sessionjournal.sealed,matrix/neo/internal/sessionjournal.sequence,matrix/neo/internal/sessionjournal.store,matrix/vault.Session.MaybeSealRecord
   ^contains=matrix/neo/internal/sessionjournal.Store
+  ^calls=matrix/neo/internal/sessionjournal.Store.appendLocked
+  ^references=matrix/neo/internal/sessionjournal.Store.appendLocked
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.Store.tailLocked kind=method
   digest=b3:74b59674b66a1b5eedd68a161ccf6183bb03390e59943272f39df5a7ccee9611 file=neo/internal/sessionjournal/store.go range=256:262 lang=go exported=false byte_range=7412:7648
   sig=func (store *Store) tailLocked(ctx context.Context, conversationID string) (TailState, error)
 EDGES
+  calls=matrix/neo/internal/sessionjournal.Store.readLocked,matrix/neo/internal/sessionjournal.inspectTail
+  references=matrix/neo/internal/sessionjournal.Store,matrix/neo/internal/sessionjournal.Store.readLocked,matrix/neo/internal/sessionjournal.TailState,matrix/neo/internal/sessionjournal.conversationID,matrix/neo/internal/sessionjournal.ctx,matrix/neo/internal/sessionjournal.err,matrix/neo/internal/sessionjournal.events,matrix/neo/internal/sessionjournal.inspectTail,matrix/neo/internal/sessionjournal.store
   ^contains=matrix/neo/internal/sessionjournal.Store
+  ^calls=matrix/neo/internal/sessionjournal.Store.FinalizeTail,matrix/neo/internal/sessionjournal.Store.Tail
+  ^references=matrix/neo/internal/sessionjournal.Store.FinalizeTail,matrix/neo/internal/sessionjournal.Store.Tail
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.Supervisor kind=type
@@ -863,6 +980,7 @@ NODE id=matrix/neo/internal/sessionjournal.Supervisor kind=type
   sig=type Supervisor struct {\n	IntentID	string	`json:"intent_id,omitempty"`\n	Attempt		int	`json:"attempt,omitempty"`\n	Action		string	`json:"action"`\n	Reason		string	`json:"reason,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.Supervisor#Action,matrix/neo/internal/sessionjournal.Supervisor#Attempt,matrix/neo/internal/sessionjournal.Supervisor#IntentID,matrix/neo/internal/sessionjournal.Supervisor#Reason
+  ^references=matrix/neo/internal/server.session.appendSupervisorEvent,matrix/neo/internal/sessionjournal.Event
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.Supervisor#Action kind=field
@@ -893,24 +1011,31 @@ NODE id=matrix/neo/internal/sessionjournal.TailClean kind=const
   digest=b3:c3de12975a7c35b0853e328a308f1425e70e74d28b70e30286b7cb777f954b54 file=neo/internal/sessionjournal/model.go range=146:146 lang=go exported=true byte_range=4795:4839
   sig=sessionjournal.TailCondition
 EDGES
+  references=matrix/neo/internal/sessionjournal.TailCondition
+  ^references=matrix/neo/internal/sessionjournal.TailState.Abnormal,matrix/neo/internal/sessionjournal.inspectTail
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.TailCondition kind=type
   digest=b3:94ab5d0ab12d1943539f4767fe7c54dabf8159dd4c43ec76afabc2d2949bab34 file=neo/internal/sessionjournal/model.go range=143:143 lang=go exported=true byte_range=4759:4784
   sig=type TailCondition string
 EDGES
+  ^references=matrix/neo/internal/sessionjournal.TailClean,matrix/neo/internal/sessionjournal.TailPartialAssistant,matrix/neo/internal/sessionjournal.TailPendingToolCall,matrix/neo/internal/sessionjournal.TailState
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.TailPartialAssistant kind=const
   digest=b3:4c19790c02010dfeb031fbee4523ffa558f54a46174df5911d909b9d5262a661 file=neo/internal/sessionjournal/model.go range=148:148 lang=go exported=true byte_range=4899:4955
   sig=sessionjournal.TailCondition
 EDGES
+  references=matrix/neo/internal/sessionjournal.TailCondition
+  ^references=matrix/neo/internal/sessionjournal.inspectTail
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.TailPendingToolCall kind=const
   digest=b3:a2796a417a3bbc01195229f344c75e9dbd77ef5caed842ab2fbeb9560f608fe5 file=neo/internal/sessionjournal/model.go range=147:147 lang=go exported=true byte_range=4841:4897
   sig=sessionjournal.TailCondition
 EDGES
+  references=matrix/neo/internal/sessionjournal.TailCondition
+  ^references=matrix/neo/internal/sessionjournal.inspectTail
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.TailState kind=type
@@ -918,6 +1043,8 @@ NODE id=matrix/neo/internal/sessionjournal.TailState kind=type
   sig=type TailState struct {\n	Condition	TailCondition\n	Event		Event\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.TailState#Condition,matrix/neo/internal/sessionjournal.TailState#Event,matrix/neo/internal/sessionjournal.TailState.Abnormal
+  references=matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.TailCondition
+  ^references=matrix/neo/internal/sessionjournal.Store.Tail,matrix/neo/internal/sessionjournal.Store.tailLocked,matrix/neo/internal/sessionjournal.TailState.Abnormal,matrix/neo/internal/sessionjournal.inspectTail
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.TailState#Condition kind=field
@@ -936,7 +1063,10 @@ NODE id=matrix/neo/internal/sessionjournal.TailState.Abnormal kind=method
   digest=b3:fa81bbebe541194415abd8a986de76e512ae21a784a003db673aea778c846159 file=neo/internal/sessionjournal/model.go range=156:156 lang=go exported=true byte_range=5028:5106
   sig=func (state TailState) Abnormal() bool
 EDGES
+  references=matrix/neo/internal/sessionjournal.TailClean,matrix/neo/internal/sessionjournal.TailState,matrix/neo/internal/sessionjournal.state
   ^contains=matrix/neo/internal/sessionjournal.TailState
+  ^calls=matrix/neo/internal/sessionjournal.Store.FinalizeTail
+  ^references=matrix/neo/internal/sessionjournal.Store.FinalizeTail
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.ToolCall kind=type
@@ -944,6 +1074,7 @@ NODE id=matrix/neo/internal/sessionjournal.ToolCall kind=type
   sig=type ToolCall struct {\n	CallID		string	`json:"call_id"`\n	Type		string	`json:"type,omitempty"`\n	Name		string	`json:"name"`\n	Arguments	[]byte	`json:"arguments,omitempty"`\n	StateChanging	bool	`json:"state_changing,omitempty"`\n	IdempotencyKey	string	`json:"idempotency_key,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.ToolCall#Arguments,matrix/neo/internal/sessionjournal.ToolCall#CallID,matrix/neo/internal/sessionjournal.ToolCall#IdempotencyKey,matrix/neo/internal/sessionjournal.ToolCall#Name,matrix/neo/internal/sessionjournal.ToolCall#StateChanging,matrix/neo/internal/sessionjournal.ToolCall#Type
+  ^references=matrix/neo/internal/agent.Agent.journalAssistant,matrix/neo/internal/agent.Agent.journalToolCallPayload,matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.Message,matrix/neo/internal/sessionjournal.ProtocolMessage,matrix/neo/internal/sessionjournal.Store.Replay,matrix/neo/internal/sessionjournal.cloneToolCall,matrix/neo/internal/sessionjournal.cloneToolCalls,matrix/neo/internal/sessionjournal.validateToolCall
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.ToolCall#Arguments kind=field
@@ -987,6 +1118,7 @@ NODE id=matrix/neo/internal/sessionjournal.ToolResult kind=type
   sig=type ToolResult struct {\n	CallID			string	`json:"call_id"`\n	Name			string	`json:"name"`\n	Result			[]byte	`json:"result,omitempty"`\n	IsError			bool	`json:"is_error,omitempty"`\n	FailureClass		string	`json:"failure_class,omitempty"`\n	ProviderMetadata	[]byte	`json:"provider_metadata,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.ToolResult#CallID,matrix/neo/internal/sessionjournal.ToolResult#FailureClass,matrix/neo/internal/sessionjournal.ToolResult#IsError,matrix/neo/internal/sessionjournal.ToolResult#Name,matrix/neo/internal/sessionjournal.ToolResult#ProviderMetadata,matrix/neo/internal/sessionjournal.ToolResult#Result
+  ^references=matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/agent.Agent.journalToolResult,matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.validateToolResult
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.ToolResult#CallID kind=field
@@ -1030,6 +1162,7 @@ NODE id=matrix/neo/internal/sessionjournal.UncertainEffect kind=type
   sig=type UncertainEffect struct {\n	CallID		string	`json:"call_id"`\n	IdempotencyKey	string	`json:"idempotency_key,omitempty"`\n	ToolName	string	`json:"tool_name"`\n	Status		string	`json:"status"`\n	Evidence	[]byte	`json:"evidence,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/sessionjournal.UncertainEffect#CallID,matrix/neo/internal/sessionjournal.UncertainEffect#Evidence,matrix/neo/internal/sessionjournal.UncertainEffect#IdempotencyKey,matrix/neo/internal/sessionjournal.UncertainEffect#Status,matrix/neo/internal/sessionjournal.UncertainEffect#ToolName
+  ^references=matrix/neo/internal/agent.Agent.journalUncertainEffect,matrix/neo/internal/sessionjournal.Event
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.UncertainEffect#CallID kind=field
@@ -1066,96 +1199,143 @@ NODE id=matrix/neo/internal/sessionjournal.appendUniqueRecent kind=func
   digest=b3:671927912f192af7a6d3b346c659524c33c3ec74bc5601523aaaf7cc22b776b9 file=neo/internal/sessionjournal/checkpoint.go range=147:167 lang=go exported=false byte_range=5938:6490
   sig=func appendUniqueRecent(values []string, value string) []string
 EDGES
+  references=matrix/neo/internal/sessionjournal.existing,matrix/neo/internal/sessionjournal.index,matrix/neo/internal/sessionjournal.maxCheckpointEntries,matrix/neo/internal/sessionjournal.value,matrix/neo/internal/sessionjournal.values
+  ^calls=matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint,matrix/neo/internal/sessionjournal.classifyCheckpointStatement
+  ^references=matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint,matrix/neo/internal/sessionjournal.classifyCheckpointStatement
   ^defines=matrix/neo/internal/sessionjournal/checkpoint.go
 
 NODE id=matrix/neo/internal/sessionjournal.checkpointSection kind=func
   digest=b3:66ccbed458cde046ea787364c8f3f1de32f84b04b280bf54e47aea51592202d2 file=neo/internal/sessionjournal/checkpoint.go range=88:99 lang=go exported=false byte_range=3709:4001
   sig=func checkpointSection(builder *strings.Builder, name string, values []string)
 EDGES
+  references=matrix/neo/internal/sessionjournal.builder,matrix/neo/internal/sessionjournal.name,matrix/neo/internal/sessionjournal.value,matrix/neo/internal/sessionjournal.values
+  ^calls=matrix/neo/internal/sessionjournal.SemanticCheckpoint.Render
+  ^references=matrix/neo/internal/sessionjournal.SemanticCheckpoint.Render
   ^defines=matrix/neo/internal/sessionjournal/checkpoint.go
 
 NODE id=matrix/neo/internal/sessionjournal.checkpointStatements kind=func
   digest=b3:d161c7706ce76a127a0f7c553325f8c420d7b65c3fc6c4b7cd725d45dda3656b file=neo/internal/sessionjournal/checkpoint.go range=101:111 lang=go exported=false byte_range=4003:4350
   sig=func checkpointStatements(content string) []string
 EDGES
+  references=matrix/neo/internal/sessionjournal.content,matrix/neo/internal/sessionjournal.line,matrix/neo/internal/sessionjournal.statements
+  ^calls=matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint
+  ^references=matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint
   ^defines=matrix/neo/internal/sessionjournal/checkpoint.go
 
 NODE id=matrix/neo/internal/sessionjournal.classifyCheckpointStatement kind=func
   digest=b3:83e455a6cf8810722de9413d1ddbc50b416eccfe426e2b28870f57076e081b41 file=neo/internal/sessionjournal/checkpoint.go range=113:136 lang=go exported=false byte_range=4352:5767
   sig=func classifyCheckpointStatement(checkpoint *SemanticCheckpoint, statement string)
 EDGES
+  calls=matrix/neo/internal/sessionjournal.appendUniqueRecent,matrix/neo/internal/sessionjournal.containsAny
+  references=matrix/neo/internal/sessionjournal.SemanticCheckpoint,matrix/neo/internal/sessionjournal.appendUniqueRecent,matrix/neo/internal/sessionjournal.checkpoint,matrix/neo/internal/sessionjournal.containsAny,matrix/neo/internal/sessionjournal.lower,matrix/neo/internal/sessionjournal.statement
+  ^calls=matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint
+  ^references=matrix/neo/internal/sessionjournal.BuildSemanticCheckpoint
   ^defines=matrix/neo/internal/sessionjournal/checkpoint.go
 
 NODE id=matrix/neo/internal/sessionjournal.cloneToolCall kind=func
   digest=b3:a7a0424b1b91e55b7db21909a5432aed2e77e82434bd9c031716e09f19f99629 file=neo/internal/sessionjournal/replay.go range=141:144 lang=go exported=false byte_range=4916:5032
   sig=func cloneToolCall(call ToolCall) ToolCall
 EDGES
+  references=matrix/neo/internal/sessionjournal.ToolCall,matrix/neo/internal/sessionjournal.call
+  ^calls=matrix/neo/internal/sessionjournal.Store.Replay,matrix/neo/internal/sessionjournal.cloneToolCalls
+  ^references=matrix/neo/internal/sessionjournal.Store.Replay,matrix/neo/internal/sessionjournal.cloneToolCalls
   ^defines=matrix/neo/internal/sessionjournal/replay.go
 
 NODE id=matrix/neo/internal/sessionjournal.cloneToolCalls kind=func
   digest=b3:06020c5feff368e61fe5010681fc6fa36508249179fc243009a7ad89a08f1550 file=neo/internal/sessionjournal/replay.go range=133:139 lang=go exported=false byte_range=4730:4914
   sig=func cloneToolCalls(calls []ToolCall) []ToolCall
 EDGES
+  calls=matrix/neo/internal/sessionjournal.cloneToolCall
+  references=matrix/neo/internal/sessionjournal.ToolCall,matrix/neo/internal/sessionjournal.calls,matrix/neo/internal/sessionjournal.cloneToolCall,matrix/neo/internal/sessionjournal.cloned,matrix/neo/internal/sessionjournal.index
+  ^calls=matrix/neo/internal/sessionjournal.Store.Replay
+  ^references=matrix/neo/internal/sessionjournal.Store.Replay
   ^defines=matrix/neo/internal/sessionjournal/replay.go
 
 NODE id=matrix/neo/internal/sessionjournal.containsAny kind=func
   digest=b3:bb091454b506e2e60686dca2ed7e90f94f6f7c9422156787752bebbd01dff0c7 file=neo/internal/sessionjournal/checkpoint.go range=138:145 lang=go exported=false byte_range=5769:5936
   sig=func containsAny(value string, needles ...string) bool
 EDGES
+  references=matrix/neo/internal/sessionjournal.needle,matrix/neo/internal/sessionjournal.needles,matrix/neo/internal/sessionjournal.value
+  ^calls=matrix/neo/internal/sessionjournal.classifyCheckpointStatement
+  ^references=matrix/neo/internal/sessionjournal.classifyCheckpointStatement
   ^defines=matrix/neo/internal/sessionjournal/checkpoint.go
 
 NODE id=matrix/neo/internal/sessionjournal.inspectTail kind=func
   digest=b3:a766da0da53adac8d8b56a845aa1965998c7cad7eccf6cbce345715c25ec8b61 file=neo/internal/sessionjournal/store.go range=296:338 lang=go exported=false byte_range=8565:9783
   sig=func inspectTail(events []Event) TailState
 EDGES
+  references=matrix/neo/internal/sessionjournal.Event,matrix/neo/internal/sessionjournal.KindAssistantMessage,matrix/neo/internal/sessionjournal.KindRecovery,matrix/neo/internal/sessionjournal.KindToolCall,matrix/neo/internal/sessionjournal.KindToolResult,matrix/neo/internal/sessionjournal.TailClean,matrix/neo/internal/sessionjournal.TailPartialAssistant,matrix/neo/internal/sessionjournal.TailPendingToolCall,matrix/neo/internal/sessionjournal.TailState,matrix/neo/internal/sessionjournal.event,matrix/neo/internal/sessionjournal.events,matrix/neo/internal/sessionjournal.finalized,matrix/neo/internal/sessionjournal.ok,matrix/neo/internal/sessionjournal.partial,matrix/neo/internal/sessionjournal.pending,matrix/neo/internal/sessionjournal.sequence,matrix/neo/internal/sessionjournal.state
+  ^calls=matrix/neo/internal/sessionjournal.Store.tailLocked
+  ^references=matrix/neo/internal/sessionjournal.Store.tailLocked
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.migrate kind=func
   digest=b3:470bf9e9411e7bfcf3ff9a04c197dc3dbdb43fee9190359fa58fce31ef05bcee file=neo/internal/sessionjournal/store.go range=102:126 lang=go exported=false byte_range=2451:3262
   sig=func migrate(ctx context.Context, db *sql.DB) error
 EDGES
+  references=matrix/neo/internal/sessionjournal.ctx,matrix/neo/internal/sessionjournal.db,matrix/neo/internal/sessionjournal.err,matrix/neo/internal/sessionjournal.statement,matrix/neo/internal/sessionjournal.statements
+  ^calls=matrix/neo/internal/sessionjournal.Open
+  ^references=matrix/neo/internal/sessionjournal.Open
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.schemaV1 kind=const
   digest=b3:0872feb5c62ed33acb94ad4e710b41270755d0bf9c7dfdaf801961aae736b5e9 file=neo/internal/sessionjournal/store.go range=26:26 lang=go exported=false byte_range=460:484
   sig=untyped string
 EDGES
+  ^references=matrix/neo/internal/sessionjournal.Store.ad
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.sqliteDSN kind=func
   digest=b3:b514b2f0ac3cd5258b31895b64b12405ba1f6802070f40c610f58820d741b1c6 file=neo/internal/sessionjournal/store.go range=84:100 lang=go exported=false byte_range=1956:2449
   sig=func sqliteDSN(path string) (string, error)
 EDGES
+  references=matrix/neo/internal/sessionjournal.absolute,matrix/neo/internal/sessionjournal.err,matrix/neo/internal/sessionjournal.parameters,matrix/neo/internal/sessionjournal.path,matrix/neo/internal/sessionjournal.pragma
+  ^calls=matrix/neo/internal/sessionjournal.Open
+  ^references=matrix/neo/internal/sessionjournal.Open
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.storeName kind=const
   digest=b3:ee651804aeecad9d4b4a9eb6bd0264aead1805cdbb3a164009215d8bf6fafa11 file=neo/internal/sessionjournal/store.go range=25:25 lang=go exported=false byte_range=423:458
   sig=untyped string
 EDGES
+  ^references=matrix/neo/internal/sessionjournal.Store.ad
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal.validateMessage kind=func
   digest=b3:7fb775d7450de3bf1a29749885b7c6287306213cb725b05ec7fbfb93d60097dd file=neo/internal/sessionjournal/model.go range=230:240 lang=go exported=false byte_range=8075:8387
   sig=func validateMessage(message *Message, role string) error
 EDGES
+  calls=matrix/neo/internal/sessionjournal.validateToolCall
+  references=matrix/neo/internal/sessionjournal.Message,matrix/neo/internal/sessionjournal.err,matrix/neo/internal/sessionjournal.index,matrix/neo/internal/sessionjournal.message,matrix/neo/internal/sessionjournal.role,matrix/neo/internal/sessionjournal.validateToolCall
+  ^calls=matrix/neo/internal/sessionjournal.Event.Validate
+  ^references=matrix/neo/internal/sessionjournal.Event.Validate
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.validateToolCall kind=func
   digest=b3:d49d497c20d6c998062c2e8ef8020b1297a3097f10a1cd8b7f652b380b1a066d file=neo/internal/sessionjournal/model.go range=242:247 lang=go exported=false byte_range=8389:8605
   sig=func validateToolCall(call *ToolCall) error
 EDGES
+  references=matrix/neo/internal/sessionjournal.ToolCall,matrix/neo/internal/sessionjournal.call
+  ^calls=matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.validateMessage
+  ^references=matrix/neo/internal/sessionjournal.Event.Validate,matrix/neo/internal/sessionjournal.validateMessage
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.validateToolResult kind=func
   digest=b3:a04edf11d454994aaaaf5a8de5d469b33b682e310a0598b0c4d89f893b8d6c21 file=neo/internal/sessionjournal/model.go range=249:254 lang=go exported=false byte_range=8607:8842
   sig=func validateToolResult(result *ToolResult) error
 EDGES
+  references=matrix/neo/internal/sessionjournal.ToolResult,matrix/neo/internal/sessionjournal.result
+  ^calls=matrix/neo/internal/sessionjournal.Event.Validate
+  ^references=matrix/neo/internal/sessionjournal.Event.Validate
   ^defines=matrix/neo/internal/sessionjournal/model.go
 
 NODE id=matrix/neo/internal/sessionjournal.zero kind=func
   digest=b3:61cc148fa5527918417fc4e4ee0e970172167fe155bdb1573e16e25a836b24cd file=neo/internal/sessionjournal/store.go range=388:392 lang=go exported=false byte_range=11213:11287
   sig=func zero(data []byte)
 EDGES
+  references=matrix/neo/internal/sessionjournal.data,matrix/neo/internal/sessionjournal.index
+  ^calls=matrix/neo/internal/sessionjournal.Store.appendLocked,matrix/neo/internal/sessionjournal.Store.openEvent,matrix/neo/internal/sessionjournal.Store.readLocked
+  ^references=matrix/neo/internal/sessionjournal.Store.appendLocked,matrix/neo/internal/sessionjournal.Store.openEvent,matrix/neo/internal/sessionjournal.Store.readLocked
   ^defines=matrix/neo/internal/sessionjournal/store.go
 
 NODE id=matrix/neo/internal/sessionjournal/checkpoint.go kind=file

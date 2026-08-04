@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/construct/internal/codegen kind=package
   digest=b3:25b3b2db77e126e296c5026096a3ed41aaf2242e0ab7505ef277dd5de4576dd3 file=construct/internal/codegen range=0:0 lang=go exported=true
 EDGES
   contains=matrix/construct/internal/codegen/codegen.go
+  imports=matrix/construct/schema,matrix/construct/schema/primitives
   ^contains=mod:matrix/construct
+  ^imports=matrix/construct/cmd/construct
 
 NODE id=matrix/construct/internal/codegen.DefaultOutPath kind=const
   digest=b3:efa49e816fa8af5301f432cb7ce4a29950577aafd3f23b54ea714761d4b58a22 file=construct/internal/codegen/codegen.go range=20:22 lang=go exported=true byte_range=666:863
   sig=untyped string
   doc=DefaultOutPath is where the generated TS lands, relative to the construct\nmodule root (the client repo is the sibling directory).
 EDGES
+  ^references=matrix/construct/cmd/construct.runCodegen
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.Generate kind=func
@@ -18,18 +21,28 @@ NODE id=matrix/construct/internal/codegen.Generate kind=func
   sig=func Generate() (string, error)
   doc=Generate produces the full TypeScript file as a deterministic byte-stable\nstring.
 EDGES
+  calls=matrix/construct/internal/codegen.emitEnum,matrix/construct/internal/codegen.emitStruct,matrix/construct/internal/codegen.enums,matrix/construct/internal/codegen.structs
+  references=matrix/construct/internal/codegen.b,matrix/construct/internal/codegen.e,matrix/construct/internal/codegen.emitEnum,matrix/construct/internal/codegen.emitStruct,matrix/construct/internal/codegen.enumNames,matrix/construct/internal/codegen.enums,matrix/construct/internal/codegen.err,matrix/construct/internal/codegen.header,matrix/construct/internal/codegen.s,matrix/construct/internal/codegen.structs,matrix/construct/internal/codegen.t
+  ^calls=matrix/construct/cmd/construct.runCodegen
+  ^references=matrix/construct/cmd/construct.runCodegen
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.askKindStrings kind=func
   digest=b3:c094ed7454187161e754ae6b5065c8eb4f04655ddcd68f9a4bf210eaa9f5d150 file=construct/internal/codegen/codegen.go range=289:295 lang=go exported=false byte_range=8646:8795
   sig=func askKindStrings(in []primitives.AskKind) []string
 EDGES
+  references=matrix/construct/internal/codegen.i,matrix/construct/internal/codegen.in,matrix/construct/internal/codegen.out,matrix/construct/internal/codegen.v,matrix/construct/schema/primitives.AskKind
+  ^calls=matrix/construct/internal/codegen.enums
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.chartKindStrings kind=func
   digest=b3:03566e20911bd377d3d7204dd9cec829068d763814d04be49bb8cd38901d2710 file=construct/internal/codegen/codegen.go range=305:311 lang=go exported=false byte_range=8960:9113
   sig=func chartKindStrings(in []primitives.ChartKind) []string
 EDGES
+  references=matrix/construct/internal/codegen.i,matrix/construct/internal/codegen.in,matrix/construct/internal/codegen.out,matrix/construct/internal/codegen.v,matrix/construct/schema/primitives.ChartKind
+  ^calls=matrix/construct/internal/codegen.enums
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.emitEnum kind=func
@@ -37,6 +50,9 @@ NODE id=matrix/construct/internal/codegen.emitEnum kind=func
   sig=func emitEnum(e enumDef) string
   doc=emitEnum renders one string-literal union, one value per line for stable,\nreadable output.
 EDGES
+  references=matrix/construct/internal/codegen.b,matrix/construct/internal/codegen.e,matrix/construct/internal/codegen.enumDef,matrix/construct/internal/codegen.v
+  ^calls=matrix/construct/internal/codegen.Generate
+  ^references=matrix/construct/internal/codegen.Generate
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.emitStruct kind=func
@@ -44,6 +60,10 @@ NODE id=matrix/construct/internal/codegen.emitStruct kind=func
   sig=func emitStruct(t reflect.Type, enumNames map[string]bool) (string, error)
   doc=emitStruct renders one Go struct as a TS interface.
 EDGES
+  calls=matrix/construct/internal/codegen.jsonField,matrix/construct/internal/codegen.tsType
+  references=matrix/construct/internal/codegen.b,matrix/construct/internal/codegen.enumNames,matrix/construct/internal/codegen.err,matrix/construct/internal/codegen.f,matrix/construct/internal/codegen.i,matrix/construct/internal/codegen.jsonField,matrix/construct/internal/codegen.name,matrix/construct/internal/codegen.optional,matrix/construct/internal/codegen.q,matrix/construct/internal/codegen.skip,matrix/construct/internal/codegen.t,matrix/construct/internal/codegen.ts,matrix/construct/internal/codegen.tsType
+  ^calls=matrix/construct/internal/codegen.Generate
+  ^references=matrix/construct/internal/codegen.Generate
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.enumDef kind=type
@@ -52,6 +72,7 @@ NODE id=matrix/construct/internal/codegen.enumDef kind=type
   doc=enumDef is a Go string-enum type rendered as a TS string-literal union.
 EDGES
   contains=matrix/construct/internal/codegen.enumDef#name,matrix/construct/internal/codegen.enumDef#values
+  ^references=matrix/construct/internal/codegen.emitEnum,matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.enumDef#name kind=field
@@ -71,12 +92,17 @@ NODE id=matrix/construct/internal/codegen.enums kind=func
   sig=func enums() []enumDef
   doc=enums lists every Construct enum, in deterministic emit order. Values are\nread from the Go consts so a rename is a compile error here (authoritative,\nnever drifts from the schema).
 EDGES
+  calls=matrix/construct/internal/codegen.askKindStrings,matrix/construct/internal/codegen.chartKindStrings,matrix/construct/internal/codegen.kindStrings,matrix/construct/internal/codegen.metricDisplayStrings,matrix/construct/internal/codegen.shapeStrings,matrix/construct/internal/codegen.stakesStrings,matrix/construct/internal/codegen.stepStatusStrings,matrix/construct/internal/codegen.temporalityStrings
+  references=matrix/construct/internal/codegen.askKindStrings,matrix/construct/internal/codegen.chartKindStrings,matrix/construct/internal/codegen.enumDef,matrix/construct/internal/codegen.kindStrings,matrix/construct/internal/codegen.metricDisplayStrings,matrix/construct/internal/codegen.shapeStrings,matrix/construct/internal/codegen.stakesStrings,matrix/construct/internal/codegen.stepStatusStrings,matrix/construct/internal/codegen.temporalityStrings,matrix/construct/schema.Kinds,matrix/construct/schema.StakesValues,matrix/construct/schema.TemporalityValues,matrix/construct/schema/primitives.AffordanceAsk,matrix/construct/schema/primitives.AffordanceCopy,matrix/construct/schema/primitives.AffordanceLink,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ChartKindValues,matrix/construct/schema/primitives.MediaAudio,matrix/construct/schema/primitives.MediaChart,matrix/construct/schema/primitives.MediaImage,matrix/construct/schema/primitives.MediaPage,matrix/construct/schema/primitives.MediaVideo,matrix/construct/schema/primitives.MetricDisplayValues,matrix/construct/schema/primitives.NarrationAnswer,matrix/construct/schema/primitives.NarrationIntent,matrix/construct/schema/primitives.NarrationThinking,matrix/construct/schema/primitives.ShapeValues,matrix/construct/schema/primitives.StepStatusValues,matrix/construct/schema/primitives.TrendDown,matrix/construct/schema/primitives.TrendFlat,matrix/construct/schema/primitives.TrendUp
+  ^calls=matrix/construct/internal/codegen.Generate
+  ^references=matrix/construct/internal/codegen.Generate
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.header kind=const
   digest=b3:16987ca6658cb79e5a83d2d86221fd26b1f476c9cc756fb2f42848042d7138a4 file=construct/internal/codegen/codegen.go range=103:111 lang=go exported=false byte_range=3757:4254
   sig=untyped string
 EDGES
+  ^references=matrix/construct/internal/codegen.Generate
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.jsonField kind=func
@@ -84,36 +110,54 @@ NODE id=matrix/construct/internal/codegen.jsonField kind=func
   sig=func jsonField(f reflect.StructField) (name string, optional, skip bool)
   doc=jsonField extracts the JSON name, optionality, and skip flag from a struct\nfield. A field is optional when it has `omitempty` or is a pointer.
 EDGES
+  references=matrix/construct/internal/codegen.f,matrix/construct/internal/codegen.name,matrix/construct/internal/codegen.optional,matrix/construct/internal/codegen.p,matrix/construct/internal/codegen.parts,matrix/construct/internal/codegen.tag
+  ^calls=matrix/construct/internal/codegen.emitStruct
+  ^references=matrix/construct/internal/codegen.emitStruct
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.kindStrings kind=func
   digest=b3:cf5c85b65ae4509ff8eb056563fdfe14f87e80218c1d8719b8b9cb725bc755a5 file=construct/internal/codegen/codegen.go range=249:255 lang=go exported=false byte_range=7901:8040
   sig=func kindStrings(in []schema.Kind) []string
 EDGES
+  references=matrix/construct/internal/codegen.i,matrix/construct/internal/codegen.in,matrix/construct/internal/codegen.out,matrix/construct/internal/codegen.v,matrix/construct/schema.Kind
+  ^calls=matrix/construct/internal/codegen.enums
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.metricDisplayStrings kind=func
   digest=b3:d27900487ff9103ab7a014f0de677a047195347f051ce4cfe57bb7f59856b597 file=construct/internal/codegen/codegen.go range=297:303 lang=go exported=false byte_range=8797:8958
   sig=func metricDisplayStrings(in []primitives.MetricDisplay) []string
 EDGES
+  references=matrix/construct/internal/codegen.i,matrix/construct/internal/codegen.in,matrix/construct/internal/codegen.out,matrix/construct/internal/codegen.v,matrix/construct/schema/primitives.MetricDisplay
+  ^calls=matrix/construct/internal/codegen.enums
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.shapeStrings kind=func
   digest=b3:f8474c6f3a4f65c81bc170b52c39f8bd76132eedb29fd08dd8f28a4caec9fb34 file=construct/internal/codegen/codegen.go range=273:279 lang=go exported=false byte_range=8342:8487
   sig=func shapeStrings(in []primitives.Shape) []string
 EDGES
+  references=matrix/construct/internal/codegen.i,matrix/construct/internal/codegen.in,matrix/construct/internal/codegen.out,matrix/construct/internal/codegen.v,matrix/construct/schema/primitives.Shape
+  ^calls=matrix/construct/internal/codegen.enums
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.stakesStrings kind=func
   digest=b3:cd7315ee31d3f31cb6b920c25d2e425636ec63f758b6b4a7e7fbe8d64338536d file=construct/internal/codegen/codegen.go range=257:263 lang=go exported=false byte_range=8042:8185
   sig=func stakesStrings(in []schema.Stakes) []string
 EDGES
+  references=matrix/construct/internal/codegen.i,matrix/construct/internal/codegen.in,matrix/construct/internal/codegen.out,matrix/construct/internal/codegen.v,matrix/construct/schema.Stakes
+  ^calls=matrix/construct/internal/codegen.enums
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.stepStatusStrings kind=func
   digest=b3:c65d9491c414ef73e6027775c4731a7139d62f9b781877cd0e3ad27b5ec12680 file=construct/internal/codegen/codegen.go range=281:287 lang=go exported=false byte_range=8489:8644
   sig=func stepStatusStrings(in []primitives.StepStatus) []string
 EDGES
+  references=matrix/construct/internal/codegen.i,matrix/construct/internal/codegen.in,matrix/construct/internal/codegen.out,matrix/construct/internal/codegen.v,matrix/construct/schema/primitives.StepStatus
+  ^calls=matrix/construct/internal/codegen.enums
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.structs kind=func
@@ -121,12 +165,18 @@ NODE id=matrix/construct/internal/codegen.structs kind=func
   sig=func structs() []reflect.Type
   doc=structs lists every Construct struct, in dependency-first emit order (a type\nis emitted before the types that reference it). Surface is last.
 EDGES
+  references=matrix/construct/schema.Attributes,matrix/construct/schema.Cost,matrix/construct/schema.Frame,matrix/construct/schema.StateResponse,matrix/construct/schema.Surface,matrix/construct/schema/primitives.Affordance,matrix/construct/schema/primitives.Ask,matrix/construct/schema/primitives.AskOption,matrix/construct/schema/primitives.AskResponse,matrix/construct/schema/primitives.Canvas,matrix/construct/schema/primitives.CanvasMedia,matrix/construct/schema/primitives.CanvasRegion,matrix/construct/schema/primitives.Chart,matrix/construct/schema/primitives.ChartPoint,matrix/construct/schema/primitives.ChartSeries,matrix/construct/schema/primitives.Entity,matrix/construct/schema/primitives.EntityField,matrix/construct/schema/primitives.Metric,matrix/construct/schema/primitives.MetricThreshold,matrix/construct/schema/primitives.Narration,matrix/construct/schema/primitives.Stream,matrix/construct/schema/primitives.StreamChunk,matrix/construct/schema/primitives.Structure,matrix/construct/schema/primitives.StructureNode,matrix/construct/schema/primitives.Timeline,matrix/construct/schema/primitives.TimelineStep
+  ^calls=matrix/construct/internal/codegen.Generate
+  ^references=matrix/construct/internal/codegen.Generate
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.temporalityStrings kind=func
   digest=b3:7056edc237d25af4e82a6c127b9b8d43466b0507babbbaf9ec3a685772f71985 file=construct/internal/codegen/codegen.go range=265:271 lang=go exported=false byte_range=8187:8340
   sig=func temporalityStrings(in []schema.Temporality) []string
 EDGES
+  references=matrix/construct/internal/codegen.i,matrix/construct/internal/codegen.in,matrix/construct/internal/codegen.out,matrix/construct/internal/codegen.v,matrix/construct/schema.Temporality
+  ^calls=matrix/construct/internal/codegen.enums
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen.tsType kind=func
@@ -134,6 +184,9 @@ NODE id=matrix/construct/internal/codegen.tsType kind=func
   sig=func tsType(t reflect.Type, enumNames map[string]bool) (string, error)
   doc=tsType maps a Go type to its TypeScript representation.
 EDGES
+  references=matrix/construct/internal/codegen.elem,matrix/construct/internal/codegen.enumNames,matrix/construct/internal/codegen.err,matrix/construct/internal/codegen.t
+  ^calls=matrix/construct/internal/codegen.emitStruct
+  ^references=matrix/construct/internal/codegen.emitStruct
   ^defines=matrix/construct/internal/codegen/codegen.go
 
 NODE id=matrix/construct/internal/codegen/codegen.go kind=file

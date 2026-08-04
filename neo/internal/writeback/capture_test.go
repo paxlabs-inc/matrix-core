@@ -26,9 +26,9 @@ import (
 //
 // These tests exercise the REAL consolidator extraction path
 // (Consolidator.process via ConsolidateSync → parse → fan-out →
-// pager.RememberOpportunity) against a REAL cortex store (t.TempDir() + the
+// pager.RememberOpportunity) against a REAL Neocortex store (t.TempDir() + the
 // real hash embedder, opened by memory.Open). NOTHING in the code under test
-// is faked: the consolidator, the pager, and cortex are all real types running
+// is faked: the consolidator, the pager, and Neocortex are all real types running
 // their real logic. The ONLY controlled test double is the external LLM HTTP
 // endpoint — a real llm.Client is pointed at an httptest server that returns
 // the strict-JSON extract payload over the same OpenAI SSE wire shape the
@@ -145,15 +145,15 @@ func newExtractClient(t *testing.T, srv *httptest.Server) *llm.Client {
 	return client
 }
 
-// newCaptureHarness wires the REAL consolidator to a REAL cortex-backed pager
+// newCaptureHarness wires the REAL consolidator to a REAL Neocortex-backed pager
 // under a fresh temp dir. The extraction client is the httptest-driven real
 // client. config.Default() leaves AutomatrixEnabled=false (opt-in nominally
 // OFF) and AutomatrixMinConfidence=0.6 (the capture floor).
 func newCaptureHarness(t *testing.T, client *llm.Client) (*Consolidator, *memory.Pager, config.Config) {
 	t.Helper()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-capture-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-capture-test"
 	p, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)
@@ -167,7 +167,7 @@ func newCaptureHarness(t *testing.T, client *llm.Client) (*Consolidator, *memory
 }
 
 // TestCapture_ImpliedNeedYieldsRealOpportunity: an implied-need transcript run
-// through the real consolidator extraction writes exactly one real cortex
+// through the real consolidator extraction writes exactly one real Neocortex
 // Opportunity record, grounded and eligible-autonomous. (req.1.1)
 func TestCapture_ImpliedNeedYieldsRealOpportunity(t *testing.T) {
 	srv := newExtractServer(t)
@@ -251,7 +251,7 @@ func TestCapture_DirectRequestNotCaptured(t *testing.T) {
 }
 
 // TestCapture_RepeatMentionDeduped: the same implied need mentioned across two
-// turns dedups to a single cortex record (req.2.3) — driven entirely through
+// turns dedups to a single Neocortex record (req.2.3) — driven entirely through
 // the real RememberOpportunity normalize+semantic-similarity path.
 func TestCapture_RepeatMentionDeduped(t *testing.T) {
 	srv := newExtractServer(t)

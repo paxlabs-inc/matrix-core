@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/projectbrain kind=package
   digest=b3:e6974cfbc0fa9a84b1bbcd111b947f0feadda683b55bc1645f06f2054a13fe47 file=workforce/internal/projectbrain range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/projectbrain/codegraph.go,matrix/workforce/internal/projectbrain/doc.go,matrix/workforce/internal/projectbrain/store.go,matrix/workforce/internal/projectbrain/types.go
+  imports=matrix/vault,matrix/workforce/internal/contracts
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/actorstate,matrix/workforce/internal/companyruntime,matrix/workforce/internal/controlapi,matrix/workforce/internal/developer,matrix/workforce/internal/productcapability,matrix/workforce/internal/productexecution,matrix/workforce/internal/wakeruntime
 
 NODE id=matrix/workforce/internal/projectbrain.AffectedTests kind=type
   digest=b3:c7c19f391b1cafa8373fb931c452be1ca60f5675ce783b6e0669d179f9b35b37 file=workforce/internal/projectbrain/codegraph.go range=94:99 lang=go exported=true byte_range=2285:2577
@@ -12,6 +14,7 @@ NODE id=matrix/workforce/internal/projectbrain.AffectedTests kind=type
   doc=AffectedTests is the structured test projection for a set of changed files.
 EDGES
   contains=matrix/workforce/internal/projectbrain.AffectedTests#AffectedTests,matrix/workforce/internal/projectbrain.AffectedTests#ChangedFiles,matrix/workforce/internal/projectbrain.AffectedTests#TotalDependentsTraversed
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.AffectedTests#AffectedTests kind=field
@@ -37,6 +40,8 @@ NODE id=matrix/workforce/internal/projectbrain.CapabilityChangeScope kind=const
   sig=projectbrain.CapabilityOperation
   doc=CapabilityChangeScope authorizes one Developer change-scope acquisition.\nIt does not authorize a Project Brain record read or write by itself.
 EDGES
+  references=matrix/workforce/internal/projectbrain.CapabilityOperation
+  ^references=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.ScopeRequest.Validate,matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/wakeruntime.Runner.bindRuntimeGrant
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.CapabilityGrant kind=type
@@ -46,6 +51,8 @@ NODE id=matrix/workforce/internal/projectbrain.CapabilityGrant kind=type
 EDGES
   contains=matrix/workforce/internal/projectbrain.CapabilityGrant#AfterRecordID,matrix/workforce/internal/projectbrain.CapabilityGrant#Author,matrix/workforce/internal/projectbrain.CapabilityGrant#ExpiresAt,matrix/workforce/internal/projectbrain.CapabilityGrant#Filter,matrix/workforce/internal/projectbrain.CapabilityGrant#ID,matrix/workforce/internal/projectbrain.CapabilityGrant#IssuedAt,matrix/workforce/internal/projectbrain.CapabilityGrant#MaxRecords,matrix/workforce/internal/projectbrain.CapabilityGrant#Operation,matrix/workforce/internal/projectbrain.CapabilityGrant#OrganizationID,matrix/workforce/internal/projectbrain.CapabilityGrant#ProjectID,matrix/workforce/internal/projectbrain.CapabilityGrant#Purpose,matrix/workforce/internal/projectbrain.CapabilityGrant#RecordID,matrix/workforce/internal/projectbrain.CapabilityGrant#RequesterBindingID,matrix/workforce/internal/projectbrain.CapabilityGrant#RequesterBindingVersion,matrix/workforce/internal/projectbrain.CapabilityGrant#RequesterSeatDID,matrix/workforce/internal/projectbrain.CapabilityGrant#RequesterSeatID,matrix/workforce/internal/projectbrain.CapabilityGrant#RequesterSeatVersion,matrix/workforce/internal/projectbrain.CapabilityGrant#SchemaVersion,matrix/workforce/internal/projectbrain.CapabilityGrant#Signature,matrix/workforce/internal/projectbrain.CapabilityGrant#TenantID,matrix/workforce/internal/projectbrain.CapabilityGrant#Verifier,matrix/workforce/internal/projectbrain.CapabilityGrant#WorkspaceID,matrix/workforce/internal/projectbrain.CapabilityGrant#WorkspaceRoot,matrix/workforce/internal/projectbrain.CapabilityGrant.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.SeatBindingID,matrix/workforce/internal/contracts.SeatDID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/contracts.WorkspaceID,matrix/workforce/internal/projectbrain.CapabilityOperation,matrix/workforce/internal/projectbrain.RecordID,matrix/workforce/internal/projectbrain.SeatKeyBinding
+  ^references=matrix/workforce/internal/actorstate.Assembler.openProjectBrain,matrix/workforce/internal/actorstate.AssemblyRequest,matrix/workforce/internal/actorstate.ProjectBrainReader,matrix/workforce/internal/developer.OperationEnvelope,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.ScopeRequest,matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.SignCapabilityGrant,matrix/workforce/internal/projectbrain.Store.AuthorizeCapability,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View,matrix/workforce/internal/projectbrain.Store.auditDenial,matrix/workforce/internal/projectbrain.Store.auditedError,matrix/workforce/internal/projectbrain.Store.verifyGrant,matrix/workforce/internal/projectbrain.grantMatchesSeat,matrix/workforce/internal/projectbrain.grantSigningBytes,matrix/workforce/internal/projectbrain.grantSigningPayload,matrix/workforce/internal/wakeruntime.Runner.bindRuntimeGrant
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.CapabilityGrant#AfterRecordID kind=field
@@ -191,7 +198,11 @@ NODE id=matrix/workforce/internal/projectbrain.CapabilityGrant.Validate kind=met
   sig=func (grant CapabilityGrant) Validate() error
   doc=Validate enforces exact read/write authority with no caller-mintable widening.
 EDGES
+  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/projectbrain.SeatKeyBinding.validate,matrix/workforce/internal/projectbrain.validateFilter,matrix/workforce/internal/projectbrain.validateToken
+  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/projectbrain.CapabilityChangeScope,matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.CapabilityRead,matrix/workforce/internal/projectbrain.CapabilityWrite,matrix/workforce/internal/projectbrain.SeatKeyBinding.validate,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.grant,matrix/workforce/internal/projectbrain.name,matrix/workforce/internal/projectbrain.validateFilter,matrix/workforce/internal/projectbrain.validateToken,matrix/workforce/internal/projectbrain.value
   ^contains=matrix/workforce/internal/projectbrain.CapabilityGrant
+  ^calls=matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.ScopeRequest.Validate,matrix/workforce/internal/projectbrain.Store.verifyGrant
+  ^references=matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.ScopeRequest.Validate,matrix/workforce/internal/projectbrain.Store.verifyGrant,matrix/workforce/internal/projectbrain.grantSigningPayload.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.CapabilityOperation kind=type
@@ -199,18 +210,23 @@ NODE id=matrix/workforce/internal/projectbrain.CapabilityOperation kind=type
   sig=type CapabilityOperation string
   doc=CapabilityOperation is the closed Project Brain authorization set.
 EDGES
+  ^references=matrix/workforce/internal/projectbrain.CapabilityChangeScope,matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.CapabilityRead,matrix/workforce/internal/projectbrain.CapabilityWrite,matrix/workforce/internal/projectbrain.Store.AuthorizeCapability,matrix/workforce/internal/projectbrain.Store.auditDenial,matrix/workforce/internal/projectbrain.Store.auditedError,matrix/workforce/internal/projectbrain.Store.verifyGrant
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.CapabilityRead kind=const
   digest=b3:ecf0266922693943b2f362edb28571f334a9f982e9e94a988be8fdb8f4cd0d23 file=workforce/internal/projectbrain/types.go range=453:453 lang=go exported=true byte_range=16305:16349
   sig=projectbrain.CapabilityOperation
 EDGES
+  references=matrix/workforce/internal/projectbrain.CapabilityOperation
+  ^references=matrix/workforce/internal/actorstate.Assembler.openProjectBrain,matrix/workforce/internal/developer.ScopeRequest.Validate,matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.Store.View
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.CapabilityWrite kind=const
   digest=b3:4ef0894165e71c17a8715104ccf8ea9d22a59822244c06e19945607fc3090dee file=workforce/internal/projectbrain/types.go range=454:454 lang=go exported=true byte_range=16351:16396
   sig=projectbrain.CapabilityOperation
 EDGES
+  references=matrix/workforce/internal/projectbrain.CapabilityOperation
+  ^references=matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.Store.Commit
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.Claim kind=type
@@ -219,6 +235,8 @@ NODE id=matrix/workforce/internal/projectbrain.Claim kind=type
   doc=Claim is one bounded engineering assertion with direct evidence.
 EDGES
   contains=matrix/workforce/internal/projectbrain.Claim#Evidence,matrix/workforce/internal/projectbrain.Claim#Files,matrix/workforce/internal/projectbrain.Claim#Statement,matrix/workforce/internal/projectbrain.Claim.validate
+  references=matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/projectbrain.FileEvidence
+  ^references=matrix/workforce/internal/productcapability.NewProjectBrainProposal,matrix/workforce/internal/projectbrain.Claim.validate,matrix/workforce/internal/projectbrain.Content
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.Claim#Evidence kind=field
@@ -243,7 +261,11 @@ NODE id=matrix/workforce/internal/projectbrain.Claim.validate kind=method
   digest=b3:9a3a6857874d8fa8693d8faf5257b4a0e3c3f6bdc1e17aacc231896b27b058d6 file=workforce/internal/projectbrain/types.go range=102:123 lang=go exported=false byte_range=2640:3466
   sig=func (claim Claim) validate() error
 EDGES
+  calls=matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/projectbrain.FileEvidence.validate
+  references=matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/projectbrain.Claim,matrix/workforce/internal/projectbrain.FileEvidence.validate,matrix/workforce/internal/projectbrain.claim,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.index
   ^contains=matrix/workforce/internal/projectbrain.Claim
+  ^calls=matrix/workforce/internal/projectbrain.Content.validate
+  ^references=matrix/workforce/internal/projectbrain.Content.validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.CodeGraph kind=type
@@ -252,6 +274,7 @@ NODE id=matrix/workforce/internal/projectbrain.CodeGraph kind=type
   doc=CodeGraph reads the current persistent CodeGraph through its versioned CLI\nprocess boundary and always hashes source bytes directly.
 EDGES
   contains=matrix/workforce/internal/projectbrain.CodeGraph#environment,matrix/workforce/internal/projectbrain.CodeGraph#executable,matrix/workforce/internal/projectbrain.CodeGraph#executableDigest,matrix/workforce/internal/projectbrain.CodeGraph#now,matrix/workforce/internal/projectbrain.CodeGraph#resolved,matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles,matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected,matrix/workforce/internal/projectbrain.CodeGraph.exportGraph
+  ^references=matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.NewAuthority,matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles,matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected,matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.New,matrix/workforce/internal/projectbrain.NewCodeGraph,matrix/workforce/internal/projectbrain.Store
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.CodeGraph#environment kind=field
@@ -289,7 +312,11 @@ NODE id=matrix/workforce/internal/projectbrain.CodeGraph.Capture kind=method
   sig=func (graph *CodeGraph) Capture(\n	ctx context.Context,\n	workspaceRoot, filter string,\n) (GraphSnapshot, error)
   doc=Capture binds one CodeGraph generation to the actual current source files in scope.
 EDGES
+  calls=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/projectbrain.captureFiles,matrix/workforce/internal/projectbrain.digestGraphGeneration,matrix/workforce/internal/projectbrain.hashGraphFiles,matrix/workforce/internal/projectbrain.indexedFiles,matrix/workforce/internal/projectbrain.resolveWorkspaceRoot,matrix/workforce/internal/projectbrain.revalidateGraphFiles,matrix/workforce/internal/projectbrain.validateFilter
+  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/projectbrain.CodeGraph,matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.GraphSnapshot,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/projectbrain.captureFiles,matrix/workforce/internal/projectbrain.capturedAt,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.digestGraphGeneration,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.exportDigest,matrix/workforce/internal/projectbrain.exported,matrix/workforce/internal/projectbrain.files,matrix/workforce/internal/projectbrain.filter,matrix/workforce/internal/projectbrain.finalDigest,matrix/workforce/internal/projectbrain.finalExport,matrix/workforce/internal/projectbrain.finalIndexedAt,matrix/workforce/internal/projectbrain.generation,matrix/workforce/internal/projectbrain.graph,matrix/workforce/internal/projectbrain.graphDigest,matrix/workforce/internal/projectbrain.hashGraphFiles,matrix/workforce/internal/projectbrain.indexed,matrix/workforce/internal/projectbrain.indexedAt,matrix/workforce/internal/projectbrain.indexedFiles,matrix/workforce/internal/projectbrain.pending,matrix/workforce/internal/projectbrain.resolveWorkspaceRoot,matrix/workforce/internal/projectbrain.revalidateGraphFiles,matrix/workforce/internal/projectbrain.root,matrix/workforce/internal/projectbrain.rootDigest,matrix/workforce/internal/projectbrain.snapshot,matrix/workforce/internal/projectbrain.validateFilter,matrix/workforce/internal/projectbrain.workspaceRoot
   ^contains=matrix/workforce/internal/projectbrain.CodeGraph
+  ^calls=matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
+  ^references=matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles kind=method
@@ -297,7 +324,11 @@ NODE id=matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles kind=metho
   sig=func (graph *CodeGraph) CaptureFiles(\n	ctx context.Context,\n	workspaceRoot string,\n	paths []string,\n) (GraphSnapshot, error)
   doc=CaptureFiles binds one CodeGraph generation to an explicit bounded source set.
 EDGES
+  calls=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/projectbrain.captureExactFiles,matrix/workforce/internal/projectbrain.digestGraphGeneration,matrix/workforce/internal/projectbrain.exactSourcePaths,matrix/workforce/internal/projectbrain.hashGraphFiles,matrix/workforce/internal/projectbrain.indexedFiles,matrix/workforce/internal/projectbrain.resolveWorkspaceRoot,matrix/workforce/internal/projectbrain.revalidateExactGraphFiles
+  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/projectbrain.CodeGraph,matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.GraphSnapshot,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/projectbrain.captureExactFiles,matrix/workforce/internal/projectbrain.capturedAt,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.digestGraphGeneration,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.exactSourcePaths,matrix/workforce/internal/projectbrain.exportDigest,matrix/workforce/internal/projectbrain.exported,matrix/workforce/internal/projectbrain.files,matrix/workforce/internal/projectbrain.finalDigest,matrix/workforce/internal/projectbrain.finalExport,matrix/workforce/internal/projectbrain.finalIndexedAt,matrix/workforce/internal/projectbrain.generation,matrix/workforce/internal/projectbrain.graph,matrix/workforce/internal/projectbrain.graphDigest,matrix/workforce/internal/projectbrain.hashGraphFiles,matrix/workforce/internal/projectbrain.indexed,matrix/workforce/internal/projectbrain.indexedAt,matrix/workforce/internal/projectbrain.indexedFiles,matrix/workforce/internal/projectbrain.paths,matrix/workforce/internal/projectbrain.pending,matrix/workforce/internal/projectbrain.requested,matrix/workforce/internal/projectbrain.resolveWorkspaceRoot,matrix/workforce/internal/projectbrain.revalidateExactGraphFiles,matrix/workforce/internal/projectbrain.root,matrix/workforce/internal/projectbrain.rootDigest,matrix/workforce/internal/projectbrain.snapshot,matrix/workforce/internal/projectbrain.workspaceRoot
   ^contains=matrix/workforce/internal/projectbrain.CodeGraph
+  ^calls=matrix/workforce/internal/developer.Authority.resolve
+  ^references=matrix/workforce/internal/developer.Authority.resolve
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.CodeGraph.Impact kind=method
@@ -305,7 +336,11 @@ NODE id=matrix/workforce/internal/projectbrain.CodeGraph.Impact kind=method
   sig=func (graph *CodeGraph) Impact(\n	ctx context.Context,\n	workspaceRoot, symbol string,\n	depth uint32,\n) (ImpactResult, error)
   doc=Impact resolves a bounded live CodeGraph blast radius for one symbol.
 EDGES
+  calls=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.hashWorkspaceFile,matrix/workforce/internal/projectbrain.isImpactKind,matrix/workforce/internal/projectbrain.resolveWorkspaceRoot,matrix/workforce/internal/projectbrain.validateRelativePath
+  references=matrix/workforce/internal/projectbrain.CodeGraph,matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.ImpactNode,matrix/workforce/internal/projectbrain.ImpactResult,matrix/workforce/internal/projectbrain.affected,matrix/workforce/internal/projectbrain.caller,matrix/workforce/internal/projectbrain.candidate,matrix/workforce/internal/projectbrain.cgNode,matrix/workforce/internal/projectbrain.character,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.current,matrix/workforce/internal/projectbrain.depth,matrix/workforce/internal/projectbrain.edge,matrix/workforce/internal/projectbrain.edgeCount,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.exists,matrix/workforce/internal/projectbrain.exported,matrix/workforce/internal/projectbrain.graph,matrix/workforce/internal/projectbrain.hashWorkspaceFile,matrix/workforce/internal/projectbrain.id,matrix/workforce/internal/projectbrain.isImpactKind,matrix/workforce/internal/projectbrain.key,matrix/workforce/internal/projectbrain.left,matrix/workforce/internal/projectbrain.node,matrix/workforce/internal/projectbrain.nodeByID,matrix/workforce/internal/projectbrain.path,matrix/workforce/internal/projectbrain.queue,matrix/workforce/internal/projectbrain.resolveWorkspaceRoot,matrix/workforce/internal/projectbrain.reverse,matrix/workforce/internal/projectbrain.right,matrix/workforce/internal/projectbrain.root,matrix/workforce/internal/projectbrain.seed,matrix/workforce/internal/projectbrain.seeds,matrix/workforce/internal/projectbrain.seen,matrix/workforce/internal/projectbrain.symbol,matrix/workforce/internal/projectbrain.validateRelativePath,matrix/workforce/internal/projectbrain.visit,matrix/workforce/internal/projectbrain.visited,matrix/workforce/internal/projectbrain.workspaceRoot
   ^contains=matrix/workforce/internal/projectbrain.CodeGraph
+  ^calls=matrix/workforce/internal/developer.Authority.resolve
+  ^references=matrix/workforce/internal/developer.Authority.resolve
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected kind=method
@@ -313,14 +348,22 @@ NODE id=matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected kind=meth
   sig=func (graph *CodeGraph) TestsAffected(\n	ctx context.Context,\n	workspaceRoot string,\n	files []string,\n	depth uint32,\n) (AffectedTests, error)
   doc=TestsAffected resolves real tests reachable from the declared changed files.
 EDGES
+  calls=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.hashWorkspaceFile,matrix/workforce/internal/projectbrain.isTestPath,matrix/workforce/internal/projectbrain.resolveWorkspaceRoot,matrix/workforce/internal/projectbrain.testMatchesSourceStem,matrix/workforce/internal/projectbrain.validateRelativePath
+  references=matrix/workforce/internal/projectbrain.AffectedTests,matrix/workforce/internal/projectbrain.CodeGraph,matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.addAffectedSource,matrix/workforce/internal/projectbrain.adjacent,matrix/workforce/internal/projectbrain.affected,matrix/workforce/internal/projectbrain.affectedSet,matrix/workforce/internal/projectbrain.affectedSourceStems,matrix/workforce/internal/projectbrain.cgNode,matrix/workforce/internal/projectbrain.changed,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.currentDepth,matrix/workforce/internal/projectbrain.depth,matrix/workforce/internal/projectbrain.directories,matrix/workforce/internal/projectbrain.directory,matrix/workforce/internal/projectbrain.edge,matrix/workforce/internal/projectbrain.entries,matrix/workforce/internal/projectbrain.entry,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.exists,matrix/workforce/internal/projectbrain.exported,matrix/workforce/internal/projectbrain.file,matrix/workforce/internal/projectbrain.files,matrix/workforce/internal/projectbrain.graph,matrix/workforce/internal/projectbrain.hashWorkspaceFile,matrix/workforce/internal/projectbrain.id,matrix/workforce/internal/projectbrain.isTestPath,matrix/workforce/internal/projectbrain.next,matrix/workforce/internal/projectbrain.node,matrix/workforce/internal/projectbrain.nodeByID,matrix/workforce/internal/projectbrain.path,matrix/workforce/internal/projectbrain.queue,matrix/workforce/internal/projectbrain.relative,matrix/workforce/internal/projectbrain.requested,matrix/workforce/internal/projectbrain.requestedSet,matrix/workforce/internal/projectbrain.resolveWorkspaceRoot,matrix/workforce/internal/projectbrain.root,matrix/workforce/internal/projectbrain.selected,matrix/workforce/internal/projectbrain.sourceStem,matrix/workforce/internal/projectbrain.testMatchesSourceStem,matrix/workforce/internal/projectbrain.validateRelativePath,matrix/workforce/internal/projectbrain.visited,matrix/workforce/internal/projectbrain.workspaceRoot
   ^contains=matrix/workforce/internal/projectbrain.CodeGraph
+  ^calls=matrix/workforce/internal/developer.Authority.resolve
+  ^references=matrix/workforce/internal/developer.Authority.resolve
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph kind=method
   digest=b3:84e433fa2222ead4133255e240ce2c892988f310a4cfc3274885f32d0a0547c7 file=workforce/internal/projectbrain/codegraph.go range=637:727 lang=go exported=false byte_range=19975:23673
   sig=func (graph *CodeGraph) exportGraph(\n	ctx context.Context,\n	root string,\n) (cgExport, [sha256.Size]byte, time.Time, error)
 EDGES
+  calls=matrix/workforce/internal/projectbrain.codeGraphIndexedAt,matrix/workforce/internal/projectbrain.validateCodeGraphDatabase,matrix/workforce/internal/projectbrain.verifyCodeGraphExecutable
+  references=matrix/workforce/internal/projectbrain.CodeGraph,matrix/workforce/internal/projectbrain.boundaryContext,matrix/workforce/internal/projectbrain.boundedOutput,matrix/workforce/internal/projectbrain.cancel,matrix/workforce/internal/projectbrain.cgExport,matrix/workforce/internal/projectbrain.codeGraphBoundaryTimeout,matrix/workforce/internal/projectbrain.codeGraphIndexedAt,matrix/workforce/internal/projectbrain.command,matrix/workforce/internal/projectbrain.commandOutputLimit,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.database,matrix/workforce/internal/projectbrain.decoder,matrix/workforce/internal/projectbrain.digest,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.exportBytes,matrix/workforce/internal/projectbrain.exportFile,matrix/workforce/internal/projectbrain.exportPath,matrix/workforce/internal/projectbrain.graph,matrix/workforce/internal/projectbrain.indexedAt,matrix/workforce/internal/projectbrain.openedInfo,matrix/workforce/internal/projectbrain.pathErr,matrix/workforce/internal/projectbrain.pathInfo,matrix/workforce/internal/projectbrain.resolved,matrix/workforce/internal/projectbrain.root,matrix/workforce/internal/projectbrain.runErr,matrix/workforce/internal/projectbrain.statErr,matrix/workforce/internal/projectbrain.stderr,matrix/workforce/internal/projectbrain.stdout,matrix/workforce/internal/projectbrain.target,matrix/workforce/internal/projectbrain.validateCodeGraphDatabase,matrix/workforce/internal/projectbrain.verifyCodeGraphExecutable
   ^contains=matrix/workforce/internal/projectbrain.CodeGraph
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles,matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles,matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.Content kind=type
@@ -329,6 +372,8 @@ NODE id=matrix/workforce/internal/projectbrain.Content kind=type
   doc=Content is the complete typed body of an engineering record.
 EDGES
   contains=matrix/workforce/internal/projectbrain.Content#Artifacts,matrix/workforce/internal/projectbrain.Content#Claims,matrix/workforce/internal/projectbrain.Content#ExpiresAt,matrix/workforce/internal/projectbrain.Content#Summary,matrix/workforce/internal/projectbrain.Content.validate
+  references=matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/projectbrain.Claim
+  ^references=matrix/workforce/internal/productcapability.NewProjectBrainProposal,matrix/workforce/internal/projectbrain.Content.validate,matrix/workforce/internal/projectbrain.Proposal
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.Content#Artifacts kind=field
@@ -359,7 +404,11 @@ NODE id=matrix/workforce/internal/projectbrain.Content.validate kind=method
   digest=b3:30eda23cf668917ad9aedfb27cfc68e8d361326aa7d17043704b80cbde449ff6 file=workforce/internal/projectbrain/types.go range=133:157 lang=go exported=false byte_range=3769:4756
   sig=func (content Content) validate() error
 EDGES
+  calls=matrix/workforce/internal/contracts.ArtifactRef.Validate,matrix/workforce/internal/projectbrain.Claim.validate
+  references=matrix/workforce/internal/contracts.ArtifactRef.Validate,matrix/workforce/internal/projectbrain.Claim.validate,matrix/workforce/internal/projectbrain.Content,matrix/workforce/internal/projectbrain.content,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.index
   ^contains=matrix/workforce/internal/projectbrain.Content
+  ^calls=matrix/workforce/internal/projectbrain.Proposal.Validate
+  ^references=matrix/workforce/internal/projectbrain.Proposal.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.EngineeringRecord kind=type
@@ -369,6 +418,8 @@ NODE id=matrix/workforce/internal/projectbrain.EngineeringRecord kind=type
 EDGES
   contains=matrix/workforce/internal/projectbrain.EngineeringRecord#Proposal,matrix/workforce/internal/projectbrain.EngineeringRecord#Verification,matrix/workforce/internal/projectbrain.EngineeringRecord.ContentExpired,matrix/workforce/internal/projectbrain.EngineeringRecord.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.Verification
+  ^references=matrix/workforce/internal/developer.AuditPacket,matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.OperationEnvelope,matrix/workforce/internal/developer.coordinationSourceCurrent,matrix/workforce/internal/developer.recordsOfKind,matrix/workforce/internal/projectbrain.EngineeringRecord.ContentExpired,matrix/workforce/internal/projectbrain.EngineeringRecord.Validate,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View,matrix/workforce/internal/projectbrain.View,matrix/workforce/internal/projectbrain.recordMatchesSource,matrix/workforce/internal/projectbrain.sortRecords,matrix/workforce/internal/projectbrain.verifyRecordSignatures
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.EngineeringRecord#Proposal kind=field
@@ -388,7 +439,10 @@ NODE id=matrix/workforce/internal/projectbrain.EngineeringRecord.ContentExpired 
   sig=func (record EngineeringRecord) ContentExpired(now time.Time) bool
   doc=ContentExpired reports whether this record is outside its evidence validity window.
 EDGES
+  references=matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.now,matrix/workforce/internal/projectbrain.record
   ^contains=matrix/workforce/internal/projectbrain.EngineeringRecord
+  ^calls=matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/projectbrain.Store.View
+  ^references=matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/projectbrain.Store.View
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.EngineeringRecord.Validate kind=method
@@ -396,31 +450,39 @@ NODE id=matrix/workforce/internal/projectbrain.EngineeringRecord.Validate kind=m
   sig=func (record EngineeringRecord) Validate() error
   doc=Validate enforces exact proposal-verdict binding and independent authorship.
 EDGES
+  calls=matrix/workforce/internal/projectbrain.Proposal.Validate,matrix/workforce/internal/projectbrain.Verification.Validate,matrix/workforce/internal/projectbrain.proposalHash
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.Proposal.Validate,matrix/workforce/internal/projectbrain.Verification.Validate,matrix/workforce/internal/projectbrain.claim,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.evidence,matrix/workforce/internal/projectbrain.file,matrix/workforce/internal/projectbrain.found,matrix/workforce/internal/projectbrain.hash,matrix/workforce/internal/projectbrain.proposalHash,matrix/workforce/internal/projectbrain.record,matrix/workforce/internal/projectbrain.sourceFiles
   ^contains=matrix/workforce/internal/projectbrain.EngineeringRecord
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.View.Validate
+  ^references=matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.View.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.ErrConflict kind=var
   digest=b3:c83d455a6500f29f5cfc979309423d081df0e3d50958b66d4ab0b384931cf64a file=workforce/internal/projectbrain/types.go range=19:19 lang=go exported=true byte_range=212:276
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.validateChain
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.ErrIntegrity kind=var
   digest=b3:c5c8fdedb2a2e4ed07e90eacc21e98b0f34855632dd28df5373bba604b5358b1 file=workforce/internal/projectbrain/types.go range=22:22 lang=go exported=true byte_range=403:466
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.ErrNotFound kind=var
   digest=b3:1a3dadebe3d27f0e9419bc93a0313f47efefb1f4b62cf8dd8a7f5ffad7152c04 file=workforce/internal/projectbrain/types.go range=20:20 lang=go exported=true byte_range=278:340
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/projectbrain.validateChain
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.ErrUnauthorized kind=var
   digest=b3:c886bc401ef0c315cef64a1ee567206dc0ccdc80744bedf64d090c8aecc2c795 file=workforce/internal/projectbrain/types.go range=21:21 lang=go exported=true byte_range=342:401
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.verifyGrant,matrix/workforce/internal/projectbrain.denialReason
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.FileEvidence kind=type
@@ -429,6 +491,8 @@ NODE id=matrix/workforce/internal/projectbrain.FileEvidence kind=type
   doc=FileEvidence binds a claim to current source bytes.
 EDGES
   contains=matrix/workforce/internal/projectbrain.FileEvidence#EndLine,matrix/workforce/internal/projectbrain.FileEvidence#Hash,matrix/workforce/internal/projectbrain.FileEvidence#Path,matrix/workforce/internal/projectbrain.FileEvidence#StartLine,matrix/workforce/internal/projectbrain.FileEvidence.validate
+  references=matrix/workforce/internal/contracts.ContentHash
+  ^references=matrix/workforce/internal/projectbrain.Claim,matrix/workforce/internal/projectbrain.FileEvidence.validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.FileEvidence#EndLine kind=field
@@ -459,7 +523,11 @@ NODE id=matrix/workforce/internal/projectbrain.FileEvidence.validate kind=method
   digest=b3:fec53e5f9b3a8943e773f494b63344879188fb6146417918a4755e0a13e88a83 file=workforce/internal/projectbrain/types.go range=82:93 lang=go exported=false byte_range=2005:2390
   sig=func (evidence FileEvidence) validate() error
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/projectbrain.validateRelativePath
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/projectbrain.FileEvidence,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.evidence,matrix/workforce/internal/projectbrain.validateRelativePath
   ^contains=matrix/workforce/internal/projectbrain.FileEvidence
+  ^calls=matrix/workforce/internal/projectbrain.Claim.validate
+  ^references=matrix/workforce/internal/projectbrain.Claim.validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.GraphFile kind=type
@@ -468,6 +536,8 @@ NODE id=matrix/workforce/internal/projectbrain.GraphFile kind=type
   doc=GraphFile is current source evidence associated with one indexed file.
 EDGES
   contains=matrix/workforce/internal/projectbrain.GraphFile#Hash,matrix/workforce/internal/projectbrain.GraphFile#Indexed,matrix/workforce/internal/projectbrain.GraphFile#Language,matrix/workforce/internal/projectbrain.GraphFile#NodeCount,matrix/workforce/internal/projectbrain.GraphFile#Path,matrix/workforce/internal/projectbrain.GraphFile#SizeBytes
+  references=matrix/workforce/internal/contracts.ContentHash
+  ^references=matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.Authority.latestFileHash,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.graphFilePaths,matrix/workforce/internal/projectbrain.GraphSnapshot,matrix/workforce/internal/projectbrain.captureExactFiles,matrix/workforce/internal/projectbrain.captureFiles,matrix/workforce/internal/projectbrain.digestGraphGeneration,matrix/workforce/internal/projectbrain.hashGraphFiles,matrix/workforce/internal/projectbrain.revalidateExactGraphFiles,matrix/workforce/internal/projectbrain.revalidateGraphFiles
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.GraphFile#Hash kind=field
@@ -513,6 +583,8 @@ NODE id=matrix/workforce/internal/projectbrain.GraphSnapshot kind=type
 EDGES
   contains=matrix/workforce/internal/projectbrain.GraphSnapshot#CapturedAt,matrix/workforce/internal/projectbrain.GraphSnapshot#EdgeCount,matrix/workforce/internal/projectbrain.GraphSnapshot#Files,matrix/workforce/internal/projectbrain.GraphSnapshot#Fresh,matrix/workforce/internal/projectbrain.GraphSnapshot#Generation,matrix/workforce/internal/projectbrain.GraphSnapshot#GraphDigest,matrix/workforce/internal/projectbrain.GraphSnapshot#IndexedAt,matrix/workforce/internal/projectbrain.GraphSnapshot#NodeCount,matrix/workforce/internal/projectbrain.GraphSnapshot#PendingFiles,matrix/workforce/internal/projectbrain.GraphSnapshot#RootDigest,matrix/workforce/internal/projectbrain.GraphSnapshot#SchemaVersion,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/projectbrain.GraphFile
+  ^references=matrix/workforce/internal/companyruntime.ProductExecutionPlan,matrix/workforce/internal/controlapi.projectSource,matrix/workforce/internal/developer.AuditPacket,matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.coordinationSourceCurrent,matrix/workforce/internal/productcapability.AdapterInput,matrix/workforce/internal/productcapability.Artifact,matrix/workforce/internal/productcapability.Checkpoint,matrix/workforce/internal/productcapability.EngineeringResult,matrix/workforce/internal/productcapability.NewProjectBrainProposal,matrix/workforce/internal/productcapability.ValidateResume,matrix/workforce/internal/productexecution.ResumeRequest,matrix/workforce/internal/productexecution.StartRequest,matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.View,matrix/workforce/internal/projectbrain.equalGraphSnapshot,matrix/workforce/internal/projectbrain.recordMatchesSource
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.GraphSnapshot#CapturedAt kind=field
@@ -586,7 +658,11 @@ NODE id=matrix/workforce/internal/projectbrain.GraphSnapshot.Validate kind=metho
   sig=func (snapshot GraphSnapshot) Validate() error
   doc=Validate enforces explicit staleness and current file hashes.
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/projectbrain.validateRelativePath
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/projectbrain.GraphSnapshot,matrix/workforce/internal/projectbrain.duplicate,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.file,matrix/workforce/internal/projectbrain.index,matrix/workforce/internal/projectbrain.path,matrix/workforce/internal/projectbrain.pathBytes,matrix/workforce/internal/projectbrain.seen,matrix/workforce/internal/projectbrain.snapshot,matrix/workforce/internal/projectbrain.validateRelativePath
   ^contains=matrix/workforce/internal/projectbrain.GraphSnapshot
+  ^calls=matrix/workforce/internal/companyruntime.ProductExecutionPlan.Validate,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/productcapability.AdapterInput.ValidateAt,matrix/workforce/internal/productcapability.Artifact.ValidateAt,matrix/workforce/internal/productcapability.Checkpoint.Validate,matrix/workforce/internal/productcapability.EngineeringResult.ValidateAt,matrix/workforce/internal/productcapability.NewProjectBrainProposal,matrix/workforce/internal/productcapability.ValidateResume,matrix/workforce/internal/productexecution.StartRequest.Validate,matrix/workforce/internal/productexecution.Store.Recover,matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles,matrix/workforce/internal/projectbrain.Proposal.Validate,matrix/workforce/internal/projectbrain.View.Validate
+  ^references=matrix/workforce/internal/companyruntime.ProductExecutionPlan.Validate,matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/productcapability.AdapterInput.ValidateAt,matrix/workforce/internal/productcapability.Artifact.ValidateAt,matrix/workforce/internal/productcapability.Checkpoint.Validate,matrix/workforce/internal/productcapability.EngineeringResult.ValidateAt,matrix/workforce/internal/productcapability.NewProjectBrainProposal,matrix/workforce/internal/productcapability.ValidateResume,matrix/workforce/internal/productexecution.StartRequest.Validate,matrix/workforce/internal/productexecution.Store.Recover,matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles,matrix/workforce/internal/projectbrain.Proposal.Validate,matrix/workforce/internal/projectbrain.View.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.ImpactNode kind=type
@@ -595,6 +671,7 @@ NODE id=matrix/workforce/internal/projectbrain.ImpactNode kind=type
   doc=ImpactNode is one CodeGraph symbol or dependent in a bounded change blast radius.
 EDGES
   contains=matrix/workforce/internal/projectbrain.ImpactNode#FilePath,matrix/workforce/internal/projectbrain.ImpactNode#Kind,matrix/workforce/internal/projectbrain.ImpactNode#Name,matrix/workforce/internal/projectbrain.ImpactNode#StartLine
+  ^references=matrix/workforce/internal/developer.AuditPacket,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.uniqueImpact,matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.ImpactResult
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.ImpactNode#FilePath kind=field
@@ -627,6 +704,8 @@ NODE id=matrix/workforce/internal/projectbrain.ImpactResult kind=type
   doc=ImpactResult is the structured CodeGraph impact projection for one symbol.
 EDGES
   contains=matrix/workforce/internal/projectbrain.ImpactResult#Affected,matrix/workforce/internal/projectbrain.ImpactResult#Depth,matrix/workforce/internal/projectbrain.ImpactResult#EdgeCount,matrix/workforce/internal/projectbrain.ImpactResult#NodeCount,matrix/workforce/internal/projectbrain.ImpactResult#Symbol
+  references=matrix/workforce/internal/projectbrain.ImpactNode
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.Impact
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.ImpactResult#Affected kind=field
@@ -665,73 +744,97 @@ NODE id=matrix/workforce/internal/projectbrain.Kind kind=type
   doc=Kind is the closed set of durable engineering knowledge.
 EDGES
   contains=matrix/workforce/internal/projectbrain.Kind.valid
+  ^references=matrix/workforce/internal/developer.recordsOfKind,matrix/workforce/internal/projectbrain.Kind.valid,matrix/workforce/internal/projectbrain.KindCorrection,matrix/workforce/internal/projectbrain.KindDecision,matrix/workforce/internal/projectbrain.KindFailure,matrix/workforce/internal/projectbrain.KindHandoff,matrix/workforce/internal/projectbrain.KindHazard,matrix/workforce/internal/projectbrain.KindInvariant,matrix/workforce/internal/projectbrain.KindOutcome,matrix/workforce/internal/projectbrain.KindOwnership,matrix/workforce/internal/projectbrain.KindPlan,matrix/workforce/internal/projectbrain.KindVerification,matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.Store.View
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.Kind.valid kind=method
   digest=b3:89956ab533460b94ecf90f6b18837664433469e0170fa70424af7b7bfac4c544 file=workforce/internal/projectbrain/types.go range=44:52 lang=go exported=false byte_range=1006:1243
   sig=func (kind Kind) valid() bool
 EDGES
+  references=matrix/workforce/internal/projectbrain.Kind,matrix/workforce/internal/projectbrain.KindCorrection,matrix/workforce/internal/projectbrain.KindDecision,matrix/workforce/internal/projectbrain.KindFailure,matrix/workforce/internal/projectbrain.KindHandoff,matrix/workforce/internal/projectbrain.KindHazard,matrix/workforce/internal/projectbrain.KindInvariant,matrix/workforce/internal/projectbrain.KindOutcome,matrix/workforce/internal/projectbrain.KindOwnership,matrix/workforce/internal/projectbrain.KindPlan,matrix/workforce/internal/projectbrain.KindVerification,matrix/workforce/internal/projectbrain.kind
   ^contains=matrix/workforce/internal/projectbrain.Kind
+  ^calls=matrix/workforce/internal/projectbrain.Proposal.Validate
+  ^references=matrix/workforce/internal/projectbrain.Proposal.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.KindCorrection kind=const
   digest=b3:4417408b0cd7604e352b93bc89068e1c547f58ab397e266f22a2f0b597c1ef54 file=workforce/internal/projectbrain/types.go range=41:41 lang=go exported=true byte_range=966:1002
   sig=projectbrain.Kind
 EDGES
+  references=matrix/workforce/internal/projectbrain.Kind
+  ^references=matrix/workforce/internal/projectbrain.Kind.valid,matrix/workforce/internal/projectbrain.Proposal.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.KindDecision kind=const
   digest=b3:94ad141aac7845b4d6eca8ecde570e4046d586d45b5ba859113a558342c35eb6 file=workforce/internal/projectbrain/types.go range=32:32 lang=go exported=true byte_range=645:679
   sig=projectbrain.Kind
 EDGES
+  references=matrix/workforce/internal/projectbrain.Kind
+  ^references=matrix/workforce/internal/projectbrain.Kind.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.KindFailure kind=const
   digest=b3:78befab359c83850974e09e378d33950e8a83e82282bd2613a9d603c712e43e5 file=workforce/internal/projectbrain/types.go range=36:36 lang=go exported=true byte_range=787:820
   sig=projectbrain.Kind
 EDGES
+  references=matrix/workforce/internal/projectbrain.Kind
+  ^references=matrix/workforce/internal/projectbrain.Kind.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.KindHandoff kind=const
   digest=b3:8d823ed5b8d3631e23bf014def307d9bc326381b74f1bdbc19a8849d260ed901 file=workforce/internal/projectbrain/types.go range=40:40 lang=go exported=true byte_range=931:964
   sig=projectbrain.Kind
 EDGES
+  references=matrix/workforce/internal/projectbrain.Kind
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/productcapability.NewProjectBrainProposal,matrix/workforce/internal/productcapability.brainContainsHandoff,matrix/workforce/internal/projectbrain.Kind.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.KindHazard kind=const
   digest=b3:fbe0ed2de1f5d50bd1dc5ea34990ab64c56c269e804c87b5fb40b7cb416b7a10 file=workforce/internal/projectbrain/types.go range=39:39 lang=go exported=true byte_range=897:929
   sig=projectbrain.Kind
 EDGES
+  references=matrix/workforce/internal/projectbrain.Kind
+  ^references=matrix/workforce/internal/projectbrain.Kind.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.KindInvariant kind=const
   digest=b3:0c6a8dd75c92cb06921534c61e14a7e667885edd1451b176bf3402153069fc37 file=workforce/internal/projectbrain/types.go range=33:33 lang=go exported=true byte_range=681:716
   sig=projectbrain.Kind
 EDGES
+  references=matrix/workforce/internal/projectbrain.Kind
+  ^references=matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/projectbrain.Kind.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.KindOutcome kind=const
   digest=b3:9d95ad563103abbbd5630bfc1361a0c7c44e315bd86963f6e05bcad942314747 file=workforce/internal/projectbrain/types.go range=37:37 lang=go exported=true byte_range=822:855
   sig=projectbrain.Kind
 EDGES
+  references=matrix/workforce/internal/projectbrain.Kind
+  ^references=matrix/workforce/internal/productcapability.NewProjectBrainProposal,matrix/workforce/internal/projectbrain.Kind.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.KindOwnership kind=const
   digest=b3:a49b5f54e2815f78998fe0f40bb58487225046d2f4969a14fc308d6a310ce145 file=workforce/internal/projectbrain/types.go range=34:34 lang=go exported=true byte_range=718:753
   sig=projectbrain.Kind
 EDGES
+  references=matrix/workforce/internal/projectbrain.Kind
+  ^references=matrix/workforce/internal/projectbrain.Kind.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.KindPlan kind=const
   digest=b3:f205f9c7a714d4cda6a4db05cbf2888145d7cd3718f9dd8360a9b5e96a8ba975 file=workforce/internal/projectbrain/types.go range=35:35 lang=go exported=true byte_range=755:785
   sig=projectbrain.Kind
 EDGES
+  references=matrix/workforce/internal/projectbrain.Kind
+  ^references=matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/projectbrain.Kind.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.KindVerification kind=const
   digest=b3:705f50b06de5acfd1293f1284d1c2dc09bc950399bd7cb424423aa01e9f8c396 file=workforce/internal/projectbrain/types.go range=38:38 lang=go exported=true byte_range=857:895
   sig=projectbrain.Kind
 EDGES
+  references=matrix/workforce/internal/projectbrain.Kind
+  ^references=matrix/workforce/internal/projectbrain.Kind.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.New kind=func
@@ -739,6 +842,10 @@ NODE id=matrix/workforce/internal/projectbrain.New kind=func
   sig=func New(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	tenantID string,\n	authorityKeyID string,\n	authorityKey ed25519.PublicKey,\n	seatAuthority SeatAuthority,\n	graph *CodeGraph,\n	now func() time.Time,\n) (*Store, error)
   doc=New constructs a fail-closed tenant-scoped Project Brain store.
 EDGES
+  calls=matrix/vault.UserVault.User
+  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/projectbrain.CodeGraph,matrix/workforce/internal/projectbrain.SeatAuthority,matrix/workforce/internal/projectbrain.Store,matrix/workforce/internal/projectbrain.authorityKey,matrix/workforce/internal/projectbrain.authorityKeyID,matrix/workforce/internal/projectbrain.graph,matrix/workforce/internal/projectbrain.now,matrix/workforce/internal/projectbrain.pool,matrix/workforce/internal/projectbrain.seatAuthority,matrix/workforce/internal/projectbrain.tenantID,matrix/workforce/internal/projectbrain.userVault
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.NewCodeGraph kind=func
@@ -746,6 +853,10 @@ NODE id=matrix/workforce/internal/projectbrain.NewCodeGraph kind=func
   sig=func NewCodeGraph(executable string, now func() time.Time) (*CodeGraph, error)
   doc=NewCodeGraph constructs the real CodeGraph process adapter.
 EDGES
+  calls=matrix/workforce/internal/projectbrain.verifyCodeGraphExecutable
+  references=matrix/workforce/internal/projectbrain.CodeGraph,matrix/workforce/internal/projectbrain.base,matrix/workforce/internal/projectbrain.digest,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.executable,matrix/workforce/internal/projectbrain.now,matrix/workforce/internal/projectbrain.resolved,matrix/workforce/internal/projectbrain.verifyCodeGraphExecutable
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.Origin kind=type
@@ -754,43 +865,57 @@ NODE id=matrix/workforce/internal/projectbrain.Origin kind=type
   doc=Origin identifies the authoritative evidence family behind a proposal.
 EDGES
   contains=matrix/workforce/internal/projectbrain.Origin.valid
+  ^references=matrix/workforce/internal/projectbrain.Origin.valid,matrix/workforce/internal/projectbrain.OriginCorrection,matrix/workforce/internal/projectbrain.OriginReceipt,matrix/workforce/internal/projectbrain.OriginReview,matrix/workforce/internal/projectbrain.OriginSource,matrix/workforce/internal/projectbrain.OriginTest,matrix/workforce/internal/projectbrain.Proposal
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.Origin.valid kind=method
   digest=b3:b2df1413981dfea54d78971c4ec0a3c656ba71bacfe8a2e2afcd2b1950a3a072 file=workforce/internal/projectbrain/types.go range=65:72 lang=go exported=false byte_range=1545:1720
   sig=func (origin Origin) valid() bool
 EDGES
+  references=matrix/workforce/internal/projectbrain.Origin,matrix/workforce/internal/projectbrain.OriginCorrection,matrix/workforce/internal/projectbrain.OriginReceipt,matrix/workforce/internal/projectbrain.OriginReview,matrix/workforce/internal/projectbrain.OriginSource,matrix/workforce/internal/projectbrain.OriginTest,matrix/workforce/internal/projectbrain.origin
   ^contains=matrix/workforce/internal/projectbrain.Origin
+  ^calls=matrix/workforce/internal/projectbrain.Proposal.Validate
+  ^references=matrix/workforce/internal/projectbrain.Proposal.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.OriginCorrection kind=const
   digest=b3:329c099f8cd20a2870c06568409a919970e066d80f02fe5b633e384d4e23ab4c file=workforce/internal/projectbrain/types.go range=62:62 lang=go exported=true byte_range=1503:1541
   sig=projectbrain.Origin
 EDGES
+  references=matrix/workforce/internal/projectbrain.Origin
+  ^references=matrix/workforce/internal/projectbrain.Origin.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.OriginReceipt kind=const
   digest=b3:5426fbc1307c92bdc65ee503ab2b0cab5928d1a6492ccb18613277597c3a82e5 file=workforce/internal/projectbrain/types.go range=60:60 lang=go exported=true byte_range=1418:1453
   sig=projectbrain.Origin
 EDGES
+  references=matrix/workforce/internal/projectbrain.Origin
+  ^references=matrix/workforce/internal/productcapability.NewProjectBrainProposal,matrix/workforce/internal/productcapability.brainContainsHandoff,matrix/workforce/internal/projectbrain.Origin.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.OriginReview kind=const
   digest=b3:ac0afd022070a932fbdf981af6d3e1058b14dff097ea2c413a23066b0007dbcc file=workforce/internal/projectbrain/types.go range=61:61 lang=go exported=true byte_range=1455:1501
   sig=projectbrain.Origin
 EDGES
+  references=matrix/workforce/internal/projectbrain.Origin
+  ^references=matrix/workforce/internal/projectbrain.Origin.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.OriginSource kind=const
   digest=b3:e5c2c685a5372fca991636b0b1115d3fb9644f099795a6fb9650e67a86e1be8d file=workforce/internal/projectbrain/types.go range=58:58 lang=go exported=true byte_range=1348:1382
   sig=projectbrain.Origin
 EDGES
+  references=matrix/workforce/internal/projectbrain.Origin
+  ^references=matrix/workforce/internal/projectbrain.Origin.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.OriginTest kind=const
   digest=b3:f97265fadec26ca065bd9339bb3229aa2d222925d55e1ff04ace9f6a1349a21e file=workforce/internal/projectbrain/types.go range=59:59 lang=go exported=true byte_range=1384:1416
   sig=projectbrain.Origin
 EDGES
+  references=matrix/workforce/internal/projectbrain.Origin
+  ^references=matrix/workforce/internal/projectbrain.Origin.valid
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.Proposal kind=type
@@ -800,6 +925,8 @@ NODE id=matrix/workforce/internal/projectbrain.Proposal kind=type
 EDGES
   contains=matrix/workforce/internal/projectbrain.Proposal#AuthorSeatID,matrix/workforce/internal/projectbrain.Proposal#Content,matrix/workforce/internal/projectbrain.Proposal#Corrects,matrix/workforce/internal/projectbrain.Proposal#CreatedAt,matrix/workforce/internal/projectbrain.Proposal#ID,matrix/workforce/internal/projectbrain.Proposal#Kind,matrix/workforce/internal/projectbrain.Proposal#OrganizationID,matrix/workforce/internal/projectbrain.Proposal#Origin,matrix/workforce/internal/projectbrain.Proposal#ParentIntentID,matrix/workforce/internal/projectbrain.Proposal#ProjectID,matrix/workforce/internal/projectbrain.Proposal#SchemaVersion,matrix/workforce/internal/projectbrain.Proposal#Signature,matrix/workforce/internal/projectbrain.Proposal#Source,matrix/workforce/internal/projectbrain.Proposal#Supersedes,matrix/workforce/internal/projectbrain.Proposal#Version,matrix/workforce/internal/projectbrain.Proposal#WorkspaceID,matrix/workforce/internal/projectbrain.Proposal.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/contracts.WorkspaceID,matrix/workforce/internal/projectbrain.Content,matrix/workforce/internal/projectbrain.GraphSnapshot,matrix/workforce/internal/projectbrain.Kind,matrix/workforce/internal/projectbrain.Origin,matrix/workforce/internal/projectbrain.RecordID
+  ^references=matrix/workforce/internal/productcapability.NewProjectBrainProposal,matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.Proposal.Validate,matrix/workforce/internal/projectbrain.ProposalHash,matrix/workforce/internal/projectbrain.SignProposal,matrix/workforce/internal/projectbrain.Store.View,matrix/workforce/internal/projectbrain.Store.recordAD,matrix/workforce/internal/projectbrain.existingRecordHash,matrix/workforce/internal/projectbrain.proposalHash,matrix/workforce/internal/projectbrain.proposalSigningBytes,matrix/workforce/internal/projectbrain.proposalSigningPayload,matrix/workforce/internal/projectbrain.validateChain
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.Proposal#AuthorSeatID kind=field
@@ -903,7 +1030,11 @@ NODE id=matrix/workforce/internal/projectbrain.Proposal.Validate kind=method
   sig=func (proposal Proposal) Validate() error
   doc=Validate rejects persona memory, ungrounded claims, stale source ambiguity,\nand malformed supersession chains at the trust boundary.
 EDGES
+  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/projectbrain.Content.validate,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/projectbrain.Kind.valid,matrix/workforce/internal/projectbrain.Origin.valid,matrix/workforce/internal/projectbrain.validateToken
+  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/projectbrain.Content.validate,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/projectbrain.Kind.valid,matrix/workforce/internal/projectbrain.KindCorrection,matrix/workforce/internal/projectbrain.Origin.valid,matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.name,matrix/workforce/internal/projectbrain.proposal,matrix/workforce/internal/projectbrain.validateToken,matrix/workforce/internal/projectbrain.value
   ^contains=matrix/workforce/internal/projectbrain.Proposal
+  ^calls=matrix/workforce/internal/projectbrain.EngineeringRecord.Validate,matrix/workforce/internal/projectbrain.ProposalHash
+  ^references=matrix/workforce/internal/projectbrain.EngineeringRecord.Validate,matrix/workforce/internal/projectbrain.ProposalHash,matrix/workforce/internal/projectbrain.proposalSigningPayload.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.ProposalHash kind=func
@@ -911,6 +1042,8 @@ NODE id=matrix/workforce/internal/projectbrain.ProposalHash kind=func
   sig=func ProposalHash(proposal Proposal) (contracts.ContentHash, error)
   doc=ProposalHash returns the canonical identity independently signed by the\nverifier for one exact Developer Project Brain proposal.
 EDGES
+  calls=matrix/workforce/internal/projectbrain.Proposal.Validate,matrix/workforce/internal/projectbrain.proposalHash
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.Proposal.Validate,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.proposal,matrix/workforce/internal/projectbrain.proposalHash
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.RecordID kind=type
@@ -918,13 +1051,16 @@ NODE id=matrix/workforce/internal/projectbrain.RecordID kind=type
   sig=type RecordID string
   doc=RecordID identifies one immutable verified engineering record.
 EDGES
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.CoordinationPlan,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.ScopeRequest,matrix/workforce/internal/developer.optionalPlan,matrix/workforce/internal/productcapability.DeveloperExecutionInput,matrix/workforce/internal/productcapability.NewProjectBrainProposal,matrix/workforce/internal/productcapability.brainContainsHandoff,matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.Store.View,matrix/workforce/internal/projectbrain.Verification,matrix/workforce/internal/projectbrain.View,matrix/workforce/internal/projectbrain.optionalRecordID
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.SeatAuthority kind=interface
   digest=b3:ebeed59de64a9d8b213781cbf9448b712627671bfceb09a35124be7bbe1005fb file=workforce/internal/projectbrain/store.go range=31:33 lang=go exported=true byte_range=569:677
   sig=type SeatAuthority interface {\n	LoadCurrentSeat(context.Context, contracts.SeatID) (contracts.Seat, error)\n}
 EDGES
+  references=matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/contracts.SeatID
   ^implements=matrix/workforce/internal/policy.Store
+  ^references=matrix/workforce/internal/projectbrain.New,matrix/workforce/internal/projectbrain.Store
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.SeatKeyBinding kind=type
@@ -933,6 +1069,8 @@ NODE id=matrix/workforce/internal/projectbrain.SeatKeyBinding kind=type
   doc=SeatKeyBinding binds one seat identity to one exact Ed25519 key.
 EDGES
   contains=matrix/workforce/internal/projectbrain.SeatKeyBinding#BindingID,matrix/workforce/internal/projectbrain.SeatKeyBinding#BindingVersion,matrix/workforce/internal/projectbrain.SeatKeyBinding#KeyID,matrix/workforce/internal/projectbrain.SeatKeyBinding#PublicKey,matrix/workforce/internal/projectbrain.SeatKeyBinding#SeatDID,matrix/workforce/internal/projectbrain.SeatKeyBinding#SeatID,matrix/workforce/internal/projectbrain.SeatKeyBinding#SeatVersion,matrix/workforce/internal/projectbrain.SeatKeyBinding.publicKey,matrix/workforce/internal/projectbrain.SeatKeyBinding.validate
+  references=matrix/workforce/internal/contracts.SeatBindingID,matrix/workforce/internal/contracts.SeatDID,matrix/workforce/internal/contracts.SeatID
+  ^references=matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.SeatKeyBinding.publicKey,matrix/workforce/internal/projectbrain.SeatKeyBinding.validate,matrix/workforce/internal/projectbrain.bindingMatchesSeat
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.SeatKeyBinding#BindingID kind=field
@@ -981,14 +1119,22 @@ NODE id=matrix/workforce/internal/projectbrain.SeatKeyBinding.publicKey kind=met
   digest=b3:1c9e4def494513ffd56821266ccdf3584b850bb568156662a39a8a6bb5e995ad file=workforce/internal/projectbrain/types.go range=494:503 lang=go exported=false byte_range=17888:18230
   sig=func (binding SeatKeyBinding) publicKey() (ed25519.PublicKey, error)
 EDGES
+  calls=matrix/workforce/internal/projectbrain.SeatKeyBinding.validate
+  references=matrix/workforce/internal/projectbrain.SeatKeyBinding,matrix/workforce/internal/projectbrain.SeatKeyBinding.validate,matrix/workforce/internal/projectbrain.binding,matrix/workforce/internal/projectbrain.decoded,matrix/workforce/internal/projectbrain.err
   ^contains=matrix/workforce/internal/projectbrain.SeatKeyBinding
+  ^calls=matrix/workforce/internal/projectbrain.Store.Commit
+  ^references=matrix/workforce/internal/projectbrain.Store.Commit
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.SeatKeyBinding.validate kind=method
   digest=b3:1262454d549066d7e02103a59db5e27f34ec95020249fd9a8b92b85331d1e658 file=workforce/internal/projectbrain/types.go range=471:492 lang=go exported=false byte_range=17129:17886
   sig=func (binding SeatKeyBinding) validate() error
 EDGES
+  calls=matrix/workforce/internal/projectbrain.validateToken
+  references=matrix/workforce/internal/projectbrain.SeatKeyBinding,matrix/workforce/internal/projectbrain.binding,matrix/workforce/internal/projectbrain.decoded,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.validateToken
   ^contains=matrix/workforce/internal/projectbrain.SeatKeyBinding
+  ^calls=matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.SeatKeyBinding.publicKey
+  ^references=matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.SeatKeyBinding.publicKey
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.SignCapabilityGrant kind=func
@@ -996,6 +1142,10 @@ NODE id=matrix/workforce/internal/projectbrain.SignCapabilityGrant kind=func
   sig=func SignCapabilityGrant(\n	grant *CapabilityGrant,\n	keyID string,\n	privateKey ed25519.PrivateKey,\n) error
   doc=SignCapabilityGrant signs an exact capability using kernel authority.
 EDGES
+  calls=matrix/workforce/internal/projectbrain.grantSigningBytes,matrix/workforce/internal/projectbrain.signatureFor
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.grant,matrix/workforce/internal/projectbrain.grantSigningBytes,matrix/workforce/internal/projectbrain.keyID,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.privateKey,matrix/workforce/internal/projectbrain.signatureFor
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.bindRuntimeGrant
+  ^references=matrix/workforce/internal/wakeruntime.Runner.bindRuntimeGrant
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.SignProposal kind=func
@@ -1003,6 +1153,8 @@ NODE id=matrix/workforce/internal/projectbrain.SignProposal kind=func
   sig=func SignProposal(proposal *Proposal, keyID string, privateKey ed25519.PrivateKey) error
   doc=SignProposal signs the canonical proposal fields using real Ed25519 authority.
 EDGES
+  calls=matrix/workforce/internal/projectbrain.placeholderSignature,matrix/workforce/internal/projectbrain.proposalSigningBytes,matrix/workforce/internal/projectbrain.signatureFor
+  references=matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.keyID,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.placeholderSignature,matrix/workforce/internal/projectbrain.privateKey,matrix/workforce/internal/projectbrain.proposal,matrix/workforce/internal/projectbrain.proposalSigningBytes,matrix/workforce/internal/projectbrain.signatureFor
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.SignVerification kind=func
@@ -1010,6 +1162,8 @@ NODE id=matrix/workforce/internal/projectbrain.SignVerification kind=func
   sig=func SignVerification(verification *Verification, keyID string, privateKey ed25519.PrivateKey) error
   doc=SignVerification signs the canonical verification fields using real Ed25519 authority.
 EDGES
+  calls=matrix/workforce/internal/projectbrain.placeholderSignature,matrix/workforce/internal/projectbrain.signatureFor,matrix/workforce/internal/projectbrain.verificationSigningBytes
+  references=matrix/workforce/internal/projectbrain.Verification,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.keyID,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.placeholderSignature,matrix/workforce/internal/projectbrain.privateKey,matrix/workforce/internal/projectbrain.signatureFor,matrix/workforce/internal/projectbrain.verification,matrix/workforce/internal/projectbrain.verificationSigningBytes
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.Store kind=type
@@ -1019,6 +1173,8 @@ NODE id=matrix/workforce/internal/projectbrain.Store kind=type
 EDGES
   contains=matrix/workforce/internal/projectbrain.Store#authorityKey,matrix/workforce/internal/projectbrain.Store#authorityKeyID,matrix/workforce/internal/projectbrain.Store#graph,matrix/workforce/internal/projectbrain.Store#now,matrix/workforce/internal/projectbrain.Store#pool,matrix/workforce/internal/projectbrain.Store#seatAuthority,matrix/workforce/internal/projectbrain.Store#tenantID,matrix/workforce/internal/projectbrain.Store#vault,matrix/workforce/internal/projectbrain.Store.AuthorizeCapability,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View,matrix/workforce/internal/projectbrain.Store.auditDenial,matrix/workforce/internal/projectbrain.Store.auditedError,matrix/workforce/internal/projectbrain.Store.currentTime,matrix/workforce/internal/projectbrain.Store.recordAD,matrix/workforce/internal/projectbrain.Store.verifyGrant
   implements=matrix/workforce/internal/actorstate.ProjectBrainReader
+  references=matrix/vault.UserVault,matrix/workforce/internal/projectbrain.CodeGraph,matrix/workforce/internal/projectbrain.SeatAuthority
+  ^references=matrix/workforce/internal/developer.Adapter,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.NewAdapter,matrix/workforce/internal/developer.NewAuthority,matrix/workforce/internal/projectbrain.New,matrix/workforce/internal/projectbrain.Store.AuthorizeCapability,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View,matrix/workforce/internal/projectbrain.Store.auditDenial,matrix/workforce/internal/projectbrain.Store.auditedError,matrix/workforce/internal/projectbrain.Store.currentTime,matrix/workforce/internal/projectbrain.Store.recordAD,matrix/workforce/internal/projectbrain.Store.verifyGrant
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.Store#authorityKey kind=field
@@ -1074,7 +1230,11 @@ NODE id=matrix/workforce/internal/projectbrain.Store.AuthorizeCapability kind=me
   sig=func (store *Store) AuthorizeCapability(\n	ctx context.Context,\n	grant CapabilityGrant,\n	operation CapabilityOperation,\n) error
   doc=AuthorizeCapability verifies one kernel-signed capability against this\nstore's tenant, authority key, operation, and current UTC time. Callers use\nthis before a separate owned boundary, such as Developer source authority,\nrelies on the grant's project/workspace/root binding.
 EDGES
+  calls=matrix/workforce/internal/projectbrain.Store.auditedError,matrix/workforce/internal/projectbrain.Store.currentTime,matrix/workforce/internal/projectbrain.Store.verifyGrant,matrix/workforce/internal/projectbrain.denialReason
+  references=matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.CapabilityOperation,matrix/workforce/internal/projectbrain.Store,matrix/workforce/internal/projectbrain.Store.auditedError,matrix/workforce/internal/projectbrain.Store.currentTime,matrix/workforce/internal/projectbrain.Store.verifyGrant,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.denialReason,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.grant,matrix/workforce/internal/projectbrain.now,matrix/workforce/internal/projectbrain.operation,matrix/workforce/internal/projectbrain.store
   ^contains=matrix/workforce/internal/projectbrain.Store
+  ^calls=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.Bind
+  ^references=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.Bind
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.Store.Commit kind=method
@@ -1082,7 +1242,11 @@ NODE id=matrix/workforce/internal/projectbrain.Store.Commit kind=method
   sig=func (store *Store) Commit(\n	ctx context.Context,\n	record EngineeringRecord,\n	grant CapabilityGrant,\n) (bool, error)
   doc=Commit verifies both independent signatures and atomically appends immutable truth.
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.EngineeringRecord.Validate,matrix/workforce/internal/projectbrain.SeatKeyBinding.publicKey,matrix/workforce/internal/projectbrain.Store.auditedError,matrix/workforce/internal/projectbrain.Store.currentTime,matrix/workforce/internal/projectbrain.Store.recordAD,matrix/workforce/internal/projectbrain.Store.verifyGrant,matrix/workforce/internal/projectbrain.denialReason,matrix/workforce/internal/projectbrain.digestBytes,matrix/workforce/internal/projectbrain.equalGraphSnapshot,matrix/workforce/internal/projectbrain.existingRecordHash,matrix/workforce/internal/projectbrain.optionalRecordID,matrix/workforce/internal/projectbrain.validateChain,matrix/workforce/internal/projectbrain.verifyRecordSignatures
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.CapabilityWrite,matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.EngineeringRecord.Validate,matrix/workforce/internal/projectbrain.ErrConflict,matrix/workforce/internal/projectbrain.ErrIntegrity,matrix/workforce/internal/projectbrain.ErrUnauthorized,matrix/workforce/internal/projectbrain.SeatKeyBinding.publicKey,matrix/workforce/internal/projectbrain.Store,matrix/workforce/internal/projectbrain.Store.auditedError,matrix/workforce/internal/projectbrain.Store.currentTime,matrix/workforce/internal/projectbrain.Store.recordAD,matrix/workforce/internal/projectbrain.Store.verifyGrant,matrix/workforce/internal/projectbrain.authorKey,matrix/workforce/internal/projectbrain.canonical,matrix/workforce/internal/projectbrain.canonicalHash,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.currentSource,matrix/workforce/internal/projectbrain.denialReason,matrix/workforce/internal/projectbrain.digestBytes,matrix/workforce/internal/projectbrain.equalGraphSnapshot,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.existingHash,matrix/workforce/internal/projectbrain.existingRecordHash,matrix/workforce/internal/projectbrain.found,matrix/workforce/internal/projectbrain.grant,matrix/workforce/internal/projectbrain.lock,matrix/workforce/internal/projectbrain.now,matrix/workforce/internal/projectbrain.optionalRecordID,matrix/workforce/internal/projectbrain.proposal,matrix/workforce/internal/projectbrain.record,matrix/workforce/internal/projectbrain.sameSource,matrix/workforce/internal/projectbrain.sealed,matrix/workforce/internal/projectbrain.store,matrix/workforce/internal/projectbrain.tx,matrix/workforce/internal/projectbrain.validateChain,matrix/workforce/internal/projectbrain.verifierKey,matrix/workforce/internal/projectbrain.verifyRecordSignatures
   ^contains=matrix/workforce/internal/projectbrain.Store
+  ^calls=matrix/workforce/internal/developer.Adapter.Dispatch
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.Store.View kind=method
@@ -1090,42 +1254,63 @@ NODE id=matrix/workforce/internal/projectbrain.Store.View kind=method
   sig=func (store *Store) View(\n	ctx context.Context,\n	grant CapabilityGrant,\n) (View, error)
   doc=View opens current verified records only for the exact expiring project capability.
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.EngineeringRecord.ContentExpired,matrix/workforce/internal/projectbrain.Store.auditDenial,matrix/workforce/internal/projectbrain.Store.auditedError,matrix/workforce/internal/projectbrain.Store.currentTime,matrix/workforce/internal/projectbrain.Store.recordAD,matrix/workforce/internal/projectbrain.Store.verifyGrant,matrix/workforce/internal/projectbrain.View.Validate,matrix/workforce/internal/projectbrain.denialReason,matrix/workforce/internal/projectbrain.digestBytes,matrix/workforce/internal/projectbrain.recordMatchesSource
+  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.CapabilityRead,matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.EngineeringRecord.ContentExpired,matrix/workforce/internal/projectbrain.ErrIntegrity,matrix/workforce/internal/projectbrain.Kind,matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.RecordID,matrix/workforce/internal/projectbrain.Store,matrix/workforce/internal/projectbrain.Store.auditDenial,matrix/workforce/internal/projectbrain.Store.auditedError,matrix/workforce/internal/projectbrain.Store.currentTime,matrix/workforce/internal/projectbrain.Store.recordAD,matrix/workforce/internal/projectbrain.Store.verifyGrant,matrix/workforce/internal/projectbrain.View,matrix/workforce/internal/projectbrain.View.Validate,matrix/workforce/internal/projectbrain.after,matrix/workforce/internal/projectbrain.auditErr,matrix/workforce/internal/projectbrain.canonical,matrix/workforce/internal/projectbrain.canonicalHash,matrix/workforce/internal/projectbrain.cause,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.cursor,matrix/workforce/internal/projectbrain.denialReason,matrix/workforce/internal/projectbrain.digestBytes,matrix/workforce/internal/projectbrain.encoded,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.grant,matrix/workforce/internal/projectbrain.kind,matrix/workforce/internal/projectbrain.lastScanned,matrix/workforce/internal/projectbrain.nextCursor,matrix/workforce/internal/projectbrain.now,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.proposal,matrix/workforce/internal/projectbrain.record,matrix/workforce/internal/projectbrain.recordID,matrix/workforce/internal/projectbrain.recordMatchesSource,matrix/workforce/internal/projectbrain.records,matrix/workforce/internal/projectbrain.rows,matrix/workforce/internal/projectbrain.scanned,matrix/workforce/internal/projectbrain.sealed,matrix/workforce/internal/projectbrain.source,matrix/workforce/internal/projectbrain.staleRecordIDs,matrix/workforce/internal/projectbrain.store,matrix/workforce/internal/projectbrain.view,matrix/workforce/internal/projectbrain.viewDigestPayload
   ^contains=matrix/workforce/internal/projectbrain.Store
+  ^calls=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.Authority.resolveCoordination
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.Authority.resolveCoordination
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.Store.auditDenial kind=method
   digest=b3:773b5821458fc40b6cc461072f44aaa0c941332dc3604fb15403069dd731ad25 file=workforce/internal/projectbrain/store.go range=510:535 lang=go exported=false byte_range=17199:18051
   sig=func (store *Store) auditDenial(\n	ctx context.Context,\n	grant CapabilityGrant,\n	operation CapabilityOperation,\n	reason string,\n	now time.Time,\n) error
 EDGES
+  references=matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.CapabilityOperation,matrix/workforce/internal/projectbrain.Store,matrix/workforce/internal/projectbrain.candidate,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.grant,matrix/workforce/internal/projectbrain.now,matrix/workforce/internal/projectbrain.operation,matrix/workforce/internal/projectbrain.reason,matrix/workforce/internal/projectbrain.store,matrix/workforce/internal/projectbrain.validateToken,matrix/workforce/internal/projectbrain.value
   ^contains=matrix/workforce/internal/projectbrain.Store
+  ^calls=matrix/workforce/internal/projectbrain.Store.View,matrix/workforce/internal/projectbrain.Store.auditedError
+  ^references=matrix/workforce/internal/projectbrain.Store.View,matrix/workforce/internal/projectbrain.Store.auditedError
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.Store.auditedError kind=method
   digest=b3:ad5e885e069d1900158ec19f0b404a39340b83ae756c0358fee2bb9c042925d8 file=workforce/internal/projectbrain/store.go range=537:549 lang=go exported=false byte_range=18053:18398
   sig=func (store *Store) auditedError(\n	ctx context.Context,\n	grant CapabilityGrant,\n	operation CapabilityOperation,\n	reason string,\n	now time.Time,\n	cause error,\n) error
 EDGES
+  calls=matrix/workforce/internal/projectbrain.Store.auditDenial
+  references=matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.CapabilityOperation,matrix/workforce/internal/projectbrain.Store,matrix/workforce/internal/projectbrain.Store.auditDenial,matrix/workforce/internal/projectbrain.auditErr,matrix/workforce/internal/projectbrain.cause,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.grant,matrix/workforce/internal/projectbrain.now,matrix/workforce/internal/projectbrain.operation,matrix/workforce/internal/projectbrain.reason,matrix/workforce/internal/projectbrain.store
   ^contains=matrix/workforce/internal/projectbrain.Store
+  ^calls=matrix/workforce/internal/projectbrain.Store.AuthorizeCapability,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
+  ^references=matrix/workforce/internal/projectbrain.Store.AuthorizeCapability,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.Store.currentTime kind=method
   digest=b3:31105f802b7298787104ca3dc2089f789c7bf7154a78beaf5770f9b570df81ac file=workforce/internal/projectbrain/store.go range=595:601 lang=go exported=false byte_range=19426:19662
   sig=func (store *Store) currentTime() (time.Time, error)
 EDGES
+  references=matrix/workforce/internal/projectbrain.Store,matrix/workforce/internal/projectbrain.now,matrix/workforce/internal/projectbrain.store
   ^contains=matrix/workforce/internal/projectbrain.Store
+  ^calls=matrix/workforce/internal/projectbrain.Store.AuthorizeCapability,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
+  ^references=matrix/workforce/internal/projectbrain.Store.AuthorizeCapability,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.Store.recordAD kind=method
   digest=b3:b6e860d82ccaaf8fbf4f0cd606b41b974dfe1ba522231f8891f9bab510e2e558 file=workforce/internal/projectbrain/store.go range=603:613 lang=go exported=false byte_range=19664:20029
   sig=func (store *Store) recordAD(proposal Proposal) vault.AD
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.Store,matrix/workforce/internal/projectbrain.proposal,matrix/workforce/internal/projectbrain.store
   ^contains=matrix/workforce/internal/projectbrain.Store
+  ^calls=matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
+  ^references=matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.Store.verifyGrant kind=method
   digest=b3:5011047c3de18fb31d462e5ab6df18900a645395b081d0d109f0e6ea4eecadd4 file=workforce/internal/projectbrain/store.go range=446:491 lang=go exported=false byte_range=15239:16558
   sig=func (store *Store) verifyGrant(\n	ctx context.Context,\n	grant CapabilityGrant,\n	operation CapabilityOperation,\n	now time.Time,\n) error
 EDGES
+  calls=matrix/workforce/internal/policy.Store.LoadCurrentSeat,matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.bindingMatchesSeat,matrix/workforce/internal/projectbrain.grantMatchesSeat,matrix/workforce/internal/projectbrain.grantSigningBytes
+  references=matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.CapabilityOperation,matrix/workforce/internal/projectbrain.ErrUnauthorized,matrix/workforce/internal/projectbrain.SeatAuthority.LoadCurrentSeat,matrix/workforce/internal/projectbrain.Store,matrix/workforce/internal/projectbrain.author,matrix/workforce/internal/projectbrain.bindingMatchesSeat,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.grant,matrix/workforce/internal/projectbrain.grantMatchesSeat,matrix/workforce/internal/projectbrain.grantSigningBytes,matrix/workforce/internal/projectbrain.loadErr,matrix/workforce/internal/projectbrain.now,matrix/workforce/internal/projectbrain.operation,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.requester,matrix/workforce/internal/projectbrain.signature,matrix/workforce/internal/projectbrain.store,matrix/workforce/internal/projectbrain.verifier
   ^contains=matrix/workforce/internal/projectbrain.Store
+  ^calls=matrix/workforce/internal/projectbrain.Store.AuthorizeCapability,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
+  ^references=matrix/workforce/internal/projectbrain.Store.AuthorizeCapability,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.Verification kind=type
@@ -1135,6 +1320,8 @@ NODE id=matrix/workforce/internal/projectbrain.Verification kind=type
 EDGES
   contains=matrix/workforce/internal/projectbrain.Verification#Accepted,matrix/workforce/internal/projectbrain.Verification#Evidence,matrix/workforce/internal/projectbrain.Verification#Procedure,matrix/workforce/internal/projectbrain.Verification#ProposalHash,matrix/workforce/internal/projectbrain.Verification#RecordID,matrix/workforce/internal/projectbrain.Verification#SchemaVersion,matrix/workforce/internal/projectbrain.Verification#Signature,matrix/workforce/internal/projectbrain.Verification#VerifiedAt,matrix/workforce/internal/projectbrain.Verification#VerifierSeatID,matrix/workforce/internal/projectbrain.Verification.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/projectbrain.RecordID
+  ^references=matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.SignVerification,matrix/workforce/internal/projectbrain.Verification.Validate,matrix/workforce/internal/projectbrain.verificationSigningBytes,matrix/workforce/internal/projectbrain.verificationSigningPayload
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.Verification#Accepted kind=field
@@ -1195,7 +1382,11 @@ NODE id=matrix/workforce/internal/projectbrain.Verification.Validate kind=method
   digest=b3:8e0c2757c6a2619c44d57e33978bb1ca6cc83b22395f49086c271de5427f66c4 file=workforce/internal/projectbrain/types.go range=242:273 lang=go exported=true byte_range=8413:9730
   sig=func (verification Verification) Validate() error
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/projectbrain.validateToken
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/projectbrain.Verification,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.index,matrix/workforce/internal/projectbrain.validateToken,matrix/workforce/internal/projectbrain.verification
   ^contains=matrix/workforce/internal/projectbrain.Verification
+  ^calls=matrix/workforce/internal/projectbrain.EngineeringRecord.Validate
+  ^references=matrix/workforce/internal/projectbrain.EngineeringRecord.Validate,matrix/workforce/internal/projectbrain.verificationSigningPayload.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.View kind=type
@@ -1205,6 +1396,8 @@ NODE id=matrix/workforce/internal/projectbrain.View kind=type
 EDGES
   contains=matrix/workforce/internal/projectbrain.View#Digest,matrix/workforce/internal/projectbrain.View#ExpiresAt,matrix/workforce/internal/projectbrain.View#NextCursor,matrix/workforce/internal/projectbrain.View#OrganizationID,matrix/workforce/internal/projectbrain.View#ProjectID,matrix/workforce/internal/projectbrain.View#Records,matrix/workforce/internal/projectbrain.View#SchemaVersion,matrix/workforce/internal/projectbrain.View#Source,matrix/workforce/internal/projectbrain.View#StaleRecordIDs,matrix/workforce/internal/projectbrain.View#WorkspaceID,matrix/workforce/internal/projectbrain.View.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.WorkspaceID,matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.GraphSnapshot,matrix/workforce/internal/projectbrain.RecordID
+  ^references=matrix/workforce/internal/actorstate.ProjectBrainReader,matrix/workforce/internal/productcapability.DeveloperExecutionInput,matrix/workforce/internal/productcapability.ValidateResume,matrix/workforce/internal/productcapability.brainContainsHandoff,matrix/workforce/internal/productexecution.ResumeRequest,matrix/workforce/internal/projectbrain.Store.View,matrix/workforce/internal/projectbrain.View.Validate,matrix/workforce/internal/projectbrain.viewDigestPayload
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.View#Digest kind=field
@@ -1272,13 +1465,20 @@ NODE id=matrix/workforce/internal/projectbrain.View.Validate kind=method
   sig=func (view View) Validate() error
   doc=Validate enforces a bounded, current, content-addressed read projection.
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/projectbrain.EngineeringRecord.Validate,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/projectbrain.validateToken
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/projectbrain.EngineeringRecord.Validate,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/projectbrain.View,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.id,matrix/workforce/internal/projectbrain.index,matrix/workforce/internal/projectbrain.name,matrix/workforce/internal/projectbrain.validateToken,matrix/workforce/internal/projectbrain.value,matrix/workforce/internal/projectbrain.view
   ^contains=matrix/workforce/internal/projectbrain.View
+  ^calls=matrix/workforce/internal/productcapability.DeveloperExecutionInput.ValidateAt,matrix/workforce/internal/productcapability.ValidateResume,matrix/workforce/internal/productexecution.Store.Recover,matrix/workforce/internal/projectbrain.Store.View
+  ^references=matrix/workforce/internal/productcapability.DeveloperExecutionInput.ValidateAt,matrix/workforce/internal/productcapability.ValidateResume,matrix/workforce/internal/productexecution.Store.Recover,matrix/workforce/internal/projectbrain.Store.View,matrix/workforce/internal/projectbrain.viewDigestPayload.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.bindingMatchesSeat kind=func
   digest=b3:f72dc29660e5f6d7ca11c1b4585b3fdcf7b23be6ca6fa1131073e7d97f3176e8 file=workforce/internal/projectbrain/store.go range=502:508 lang=go exported=false byte_range=16920:17197
   sig=func bindingMatchesSeat(binding SeatKeyBinding, seat contracts.Seat) bool
 EDGES
+  references=matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/projectbrain.SeatKeyBinding,matrix/workforce/internal/projectbrain.binding,matrix/workforce/internal/projectbrain.seat
+  ^calls=matrix/workforce/internal/projectbrain.Store.verifyGrant
+  ^references=matrix/workforce/internal/projectbrain.Store.verifyGrant
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.boundedOutput kind=type
@@ -1286,6 +1486,7 @@ NODE id=matrix/workforce/internal/projectbrain.boundedOutput kind=type
   sig=type boundedOutput struct {\n	buffer		bytes.Buffer\n	limit		int\n	exceeded	bool\n	cancel		context.CancelFunc\n}
 EDGES
   contains=matrix/workforce/internal/projectbrain.boundedOutput#buffer,matrix/workforce/internal/projectbrain.boundedOutput#cancel,matrix/workforce/internal/projectbrain.boundedOutput#exceeded,matrix/workforce/internal/projectbrain.boundedOutput#limit,matrix/workforce/internal/projectbrain.boundedOutput.Bytes,matrix/workforce/internal/projectbrain.boundedOutput.Write
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.boundedOutput.Bytes,matrix/workforce/internal/projectbrain.boundedOutput.Write
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.boundedOutput#buffer kind=field
@@ -1316,6 +1517,7 @@ NODE id=matrix/workforce/internal/projectbrain.boundedOutput.Bytes kind=method
   digest=b3:9de6a659c561d42225a6ec24babcff140dcb82d4ab0ed8f1724bdf0cb544e9bf file=workforce/internal/projectbrain/codegraph.go range=838:840 lang=go exported=true byte_range=27160:27237
   sig=func (output *boundedOutput) Bytes() []byte
 EDGES
+  references=matrix/workforce/internal/projectbrain.boundedOutput,matrix/workforce/internal/projectbrain.output
   ^contains=matrix/workforce/internal/projectbrain.boundedOutput
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
@@ -1323,6 +1525,7 @@ NODE id=matrix/workforce/internal/projectbrain.boundedOutput.Write kind=method
   digest=b3:7cfb43d077fefa4a5c1b06f3aa69b65743e0d3e5c9a811bfc7cfccb80d0420a7 file=workforce/internal/projectbrain/codegraph.go range=822:836 lang=go exported=true byte_range=26794:27158
   sig=func (output *boundedOutput) Write(value []byte) (int, error)
 EDGES
+  references=matrix/workforce/internal/projectbrain.accepted,matrix/workforce/internal/projectbrain.boundedOutput,matrix/workforce/internal/projectbrain.output,matrix/workforce/internal/projectbrain.remaining,matrix/workforce/internal/projectbrain.value
   ^contains=matrix/workforce/internal/projectbrain.boundedOutput
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
@@ -1330,12 +1533,20 @@ NODE id=matrix/workforce/internal/projectbrain.captureExactFiles kind=func
   digest=b3:dd7e261ce5f6af8c87fa0ed0d22ce87d8810e1d261f041e77941affaf41dcb4a file=workforce/internal/projectbrain/codegraph.go range=924:962 lang=go exported=false byte_range=29824:31035
   sig=func captureExactFiles(\n	root string,\n	paths []string,\n	indexed []indexedFile,\n) ([]GraphFile, []string, error)
 EDGES
+  calls=matrix/workforce/internal/projectbrain.hashWorkspaceFile,matrix/workforce/internal/projectbrain.isTestPath,matrix/workforce/internal/projectbrain.sourceLanguage
+  references=matrix/workforce/internal/projectbrain.GraphFile,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.exists,matrix/workforce/internal/projectbrain.file,matrix/workforce/internal/projectbrain.files,matrix/workforce/internal/projectbrain.hash,matrix/workforce/internal/projectbrain.hashWorkspaceFile,matrix/workforce/internal/projectbrain.indexed,matrix/workforce/internal/projectbrain.indexedByPath,matrix/workforce/internal/projectbrain.indexedCurrent,matrix/workforce/internal/projectbrain.indexedDigest,matrix/workforce/internal/projectbrain.indexedFile,matrix/workforce/internal/projectbrain.info,matrix/workforce/internal/projectbrain.isTestPath,matrix/workforce/internal/projectbrain.language,matrix/workforce/internal/projectbrain.metadata,matrix/workforce/internal/projectbrain.path,matrix/workforce/internal/projectbrain.paths,matrix/workforce/internal/projectbrain.pending,matrix/workforce/internal/projectbrain.root,matrix/workforce/internal/projectbrain.sourceLanguage
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.captureFiles kind=func
   digest=b3:ffc03a23f4f29672173bb8dede88b658584bad77062b34eac920c916f18fbce2 file=workforce/internal/projectbrain/codegraph.go range=842:922 lang=go exported=false byte_range=27239:29822
   sig=func captureFiles(\n	root, filter string,\n	indexed []indexedFile,\n) ([]GraphFile, []string, error)
 EDGES
+  calls=matrix/workforce/internal/projectbrain.hashWorkspaceFile,matrix/workforce/internal/projectbrain.validateRelativePath
+  references=matrix/workforce/internal/projectbrain.GraphFile,matrix/workforce/internal/projectbrain.absolute,matrix/workforce/internal/projectbrain.entry,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.exists,matrix/workforce/internal/projectbrain.file,matrix/workforce/internal/projectbrain.files,matrix/workforce/internal/projectbrain.filter,matrix/workforce/internal/projectbrain.hash,matrix/workforce/internal/projectbrain.hashWorkspaceFile,matrix/workforce/internal/projectbrain.indexed,matrix/workforce/internal/projectbrain.indexedByPath,matrix/workforce/internal/projectbrain.indexedCurrent,matrix/workforce/internal/projectbrain.indexedDigest,matrix/workforce/internal/projectbrain.indexedFile,matrix/workforce/internal/projectbrain.info,matrix/workforce/internal/projectbrain.isSourceFile,matrix/workforce/internal/projectbrain.isSourceManifest,matrix/workforce/internal/projectbrain.isTestPath,matrix/workforce/internal/projectbrain.left,matrix/workforce/internal/projectbrain.metadata,matrix/workforce/internal/projectbrain.path,matrix/workforce/internal/projectbrain.pending,matrix/workforce/internal/projectbrain.pendingSet,matrix/workforce/internal/projectbrain.relative,matrix/workforce/internal/projectbrain.right,matrix/workforce/internal/projectbrain.root,matrix/workforce/internal/projectbrain.scope,matrix/workforce/internal/projectbrain.skipSourceDirectory,matrix/workforce/internal/projectbrain.sourceLanguage,matrix/workforce/internal/projectbrain.validateRelativePath,matrix/workforce/internal/projectbrain.walkErr
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.Capture
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.Capture
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.cgEdge kind=type
@@ -1343,6 +1554,7 @@ NODE id=matrix/workforce/internal/projectbrain.cgEdge kind=type
   sig=type cgEdge struct {\n	Source	string	`json:"src"`\n	Target	string	`json:"dst"`\n	Type	string	`json:"type"`\n}
 EDGES
   contains=matrix/workforce/internal/projectbrain.cgEdge#Source,matrix/workforce/internal/projectbrain.cgEdge#Target,matrix/workforce/internal/projectbrain.cgEdge#Type
+  ^references=matrix/workforce/internal/projectbrain.cgExport
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.cgEdge#Source kind=field
@@ -1368,6 +1580,8 @@ NODE id=matrix/workforce/internal/projectbrain.cgExport kind=type
   sig=type cgExport struct {\n	Edges	[]cgEdge	`json:"edges"`\n	Nodes	[]cgNode	`json:"nodes"`\n	Stats	cgStats		`json:"stats"`\n}
 EDGES
   contains=matrix/workforce/internal/projectbrain.cgExport#Edges,matrix/workforce/internal/projectbrain.cgExport#Nodes,matrix/workforce/internal/projectbrain.cgExport#Stats
+  references=matrix/workforce/internal/projectbrain.cgEdge,matrix/workforce/internal/projectbrain.cgNode,matrix/workforce/internal/projectbrain.cgStats
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.indexedFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.cgExport#Edges kind=field
@@ -1393,6 +1607,8 @@ NODE id=matrix/workforce/internal/projectbrain.cgNode kind=type
   sig=type cgNode struct {\n	ID		string		`json:"id"`\n	Kind		string		`json:"kind"`\n	Name		string		`json:"name"`\n	QName		string		`json:"qname"`\n	Language	string		`json:"lang"`\n	File		string		`json:"file"`\n	Range		cgRange		`json:"range"`\n	Digest		string		`json:"digest"`\n	Signature	string		`json:"sig"`\n	Exported	bool		`json:"exported"`\n	Enrich		json.RawMessage	`json:"enrich"`\n	NodeCount	uint64		`json:"-"`\n}
 EDGES
   contains=matrix/workforce/internal/projectbrain.cgNode#Digest,matrix/workforce/internal/projectbrain.cgNode#Enrich,matrix/workforce/internal/projectbrain.cgNode#Exported,matrix/workforce/internal/projectbrain.cgNode#File,matrix/workforce/internal/projectbrain.cgNode#ID,matrix/workforce/internal/projectbrain.cgNode#Kind,matrix/workforce/internal/projectbrain.cgNode#Language,matrix/workforce/internal/projectbrain.cgNode#Name,matrix/workforce/internal/projectbrain.cgNode#NodeCount,matrix/workforce/internal/projectbrain.cgNode#QName,matrix/workforce/internal/projectbrain.cgNode#Range,matrix/workforce/internal/projectbrain.cgNode#Signature
+  references=matrix/workforce/internal/projectbrain.cgRange
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected,matrix/workforce/internal/projectbrain.cgExport
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.cgNode#Digest kind=field
@@ -1472,6 +1688,7 @@ NODE id=matrix/workforce/internal/projectbrain.cgRange kind=type
   sig=type cgRange struct {\n	StartLine	uint32	`json:"start_line"`\n	EndLine		uint32	`json:"end_line"`\n}
 EDGES
   contains=matrix/workforce/internal/projectbrain.cgRange#EndLine,matrix/workforce/internal/projectbrain.cgRange#StartLine
+  ^references=matrix/workforce/internal/projectbrain.cgNode
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.cgRange#EndLine kind=field
@@ -1491,6 +1708,7 @@ NODE id=matrix/workforce/internal/projectbrain.cgStats kind=type
   sig=type cgStats struct {\n	TotalNodes	uint64			`json:"total_nodes"`\n	TotalEdges	uint64			`json:"total_edges"`\n	NodesByKind	map[string]uint64	`json:"nodes_by_kind"`\n	EdgesByType	map[string]uint64	`json:"edges_by_type"`\n	FilesCount	uint64			`json:"files_count"`\n	Languages	[]string		`json:"languages"`\n}
 EDGES
   contains=matrix/workforce/internal/projectbrain.cgStats#EdgesByType,matrix/workforce/internal/projectbrain.cgStats#FilesCount,matrix/workforce/internal/projectbrain.cgStats#Languages,matrix/workforce/internal/projectbrain.cgStats#NodesByKind,matrix/workforce/internal/projectbrain.cgStats#TotalEdges,matrix/workforce/internal/projectbrain.cgStats#TotalNodes
+  ^references=matrix/workforce/internal/projectbrain.cgExport,matrix/workforce/internal/projectbrain.digestGraphGeneration
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.cgStats#EdgesByType kind=field
@@ -1533,72 +1751,108 @@ NODE id=matrix/workforce/internal/projectbrain.codeGraphBoundaryTimeout kind=con
   digest=b3:e4be06bdf886f312ef258fe66e1d1fca47e7d98999f8871509e665752b04a95d file=workforce/internal/projectbrain/codegraph.go range=25:25 lang=go exported=false byte_range=283:326
   sig=time.Duration
 EDGES
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.codeGraphIndexedAt kind=func
   digest=b3:c01518408a3085e20190202a5db6b3bdbeaed20bbde2e2ede5ccf7e52e67854c file=workforce/internal/projectbrain/codegraph.go range=729:735 lang=go exported=false byte_range=23675:23937
   sig=func codeGraphIndexedAt(database string) (time.Time, error)
 EDGES
+  references=matrix/workforce/internal/projectbrain.database,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.info
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.commandOutputLimit kind=const
   digest=b3:d7114d009b061ce26e6244ca9cab5ae105d982704297aea12ac09acd3957f403 file=workforce/internal/projectbrain/codegraph.go range=24:24 lang=go exported=false byte_range=246:281
   sig=untyped int
 EDGES
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.denialReason kind=func
   digest=b3:ef417f5e15f422440f998786e65e84ffc51ec2006becb07edb57f00e521faa9f file=workforce/internal/projectbrain/store.go range=551:556 lang=go exported=false byte_range=18400:18522
   sig=func denialReason(err error) string
 EDGES
+  references=matrix/workforce/internal/projectbrain.ErrUnauthorized,matrix/workforce/internal/projectbrain.err
+  ^calls=matrix/workforce/internal/projectbrain.Store.AuthorizeCapability,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
+  ^references=matrix/workforce/internal/projectbrain.Store.AuthorizeCapability,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.digestBytes kind=func
   digest=b3:1d2d9c8120ae9f5eb7b34174c9cc721a921024807acb77f1a83b305d50dbac71 file=workforce/internal/projectbrain/types.go range=766:769 lang=go exported=false byte_range=28604:28776
   sig=func digestBytes(value []byte) contracts.ContentHash
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/projectbrain.sum,matrix/workforce/internal/projectbrain.value
+  ^calls=matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
+  ^references=matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.digestFromHasher kind=func
   digest=b3:c8c8e4498adc6f27a1df0cb1d36ebafca152e50e79951b66c73f50f68eb63c65 file=workforce/internal/projectbrain/codegraph.go range=978:983 lang=go exported=false byte_range=31400:31572
   sig=func digestFromHasher(hasher hash.Hash) contracts.ContentHash
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/projectbrain.hasher
+  ^calls=matrix/workforce/internal/projectbrain.digestGraphGeneration,matrix/workforce/internal/projectbrain.hashGraphFiles,matrix/workforce/internal/projectbrain.hashWorkspaceFile
+  ^references=matrix/workforce/internal/projectbrain.digestGraphGeneration,matrix/workforce/internal/projectbrain.hashGraphFiles,matrix/workforce/internal/projectbrain.hashWorkspaceFile
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.digestGraphGeneration kind=func
   digest=b3:262b2b276896359c3593ef6a6dd4362ce5c7bd7c902c7b94a6f7919e9b8e7a83 file=workforce/internal/projectbrain/codegraph.go range=1091:1118 lang=go exported=false byte_range=35320:36114
   sig=func digestGraphGeneration(\n	exportDigest [sha256.Size]byte,\n	stats cgStats,\n	root contracts.ContentHash,\n	files []GraphFile,\n) (contracts.ContentHash, error)
 EDGES
+  calls=matrix/workforce/internal/projectbrain.digestFromHasher,matrix/workforce/internal/projectbrain.sha256Writer
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/projectbrain.GraphFile,matrix/workforce/internal/projectbrain.cgStats,matrix/workforce/internal/projectbrain.digestFromHasher,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.exportDigest,matrix/workforce/internal/projectbrain.file,matrix/workforce/internal/projectbrain.files,matrix/workforce/internal/projectbrain.hasher,matrix/workforce/internal/projectbrain.header,matrix/workforce/internal/projectbrain.root,matrix/workforce/internal/projectbrain.sha256Writer,matrix/workforce/internal/projectbrain.stats
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.equalGraphSnapshot kind=func
   digest=b3:7942da2da8d5070080d4c661ae0a17cb6d3fa0d94e3d5fbf4042c936bf93268d file=workforce/internal/projectbrain/store.go range=558:569 lang=go exported=false byte_range=18524:18843
   sig=func equalGraphSnapshot(left, right GraphSnapshot) (bool, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.HashCanonical
+  references=matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/projectbrain.GraphSnapshot,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.left,matrix/workforce/internal/projectbrain.leftHash,matrix/workforce/internal/projectbrain.right,matrix/workforce/internal/projectbrain.rightHash
+  ^calls=matrix/workforce/internal/projectbrain.Store.Commit
+  ^references=matrix/workforce/internal/projectbrain.Store.Commit
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.exactSourcePaths kind=func
   digest=b3:5ccbd5a71b65eaca844af5a936c33f310568f875bd37d7b8ae647137a882caba file=workforce/internal/projectbrain/codegraph.go range=602:623 lang=go exported=false byte_range=18920:19625
   sig=func exactSourcePaths(paths []string) ([]string, error)
 EDGES
+  calls=matrix/workforce/internal/projectbrain.validateRelativePath
+  references=matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.path,matrix/workforce/internal/projectbrain.paths,matrix/workforce/internal/projectbrain.result,matrix/workforce/internal/projectbrain.set,matrix/workforce/internal/projectbrain.validateRelativePath
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.existingRecordHash kind=func
   digest=b3:64c40cb8c8f82c264c1f875380699c6fbbea352273c7e251f9107222a1b82553 file=workforce/internal/projectbrain/store.go range=372:392 lang=go exported=false byte_range=12952:13580
   sig=func existingRecordHash(\n	ctx context.Context,\n	tx pgx.Tx,\n	tenantID string,\n	proposal Proposal,\n) (string, bool, error)
 EDGES
+  references=matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.hash,matrix/workforce/internal/projectbrain.proposal,matrix/workforce/internal/projectbrain.tenantID,matrix/workforce/internal/projectbrain.tx
+  ^calls=matrix/workforce/internal/projectbrain.Store.Commit
+  ^references=matrix/workforce/internal/projectbrain.Store.Commit
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.grantMatchesSeat kind=func
   digest=b3:215c0ed4f99299a49f66807cf517677b10cad84e1da8b67f6b1ea92aa90dcc70 file=workforce/internal/projectbrain/store.go range=493:500 lang=go exported=false byte_range=16560:16918
   sig=func grantMatchesSeat(grant CapabilityGrant, seat contracts.Seat) bool
 EDGES
+  references=matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.grant,matrix/workforce/internal/projectbrain.seat
+  ^calls=matrix/workforce/internal/projectbrain.Store.verifyGrant
+  ^references=matrix/workforce/internal/projectbrain.Store.verifyGrant
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.grantSigningBytes kind=func
   digest=b3:1aab56a8c69a8e67f1a49514abfb2beea20f7fc75dc6dbd4f880eccb99986738 file=workforce/internal/projectbrain/types.go range=744:748 lang=go exported=false byte_range=27851:28107
   sig=func grantSigningBytes(grant CapabilityGrant) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/projectbrain.placeholderSignature
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.grant,matrix/workforce/internal/projectbrain.grantSigningPayload,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.placeholderSignature
+  ^calls=matrix/workforce/internal/projectbrain.SignCapabilityGrant,matrix/workforce/internal/projectbrain.Store.verifyGrant
+  ^references=matrix/workforce/internal/projectbrain.SignCapabilityGrant,matrix/workforce/internal/projectbrain.Store.verifyGrant
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.grantSigningPayload kind=type
@@ -1607,6 +1861,8 @@ NODE id=matrix/workforce/internal/projectbrain.grantSigningPayload kind=type
 EDGES
   contains=matrix/workforce/internal/projectbrain.grantSigningPayload#Grant,matrix/workforce/internal/projectbrain.grantSigningPayload#KeyID,matrix/workforce/internal/projectbrain.grantSigningPayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/projectbrain.CapabilityGrant
+  ^references=matrix/workforce/internal/projectbrain.grantSigningBytes,matrix/workforce/internal/projectbrain.grantSigningPayload.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.grantSigningPayload#Grant kind=field
@@ -1625,6 +1881,7 @@ NODE id=matrix/workforce/internal/projectbrain.grantSigningPayload.Validate kind
   digest=b3:bf802cc1ec0823f6a7f43282194c667fa0adbe9b94e8af734675b308a31f54eb file=workforce/internal/projectbrain/types.go range=737:742 lang=go exported=true byte_range=27636:27849
   sig=func (payload grantSigningPayload) Validate() error
 EDGES
+  references=matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.grantSigningPayload,matrix/workforce/internal/projectbrain.payload
   ^contains=matrix/workforce/internal/projectbrain.grantSigningPayload
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
@@ -1632,12 +1889,20 @@ NODE id=matrix/workforce/internal/projectbrain.hashGraphFiles kind=func
   digest=b3:8bdc44c237bc5adbef74f289ba41b7b905d3cf142eeabb099f88755d1a9b38a3 file=workforce/internal/projectbrain/codegraph.go range=964:972 lang=go exported=false byte_range=31037:31342
   sig=func hashGraphFiles(files []GraphFile) (contracts.ContentHash, error)
 EDGES
+  calls=matrix/workforce/internal/projectbrain.digestFromHasher,matrix/workforce/internal/projectbrain.sha256Writer
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/projectbrain.GraphFile,matrix/workforce/internal/projectbrain.digestFromHasher,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.file,matrix/workforce/internal/projectbrain.files,matrix/workforce/internal/projectbrain.hasher,matrix/workforce/internal/projectbrain.sha256Writer
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.hashWorkspaceFile kind=func
   digest=b3:ef03a239981fb983b4f271047eb6d8132f1f42e9236c51347d9ef494d0906472 file=workforce/internal/projectbrain/codegraph.go range=985:1024 lang=go exported=false byte_range=31574:33339
   sig=func hashWorkspaceFile(root, path string) (contracts.ContentHash, os.FileInfo, error)
 EDGES
+  calls=matrix/workforce/internal/projectbrain.digestFromHasher,matrix/workforce/internal/projectbrain.sha256Writer
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/projectbrain.before,matrix/workforce/internal/projectbrain.closeErr,matrix/workforce/internal/projectbrain.copied,matrix/workforce/internal/projectbrain.copyErr,matrix/workforce/internal/projectbrain.digestFromHasher,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.file,matrix/workforce/internal/projectbrain.hasher,matrix/workforce/internal/projectbrain.lstatErr,matrix/workforce/internal/projectbrain.maxSourceFileBytes,matrix/workforce/internal/projectbrain.openedAfter,matrix/workforce/internal/projectbrain.path,matrix/workforce/internal/projectbrain.pathAfter,matrix/workforce/internal/projectbrain.relative,matrix/workforce/internal/projectbrain.resolved,matrix/workforce/internal/projectbrain.root,matrix/workforce/internal/projectbrain.sha256Writer,matrix/workforce/internal/projectbrain.statErr
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected,matrix/workforce/internal/projectbrain.captureExactFiles,matrix/workforce/internal/projectbrain.captureFiles,matrix/workforce/internal/projectbrain.revalidateExactGraphFiles,matrix/workforce/internal/projectbrain.revalidateGraphFiles
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected,matrix/workforce/internal/projectbrain.captureExactFiles,matrix/workforce/internal/projectbrain.captureFiles,matrix/workforce/internal/projectbrain.revalidateExactGraphFiles,matrix/workforce/internal/projectbrain.revalidateGraphFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.indexedFile kind=type
@@ -1645,6 +1910,7 @@ NODE id=matrix/workforce/internal/projectbrain.indexedFile kind=type
   sig=type indexedFile struct {\n	Path		string	`json:"path"`\n	Language	string	`json:"language"`\n	NodeCount	uint64	`json:"nodeCount"`\n	Digest		string	`json:"digest"`\n}
 EDGES
   contains=matrix/workforce/internal/projectbrain.indexedFile#Digest,matrix/workforce/internal/projectbrain.indexedFile#Language,matrix/workforce/internal/projectbrain.indexedFile#NodeCount,matrix/workforce/internal/projectbrain.indexedFile#Path
+  ^references=matrix/workforce/internal/projectbrain.captureExactFiles,matrix/workforce/internal/projectbrain.captureFiles,matrix/workforce/internal/projectbrain.indexedFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.indexedFile#Digest kind=field
@@ -1675,60 +1941,91 @@ NODE id=matrix/workforce/internal/projectbrain.indexedFiles kind=func
   digest=b3:76edb1baecd48566582666696b33140b31bf2dccf4728d0a98420cc8f5e6bd41 file=workforce/internal/projectbrain/codegraph.go range=393:429 lang=go exported=false byte_range=12111:13118
   sig=func indexedFiles(exported cgExport, filter string) []indexedFile
 EDGES
+  calls=matrix/workforce/internal/projectbrain.validateRelativePath
+  references=matrix/workforce/internal/projectbrain.byPath,matrix/workforce/internal/projectbrain.cgExport,matrix/workforce/internal/projectbrain.current,matrix/workforce/internal/projectbrain.exported,matrix/workforce/internal/projectbrain.file,matrix/workforce/internal/projectbrain.filter,matrix/workforce/internal/projectbrain.indexedFile,matrix/workforce/internal/projectbrain.left,matrix/workforce/internal/projectbrain.node,matrix/workforce/internal/projectbrain.path,matrix/workforce/internal/projectbrain.result,matrix/workforce/internal/projectbrain.right,matrix/workforce/internal/projectbrain.validateRelativePath
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.isImpactKind kind=func
   digest=b3:2c477083e18d137ac43058146a256c58ccffed41dc92ff35f589c0e5311860a8 file=workforce/internal/projectbrain/codegraph.go range=431:439 lang=go exported=false byte_range=13120:13348
   sig=func isImpactKind(kind string) bool
 EDGES
+  references=matrix/workforce/internal/projectbrain.kind
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.Impact
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.Impact
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.isSourceFile kind=func
   digest=b3:be5c1f215b35cd33de72a597de7c5082bf26216746bfa2f842b67bad6a6614ac file=workforce/internal/projectbrain/codegraph.go range=1136:1146 lang=go exported=false byte_range=36461:36736
   sig=func isSourceFile(path string) bool
 EDGES
+  calls=matrix/workforce/internal/projectbrain.isSourceManifest
+  references=matrix/workforce/internal/projectbrain.isSourceManifest,matrix/workforce/internal/projectbrain.path
+  ^references=matrix/workforce/internal/projectbrain.captureFiles,matrix/workforce/internal/projectbrain.revalidateGraphFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.isSourceManifest kind=func
   digest=b3:f8f4b3e4c7345934079e4958e5196731cca6767f3af061a170f58cebe17e53b2 file=workforce/internal/projectbrain/codegraph.go range=1148:1157 lang=go exported=false byte_range=36738:37113
   sig=func isSourceManifest(path string) bool
 EDGES
+  references=matrix/workforce/internal/projectbrain.path
+  ^calls=matrix/workforce/internal/projectbrain.isSourceFile
+  ^references=matrix/workforce/internal/projectbrain.captureFiles,matrix/workforce/internal/projectbrain.isSourceFile
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.isTestPath kind=func
   digest=b3:cf9e1c12afccb7fbb983e9522998472ec513e006dd75c7d924aabbed1420491b file=workforce/internal/projectbrain/codegraph.go range=441:450 lang=go exported=false byte_range=13350:13756
   sig=func isTestPath(path string) bool
 EDGES
+  references=matrix/workforce/internal/projectbrain.base,matrix/workforce/internal/projectbrain.path
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected,matrix/workforce/internal/projectbrain.captureExactFiles
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected,matrix/workforce/internal/projectbrain.captureExactFiles,matrix/workforce/internal/projectbrain.captureFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.maxSourceFileBytes kind=const
   digest=b3:a08f13b0e85710699de1a69f1a2cb63a911e353d0cf894f37f0232cc22ef3e3e file=workforce/internal/projectbrain/codegraph.go range=26:26 lang=go exported=false byte_range=328:362
   sig=untyped int
 EDGES
+  ^references=matrix/workforce/internal/projectbrain.hashWorkspaceFile
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.optionalRecordID kind=func
   digest=b3:5a13acbea6539624ed22d386bbfe7c4c218234b68b05459059a57f66b3ff6c05 file=workforce/internal/projectbrain/store.go range=615:620 lang=go exported=false byte_range=20031:20135
   sig=func optionalRecordID(value *RecordID) any
 EDGES
+  references=matrix/workforce/internal/projectbrain.RecordID,matrix/workforce/internal/projectbrain.value
+  ^calls=matrix/workforce/internal/projectbrain.Store.Commit
+  ^references=matrix/workforce/internal/projectbrain.Store.Commit
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.placeholderSignature kind=func
   digest=b3:1057dbe1dc138c4d5fd2c860f97bd635804c0af0438651cc3105d20cf262f759 file=workforce/internal/projectbrain/types.go range=750:756 lang=go exported=false byte_range=28109:28336
   sig=func placeholderSignature(keyID string) contracts.Signature
 EDGES
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/projectbrain.keyID
+  ^calls=matrix/workforce/internal/projectbrain.SignProposal,matrix/workforce/internal/projectbrain.SignVerification,matrix/workforce/internal/projectbrain.grantSigningBytes,matrix/workforce/internal/projectbrain.proposalSigningBytes,matrix/workforce/internal/projectbrain.verificationSigningBytes
+  ^references=matrix/workforce/internal/projectbrain.SignProposal,matrix/workforce/internal/projectbrain.SignVerification,matrix/workforce/internal/projectbrain.grantSigningBytes,matrix/workforce/internal/projectbrain.proposalSigningBytes,matrix/workforce/internal/projectbrain.verificationSigningBytes
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.proposalHash kind=func
   digest=b3:a394e063af095e7014f66cad45a2248e227920ed83cb2af4fe4180e5d6718f15 file=workforce/internal/projectbrain/types.go range=687:694 lang=go exported=false byte_range=25926:26226
   sig=func proposalHash(proposal Proposal) (contracts.ContentHash, error)
 EDGES
+  calls=matrix/workforce/internal/projectbrain.proposalSigningBytes
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.proposal,matrix/workforce/internal/projectbrain.proposalSigningBytes,matrix/workforce/internal/projectbrain.sum
+  ^calls=matrix/workforce/internal/projectbrain.EngineeringRecord.Validate,matrix/workforce/internal/projectbrain.ProposalHash
+  ^references=matrix/workforce/internal/projectbrain.EngineeringRecord.Validate,matrix/workforce/internal/projectbrain.ProposalHash
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.proposalSigningBytes kind=func
   digest=b3:d03b8c6079b4dea3fd7a688890f737478eedb478f6dfbafff904119dfec0f0f9 file=workforce/internal/projectbrain/types.go range=696:700 lang=go exported=false byte_range=26228:26501
   sig=func proposalSigningBytes(proposal Proposal) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/projectbrain.placeholderSignature
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.placeholderSignature,matrix/workforce/internal/projectbrain.proposal,matrix/workforce/internal/projectbrain.proposalSigningPayload
+  ^calls=matrix/workforce/internal/projectbrain.SignProposal,matrix/workforce/internal/projectbrain.proposalHash,matrix/workforce/internal/projectbrain.verifyRecordSignatures
+  ^references=matrix/workforce/internal/projectbrain.SignProposal,matrix/workforce/internal/projectbrain.proposalHash,matrix/workforce/internal/projectbrain.verifyRecordSignatures
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.proposalSigningPayload kind=type
@@ -1737,6 +2034,8 @@ NODE id=matrix/workforce/internal/projectbrain.proposalSigningPayload kind=type
 EDGES
   contains=matrix/workforce/internal/projectbrain.proposalSigningPayload#KeyID,matrix/workforce/internal/projectbrain.proposalSigningPayload#Proposal,matrix/workforce/internal/projectbrain.proposalSigningPayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/projectbrain.Proposal
+  ^references=matrix/workforce/internal/projectbrain.proposalSigningBytes,matrix/workforce/internal/projectbrain.proposalSigningPayload.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.proposalSigningPayload#KeyID kind=field
@@ -1755,6 +2054,7 @@ NODE id=matrix/workforce/internal/projectbrain.proposalSigningPayload.Validate k
   digest=b3:72237883317163e5d091028de0ac3921a9f8b66793352535277f408db2e9dc0f file=workforce/internal/projectbrain/types.go range=713:718 lang=go exported=true byte_range=26926:27146
   sig=func (payload proposalSigningPayload) Validate() error
 EDGES
+  references=matrix/workforce/internal/projectbrain.Proposal.Validate,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.proposalSigningPayload
   ^contains=matrix/workforce/internal/projectbrain.proposalSigningPayload
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
@@ -1762,102 +2062,152 @@ NODE id=matrix/workforce/internal/projectbrain.recordMatchesSource kind=func
   digest=b3:ae25811d69b23721804895a4cf10d81c6425b6c1cabb8b8f40e5199461900c86 file=workforce/internal/projectbrain/store.go range=571:585 lang=go exported=false byte_range=18845:19277
   sig=func recordMatchesSource(record EngineeringRecord, source GraphSnapshot) bool
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.GraphSnapshot,matrix/workforce/internal/projectbrain.claim,matrix/workforce/internal/projectbrain.current,matrix/workforce/internal/projectbrain.file,matrix/workforce/internal/projectbrain.found,matrix/workforce/internal/projectbrain.hash,matrix/workforce/internal/projectbrain.record,matrix/workforce/internal/projectbrain.source
+  ^calls=matrix/workforce/internal/projectbrain.Store.View
+  ^references=matrix/workforce/internal/projectbrain.Store.View
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.resolveWorkspaceRoot kind=func
   digest=b3:cfbfbddfdaaa19816da4acd9463345b706374e1a0f73aa82007c7af87621e009 file=workforce/internal/projectbrain/codegraph.go range=625:635 lang=go exported=false byte_range=19627:19973
   sig=func resolveWorkspaceRoot(workspaceRoot string) (string, error)
 EDGES
+  references=matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.root,matrix/workforce/internal/projectbrain.workspaceRoot
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles,matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.Capture,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles,matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.revalidateExactGraphFiles kind=func
   digest=b3:abf44ba52b1063b7019462c3a73065e2176396ddce8913f8d7412f903971b80c file=workforce/internal/projectbrain/codegraph.go range=1075:1089 lang=go exported=false byte_range=34816:35318
   sig=func revalidateExactGraphFiles(root string, files []GraphFile) error
 EDGES
+  calls=matrix/workforce/internal/projectbrain.hashWorkspaceFile
+  references=matrix/workforce/internal/projectbrain.GraphFile,matrix/workforce/internal/projectbrain.captured,matrix/workforce/internal/projectbrain.current,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.files,matrix/workforce/internal/projectbrain.hashWorkspaceFile,matrix/workforce/internal/projectbrain.info,matrix/workforce/internal/projectbrain.root
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.revalidateGraphFiles kind=func
   digest=b3:4868c34ae771cb79271ee035c05f5f37bdba82e9ef7d9c30eb1f5f69d44adb3c file=workforce/internal/projectbrain/codegraph.go range=1026:1073 lang=go exported=false byte_range=33341:34814
   sig=func revalidateGraphFiles(root, filter string, files []GraphFile) error
 EDGES
+  calls=matrix/workforce/internal/projectbrain.hashWorkspaceFile
+  references=matrix/workforce/internal/projectbrain.GraphFile,matrix/workforce/internal/projectbrain.captured,matrix/workforce/internal/projectbrain.capturedPaths,matrix/workforce/internal/projectbrain.current,matrix/workforce/internal/projectbrain.entry,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.exists,matrix/workforce/internal/projectbrain.files,matrix/workforce/internal/projectbrain.filter,matrix/workforce/internal/projectbrain.hashWorkspaceFile,matrix/workforce/internal/projectbrain.info,matrix/workforce/internal/projectbrain.isSourceFile,matrix/workforce/internal/projectbrain.path,matrix/workforce/internal/projectbrain.relative,matrix/workforce/internal/projectbrain.root,matrix/workforce/internal/projectbrain.scope,matrix/workforce/internal/projectbrain.skipSourceDirectory,matrix/workforce/internal/projectbrain.walkErr
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.Capture
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.Capture
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.sha256Writer kind=func
   digest=b3:29e840835df9eccf84253ff60b91ddfe1fe01d177577df8eb588baf9e3c25c02 file=workforce/internal/projectbrain/codegraph.go range=974:976 lang=go exported=false byte_range=31344:31398
   sig=func sha256Writer() hash.Hash
 EDGES
+  ^calls=matrix/workforce/internal/projectbrain.digestGraphGeneration,matrix/workforce/internal/projectbrain.hashGraphFiles,matrix/workforce/internal/projectbrain.hashWorkspaceFile
+  ^references=matrix/workforce/internal/projectbrain.digestGraphGeneration,matrix/workforce/internal/projectbrain.hashGraphFiles,matrix/workforce/internal/projectbrain.hashWorkspaceFile
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.signatureFor kind=func
   digest=b3:9acdedfc45f2302f0e5f2c20550049aeb90e1a60cbcf2c7eeef77f1bf24b360f file=workforce/internal/projectbrain/types.go range=758:764 lang=go exported=false byte_range=28338:28602
   sig=func signatureFor(payload []byte, keyID string, privateKey ed25519.PrivateKey) contracts.Signature
 EDGES
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/projectbrain.keyID,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.privateKey
+  ^calls=matrix/workforce/internal/projectbrain.SignCapabilityGrant,matrix/workforce/internal/projectbrain.SignProposal,matrix/workforce/internal/projectbrain.SignVerification
+  ^references=matrix/workforce/internal/projectbrain.SignCapabilityGrant,matrix/workforce/internal/projectbrain.SignProposal,matrix/workforce/internal/projectbrain.SignVerification
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.skipSourceDirectory kind=func
   digest=b3:f3408bb15f67f10940f6d5936d846e3fd11e6dceb61cb973570cdf3ab8c2648d file=workforce/internal/projectbrain/codegraph.go range=1127:1134 lang=go exported=false byte_range=36252:36459
   sig=func skipSourceDirectory(name string) bool
 EDGES
+  references=matrix/workforce/internal/projectbrain.name
+  ^references=matrix/workforce/internal/projectbrain.captureFiles,matrix/workforce/internal/projectbrain.revalidateGraphFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.sortRecords kind=func
   digest=b3:d32bab72efcebfed0b125ae5ae732fcf808ed8e7b8d83f2bd3e9b11f73036920 file=workforce/internal/projectbrain/types.go range=802:812 lang=go exported=false byte_range=29863:30322
   sig=func sortRecords(records []EngineeringRecord)
 EDGES
+  references=matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.left,matrix/workforce/internal/projectbrain.records,matrix/workforce/internal/projectbrain.right
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.sourceLanguage kind=func
   digest=b3:e05716b22c7e4003da89390d67b1c58c0d5ae7abdbec44d95338b20032467d33 file=workforce/internal/projectbrain/codegraph.go range=1159:1188 lang=go exported=false byte_range=37115:37817
   sig=func sourceLanguage(path string) string
 EDGES
+  references=matrix/workforce/internal/projectbrain.path
+  ^calls=matrix/workforce/internal/projectbrain.captureExactFiles
+  ^references=matrix/workforce/internal/projectbrain.captureExactFiles,matrix/workforce/internal/projectbrain.captureFiles
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.sourceStem kind=func
   digest=b3:b6f78a0201385dc723698ed2d9ce5a66cb1417ff0bb16593f14899f40fa3e48e file=workforce/internal/projectbrain/codegraph.go range=452:455 lang=go exported=false byte_range=13758:13896
   sig=func sourceStem(path string) string
 EDGES
+  references=matrix/workforce/internal/projectbrain.base,matrix/workforce/internal/projectbrain.path
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.testMatchesSourceStem kind=func
   digest=b3:3b3f8e56836d5b4a584defb4bae7665a55ec7167b08468590a3689a31385c185 file=workforce/internal/projectbrain/codegraph.go range=457:474 lang=go exported=false byte_range=13898:14474
   sig=func testMatchesSourceStem(path string, stems map[string]struct{}) bool
 EDGES
+  references=matrix/workforce/internal/projectbrain.base,matrix/workforce/internal/projectbrain.candidate,matrix/workforce/internal/projectbrain.candidates,matrix/workforce/internal/projectbrain.exists,matrix/workforce/internal/projectbrain.path,matrix/workforce/internal/projectbrain.stems
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.validateChain kind=func
   digest=b3:6fb973e9f5df3e5944a773cd0170ade8c7fd8800db454a98ce88bd088f29c820 file=workforce/internal/projectbrain/store.go range=394:444 lang=go exported=false byte_range=13582:15237
   sig=func validateChain(\n	ctx context.Context,\n	tx pgx.Tx,\n	tenantID string,\n	proposal Proposal,\n) error
 EDGES
+  references=matrix/workforce/internal/projectbrain.ErrConflict,matrix/workforce/internal/projectbrain.ErrNotFound,matrix/workforce/internal/projectbrain.Proposal,matrix/workforce/internal/projectbrain.ctx,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.kind,matrix/workforce/internal/projectbrain.parent,matrix/workforce/internal/projectbrain.proposal,matrix/workforce/internal/projectbrain.successor,matrix/workforce/internal/projectbrain.tenantID,matrix/workforce/internal/projectbrain.tx,matrix/workforce/internal/projectbrain.version
+  ^calls=matrix/workforce/internal/projectbrain.Store.Commit
+  ^references=matrix/workforce/internal/projectbrain.Store.Commit
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.validateCodeGraphDatabase kind=func
   digest=b3:66133d21901bce23ea44936b1f5896977387e285bfc5c01ef24442ecd83a04fc file=workforce/internal/projectbrain/codegraph.go range=737:753 lang=go exported=false byte_range=23939:24557
   sig=func validateCodeGraphDatabase(database string) error
 EDGES
+  references=matrix/workforce/internal/projectbrain.database,matrix/workforce/internal/projectbrain.directory,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.info,matrix/workforce/internal/projectbrain.path
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.validateFilter kind=func
   digest=b3:7bc9ffcc3e183a2f522b3551eac918befeefdfa03a0fb9c30acc58ccec207c53 file=workforce/internal/projectbrain/codegraph.go range=1120:1125 lang=go exported=false byte_range=36116:36250
   sig=func validateFilter(filter string) error
 EDGES
+  calls=matrix/workforce/internal/projectbrain.validateRelativePath
+  references=matrix/workforce/internal/projectbrain.filter,matrix/workforce/internal/projectbrain.validateRelativePath
+  ^calls=matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.CodeGraph.Capture
+  ^references=matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.CodeGraph.Capture
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.validateRelativePath kind=func
   digest=b3:df2edb7e2269abf347a5d58349a980f5c7e24da69f40c313b426778841a8280d file=workforce/internal/projectbrain/types.go range=787:800 lang=go exported=false byte_range=29274:29861
   sig=func validateRelativePath(path string) error
 EDGES
+  references=matrix/workforce/internal/projectbrain.character,matrix/workforce/internal/projectbrain.cleaned,matrix/workforce/internal/projectbrain.path
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected,matrix/workforce/internal/projectbrain.FileEvidence.validate,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/projectbrain.captureFiles,matrix/workforce/internal/projectbrain.exactSourcePaths,matrix/workforce/internal/projectbrain.indexedFiles,matrix/workforce/internal/projectbrain.validateFilter
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected,matrix/workforce/internal/projectbrain.FileEvidence.validate,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/projectbrain.captureFiles,matrix/workforce/internal/projectbrain.exactSourcePaths,matrix/workforce/internal/projectbrain.indexedFiles,matrix/workforce/internal/projectbrain.validateFilter
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.validateToken kind=func
   digest=b3:4d4e2f6d7d3df14d4aa581c1a806ef959662b4cc62a33544919ea3c9b37029f0 file=workforce/internal/projectbrain/types.go range=771:785 lang=go exported=false byte_range=28778:29272
   sig=func validateToken(name, value string) error
 EDGES
+  references=matrix/workforce/internal/projectbrain.char,matrix/workforce/internal/projectbrain.name,matrix/workforce/internal/projectbrain.value
+  ^calls=matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.Proposal.Validate,matrix/workforce/internal/projectbrain.SeatKeyBinding.validate,matrix/workforce/internal/projectbrain.Verification.Validate,matrix/workforce/internal/projectbrain.View.Validate
+  ^references=matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.Proposal.Validate,matrix/workforce/internal/projectbrain.SeatKeyBinding.validate,matrix/workforce/internal/projectbrain.Store.auditDenial,matrix/workforce/internal/projectbrain.Verification.Validate,matrix/workforce/internal/projectbrain.View.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.verificationSigningBytes kind=func
   digest=b3:a33beb6df4053c6f6ee63b05d91a8e3b7c7e4b055245317ba4780de34ac6939b file=workforce/internal/projectbrain/types.go range=702:706 lang=go exported=false byte_range=26503:26812
   sig=func verificationSigningBytes(verification Verification) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/projectbrain.placeholderSignature
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/projectbrain.Verification,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.placeholderSignature,matrix/workforce/internal/projectbrain.verification,matrix/workforce/internal/projectbrain.verificationSigningPayload
+  ^calls=matrix/workforce/internal/projectbrain.SignVerification,matrix/workforce/internal/projectbrain.verifyRecordSignatures
+  ^references=matrix/workforce/internal/projectbrain.SignVerification,matrix/workforce/internal/projectbrain.verifyRecordSignatures
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.verificationSigningPayload kind=type
@@ -1866,6 +2216,8 @@ NODE id=matrix/workforce/internal/projectbrain.verificationSigningPayload kind=t
 EDGES
   contains=matrix/workforce/internal/projectbrain.verificationSigningPayload#KeyID,matrix/workforce/internal/projectbrain.verificationSigningPayload#Verification,matrix/workforce/internal/projectbrain.verificationSigningPayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/projectbrain.Verification
+  ^references=matrix/workforce/internal/projectbrain.verificationSigningBytes,matrix/workforce/internal/projectbrain.verificationSigningPayload.Validate
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.verificationSigningPayload#KeyID kind=field
@@ -1884,6 +2236,7 @@ NODE id=matrix/workforce/internal/projectbrain.verificationSigningPayload.Valida
   digest=b3:c97350275ce178171844f28fa1f3b3ae1ff98771898be8a3600757564663df77 file=workforce/internal/projectbrain/types.go range=725:730 lang=go exported=true byte_range=27284:27520
   sig=func (payload verificationSigningPayload) Validate() error
 EDGES
+  references=matrix/workforce/internal/projectbrain.Verification.Validate,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.verificationSigningPayload
   ^contains=matrix/workforce/internal/projectbrain.verificationSigningPayload
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
@@ -1891,18 +2244,29 @@ NODE id=matrix/workforce/internal/projectbrain.verifyCodeGraphAncestry kind=func
   digest=b3:487c20e22a1efef70b05b858d122bbba63715a2f311f44186d6f954b3464bde4 file=workforce/internal/projectbrain/codegraph.go range=798:813 lang=go exported=false byte_range=26118:26680
   sig=func verifyCodeGraphAncestry(path string) error
 EDGES
+  references=matrix/workforce/internal/projectbrain.directory,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.info,matrix/workforce/internal/projectbrain.ok,matrix/workforce/internal/projectbrain.path,matrix/workforce/internal/projectbrain.stat
+  ^calls=matrix/workforce/internal/projectbrain.verifyCodeGraphExecutable
+  ^references=matrix/workforce/internal/projectbrain.verifyCodeGraphExecutable
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.verifyCodeGraphExecutable kind=func
   digest=b3:e353b3a2c8dcc099f8a7160492101a5b9c95d642e922d02d6c7f66c2bf9bca7b file=workforce/internal/projectbrain/codegraph.go range=755:796 lang=go exported=false byte_range=24559:26116
   sig=func verifyCodeGraphExecutable(path string) (string, [sha256.Size]byte, error)
 EDGES
+  calls=matrix/workforce/internal/projectbrain.verifyCodeGraphAncestry
+  references=matrix/workforce/internal/projectbrain.candidate,matrix/workforce/internal/projectbrain.digest,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.file,matrix/workforce/internal/projectbrain.hash,matrix/workforce/internal/projectbrain.info,matrix/workforce/internal/projectbrain.ok,matrix/workforce/internal/projectbrain.opened,matrix/workforce/internal/projectbrain.path,matrix/workforce/internal/projectbrain.resolved,matrix/workforce/internal/projectbrain.stat,matrix/workforce/internal/projectbrain.verifyCodeGraphAncestry
+  ^calls=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.NewCodeGraph
+  ^references=matrix/workforce/internal/projectbrain.CodeGraph.exportGraph,matrix/workforce/internal/projectbrain.NewCodeGraph
   ^defines=matrix/workforce/internal/projectbrain/codegraph.go
 
 NODE id=matrix/workforce/internal/projectbrain.verifyRecordSignatures kind=func
   digest=b3:ae1b0d28d8f73970be52ad9e74cf24351b0f92b8a04d0c8bce46975df14a5dda file=workforce/internal/projectbrain/types.go range=661:685 lang=go exported=false byte_range=24927:25924
   sig=func verifyRecordSignatures(\n	record EngineeringRecord,\n	authorKey, verifierKey ed25519.PublicKey,\n) error
 EDGES
+  calls=matrix/workforce/internal/projectbrain.proposalSigningBytes,matrix/workforce/internal/projectbrain.verificationSigningBytes
+  references=matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.authorKey,matrix/workforce/internal/projectbrain.err,matrix/workforce/internal/projectbrain.proposalBytes,matrix/workforce/internal/projectbrain.proposalSignature,matrix/workforce/internal/projectbrain.proposalSigningBytes,matrix/workforce/internal/projectbrain.record,matrix/workforce/internal/projectbrain.verificationBytes,matrix/workforce/internal/projectbrain.verificationSignature,matrix/workforce/internal/projectbrain.verificationSigningBytes,matrix/workforce/internal/projectbrain.verifierKey
+  ^calls=matrix/workforce/internal/projectbrain.Store.Commit
+  ^references=matrix/workforce/internal/projectbrain.Store.Commit
   ^defines=matrix/workforce/internal/projectbrain/types.go
 
 NODE id=matrix/workforce/internal/projectbrain.viewDigestPayload kind=type
@@ -1911,6 +2275,8 @@ NODE id=matrix/workforce/internal/projectbrain.viewDigestPayload kind=type
 EDGES
   contains=matrix/workforce/internal/projectbrain.viewDigestPayload#View,matrix/workforce/internal/projectbrain.viewDigestPayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/projectbrain.View
+  ^references=matrix/workforce/internal/projectbrain.Store.View,matrix/workforce/internal/projectbrain.viewDigestPayload.Validate
   ^defines=matrix/workforce/internal/projectbrain/store.go
 
 NODE id=matrix/workforce/internal/projectbrain.viewDigestPayload#View kind=field
@@ -1923,6 +2289,7 @@ NODE id=matrix/workforce/internal/projectbrain.viewDigestPayload.Validate kind=m
   digest=b3:22776aea114b3459ec40f3919c96c1a77fcc7db5a92bbe960bc9dd0a8debe9c1 file=workforce/internal/projectbrain/store.go range=591:593 lang=go exported=true byte_range=19339:19424
   sig=func (payload viewDigestPayload) Validate() error
 EDGES
+  references=matrix/workforce/internal/projectbrain.View.Validate,matrix/workforce/internal/projectbrain.payload,matrix/workforce/internal/projectbrain.viewDigestPayload
   ^contains=matrix/workforce/internal/projectbrain.viewDigestPayload
   ^defines=matrix/workforce/internal/projectbrain/store.go
 

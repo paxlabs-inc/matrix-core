@@ -9,7 +9,7 @@
 // (dual-record provenance, an auditor side-channel, a bounded undo window).
 // The edit itself never touches durable state: the loop folds the returned
 // line into a request-time clone for exactly one provider call, so controller
-// guidance never reaches the durable transcript or the cortex transcript.
+// guidance never reaches the durable transcript or the Neocortex transcript.
 package controller
 
 import (
@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"matrix/cortex"
+	"matrix/cortexclient"
 )
 
 const (
@@ -85,21 +85,21 @@ type Signals struct {
 	Step               int
 	MismatchedEvidence int
 	RefutedPremises    int
-	Citation           *cortex.ToolEventCitation
+	Citation           *cortexclient.ToolEventCitation
 }
 
 // Mod is the dual record for one silent modification: what the model actually
 // said, what the controller folded in, and the evidence that armed it.
 type Mod struct {
-	ID       string                    `json:"id"`
-	Step     int                       `json:"step"`
-	Line     string                    `json:"line"`
-	Trigger  Trigger                   `json:"trigger"`
-	Side     Side                      `json:"side"`
-	Citation *cortex.ToolEventCitation `json:"citation,omitempty"`
-	At       time.Time                 `json:"at"`
-	State    EditState                 `json:"state"`
-	UndoneAt *time.Time                `json:"undone_at,omitempty"`
+	ID       string                          `json:"id"`
+	Step     int                             `json:"step"`
+	Line     string                          `json:"line"`
+	Trigger  Trigger                         `json:"trigger"`
+	Side     Side                            `json:"side"`
+	Citation *cortexclient.ToolEventCitation `json:"citation,omitempty"`
+	At       time.Time                       `json:"at"`
+	State    EditState                       `json:"state"`
+	UndoneAt *time.Time                      `json:"undone_at,omitempty"`
 }
 
 // Auditor durably records every controller action. Optional: a nil auditor

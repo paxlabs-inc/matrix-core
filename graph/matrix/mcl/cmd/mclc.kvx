@@ -1,9 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/mcl/cmd/mclc kind=package
   digest=b3:a9d68ca0e391e477cb5d08dfaaf1657d1336db4a9ccfcb2843c5b75a53ba2f10 file=MCL/cmd/mclc range=0:0 lang=go exported=true
 EDGES
   contains=matrix/mcl/cmd/mclc/main.go
+  imports=matrix/mcl/ir,matrix/mcl/llm,matrix/mcl/mtx/canonical,matrix/mcl/mtx/interpreter,matrix/mcl/mtx/parser,matrix/mcl/mtx/validator
   ^contains=mod:matrix/mcl
 
 NODE id=matrix/mcl/cmd/mclc._ kind=var
@@ -11,6 +12,7 @@ NODE id=matrix/mcl/cmd/mclc._ kind=var
   sig=string
   doc=Ensure ir package is linked (used in compile output types)
 EDGES
+  references=matrix/mcl/ir.VerbBuild
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc.clarifyOut kind=type
@@ -18,6 +20,7 @@ NODE id=matrix/mcl/cmd/mclc.clarifyOut kind=type
   sig=type clarifyOut struct {\n	SlotName	string	`json:"slot_name"`\n	Prompt		string	`json:"prompt"`\n	Type		string	`json:"type"`\n	Required	bool	`json:"required"`\n}
 EDGES
   contains=matrix/mcl/cmd/mclc.clarifyOut#Prompt,matrix/mcl/cmd/mclc.clarifyOut#Required,matrix/mcl/cmd/mclc.clarifyOut#SlotName,matrix/mcl/cmd/mclc.clarifyOut#Type
+  ^references=matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.compileOutput
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc.clarifyOut#Prompt kind=field
@@ -48,24 +51,40 @@ NODE id=matrix/mcl/cmd/mclc.cmdCompile kind=func
   digest=b3:5ff9cd632998bcea85dde9bc15041119df55ee83e181fa23025e39f80382a138 file=MCL/cmd/mclc/main.go range=88:275 lang=go exported=false byte_range=2296:6345
   sig=func cmdCompile(args []string)
 EDGES
+  calls=matrix/mcl/cmd/mclc.statusName,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.New,matrix/mcl/mtx/canonical.Hash,matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.New,matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/validator.ValidateSkill
+  references=matrix/mcl/cmd/mclc.args,matrix/mcl/cmd/mclc.cfg,matrix/mcl/cmd/mclc.clarifyOut,matrix/mcl/cmd/mclc.client,matrix/mcl/cmd/mclc.compileOutput,matrix/mcl/cmd/mclc.confidence,matrix/mcl/cmd/mclc.digest,matrix/mcl/cmd/mclc.dryRun,matrix/mcl/cmd/mclc.e,matrix/mcl/cmd/mclc.enc,matrix/mcl/cmd/mclc.err,matrix/mcl/cmd/mclc.errs,matrix/mcl/cmd/mclc.file,matrix/mcl/cmd/mclc.grammar,matrix/mcl/cmd/mclc.i,matrix/mcl/cmd/mclc.interp,matrix/mcl/cmd/mclc.llmClient,matrix/mcl/cmd/mclc.m,matrix/mcl/cmd/mclc.model,matrix/mcl/cmd/mclc.name,matrix/mcl/cmd/mclc.output,matrix/mcl/cmd/mclc.p,matrix/mcl/cmd/mclc.parts,matrix/mcl/cmd/mclc.promptMsg,matrix/mcl/cmd/mclc.prose,matrix/mcl/cmd/mclc.q,matrix/mcl/cmd/mclc.result,matrix/mcl/cmd/mclc.seed,matrix/mcl/cmd/mclc.skillPath,matrix/mcl/cmd/mclc.slot,matrix/mcl/cmd/mclc.slotOut,matrix/mcl/cmd/mclc.slotValues,matrix/mcl/cmd/mclc.src,matrix/mcl/cmd/mclc.statusName,matrix/mcl/cmd/mclc.u,matrix/mcl/cmd/mclc.unknownOut,matrix/mcl/cmd/mclc.verb,matrix/mcl/cmd/mclc.verrs,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.New,matrix/mcl/mtx/canonical.Hash,matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.LLM,matrix/mcl/mtx/interpreter.New,matrix/mcl/mtx/interpreter.RunInput,matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/validator.ValidateSkill
+  ^calls=matrix/mcl/cmd/mclc.main
+  ^references=matrix/mcl/cmd/mclc.main
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc.cmdHash kind=func
   digest=b3:a8cd17a84eada9efc6daf28995f810f54397a6f026ed9bc0830f179dc0d58650 file=MCL/cmd/mclc/main.go range=381:406 lang=go exported=false byte_range=8640:9165
   sig=func cmdHash(args []string)
 EDGES
+  calls=matrix/mcl/mtx/canonical.Hash,matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse
+  references=matrix/mcl/cmd/mclc.args,matrix/mcl/cmd/mclc.digest,matrix/mcl/cmd/mclc.e,matrix/mcl/cmd/mclc.err,matrix/mcl/cmd/mclc.file,matrix/mcl/cmd/mclc.p,matrix/mcl/cmd/mclc.path,matrix/mcl/cmd/mclc.perrs,matrix/mcl/cmd/mclc.src,matrix/mcl/mtx/canonical.Hash,matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse
+  ^calls=matrix/mcl/cmd/mclc.main
+  ^references=matrix/mcl/cmd/mclc.main
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc.cmdParse kind=func
   digest=b3:1c8fbdf4c19d2a692c754b7ff83d2c55291099cb2d0ef7bf4626be2d3a4db5ef file=MCL/cmd/mclc/main.go range=410:437 lang=go exported=false byte_range=9187:9810
   sig=func cmdParse(args []string)
 EDGES
+  calls=matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse
+  references=matrix/mcl/cmd/mclc.args,matrix/mcl/cmd/mclc.e,matrix/mcl/cmd/mclc.err,matrix/mcl/cmd/mclc.file,matrix/mcl/cmd/mclc.p,matrix/mcl/cmd/mclc.path,matrix/mcl/cmd/mclc.perrs,matrix/mcl/cmd/mclc.sec,matrix/mcl/cmd/mclc.src,matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse
+  ^calls=matrix/mcl/cmd/mclc.main
+  ^references=matrix/mcl/cmd/mclc.main
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc.cmdValidate kind=func
   digest=b3:71a229b0a99ef5e07ac510fe9be3c4b4c50d961b8611ab3be177b2e0543ac36c file=MCL/cmd/mclc/main.go range=330:377 lang=go exported=false byte_range=7686:8619
   sig=func cmdValidate(args []string)
 EDGES
+  calls=matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill
+  references=matrix/mcl/cmd/mclc.args,matrix/mcl/cmd/mclc.e,matrix/mcl/cmd/mclc.err,matrix/mcl/cmd/mclc.file,matrix/mcl/cmd/mclc.isSkill,matrix/mcl/cmd/mclc.p,matrix/mcl/cmd/mclc.path,matrix/mcl/cmd/mclc.perrs,matrix/mcl/cmd/mclc.sec,matrix/mcl/cmd/mclc.src,matrix/mcl/cmd/mclc.verrs,matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/validator.Error,matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill
+  ^calls=matrix/mcl/cmd/mclc.main
+  ^references=matrix/mcl/cmd/mclc.main
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc.compileOutput kind=type
@@ -73,6 +92,8 @@ NODE id=matrix/mcl/cmd/mclc.compileOutput kind=type
   sig=type compileOutput struct {\n	MtxDigest		string		`json:"mtx_digest"`\n	MatchedCondition	string		`json:"matched_condition"`\n	Executed		bool		`json:"executed"`\n	FrameJSON		string		`json:"frame_json,omitempty"`\n	PromptMessages		[]promptMsg	`json:"prompt_messages,omitempty"`\n	Slots			[]slotOut	`json:"slots,omitempty"`\n	Unknowns		[]unknownOut	`json:"unknowns,omitempty"`\n	ClarifyQuestions	[]clarifyOut	`json:"clarify_questions,omitempty"`\n}
 EDGES
   contains=matrix/mcl/cmd/mclc.compileOutput#ClarifyQuestions,matrix/mcl/cmd/mclc.compileOutput#Executed,matrix/mcl/cmd/mclc.compileOutput#FrameJSON,matrix/mcl/cmd/mclc.compileOutput#MatchedCondition,matrix/mcl/cmd/mclc.compileOutput#MtxDigest,matrix/mcl/cmd/mclc.compileOutput#PromptMessages,matrix/mcl/cmd/mclc.compileOutput#Slots,matrix/mcl/cmd/mclc.compileOutput#Unknowns
+  references=matrix/mcl/cmd/mclc.clarifyOut,matrix/mcl/cmd/mclc.promptMsg,matrix/mcl/cmd/mclc.slotOut,matrix/mcl/cmd/mclc.unknownOut
+  ^references=matrix/mcl/cmd/mclc.cmdCompile
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc.compileOutput#ClarifyQuestions kind=field
@@ -127,6 +148,8 @@ NODE id=matrix/mcl/cmd/mclc.main kind=func
   digest=b3:b9a4f3821d224502f443d3c3c8865365e946a14df46b8f3dc4ef84f66ae1cbfd file=MCL/cmd/mclc/main.go range=34:59 lang=go exported=false byte_range=986:1378
   sig=func main()
 EDGES
+  calls=matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.cmdHash,matrix/mcl/cmd/mclc.cmdParse,matrix/mcl/cmd/mclc.cmdValidate,matrix/mcl/cmd/mclc.usage
+  references=matrix/mcl/cmd/mclc.args,matrix/mcl/cmd/mclc.cmd,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.cmdHash,matrix/mcl/cmd/mclc.cmdParse,matrix/mcl/cmd/mclc.cmdValidate,matrix/mcl/cmd/mclc.usage
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc.promptMsg kind=type
@@ -134,6 +157,7 @@ NODE id=matrix/mcl/cmd/mclc.promptMsg kind=type
   sig=type promptMsg struct {\n	Role	string	`json:"role"`\n	Content	string	`json:"content"`\n}
 EDGES
   contains=matrix/mcl/cmd/mclc.promptMsg#Content,matrix/mcl/cmd/mclc.promptMsg#Role
+  ^references=matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.compileOutput
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc.promptMsg#Content kind=field
@@ -153,6 +177,7 @@ NODE id=matrix/mcl/cmd/mclc.slotOut kind=type
   sig=type slotOut struct {\n	Name	string	`json:"name"`\n	Value	string	`json:"value"`\n	Status	string	`json:"status"`\n	Type	string	`json:"type"`\n}
 EDGES
   contains=matrix/mcl/cmd/mclc.slotOut#Name,matrix/mcl/cmd/mclc.slotOut#Status,matrix/mcl/cmd/mclc.slotOut#Type,matrix/mcl/cmd/mclc.slotOut#Value
+  ^references=matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.compileOutput
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc.slotOut#Name kind=field
@@ -183,6 +208,9 @@ NODE id=matrix/mcl/cmd/mclc.statusName kind=func
   digest=b3:ce3d0e74ae15481629f6dd0064dbeec5ea0bbe0a156a87cfa1671afb65dcf50c file=MCL/cmd/mclc/main.go range=313:326 lang=go exported=false byte_range=7375:7661
   sig=func statusName(s interpreter.SlotStatus) string
 EDGES
+  references=matrix/mcl/cmd/mclc.s,matrix/mcl/mtx/interpreter.SlotDefault,matrix/mcl/mtx/interpreter.SlotEmpty,matrix/mcl/mtx/interpreter.SlotRaw,matrix/mcl/mtx/interpreter.SlotResolved,matrix/mcl/mtx/interpreter.SlotStatus
+  ^calls=matrix/mcl/cmd/mclc.cmdCompile
+  ^references=matrix/mcl/cmd/mclc.cmdCompile
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc.unknownOut kind=type
@@ -190,6 +218,7 @@ NODE id=matrix/mcl/cmd/mclc.unknownOut kind=type
   sig=type unknownOut struct {\n	SlotName	string	`json:"slot_name"`\n	Severity	string	`json:"severity"`\n	Reason		string	`json:"reason"`\n}
 EDGES
   contains=matrix/mcl/cmd/mclc.unknownOut#Reason,matrix/mcl/cmd/mclc.unknownOut#Severity,matrix/mcl/cmd/mclc.unknownOut#SlotName
+  ^references=matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.compileOutput
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc.unknownOut#Reason kind=field
@@ -214,6 +243,8 @@ NODE id=matrix/mcl/cmd/mclc.usage kind=func
   digest=b3:5d42d1ef439d9faebafb06a4682444825ec98fb5280fdddfb618afa6f6e56c64 file=MCL/cmd/mclc/main.go range=61:84 lang=go exported=false byte_range=1380:2272
   sig=func usage()
 EDGES
+  ^calls=matrix/mcl/cmd/mclc.main
+  ^references=matrix/mcl/cmd/mclc.main
   ^defines=matrix/mcl/cmd/mclc/main.go
 
 NODE id=matrix/mcl/cmd/mclc/main.go kind=file

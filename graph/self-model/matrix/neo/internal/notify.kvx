@@ -1,13 +1,13 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:722a887a8e2a11f31226185a4f4b579d99c8d246ded95ccfe74a4ccc9b9805f6
+# GENERATED gen=codegraph do-not-edit merkle=b3:2eece1e371401718b5b83332ea874dc9d69dc31720a509148678833de7350783
 
 NODE id=matrix/neo/internal/notify kind=package
-  digest=b3:dffd3f01d279802d1309f7619879ebed3ec089010e89b3adc920f3297a5921e8 file=neo/internal/notify range=0:0 lang=go exported=true
+  digest=b3:6435942dc6dc20ad027521ce3705156e9c38406b8bdc042fb494d6f90c73d377 file=neo/internal/notify range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/notify/notify.go
   ^contains=mod:matrix/neo
 
 NODE id=matrix/neo/internal/notify.Config kind=type
-  digest=b3:5f23226c4b5ea20d7d043c50723e36549890ea2158af86d18d33779ccbeac977 file=neo/internal/notify/notify.go range=62:80 lang=go exported=true byte_range=2457:3290
+  digest=b3:5f23226c4b5ea20d7d043c50723e36549890ea2158af86d18d33779ccbeac977 file=neo/internal/notify/notify.go range=62:80 lang=go exported=true byte_range=2460:3293
   sig=type Config struct {\n	// NtfyServer is the ntfy base URL (default https://ntfy.sh when blank but a\n	// topic is available). NtfyTopic is the explicit topic; when blank it is\n	// derived deterministically from AgentDID. ntfy is disabled (skipped) when\n	// neither an explicit topic nor a DID is available.\n	NtfyServer	string\n	NtfyTopic	string\n	AgentDID	string\n\n	// AppriseURL enables the optional Apprise fan-out: an http(s) value targets\n	// an Apprise API server; any other value (e.g. tgram://…, comma-separated\n	// apprise service URLs) is delivered via the local `apprise` CLI.\n	AppriseURL	string\n\n	// HTTPClient overrides the default client (tests inject an httptest client).\n	HTTPClient	*http.Client\n}
   doc=Config selects and wires the external backend(s). All fields are optional;\nan empty Config yields a noop Notifier.
 EDGES
@@ -15,94 +15,94 @@ EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.Config#AgentDID kind=field
-  digest=b3:4a2df5b526caa8e13b75fdc06dd46d5124f52bb4bc14bb2af35efdc7384a5d2b file=neo/internal/notify/notify.go range=71:71 lang=go exported=true byte_range=2922:2939
+  digest=b3:4a2df5b526caa8e13b75fdc06dd46d5124f52bb4bc14bb2af35efdc7384a5d2b file=neo/internal/notify/notify.go range=71:71 lang=go exported=true byte_range=2925:2942
   sig=string
 EDGES
   ^contains=matrix/neo/internal/notify.Config
 
 NODE id=matrix/neo/internal/notify.Config#AppriseURL kind=field
-  digest=b3:f3534203bb063b4ec22b6aa5d438691b83b847ed0f6f5d98ec606d6cb8e9587c file=neo/internal/notify/notify.go range=73:76 lang=go exported=true byte_range=2942:3183
+  digest=b3:f3534203bb063b4ec22b6aa5d438691b83b847ed0f6f5d98ec606d6cb8e9587c file=neo/internal/notify/notify.go range=73:76 lang=go exported=true byte_range=2945:3186
   sig=string
   doc=AppriseURL enables the optional Apprise fan-out: an http(s) value targets\nan Apprise API server; any other value (e.g. tgram://…, comma-separated\napprise service URLs) is delivered via the local `apprise` CLI.
 EDGES
   ^contains=matrix/neo/internal/notify.Config
 
 NODE id=matrix/neo/internal/notify.Config#HTTPClient kind=field
-  digest=b3:5327eeecc67e7e277ad4c6cf7abdfbdaba3dbd914ca481a744209bda9bc435e9 file=neo/internal/notify/notify.go range=78:79 lang=go exported=true byte_range=3186:3288
+  digest=b3:5327eeecc67e7e277ad4c6cf7abdfbdaba3dbd914ca481a744209bda9bc435e9 file=neo/internal/notify/notify.go range=78:79 lang=go exported=true byte_range=3189:3291
   sig=*http.Client
   doc=HTTPClient overrides the default client (tests inject an httptest client).
 EDGES
   ^contains=matrix/neo/internal/notify.Config
 
 NODE id=matrix/neo/internal/notify.Config#NtfyServer kind=field
-  digest=b3:d669c93425bd1de29f4cd692b6c7787dbc50925d68f4f02c1c6b4c63fe8e1cfa file=neo/internal/notify/notify.go range=65:69 lang=go exported=true byte_range=2600:2901
+  digest=b3:d669c93425bd1de29f4cd692b6c7787dbc50925d68f4f02c1c6b4c63fe8e1cfa file=neo/internal/notify/notify.go range=65:69 lang=go exported=true byte_range=2603:2904
   sig=string
   doc=NtfyServer is the ntfy base URL (default https://ntfy.sh when blank but a\ntopic is available). NtfyTopic is the explicit topic; when blank it is\nderived deterministically from AgentDID. ntfy is disabled (skipped) when\nneither an explicit topic nor a DID is available.
 EDGES
   ^contains=matrix/neo/internal/notify.Config
 
 NODE id=matrix/neo/internal/notify.Config#NtfyTopic kind=field
-  digest=b3:bdc5082865988b9c8f70a218c588696ebe86d78d9f43ad83a32a8d9310fc17af file=neo/internal/notify/notify.go range=70:70 lang=go exported=true byte_range=2903:2920
+  digest=b3:bdc5082865988b9c8f70a218c588696ebe86d78d9f43ad83a32a8d9310fc17af file=neo/internal/notify/notify.go range=70:70 lang=go exported=true byte_range=2906:2923
   sig=string
 EDGES
   ^contains=matrix/neo/internal/notify.Config
 
 NODE id=matrix/neo/internal/notify.DefaultNtfyServer kind=const
-  digest=b3:40d9d9d144e6318045925d869089bd7ac728dd62e6d7bc6ee71650a5850d53f5 file=neo/internal/notify/notify.go range=82:83 lang=go exported=true byte_range=3292:3412
+  digest=b3:40d9d9d144e6318045925d869089bd7ac728dd62e6d7bc6ee71650a5850d53f5 file=neo/internal/notify/notify.go range=82:83 lang=go exported=true byte_range=3295:3415
   sig=untyped string
   doc=DefaultNtfyServer is the public ntfy server used when none is configured.
 EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.Deliver kind=func
-  digest=b3:8c08fcf0c662612170bef836cde29e3c090d87be83af7a8bbcb7702faf9de5aa file=neo/internal/notify/notify.go range=144:159 lang=go exported=true byte_range=4954:5568
+  digest=b3:8c08fcf0c662612170bef836cde29e3c090d87be83af7a8bbcb7702faf9de5aa file=neo/internal/notify/notify.go range=144:159 lang=go exported=true byte_range=4957:5571
   sig=func Deliver(n Notifier, note Notification)
   doc=Deliver sends the notification BEST-EFFORT on a background goroutine. It never\nblocks the caller and never returns an error: a failed external send is logged\nhonestly and dropped (the durable in-app record remains the canonical\nsurface). A nil notifier is a safe no-op.
 EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.DeriveTopic kind=func
-  digest=b3:e9f64310486fe06fe39d7528213f7908a8ede140ca7e2d25c645c454b31e4a99 file=neo/internal/notify/notify.go range=88:98 lang=go exported=true byte_range=3516:3924
+  digest=b3:e9f64310486fe06fe39d7528213f7908a8ede140ca7e2d25c645c454b31e4a99 file=neo/internal/notify/notify.go range=88:98 lang=go exported=true byte_range=3519:3927
   sig=func DeriveTopic(did string) string
   doc=DeriveTopic derives a deterministic, per-user, unguessable ntfy topic from\nthe agent DID. Returns "" for a blank DID (ntfy then has no topic and is\nskipped). The DID itself is never exposed: only an opaque hash prefix.
 EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.New kind=func
-  digest=b3:15d710c3058e2d5a5991c10f33f4f1b7e36bee76cce08e904b39618719a1fd83 file=neo/internal/notify/notify.go range=100:142 lang=go exported=true byte_range=3926:4952
+  digest=b3:15d710c3058e2d5a5991c10f33f4f1b7e36bee76cce08e904b39618719a1fd83 file=neo/internal/notify/notify.go range=100:142 lang=go exported=true byte_range=3929:4955
   sig=func New(cfg Config) Notifier
   doc=New builds a Notifier from cfg. ntfy (default) is added whenever a topic can\nbe determined; Apprise (optional) is added when AppriseURL is set. With both,\nthe returned Notifier fans out to each. With neither, it is a noop.
 EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.Notification kind=type
-  digest=b3:599026736a1e49c00f053a8e5b00be375f775d1cf7945de8a0665f64805a1f1b file=neo/internal/notify/notify.go range=47:53 lang=go exported=true byte_range=1794:2153
+  digest=b3:901175732b0a37487e2d11800440bbb2f2d201a6430967c2a047afb08ce13ee8 file=neo/internal/notify/notify.go range=47:53 lang=go exported=true byte_range=1794:2156
   sig=type Notification struct {\n	Title	string	// short headline, e.g. the result summary\n	Body	string	// the human-readable result\n	URL	string	// optional deep link the ping opens (ntfy Click / Apprise)\n}
-  doc=Notification is a single outbound ping. It carries the RESULT, not the\nprotocol — no Chronos/alarm/marker/cortex jargon (the consumer-product rule).
+  doc=Notification is a single outbound ping. It carries the RESULT, not the\nprotocol — no Chronos/alarm/marker/Neocortex jargon (the consumer-product rule).
 EDGES
   contains=matrix/neo/internal/notify.Notification#Body,matrix/neo/internal/notify.Notification#Title,matrix/neo/internal/notify.Notification#URL
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.Notification#Body kind=field
-  digest=b3:4eb13e9ffbaa2264c4afb57df47f60223118fb6d5d30d6d88b4a778256fbea09 file=neo/internal/notify/notify.go range=51:51 lang=go exported=true byte_range=2036:2048
+  digest=b3:4eb13e9ffbaa2264c4afb57df47f60223118fb6d5d30d6d88b4a778256fbea09 file=neo/internal/notify/notify.go range=51:51 lang=go exported=true byte_range=2039:2051
   sig=string
 EDGES
   ^contains=matrix/neo/internal/notify.Notification
 
 NODE id=matrix/neo/internal/notify.Notification#Title kind=field
-  digest=b3:8fe0e3652858513f9e89e35fcf03f3e8a9a24236d9bee6198d8cdd5c4a3362ac file=neo/internal/notify/notify.go range=50:50 lang=go exported=true byte_range=1979:1991
+  digest=b3:8fe0e3652858513f9e89e35fcf03f3e8a9a24236d9bee6198d8cdd5c4a3362ac file=neo/internal/notify/notify.go range=50:50 lang=go exported=true byte_range=1982:1994
   sig=string
 EDGES
   ^contains=matrix/neo/internal/notify.Notification
 
 NODE id=matrix/neo/internal/notify.Notification#URL kind=field
-  digest=b3:80beb530c59f8929fb47e213871887b99b1f1c6c98377c3e2f7519f82cb8dd4f file=neo/internal/notify/notify.go range=52:52 lang=go exported=true byte_range=2079:2091
+  digest=b3:80beb530c59f8929fb47e213871887b99b1f1c6c98377c3e2f7519f82cb8dd4f file=neo/internal/notify/notify.go range=52:52 lang=go exported=true byte_range=2082:2094
   sig=string
 EDGES
   ^contains=matrix/neo/internal/notify.Notification
 
 NODE id=matrix/neo/internal/notify.Notifier kind=interface
-  digest=b3:c1c8e163a51d239a503acf0974d1bb332782c5b55595b45b36688962317af10c file=neo/internal/notify/notify.go range=55:60 lang=go exported=true byte_range=2155:2455
+  digest=b3:c1c8e163a51d239a503acf0974d1bb332782c5b55595b45b36688962317af10c file=neo/internal/notify/notify.go range=55:60 lang=go exported=true byte_range=2158:2458
   sig=type Notifier interface {\n	Notify(ctx context.Context, n Notification) error\n}
   doc=Notifier delivers a Notification to an external channel. A backend returns an\nerror on a failed send; callers that must not block (the agent loop) should\nroute through Deliver rather than calling Notify directly.
 EDGES
@@ -110,7 +110,7 @@ EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.appriseBackend kind=type
-  digest=b3:24bb447b5058683980ba91f5aa18fab3365a0979b20c1c0fabd187abf15b768c file=neo/internal/notify/notify.go range=199:204 lang=go exported=false byte_range=6600:6812
+  digest=b3:24bb447b5058683980ba91f5aa18fab3365a0979b20c1c0fabd187abf15b768c file=neo/internal/notify/notify.go range=199:204 lang=go exported=false byte_range=6603:6815
   sig=type appriseBackend struct {\n	target	string\n	client	*http.Client\n}
   doc=appriseBackend routes to an Apprise API server (http(s) target) or the local\n`apprise` CLI (any other target) for fan-out to many services.
 EDGES
@@ -119,26 +119,26 @@ EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.appriseBackend#client kind=field
-  digest=b3:7c0cb504d41523547241354fab9d688332215bc4ca84cd570ca943751af4029f file=neo/internal/notify/notify.go range=203:203 lang=go exported=false byte_range=6791:6810
+  digest=b3:7c0cb504d41523547241354fab9d688332215bc4ca84cd570ca943751af4029f file=neo/internal/notify/notify.go range=203:203 lang=go exported=false byte_range=6794:6813
   sig=*http.Client
 EDGES
   ^contains=matrix/neo/internal/notify.appriseBackend
 
 NODE id=matrix/neo/internal/notify.appriseBackend#target kind=field
-  digest=b3:bbf3075e5cfe020ffe206312e92fd4c39425be44f13bf7cf814713e3b6b31579 file=neo/internal/notify/notify.go range=202:202 lang=go exported=false byte_range=6776:6789
+  digest=b3:bbf3075e5cfe020ffe206312e92fd4c39425be44f13bf7cf814713e3b6b31579 file=neo/internal/notify/notify.go range=202:202 lang=go exported=false byte_range=6779:6792
   sig=string
 EDGES
   ^contains=matrix/neo/internal/notify.appriseBackend
 
 NODE id=matrix/neo/internal/notify.appriseBackend.Notify kind=method
-  digest=b3:6c205f593de401b4429c370e7d64ccc6152faf5230d1618e552a38ab0fc7605b file=neo/internal/notify/notify.go range=206:211 lang=go exported=true byte_range=6814:6979
+  digest=b3:6c205f593de401b4429c370e7d64ccc6152faf5230d1618e552a38ab0fc7605b file=neo/internal/notify/notify.go range=206:211 lang=go exported=true byte_range=6817:6982
   sig=func (b *appriseBackend) Notify(ctx context.Context, n Notification) error
 EDGES
   ^contains=matrix/neo/internal/notify.appriseBackend
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.appriseBackend.notifyCLI kind=method
-  digest=b3:07230edc9e4bb612f9fa17a5d2a9663c378d12dd1cdb456161f39f7ecfb326f8 file=neo/internal/notify/notify.go range=241:257 lang=go exported=false byte_range=7867:8596
+  digest=b3:07230edc9e4bb612f9fa17a5d2a9663c378d12dd1cdb456161f39f7ecfb326f8 file=neo/internal/notify/notify.go range=241:257 lang=go exported=false byte_range=7870:8599
   sig=func (b *appriseBackend) notifyCLI(ctx context.Context, n Notification) error
   doc=notifyCLI fans out through the local `apprise` binary. The target may be a\ncomma-separated list of apprise service URLs. When the binary is absent the\nsend fails honestly (logged by Deliver, never reported as delivered).
 EDGES
@@ -146,7 +146,7 @@ EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.appriseBackend.notifyHTTP kind=method
-  digest=b3:cbf766dd99c6c08ebbf4171b9138daf2aae01a185b59b93f1d9984eace00470f file=neo/internal/notify/notify.go range=213:239 lang=go exported=false byte_range=6981:7865
+  digest=b3:cbf766dd99c6c08ebbf4171b9138daf2aae01a185b59b93f1d9984eace00470f file=neo/internal/notify/notify.go range=213:239 lang=go exported=false byte_range=6984:7868
   sig=func (b *appriseBackend) notifyHTTP(ctx context.Context, n Notification) error
   doc=notifyHTTP posts {title, body} JSON to an Apprise API server endpoint. The\nservice URLs themselves live server-side (a stored config key), so no secret\nis sent or logged from here.
 EDGES
@@ -154,21 +154,21 @@ EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.deliverTimeout kind=const
-  digest=b3:88a40588228dee3666d8529d88974fb23805f943fdb9ab5932456e5f54c910b4 file=neo/internal/notify/notify.go range=85:86 lang=go exported=false byte_range=3414:3514
+  digest=b3:88a40588228dee3666d8529d88974fb23805f943fdb9ab5932456e5f54c910b4 file=neo/internal/notify/notify.go range=85:86 lang=go exported=false byte_range=3417:3517
   sig=time.Duration
   doc=deliverTimeout bounds a single best-effort external send.
 EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.isHTTPURL kind=func
-  digest=b3:c2c600fa87af4966db11654c12cc3ede70b1795115ca8e4d668fa57a3b0697d7 file=neo/internal/notify/notify.go range=273:278 lang=go exported=false byte_range=8997:9302
+  digest=b3:c2c600fa87af4966db11654c12cc3ede70b1795115ca8e4d668fa57a3b0697d7 file=neo/internal/notify/notify.go range=273:278 lang=go exported=false byte_range=9000:9305
   sig=func isHTTPURL(target string) bool
   doc=isHTTPURL reports whether target is an http(s) URL (the Apprise API server\npath) rather than an apprise service URL handled by the CLI.
 EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.multiBackend kind=type
-  digest=b3:249ec24dba8d6542aaaea4ad3e22fabb9a4742fdae33b66159930489e6740a02 file=neo/internal/notify/notify.go range=259:261 lang=go exported=false byte_range=8598:8770
+  digest=b3:249ec24dba8d6542aaaea4ad3e22fabb9a4742fdae33b66159930489e6740a02 file=neo/internal/notify/notify.go range=259:261 lang=go exported=false byte_range=8601:8773
   sig=type multiBackend []Notifier
   doc=multiBackend fans a notification out to every backend, attempting all even\nwhen one fails and joining their errors (best-effort fan-out).
 EDGES
@@ -177,14 +177,14 @@ EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.multiBackend.Notify kind=method
-  digest=b3:230bd53ec3774110ce6e8eb41fea285916fc629bc2de36cabb881f17c803afbb file=neo/internal/notify/notify.go range=263:271 lang=go exported=true byte_range=8772:8995
+  digest=b3:230bd53ec3774110ce6e8eb41fea285916fc629bc2de36cabb881f17c803afbb file=neo/internal/notify/notify.go range=263:271 lang=go exported=true byte_range=8775:8998
   sig=func (m multiBackend) Notify(ctx context.Context, n Notification) error
 EDGES
   ^contains=matrix/neo/internal/notify.multiBackend
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.noopBackend kind=type
-  digest=b3:7bdff60595b8b8793892d87448cf6d41b83c63713e58023b8f3d307c33c46ec7 file=neo/internal/notify/notify.go range=161:163 lang=go exported=false byte_range=5570:5736
+  digest=b3:7bdff60595b8b8793892d87448cf6d41b83c63713e58023b8f3d307c33c46ec7 file=neo/internal/notify/notify.go range=161:163 lang=go exported=false byte_range=5573:5739
   sig=type noopBackend struct{}
   doc=noopBackend is the fallback when nothing is configured. The durable in-app\nrecord still happens upstream, so the result is never lost.
 EDGES
@@ -193,14 +193,14 @@ EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.noopBackend.Notify kind=method
-  digest=b3:60fd65aedd6acc0ff40b6a4fe5ab249433efcde11a7bbfb0c6f52d44aaabcebd file=neo/internal/notify/notify.go range=165:165 lang=go exported=true byte_range=5738:5815
+  digest=b3:60fd65aedd6acc0ff40b6a4fe5ab249433efcde11a7bbfb0c6f52d44aaabcebd file=neo/internal/notify/notify.go range=165:165 lang=go exported=true byte_range=5741:5818
   sig=func (noopBackend) Notify(context.Context, Notification) error
 EDGES
   ^contains=matrix/neo/internal/notify.noopBackend
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.ntfyBackend kind=type
-  digest=b3:7210af99f0601345650708ed947fdf40b7d400c0c652409818b875617d63d34c file=neo/internal/notify/notify.go range=167:173 lang=go exported=false byte_range=5817:6008
+  digest=b3:7210af99f0601345650708ed947fdf40b7d400c0c652409818b875617d63d34c file=neo/internal/notify/notify.go range=167:173 lang=go exported=false byte_range=5820:6011
   sig=type ntfyBackend struct {\n	server	string\n	topic	string\n	client	*http.Client\n}
   doc=ntfyBackend posts to ${server}/${topic} with Title/Click headers — the\ndocumented ntfy publish contract.
 EDGES
@@ -209,32 +209,32 @@ EDGES
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.ntfyBackend#client kind=field
-  digest=b3:7c0cb504d41523547241354fab9d688332215bc4ca84cd570ca943751af4029f file=neo/internal/notify/notify.go range=172:172 lang=go exported=false byte_range=5987:6006
+  digest=b3:7c0cb504d41523547241354fab9d688332215bc4ca84cd570ca943751af4029f file=neo/internal/notify/notify.go range=172:172 lang=go exported=false byte_range=5990:6009
   sig=*http.Client
 EDGES
   ^contains=matrix/neo/internal/notify.ntfyBackend
 
 NODE id=matrix/neo/internal/notify.ntfyBackend#server kind=field
-  digest=b3:97710dfd40b10e12d85909e4f77b0386ff2735f1890250d9c331b6df9dc0461c file=neo/internal/notify/notify.go range=170:170 lang=go exported=false byte_range=5957:5970
+  digest=b3:97710dfd40b10e12d85909e4f77b0386ff2735f1890250d9c331b6df9dc0461c file=neo/internal/notify/notify.go range=170:170 lang=go exported=false byte_range=5960:5973
   sig=string
 EDGES
   ^contains=matrix/neo/internal/notify.ntfyBackend
 
 NODE id=matrix/neo/internal/notify.ntfyBackend#topic kind=field
-  digest=b3:a426f2618c6967e74806dea6df09019cc02155ed709c64aa8237e39a5792e764 file=neo/internal/notify/notify.go range=171:171 lang=go exported=false byte_range=5972:5985
+  digest=b3:a426f2618c6967e74806dea6df09019cc02155ed709c64aa8237e39a5792e764 file=neo/internal/notify/notify.go range=171:171 lang=go exported=false byte_range=5975:5988
   sig=string
 EDGES
   ^contains=matrix/neo/internal/notify.ntfyBackend
 
 NODE id=matrix/neo/internal/notify.ntfyBackend.Notify kind=method
-  digest=b3:078c66b6e531527d5d96353156a7f708d31e6365fb58c0ff2f8a1efc03066f9c file=neo/internal/notify/notify.go range=175:197 lang=go exported=true byte_range=6010:6598
+  digest=b3:078c66b6e531527d5d96353156a7f708d31e6365fb58c0ff2f8a1efc03066f9c file=neo/internal/notify/notify.go range=175:197 lang=go exported=true byte_range=6013:6601
   sig=func (b *ntfyBackend) Notify(ctx context.Context, n Notification) error
 EDGES
   ^contains=matrix/neo/internal/notify.ntfyBackend
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify/notify.go kind=file
-  digest=b3:64c1e200d27b81e4ea32e7e042307388d0eabe367f1b8d9d1d746a32229e1add file=neo/internal/notify/notify.go range=1:278 lang=go exported=true
+  digest=b3:f93a2f2273cc42240f7fe410465dbc2203dd9451b4eae550841c07317fa650c2 file=neo/internal/notify/notify.go range=1:278 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/notify.Config,matrix/neo/internal/notify.DefaultNtfyServer,matrix/neo/internal/notify.Deliver,matrix/neo/internal/notify.DeriveTopic,matrix/neo/internal/notify.New,matrix/neo/internal/notify.Notification,matrix/neo/internal/notify.Notifier,matrix/neo/internal/notify.appriseBackend,matrix/neo/internal/notify.appriseBackend.Notify,matrix/neo/internal/notify.appriseBackend.notifyCLI,matrix/neo/internal/notify.appriseBackend.notifyHTTP,matrix/neo/internal/notify.deliverTimeout,matrix/neo/internal/notify.isHTTPURL,matrix/neo/internal/notify.multiBackend,matrix/neo/internal/notify.multiBackend.Notify,matrix/neo/internal/notify.noopBackend,matrix/neo/internal/notify.noopBackend.Notify,matrix/neo/internal/notify.ntfyBackend,matrix/neo/internal/notify.ntfyBackend.Notify
   ^contains=matrix/neo/internal/notify

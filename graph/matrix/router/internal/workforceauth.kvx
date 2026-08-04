@@ -1,10 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/router/internal/workforceauth kind=package
   digest=b3:6557a71585ff3c974c585f71f486a7e7ae7b56779cf0cd64268da3631fe1c936 file=router/internal/workforceauth range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/workforceauth/credentials.go
   ^contains=mod:matrix/router
+  ^imports=matrix/router/cmd/matrix-router,matrix/router/internal/admin,matrix/router/internal/proxy
 
 NODE id=matrix/router/internal/workforceauth.Deriver kind=type
   digest=b3:da94d69b21b1508e9ee11d301b7d03e5f4b2db450b0ab31d78231d218ddbe616 file=router/internal/workforceauth/credentials.go range=14:19 lang=go exported=true byte_range=157:365
@@ -12,6 +13,7 @@ NODE id=matrix/router/internal/workforceauth.Deriver kind=type
   doc=Deriver expands one router-only root secret into domain-separated,\nper-user Workforce credentials. The root secret is never copied into a\nprovisioned environment.
 EDGES
   contains=matrix/router/internal/workforceauth.Deriver#root,matrix/router/internal/workforceauth.Deriver.BootstrapOwnerPublicKey,matrix/router/internal/workforceauth.Deriver.CompanyIssuerPrivateKey,matrix/router/internal/workforceauth.Deriver.OwnerToken,matrix/router/internal/workforceauth.Deriver.RuntimePrivateKey,matrix/router/internal/workforceauth.Deriver.WakeToken,matrix/router/internal/workforceauth.Deriver.derive,matrix/router/internal/workforceauth.Deriver.token
+  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/admin.Handler,matrix/router/internal/proxy.Handler,matrix/router/internal/workforceauth.Deriver.BootstrapOwnerPublicKey,matrix/router/internal/workforceauth.Deriver.CompanyIssuerPrivateKey,matrix/router/internal/workforceauth.Deriver.OwnerToken,matrix/router/internal/workforceauth.Deriver.RuntimePrivateKey,matrix/router/internal/workforceauth.Deriver.WakeToken,matrix/router/internal/workforceauth.Deriver.derive,matrix/router/internal/workforceauth.Deriver.token,matrix/router/internal/workforceauth.New
   ^defines=matrix/router/internal/workforceauth/credentials.go
 
 NODE id=matrix/router/internal/workforceauth.Deriver#root kind=field
@@ -24,61 +26,92 @@ NODE id=matrix/router/internal/workforceauth.Deriver.BootstrapOwnerPublicKey kin
   digest=b3:8d7f60274066a76cb380a68bb9ac2c9b868d4c18cc473b82c5c7416eb9ee1a85 file=router/internal/workforceauth/credentials.go range=54:62 lang=go exported=true byte_range=1405:1731
   sig=func (d *Deriver) BootstrapOwnerPublicKey(userID string) (string, error)
 EDGES
+  calls=matrix/router/internal/workforceauth.Deriver.derive
+  references=matrix/router/internal/workforceauth.Deriver,matrix/router/internal/workforceauth.Deriver.derive,matrix/router/internal/workforceauth.d,matrix/router/internal/workforceauth.err,matrix/router/internal/workforceauth.privateKey,matrix/router/internal/workforceauth.publicKey,matrix/router/internal/workforceauth.seed,matrix/router/internal/workforceauth.userID
   ^contains=matrix/router/internal/workforceauth.Deriver
+  ^calls=matrix/router/internal/admin.Handler.instanceEnv
+  ^references=matrix/router/internal/admin.Handler.instanceEnv
   ^defines=matrix/router/internal/workforceauth/credentials.go
 
 NODE id=matrix/router/internal/workforceauth.Deriver.CompanyIssuerPrivateKey kind=method
   digest=b3:88f77a12887ee534faacc97aaf17efa8362f30fc6ac995c7ff74e515a5073988 file=router/internal/workforceauth/credentials.go range=45:52 lang=go exported=true byte_range=1123:1403
   sig=func (d *Deriver) CompanyIssuerPrivateKey(userID string) (string, error)
 EDGES
+  calls=matrix/router/internal/workforceauth.Deriver.derive
+  references=matrix/router/internal/workforceauth.Deriver,matrix/router/internal/workforceauth.Deriver.derive,matrix/router/internal/workforceauth.d,matrix/router/internal/workforceauth.err,matrix/router/internal/workforceauth.privateKey,matrix/router/internal/workforceauth.seed,matrix/router/internal/workforceauth.userID
   ^contains=matrix/router/internal/workforceauth.Deriver
+  ^calls=matrix/router/internal/admin.Handler.instanceEnv
+  ^references=matrix/router/internal/admin.Handler.instanceEnv
   ^defines=matrix/router/internal/workforceauth/credentials.go
 
 NODE id=matrix/router/internal/workforceauth.Deriver.OwnerToken kind=method
   digest=b3:46c9e70c365dfe2eefb47ca748932347486c9bdcc78f38bca1382eef956200ee file=router/internal/workforceauth/credentials.go range=28:30 lang=go exported=true byte_range=648:750
   sig=func (d *Deriver) OwnerToken(userID string) (string, error)
 EDGES
+  calls=matrix/router/internal/workforceauth.Deriver.token
+  references=matrix/router/internal/workforceauth.Deriver,matrix/router/internal/workforceauth.Deriver.token,matrix/router/internal/workforceauth.d,matrix/router/internal/workforceauth.userID
   ^contains=matrix/router/internal/workforceauth.Deriver
+  ^calls=matrix/router/internal/admin.Handler.instanceEnv,matrix/router/internal/proxy.Handler.forwardWith
+  ^references=matrix/router/internal/admin.Handler.instanceEnv,matrix/router/internal/proxy.Handler.forwardWith
   ^defines=matrix/router/internal/workforceauth/credentials.go
 
 NODE id=matrix/router/internal/workforceauth.Deriver.RuntimePrivateKey kind=method
   digest=b3:74acee1b7489974b6cbe8d2e387ee88358781f090a4260db3331fc9d5f626381 file=router/internal/workforceauth/credentials.go range=36:43 lang=go exported=true byte_range=854:1121
   sig=func (d *Deriver) RuntimePrivateKey(userID string) (string, error)
 EDGES
+  calls=matrix/router/internal/workforceauth.Deriver.derive
+  references=matrix/router/internal/workforceauth.Deriver,matrix/router/internal/workforceauth.Deriver.derive,matrix/router/internal/workforceauth.d,matrix/router/internal/workforceauth.err,matrix/router/internal/workforceauth.privateKey,matrix/router/internal/workforceauth.seed,matrix/router/internal/workforceauth.userID
   ^contains=matrix/router/internal/workforceauth.Deriver
+  ^calls=matrix/router/internal/admin.Handler.instanceEnv
+  ^references=matrix/router/internal/admin.Handler.instanceEnv
   ^defines=matrix/router/internal/workforceauth/credentials.go
 
 NODE id=matrix/router/internal/workforceauth.Deriver.WakeToken kind=method
   digest=b3:669a846db5fdb89e413ed3b7d7d308d6c7421d1197a75465c29c94cdda042e07 file=router/internal/workforceauth/credentials.go range=32:34 lang=go exported=true byte_range=752:852
   sig=func (d *Deriver) WakeToken(userID string) (string, error)
 EDGES
+  calls=matrix/router/internal/workforceauth.Deriver.token
+  references=matrix/router/internal/workforceauth.Deriver,matrix/router/internal/workforceauth.Deriver.token,matrix/router/internal/workforceauth.d,matrix/router/internal/workforceauth.userID
   ^contains=matrix/router/internal/workforceauth.Deriver
+  ^calls=matrix/router/internal/admin.Handler.instanceEnv,matrix/router/internal/proxy.Handler.forwardWith
+  ^references=matrix/router/internal/admin.Handler.instanceEnv,matrix/router/internal/proxy.Handler.forwardWith
   ^defines=matrix/router/internal/workforceauth/credentials.go
 
 NODE id=matrix/router/internal/workforceauth.Deriver.derive kind=method
   digest=b3:a76128fc2b83c4e661e93870b8a1359c59e634b0f8ba59a41292c3415b5563ca file=router/internal/workforceauth/credentials.go range=72:86 lang=go exported=false byte_range=1937:2512
   sig=func (d *Deriver) derive(purpose, userID string) ([]byte, error)
 EDGES
+  references=matrix/router/internal/workforceauth.Deriver,matrix/router/internal/workforceauth.d,matrix/router/internal/workforceauth.mac,matrix/router/internal/workforceauth.minimumRootSecretBytes,matrix/router/internal/workforceauth.purpose,matrix/router/internal/workforceauth.userID
   ^contains=matrix/router/internal/workforceauth.Deriver
+  ^calls=matrix/router/internal/workforceauth.Deriver.BootstrapOwnerPublicKey,matrix/router/internal/workforceauth.Deriver.CompanyIssuerPrivateKey,matrix/router/internal/workforceauth.Deriver.RuntimePrivateKey,matrix/router/internal/workforceauth.Deriver.token
+  ^references=matrix/router/internal/workforceauth.Deriver.BootstrapOwnerPublicKey,matrix/router/internal/workforceauth.Deriver.CompanyIssuerPrivateKey,matrix/router/internal/workforceauth.Deriver.RuntimePrivateKey,matrix/router/internal/workforceauth.Deriver.token
   ^defines=matrix/router/internal/workforceauth/credentials.go
 
 NODE id=matrix/router/internal/workforceauth.Deriver.token kind=method
   digest=b3:619b8ad393d39dae93f4030a59de56e41080dd8283a7e3adc425f097fd7aa7ad file=router/internal/workforceauth/credentials.go range=64:70 lang=go exported=false byte_range=1733:1935
   sig=func (d *Deriver) token(purpose, userID string) (string, error)
 EDGES
+  calls=matrix/router/internal/workforceauth.Deriver.derive
+  references=matrix/router/internal/workforceauth.Deriver,matrix/router/internal/workforceauth.Deriver.derive,matrix/router/internal/workforceauth.d,matrix/router/internal/workforceauth.err,matrix/router/internal/workforceauth.purpose,matrix/router/internal/workforceauth.userID,matrix/router/internal/workforceauth.value
   ^contains=matrix/router/internal/workforceauth.Deriver
+  ^calls=matrix/router/internal/workforceauth.Deriver.OwnerToken,matrix/router/internal/workforceauth.Deriver.WakeToken
+  ^references=matrix/router/internal/workforceauth.Deriver.OwnerToken,matrix/router/internal/workforceauth.Deriver.WakeToken
   ^defines=matrix/router/internal/workforceauth/credentials.go
 
 NODE id=matrix/router/internal/workforceauth.New kind=func
   digest=b3:56ebaeac3c8a1cf2591af45fc31cdfecf319fc5a1366cee3d35b1f071db64331 file=router/internal/workforceauth/credentials.go range=21:26 lang=go exported=true byte_range=367:646
   sig=func New(root string) (*Deriver, error)
 EDGES
+  references=matrix/router/internal/workforceauth.Deriver,matrix/router/internal/workforceauth.minimumRootSecretBytes,matrix/router/internal/workforceauth.root
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/workforceauth/credentials.go
 
 NODE id=matrix/router/internal/workforceauth.minimumRootSecretBytes kind=const
   digest=b3:2137d4d9a7ae94aa7545f8bba12bec022d45cbd9745250d63dcb4b89f6defef2 file=router/internal/workforceauth/credentials.go range=12:12 lang=go exported=false byte_range=128:155
   sig=untyped int
 EDGES
+  ^references=matrix/router/internal/workforceauth.Deriver.derive,matrix/router/internal/workforceauth.New
   ^defines=matrix/router/internal/workforceauth/credentials.go
 
 NODE id=matrix/router/internal/workforceauth/credentials.go kind=file

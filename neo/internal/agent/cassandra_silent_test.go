@@ -96,8 +96,8 @@ func runScripted(t *testing.T, steps []scriptStep, enabled bool, goal string) (*
 	}
 
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-cassandra-silent"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-cassandra-silent"
 	cfg.CassandraEnabled = enabled
 
 	pager, err := memory.Open(cfg)

@@ -18,7 +18,7 @@ import (
 )
 
 // Q2 — first-message relevance push. These drive the REAL turn loop (agent.Chat)
-// over a REAL Pager + cortex store, with only the model boundary scripted. They
+// over a REAL Pager + Neocortex store, with only the model boundary scripted. They
 // prove the opening turn carries relevance-matched memory (not just the
 // recency-based, query-independent Activate tiers) WITHOUT a reactive
 // memory_recall tool call, and that the push is first-turn-only.
@@ -48,7 +48,7 @@ func newRelevanceAgent(t *testing.T, cfg config.Config, lastBody *[]byte, mu *sy
 
 	// Seed a distinctive durable fact the push must surface. RememberFact writes
 	// durably (the async embed worker is irrelevant — Retrieve's always-on
-	// salience lane finds it via the type-filtered cortex scan).
+	// salience lane finds it via the type-filtered Neocortex scan).
 	if _, err := pager.RememberFact(context.Background(), "the deploy sentinel token is zephyrdeploy42"); err != nil {
 		t.Fatalf("RememberFact: %v", err)
 	}
@@ -66,8 +66,8 @@ func newRelevanceAgent(t *testing.T, cfg config.Config, lastBody *[]byte, mu *sy
 func relevanceCfg(t *testing.T) config.Config {
 	t.Helper()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-relevance-push"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-relevance-push"
 	return cfg
 }
 
@@ -117,7 +117,7 @@ func TestFirstTurnRelevancePush_InjectsOnOpeningTurnOnly(t *testing.T) {
 
 // TestFirstTurnRelevancePush_DisabledByFlag proves the flag gates the behavior:
 // with FirstTurnRelevancePush off, the opening turn carries no push block even
-// though the fact exists in cortex.
+// though the fact exists in Neocortex.
 func TestFirstTurnRelevancePush_DisabledByFlag(t *testing.T) {
 	var lastBody []byte
 	var mu sync.Mutex

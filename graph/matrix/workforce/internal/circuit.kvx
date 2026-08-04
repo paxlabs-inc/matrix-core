@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/circuit kind=package
   digest=b3:a5f7b7f50971323877b925a87d84ae8d8728ea613919309d7380b762c2f91a75 file=workforce/internal/circuit range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/circuit/doc.go,matrix/workforce/internal/circuit/store.go,matrix/workforce/internal/circuit/types.go
+  imports=matrix/workforce/internal/contracts
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/effect,matrix/workforce/internal/reconcile
 
 NODE id=matrix/workforce/internal/circuit.Config kind=type
   digest=b3:62b340d3befbc69868b910b67309a6e79fe6fa4ab0831e906186c2f02cff1210 file=workforce/internal/circuit/types.go range=54:62 lang=go exported=true byte_range=1485:1750
@@ -13,6 +15,7 @@ NODE id=matrix/workforce/internal/circuit.Config kind=type
 EDGES
   contains=matrix/workforce/internal/circuit.Config#FailureThreshold,matrix/workforce/internal/circuit.Config#HalfOpenLimit,matrix/workforce/internal/circuit.Config#OpenDuration,matrix/workforce/internal/circuit.Config#SuccessThreshold,matrix/workforce/internal/circuit.Config#TrialDuration,matrix/workforce/internal/circuit.Config#Window,matrix/workforce/internal/circuit.Config.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/circuit.Config.Validate,matrix/workforce/internal/circuit.New,matrix/workforce/internal/circuit.Store
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.Config#FailureThreshold kind=field
@@ -56,7 +59,10 @@ NODE id=matrix/workforce/internal/circuit.Config.Validate kind=method
   sig=func (config Config) Validate() error
   doc=Validate rejects unbounded or nonsensical breaker policies.
 EDGES
+  references=matrix/workforce/internal/circuit.Config,matrix/workforce/internal/circuit.config
   ^contains=matrix/workforce/internal/circuit.Config
+  ^calls=matrix/workforce/internal/circuit.New
+  ^references=matrix/workforce/internal/circuit.New
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.ErrOpen kind=var
@@ -64,6 +70,7 @@ NODE id=matrix/workforce/internal/circuit.ErrOpen kind=var
   sig=error
   doc=ErrOpen means an applicable breaker denies admission.
 EDGES
+  ^references=matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.openError,matrix/workforce/internal/reconcile.Service.Sweep
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.ErrUncertain kind=var
@@ -71,6 +78,7 @@ NODE id=matrix/workforce/internal/circuit.ErrUncertain kind=var
   sig=error
   doc=ErrUncertain means breaker authority cannot be established and fails closed.
 EDGES
+  ^references=matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.Inspect,matrix/workforce/internal/circuit.Store.Release,matrix/workforce/internal/circuit.Store.complete,matrix/workforce/internal/circuit.Store.completeOnce,matrix/workforce/internal/circuit.Store.currentTime,matrix/workforce/internal/circuit.Store.openError
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.Key kind=type
@@ -80,6 +88,9 @@ NODE id=matrix/workforce/internal/circuit.Key kind=type
 EDGES
   contains=matrix/workforce/internal/circuit.Key#Kind,matrix/workforce/internal/circuit.Key#Name,matrix/workforce/internal/circuit.Key#OrganizationID,matrix/workforce/internal/circuit.Key.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/circuit.Kind,matrix/workforce/internal/contracts.OrganizationID
+  ^embeds=matrix/workforce/internal/circuit.Snapshot
+  ^references=matrix/workforce/internal/circuit.Key.Validate,matrix/workforce/internal/circuit.Keys,matrix/workforce/internal/circuit.Permit,matrix/workforce/internal/circuit.Snapshot,matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.Inspect,matrix/workforce/internal/circuit.Store.lockKey,matrix/workforce/internal/circuit.Store.openError,matrix/workforce/internal/circuit.normalizeKeys,matrix/workforce/internal/circuit.validatePermit
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.Key#Kind kind=field
@@ -105,7 +116,11 @@ NODE id=matrix/workforce/internal/circuit.Key.Validate kind=method
   sig=func (key Key) Validate() error
   doc=Validate rejects incomplete or unrecognized breaker identities.
 EDGES
+  calls=matrix/workforce/internal/circuit.Kind.Valid,matrix/workforce/internal/circuit.validateToken
+  references=matrix/workforce/internal/circuit.Key,matrix/workforce/internal/circuit.Kind.Valid,matrix/workforce/internal/circuit.err,matrix/workforce/internal/circuit.key,matrix/workforce/internal/circuit.validateToken
   ^contains=matrix/workforce/internal/circuit.Key
+  ^calls=matrix/workforce/internal/circuit.Keys,matrix/workforce/internal/circuit.normalizeKeys
+  ^references=matrix/workforce/internal/circuit.Keys,matrix/workforce/internal/circuit.normalizeKeys
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.Keys kind=func
@@ -113,6 +128,10 @@ NODE id=matrix/workforce/internal/circuit.Keys kind=func
   sig=func Keys(\n	organizationID contracts.OrganizationID,\n	provider, skill, effectClass string,\n) ([]Key, error)
   doc=Keys returns the three mandatory breaker dimensions for an effect.
 EDGES
+  calls=matrix/workforce/internal/circuit.Key.Validate
+  references=matrix/workforce/internal/circuit.Key,matrix/workforce/internal/circuit.Key.Validate,matrix/workforce/internal/circuit.KindEffectClass,matrix/workforce/internal/circuit.KindProvider,matrix/workforce/internal/circuit.KindSkill,matrix/workforce/internal/circuit.effectClass,matrix/workforce/internal/circuit.err,matrix/workforce/internal/circuit.key,matrix/workforce/internal/circuit.keys,matrix/workforce/internal/circuit.organizationID,matrix/workforce/internal/circuit.provider,matrix/workforce/internal/circuit.skill,matrix/workforce/internal/contracts.OrganizationID
+  ^calls=matrix/workforce/internal/effect.Gateway.admit
+  ^references=matrix/workforce/internal/effect.Gateway.admit
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.Kind kind=type
@@ -121,6 +140,7 @@ NODE id=matrix/workforce/internal/circuit.Kind kind=type
   doc=Kind identifies one independently observable breaker dimension.
 EDGES
   contains=matrix/workforce/internal/circuit.Kind.Valid
+  ^references=matrix/workforce/internal/circuit.Key,matrix/workforce/internal/circuit.Kind.Valid,matrix/workforce/internal/circuit.KindEffectClass,matrix/workforce/internal/circuit.KindProvider,matrix/workforce/internal/circuit.KindSkill
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.Kind.Valid kind=method
@@ -128,7 +148,10 @@ NODE id=matrix/workforce/internal/circuit.Kind.Valid kind=method
   sig=func (kind Kind) Valid() bool
   doc=Valid reports whether the breaker kind is recognized.
 EDGES
+  references=matrix/workforce/internal/circuit.Kind,matrix/workforce/internal/circuit.KindEffectClass,matrix/workforce/internal/circuit.KindProvider,matrix/workforce/internal/circuit.KindSkill,matrix/workforce/internal/circuit.kind
   ^contains=matrix/workforce/internal/circuit.Kind
+  ^calls=matrix/workforce/internal/circuit.Key.Validate
+  ^references=matrix/workforce/internal/circuit.Key.Validate
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.KindEffectClass kind=const
@@ -136,6 +159,8 @@ NODE id=matrix/workforce/internal/circuit.KindEffectClass kind=const
   sig=circuit.Kind
   doc=KindEffectClass isolates failures of one consequence class.
 EDGES
+  references=matrix/workforce/internal/circuit.Kind
+  ^references=matrix/workforce/internal/circuit.Keys,matrix/workforce/internal/circuit.Kind.Valid
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.KindProvider kind=const
@@ -143,6 +168,8 @@ NODE id=matrix/workforce/internal/circuit.KindProvider kind=const
   sig=circuit.Kind
   doc=KindProvider isolates failures of one external provider.
 EDGES
+  references=matrix/workforce/internal/circuit.Kind
+  ^references=matrix/workforce/internal/circuit.Keys,matrix/workforce/internal/circuit.Kind.Valid
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.KindSkill kind=const
@@ -150,6 +177,8 @@ NODE id=matrix/workforce/internal/circuit.KindSkill kind=const
   sig=circuit.Kind
   doc=KindSkill isolates failures of one versioned skill.
 EDGES
+  references=matrix/workforce/internal/circuit.Kind
+  ^references=matrix/workforce/internal/circuit.Keys,matrix/workforce/internal/circuit.Kind.Valid
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.New kind=func
@@ -157,6 +186,10 @@ NODE id=matrix/workforce/internal/circuit.New kind=func
   sig=func New(pool *pgxpool.Pool, tenantID string, config Config, now func() time.Time) (*Store, error)
   doc=New constructs one tenant-scoped durable circuit authority.
 EDGES
+  calls=matrix/workforce/internal/circuit.Config.Validate
+  references=matrix/workforce/internal/circuit.Config,matrix/workforce/internal/circuit.Config.Validate,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/circuit.config,matrix/workforce/internal/circuit.err,matrix/workforce/internal/circuit.now,matrix/workforce/internal/circuit.pool,matrix/workforce/internal/circuit.tenantID
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.Permit kind=type
@@ -165,6 +198,8 @@ NODE id=matrix/workforce/internal/circuit.Permit kind=type
   doc=Permit is kernel-minted admission authority and cannot be constructed by a seat.
 EDGES
   contains=matrix/workforce/internal/circuit.Permit#ExpiresAt,matrix/workforce/internal/circuit.Permit#ID,matrix/workforce/internal/circuit.Permit#Keys
+  references=matrix/workforce/internal/circuit.Key
+  ^references=matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.Fail,matrix/workforce/internal/circuit.Store.Release,matrix/workforce/internal/circuit.Store.Succeed,matrix/workforce/internal/circuit.Store.complete,matrix/workforce/internal/circuit.Store.completeOnce,matrix/workforce/internal/circuit.validatePermit,matrix/workforce/internal/effect.Gateway.admit
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.Permit#ExpiresAt kind=field
@@ -192,6 +227,9 @@ NODE id=matrix/workforce/internal/circuit.Snapshot kind=type
 EDGES
   contains=matrix/workforce/internal/circuit.Snapshot#FailureCount,matrix/workforce/internal/circuit.Snapshot#HalfOpenInUse,matrix/workforce/internal/circuit.Snapshot#Reason,matrix/workforce/internal/circuit.Snapshot#RetryAt,matrix/workforce/internal/circuit.Snapshot#State,matrix/workforce/internal/circuit.Snapshot#SuccessCount,matrix/workforce/internal/circuit.Snapshot#UpdatedAt,matrix/workforce/internal/circuit.Snapshot#Version
   implements=matrix/workforce/internal/contracts.Validatable
+  embeds=matrix/workforce/internal/circuit.Key
+  references=matrix/workforce/internal/circuit.Key,matrix/workforce/internal/circuit.State
+  ^references=matrix/workforce/internal/circuit.Store.Inspect
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.Snapshot#FailureCount kind=field
@@ -248,6 +286,7 @@ NODE id=matrix/workforce/internal/circuit.State kind=type
   doc=State is the closed durable circuit lifecycle.
 EDGES
   contains=matrix/workforce/internal/circuit.State.Valid
+  ^references=matrix/workforce/internal/circuit.Snapshot,matrix/workforce/internal/circuit.State.Valid,matrix/workforce/internal/circuit.StateClosed,matrix/workforce/internal/circuit.StateHalfOpen,matrix/workforce/internal/circuit.StateOpen,matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.completeOnce
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.State.Valid kind=method
@@ -255,6 +294,7 @@ NODE id=matrix/workforce/internal/circuit.State.Valid kind=method
   sig=func (state State) Valid() bool
   doc=Valid reports whether state is recognized.
 EDGES
+  references=matrix/workforce/internal/circuit.State,matrix/workforce/internal/circuit.StateClosed,matrix/workforce/internal/circuit.StateHalfOpen,matrix/workforce/internal/circuit.StateOpen,matrix/workforce/internal/circuit.state
   ^contains=matrix/workforce/internal/circuit.State
   ^defines=matrix/workforce/internal/circuit/types.go
 
@@ -263,6 +303,8 @@ NODE id=matrix/workforce/internal/circuit.StateClosed kind=const
   sig=circuit.State
   doc=StateClosed admits normal execution.
 EDGES
+  references=matrix/workforce/internal/circuit.State
+  ^references=matrix/workforce/internal/circuit.State.Valid,matrix/workforce/internal/circuit.Store.Inspect,matrix/workforce/internal/circuit.Store.completeOnce
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.StateHalfOpen kind=const
@@ -270,6 +312,8 @@ NODE id=matrix/workforce/internal/circuit.StateHalfOpen kind=const
   sig=circuit.State
   doc=StateHalfOpen admits only a bounded set of reversible/read-only probes.
 EDGES
+  references=matrix/workforce/internal/circuit.State
+  ^references=matrix/workforce/internal/circuit.State.Valid,matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.completeOnce
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.StateOpen kind=const
@@ -277,6 +321,8 @@ NODE id=matrix/workforce/internal/circuit.StateOpen kind=const
   sig=circuit.State
   doc=StateOpen denies execution until RetryAt.
 EDGES
+  references=matrix/workforce/internal/circuit.State
+  ^references=matrix/workforce/internal/circuit.State.Valid,matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.completeOnce
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit.Store kind=type
@@ -285,6 +331,8 @@ NODE id=matrix/workforce/internal/circuit.Store kind=type
   doc=Store is the only authority allowed to transition durable circuit state.
 EDGES
   contains=matrix/workforce/internal/circuit.Store#config,matrix/workforce/internal/circuit.Store#now,matrix/workforce/internal/circuit.Store#pool,matrix/workforce/internal/circuit.Store#tenantID,matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.Fail,matrix/workforce/internal/circuit.Store.Inspect,matrix/workforce/internal/circuit.Store.Release,matrix/workforce/internal/circuit.Store.Succeed,matrix/workforce/internal/circuit.Store.complete,matrix/workforce/internal/circuit.Store.completeOnce,matrix/workforce/internal/circuit.Store.currentTime,matrix/workforce/internal/circuit.Store.lockKey,matrix/workforce/internal/circuit.Store.openError
+  references=matrix/workforce/internal/circuit.Config
+  ^references=matrix/workforce/internal/circuit.New,matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.Fail,matrix/workforce/internal/circuit.Store.Inspect,matrix/workforce/internal/circuit.Store.Release,matrix/workforce/internal/circuit.Store.Succeed,matrix/workforce/internal/circuit.Store.complete,matrix/workforce/internal/circuit.Store.completeOnce,matrix/workforce/internal/circuit.Store.currentTime,matrix/workforce/internal/circuit.Store.lockKey,matrix/workforce/internal/circuit.Store.openError,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.New
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.Store#config kind=field
@@ -316,7 +364,11 @@ NODE id=matrix/workforce/internal/circuit.Store.Admit kind=method
   sig=func (store *Store) Admit(\n	ctx context.Context,\n	keys []Key,\n	irreversible bool,\n) (Permit, error)
   doc=Admit atomically evaluates every applicable circuit and mints a bounded permit.
 EDGES
+  calls=matrix/workforce/internal/circuit.Store.currentTime,matrix/workforce/internal/circuit.Store.lockKey,matrix/workforce/internal/circuit.Store.openError,matrix/workforce/internal/circuit.normalizeKeys,matrix/workforce/internal/circuit.randomID
+  references=matrix/workforce/internal/circuit.ErrOpen,matrix/workforce/internal/circuit.ErrUncertain,matrix/workforce/internal/circuit.Key,matrix/workforce/internal/circuit.Permit,matrix/workforce/internal/circuit.State,matrix/workforce/internal/circuit.StateHalfOpen,matrix/workforce/internal/circuit.StateOpen,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/circuit.Store.currentTime,matrix/workforce/internal/circuit.Store.lockKey,matrix/workforce/internal/circuit.Store.openError,matrix/workforce/internal/circuit.count,matrix/workforce/internal/circuit.ctx,matrix/workforce/internal/circuit.err,matrix/workforce/internal/circuit.expiresAt,matrix/workforce/internal/circuit.irreversible,matrix/workforce/internal/circuit.key,matrix/workforce/internal/circuit.keys,matrix/workforce/internal/circuit.loaded,matrix/workforce/internal/circuit.normalizeKeys,matrix/workforce/internal/circuit.now,matrix/workforce/internal/circuit.ordered,matrix/workforce/internal/circuit.permitID,matrix/workforce/internal/circuit.randomID,matrix/workforce/internal/circuit.row,matrix/workforce/internal/circuit.rows,matrix/workforce/internal/circuit.store,matrix/workforce/internal/circuit.tx
   ^contains=matrix/workforce/internal/circuit.Store
+  ^calls=matrix/workforce/internal/effect.Gateway.admit
+  ^references=matrix/workforce/internal/effect.Gateway.admit
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.Store.Fail kind=method
@@ -324,7 +376,11 @@ NODE id=matrix/workforce/internal/circuit.Store.Fail kind=method
   sig=func (store *Store) Fail(ctx context.Context, permit Permit, reason string) error
   doc=Fail records one authoritative failure and opens thresholded circuits.
 EDGES
+  calls=matrix/workforce/internal/circuit.Store.complete
+  references=matrix/workforce/internal/circuit.Permit,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/circuit.Store.complete,matrix/workforce/internal/circuit.ctx,matrix/workforce/internal/circuit.permit,matrix/workforce/internal/circuit.reason,matrix/workforce/internal/circuit.store
   ^contains=matrix/workforce/internal/circuit.Store
+  ^calls=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.Store.Inspect kind=method
@@ -332,6 +388,8 @@ NODE id=matrix/workforce/internal/circuit.Store.Inspect kind=method
   sig=func (store *Store) Inspect(ctx context.Context, keys []Key) ([]Snapshot, error)
   doc=Inspect returns deterministic observable state for the requested dimensions.
 EDGES
+  calls=matrix/workforce/internal/circuit.normalizeKeys,matrix/workforce/internal/circuit.normalizeTime
+  references=matrix/workforce/internal/circuit.ErrUncertain,matrix/workforce/internal/circuit.Key,matrix/workforce/internal/circuit.Snapshot,matrix/workforce/internal/circuit.StateClosed,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/circuit.ctx,matrix/workforce/internal/circuit.err,matrix/workforce/internal/circuit.key,matrix/workforce/internal/circuit.keys,matrix/workforce/internal/circuit.normalizeKeys,matrix/workforce/internal/circuit.normalizeTime,matrix/workforce/internal/circuit.ordered,matrix/workforce/internal/circuit.result,matrix/workforce/internal/circuit.retryAt,matrix/workforce/internal/circuit.snapshot,matrix/workforce/internal/circuit.store
   ^contains=matrix/workforce/internal/circuit.Store
   ^defines=matrix/workforce/internal/circuit/store.go
 
@@ -340,7 +398,11 @@ NODE id=matrix/workforce/internal/circuit.Store.Release kind=method
   sig=func (store *Store) Release(ctx context.Context, permit Permit) error
   doc=Release relinquishes half-open capacity without treating an internal rejection as provider health.
 EDGES
+  calls=matrix/workforce/internal/circuit.validatePermit
+  references=matrix/workforce/internal/circuit.ErrUncertain,matrix/workforce/internal/circuit.Permit,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/circuit.ctx,matrix/workforce/internal/circuit.err,matrix/workforce/internal/circuit.key,matrix/workforce/internal/circuit.ordered,matrix/workforce/internal/circuit.permit,matrix/workforce/internal/circuit.store,matrix/workforce/internal/circuit.tx,matrix/workforce/internal/circuit.validatePermit
   ^contains=matrix/workforce/internal/circuit.Store
+  ^calls=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.Store.Succeed kind=method
@@ -348,78 +410,119 @@ NODE id=matrix/workforce/internal/circuit.Store.Succeed kind=method
   sig=func (store *Store) Succeed(ctx context.Context, permit Permit) error
   doc=Succeed records one authoritative success and closes recovered circuits.
 EDGES
+  calls=matrix/workforce/internal/circuit.Store.complete
+  references=matrix/workforce/internal/circuit.Permit,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/circuit.Store.complete,matrix/workforce/internal/circuit.ctx,matrix/workforce/internal/circuit.permit,matrix/workforce/internal/circuit.store
   ^contains=matrix/workforce/internal/circuit.Store
+  ^calls=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.Store.complete kind=method
   digest=b3:e3c018b7fbcc2a6833e58aea736479a43a0cfb1f1a00c0ea8170118aee8bd0cf file=workforce/internal/circuit/store.go range=267:281 lang=go exported=false byte_range=9132:9494
   sig=func (store *Store) complete(\n	ctx context.Context,\n	permit Permit,\n	success bool,\n	reason string,\n) error
 EDGES
+  calls=matrix/workforce/internal/circuit.Store.completeOnce,matrix/workforce/internal/circuit.retryable
+  references=matrix/workforce/internal/circuit.ErrUncertain,matrix/workforce/internal/circuit.Permit,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/circuit.Store.completeOnce,matrix/workforce/internal/circuit.attempt,matrix/workforce/internal/circuit.ctx,matrix/workforce/internal/circuit.err,matrix/workforce/internal/circuit.permit,matrix/workforce/internal/circuit.reason,matrix/workforce/internal/circuit.retryable,matrix/workforce/internal/circuit.store,matrix/workforce/internal/circuit.success
   ^contains=matrix/workforce/internal/circuit.Store
+  ^calls=matrix/workforce/internal/circuit.Store.Fail,matrix/workforce/internal/circuit.Store.Succeed
+  ^references=matrix/workforce/internal/circuit.Store.Fail,matrix/workforce/internal/circuit.Store.Succeed
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.Store.completeOnce kind=method
   digest=b3:a1d6b44bbe961f5c1aea54fce4f0db8debef15410a86b6b8a43faad010361038 file=workforce/internal/circuit/store.go range=283:389 lang=go exported=false byte_range=9496:13263
   sig=func (store *Store) completeOnce(\n	ctx context.Context,\n	permit Permit,\n	success bool,\n	reason string,\n) error
 EDGES
+  calls=matrix/workforce/internal/circuit.Store.currentTime,matrix/workforce/internal/circuit.Store.lockKey,matrix/workforce/internal/circuit.normalizeTime,matrix/workforce/internal/circuit.validatePermit
+  references=matrix/workforce/internal/circuit.ErrUncertain,matrix/workforce/internal/circuit.Permit,matrix/workforce/internal/circuit.State,matrix/workforce/internal/circuit.StateClosed,matrix/workforce/internal/circuit.StateHalfOpen,matrix/workforce/internal/circuit.StateOpen,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/circuit.Store.currentTime,matrix/workforce/internal/circuit.Store.lockKey,matrix/workforce/internal/circuit.ctx,matrix/workforce/internal/circuit.err,matrix/workforce/internal/circuit.failures,matrix/workforce/internal/circuit.key,matrix/workforce/internal/circuit.nextFailures,matrix/workforce/internal/circuit.nextState,matrix/workforce/internal/circuit.nextSuccesses,matrix/workforce/internal/circuit.normalizeTime,matrix/workforce/internal/circuit.now,matrix/workforce/internal/circuit.open,matrix/workforce/internal/circuit.openedAt,matrix/workforce/internal/circuit.ordered,matrix/workforce/internal/circuit.permit,matrix/workforce/internal/circuit.reason,matrix/workforce/internal/circuit.retry,matrix/workforce/internal/circuit.retryAt,matrix/workforce/internal/circuit.state,matrix/workforce/internal/circuit.store,matrix/workforce/internal/circuit.success,matrix/workforce/internal/circuit.successes,matrix/workforce/internal/circuit.tx,matrix/workforce/internal/circuit.validatePermit,matrix/workforce/internal/circuit.windowStarted
   ^contains=matrix/workforce/internal/circuit.Store
+  ^calls=matrix/workforce/internal/circuit.Store.complete
+  ^references=matrix/workforce/internal/circuit.Store.complete
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.Store.currentTime kind=method
   digest=b3:9e419d7607968152ec0bd2895f1b0749c7af1f52b21c864d37af380d2d76268a file=workforce/internal/circuit/store.go range=413:419 lang=go exported=false byte_range=14034:14256
   sig=func (store *Store) currentTime() (time.Time, error)
 EDGES
+  references=matrix/workforce/internal/circuit.ErrUncertain,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/circuit.now,matrix/workforce/internal/circuit.store
   ^contains=matrix/workforce/internal/circuit.Store
+  ^calls=matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.completeOnce
+  ^references=matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.completeOnce
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.Store.lockKey kind=method
   digest=b3:48f560ce939275515af9715de5a03c882b851bd794ebf11d8f4af031437c8dbb file=workforce/internal/circuit/store.go range=421:424 lang=go exported=false byte_range=14258:14407
   sig=func (store *Store) lockKey(key Key) string
 EDGES
+  references=matrix/workforce/internal/circuit.Key,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/circuit.key,matrix/workforce/internal/circuit.store
   ^contains=matrix/workforce/internal/circuit.Store
+  ^calls=matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.completeOnce
+  ^references=matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.completeOnce
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.Store.openError kind=method
   digest=b3:da0c3fd7b46e35e333ad2d1e401067be3a04803c37e1741de67d8f148e7332a8 file=workforce/internal/circuit/store.go range=397:411 lang=go exported=false byte_range=13445:14032
   sig=func (store *Store) openError(ctx context.Context, tx pgx.Tx, key Key) error
 EDGES
+  references=matrix/workforce/internal/circuit.ErrOpen,matrix/workforce/internal/circuit.ErrUncertain,matrix/workforce/internal/circuit.Key,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/circuit.ctx,matrix/workforce/internal/circuit.err,matrix/workforce/internal/circuit.key,matrix/workforce/internal/circuit.reason,matrix/workforce/internal/circuit.retryAt,matrix/workforce/internal/circuit.store,matrix/workforce/internal/circuit.tx
   ^contains=matrix/workforce/internal/circuit.Store
+  ^calls=matrix/workforce/internal/circuit.Store.Admit
+  ^references=matrix/workforce/internal/circuit.Store.Admit
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.normalizeKeys kind=func
   digest=b3:ca9cd42ea33e3d4db09686974d19db99e52bf4508bc988b042d9a436aec9eaf0 file=workforce/internal/circuit/store.go range=426:451 lang=go exported=false byte_range=14409:15240
   sig=func normalizeKeys(keys []Key) ([]Key, error)
 EDGES
+  calls=matrix/workforce/internal/circuit.Key.Validate
+  references=matrix/workforce/internal/circuit.Key,matrix/workforce/internal/circuit.Key.Validate,matrix/workforce/internal/circuit.err,matrix/workforce/internal/circuit.index,matrix/workforce/internal/circuit.key,matrix/workforce/internal/circuit.keys,matrix/workforce/internal/circuit.left,matrix/workforce/internal/circuit.ordered,matrix/workforce/internal/circuit.right
+  ^calls=matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.Inspect,matrix/workforce/internal/circuit.validatePermit
+  ^references=matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/circuit.Store.Inspect,matrix/workforce/internal/circuit.validatePermit
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.normalizeTime kind=func
   digest=b3:a229ecc5a36b61182291271dc8b6b382d61a3f9c495168b995d973b561dda545 file=workforce/internal/circuit/store.go range=471:473 lang=go exported=false byte_range=15724:15786
   sig=func normalizeTime(value *time.Time)
 EDGES
+  references=matrix/workforce/internal/circuit.value
+  ^calls=matrix/workforce/internal/circuit.Store.Inspect,matrix/workforce/internal/circuit.Store.completeOnce
+  ^references=matrix/workforce/internal/circuit.Store.Inspect,matrix/workforce/internal/circuit.Store.completeOnce
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.randomID kind=func
   digest=b3:c5acab750680862f950ed0024e187e900215ccff27ab9dd6527a1597d92889c7 file=workforce/internal/circuit/store.go range=463:469 lang=go exported=false byte_range=15557:15722
   sig=func randomID() (string, error)
 EDGES
+  references=matrix/workforce/internal/circuit.err,matrix/workforce/internal/circuit.value
+  ^calls=matrix/workforce/internal/circuit.Store.Admit
+  ^references=matrix/workforce/internal/circuit.Store.Admit
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.retryable kind=func
   digest=b3:d9a1264b33730dabf587ea4420df874b76273040b1077f6e6e12d8a4c5797633 file=workforce/internal/circuit/store.go range=391:395 lang=go exported=false byte_range=13265:13443
   sig=func retryable(err error) bool
 EDGES
+  references=matrix/workforce/internal/circuit.databaseError,matrix/workforce/internal/circuit.err
+  ^calls=matrix/workforce/internal/circuit.Store.complete
+  ^references=matrix/workforce/internal/circuit.Store.complete
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.validatePermit kind=func
   digest=b3:ecd4522476bc11ab5a86ad8927d26a6612638ae1a45c2dc1ba245682435b45ea file=workforce/internal/circuit/store.go range=453:461 lang=go exported=false byte_range=15242:15555
   sig=func validatePermit(permit Permit) ([]Key, error)
 EDGES
+  calls=matrix/workforce/internal/circuit.normalizeKeys,matrix/workforce/internal/circuit.validateToken
+  references=matrix/workforce/internal/circuit.Key,matrix/workforce/internal/circuit.Permit,matrix/workforce/internal/circuit.err,matrix/workforce/internal/circuit.normalizeKeys,matrix/workforce/internal/circuit.permit,matrix/workforce/internal/circuit.validateToken
+  ^calls=matrix/workforce/internal/circuit.Store.Release,matrix/workforce/internal/circuit.Store.completeOnce
+  ^references=matrix/workforce/internal/circuit.Store.Release,matrix/workforce/internal/circuit.Store.completeOnce
   ^defines=matrix/workforce/internal/circuit/store.go
 
 NODE id=matrix/workforce/internal/circuit.validateToken kind=func
   digest=b3:590459e2e47ebbf7873dbe7192d5009b922fad4f2b2817e6555d73258f5ecacd file=workforce/internal/circuit/types.go range=117:131 lang=go exported=false byte_range=3353:3837
   sig=func validateToken(name, value string) error
 EDGES
+  references=matrix/workforce/internal/circuit.char,matrix/workforce/internal/circuit.name,matrix/workforce/internal/circuit.value
+  ^calls=matrix/workforce/internal/circuit.Key.Validate,matrix/workforce/internal/circuit.validatePermit
+  ^references=matrix/workforce/internal/circuit.Key.Validate,matrix/workforce/internal/circuit.validatePermit
   ^defines=matrix/workforce/internal/circuit/types.go
 
 NODE id=matrix/workforce/internal/circuit/doc.go kind=file

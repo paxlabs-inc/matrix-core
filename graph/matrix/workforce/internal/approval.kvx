@@ -1,15 +1,18 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/approval kind=package
   digest=b3:c5aa4da270666b1f2c6e9a33a3110c38776a0062109a81c7f84162d8de5a6ef0 file=workforce/internal/approval range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/approval/doc.go,matrix/workforce/internal/approval/store.go,matrix/workforce/internal/approval/types.go
+  imports=matrix/vault,matrix/workforce/internal/contracts
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/departmentadapter,matrix/workforce/internal/domainwork,matrix/workforce/internal/effect,matrix/workforce/internal/operationswork
 
 NODE id=matrix/workforce/internal/approval.AssertDecisionAuthority kind=func
   digest=b3:966b5556412c9db0598db30dd47e865c9c7ecacc7a4a512a1c0b2d076daf0aba file=workforce/internal/approval/store.go range=375:387 lang=go exported=true byte_range=11906:12239
   sig=func AssertDecisionAuthority(\n	departmentKind contracts.DepartmentKind,\n	role contracts.SeatRole,\n) error
 EDGES
+  references=matrix/workforce/internal/approval.ErrUnauthorized,matrix/workforce/internal/approval.departmentKind,matrix/workforce/internal/approval.role,matrix/workforce/internal/contracts.DepartmentExecutive,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.SeatAuditor,matrix/workforce/internal/contracts.SeatExecutor,matrix/workforce/internal/contracts.SeatLead,matrix/workforce/internal/contracts.SeatRole
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.Authority kind=type
@@ -19,6 +22,8 @@ NODE id=matrix/workforce/internal/approval.Authority kind=type
 EDGES
   contains=matrix/workforce/internal/approval.Authority#KeyID,matrix/workforce/internal/approval.Authority#OwnerID,matrix/workforce/internal/approval.Authority#PublicKey,matrix/workforce/internal/approval.Authority.Clone,matrix/workforce/internal/approval.Authority.Empty,matrix/workforce/internal/approval.Authority.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.OwnerID
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/approval.Authority.Clone,matrix/workforce/internal/approval.Authority.Empty,matrix/workforce/internal/approval.Authority.Validate,matrix/workforce/internal/approval.OpenSealedBatch,matrix/workforce/internal/approval.Store.Authority,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.New
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.Authority#KeyID kind=field
@@ -44,7 +49,10 @@ NODE id=matrix/workforce/internal/approval.Authority.Clone kind=method
   sig=func (authority Authority) Clone() Authority
   doc=Clone returns a copy that does not share key material with the caller.
 EDGES
+  references=matrix/workforce/internal/approval.Authority,matrix/workforce/internal/approval.authority
   ^contains=matrix/workforce/internal/approval.Authority
+  ^calls=matrix/workforce/internal/effect.New
+  ^references=matrix/workforce/internal/effect.New
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.Authority.Empty kind=method
@@ -52,7 +60,10 @@ NODE id=matrix/workforce/internal/approval.Authority.Empty kind=method
   sig=func (authority Authority) Empty() bool
   doc=Empty reports whether no owner authority was configured at all. An empty\nauthority is a valid choice for a caller that never spends approvals; a\npartially filled one is always a misconfiguration.
 EDGES
+  references=matrix/workforce/internal/approval.Authority,matrix/workforce/internal/approval.authority
   ^contains=matrix/workforce/internal/approval.Authority
+  ^calls=matrix/workforce/internal/approval.Authority.Validate
+  ^references=matrix/workforce/internal/approval.Authority.Validate
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.Authority.Validate kind=method
@@ -60,13 +71,18 @@ NODE id=matrix/workforce/internal/approval.Authority.Validate kind=method
   sig=func (authority Authority) Validate() error
   doc=Validate accepts either a complete owner authority or none at all.
 EDGES
+  calls=matrix/workforce/internal/approval.Authority.Empty
+  references=matrix/workforce/internal/approval.Authority,matrix/workforce/internal/approval.Authority.Empty,matrix/workforce/internal/approval.authority
   ^contains=matrix/workforce/internal/approval.Authority
+  ^calls=matrix/workforce/internal/effect.New
+  ^references=matrix/workforce/internal/effect.New
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.AutonomyPreset kind=type
   digest=b3:058e61757ff2f02f4e52a8223d66d2052e8805b3aaf8cb3cbce7e52ef5b3ff14 file=workforce/internal/approval/types.go range=26:26 lang=go exported=true byte_range=635:661
   sig=type AutonomyPreset string
 EDGES
+  ^references=matrix/workforce/internal/approval.CompilePreset,matrix/workforce/internal/approval.PresetBounded,matrix/workforce/internal/approval.PresetSupervised,matrix/workforce/internal/approval.PresetUnattended
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.BatchAD kind=func
@@ -74,6 +90,9 @@ NODE id=matrix/workforce/internal/approval.BatchAD kind=func
   sig=func BatchAD(\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	batchID contracts.ApprovalID,\n) vault.AD
   doc=BatchAD is the Vault authenticated-data binding for one durable owner-signed\nbatch. Every reader that opens a sealed batch must bind it to this identity.
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/approval.batchID,matrix/workforce/internal/approval.organizationID,matrix/workforce/internal/approval.tenantID,matrix/workforce/internal/contracts.ApprovalID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SchemaVersionV1
+  ^calls=matrix/workforce/internal/approval.OpenSealedBatch
+  ^references=matrix/workforce/internal/approval.OpenSealedBatch
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.BatchApproval kind=type
@@ -82,6 +101,8 @@ NODE id=matrix/workforce/internal/approval.BatchApproval kind=type
 EDGES
   contains=matrix/workforce/internal/approval.BatchApproval#AggregateCeilingMicrounits,matrix/workforce/internal/approval.BatchApproval#BatchID,matrix/workforce/internal/approval.BatchApproval#ExpiresAt,matrix/workforce/internal/approval.BatchApproval#IntentIDs,matrix/workforce/internal/approval.BatchApproval#IntentSetHash,matrix/workforce/internal/approval.BatchApproval#OrganizationID,matrix/workforce/internal/approval.BatchApproval#OwnerID,matrix/workforce/internal/approval.BatchApproval#SchemaVersion,matrix/workforce/internal/approval.BatchApproval#Signature,matrix/workforce/internal/approval.BatchApproval#TenantID,matrix/workforce/internal/approval.BatchApproval.Authorizes,matrix/workforce/internal/approval.BatchApproval.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ApprovalID,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/contracts.Signature
+  ^references=matrix/workforce/internal/approval.BatchApproval.Authorizes,matrix/workforce/internal/approval.BatchApproval.Validate,matrix/workforce/internal/approval.OpenSealedBatch,matrix/workforce/internal/approval.SignBatch,matrix/workforce/internal/approval.Store.PublishBatch,matrix/workforce/internal/approval.batchSigningBytes
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.BatchApproval#AggregateCeilingMicrounits kind=field
@@ -149,20 +170,28 @@ NODE id=matrix/workforce/internal/approval.BatchApproval.Authorizes kind=method
   sig=func (batch BatchApproval) Authorizes(intentID contracts.IntentID) bool
   doc=Authorizes reports whether the owner signed this exact intent into the batch.
 EDGES
+  references=matrix/workforce/internal/approval.BatchApproval,matrix/workforce/internal/approval.batch,matrix/workforce/internal/approval.candidate,matrix/workforce/internal/approval.intentID,matrix/workforce/internal/contracts.IntentID
   ^contains=matrix/workforce/internal/approval.BatchApproval
+  ^calls=matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/effect.Gateway.consumeApproval,matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval
+  ^references=matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/effect.Gateway.consumeApproval,matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.BatchApproval.Validate kind=method
   digest=b3:9bc52d60f0c6add46cdaa65ab0e7f46239c583ade914a75ecdb0a6081b3469f8 file=workforce/internal/approval/store.go range=36:49 lang=go exported=true byte_range=745:1248
   sig=func (batch BatchApproval) Validate() error
 EDGES
+  calls=matrix/workforce/internal/approval.IntentSetHash,matrix/workforce/internal/contracts.Signature.Validate
+  references=matrix/workforce/internal/approval.BatchApproval,matrix/workforce/internal/approval.IntentSetHash,matrix/workforce/internal/approval.batch,matrix/workforce/internal/approval.err,matrix/workforce/internal/approval.hash,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Signature.Validate
   ^contains=matrix/workforce/internal/approval.BatchApproval
+  ^calls=matrix/workforce/internal/approval.OpenSealedBatch,matrix/workforce/internal/approval.SignBatch,matrix/workforce/internal/approval.Store.PublishBatch
+  ^references=matrix/workforce/internal/approval.OpenSealedBatch,matrix/workforce/internal/approval.SignBatch,matrix/workforce/internal/approval.Store.PublishBatch
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.CompilePreset kind=func
   digest=b3:867af49b0d6f2ea1ab6395e66af9f341bfc3f5d07bad420a15d50ce6b1628a63 file=workforce/internal/approval/types.go range=45:63 lang=go exported=true byte_range=1068:1704
   sig=func CompilePreset(preset AutonomyPreset) (Permissions, error)
 EDGES
+  references=matrix/workforce/internal/approval.AutonomyPreset,matrix/workforce/internal/approval.Permissions,matrix/workforce/internal/approval.PresetBounded,matrix/workforce/internal/approval.PresetSupervised,matrix/workforce/internal/approval.PresetUnattended,matrix/workforce/internal/approval.preset
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.Decision kind=type
@@ -170,6 +199,8 @@ NODE id=matrix/workforce/internal/approval.Decision kind=type
   sig=type Decision struct {\n	Outcome		Outcome\n	ClauseID	string\n	Reason		string\n}
 EDGES
   contains=matrix/workforce/internal/approval.Decision#ClauseID,matrix/workforce/internal/approval.Decision#Outcome,matrix/workforce/internal/approval.Decision#Reason
+  references=matrix/workforce/internal/approval.Outcome
+  ^references=matrix/workforce/internal/approval.Evaluate,matrix/workforce/internal/approval.ResolveTimeout
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.Decision#ClauseID kind=field
@@ -194,66 +225,83 @@ NODE id=matrix/workforce/internal/approval.ErrCeiling kind=var
   digest=b3:b3430fc25987db2f467c76676e503753ebb298d918d7ded1ce995f7a24228ee9 file=workforce/internal/approval/types.go range=22:22 lang=go exported=true byte_range=499:568
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/approval.Store.ConsumeBatch
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.ErrConflict kind=var
   digest=b3:66927740c2e4f657e7d0a5a387e69487193ea054c2022fb6068598b1525f34b3 file=workforce/internal/approval/types.go range=21:21 lang=go exported=true byte_range=446:497
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/approval.Store.PublishBatch
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.ErrDenied kind=var
   digest=b3:77b8bf2d8fa6364c20372c1cbce5be0efa6e2679210eb0ee1d0672e9c6bc0689 file=workforce/internal/approval/types.go range=16:16 lang=go exported=true byte_range=154:203
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/approval.Evaluate,matrix/workforce/internal/approval.ResolveTimeout
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.ErrEscalate kind=var
   digest=b3:dcc662c1d9708621cf68078c284265807dcef62c2c8034aba893221c4311deba file=workforce/internal/approval/types.go range=18:18 lang=go exported=true byte_range=273:335
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/approval.Evaluate,matrix/workforce/internal/approval.ResolveTimeout
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.ErrExpired kind=var
   digest=b3:c9facf45a3c72836c6170a6927bb94932ba0d04f0935cc12c073a346d4b16831 file=workforce/internal/approval/types.go range=20:20 lang=go exported=true byte_range=394:444
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/approval.Store.ConsumeBatch
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.ErrHumanRequired kind=var
   digest=b3:276fd46ae848194a8763f01c2f30bdd822335fd655e6f6b0e0a219f3f071ac59 file=workforce/internal/approval/types.go range=17:17 lang=go exported=true byte_range=205:271
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/approval.Evaluate,matrix/workforce/internal/approval.ResolveTimeout
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.ErrUnauthorized kind=var
   digest=b3:ce20920fe68fafe718a261686e669e963ecbae699ea0953a9b6e2713b6ac195c file=workforce/internal/approval/types.go range=19:19 lang=go exported=true byte_range=337:392
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/approval.AssertDecisionAuthority,matrix/workforce/internal/approval.OpenSealedBatch,matrix/workforce/internal/approval.Store.AnnotateAsExecutive,matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/approval.Store.PublishBatch,matrix/workforce/internal/approval.Store.RevokeBatch
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.ErrUncertain kind=var
   digest=b3:106510257015b634bfaee1643e46ed4175e2cdd333cb0e5f5e2d3424d7e87d3b file=workforce/internal/approval/types.go range=23:23 lang=go exported=true byte_range=570:631
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/approval.Store.AnnotateAsExecutive,matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/approval.Store.PublishBatch,matrix/workforce/internal/approval.Store.RevokeBatch,matrix/workforce/internal/approval.Store.currentTime
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.Evaluate kind=func
   digest=b3:2feb1628e061a2cae7d3ead08b686d098e75337130c3879122d17a65b5b05623 file=workforce/internal/approval/types.go range=159:211 lang=go exported=true byte_range=4237:5937
   sig=func Evaluate(rules []Rule, request Request) (Decision, error)
 EDGES
+  calls=matrix/workforce/internal/approval.Request.Validate,matrix/workforce/internal/approval.Rule.Validate,matrix/workforce/internal/approval.ruleMatch
+  references=matrix/workforce/internal/approval.Decision,matrix/workforce/internal/approval.ErrDenied,matrix/workforce/internal/approval.ErrEscalate,matrix/workforce/internal/approval.ErrHumanRequired,matrix/workforce/internal/approval.OutcomeDeny,matrix/workforce/internal/approval.OutcomeEscalate,matrix/workforce/internal/approval.OutcomeHumanRequired,matrix/workforce/internal/approval.Request,matrix/workforce/internal/approval.Request.Validate,matrix/workforce/internal/approval.Rule,matrix/workforce/internal/approval.Rule.Validate,matrix/workforce/internal/approval.decision,matrix/workforce/internal/approval.err,matrix/workforce/internal/approval.left,matrix/workforce/internal/approval.match,matrix/workforce/internal/approval.matches,matrix/workforce/internal/approval.ok,matrix/workforce/internal/approval.outcomeRank,matrix/workforce/internal/approval.request,matrix/workforce/internal/approval.right,matrix/workforce/internal/approval.rule,matrix/workforce/internal/approval.ruleMatch,matrix/workforce/internal/approval.rules,matrix/workforce/internal/approval.selected,matrix/workforce/internal/approval.specificity
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.IntentSetHash kind=func
   digest=b3:6254f7a5d47054dde5cbfea35ba3a62635bbd0126b3b3f7966543a767081067c file=workforce/internal/approval/types.go range=240:257 lang=go exported=true byte_range=6775:7427
   sig=func IntentSetHash(intents []contracts.IntentID) (string, error)
 EDGES
+  references=matrix/workforce/internal/approval.index,matrix/workforce/internal/approval.intent,matrix/workforce/internal/approval.intents,matrix/workforce/internal/approval.seen,matrix/workforce/internal/approval.sum,matrix/workforce/internal/approval.value,matrix/workforce/internal/approval.values,matrix/workforce/internal/contracts.IntentID
+  ^calls=matrix/workforce/internal/approval.BatchApproval.Validate,matrix/workforce/internal/approval.SignBatch
+  ^references=matrix/workforce/internal/approval.BatchApproval.Validate,matrix/workforce/internal/approval.SignBatch
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.New kind=func
   digest=b3:24e5ca24d7c01d39228e7cf3ec8a2a1984ab7f5a98916defa31643634ec5b033 file=workforce/internal/approval/store.go range=62:85 lang=go exported=true byte_range=1524:2370
   sig=func New(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	ownerID contracts.OwnerID,\n	keyID string,\n	publicKey ed25519.PublicKey,\n	now func() time.Time,\n) (*Store, error)
 EDGES
+  calls=matrix/vault.UserVault.User
+  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/approval.Store,matrix/workforce/internal/approval.keyID,matrix/workforce/internal/approval.now,matrix/workforce/internal/approval.organizationID,matrix/workforce/internal/approval.ownerID,matrix/workforce/internal/approval.pool,matrix/workforce/internal/approval.publicKey,matrix/workforce/internal/approval.tenantID,matrix/workforce/internal/approval.userVault,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.OpenSealedBatch kind=func
@@ -261,6 +309,10 @@ NODE id=matrix/workforce/internal/approval.OpenSealedBatch kind=func
   sig=func OpenSealedBatch(\n	userVault *vault.UserVault,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	batchID contracts.ApprovalID,\n	sealed []byte,\n	canonicalHash string,\n	authority Authority,\n) (BatchApproval, error)
   doc=OpenSealedBatch recovers one owner-signed batch from its Vault-sealed bytes,\nbinds it to the exact tenant, organization, and batch it claims, and verifies\nthe owner's signature over it. Callers that authorize spending must take the\nceiling, expiry, and intent membership from the returned value: the relational\ncolumns beside the sealed record are projections, and only the verified\nsignature — not the seal — proves the owner approved this authority.
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/approval.BatchAD,matrix/workforce/internal/approval.BatchApproval.Validate,matrix/workforce/internal/approval.batchSigningBytes
+  references=matrix/vault.UserVault,matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/approval.Authority,matrix/workforce/internal/approval.BatchAD,matrix/workforce/internal/approval.BatchApproval,matrix/workforce/internal/approval.BatchApproval.Validate,matrix/workforce/internal/approval.ErrUnauthorized,matrix/workforce/internal/approval.authority,matrix/workforce/internal/approval.batch,matrix/workforce/internal/approval.batchID,matrix/workforce/internal/approval.batchSigningBytes,matrix/workforce/internal/approval.canonical,matrix/workforce/internal/approval.canonicalHash,matrix/workforce/internal/approval.err,matrix/workforce/internal/approval.organizationID,matrix/workforce/internal/approval.payload,matrix/workforce/internal/approval.sealed,matrix/workforce/internal/approval.signature,matrix/workforce/internal/approval.sum,matrix/workforce/internal/approval.tenantID,matrix/workforce/internal/approval.userVault,matrix/workforce/internal/contracts.ApprovalID,matrix/workforce/internal/contracts.OrganizationID
+  ^calls=matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/effect.Gateway.consumeApproval,matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval
+  ^references=matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/effect.Gateway.consumeApproval,matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.Outcome kind=type
@@ -268,43 +320,57 @@ NODE id=matrix/workforce/internal/approval.Outcome kind=type
   sig=type Outcome string
 EDGES
   contains=matrix/workforce/internal/approval.Outcome.Valid
+  ^references=matrix/workforce/internal/approval.Decision,matrix/workforce/internal/approval.Outcome.Valid,matrix/workforce/internal/approval.OutcomeAutoApprove,matrix/workforce/internal/approval.OutcomeBatchable,matrix/workforce/internal/approval.OutcomeDeny,matrix/workforce/internal/approval.OutcomeEscalate,matrix/workforce/internal/approval.OutcomeHumanRequired,matrix/workforce/internal/approval.ResolveTimeout,matrix/workforce/internal/approval.Rule,matrix/workforce/internal/approval.outcomeRank
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.Outcome.Valid kind=method
   digest=b3:cbf17139f29097636dea7546b0dbee83aaa8caf554eadf56b632f3cab5e1716d file=workforce/internal/approval/types.go range=75:83 lang=go exported=true byte_range=1960:2157
   sig=func (outcome Outcome) Valid() bool
 EDGES
+  references=matrix/workforce/internal/approval.Outcome,matrix/workforce/internal/approval.OutcomeAutoApprove,matrix/workforce/internal/approval.OutcomeBatchable,matrix/workforce/internal/approval.OutcomeDeny,matrix/workforce/internal/approval.OutcomeEscalate,matrix/workforce/internal/approval.OutcomeHumanRequired,matrix/workforce/internal/approval.outcome
   ^contains=matrix/workforce/internal/approval.Outcome
+  ^calls=matrix/workforce/internal/approval.ResolveTimeout,matrix/workforce/internal/approval.Rule.Validate
+  ^references=matrix/workforce/internal/approval.ResolveTimeout,matrix/workforce/internal/approval.Rule.Validate
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.OutcomeAutoApprove kind=const
   digest=b3:c9efb2a61e0283c977388e8c8f8c6b9c97766ddaeecd6af9320bc2861a25cd89 file=workforce/internal/approval/types.go range=68:68 lang=go exported=true byte_range=1736:1781
   sig=approval.Outcome
 EDGES
+  references=matrix/workforce/internal/approval.Outcome
+  ^references=matrix/workforce/internal/approval.Outcome.Valid,matrix/workforce/internal/approval.ResolveTimeout
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.OutcomeBatchable kind=const
   digest=b3:3663cb6fd9d00ec9891699a442ffd2a41b421e933b7843bf02fb212a69cfee5d file=workforce/internal/approval/types.go range=69:69 lang=go exported=true byte_range=1783:1825
   sig=approval.Outcome
 EDGES
+  references=matrix/workforce/internal/approval.Outcome
+  ^references=matrix/workforce/internal/approval.Outcome.Valid,matrix/workforce/internal/approval.ResolveTimeout,matrix/workforce/internal/approval.outcomeRank
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.OutcomeDeny kind=const
   digest=b3:1b6a2594576c8011d119a890b89ead87eec7cdb1ee816fba6ecabc37f2c2c763 file=workforce/internal/approval/types.go range=71:71 lang=go exported=true byte_range=1876:1913
   sig=approval.Outcome
 EDGES
+  references=matrix/workforce/internal/approval.Outcome
+  ^references=matrix/workforce/internal/approval.Evaluate,matrix/workforce/internal/approval.Outcome.Valid,matrix/workforce/internal/approval.ResolveTimeout,matrix/workforce/internal/approval.outcomeRank
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.OutcomeEscalate kind=const
   digest=b3:7eb33e75ab475383b7ffee78449f3c4d1c206a666cb2b6df7f525d98b74f70ff file=workforce/internal/approval/types.go range=72:72 lang=go exported=true byte_range=1915:1956
   sig=approval.Outcome
 EDGES
+  references=matrix/workforce/internal/approval.Outcome
+  ^references=matrix/workforce/internal/approval.Evaluate,matrix/workforce/internal/approval.Outcome.Valid,matrix/workforce/internal/approval.ResolveTimeout,matrix/workforce/internal/approval.outcomeRank
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.OutcomeHumanRequired kind=const
   digest=b3:e6016fdb90588ce3b4249bae39e597da4c1b1cc9e4dcb4a8d3baf878111456a3 file=workforce/internal/approval/types.go range=70:70 lang=go exported=true byte_range=1827:1874
   sig=approval.Outcome
 EDGES
+  references=matrix/workforce/internal/approval.Outcome
+  ^references=matrix/workforce/internal/approval.Evaluate,matrix/workforce/internal/approval.Outcome.Valid,matrix/workforce/internal/approval.ResolveTimeout,matrix/workforce/internal/approval.outcomeRank
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.Permissions kind=type
@@ -312,6 +378,7 @@ NODE id=matrix/workforce/internal/approval.Permissions kind=type
   sig=type Permissions struct {\n	Initiation		bool\n	Scheduling		bool\n	DataAccess		bool\n	ExternalCommunication	bool\n	Publication		bool\n	Spending		bool\n	DestructiveEffects	bool\n	RequiredReview		bool\n}
 EDGES
   contains=matrix/workforce/internal/approval.Permissions#DataAccess,matrix/workforce/internal/approval.Permissions#DestructiveEffects,matrix/workforce/internal/approval.Permissions#ExternalCommunication,matrix/workforce/internal/approval.Permissions#Initiation,matrix/workforce/internal/approval.Permissions#Publication,matrix/workforce/internal/approval.Permissions#RequiredReview,matrix/workforce/internal/approval.Permissions#Scheduling,matrix/workforce/internal/approval.Permissions#Spending
+  ^references=matrix/workforce/internal/approval.CompilePreset
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.Permissions#DataAccess kind=field
@@ -366,18 +433,24 @@ NODE id=matrix/workforce/internal/approval.PresetBounded kind=const
   digest=b3:6fa95f3576241c9046d2306b648d70bf33dee81f6bd7664700e9a06d6466fa94 file=workforce/internal/approval/types.go range=30:30 lang=go exported=true byte_range=720:763
   sig=approval.AutonomyPreset
 EDGES
+  references=matrix/workforce/internal/approval.AutonomyPreset
+  ^references=matrix/workforce/internal/approval.CompilePreset
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.PresetSupervised kind=const
   digest=b3:f4d906efac2d8903b068ba211e232656f3a1222a89e2c4ca3b91aed2724bac3d file=workforce/internal/approval/types.go range=29:29 lang=go exported=true byte_range=672:718
   sig=approval.AutonomyPreset
 EDGES
+  references=matrix/workforce/internal/approval.AutonomyPreset
+  ^references=matrix/workforce/internal/approval.CompilePreset
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.PresetUnattended kind=const
   digest=b3:dacc4bdba0eacbc46880192392eefcd16fef104c679cacb9c2d45bb20206d3c7 file=workforce/internal/approval/types.go range=31:31 lang=go exported=true byte_range=765:811
   sig=approval.AutonomyPreset
 EDGES
+  references=matrix/workforce/internal/approval.AutonomyPreset
+  ^references=matrix/workforce/internal/approval.CompilePreset
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.Request kind=type
@@ -386,6 +459,8 @@ NODE id=matrix/workforce/internal/approval.Request kind=type
 EDGES
   contains=matrix/workforce/internal/approval.Request#Channel,matrix/workforce/internal/approval.Request#CostMicrounits,matrix/workforce/internal/approval.Request#Counterparty,matrix/workforce/internal/approval.Request#DataScope,matrix/workforce/internal/approval.Request#EffectClass,matrix/workforce/internal/approval.Request#IntentID,matrix/workforce/internal/approval.Request#Jurisdiction,matrix/workforce/internal/approval.Request#Operation,matrix/workforce/internal/approval.Request#PriorVerdict,matrix/workforce/internal/approval.Request#RequestID,matrix/workforce/internal/approval.Request#RequestedAt,matrix/workforce/internal/approval.Request#Reversible,matrix/workforce/internal/approval.Request#SeatID,matrix/workforce/internal/approval.Request#SkillID,matrix/workforce/internal/approval.Request.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.SeatID
+  ^references=matrix/workforce/internal/approval.Evaluate,matrix/workforce/internal/approval.Request.Validate,matrix/workforce/internal/approval.ResolveTimeout,matrix/workforce/internal/approval.ruleMatch
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.Request#Channel kind=field
@@ -476,13 +551,18 @@ NODE id=matrix/workforce/internal/approval.Request.Validate kind=method
   digest=b3:6c8a6b1e74da068a85663bfddbc17e6c965a293c0ce26318fbad24096e52cbd4 file=workforce/internal/approval/types.go range=141:151 lang=go exported=true byte_range=3719:4157
   sig=func (request Request) Validate() error
 EDGES
+  references=matrix/workforce/internal/approval.Request,matrix/workforce/internal/approval.request
   ^contains=matrix/workforce/internal/approval.Request
+  ^calls=matrix/workforce/internal/approval.Evaluate,matrix/workforce/internal/approval.ResolveTimeout
+  ^references=matrix/workforce/internal/approval.Evaluate,matrix/workforce/internal/approval.ResolveTimeout
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.ResolveTimeout kind=func
   digest=b3:919de18f2773292c84a4c4b99215f2d49a135d0c953d3f7e3500552a179e147c file=workforce/internal/approval/types.go range=213:238 lang=go exported=true byte_range=5939:6773
   sig=func ResolveTimeout(request Request, explicit *Outcome) (Decision, error)
 EDGES
+  calls=matrix/workforce/internal/approval.Outcome.Valid,matrix/workforce/internal/approval.Request.Validate
+  references=matrix/workforce/internal/approval.Decision,matrix/workforce/internal/approval.ErrDenied,matrix/workforce/internal/approval.ErrEscalate,matrix/workforce/internal/approval.ErrHumanRequired,matrix/workforce/internal/approval.Outcome,matrix/workforce/internal/approval.Outcome.Valid,matrix/workforce/internal/approval.OutcomeAutoApprove,matrix/workforce/internal/approval.OutcomeBatchable,matrix/workforce/internal/approval.OutcomeDeny,matrix/workforce/internal/approval.OutcomeEscalate,matrix/workforce/internal/approval.OutcomeHumanRequired,matrix/workforce/internal/approval.Request,matrix/workforce/internal/approval.Request.Validate,matrix/workforce/internal/approval.decision,matrix/workforce/internal/approval.err,matrix/workforce/internal/approval.explicit,matrix/workforce/internal/approval.request
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.Rule kind=type
@@ -491,6 +571,8 @@ NODE id=matrix/workforce/internal/approval.Rule kind=type
 EDGES
   contains=matrix/workforce/internal/approval.Rule#Channel,matrix/workforce/internal/approval.Rule#ClauseID,matrix/workforce/internal/approval.Rule#Counterparty,matrix/workforce/internal/approval.Rule#DataScope,matrix/workforce/internal/approval.Rule#EffectClass,matrix/workforce/internal/approval.Rule#Jurisdiction,matrix/workforce/internal/approval.Rule#MaxCostMicrounits,matrix/workforce/internal/approval.Rule#Operation,matrix/workforce/internal/approval.Rule#Outcome,matrix/workforce/internal/approval.Rule#PriorVerdict,matrix/workforce/internal/approval.Rule#Priority,matrix/workforce/internal/approval.Rule#Reversibility,matrix/workforce/internal/approval.Rule#SeatID,matrix/workforce/internal/approval.Rule#SkillID,matrix/workforce/internal/approval.Rule#WindowEndUTC,matrix/workforce/internal/approval.Rule#WindowStartUTC,matrix/workforce/internal/approval.Rule.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/approval.Outcome
+  ^references=matrix/workforce/internal/approval.Evaluate,matrix/workforce/internal/approval.Rule.Validate,matrix/workforce/internal/approval.ruleMatch
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.Rule#Channel kind=field
@@ -593,13 +675,19 @@ NODE id=matrix/workforce/internal/approval.Rule.Validate kind=method
   digest=b3:08df88b62651f56fad1dca44397d33be0dcbe80e17d6e45ebdb936ebf0548e53 file=workforce/internal/approval/types.go range=104:122 lang=go exported=true byte_range=2605:3347
   sig=func (rule Rule) Validate() error
 EDGES
+  calls=matrix/workforce/internal/approval.Outcome.Valid
+  references=matrix/workforce/internal/approval.Outcome.Valid,matrix/workforce/internal/approval.Rule,matrix/workforce/internal/approval.rule
   ^contains=matrix/workforce/internal/approval.Rule
+  ^calls=matrix/workforce/internal/approval.Evaluate
+  ^references=matrix/workforce/internal/approval.Evaluate
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.SignBatch kind=func
   digest=b3:3da53bb903f8e3c02e1861136590dbf0be4a8858d1102077a4607e7cadc06fd6 file=workforce/internal/approval/store.go range=87:110 lang=go exported=true byte_range=2372:3018
   sig=func SignBatch(\n	batch *BatchApproval,\n	keyID string,\n	privateKey ed25519.PrivateKey,\n) error
 EDGES
+  calls=matrix/workforce/internal/approval.BatchApproval.Validate,matrix/workforce/internal/approval.IntentSetHash,matrix/workforce/internal/approval.batchSigningBytes
+  references=matrix/workforce/internal/approval.BatchApproval,matrix/workforce/internal/approval.BatchApproval.Validate,matrix/workforce/internal/approval.IntentSetHash,matrix/workforce/internal/approval.batch,matrix/workforce/internal/approval.batchSigningBytes,matrix/workforce/internal/approval.err,matrix/workforce/internal/approval.hash,matrix/workforce/internal/approval.keyID,matrix/workforce/internal/approval.payload,matrix/workforce/internal/approval.privateKey,matrix/workforce/internal/contracts.Signature
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.Store kind=type
@@ -607,6 +695,8 @@ NODE id=matrix/workforce/internal/approval.Store kind=type
   sig=type Store struct {\n	pool		*pgxpool.Pool\n	vault		*vault.UserVault\n	tenantID	string\n	organizationID	contracts.OrganizationID\n	ownerID		contracts.OwnerID\n	keyID		string\n	publicKey	ed25519.PublicKey\n	now		func() time.Time\n}
 EDGES
   contains=matrix/workforce/internal/approval.Store#keyID,matrix/workforce/internal/approval.Store#now,matrix/workforce/internal/approval.Store#organizationID,matrix/workforce/internal/approval.Store#ownerID,matrix/workforce/internal/approval.Store#pool,matrix/workforce/internal/approval.Store#publicKey,matrix/workforce/internal/approval.Store#tenantID,matrix/workforce/internal/approval.Store#vault,matrix/workforce/internal/approval.Store.AnnotateAsExecutive,matrix/workforce/internal/approval.Store.Authority,matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/approval.Store.PublishBatch,matrix/workforce/internal/approval.Store.RevokeBatch,matrix/workforce/internal/approval.Store.ad,matrix/workforce/internal/approval.Store.currentTime
+  references=matrix/vault.UserVault,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID
+  ^references=matrix/workforce/internal/approval.New,matrix/workforce/internal/approval.Store.AnnotateAsExecutive,matrix/workforce/internal/approval.Store.Authority,matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/approval.Store.PublishBatch,matrix/workforce/internal/approval.Store.RevokeBatch,matrix/workforce/internal/approval.Store.ad,matrix/workforce/internal/approval.Store.currentTime,matrix/workforce/internal/departmentadapter.New,matrix/workforce/internal/domainwork.New,matrix/workforce/internal/domainwork.Service,matrix/workforce/internal/operationswork.New,matrix/workforce/internal/operationswork.Service
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.Store#keyID kind=field
@@ -661,6 +751,8 @@ NODE id=matrix/workforce/internal/approval.Store.AnnotateAsExecutive kind=method
   digest=b3:cadf4479cf213b083fedcd7bc2594889a0be333e84bcda818bd1dd01dbafdf62 file=workforce/internal/approval/store.go range=327:373 lang=go exported=true byte_range=10292:11904
   sig=func (store *Store) AnnotateAsExecutive(\n	ctx context.Context,\n	annotationID, requestID string,\n	seatID contracts.SeatID,\n	departmentKind contracts.DepartmentKind,\n	annotation string,\n) error
 EDGES
+  calls=matrix/workforce/internal/approval.Store.currentTime
+  references=matrix/workforce/internal/approval.ErrUnauthorized,matrix/workforce/internal/approval.ErrUncertain,matrix/workforce/internal/approval.Store,matrix/workforce/internal/approval.Store.currentTime,matrix/workforce/internal/approval.annotation,matrix/workforce/internal/approval.annotationID,matrix/workforce/internal/approval.ctx,matrix/workforce/internal/approval.departmentKind,matrix/workforce/internal/approval.err,matrix/workforce/internal/approval.executive,matrix/workforce/internal/approval.now,matrix/workforce/internal/approval.requestID,matrix/workforce/internal/approval.seatID,matrix/workforce/internal/approval.store,matrix/workforce/internal/contracts.DepartmentExecutive,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.SeatID
   ^contains=matrix/workforce/internal/approval.Store
   ^defines=matrix/workforce/internal/approval/store.go
 
@@ -669,20 +761,29 @@ NODE id=matrix/workforce/internal/approval.Store.Authority kind=method
   sig=func (store *Store) Authority() Authority
   doc=Authority returns the exact owner identity this store verifies against.
 EDGES
+  references=matrix/workforce/internal/approval.Authority,matrix/workforce/internal/approval.Store,matrix/workforce/internal/approval.store
   ^contains=matrix/workforce/internal/approval.Store
+  ^calls=matrix/workforce/internal/approval.Store.ConsumeBatch
+  ^references=matrix/workforce/internal/approval.Store.ConsumeBatch
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.Store.ConsumeBatch kind=method
   digest=b3:24afd7895a7d5e409a584be2947230e0797056f526ee6ec1dd6da0b99e7ca8dc file=workforce/internal/approval/store.go range=193:303 lang=go exported=true byte_range=5801:9731
   sig=func (store *Store) ConsumeBatch(\n	ctx context.Context,\n	batchID contracts.ApprovalID,\n	intentID contracts.IntentID,\n	costMicrounits uint64,\n	idempotencyKey string,\n) error
 EDGES
+  calls=matrix/workforce/internal/approval.BatchApproval.Authorizes,matrix/workforce/internal/approval.OpenSealedBatch,matrix/workforce/internal/approval.Store.Authority,matrix/workforce/internal/approval.Store.currentTime
+  references=matrix/workforce/internal/approval.BatchApproval.Authorizes,matrix/workforce/internal/approval.ErrCeiling,matrix/workforce/internal/approval.ErrConflict,matrix/workforce/internal/approval.ErrExpired,matrix/workforce/internal/approval.ErrUnauthorized,matrix/workforce/internal/approval.ErrUncertain,matrix/workforce/internal/approval.OpenSealedBatch,matrix/workforce/internal/approval.Store,matrix/workforce/internal/approval.Store.Authority,matrix/workforce/internal/approval.Store.currentTime,matrix/workforce/internal/approval.batch,matrix/workforce/internal/approval.batchID,matrix/workforce/internal/approval.canonicalHash,matrix/workforce/internal/approval.ceiling,matrix/workforce/internal/approval.consumed,matrix/workforce/internal/approval.costMicrounits,matrix/workforce/internal/approval.ctx,matrix/workforce/internal/approval.err,matrix/workforce/internal/approval.expiresAt,matrix/workforce/internal/approval.idempotencyKey,matrix/workforce/internal/approval.intentID,matrix/workforce/internal/approval.now,matrix/workforce/internal/approval.priorCost,matrix/workforce/internal/approval.recorded,matrix/workforce/internal/approval.revokedAt,matrix/workforce/internal/approval.sealed,matrix/workforce/internal/approval.store,matrix/workforce/internal/approval.tx,matrix/workforce/internal/contracts.ApprovalID,matrix/workforce/internal/contracts.IntentID
   ^contains=matrix/workforce/internal/approval.Store
+  ^calls=matrix/workforce/internal/domainwork.Service.Execute,matrix/workforce/internal/operationswork.Service.Execute
+  ^references=matrix/workforce/internal/domainwork.Service.Execute,matrix/workforce/internal/operationswork.Service.Execute
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.Store.PublishBatch kind=method
   digest=b3:ecca3f75119fe0e44d8693a03c21c3324df27f1cdfd52e205146a4b15c91a4e4 file=workforce/internal/approval/store.go range=112:191 lang=go exported=true byte_range=3020:5799
   sig=func (store *Store) PublishBatch(\n	ctx context.Context,\n	batch BatchApproval,\n) error
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/approval.BatchApproval.Validate,matrix/workforce/internal/approval.Store.ad,matrix/workforce/internal/approval.Store.currentTime,matrix/workforce/internal/approval.batchSigningBytes
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/approval.BatchApproval,matrix/workforce/internal/approval.BatchApproval.Validate,matrix/workforce/internal/approval.ErrConflict,matrix/workforce/internal/approval.ErrUnauthorized,matrix/workforce/internal/approval.ErrUncertain,matrix/workforce/internal/approval.Store,matrix/workforce/internal/approval.Store.ad,matrix/workforce/internal/approval.Store.currentTime,matrix/workforce/internal/approval.batch,matrix/workforce/internal/approval.batchSigningBytes,matrix/workforce/internal/approval.canonical,matrix/workforce/internal/approval.canonicalHash,matrix/workforce/internal/approval.command,matrix/workforce/internal/approval.ctx,matrix/workforce/internal/approval.err,matrix/workforce/internal/approval.existing,matrix/workforce/internal/approval.intentID,matrix/workforce/internal/approval.now,matrix/workforce/internal/approval.payload,matrix/workforce/internal/approval.sealed,matrix/workforce/internal/approval.signature,matrix/workforce/internal/approval.store,matrix/workforce/internal/approval.sum,matrix/workforce/internal/approval.tx
   ^contains=matrix/workforce/internal/approval.Store
   ^defines=matrix/workforce/internal/approval/store.go
 
@@ -690,6 +791,8 @@ NODE id=matrix/workforce/internal/approval.Store.RevokeBatch kind=method
   digest=b3:39efdf8d100b36ceebdcae84310ecd1a8c5c5bef29d624811a42bef302c7a1fa file=workforce/internal/approval/store.go range=305:325 lang=go exported=true byte_range=9733:10290
   sig=func (store *Store) RevokeBatch(\n	ctx context.Context,\n	batchID contracts.ApprovalID,\n) error
 EDGES
+  calls=matrix/workforce/internal/approval.Store.currentTime
+  references=matrix/workforce/internal/approval.ErrUnauthorized,matrix/workforce/internal/approval.ErrUncertain,matrix/workforce/internal/approval.Store,matrix/workforce/internal/approval.Store.currentTime,matrix/workforce/internal/approval.batchID,matrix/workforce/internal/approval.command,matrix/workforce/internal/approval.ctx,matrix/workforce/internal/approval.err,matrix/workforce/internal/approval.now,matrix/workforce/internal/approval.store,matrix/workforce/internal/contracts.ApprovalID
   ^contains=matrix/workforce/internal/approval.Store
   ^defines=matrix/workforce/internal/approval/store.go
 
@@ -697,32 +800,46 @@ NODE id=matrix/workforce/internal/approval.Store.ad kind=method
   digest=b3:7ee61fe9215d7351885b1f57509f6f032728f11241c64b33493c59cceaad5fe1 file=workforce/internal/approval/store.go range=540:546 lang=go exported=false byte_range=18001:18247
   sig=func (store *Store) ad(batchID contracts.ApprovalID) vault.AD
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/approval.Store,matrix/workforce/internal/approval.batchID,matrix/workforce/internal/approval.store,matrix/workforce/internal/contracts.ApprovalID,matrix/workforce/internal/contracts.SchemaVersionV1
   ^contains=matrix/workforce/internal/approval.Store
+  ^calls=matrix/workforce/internal/approval.Store.PublishBatch
+  ^references=matrix/workforce/internal/approval.Store.PublishBatch
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.Store.currentTime kind=method
   digest=b3:9e419d7607968152ec0bd2895f1b0749c7af1f52b21c864d37af380d2d76268a file=workforce/internal/approval/store.go range=532:538 lang=go exported=false byte_range=17777:17999
   sig=func (store *Store) currentTime() (time.Time, error)
 EDGES
+  references=matrix/workforce/internal/approval.ErrUncertain,matrix/workforce/internal/approval.Store,matrix/workforce/internal/approval.now,matrix/workforce/internal/approval.store
   ^contains=matrix/workforce/internal/approval.Store
+  ^calls=matrix/workforce/internal/approval.Store.AnnotateAsExecutive,matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/approval.Store.PublishBatch,matrix/workforce/internal/approval.Store.RevokeBatch
+  ^references=matrix/workforce/internal/approval.Store.AnnotateAsExecutive,matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/approval.Store.PublishBatch,matrix/workforce/internal/approval.Store.RevokeBatch
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.batchSigningBytes kind=func
   digest=b3:78dfe07a0817fb4292baea91e2f5073ffcf92b06341f08f13da6024c4a1343df file=workforce/internal/approval/store.go range=512:530 lang=go exported=false byte_range=16957:17775
   sig=func batchSigningBytes(batch BatchApproval) ([]byte, error)
 EDGES
+  references=matrix/workforce/internal/approval.BatchApproval,matrix/workforce/internal/approval.batch,matrix/workforce/internal/approval.intents,matrix/workforce/internal/approval.left,matrix/workforce/internal/approval.right,matrix/workforce/internal/contracts.ApprovalID,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID
+  ^calls=matrix/workforce/internal/approval.OpenSealedBatch,matrix/workforce/internal/approval.SignBatch,matrix/workforce/internal/approval.Store.PublishBatch
+  ^references=matrix/workforce/internal/approval.OpenSealedBatch,matrix/workforce/internal/approval.SignBatch,matrix/workforce/internal/approval.Store.PublishBatch
   ^defines=matrix/workforce/internal/approval/store.go
 
 NODE id=matrix/workforce/internal/approval.outcomeRank kind=func
   digest=b3:a2a23e0473fb2d20c0cd9c62ffe0cb33256ff663a4ecefa1e8817e13239370ec file=workforce/internal/approval/types.go range=302:315 lang=go exported=false byte_range=8558:8779
   sig=func outcomeRank(outcome Outcome) int
 EDGES
+  references=matrix/workforce/internal/approval.Outcome,matrix/workforce/internal/approval.OutcomeBatchable,matrix/workforce/internal/approval.OutcomeDeny,matrix/workforce/internal/approval.OutcomeEscalate,matrix/workforce/internal/approval.OutcomeHumanRequired,matrix/workforce/internal/approval.outcome
+  ^references=matrix/workforce/internal/approval.Evaluate
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval.ruleMatch kind=func
   digest=b3:e91bf881928be2111d3cdc09e8e98c2df12baca405c2b4558cc45416dd704a83 file=workforce/internal/approval/types.go range=259:300 lang=go exported=false byte_range=7429:8556
   sig=func ruleMatch(rule Rule, request Request) (int, bool)
 EDGES
+  references=matrix/workforce/internal/approval.Request,matrix/workforce/internal/approval.Rule,matrix/workforce/internal/approval.actual,matrix/workforce/internal/approval.field,matrix/workforce/internal/approval.fields,matrix/workforce/internal/approval.request,matrix/workforce/internal/approval.rule,matrix/workforce/internal/approval.specificity
+  ^calls=matrix/workforce/internal/approval.Evaluate
+  ^references=matrix/workforce/internal/approval.Evaluate
   ^defines=matrix/workforce/internal/approval/types.go
 
 NODE id=matrix/workforce/internal/approval/doc.go kind=file

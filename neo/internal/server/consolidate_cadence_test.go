@@ -37,7 +37,7 @@ func selfModelPatternCount(t *testing.T, p *memory.Pager) int {
 // task 3.2, req.5.2): recording loop deaths via session.recordLoopDeath does NOT
 // author a how-I-fail memory every death — it authors only when the configured
 // cadence (DeathConsolidateEvery) is reached. No fakes: a real Engine, a real
-// cortex pager, the real recordLoopDeath → RecordLoopDeath → ConsolidateDeathJournal
+// Neocortex pager, the real recordLoopDeath → RecordLoopDeath → ConsolidateDeathJournal
 // path.
 func TestSelfAuthoringRunsOnBoundedCadence(t *testing.T) {
 	e, pager := newRunTestEngine(t, "")

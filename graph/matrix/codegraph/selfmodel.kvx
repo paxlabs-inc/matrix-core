@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/codegraph/selfmodel kind=package
   digest=b3:1038a8cc4b922cc005fbc9868d744c4f001898940f0031cdd6d1ae6049d563db file=codegraph/selfmodel range=0:0 lang=go exported=true
 EDGES
   contains=matrix/codegraph/selfmodel/selfmodel.go
+  imports=matrix/codegraph/model,matrix/codegraph/retrieve
   ^contains=mod:matrix/codegraph
+  ^imports=matrix/codegraph/cmd/codegraph,matrix/neo/internal/memory
 
 NODE id=matrix/codegraph/selfmodel.Artifact kind=type
   digest=b3:12ec8de983dc7650c966134eab8a7eac2d2607559d9e00f064a56042586ff43c file=codegraph/selfmodel/selfmodel.go range=20:24 lang=go exported=true byte_range=262:388
   sig=type Artifact struct {\n	Summary	string		`json:"summary"`\n	Merkle	string		`json:"merkle"`\n	Scope	[]string	`json:"scope"`\n}
 EDGES
   contains=matrix/codegraph/selfmodel.Artifact#Merkle,matrix/codegraph/selfmodel.Artifact#Scope,matrix/codegraph/selfmodel.Artifact#Summary
+  ^references=matrix/codegraph/selfmodel.Distill,matrix/neo/internal/memory.Pager.LoadStructuralSelf
   ^defines=matrix/codegraph/selfmodel/selfmodel.go
 
 NODE id=matrix/codegraph/selfmodel.Artifact#Merkle kind=field
@@ -35,24 +38,36 @@ NODE id=matrix/codegraph/selfmodel.Distill kind=func
   digest=b3:fb73b392e897c399f8e6f26423ad0fbe12d03def6b26af9fa712affc7edd5d73 file=codegraph/selfmodel/selfmodel.go range=26:41 lang=go exported=true byte_range=390:1204
   sig=func Distill(ix *model.Index, merkle string, scope []string, tokenBudget int) Artifact
 EDGES
+  calls=matrix/codegraph/retrieve.API.SymbolLookup,matrix/codegraph/retrieve.New,matrix/codegraph/selfmodel.truncateTokens
+  references=matrix/codegraph/model.Index,matrix/codegraph/retrieve.API.SymbolLookup,matrix/codegraph/retrieve.New,matrix/codegraph/selfmodel.Artifact,matrix/codegraph/selfmodel.api,matrix/codegraph/selfmodel.fragment,matrix/codegraph/selfmodel.ix,matrix/codegraph/selfmodel.merkle,matrix/codegraph/selfmodel.parts,matrix/codegraph/selfmodel.residentSymbols,matrix/codegraph/selfmodel.scope,matrix/codegraph/selfmodel.summary,matrix/codegraph/selfmodel.symbol,matrix/codegraph/selfmodel.tokenBudget,matrix/codegraph/selfmodel.truncateTokens
+  ^calls=matrix/codegraph/cmd/codegraph.cmdBuild
+  ^references=matrix/codegraph/cmd/codegraph.cmdBuild
   ^defines=matrix/codegraph/selfmodel/selfmodel.go
 
 NODE id=matrix/codegraph/selfmodel.Lookup kind=func
   digest=b3:175a59e6e679db208890fe6f0e699fed662de6b0e854f199b6b2988a85d99d96 file=codegraph/selfmodel/selfmodel.go range=43:49 lang=go exported=true byte_range=1206:1439
   sig=func Lookup(ix *model.Index, symbol string) (string, error)
 EDGES
+  calls=matrix/codegraph/retrieve.API.SymbolLookup,matrix/codegraph/retrieve.New
+  references=matrix/codegraph/model.Index,matrix/codegraph/retrieve.API.SymbolLookup,matrix/codegraph/retrieve.New,matrix/codegraph/selfmodel.ix,matrix/codegraph/selfmodel.symbol
+  ^calls=matrix/neo/internal/memory.Pager.LookupStructuralSelf
+  ^references=matrix/neo/internal/memory.Pager.LookupStructuralSelf
   ^defines=matrix/codegraph/selfmodel/selfmodel.go
 
 NODE id=matrix/codegraph/selfmodel.residentSymbols kind=var
   digest=b3:d696224e6c47892ce92ae10bf7ab908b07a4af47e0eaf7a13e3ad2dfee8cef20 file=codegraph/selfmodel/selfmodel.go range=11:18 lang=go exported=false byte_range=109:260
   sig=[]string
 EDGES
+  ^references=matrix/codegraph/selfmodel.Distill
   ^defines=matrix/codegraph/selfmodel/selfmodel.go
 
 NODE id=matrix/codegraph/selfmodel.truncateTokens kind=func
   digest=b3:9837d8a37064cc3ed8aab9dcad6e96124775d536b3ae3e293d5cc362f8c23498 file=codegraph/selfmodel/selfmodel.go range=51:57 lang=go exported=false byte_range=1441:1616
   sig=func truncateTokens(text string, budget int) string
 EDGES
+  references=matrix/codegraph/selfmodel.budget,matrix/codegraph/selfmodel.fields,matrix/codegraph/selfmodel.text
+  ^calls=matrix/codegraph/selfmodel.Distill
+  ^references=matrix/codegraph/selfmodel.Distill
   ^defines=matrix/codegraph/selfmodel/selfmodel.go
 
 NODE id=matrix/codegraph/selfmodel/selfmodel.go kind=file

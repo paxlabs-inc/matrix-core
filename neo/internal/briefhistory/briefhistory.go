@@ -315,7 +315,7 @@ func (s *Store) readJSONL(path string) []Record {
 }
 
 // Dir resolves the brief-history directory: an explicit override wins; else it
-// is derived from the cortex root's parent, sharing the briefsettings "brief"
+// is derived from the Neocortex root's parent, sharing the briefsettings "brief"
 // dir on /data so it survives suspend / redeploy. "" disables persistence.
 func Dir(override, cortexRoot string) string {
 	if o := strings.TrimSpace(override); o != "" {

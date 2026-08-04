@@ -2,8 +2,6 @@ module matrix/cortexclient
 
 go 1.25.0
 
-require matrix/cortex v0.0.0
-
 require (
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -38,6 +36,5 @@ require (
 	matrix/vault v0.0.0 // indirect
 )
 
-replace matrix/cortex => ../cortex
 
 replace matrix/vault => ../vault

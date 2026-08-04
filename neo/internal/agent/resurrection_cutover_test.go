@@ -221,8 +221,8 @@ func openCutoverRuntime(
 	cfg.GatewayURL = gatewayURL
 	cfg.RuntimeProvider.GatewayURL = gatewayURL
 	cfg.RuntimeProvider.MaxAttempts = 1
-	cfg.CortexRoot = filepath.Join(root, "cortex")
-	cfg.CortexActor = "cutover-runtime"
+	cfg.DataRoot = filepath.Join(root, "Neocortex")
+	cfg.NeocortexActor = "cutover-runtime"
 	cfg.SelfModelGraph = filepath.Join(root, "self-model")
 	cfg.Vault = session
 	cfg.VaultUser = cfg.ActorDID

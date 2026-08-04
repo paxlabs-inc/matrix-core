@@ -5,7 +5,7 @@ package server
 // Tests for the ORACLE brief content policy + recommendation history (task 5.5,
 // req 16/17). The deterministic post-check and objective composition are pure
 // functions tested directly; the delivery/no-repeat/feedback loops run on the
-// REAL engine, durable history store, cortex pager, and HTTP surface.
+// REAL engine, durable history store, Neocortex pager, and HTTP surface.
 
 import (
 	"bytes"

@@ -14,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
@@ -46,9 +45,9 @@ func OpenResurrectionRuntime(
 	pager *memory.Pager,
 	statePath string,
 ) (*ResurrectionRuntime, error) {
-	if manager == nil || pager == nil || pager.Cortex() == nil {
+	if manager == nil || pager == nil || pager.NeocortexClient() == nil {
 		return nil, fmt.Errorf(
-			"neo: resurrection runtime requires tools and cortex",
+			"neo: resurrection runtime requires tools and Neocortex",
 		)
 	}
 	statePath = strings.TrimSpace(statePath)
@@ -163,7 +162,7 @@ func (a *Agent) chatResurrectionWithGuidance(
 		)
 	}
 	a.turnSeq++
-	turnID := uuid.NewString()
+	turnID := a.turnIntentID()
 	conversationID := strings.TrimSpace(a.convID)
 	if conversationID == "" {
 		conversationID = "cli"
@@ -181,60 +180,41 @@ func (a *Agent) chatResurrectionWithGuidance(
 	var activation loop.ActivationSource
 	var recorder loop.TurnRecorder
 	var evidence loop.EvidenceJournal
-	var checkpoints loop.CheckpointStore = a.runtime.store
-	var citationVerifier belief.CitationVerifier = a.runtime.pager.Cortex()
-	var deliveryConsolidator loop.Consolidator = a.consolidator
+	var citationVerifier belief.CitationVerifier
+	var deliveryConsolidator loop.Consolidator
 	var neocortexAdapter *loop.NeocortexAdapter
 	var recoveryCheckpoint *turnstate.Checkpoint
-	if a.cfg.MemorySubstrate == config.SubstrateNeocortex {
-		turnID = a.turnIntentID()
-		seam, seamErr := a.runtime.pager.NewNeocortexLoopSeam(
-			conversationID, a.cfg.ActivationBudget(),
-		)
-		if seamErr != nil {
+	seam, seamErr := a.runtime.pager.NewNeocortexLoopSeam(
+		conversationID, a.cfg.ActivationBudget(),
+	)
+	if seamErr != nil {
+		a.runtimeFailure = delegate.ClassDeterministic
+		return seamErr
+	}
+	adapter, adapterErr := loop.NewNeocortexAdapter(seam)
+	if adapterErr != nil {
+		a.runtimeFailure = delegate.ClassDeterministic
+		return adapterErr
+	}
+	neocortexAdapter = adapter
+	activation, recorder, evidence = adapter, adapter, adapter
+	citationVerifier = adapter
+	deliveryConsolidator = adapter
+	checkpointStore := &loop.NeocortexCheckpointStore{
+		Seam: seam, Turns: a.runtime.store,
+	}
+	var checkpoints loop.CheckpointStore = checkpointStore
+	if strings.TrimSpace(resumeGuidance) != "" {
+		state, loadErr := checkpointStore.LoadTurnState(ctx, turnID)
+		switch {
+		case loadErr == nil && state.Checkpoint != nil:
+			recoveryCheckpoint = state.Checkpoint
+		case loadErr == nil:
 			a.runtimeFailure = delegate.ClassDeterministic
-			return seamErr
-		}
-		adapter, adapterErr := loop.NewNeocortexAdapter(seam)
-		if adapterErr != nil {
+			return fmt.Errorf("neo: Neocortex recovery checkpoint is missing")
+		case !errors.Is(loadErr, sql.ErrNoRows):
 			a.runtimeFailure = delegate.ClassDeterministic
-			return adapterErr
-		}
-		neocortexAdapter = adapter
-		activation, recorder, evidence = adapter, adapter, adapter
-		citationVerifier = adapter
-		deliveryConsolidator = adapter
-		checkpointStore := &loop.NeocortexCheckpointStore{
-			Seam: seam, Turns: a.runtime.store,
-		}
-		checkpoints = checkpointStore
-		if strings.TrimSpace(resumeGuidance) != "" {
-			state, loadErr := checkpointStore.LoadTurnState(ctx, turnID)
-			switch {
-			case loadErr == nil && state.Checkpoint != nil:
-				recoveryCheckpoint = state.Checkpoint
-			case loadErr == nil:
-				a.runtimeFailure = delegate.ClassDeterministic
-				return fmt.Errorf(
-					"neo: neocortex recovery checkpoint is missing",
-				)
-			case !errors.Is(loadErr, sql.ErrNoRows):
-				a.runtimeFailure = delegate.ClassDeterministic
-				return loadErr
-			}
-		}
-	} else {
-		cortexAdapter, adapterErr := loop.NewCortexAdapter(
-			a.runtime.pager, a.cfg, conversationID,
-		)
-		if adapterErr != nil {
-			a.runtimeFailure = delegate.ClassDeterministic
-			return adapterErr
-		}
-		activation, recorder = cortexAdapter, cortexAdapter
-		evidence = &loop.CortexToolJournal{
-			Cortex:    a.runtime.pager.Cortex(),
-			CreatedBy: actorID,
+			return loadErr
 		}
 	}
 	if recoveryCheckpoint == nil {
@@ -510,7 +490,7 @@ func (a *Agent) openBeliefState(
 // runtimeEvidenceObserver fans one committed execution out to the UI stream and
 // then to the belief state. The UI leg is presentation and never fails the
 // turn; the belief leg is fail-closed, so an execution whose citation does not
-// verify against the cortex journal stops the turn rather than updating
+// verify against the Neocortex journal stops the turn rather than updating
 // cognition from unanchored evidence.
 type runtimeEvidenceObserver struct {
 	ui         loop.EvidenceObserver

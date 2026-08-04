@@ -21,7 +21,7 @@ package server
 //
 // Two complementary proofs, both over REAL code: (1) a seeded randomized sweep
 // over the REAL pure decideAutomatrixWake across the whole input space, and (2)
-// a sequential end-to-end walk of ONE real Engine (real cortex pager under
+// a sequential end-to-end walk of ONE real Engine (real Neocortex pager under
 // t.TempDir(), faithful in-package governor seam, recording runner) through the
 // full state machine, asserting the cumulative invariant after every transition.
 
@@ -153,7 +153,7 @@ func TestProperty3_Decider_InvariantSweep(t *testing.T) {
 // TestProperty3_Handler_EndToEndChain walks ONE real Engine through the full
 // Property-3 state machine in sequence — opted-out → busy → capped → idle →
 // runnable — and asserts the cumulative invariant after each transition,
-// against the REAL handler, a REAL cortex pager, a faithful in-package governor
+// against the REAL handler, a REAL Neocortex pager, a faithful in-package governor
 // seam, and a recording runner. This is the single coherent end-to-end proof
 // that the clauses compose: at no point before the fully-permitted state does a
 // proactive run occur, and the opt-out path is the only one that cancels rather

@@ -4,7 +4,7 @@
 package server
 
 // Privacy controls surface (PRIV-01, launch-readiness req 8). These routes are
-// Neo-owned and back onto Engine.pager — Neo's OWN Cortex actor — because the
+// Neo-owned and back onto Engine.pager — Neo's OWN Neocortex actor — because the
 // co-located daemon owns a SEPARATE actor and cannot see Neo's learned
 // memories. The daemon's /personalization routes address the daemon actor's
 // record; the authenticated product must reach Neo's, so these routes exist.

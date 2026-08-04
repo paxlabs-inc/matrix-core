@@ -20,7 +20,7 @@
 // kept hot for the wake's live read, persisted to a single crash-atomic JSON
 // file on the machine volume (tmp+rename) so it survives reload / suspend /
 // redeploy. An empty dir yields an in-memory-only store (dev/CLI/tests still
-// toggle correctly, just without disk durability). It never touches cortex,
+// toggle correctly, just without disk durability). It never touches Neocortex,
 // signs anything, or perturbs the plan/walk, and stores NO secrets, tokens, or
 // keys — only the opt-in flag, the alarm id, and the daily counter.
 package automatrixsettings
@@ -273,7 +273,7 @@ func (s *Store) path() string {
 func today() string { return time.Now().UTC().Format("2006-01-02") }
 
 // Dir resolves Neo's Automatrix settings directory. An explicit override wins;
-// else it derives from the cortex root's parent (matching the conversation /
+// else it derives from the Neocortex root's parent (matching the conversation /
 // task / trace / automatrix stores, so it shares /data with them and survives
 // suspend / redeploy). Returns "" when neither is available (in-memory only).
 func Dir(override, cortexRoot string) string {

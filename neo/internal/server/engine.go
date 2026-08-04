@@ -53,7 +53,7 @@ import (
 )
 
 // Engine holds the process-wide shared dependencies (models, the native plus
-// integration tool surface, the cortex pager, the background consolidator) and hands each
+// integration tool surface, the Neocortex pager, the background consolidator) and hands each
 // conversation its own agent loop over them.
 type Engine struct {
 	cfg   config.Config
@@ -72,9 +72,9 @@ type Engine struct {
 	tasks              *task.Store         // durable task-supervision ledger (survives restart/suspend)
 	runRecords         *runrecord.Store
 	journal            *sessionjournal.Store
-	trace              *trace.Store         // durable per-run workspace timeline ("Neo's Computer"); sidecar, never cortex
-	automatrix         *automatrixlog.Store // durable Automatrix completion inbox (in-app surprise results); sidecar, never cortex
-	briefHistory       *briefhistory.Store  // durable morning-brief recommendation history + feedback (ORACLE task 5.5); sidecar, never cortex
+	trace              *trace.Store         // durable per-run workspace timeline ("Neo's Computer"); sidecar, never Neocortex
+	automatrix         *automatrixlog.Store // durable Automatrix completion inbox (in-app surprise results); sidecar, never Neocortex
+	briefHistory       *briefhistory.Store  // durable morning-brief recommendation history + feedback (ORACLE task 5.5); sidecar, never Neocortex
 	telegram           *telegramBridge
 	machineMail        *machineMailBridge
 	mediaDir           string // machine-volume dir for generated + uploaded media ("" disables)
@@ -375,7 +375,7 @@ func NewEngine(o EngineOptions) *Engine {
 		// Personalization interview (ORACLE task 5.3): the confirmation-gated
 		// save_personalization_profile tool (advertised only to interview
 		// agents) persists the confirmed profile as the single versioned
-		// cortex record through the real pager.
+		// Neocortex record through the real pager.
 		if e.pager != nil {
 			e.tools.SetPersonalizationSave(e.savePersonalizationProfile)
 		}
@@ -652,7 +652,7 @@ func (s neoSurfaceSink) Event(typ, phase string, fields map[string]interface{}) 
 // manager: it streams an agent-authored surface onto the active run's event
 // stream as a construct.surface event. Pure side-channel — it only publishes a
 // transcript event, exactly like surfaceTool / notifyFor; it never signs,
-// writes cortex, or touches the plan/walk.
+// writes Neocortex, or touches the plan/walk.
 func (e *Engine) emitConstructSurface(ctx context.Context, s *schema.Surface) error {
 	r := runFromContext(ctx)
 	if r == nil {
@@ -665,7 +665,7 @@ func (e *Engine) emitConstructSurface(ctx context.Context, s *schema.Surface) er
 // (neo-smoothness req.3): it streams the agent's ordered checklist onto the
 // active run's event stream as a tool.todo event. Pure side-channel — it only
 // publishes a transcript event (like emitConstructSurface / surfaceTool); it
-// never signs, writes cortex, or touches the plan/walk. The trace tap persists
+// never signs, writes Neocortex, or touches the plan/walk. The trace tap persists
 // tool.todo (traceWorkspaceTypes) so the checklist survives reopen + respawn.
 func (e *Engine) emitTodo(ctx context.Context, items []tools.TodoItem) error {
 	r := runFromContext(ctx)
@@ -698,7 +698,7 @@ const askWaitTimeout = 10 * time.Minute
 // race the park, then emit; on answer, patch the Ask surface to its settled
 // state so the rendered control resolves. Pure side-channel: it publishes
 // transcript events and returns the answer as a tool result (an agent INPUT);
-// it never signs, writes cortex, or touches the plan/walk.
+// it never signs, writes Neocortex, or touches the plan/walk.
 func (e *Engine) respondAsk(ctx context.Context, s *schema.Surface) (*primitives.AskResponse, error) {
 	r := runFromContext(ctx)
 	if r == nil {
@@ -836,7 +836,7 @@ func (e *Engine) approverFor(r *run) delegate.Approver {
 // publishAudit streams a Cassandra audit event onto the run's event stream as
 // a cassandra.* event (cassandra.frozen.kvx [audit].events). Pure observability
 // side-channel — it only publishes a transcript event, exactly like surfaceTool
-// / notifyFor; the adjudicator signs nothing and writes no cortex (i_cass_4,
+// / notifyFor; the adjudicator signs nothing and writes no Neocortex (i_cass_4,
 // i_cass_6).
 func (e *Engine) publishAudit(r *run, ev agent.AuditEvent) {
 	if r == nil {
@@ -852,8 +852,8 @@ func (e *Engine) publishAudit(r *run, ev agent.AuditEvent) {
 // publishMemory streams the turn's continuous-memory activation summary onto
 // the run's event stream as a memory.activation event (continuous-memory task
 // 7.1). Pure observability side-channel — like publishAudit / surfaceTool it
-// only publishes a transcript event; cortex composed the bundle read-only and
-// nothing here signs, writes cortex, or touches the plan/walk. It surfaces the
+// only publishes a transcript event; Neocortex composed the bundle read-only and
+// nothing here signs, writes Neocortex, or touches the plan/walk. It surfaces the
 // RESULT (the durable story-so-far + a coarse memory timeline), never the
 // protocol (no journal / MMR / rollup / snapshot jargon). Empty payloads are
 // dropped so a turn with nothing to remember emits nothing.
@@ -1024,7 +1024,7 @@ var traceWorkspaceTypes = map[string]bool{
 // scrolls past the 512-event broker buffer, or the topic is reclaimed. It runs
 // on every publish, so it stays cheap: a map lookup, then a NON-BLOCKING
 // enqueue (trace.Record drops rather than blocks). It never signs, never writes
-// cortex, never touches plan/walk (pure sidecar — m9/i_trace).
+// Neocortex, never touches plan/walk (pure sidecar — m9/i_trace).
 func (e *Engine) recordTrace(id string, ev Event) {
 	if e.trace == nil || !e.trace.Enabled() || id == "" {
 		return
@@ -1049,7 +1049,7 @@ func (e *Engine) recordTrace(id string, ev Event) {
 
 // automatrixCompleteEvent is the broker event type announcing that Neo finished
 // an unprompted opportunity (req 6.1). It carries the RESULT, not the protocol
-// (no Chronos/alarm/marker/cortex jargon — the consumer rule, req 6.5): the
+// (no Chronos/alarm/marker/Neocortex jargon — the consumer rule, req 6.5): the
 // opportunity summary, a result summary, the conversation it belongs to, the
 // created_at, the unread flag, and the durable record id. The client renders it
 // as an Automatrix inbox item / unread badge.
@@ -1061,7 +1061,7 @@ const automatrixCompleteEvent = "automatrix.complete"
 // surface: it is written FIRST so the result is never lost even if no client is
 // connected (and regardless of any out-of-app ntfy/Apprise ping). This is the
 // clean writer seam the completion path (5.3) calls on a genuinely-gated pass;
-// it never signs, writes cortex, or touches the plan/walk. No secrets are
+// it never signs, writes Neocortex, or touches the plan/walk. No secrets are
 // recorded — only the result-not-protocol fields.
 func (e *Engine) emitAutomatrixComplete(convID, opportunitySummary, resultSummary string) automatrixlog.Record {
 	rec, err := e.automatrix.Append(automatrixlog.Record{
@@ -1196,7 +1196,7 @@ func (e *Engine) surfaceTool(r *run, ev agent.ToolEvent) {
 	// don't know the event simply skip it. A tool opts in by returning the
 	// documented artifact shape (see parseArtifact); the blob itself stays in
 	// object storage as a content-addressed ref (boundaries: never bytes in the
-	// conversation store or cortex).
+	// conversation store or Neocortex).
 	if a, ok := parseArtifact(ev.Result); ok {
 		if e.journal != nil {
 			if _, err := e.journal.Append(context.Background(), sessionjournal.Event{

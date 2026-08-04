@@ -15,8 +15,8 @@ import (
 
 func TestQueueCoalescesRespawnsByStableIntentBeforeCommit(t *testing.T) {
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "writeback-coalesce-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "writeback-coalesce-test"
 	pager, err := neomemory.Open(cfg)
 	if err != nil {
 		t.Fatalf("Open pager: %v", err)

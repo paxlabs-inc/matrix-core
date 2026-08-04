@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/neo/internal/o1 kind=package
   digest=b3:2dbf8e1f45537febfe506cce9e3f4e1c9bafab18a424895beb0b5d995e35009e file=neo/internal/o1 range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/o1/context.go,matrix/neo/internal/o1/contract.go,matrix/neo/internal/o1/ledger.go,matrix/neo/internal/o1/manifest.go,matrix/neo/internal/o1/mutation.go,matrix/neo/internal/o1/outcome.go,matrix/neo/internal/o1/protocol.go,matrix/neo/internal/o1/qualification.go,matrix/neo/internal/o1/recovery.go,matrix/neo/internal/o1/registry.go,matrix/neo/internal/o1/runtime.go,matrix/neo/internal/o1/supervisor.go,matrix/neo/internal/o1/verifier.go
+  imports=matrix/neo/internal/llm
   ^contains=mod:matrix/neo
+  ^imports=matrix/neo/internal/agent,matrix/neo/internal/runtime/loop
 
 NODE id=matrix/neo/internal/o1.Ambiguity kind=type
   digest=b3:7d38650e2dbd906ff3909966a3d3944ac4d4ea45f157cb8d2d3da83305774b04 file=neo/internal/o1/contract.go range=45:50 lang=go exported=true byte_range=999:1158
   sig=type Ambiguity struct {\n	ID		string	`json:"id"`\n	Question	string	`json:"question"`\n	Material	bool	`json:"material"`\n	Resolved	bool	`json:"resolved"`\n}
 EDGES
   contains=matrix/neo/internal/o1.Ambiguity#ID,matrix/neo/internal/o1.Ambiguity#Material,matrix/neo/internal/o1.Ambiguity#Question,matrix/neo/internal/o1.Ambiguity#Resolved
+  ^references=matrix/neo/internal/o1.Compile,matrix/neo/internal/o1.TaskContract
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.Ambiguity#ID kind=field
@@ -43,6 +46,8 @@ NODE id=matrix/neo/internal/o1.AttemptRecord kind=type
   doc=AttemptRecord logs one operation attempt with its pre/post state and outcome.
 EDGES
   contains=matrix/neo/internal/o1.AttemptRecord#AttemptID,matrix/neo/internal/o1.AttemptRecord#Evidence,matrix/neo/internal/o1.AttemptRecord#Operation,matrix/neo/internal/o1.AttemptRecord#Outcome,matrix/neo/internal/o1.AttemptRecord#PostState,matrix/neo/internal/o1.AttemptRecord#PreState,matrix/neo/internal/o1.AttemptRecord#Timestamp
+  references=matrix/neo/internal/o1.OperationOutcome
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.RunLedger.EvidenceSnapshot,matrix/neo/internal/o1.RunLedger.RecordAttempt,matrix/neo/internal/o1.RunLedger.SuccessfulAttempt
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.AttemptRecord#AttemptID kind=field
@@ -92,6 +97,8 @@ NODE id=matrix/neo/internal/o1.ChannelAssistant kind=const
   sig=o1.MessageChannel
   doc=ChannelAssistant is an assistant-authored conversational message —\ngenuine model output the model should treat as its own prior turn.
 EDGES
+  references=matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.DefaultContextRules,matrix/neo/internal/o1.MessageChannel.IsAssistantAuthored,matrix/neo/internal/o1.MessageChannel.IsDurable,matrix/neo/internal/o1.MessageChannel.IsUserVisible,matrix/neo/internal/o1.ValidateConversationTruth
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ChannelGuidance kind=const
@@ -99,6 +106,8 @@ NODE id=matrix/neo/internal/o1.ChannelGuidance kind=const
   sig=o1.MessageChannel
   doc=ChannelGuidance is runtime-generated steering injected into the model's\ncontext (e.g. convergence nudges, contract reminders, forced-revision\ndirectives). NEVER persisted as assistant-authored history.
 EDGES
+  references=matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.DefaultContextRules,matrix/neo/internal/o1.ValidateConversationTruth
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ChannelNarration kind=const
@@ -106,6 +115,8 @@ NODE id=matrix/neo/internal/o1.ChannelNarration kind=const
   sig=o1.MessageChannel
   doc=ChannelNarration is ephemeral narrate-before-act text. Surfaced live\nbut never persisted to the durable thread. (neo-smoothness req.1)
 EDGES
+  references=matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.DefaultContextRules
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ChannelProgress kind=const
@@ -113,6 +124,8 @@ NODE id=matrix/neo/internal/o1.ChannelProgress kind=const
   sig=o1.MessageChannel
   doc=ChannelProgress is structured runtime progress — e.g. todo updates,\nmilestone markers, phase transitions. NEVER treated as assistant-authored.
 EDGES
+  references=matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.DefaultContextRules
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ChannelReasoning kind=const
@@ -120,6 +133,8 @@ NODE id=matrix/neo/internal/o1.ChannelReasoning kind=const
   sig=o1.MessageChannel
   doc=ChannelReasoning is provider reasoning (chain-of-thought) — output-only,\nnever persisted back to the conversation, never counts as assistant content.
 EDGES
+  references=matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.DefaultContextRules
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ChannelSupervisor kind=const
@@ -127,6 +142,8 @@ NODE id=matrix/neo/internal/o1.ChannelSupervisor kind=const
   sig=o1.MessageChannel
   doc=ChannelSupervisor is a supervisor decision (continue, repair, stop,\ncomplete) with structured provenance. NEVER treated as assistant output.
 EDGES
+  references=matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.DefaultContextRules,matrix/neo/internal/o1.MessageChannel.IsDurable
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ChannelTerminal kind=const
@@ -134,6 +151,8 @@ NODE id=matrix/neo/internal/o1.ChannelTerminal kind=const
   sig=o1.MessageChannel
   doc=ChannelTerminal is the final run metadata — completion proof, blocker\ndescription, or death reason. Carries the authoritative terminal state.
 EDGES
+  references=matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.DefaultContextRules,matrix/neo/internal/o1.MessageChannel.IsDurable,matrix/neo/internal/o1.MessageChannel.IsUserVisible
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ChannelToolCall kind=const
@@ -141,6 +160,8 @@ NODE id=matrix/neo/internal/o1.ChannelToolCall kind=const
   sig=o1.MessageChannel
   doc=ChannelToolCall is a structured tool invocation from the model.
 EDGES
+  references=matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.DefaultContextRules,matrix/neo/internal/o1.MessageChannel.IsDurable
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ChannelToolResult kind=const
@@ -148,6 +169,8 @@ NODE id=matrix/neo/internal/o1.ChannelToolResult kind=const
   sig=o1.MessageChannel
   doc=ChannelToolResult is the authoritative result of a tool execution.
 EDGES
+  references=matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.DefaultContextRules,matrix/neo/internal/o1.MessageChannel.IsDurable,matrix/neo/internal/o1.MessageChannel.IsUserVisible,matrix/neo/internal/o1.ValidateConversationTruth
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ChannelUser kind=const
@@ -155,12 +178,15 @@ NODE id=matrix/neo/internal/o1.ChannelUser kind=const
   sig=o1.MessageChannel
   doc=ChannelUser is a user-authored conversational message.
 EDGES
+  references=matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.DefaultContextRules,matrix/neo/internal/o1.MessageChannel.IsDurable,matrix/neo/internal/o1.MessageChannel.IsUserVisible,matrix/neo/internal/o1.ValidateConversationTruth
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.Class kind=type
   digest=b3:69daa9107a980ecbc96739f1d9d28cc85ccd436c2698269055ff6d49375ffd14 file=neo/internal/o1/registry.go range=15:15 lang=go exported=true byte_range=250:267
   sig=type Class string
 EDGES
+  ^references=matrix/neo/internal/o1.Detectable,matrix/neo/internal/o1.Hazard,matrix/neo/internal/o1.Irreducible,matrix/neo/internal/o1.Preventable,matrix/neo/internal/o1.Unknown
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.Clause kind=type
@@ -168,6 +194,8 @@ NODE id=matrix/neo/internal/o1.Clause kind=type
   sig=type Clause struct {\n	ID		string		`json:"id"`\n	Text		string		`json:"text"`\n	Provenance	Provenance	`json:"provenance"`\n	Source		string		`json:"source"`\n}
 EDGES
   contains=matrix/neo/internal/o1.Clause#ID,matrix/neo/internal/o1.Clause#Provenance,matrix/neo/internal/o1.Clause#Source,matrix/neo/internal/o1.Clause#Text
+  references=matrix/neo/internal/o1.Provenance
+  ^references=matrix/neo/internal/o1.Compile,matrix/neo/internal/o1.Revision,matrix/neo/internal/o1.TaskContract,matrix/neo/internal/o1.TaskContract.Revise
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.Clause#ID kind=field
@@ -198,6 +226,10 @@ NODE id=matrix/neo/internal/o1.Compile kind=func
   digest=b3:921ff13ba157e74d8aec930bb363a37973a24cc83797215b67ef3d7037fab4ec file=neo/internal/o1/contract.go range=79:127 lang=go exported=true byte_range=2118:4914
   sig=func Compile(in CompileInput) TaskContract
 EDGES
+  calls=matrix/neo/internal/o1.cleanRules,matrix/neo/internal/o1.criteriaForCapabilities,matrix/neo/internal/o1.itoa,matrix/neo/internal/o1.requiredCapabilities
+  references=matrix/neo/internal/o1.Ambiguity,matrix/neo/internal/o1.Clause,matrix/neo/internal/o1.CompileInput,matrix/neo/internal/o1.Criterion,matrix/neo/internal/o1.Framework,matrix/neo/internal/o1.Gate,matrix/neo/internal/o1.Repository,matrix/neo/internal/o1.TaskContract,matrix/neo/internal/o1.User,matrix/neo/internal/o1.cleanRules,matrix/neo/internal/o1.contract,matrix/neo/internal/o1.criteriaForCapabilities,matrix/neo/internal/o1.i,matrix/neo/internal/o1.in,matrix/neo/internal/o1.itoa,matrix/neo/internal/o1.request,matrix/neo/internal/o1.required,matrix/neo/internal/o1.requiredCapabilities,matrix/neo/internal/o1.rule,matrix/neo/internal/o1.sum
+  ^calls=matrix/neo/internal/agent.Agent.prepareExecutionFrame
+  ^references=matrix/neo/internal/agent.Agent.prepareExecutionFrame
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.CompileAllCapabilities kind=func
@@ -205,6 +237,10 @@ NODE id=matrix/neo/internal/o1.CompileAllCapabilities kind=func
   sig=func CompileAllCapabilities(available []llm.Tool) (RuntimeCapabilities, error)
   doc=CompileAllCapabilities is the FULL-SURFACE compilation: it derives an\nOperationManifest for every live, already-bound tool schema and exposes them\nall, without the task-contract minimal narrowing. The O1 evidence machinery\n(typed manifests, deterministic preflight over the whole surface) still runs,\nbut no tool is hidden from the model — the request->capability text heuristic\ncannot silently strip an essential tool (e.g. fetch) it failed to name. Used\nwhen O1ConstrainTools is off (the default). A schema that cannot be\nrepresented as a bounded object is still rejected before it can reach the\nmodel.
 EDGES
+  calls=matrix/neo/internal/o1.RunPreflight,matrix/neo/internal/o1.manifestFromTool,matrix/neo/internal/o1.validateToolSchema
+  references=matrix/neo/internal/llm.Tool,matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.PreflightEnvironment,matrix/neo/internal/o1.RunPreflight,matrix/neo/internal/o1.RuntimeCapabilities,matrix/neo/internal/o1.available,matrix/neo/internal/o1.byName,matrix/neo/internal/o1.env,matrix/neo/internal/o1.err,matrix/neo/internal/o1.exists,matrix/neo/internal/o1.i,matrix/neo/internal/o1.j,matrix/neo/internal/o1.manifest,matrix/neo/internal/o1.manifestFromTool,matrix/neo/internal/o1.name,matrix/neo/internal/o1.result,matrix/neo/internal/o1.schema,matrix/neo/internal/o1.selected,matrix/neo/internal/o1.validateToolSchema
+  ^calls=matrix/neo/internal/agent.Agent.prepareExecutionFrame
+  ^references=matrix/neo/internal/agent.Agent.prepareExecutionFrame
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.CompileInput kind=type
@@ -212,6 +248,7 @@ NODE id=matrix/neo/internal/o1.CompileInput kind=type
   sig=type CompileInput struct {\n	Request		string\n	RepositoryRules	[]string\n	FrameworkRules	[]string\n}
 EDGES
   contains=matrix/neo/internal/o1.CompileInput#FrameworkRules,matrix/neo/internal/o1.CompileInput#RepositoryRules,matrix/neo/internal/o1.CompileInput#Request
+  ^references=matrix/neo/internal/agent.Agent.prepareExecutionFrame,matrix/neo/internal/o1.Compile
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.CompileInput#FrameworkRules kind=field
@@ -237,6 +274,8 @@ NODE id=matrix/neo/internal/o1.CompileRuntimeCapabilities kind=func
   sig=func CompileRuntimeCapabilities(contract TaskContract, available []llm.Tool) (RuntimeCapabilities, error)
   doc=CompileRuntimeCapabilities derives manifests from the live, already-bound\nproduction tool schemas and selects the smallest contract-authorized set.\nA schema that cannot be represented as a bounded object is rejected before\nit can reach the model.
 EDGES
+  calls=matrix/neo/internal/o1.ManifestSet.Get,matrix/neo/internal/o1.ManifestSet.SelectMinimal,matrix/neo/internal/o1.RunPreflight,matrix/neo/internal/o1.hasManifest,matrix/neo/internal/o1.manifestFromTool,matrix/neo/internal/o1.selectExplicitProvider,matrix/neo/internal/o1.validateToolSchema
+  references=matrix/neo/internal/llm.Tool,matrix/neo/internal/o1.ManifestSet,matrix/neo/internal/o1.ManifestSet.Get,matrix/neo/internal/o1.ManifestSet.SelectMinimal,matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.PreflightEnvironment,matrix/neo/internal/o1.RunPreflight,matrix/neo/internal/o1.RuntimeCapabilities,matrix/neo/internal/o1.TaskContract,matrix/neo/internal/o1.available,matrix/neo/internal/o1.byName,matrix/neo/internal/o1.contract,matrix/neo/internal/o1.env,matrix/neo/internal/o1.err,matrix/neo/internal/o1.exists,matrix/neo/internal/o1.hasManifest,matrix/neo/internal/o1.i,matrix/neo/internal/o1.j,matrix/neo/internal/o1.manifest,matrix/neo/internal/o1.manifestFromTool,matrix/neo/internal/o1.ms,matrix/neo/internal/o1.name,matrix/neo/internal/o1.result,matrix/neo/internal/o1.schema,matrix/neo/internal/o1.selectExplicitProvider,matrix/neo/internal/o1.selected,matrix/neo/internal/o1.validateToolSchema
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.CompileVerifiers kind=func
@@ -244,12 +283,18 @@ NODE id=matrix/neo/internal/o1.CompileVerifiers kind=func
   sig=func CompileVerifiers(criteria []Criterion) VerifierGraph
   doc=CompileVerifiers creates a verifier graph from the task contract's criteria.
 EDGES
+  calls=matrix/neo/internal/o1.inferVerifierKinds
+  references=matrix/neo/internal/o1.Criterion,matrix/neo/internal/o1.CriterionVerifier,matrix/neo/internal/o1.VerifierGraph,matrix/neo/internal/o1.c,matrix/neo/internal/o1.criteria,matrix/neo/internal/o1.inferVerifierKinds,matrix/neo/internal/o1.kinds,matrix/neo/internal/o1.verifiers
+  ^calls=matrix/neo/internal/agent.Agent.prepareExecutionFrame
+  ^references=matrix/neo/internal/agent.Agent.prepareExecutionFrame
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.Conditional kind=const
   digest=b3:2a4f2f9f45a17b41a68194d92bf7ee98c90aa9dcfd97a2860bc9bf241be1e49d file=neo/internal/o1/manifest.go range=33:33 lang=go exported=true byte_range=815:857
   sig=o1.Reversibility
 EDGES
+  references=matrix/neo/internal/o1.Reversibility
+  ^references=matrix/neo/internal/o1.manifestFromTool
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.ConformChatResult kind=func
@@ -257,6 +302,10 @@ NODE id=matrix/neo/internal/o1.ConformChatResult kind=func
   sig=func ConformChatResult(result *llm.ChatResult, budget RepresentationBudget, dialect ...ProviderDialect) error
   doc=ConformChatResult validates the production provider result against the O1\nnormalized protocol and representation budget before any call can dispatch.
 EDGES
+  calls=matrix/neo/internal/o1.NewProviderConformer,matrix/neo/internal/o1.ProviderConformer.Validate,matrix/neo/internal/o1.RepresentationBudget.BudgetCheck
+  references=matrix/neo/internal/llm.ChatResult,matrix/neo/internal/o1.DialectGeneric,matrix/neo/internal/o1.NewProviderConformer,matrix/neo/internal/o1.NormalizedGeneration,matrix/neo/internal/o1.NormalizedToolCall,matrix/neo/internal/o1.ProviderConformer.Validate,matrix/neo/internal/o1.ProviderDialect,matrix/neo/internal/o1.RepresentationBudget,matrix/neo/internal/o1.RepresentationBudget.BudgetCheck,matrix/neo/internal/o1.Usage,matrix/neo/internal/o1.budget,matrix/neo/internal/o1.call,matrix/neo/internal/o1.dialect,matrix/neo/internal/o1.err,matrix/neo/internal/o1.generation,matrix/neo/internal/o1.result,matrix/neo/internal/o1.wireDialect
+  ^calls=matrix/neo/internal/agent.Agent.chatWithRetry
+  ^references=matrix/neo/internal/agent.Agent.chatWithRetry
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.ContentHash kind=func
@@ -264,6 +313,9 @@ NODE id=matrix/neo/internal/o1.ContentHash kind=func
   sig=func ContentHash(content []byte) string
   doc=ContentHash computes the SHA-256 of content for integrity verification.
 EDGES
+  references=matrix/neo/internal/o1.content,matrix/neo/internal/o1.h
+  ^calls=matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.journalUncertainEffect,matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/o1.EvaluateFailureReplay,matrix/neo/internal/o1.EvaluateQualification,matrix/neo/internal/o1.ProofManifest.Verify,matrix/neo/internal/o1.RunLedger.SetTerminal,matrix/neo/internal/o1.VerifierGraph.GenerateProofManifest
+  ^references=matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.journalUncertainEffect,matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/o1.EvaluateFailureReplay,matrix/neo/internal/o1.EvaluateQualification,matrix/neo/internal/o1.ProofManifest.Verify,matrix/neo/internal/o1.RunLedger.SetTerminal,matrix/neo/internal/o1.VerifierGraph.GenerateProofManifest
   ^defines=matrix/neo/internal/o1/mutation.go
 
 NODE id=matrix/neo/internal/o1.ContextAssembler kind=type
@@ -272,6 +324,8 @@ NODE id=matrix/neo/internal/o1.ContextAssembler kind=type
   doc=ContextAssembler builds a model-visible context window from typed messages,\napplying channel rules to ensure no runtime fiction enters assistant history.
 EDGES
   contains=matrix/neo/internal/o1.ContextAssembler#rules,matrix/neo/internal/o1.ContextAssembler.AssembleContext,matrix/neo/internal/o1.ContextAssembler.CompactableMessages
+  references=matrix/neo/internal/o1.ContextRule,matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.ContextAssembler.AssembleContext,matrix/neo/internal/o1.ContextAssembler.CompactableMessages,matrix/neo/internal/o1.NewContextAssembler
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ContextAssembler#rules kind=field
@@ -285,6 +339,7 @@ NODE id=matrix/neo/internal/o1.ContextAssembler.AssembleContext kind=method
   sig=func (ca *ContextAssembler) AssembleContext(messages []ContextMessage) []ContextMessage
   doc=AssembleContext filters and orders messages for the model's context window.\nPer O1 req.8 ac.3: select current authoritative state, unresolved criteria,\nrelevant evidence, and valid capabilities; exclude stale, superseded,\nduplicated, or internal control content.
 EDGES
+  references=matrix/neo/internal/o1.ContextAssembler,matrix/neo/internal/o1.ContextMessage,matrix/neo/internal/o1.ca,matrix/neo/internal/o1.messages,matrix/neo/internal/o1.msg,matrix/neo/internal/o1.ok,matrix/neo/internal/o1.out,matrix/neo/internal/o1.rule
   ^contains=matrix/neo/internal/o1.ContextAssembler
   ^defines=matrix/neo/internal/o1/context.go
 
@@ -293,6 +348,7 @@ NODE id=matrix/neo/internal/o1.ContextAssembler.CompactableMessages kind=method
   sig=func (ca *ContextAssembler) CompactableMessages(messages []ContextMessage) []ContextMessage
   doc=CompactableMessages returns only the messages that should survive compaction\nper their channel rules. Per O1 req.8 ac.4: compaction preserves task-contract\nstate, causal evidence, open hazards, effects, authorization, and completion\nobligations.
 EDGES
+  references=matrix/neo/internal/o1.ContextAssembler,matrix/neo/internal/o1.ContextMessage,matrix/neo/internal/o1.ca,matrix/neo/internal/o1.messages,matrix/neo/internal/o1.msg,matrix/neo/internal/o1.ok,matrix/neo/internal/o1.out,matrix/neo/internal/o1.rule
   ^contains=matrix/neo/internal/o1.ContextAssembler
   ^defines=matrix/neo/internal/o1/context.go
 
@@ -302,6 +358,8 @@ NODE id=matrix/neo/internal/o1.ContextMessage kind=type
   doc=ContextMessage is a typed message in the Neo context window with explicit\nchannel attribution. It replaces untyped message arrays where runtime\nfiction could leak into assistant-authored history.
 EDGES
   contains=matrix/neo/internal/o1.ContextMessage#Channel,matrix/neo/internal/o1.ContextMessage#Content,matrix/neo/internal/o1.ContextMessage#Provenance,matrix/neo/internal/o1.ContextMessage#ToolName,matrix/neo/internal/o1.ContextMessage#TurnIndex,matrix/neo/internal/o1.ContextMessage.IsAssistantAuthored
+  references=matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.ContextAssembler.AssembleContext,matrix/neo/internal/o1.ContextAssembler.CompactableMessages,matrix/neo/internal/o1.ContextMessage.IsAssistantAuthored,matrix/neo/internal/o1.ValidateConversationTruth,matrix/neo/internal/o1.ValidateNoLeakage
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ContextMessage#Channel kind=field
@@ -339,6 +397,8 @@ NODE id=matrix/neo/internal/o1.ContextMessage.IsAssistantAuthored kind=method
   sig=func (m ContextMessage) IsAssistantAuthored() bool
   doc=IsAssistantAuthored returns true only when the channel is ChannelAssistant.\nThis is the single check that prevents runtime-generated prose from being\ntreated as the model's own prior output.
 EDGES
+  calls=matrix/neo/internal/o1.MessageChannel.IsAssistantAuthored
+  references=matrix/neo/internal/o1.ContextMessage,matrix/neo/internal/o1.MessageChannel.IsAssistantAuthored,matrix/neo/internal/o1.m
   ^contains=matrix/neo/internal/o1.ContextMessage
   ^defines=matrix/neo/internal/o1/context.go
 
@@ -348,6 +408,8 @@ NODE id=matrix/neo/internal/o1.ContextRule kind=type
   doc=ContextRule describes how a channel's content is treated during context\nassembly and compaction. Per O1 req.8 ac.3 and ac.4.
 EDGES
   contains=matrix/neo/internal/o1.ContextRule#AssistantAuthored,matrix/neo/internal/o1.ContextRule#Channel,matrix/neo/internal/o1.ContextRule#CompactionPolicy,matrix/neo/internal/o1.ContextRule#Durable,matrix/neo/internal/o1.ContextRule#ProvenanceTag,matrix/neo/internal/o1.ContextRule#UserVisible
+  references=matrix/neo/internal/o1.MessageChannel
+  ^references=matrix/neo/internal/o1.ContextAssembler,matrix/neo/internal/o1.DefaultContextRules,matrix/neo/internal/o1.NewContextAssembler
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ContextRule#AssistantAuthored kind=field
@@ -391,6 +453,7 @@ NODE id=matrix/neo/internal/o1.Control kind=type
   sig=type Control struct {\n	Kind	string	`json:"kind"`\n	Phase	string	`json:"phase"`\n	Ref	string	`json:"ref"`\n}
 EDGES
   contains=matrix/neo/internal/o1.Control#Kind,matrix/neo/internal/o1.Control#Phase,matrix/neo/internal/o1.Control#Ref
+  ^references=matrix/neo/internal/o1.Hazard
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.Control#Kind kind=field
@@ -416,6 +479,7 @@ NODE id=matrix/neo/internal/o1.Corpus kind=type
   sig=type Corpus struct {\n	ID		string		`json:"id"`\n	Source		string		`json:"source"`\n	HazardIDs	[]string	`json:"hazard_ids"`\n}
 EDGES
   contains=matrix/neo/internal/o1.Corpus#HazardIDs,matrix/neo/internal/o1.Corpus#ID,matrix/neo/internal/o1.Corpus#Source
+  ^references=matrix/neo/internal/o1.Registry
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.Corpus#HazardIDs kind=field
@@ -441,6 +505,7 @@ NODE id=matrix/neo/internal/o1.Criterion kind=type
   sig=type Criterion struct {\n	ID		string		`json:"id"`\n	Statement	string		`json:"statement"`\n	Evidence	[]string	`json:"evidence"`\n	Closed		bool		`json:"closed"`\n}
 EDGES
   contains=matrix/neo/internal/o1.Criterion#Closed,matrix/neo/internal/o1.Criterion#Evidence,matrix/neo/internal/o1.Criterion#ID,matrix/neo/internal/o1.Criterion#Statement
+  ^references=matrix/neo/internal/o1.Compile,matrix/neo/internal/o1.CompileVerifiers,matrix/neo/internal/o1.TaskContract,matrix/neo/internal/o1.criteriaForCapabilities,matrix/neo/internal/o1.inferVerifierKinds
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.Criterion#Closed kind=field
@@ -473,6 +538,8 @@ NODE id=matrix/neo/internal/o1.CriterionVerifier kind=type
   doc=CriterionVerifier binds one acceptance criterion to its verifiers.
 EDGES
   contains=matrix/neo/internal/o1.CriterionVerifier#Closed,matrix/neo/internal/o1.CriterionVerifier#CriterionID,matrix/neo/internal/o1.CriterionVerifier#Kinds,matrix/neo/internal/o1.CriterionVerifier#Results,matrix/neo/internal/o1.CriterionVerifier#Statement
+  references=matrix/neo/internal/o1.VerifierKind,matrix/neo/internal/o1.VerifierResult
+  ^references=matrix/neo/internal/agent.findO1Verifier,matrix/neo/internal/o1.CompileVerifiers,matrix/neo/internal/o1.ProofManifest,matrix/neo/internal/o1.VerifierGraph
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.CriterionVerifier#Closed kind=field
@@ -510,6 +577,9 @@ NODE id=matrix/neo/internal/o1.DefaultBudget kind=func
   sig=func DefaultBudget() RepresentationBudget
   doc=DefaultBudget returns the default representation budget.\n\nThe ceilings are deliberately generous: this budget exists to catch a\nrunaway representation, NOT to cap how long a legitimate answer may be. The\nprior 4096-token ceiling sat BELOW the main conversational client's own\n8192-token request cap (cmd/neo/main.go), so every generation in the\n4097..8192 range — which is where a real report or synthesis lands — was\nrejected by our own conformer after the provider had already produced it.\nThe token ceiling now matches the agent's answer-budget escalation ceiling\n(agent.answerTokenCeiling, 64K) so the two ladders agree; argument bytes sit\nwell above the tools layer's own 16KB file-mutation limit, which returns a\ngraceful "write a bounded chunk" tool result and must be the surface that\nenforces payload size, not this one.
 EDGES
+  references=matrix/neo/internal/o1.RepresentationBudget
+  ^calls=matrix/neo/internal/agent.Agent.chatWithRetry
+  ^references=matrix/neo/internal/agent.Agent.chatWithRetry
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DefaultContextRules kind=func
@@ -517,60 +587,82 @@ NODE id=matrix/neo/internal/o1.DefaultContextRules kind=func
   sig=func DefaultContextRules() []ContextRule
   doc=DefaultContextRules returns the canonical context rules for all channels.\nThese rules enforce the O1 invariant that runtime-generated prose never\nbecomes assistant-authored conversational history.
 EDGES
+  references=matrix/neo/internal/o1.ChannelAssistant,matrix/neo/internal/o1.ChannelGuidance,matrix/neo/internal/o1.ChannelNarration,matrix/neo/internal/o1.ChannelProgress,matrix/neo/internal/o1.ChannelReasoning,matrix/neo/internal/o1.ChannelSupervisor,matrix/neo/internal/o1.ChannelTerminal,matrix/neo/internal/o1.ChannelToolCall,matrix/neo/internal/o1.ChannelToolResult,matrix/neo/internal/o1.ChannelUser,matrix/neo/internal/o1.ContextRule
+  ^calls=matrix/neo/internal/o1.NewContextAssembler
+  ^references=matrix/neo/internal/o1.NewContextAssembler
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.Detectable kind=const
   digest=b3:fda6064ca5d52889105ba597f3b2bde26d876b5ef2cc6f37983504aed61ac34c file=neo/internal/o1/registry.go range=19:19 lang=go exported=true byte_range=313:345
   sig=o1.Class
 EDGES
+  references=matrix/neo/internal/o1.Class
+  ^references=matrix/neo/internal/o1.Registry.Check
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.DialectBaseten kind=const
   digest=b3:af02a442a1d461ace8ed4942acbacfbdf44074ae77e2be752c8dbb581622bc5d file=neo/internal/o1/protocol.go range=35:35 lang=go exported=true byte_range=1372:1416
   sig=o1.ProviderDialect
 EDGES
+  references=matrix/neo/internal/o1.ProviderDialect
+  ^references=matrix/neo/internal/o1.DialectForProvider
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectDeepSeek kind=const
   digest=b3:15635681dbc159be2035c34a3b8e205fd8295c3fbaf2b360b5279453d179a506 file=neo/internal/o1/protocol.go range=33:33 lang=go exported=true byte_range=1283:1328
   sig=o1.ProviderDialect
 EDGES
+  references=matrix/neo/internal/o1.ProviderDialect
+  ^references=matrix/neo/internal/o1.NewProviderConformer
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectFireworks kind=const
   digest=b3:29a5d91876e6630a227bce220a2a8ccc02ebb05f5cd4c504cfa85a367a9e6135 file=neo/internal/o1/protocol.go range=31:31 lang=go exported=true byte_range=1192:1238
   sig=o1.ProviderDialect
 EDGES
+  references=matrix/neo/internal/o1.ProviderDialect
+  ^references=matrix/neo/internal/o1.DialectForProvider
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectForProvider kind=func
   digest=b3:3e397c643520042f96d783c35064ba4ccd6abd4c996cd9613d7f14f0d8b8b739 file=neo/internal/o1/runtime.go range=187:200 lang=go exported=true byte_range=6734:7041
   sig=func DialectForProvider(provider string) ProviderDialect
 EDGES
+  references=matrix/neo/internal/o1.DialectBaseten,matrix/neo/internal/o1.DialectFireworks,matrix/neo/internal/o1.DialectMimo,matrix/neo/internal/o1.DialectOpenAI,matrix/neo/internal/o1.DialectXAI,matrix/neo/internal/o1.ProviderDialect,matrix/neo/internal/o1.provider
+  ^calls=matrix/neo/internal/agent.Agent.chatWithRetry
+  ^references=matrix/neo/internal/agent.Agent.chatWithRetry
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.DialectGeneric kind=const
   digest=b3:63041080ad7c5da6b951a5e8286e083dfba314e0b0e3edd28e4b04d1806eaa3b file=neo/internal/o1/protocol.go range=36:36 lang=go exported=true byte_range=1418:1462
   sig=o1.ProviderDialect
 EDGES
+  references=matrix/neo/internal/o1.ProviderDialect
+  ^references=matrix/neo/internal/o1.ConformChatResult
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectMimo kind=const
   digest=b3:7f808118400a1350d3a543ce01482ab6ddaa6ad53dc45294605f4544bb4e015a file=neo/internal/o1/protocol.go range=32:32 lang=go exported=true byte_range=1240:1281
   sig=o1.ProviderDialect
 EDGES
+  references=matrix/neo/internal/o1.ProviderDialect
+  ^references=matrix/neo/internal/o1.DialectForProvider,matrix/neo/internal/o1.NewProviderConformer
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectOpenAI kind=const
   digest=b3:73b462abba57f8e6ed0ab9ffa8b37638f4a34ce2bc05b908124e79596e37dc69 file=neo/internal/o1/protocol.go range=30:30 lang=go exported=true byte_range=1147:1190
   sig=o1.ProviderDialect
 EDGES
+  references=matrix/neo/internal/o1.ProviderDialect
+  ^references=matrix/neo/internal/o1.DialectForProvider
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectXAI kind=const
   digest=b3:f4355c3b7547bdbf3166333bbd765daf4c896aaac05213a7f6dca3d1b7ef1408 file=neo/internal/o1/protocol.go range=34:34 lang=go exported=true byte_range=1330:1370
   sig=o1.ProviderDialect
 EDGES
+  references=matrix/neo/internal/o1.ProviderDialect
+  ^references=matrix/neo/internal/o1.DialectForProvider
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.EffectClass kind=type
@@ -578,36 +670,46 @@ NODE id=matrix/neo/internal/o1.EffectClass kind=type
   sig=type EffectClass string
   doc=EffectClass describes the material consequence of an operation.
 EDGES
+  ^references=matrix/neo/internal/o1.EffectDestructive,matrix/neo/internal/o1.EffectExternal,matrix/neo/internal/o1.EffectMoney,matrix/neo/internal/o1.EffectNotification,matrix/neo/internal/o1.EffectReadOnly,matrix/neo/internal/o1.EffectWrite,matrix/neo/internal/o1.OperationManifest
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.EffectDestructive kind=const
   digest=b3:d78257d83ea0eda253f1545fe6e7c54eb7bbb0dfa510d88c5d6a5ac3e1407512 file=neo/internal/o1/manifest.go range=21:21 lang=go exported=true byte_range=442:488
   sig=o1.EffectClass
 EDGES
+  references=matrix/neo/internal/o1.EffectClass
+  ^references=matrix/neo/internal/o1.manifestFromTool
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.EffectExternal kind=const
   digest=b3:949ba6f4e9f69fec3edd2e07c5b1cab27a21317b96f784639079cd3a2870d479 file=neo/internal/o1/manifest.go range=22:22 lang=go exported=true byte_range=490:533
   sig=o1.EffectClass
 EDGES
+  references=matrix/neo/internal/o1.EffectClass
+  ^references=matrix/neo/internal/o1.RunPreflight,matrix/neo/internal/o1.manifestFromTool
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.EffectMoney kind=const
   digest=b3:5d6e4ef3f294ecd2c2086554cece2b49fc81f7e1c27d387acf438e7d93fe43bb file=neo/internal/o1/manifest.go range=23:23 lang=go exported=true byte_range=535:575
   sig=o1.EffectClass
 EDGES
+  references=matrix/neo/internal/o1.EffectClass
+  ^references=matrix/neo/internal/o1.manifestFromTool
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.EffectNotification kind=const
   digest=b3:4e0ce2c1ee41965f678d62b2b58e497e7ecf9d27234d7545395cd76744576461 file=neo/internal/o1/manifest.go range=24:24 lang=go exported=true byte_range=577:624
   sig=o1.EffectClass
 EDGES
+  references=matrix/neo/internal/o1.EffectClass
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.EffectReadOnly kind=const
   digest=b3:ed92a21eb46d9494e9ea2cd4eef3fcefee605091788478a9812c9f0a29a2761a file=neo/internal/o1/manifest.go range=19:19 lang=go exported=true byte_range=354:398
   sig=o1.EffectClass
 EDGES
+  references=matrix/neo/internal/o1.EffectClass
+  ^references=matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.journalToolCallPayload,matrix/neo/internal/agent.Agent.journalUncertainEffect,matrix/neo/internal/agent.Agent.o1Manifest,matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/o1.ManifestSet.Validate,matrix/neo/internal/o1.SelectRecoveryTransition,matrix/neo/internal/o1.manifestFromTool
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.EffectRecord kind=type
@@ -616,6 +718,7 @@ NODE id=matrix/neo/internal/o1.EffectRecord kind=type
   doc=EffectRecord captures a state-changing effect for reconciliation.
 EDGES
   contains=matrix/neo/internal/o1.EffectRecord#Effect,matrix/neo/internal/o1.EffectRecord#Operation,matrix/neo/internal/o1.EffectRecord#Reconciled,matrix/neo/internal/o1.EffectRecord#Reversible,matrix/neo/internal/o1.EffectRecord#Timestamp
+  ^references=matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.RunLedger.RecordEffect
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.EffectRecord#Effect kind=field
@@ -652,6 +755,8 @@ NODE id=matrix/neo/internal/o1.EffectWrite kind=const
   digest=b3:affd9a2d7db089b0f4d49bd01cbbe9c624d801375b2ecccbbb9ae1462b871ffd file=neo/internal/o1/manifest.go range=20:20 lang=go exported=true byte_range=400:440
   sig=o1.EffectClass
 EDGES
+  references=matrix/neo/internal/o1.EffectClass
+  ^references=matrix/neo/internal/o1.manifestFromTool
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.ErrBudgetExceeded kind=var
@@ -659,6 +764,7 @@ NODE id=matrix/neo/internal/o1.ErrBudgetExceeded kind=var
   sig=error
   doc=ErrBudgetExceeded marks a representation-budget overage (too many completion\ntokens, tool calls, or argument bytes). Every BudgetCheck error wraps it so\ncallers can tell a SIZE verdict apart from a protocol violation.\n\nThe distinction is load-bearing. A malformed or reasoning-only generation is\nunusable — the model produced nothing to act on. An oversized generation is\nthe opposite: it is complete and correct, merely long. Conflating the two let\na finished 4098-token answer be discarded as a "model call failed" and killed\nthe run (2026-07-25 research-task incident), so a budget verdict must never\nbe the reason a usable generation is thrown away.
 EDGES
+  ^references=matrix/neo/internal/agent.Agent.chatWithRetry,matrix/neo/internal/o1.RepresentationBudget.BudgetCheck
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.EvaluateFailureReplay kind=func
@@ -666,6 +772,8 @@ NODE id=matrix/neo/internal/o1.EvaluateFailureReplay kind=func
   sig=func EvaluateFailureReplay(cases []FailureReplayCase) QualificationResult
   doc=EvaluateFailureReplay derives pass/fail from a valid typed outcome and the\nexpected prevention/recovery posture. Static Passed fields are ignored.
 EDGES
+  calls=matrix/neo/internal/o1.ContentHash,matrix/neo/internal/o1.OperationOutcome.Verify
+  references=matrix/neo/internal/o1.ContentHash,matrix/neo/internal/o1.FailureReplayCase,matrix/neo/internal/o1.LayerAuthorization,matrix/neo/internal/o1.LayerInvocation,matrix/neo/internal/o1.LayerProtocol,matrix/neo/internal/o1.LayerValidation,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.QualificationResult,matrix/neo/internal/o1.cases,matrix/neo/internal/o1.encoded,matrix/neo/internal/o1.i,matrix/neo/internal/o1.outcome,matrix/neo/internal/o1.result,matrix/neo/internal/o1.valid
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.EvaluateQualification kind=func
@@ -673,6 +781,10 @@ NODE id=matrix/neo/internal/o1.EvaluateQualification kind=func
   sig=func EvaluateQualification(cases []QualificationCase) QualificationResult
   doc=EvaluateQualification derives the aggregate solely from durable proof\nmanifests. Caller-supplied Passed booleans are ignored so a catalog entry\ncannot manufacture release evidence.
 EDGES
+  calls=matrix/neo/internal/o1.ContentHash,matrix/neo/internal/o1.ProofManifest.Verify
+  references=matrix/neo/internal/o1.ContentHash,matrix/neo/internal/o1.ProofManifest,matrix/neo/internal/o1.ProofManifest.Verify,matrix/neo/internal/o1.QualificationCase,matrix/neo/internal/o1.QualificationResult,matrix/neo/internal/o1.cases,matrix/neo/internal/o1.encoded,matrix/neo/internal/o1.i,matrix/neo/internal/o1.proof,matrix/neo/internal/o1.result
+  ^calls=matrix/neo/internal/o1.ExtensionGate.Unmet
+  ^references=matrix/neo/internal/o1.ExtensionGate.Unmet
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.ExtensionGate kind=type
@@ -681,6 +793,8 @@ NODE id=matrix/neo/internal/o1.ExtensionGate kind=type
   doc=ExtensionGate checks a new or changed capability from the same concrete\nevidence used by execution. No caller-supplied compliance boolean can clear\nthe gate.
 EDGES
   contains=matrix/neo/internal/o1.ExtensionGate#Conformance,matrix/neo/internal/o1.ExtensionGate#Manifest,matrix/neo/internal/o1.ExtensionGate#Outcomes,matrix/neo/internal/o1.ExtensionGate#Preflight,matrix/neo/internal/o1.ExtensionGate#Recovery,matrix/neo/internal/o1.ExtensionGate#Registry,matrix/neo/internal/o1.ExtensionGate.IsClear,matrix/neo/internal/o1.ExtensionGate.Unmet
+  references=matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.PreflightResult,matrix/neo/internal/o1.QualificationCase,matrix/neo/internal/o1.RecoveryAutomaton,matrix/neo/internal/o1.Registry
+  ^references=matrix/neo/internal/o1.ExtensionGate.IsClear,matrix/neo/internal/o1.ExtensionGate.Unmet
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.ExtensionGate#Conformance kind=field
@@ -724,6 +838,8 @@ NODE id=matrix/neo/internal/o1.ExtensionGate.IsClear kind=method
   sig=func (g ExtensionGate) IsClear() bool
   doc=IsClear returns true only when every extension requirement is supported by\nvalid operation-specific evidence.
 EDGES
+  calls=matrix/neo/internal/o1.ExtensionGate.Unmet
+  references=matrix/neo/internal/o1.ExtensionGate,matrix/neo/internal/o1.ExtensionGate.Unmet,matrix/neo/internal/o1.g
   ^contains=matrix/neo/internal/o1.ExtensionGate
   ^defines=matrix/neo/internal/o1/qualification.go
 
@@ -732,7 +848,11 @@ NODE id=matrix/neo/internal/o1.ExtensionGate.Unmet kind=method
   sig=func (g ExtensionGate) Unmet() []string
   doc=Unmet returns the list of requirements not yet satisfied.
 EDGES
+  calls=matrix/neo/internal/o1.EvaluateQualification,matrix/neo/internal/o1.ValidateRecoveryAutomaton,matrix/neo/internal/o1.boundedInputs,matrix/neo/internal/o1.containsString,matrix/neo/internal/o1.extensionHazardsCovered,matrix/neo/internal/o1.extensionOutcomesCovered
+  references=matrix/neo/internal/o1.EvaluateQualification,matrix/neo/internal/o1.ExtensionGate,matrix/neo/internal/o1.QualificationCase,matrix/neo/internal/o1.ValidateRecoveryAutomaton,matrix/neo/internal/o1.boundedInputs,matrix/neo/internal/o1.conformance,matrix/neo/internal/o1.containsString,matrix/neo/internal/o1.extensionHazardsCovered,matrix/neo/internal/o1.extensionOutcomesCovered,matrix/neo/internal/o1.g,matrix/neo/internal/o1.op,matrix/neo/internal/o1.out
   ^contains=matrix/neo/internal/o1.ExtensionGate
+  ^calls=matrix/neo/internal/o1.ExtensionGate.IsClear
+  ^references=matrix/neo/internal/o1.ExtensionGate.IsClear
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.FailureLayer kind=type
@@ -740,6 +860,7 @@ NODE id=matrix/neo/internal/o1.FailureLayer kind=type
   sig=type FailureLayer string
   doc=FailureLayer identifies where in the operation lifecycle a failure occurred.\nPer O1 req.6 ac.2: transport, process, protocol, HTTP, application,\nvalidation, policy, authorization, conflict, and cancellation remain distinct.
 EDGES
+  ^references=matrix/neo/internal/agent.o1FailureLayer,matrix/neo/internal/o1.FailureReplayCase,matrix/neo/internal/o1.LayerApplication,matrix/neo/internal/o1.LayerAuthorization,matrix/neo/internal/o1.LayerCancellation,matrix/neo/internal/o1.LayerConflict,matrix/neo/internal/o1.LayerHTTP,matrix/neo/internal/o1.LayerInvocation,matrix/neo/internal/o1.LayerNone,matrix/neo/internal/o1.LayerPolicy,matrix/neo/internal/o1.LayerProcess,matrix/neo/internal/o1.LayerProtocol,matrix/neo/internal/o1.LayerTransport,matrix/neo/internal/o1.LayerValidation,matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.OutcomeBuilder.Fail,matrix/neo/internal/runtime/loop.incompleteHazard,matrix/neo/internal/runtime/loop.incompleteRecovery
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.FailureReplayCase kind=type
@@ -748,6 +869,8 @@ NODE id=matrix/neo/internal/o1.FailureReplayCase kind=type
   doc=FailureReplayCase is one genuine failure to replay through prevention\nand bounded recovery. Per O1 req.12 ac.3.
 EDGES
   contains=matrix/neo/internal/o1.FailureReplayCase#ExpectedBehavior,matrix/neo/internal/o1.FailureReplayCase#FailureClass,matrix/neo/internal/o1.FailureReplayCase#ID,matrix/neo/internal/o1.FailureReplayCase#Name,matrix/neo/internal/o1.FailureReplayCase#Outcome,matrix/neo/internal/o1.FailureReplayCase#Passed,matrix/neo/internal/o1.FailureReplayCase#Source
+  references=matrix/neo/internal/o1.FailureLayer,matrix/neo/internal/o1.OperationOutcome
+  ^references=matrix/neo/internal/o1.EvaluateFailureReplay,matrix/neo/internal/o1.StandardFailureCorpus,matrix/neo/internal/runtime/loop.O1FailureReplayLane,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete,matrix/neo/internal/runtime/loop.O1FailureReplayLane.Records
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.FailureReplayCase#ExpectedBehavior kind=field
@@ -796,6 +919,8 @@ NODE id=matrix/neo/internal/o1.Framework kind=const
   digest=b3:d3a87fff004b55eeaa85e4e6582758635bfde951725897e210b63cf65c313cba file=neo/internal/o1/contract.go range=19:19 lang=go exported=true byte_range=365:400
   sig=o1.Provenance
 EDGES
+  references=matrix/neo/internal/o1.Provenance
+  ^references=matrix/neo/internal/o1.Compile
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.Gate kind=type
@@ -803,6 +928,7 @@ NODE id=matrix/neo/internal/o1.Gate kind=type
   sig=type Gate struct {\n	ID		string	`json:"id"`\n	Kind		string	`json:"kind"`\n	RequiredWhen	string	`json:"required_when"`\n	Satisfied	bool	`json:"satisfied"`\n}
 EDGES
   contains=matrix/neo/internal/o1.Gate#ID,matrix/neo/internal/o1.Gate#Kind,matrix/neo/internal/o1.Gate#RequiredWhen,matrix/neo/internal/o1.Gate#Satisfied
+  ^references=matrix/neo/internal/o1.Compile,matrix/neo/internal/o1.TaskContract
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.Gate#ID kind=field
@@ -834,6 +960,8 @@ NODE id=matrix/neo/internal/o1.Hazard kind=type
   sig=type Hazard struct {\n	ID		string		`json:"id"`\n	Operation	string		`json:"operation"`\n	Source		string		`json:"source_boundary"`\n	Trigger		string		`json:"trigger"`\n	Evidence	[]string	`json:"evidence"`\n	Class		Class		`json:"class"`\n	Owner		string		`json:"owner"`\n	Control		Control		`json:"control"`\n	Recovery	Recovery	`json:"recovery"`\n	Outcomes	[]string	`json:"outcomes"`\n	Verifier	string		`json:"verifier"`\n	Status		string		`json:"status"`\n}
 EDGES
   contains=matrix/neo/internal/o1.Hazard#Class,matrix/neo/internal/o1.Hazard#Control,matrix/neo/internal/o1.Hazard#Evidence,matrix/neo/internal/o1.Hazard#ID,matrix/neo/internal/o1.Hazard#Operation,matrix/neo/internal/o1.Hazard#Outcomes,matrix/neo/internal/o1.Hazard#Owner,matrix/neo/internal/o1.Hazard#Recovery,matrix/neo/internal/o1.Hazard#Source,matrix/neo/internal/o1.Hazard#Status,matrix/neo/internal/o1.Hazard#Trigger,matrix/neo/internal/o1.Hazard#Verifier
+  references=matrix/neo/internal/o1.Class,matrix/neo/internal/o1.Control,matrix/neo/internal/o1.Recovery
+  ^references=matrix/neo/internal/o1.Registry
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.Hazard#Class kind=field
@@ -950,96 +1078,126 @@ NODE id=matrix/neo/internal/o1.Inferred kind=const
   digest=b3:adef7f980d83bc667c5518786ad12adf6c6936c81314e8ac35fcb2aad4546b51 file=neo/internal/o1/contract.go range=21:21 lang=go exported=true byte_range=437:471
   sig=o1.Provenance
 EDGES
+  references=matrix/neo/internal/o1.Provenance
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.Irreducible kind=const
   digest=b3:375b31a309d0413eaebfb5d6fd25697510c830a01677b6baa59952ed9cd3fc2b file=neo/internal/o1/registry.go range=20:20 lang=go exported=true byte_range=347:390
   sig=o1.Class
 EDGES
+  references=matrix/neo/internal/o1.Class
+  ^references=matrix/neo/internal/o1.Registry.Check
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.Irreversible kind=const
   digest=b3:93f89ac348b815c1e87edf169850bbb0ff175118aaf21117ee8c9f4e792e98ea file=neo/internal/o1/manifest.go range=32:32 lang=go exported=true byte_range=770:813
   sig=o1.Reversibility
 EDGES
+  references=matrix/neo/internal/o1.Reversibility
+  ^references=matrix/neo/internal/o1.manifestFromTool
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.LayerApplication kind=const
   digest=b3:35129a376aabe5fc27f86266d29feda4ae25e990b43a69e25b62122287da1917 file=neo/internal/o1/outcome.go range=22:22 lang=go exported=true byte_range=703:750
   sig=o1.FailureLayer
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer
+  ^references=matrix/neo/internal/agent.o1FailureLayer,matrix/neo/internal/o1.OperationOutcome.Verify
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.LayerAuthorization kind=const
   digest=b3:7c8e1e3f1e3904014cafec85ee0e00b770fe81ff44025000a2e8e99aafeac669 file=neo/internal/o1/outcome.go range=25:25 lang=go exported=true byte_range=844:893
   sig=o1.FailureLayer
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer
+  ^references=matrix/neo/internal/agent.o1FailureLayer,matrix/neo/internal/o1.EvaluateFailureReplay,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.StandardFailureCorpus,matrix/neo/internal/o1.classifyTerminal
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.LayerCancellation kind=const
   digest=b3:910565904c96bdd46e7b2bf370859b592e980953702cafda7d8addde34bce0af file=neo/internal/o1/outcome.go range=27:27 lang=go exported=true byte_range=941:989
   sig=o1.FailureLayer
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer
+  ^references=matrix/neo/internal/agent.o1FailureLayer,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.StandardFailureCorpus,matrix/neo/internal/o1.classifyTerminal,matrix/neo/internal/runtime/loop.incompleteHazard,matrix/neo/internal/runtime/loop.incompleteRecovery
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.LayerConflict kind=const
   digest=b3:10a9434d020350c54d8fed8b9e0f1bebc1437628d348f6ef08e91e2e0696a7c6 file=neo/internal/o1/outcome.go range=26:26 lang=go exported=true byte_range=895:939
   sig=o1.FailureLayer
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer
+  ^references=matrix/neo/internal/agent.o1FailureLayer,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.SelectRecoveryTransition,matrix/neo/internal/o1.StandardFailureCorpus,matrix/neo/internal/runtime/loop.incompleteHazard,matrix/neo/internal/runtime/loop.incompleteRecovery
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.LayerHTTP kind=const
   digest=b3:32edcaa4ccf841f29f1561727e45fc59c61352ca432d53286f40b2ef4fa8a898 file=neo/internal/o1/outcome.go range=21:21 lang=go exported=true byte_range=661:701
   sig=o1.FailureLayer
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer
+  ^references=matrix/neo/internal/agent.o1FailureLayer,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.StandardFailureCorpus
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.LayerInvocation kind=const
   digest=b3:85a69a5610bc40f3a17a725f1457367cc87d0f7662cc5fc3b4d13d0516a5550a file=neo/internal/o1/outcome.go range=28:28 lang=go exported=true byte_range=991:1037
   sig=o1.FailureLayer
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer
+  ^references=matrix/neo/internal/agent.o1FailureLayer,matrix/neo/internal/o1.EvaluateFailureReplay,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.SelectRecoveryTransition
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.LayerNone kind=const
   digest=b3:a3d8e485f9c057940fc5b098e92d8ae084441c0958abb9da119c5f83be5fba2f file=neo/internal/o1/outcome.go range=17:17 lang=go exported=true byte_range=485:521
   sig=o1.FailureLayer
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer
+  ^references=matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.OutcomeBuilder.Success
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.LayerPolicy kind=const
   digest=b3:95acf9b64d0af31fb73bda7ffabc0a76c510f4bc10abd236fd3ed84d49a5e128 file=neo/internal/o1/outcome.go range=24:24 lang=go exported=true byte_range=800:842
   sig=o1.FailureLayer
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer
+  ^references=matrix/neo/internal/agent.o1FailureLayer,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.classifyTerminal
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.LayerProcess kind=const
   digest=b3:edf6ef482b00b3e216a378da8731b3d37fc3703d8932f2e8e4dc29805343001b file=neo/internal/o1/outcome.go range=19:19 lang=go exported=true byte_range=570:613
   sig=o1.FailureLayer
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer
+  ^references=matrix/neo/internal/agent.o1FailureLayer,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.StandardFailureCorpus,matrix/neo/internal/o1.classifyTerminal,matrix/neo/internal/runtime/loop.incompleteHazard,matrix/neo/internal/runtime/loop.incompleteRecovery
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.LayerProtocol kind=const
   digest=b3:99160f1ac1c4e7775f0070129428f32af5900bb3ec1f6f63e91323599a761cc1 file=neo/internal/o1/outcome.go range=20:20 lang=go exported=true byte_range=615:659
   sig=o1.FailureLayer
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/agent.o1FailureLayer,matrix/neo/internal/o1.EvaluateFailureReplay,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.SelectRecoveryTransition,matrix/neo/internal/o1.StandardFailureCorpus
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.LayerTransport kind=const
   digest=b3:204e832a543adbdd23687a06e6fe58d3fbc9fb6177f8cca2ae5056cc4538ca93 file=neo/internal/o1/outcome.go range=18:18 lang=go exported=true byte_range=523:568
   sig=o1.FailureLayer
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/agent.o1FailureLayer,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.SelectRecoveryTransition,matrix/neo/internal/o1.StandardFailureCorpus,matrix/neo/internal/o1.classifyTerminal,matrix/neo/internal/runtime/loop.incompleteRecovery
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.LayerValidation kind=const
   digest=b3:7d27923a7554c69cd128df2fbc6e96b32eae2a36d40275f9a8108f40fd21fa86 file=neo/internal/o1/outcome.go range=23:23 lang=go exported=true byte_range=752:798
   sig=o1.FailureLayer
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer
+  ^references=matrix/neo/internal/agent.o1FailureLayer,matrix/neo/internal/o1.EvaluateFailureReplay,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.SelectRecoveryTransition,matrix/neo/internal/o1.StandardFailureCorpus
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.Load kind=func
   digest=b3:00b57e58fdc7a159de2f7d6e72515ea0dd28747c93843751ad8243e9c89c4456 file=neo/internal/o1/registry.go range=74:84 lang=go exported=true byte_range=1665:1928
   sig=func Load(registryPath string) (*Registry, error)
 EDGES
+  references=matrix/neo/internal/o1.Registry,matrix/neo/internal/o1.b,matrix/neo/internal/o1.err,matrix/neo/internal/o1.r,matrix/neo/internal/o1.registryPath
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.LoadManifests kind=func
@@ -1047,12 +1205,14 @@ NODE id=matrix/neo/internal/o1.LoadManifests kind=func
   sig=func LoadManifests(path string) (*ManifestSet, error)
   doc=LoadManifests reads a manifest JSON file and returns the set.
 EDGES
+  references=matrix/neo/internal/o1.ManifestSet,matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.b,matrix/neo/internal/o1.err,matrix/neo/internal/o1.m,matrix/neo/internal/o1.ms,matrix/neo/internal/o1.path,matrix/neo/internal/o1.raw
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.ManifestOperations kind=func
   digest=b3:7aa616eb87ef88d7f82725b1ccbbeb901e8cd401760e8c2fe32cc8c658754e22 file=neo/internal/o1/registry.go range=86:103 lang=go exported=true byte_range=1930:2386
   sig=func ManifestOperations(manifestPath string) ([]string, error)
 EDGES
+  references=matrix/neo/internal/o1.agentManifest,matrix/neo/internal/o1.b,matrix/neo/internal/o1.err,matrix/neo/internal/o1.m,matrix/neo/internal/o1.manifestPath,matrix/neo/internal/o1.out,matrix/neo/internal/o1.server,matrix/neo/internal/o1.tool
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.ManifestSet kind=type
@@ -1061,6 +1221,8 @@ NODE id=matrix/neo/internal/o1.ManifestSet kind=type
   doc=ManifestSet is the authoritative registry of all shipped operation manifests,\nkeyed by operation name (alias__name for MCP tools, constant name for synthetics).
 EDGES
   contains=matrix/neo/internal/o1.ManifestSet#manifests,matrix/neo/internal/o1.ManifestSet.Get,matrix/neo/internal/o1.ManifestSet.Operations,matrix/neo/internal/o1.ManifestSet.SelectMinimal,matrix/neo/internal/o1.ManifestSet.Validate
+  references=matrix/neo/internal/o1.OperationManifest
+  ^references=matrix/neo/internal/o1.CompileRuntimeCapabilities,matrix/neo/internal/o1.LoadManifests,matrix/neo/internal/o1.ManifestSet.Get,matrix/neo/internal/o1.ManifestSet.Operations,matrix/neo/internal/o1.ManifestSet.SelectMinimal,matrix/neo/internal/o1.ManifestSet.Validate,matrix/neo/internal/o1.selectExplicitProvider
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.ManifestSet#manifests kind=field
@@ -1074,7 +1236,10 @@ NODE id=matrix/neo/internal/o1.ManifestSet.Get kind=method
   sig=func (ms *ManifestSet) Get(operation string) *OperationManifest
   doc=Get returns the manifest for an operation, or nil if not registered.
 EDGES
+  references=matrix/neo/internal/o1.ManifestSet,matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.m,matrix/neo/internal/o1.ms,matrix/neo/internal/o1.ok,matrix/neo/internal/o1.operation
   ^contains=matrix/neo/internal/o1.ManifestSet
+  ^calls=matrix/neo/internal/o1.CompileRuntimeCapabilities,matrix/neo/internal/o1.selectExplicitProvider
+  ^references=matrix/neo/internal/o1.CompileRuntimeCapabilities,matrix/neo/internal/o1.selectExplicitProvider
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.ManifestSet.Operations kind=method
@@ -1082,7 +1247,10 @@ NODE id=matrix/neo/internal/o1.ManifestSet.Operations kind=method
   sig=func (ms *ManifestSet) Operations() []string
   doc=Operations returns all registered operation names in sorted order.
 EDGES
+  references=matrix/neo/internal/o1.ManifestSet,matrix/neo/internal/o1.k,matrix/neo/internal/o1.ms,matrix/neo/internal/o1.out
   ^contains=matrix/neo/internal/o1.ManifestSet
+  ^calls=matrix/neo/internal/o1.selectExplicitProvider
+  ^references=matrix/neo/internal/o1.selectExplicitProvider
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.ManifestSet.SelectMinimal kind=method
@@ -1090,7 +1258,11 @@ NODE id=matrix/neo/internal/o1.ManifestSet.SelectMinimal kind=method
   sig=func (ms *ManifestSet) SelectMinimal(requiredCapabilities []string) []OperationManifest
   doc=SelectMinimal returns the operations needed by the task contract's required\ncapabilities. Per O1 req.3 ac.2: the model sees only operations valid for\nthe current contract state.
 EDGES
+  calls=matrix/neo/internal/o1.matchesCapability
+  references=matrix/neo/internal/o1.ManifestSet,matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.cap,matrix/neo/internal/o1.i,matrix/neo/internal/o1.j,matrix/neo/internal/o1.m,matrix/neo/internal/o1.matchesCapability,matrix/neo/internal/o1.ms,matrix/neo/internal/o1.need,matrix/neo/internal/o1.out,matrix/neo/internal/o1.requiredCapabilities
   ^contains=matrix/neo/internal/o1.ManifestSet
+  ^calls=matrix/neo/internal/o1.CompileRuntimeCapabilities
+  ^references=matrix/neo/internal/o1.CompileRuntimeCapabilities
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.ManifestSet.Validate kind=method
@@ -1098,6 +1270,7 @@ NODE id=matrix/neo/internal/o1.ManifestSet.Validate kind=method
   sig=func (ms *ManifestSet) Validate() error
   doc=Validate checks a manifest set for completeness and consistency.
 EDGES
+  references=matrix/neo/internal/o1.EffectReadOnly,matrix/neo/internal/o1.ManifestSet,matrix/neo/internal/o1.m,matrix/neo/internal/o1.ms,matrix/neo/internal/o1.name,matrix/neo/internal/o1.problems
   ^contains=matrix/neo/internal/o1.ManifestSet
   ^defines=matrix/neo/internal/o1/manifest.go
 
@@ -1107,6 +1280,7 @@ NODE id=matrix/neo/internal/o1.MessageChannel kind=type
   doc=MessageChannel identifies the typed channel a message belongs to.\nPer O1 req.8 ac.1: assistant conversation, user messages, provider reasoning,\ntool evidence, structured progress, runtime guidance, supervisor decisions,\nand terminal metadata remain distinct typed channels.
 EDGES
   contains=matrix/neo/internal/o1.MessageChannel.IsAssistantAuthored,matrix/neo/internal/o1.MessageChannel.IsDurable,matrix/neo/internal/o1.MessageChannel.IsUserVisible
+  ^references=matrix/neo/internal/o1.ChannelAssistant,matrix/neo/internal/o1.ChannelGuidance,matrix/neo/internal/o1.ChannelNarration,matrix/neo/internal/o1.ChannelProgress,matrix/neo/internal/o1.ChannelReasoning,matrix/neo/internal/o1.ChannelSupervisor,matrix/neo/internal/o1.ChannelTerminal,matrix/neo/internal/o1.ChannelToolCall,matrix/neo/internal/o1.ChannelToolResult,matrix/neo/internal/o1.ChannelUser,matrix/neo/internal/o1.ContextAssembler,matrix/neo/internal/o1.ContextMessage,matrix/neo/internal/o1.ContextRule,matrix/neo/internal/o1.MessageChannel.IsAssistantAuthored,matrix/neo/internal/o1.MessageChannel.IsDurable,matrix/neo/internal/o1.MessageChannel.IsUserVisible,matrix/neo/internal/o1.NewContextAssembler
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.MessageChannel.IsAssistantAuthored kind=method
@@ -1114,7 +1288,10 @@ NODE id=matrix/neo/internal/o1.MessageChannel.IsAssistantAuthored kind=method
   sig=func (ch MessageChannel) IsAssistantAuthored() bool
   doc=IsAssistantAuthored returns true only for genuine model output that the\nmodel should treat as its own prior turn. Runtime-generated prose\n(guidance, progress, supervisor decisions) MUST NOT be classified here.
 EDGES
+  references=matrix/neo/internal/o1.ChannelAssistant,matrix/neo/internal/o1.MessageChannel,matrix/neo/internal/o1.ch
   ^contains=matrix/neo/internal/o1.MessageChannel
+  ^calls=matrix/neo/internal/o1.ContextMessage.IsAssistantAuthored,matrix/neo/internal/o1.ValidateNoLeakage
+  ^references=matrix/neo/internal/o1.ContextMessage.IsAssistantAuthored,matrix/neo/internal/o1.ValidateNoLeakage
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.MessageChannel.IsDurable kind=method
@@ -1122,6 +1299,7 @@ NODE id=matrix/neo/internal/o1.MessageChannel.IsDurable kind=method
   sig=func (ch MessageChannel) IsDurable() bool
   doc=IsDurable returns true for channels that must survive compaction and\nsession reload. Transient channels (narration, reasoning) are dropped.
 EDGES
+  references=matrix/neo/internal/o1.ChannelAssistant,matrix/neo/internal/o1.ChannelSupervisor,matrix/neo/internal/o1.ChannelTerminal,matrix/neo/internal/o1.ChannelToolCall,matrix/neo/internal/o1.ChannelToolResult,matrix/neo/internal/o1.ChannelUser,matrix/neo/internal/o1.MessageChannel,matrix/neo/internal/o1.ch
   ^contains=matrix/neo/internal/o1.MessageChannel
   ^defines=matrix/neo/internal/o1/context.go
 
@@ -1130,6 +1308,7 @@ NODE id=matrix/neo/internal/o1.MessageChannel.IsUserVisible kind=method
   sig=func (ch MessageChannel) IsUserVisible() bool
   doc=IsUserVisible returns true for channels whose content the user should see\nin the conversation thread.
 EDGES
+  references=matrix/neo/internal/o1.ChannelAssistant,matrix/neo/internal/o1.ChannelTerminal,matrix/neo/internal/o1.ChannelToolResult,matrix/neo/internal/o1.ChannelUser,matrix/neo/internal/o1.MessageChannel,matrix/neo/internal/o1.ch
   ^contains=matrix/neo/internal/o1.MessageChannel
   ^defines=matrix/neo/internal/o1/context.go
 
@@ -1137,42 +1316,56 @@ NODE id=matrix/neo/internal/o1.MutateAppend kind=const
   digest=b3:d210730b03e9684c3bc2fff417a34c87c60264e4410e8340d0797a0147e45707 file=neo/internal/o1/mutation.go range=22:22 lang=go exported=true byte_range=570:609
   sig=o1.MutationKind
 EDGES
+  references=matrix/neo/internal/o1.MutationKind
+  ^references=matrix/neo/internal/o1.ValidateMutation
   ^defines=matrix/neo/internal/o1/mutation.go
 
 NODE id=matrix/neo/internal/o1.MutateCreate kind=const
   digest=b3:79e21bbb1d36d4d57fd0b644714076dfe6967764aea3b5d213cbe184f6b321a1 file=neo/internal/o1/mutation.go range=20:20 lang=go exported=true byte_range=484:523
   sig=o1.MutationKind
 EDGES
+  references=matrix/neo/internal/o1.MutationKind
+  ^references=matrix/neo/internal/o1.ValidateMutation
   ^defines=matrix/neo/internal/o1/mutation.go
 
 NODE id=matrix/neo/internal/o1.MutateFinalize kind=const
   digest=b3:a5bfb5a103d7191ab52634a6dd195b697b1ac16b8cf0cd5b9af78e3d8c9757e8 file=neo/internal/o1/mutation.go range=25:25 lang=go exported=true byte_range=699:740
   sig=o1.MutationKind
 EDGES
+  references=matrix/neo/internal/o1.MutationKind
+  ^references=matrix/neo/internal/o1.ValidateMutation
   ^defines=matrix/neo/internal/o1/mutation.go
 
 NODE id=matrix/neo/internal/o1.MutatePatch kind=const
   digest=b3:25cab295388975d8ecdc6e123c4ea9a87027455a96551c7611b7766fe71a0a6d file=neo/internal/o1/mutation.go range=24:24 lang=go exported=true byte_range=659:697
   sig=o1.MutationKind
 EDGES
+  references=matrix/neo/internal/o1.MutationKind
+  ^references=matrix/neo/internal/o1.ValidateMutation
   ^defines=matrix/neo/internal/o1/mutation.go
 
 NODE id=matrix/neo/internal/o1.MutateReadRange kind=const
   digest=b3:69bd8328d1deb0391cf303d3691a689e58a441db87c3db956baa81683a24611e file=neo/internal/o1/mutation.go range=21:21 lang=go exported=true byte_range=525:568
   sig=o1.MutationKind
 EDGES
+  references=matrix/neo/internal/o1.MutationKind
+  ^references=matrix/neo/internal/o1.ValidateMutation
   ^defines=matrix/neo/internal/o1/mutation.go
 
 NODE id=matrix/neo/internal/o1.MutateReplace kind=const
   digest=b3:ec92d10fc98567d1626fe7dd00dc83e4543e8fdb9536ca80277b9242336a7d00 file=neo/internal/o1/mutation.go range=23:23 lang=go exported=true byte_range=611:657
   sig=o1.MutationKind
 EDGES
+  references=matrix/neo/internal/o1.MutationKind
+  ^references=matrix/neo/internal/o1.ValidateMutation
   ^defines=matrix/neo/internal/o1/mutation.go
 
 NODE id=matrix/neo/internal/o1.MutateRollback kind=const
   digest=b3:9fc83b1bdfe31a605dc7378bdd3f55cda340b5268698a6ce556eaa8afbbb17ea file=neo/internal/o1/mutation.go range=26:26 lang=go exported=true byte_range=742:783
   sig=o1.MutationKind
 EDGES
+  references=matrix/neo/internal/o1.MutationKind
+  ^references=matrix/neo/internal/o1.ValidateMutation
   ^defines=matrix/neo/internal/o1/mutation.go
 
 NODE id=matrix/neo/internal/o1.MutationCheckpoint kind=type
@@ -1218,6 +1411,7 @@ NODE id=matrix/neo/internal/o1.MutationKind kind=type
   sig=type MutationKind string
   doc=MutationKind describes the class of file/artifact mutation.\nPer O1 req.5 ac.1: bounded create, read-range, append, replace-range,\nstructured patch, atomic finalize, and rollback.
 EDGES
+  ^references=matrix/neo/internal/o1.MutateAppend,matrix/neo/internal/o1.MutateCreate,matrix/neo/internal/o1.MutateFinalize,matrix/neo/internal/o1.MutatePatch,matrix/neo/internal/o1.MutateReadRange,matrix/neo/internal/o1.MutateReplace,matrix/neo/internal/o1.MutateRollback,matrix/neo/internal/o1.MutationRequest
   ^defines=matrix/neo/internal/o1/mutation.go
 
 NODE id=matrix/neo/internal/o1.MutationRequest kind=type
@@ -1226,6 +1420,8 @@ NODE id=matrix/neo/internal/o1.MutationRequest kind=type
   doc=MutationRequest is a bounded, invariant-preserving description of a\nfile or artifact change. Per O1 req.5: the model expresses intent to\nmutate; deterministic operations own the mechanics.
 EDGES
   contains=matrix/neo/internal/o1.MutationRequest#Content,matrix/neo/internal/o1.MutationRequest#Hash,matrix/neo/internal/o1.MutationRequest#IdempotencyKey,matrix/neo/internal/o1.MutationRequest#Kind,matrix/neo/internal/o1.MutationRequest#Length,matrix/neo/internal/o1.MutationRequest#MaxBytes,matrix/neo/internal/o1.MutationRequest#Offset,matrix/neo/internal/o1.MutationRequest#Path
+  references=matrix/neo/internal/o1.MutationKind
+  ^references=matrix/neo/internal/o1.ValidateMutation
   ^defines=matrix/neo/internal/o1/mutation.go
 
 NODE id=matrix/neo/internal/o1.MutationRequest#Content kind=field
@@ -1325,12 +1521,17 @@ NODE id=matrix/neo/internal/o1.NewContextAssembler kind=func
   sig=func NewContextAssembler() *ContextAssembler
   doc=NewContextAssembler creates an assembler with the default O1 context rules.
 EDGES
+  calls=matrix/neo/internal/o1.DefaultContextRules
+  references=matrix/neo/internal/o1.ContextAssembler,matrix/neo/internal/o1.ContextRule,matrix/neo/internal/o1.DefaultContextRules,matrix/neo/internal/o1.MessageChannel,matrix/neo/internal/o1.r,matrix/neo/internal/o1.ruleMap,matrix/neo/internal/o1.rules
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.NewOutcome kind=func
   digest=b3:686b0606b59c76436dda73db8f7c6f2b1c2abcea4f3f6cbabde2005ddfc3f2b2 file=neo/internal/o1/outcome.go range=140:148 lang=go exported=true byte_range=5260:5455
   sig=func NewOutcome(operation string) *OutcomeBuilder
 EDGES
+  references=matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.operation
+  ^calls=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.NewProviderConformer kind=func
@@ -1338,6 +1539,9 @@ NODE id=matrix/neo/internal/o1.NewProviderConformer kind=func
   sig=func NewProviderConformer(dialect ProviderDialect) *ProviderConformer
   doc=NewProviderConformer creates a conformer for the given dialect.
 EDGES
+  references=matrix/neo/internal/o1.DialectDeepSeek,matrix/neo/internal/o1.DialectMimo,matrix/neo/internal/o1.ProviderConformer,matrix/neo/internal/o1.ProviderDialect,matrix/neo/internal/o1.dialect,matrix/neo/internal/o1.pc
+  ^calls=matrix/neo/internal/o1.ConformChatResult
+  ^references=matrix/neo/internal/o1.ConformChatResult
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.NewRecoveryInstance kind=func
@@ -1345,6 +1549,7 @@ NODE id=matrix/neo/internal/o1.NewRecoveryInstance kind=func
   sig=func NewRecoveryInstance(auto RecoveryAutomaton) RecoveryInstance
   doc=NewRecoveryInstance starts a recovery from the automaton's initial state.
 EDGES
+  references=matrix/neo/internal/o1.RecoveryAutomaton,matrix/neo/internal/o1.RecoveryInstance,matrix/neo/internal/o1.auto
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.NewRunLedger kind=func
@@ -1352,6 +1557,9 @@ NODE id=matrix/neo/internal/o1.NewRunLedger kind=func
   sig=func NewRunLedger(runID, contractID string, contractVer uint64) *RunLedger
   doc=NewRunLedger creates a fresh ledger for a run.
 EDGES
+  references=matrix/neo/internal/o1.RecoveryRecord,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.contractID,matrix/neo/internal/o1.contractVer,matrix/neo/internal/o1.now,matrix/neo/internal/o1.runID
+  ^calls=matrix/neo/internal/agent.Agent.prepareExecutionFrame
+  ^references=matrix/neo/internal/agent.Agent.prepareExecutionFrame
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.NormalizedGeneration kind=type
@@ -1360,6 +1568,8 @@ NODE id=matrix/neo/internal/o1.NormalizedGeneration kind=type
   doc=NormalizedGeneration is the provider-independent result of a model turn.\nPer O1 req.4 ac.1 and ac.2: streaming content, reasoning, structured calls,\nfragmented arguments, finish reasons, and usage are captured.
 EDGES
   contains=matrix/neo/internal/o1.NormalizedGeneration#Content,matrix/neo/internal/o1.NormalizedGeneration#ControlTokens,matrix/neo/internal/o1.NormalizedGeneration#Dialect,matrix/neo/internal/o1.NormalizedGeneration#FinishReason,matrix/neo/internal/o1.NormalizedGeneration#Malformed,matrix/neo/internal/o1.NormalizedGeneration#MalformedReason,matrix/neo/internal/o1.NormalizedGeneration#Reasoning,matrix/neo/internal/o1.NormalizedGeneration#ToolCalls,matrix/neo/internal/o1.NormalizedGeneration#Usage
+  references=matrix/neo/internal/o1.NormalizedToolCall,matrix/neo/internal/o1.ProviderDialect,matrix/neo/internal/o1.Usage
+  ^references=matrix/neo/internal/o1.ConformChatResult,matrix/neo/internal/o1.ProviderConformer.Validate,matrix/neo/internal/o1.RepresentationBudget.BudgetCheck
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.NormalizedGeneration#Content kind=field
@@ -1422,6 +1632,8 @@ NODE id=matrix/neo/internal/o1.NormalizedToolCall kind=type
   doc=NormalizedToolCall is the provider-independent internal representation\nof a model-authored tool call. Per O1 req.4 ac.2: all supported forms\nnormalize into one typed internal representation.
 EDGES
   contains=matrix/neo/internal/o1.NormalizedToolCall#Arguments,matrix/neo/internal/o1.NormalizedToolCall#ID,matrix/neo/internal/o1.NormalizedToolCall#Name,matrix/neo/internal/o1.NormalizedToolCall#RawDialect
+  references=matrix/neo/internal/o1.ProviderDialect
+  ^references=matrix/neo/internal/o1.ConformChatResult,matrix/neo/internal/o1.NormalizedGeneration
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.NormalizedToolCall#Arguments kind=field
@@ -1454,6 +1666,8 @@ NODE id=matrix/neo/internal/o1.OperationManifest kind=type
   doc=OperationManifest fully describes a single tool operation's bounds,\npreconditions, dependencies, effects, outcomes, recovery, and verification.\nPer O1 req.3 ac.1.
 EDGES
   contains=matrix/neo/internal/o1.OperationManifest#ContextPolicy,matrix/neo/internal/o1.OperationManifest#Dependencies,matrix/neo/internal/o1.OperationManifest#Description,matrix/neo/internal/o1.OperationManifest#Effects,matrix/neo/internal/o1.OperationManifest#Idempotency,matrix/neo/internal/o1.OperationManifest#InputBounds,matrix/neo/internal/o1.OperationManifest#Operation,matrix/neo/internal/o1.OperationManifest#OutcomeVariants,matrix/neo/internal/o1.OperationManifest#Permissions,matrix/neo/internal/o1.OperationManifest#Preconditions,matrix/neo/internal/o1.OperationManifest#Recovery,matrix/neo/internal/o1.OperationManifest#Reversibility,matrix/neo/internal/o1.OperationManifest#Verifier
+  references=matrix/neo/internal/o1.EffectClass,matrix/neo/internal/o1.RecoverySpec,matrix/neo/internal/o1.Reversibility
+  ^references=matrix/neo/internal/agent.Agent.o1Manifest,matrix/neo/internal/agent.newTurn,matrix/neo/internal/agent.turn,matrix/neo/internal/o1.CompileAllCapabilities,matrix/neo/internal/o1.CompileRuntimeCapabilities,matrix/neo/internal/o1.ExtensionGate,matrix/neo/internal/o1.LoadManifests,matrix/neo/internal/o1.ManifestSet,matrix/neo/internal/o1.ManifestSet.Get,matrix/neo/internal/o1.ManifestSet.SelectMinimal,matrix/neo/internal/o1.RunPreflight,matrix/neo/internal/o1.RuntimeCapabilities,matrix/neo/internal/o1.SelectRecoveryTransition,matrix/neo/internal/o1.hasManifest,matrix/neo/internal/o1.manifestFromTool,matrix/neo/internal/o1.selectExplicitProvider
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.OperationManifest#ContextPolicy kind=field
@@ -1540,6 +1754,8 @@ NODE id=matrix/neo/internal/o1.OperationOutcome kind=type
   doc=OperationOutcome is the discriminated result of every operation.\nPer O1 req.6 ac.1: operation id, success state, failure layer, stable class,\nretryability, evidence, state effects, satisfied postconditions, unsatisfied\npostconditions, and allowed next transitions.
 EDGES
   contains=matrix/neo/internal/o1.OperationOutcome#EffectsObserved,matrix/neo/internal/o1.OperationOutcome#Evidence,matrix/neo/internal/o1.OperationOutcome#FailureClass,matrix/neo/internal/o1.OperationOutcome#FailureLayer,matrix/neo/internal/o1.OperationOutcome#Metadata,matrix/neo/internal/o1.OperationOutcome#Operation,matrix/neo/internal/o1.OperationOutcome#PostSatisfied,matrix/neo/internal/o1.OperationOutcome#PostUnsatisfied,matrix/neo/internal/o1.OperationOutcome#Retryable,matrix/neo/internal/o1.OperationOutcome#Success,matrix/neo/internal/o1.OperationOutcome#Transitions,matrix/neo/internal/o1.OperationOutcome.AllowsTransition,matrix/neo/internal/o1.OperationOutcome.IsTerminal,matrix/neo/internal/o1.OperationOutcome.Verify
+  references=matrix/neo/internal/o1.FailureLayer,matrix/neo/internal/o1.TransitionKind
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/agent.turn,matrix/neo/internal/agent.turn.commitOutcome,matrix/neo/internal/agent.turn.commitOutcomeIfStandingIsNotTerminal,matrix/neo/internal/agent.turn.outcome,matrix/neo/internal/o1.AttemptRecord,matrix/neo/internal/o1.ExtensionGate,matrix/neo/internal/o1.FailureReplayCase,matrix/neo/internal/o1.NewOutcome,matrix/neo/internal/o1.OperationOutcome.AllowsTransition,matrix/neo/internal/o1.OperationOutcome.IsTerminal,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.OutcomeBuilder.Build,matrix/neo/internal/o1.OutcomeBuilder.MustBuild,matrix/neo/internal/o1.RenderOutcome,matrix/neo/internal/o1.SelectRecoveryTransition,matrix/neo/internal/o1.Supervisor.Evaluate,matrix/neo/internal/o1.classifyTerminal,matrix/neo/internal/o1.extensionOutcomesCovered
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OperationOutcome#EffectsObserved kind=field
@@ -1613,7 +1829,10 @@ NODE id=matrix/neo/internal/o1.OperationOutcome.AllowsTransition kind=method
   sig=func (o OperationOutcome) AllowsTransition(t TransitionKind) bool
   doc=AllowsTransition checks whether a specific recovery transition is permitted.
 EDGES
+  references=matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.TransitionKind,matrix/neo/internal/o1.o,matrix/neo/internal/o1.t,matrix/neo/internal/o1.tr
   ^contains=matrix/neo/internal/o1.OperationOutcome
+  ^calls=matrix/neo/internal/o1.Supervisor.Evaluate
+  ^references=matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OperationOutcome.IsTerminal kind=method
@@ -1621,7 +1840,10 @@ NODE id=matrix/neo/internal/o1.OperationOutcome.IsTerminal kind=method
   sig=func (o OperationOutcome) IsTerminal() bool
   doc=IsTerminal returns true when no recovery transitions are available.
 EDGES
+  references=matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.o
   ^contains=matrix/neo/internal/o1.OperationOutcome
+  ^calls=matrix/neo/internal/agent.turn.commitOutcomeIfStandingIsNotTerminal,matrix/neo/internal/o1.Supervisor.Evaluate
+  ^references=matrix/neo/internal/agent.turn.commitOutcomeIfStandingIsNotTerminal,matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OperationOutcome.Verify kind=method
@@ -1629,7 +1851,10 @@ NODE id=matrix/neo/internal/o1.OperationOutcome.Verify kind=method
   sig=func (o OperationOutcome) Verify() error
   doc=Verify checks the outcome's internal consistency.\nAn outcome must have an operation, a valid failure layer when failed,\nand at least one transition when retryable.
 EDGES
+  references=matrix/neo/internal/o1.LayerApplication,matrix/neo/internal/o1.LayerAuthorization,matrix/neo/internal/o1.LayerCancellation,matrix/neo/internal/o1.LayerConflict,matrix/neo/internal/o1.LayerHTTP,matrix/neo/internal/o1.LayerInvocation,matrix/neo/internal/o1.LayerNone,matrix/neo/internal/o1.LayerPolicy,matrix/neo/internal/o1.LayerProcess,matrix/neo/internal/o1.LayerProtocol,matrix/neo/internal/o1.LayerTransport,matrix/neo/internal/o1.LayerValidation,matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.TransitionAskUser,matrix/neo/internal/o1.TransitionAuthorizedFix,matrix/neo/internal/o1.TransitionDecompose,matrix/neo/internal/o1.TransitionKind,matrix/neo/internal/o1.TransitionProbe,matrix/neo/internal/o1.TransitionReconcile,matrix/neo/internal/o1.TransitionRepair,matrix/neo/internal/o1.TransitionRetry,matrix/neo/internal/o1.TransitionStop,matrix/neo/internal/o1.o,matrix/neo/internal/o1.seen,matrix/neo/internal/o1.transition
   ^contains=matrix/neo/internal/o1.OperationOutcome
+  ^calls=matrix/neo/internal/o1.EvaluateFailureReplay,matrix/neo/internal/o1.OutcomeBuilder.Build,matrix/neo/internal/o1.extensionOutcomesCovered
+  ^references=matrix/neo/internal/o1.EvaluateFailureReplay,matrix/neo/internal/o1.OutcomeBuilder.Build,matrix/neo/internal/o1.extensionOutcomesCovered
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OutcomeBuilder kind=type
@@ -1638,6 +1863,8 @@ NODE id=matrix/neo/internal/o1.OutcomeBuilder kind=type
   doc=OutcomeBuilder constructs OperationOutcome incrementally, enforcing that\nevery failed outcome carries a layer and every retryable outcome carries\nat least one transition.
 EDGES
   contains=matrix/neo/internal/o1.OutcomeBuilder#op,matrix/neo/internal/o1.OutcomeBuilder#result,matrix/neo/internal/o1.OutcomeBuilder.AllowTransition,matrix/neo/internal/o1.OutcomeBuilder.Build,matrix/neo/internal/o1.OutcomeBuilder.Effect,matrix/neo/internal/o1.OutcomeBuilder.Evidence,matrix/neo/internal/o1.OutcomeBuilder.Fail,matrix/neo/internal/o1.OutcomeBuilder.MustBuild,matrix/neo/internal/o1.OutcomeBuilder.PostSatisfied,matrix/neo/internal/o1.OutcomeBuilder.PostUnsatisfied,matrix/neo/internal/o1.OutcomeBuilder.Retryable,matrix/neo/internal/o1.OutcomeBuilder.SetMeta,matrix/neo/internal/o1.OutcomeBuilder.Success
+  references=matrix/neo/internal/o1.OperationOutcome
+  ^references=matrix/neo/internal/o1.NewOutcome,matrix/neo/internal/o1.OutcomeBuilder.AllowTransition,matrix/neo/internal/o1.OutcomeBuilder.Build,matrix/neo/internal/o1.OutcomeBuilder.Effect,matrix/neo/internal/o1.OutcomeBuilder.Evidence,matrix/neo/internal/o1.OutcomeBuilder.Fail,matrix/neo/internal/o1.OutcomeBuilder.MustBuild,matrix/neo/internal/o1.OutcomeBuilder.PostSatisfied,matrix/neo/internal/o1.OutcomeBuilder.PostUnsatisfied,matrix/neo/internal/o1.OutcomeBuilder.Retryable,matrix/neo/internal/o1.OutcomeBuilder.SetMeta,matrix/neo/internal/o1.OutcomeBuilder.Success
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OutcomeBuilder#op kind=field
@@ -1656,20 +1883,28 @@ NODE id=matrix/neo/internal/o1.OutcomeBuilder.AllowTransition kind=method
   digest=b3:b421e0a431c50fed85eb3a49b6aac0c885adde86c0f00204285d129739089874 file=neo/internal/o1/outcome.go range=191:194 lang=go exported=true byte_range=6473:6617
   sig=func (b *OutcomeBuilder) AllowTransition(t TransitionKind) *OutcomeBuilder
 EDGES
+  references=matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.TransitionKind,matrix/neo/internal/o1.b,matrix/neo/internal/o1.t
   ^contains=matrix/neo/internal/o1.OutcomeBuilder
+  ^calls=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OutcomeBuilder.Build kind=method
   digest=b3:6799f3171c8a4aec4812af8363508e488f23922bff75afd43ef343e83499c37f file=neo/internal/o1/outcome.go range=201:206 lang=go exported=true byte_range=6734:6897
   sig=func (b *OutcomeBuilder) Build() (OperationOutcome, error)
 EDGES
+  calls=matrix/neo/internal/o1.OperationOutcome.Verify
+  references=matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.b,matrix/neo/internal/o1.err
   ^contains=matrix/neo/internal/o1.OutcomeBuilder
+  ^calls=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/o1.OutcomeBuilder.MustBuild
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/o1.OutcomeBuilder.MustBuild
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OutcomeBuilder.Effect kind=method
   digest=b3:a9b75529d4dff7d2ef8f99c45afc5660fcc0e381ef5c396845a7f354e3c9f2aa file=neo/internal/o1/outcome.go range=176:179 lang=go exported=true byte_range=6050:6185
   sig=func (b *OutcomeBuilder) Effect(e string) *OutcomeBuilder
 EDGES
+  references=matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.b,matrix/neo/internal/o1.e
   ^contains=matrix/neo/internal/o1.OutcomeBuilder
   ^defines=matrix/neo/internal/o1/outcome.go
 
@@ -1677,34 +1912,48 @@ NODE id=matrix/neo/internal/o1.OutcomeBuilder.Evidence kind=method
   digest=b3:93b45a4094b3f3b542f80141b5d711161e937184fd3f11b80925c60019a70273 file=neo/internal/o1/outcome.go range=171:174 lang=go exported=true byte_range=5952:6048
   sig=func (b *OutcomeBuilder) Evidence(e string) *OutcomeBuilder
 EDGES
+  references=matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.b,matrix/neo/internal/o1.e
   ^contains=matrix/neo/internal/o1.OutcomeBuilder
+  ^calls=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OutcomeBuilder.Fail kind=method
   digest=b3:87a94ed99f091a18a5f0ea2925696c40378cef2d589d83e19260b1a526d87f49 file=neo/internal/o1/outcome.go range=159:164 lang=go exported=true byte_range=5667:5848
   sig=func (b *OutcomeBuilder) Fail(layer FailureLayer, class string) *OutcomeBuilder
 EDGES
+  references=matrix/neo/internal/o1.FailureLayer,matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.b,matrix/neo/internal/o1.class,matrix/neo/internal/o1.layer
   ^contains=matrix/neo/internal/o1.OutcomeBuilder
+  ^calls=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OutcomeBuilder.MustBuild kind=method
   digest=b3:d2de596da720e37fba34d6334411388a7ceb3250c4f3031c09dfb084c86efc91 file=neo/internal/o1/outcome.go range=208:214 lang=go exported=true byte_range=6899:7054
   sig=func (b *OutcomeBuilder) MustBuild() OperationOutcome
 EDGES
+  calls=matrix/neo/internal/o1.OutcomeBuilder.Build
+  references=matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.OutcomeBuilder.Build,matrix/neo/internal/o1.b,matrix/neo/internal/o1.err,matrix/neo/internal/o1.o
   ^contains=matrix/neo/internal/o1.OutcomeBuilder
+  ^calls=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OutcomeBuilder.PostSatisfied kind=method
   digest=b3:ddec87d419e1fad33c9399b1e0fa21169d8dfc632a0f341901945b01d5fb381a file=neo/internal/o1/outcome.go range=181:184 lang=go exported=true byte_range=6187:6325
   sig=func (b *OutcomeBuilder) PostSatisfied(p string) *OutcomeBuilder
 EDGES
+  references=matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.b,matrix/neo/internal/o1.p
   ^contains=matrix/neo/internal/o1.OutcomeBuilder
+  ^calls=matrix/neo/internal/agent.Agent.recordO1ToolOutcome
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OutcomeBuilder.PostUnsatisfied kind=method
   digest=b3:b7d934c28cacf9809b8bdb5e77e5fccb98ee96f4c7b550d66a1313b9e72794c5 file=neo/internal/o1/outcome.go range=186:189 lang=go exported=true byte_range=6327:6471
   sig=func (b *OutcomeBuilder) PostUnsatisfied(p string) *OutcomeBuilder
 EDGES
+  references=matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.b,matrix/neo/internal/o1.p
   ^contains=matrix/neo/internal/o1.OutcomeBuilder
   ^defines=matrix/neo/internal/o1/outcome.go
 
@@ -1712,21 +1961,30 @@ NODE id=matrix/neo/internal/o1.OutcomeBuilder.Retryable kind=method
   digest=b3:fc2f4a9566b123b8c901be7512d2ad377f3516f04cacf8e85c94a2b1c8df4848 file=neo/internal/o1/outcome.go range=166:169 lang=go exported=true byte_range=5850:5950
   sig=func (b *OutcomeBuilder) Retryable(yes bool) *OutcomeBuilder
 EDGES
+  references=matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.b,matrix/neo/internal/o1.yes
   ^contains=matrix/neo/internal/o1.OutcomeBuilder
+  ^calls=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OutcomeBuilder.SetMeta kind=method
   digest=b3:1ebd95517f8cb8b4819e4df1e7ca2758421ad8d80125be3f3cc821454b77cc83 file=neo/internal/o1/outcome.go range=196:199 lang=go exported=true byte_range=6619:6732
   sig=func (b *OutcomeBuilder) SetMeta(key, value string) *OutcomeBuilder
 EDGES
+  references=matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.b,matrix/neo/internal/o1.key,matrix/neo/internal/o1.value
   ^contains=matrix/neo/internal/o1.OutcomeBuilder
+  ^calls=matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
+  ^references=matrix/neo/internal/runtime/loop.O1FailureReplayLane.RecordIncomplete
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.OutcomeBuilder.Success kind=method
   digest=b3:92abceec6d246004889b63526cf5240c718d25c924f46cfbed63ba7bf7a51c61 file=neo/internal/o1/outcome.go range=150:157 lang=go exported=true byte_range=5457:5665
   sig=func (b *OutcomeBuilder) Success() *OutcomeBuilder
 EDGES
+  references=matrix/neo/internal/o1.LayerNone,matrix/neo/internal/o1.OutcomeBuilder,matrix/neo/internal/o1.b
   ^contains=matrix/neo/internal/o1.OutcomeBuilder
+  ^calls=matrix/neo/internal/agent.Agent.recordO1ToolOutcome
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.PredefinedRecoveryAutomata kind=func
@@ -1734,6 +1992,7 @@ NODE id=matrix/neo/internal/o1.PredefinedRecoveryAutomata kind=func
   sig=func PredefinedRecoveryAutomata() map[string]RecoveryAutomaton
   doc=PredefinedRecoveryAutomata returns the standard recovery patterns for\ncommon failure classes.
 EDGES
+  references=matrix/neo/internal/o1.RecoveryAutomaton,matrix/neo/internal/o1.RecoveryTransition,matrix/neo/internal/o1.StateComplete,matrix/neo/internal/o1.StateInitial,matrix/neo/internal/o1.StateProbing,matrix/neo/internal/o1.StateReconciling,matrix/neo/internal/o1.StateRepairing,matrix/neo/internal/o1.StateTerminal,matrix/neo/internal/o1.StateVerifying,matrix/neo/internal/o1.TransitionAuthorizedFix,matrix/neo/internal/o1.TransitionProbe,matrix/neo/internal/o1.TransitionReconcile,matrix/neo/internal/o1.TransitionRepair,matrix/neo/internal/o1.TransitionRetry,matrix/neo/internal/o1.TransitionStop
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.PreflightEnvironment kind=type
@@ -1742,6 +2001,7 @@ NODE id=matrix/neo/internal/o1.PreflightEnvironment kind=type
   doc=PreflightEnvironment describes the runtime state needed for preflight checks.
 EDGES
   contains=matrix/neo/internal/o1.PreflightEnvironment#CredentialsPresent,matrix/neo/internal/o1.PreflightEnvironment#FrameworkVersion,matrix/neo/internal/o1.PreflightEnvironment#InstalledTools,matrix/neo/internal/o1.PreflightEnvironment#MaxPayloadBytes,matrix/neo/internal/o1.PreflightEnvironment#NetworkReachable,matrix/neo/internal/o1.PreflightEnvironment#Permissions,matrix/neo/internal/o1.PreflightEnvironment#ProjectRoot,matrix/neo/internal/o1.PreflightEnvironment#StorageAvailable,matrix/neo/internal/o1.PreflightEnvironment#ToolVersions
+  ^references=matrix/neo/internal/o1.CompileAllCapabilities,matrix/neo/internal/o1.CompileRuntimeCapabilities,matrix/neo/internal/o1.RunPreflight,matrix/neo/internal/o1.checkPrecondition
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.PreflightEnvironment#CredentialsPresent kind=field
@@ -1804,6 +2064,7 @@ NODE id=matrix/neo/internal/o1.PreflightResult kind=type
   doc=PreflightResult is the deterministic outcome of a preflight check.\nPer O1 req.3 ac.3 and ac.4.
 EDGES
   contains=matrix/neo/internal/o1.PreflightResult#Failed,matrix/neo/internal/o1.PreflightResult#OK,matrix/neo/internal/o1.PreflightResult#Operation,matrix/neo/internal/o1.PreflightResult#Repairs
+  ^references=matrix/neo/internal/o1.ExtensionGate,matrix/neo/internal/o1.RunPreflight
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.PreflightResult#Failed kind=field
@@ -1834,6 +2095,8 @@ NODE id=matrix/neo/internal/o1.Preventable kind=const
   digest=b3:112b38ee4997d0299bb9d01134a77039efd6d8969a0d2664d47628108c9d136d file=neo/internal/o1/registry.go range=18:18 lang=go exported=true byte_range=278:311
   sig=o1.Class
 EDGES
+  references=matrix/neo/internal/o1.Class
+  ^references=matrix/neo/internal/o1.Registry.Check
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.ProofManifest kind=type
@@ -1842,6 +2105,8 @@ NODE id=matrix/neo/internal/o1.ProofManifest kind=type
   doc=ProofManifest is the durable record linking every criterion to its proof.\nPer O1 req.9 ac.5: completion requires every criterion closed, effects\nreconciled, artifact delivered, and a durable proof manifest.
 EDGES
   contains=matrix/neo/internal/o1.ProofManifest#AllCriteria,matrix/neo/internal/o1.ProofManifest#ContractID,matrix/neo/internal/o1.ProofManifest#Delivered,matrix/neo/internal/o1.ProofManifest#EffectsReconciled,matrix/neo/internal/o1.ProofManifest#ProofHash,matrix/neo/internal/o1.ProofManifest#RunID,matrix/neo/internal/o1.ProofManifest#Verifiers,matrix/neo/internal/o1.ProofManifest.FmtUnmet,matrix/neo/internal/o1.ProofManifest.IsComplete,matrix/neo/internal/o1.ProofManifest.UnmetRequirements,matrix/neo/internal/o1.ProofManifest.Verify
+  references=matrix/neo/internal/o1.CriterionVerifier
+  ^references=matrix/neo/internal/agent.Agent.LastO1Decision,matrix/neo/internal/o1.EvaluateQualification,matrix/neo/internal/o1.ProofManifest.FmtUnmet,matrix/neo/internal/o1.ProofManifest.IsComplete,matrix/neo/internal/o1.ProofManifest.UnmetRequirements,matrix/neo/internal/o1.ProofManifest.Verify,matrix/neo/internal/o1.RenderTerminalMessage,matrix/neo/internal/o1.Supervisor.Evaluate,matrix/neo/internal/o1.VerifierGraph.GenerateProofManifest
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.ProofManifest#AllCriteria kind=field
@@ -1891,6 +2156,8 @@ NODE id=matrix/neo/internal/o1.ProofManifest.FmtUnmet kind=method
   sig=func (pm ProofManifest) FmtUnmet() string
   doc=FmtUnmet returns a formatted string of unmet requirements.
 EDGES
+  calls=matrix/neo/internal/o1.ProofManifest.UnmetRequirements
+  references=matrix/neo/internal/o1.ProofManifest,matrix/neo/internal/o1.ProofManifest.UnmetRequirements,matrix/neo/internal/o1.pm,matrix/neo/internal/o1.reqs
   ^contains=matrix/neo/internal/o1.ProofManifest
   ^defines=matrix/neo/internal/o1/verifier.go
 
@@ -1899,7 +2166,11 @@ NODE id=matrix/neo/internal/o1.ProofManifest.IsComplete kind=method
   sig=func (pm ProofManifest) IsComplete() bool
   doc=IsComplete returns true when all completion requirements are met.
 EDGES
+  calls=matrix/neo/internal/o1.ProofManifest.Verify
+  references=matrix/neo/internal/o1.ProofManifest,matrix/neo/internal/o1.ProofManifest.Verify,matrix/neo/internal/o1.pm
   ^contains=matrix/neo/internal/o1.ProofManifest
+  ^calls=matrix/neo/internal/o1.Supervisor.Evaluate
+  ^references=matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.ProofManifest.UnmetRequirements kind=method
@@ -1907,7 +2178,10 @@ NODE id=matrix/neo/internal/o1.ProofManifest.UnmetRequirements kind=method
   sig=func (pm ProofManifest) UnmetRequirements() []string
   doc=UnmetRequirements returns descriptions of what is not yet complete.
 EDGES
+  references=matrix/neo/internal/o1.ProofManifest,matrix/neo/internal/o1.out,matrix/neo/internal/o1.pm
   ^contains=matrix/neo/internal/o1.ProofManifest
+  ^calls=matrix/neo/internal/o1.ProofManifest.FmtUnmet
+  ^references=matrix/neo/internal/o1.ProofManifest.FmtUnmet
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.ProofManifest.Verify kind=method
@@ -1915,13 +2189,18 @@ NODE id=matrix/neo/internal/o1.ProofManifest.Verify kind=method
   sig=func (pm ProofManifest) Verify() error
   doc=Verify proves the manifest is internally complete and hash-consistent.\nClosed booleans without verifier evidence cannot manufacture completion.
 EDGES
+  calls=matrix/neo/internal/o1.ContentHash
+  references=matrix/neo/internal/o1.ContentHash,matrix/neo/internal/o1.ProofManifest,matrix/neo/internal/o1.encoded,matrix/neo/internal/o1.kind,matrix/neo/internal/o1.passed,matrix/neo/internal/o1.pm,matrix/neo/internal/o1.result,matrix/neo/internal/o1.verifier,matrix/neo/internal/o1.want
   ^contains=matrix/neo/internal/o1.ProofManifest
+  ^calls=matrix/neo/internal/o1.EvaluateQualification,matrix/neo/internal/o1.ProofManifest.IsComplete
+  ^references=matrix/neo/internal/o1.EvaluateQualification,matrix/neo/internal/o1.ProofManifest.IsComplete
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.Provenance kind=type
   digest=b3:b8fabf8fb20ce6dc56e60d0d54cdc28438942c74a4fa859005d114c9ec4ecdad file=neo/internal/o1/contract.go range=14:14 lang=go exported=true byte_range=262:284
   sig=type Provenance string
 EDGES
+  ^references=matrix/neo/internal/o1.Clause,matrix/neo/internal/o1.Framework,matrix/neo/internal/o1.Inferred,matrix/neo/internal/o1.Repository,matrix/neo/internal/o1.Runtime,matrix/neo/internal/o1.User
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.ProviderConformer kind=type
@@ -1930,6 +2209,8 @@ NODE id=matrix/neo/internal/o1.ProviderConformer kind=type
   doc=ProviderConformer validates and normalizes provider output.\nPer O1 req.4 ac.2: raw tool markup, guidance, control tokens, malformed\npartial calls, and reasoning-only calls SHALL never execute accidentally.
 EDGES
   contains=matrix/neo/internal/o1.ProviderConformer#controlMarkers,matrix/neo/internal/o1.ProviderConformer#dialect,matrix/neo/internal/o1.ProviderConformer.StripControlTokens,matrix/neo/internal/o1.ProviderConformer.Validate
+  references=matrix/neo/internal/o1.ProviderDialect
+  ^references=matrix/neo/internal/o1.NewProviderConformer,matrix/neo/internal/o1.ProviderConformer.StripControlTokens,matrix/neo/internal/o1.ProviderConformer.Validate
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.ProviderConformer#controlMarkers kind=field
@@ -1949,6 +2230,7 @@ NODE id=matrix/neo/internal/o1.ProviderConformer.StripControlTokens kind=method
   sig=func (pc *ProviderConformer) StripControlTokens(content string) string
   doc=StripControlTokens removes provider-specific control syntax from content\nso it never reaches users or assistant history.
 EDGES
+  references=matrix/neo/internal/o1.ProviderConformer,matrix/neo/internal/o1.content,matrix/neo/internal/o1.marker,matrix/neo/internal/o1.pc
   ^contains=matrix/neo/internal/o1.ProviderConformer
   ^defines=matrix/neo/internal/o1/protocol.go
 
@@ -1957,7 +2239,10 @@ NODE id=matrix/neo/internal/o1.ProviderConformer.Validate kind=method
   sig=func (pc *ProviderConformer) Validate(gen *NormalizedGeneration) error
   doc=Validate checks a NormalizedGeneration for structural integrity before\nexecution. Per O1 req.4 ac.3: raw tool markup, guidance, control tokens,\nmalformed partial calls, and reasoning-only calls are caught here.
 EDGES
+  references=matrix/neo/internal/o1.NormalizedGeneration,matrix/neo/internal/o1.ProviderConformer,matrix/neo/internal/o1.err,matrix/neo/internal/o1.gen,matrix/neo/internal/o1.i,matrix/neo/internal/o1.marker,matrix/neo/internal/o1.pc,matrix/neo/internal/o1.probe,matrix/neo/internal/o1.tc
   ^contains=matrix/neo/internal/o1.ProviderConformer
+  ^calls=matrix/neo/internal/o1.ConformChatResult
+  ^references=matrix/neo/internal/o1.ConformChatResult
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.ProviderDialect kind=type
@@ -1965,6 +2250,7 @@ NODE id=matrix/neo/internal/o1.ProviderDialect kind=type
   sig=type ProviderDialect string
   doc=ProviderDialect identifies a provider's wire format for tool calls,\nreasoning, streaming, and control syntax.
 EDGES
+  ^references=matrix/neo/internal/o1.ConformChatResult,matrix/neo/internal/o1.DialectBaseten,matrix/neo/internal/o1.DialectDeepSeek,matrix/neo/internal/o1.DialectFireworks,matrix/neo/internal/o1.DialectForProvider,matrix/neo/internal/o1.DialectGeneric,matrix/neo/internal/o1.DialectMimo,matrix/neo/internal/o1.DialectOpenAI,matrix/neo/internal/o1.DialectXAI,matrix/neo/internal/o1.NewProviderConformer,matrix/neo/internal/o1.NormalizedGeneration,matrix/neo/internal/o1.NormalizedToolCall,matrix/neo/internal/o1.ProviderConformer
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.QualificationCase kind=type
@@ -1973,6 +2259,7 @@ NODE id=matrix/neo/internal/o1.QualificationCase kind=type
   doc=QualificationCase is one representative complete-request workflow.\nPer O1 req.12 ac.1: covers code, large-file, framework, browser, media,\nsourced-web, memory, scheduling, long-running, cancellation, and guarded effects.
 EDGES
   contains=matrix/neo/internal/o1.QualificationCase#Category,matrix/neo/internal/o1.QualificationCase#Evidence,matrix/neo/internal/o1.QualificationCase#ExpectedCriteria,matrix/neo/internal/o1.QualificationCase#ID,matrix/neo/internal/o1.QualificationCase#InitialPrompt,matrix/neo/internal/o1.QualificationCase#Name,matrix/neo/internal/o1.QualificationCase#Passed,matrix/neo/internal/o1.QualificationCase#ProofManifest,matrix/neo/internal/o1.QualificationCase#RequiredTools
+  ^references=matrix/neo/internal/o1.EvaluateQualification,matrix/neo/internal/o1.ExtensionGate,matrix/neo/internal/o1.ExtensionGate.Unmet,matrix/neo/internal/o1.StandardQualificationCorpus
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.QualificationCase#Category kind=field
@@ -2035,6 +2322,7 @@ NODE id=matrix/neo/internal/o1.QualificationResult kind=type
   doc=QualificationResult is the aggregate result of running the qualification corpus.
 EDGES
   contains=matrix/neo/internal/o1.QualificationResult#AllPassed,matrix/neo/internal/o1.QualificationResult#Failed,matrix/neo/internal/o1.QualificationResult#Hash,matrix/neo/internal/o1.QualificationResult#Passed,matrix/neo/internal/o1.QualificationResult#Skipped,matrix/neo/internal/o1.QualificationResult#Total
+  ^references=matrix/neo/internal/o1.EvaluateFailureReplay,matrix/neo/internal/o1.EvaluateQualification
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.QualificationResult#AllPassed kind=field
@@ -2078,6 +2366,7 @@ NODE id=matrix/neo/internal/o1.Recovery kind=type
   sig=type Recovery struct {\n	Initial		string		`json:"initial"`\n	Allowed		[]string	`json:"allowed"`\n	Terminal	[]string	`json:"terminal"`\n	Bound		int		`json:"bound"`\n}
 EDGES
   contains=matrix/neo/internal/o1.Recovery#Allowed,matrix/neo/internal/o1.Recovery#Bound,matrix/neo/internal/o1.Recovery#Initial,matrix/neo/internal/o1.Recovery#Terminal
+  ^references=matrix/neo/internal/o1.Hazard
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.Recovery#Allowed kind=field
@@ -2110,6 +2399,8 @@ NODE id=matrix/neo/internal/o1.RecoveryAutomaton kind=type
   doc=RecoveryAutomaton defines the bounded recovery transitions for a capability.\nPer O1 req.6 ac.3: probe, repair, reconcile, retry, verify, ask, and\nterminal transitions with explicit bounds and state predicates.
 EDGES
   contains=matrix/neo/internal/o1.RecoveryAutomaton#Bound,matrix/neo/internal/o1.RecoveryAutomaton#Initial,matrix/neo/internal/o1.RecoveryAutomaton#Operation,matrix/neo/internal/o1.RecoveryAutomaton#Transitions
+  references=matrix/neo/internal/o1.RecoveryState,matrix/neo/internal/o1.RecoveryTransition
+  ^references=matrix/neo/internal/o1.ExtensionGate,matrix/neo/internal/o1.NewRecoveryInstance,matrix/neo/internal/o1.PredefinedRecoveryAutomata,matrix/neo/internal/o1.RecoveryInstance,matrix/neo/internal/o1.ValidateRecoveryAutomaton
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.RecoveryAutomaton#Bound kind=field
@@ -2142,6 +2433,8 @@ NODE id=matrix/neo/internal/o1.RecoveryDecision kind=type
   doc=RecoveryDecision is the deterministic transition selected for a concrete\ntyped outcome. It is consumed by the production dispatch loop; the model is\nnever asked to infer retryability from prose.
 EDGES
   contains=matrix/neo/internal/o1.RecoveryDecision#Reason,matrix/neo/internal/o1.RecoveryDecision#Terminal,matrix/neo/internal/o1.RecoveryDecision#Transition
+  references=matrix/neo/internal/o1.TransitionKind
+  ^references=matrix/neo/internal/agent.Agent.recordO1Recovery,matrix/neo/internal/o1.SelectRecoveryTransition
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.RecoveryDecision#Reason kind=field
@@ -2168,6 +2461,8 @@ NODE id=matrix/neo/internal/o1.RecoveryInstance kind=type
   doc=RecoveryInstance tracks a running recovery through the automaton.
 EDGES
   contains=matrix/neo/internal/o1.RecoveryInstance#Attempts,matrix/neo/internal/o1.RecoveryInstance#Automaton,matrix/neo/internal/o1.RecoveryInstance#Current,matrix/neo/internal/o1.RecoveryInstance#Err,matrix/neo/internal/o1.RecoveryInstance.Advance,matrix/neo/internal/o1.RecoveryInstance.AdvanceWhen,matrix/neo/internal/o1.RecoveryInstance.IsTerminal
+  references=matrix/neo/internal/o1.RecoveryAutomaton,matrix/neo/internal/o1.RecoveryState
+  ^references=matrix/neo/internal/o1.NewRecoveryInstance,matrix/neo/internal/o1.RecoveryInstance.Advance,matrix/neo/internal/o1.RecoveryInstance.AdvanceWhen,matrix/neo/internal/o1.RecoveryInstance.IsTerminal
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.RecoveryInstance#Attempts kind=field
@@ -2199,6 +2494,8 @@ NODE id=matrix/neo/internal/o1.RecoveryInstance.Advance kind=method
   sig=func (ri *RecoveryInstance) Advance(kind TransitionKind) error
   doc=Advance moves the recovery to the next state via a transition.\nReturns an error if the transition is not allowed or the bound is exhausted.
 EDGES
+  calls=matrix/neo/internal/o1.RecoveryInstance.AdvanceWhen
+  references=matrix/neo/internal/o1.RecoveryInstance,matrix/neo/internal/o1.RecoveryInstance.AdvanceWhen,matrix/neo/internal/o1.TransitionKind,matrix/neo/internal/o1.kind,matrix/neo/internal/o1.ri
   ^contains=matrix/neo/internal/o1.RecoveryInstance
   ^defines=matrix/neo/internal/o1/recovery.go
 
@@ -2207,7 +2504,11 @@ NODE id=matrix/neo/internal/o1.RecoveryInstance.AdvanceWhen kind=method
   sig=func (ri *RecoveryInstance) AdvanceWhen(kind TransitionKind, facts map[string]bool) error
   doc=AdvanceWhen moves through an edge only when its named guard is present and\ntrue in authoritative facts. Unguarded test/local automata remain usable,\nwhile production recovery cannot silently ignore a state predicate.
 EDGES
+  calls=matrix/neo/internal/o1.RecoveryInstance.IsTerminal
+  references=matrix/neo/internal/o1.RecoveryInstance,matrix/neo/internal/o1.RecoveryInstance.IsTerminal,matrix/neo/internal/o1.TransitionKind,matrix/neo/internal/o1.facts,matrix/neo/internal/o1.kind,matrix/neo/internal/o1.ri,matrix/neo/internal/o1.tr
   ^contains=matrix/neo/internal/o1.RecoveryInstance
+  ^calls=matrix/neo/internal/o1.RecoveryInstance.Advance
+  ^references=matrix/neo/internal/o1.RecoveryInstance.Advance
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.RecoveryInstance.IsTerminal kind=method
@@ -2215,7 +2516,10 @@ NODE id=matrix/neo/internal/o1.RecoveryInstance.IsTerminal kind=method
   sig=func (ri RecoveryInstance) IsTerminal() bool
   doc=IsTerminal returns true when the recovery has reached a terminal state.
 EDGES
+  references=matrix/neo/internal/o1.RecoveryInstance,matrix/neo/internal/o1.StateComplete,matrix/neo/internal/o1.StateTerminal,matrix/neo/internal/o1.ri
   ^contains=matrix/neo/internal/o1.RecoveryInstance
+  ^calls=matrix/neo/internal/o1.RecoveryInstance.AdvanceWhen
+  ^references=matrix/neo/internal/o1.RecoveryInstance.AdvanceWhen
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.RecoveryRecord kind=type
@@ -2223,6 +2527,8 @@ NODE id=matrix/neo/internal/o1.RecoveryRecord kind=type
   sig=type RecoveryRecord struct {\n	Operation	string		`json:"operation"`\n	Transition	TransitionKind	`json:"transition"`\n	Attempts	int		`json:"attempts"`\n	Terminal	bool		`json:"terminal"`\n	Reason		string		`json:"reason"`\n}
 EDGES
   contains=matrix/neo/internal/o1.RecoveryRecord#Attempts,matrix/neo/internal/o1.RecoveryRecord#Operation,matrix/neo/internal/o1.RecoveryRecord#Reason,matrix/neo/internal/o1.RecoveryRecord#Terminal,matrix/neo/internal/o1.RecoveryRecord#Transition
+  references=matrix/neo/internal/o1.TransitionKind
+  ^references=matrix/neo/internal/agent.Agent.recordO1Recovery,matrix/neo/internal/o1.NewRunLedger,matrix/neo/internal/o1.RestoreRunLedger,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.RunLedger.RecordRecovery
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RecoveryRecord#Attempts kind=field
@@ -2261,6 +2567,7 @@ NODE id=matrix/neo/internal/o1.RecoverySpec kind=type
   doc=RecoverySpec describes the bounded recovery automaton for an operation.
 EDGES
   contains=matrix/neo/internal/o1.RecoverySpec#Allowed,matrix/neo/internal/o1.RecoverySpec#Bound,matrix/neo/internal/o1.RecoverySpec#Initial,matrix/neo/internal/o1.RecoverySpec#Terminal
+  ^references=matrix/neo/internal/agent.Agent.o1Manifest,matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.manifestFromTool
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.RecoverySpec#Allowed kind=field
@@ -2292,6 +2599,7 @@ NODE id=matrix/neo/internal/o1.RecoveryState kind=type
   sig=type RecoveryState string
   doc=RecoveryState is a named state in the recovery automaton.
 EDGES
+  ^references=matrix/neo/internal/o1.RecoveryAutomaton,matrix/neo/internal/o1.RecoveryInstance,matrix/neo/internal/o1.RecoveryTransition,matrix/neo/internal/o1.StateComplete,matrix/neo/internal/o1.StateInitial,matrix/neo/internal/o1.StateProbing,matrix/neo/internal/o1.StateReconciling,matrix/neo/internal/o1.StateRepairing,matrix/neo/internal/o1.StateTerminal,matrix/neo/internal/o1.StateVerifying
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.RecoveryTransition kind=type
@@ -2300,6 +2608,8 @@ NODE id=matrix/neo/internal/o1.RecoveryTransition kind=type
   doc=RecoveryTransition is a single edge in the recovery automaton.
 EDGES
   contains=matrix/neo/internal/o1.RecoveryTransition#From,matrix/neo/internal/o1.RecoveryTransition#Guard,matrix/neo/internal/o1.RecoveryTransition#Kind,matrix/neo/internal/o1.RecoveryTransition#To
+  references=matrix/neo/internal/o1.RecoveryState,matrix/neo/internal/o1.TransitionKind
+  ^references=matrix/neo/internal/o1.PredefinedRecoveryAutomata,matrix/neo/internal/o1.RecoveryAutomaton
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.RecoveryTransition#From kind=field
@@ -2331,6 +2641,8 @@ NODE id=matrix/neo/internal/o1.Registry kind=type
   sig=type Registry struct {\n	Version		string		`json:"version"`\n	Operations	[]string	`json:"synthetic_operations"`\n	Corpus		[]Corpus	`json:"corpus"`\n	Hazards		[]Hazard	`json:"hazards"`\n}
 EDGES
   contains=matrix/neo/internal/o1.Registry#Corpus,matrix/neo/internal/o1.Registry#Hazards,matrix/neo/internal/o1.Registry#Operations,matrix/neo/internal/o1.Registry#Version,matrix/neo/internal/o1.Registry.Check
+  references=matrix/neo/internal/o1.Corpus,matrix/neo/internal/o1.Hazard
+  ^references=matrix/neo/internal/o1.ExtensionGate,matrix/neo/internal/o1.Load,matrix/neo/internal/o1.Registry.Check,matrix/neo/internal/o1.extensionHazardsCovered
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.Registry#Corpus kind=field
@@ -2361,7 +2673,10 @@ NODE id=matrix/neo/internal/o1.Registry.Check kind=method
   digest=b3:fb2be5e2b156b71d8e74b52a53cd12ee2c37be6510d35536b9d6597a8d35b754 file=neo/internal/o1/registry.go range=105:190 lang=go exported=true byte_range=2388:5299
   sig=func (r *Registry) Check(manifestOperations []string) error
 EDGES
+  references=matrix/neo/internal/o1.Detectable,matrix/neo/internal/o1.Irreducible,matrix/neo/internal/o1.Preventable,matrix/neo/internal/o1.Registry,matrix/neo/internal/o1.Unknown,matrix/neo/internal/o1.covered,matrix/neo/internal/o1.err,matrix/neo/internal/o1.h,matrix/neo/internal/o1.i,matrix/neo/internal/o1.id,matrix/neo/internal/o1.item,matrix/neo/internal/o1.label,matrix/neo/internal/o1.manifestOperations,matrix/neo/internal/o1.matched,matrix/neo/internal/o1.ok,matrix/neo/internal/o1.operation,matrix/neo/internal/o1.operations,matrix/neo/internal/o1.outcome,matrix/neo/internal/o1.outcomes,matrix/neo/internal/o1.problems,matrix/neo/internal/o1.r,matrix/neo/internal/o1.seenCorpus,matrix/neo/internal/o1.seenIDs,matrix/neo/internal/o1.terminal
   ^contains=matrix/neo/internal/o1.Registry
+  ^calls=matrix/neo/internal/o1.extensionHazardsCovered
+  ^references=matrix/neo/internal/o1.extensionHazardsCovered
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.RenderOutcome kind=func
@@ -2369,6 +2684,9 @@ NODE id=matrix/neo/internal/o1.RenderOutcome kind=func
   sig=func RenderOutcome(o OperationOutcome) string
   doc=OutcomeRenderer converts an OperationOutcome to the model-facing text\nrepresentation. The model never parses raw error prose — it reads structured\nfields. Per O1 req.6 ac.4.
 EDGES
+  references=matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.TransitionKind,matrix/neo/internal/o1.b,matrix/neo/internal/o1.o
+  ^calls=matrix/neo/internal/o1.Supervisor.Evaluate
+  ^references=matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.RenderTerminalMessage kind=func
@@ -2376,12 +2694,15 @@ NODE id=matrix/neo/internal/o1.RenderTerminalMessage kind=func
   sig=func RenderTerminalMessage(dec SupervisorDecision, proof *ProofManifest) string
   doc=RenderTerminalMessage produces user-facing terminal prose from verified state.\nPer O1 req.10 ac.4: terminal communication is generated from verified data\nand accurately distinguishes completed work, residual effects, etc.
 EDGES
+  references=matrix/neo/internal/o1.ProofManifest,matrix/neo/internal/o1.SupervisorDecision,matrix/neo/internal/o1.TermBudgetExhausted,matrix/neo/internal/o1.TermComplete,matrix/neo/internal/o1.TermExternalUnavail,matrix/neo/internal/o1.TermInternalFailure,matrix/neo/internal/o1.TermIrreducibleAmbiguity,matrix/neo/internal/o1.TermMissingAuth,matrix/neo/internal/o1.TermSafePartial,matrix/neo/internal/o1.dec,matrix/neo/internal/o1.proof
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.Repository kind=const
   digest=b3:f593147a5deaf99f96bf22d58afb61b95b4a2e0da4b326e1fa8a74694b0ddf52 file=neo/internal/o1/contract.go range=18:18 lang=go exported=true byte_range=327:363
   sig=o1.Provenance
 EDGES
+  references=matrix/neo/internal/o1.Provenance
+  ^references=matrix/neo/internal/o1.Compile
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.RepresentationBudget kind=type
@@ -2390,6 +2711,7 @@ NODE id=matrix/neo/internal/o1.RepresentationBudget kind=type
   doc=RepresentationBudget estimates the token cost of representing an operation\nbefore generation. Per O1 req.4 ac.4: operations whose representation\ncannot fit the budget are decomposed deterministically.
 EDGES
   contains=matrix/neo/internal/o1.RepresentationBudget#MaxArgumentSize,matrix/neo/internal/o1.RepresentationBudget#MaxTokens,matrix/neo/internal/o1.RepresentationBudget#MaxToolCalls,matrix/neo/internal/o1.RepresentationBudget.BudgetCheck
+  ^references=matrix/neo/internal/o1.ConformChatResult,matrix/neo/internal/o1.DefaultBudget,matrix/neo/internal/o1.RepresentationBudget.BudgetCheck
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.RepresentationBudget#MaxArgumentSize kind=field
@@ -2415,13 +2737,19 @@ NODE id=matrix/neo/internal/o1.RepresentationBudget.BudgetCheck kind=method
   sig=func (b RepresentationBudget) BudgetCheck(gen *NormalizedGeneration) error
   doc=BudgetCheck verifies that a generation fits within the budget.\nReturns an error if the operation should be decomposed instead of generated.
 EDGES
+  references=matrix/neo/internal/o1.ErrBudgetExceeded,matrix/neo/internal/o1.NormalizedGeneration,matrix/neo/internal/o1.RepresentationBudget,matrix/neo/internal/o1.b,matrix/neo/internal/o1.estimated,matrix/neo/internal/o1.gen,matrix/neo/internal/o1.i,matrix/neo/internal/o1.tc
   ^contains=matrix/neo/internal/o1.RepresentationBudget
+  ^calls=matrix/neo/internal/o1.ConformChatResult
+  ^references=matrix/neo/internal/o1.ConformChatResult
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.RestoreRunLedger kind=func
   digest=b3:e67a9fa10b5228e48a17681d0f28f6e300cb197da587eebf0e8f4e48ec9559e0 file=neo/internal/o1/ledger.go range=24:42 lang=go exported=true byte_range=494:1096
   sig=func RestoreRunLedger(snapshot []byte) (*RunLedger, error)
 EDGES
+  references=matrix/neo/internal/o1.RecoveryRecord,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.err,matrix/neo/internal/o1.ledger,matrix/neo/internal/o1.snapshot
+  ^calls=matrix/neo/internal/agent.Agent.restoreO1State
+  ^references=matrix/neo/internal/agent.Agent.restoreO1State
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.Reversibility kind=type
@@ -2429,12 +2757,15 @@ NODE id=matrix/neo/internal/o1.Reversibility kind=type
   sig=type Reversibility string
   doc=Reversibility describes whether an operation can be undone.
 EDGES
+  ^references=matrix/neo/internal/o1.Conditional,matrix/neo/internal/o1.Irreversible,matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.Reversible
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.Reversible kind=const
   digest=b3:0064965273eb15ac85de7244205e87f3a4ce3f691301dc2a1680fe09894c034a file=neo/internal/o1/manifest.go range=31:31 lang=go exported=true byte_range=727:768
   sig=o1.Reversibility
 EDGES
+  references=matrix/neo/internal/o1.Reversibility
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/o1.manifestFromTool
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.Revision kind=type
@@ -2442,6 +2773,8 @@ NODE id=matrix/neo/internal/o1.Revision kind=type
   sig=type Revision struct {\n	Version		uint64		`json:"version"`\n	Steering	Clause		`json:"steering"`\n	PriorProof	[]string	`json:"prior_proof"`\n}
 EDGES
   contains=matrix/neo/internal/o1.Revision#PriorProof,matrix/neo/internal/o1.Revision#Steering,matrix/neo/internal/o1.Revision#Version
+  references=matrix/neo/internal/o1.Clause
+  ^references=matrix/neo/internal/o1.TaskContract,matrix/neo/internal/o1.TaskContract.Revise
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.Revision#PriorProof kind=field
@@ -2468,6 +2801,8 @@ NODE id=matrix/neo/internal/o1.RunLedger kind=type
   doc=RunLedger is the authoritative state ledger for a single run.\nPer O1 req.7 ac.1: persists contract version, operation attempts, observed\npre/post state, evidence, effects, open hazards, satisfied criteria,\nrecovery state, and terminal proof under stable run/operation ids.
 EDGES
   contains=matrix/neo/internal/o1.RunLedger#Attempts,matrix/neo/internal/o1.RunLedger#ContractID,matrix/neo/internal/o1.RunLedger#ContractVer,matrix/neo/internal/o1.RunLedger#CreatedAt,matrix/neo/internal/o1.RunLedger#CriterionProof,matrix/neo/internal/o1.RunLedger#Effects,matrix/neo/internal/o1.RunLedger#EffectsReconciled,matrix/neo/internal/o1.RunLedger#LastModified,matrix/neo/internal/o1.RunLedger#OpenHazards,matrix/neo/internal/o1.RunLedger#Recovery,matrix/neo/internal/o1.RunLedger#RunID,matrix/neo/internal/o1.RunLedger#Satisfied,matrix/neo/internal/o1.RunLedger#TerminalProof,matrix/neo/internal/o1.RunLedger#mu,matrix/neo/internal/o1.RunLedger.AddHazard,matrix/neo/internal/o1.RunLedger.AttemptCount,matrix/neo/internal/o1.RunLedger.CausalDeltas,matrix/neo/internal/o1.RunLedger.CloseCriterion,matrix/neo/internal/o1.RunLedger.CloseHazard,matrix/neo/internal/o1.RunLedger.EvidenceSnapshot,matrix/neo/internal/o1.RunLedger.HasSuccessfulOperation,matrix/neo/internal/o1.RunLedger.HasUnreconciledEffect,matrix/neo/internal/o1.RunLedger.IsCriterionClosed,matrix/neo/internal/o1.RunLedger.ReconcileEffect,matrix/neo/internal/o1.RunLedger.RecordAttempt,matrix/neo/internal/o1.RunLedger.RecordEffect,matrix/neo/internal/o1.RunLedger.RecordRecovery,matrix/neo/internal/o1.RunLedger.SetTerminal,matrix/neo/internal/o1.RunLedger.SnapshotJSON,matrix/neo/internal/o1.RunLedger.SuccessfulAttempt
+  references=matrix/neo/internal/o1.AttemptRecord,matrix/neo/internal/o1.EffectRecord,matrix/neo/internal/o1.RecoveryRecord,matrix/neo/internal/o1.TerminalProof
+  ^references=matrix/neo/internal/agent.Agent.restoreO1State,matrix/neo/internal/agent.turn,matrix/neo/internal/o1.NewRunLedger,matrix/neo/internal/o1.RestoreRunLedger,matrix/neo/internal/o1.RunLedger.AddHazard,matrix/neo/internal/o1.RunLedger.AttemptCount,matrix/neo/internal/o1.RunLedger.CausalDeltas,matrix/neo/internal/o1.RunLedger.CloseCriterion,matrix/neo/internal/o1.RunLedger.CloseHazard,matrix/neo/internal/o1.RunLedger.EvidenceSnapshot,matrix/neo/internal/o1.RunLedger.HasSuccessfulOperation,matrix/neo/internal/o1.RunLedger.HasUnreconciledEffect,matrix/neo/internal/o1.RunLedger.IsCriterionClosed,matrix/neo/internal/o1.RunLedger.ReconcileEffect,matrix/neo/internal/o1.RunLedger.RecordAttempt,matrix/neo/internal/o1.RunLedger.RecordEffect,matrix/neo/internal/o1.RunLedger.RecordRecovery,matrix/neo/internal/o1.RunLedger.SetTerminal,matrix/neo/internal/o1.RunLedger.SnapshotJSON,matrix/neo/internal/o1.RunLedger.SuccessfulAttempt,matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger#Attempts kind=field
@@ -2559,7 +2894,10 @@ NODE id=matrix/neo/internal/o1.RunLedger.AddHazard kind=method
   sig=func (l *RunLedger) AddHazard(hazardID string)
   doc=AddHazard records an open hazard that must be closed before completion.
 EDGES
+  references=matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.h,matrix/neo/internal/o1.hazardID,matrix/neo/internal/o1.l
   ^contains=matrix/neo/internal/o1.RunLedger
+  ^calls=matrix/neo/internal/agent.Agent.persistO1State
+  ^references=matrix/neo/internal/agent.Agent.persistO1State
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.AttemptCount kind=method
@@ -2567,6 +2905,7 @@ NODE id=matrix/neo/internal/o1.RunLedger.AttemptCount kind=method
   sig=func (l *RunLedger) AttemptCount() int
   doc=AttemptCount returns the total number of recorded attempts.
 EDGES
+  references=matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.l
   ^contains=matrix/neo/internal/o1.RunLedger
   ^defines=matrix/neo/internal/o1/ledger.go
 
@@ -2575,6 +2914,7 @@ NODE id=matrix/neo/internal/o1.RunLedger.CausalDeltas kind=method
   sig=func (l *RunLedger) CausalDeltas() int
   doc=CausalDeltas returns the count of attempts that represented actual progress.
 EDGES
+  references=matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.a,matrix/neo/internal/o1.count,matrix/neo/internal/o1.l
   ^contains=matrix/neo/internal/o1.RunLedger
   ^defines=matrix/neo/internal/o1/ledger.go
 
@@ -2583,7 +2923,10 @@ NODE id=matrix/neo/internal/o1.RunLedger.CloseCriterion kind=method
   sig=func (l *RunLedger) CloseCriterion(criterionID, evidence string)
   doc=CloseCriterion marks an acceptance criterion as satisfied.
 EDGES
+  references=matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.criterionID,matrix/neo/internal/o1.evidence,matrix/neo/internal/o1.l
   ^contains=matrix/neo/internal/o1.RunLedger
+  ^calls=matrix/neo/internal/agent.Agent.finalizeO1
+  ^references=matrix/neo/internal/agent.Agent.finalizeO1
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.CloseHazard kind=method
@@ -2591,6 +2934,7 @@ NODE id=matrix/neo/internal/o1.RunLedger.CloseHazard kind=method
   sig=func (l *RunLedger) CloseHazard(hazardID string)
   doc=CloseHazard removes a resolved hazard.
 EDGES
+  references=matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.h,matrix/neo/internal/o1.hazardID,matrix/neo/internal/o1.i,matrix/neo/internal/o1.l
   ^contains=matrix/neo/internal/o1.RunLedger
   ^defines=matrix/neo/internal/o1/ledger.go
 
@@ -2599,21 +2943,30 @@ NODE id=matrix/neo/internal/o1.RunLedger.EvidenceSnapshot kind=method
   sig=func (l *RunLedger) EvidenceSnapshot() ([]AttemptRecord, *TerminalProof)
   doc=EvidenceSnapshot returns a detached, consistent copy of the ledger evidence\nthat is safe to hand to background memory consolidation.
 EDGES
+  references=matrix/neo/internal/o1.AttemptRecord,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.TerminalProof,matrix/neo/internal/o1.attempts,matrix/neo/internal/o1.l,matrix/neo/internal/o1.proof
   ^contains=matrix/neo/internal/o1.RunLedger
+  ^calls=matrix/neo/internal/agent.Agent.consolidateWorking
+  ^references=matrix/neo/internal/agent.Agent.consolidateWorking
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.HasSuccessfulOperation kind=method
   digest=b3:42259a4f7406a228aa38d83e27f2bf0ac1ea46c8a6ab71342094c4a8c939944a file=neo/internal/o1/ledger.go range=333:347 lang=go exported=true byte_range=10613:10966
   sig=func (l *RunLedger) HasSuccessfulOperation(prefixes ...string) bool
 EDGES
+  references=matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.attempt,matrix/neo/internal/o1.l,matrix/neo/internal/o1.prefix,matrix/neo/internal/o1.prefixes
   ^contains=matrix/neo/internal/o1.RunLedger
+  ^calls=matrix/neo/internal/agent.Agent.o1CriterionEvidence
+  ^references=matrix/neo/internal/agent.Agent.o1CriterionEvidence
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.HasUnreconciledEffect kind=method
   digest=b3:fb321e71282a5b8c4ff58a3c99f7df1e1d4f6413f6900f1debd3f963bfced3fd file=neo/internal/o1/ledger.go range=244:253 lang=go exported=true byte_range=7934:8196
   sig=func (l *RunLedger) HasUnreconciledEffect(op, effect string) bool
 EDGES
+  references=matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.effect,matrix/neo/internal/o1.l,matrix/neo/internal/o1.op,matrix/neo/internal/o1.recorded
   ^contains=matrix/neo/internal/o1.RunLedger
+  ^calls=matrix/neo/internal/agent.Agent.dispatchWithRetry
+  ^references=matrix/neo/internal/agent.Agent.dispatchWithRetry
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.IsCriterionClosed kind=method
@@ -2621,6 +2974,7 @@ NODE id=matrix/neo/internal/o1.RunLedger.IsCriterionClosed kind=method
   sig=func (l *RunLedger) IsCriterionClosed(criterionID string) bool
   doc=IsCriterionClosed checks whether a criterion has been closed.
 EDGES
+  references=matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.criterionID,matrix/neo/internal/o1.l
   ^contains=matrix/neo/internal/o1.RunLedger
   ^defines=matrix/neo/internal/o1/ledger.go
 
@@ -2629,7 +2983,10 @@ NODE id=matrix/neo/internal/o1.RunLedger.ReconcileEffect kind=method
   sig=func (l *RunLedger) ReconcileEffect(op, effect string) error
   doc=ReconcileEffect marks a recorded effect reconciled from authoritative\npostcondition evidence. Unknown operations/effects fail closed.
 EDGES
+  references=matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.effect,matrix/neo/internal/o1.found,matrix/neo/internal/o1.i,matrix/neo/internal/o1.l,matrix/neo/internal/o1.op,matrix/neo/internal/o1.recorded
   ^contains=matrix/neo/internal/o1.RunLedger
+  ^calls=matrix/neo/internal/agent.Agent.recordO1ToolOutcome
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.RecordAttempt kind=method
@@ -2637,7 +2994,10 @@ NODE id=matrix/neo/internal/o1.RunLedger.RecordAttempt kind=method
   sig=func (l *RunLedger) RecordAttempt(a AttemptRecord) (causalDelta bool, err error)
   doc=RecordAttempt logs an operation attempt and returns whether it represents\na causal delta (new state, not a repetition of unchanged state).\nPer O1 req.7 ac.2: progress requires at least one causal delta.\nPer O1 req.7 ac.4: repeating from the same state with the same evidence\nand no allowed transition is rejected.
 EDGES
+  references=matrix/neo/internal/o1.AttemptRecord,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.a,matrix/neo/internal/o1.causalDelta,matrix/neo/internal/o1.i,matrix/neo/internal/o1.l,matrix/neo/internal/o1.newFailureEvidence,matrix/neo/internal/o1.prev
   ^contains=matrix/neo/internal/o1.RunLedger
+  ^calls=matrix/neo/internal/agent.Agent.recordO1ToolOutcome
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.RecordEffect kind=method
@@ -2645,14 +3005,20 @@ NODE id=matrix/neo/internal/o1.RunLedger.RecordEffect kind=method
   sig=func (l *RunLedger) RecordEffect(op, effect string, reversible bool)
   doc=RecordEffect logs a state-changing effect for reconciliation.
 EDGES
+  references=matrix/neo/internal/o1.EffectRecord,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.effect,matrix/neo/internal/o1.l,matrix/neo/internal/o1.op,matrix/neo/internal/o1.reversible
   ^contains=matrix/neo/internal/o1.RunLedger
+  ^calls=matrix/neo/internal/agent.Agent.recordO1ToolOutcome
+  ^references=matrix/neo/internal/agent.Agent.recordO1ToolOutcome
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.RecordRecovery kind=method
   digest=b3:f528dbfd9600f9f6990e9a9107a44bf3984eb151fc0b7f1d2ae10111bbd6af5e file=neo/internal/o1/ledger.go range=175:183 lang=go exported=true byte_range=6151:6355
   sig=func (l *RunLedger) RecordRecovery(record RecoveryRecord)
 EDGES
+  references=matrix/neo/internal/o1.RecoveryRecord,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.l,matrix/neo/internal/o1.record
   ^contains=matrix/neo/internal/o1.RunLedger
+  ^calls=matrix/neo/internal/agent.Agent.recordO1Recovery
+  ^references=matrix/neo/internal/agent.Agent.recordO1Recovery
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.SetTerminal kind=method
@@ -2660,7 +3026,11 @@ NODE id=matrix/neo/internal/o1.RunLedger.SetTerminal kind=method
   sig=func (l *RunLedger) SetTerminal(proof TerminalProof) error
   doc=SetTerminal records the final proof and returns an error if the run\ncannot complete (unclosed hazards, unsatisfied criteria, un-reconciled effects).
 EDGES
+  calls=matrix/neo/internal/o1.ContentHash
+  references=matrix/neo/internal/o1.ContentHash,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.TerminalProof,matrix/neo/internal/o1.criterionID,matrix/neo/internal/o1.l,matrix/neo/internal/o1.proof
   ^contains=matrix/neo/internal/o1.RunLedger
+  ^calls=matrix/neo/internal/agent.Agent.finalizeO1
+  ^references=matrix/neo/internal/agent.Agent.finalizeO1
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.SnapshotJSON kind=method
@@ -2668,7 +3038,10 @@ NODE id=matrix/neo/internal/o1.RunLedger.SnapshotJSON kind=method
   sig=func (l *RunLedger) SnapshotJSON() ([]byte, error)
   doc=SnapshotJSON returns a consistent durable representation of the ledger.
 EDGES
+  references=matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.l
   ^contains=matrix/neo/internal/o1.RunLedger
+  ^calls=matrix/neo/internal/agent.Agent.persistO1State
+  ^references=matrix/neo/internal/agent.Agent.persistO1State
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunLedger.SuccessfulAttempt kind=method
@@ -2676,7 +3049,10 @@ NODE id=matrix/neo/internal/o1.RunLedger.SuccessfulAttempt kind=method
   sig=func (l *RunLedger) SuccessfulAttempt(operation, preState string) (AttemptRecord, bool)
   doc=SuccessfulAttempt returns the authoritative prior success for the same\noperation and expected pre-state. It is the idempotency join used before a\nduplicate state-changing dispatch.
 EDGES
+  references=matrix/neo/internal/o1.AttemptRecord,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.attempt,matrix/neo/internal/o1.i,matrix/neo/internal/o1.l,matrix/neo/internal/o1.operation,matrix/neo/internal/o1.preState
   ^contains=matrix/neo/internal/o1.RunLedger
+  ^calls=matrix/neo/internal/agent.Agent.dispatchWithRetry
+  ^references=matrix/neo/internal/agent.Agent.dispatchWithRetry
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.RunPreflight kind=func
@@ -2684,12 +3060,17 @@ NODE id=matrix/neo/internal/o1.RunPreflight kind=func
   sig=func RunPreflight(env PreflightEnvironment, manifest OperationManifest) PreflightResult
   doc=RunPreflight checks all manifest preconditions against the environment.\nReturns OK=true when the operation is safe to expose, or a list of failed\npreconditions. Per O1 req.3 ac.3: every knowable prerequisite is verified\nbefore the model attempts the operation.
 EDGES
+  calls=matrix/neo/internal/o1.checkPrecondition
+  references=matrix/neo/internal/o1.EffectExternal,matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.PreflightEnvironment,matrix/neo/internal/o1.PreflightResult,matrix/neo/internal/o1.checkPrecondition,matrix/neo/internal/o1.dep,matrix/neo/internal/o1.env,matrix/neo/internal/o1.key,matrix/neo/internal/o1.manifest,matrix/neo/internal/o1.perm,matrix/neo/internal/o1.pre,matrix/neo/internal/o1.result
+  ^calls=matrix/neo/internal/o1.CompileAllCapabilities,matrix/neo/internal/o1.CompileRuntimeCapabilities
+  ^references=matrix/neo/internal/o1.CompileAllCapabilities,matrix/neo/internal/o1.CompileRuntimeCapabilities
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.Runtime kind=const
   digest=b3:352d14a155e603e2a45e0a33d9cef4f4b2f2ba08b829cc361ed66822d589107e file=neo/internal/o1/contract.go range=20:20 lang=go exported=true byte_range=402:435
   sig=o1.Provenance
 EDGES
+  references=matrix/neo/internal/o1.Provenance
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.RuntimeCapabilities kind=type
@@ -2698,6 +3079,8 @@ NODE id=matrix/neo/internal/o1.RuntimeCapabilities kind=type
   doc=RuntimeCapabilities is the result of compiling the live advertised schema\nset against a task contract. The selected schemas are the only operations\nthat may be sent to the provider for the turn.
 EDGES
   contains=matrix/neo/internal/o1.RuntimeCapabilities#Manifests,matrix/neo/internal/o1.RuntimeCapabilities#Tools
+  references=matrix/neo/internal/llm.Tool,matrix/neo/internal/o1.OperationManifest
+  ^references=matrix/neo/internal/o1.CompileAllCapabilities,matrix/neo/internal/o1.CompileRuntimeCapabilities
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.RuntimeCapabilities#Manifests kind=field
@@ -2717,6 +3100,9 @@ NODE id=matrix/neo/internal/o1.SelectRecoveryTransition kind=func
   sig=func SelectRecoveryTransition(manifest OperationManifest, outcome OperationOutcome, attempts int) RecoveryDecision
   doc=SelectRecoveryTransition chooses the next capability-owned transition from\nauthoritative outcome and manifest state. State-changing operations never\nblind-retry after transport uncertainty: they reconcile first.
 EDGES
+  references=matrix/neo/internal/o1.EffectReadOnly,matrix/neo/internal/o1.LayerConflict,matrix/neo/internal/o1.LayerInvocation,matrix/neo/internal/o1.LayerProtocol,matrix/neo/internal/o1.LayerTransport,matrix/neo/internal/o1.LayerValidation,matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.RecoveryDecision,matrix/neo/internal/o1.TransitionReconcile,matrix/neo/internal/o1.TransitionRetry,matrix/neo/internal/o1.TransitionStop,matrix/neo/internal/o1.attempts,matrix/neo/internal/o1.bound,matrix/neo/internal/o1.manifest,matrix/neo/internal/o1.outcome,matrix/neo/internal/o1.stateChanging
+  ^calls=matrix/neo/internal/agent.Agent.dispatchWithRetry
+  ^references=matrix/neo/internal/agent.Agent.dispatchWithRetry
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.StandardFailureCorpus kind=func
@@ -2724,6 +3110,7 @@ NODE id=matrix/neo/internal/o1.StandardFailureCorpus kind=func
   sig=func StandardFailureCorpus() []FailureReplayCase
   doc=StandardFailureCorpus returns the representative failure replay cases.
 EDGES
+  references=matrix/neo/internal/o1.FailureReplayCase,matrix/neo/internal/o1.LayerAuthorization,matrix/neo/internal/o1.LayerCancellation,matrix/neo/internal/o1.LayerConflict,matrix/neo/internal/o1.LayerHTTP,matrix/neo/internal/o1.LayerProcess,matrix/neo/internal/o1.LayerProtocol,matrix/neo/internal/o1.LayerTransport,matrix/neo/internal/o1.LayerValidation
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.StandardQualificationCorpus kind=func
@@ -2731,84 +3118,111 @@ NODE id=matrix/neo/internal/o1.StandardQualificationCorpus kind=func
   sig=func StandardQualificationCorpus() []QualificationCase
   doc=StandardQualificationCorpus returns the representative qualification cases\nthat the O1 release gate requires.
 EDGES
+  references=matrix/neo/internal/o1.QualificationCase
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.StateComplete kind=const
   digest=b3:8bf4a3efc8557696eaf074b4706d05917cac10c0bb4bc67fac2b60a381481175 file=neo/internal/o1/recovery.go range=29:29 lang=go exported=true byte_range=994:1037
   sig=o1.RecoveryState
 EDGES
+  references=matrix/neo/internal/o1.RecoveryState
+  ^references=matrix/neo/internal/o1.PredefinedRecoveryAutomata,matrix/neo/internal/o1.RecoveryInstance.IsTerminal,matrix/neo/internal/o1.ValidateRecoveryAutomaton
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.StateInitial kind=const
   digest=b3:977027bc1aa5f51845d1587941d4fa7d633c28d6f1316cb7f0c44be748b775d7 file=neo/internal/o1/recovery.go range=24:24 lang=go exported=true byte_range=766:808
   sig=o1.RecoveryState
 EDGES
+  references=matrix/neo/internal/o1.RecoveryState
+  ^references=matrix/neo/internal/o1.PredefinedRecoveryAutomata
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.StateProbing kind=const
   digest=b3:195529684f73e9a6d6b88aab2c030db57d0c1ad2b35c5ebd64eb0c3b573e9af5 file=neo/internal/o1/recovery.go range=25:25 lang=go exported=true byte_range=810:852
   sig=o1.RecoveryState
 EDGES
+  references=matrix/neo/internal/o1.RecoveryState
+  ^references=matrix/neo/internal/o1.PredefinedRecoveryAutomata
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.StateReconciling kind=const
   digest=b3:bc4ac6e7f08d6aedb96eba0226c2b34d8ebc4a56e0167f67ffb4e7ec3156937d file=neo/internal/o1/recovery.go range=27:27 lang=go exported=true byte_range=900:946
   sig=o1.RecoveryState
 EDGES
+  references=matrix/neo/internal/o1.RecoveryState
+  ^references=matrix/neo/internal/o1.PredefinedRecoveryAutomata
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.StateRepairing kind=const
   digest=b3:6d6794b83db4f31f6d7214e34d1e9e11532342873c00b674419ace220ecf9f04 file=neo/internal/o1/recovery.go range=26:26 lang=go exported=true byte_range=854:898
   sig=o1.RecoveryState
 EDGES
+  references=matrix/neo/internal/o1.RecoveryState
+  ^references=matrix/neo/internal/o1.PredefinedRecoveryAutomata
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.StateTerminal kind=const
   digest=b3:a600404b81418754cd7fec00ad5a7e6aa8a503d43f62f43ab16433d5f660dd4b file=neo/internal/o1/recovery.go range=30:30 lang=go exported=true byte_range=1039:1082
   sig=o1.RecoveryState
 EDGES
+  references=matrix/neo/internal/o1.RecoveryState
+  ^references=matrix/neo/internal/o1.PredefinedRecoveryAutomata,matrix/neo/internal/o1.RecoveryInstance.IsTerminal,matrix/neo/internal/o1.ValidateRecoveryAutomaton
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.StateVerifying kind=const
   digest=b3:ff7ae81faf7e8d0c33c9f26620d5de45fef820b51479566ef91ecb12cca97145 file=neo/internal/o1/recovery.go range=28:28 lang=go exported=true byte_range=948:992
   sig=o1.RecoveryState
 EDGES
+  references=matrix/neo/internal/o1.RecoveryState
+  ^references=matrix/neo/internal/o1.PredefinedRecoveryAutomata
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.SupAskUser kind=const
   digest=b3:cec7205c15de6f626b16f648e02728c72d5a4bb74af8ae485908ad9877a822d8 file=neo/internal/o1/supervisor.go range=19:19 lang=go exported=true byte_range=581:623
   sig=o1.SupervisorAction
 EDGES
+  references=matrix/neo/internal/o1.SupervisorAction
+  ^references=matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.SupComplete kind=const
   digest=b3:409f30f46929eee11dc7d88ba9d5b987ee635fe7230b4ac253dada4fe66b0389 file=neo/internal/o1/supervisor.go range=21:21 lang=go exported=true byte_range=665:707
   sig=o1.SupervisorAction
 EDGES
+  references=matrix/neo/internal/o1.SupervisorAction
+  ^references=matrix/neo/internal/agent.Agent.finalizeO1,matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.SupContinue kind=const
   digest=b3:d1e9136205170dc9d818005ab6dc05bcbe3f71ab76d215977873a17ddb376544 file=neo/internal/o1/supervisor.go range=16:16 lang=go exported=true byte_range=450:492
   sig=o1.SupervisorAction
 EDGES
+  references=matrix/neo/internal/o1.SupervisorAction
+  ^references=matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.SupReconcile kind=const
   digest=b3:61d9e7e6d84bf0c04a4c5f4e9d306bf6b93428bec2399521b433e5de8597488e file=neo/internal/o1/supervisor.go range=18:18 lang=go exported=true byte_range=536:579
   sig=o1.SupervisorAction
 EDGES
+  references=matrix/neo/internal/o1.SupervisorAction
+  ^references=matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.SupRepair kind=const
   digest=b3:9c4556d514b53bda88ede332aceb9cc006e0f5e5ecde2f506f4480521d10be9c file=neo/internal/o1/supervisor.go range=17:17 lang=go exported=true byte_range=494:534
   sig=o1.SupervisorAction
 EDGES
+  references=matrix/neo/internal/o1.SupervisorAction
+  ^references=matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.SupStop kind=const
   digest=b3:951609cea89cdaede979924041f3810084c15e2555c9e8f8c4716ec7580950b3 file=neo/internal/o1/supervisor.go range=20:20 lang=go exported=true byte_range=625:663
   sig=o1.SupervisorAction
 EDGES
+  references=matrix/neo/internal/o1.SupervisorAction
+  ^references=matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.Supervisor kind=type
@@ -2817,6 +3231,7 @@ NODE id=matrix/neo/internal/o1.Supervisor kind=type
   doc=Supervisor evaluates the run state and produces a decision.\nPer O1 req.10 ac.1: decisions are driven solely by contract state,\nledger, outcomes, recovery automata, authorization, and verifier evidence.
 EDGES
   contains=matrix/neo/internal/o1.Supervisor.Evaluate
+  ^references=matrix/neo/internal/agent.Agent.LastO1Decision,matrix/neo/internal/agent.Agent.finalizeO1,matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.Supervisor.Evaluate kind=method
@@ -2824,7 +3239,11 @@ NODE id=matrix/neo/internal/o1.Supervisor.Evaluate kind=method
   sig=func (s *Supervisor) Evaluate(\n	contract TaskContract,\n	ledger *RunLedger,\n	graph *VerifierGraph,\n	proof *ProofManifest,\n	lastOutcome *OperationOutcome,\n) SupervisorDecision
   doc=Evaluate produces a supervisor decision from the current run state.
 EDGES
+  calls=matrix/neo/internal/o1.OperationOutcome.AllowsTransition,matrix/neo/internal/o1.OperationOutcome.IsTerminal,matrix/neo/internal/o1.ProofManifest.IsComplete,matrix/neo/internal/o1.RenderOutcome,matrix/neo/internal/o1.TaskContract.ReadyForMutation,matrix/neo/internal/o1.VerifierGraph.AllClosed,matrix/neo/internal/o1.classifyTerminal
+  references=matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.OperationOutcome.AllowsTransition,matrix/neo/internal/o1.OperationOutcome.IsTerminal,matrix/neo/internal/o1.ProofManifest,matrix/neo/internal/o1.ProofManifest.IsComplete,matrix/neo/internal/o1.RenderOutcome,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.SupAskUser,matrix/neo/internal/o1.SupComplete,matrix/neo/internal/o1.SupContinue,matrix/neo/internal/o1.SupReconcile,matrix/neo/internal/o1.SupRepair,matrix/neo/internal/o1.SupStop,matrix/neo/internal/o1.Supervisor,matrix/neo/internal/o1.SupervisorDecision,matrix/neo/internal/o1.TaskContract,matrix/neo/internal/o1.TaskContract.ReadyForMutation,matrix/neo/internal/o1.TermComplete,matrix/neo/internal/o1.TransitionReconcile,matrix/neo/internal/o1.TransitionRepair,matrix/neo/internal/o1.TransitionRetry,matrix/neo/internal/o1.VerifierGraph,matrix/neo/internal/o1.VerifierGraph.AllClosed,matrix/neo/internal/o1.classifyTerminal,matrix/neo/internal/o1.complete,matrix/neo/internal/o1.contract,matrix/neo/internal/o1.graph,matrix/neo/internal/o1.lastOutcome,matrix/neo/internal/o1.ledger,matrix/neo/internal/o1.proof,matrix/neo/internal/o1.termClass
   ^contains=matrix/neo/internal/o1.Supervisor
+  ^calls=matrix/neo/internal/agent.Agent.LastO1Decision,matrix/neo/internal/agent.Agent.finalizeO1
+  ^references=matrix/neo/internal/agent.Agent.LastO1Decision,matrix/neo/internal/agent.Agent.finalizeO1
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.SupervisorAction kind=type
@@ -2832,6 +3251,7 @@ NODE id=matrix/neo/internal/o1.SupervisorAction kind=type
   sig=type SupervisorAction string
   doc=SupervisorAction is the decision the supervisor makes after evaluating\nthe ledger, outcomes, recovery automata, and verifiers.\nPer O1 req.10 ac.1: decisions come solely from typed state, not narration.
 EDGES
+  ^references=matrix/neo/internal/o1.SupAskUser,matrix/neo/internal/o1.SupComplete,matrix/neo/internal/o1.SupContinue,matrix/neo/internal/o1.SupReconcile,matrix/neo/internal/o1.SupRepair,matrix/neo/internal/o1.SupStop,matrix/neo/internal/o1.SupervisorDecision
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.SupervisorDecision kind=type
@@ -2840,6 +3260,8 @@ NODE id=matrix/neo/internal/o1.SupervisorDecision kind=type
   doc=SupervisorDecision is the structured output of the supervisor.
 EDGES
   contains=matrix/neo/internal/o1.SupervisorDecision#Action,matrix/neo/internal/o1.SupervisorDecision#Evidence,matrix/neo/internal/o1.SupervisorDecision#Reason,matrix/neo/internal/o1.SupervisorDecision#RecoveryHint,matrix/neo/internal/o1.SupervisorDecision#Terminal
+  references=matrix/neo/internal/o1.SupervisorAction,matrix/neo/internal/o1.TerminalClass
+  ^references=matrix/neo/internal/agent.Agent.LastO1Decision,matrix/neo/internal/o1.RenderTerminalMessage,matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.SupervisorDecision#Action kind=field
@@ -2877,6 +3299,8 @@ NODE id=matrix/neo/internal/o1.TaskContract kind=type
   sig=type TaskContract struct {\n	ID			string		`json:"id"`\n	Version			uint64		`json:"version"`\n	Objective		Clause		`json:"objective"`\n	Deliverables		[]Clause	`json:"deliverables"`\n	Constraints		[]Clause	`json:"constraints"`\n	NonGoals		[]Clause	`json:"non_goals"`\n	RequiredCapabilities	[]string	`json:"required_capabilities"`\n	Criteria		[]Criterion	`json:"acceptance_criteria"`\n	Gates			[]Gate		`json:"authorization_gates"`\n	Ambiguities		[]Ambiguity	`json:"ambiguities"`\n	CompletionPredicate	string		`json:"completion_predicate"`\n	Revisions		[]Revision	`json:"revisions"`\n}
 EDGES
   contains=matrix/neo/internal/o1.TaskContract#Ambiguities,matrix/neo/internal/o1.TaskContract#CompletionPredicate,matrix/neo/internal/o1.TaskContract#Constraints,matrix/neo/internal/o1.TaskContract#Criteria,matrix/neo/internal/o1.TaskContract#Deliverables,matrix/neo/internal/o1.TaskContract#Gates,matrix/neo/internal/o1.TaskContract#ID,matrix/neo/internal/o1.TaskContract#NonGoals,matrix/neo/internal/o1.TaskContract#Objective,matrix/neo/internal/o1.TaskContract#RequiredCapabilities,matrix/neo/internal/o1.TaskContract#Revisions,matrix/neo/internal/o1.TaskContract#Version,matrix/neo/internal/o1.TaskContract.ReadyForMutation,matrix/neo/internal/o1.TaskContract.Render,matrix/neo/internal/o1.TaskContract.Revise
+  references=matrix/neo/internal/o1.Ambiguity,matrix/neo/internal/o1.Clause,matrix/neo/internal/o1.Criterion,matrix/neo/internal/o1.Gate,matrix/neo/internal/o1.Revision
+  ^references=matrix/neo/internal/agent.contractNeedsCapability,matrix/neo/internal/agent.turn,matrix/neo/internal/o1.Compile,matrix/neo/internal/o1.CompileRuntimeCapabilities,matrix/neo/internal/o1.Supervisor.Evaluate,matrix/neo/internal/o1.TaskContract.ReadyForMutation,matrix/neo/internal/o1.TaskContract.Render,matrix/neo/internal/o1.TaskContract.Revise
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.TaskContract#Ambiguities kind=field
@@ -2955,13 +3379,17 @@ NODE id=matrix/neo/internal/o1.TaskContract.ReadyForMutation kind=method
   digest=b3:95bd2c2996f0ed497a03e4ae64080ea8a4138a4cdd2cc83b715cb4ba2f43b868 file=neo/internal/o1/contract.go range=224:234 lang=go exported=true byte_range=8431:8698
   sig=func (c TaskContract) ReadyForMutation() bool
 EDGES
+  references=matrix/neo/internal/o1.TaskContract,matrix/neo/internal/o1.ambiguity,matrix/neo/internal/o1.c
   ^contains=matrix/neo/internal/o1.TaskContract
+  ^calls=matrix/neo/internal/o1.Supervisor.Evaluate
+  ^references=matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.TaskContract.Render kind=method
   digest=b3:c3ab3e54485a6f18610f80b8fcbb99daa38d90a6fcffedbf6785b8e4ff85e421 file=neo/internal/o1/contract.go range=259:262 lang=go exported=true byte_range=9373:9512
   sig=func (c TaskContract) Render() string
 EDGES
+  references=matrix/neo/internal/o1.TaskContract,matrix/neo/internal/o1.b,matrix/neo/internal/o1.c
   ^contains=matrix/neo/internal/o1.TaskContract
   ^defines=matrix/neo/internal/o1/contract.go
 
@@ -2969,49 +3397,67 @@ NODE id=matrix/neo/internal/o1.TaskContract.Revise kind=method
   digest=b3:80b4dd76ec0d1f3e599cc46357181e94d671753d1ab2c732d9cc0042bed60e07 file=neo/internal/o1/contract.go range=236:257 lang=go exported=true byte_range=8700:9371
   sig=func (c TaskContract) Revise(steering string) TaskContract
 EDGES
+  calls=matrix/neo/internal/o1.itoa
+  references=matrix/neo/internal/o1.Clause,matrix/neo/internal/o1.Revision,matrix/neo/internal/o1.TaskContract,matrix/neo/internal/o1.User,matrix/neo/internal/o1.c,matrix/neo/internal/o1.criterion,matrix/neo/internal/o1.itoa,matrix/neo/internal/o1.proof,matrix/neo/internal/o1.steering
   ^contains=matrix/neo/internal/o1.TaskContract
+  ^calls=matrix/neo/internal/agent.Agent.drainInbox
+  ^references=matrix/neo/internal/agent.Agent.drainInbox
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.TermBudgetExhausted kind=const
   digest=b3:882893ba380ecde25f185c5ef0939334da4699f6003a0826a4e558e2d0c3b430 file=neo/internal/o1/supervisor.go range=37:37 lang=go exported=true byte_range=1341:1400
   sig=o1.TerminalClass
 EDGES
+  references=matrix/neo/internal/o1.TerminalClass
+  ^references=matrix/neo/internal/o1.RenderTerminalMessage
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.TermComplete kind=const
   digest=b3:bf404ab2240b7e54875a8274c215e8e5a006a88e726d8d13fea2000ec9bf5274 file=neo/internal/o1/supervisor.go range=31:31 lang=go exported=true byte_range=970:1021
   sig=o1.TerminalClass
 EDGES
+  references=matrix/neo/internal/o1.TerminalClass
+  ^references=matrix/neo/internal/o1.RenderTerminalMessage,matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.TermExternalUnavail kind=const
   digest=b3:b6ae2f9b630f21f31a048c9e5fb7166c297efa6d97c0bb9f16cbb9da3d83795f file=neo/internal/o1/supervisor.go range=34:34 lang=go exported=true byte_range=1155:1221
   sig=o1.TerminalClass
 EDGES
+  references=matrix/neo/internal/o1.TerminalClass
+  ^references=matrix/neo/internal/o1.RenderTerminalMessage,matrix/neo/internal/o1.classifyTerminal
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.TermInternalFailure kind=const
   digest=b3:88f8e1b5321c864bb1f39322e7dd6180cc38cb229dfbac361c830c2831b7c1fe file=neo/internal/o1/supervisor.go range=36:36 lang=go exported=true byte_range=1280:1339
   sig=o1.TerminalClass
 EDGES
+  references=matrix/neo/internal/o1.TerminalClass
+  ^references=matrix/neo/internal/o1.RenderTerminalMessage,matrix/neo/internal/o1.classifyTerminal
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.TermIrreducibleAmbiguity kind=const
   digest=b3:f73923b1490b3ce5d4ba60a260c57460f66b5fa064c248f10ab6495c30336ebf file=neo/internal/o1/supervisor.go range=33:33 lang=go exported=true byte_range=1089:1153
   sig=o1.TerminalClass
 EDGES
+  references=matrix/neo/internal/o1.TerminalClass
+  ^references=matrix/neo/internal/o1.RenderTerminalMessage
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.TermMissingAuth kind=const
   digest=b3:a3e7c8fbb4e8da868bb3108f59183d0697232bddaeaebb972639a63ee237284e file=neo/internal/o1/supervisor.go range=32:32 lang=go exported=true byte_range=1023:1087
   sig=o1.TerminalClass
 EDGES
+  references=matrix/neo/internal/o1.TerminalClass
+  ^references=matrix/neo/internal/o1.RenderTerminalMessage,matrix/neo/internal/o1.classifyTerminal
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.TermSafePartial kind=const
   digest=b3:ab6331ce96a6920eebb3ea5d325d5016830750e6372552656696fe5c4fef80f0 file=neo/internal/o1/supervisor.go range=35:35 lang=go exported=true byte_range=1223:1278
   sig=o1.TerminalClass
 EDGES
+  references=matrix/neo/internal/o1.TerminalClass
+  ^references=matrix/neo/internal/o1.RenderTerminalMessage,matrix/neo/internal/o1.classifyTerminal
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.TerminalClass kind=type
@@ -3019,6 +3465,7 @@ NODE id=matrix/neo/internal/o1.TerminalClass kind=type
   sig=type TerminalClass string
   doc=TerminalClass distinguishes the reason a run ended.\nPer O1 req.10 ac.4: distinguish completed work, residual effects,\nmissing authorization, external unavailability, irreducible ambiguity,\nand internal failure.
 EDGES
+  ^references=matrix/neo/internal/o1.SupervisorDecision,matrix/neo/internal/o1.TermBudgetExhausted,matrix/neo/internal/o1.TermComplete,matrix/neo/internal/o1.TermExternalUnavail,matrix/neo/internal/o1.TermInternalFailure,matrix/neo/internal/o1.TermIrreducibleAmbiguity,matrix/neo/internal/o1.TermMissingAuth,matrix/neo/internal/o1.TermSafePartial,matrix/neo/internal/o1.classifyTerminal
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.TerminalProof kind=type
@@ -3027,6 +3474,7 @@ NODE id=matrix/neo/internal/o1.TerminalProof kind=type
   doc=TerminalProof captures the final run result.
 EDGES
   contains=matrix/neo/internal/o1.TerminalProof#Evidence,matrix/neo/internal/o1.TerminalProof#ProofHash,matrix/neo/internal/o1.TerminalProof#Success,matrix/neo/internal/o1.TerminalProof#Summary
+  ^references=matrix/neo/internal/agent.Agent.finalizeO1,matrix/neo/internal/o1.RunLedger,matrix/neo/internal/o1.RunLedger.EvidenceSnapshot,matrix/neo/internal/o1.RunLedger.SetTerminal
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.TerminalProof#Evidence kind=field
@@ -3057,18 +3505,24 @@ NODE id=matrix/neo/internal/o1.TransitionAskUser kind=const
   digest=b3:3805453bacade64ae2a3eb04212617261d227be82cfe24473833b500b284c433 file=neo/internal/o1/outcome.go range=40:40 lang=go exported=true byte_range=1417:1468
   sig=o1.TransitionKind
 EDGES
+  references=matrix/neo/internal/o1.TransitionKind
+  ^references=matrix/neo/internal/o1.OperationOutcome.Verify
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.TransitionAuthorizedFix kind=const
   digest=b3:621e4a5cdbeed9e44ec2cbc6617af80ecf9e174dc383d0926669a2be37e19275 file=neo/internal/o1/outcome.go range=41:41 lang=go exported=true byte_range=1470:1527
   sig=o1.TransitionKind
 EDGES
+  references=matrix/neo/internal/o1.TransitionKind
+  ^references=matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.PredefinedRecoveryAutomata
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.TransitionDecompose kind=const
   digest=b3:61804b537de8e5cc07ce382a29511e87a3952fdcbf8026828cbf5f63e7ffceae file=neo/internal/o1/outcome.go range=38:38 lang=go exported=true byte_range=1314:1366
   sig=o1.TransitionKind
 EDGES
+  references=matrix/neo/internal/o1.TransitionKind
+  ^references=matrix/neo/internal/o1.OperationOutcome.Verify
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.TransitionKind kind=type
@@ -3076,42 +3530,55 @@ NODE id=matrix/neo/internal/o1.TransitionKind kind=type
   sig=type TransitionKind string
   doc=TransitionKind is a bounded recovery transition the owning capability allows.
 EDGES
+  ^references=matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.OperationOutcome.AllowsTransition,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.OutcomeBuilder.AllowTransition,matrix/neo/internal/o1.RecoveryDecision,matrix/neo/internal/o1.RecoveryInstance.Advance,matrix/neo/internal/o1.RecoveryInstance.AdvanceWhen,matrix/neo/internal/o1.RecoveryRecord,matrix/neo/internal/o1.RecoveryTransition,matrix/neo/internal/o1.RenderOutcome,matrix/neo/internal/o1.TransitionAskUser,matrix/neo/internal/o1.TransitionAuthorizedFix,matrix/neo/internal/o1.TransitionDecompose,matrix/neo/internal/o1.TransitionProbe,matrix/neo/internal/o1.TransitionReconcile,matrix/neo/internal/o1.TransitionRepair,matrix/neo/internal/o1.TransitionRetry,matrix/neo/internal/o1.TransitionStop,matrix/neo/internal/runtime/loop.incompleteRecovery
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.TransitionProbe kind=const
   digest=b3:552d85ba4f36ba2597ff12fbd0860ae89bde37392e000bbb79f833371be0ef00 file=neo/internal/o1/outcome.go range=42:42 lang=go exported=true byte_range=1529:1577
   sig=o1.TransitionKind
 EDGES
+  references=matrix/neo/internal/o1.TransitionKind
+  ^references=matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.PredefinedRecoveryAutomata
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.TransitionReconcile kind=const
   digest=b3:af3d60ee755bcbe2ba95c16cedcd1fbacc1869e1458438e5885298776201362a file=neo/internal/o1/outcome.go range=37:37 lang=go exported=true byte_range=1260:1312
   sig=o1.TransitionKind
 EDGES
+  references=matrix/neo/internal/o1.TransitionKind
+  ^references=matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.PredefinedRecoveryAutomata,matrix/neo/internal/o1.SelectRecoveryTransition,matrix/neo/internal/o1.Supervisor.Evaluate,matrix/neo/internal/runtime/loop.incompleteRecovery
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.TransitionRepair kind=const
   digest=b3:c827ec774fc00bc14e059b5aef6433811ca808baaed5626f6319fba54ccbf244 file=neo/internal/o1/outcome.go range=36:36 lang=go exported=true byte_range=1209:1258
   sig=o1.TransitionKind
 EDGES
+  references=matrix/neo/internal/o1.TransitionKind
+  ^references=matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.PredefinedRecoveryAutomata,matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.TransitionRetry kind=const
   digest=b3:bcdab635daf815cd169b3a1a264c5d051d16b7bc6c909a43c1e9e83f19b1529c file=neo/internal/o1/outcome.go range=35:35 lang=go exported=true byte_range=1159:1207
   sig=o1.TransitionKind
 EDGES
+  references=matrix/neo/internal/o1.TransitionKind
+  ^references=matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.recordO1ToolOutcome,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.PredefinedRecoveryAutomata,matrix/neo/internal/o1.SelectRecoveryTransition,matrix/neo/internal/o1.Supervisor.Evaluate,matrix/neo/internal/runtime/loop.incompleteRecovery
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.TransitionStop kind=const
   digest=b3:2da725b9edbd72a391bf6de21275cb39433c8346e790770ea6108cba232467ee file=neo/internal/o1/outcome.go range=39:39 lang=go exported=true byte_range=1368:1415
   sig=o1.TransitionKind
 EDGES
+  references=matrix/neo/internal/o1.TransitionKind
+  ^references=matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.PredefinedRecoveryAutomata,matrix/neo/internal/o1.SelectRecoveryTransition
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.Unknown kind=const
   digest=b3:9e1abc076d12476bba57cedd077b4a65f058c504fa9e525e8de4abb1a7333f99 file=neo/internal/o1/registry.go range=21:21 lang=go exported=true byte_range=392:421
   sig=o1.Class
 EDGES
+  references=matrix/neo/internal/o1.Class
+  ^references=matrix/neo/internal/o1.Registry.Check
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.Usage kind=type
@@ -3120,6 +3587,7 @@ NODE id=matrix/neo/internal/o1.Usage kind=type
   doc=Usage captures token consumption per turn.
 EDGES
   contains=matrix/neo/internal/o1.Usage#CompletionTokens,matrix/neo/internal/o1.Usage#PromptTokens,matrix/neo/internal/o1.Usage#TotalTokens
+  ^references=matrix/neo/internal/o1.ConformChatResult,matrix/neo/internal/o1.NormalizedGeneration
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.Usage#CompletionTokens kind=field
@@ -3144,6 +3612,8 @@ NODE id=matrix/neo/internal/o1.User kind=const
   digest=b3:8bbc5affd1afbb53401502e3d28fd78cfb8faf99147421636666974c2fb67751 file=neo/internal/o1/contract.go range=17:17 lang=go exported=true byte_range=295:325
   sig=o1.Provenance
 EDGES
+  references=matrix/neo/internal/o1.Provenance
+  ^references=matrix/neo/internal/o1.Compile,matrix/neo/internal/o1.TaskContract.Revise
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.ValidateConversationTruth kind=func
@@ -3151,6 +3621,10 @@ NODE id=matrix/neo/internal/o1.ValidateConversationTruth kind=func
   sig=func ValidateConversationTruth(messages []llm.Message) error
   doc=ValidateConversationTruth maps the production transcript type onto O1\nchannels and rejects ambiguous or leaked history before model assembly.
 EDGES
+  calls=matrix/neo/internal/llm.Message.IsGuidance,matrix/neo/internal/o1.ValidateNoLeakage
+  references=matrix/neo/internal/llm.Message,matrix/neo/internal/llm.Message.IsGuidance,matrix/neo/internal/llm.RoleAssistant,matrix/neo/internal/llm.RoleTool,matrix/neo/internal/llm.RoleUser,matrix/neo/internal/o1.ChannelAssistant,matrix/neo/internal/o1.ChannelGuidance,matrix/neo/internal/o1.ChannelToolResult,matrix/neo/internal/o1.ChannelUser,matrix/neo/internal/o1.ContextMessage,matrix/neo/internal/o1.ValidateNoLeakage,matrix/neo/internal/o1.i,matrix/neo/internal/o1.item,matrix/neo/internal/o1.leaked,matrix/neo/internal/o1.messages,matrix/neo/internal/o1.msg,matrix/neo/internal/o1.typed
+  ^calls=matrix/neo/internal/agent.Agent.prepareWindow
+  ^references=matrix/neo/internal/agent.Agent.prepareWindow
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ValidateMutation kind=func
@@ -3158,6 +3632,7 @@ NODE id=matrix/neo/internal/o1.ValidateMutation kind=func
   sig=func ValidateMutation(req MutationRequest, maxPayloadBytes int64) error
   doc=ValidateMutation checks a mutation request for structural validity before\nexecution. Per O1 req.5 ac.1 and ac.2: reject oversized payloads and\ninvalid ranges before model-visible execution.
 EDGES
+  references=matrix/neo/internal/o1.MutateAppend,matrix/neo/internal/o1.MutateCreate,matrix/neo/internal/o1.MutateFinalize,matrix/neo/internal/o1.MutatePatch,matrix/neo/internal/o1.MutateReadRange,matrix/neo/internal/o1.MutateReplace,matrix/neo/internal/o1.MutateRollback,matrix/neo/internal/o1.MutationRequest,matrix/neo/internal/o1.limit,matrix/neo/internal/o1.maxPayloadBytes,matrix/neo/internal/o1.req
   ^defines=matrix/neo/internal/o1/mutation.go
 
 NODE id=matrix/neo/internal/o1.ValidateNoLeakage kind=func
@@ -3165,6 +3640,10 @@ NODE id=matrix/neo/internal/o1.ValidateNoLeakage kind=func
   sig=func ValidateNoLeakage(messages []ContextMessage) []ContextMessage
   doc=ValidateNoLeakage checks that no runtime-generated or non-assistant content\nis tagged as assistant-authored. This is the O1 guard against the specific\nfailure class where supervisor prose, guidance, or progress text enters the\nmodel's conversation as if the model itself wrote it.
 EDGES
+  calls=matrix/neo/internal/o1.MessageChannel.IsAssistantAuthored
+  references=matrix/neo/internal/o1.ContextMessage,matrix/neo/internal/o1.MessageChannel.IsAssistantAuthored,matrix/neo/internal/o1.messages,matrix/neo/internal/o1.msg,matrix/neo/internal/o1.violations
+  ^calls=matrix/neo/internal/o1.ValidateConversationTruth
+  ^references=matrix/neo/internal/o1.ValidateConversationTruth
   ^defines=matrix/neo/internal/o1/context.go
 
 NODE id=matrix/neo/internal/o1.ValidateRecoveryAutomaton kind=func
@@ -3172,36 +3651,49 @@ NODE id=matrix/neo/internal/o1.ValidateRecoveryAutomaton kind=func
   sig=func ValidateRecoveryAutomaton(auto RecoveryAutomaton) error
   doc=ValidateRecoveryAutomaton rejects missing bounds, unknown states, empty\nguards, and non-terminal graphs before a capability can own the automaton.
 EDGES
+  references=matrix/neo/internal/o1.RecoveryAutomaton,matrix/neo/internal/o1.StateComplete,matrix/neo/internal/o1.StateTerminal,matrix/neo/internal/o1.auto,matrix/neo/internal/o1.hasTerminal,matrix/neo/internal/o1.i,matrix/neo/internal/o1.tr
+  ^calls=matrix/neo/internal/o1.ExtensionGate.Unmet
+  ^references=matrix/neo/internal/o1.ExtensionGate.Unmet
   ^defines=matrix/neo/internal/o1/recovery.go
 
 NODE id=matrix/neo/internal/o1.VerifierArtifact kind=const
   digest=b3:7bc0d0b5f94e08938f33d9a457d84a17de7a543148791cb5ec9b6f9653df6221 file=neo/internal/o1/verifier.go range=16:16 lang=go exported=true byte_range=313:356
   sig=o1.VerifierKind
 EDGES
+  references=matrix/neo/internal/o1.VerifierKind
+  ^references=matrix/neo/internal/o1.inferVerifierKinds
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierDelivery kind=const
   digest=b3:03421dd682b8a0a856bad210b6030fbf9dd51a40c5e5201f31d15986dcf2b82d file=neo/internal/o1/verifier.go range=23:23 lang=go exported=true byte_range=619:662
   sig=o1.VerifierKind
 EDGES
+  references=matrix/neo/internal/o1.VerifierKind
+  ^references=matrix/neo/internal/o1.inferVerifierKinds
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierEffect kind=const
   digest=b3:7aac433ce90293325b2776082c21f36141a655ca77924e06401f086dcff83341 file=neo/internal/o1/verifier.go range=22:22 lang=go exported=true byte_range=576:617
   sig=o1.VerifierKind
 EDGES
+  references=matrix/neo/internal/o1.VerifierKind
+  ^references=matrix/neo/internal/o1.inferVerifierKinds
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierFact kind=const
   digest=b3:5fe0e6de227529a44bf326d5b46e2a72a7da7be15c4530d383e246391ce3023d file=neo/internal/o1/verifier.go range=18:18 lang=go exported=true byte_range=403:442
   sig=o1.VerifierKind
 EDGES
+  references=matrix/neo/internal/o1.VerifierKind
+  ^references=matrix/neo/internal/o1.inferVerifierKinds
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierFramework kind=const
   digest=b3:1128962c80691f99f47e9946c83e43be0806a3e4d1b7b24ddae4708c1d5b36f3 file=neo/internal/o1/verifier.go range=19:19 lang=go exported=true byte_range=444:488
   sig=o1.VerifierKind
 EDGES
+  references=matrix/neo/internal/o1.VerifierKind
+  ^references=matrix/neo/internal/o1.inferVerifierKinds
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierGraph kind=type
@@ -3210,6 +3702,8 @@ NODE id=matrix/neo/internal/o1.VerifierGraph kind=type
   doc=VerifierGraph maps acceptance criteria to executable verifiers.\nPer O1 req.9 ac.1: every measurable criterion compiles to verifiers.
 EDGES
   contains=matrix/neo/internal/o1.VerifierGraph#Verifiers,matrix/neo/internal/o1.VerifierGraph.AllClosed,matrix/neo/internal/o1.VerifierGraph.GenerateProofManifest,matrix/neo/internal/o1.VerifierGraph.OpenCriteria,matrix/neo/internal/o1.VerifierGraph.RecordResult
+  references=matrix/neo/internal/o1.CriterionVerifier
+  ^references=matrix/neo/internal/agent.findO1Verifier,matrix/neo/internal/agent.turn,matrix/neo/internal/o1.CompileVerifiers,matrix/neo/internal/o1.Supervisor.Evaluate,matrix/neo/internal/o1.VerifierGraph.AllClosed,matrix/neo/internal/o1.VerifierGraph.GenerateProofManifest,matrix/neo/internal/o1.VerifierGraph.OpenCriteria,matrix/neo/internal/o1.VerifierGraph.RecordResult
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierGraph#Verifiers kind=field
@@ -3223,7 +3717,10 @@ NODE id=matrix/neo/internal/o1.VerifierGraph.AllClosed kind=method
   sig=func (vg VerifierGraph) AllClosed() bool
   doc=AllClosed returns true when every criterion has passed all its verifiers.
 EDGES
+  references=matrix/neo/internal/o1.VerifierGraph,matrix/neo/internal/o1.v,matrix/neo/internal/o1.vg
   ^contains=matrix/neo/internal/o1.VerifierGraph
+  ^calls=matrix/neo/internal/agent.Agent.LastO1Decision,matrix/neo/internal/o1.Supervisor.Evaluate,matrix/neo/internal/o1.VerifierGraph.GenerateProofManifest
+  ^references=matrix/neo/internal/agent.Agent.LastO1Decision,matrix/neo/internal/o1.Supervisor.Evaluate,matrix/neo/internal/o1.VerifierGraph.GenerateProofManifest
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierGraph.GenerateProofManifest kind=method
@@ -3231,7 +3728,11 @@ NODE id=matrix/neo/internal/o1.VerifierGraph.GenerateProofManifest kind=method
   sig=func (vg VerifierGraph) GenerateProofManifest(runID, contractID string, effectsReconciled, delivered bool) ProofManifest
   doc=GenerateProofManifest produces the proof manifest from the verifier graph.
 EDGES
+  calls=matrix/neo/internal/o1.ContentHash,matrix/neo/internal/o1.VerifierGraph.AllClosed
+  references=matrix/neo/internal/o1.ContentHash,matrix/neo/internal/o1.ProofManifest,matrix/neo/internal/o1.VerifierGraph,matrix/neo/internal/o1.VerifierGraph.AllClosed,matrix/neo/internal/o1.b,matrix/neo/internal/o1.contractID,matrix/neo/internal/o1.delivered,matrix/neo/internal/o1.effectsReconciled,matrix/neo/internal/o1.pm,matrix/neo/internal/o1.runID,matrix/neo/internal/o1.vg
   ^contains=matrix/neo/internal/o1.VerifierGraph
+  ^calls=matrix/neo/internal/agent.Agent.LastO1Decision,matrix/neo/internal/agent.Agent.finalizeO1
+  ^references=matrix/neo/internal/agent.Agent.LastO1Decision,matrix/neo/internal/agent.Agent.finalizeO1
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierGraph.OpenCriteria kind=method
@@ -3239,6 +3740,7 @@ NODE id=matrix/neo/internal/o1.VerifierGraph.OpenCriteria kind=method
   sig=func (vg VerifierGraph) OpenCriteria() []string
   doc=OpenCriteria returns the IDs of criteria that are not yet closed.
 EDGES
+  references=matrix/neo/internal/o1.VerifierGraph,matrix/neo/internal/o1.out,matrix/neo/internal/o1.v,matrix/neo/internal/o1.vg
   ^contains=matrix/neo/internal/o1.VerifierGraph
   ^defines=matrix/neo/internal/o1/verifier.go
 
@@ -3247,7 +3749,10 @@ NODE id=matrix/neo/internal/o1.VerifierGraph.RecordResult kind=method
   sig=func (vg *VerifierGraph) RecordResult(r VerifierResult)
   doc=RecordResult records a verifier result and closes the criterion if all\nrequired verifier kinds have passed.
 EDGES
+  references=matrix/neo/internal/o1.VerifierGraph,matrix/neo/internal/o1.VerifierResult,matrix/neo/internal/o1.allKindsVerified,matrix/neo/internal/o1.i,matrix/neo/internal/o1.kindPassed,matrix/neo/internal/o1.r,matrix/neo/internal/o1.requiredKind,matrix/neo/internal/o1.res,matrix/neo/internal/o1.vg
   ^contains=matrix/neo/internal/o1.VerifierGraph
+  ^calls=matrix/neo/internal/agent.Agent.finalizeO1
+  ^references=matrix/neo/internal/agent.Agent.finalizeO1
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierKind kind=type
@@ -3255,12 +3760,15 @@ NODE id=matrix/neo/internal/o1.VerifierKind kind=type
   sig=type VerifierKind string
   doc=VerifierKind describes the class of verification.
 EDGES
+  ^references=matrix/neo/internal/o1.CriterionVerifier,matrix/neo/internal/o1.VerifierArtifact,matrix/neo/internal/o1.VerifierDelivery,matrix/neo/internal/o1.VerifierEffect,matrix/neo/internal/o1.VerifierFact,matrix/neo/internal/o1.VerifierFramework,matrix/neo/internal/o1.VerifierPolicy,matrix/neo/internal/o1.VerifierResult,matrix/neo/internal/o1.VerifierSemantic,matrix/neo/internal/o1.VerifierVisual,matrix/neo/internal/o1.inferVerifierKinds
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierPolicy kind=const
   digest=b3:66fc46fa9f7164d7257abeb7b173793658b86379c3c6d549ae10de75a224013c file=neo/internal/o1/verifier.go range=20:20 lang=go exported=true byte_range=490:531
   sig=o1.VerifierKind
 EDGES
+  references=matrix/neo/internal/o1.VerifierKind
+  ^references=matrix/neo/internal/o1.inferVerifierKinds
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierResult kind=type
@@ -3269,6 +3777,8 @@ NODE id=matrix/neo/internal/o1.VerifierResult kind=type
   doc=VerifierResult is the typed outcome of one verifier execution.
 EDGES
   contains=matrix/neo/internal/o1.VerifierResult#CriterionID,matrix/neo/internal/o1.VerifierResult#Evidence,matrix/neo/internal/o1.VerifierResult#Passed,matrix/neo/internal/o1.VerifierResult#RepairState,matrix/neo/internal/o1.VerifierResult#VerifierKind
+  references=matrix/neo/internal/o1.VerifierKind
+  ^references=matrix/neo/internal/agent.Agent.finalizeO1,matrix/neo/internal/agent.joinO1Evidence,matrix/neo/internal/o1.CriterionVerifier,matrix/neo/internal/o1.VerifierGraph.RecordResult
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierResult#CriterionID kind=field
@@ -3305,12 +3815,15 @@ NODE id=matrix/neo/internal/o1.VerifierSemantic kind=const
   digest=b3:6aa8baaf64169a6e531f7c035f90a4980d69b7379831881f63f4645666b2a4fc file=neo/internal/o1/verifier.go range=17:17 lang=go exported=true byte_range=358:401
   sig=o1.VerifierKind
 EDGES
+  references=matrix/neo/internal/o1.VerifierKind
+  ^references=matrix/neo/internal/o1.inferVerifierKinds
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.VerifierVisual kind=const
   digest=b3:464c4ebc94a1c8c60a34c220290339bebc4a3e4e27911553ae4f558691311a51 file=neo/internal/o1/verifier.go range=21:21 lang=go exported=true byte_range=533:574
   sig=o1.VerifierKind
 EDGES
+  references=matrix/neo/internal/o1.VerifierKind
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.agentManifest kind=type
@@ -3318,6 +3831,7 @@ NODE id=matrix/neo/internal/o1.agentManifest kind=type
   sig=type agentManifest struct {\n	Servers []struct {\n		Alias	string	`json:"alias"`\n		Tools	[]struct {\n			Name string `json:"name"`\n		}	`json:"tools"`\n	} `json:"servers"`\n}
 EDGES
   contains=matrix/neo/internal/o1.agentManifest#Servers
+  ^references=matrix/neo/internal/o1.ManifestOperations
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.agentManifest#Servers kind=field
@@ -3330,6 +3844,9 @@ NODE id=matrix/neo/internal/o1.boundedInputs kind=func
   digest=b3:b8201e38eb640a26674186ad258b8e67629154a3e6abdcd842b3bff9586a02d9 file=neo/internal/o1/qualification.go range=243:253 lang=go exported=false byte_range=10340:10540
   sig=func boundedInputs(bounds map[string]string) bool
 EDGES
+  references=matrix/neo/internal/o1.bound,matrix/neo/internal/o1.bounds,matrix/neo/internal/o1.field
+  ^calls=matrix/neo/internal/o1.ExtensionGate.Unmet
+  ^references=matrix/neo/internal/o1.ExtensionGate.Unmet
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.capabilityGroups kind=var
@@ -3337,120 +3854,185 @@ NODE id=matrix/neo/internal/o1.capabilityGroups kind=var
   sig=map[string][]string
   doc=capabilityGroups maps capability names to operation prefixes.\nSynthetic tools map to their constant names; MCP tools map by alias prefix.
 EDGES
+  ^references=matrix/neo/internal/o1.matchesCapability
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.checkPrecondition kind=func
   digest=b3:8a9734972cefb6a9cfc139ceffa72d3736da58938e75f6e82808604f2b1daafd file=neo/internal/o1/manifest.go range=225:261 lang=go exported=false byte_range=7755:9321
   sig=func checkPrecondition(env PreflightEnvironment, pre string) bool
 EDGES
+  calls=matrix/neo/internal/o1.versionAtLeast
+  references=matrix/neo/internal/o1.PreflightEnvironment,matrix/neo/internal/o1.credName,matrix/neo/internal/o1.env,matrix/neo/internal/o1.err,matrix/neo/internal/o1.ok,matrix/neo/internal/o1.parts,matrix/neo/internal/o1.permName,matrix/neo/internal/o1.pre,matrix/neo/internal/o1.required,matrix/neo/internal/o1.toolName,matrix/neo/internal/o1.ver,matrix/neo/internal/o1.versionAtLeast
+  ^calls=matrix/neo/internal/o1.RunPreflight
+  ^references=matrix/neo/internal/o1.RunPreflight
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.classifyTerminal kind=func
   digest=b3:452a536fb1a1fe2745304f64941d775ee90e108036ca907a2a7eb4beecbbef45 file=neo/internal/o1/supervisor.go range=127:143 lang=go exported=false byte_range=4653:5037
   sig=func classifyTerminal(o *OperationOutcome) TerminalClass
 EDGES
+  references=matrix/neo/internal/o1.LayerAuthorization,matrix/neo/internal/o1.LayerCancellation,matrix/neo/internal/o1.LayerPolicy,matrix/neo/internal/o1.LayerProcess,matrix/neo/internal/o1.LayerTransport,matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.TermExternalUnavail,matrix/neo/internal/o1.TermInternalFailure,matrix/neo/internal/o1.TermMissingAuth,matrix/neo/internal/o1.TermSafePartial,matrix/neo/internal/o1.TerminalClass,matrix/neo/internal/o1.o
+  ^calls=matrix/neo/internal/o1.Supervisor.Evaluate
+  ^references=matrix/neo/internal/o1.Supervisor.Evaluate
   ^defines=matrix/neo/internal/o1/supervisor.go
 
 NODE id=matrix/neo/internal/o1.cleanRules kind=func
   digest=b3:40efe5eda5cdabeb3ca0252a54be2f39f77fada0143cb3bdf70f7a6c1a2930c7 file=neo/internal/o1/contract.go range=264:276 lang=go exported=false byte_range=9514:9779
   sig=func cleanRules(in []string) []string
 EDGES
+  references=matrix/neo/internal/o1.in,matrix/neo/internal/o1.out,matrix/neo/internal/o1.rule,matrix/neo/internal/o1.seen
+  ^calls=matrix/neo/internal/o1.Compile
+  ^references=matrix/neo/internal/o1.Compile
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.containsAny kind=func
   digest=b3:bb091454b506e2e60686dca2ed7e90f94f6f7c9422156787752bebbd01dff0c7 file=neo/internal/o1/runtime.go range=271:278 lang=go exported=false byte_range=9730:9897
   sig=func containsAny(value string, needles ...string) bool
 EDGES
+  references=matrix/neo/internal/o1.needle,matrix/neo/internal/o1.needles,matrix/neo/internal/o1.value
+  ^calls=matrix/neo/internal/o1.inferVerifierKinds,matrix/neo/internal/o1.manifestFromTool
+  ^references=matrix/neo/internal/o1.inferVerifierKinds,matrix/neo/internal/o1.manifestFromTool
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.containsString kind=func
   digest=b3:c2bfebfdf012390d93518384759b2a3504822df4c6bc47567f67216465e75e10 file=neo/internal/o1/qualification.go range=255:262 lang=go exported=false byte_range=10542:10689
   sig=func containsString(values []string, want string) bool
 EDGES
+  references=matrix/neo/internal/o1.value,matrix/neo/internal/o1.values,matrix/neo/internal/o1.want
+  ^calls=matrix/neo/internal/o1.ExtensionGate.Unmet,matrix/neo/internal/o1.extensionOutcomesCovered
+  ^references=matrix/neo/internal/o1.ExtensionGate.Unmet,matrix/neo/internal/o1.extensionOutcomesCovered
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.criteriaForCapabilities kind=func
   digest=b3:5c053e1b38e4c5c86cfb229fa8c4559c9a2c86cffa49dbc82f106be4d6880f92 file=neo/internal/o1/contract.go range=129:160 lang=go exported=false byte_range=4916:6193
   sig=func criteriaForCapabilities(capabilities []string) []Criterion
 EDGES
+  references=matrix/neo/internal/o1.Criterion,matrix/neo/internal/o1.capabilities,matrix/neo/internal/o1.capability,matrix/neo/internal/o1.criteria,matrix/neo/internal/o1.has
+  ^calls=matrix/neo/internal/o1.Compile
+  ^references=matrix/neo/internal/o1.Compile
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.extensionHazardsCovered kind=func
   digest=b3:920bacfe24c2fa6733faa923fccfe1fecb5281fec579ec6226ea27f0d23e5648 file=neo/internal/o1/qualification.go range=210:225 lang=go exported=false byte_range=9299:9796
   sig=func extensionHazardsCovered(registry *Registry, operation string) bool
 EDGES
+  calls=matrix/neo/internal/o1.Registry.Check
+  references=matrix/neo/internal/o1.Registry,matrix/neo/internal/o1.Registry.Check,matrix/neo/internal/o1.err,matrix/neo/internal/o1.filtered,matrix/neo/internal/o1.hazard,matrix/neo/internal/o1.matched,matrix/neo/internal/o1.operation,matrix/neo/internal/o1.registry
+  ^calls=matrix/neo/internal/o1.ExtensionGate.Unmet
+  ^references=matrix/neo/internal/o1.ExtensionGate.Unmet
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.extensionOutcomesCovered kind=func
   digest=b3:6c297b5d75e8f0696dc0f01227164f955aa4fa48adafc5ff32c600a0f930f322 file=neo/internal/o1/qualification.go range=227:241 lang=go exported=false byte_range=9798:10338
   sig=func extensionOutcomesCovered(operation string, variants []string, outcomes []OperationOutcome) bool
 EDGES
+  calls=matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.containsString
+  references=matrix/neo/internal/o1.OperationOutcome,matrix/neo/internal/o1.OperationOutcome.Verify,matrix/neo/internal/o1.containsString,matrix/neo/internal/o1.hasFailure,matrix/neo/internal/o1.hasSuccess,matrix/neo/internal/o1.operation,matrix/neo/internal/o1.outcome,matrix/neo/internal/o1.outcomes,matrix/neo/internal/o1.variants
+  ^calls=matrix/neo/internal/o1.ExtensionGate.Unmet
+  ^references=matrix/neo/internal/o1.ExtensionGate.Unmet
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.hasManifest kind=func
   digest=b3:dbb482f66e20be1197525220417c27ee0524e686aa6f9d20bbe3f8f2fec71000 file=neo/internal/o1/runtime.go range=147:154 lang=go exported=false byte_range=5405:5592
   sig=func hasManifest(manifests []OperationManifest, operation string) bool
 EDGES
+  references=matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.manifest,matrix/neo/internal/o1.manifests,matrix/neo/internal/o1.operation
+  ^calls=matrix/neo/internal/o1.CompileRuntimeCapabilities
+  ^references=matrix/neo/internal/o1.CompileRuntimeCapabilities
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.inferVerifierKinds kind=func
   digest=b3:c0728652d1f8774ba85b8f1cd77f07edfdfc029bbda5d318e3eb1bd8c7a0cee6 file=neo/internal/o1/verifier.go range=64:99 lang=go exported=false byte_range=2002:3223
   sig=func inferVerifierKinds(c Criterion) []VerifierKind
 EDGES
+  calls=matrix/neo/internal/o1.containsAny
+  references=matrix/neo/internal/o1.Criterion,matrix/neo/internal/o1.VerifierArtifact,matrix/neo/internal/o1.VerifierDelivery,matrix/neo/internal/o1.VerifierEffect,matrix/neo/internal/o1.VerifierFact,matrix/neo/internal/o1.VerifierFramework,matrix/neo/internal/o1.VerifierKind,matrix/neo/internal/o1.VerifierPolicy,matrix/neo/internal/o1.VerifierSemantic,matrix/neo/internal/o1.c,matrix/neo/internal/o1.containsAny,matrix/neo/internal/o1.kinds,matrix/neo/internal/o1.stmt
+  ^calls=matrix/neo/internal/o1.CompileVerifiers
+  ^references=matrix/neo/internal/o1.CompileVerifiers
   ^defines=matrix/neo/internal/o1/verifier.go
 
 NODE id=matrix/neo/internal/o1.itoa kind=func
   digest=b3:5010656ea8566951a4222ef93746755bac8babee3af293a75d04ca0a431432ab file=neo/internal/o1/contract.go range=278:290 lang=go exported=false byte_range=9781:9946
   sig=func itoa(v int) string
 EDGES
+  references=matrix/neo/internal/o1.b,matrix/neo/internal/o1.i,matrix/neo/internal/o1.v
+  ^calls=matrix/neo/internal/o1.Compile,matrix/neo/internal/o1.TaskContract.Revise
+  ^references=matrix/neo/internal/o1.Compile,matrix/neo/internal/o1.TaskContract.Revise
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.manifestFromTool kind=func
   digest=b3:be2f60a7c72cb532eff7243d0961ad15e9ab1dd5533f6adf3510e13b95b7b657 file=neo/internal/o1/runtime.go range=215:251 lang=go exported=false byte_range=7615:9208
   sig=func manifestFromTool(schema llm.Tool) OperationManifest
 EDGES
+  calls=matrix/neo/internal/o1.containsAny,matrix/neo/internal/o1.schemaBounds
+  references=matrix/neo/internal/llm.Tool,matrix/neo/internal/o1.Conditional,matrix/neo/internal/o1.EffectDestructive,matrix/neo/internal/o1.EffectExternal,matrix/neo/internal/o1.EffectMoney,matrix/neo/internal/o1.EffectReadOnly,matrix/neo/internal/o1.EffectWrite,matrix/neo/internal/o1.Irreversible,matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.RecoverySpec,matrix/neo/internal/o1.Reversible,matrix/neo/internal/o1.containsAny,matrix/neo/internal/o1.effect,matrix/neo/internal/o1.lower,matrix/neo/internal/o1.name,matrix/neo/internal/o1.reversibility,matrix/neo/internal/o1.schema,matrix/neo/internal/o1.schemaBounds
+  ^calls=matrix/neo/internal/o1.CompileAllCapabilities,matrix/neo/internal/o1.CompileRuntimeCapabilities
+  ^references=matrix/neo/internal/o1.CompileAllCapabilities,matrix/neo/internal/o1.CompileRuntimeCapabilities
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.matchesCapability kind=func
   digest=b3:1495da2da7fe6d132d096d07612c2cd6c8ca40ca1e432aff70016acc8f6b79ec file=neo/internal/o1/manifest.go range=154:169 lang=go exported=false byte_range=5246:5583
   sig=func matchesCapability(operation string, need map[string]bool) bool
 EDGES
+  references=matrix/neo/internal/o1.cap,matrix/neo/internal/o1.capabilityGroups,matrix/neo/internal/o1.need,matrix/neo/internal/o1.operation,matrix/neo/internal/o1.prefix,matrix/neo/internal/o1.prefixes
+  ^calls=matrix/neo/internal/o1.ManifestSet.SelectMinimal
+  ^references=matrix/neo/internal/o1.ManifestSet.SelectMinimal
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.requestContainsTerm kind=func
   digest=b3:893470f487e2dff94aab62b3113257a4e9f09aa04e6cb723a484b3949251d2be file=neo/internal/o1/contract.go range=198:222 lang=go exported=false byte_range=7780:8429
   sig=func requestContainsTerm(request, term string) bool
 EDGES
+  references=matrix/neo/internal/o1.after,matrix/neo/internal/o1.afterOK,matrix/neo/internal/o1.beforeOK,matrix/neo/internal/o1.index,matrix/neo/internal/o1.isWord,matrix/neo/internal/o1.r,matrix/neo/internal/o1.request,matrix/neo/internal/o1.start,matrix/neo/internal/o1.term
+  ^calls=matrix/neo/internal/o1.requiredCapabilities,matrix/neo/internal/o1.selectExplicitProvider
+  ^references=matrix/neo/internal/o1.requiredCapabilities,matrix/neo/internal/o1.selectExplicitProvider
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.requiredCapabilities kind=func
   digest=b3:28ec39fb4da3451664a8c7b4e92c0ef44f338fee8f40da1b78b242ce261df41d file=neo/internal/o1/contract.go range=162:196 lang=go exported=false byte_range=6195:7778
   sig=func requiredCapabilities(request string) []string
 EDGES
+  calls=matrix/neo/internal/o1.requestContainsTerm
+  references=matrix/neo/internal/o1.capability,matrix/neo/internal/o1.group,matrix/neo/internal/o1.groups,matrix/neo/internal/o1.hasExecution,matrix/neo/internal/o1.hasFilesystem,matrix/neo/internal/o1.lower,matrix/neo/internal/o1.out,matrix/neo/internal/o1.request,matrix/neo/internal/o1.requestContainsTerm,matrix/neo/internal/o1.term
+  ^calls=matrix/neo/internal/o1.Compile
+  ^references=matrix/neo/internal/o1.Compile,matrix/neo/internal/o1.ManifestSet.SelectMinimal
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.schemaBounds kind=func
   digest=b3:8ecad1f159ce52d930eebad1e79b8f4929586b3ae17be4a1cc7cdf5436539c02 file=neo/internal/o1/runtime.go range=253:269 lang=go exported=false byte_range=9210:9728
   sig=func schemaBounds(parameters map[string]interface{}) map[string]string
 EDGES
+  references=matrix/neo/internal/o1.additional,matrix/neo/internal/o1.name,matrix/neo/internal/o1.names,matrix/neo/internal/o1.ok,matrix/neo/internal/o1.out,matrix/neo/internal/o1.parameters,matrix/neo/internal/o1.required,matrix/neo/internal/o1.value
+  ^calls=matrix/neo/internal/o1.manifestFromTool
+  ^references=matrix/neo/internal/o1.manifestFromTool
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.selectExplicitProvider kind=func
   digest=b3:b84b62d4d98292b2d6353a2fb76a8a2b47e5ecba06527fced7490797ad6f7798 file=neo/internal/o1/runtime.go range=122:145 lang=go exported=false byte_range=4665:5403
   sig=func selectExplicitProvider(objective string, manifests *ManifestSet) []OperationManifest
 EDGES
+  calls=matrix/neo/internal/o1.ManifestSet.Get,matrix/neo/internal/o1.ManifestSet.Operations,matrix/neo/internal/o1.requestContainsTerm
+  references=matrix/neo/internal/o1.ManifestSet,matrix/neo/internal/o1.ManifestSet.Get,matrix/neo/internal/o1.ManifestSet.Operations,matrix/neo/internal/o1.OperationManifest,matrix/neo/internal/o1.alias,matrix/neo/internal/o1.lower,matrix/neo/internal/o1.manifest,matrix/neo/internal/o1.manifests,matrix/neo/internal/o1.objective,matrix/neo/internal/o1.ok,matrix/neo/internal/o1.operation,matrix/neo/internal/o1.providers,matrix/neo/internal/o1.requestContainsTerm,matrix/neo/internal/o1.selected
+  ^calls=matrix/neo/internal/o1.CompileRuntimeCapabilities
+  ^references=matrix/neo/internal/o1.CompileRuntimeCapabilities
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.validateToolSchema kind=func
   digest=b3:f2c79361f577c6d43717a1068e760a00d888f1447fa55a7700e89a0c17be68f2 file=neo/internal/o1/runtime.go range=202:213 lang=go exported=false byte_range=7043:7613
   sig=func validateToolSchema(schema llm.Tool) error
 EDGES
+  references=matrix/neo/internal/llm.Tool,matrix/neo/internal/o1.err,matrix/neo/internal/o1.schema
+  ^calls=matrix/neo/internal/o1.CompileAllCapabilities,matrix/neo/internal/o1.CompileRuntimeCapabilities
+  ^references=matrix/neo/internal/o1.CompileAllCapabilities,matrix/neo/internal/o1.CompileRuntimeCapabilities
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.versionAtLeast kind=func
   digest=b3:ffa355e4fd90d10e6e84c9046ef7b3fdf20f2872c3fe4d063d21c226cea9ae7e file=neo/internal/o1/manifest.go range=263:308 lang=go exported=false byte_range=9323:10136
   sig=func versionAtLeast(actual, minimum string) bool
 EDGES
+  references=matrix/neo/internal/o1.a,matrix/neo/internal/o1.actual,matrix/neo/internal/o1.av,matrix/neo/internal/o1.cut,matrix/neo/internal/o1.err,matrix/neo/internal/o1.i,matrix/neo/internal/o1.m,matrix/neo/internal/o1.minimum,matrix/neo/internal/o1.mv,matrix/neo/internal/o1.n,matrix/neo/internal/o1.ok,matrix/neo/internal/o1.out,matrix/neo/internal/o1.parse,matrix/neo/internal/o1.part,matrix/neo/internal/o1.parts,matrix/neo/internal/o1.v
+  ^calls=matrix/neo/internal/o1.checkPrecondition
+  ^references=matrix/neo/internal/o1.checkPrecondition
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1/context.go kind=file

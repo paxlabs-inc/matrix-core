@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/neo/provider kind=package
   digest=b3:de9b070ad15078a1900b18d5de69e782df66f45551c5629f881f86756c41f7ee file=neo/provider range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/provider/mimo.go
+  imports=matrix/neo/internal/runtime/protocol,matrix/neo/internal/runtime/provider
   ^contains=mod:matrix/neo
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/modelclient
 
 NODE id=matrix/neo/provider.MiMoChatEndpoint kind=const
   digest=b3:ffb6d94eac320b7ff0f45785cc6297767ff2b394128dce6cab796157746eaf93 file=neo/provider/mimo.go range=19:20 lang=go exported=true byte_range=430:569
   sig=untyped string
   doc=MiMoChatEndpoint is Xiaomi's native MiMo chat-completions endpoint.
 EDGES
+  ^references=matrix/neo/provider.NewMiMo,matrix/workforce/cmd/workforced.loadConfig
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.MiMoClient kind=type
@@ -19,6 +22,8 @@ NODE id=matrix/neo/provider.MiMoClient kind=type
   doc=MiMoClient is Neo's production MiMo adapter and transport composition.
 EDGES
   contains=matrix/neo/provider.MiMoClient#call,matrix/neo/provider.MiMoClient#capture,matrix/neo/provider.MiMoClient#generator,matrix/neo/provider.MiMoClient.Complete
+  references=matrix/neo/internal/runtime/provider.MiMoGenerator,matrix/neo/provider.exchangeCapture
+  ^references=matrix/neo/provider.MiMoClient.Complete,matrix/neo/provider.NewMiMo,matrix/workforce/internal/modelclient.Client
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.MiMoClient#call kind=field
@@ -44,7 +49,11 @@ NODE id=matrix/neo/provider.MiMoClient.Complete kind=method
   sig=func (client *MiMoClient) Complete(ctx context.Context, request MiMoRequest) (MiMoExchange, error)
   doc=Complete executes one stateless MiMo exchange and returns replay evidence.
 EDGES
+  calls=matrix/neo/internal/runtime/provider.MiMoGenerator.Generate,matrix/neo/provider.exchangeCapture.reset,matrix/neo/provider.exchangeCapture.take
+  references=matrix/neo/internal/runtime/protocol.GenerationRequest,matrix/neo/internal/runtime/protocol.Message,matrix/neo/internal/runtime/protocol.RoleSystem,matrix/neo/internal/runtime/protocol.RoleUser,matrix/neo/internal/runtime/provider.MiMoGenerator.Generate,matrix/neo/provider.MiMoClient,matrix/neo/provider.MiMoExchange,matrix/neo/provider.MiMoRequest,matrix/neo/provider.MiMoV25ProModel,matrix/neo/provider.TokenUsage,matrix/neo/provider.client,matrix/neo/provider.ctx,matrix/neo/provider.err,matrix/neo/provider.exchangeCapture.reset,matrix/neo/provider.exchangeCapture.take,matrix/neo/provider.generation,matrix/neo/provider.rawRequest,matrix/neo/provider.rawResponse,matrix/neo/provider.request
   ^contains=matrix/neo/provider.MiMoClient
+  ^calls=matrix/workforce/internal/modelclient.Client.Complete
+  ^references=matrix/workforce/internal/modelclient.Client.Complete
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.MiMoConfig kind=type
@@ -53,6 +62,7 @@ NODE id=matrix/neo/provider.MiMoConfig kind=type
   doc=MiMoConfig binds one credentialed Neo MiMo connector.
 EDGES
   contains=matrix/neo/provider.MiMoConfig#APIKey,matrix/neo/provider.MiMoConfig#ActorDID,matrix/neo/provider.MiMoConfig#Endpoint,matrix/neo/provider.MiMoConfig#IdleTimeout,matrix/neo/provider.MiMoConfig#MaxAttempts,matrix/neo/provider.MiMoConfig#SlotLabel
+  ^references=matrix/neo/provider.NewMiMo,matrix/workforce/internal/modelclient.New
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.MiMoConfig#APIKey kind=field
@@ -97,6 +107,8 @@ NODE id=matrix/neo/provider.MiMoExchange kind=type
   doc=MiMoExchange retains exact request and response evidence with normalized output.
 EDGES
   contains=matrix/neo/provider.MiMoExchange#Content,matrix/neo/provider.MiMoExchange#Reasoning,matrix/neo/provider.MiMoExchange#Request,matrix/neo/provider.MiMoExchange#Response,matrix/neo/provider.MiMoExchange#Usage
+  references=matrix/neo/provider.TokenUsage
+  ^references=matrix/neo/provider.MiMoClient.Complete
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.MiMoExchange#Content kind=field
@@ -135,6 +147,7 @@ NODE id=matrix/neo/provider.MiMoRequest kind=type
   doc=MiMoRequest is one stateless system-and-user generation request.
 EDGES
   contains=matrix/neo/provider.MiMoRequest#MaxOutputTokens,matrix/neo/provider.MiMoRequest#System,matrix/neo/provider.MiMoRequest#User
+  ^references=matrix/neo/provider.MiMoClient.Complete,matrix/workforce/internal/modelclient.Client.Complete
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.MiMoRequest#MaxOutputTokens kind=field
@@ -160,6 +173,7 @@ NODE id=matrix/neo/provider.MiMoTemperature kind=const
   sig=untyped float
   doc=MiMoTemperature is Neo's production sampling temperature.
 EDGES
+  ^references=matrix/workforce/cmd/workforced.loadConfig,matrix/workforce/internal/modelclient.New
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.MiMoTopP kind=const
@@ -167,6 +181,7 @@ NODE id=matrix/neo/provider.MiMoTopP kind=const
   sig=untyped float
   doc=MiMoTopP is Neo's production nucleus-sampling ceiling.
 EDGES
+  ^references=matrix/workforce/internal/modelclient.New
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.MiMoV25ProModel kind=const
@@ -174,6 +189,7 @@ NODE id=matrix/neo/provider.MiMoV25ProModel kind=const
   sig=untyped string
   doc=MiMoV25ProModel is the sole production text-model identity.
 EDGES
+  ^references=matrix/neo/provider.MiMoClient.Complete,matrix/workforce/cmd/workforced.loadConfig,matrix/workforce/internal/modelclient.New
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.NewMiMo kind=func
@@ -181,6 +197,10 @@ NODE id=matrix/neo/provider.NewMiMo kind=func
   sig=func NewMiMo(config MiMoConfig) (*MiMoClient, error)
   doc=NewMiMo constructs Neo's MiMo connector without exposing Neo cognitive state.
 EDGES
+  calls=matrix/neo/internal/runtime/provider.New,matrix/neo/internal/runtime/provider.NewMiMoGenerator
+  references=matrix/neo/internal/runtime/provider.Config,matrix/neo/internal/runtime/provider.MiMoAdapter,matrix/neo/internal/runtime/provider.New,matrix/neo/internal/runtime/provider.NewMiMoGenerator,matrix/neo/provider.MiMoChatEndpoint,matrix/neo/provider.MiMoClient,matrix/neo/provider.MiMoConfig,matrix/neo/provider.adapter,matrix/neo/provider.base,matrix/neo/provider.capture,matrix/neo/provider.client,matrix/neo/provider.config,matrix/neo/provider.defaultMiMoAttempts,matrix/neo/provider.endpoint,matrix/neo/provider.err,matrix/neo/provider.exchangeCapture,matrix/neo/provider.exchangeCapture.set,matrix/neo/provider.generator,matrix/neo/provider.maxAttempts,matrix/neo/provider.ok
+  ^calls=matrix/workforce/internal/modelclient.New
+  ^references=matrix/workforce/internal/modelclient.New
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.TokenUsage kind=type
@@ -189,6 +209,7 @@ NODE id=matrix/neo/provider.TokenUsage kind=type
   doc=TokenUsage is the provider-reported token accounting for one exchange.
 EDGES
   contains=matrix/neo/provider.TokenUsage#CachedTokens,matrix/neo/provider.TokenUsage#CompletionTokens,matrix/neo/provider.TokenUsage#PromptTokens,matrix/neo/provider.TokenUsage#ReasoningTokens,matrix/neo/provider.TokenUsage#TotalTokens
+  ^references=matrix/neo/provider.MiMoClient.Complete,matrix/neo/provider.MiMoExchange
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.TokenUsage#CachedTokens kind=field
@@ -225,6 +246,7 @@ NODE id=matrix/neo/provider.defaultMiMoAttempts kind=const
   digest=b3:77ce472c6204683a6b671b1b212ce3fb3b0d58d977cb06e47b440327a215684d file=neo/provider/mimo.go range=25:25 lang=go exported=false byte_range=743:766
   sig=untyped int
 EDGES
+  ^references=matrix/neo/provider.NewMiMo
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.exchangeCapture kind=type
@@ -232,6 +254,7 @@ NODE id=matrix/neo/provider.exchangeCapture kind=type
   sig=type exchangeCapture struct {\n	mu		sync.Mutex\n	request		[]byte\n	response	[]byte\n}
 EDGES
   contains=matrix/neo/provider.exchangeCapture#mu,matrix/neo/provider.exchangeCapture#request,matrix/neo/provider.exchangeCapture#response,matrix/neo/provider.exchangeCapture.reset,matrix/neo/provider.exchangeCapture.set,matrix/neo/provider.exchangeCapture.take
+  ^references=matrix/neo/provider.MiMoClient,matrix/neo/provider.NewMiMo,matrix/neo/provider.exchangeCapture.reset,matrix/neo/provider.exchangeCapture.set,matrix/neo/provider.exchangeCapture.take
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.exchangeCapture#mu kind=field
@@ -256,21 +279,31 @@ NODE id=matrix/neo/provider.exchangeCapture.reset kind=method
   digest=b3:c888cb180e80c4f91bfc8e74cb718b0bc75d1ca6970b8e20431b214f5039cc65 file=neo/provider/mimo.go range=159:161 lang=go exported=false byte_range=4970:5036
   sig=func (capture *exchangeCapture) reset()
 EDGES
+  calls=matrix/neo/provider.exchangeCapture.set
+  references=matrix/neo/provider.capture,matrix/neo/provider.exchangeCapture,matrix/neo/provider.exchangeCapture.set
   ^contains=matrix/neo/provider.exchangeCapture
+  ^calls=matrix/neo/provider.MiMoClient.Complete
+  ^references=matrix/neo/provider.MiMoClient.Complete
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.exchangeCapture.set kind=method
   digest=b3:bd1a69ee7949d1b8f3332b916c99819ba3281f8f459e39cde55a3b6d1a68df75 file=neo/provider/mimo.go range=152:157 lang=go exported=false byte_range=4753:4968
   sig=func (capture *exchangeCapture) set(request, response []byte)
 EDGES
+  references=matrix/neo/provider.capture,matrix/neo/provider.exchangeCapture,matrix/neo/provider.request,matrix/neo/provider.response
   ^contains=matrix/neo/provider.exchangeCapture
+  ^calls=matrix/neo/internal/runtime/provider.Client.recordRawExchange,matrix/neo/provider.exchangeCapture.reset
+  ^references=matrix/neo/provider.NewMiMo,matrix/neo/provider.exchangeCapture.reset
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider.exchangeCapture.take kind=method
   digest=b3:a9bfc183bc62d11ce64c5b16d36cc4c137f4ccb42eef2022df331c6260e56c24 file=neo/provider/mimo.go range=163:167 lang=go exported=false byte_range=5038:5233
   sig=func (capture *exchangeCapture) take() ([]byte, []byte)
 EDGES
+  references=matrix/neo/provider.capture,matrix/neo/provider.exchangeCapture
   ^contains=matrix/neo/provider.exchangeCapture
+  ^calls=matrix/neo/provider.MiMoClient.Complete
+  ^references=matrix/neo/provider.MiMoClient.Complete
   ^defines=matrix/neo/provider/mimo.go
 
 NODE id=matrix/neo/provider/mimo.go kind=file

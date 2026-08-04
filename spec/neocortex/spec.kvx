@@ -27,13 +27,14 @@ overview = "See design.body.md for the architectural stance (deterministic state
 include  = "design.body.md"
 
 [delivery]
-implementation_posture = "Waves 1-5 are done; Task 6.1 is in progress. The old cortex module remains the live substrate for every consumer until the wave-7 cutover gate; nothing under this spec may degrade the running system before that gate."
-verification_posture = "Simulation, sanitizer, fuzz and property evidence is implementation evidence. Live qualification means the real cortexd process serving the real neo daemon on real conversations with the regression corpus green. Neither is a substitute for the other; task completion gates name which is required."
+implementation_posture = "Waves 1-6 are done; Task 7.1 is in progress. The owner approved a hard Neo cutover on 2026-08-04: Neo has one memory substrate, Neocortex, and no source, build, configuration, runtime, or fallback path may reach matrix/cortex."
+verification_posture = "Simulation, sanitizer, fuzz and property evidence is implementation evidence. Live qualification means the real cortexd process serving the real neo daemon on real conversations with the regression corpus green. Structural qualification additionally proves matrix/cortex is absent from Neo's module graph and reachable source. Neither is a substitute for the other; task completion gates name which is required."
 
 [owner_decisions]
 dependency_changes_2026_08_03 = "OWNER YES: dependencies may be added, upgraded, replaced, or removed when needed to implement all Neocortex waves. Every change remains vendored, version-pinned, digest-pinned, justified against the architecture, and subject to every other agent.lock.kvx constraint. This authorization does not approve event-taxonomy drift, cutover, old-cortex deletion, destructive migration, or production actions."
 belief_gate_admission_2026_08_04 = "OWNER YES: sanction pre-commit policy admission for assertion, consolidation, and retract socket batches while retaining actual belief mutation exclusively in APPLY. Policy rejections at APPLY are deterministic skips so legacy or imported logs cannot make replay unbootable. Admission uses the same deterministic gate semantics against the current projection snapshot plus earlier events in the batch and performs no durable mutation."
 neo_execution_surface_2026_08_04 = "OWNER YES: qualification failures caused by Cortex-v1 compensation code are corrected as one Neo execution-surface change: native local tools shadow overlapping legacy coding schemas; Build admission selects or creates a project in one operation; prediction mismatch applies only to genuinely uncertain network/search probes; shell output is structured and retrievable; multi-file mutation is atomic; coding state is a typed durable checkpoint; model-authored recovery narration is private and public progress consists only of deterministic runtime milestones. Evidence-backed Cortex-v1 compensations may be removed, but this does not authorize cutover, production restart, deployment, or old-cortex deletion."
+neo_neocortex_only_cutover_2026_08_04 = "OWNER YES: Neo SHALL have no Cortex-v1 awareness or reachability. Remove matrix/cortex from Neo source, tests, module graph, configuration, CLI, construction, proxy, and fallback paths. Neocortex is Neo's sole memory engine; loss of Cortex-v1 memories is accepted. An unavailable Neocortex surfaces an honest typed failure and SHALL never fall back. Cortex v1 may remain temporarily outside Neo only when unreachable from Neo. This authorizes the Neo cutover and supersedes the earlier migration-preservation and side-by-side requirements; it does not authorize production restart, deployment, or deletion of unrelated consumers' data."
 
 [protocol]
 step_0_lock      = "Read spec/neocortex/agent.lock.kvx IN FULL before any other file, every session. It is the build-conduct contract: any implementation that drifts from it, from spec.kvx, or from schematics.md is a FAILED task — stop and surface, never silently adapt."
@@ -134,13 +135,13 @@ ac_4 = "THE dependency set SHALL be exactly the vendored, digest-pinned list in 
 ac_5 = "EVERY untrusted input boundary (socket frames, imported events, on-disk state) SHALL be verified before trust; a malformed input SHALL produce a typed rejection, never undefined behavior, proven by fuzz corpora kept in-tree."
 
 [req.9]
-title = "Migration, absorption, and gated cutover"
-story = "As the owner, I want the rewrite to land without losing a byte of memory or destabilizing the live agent, so cutover is an evidence-backed decision, not a leap."
-ac_1 = "A Go export tool SHALL walk the existing Pebble store with the current decode and vault unseal paths and replay it through a cortexd import gate: sessions become conversation events, memories become assertion events with synthesized provenance, tool events map one to one, and edges are preserved; an import fidelity report SHALL account for every source record."
-ac_2 = "NEO SHALL run old and new substrates side by side behind the memory seam under an explicit flag, defaulting to the old cortex; the fixed-incident regression corpus and the INV-1 property SHALL be green on the new substrate before any default flips."
+title = "Hard Neo cutover, absorption, and structural Cortex-v1 exclusion"
+story = "As the owner, I want Neo to know only Neocortex, so Cortex-v1 cannot influence, fail, or silently recover any Neo turn."
+ac_1 = "NO Neo source file, test, module dependency, build target, configuration key, command-line flag, or runtime construction path SHALL import, name as a selectable substrate, open, query, write, proxy, or fall back to matrix/cortex. A structural CI gate SHALL prove the exclusion."
+ac_2 = "NEOCORTEX SHALL be Neo's sole memory engine with no substrate selector. Startup SHALL require a valid Neocortex client configuration; an unavailable or unhealthy cortexd SHALL produce an honest typed failure and SHALL never route to Cortex v1."
 ac_3 = "THE hello-world sessionjournal lane SHALL be absorbed: its event kinds and exact provider-byte sidecar are promoted into the log taxonomy, and no second event-sourcing system SHALL remain on the cutover path."
 ac_4 = "EXTERNAL consumers (executor daemon cortex routes, bridge, MCP tooling) SHALL be re-pointed to cortexd clients; the MCL compile-cache seed SHALL derive from the neocortex checkpoint root by an owner-approved rule."
-ac_5 = "CUTOVER and any deletion of the old cortex module SHALL each require explicit owner YES; until then the old module stays intact and every consumer keeps a working path."
+ac_5 = "CORTEX v1 MAY remain temporarily for unrelated consumers, but it SHALL be outside Neo's source and module graph and unreachable from the Neo process. Deletion or migration of unrelated consumers remains separately owner-gated."
 
 # ================================ TASKS ==================================
 
@@ -348,27 +349,27 @@ requires = ["6.1"]
 
 [task.7]
 section = "W7 — Migration, absorption, and gated cutover"
-title   = "Export, side-by-side qualification, consumer re-point, owner gates"
+title   = "Neo hard cutover, absorption, consumer re-point"
 status  = "in_progress"
 
 [task.7.1]
-title  = "Pebble export and the import fidelity proof"
-status = "in_progress"
+title  = "Remove Cortex v1 from Neo completely"
+status = "done"
 wave   = 7
-do_1   = "Build the Go exporter walking the existing Pebble store with current decode and vault unseal: sessions to conversation events, memories to assertion events with synthesized provenance, tool events one to one, edges preserved; stream through the cortexd import gate."
-do_2   = "Produce the fidelity report accounting for every source record (imported, transformed, skipped-with-reason); zero unaccounted records is the gate."
-do_3   = "Prove round-trip semantics on a real production-shaped store copy: post-import recall surfaces the same memories the old substrate surfaced for a probe suite, and MEMORY VERIFIED holds on the new root."
-reqs   = ["9.1"]
+do_1   = "Remove matrix/cortex from every Neo source file, test, module requirement, configuration field, CLI flag, constructor, runtime branch, and proxy path. Remove the substrate selector and all silent fallback behavior."
+do_2   = "Make Neo's memory contracts and implementations Neocortex-native. Startup requires the real cortexd socket and scoped token; loss or unavailability returns an honest typed Neocortex error without touching Cortex v1."
+do_3   = "Add a structural CI gate proving the Neo source tree and complete module graph cannot reach matrix/cortex. Exercise the real Neo daemon against the real cortexd process, including unavailable-cortexd behavior."
+reqs   = ["9.1", "9.2", "7.3", "7.4"]
 requires = ["6.2"]
 
 [task.7.2]
-title  = "Side-by-side qualification behind the memory seam"
-status = "pending"
+title  = "Neocortex-only Neo qualification"
+status = "in_progress"
 wave   = 7
-do_1   = "Wire the substrate flag (default old cortex) through the neo memory seam so the resurrection loop, server, and tools run on either substrate without code changes elsewhere."
-do_2   = "Run the fixed-incident regression corpus, the INV-1 property, and the Moltbook/duplicate/poisoning reproductions on the new substrate; run real conversations on a dev daemon against cortexd."
+do_1   = "Run the fixed-incident regression corpus, the INV-1 property, and the Moltbook/duplicate/poisoning reproductions with Neo built and run only against Neocortex."
+do_2   = "Run real conversations on a dev daemon against cortexd, including process loss/restart, and prove no Neo process or build artifact opens a Cortex-v1 store."
 do_3   = "Record exact green checks and any divergences; a behavioral divergence is a stop, not a footnote."
-reqs   = ["9.2", "9.3"]
+reqs   = ["9.1", "9.2", "9.3"]
 requires = ["7.1"]
 
 [task.7.3]
@@ -376,7 +377,7 @@ title  = "Consumer re-point and the owner cutover gate"
 status = "pending"
 wave   = 7
 do_1   = "Re-point external consumers to cortexd clients: executor daemon cortex routes, bridge, MCP tooling; derive the MCL compile-cache seed from the neocortex checkpoint root under an owner-approved rule."
-do_2   = "Assemble the cutover evidence package: qualification results, fidelity report, INV-1 CI status, performance envelope, and the rollback plan (flag back to old cortex with no data loss)."
-do_3   = "Present cutover and any old-cortex deletion as explicit owner YES decisions; take neither action without them."
+do_2   = "Assemble the consumer re-point evidence package: qualification results, INV-1 CI status, performance envelope, and an honest Neocortex failure/recovery plan with no Cortex-v1 fallback."
+do_3   = "Keep unrelated-consumer migration, production restart/deployment, and deletion of Cortex-v1 data as explicit owner gates."
 reqs   = ["9.4", "9.5"]
 requires = ["7.2"]

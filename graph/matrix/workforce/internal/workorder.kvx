@@ -1,16 +1,20 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/workorder kind=package
   digest=b3:b8907cd9c7b0f37f547528f7a4a711cb838c461bbf4f19dc9cd79332cfb32476 file=workforce/internal/workorder range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/workorder/company.go,matrix/workforce/internal/workorder/cycle.go,matrix/workforce/internal/workorder/execution.go,matrix/workforce/internal/workorder/store.go,matrix/workforce/internal/workorder/types.go
+  imports=matrix/vault,matrix/workforce/internal/contracts,matrix/workforce/internal/dependency,matrix/workforce/internal/mission
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/companyruntime,matrix/workforce/internal/controlapi,matrix/workforce/internal/initiative,matrix/workforce/internal/productexecution,matrix/workforce/internal/wakeruntime
 
 NODE id=matrix/workforce/internal/workorder.AcceptanceCriterion kind=type
   digest=b3:cc118e44ec17c0bdf835f79d00fa063b2c1ee8e2db4eaf01bfdb9981287c0a0e file=workforce/internal/workorder/types.go range=28:32 lang=go exported=true byte_range=571:683
   sig=type AcceptanceCriterion struct {\n	ID		string\n	Kind		AcceptanceCriterionKind\n	Description	string\n}
 EDGES
   contains=matrix/workforce/internal/workorder.AcceptanceCriterion#Description,matrix/workforce/internal/workorder.AcceptanceCriterion#ID,matrix/workforce/internal/workorder.AcceptanceCriterion#Kind
+  references=matrix/workforce/internal/workorder.AcceptanceCriterionKind
+  ^references=matrix/workforce/internal/workorder.ParseAcceptanceCriterion
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.AcceptanceCriterion#Description kind=field
@@ -35,18 +39,23 @@ NODE id=matrix/workforce/internal/workorder.AcceptanceCriterionKind kind=type
   digest=b3:4b079f95f34b09cb342431308c6d1a48f8470708987dc3b5e98202068775ca2b file=workforce/internal/workorder/types.go range=21:21 lang=go exported=true byte_range=389:424
   sig=type AcceptanceCriterionKind string
 EDGES
+  ^references=matrix/workforce/internal/workorder.AcceptanceCriterion,matrix/workforce/internal/workorder.AcceptanceEvidenceHash,matrix/workforce/internal/workorder.AcceptanceSemantic
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.AcceptanceEvidenceHash kind=const
   digest=b3:a8d9df45343feaabb769ea3fcb5d30f5d2b799fe09ff054be34645ceffabedab file=workforce/internal/workorder/types.go range=24:24 lang=go exported=true byte_range=435:499
   sig=workorder.AcceptanceCriterionKind
 EDGES
+  references=matrix/workforce/internal/workorder.AcceptanceCriterionKind
+  ^references=matrix/workforce/internal/wakeruntime.acceptancePredicates,matrix/workforce/internal/workorder.ParseAcceptanceCriterion
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.AcceptanceSemantic kind=const
   digest=b3:e3edc5e44f63b7c8109b6d4a7070d81b8250093043cd42443ae782350a43e3fb file=workforce/internal/workorder/types.go range=25:25 lang=go exported=true byte_range=501:567
   sig=workorder.AcceptanceCriterionKind
 EDGES
+  references=matrix/workforce/internal/workorder.AcceptanceCriterionKind
+  ^references=matrix/workforce/internal/wakeruntime.acceptancePredicates,matrix/workforce/internal/workorder.ParseAcceptanceCriterion
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.Budget kind=type
@@ -54,6 +63,7 @@ NODE id=matrix/workforce/internal/workorder.Budget kind=type
   sig=type Budget struct {\n	MaxTasks		uint32	`json:"max_tasks"`\n	MaxSpendMicrounits	uint64	`json:"max_spend_microunits"`\n}
 EDGES
   contains=matrix/workforce/internal/workorder.Budget#MaxSpendMicrounits,matrix/workforce/internal/workorder.Budget#MaxTasks
+  ^references=matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/controlapi.WorkOrderBudget,matrix/workforce/internal/workorder.CompanyCycleOrder,matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.ExecutionOrder,matrix/workforce/internal/workorder.Order,matrix/workforce/internal/workorder.payload
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.Budget#MaxSpendMicrounits kind=field
@@ -73,6 +83,8 @@ NODE id=matrix/workforce/internal/workorder.CompanyAuthority kind=type
   sig=type CompanyAuthority struct {\n	Policy				mission.CompanyIssuerPolicy\n	FounderKeyID			string\n	FounderPublicKey		ed25519.PublicKey\n	CurrentMissionVersion		uint64\n	CurrentConstitutionVersion	uint64\n	CurrentCapitalEnvelopeVersion	uint64\n	At				time.Time\n}
 EDGES
   contains=matrix/workforce/internal/workorder.CompanyAuthority#At,matrix/workforce/internal/workorder.CompanyAuthority#CurrentCapitalEnvelopeVersion,matrix/workforce/internal/workorder.CompanyAuthority#CurrentConstitutionVersion,matrix/workforce/internal/workorder.CompanyAuthority#CurrentMissionVersion,matrix/workforce/internal/workorder.CompanyAuthority#FounderKeyID,matrix/workforce/internal/workorder.CompanyAuthority#FounderPublicKey,matrix/workforce/internal/workorder.CompanyAuthority#Policy,matrix/workforce/internal/workorder.CompanyAuthority.Validate
+  references=matrix/workforce/internal/mission.CompanyIssuerPolicy
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/companyruntime.Coordinator.CompanyAuthority,matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/initiative.CancelRequest,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.Dispatcher.dispatch,matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation,matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/initiative.VerifyInitiative,matrix/workforce/internal/initiative.VerifyMutation,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/productexecution.StartRequest,matrix/workforce/internal/productexecution.Store.stageOrders,matrix/workforce/internal/workorder.CompanyAuthority.Validate,matrix/workforce/internal/workorder.CompanyAuthorityResolver,matrix/workforce/internal/workorder.SignCompany,matrix/workforce/internal/workorder.VerificationAuthority,matrix/workforce/internal/workorder.VerifyCompany,matrix/workforce/internal/workorder.validateCompanyAuthority
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyAuthority#At kind=field
@@ -121,13 +133,19 @@ NODE id=matrix/workforce/internal/workorder.CompanyAuthority.Validate kind=metho
   digest=b3:e6b486f44232dddaee82b56aa45555ea739ba54472bad7e81321f61c6fa2f64d file=workforce/internal/workorder/company.go range=213:226 lang=go exported=true byte_range=10138:10894
   sig=func (authority CompanyAuthority) Validate(organizationID contracts.OrganizationID) error
 EDGES
+  calls=matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy,matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.authority,matrix/workforce/internal/workorder.organizationID
   ^contains=matrix/workforce/internal/workorder.CompanyAuthority
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.CompanyAuthority,matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.VerifyInitiative,matrix/workforce/internal/initiative.VerifyMutation,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/productexecution.StartRequest.Validate,matrix/workforce/internal/productexecution.Store.Start,matrix/workforce/internal/workorder.validateCompanyAuthority
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.CompanyAuthority,matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.VerifyInitiative,matrix/workforce/internal/initiative.VerifyMutation,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/productexecution.StartRequest.Validate,matrix/workforce/internal/productexecution.Store.Start,matrix/workforce/internal/workorder.validateCompanyAuthority
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyAuthorityResolver kind=type
   digest=b3:b01e1ab96237930696ad0b7b7861b5cc13300157f5c7b882f268a8f5e40587d8 file=workforce/internal/workorder/store.go range=35:35 lang=go exported=true byte_range=684:761
   sig=type CompanyAuthorityResolver func(context.Context) (CompanyAuthority, error)
 EDGES
+  references=matrix/workforce/internal/workorder.CompanyAuthority
+  ^references=matrix/workforce/internal/workorder.Store,matrix/workforce/internal/workorder.Store.AttachCompanyAuthority
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyBinding kind=type
@@ -136,6 +154,8 @@ NODE id=matrix/workforce/internal/workorder.CompanyBinding kind=type
   doc=CompanyBinding is the exact authority and initiative lineage for one\ncontroller-issued Work Order. It is part of the controller signature.
 EDGES
   contains=matrix/workforce/internal/workorder.CompanyBinding#BusinessOutcomeGateIDs,matrix/workforce/internal/workorder.CompanyBinding#BusinessSuccessCriteria,matrix/workforce/internal/workorder.CompanyBinding#CapabilityPlanHash,matrix/workforce/internal/workorder.CompanyBinding#CapabilityPlanID,matrix/workforce/internal/workorder.CompanyBinding#CapitalAllocationID,matrix/workforce/internal/workorder.CompanyBinding#CapitalEnvelopeVersion,matrix/workforce/internal/workorder.CompanyBinding#CapitalMicrounits,matrix/workforce/internal/workorder.CompanyBinding#ConstitutionID,matrix/workforce/internal/workorder.CompanyBinding#ConstitutionVersion,matrix/workforce/internal/workorder.CompanyBinding#EffectIdentities,matrix/workforce/internal/workorder.CompanyBinding#InitiativeExecutionCriteria,matrix/workforce/internal/workorder.CompanyBinding#InitiativeID,matrix/workforce/internal/workorder.CompanyBinding#InitiativePlanID,matrix/workforce/internal/workorder.CompanyBinding#InitiativePlanVersion,matrix/workforce/internal/workorder.CompanyBinding#IssueIdentity,matrix/workforce/internal/workorder.CompanyBinding#IssuerPolicyVersion,matrix/workforce/internal/workorder.CompanyBinding#MissionID,matrix/workforce/internal/workorder.CompanyBinding#MissionVersion,matrix/workforce/internal/workorder.CompanyBinding#PlanNodeID,matrix/workforce/internal/workorder.CompanyBinding#PortfolioDecisionID,matrix/workforce/internal/workorder.CompanyBinding#RiskMicrounits,matrix/workforce/internal/workorder.CompanyBinding#WorkOrderClass,matrix/workforce/internal/workorder.CompanyBinding.Validate
+  references=matrix/workforce/internal/contracts.ContentHash
+  ^references=matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/workorder.CompanyBinding.Validate,matrix/workforce/internal/workorder.CompanyOrder
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyBinding#BusinessOutcomeGateIDs kind=field
@@ -274,7 +294,11 @@ NODE id=matrix/workforce/internal/workorder.CompanyBinding.Validate kind=method
   digest=b3:faf6ca53ba0752abb85c60a0b824f85ccb3b029e560acdee3465f309bda5b151 file=workforce/internal/workorder/company.go range=59:95 lang=go exported=true byte_range=2485:4330
   sig=func (value CompanyBinding) Validate(organizationID contracts.OrganizationID) error
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/workorder.validCompanySet,matrix/workforce/internal/workorder.validOrderID
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/workorder.CompanyBinding,matrix/workforce/internal/workorder.entries,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.name,matrix/workforce/internal/workorder.organizationID,matrix/workforce/internal/workorder.validCompanySet,matrix/workforce/internal/workorder.validOrderID,matrix/workforce/internal/workorder.value
   ^contains=matrix/workforce/internal/workorder.CompanyBinding
+  ^calls=matrix/workforce/internal/workorder.CompanyOrder.Validate
+  ^references=matrix/workforce/internal/workorder.CompanyOrder.Validate
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyCycleAuthority kind=type
@@ -282,6 +306,8 @@ NODE id=matrix/workforce/internal/workorder.CompanyCycleAuthority kind=type
   sig=type CompanyCycleAuthority struct {\n	RuntimeConfigID			string\n	RuntimeConfigVersion		uint64\n	RuntimeConfigHash		contracts.ContentHash\n	MissionVersion			uint64\n	MissionHash			contracts.ContentHash\n	ConstitutionVersion		uint64\n	ConstitutionHash		contracts.ContentHash\n	CapitalEnvelopeVersion		uint64\n	CapitalEnvelopeHash		contracts.ContentHash\n	AggregateLimitMicrounits	uint64\n	ControllerKeyID			string\n	ControllerPublicKey		ed25519.PublicKey\n	EffectiveAt			time.Time\n	At				time.Time\n	ExpiresAt			time.Time\n}
 EDGES
   contains=matrix/workforce/internal/workorder.CompanyCycleAuthority#AggregateLimitMicrounits,matrix/workforce/internal/workorder.CompanyCycleAuthority#At,matrix/workforce/internal/workorder.CompanyCycleAuthority#CapitalEnvelopeHash,matrix/workforce/internal/workorder.CompanyCycleAuthority#CapitalEnvelopeVersion,matrix/workforce/internal/workorder.CompanyCycleAuthority#ConstitutionHash,matrix/workforce/internal/workorder.CompanyCycleAuthority#ConstitutionVersion,matrix/workforce/internal/workorder.CompanyCycleAuthority#ControllerKeyID,matrix/workforce/internal/workorder.CompanyCycleAuthority#ControllerPublicKey,matrix/workforce/internal/workorder.CompanyCycleAuthority#EffectiveAt,matrix/workforce/internal/workorder.CompanyCycleAuthority#ExpiresAt,matrix/workforce/internal/workorder.CompanyCycleAuthority#MissionHash,matrix/workforce/internal/workorder.CompanyCycleAuthority#MissionVersion,matrix/workforce/internal/workorder.CompanyCycleAuthority#RuntimeConfigHash,matrix/workforce/internal/workorder.CompanyCycleAuthority#RuntimeConfigID,matrix/workforce/internal/workorder.CompanyCycleAuthority#RuntimeConfigVersion,matrix/workforce/internal/workorder.CompanyCycleAuthority.Validate
+  references=matrix/workforce/internal/contracts.ContentHash
+  ^references=matrix/workforce/internal/companyruntime.CycleDispatcher.Authority,matrix/workforce/internal/workorder.CompanyCycleAuthority.Validate,matrix/workforce/internal/workorder.CompanyCycleAuthorityResolver,matrix/workforce/internal/workorder.SignCompanyCycle,matrix/workforce/internal/workorder.VerifyCompanyCycle,matrix/workforce/internal/workorder.validateCompanyCycleAuthority
   ^defines=matrix/workforce/internal/workorder/cycle.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyCycleAuthority#AggregateLimitMicrounits kind=field
@@ -378,13 +404,19 @@ NODE id=matrix/workforce/internal/workorder.CompanyCycleAuthority.Validate kind=
   digest=b3:fc5bfefb863ae78605ceb8431f4635d98d63597e23173cd42ffcb4e56ffcd3cc file=workforce/internal/workorder/cycle.go range=142:162 lang=go exported=true byte_range=6531:7563
   sig=func (authority CompanyCycleAuthority) Validate(organizationID contracts.OrganizationID) error
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/workorder.CompanyCycleAuthority,matrix/workforce/internal/workorder.authority,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.hash,matrix/workforce/internal/workorder.organizationID
   ^contains=matrix/workforce/internal/workorder.CompanyCycleAuthority
+  ^calls=matrix/workforce/internal/workorder.validateCompanyCycleAuthority
+  ^references=matrix/workforce/internal/workorder.validateCompanyCycleAuthority
   ^defines=matrix/workforce/internal/workorder/cycle.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyCycleAuthorityResolver kind=type
   digest=b3:856b80493c55bc6a6b1f0e5fe9192e81bff16c6ccf31a2ad38ce181e04f63962 file=workforce/internal/workorder/store.go range=36:36 lang=go exported=true byte_range=762:849
   sig=type CompanyCycleAuthorityResolver func(context.Context) (CompanyCycleAuthority, error)
 EDGES
+  references=matrix/workforce/internal/workorder.CompanyCycleAuthority
+  ^references=matrix/workforce/internal/workorder.Store,matrix/workforce/internal/workorder.Store.AttachCompanyCycleAuthority
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyCycleBinding kind=type
@@ -392,6 +424,8 @@ NODE id=matrix/workforce/internal/workorder.CompanyCycleBinding kind=type
   sig=type CompanyCycleBinding struct {\n	RuntimeConfigID			string			`json:"runtime_config_id"`\n	RuntimeConfigVersion		uint64			`json:"runtime_config_version"`\n	RuntimeConfigHash		contracts.ContentHash	`json:"runtime_config_hash"`\n	MissionVersion			uint64			`json:"mission_version"`\n	MissionHash			contracts.ContentHash	`json:"mission_hash"`\n	ConstitutionVersion		uint64			`json:"constitution_version"`\n	ConstitutionHash		contracts.ContentHash	`json:"constitution_hash"`\n	CapitalEnvelopeVersion		uint64			`json:"capital_envelope_version"`\n	CapitalEnvelopeHash		contracts.ContentHash	`json:"capital_envelope_hash"`\n	CycleID				string			`json:"cycle_id"`\n	CadenceKind			string			`json:"cadence_kind"`\n	RequiredCapabilities		[]string		`json:"required_capabilities"`\n	IndependentAudit		bool			`json:"independent_audit"`\n	MaximumCycleMicrounits		uint64			`json:"maximum_cycle_microunits"`\n	AggregateLimitMicrounits	uint64			`json:"aggregate_limit_microunits"`\n}
 EDGES
   contains=matrix/workforce/internal/workorder.CompanyCycleBinding#AggregateLimitMicrounits,matrix/workforce/internal/workorder.CompanyCycleBinding#CadenceKind,matrix/workforce/internal/workorder.CompanyCycleBinding#CapitalEnvelopeHash,matrix/workforce/internal/workorder.CompanyCycleBinding#CapitalEnvelopeVersion,matrix/workforce/internal/workorder.CompanyCycleBinding#ConstitutionHash,matrix/workforce/internal/workorder.CompanyCycleBinding#ConstitutionVersion,matrix/workforce/internal/workorder.CompanyCycleBinding#CycleID,matrix/workforce/internal/workorder.CompanyCycleBinding#IndependentAudit,matrix/workforce/internal/workorder.CompanyCycleBinding#MaximumCycleMicrounits,matrix/workforce/internal/workorder.CompanyCycleBinding#MissionHash,matrix/workforce/internal/workorder.CompanyCycleBinding#MissionVersion,matrix/workforce/internal/workorder.CompanyCycleBinding#RequiredCapabilities,matrix/workforce/internal/workorder.CompanyCycleBinding#RuntimeConfigHash,matrix/workforce/internal/workorder.CompanyCycleBinding#RuntimeConfigID,matrix/workforce/internal/workorder.CompanyCycleBinding#RuntimeConfigVersion,matrix/workforce/internal/workorder.CompanyCycleBinding.Validate
+  references=matrix/workforce/internal/contracts.ContentHash
+  ^references=matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/workorder.CompanyCycleBinding.Validate,matrix/workforce/internal/workorder.CompanyCycleOrder
   ^defines=matrix/workforce/internal/workorder/cycle.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyCycleBinding#AggregateLimitMicrounits kind=field
@@ -488,7 +522,11 @@ NODE id=matrix/workforce/internal/workorder.CompanyCycleBinding.Validate kind=me
   digest=b3:43c95672448d695190f4a335d260a059fdd2e5ff9e1360bd430b986bf378e9d4 file=workforce/internal/workorder/cycle.go range=35:54 lang=go exported=true byte_range=1415:2342
   sig=func (value CompanyCycleBinding) Validate(organizationID contracts.OrganizationID) error
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/workorder.validCompanySet,matrix/workforce/internal/workorder.validOrderID
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/workorder.CompanyCycleBinding,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.hash,matrix/workforce/internal/workorder.organizationID,matrix/workforce/internal/workorder.validCompanySet,matrix/workforce/internal/workorder.validOrderID,matrix/workforce/internal/workorder.value
   ^contains=matrix/workforce/internal/workorder.CompanyCycleBinding
+  ^calls=matrix/workforce/internal/workorder.CompanyCycleOrder.Validate
+  ^references=matrix/workforce/internal/workorder.CompanyCycleOrder.Validate
   ^defines=matrix/workforce/internal/workorder/cycle.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyCycleOrder kind=type
@@ -497,6 +535,8 @@ NODE id=matrix/workforce/internal/workorder.CompanyCycleOrder kind=type
 EDGES
   contains=matrix/workforce/internal/workorder.CompanyCycleOrder#AcceptanceCriteria,matrix/workforce/internal/workorder.CompanyCycleOrder#Autonomy,matrix/workforce/internal/workorder.CompanyCycleOrder#Binding,matrix/workforce/internal/workorder.CompanyCycleOrder#Budget,matrix/workforce/internal/workorder.CompanyCycleOrder#ControllerID,matrix/workforce/internal/workorder.CompanyCycleOrder#CreatedAt,matrix/workforce/internal/workorder.CompanyCycleOrder#Deadline,matrix/workforce/internal/workorder.CompanyCycleOrder#Departments,matrix/workforce/internal/workorder.CompanyCycleOrder#ID,matrix/workforce/internal/workorder.CompanyCycleOrder#IdempotencyKey,matrix/workforce/internal/workorder.CompanyCycleOrder#MGSDigest,matrix/workforce/internal/workorder.CompanyCycleOrder#MGSReference,matrix/workforce/internal/workorder.CompanyCycleOrder#ModelID,matrix/workforce/internal/workorder.CompanyCycleOrder#ModelProvider,matrix/workforce/internal/workorder.CompanyCycleOrder#Objective,matrix/workforce/internal/workorder.CompanyCycleOrder#OrganizationID,matrix/workforce/internal/workorder.CompanyCycleOrder#Priority,matrix/workforce/internal/workorder.CompanyCycleOrder#SchemaVersion,matrix/workforce/internal/workorder.CompanyCycleOrder#Scope,matrix/workforce/internal/workorder.CompanyCycleOrder#Signature,matrix/workforce/internal/workorder.CompanyCycleOrder#Version,matrix/workforce/internal/workorder.CompanyCycleOrder.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/workorder.Budget,matrix/workforce/internal/workorder.CompanyCycleBinding
+  ^references=matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/companyruntime.CycleDispatcher.orderAD,matrix/workforce/internal/companyruntime.CycleDispatcher.persist,matrix/workforce/internal/workorder.CompanyCycleOrder.Validate,matrix/workforce/internal/workorder.Context,matrix/workforce/internal/workorder.ExecutionFromCompanyCycle,matrix/workforce/internal/workorder.SignCompanyCycle,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext,matrix/workforce/internal/workorder.VerifyCompanyCycle,matrix/workforce/internal/workorder.companyCycleSigningBytes,matrix/workforce/internal/workorder.validateCompanyCycleAuthority
   ^defines=matrix/workforce/internal/workorder/cycle.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyCycleOrder#AcceptanceCriteria kind=field
@@ -629,13 +669,18 @@ NODE id=matrix/workforce/internal/workorder.CompanyCycleOrder.Validate kind=meth
   digest=b3:c0a3364299b0db2b62cb0f74c32ff0a2fcff14332f66d9b48e44ee479f2509ea file=workforce/internal/workorder/cycle.go range=80:122 lang=go exported=true byte_range=3812:5915
   sig=func (order CompanyCycleOrder) Validate() error
 EDGES
+  calls=matrix/workforce/internal/contracts.DepartmentKind.Valid,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/workorder.CompanyCycleBinding.Validate,matrix/workforce/internal/workorder.ParseAcceptanceCriterion,matrix/workforce/internal/workorder.validCompanySet,matrix/workforce/internal/workorder.validOrderID
+  references=matrix/workforce/internal/contracts.DepartmentKind.Valid,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/workorder.CompanyCycleBinding.Validate,matrix/workforce/internal/workorder.CompanyCycleOrder,matrix/workforce/internal/workorder.CompanyCycleOrderSchemaVersion,matrix/workforce/internal/workorder.ParseAcceptanceCriterion,matrix/workforce/internal/workorder.character,matrix/workforce/internal/workorder.department,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.index,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.validCompanySet,matrix/workforce/internal/workorder.validOrderID
   ^contains=matrix/workforce/internal/workorder.CompanyCycleOrder
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/workorder.SignCompanyCycle,matrix/workforce/internal/workorder.VerifyCompanyCycle
+  ^references=matrix/workforce/internal/workorder.SignCompanyCycle,matrix/workforce/internal/workorder.VerifyCompanyCycle
   ^defines=matrix/workforce/internal/workorder/cycle.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyCycleOrderSchemaVersion kind=const
   digest=b3:1b1ab64b4fa7e809086a2155e1e56ec511acdcc3f79c8c65cab0400887b02c6f file=workforce/internal/workorder/cycle.go range=15:15 lang=go exported=true byte_range=159:231
   sig=untyped string
 EDGES
+  ^references=matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/companyruntime.CycleDispatcher.orderAD,matrix/workforce/internal/workorder.CompanyCycleOrder.Validate,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
   ^defines=matrix/workforce/internal/workorder/cycle.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyOrder kind=type
@@ -645,6 +690,8 @@ NODE id=matrix/workforce/internal/workorder.CompanyOrder kind=type
 EDGES
   contains=matrix/workforce/internal/workorder.CompanyOrder#AcceptanceCriteria,matrix/workforce/internal/workorder.CompanyOrder#Autonomy,matrix/workforce/internal/workorder.CompanyOrder#Binding,matrix/workforce/internal/workorder.CompanyOrder#Budget,matrix/workforce/internal/workorder.CompanyOrder#ControllerID,matrix/workforce/internal/workorder.CompanyOrder#CreatedAt,matrix/workforce/internal/workorder.CompanyOrder#Deadline,matrix/workforce/internal/workorder.CompanyOrder#Departments,matrix/workforce/internal/workorder.CompanyOrder#ID,matrix/workforce/internal/workorder.CompanyOrder#IdempotencyKey,matrix/workforce/internal/workorder.CompanyOrder#IssuerKind,matrix/workforce/internal/workorder.CompanyOrder#MGSDigest,matrix/workforce/internal/workorder.CompanyOrder#MGSReference,matrix/workforce/internal/workorder.CompanyOrder#ModelID,matrix/workforce/internal/workorder.CompanyOrder#ModelProvider,matrix/workforce/internal/workorder.CompanyOrder#Objective,matrix/workforce/internal/workorder.CompanyOrder#OrganizationID,matrix/workforce/internal/workorder.CompanyOrder#Priority,matrix/workforce/internal/workorder.CompanyOrder#ProjectID,matrix/workforce/internal/workorder.CompanyOrder#SchemaVersion,matrix/workforce/internal/workorder.CompanyOrder#Scope,matrix/workforce/internal/workorder.CompanyOrder#ScopeFiles,matrix/workforce/internal/workorder.CompanyOrder#ScopeSymbols,matrix/workforce/internal/workorder.CompanyOrder#Signature,matrix/workforce/internal/workorder.CompanyOrder#Version,matrix/workforce/internal/workorder.CompanyOrder#WorkspaceID,matrix/workforce/internal/workorder.CompanyOrder.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/contracts.WorkspaceID,matrix/workforce/internal/workorder.Budget,matrix/workforce/internal/workorder.CompanyBinding,matrix/workforce/internal/workorder.IssuerKind
+  ^references=matrix/workforce/internal/initiative.CompiledNode,matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/initiative.SortedEffectIdentities,matrix/workforce/internal/initiative.Store.orderAD,matrix/workforce/internal/initiative.WorkOrderSpec,matrix/workforce/internal/initiative.compiledNodeDigest,matrix/workforce/internal/initiative.sameCompanyOrder,matrix/workforce/internal/productexecution.Store.bindStages,matrix/workforce/internal/productexecution.Store.commitReceiptProgress,matrix/workforce/internal/productexecution.Store.currentStageOrder,matrix/workforce/internal/productexecution.Store.dispatchStageTx,matrix/workforce/internal/productexecution.Store.stageOrders,matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.Context,matrix/workforce/internal/workorder.ExecutionFromCompany,matrix/workforce/internal/workorder.ExpectedCompanyIssueIdentity,matrix/workforce/internal/workorder.IssuedOrder,matrix/workforce/internal/workorder.SignCompany,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.VerifyCompany,matrix/workforce/internal/workorder.companySigningBytes,matrix/workforce/internal/workorder.validateCompanyAuthority
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyOrder#AcceptanceCriteria kind=field
@@ -807,13 +854,18 @@ NODE id=matrix/workforce/internal/workorder.CompanyOrder.Validate kind=method
   digest=b3:a88bb4a320ad526e0cc3884d352c8a8c053a1c95ce407c4f49b0244adb277f77 file=workforce/internal/workorder/company.go range=128:201 lang=go exported=true byte_range=6260:9801
   sig=func (order CompanyOrder) Validate() error
 EDGES
+  calls=matrix/workforce/internal/contracts.DepartmentKind.Valid,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/workorder.CompanyBinding.Validate,matrix/workforce/internal/workorder.ExpectedCompanyIssueIdentity,matrix/workforce/internal/workorder.ParseAcceptanceCriterion,matrix/workforce/internal/workorder.validOrderID,matrix/workforce/internal/workorder.validScopeValues
+  references=matrix/workforce/internal/contracts.DepartmentDeveloper,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.DepartmentKind.Valid,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/workorder.CompanyBinding.Validate,matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.CompanyOrderSchemaVersion,matrix/workforce/internal/workorder.ExpectedCompanyIssueIdentity,matrix/workforce/internal/workorder.IssuerCompanyController,matrix/workforce/internal/workorder.ParseAcceptanceCriterion,matrix/workforce/internal/workorder.character,matrix/workforce/internal/workorder.criterion,matrix/workforce/internal/workorder.department,matrix/workforce/internal/workorder.developer,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.index,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.seen,matrix/workforce/internal/workorder.validOrderID,matrix/workforce/internal/workorder.validScopeValues
   ^contains=matrix/workforce/internal/workorder.CompanyOrder
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.validatePlanCore,matrix/workforce/internal/workorder.IssuedOrder.Validate,matrix/workforce/internal/workorder.SignCompany,matrix/workforce/internal/workorder.VerifyCompany
+  ^references=matrix/workforce/internal/initiative.validatePlanCore,matrix/workforce/internal/workorder.IssuedOrder.Validate,matrix/workforce/internal/workorder.SignCompany,matrix/workforce/internal/workorder.VerifyCompany
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.CompanyOrderSchemaVersion kind=const
   digest=b3:83a19406ba4677fa1612472258e901e1b1c98c724dbf408e3ef188ae897ffbd2 file=workforce/internal/workorder/company.go range=19:19 lang=go exported=true byte_range=246:307
   sig=untyped string
 EDGES
+  ^references=matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/initiative.Store.orderAD,matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.Store.loadCompanyContext
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.Context kind=type
@@ -821,6 +873,8 @@ NODE id=matrix/workforce/internal/workorder.Context kind=type
   sig=type Context struct {\n	Issuer			IssuerKind\n	Order			Order\n	Company			*CompanyOrder\n	Cycle			*CompanyCycleOrder\n	CompanyExecution	*contracts.CompanyExecutionContext\n	Execute			ExecutionOrder\n	Goal			contracts.Goal\n	Intent			contracts.Intent\n	Node			dependency.Node\n}
 EDGES
   contains=matrix/workforce/internal/workorder.Context#Company,matrix/workforce/internal/workorder.Context#CompanyExecution,matrix/workforce/internal/workorder.Context#Cycle,matrix/workforce/internal/workorder.Context#Execute,matrix/workforce/internal/workorder.Context#Goal,matrix/workforce/internal/workorder.Context#Intent,matrix/workforce/internal/workorder.Context#Issuer,matrix/workforce/internal/workorder.Context#Node,matrix/workforce/internal/workorder.Context#Order
+  references=matrix/workforce/internal/contracts.CompanyExecutionContext,matrix/workforce/internal/contracts.Goal,matrix/workforce/internal/contracts.Intent,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/workorder.CompanyCycleOrder,matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.ExecutionOrder,matrix/workforce/internal/workorder.IssuerKind,matrix/workforce/internal/workorder.Order
+  ^references=matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.preparedClaim,matrix/workforce/internal/wakeruntime.validateRecoveredPacket,matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.Context#Company kind=field
@@ -881,30 +935,41 @@ NODE id=matrix/workforce/internal/workorder.ErrIntegrity kind=var
   digest=b3:8eb65f088c83bc21a2456927ca8fdb5172134a2cb966950058186bf6a8677ed1 file=workforce/internal/workorder/store.go range=22:22 lang=go exported=true byte_range=356:413
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext,matrix/workforce/internal/workorder.Store.verificationKey
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.ErrNotFound kind=var
   digest=b3:2c521a109e896953a28770ecfa533220b9488240808d312472feb9b27eec7645 file=workforce/internal/workorder/store.go range=21:21 lang=go exported=true byte_range=287:354
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.ExecutionFromCompany kind=func
   digest=b3:37a0ad7cfda84014d26ae373e1717f73ee181e41ecda165c0b85cb4cd500d30c file=workforce/internal/workorder/execution.go range=51:64 lang=go exported=true byte_range=1627:2370
   sig=func ExecutionFromCompany(order CompanyOrder) ExecutionOrder
 EDGES
+  references=matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.ExecutionOrder,matrix/workforce/internal/workorder.order
+  ^calls=matrix/workforce/internal/workorder.Store.loadCompanyContext
+  ^references=matrix/workforce/internal/workorder.Store.loadCompanyContext
   ^defines=matrix/workforce/internal/workorder/execution.go
 
 NODE id=matrix/workforce/internal/workorder.ExecutionFromCompanyCycle kind=func
   digest=b3:93e6771353a746cfb060b00dfb44660c225ddaf64d5f69ada1525f55d20664e5 file=workforce/internal/workorder/execution.go range=66:77 lang=go exported=true byte_range=2372:2967
   sig=func ExecutionFromCompanyCycle(order CompanyCycleOrder) ExecutionOrder
 EDGES
+  references=matrix/workforce/internal/workorder.CompanyCycleOrder,matrix/workforce/internal/workorder.ExecutionOrder,matrix/workforce/internal/workorder.order
+  ^calls=matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
+  ^references=matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
   ^defines=matrix/workforce/internal/workorder/execution.go
 
 NODE id=matrix/workforce/internal/workorder.ExecutionFromOwner kind=func
   digest=b3:b988119e1a38adcd1dcd3819a7a19b940b7428a2aaf9befc0d35a76ddcb38788 file=workforce/internal/workorder/execution.go range=36:49 lang=go exported=true byte_range=893:1625
   sig=func ExecutionFromOwner(order Order) ExecutionOrder
 EDGES
+  references=matrix/workforce/internal/workorder.ExecutionOrder,matrix/workforce/internal/workorder.Order,matrix/workforce/internal/workorder.order
+  ^calls=matrix/workforce/internal/workorder.Store.LoadContext
+  ^references=matrix/workforce/internal/workorder.Store.LoadContext
   ^defines=matrix/workforce/internal/workorder/execution.go
 
 NODE id=matrix/workforce/internal/workorder.ExecutionOrder kind=type
@@ -914,6 +979,8 @@ NODE id=matrix/workforce/internal/workorder.ExecutionOrder kind=type
 EDGES
   contains=matrix/workforce/internal/workorder.ExecutionOrder#AcceptanceCriteria,matrix/workforce/internal/workorder.ExecutionOrder#Autonomy,matrix/workforce/internal/workorder.ExecutionOrder#Budget,matrix/workforce/internal/workorder.ExecutionOrder#CreatedAt,matrix/workforce/internal/workorder.ExecutionOrder#Deadline,matrix/workforce/internal/workorder.ExecutionOrder#Departments,matrix/workforce/internal/workorder.ExecutionOrder#Domain,matrix/workforce/internal/workorder.ExecutionOrder#ID,matrix/workforce/internal/workorder.ExecutionOrder#MGSDigest,matrix/workforce/internal/workorder.ExecutionOrder#MGSReference,matrix/workforce/internal/workorder.ExecutionOrder#ModelID,matrix/workforce/internal/workorder.ExecutionOrder#ModelProvider,matrix/workforce/internal/workorder.ExecutionOrder#Objective,matrix/workforce/internal/workorder.ExecutionOrder#OrganizationID,matrix/workforce/internal/workorder.ExecutionOrder#Priority,matrix/workforce/internal/workorder.ExecutionOrder#ProjectID,matrix/workforce/internal/workorder.ExecutionOrder#Scope,matrix/workforce/internal/workorder.ExecutionOrder#ScopeFiles,matrix/workforce/internal/workorder.ExecutionOrder#ScopeSymbols,matrix/workforce/internal/workorder.ExecutionOrder#WorkspaceID,matrix/workforce/internal/workorder.ExecutionOrder.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.WorkspaceID,matrix/workforce/internal/workorder.Budget
+  ^references=matrix/workforce/internal/wakeruntime.Runner.nextEnvelope,matrix/workforce/internal/workorder.Context,matrix/workforce/internal/workorder.ExecutionFromCompany,matrix/workforce/internal/workorder.ExecutionFromCompanyCycle,matrix/workforce/internal/workorder.ExecutionFromOwner,matrix/workforce/internal/workorder.ExecutionOrder.Validate
   ^defines=matrix/workforce/internal/workorder/execution.go
 
 NODE id=matrix/workforce/internal/workorder.ExecutionOrder#AcceptanceCriteria kind=field
@@ -1040,13 +1107,19 @@ NODE id=matrix/workforce/internal/workorder.ExecutionOrder.Validate kind=method
   digest=b3:648bd431a7588b277b13964c714fcc86a2d40bcd46cd0bff5709b1fd6c5a9314 file=workforce/internal/workorder/execution.go range=79:92 lang=go exported=true byte_range=2969:3667
   sig=func (value ExecutionOrder) Validate() error
 EDGES
+  references=matrix/workforce/internal/workorder.ExecutionOrder,matrix/workforce/internal/workorder.value
   ^contains=matrix/workforce/internal/workorder.ExecutionOrder
+  ^calls=matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
+  ^references=matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
   ^defines=matrix/workforce/internal/workorder/execution.go
 
 NODE id=matrix/workforce/internal/workorder.ExpectedCompanyIssueIdentity kind=func
   digest=b3:f5019d67268127fa0af4700791e485a75d46c6bd91f27add420bac9d2fba7259 file=workforce/internal/workorder/company.go range=291:299 lang=go exported=true byte_range=13470:13871
   sig=func ExpectedCompanyIssueIdentity(order CompanyOrder) string
 EDGES
+  references=matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.sum,matrix/workforce/internal/workorder.value
+  ^calls=matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/workorder.CompanyOrder.Validate
+  ^references=matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/workorder.CompanyOrder.Validate
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.IssuedOrder kind=type
@@ -1056,6 +1129,8 @@ NODE id=matrix/workforce/internal/workorder.IssuedOrder kind=type
 EDGES
   contains=matrix/workforce/internal/workorder.IssuedOrder#Company,matrix/workforce/internal/workorder.IssuedOrder#Issuer,matrix/workforce/internal/workorder.IssuedOrder#Owner,matrix/workforce/internal/workorder.IssuedOrder.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.IssuerKind,matrix/workforce/internal/workorder.Order
+  ^references=matrix/workforce/internal/workorder.IssuedOrder.Validate,matrix/workforce/internal/workorder.VerifyIssued
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.IssuedOrder#Company kind=field
@@ -1080,13 +1155,19 @@ NODE id=matrix/workforce/internal/workorder.IssuedOrder.Validate kind=method
   digest=b3:473e3b500358274b8fab40425597ec7ac5e83ee9896f85d59d87b6c1639e553a file=workforce/internal/workorder/company.go range=325:340 lang=go exported=true byte_range=14798:15292
   sig=func (value IssuedOrder) Validate() error
 EDGES
+  calls=matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.Order.Validate
+  references=matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.IssuedOrder,matrix/workforce/internal/workorder.IssuerCompanyController,matrix/workforce/internal/workorder.IssuerOwner,matrix/workforce/internal/workorder.Order.Validate,matrix/workforce/internal/workorder.value
   ^contains=matrix/workforce/internal/workorder.IssuedOrder
+  ^calls=matrix/workforce/internal/workorder.VerifyIssued
+  ^references=matrix/workforce/internal/workorder.VerifyIssued
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.IssuerCompanyController kind=const
   digest=b3:c2ddb435c835be2b6365b3f75a9a94c669fc69b2d1d8830f25dbbe41b2e91e2a file=workforce/internal/workorder/company.go range=25:25 lang=go exported=true byte_range=388:445
   sig=workorder.IssuerKind
 EDGES
+  references=matrix/workforce/internal/workorder.IssuerKind
+  ^references=matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit,matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.IssuedOrder.Validate,matrix/workforce/internal/workorder.IssuerKind.Valid,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.IssuerKind kind=type
@@ -1094,12 +1175,14 @@ NODE id=matrix/workforce/internal/workorder.IssuerKind kind=type
   sig=type IssuerKind string
 EDGES
   contains=matrix/workforce/internal/workorder.IssuerKind.Valid
+  ^references=matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.Context,matrix/workforce/internal/workorder.IssuedOrder,matrix/workforce/internal/workorder.IssuerCompanyController,matrix/workforce/internal/workorder.IssuerKind.Valid,matrix/workforce/internal/workorder.IssuerOwner
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.IssuerKind.Valid kind=method
   digest=b3:a34ff2717626236b05711023dc3a6ae1bccf8d0a4be2d74d50be01bbc78068c1 file=workforce/internal/workorder/company.go range=28:30 lang=go exported=true byte_range=449:554
   sig=func (value IssuerKind) Valid() bool
 EDGES
+  references=matrix/workforce/internal/workorder.IssuerCompanyController,matrix/workforce/internal/workorder.IssuerKind,matrix/workforce/internal/workorder.IssuerOwner,matrix/workforce/internal/workorder.value
   ^contains=matrix/workforce/internal/workorder.IssuerKind
   ^defines=matrix/workforce/internal/workorder/company.go
 
@@ -1107,12 +1190,18 @@ NODE id=matrix/workforce/internal/workorder.IssuerOwner kind=const
   digest=b3:93ea4f22eca90a82b41dddb0633570ad4b25dea58b51622c9865ea580fcadc63 file=workforce/internal/workorder/company.go range=24:24 lang=go exported=true byte_range=342:386
   sig=workorder.IssuerKind
 EDGES
+  references=matrix/workforce/internal/workorder.IssuerKind
+  ^references=matrix/workforce/internal/workorder.IssuedOrder.Validate,matrix/workforce/internal/workorder.IssuerKind.Valid,matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.VerifyIssued
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.NewStore kind=func
   digest=b3:f4b6908b58190ece5d4ec517ab7be76366d932825f12a817466fe8fc28bdeea6 file=workforce/internal/workorder/store.go range=66:84 lang=go exported=true byte_range=1700:2339
   sig=func NewStore(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	tenantID, keyID string,\n	publicKey ed25519.PublicKey,\n) (*Store, error)
 EDGES
+  calls=matrix/vault.UserVault.User
+  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/workorder.Store,matrix/workforce/internal/workorder.keyID,matrix/workforce/internal/workorder.pool,matrix/workforce/internal/workorder.publicKey,matrix/workforce/internal/workorder.tenantID,matrix/workforce/internal/workorder.userVault
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.Order kind=type
@@ -1121,6 +1210,8 @@ NODE id=matrix/workforce/internal/workorder.Order kind=type
 EDGES
   contains=matrix/workforce/internal/workorder.Order#AcceptanceCriteria,matrix/workforce/internal/workorder.Order#Autonomy,matrix/workforce/internal/workorder.Order#Budget,matrix/workforce/internal/workorder.Order#CreatedAt,matrix/workforce/internal/workorder.Order#Deadline,matrix/workforce/internal/workorder.Order#Departments,matrix/workforce/internal/workorder.Order#ID,matrix/workforce/internal/workorder.Order#IdempotencyKey,matrix/workforce/internal/workorder.Order#MGSDigest,matrix/workforce/internal/workorder.Order#MGSReference,matrix/workforce/internal/workorder.Order#ModelID,matrix/workforce/internal/workorder.Order#ModelProvider,matrix/workforce/internal/workorder.Order#Objective,matrix/workforce/internal/workorder.Order#OrganizationID,matrix/workforce/internal/workorder.Order#OwnerID,matrix/workforce/internal/workorder.Order#Priority,matrix/workforce/internal/workorder.Order#ProjectID,matrix/workforce/internal/workorder.Order#SchemaVersion,matrix/workforce/internal/workorder.Order#Scope,matrix/workforce/internal/workorder.Order#ScopeFiles,matrix/workforce/internal/workorder.Order#ScopeSymbols,matrix/workforce/internal/workorder.Order#Signature,matrix/workforce/internal/workorder.Order#Version,matrix/workforce/internal/workorder.Order#WorkspaceID,matrix/workforce/internal/workorder.Order.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/contracts.WorkspaceID,matrix/workforce/internal/workorder.Budget
+  ^references=matrix/workforce/internal/controlapi.WorkOrder,matrix/workforce/internal/workorder.Context,matrix/workforce/internal/workorder.ExecutionFromOwner,matrix/workforce/internal/workorder.IssuedOrder,matrix/workforce/internal/workorder.Order.Validate,matrix/workforce/internal/workorder.Sign,matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.verificationKey,matrix/workforce/internal/workorder.Verify,matrix/workforce/internal/workorder.signingBytes
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.Order#AcceptanceCriteria kind=field
@@ -1271,31 +1362,50 @@ NODE id=matrix/workforce/internal/workorder.Order.Validate kind=method
   digest=b3:5d140dc4e7a04d33458319fe21187352b727d352a3f58b8ab37a97be34bb334e file=workforce/internal/workorder/types.go range=88:166 lang=go exported=true byte_range=3159:6295
   sig=func (order Order) Validate() error
 EDGES
+  calls=matrix/workforce/internal/contracts.DepartmentKind.Valid,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/workorder.ParseAcceptanceCriterion,matrix/workforce/internal/workorder.validOrderID,matrix/workforce/internal/workorder.validScopeValues
+  references=matrix/workforce/internal/contracts.DepartmentDeveloper,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.DepartmentKind.Valid,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/workorder.Order,matrix/workforce/internal/workorder.ParseAcceptanceCriterion,matrix/workforce/internal/workorder.character,matrix/workforce/internal/workorder.criterion,matrix/workforce/internal/workorder.department,matrix/workforce/internal/workorder.developer,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.index,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.seen,matrix/workforce/internal/workorder.validOrderID,matrix/workforce/internal/workorder.validScopeValues
   ^contains=matrix/workforce/internal/workorder.Order
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/workorder.IssuedOrder.Validate,matrix/workforce/internal/workorder.Sign,matrix/workforce/internal/workorder.Verify
+  ^references=matrix/workforce/internal/workorder.IssuedOrder.Validate,matrix/workforce/internal/workorder.Sign,matrix/workforce/internal/workorder.Verify
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.ParseAcceptanceCriterion kind=func
   digest=b3:ba53f1599b10a5e0822d5d85cf5eb32c0d56f5252870f8e96568466dc8482bbd file=workforce/internal/workorder/types.go range=34:59 lang=go exported=true byte_range=685:1510
   sig=func ParseAcceptanceCriterion(index int, value string) (AcceptanceCriterion, error)
 EDGES
+  references=matrix/workforce/internal/workorder.AcceptanceCriterion,matrix/workforce/internal/workorder.AcceptanceEvidenceHash,matrix/workforce/internal/workorder.AcceptanceSemantic,matrix/workforce/internal/workorder.description,matrix/workforce/internal/workorder.evidencePrefix,matrix/workforce/internal/workorder.index,matrix/workforce/internal/workorder.kind,matrix/workforce/internal/workorder.value
+  ^calls=matrix/workforce/internal/wakeruntime.acceptancePredicates,matrix/workforce/internal/workorder.CompanyCycleOrder.Validate,matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.Order.Validate
+  ^references=matrix/workforce/internal/wakeruntime.acceptancePredicates,matrix/workforce/internal/workorder.CompanyCycleOrder.Validate,matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.Order.Validate
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.Sign kind=func
   digest=b3:e50720573ed46d446699f3734aa15a19f1da48909bbd4b410fc6aa7f684b860c file=workforce/internal/workorder/types.go range=196:212 lang=go exported=true byte_range=7928:8449
   sig=func Sign(order *Order, keyID string, privateKey ed25519.PrivateKey) error
 EDGES
+  calls=matrix/workforce/internal/workorder.Order.Validate,matrix/workforce/internal/workorder.signingBytes
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/workorder.Order,matrix/workforce/internal/workorder.Order.Validate,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.keyID,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.privateKey,matrix/workforce/internal/workorder.signingBytes
+  ^calls=matrix/workforce/internal/controlapi.SignWorkOrder
+  ^references=matrix/workforce/internal/controlapi.SignWorkOrder
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.SignCompany kind=func
   digest=b3:45b195f49a5920e88ed1222eca287a1217fe12396130afb3e1fecb2ada6297e8 file=workforce/internal/workorder/company.go range=228:248 lang=go exported=true byte_range=10896:11786
   sig=func SignCompany(order *CompanyOrder, authority CompanyAuthority, privateKey ed25519.PrivateKey) error
 EDGES
+  calls=matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.companySigningBytes,matrix/workforce/internal/workorder.decodeIssuerPublicKey,matrix/workforce/internal/workorder.validateCompanyAuthority
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.authority,matrix/workforce/internal/workorder.companySigningBytes,matrix/workforce/internal/workorder.decodeIssuerPublicKey,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.issuerPublicKey,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.payload,matrix/workforce/internal/workorder.privateKey,matrix/workforce/internal/workorder.validateCompanyAuthority
+  ^calls=matrix/workforce/internal/initiative.Compiler.compileOrder
+  ^references=matrix/workforce/internal/initiative.Compiler.compileOrder
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.SignCompanyCycle kind=func
   digest=b3:75d82606225c4e5bd5d4d70a5030db3ca941c1876e3d66f7a84999c5aac0a294 file=workforce/internal/workorder/cycle.go range=164:185 lang=go exported=true byte_range=7565:8328
   sig=func SignCompanyCycle(\n	order *CompanyCycleOrder,\n	authority CompanyCycleAuthority,\n	privateKey ed25519.PrivateKey,\n) error
 EDGES
+  calls=matrix/workforce/internal/workorder.CompanyCycleOrder.Validate,matrix/workforce/internal/workorder.companyCycleSigningBytes,matrix/workforce/internal/workorder.validateCompanyCycleAuthority
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/workorder.CompanyCycleAuthority,matrix/workforce/internal/workorder.CompanyCycleOrder,matrix/workforce/internal/workorder.CompanyCycleOrder.Validate,matrix/workforce/internal/workorder.authority,matrix/workforce/internal/workorder.companyCycleSigningBytes,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.payload,matrix/workforce/internal/workorder.privateKey,matrix/workforce/internal/workorder.validateCompanyCycleAuthority
+  ^calls=matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch
+  ^references=matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch
   ^defines=matrix/workforce/internal/workorder/cycle.go
 
 NODE id=matrix/workforce/internal/workorder.Store kind=type
@@ -1303,6 +1413,8 @@ NODE id=matrix/workforce/internal/workorder.Store kind=type
   sig=type Store struct {\n	pool			*pgxpool.Pool\n	vault			*vault.UserVault\n	tenantID		string\n	keyID			string\n	publicKey		ed25519.PublicKey\n	companyAuthority	CompanyAuthorityResolver\n	cycleAuthority		CompanyCycleAuthorityResolver\n}
 EDGES
   contains=matrix/workforce/internal/workorder.Store#companyAuthority,matrix/workforce/internal/workorder.Store#cycleAuthority,matrix/workforce/internal/workorder.Store#keyID,matrix/workforce/internal/workorder.Store#pool,matrix/workforce/internal/workorder.Store#publicKey,matrix/workforce/internal/workorder.Store#tenantID,matrix/workforce/internal/workorder.Store#vault,matrix/workforce/internal/workorder.Store.AttachCompanyAuthority,matrix/workforce/internal/workorder.Store.AttachCompanyCycleAuthority,matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext,matrix/workforce/internal/workorder.Store.verificationKey
+  references=matrix/vault.UserVault,matrix/workforce/internal/workorder.CompanyAuthorityResolver,matrix/workforce/internal/workorder.CompanyCycleAuthorityResolver
+  ^references=matrix/workforce/internal/wakeruntime.Runner,matrix/workforce/internal/workorder.NewStore,matrix/workforce/internal/workorder.Store.AttachCompanyAuthority,matrix/workforce/internal/workorder.Store.AttachCompanyCycleAuthority,matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext,matrix/workforce/internal/workorder.Store.verificationKey
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.Store#companyAuthority kind=field
@@ -1351,42 +1463,63 @@ NODE id=matrix/workforce/internal/workorder.Store.AttachCompanyAuthority kind=me
   digest=b3:21316092906c7f2d104abb44960a734713814ce81f1164e90b6d7323c653aa2c file=workforce/internal/workorder/store.go range=58:64 lang=go exported=true byte_range=1450:1698
   sig=func (store *Store) AttachCompanyAuthority(resolver CompanyAuthorityResolver) error
 EDGES
+  references=matrix/workforce/internal/workorder.CompanyAuthorityResolver,matrix/workforce/internal/workorder.Store,matrix/workforce/internal/workorder.resolver,matrix/workforce/internal/workorder.store
   ^contains=matrix/workforce/internal/workorder.Store
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.Store.AttachCompanyCycleAuthority kind=method
   digest=b3:a0ba16d6ce0ba210160f0fb59e08ec20c747c4fb4c88d745d641f3c01db945b8 file=workforce/internal/workorder/store.go range=50:56 lang=go exported=true byte_range=1186:1448
   sig=func (store *Store) AttachCompanyCycleAuthority(resolver CompanyCycleAuthorityResolver) error
 EDGES
+  references=matrix/workforce/internal/workorder.CompanyCycleAuthorityResolver,matrix/workforce/internal/workorder.Store,matrix/workforce/internal/workorder.resolver,matrix/workforce/internal/workorder.store
   ^contains=matrix/workforce/internal/workorder.Store
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.Store.LoadContext kind=method
   digest=b3:b12d43fe41f911c20d3353efc0d9bb524bd67ff0d34265bb013b8d84b739b771 file=workforce/internal/workorder/store.go range=86:214 lang=go exported=true byte_range=2341:6980
   sig=func (store *Store) LoadContext(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	intentID contracts.IntentID,\n) (Context, error)
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.Goal.Validate,matrix/workforce/internal/contracts.Intent.Validate,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/workorder.ExecutionFromOwner,matrix/workforce/internal/workorder.ExecutionOrder.Validate,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.verificationKey,matrix/workforce/internal/workorder.Verify
+  references=matrix/vault.AD,matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.Goal,matrix/workforce/internal/contracts.Goal.Validate,matrix/workforce/internal/contracts.GoalID,matrix/workforce/internal/contracts.Intent,matrix/workforce/internal/contracts.Intent.Validate,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.WorkOrderID,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.NodeIntent,matrix/workforce/internal/workorder.Context,matrix/workforce/internal/workorder.ErrIntegrity,matrix/workforce/internal/workorder.ErrNotFound,matrix/workforce/internal/workorder.ExecutionFromOwner,matrix/workforce/internal/workorder.ExecutionOrder.Validate,matrix/workforce/internal/workorder.IssuerOwner,matrix/workforce/internal/workorder.Order,matrix/workforce/internal/workorder.Store,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.verificationKey,matrix/workforce/internal/workorder.Verify,matrix/workforce/internal/workorder.canonical,matrix/workforce/internal/workorder.ctx,matrix/workforce/internal/workorder.deadline,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.expectedHash,matrix/workforce/internal/workorder.goalID,matrix/workforce/internal/workorder.intentID,matrix/workforce/internal/workorder.node,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.orderID,matrix/workforce/internal/workorder.organizationID,matrix/workforce/internal/workorder.ownerDepartment,matrix/workforce/internal/workorder.ownerSeat,matrix/workforce/internal/workorder.result,matrix/workforce/internal/workorder.sealed,matrix/workforce/internal/workorder.store,matrix/workforce/internal/workorder.sum,matrix/workforce/internal/workorder.terminalRecord,matrix/workforce/internal/workorder.tx,matrix/workforce/internal/workorder.value,matrix/workforce/internal/workorder.verificationKey
   ^contains=matrix/workforce/internal/workorder.Store
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim,matrix/workforce/internal/wakeruntime.Runner.prepareClaim
+  ^references=matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim,matrix/workforce/internal/wakeruntime.Runner.prepareClaim
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.Store.loadCompanyContext kind=method
   digest=b3:f2fda26526c12a06f272336fb5108c0462c78a09baee6cdfc5296dd25e8364ee file=workforce/internal/workorder/store.go range=216:382 lang=go exported=false byte_range=6982:13811
   sig=func (store *Store) loadCompanyContext(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	intentID contracts.IntentID,\n) (Context, error)
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.CompanyExecutionContext.Validate,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.Goal.Validate,matrix/workforce/internal/contracts.Intent.Validate,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/workorder.ExecutionFromCompany,matrix/workforce/internal/workorder.ExecutionOrder.Validate,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext,matrix/workforce/internal/workorder.VerifyCompany
+  references=matrix/vault.AD,matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.CompanyAuthorityLineage,matrix/workforce/internal/contracts.CompanyExecutionContext,matrix/workforce/internal/contracts.CompanyExecutionContext.Validate,matrix/workforce/internal/contracts.CompanyInitiativeLineage,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.Goal,matrix/workforce/internal/contracts.Goal.Validate,matrix/workforce/internal/contracts.GoalID,matrix/workforce/internal/contracts.Intent,matrix/workforce/internal/contracts.Intent.Validate,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.WorkOrderID,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.NodeIntent,matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.CompanyOrderSchemaVersion,matrix/workforce/internal/workorder.Context,matrix/workforce/internal/workorder.ErrIntegrity,matrix/workforce/internal/workorder.ErrNotFound,matrix/workforce/internal/workorder.ExecutionFromCompany,matrix/workforce/internal/workorder.ExecutionOrder.Validate,matrix/workforce/internal/workorder.IssuerCompanyController,matrix/workforce/internal/workorder.Store,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext,matrix/workforce/internal/workorder.VerifyCompany,matrix/workforce/internal/workorder.authority,matrix/workforce/internal/workorder.canonical,matrix/workforce/internal/workorder.checkpointHash,matrix/workforce/internal/workorder.companyExecution,matrix/workforce/internal/workorder.ctx,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.execute,matrix/workforce/internal/workorder.expectedHash,matrix/workforce/internal/workorder.goalID,matrix/workforce/internal/workorder.intentID,matrix/workforce/internal/workorder.lifecycleState,matrix/workforce/internal/workorder.lifecycleVersion,matrix/workforce/internal/workorder.node,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.orderID,matrix/workforce/internal/workorder.organizationID,matrix/workforce/internal/workorder.ownerDepartment,matrix/workforce/internal/workorder.ownerSeat,matrix/workforce/internal/workorder.result,matrix/workforce/internal/workorder.sealed,matrix/workforce/internal/workorder.store,matrix/workforce/internal/workorder.sum,matrix/workforce/internal/workorder.terminalRecord,matrix/workforce/internal/workorder.tx,matrix/workforce/internal/workorder.value
   ^contains=matrix/workforce/internal/workorder.Store
+  ^calls=matrix/workforce/internal/workorder.Store.LoadContext
+  ^references=matrix/workforce/internal/workorder.Store.LoadContext
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.Store.loadCompanyCycleContext kind=method
   digest=b3:1d0062e81e8206cd58035a5d19a5d29544842c46da49041155ffa5a099cc697a file=workforce/internal/workorder/store.go range=384:535 lang=go exported=false byte_range=13813:19889
   sig=func (store *Store) loadCompanyCycleContext(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	intentID contracts.IntentID,\n) (Context, error)
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/companyruntime.CycleDispatcher.Authority,matrix/workforce/internal/contracts.CompanyExecutionContext.Validate,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.Goal.Validate,matrix/workforce/internal/contracts.Intent.Validate,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/workorder.ExecutionFromCompanyCycle,matrix/workforce/internal/workorder.ExecutionOrder.Validate,matrix/workforce/internal/workorder.VerifyCompanyCycle
+  references=matrix/vault.AD,matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.CompanyAuthorityLineage,matrix/workforce/internal/contracts.CompanyCycleLineage,matrix/workforce/internal/contracts.CompanyExecutionContext,matrix/workforce/internal/contracts.CompanyExecutionContext.Validate,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.Goal,matrix/workforce/internal/contracts.Goal.Validate,matrix/workforce/internal/contracts.GoalID,matrix/workforce/internal/contracts.Intent,matrix/workforce/internal/contracts.Intent.Validate,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.WorkOrderID,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.NodeIntent,matrix/workforce/internal/workorder.CompanyCycleOrder,matrix/workforce/internal/workorder.CompanyCycleOrderSchemaVersion,matrix/workforce/internal/workorder.Context,matrix/workforce/internal/workorder.ErrIntegrity,matrix/workforce/internal/workorder.ErrNotFound,matrix/workforce/internal/workorder.ExecutionFromCompanyCycle,matrix/workforce/internal/workorder.ExecutionOrder.Validate,matrix/workforce/internal/workorder.IssuerCompanyController,matrix/workforce/internal/workorder.Store,matrix/workforce/internal/workorder.VerifyCompanyCycle,matrix/workforce/internal/workorder.authority,matrix/workforce/internal/workorder.canonical,matrix/workforce/internal/workorder.companyExecution,matrix/workforce/internal/workorder.ctx,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.execute,matrix/workforce/internal/workorder.expectedHash,matrix/workforce/internal/workorder.goalID,matrix/workforce/internal/workorder.intentID,matrix/workforce/internal/workorder.node,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.orderID,matrix/workforce/internal/workorder.organizationID,matrix/workforce/internal/workorder.ownerDepartment,matrix/workforce/internal/workorder.ownerSeat,matrix/workforce/internal/workorder.result,matrix/workforce/internal/workorder.sealed,matrix/workforce/internal/workorder.store,matrix/workforce/internal/workorder.sum,matrix/workforce/internal/workorder.terminalRecord,matrix/workforce/internal/workorder.tx,matrix/workforce/internal/workorder.value
   ^contains=matrix/workforce/internal/workorder.Store
+  ^calls=matrix/workforce/internal/workorder.Store.loadCompanyContext
+  ^references=matrix/workforce/internal/workorder.Store.loadCompanyContext
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.Store.verificationKey kind=method
   digest=b3:babbcdb933e9007132b709f23d2464aa0ebf0356bcdd2a1c4ed48980291435cc file=workforce/internal/workorder/store.go range=537:559 lang=go exported=false byte_range=19891:20605
   sig=func (store *Store) verificationKey(\n	ctx context.Context,\n	order Order,\n) (ed25519.PublicKey, error)
 EDGES
+  references=matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/workorder.ErrIntegrity,matrix/workforce/internal/workorder.Order,matrix/workforce/internal/workorder.Store,matrix/workforce/internal/workorder.ctx,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.ownerID,matrix/workforce/internal/workorder.publicKey,matrix/workforce/internal/workorder.store
   ^contains=matrix/workforce/internal/workorder.Store
+  ^calls=matrix/workforce/internal/workorder.Store.LoadContext
+  ^references=matrix/workforce/internal/workorder.Store.LoadContext
   ^defines=matrix/workforce/internal/workorder/store.go
 
 NODE id=matrix/workforce/internal/workorder.VerificationAuthority kind=type
@@ -1394,6 +1527,8 @@ NODE id=matrix/workforce/internal/workorder.VerificationAuthority kind=type
   sig=type VerificationAuthority struct {\n	OwnerKeyID	string\n	OwnerPublicKey	ed25519.PublicKey\n	Company		*CompanyAuthority\n}
 EDGES
   contains=matrix/workforce/internal/workorder.VerificationAuthority#Company,matrix/workforce/internal/workorder.VerificationAuthority#OwnerKeyID,matrix/workforce/internal/workorder.VerificationAuthority#OwnerPublicKey
+  references=matrix/workforce/internal/workorder.CompanyAuthority
+  ^references=matrix/workforce/internal/workorder.VerifyIssued
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.VerificationAuthority#Company kind=field
@@ -1418,42 +1553,67 @@ NODE id=matrix/workforce/internal/workorder.Verify kind=func
   digest=b3:9315660ed3256d2325e3ebf422af675262974bac9d5accda3aa7882223155306 file=workforce/internal/workorder/types.go range=214:231 lang=go exported=true byte_range=8451:9088
   sig=func Verify(order Order, keyID string, publicKey ed25519.PublicKey) error
 EDGES
+  calls=matrix/workforce/internal/workorder.Order.Validate,matrix/workforce/internal/workorder.signingBytes
+  references=matrix/workforce/internal/workorder.Order,matrix/workforce/internal/workorder.Order.Validate,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.keyID,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.publicKey,matrix/workforce/internal/workorder.signature,matrix/workforce/internal/workorder.signingBytes
+  ^calls=matrix/workforce/internal/controlapi.verifyWorkOrder,matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.VerifyIssued
+  ^references=matrix/workforce/internal/controlapi.verifyWorkOrder,matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.VerifyIssued
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.VerifyCompany kind=func
   digest=b3:c0aeba6e20e676fc2c9447c8865bf76b5555754c75ee8d9891571f0eda2a5027 file=workforce/internal/workorder/company.go range=250:270 lang=go exported=true byte_range=11788:12559
   sig=func VerifyCompany(order CompanyOrder, authority CompanyAuthority) error
 EDGES
+  calls=matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.companySigningBytes,matrix/workforce/internal/workorder.decodeIssuerPublicKey,matrix/workforce/internal/workorder.validateCompanyAuthority
+  references=matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.authority,matrix/workforce/internal/workorder.companySigningBytes,matrix/workforce/internal/workorder.decodeIssuerPublicKey,matrix/workforce/internal/workorder.decoded,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.issuerPublicKey,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.payload,matrix/workforce/internal/workorder.validateCompanyAuthority
+  ^calls=matrix/workforce/internal/initiative.Dispatcher.dispatch,matrix/workforce/internal/productexecution.Store.stageOrders,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.VerifyIssued
+  ^references=matrix/workforce/internal/initiative.Dispatcher.dispatch,matrix/workforce/internal/productexecution.Store.stageOrders,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.VerifyIssued
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.VerifyCompanyCycle kind=func
   digest=b3:528d2eab2bb8e14c04e1908cc45ae5d58f3a44bf5ed364c72dacac880b5c7420 file=workforce/internal/workorder/cycle.go range=187:201 lang=go exported=true byte_range=8330:8979
   sig=func VerifyCompanyCycle(order CompanyCycleOrder, authority CompanyCycleAuthority) error
 EDGES
+  calls=matrix/workforce/internal/workorder.CompanyCycleOrder.Validate,matrix/workforce/internal/workorder.companyCycleSigningBytes,matrix/workforce/internal/workorder.validateCompanyCycleAuthority
+  references=matrix/workforce/internal/workorder.CompanyCycleAuthority,matrix/workforce/internal/workorder.CompanyCycleOrder,matrix/workforce/internal/workorder.CompanyCycleOrder.Validate,matrix/workforce/internal/workorder.authority,matrix/workforce/internal/workorder.companyCycleSigningBytes,matrix/workforce/internal/workorder.decodeErr,matrix/workforce/internal/workorder.decoded,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.payload,matrix/workforce/internal/workorder.validateCompanyCycleAuthority
+  ^calls=matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
+  ^references=matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
   ^defines=matrix/workforce/internal/workorder/cycle.go
 
 NODE id=matrix/workforce/internal/workorder.VerifyIssued kind=func
   digest=b3:fbde3b06dcfaeaae287c1ef01c393caed3658e73ff08c658cac3aa6d5ce9c85a file=workforce/internal/workorder/company.go range=348:362 lang=go exported=true byte_range=15424:16034
   sig=func VerifyIssued(value IssuedOrder, authority VerificationAuthority) error
 EDGES
+  calls=matrix/workforce/internal/workorder.IssuedOrder.Validate,matrix/workforce/internal/workorder.Verify,matrix/workforce/internal/workorder.VerifyCompany
+  references=matrix/workforce/internal/workorder.IssuedOrder,matrix/workforce/internal/workorder.IssuedOrder.Validate,matrix/workforce/internal/workorder.IssuerOwner,matrix/workforce/internal/workorder.VerificationAuthority,matrix/workforce/internal/workorder.Verify,matrix/workforce/internal/workorder.VerifyCompany,matrix/workforce/internal/workorder.authority,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.value
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.companyCycleSigningBytes kind=func
   digest=b3:77e7c5c65c08da0b26bcd4fe99ce9c1a3ef395f614eebfd67366a5f86bed614e file=workforce/internal/workorder/cycle.go range=224:230 lang=go exported=false byte_range=10123:10418
   sig=func companyCycleSigningBytes(order CompanyCycleOrder, keyID string) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/workorder.CompanyCycleOrder,matrix/workforce/internal/workorder.keyID,matrix/workforce/internal/workorder.order
+  ^calls=matrix/workforce/internal/workorder.SignCompanyCycle,matrix/workforce/internal/workorder.VerifyCompanyCycle
+  ^references=matrix/workforce/internal/workorder.SignCompanyCycle,matrix/workforce/internal/workorder.VerifyCompanyCycle
   ^defines=matrix/workforce/internal/workorder/cycle.go
 
 NODE id=matrix/workforce/internal/workorder.companySigningBytes kind=func
   digest=b3:fc3a3f0fa6a9a5c6ec9d9635d0a4422dc5069f8f851932b5b5ca312c61df5b34 file=workforce/internal/workorder/company.go range=301:307 lang=go exported=false byte_range=13873:14158
   sig=func companySigningBytes(order CompanyOrder, keyID string) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.keyID,matrix/workforce/internal/workorder.order
+  ^calls=matrix/workforce/internal/workorder.SignCompany,matrix/workforce/internal/workorder.VerifyCompany
+  ^references=matrix/workforce/internal/workorder.SignCompany,matrix/workforce/internal/workorder.VerifyCompany
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.decodeIssuerPublicKey kind=func
   digest=b3:45bc1a2a040bbebe9f380990dea3a740bd744f60b38b95b84b48d6ac838c32dd file=workforce/internal/workorder/company.go range=309:315 lang=go exported=false byte_range=14160:14506
   sig=func decodeIssuerPublicKey(policy mission.CompanyIssuerPolicy) (ed25519.PublicKey, error)
 EDGES
+  references=matrix/workforce/internal/mission.CompanyIssuerPolicy,matrix/workforce/internal/workorder.decoded,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.policy
+  ^calls=matrix/workforce/internal/workorder.SignCompany,matrix/workforce/internal/workorder.VerifyCompany
+  ^references=matrix/workforce/internal/workorder.SignCompany,matrix/workforce/internal/workorder.VerifyCompany
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.payload kind=type
@@ -1462,6 +1622,8 @@ NODE id=matrix/workforce/internal/workorder.payload kind=type
 EDGES
   contains=matrix/workforce/internal/workorder.payload#AcceptanceCriteria,matrix/workforce/internal/workorder.payload#Autonomy,matrix/workforce/internal/workorder.payload#Budget,matrix/workforce/internal/workorder.payload#CreatedAt,matrix/workforce/internal/workorder.payload#Deadline,matrix/workforce/internal/workorder.payload#Departments,matrix/workforce/internal/workorder.payload#ID,matrix/workforce/internal/workorder.payload#IdempotencyKey,matrix/workforce/internal/workorder.payload#MGSDigest,matrix/workforce/internal/workorder.payload#MGSReference,matrix/workforce/internal/workorder.payload#ModelID,matrix/workforce/internal/workorder.payload#ModelProvider,matrix/workforce/internal/workorder.payload#Objective,matrix/workforce/internal/workorder.payload#OrganizationID,matrix/workforce/internal/workorder.payload#OwnerID,matrix/workforce/internal/workorder.payload#Priority,matrix/workforce/internal/workorder.payload#ProjectID,matrix/workforce/internal/workorder.payload#SchemaVersion,matrix/workforce/internal/workorder.payload#Scope,matrix/workforce/internal/workorder.payload#ScopeFiles,matrix/workforce/internal/workorder.payload#ScopeSymbols,matrix/workforce/internal/workorder.payload#Version,matrix/workforce/internal/workorder.payload#WorkspaceID,matrix/workforce/internal/workorder.payload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.WorkspaceID,matrix/workforce/internal/workorder.Budget
+  ^references=matrix/workforce/internal/workorder.SignCompany,matrix/workforce/internal/workorder.SignCompanyCycle,matrix/workforce/internal/workorder.VerifyCompany,matrix/workforce/internal/workorder.VerifyCompanyCycle,matrix/workforce/internal/workorder.payload.Validate,matrix/workforce/internal/workorder.signingBytes
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.payload#AcceptanceCriteria kind=field
@@ -1606,6 +1768,7 @@ NODE id=matrix/workforce/internal/workorder.payload.Validate kind=method
   digest=b3:2dcb1a7d266a13d25c1ecd551dfeab0eea1db7ffe2050316de7926fdea0d99e3 file=workforce/internal/workorder/types.go range=194:194 lang=go exported=true byte_range=7880:7926
   sig=func (payload) Validate() error
 EDGES
+  references=matrix/workforce/internal/workorder.payload
   ^contains=matrix/workforce/internal/workorder.payload
   ^defines=matrix/workforce/internal/workorder/types.go
 
@@ -1613,36 +1776,57 @@ NODE id=matrix/workforce/internal/workorder.signingBytes kind=func
   digest=b3:28dc9966049d7543ad79f74376a90d395404b9f00d3672abb18fa86502818f8f file=workforce/internal/workorder/types.go range=233:249 lang=go exported=false byte_range=9090:10032
   sig=func signingBytes(order Order) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical
+  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/workorder.Order,matrix/workforce/internal/workorder.order,matrix/workforce/internal/workorder.payload
+  ^calls=matrix/workforce/internal/workorder.Sign,matrix/workforce/internal/workorder.Verify
+  ^references=matrix/workforce/internal/workorder.Sign,matrix/workforce/internal/workorder.Verify
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.validCompanySet kind=func
   digest=b3:0a640480beee72e6e25ad171f851260fb681f703c5a1333aeeb915b07d7ade70 file=workforce/internal/workorder/company.go range=364:375 lang=go exported=false byte_range=16036:16392
   sig=func validCompanySet(values []string, minimum, maximum, maxBytes int) bool
 EDGES
+  references=matrix/workforce/internal/workorder.index,matrix/workforce/internal/workorder.maxBytes,matrix/workforce/internal/workorder.maximum,matrix/workforce/internal/workorder.minimum,matrix/workforce/internal/workorder.value,matrix/workforce/internal/workorder.values
+  ^calls=matrix/workforce/internal/workorder.CompanyBinding.Validate,matrix/workforce/internal/workorder.CompanyCycleBinding.Validate,matrix/workforce/internal/workorder.CompanyCycleOrder.Validate
+  ^references=matrix/workforce/internal/workorder.CompanyBinding.Validate,matrix/workforce/internal/workorder.CompanyCycleBinding.Validate,matrix/workforce/internal/workorder.CompanyCycleOrder.Validate
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.validOrderID kind=func
   digest=b3:b0ded9eba5b0f27acb7384db56f8caa9626dd9e4520bc4a92a0aa55294e5ee39 file=workforce/internal/workorder/types.go range=251:267 lang=go exported=false byte_range=10034:10462
   sig=func validOrderID(value string) bool
 EDGES
+  references=matrix/workforce/internal/workorder.character,matrix/workforce/internal/workorder.value
+  ^calls=matrix/workforce/internal/workorder.CompanyBinding.Validate,matrix/workforce/internal/workorder.CompanyCycleBinding.Validate,matrix/workforce/internal/workorder.CompanyCycleOrder.Validate,matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.Order.Validate
+  ^references=matrix/workforce/internal/workorder.CompanyBinding.Validate,matrix/workforce/internal/workorder.CompanyCycleBinding.Validate,matrix/workforce/internal/workorder.CompanyCycleOrder.Validate,matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.Order.Validate
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.validScopeValues kind=func
   digest=b3:755dbf53fb3f050968747228c1743db81f66d0d9982d419c5e0d2205564c45ee file=workforce/internal/workorder/types.go range=269:286 lang=go exported=false byte_range=10464:10982
   sig=func validScopeValues(values []string, paths bool) bool
 EDGES
+  references=matrix/workforce/internal/workorder.paths,matrix/workforce/internal/workorder.seen,matrix/workforce/internal/workorder.value,matrix/workforce/internal/workorder.values
+  ^calls=matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.Order.Validate
+  ^references=matrix/workforce/internal/workorder.CompanyOrder.Validate,matrix/workforce/internal/workorder.Order.Validate
   ^defines=matrix/workforce/internal/workorder/types.go
 
 NODE id=matrix/workforce/internal/workorder.validateCompanyAuthority kind=func
   digest=b3:f15a68923a8b38688cdd78cce93c91a72cdeb2d10eb24028ba22cd79d3a1e52e file=workforce/internal/workorder/company.go range=272:289 lang=go exported=false byte_range=12561:13468
   sig=func validateCompanyAuthority(order CompanyOrder, authority CompanyAuthority) error
 EDGES
+  calls=matrix/workforce/internal/workorder.CompanyAuthority.Validate
+  references=matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.CompanyAuthority.Validate,matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.authority,matrix/workforce/internal/workorder.binding,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.order
+  ^calls=matrix/workforce/internal/workorder.SignCompany,matrix/workforce/internal/workorder.VerifyCompany
+  ^references=matrix/workforce/internal/workorder.SignCompany,matrix/workforce/internal/workorder.VerifyCompany
   ^defines=matrix/workforce/internal/workorder/company.go
 
 NODE id=matrix/workforce/internal/workorder.validateCompanyCycleAuthority kind=func
   digest=b3:25e02460f1a0b626b341dd347f9d9707398267f348e34128e2b4d5fffc9883de file=workforce/internal/workorder/cycle.go range=203:222 lang=go exported=false byte_range=8981:10121
   sig=func validateCompanyCycleAuthority(order CompanyCycleOrder, authority CompanyCycleAuthority) error
 EDGES
+  calls=matrix/workforce/internal/workorder.CompanyCycleAuthority.Validate
+  references=matrix/workforce/internal/workorder.CompanyCycleAuthority,matrix/workforce/internal/workorder.CompanyCycleAuthority.Validate,matrix/workforce/internal/workorder.CompanyCycleOrder,matrix/workforce/internal/workorder.authority,matrix/workforce/internal/workorder.binding,matrix/workforce/internal/workorder.err,matrix/workforce/internal/workorder.order
+  ^calls=matrix/workforce/internal/workorder.SignCompanyCycle,matrix/workforce/internal/workorder.VerifyCompanyCycle
+  ^references=matrix/workforce/internal/workorder.SignCompanyCycle,matrix/workforce/internal/workorder.VerifyCompanyCycle
   ^defines=matrix/workforce/internal/workorder/cycle.go
 
 NODE id=matrix/workforce/internal/workorder/company.go kind=file

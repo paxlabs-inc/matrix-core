@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/lease kind=package
   digest=b3:1ab58c2aa14c09bb65b85e5860110a43d87829e718a3367c474ba92ca4c56d70 file=workforce/internal/lease range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/lease/doc.go,matrix/workforce/internal/lease/store.go,matrix/workforce/internal/lease/types.go
+  imports=matrix/workforce/internal/contracts,matrix/workforce/internal/dependency
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/actorstate,matrix/workforce/internal/commercialcapability,matrix/workforce/internal/commercialexecution,matrix/workforce/internal/departmentadapter,matrix/workforce/internal/developer,matrix/workforce/internal/effect,matrix/workforce/internal/productcapability,matrix/workforce/internal/provider/customer,matrix/workforce/internal/provider/developer,matrix/workforce/internal/provider/external,matrix/workforce/internal/provider/financial,matrix/workforce/internal/testauthority,matrix/workforce/internal/wakeruntime,matrix/workforce/internal/workcompile
 
 NODE id=matrix/workforce/internal/lease.ErrCancelled kind=var
   digest=b3:7528afa2c19f21546f01835732183236ca06539aa6d3132215f5ee78915b3f81 file=workforce/internal/lease/types.go range=22:23 lang=go exported=true byte_range=593:706
   sig=error
   doc=ErrCancelled means lease authority was explicitly cancelled.
 EDGES
+  ^references=matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.classify,matrix/workforce/internal/wakeruntime.Runner.RunClaim,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.ErrExpired kind=var
@@ -18,6 +21,7 @@ NODE id=matrix/workforce/internal/lease.ErrExpired kind=var
   sig=error
   doc=ErrExpired means lease authority has expired.
 EDGES
+  ^references=matrix/workforce/internal/lease.Store.Acquire,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.Renew,matrix/workforce/internal/lease.Store.classify,matrix/workforce/internal/wakeruntime.Runner.RunClaim,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.ErrHeld kind=var
@@ -25,6 +29,7 @@ NODE id=matrix/workforce/internal/lease.ErrHeld kind=var
   sig=error
   doc=ErrHeld means the seat or graph node already has an active lease.
 EDGES
+  ^references=matrix/workforce/internal/lease.Store.acquireOnce
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.ErrPolicyMismatch kind=var
@@ -32,6 +37,7 @@ NODE id=matrix/workforce/internal/lease.ErrPolicyMismatch kind=var
   sig=error
   doc=ErrPolicyMismatch means bound authority is no longer current.
 EDGES
+  ^references=matrix/workforce/internal/lease.requireCurrent
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.ErrStaleFence kind=var
@@ -39,6 +45,7 @@ NODE id=matrix/workforce/internal/lease.ErrStaleFence kind=var
   sig=error
   doc=ErrStaleFence means the caller no longer owns the current generation.
 EDGES
+  ^references=matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.Recover,matrix/workforce/internal/lease.Store.classify,matrix/workforce/internal/lease.Store.load,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.ErrUncertain kind=var
@@ -46,6 +53,7 @@ NODE id=matrix/workforce/internal/lease.ErrUncertain kind=var
   sig=error
   doc=ErrUncertain means the lease service cannot prove authority and fails closed.
 EDGES
+  ^references=matrix/workforce/internal/lease.Store.Acquire,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.Cancel,matrix/workforce/internal/lease.Store.Renew,matrix/workforce/internal/lease.Store.acquireOnce,matrix/workforce/internal/lease.Store.classify,matrix/workforce/internal/lease.Store.currentTime,matrix/workforce/internal/lease.Store.load,matrix/workforce/internal/lease.expireActive,matrix/workforce/internal/lease.nextFence,matrix/workforce/internal/lease.requireCurrent
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.Grant kind=type
@@ -55,6 +63,9 @@ NODE id=matrix/workforce/internal/lease.Grant kind=type
 EDGES
   contains=matrix/workforce/internal/lease.Grant#Fence,matrix/workforce/internal/lease.Grant#RenewedAt,matrix/workforce/internal/lease.Grant#State
   implements=matrix/workforce/internal/contracts.Validatable
+  embeds=matrix/workforce/internal/lease.Request
+  references=matrix/workforce/internal/contracts.FenceToken,matrix/workforce/internal/lease.Request,matrix/workforce/internal/lease.State
+  ^references=matrix/workforce/internal/commercialcapability.AdapterInput,matrix/workforce/internal/departmentadapter.openPayload,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/developer.Authority.claim,matrix/workforce/internal/developer.Authority.openBoundScope,matrix/workforce/internal/developer.Grant,matrix/workforce/internal/lease.Store.Acquire,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.Recover,matrix/workforce/internal/lease.Store.Renew,matrix/workforce/internal/lease.Store.acquireOnce,matrix/workforce/internal/lease.Store.load,matrix/workforce/internal/productcapability.AdapterInput,matrix/workforce/internal/provider/customer.BuildEnvelope,matrix/workforce/internal/provider/customer.Envelope,matrix/workforce/internal/provider/developer.inputEnvelope,matrix/workforce/internal/provider/external.BuildEnvelope,matrix/workforce/internal/provider/external.Envelope,matrix/workforce/internal/provider/financial.Envelope,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.auditorLease,matrix/workforce/internal/wakeruntime.Runner.bindRuntimeGrant,matrix/workforce/internal/wakeruntime.Runner.openAuditorLease,matrix/workforce/internal/wakeruntime.Runner.prepareClaim,matrix/workforce/internal/wakeruntime.bindGrant,matrix/workforce/internal/wakeruntime.preparedClaim
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.Grant#Fence kind=field
@@ -81,6 +92,7 @@ NODE id=matrix/workforce/internal/lease.Incident kind=type
   doc=Incident is a safe typed explanation of failed authorization.
 EDGES
   contains=matrix/workforce/internal/lease.Incident#CreatedAt,matrix/workforce/internal/lease.Incident#ID,matrix/workforce/internal/lease.Incident#Kind,matrix/workforce/internal/lease.Incident#LeaseID,matrix/workforce/internal/lease.Incident#OrganizationID,matrix/workforce/internal/lease.Incident#Reason
+  references=matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.OrganizationID
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.Incident#CreatedAt kind=field
@@ -124,6 +136,9 @@ NODE id=matrix/workforce/internal/lease.New kind=func
   sig=func New(pool *pgxpool.Pool, tenantID string, now func() time.Time) (*Store, error)
   doc=New constructs a fail-closed tenant lease service.
 EDGES
+  references=matrix/workforce/internal/lease.Store,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.pool,matrix/workforce/internal/lease.tenantID
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.Request kind=type
@@ -133,6 +148,9 @@ NODE id=matrix/workforce/internal/lease.Request kind=type
 EDGES
   contains=matrix/workforce/internal/lease.Request#ExpiresAt,matrix/workforce/internal/lease.Request#ID,matrix/workforce/internal/lease.Request#IssuedAt,matrix/workforce/internal/lease.Request#MandateID,matrix/workforce/internal/lease.Request#MandateVersion,matrix/workforce/internal/lease.Request#NodeID,matrix/workforce/internal/lease.Request#OrganizationID,matrix/workforce/internal/lease.Request#Policies,matrix/workforce/internal/lease.Request#SeatID,matrix/workforce/internal/lease.Request#WakeID,matrix/workforce/internal/lease.Request.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.MandateID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.PolicyRef,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/dependency.NodeID
+  ^embeds=matrix/workforce/internal/lease.Grant
+  ^references=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/lease.Grant,matrix/workforce/internal/lease.Request.Validate,matrix/workforce/internal/lease.Store.Acquire,matrix/workforce/internal/lease.Store.acquireOnce,matrix/workforce/internal/lease.Store.load,matrix/workforce/internal/lease.requireAuthority,matrix/workforce/internal/testauthority.Fixture.Publish,matrix/workforce/internal/testauthority.Fixture.PublishExact,matrix/workforce/internal/testauthority.Published,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.auditorLease
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.Request#ExpiresAt kind=field
@@ -200,7 +218,11 @@ NODE id=matrix/workforce/internal/lease.Request.Validate kind=method
   sig=func (request Request) Validate() error
   doc=Validate rejects incomplete, expired, unbounded, or duplicate policy bindings.
 EDGES
+  calls=matrix/workforce/internal/contracts.PolicyRef.Validate,matrix/workforce/internal/lease.validUTC,matrix/workforce/internal/lease.validateToken
+  references=matrix/workforce/internal/contracts.PolicyID,matrix/workforce/internal/contracts.PolicyRef.Validate,matrix/workforce/internal/lease.Request,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.name,matrix/workforce/internal/lease.policy,matrix/workforce/internal/lease.request,matrix/workforce/internal/lease.seen,matrix/workforce/internal/lease.validUTC,matrix/workforce/internal/lease.validateToken,matrix/workforce/internal/lease.value
   ^contains=matrix/workforce/internal/lease.Request
+  ^calls=matrix/workforce/internal/commercialcapability.AdapterInput.ValidateAt,matrix/workforce/internal/departmentadapter.openPayload,matrix/workforce/internal/lease.Store.Acquire,matrix/workforce/internal/productcapability.AdapterInput.ValidateAt,matrix/workforce/internal/productcapability.DeveloperExecutionInput.ValidateAt,matrix/workforce/internal/provider/customer.Adapter.authorize,matrix/workforce/internal/provider/customer.Envelope.Validate,matrix/workforce/internal/provider/external.Adapter.authorize,matrix/workforce/internal/provider/external.BuildEnvelope,matrix/workforce/internal/provider/external.Envelope.Validate,matrix/workforce/internal/provider/financial.Adapter.authorize,matrix/workforce/internal/provider/financial.Envelope.Validate
+  ^references=matrix/workforce/internal/commercialcapability.AdapterInput.ValidateAt,matrix/workforce/internal/departmentadapter.openPayload,matrix/workforce/internal/lease.Store.Acquire,matrix/workforce/internal/productcapability.AdapterInput.ValidateAt,matrix/workforce/internal/productcapability.DeveloperExecutionInput.ValidateAt,matrix/workforce/internal/provider/customer.Adapter.authorize,matrix/workforce/internal/provider/customer.Envelope.Validate,matrix/workforce/internal/provider/external.Adapter.authorize,matrix/workforce/internal/provider/external.BuildEnvelope,matrix/workforce/internal/provider/external.Envelope.Validate,matrix/workforce/internal/provider/financial.Adapter.authorize,matrix/workforce/internal/provider/financial.Envelope.Validate
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.State kind=type
@@ -209,6 +231,7 @@ NODE id=matrix/workforce/internal/lease.State kind=type
   doc=State is the closed durable lease lifecycle.
 EDGES
   contains=matrix/workforce/internal/lease.State.Valid
+  ^references=matrix/workforce/internal/lease.Grant,matrix/workforce/internal/lease.State.Valid,matrix/workforce/internal/lease.StateActive,matrix/workforce/internal/lease.StateCancelled,matrix/workforce/internal/lease.StateExpired,matrix/workforce/internal/lease.StateLost
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.State.Valid kind=method
@@ -216,6 +239,7 @@ NODE id=matrix/workforce/internal/lease.State.Valid kind=method
   sig=func (state State) Valid() bool
   doc=Valid reports whether state is executable by this release.
 EDGES
+  references=matrix/workforce/internal/lease.State,matrix/workforce/internal/lease.StateActive,matrix/workforce/internal/lease.StateCancelled,matrix/workforce/internal/lease.StateExpired,matrix/workforce/internal/lease.StateLost,matrix/workforce/internal/lease.state
   ^contains=matrix/workforce/internal/lease.State
   ^defines=matrix/workforce/internal/lease/types.go
 
@@ -224,6 +248,8 @@ NODE id=matrix/workforce/internal/lease.StateActive kind=const
   sig=lease.State
   doc=StateActive authorizes bounded work until expiry.
 EDGES
+  references=matrix/workforce/internal/lease.State
+  ^references=matrix/workforce/internal/commercialcapability.AdapterInput.ValidateAt,matrix/workforce/internal/commercialexecution.Store.authorize,matrix/workforce/internal/departmentadapter.openPayload,matrix/workforce/internal/effect.Gateway.beginDispatch,matrix/workforce/internal/lease.State.Valid,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.acquireOnce,matrix/workforce/internal/lease.Store.classify,matrix/workforce/internal/productcapability.AdapterInput.ValidateAt,matrix/workforce/internal/productcapability.DeveloperExecutionInput.ValidateAt,matrix/workforce/internal/provider/customer.Adapter.authorize,matrix/workforce/internal/provider/customer.Envelope.Validate,matrix/workforce/internal/provider/developer.Adapter.authorize,matrix/workforce/internal/provider/external.Adapter.authorize,matrix/workforce/internal/provider/external.BuildEnvelope,matrix/workforce/internal/provider/external.Envelope.Validate,matrix/workforce/internal/provider/financial.Adapter.authorize,matrix/workforce/internal/provider/financial.Envelope.Validate
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.StateCancelled kind=const
@@ -231,6 +257,8 @@ NODE id=matrix/workforce/internal/lease.StateCancelled kind=const
   sig=lease.State
   doc=StateCancelled is terminal explicit revocation.
 EDGES
+  references=matrix/workforce/internal/lease.State
+  ^references=matrix/workforce/internal/lease.State.Valid,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.classify
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.StateExpired kind=const
@@ -238,6 +266,8 @@ NODE id=matrix/workforce/internal/lease.StateExpired kind=const
   sig=lease.State
   doc=StateExpired is terminal time-based loss of authority.
 EDGES
+  references=matrix/workforce/internal/lease.State
+  ^references=matrix/workforce/internal/lease.State.Valid
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.StateLost kind=const
@@ -245,6 +275,8 @@ NODE id=matrix/workforce/internal/lease.StateLost kind=const
   sig=lease.State
   doc=StateLost records fail-closed authority uncertainty.
 EDGES
+  references=matrix/workforce/internal/lease.State
+  ^references=matrix/workforce/internal/lease.State.Valid
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.Store kind=type
@@ -253,6 +285,7 @@ NODE id=matrix/workforce/internal/lease.Store kind=type
   doc=Store owns linearizable lease transactions for one tenant.
 EDGES
   contains=matrix/workforce/internal/lease.Store#now,matrix/workforce/internal/lease.Store#pool,matrix/workforce/internal/lease.Store#tenantID,matrix/workforce/internal/lease.Store.Acquire,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.Cancel,matrix/workforce/internal/lease.Store.Recover,matrix/workforce/internal/lease.Store.Renew,matrix/workforce/internal/lease.Store.acquireOnce,matrix/workforce/internal/lease.Store.classify,matrix/workforce/internal/lease.Store.currentTime,matrix/workforce/internal/lease.Store.incident,matrix/workforce/internal/lease.Store.load
+  ^references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.NewAssembler,matrix/workforce/internal/commercialexecution.NewStore,matrix/workforce/internal/commercialexecution.Store,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.NewAuthority,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.New,matrix/workforce/internal/lease.New,matrix/workforce/internal/lease.Store.Acquire,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.Cancel,matrix/workforce/internal/lease.Store.Recover,matrix/workforce/internal/lease.Store.Renew,matrix/workforce/internal/lease.Store.acquireOnce,matrix/workforce/internal/lease.Store.classify,matrix/workforce/internal/lease.Store.currentTime,matrix/workforce/internal/lease.Store.incident,matrix/workforce/internal/lease.Store.load,matrix/workforce/internal/wakeruntime.Runner,matrix/workforce/internal/workcompile.Compiler,matrix/workforce/internal/workcompile.New
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.Store#now kind=field
@@ -278,7 +311,11 @@ NODE id=matrix/workforce/internal/lease.Store.Acquire kind=method
   sig=func (store *Store) Acquire(ctx context.Context, request Request) (Grant, error)
   doc=Acquire atomically expires prior authority, verifies current signed authority,\nlocks both scopes, and mints a monotonically increasing fence.
 EDGES
+  calls=matrix/workforce/internal/lease.Request.Validate,matrix/workforce/internal/lease.Store.acquireOnce,matrix/workforce/internal/lease.Store.currentTime
+  references=matrix/workforce/internal/lease.ErrExpired,matrix/workforce/internal/lease.ErrUncertain,matrix/workforce/internal/lease.Grant,matrix/workforce/internal/lease.Request,matrix/workforce/internal/lease.Request.Validate,matrix/workforce/internal/lease.Store,matrix/workforce/internal/lease.Store.acquireOnce,matrix/workforce/internal/lease.Store.currentTime,matrix/workforce/internal/lease.acquireErr,matrix/workforce/internal/lease.attempt,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.grant,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.request,matrix/workforce/internal/lease.store
   ^contains=matrix/workforce/internal/lease.Store
+  ^calls=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.auditorLease
+  ^references=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.auditorLease
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.Store.Authorize kind=method
@@ -286,7 +323,11 @@ NODE id=matrix/workforce/internal/lease.Store.Authorize kind=method
   sig=func (store *Store) Authorize(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	leaseID contracts.LeaseID,\n	fence contracts.FenceToken,\n) (Grant, error)
   doc=Authorize proves the exact lease and fence are active at this instant and that\nevery signed mandate and policy binding remains current.
 EDGES
+  calls=matrix/workforce/internal/lease.Store.currentTime,matrix/workforce/internal/lease.Store.incident,matrix/workforce/internal/lease.Store.load,matrix/workforce/internal/lease.requireAuthority
+  references=matrix/workforce/internal/contracts.FenceToken,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/lease.ErrCancelled,matrix/workforce/internal/lease.ErrExpired,matrix/workforce/internal/lease.ErrStaleFence,matrix/workforce/internal/lease.ErrUncertain,matrix/workforce/internal/lease.Grant,matrix/workforce/internal/lease.StateActive,matrix/workforce/internal/lease.StateCancelled,matrix/workforce/internal/lease.Store,matrix/workforce/internal/lease.Store.currentTime,matrix/workforce/internal/lease.Store.incident,matrix/workforce/internal/lease.Store.load,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.fence,matrix/workforce/internal/lease.grant,matrix/workforce/internal/lease.leaseID,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.organizationID,matrix/workforce/internal/lease.requireAuthority,matrix/workforce/internal/lease.store,matrix/workforce/internal/lease.tx
   ^contains=matrix/workforce/internal/lease.Store
+  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/commercialexecution.Store.authorize,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/lease.Store.Recover,matrix/workforce/internal/workcompile.Compiler.authorizePacket
+  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/commercialexecution.Store.authorize,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/lease.Store.Recover,matrix/workforce/internal/workcompile.Compiler.authorizePacket
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.Store.Cancel kind=method
@@ -294,7 +335,11 @@ NODE id=matrix/workforce/internal/lease.Store.Cancel kind=method
   sig=func (store *Store) Cancel(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	leaseID contracts.LeaseID,\n	fence contracts.FenceToken,\n	reason string,\n) error
   doc=Cancel revokes one current lease and never reuses its fence.
 EDGES
+  calls=matrix/workforce/internal/lease.Store.classify,matrix/workforce/internal/lease.Store.currentTime
+  references=matrix/workforce/internal/contracts.FenceToken,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/lease.ErrUncertain,matrix/workforce/internal/lease.Store,matrix/workforce/internal/lease.Store.classify,matrix/workforce/internal/lease.Store.currentTime,matrix/workforce/internal/lease.command,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.fence,matrix/workforce/internal/lease.leaseID,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.organizationID,matrix/workforce/internal/lease.reason,matrix/workforce/internal/lease.store
   ^contains=matrix/workforce/internal/lease.Store
+  ^calls=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/wakeruntime.Runner.RunClaim,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^references=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/wakeruntime.Runner.RunClaim,matrix/workforce/internal/wakeruntime.Runner.runIndependentAudit,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.Store.Recover kind=method
@@ -302,7 +347,11 @@ NODE id=matrix/workforce/internal/lease.Store.Recover kind=method
   sig=func (store *Store) Recover(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	leaseID contracts.LeaseID,\n	wakeID contracts.WakeID,\n	seatID contracts.SeatID,\n	nodeID dependency.NodeID,\n) (Grant, error)
   doc=Recover returns an already-minted active grant only when every scheduler and\ngraph identity supplied by a reclaimed wake matches. It never creates,\nrenews, or widens authority.
 EDGES
+  calls=matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.load,matrix/workforce/internal/lease.validateToken
+  references=matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/lease.ErrStaleFence,matrix/workforce/internal/lease.Grant,matrix/workforce/internal/lease.Store,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.load,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.grant,matrix/workforce/internal/lease.leaseID,matrix/workforce/internal/lease.name,matrix/workforce/internal/lease.nodeID,matrix/workforce/internal/lease.organizationID,matrix/workforce/internal/lease.seatID,matrix/workforce/internal/lease.store,matrix/workforce/internal/lease.validateToken,matrix/workforce/internal/lease.value,matrix/workforce/internal/lease.wakeID
   ^contains=matrix/workforce/internal/lease.Store
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.prepareClaim,matrix/workforce/internal/wakeruntime.Runner.runIndependentAudit
+  ^references=matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.prepareClaim,matrix/workforce/internal/wakeruntime.Runner.runIndependentAudit
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.Store.Renew kind=method
@@ -310,6 +359,8 @@ NODE id=matrix/workforce/internal/lease.Store.Renew kind=method
   sig=func (store *Store) Renew(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	leaseID contracts.LeaseID,\n	fence contracts.FenceToken,\n	expiresAt time.Time,\n) (Grant, error)
   doc=Renew extends one active generation without changing its fence.
 EDGES
+  calls=matrix/workforce/internal/contracts.FenceToken.Validate,matrix/workforce/internal/lease.Store.classify,matrix/workforce/internal/lease.Store.currentTime,matrix/workforce/internal/lease.Store.load,matrix/workforce/internal/lease.validUTC,matrix/workforce/internal/lease.validateToken
+  references=matrix/workforce/internal/contracts.FenceToken,matrix/workforce/internal/contracts.FenceToken.Validate,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/lease.ErrExpired,matrix/workforce/internal/lease.ErrUncertain,matrix/workforce/internal/lease.Grant,matrix/workforce/internal/lease.Store,matrix/workforce/internal/lease.Store.classify,matrix/workforce/internal/lease.Store.currentTime,matrix/workforce/internal/lease.Store.load,matrix/workforce/internal/lease.command,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.expiresAt,matrix/workforce/internal/lease.fence,matrix/workforce/internal/lease.leaseID,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.organizationID,matrix/workforce/internal/lease.store,matrix/workforce/internal/lease.validUTC,matrix/workforce/internal/lease.validateToken
   ^contains=matrix/workforce/internal/lease.Store
   ^defines=matrix/workforce/internal/lease/store.go
 
@@ -317,77 +368,117 @@ NODE id=matrix/workforce/internal/lease.Store.acquireOnce kind=method
   digest=b3:03fe3cc1c205e7e4e03366c364b12aaafd3329c4cbbc0da4b8c082c1c06ded0f file=workforce/internal/lease/store.go range=90:157 lang=go exported=false byte_range=2473:5324
   sig=func (store *Store) acquireOnce(\n	ctx context.Context,\n	request Request,\n	now time.Time,\n) (Grant, error)
 EDGES
+  calls=matrix/workforce/internal/lease.expireActive,matrix/workforce/internal/lease.nextFence,matrix/workforce/internal/lease.policyBindingHash,matrix/workforce/internal/lease.requireAuthority
+  references=matrix/workforce/internal/contracts.FenceToken,matrix/workforce/internal/lease.ErrHeld,matrix/workforce/internal/lease.ErrUncertain,matrix/workforce/internal/lease.Grant,matrix/workforce/internal/lease.Request,matrix/workforce/internal/lease.StateActive,matrix/workforce/internal/lease.Store,matrix/workforce/internal/lease.bindingHash,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.expireActive,matrix/workforce/internal/lease.fence,matrix/workforce/internal/lease.held,matrix/workforce/internal/lease.nextFence,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.policy,matrix/workforce/internal/lease.policyBindingHash,matrix/workforce/internal/lease.request,matrix/workforce/internal/lease.requireAuthority,matrix/workforce/internal/lease.scope,matrix/workforce/internal/lease.store,matrix/workforce/internal/lease.tx
   ^contains=matrix/workforce/internal/lease.Store
+  ^calls=matrix/workforce/internal/lease.Store.Acquire
+  ^references=matrix/workforce/internal/lease.Store.Acquire
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.Store.classify kind=method
   digest=b3:15daae8ea0d43209b8d4db7d941dae3b7ddc233e59253a84c1e11139bd67588f file=workforce/internal/lease/store.go range=423:444 lang=go exported=false byte_range=13655:14162
   sig=func (store *Store) classify(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	leaseID contracts.LeaseID,\n	fence contracts.FenceToken,\n	now time.Time,\n) error
 EDGES
+  calls=matrix/workforce/internal/lease.Store.load
+  references=matrix/workforce/internal/contracts.FenceToken,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/lease.ErrCancelled,matrix/workforce/internal/lease.ErrExpired,matrix/workforce/internal/lease.ErrStaleFence,matrix/workforce/internal/lease.ErrUncertain,matrix/workforce/internal/lease.StateActive,matrix/workforce/internal/lease.StateCancelled,matrix/workforce/internal/lease.Store,matrix/workforce/internal/lease.Store.load,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.fence,matrix/workforce/internal/lease.grant,matrix/workforce/internal/lease.leaseID,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.organizationID,matrix/workforce/internal/lease.store
   ^contains=matrix/workforce/internal/lease.Store
+  ^calls=matrix/workforce/internal/lease.Store.Cancel,matrix/workforce/internal/lease.Store.Renew
+  ^references=matrix/workforce/internal/lease.Store.Cancel,matrix/workforce/internal/lease.Store.Renew
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.Store.currentTime kind=method
   digest=b3:c2ae0d91bfd66f6f96e7b8a18b4fa7cd795f79f5c0fc58521ac590f479c3a147 file=workforce/internal/lease/store.go range=473:479 lang=go exported=false byte_range=15156:15350
   sig=func (store *Store) currentTime() (time.Time, error)
 EDGES
+  calls=matrix/workforce/internal/lease.validUTC
+  references=matrix/workforce/internal/lease.ErrUncertain,matrix/workforce/internal/lease.Store,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.store,matrix/workforce/internal/lease.validUTC
   ^contains=matrix/workforce/internal/lease.Store
+  ^calls=matrix/workforce/internal/lease.Store.Acquire,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.Cancel,matrix/workforce/internal/lease.Store.Renew
+  ^references=matrix/workforce/internal/lease.Store.Acquire,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.Cancel,matrix/workforce/internal/lease.Store.Renew
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.Store.incident kind=method
   digest=b3:c57dff806f323696a136dc16e497eba1461f58f7569ab43140c8f395f5a88bab file=workforce/internal/lease/store.go range=446:461 lang=go exported=false byte_range=14164:14760
   sig=func (store *Store) incident(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	leaseID contracts.LeaseID,\n	kind, reason string,\n	now time.Time,\n) error
 EDGES
+  references=matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/lease.Store,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.kind,matrix/workforce/internal/lease.leaseID,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.organizationID,matrix/workforce/internal/lease.reason,matrix/workforce/internal/lease.store,matrix/workforce/internal/lease.sum
   ^contains=matrix/workforce/internal/lease.Store
+  ^calls=matrix/workforce/internal/lease.Store.Authorize
+  ^references=matrix/workforce/internal/lease.Store.Authorize
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.Store.load kind=method
   digest=b3:5e57ea55bec96026fb1d033c572f5cebfcb5c07c03d1d5d53b3ba5194c7e453c file=workforce/internal/lease/store.go range=268:320 lang=go exported=false byte_range=8849:10725
   sig=func (store *Store) load(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	leaseID contracts.LeaseID,\n) (Grant, error)
 EDGES
+  references=matrix/workforce/internal/contracts.FenceToken,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.PolicyRef,matrix/workforce/internal/lease.ErrStaleFence,matrix/workforce/internal/lease.ErrUncertain,matrix/workforce/internal/lease.Grant,matrix/workforce/internal/lease.Request,matrix/workforce/internal/lease.Store,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.fence,matrix/workforce/internal/lease.grant,matrix/workforce/internal/lease.leaseID,matrix/workforce/internal/lease.normalized,matrix/workforce/internal/lease.organizationID,matrix/workforce/internal/lease.policy,matrix/workforce/internal/lease.rows,matrix/workforce/internal/lease.store
   ^contains=matrix/workforce/internal/lease.Store
+  ^calls=matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.Recover,matrix/workforce/internal/lease.Store.Renew,matrix/workforce/internal/lease.Store.classify
+  ^references=matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.Recover,matrix/workforce/internal/lease.Store.Renew,matrix/workforce/internal/lease.Store.classify
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.expireActive kind=func
   digest=b3:ddf0a09142e242eac89c64c6a8b88e2d88d71662b909302474e06a1871901f85 file=workforce/internal/lease/store.go range=382:398 lang=go exported=false byte_range=12509:12954
   sig=func expireActive(\n	ctx context.Context,\n	tx pgx.Tx,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	now time.Time,\n) error
 EDGES
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/lease.ErrUncertain,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.organizationID,matrix/workforce/internal/lease.tenantID,matrix/workforce/internal/lease.tx
+  ^calls=matrix/workforce/internal/lease.Store.acquireOnce
+  ^references=matrix/workforce/internal/lease.Store.acquireOnce
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.nextFence kind=func
   digest=b3:a3d6e117bb436ee96ae988397c09a2b178d97e984e274b538f9d3aecedcf4ee1 file=workforce/internal/lease/store.go range=400:421 lang=go exported=false byte_range=12956:13653
   sig=func nextFence(\n	ctx context.Context,\n	tx pgx.Tx,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	scopeKind, scopeID string,\n	now time.Time,\n) (uint64, error)
 EDGES
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/lease.ErrUncertain,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.fence,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.organizationID,matrix/workforce/internal/lease.scopeID,matrix/workforce/internal/lease.scopeKind,matrix/workforce/internal/lease.tenantID,matrix/workforce/internal/lease.tx
+  ^calls=matrix/workforce/internal/lease.Store.acquireOnce
+  ^references=matrix/workforce/internal/lease.Store.acquireOnce
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.policyBindingHash kind=func
   digest=b3:d59d649c2e143280e1aa813bfe5ecb3e749da90f8b721ad1bd3fa4e2de66d29c file=workforce/internal/lease/store.go range=463:471 lang=go exported=false byte_range=14762:15154
   sig=func policyBindingHash(policies []contracts.PolicyRef) string
 EDGES
+  references=matrix/workforce/internal/contracts.PolicyRef,matrix/workforce/internal/lease.hash,matrix/workforce/internal/lease.i,matrix/workforce/internal/lease.j,matrix/workforce/internal/lease.policies,matrix/workforce/internal/lease.policy,matrix/workforce/internal/lease.sorted
+  ^calls=matrix/workforce/internal/lease.Store.acquireOnce
+  ^references=matrix/workforce/internal/lease.Store.acquireOnce
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.requireAuthority kind=func
   digest=b3:a472c0f67dc71376c908381eb095d12020e701eca28ff77a045949fa69e0718a file=workforce/internal/lease/store.go range=322:340 lang=go exported=false byte_range=10727:11252
   sig=func requireAuthority(\n	ctx context.Context,\n	tx pgx.Tx,\n	tenantID string,\n	request Request,\n	now time.Time,\n) error
 EDGES
+  calls=matrix/workforce/internal/lease.requireCurrent
+  references=matrix/workforce/internal/lease.Request,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.policy,matrix/workforce/internal/lease.request,matrix/workforce/internal/lease.requireCurrent,matrix/workforce/internal/lease.tenantID,matrix/workforce/internal/lease.tx
+  ^calls=matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.acquireOnce
+  ^references=matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/lease.Store.acquireOnce
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.requireCurrent kind=func
   digest=b3:88291187733cba22e9457e00e4f7319b90ee0cad848931d189ee7f7b3cc383b4 file=workforce/internal/lease/store.go range=342:380 lang=go exported=false byte_range=11254:12507
   sig=func requireCurrent(\n	ctx context.Context,\n	tx pgx.Tx,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	kind, id string,\n	version uint64,\n	expectedHash string,\n	now time.Time,\n) error
 EDGES
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/lease.ErrPolicyMismatch,matrix/workforce/internal/lease.ErrUncertain,matrix/workforce/internal/lease.ctx,matrix/workforce/internal/lease.currentHash,matrix/workforce/internal/lease.currentVersion,matrix/workforce/internal/lease.err,matrix/workforce/internal/lease.expectedHash,matrix/workforce/internal/lease.id,matrix/workforce/internal/lease.kind,matrix/workforce/internal/lease.now,matrix/workforce/internal/lease.organizationID,matrix/workforce/internal/lease.tenantID,matrix/workforce/internal/lease.tx,matrix/workforce/internal/lease.version
+  ^calls=matrix/workforce/internal/lease.requireAuthority
+  ^references=matrix/workforce/internal/lease.requireAuthority
   ^defines=matrix/workforce/internal/lease/store.go
 
 NODE id=matrix/workforce/internal/lease.validUTC kind=func
   digest=b3:a0beee5b6bbe8dd3ff5ef521bfd147e9b7a7c4ce79ae888de69822b6d3078f75 file=workforce/internal/lease/types.go range=133:135 lang=go exported=false byte_range=4196:4291
   sig=func validUTC(value time.Time) bool
 EDGES
+  references=matrix/workforce/internal/lease.value
+  ^calls=matrix/workforce/internal/lease.Request.Validate,matrix/workforce/internal/lease.Store.Renew,matrix/workforce/internal/lease.Store.currentTime
+  ^references=matrix/workforce/internal/lease.Request.Validate,matrix/workforce/internal/lease.Store.Renew,matrix/workforce/internal/lease.Store.currentTime
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease.validateToken kind=func
   digest=b3:f5f1b96d9659cdeffda403238f02bd1b8a6609d09b837ab54ad137d35dc08720 file=workforce/internal/lease/types.go range=117:131 lang=go exported=false byte_range=3728:4194
   sig=func validateToken(name, value string) error
 EDGES
+  references=matrix/workforce/internal/lease.char,matrix/workforce/internal/lease.name,matrix/workforce/internal/lease.value
+  ^calls=matrix/workforce/internal/lease.Request.Validate,matrix/workforce/internal/lease.Store.Recover,matrix/workforce/internal/lease.Store.Renew
+  ^references=matrix/workforce/internal/lease.Request.Validate,matrix/workforce/internal/lease.Store.Recover,matrix/workforce/internal/lease.Store.Renew
   ^defines=matrix/workforce/internal/lease/types.go
 
 NODE id=matrix/workforce/internal/lease/doc.go kind=file

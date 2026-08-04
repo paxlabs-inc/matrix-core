@@ -87,9 +87,9 @@ properties  = "Replay convergence, rebuild equivalence, upsert idempotency, MMR 
 crash       = "Recovery claims are proven by real kill -9 (simulated at arbitrary lsn, and on the real process for cortexd/client tasks), never by graceful-shutdown-only tests."
 
 [lock.seam]
-go_client   = "The Go client implements the EXISTING resurrection loop interfaces verbatim (ActivationSource, TurnRecorder, EvidenceJournal, Consolidator sink, CheckpointStore). Changing those interface signatures under this feature is drift — the loop must not need edits to swap substrates."
-old_cortex  = "The old matrix/cortex module and every consumer path on it stay intact and working until the wave-7 owner cutover gate. Any task that breaks, edits behavior of, or deletes old-cortex code before that gate is drift (the wave-7 exporter READS it; that is the only sanctioned contact)."
-flag        = "The substrate flag defaults to the old cortex until the owner flips it. No task flips the default."
+go_client   = "Neo uses Neocortex-native contracts exclusively. No Neo package, module graph, build target, test, or runtime path may import or depend on matrix/cortex."
+old_cortex  = "OWNER CUTOVER APPROVED 2026-08-04: Cortex v1 may remain outside Neo temporarily, but it must be unreachable from Neo source, builds, configuration, and runtime."
+flag        = "Neo has no selectable memory substrate and no legacy fallback. Neocortex is its sole memory engine; unavailable Neocortex produces an honest typed failure."
 isolation   = "A cortexd crash must never take down a client process; a client crash must never corrupt engine state. Both directions are tested, not assumed."
 
 [lock.process]

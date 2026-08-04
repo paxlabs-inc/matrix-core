@@ -13,8 +13,6 @@ import (
 	"strings"
 	"sync"
 
-	"matrix/cortex"
-
 	flatbuffers "matrix/cortexclient/internal/flatbuffers"
 	"matrix/cortexclient/wire/neocortex/protocol"
 	"matrix/cortexclient/wire/neocortex/schema"
@@ -192,6 +190,33 @@ func AssertionEvent(conversation [16]byte, assertion Assertion) AppendEvent {
 		Conversation: conversation,
 		Build: func(builder *flatbuffers.Builder) (byte, flatbuffers.UOffsetT) {
 			return byte(schema.EventPayloadAssertion), buildAssertion(builder, assertion)
+		},
+	}
+}
+
+// Retraction identifies a current assertion to remove and the evidence that
+// authorized the removal.
+type Retraction struct {
+	BeliefID   []byte
+	Provenance [][2]uint64
+}
+
+// RetractionEvent builds a single typed Neocortex retraction event.
+func RetractionEvent(conversation [16]byte, retraction Retraction) AppendEvent {
+	return AppendEvent{
+		Kind:         KindRetract,
+		Conversation: conversation,
+		Build: func(builder *flatbuffers.Builder) (byte, flatbuffers.UOffsetT) {
+			id := builder.CreateByteVector(retraction.BeliefID)
+			schema.RetractStartProvenanceVector(builder, len(retraction.Provenance))
+			for index := len(retraction.Provenance) - 1; index >= 0; index-- {
+				schema.CreateProvenanceRange(builder, retraction.Provenance[index][0], retraction.Provenance[index][1])
+			}
+			provenance := builder.EndVector(len(retraction.Provenance))
+			schema.RetractStart(builder)
+			schema.RetractAddBeliefId(builder, id)
+			schema.RetractAddProvenance(builder, provenance)
+			return byte(schema.EventPayloadRetract), schema.RetractEnd(builder)
 		},
 	}
 }
@@ -446,6 +471,56 @@ func eventText(kind EventKind, payload []byte) string {
 	}
 }
 
+// DecodedEvent is the protocol-neutral content Neo needs when rebuilding a
+// readable transcript from typed Neocortex frames.
+type DecodedEvent struct {
+	Content  string
+	ToolName string
+}
+
+// DecodeEvent decodes one typed transcript frame without exposing generated
+// FlatBuffers tables to Neo.
+func DecodeEvent(kind EventKind, payload []byte) (out DecodedEvent, err error) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			err = fmt.Errorf("%w: malformed event payload", ErrProtocol)
+		}
+	}()
+	envelope := schema.GetRootAsEventEnvelope(payload, 0)
+	var table flatbuffers.Table
+	if !envelope.Payload(&table) {
+		return DecodedEvent{}, ErrProtocol
+	}
+	switch kind {
+	case KindUserMsg:
+		var value schema.UserMsg
+		value.Init(table.Bytes, table.Pos)
+		out.Content = string(value.ContentBytes())
+	case KindDeliveredMsg:
+		var value schema.DeliveredMsg
+		value.Init(table.Bytes, table.Pos)
+		out.Content = string(value.ContentBytes())
+	case KindReasoning:
+		var value schema.Reasoning
+		value.Init(table.Bytes, table.Pos)
+		out.Content = string(value.ContentBytes())
+	case KindToolCall:
+		var value schema.ToolCall
+		value.Init(table.Bytes, table.Pos)
+		out.ToolName = string(value.ToolName())
+		out.Content = string(value.ArgumentsBytes())
+	case KindToolResult:
+		var value schema.ToolResult
+		value.Init(table.Bytes, table.Pos)
+		out.Content = string(value.ResultBytes())
+	case KindAssertion:
+		var value schema.Assertion
+		value.Init(table.Bytes, table.Pos)
+		out.Content = string(value.ValueBytes())
+	}
+	return out, nil
+}
+
 // RenderBundle turns the structured bundle into the activation string the
 // resurrection loop consumes. Rendering is the client's job by design.
 func RenderBundle(bundle *Bundle, premises []string) string {
@@ -549,6 +624,37 @@ type ToolExecution struct {
 	MatchVerdict   string
 	SubgoalID      string
 }
+
+// ToolEventCitation pins acknowledged execution evidence to a Neocortex MMR
+// prefix. It is a Neocortex wire contract, independent of every legacy store.
+type ToolEventCitation struct {
+	Seq         uint64   `json:"seq"`
+	LeafCount   uint64   `json:"leaf_count"`
+	LeafHash    [32]byte `json:"leaf_hash"`
+	JournalRoot [32]byte `json:"journal_root"`
+}
+
+// ToolEventPayload is the execution evidence Neo verifies against a citation.
+type ToolEventPayload struct {
+	SchemaVersion  uint8
+	CallID         string
+	ToolName       string
+	Arguments      []byte
+	ResultDigest   [32]byte
+	Error          string
+	Expect         string
+	MatchVerdict   string
+	SubgoalID      string
+	IdempotencyKey string
+}
+
+var ErrToolCitationMismatch = errors.New("neocortex: tool-event citation mismatch")
+
+const (
+	ToolMatchMatched    = "matched"
+	ToolMatchMismatched = "mismatched"
+	ToolMatchUnknown    = "unknown"
+)
 
 // ActivationQuery mirrors the loop's activation request.
 type ActivationQuery struct {
@@ -727,9 +833,9 @@ func (s *LoopSeam) RecordError() error {
 
 // CommitToolExecution appends the tool call and its result as typed evidence
 // and returns a citation anchored in the engine's MMR.
-func (s *LoopSeam) CommitToolExecution(ctx context.Context, execution ToolExecution) (cortex.ToolEventCitation, error) {
+func (s *LoopSeam) CommitToolExecution(ctx context.Context, execution ToolExecution) (ToolEventCitation, error) {
 	if execution.CallID == "" || execution.ToolName == "" {
-		return cortex.ToolEventCitation{}, fmt.Errorf("%w: tool execution requires call id and tool name", ErrProtocol)
+		return ToolEventCitation{}, fmt.Errorf("%w: tool execution requires call id and tool name", ErrProtocol)
 	}
 	arguments := execution.Arguments
 	if len(arguments) == 0 {
@@ -739,7 +845,7 @@ func (s *LoopSeam) CommitToolExecution(ctx context.Context, execution ToolExecut
 		ToolCallEvent(s.conversation, execution.CallID, execution.ToolName,
 			arguments)})
 	if err != nil {
-		return cortex.ToolEventCitation{}, err
+		return ToolEventCitation{}, err
 	}
 	result := execution.Result
 	ok := execution.Error == ""
@@ -753,11 +859,11 @@ func (s *LoopSeam) CommitToolExecution(ctx context.Context, execution ToolExecut
 		ToolResultEvent(s.conversation, execution.CallID, callAck.FirstLsn, ok,
 			result)})
 	if err != nil {
-		return cortex.ToolEventCitation{}, err
+		return ToolEventCitation{}, err
 	}
 	s.noteSpan(callAck, nil)
 	s.noteSpan(resultAck, nil)
-	return cortex.ToolEventCitation{
+	return ToolEventCitation{
 		Seq:         resultAck.LastLsn,
 		LeafCount:   resultAck.LeafCount,
 		LeafHash:    resultAck.LastLeafHash,

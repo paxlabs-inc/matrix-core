@@ -14,7 +14,7 @@
 //     critical (413 / byte-cap) threshold the older turns' blobs are replaced
 //     with a short placeholder, keeping the surrounding tool text.
 //
-// Pure Neo RAM-tier hygiene: no cortex bytes, no replay surface.
+// Pure Neo RAM-tier hygiene: no Neocortex bytes, no replay surface.
 package agent
 
 import (

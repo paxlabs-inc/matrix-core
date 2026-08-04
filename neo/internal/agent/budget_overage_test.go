@@ -77,8 +77,8 @@ func TestOversizedAnswerIsDelivered(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-budget-overage"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-budget-overage"
 
 	pager, err := memory.Open(cfg)
 	if err != nil {

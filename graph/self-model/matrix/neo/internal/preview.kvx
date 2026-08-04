@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:722a887a8e2a11f31226185a4f4b579d99c8d246ded95ccfe74a4ccc9b9805f6
+# GENERATED gen=codegraph do-not-edit merkle=b3:2eece1e371401718b5b83332ea874dc9d69dc31720a509148678833de7350783
 
 NODE id=matrix/neo/internal/preview kind=package
-  digest=b3:00e9ec088426385fe9b14037bb3bff382bbd937cda422683d5d7e2c5ef6efd1b file=neo/internal/preview range=0:0 lang=go exported=true
+  digest=b3:0cb69ccb17f492d3cf18ff89df896b08b9067f2100f692a55143fb479bd345c7 file=neo/internal/preview range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/preview/detect.go,matrix/neo/internal/preview/preview.go,matrix/neo/internal/preview/router.go
   ^contains=mod:matrix/neo
@@ -71,7 +71,7 @@ EDGES
   ^contains=matrix/neo/internal/preview.Config
 
 NODE id=matrix/neo/internal/preview.DetectStart kind=func
-  digest=b3:0b83140c0a89282ca90bc3323989f10a1fe77b65730e93933eef6582456c0df9 file=neo/internal/preview/detect.go range=28:81 lang=go exported=true byte_range=947:2964
+  digest=b3:54b65bfb9fa0d1b07bb2183a63fb4e4bfd5d05e775b887042c7c9cda8b3bef0d file=neo/internal/preview/detect.go range=29:82 lang=go exported=true byte_range=958:2980
   sig=func DetectStart(root string) (StartSpec, bool)
   doc=DetectStart infers how to run a project by reading its REAL manifest files\nfrom the workspace root (package.json scripts + dependencies, python\nentrypoints, go.mod). ok=false means no runnable app was detected — the\ncaller surfaces preview.failed with an honest reason rather than guessing.
 EDGES
@@ -423,7 +423,7 @@ EDGES
   ^defines=matrix/neo/internal/preview/router.go
 
 NODE id=matrix/neo/internal/preview.StartSpec kind=type
-  digest=b3:1d45a4b0b112e28659bc37168939c9994952326eb37dc776d6f4334715a9b8ad file=neo/internal/preview/detect.go range=13:26 lang=go exported=true byte_range=249:945
+  digest=b3:1d45a4b0b112e28659bc37168939c9994952326eb37dc776d6f4334715a9b8ad file=neo/internal/preview/detect.go range=14:27 lang=go exported=true byte_range=260:956
   sig=type StartSpec struct {\n	// Install runs once before Serve (npm install, pip install …); empty skips.\n	Install	string\n	// Serve is the long-lived dev/serve command; started detached in the sandbox.\n	Serve	string\n	// Port is the port the app binds (string form for the router register call).\n	Port	string\n	// Env is exported before Serve (PORT/HOST so frameworks bind reachably).\n	Env	map[string]string\n}
   doc=StartSpec is a detected way to bring a project's app up inside the sandbox:\nan optional one-shot install/build command, the long-lived serve command,\nand the port the app is expected to bind. Host is forced to 0.0.0.0 via env\nso the router can reach it over the private network.
 EDGES
@@ -431,28 +431,28 @@ EDGES
   ^defines=matrix/neo/internal/preview/detect.go
 
 NODE id=matrix/neo/internal/preview.StartSpec#Env kind=field
-  digest=b3:57585b03a74e444d6da5e242fee3065159438bb606fac8286c53f65a5dd090ce file=neo/internal/preview/detect.go range=24:25 lang=go exported=true byte_range=847:943
+  digest=b3:57585b03a74e444d6da5e242fee3065159438bb606fac8286c53f65a5dd090ce file=neo/internal/preview/detect.go range=25:26 lang=go exported=true byte_range=858:954
   sig=map[string]string
   doc=Env is exported before Serve (PORT/HOST so frameworks bind reachably).
 EDGES
   ^contains=matrix/neo/internal/preview.StartSpec
 
 NODE id=matrix/neo/internal/preview.StartSpec#Install kind=field
-  digest=b3:f02f71049485b3d79e4822133aad5e9908b3816be2de0f5263dfbf9b79363115 file=neo/internal/preview/detect.go range=18:19 lang=go exported=true byte_range=565:659
+  digest=b3:f02f71049485b3d79e4822133aad5e9908b3816be2de0f5263dfbf9b79363115 file=neo/internal/preview/detect.go range=19:20 lang=go exported=true byte_range=576:670
   sig=string
   doc=Install runs once before Serve (npm install, pip install …); empty skips.
 EDGES
   ^contains=matrix/neo/internal/preview.StartSpec
 
 NODE id=matrix/neo/internal/preview.StartSpec#Port kind=field
-  digest=b3:5e2a72bbb8b73a1a942737100235f9e0ed0b25aa2f9e903127f7e83a448a3afb file=neo/internal/preview/detect.go range=22:23 lang=go exported=true byte_range=755:845
+  digest=b3:5e2a72bbb8b73a1a942737100235f9e0ed0b25aa2f9e903127f7e83a448a3afb file=neo/internal/preview/detect.go range=23:24 lang=go exported=true byte_range=766:856
   sig=string
   doc=Port is the port the app binds (string form for the router register call).
 EDGES
   ^contains=matrix/neo/internal/preview.StartSpec
 
 NODE id=matrix/neo/internal/preview.StartSpec#Serve kind=field
-  digest=b3:9a1277aea70bb45f722af56b9ba817d0c54cb384dca53095dde76da6ccbc4748 file=neo/internal/preview/detect.go range=20:21 lang=go exported=true byte_range=661:753
+  digest=b3:9a1277aea70bb45f722af56b9ba817d0c54cb384dca53095dde76da6ccbc4748 file=neo/internal/preview/detect.go range=21:22 lang=go exported=true byte_range=672:764
   sig=string
   doc=Serve is the long-lived dev/serve command; started detached in the sandbox.
 EDGES
@@ -511,7 +511,7 @@ EDGES
   ^defines=matrix/neo/internal/preview/preview.go
 
 NODE id=matrix/neo/internal/preview.fileExists kind=func
-  digest=b3:86187b0793e8c556adc8f7662382ca5b5e2319742ff63d6ac1b2869b7f8e6412 file=neo/internal/preview/detect.go range=157:160 lang=go exported=false byte_range=4962:5090
+  digest=b3:86187b0793e8c556adc8f7662382ca5b5e2319742ff63d6ac1b2869b7f8e6412 file=neo/internal/preview/detect.go range=164:167 lang=go exported=false byte_range=5236:5364
   sig=func fileExists(root, name string) bool
 EDGES
   ^defines=matrix/neo/internal/preview/detect.go
@@ -603,59 +603,65 @@ EDGES
   ^defines=matrix/neo/internal/preview/preview.go
 
 NODE id=matrix/neo/internal/preview.nodeFrameworks kind=func
-  digest=b3:5432c66cb2ee0e59b11f4edd53eed26345592037dd9bbeeeb06f0507aa148421 file=neo/internal/preview/detect.go range=104:128 lang=go exported=false byte_range=3524:4182
+  digest=b3:5432c66cb2ee0e59b11f4edd53eed26345592037dd9bbeeeb06f0507aa148421 file=neo/internal/preview/detect.go range=106:130 lang=go exported=false byte_range=3591:4249
   sig=func nodeFrameworks(pkg packageJSON) map[string]bool
   doc=nodeFrameworks reports the framework set from the REAL dependency lists.
 EDGES
   ^defines=matrix/neo/internal/preview/detect.go
 
 NODE id=matrix/neo/internal/preview.nodePort kind=func
-  digest=b3:ae946f2fdb434e2d26839dd30dd5ee2851d987f467ab4ec342e1f0fd3dd6439a file=neo/internal/preview/detect.go range=130:142 lang=go exported=false byte_range=4184:4500
-  sig=func nodePort(fw map[string]bool) string
+  digest=b3:0749774ceb6a310700bf713f9db110bdfc03321b9d9910b4e53b6773bf27d5b3 file=neo/internal/preview/detect.go range=132:149 lang=go exported=false byte_range=4251:4774
+  sig=func nodePort(pkg packageJSON, fw map[string]bool) string
   doc=nodePort picks the conventional dev-server port for the detected framework.
 EDGES
   ^defines=matrix/neo/internal/preview/detect.go
 
 NODE id=matrix/neo/internal/preview.nodeServe kind=func
-  digest=b3:9e2aa7645fe9fa61f6eebc85ff7ff421c9aafff88dab3724f8fe7e56c3187df0 file=neo/internal/preview/detect.go range=144:155 lang=go exported=false byte_range=4502:4960
+  digest=b3:9e2aa7645fe9fa61f6eebc85ff7ff421c9aafff88dab3724f8fe7e56c3187df0 file=neo/internal/preview/detect.go range=151:162 lang=go exported=false byte_range=4776:5234
   sig=func nodeServe(fw map[string]bool, base, port string) string
   doc=nodeServe augments the dev command with the host/port flags a framework needs\nto bind reachably (env alone is not always honoured by Vite-family servers).
 EDGES
   ^defines=matrix/neo/internal/preview/detect.go
 
 NODE id=matrix/neo/internal/preview.packageJSON kind=type
-  digest=b3:0e9e0fb606b7bd7ef0dafbdbb1b345afaacdb71ea176de5074a2d63aa9b82c73 file=neo/internal/preview/detect.go range=83:87 lang=go exported=false byte_range=2966:3162
-  sig=type packageJSON struct {\n	Scripts		map[string]string	`json:"scripts"`\n	Dependencies	map[string]string	`json:"dependencies"`\n	DevDependencies	map[string]string	`json:"devDependencies"`\n}
+  digest=b3:5c8889399da54d81d2f1fec0b439a5530f87f457329782f0affaadaace2f9f32 file=neo/internal/preview/detect.go range=84:89 lang=go exported=false byte_range=2982:3229
+  sig=type packageJSON struct {\n	Scripts		map[string]string	`json:"scripts"`\n	Dependencies	map[string]string	`json:"dependencies"`\n	DevDependencies	map[string]string	`json:"devDependencies"`\n	Config		map[string]string	`json:"config"`\n}
 EDGES
-  contains=matrix/neo/internal/preview.packageJSON#Dependencies,matrix/neo/internal/preview.packageJSON#DevDependencies,matrix/neo/internal/preview.packageJSON#Scripts
+  contains=matrix/neo/internal/preview.packageJSON#Config,matrix/neo/internal/preview.packageJSON#Dependencies,matrix/neo/internal/preview.packageJSON#DevDependencies,matrix/neo/internal/preview.packageJSON#Scripts
   ^defines=matrix/neo/internal/preview/detect.go
 
+NODE id=matrix/neo/internal/preview.packageJSON#Config kind=field
+  digest=b3:cdc63032ea98c41991d207b5769e7fcdc16aa0fc6e28c074dda50885f1bdb879 file=neo/internal/preview/detect.go range=88:88 lang=go exported=true byte_range=3178:3227
+  sig=map[string]string
+EDGES
+  ^contains=matrix/neo/internal/preview.packageJSON
+
 NODE id=matrix/neo/internal/preview.packageJSON#Dependencies kind=field
-  digest=b3:e5d5f371e4c160cc6871ddd372c38b09b358d991d7732a6e44c13b0eb302a3a7 file=neo/internal/preview/detect.go range=85:85 lang=go exported=true byte_range=3045:3100
+  digest=b3:e5d5f371e4c160cc6871ddd372c38b09b358d991d7732a6e44c13b0eb302a3a7 file=neo/internal/preview/detect.go range=86:86 lang=go exported=true byte_range=3061:3116
   sig=map[string]string
 EDGES
   ^contains=matrix/neo/internal/preview.packageJSON
 
 NODE id=matrix/neo/internal/preview.packageJSON#DevDependencies kind=field
-  digest=b3:f7053382a3a9aa7b8dcde5cf2267b44f8bcbaf55aef7e06cb4199864440d0fa8 file=neo/internal/preview/detect.go range=86:86 lang=go exported=true byte_range=3102:3160
+  digest=b3:f7053382a3a9aa7b8dcde5cf2267b44f8bcbaf55aef7e06cb4199864440d0fa8 file=neo/internal/preview/detect.go range=87:87 lang=go exported=true byte_range=3118:3176
   sig=map[string]string
 EDGES
   ^contains=matrix/neo/internal/preview.packageJSON
 
 NODE id=matrix/neo/internal/preview.packageJSON#Scripts kind=field
-  digest=b3:7f4801e6d3c771281edea5424041f15624ad5eb5202bef04d44d1d683588fe2e file=neo/internal/preview/detect.go range=84:84 lang=go exported=true byte_range=2993:3043
+  digest=b3:7f4801e6d3c771281edea5424041f15624ad5eb5202bef04d44d1d683588fe2e file=neo/internal/preview/detect.go range=85:85 lang=go exported=true byte_range=3009:3059
   sig=map[string]string
 EDGES
   ^contains=matrix/neo/internal/preview.packageJSON
 
 NODE id=matrix/neo/internal/preview.readFileLower kind=func
-  digest=b3:1981a65229f22a16fb4a0214600f049c7c4ffb2e7b5117f78375565a17c7653c file=neo/internal/preview/detect.go range=162:168 lang=go exported=false byte_range=5092:5263
+  digest=b3:1981a65229f22a16fb4a0214600f049c7c4ffb2e7b5117f78375565a17c7653c file=neo/internal/preview/detect.go range=169:175 lang=go exported=false byte_range=5366:5537
   sig=func readFileLower(root, name string) string
 EDGES
   ^defines=matrix/neo/internal/preview/detect.go
 
 NODE id=matrix/neo/internal/preview.readPackageJSON kind=func
-  digest=b3:567a8347770bb2c9e50a8d383cb1da2b836483f10ef59aea41414c684267045f file=neo/internal/preview/detect.go range=89:102 lang=go exported=false byte_range=3164:3522
+  digest=b3:567a8347770bb2c9e50a8d383cb1da2b836483f10ef59aea41414c684267045f file=neo/internal/preview/detect.go range=91:104 lang=go exported=false byte_range=3231:3589
   sig=func readPackageJSON(root string) (packageJSON, bool)
 EDGES
   ^defines=matrix/neo/internal/preview/detect.go
@@ -687,7 +693,7 @@ EDGES
   ^defines=matrix/neo/internal/preview/router.go
 
 NODE id=matrix/neo/internal/preview/detect.go kind=file
-  digest=b3:173c0b88e96a45c72b9ae0fc1c0990074ec2bf05779aa77746c4ae24bee2e5a9 file=neo/internal/preview/detect.go range=1:168 lang=go exported=true
+  digest=b3:a3538fd050307f1173e413b0a57ed2663871b8d58a842ce0364062f1eeda22f4 file=neo/internal/preview/detect.go range=1:175 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/preview.DetectStart,matrix/neo/internal/preview.StartSpec,matrix/neo/internal/preview.fileExists,matrix/neo/internal/preview.nodeFrameworks,matrix/neo/internal/preview.nodePort,matrix/neo/internal/preview.nodeServe,matrix/neo/internal/preview.packageJSON,matrix/neo/internal/preview.readFileLower,matrix/neo/internal/preview.readPackageJSON
   ^contains=matrix/neo/internal/preview

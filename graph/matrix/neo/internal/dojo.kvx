@@ -1,10 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/neo/internal/dojo kind=package
   digest=b3:fb386e66935cfa31b2caca7d548340665143e098232f7f254b02f1de812f34d8 file=neo/internal/dojo range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/dojo/a11y.go,matrix/neo/internal/dojo/bridge.go,matrix/neo/internal/dojo/dojo.go,matrix/neo/internal/dojo/look.go,matrix/neo/internal/dojo/railway.go
   ^contains=mod:matrix/neo
+  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/dojo.A11yNode kind=type
   digest=b3:f55ee0105753e44277689d60635e0bba8e121601b89b234eee4731dacee7ed10 file=neo/internal/dojo/a11y.go range=20:29 lang=go exported=true byte_range=693:982
@@ -12,6 +13,7 @@ NODE id=matrix/neo/internal/dojo.A11yNode kind=type
   doc=A11yNode is one accessible element with its center in absolute screen pixels.
 EDGES
   contains=matrix/neo/internal/dojo.A11yNode#App,matrix/neo/internal/dojo.A11yNode#H,matrix/neo/internal/dojo.A11yNode#Label,matrix/neo/internal/dojo.A11yNode#Role,matrix/neo/internal/dojo.A11yNode#W,matrix/neo/internal/dojo.A11yNode#X,matrix/neo/internal/dojo.A11yNode#Y
+  ^references=matrix/neo/internal/dojo.A11yTree
   ^defines=matrix/neo/internal/dojo/a11y.go
 
 NODE id=matrix/neo/internal/dojo.A11yNode#App kind=field
@@ -62,6 +64,8 @@ NODE id=matrix/neo/internal/dojo.A11yTree kind=type
   doc=A11yTree is the parsed dump.
 EDGES
   contains=matrix/neo/internal/dojo.A11yTree#Apps,matrix/neo/internal/dojo.A11yTree#Nodes
+  references=matrix/neo/internal/dojo.A11yNode
+  ^references=matrix/neo/internal/dojo.FormatA11yTree,matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.ParseA11yTree
   ^defines=matrix/neo/internal/dojo/a11y.go
 
 NODE id=matrix/neo/internal/dojo.A11yTree#Apps kind=field
@@ -81,7 +85,9 @@ NODE id=matrix/neo/internal/dojo.BytebotdTransport kind=interface
   sig=type BytebotdTransport interface {\n	// Call POSTs a bytebotd /computer-use request body to the session's\n	// appliance and returns the response body and the bytebotd HTTP status.\n	Call(ctx context.Context, s Session, body []byte) (resp []byte, status int, err error)\n	// ExecDesktop runs a shell command INSIDE the appliance desktop as the\n	// session user, with DISPLAY and the XFCE session's a11y D-Bus exported —\n	// the AT-SPI dumper's carrier. It returns stdout and the command exit code.\n	ExecDesktop(ctx context.Context, s Session, command string, timeoutSec int) (stdout string, exit int, err error)\n}
   doc=BytebotdTransport carries a request to a session's appliance. The production\nimplementation (execCurlTransport) rides sandboxExec-curl into the sandbox;\na docker contract test supplies a direct-HTTP/exec transport against a real\nlocal container. Both hit REAL bytebotd — the seam swaps only the carrier.
 EDGES
+  references=matrix/neo/internal/dojo.Session
   ^implements=matrix/neo/internal/dojo.execCurlTransport
+  ^references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.SetTransport,matrix/neo/internal/dojo._
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.Config kind=type
@@ -90,6 +96,8 @@ NODE id=matrix/neo/internal/dojo.Config kind=type
   doc=Config configures a Manager. All caps are env-configured at the serve seam.
 EDGES
   contains=matrix/neo/internal/dojo.Config#IdleTimeout,matrix/neo/internal/dojo.Config#Image,matrix/neo/internal/dojo.Config#Logf,matrix/neo/internal/dojo.Config#MaxActive,matrix/neo/internal/dojo.Config#MaxLifetime,matrix/neo/internal/dojo.Config#ProvisionTimeout,matrix/neo/internal/dojo.Config#Ship,matrix/neo/internal/dojo.Config#pollGap,matrix/neo/internal/dojo.Config#probeGap
+  references=matrix/neo/internal/dojo.ShipFunc
+  ^references=matrix/neo/cmd/neo.runServe,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.New,matrix/neo/internal/server.EngineOptions
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Config#IdleTimeout kind=field
@@ -159,6 +167,7 @@ NODE id=matrix/neo/internal/dojo.CoordSpace kind=const
   sig=untyped int
   doc=CoordSpace is omni's normalized coordinate range on each axis (0..CoordSpace).
 EDGES
+  ^references=matrix/neo/internal/dojo.rescale
   ^defines=matrix/neo/internal/dojo/look.go
 
 NODE id=matrix/neo/internal/dojo.CreateOpts kind=type
@@ -167,6 +176,7 @@ NODE id=matrix/neo/internal/dojo.CreateOpts kind=type
   doc=CreateOpts parameterises CreateSandbox.
 EDGES
   contains=matrix/neo/internal/dojo.CreateOpts#IdleTimeoutMinutes,matrix/neo/internal/dojo.CreateOpts#Network,matrix/neo/internal/dojo.CreateOpts#Variables
+  ^references=matrix/neo/internal/dojo.Manager.provision,matrix/neo/internal/dojo.RailwayClient,matrix/neo/internal/dojo.railway.CreateSandbox
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.CreateOpts#IdleTimeoutMinutes kind=field
@@ -195,6 +205,7 @@ NODE id=matrix/neo/internal/dojo.DefaultEndpoint kind=const
   sig=untyped string
   doc=DefaultEndpoint is the Railway public GraphQL API base.
 EDGES
+  ^references=matrix/neo/internal/dojo.NewRailway
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.DefaultImage kind=const
@@ -202,6 +213,7 @@ NODE id=matrix/neo/internal/dojo.DefaultImage kind=const
   sig=untyped string
   doc=DefaultImage is the digest-pinned bytebot-desktop appliance (req 2.4).\nResolved from ghcr.io/bytebot-ai/bytebot-desktop:edge on 2026-07-24;\nupstream is archived, so upgrades are explicit re-pins of this constant (or\nNEO_DOJO_IMAGE), never floating tags.
 EDGES
+  ^references=matrix/neo/internal/dojo.New
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Emit kind=type
@@ -209,6 +221,7 @@ NODE id=matrix/neo/internal/dojo.Emit kind=type
   sig=type Emit func(convID, typ string, fields map[string]interface{})
   doc=Emit publishes a dojo.* event onto a conversation's live topic + durable\ntrace (engine.publishDojo).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.New
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ErrBooting kind=var
@@ -216,6 +229,7 @@ NODE id=matrix/neo/internal/dojo.ErrBooting kind=var
   sig=error
   doc=ErrBooting is returned to a desktop caller while the session is still\nprovisioning — the computer is turning on (req 4.1: a boot, never an\nerror-hang).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.TakeoverConv,matrix/neo/internal/server.Engine.desktopA11y,matrix/neo/internal/server.Engine.desktopLook,matrix/neo/internal/server.Engine.dojoBoot,matrix/neo/internal/server.Server.handleDojoComputerUse,matrix/neo/internal/server.Server.handleDojoFrame,matrix/neo/internal/server.Server.handleDojoLease
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ErrBytebotd kind=var
@@ -223,6 +237,7 @@ NODE id=matrix/neo/internal/dojo.ErrBytebotd kind=var
   sig=error
   doc=ErrBytebotd wraps a non-2xx bytebotd response.
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.TakeoverInput,matrix/neo/internal/server.Server.handleDojoComputerUse,matrix/neo/internal/server.Server.handleDojoInput
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.ErrDestroyed kind=var
@@ -230,6 +245,7 @@ NODE id=matrix/neo/internal/dojo.ErrDestroyed kind=var
   sig=error
   doc=Typed session errors (req 1.3: provisioning failure or timeout degrades to\na typed error that never hangs the turn).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.step
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ErrImageNotPinned kind=var
@@ -237,6 +253,7 @@ NODE id=matrix/neo/internal/dojo.ErrImageNotPinned kind=var
   sig=error
   doc=Typed session errors (req 1.3: provisioning failure or timeout degrades to\na typed error that never hangs the turn).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.ensureRecord
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ErrInvalidTransition kind=var
@@ -244,6 +261,7 @@ NODE id=matrix/neo/internal/dojo.ErrInvalidTransition kind=var
   sig=error
   doc=Typed session errors (req 1.3: provisioning failure or timeout degrades to\na typed error that never hangs the turn).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/dojo.Manager.transition,matrix/neo/internal/server.Server.handleDojoLease
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ErrNoSession kind=var
@@ -251,6 +269,7 @@ NODE id=matrix/neo/internal/dojo.ErrNoSession kind=var
   sig=error
   doc=ErrNoSession is returned when no live dojo session exists to drive. The\ncaller surfaces it as a "no desktop is running" tool result.
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.HandbackConv,matrix/neo/internal/dojo.Manager.RegisterSessionForTest,matrix/neo/internal/dojo.Manager.TakeoverConv,matrix/neo/internal/dojo.Manager.TakeoverInput,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/server.Engine.desktopA11y,matrix/neo/internal/server.Engine.desktopLook,matrix/neo/internal/server.Server.handleDojoComputerUse,matrix/neo/internal/server.Server.handleDojoFrame,matrix/neo/internal/server.Server.handleDojoInput,matrix/neo/internal/server.Server.handleDojoLease
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.ErrNoTakeover kind=var
@@ -258,6 +277,7 @@ NODE id=matrix/neo/internal/dojo.ErrNoTakeover kind=var
   sig=error
   doc=ErrNoTakeover rejects a human input passthrough when the lease is not\nheld.
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.TakeoverInput,matrix/neo/internal/server.Server.handleDojoInput
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ErrNotConfigured kind=var
@@ -265,6 +285,7 @@ NODE id=matrix/neo/internal/dojo.ErrNotConfigured kind=var
   sig=error
   doc=Typed session errors (req 1.3: provisioning failure or timeout degrades to\na typed error that never hangs the turn).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.ensureRecord
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ErrNotFound kind=var
@@ -272,6 +293,7 @@ NODE id=matrix/neo/internal/dojo.ErrNotFound kind=var
   sig=error
   doc=Typed session errors (req 1.3: provisioning failure or timeout degrades to\na typed error that never hangs the turn).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.Get,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.WaitReady,matrix/neo/internal/dojo.Manager.gateReobserve,matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/server.Engine.dojoBoot,matrix/neo/internal/server.Server.handleDojoFrame,matrix/neo/internal/server.Server.handleDojoLease
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ErrProvision kind=var
@@ -279,6 +301,7 @@ NODE id=matrix/neo/internal/dojo.ErrProvision kind=var
   sig=error
   doc=Typed session errors (req 1.3: provisioning failure or timeout degrades to\na typed error that never hangs the turn).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/server.Engine.dojoBoot
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ErrProvisionTimeout kind=var
@@ -286,6 +309,7 @@ NODE id=matrix/neo/internal/dojo.ErrProvisionTimeout kind=var
   sig=error
   doc=Typed session errors (req 1.3: provisioning failure or timeout degrades to\na typed error that never hangs the turn).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.settleProvision
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ErrReobserveRequired kind=var
@@ -293,6 +317,7 @@ NODE id=matrix/neo/internal/dojo.ErrReobserveRequired kind=var
   sig=error
   doc=ErrReobserveRequired rejects an agent action after a handback until the\nagent has re-observed (req 4.3) — the human may have changed anything, so\nacting on the pre-takeover world model is forbidden.
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.gateReobserve,matrix/neo/internal/server.Server.handleDojoComputerUse
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ErrTakeoverActive kind=var
@@ -300,6 +325,7 @@ NODE id=matrix/neo/internal/dojo.ErrTakeoverActive kind=var
   sig=error
   doc=ErrTakeoverActive rejects an AGENT action while the human holds the\ncontrol lease (req 4.2) — the typed result the planner reads as "the\nhuman is driving; wait for handback".
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/server.Server.handleDojoComputerUse
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ErrTransport kind=var
@@ -307,6 +333,7 @@ NODE id=matrix/neo/internal/dojo.ErrTransport kind=var
   sig=error
   doc=ErrTransport wraps a sandbox-exec/transport failure reaching bytebotd.
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.TakeoverInput
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.ErrWireNotFound kind=var
@@ -314,6 +341,7 @@ NODE id=matrix/neo/internal/dojo.ErrWireNotFound kind=var
   sig=error
   doc=Wire sentinel errors. Callers dispatch with errors.Is.
 EDGES
+  ^references=matrix/neo/internal/dojo.railway.DestroySandbox,matrix/neo/internal/dojo.railway.do
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.ErrWireUnauthorized kind=var
@@ -321,6 +349,7 @@ NODE id=matrix/neo/internal/dojo.ErrWireUnauthorized kind=var
   sig=error
   doc=Wire sentinel errors. Callers dispatch with errors.Is.
 EDGES
+  ^references=matrix/neo/internal/dojo.railway.do
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.ErrWireUpstream kind=var
@@ -328,6 +357,7 @@ NODE id=matrix/neo/internal/dojo.ErrWireUpstream kind=var
   sig=error
   doc=Wire sentinel errors. Callers dispatch with errors.Is.
 EDGES
+  ^references=matrix/neo/internal/dojo.railway.do
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.EvtActive kind=const
@@ -335,6 +365,7 @@ NODE id=matrix/neo/internal/dojo.EvtActive kind=const
   sig=untyped string
   doc=Event type names carried onto the conversation topic + durable trace\n(mirrored in the daemon trace whitelist; the client folds dojo.* in wave 3).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.Activate
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.EvtDestroyed kind=const
@@ -342,6 +373,7 @@ NODE id=matrix/neo/internal/dojo.EvtDestroyed kind=const
   sig=untyped string
   doc=Event type names carried onto the conversation topic + durable trace\n(mirrored in the daemon trace whitelist; the client folds dojo.* in wave 3).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.finish
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.EvtFailed kind=const
@@ -349,6 +381,7 @@ NODE id=matrix/neo/internal/dojo.EvtFailed kind=const
   sig=untyped string
   doc=Event type names carried onto the conversation topic + durable trace\n(mirrored in the daemon trace whitelist; the client folds dojo.* in wave 3).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.settleProvision
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.EvtHandback kind=const
@@ -356,6 +389,7 @@ NODE id=matrix/neo/internal/dojo.EvtHandback kind=const
   sig=untyped string
   doc=Event type names carried onto the conversation topic + durable trace\n(mirrored in the daemon trace whitelist; the client folds dojo.* in wave 3).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.Handback
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.EvtProvisioning kind=const
@@ -363,6 +397,7 @@ NODE id=matrix/neo/internal/dojo.EvtProvisioning kind=const
   sig=untyped string
   doc=Event type names carried onto the conversation topic + durable trace\n(mirrored in the daemon trace whitelist; the client folds dojo.* in wave 3).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.ensureRecord
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.EvtReady kind=const
@@ -370,6 +405,7 @@ NODE id=matrix/neo/internal/dojo.EvtReady kind=const
   sig=untyped string
   doc=Event type names carried onto the conversation topic + durable trace\n(mirrored in the daemon trace whitelist; the client folds dojo.* in wave 3).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.settleProvision
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.EvtShipping kind=const
@@ -377,6 +413,7 @@ NODE id=matrix/neo/internal/dojo.EvtShipping kind=const
   sig=untyped string
   doc=Event type names carried onto the conversation topic + durable trace\n(mirrored in the daemon trace whitelist; the client folds dojo.* in wave 3).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.Teardown
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.EvtTakeover kind=const
@@ -384,6 +421,7 @@ NODE id=matrix/neo/internal/dojo.EvtTakeover kind=const
   sig=untyped string
   doc=Event type names carried onto the conversation topic + durable trace\n(mirrored in the daemon trace whitelist; the client folds dojo.* in wave 3).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.Takeover
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.ExecResult kind=type
@@ -392,6 +430,7 @@ NODE id=matrix/neo/internal/dojo.ExecResult kind=type
   doc=ExecResult is the outcome of one sandboxExec.
 EDGES
   contains=matrix/neo/internal/dojo.ExecResult#ExitCode,matrix/neo/internal/dojo.ExecResult#Stderr,matrix/neo/internal/dojo.ExecResult#Stdout,matrix/neo/internal/dojo.ExecResult#TimedOut,matrix/neo/internal/dojo.ExecResult#Truncated
+  ^references=matrix/neo/internal/dojo.RailwayClient,matrix/neo/internal/dojo.railway.ExecSandbox
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.ExecResult#ExitCode kind=field
@@ -429,6 +468,9 @@ NODE id=matrix/neo/internal/dojo.FormatA11yTree kind=func
   sig=func FormatA11yTree(tree A11yTree) string
   doc=FormatA11yTree renders the tree as the compact text the desktop_a11y tool\nreturns to the model. Nodes are ordered top-to-bottom, left-to-right.
 EDGES
+  references=matrix/neo/internal/dojo.A11yTree,matrix/neo/internal/dojo.b,matrix/neo/internal/dojo.label,matrix/neo/internal/dojo.n,matrix/neo/internal/dojo.tree
+  ^calls=matrix/neo/internal/server.Engine.desktopA11y
+  ^references=matrix/neo/internal/server.Engine.desktopA11y
   ^defines=matrix/neo/internal/dojo/a11y.go
 
 NODE id=matrix/neo/internal/dojo.FormatGrounding kind=func
@@ -436,6 +478,9 @@ NODE id=matrix/neo/internal/dojo.FormatGrounding kind=func
   sig=func FormatGrounding(g Grounding) string
   doc=FormatGrounding renders the grounding as the compact text a stateless omni\ncall is allowed to contribute to the window (planner_integrity: omni output\nenters only as a tool result). The click point, when present, leads.
 EDGES
+  references=matrix/neo/internal/dojo.GroundedElement,matrix/neo/internal/dojo.Grounding,matrix/neo/internal/dojo.b,matrix/neo/internal/dojo.e,matrix/neo/internal/dojo.els,matrix/neo/internal/dojo.g,matrix/neo/internal/dojo.i,matrix/neo/internal/dojo.j
+  ^calls=matrix/neo/internal/server.Engine.desktopLook
+  ^references=matrix/neo/internal/server.Engine.desktopLook
   ^defines=matrix/neo/internal/dojo/look.go
 
 NODE id=matrix/neo/internal/dojo.GroundedElement kind=type
@@ -444,6 +489,7 @@ NODE id=matrix/neo/internal/dojo.GroundedElement kind=type
   doc=GroundedElement is one element with coordinates rescaled to bytebotd pixels.
 EDGES
   contains=matrix/neo/internal/dojo.GroundedElement#Label,matrix/neo/internal/dojo.GroundedElement#Role,matrix/neo/internal/dojo.GroundedElement#X,matrix/neo/internal/dojo.GroundedElement#Y
+  ^references=matrix/neo/internal/dojo.FormatGrounding,matrix/neo/internal/dojo.Grounding,matrix/neo/internal/dojo.ParseGrounding
   ^defines=matrix/neo/internal/dojo/look.go
 
 NODE id=matrix/neo/internal/dojo.GroundedElement#Label kind=field
@@ -476,6 +522,8 @@ NODE id=matrix/neo/internal/dojo.Grounding kind=type
   doc=Grounding is the rescaled result of one desktop_look.
 EDGES
   contains=matrix/neo/internal/dojo.Grounding#Click,matrix/neo/internal/dojo.Grounding#Elements,matrix/neo/internal/dojo.Grounding#Height,matrix/neo/internal/dojo.Grounding#Width
+  references=matrix/neo/internal/dojo.GroundedElement
+  ^references=matrix/neo/internal/dojo.FormatGrounding,matrix/neo/internal/dojo.ParseGrounding
   ^defines=matrix/neo/internal/dojo/look.go
 
 NODE id=matrix/neo/internal/dojo.Grounding#Click kind=field
@@ -507,6 +555,9 @@ NODE id=matrix/neo/internal/dojo.GroundingInstruction kind=func
   sig=func GroundingInstruction(target string) string
   doc=GroundingInstruction builds the per-call user instruction. A blank target\nasks for a full element inventory; a named target asks additionally for the\nsingle best click point.
 EDGES
+  references=matrix/neo/internal/dojo.target
+  ^calls=matrix/neo/internal/server.Engine.desktopLook
+  ^references=matrix/neo/internal/server.Engine.desktopLook
   ^defines=matrix/neo/internal/dojo/look.go
 
 NODE id=matrix/neo/internal/dojo.GroundingSystemPrompt kind=const
@@ -514,6 +565,7 @@ NODE id=matrix/neo/internal/dojo.GroundingSystemPrompt kind=const
   sig=untyped string
   doc=GroundingSystemPrompt fixes omni's job: it is a stateless GUI grounder, not a\nplanner. It returns strict JSON in the normalized 0–1000 convention the\nwave-1 probe established, and nothing else.
 EDGES
+  ^references=matrix/neo/internal/server.Engine.desktopLook
   ^defines=matrix/neo/internal/dojo/look.go
 
 NODE id=matrix/neo/internal/dojo.Manager kind=type
@@ -522,6 +574,8 @@ NODE id=matrix/neo/internal/dojo.Manager kind=type
   doc=Manager owns the dojo sessions for one daemon (one user). Safe for\nconcurrent use.
 EDGES
   contains=matrix/neo/internal/dojo.Manager#byConv,matrix/neo/internal/dojo.Manager#cfg,matrix/neo/internal/dojo.Manager#emit,matrix/neo/internal/dojo.Manager#mu,matrix/neo/internal/dojo.Manager#now,matrix/neo/internal/dojo.Manager#rw,matrix/neo/internal/dojo.Manager#sessions,matrix/neo/internal/dojo.Manager#transport,matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.Close,matrix/neo/internal/dojo.Manager.Discard,matrix/neo/internal/dojo.Manager.Enabled,matrix/neo/internal/dojo.Manager.EnsureSession,matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.Get,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.HandbackConv,matrix/neo/internal/dojo.Manager.Provision,matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.RegisterSessionForTest,matrix/neo/internal/dojo.Manager.SessionForConv,matrix/neo/internal/dojo.Manager.SessionForConvOrLive,matrix/neo/internal/dojo.Manager.SessionResultForConv,matrix/neo/internal/dojo.Manager.SetTransport,matrix/neo/internal/dojo.Manager.StartReaper,matrix/neo/internal/dojo.Manager.Takeover,matrix/neo/internal/dojo.Manager.TakeoverConv,matrix/neo/internal/dojo.Manager.TakeoverInput,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.Touch,matrix/neo/internal/dojo.Manager.WaitReady,matrix/neo/internal/dojo.Manager.clearReobserve,matrix/neo/internal/dojo.Manager.emitState,matrix/neo/internal/dojo.Manager.ensureRecord,matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.Manager.evictForCap,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.Manager.gateReobserve,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.Manager.logf,matrix/neo/internal/dojo.Manager.provision,matrix/neo/internal/dojo.Manager.reapOnce,matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/dojo.Manager.transition
+  references=matrix/neo/internal/dojo.BytebotdTransport,matrix/neo/internal/dojo.Config,matrix/neo/internal/dojo.Emit,matrix/neo/internal/dojo.RailwayClient,matrix/neo/internal/dojo.session
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.Close,matrix/neo/internal/dojo.Manager.Discard,matrix/neo/internal/dojo.Manager.Enabled,matrix/neo/internal/dojo.Manager.EnsureSession,matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.Get,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.HandbackConv,matrix/neo/internal/dojo.Manager.Provision,matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.RegisterSessionForTest,matrix/neo/internal/dojo.Manager.SessionForConv,matrix/neo/internal/dojo.Manager.SessionForConvOrLive,matrix/neo/internal/dojo.Manager.SessionResultForConv,matrix/neo/internal/dojo.Manager.SetTransport,matrix/neo/internal/dojo.Manager.StartReaper,matrix/neo/internal/dojo.Manager.Takeover,matrix/neo/internal/dojo.Manager.TakeoverConv,matrix/neo/internal/dojo.Manager.TakeoverInput,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.Touch,matrix/neo/internal/dojo.Manager.WaitReady,matrix/neo/internal/dojo.Manager.clearReobserve,matrix/neo/internal/dojo.Manager.emitState,matrix/neo/internal/dojo.Manager.ensureRecord,matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.Manager.evictForCap,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.Manager.gateReobserve,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.Manager.logf,matrix/neo/internal/dojo.Manager.provision,matrix/neo/internal/dojo.Manager.reapOnce,matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/dojo.Manager.transition,matrix/neo/internal/dojo.New,matrix/neo/internal/server.Engine,matrix/neo/internal/server.Engine.Dojo
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager#byConv kind=field
@@ -579,7 +633,11 @@ NODE id=matrix/neo/internal/dojo.Manager.A11yDump kind=method
   sig=func (m *Manager) A11yDump(ctx context.Context) (A11yTree, error)
   doc=A11yDump resolves the live session and runs the AT-SPI accessibility dumper\ninside the appliance desktop, returning the parsed accessibility tree — the\ndeterministic middle rung of the driving ladder (roles, labels, screen-pixel\ncoordinates), no vision model involved.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.Touch,matrix/neo/internal/dojo.Manager.clearReobserve,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.ParseA11yTree,matrix/neo/internal/dojo.a11yPayloadCommand,matrix/neo/internal/dojo.execCurlTransport.ExecDesktop,matrix/neo/internal/dojo.truncate
+  references=matrix/neo/internal/dojo.A11yTree,matrix/neo/internal/dojo.BytebotdTransport.ExecDesktop,matrix/neo/internal/dojo.ErrBooting,matrix/neo/internal/dojo.ErrTakeoverActive,matrix/neo/internal/dojo.ErrTransport,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.Touch,matrix/neo/internal/dojo.Manager.clearReobserve,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.ParseA11yTree,matrix/neo/internal/dojo.StateProvisioning,matrix/neo/internal/dojo.StateReady,matrix/neo/internal/dojo.StateTakeover,matrix/neo/internal/dojo.a11yPayloadCommand,matrix/neo/internal/dojo.a11yTimeoutSec,matrix/neo/internal/dojo.aerr,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.exit,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.out,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.snap,matrix/neo/internal/dojo.tree,matrix/neo/internal/dojo.truncate
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/server.Engine.desktopA11y
+  ^references=matrix/neo/internal/server.Engine.desktopA11y
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.Manager.Activate kind=method
@@ -587,7 +645,11 @@ NODE id=matrix/neo/internal/dojo.Manager.Activate kind=method
   sig=func (m *Manager) Activate(id string) (Session, error)
   doc=Activate marks the agent as driving (ready -> active). Activating an\nalready-active session just bumps the idle clock. Activating during a\ntakeover is refused — the human holds the controls.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/server.Engine.publishDojo
+  references=matrix/neo/internal/dojo.ErrDestroyed,matrix/neo/internal/dojo.ErrInvalidTransition,matrix/neo/internal/dojo.ErrNotFound,matrix/neo/internal/dojo.EvtActive,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.StateActive,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateReady,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/dojo.snap,matrix/neo/internal/dojo.st
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.TakeoverConv
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.TakeoverConv
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.CallBytebotd kind=method
@@ -595,7 +657,11 @@ NODE id=matrix/neo/internal/dojo.Manager.CallBytebotd kind=method
   sig=func (m *Manager) CallBytebotd(ctx context.Context, body []byte) ([]byte, error)
   doc=CallBytebotd resolves the live session and issues one bytebotd /computer-use\nrequest through the carrier. A non-2xx status is returned as ErrBytebotd with\nthe body preserved so the caller can surface bytebotd's own message.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.Touch,matrix/neo/internal/dojo.Manager.clearReobserve,matrix/neo/internal/dojo.Manager.gateReobserve,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.actionOf,matrix/neo/internal/dojo.execCurlTransport.Call,matrix/neo/internal/dojo.truncate
+  references=matrix/neo/internal/dojo.BytebotdTransport.Call,matrix/neo/internal/dojo.ErrBooting,matrix/neo/internal/dojo.ErrBytebotd,matrix/neo/internal/dojo.ErrTakeoverActive,matrix/neo/internal/dojo.ErrTransport,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.Touch,matrix/neo/internal/dojo.Manager.clearReobserve,matrix/neo/internal/dojo.Manager.gateReobserve,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.StateProvisioning,matrix/neo/internal/dojo.StateReady,matrix/neo/internal/dojo.StateTakeover,matrix/neo/internal/dojo.action,matrix/neo/internal/dojo.actionOf,matrix/neo/internal/dojo.aerr,matrix/neo/internal/dojo.body,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.resp,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.snap,matrix/neo/internal/dojo.status,matrix/neo/internal/dojo.truncate
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/server.Engine.desktopLook,matrix/neo/internal/server.Server.handleDojoComputerUse
+  ^references=matrix/neo/internal/server.Engine.desktopLook,matrix/neo/internal/server.Server.handleDojoComputerUse
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.Manager.Close kind=method
@@ -603,6 +669,8 @@ NODE id=matrix/neo/internal/dojo.Manager.Close kind=method
   sig=func (m *Manager) Close()
   doc=Close tears down every live session (graceful daemon shutdown).
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.Teardown
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.cancel,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.ids,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.s
   ^contains=matrix/neo/internal/dojo.Manager
   ^defines=matrix/neo/internal/dojo/dojo.go
 
@@ -611,6 +679,8 @@ NODE id=matrix/neo/internal/dojo.Manager.Discard kind=method
   sig=func (m *Manager) Discard(ctx context.Context, id string) error
   doc=Discard destroys a session WITHOUT shipping — only the explicit user\ndiscard path calls this (req 5.4). Idempotent.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.Manager.logf,matrix/neo/internal/dojo.railway.DestroySandbox
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.Manager.logf,matrix/neo/internal/dojo.RailwayClient.DestroySandbox,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.s
   ^contains=matrix/neo/internal/dojo.Manager
   ^defines=matrix/neo/internal/dojo/dojo.go
 
@@ -619,7 +689,10 @@ NODE id=matrix/neo/internal/dojo.Manager.Enabled kind=method
   sig=func (m *Manager) Enabled() bool
   doc=Enabled reports whether the Manager can provision.
 EDGES
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.m
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.ensureRecord,matrix/neo/internal/server.NewEngine
+  ^references=matrix/neo/internal/dojo.Manager.ensureRecord,matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.EnsureSession kind=method
@@ -627,7 +700,11 @@ NODE id=matrix/neo/internal/dojo.Manager.EnsureSession kind=method
   sig=func (m *Manager) EnsureSession(convID string) (Session, error)
   doc=EnsureSession returns the conversation's live session, registering a fresh\none and provisioning it in the BACKGROUND when none exists — the wave-3\nboot trigger: the caller returns a typed "booting" result immediately while\nthe client watches the dojo.* boot events (req 4.1). The background boot is\nbounded by ProvisionTimeout exactly like the synchronous path.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.ensureRecord,matrix/neo/internal/dojo.session.snapshot
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.ensureRecord,matrix/neo/internal/dojo.Manager.logf,matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.convID,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.live,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/dojo.snap
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/server.Engine.dojoBoot,matrix/neo/internal/server.Server.handleDojoBoot
+  ^references=matrix/neo/internal/server.Engine.dojoBoot,matrix/neo/internal/server.Server.handleDojoBoot
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.Frame kind=method
@@ -635,7 +712,11 @@ NODE id=matrix/neo/internal/dojo.Manager.Frame kind=method
   sig=func (m *Manager) Frame(ctx context.Context, convID string) ([]byte, error)
   doc=Frame captures a live-view screenshot of the conversation's desktop for the\nclient panel (req 4.1) and returns the raw PNG. It is a PASSIVE view: it\nnever bumps the idle clock (an abandoned open tab must not keep a sandbox\nbilled forever — actively driving does, watching does not), never activates\nthe session, and works in every attached state including takeover (the human\nwatches themselves drive).
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.SessionForConvOrLive,matrix/neo/internal/dojo.execCurlTransport.Call,matrix/neo/internal/dojo.truncate
+  references=matrix/neo/internal/dojo.BytebotdTransport.Call,matrix/neo/internal/dojo.ErrBooting,matrix/neo/internal/dojo.ErrBytebotd,matrix/neo/internal/dojo.ErrNoSession,matrix/neo/internal/dojo.ErrTransport,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.SessionForConvOrLive,matrix/neo/internal/dojo.StateProvisioning,matrix/neo/internal/dojo.StateShipping,matrix/neo/internal/dojo.convID,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.ok,matrix/neo/internal/dojo.png,matrix/neo/internal/dojo.resp,matrix/neo/internal/dojo.snap,matrix/neo/internal/dojo.status,matrix/neo/internal/dojo.truncate,matrix/neo/internal/dojo.wrap
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/server.Server.handleDojoFrame
+  ^references=matrix/neo/internal/server.Server.handleDojoFrame
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.Manager.Get kind=method
@@ -643,6 +724,8 @@ NODE id=matrix/neo/internal/dojo.Manager.Get kind=method
   sig=func (m *Manager) Get(id string) (Session, error)
   doc=Get returns the snapshot of a session by id.
 EDGES
+  calls=matrix/neo/internal/dojo.session.snapshot
+  references=matrix/neo/internal/dojo.ErrNotFound,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session.snapshot
   ^contains=matrix/neo/internal/dojo.Manager
   ^defines=matrix/neo/internal/dojo/dojo.go
 
@@ -651,7 +734,11 @@ NODE id=matrix/neo/internal/dojo.Manager.Handback kind=method
   sig=func (m *Manager) Handback(id string) (Session, error)
   doc=Handback returns control to the agent (takeover -> active) and arms the\nre-observation contract (req 4.3): the agent's next mutating action is\nrejected until a fresh observation lands — it never acts on a pre-takeover\nworld model. The flag is set under the SAME lock as the transition so no\nagent call can slip between them.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/server.Engine.publishDojo
+  references=matrix/neo/internal/dojo.ErrDestroyed,matrix/neo/internal/dojo.ErrInvalidTransition,matrix/neo/internal/dojo.ErrNotFound,matrix/neo/internal/dojo.EvtHandback,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.StateActive,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.StateTakeover,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/dojo.snap,matrix/neo/internal/dojo.st
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.HandbackConv
+  ^references=matrix/neo/internal/dojo.Manager.HandbackConv
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.HandbackConv kind=method
@@ -659,7 +746,10 @@ NODE id=matrix/neo/internal/dojo.Manager.HandbackConv kind=method
   sig=func (m *Manager) HandbackConv(convID string) (Session, error)
   doc=HandbackConv returns control to the agent for a conversation's live session.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.SessionForConvOrLive
+  references=matrix/neo/internal/dojo.ErrNoSession,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.SessionForConvOrLive,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.convID,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.ok,matrix/neo/internal/dojo.snap
   ^contains=matrix/neo/internal/dojo.Manager
+  ^references=matrix/neo/internal/server.Server.handleDojoHandback
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.Provision kind=method
@@ -667,6 +757,8 @@ NODE id=matrix/neo/internal/dojo.Manager.Provision kind=method
   sig=func (m *Manager) Provision(ctx context.Context, req Request) (Session, error)
   doc=Provision brings up the dojo session for a conversation, or reattaches to\nthe conversation's live session if one exists (sessions are reattachable\nacross turns and reconnects, req 1.2). It is synchronous and bounded by\nProvisionTimeout — it returns a typed error rather than hanging the turn.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.ensureRecord,matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/dojo.session.snapshot
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.ensureRecord,matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/dojo.Request,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.live,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.req,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/dojo.snap
   ^contains=matrix/neo/internal/dojo.Manager
   ^defines=matrix/neo/internal/dojo/dojo.go
 
@@ -675,6 +767,8 @@ NODE id=matrix/neo/internal/dojo.Manager.Reattach kind=method
   sig=func (m *Manager) Reattach(ctx context.Context, id string) (Session, error)
   doc=Reattach verifies a session's sandbox is still alive, bumps its idle clock,\nand returns it. A dead sandbox is torn down honestly and reported as\nErrDestroyed — the caller re-provisions rather than acting on a corpse.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.emitState,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.railway.GetSandbox,matrix/neo/internal/dojo.session.snapshot
+  references=matrix/neo/internal/dojo.ErrDestroyed,matrix/neo/internal/dojo.ErrNotFound,matrix/neo/internal/dojo.EvtFailed,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.emitState,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.RailwayClient.GetSandbox,matrix/neo/internal/dojo.SandboxRunning,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.reason,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.sandboxID,matrix/neo/internal/dojo.sb,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/dojo.snap
   ^contains=matrix/neo/internal/dojo.Manager
   ^defines=matrix/neo/internal/dojo/dojo.go
 
@@ -683,6 +777,8 @@ NODE id=matrix/neo/internal/dojo.Manager.RegisterSessionForTest kind=method
   sig=func (m *Manager) RegisterSessionForTest(sandboxID string) (Session, error)
   doc=RegisterSessionForTest hand-registers a live (active) session bound to the\ngiven sandbox id, bypassing Provision — for docker contract tests that drive\nan existing local bytebot-desktop container through the carrier seam. It\nreturns the session snapshot. Not used in production paths.
 EDGES
+  calls=matrix/neo/internal/dojo.newSessionID,matrix/neo/internal/dojo.session.snapshot
+  references=matrix/neo/internal/dojo.ErrNoSession,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.StateActive,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.newSessionID,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.sandboxID,matrix/neo/internal/dojo.session,matrix/neo/internal/dojo.session.snapshot
   ^contains=matrix/neo/internal/dojo.Manager
   ^defines=matrix/neo/internal/dojo/bridge.go
 
@@ -691,7 +787,11 @@ NODE id=matrix/neo/internal/dojo.Manager.SessionForConv kind=method
   sig=func (m *Manager) SessionForConv(convID string) (Session, bool)
   doc=SessionForConv returns the live session for a conversation, if any.
 EDGES
+  calls=matrix/neo/internal/dojo.session.snapshot
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.convID,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.ok,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session.snapshot
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.SessionForConvOrLive
+  ^references=matrix/neo/internal/dojo.Manager.SessionForConvOrLive
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.SessionForConvOrLive kind=method
@@ -699,7 +799,11 @@ NODE id=matrix/neo/internal/dojo.Manager.SessionForConvOrLive kind=method
   sig=func (m *Manager) SessionForConvOrLive(convID string) (Session, bool)
   doc=SessionForConvOrLive resolves a conversation's session, falling back to THE\nlive session when the conversation has none bound. With MaxActive=1 (the\ndefault) the user has exactly one computer — every conversation's panel\nshows and controls it, whichever conversation booted it. With a larger cap\nthe fallback is disabled and bindings stay strictly per-conversation.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.SessionForConv,matrix/neo/internal/dojo.Manager.liveSession
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.SessionForConv,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.convID,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.ok,matrix/neo/internal/dojo.s
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.HandbackConv,matrix/neo/internal/dojo.Manager.TakeoverConv,matrix/neo/internal/dojo.Manager.TakeoverInput,matrix/neo/internal/server.Engine.stopRecoveryDesktop,matrix/neo/internal/server.Server.handleDojoBoot,matrix/neo/internal/server.Server.handleDojoSession,matrix/neo/internal/server.Server.handleDojoShutdown
+  ^references=matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.HandbackConv,matrix/neo/internal/dojo.Manager.TakeoverConv,matrix/neo/internal/dojo.Manager.TakeoverInput,matrix/neo/internal/server.Engine.stopRecoveryDesktop,matrix/neo/internal/server.Server.handleDojoBoot,matrix/neo/internal/server.Server.handleDojoSession,matrix/neo/internal/server.Server.handleDojoShutdown
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.SessionResultForConv kind=method
@@ -707,7 +811,11 @@ NODE id=matrix/neo/internal/dojo.Manager.SessionResultForConv kind=method
   sig=func (m *Manager) SessionResultForConv(convID string) (Session, bool)
   doc=SessionResultForConv returns a conversation's latest non-destroyed result,\nincluding a failed boot so clients can render its bounded reason. A retry\nstill replaces the failed record through ensureRecord.
 EDGES
+  calls=matrix/neo/internal/dojo.session.snapshot
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.convID,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.ok,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session.snapshot
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.WaitReady,matrix/neo/internal/server.Server.handleDojoSession
+  ^references=matrix/neo/internal/dojo.Manager.WaitReady,matrix/neo/internal/server.Server.handleDojoSession
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.SetTransport kind=method
@@ -715,6 +823,7 @@ NODE id=matrix/neo/internal/dojo.Manager.SetTransport kind=method
   sig=func (m *Manager) SetTransport(t BytebotdTransport)
   doc=SetTransport swaps the desktop actuation carrier. Production keeps the\ndefault exec-curl carrier over the Railway client; a docker contract test\ninjects a direct-container carrier so the SAME Manager drives real bytebotd\nover a local HTTP/exec path. nil leaves the default in place.
 EDGES
+  references=matrix/neo/internal/dojo.BytebotdTransport,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.t
   ^contains=matrix/neo/internal/dojo.Manager
   ^defines=matrix/neo/internal/dojo/dojo.go
 
@@ -723,7 +832,11 @@ NODE id=matrix/neo/internal/dojo.Manager.StartReaper kind=method
   sig=func (m *Manager) StartReaper(ctx context.Context)
   doc=StartReaper enforces the idle-timeout and hard-lifetime caps until ctx ends.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.reapOnce
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.reapOnce,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.t
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/server.Engine.StartDojoReaper
+  ^references=matrix/neo/internal/server.Engine.StartDojoReaper
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.Takeover kind=method
@@ -731,7 +844,11 @@ NODE id=matrix/neo/internal/dojo.Manager.Takeover kind=method
   sig=func (m *Manager) Takeover(id string) (Session, error)
   doc=Takeover hands the control lease to the human (active -> takeover, req 4.2).\nWhile held, every AGENT desktop call is rejected with ErrTakeoverActive; the\nhuman's input passes through via TakeoverInput.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.step
+  references=matrix/neo/internal/dojo.EvtTakeover,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.StateActive,matrix/neo/internal/dojo.StateTakeover,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.TakeoverConv
+  ^references=matrix/neo/internal/dojo.Manager.TakeoverConv
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.TakeoverConv kind=method
@@ -739,7 +856,10 @@ NODE id=matrix/neo/internal/dojo.Manager.TakeoverConv kind=method
   sig=func (m *Manager) TakeoverConv(convID string) (Session, error)
   doc=TakeoverConv hands the control lease to the human for a conversation's live\nsession. Grabbing a booted-but-idle desktop (ready) first marks it active so\nthe machine's edges stay closed.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.SessionForConvOrLive,matrix/neo/internal/dojo.Manager.Takeover
+  references=matrix/neo/internal/dojo.ErrBooting,matrix/neo/internal/dojo.ErrNoSession,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.SessionForConvOrLive,matrix/neo/internal/dojo.Manager.Takeover,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.StateProvisioning,matrix/neo/internal/dojo.StateReady,matrix/neo/internal/dojo.activated,matrix/neo/internal/dojo.convID,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.ok,matrix/neo/internal/dojo.snap
   ^contains=matrix/neo/internal/dojo.Manager
+  ^references=matrix/neo/internal/server.Server.handleDojoTakeover
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.TakeoverInput kind=method
@@ -747,7 +867,11 @@ NODE id=matrix/neo/internal/dojo.Manager.TakeoverInput kind=method
   sig=func (m *Manager) TakeoverInput(ctx context.Context, convID string, body []byte) ([]byte, error)
   doc=TakeoverInput passes ONE human input action through to the desktop while the\nhuman holds the control lease (req 4.2). It is refused in every other state\n— the passthrough exists only under an explicit takeover, and holding the\nmouse never widens anyone's authority.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.SessionForConvOrLive,matrix/neo/internal/dojo.Manager.Touch,matrix/neo/internal/dojo.execCurlTransport.Call,matrix/neo/internal/dojo.truncate
+  references=matrix/neo/internal/dojo.BytebotdTransport.Call,matrix/neo/internal/dojo.ErrBytebotd,matrix/neo/internal/dojo.ErrNoSession,matrix/neo/internal/dojo.ErrNoTakeover,matrix/neo/internal/dojo.ErrTransport,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.SessionForConvOrLive,matrix/neo/internal/dojo.Manager.Touch,matrix/neo/internal/dojo.StateTakeover,matrix/neo/internal/dojo.body,matrix/neo/internal/dojo.convID,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.ok,matrix/neo/internal/dojo.resp,matrix/neo/internal/dojo.snap,matrix/neo/internal/dojo.status,matrix/neo/internal/dojo.truncate
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/server.Server.handleDojoInput
+  ^references=matrix/neo/internal/server.Server.handleDojoInput
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.Manager.Teardown kind=method
@@ -755,7 +879,11 @@ NODE id=matrix/neo/internal/dojo.Manager.Teardown kind=method
   sig=func (m *Manager) Teardown(ctx context.Context, id, reason string) error
   doc=Teardown runs the full teardown pipeline for a session: shipping (the ship\nseam runs, its failure reported honestly, never silently dropped) then\ndestroy. Idempotent — tearing down a session already shipping or destroyed\nis a no-op (req 1.3).
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.Manager.logf,matrix/neo/internal/dojo.railway.DestroySandbox,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/server.Engine.publishDojo
+  references=matrix/neo/internal/dojo.EvtShipping,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.Manager.logf,matrix/neo/internal/dojo.RailwayClient.DestroySandbox,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.StateShipping,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.reason,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/dojo.shipErr,matrix/neo/internal/dojo.snap
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.Close,matrix/neo/internal/dojo.Manager.evictForCap,matrix/neo/internal/dojo.Manager.reapOnce,matrix/neo/internal/server.Engine.stopRecoveryDesktop,matrix/neo/internal/server.Server.handleDojoShutdown
+  ^references=matrix/neo/internal/dojo.Manager.Close,matrix/neo/internal/dojo.Manager.evictForCap,matrix/neo/internal/dojo.Manager.reapOnce,matrix/neo/internal/server.Engine.stopRecoveryDesktop,matrix/neo/internal/server.Server.handleDojoShutdown
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.Touch kind=method
@@ -763,7 +891,10 @@ NODE id=matrix/neo/internal/dojo.Manager.Touch kind=method
   sig=func (m *Manager) Touch(id string)
   doc=Touch bumps a session's idle clock.
 EDGES
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.s
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.TakeoverInput,matrix/neo/internal/server.Server.handleDojoBoot
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.TakeoverInput,matrix/neo/internal/server.Server.handleDojoBoot
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.WaitReady kind=method
@@ -771,21 +902,32 @@ NODE id=matrix/neo/internal/dojo.Manager.WaitReady kind=method
   sig=func (m *Manager) WaitReady(ctx context.Context, convID string, wait time.Duration) (Session, error)
   doc=WaitReady waits up to wait for the conversation's session to leave\nprovisioning, returning the latest snapshot either way — the caller reads\nits state. It never provisions; pair it with EnsureSession.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.SessionResultForConv
+  references=matrix/neo/internal/dojo.ErrNotFound,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.SessionResultForConv,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.StateProvisioning,matrix/neo/internal/dojo.convID,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.deadline,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.ok,matrix/neo/internal/dojo.snap,matrix/neo/internal/dojo.wait
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/server.Engine.dojoBoot
+  ^references=matrix/neo/internal/server.Engine.dojoBoot
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.clearReobserve kind=method
   digest=b3:cea4ff908ffe24935c158e6129ea253d9d09ffecb9f915a1eccf934e0441fbf0 file=neo/internal/dojo/bridge.go range=156:162 lang=go exported=false byte_range=5916:6057
   sig=func (m *Manager) clearReobserve(id string)
 EDGES
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.s
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.Manager.emitState kind=method
   digest=b3:e6f64aef8d226309cdb7df53988d8e0d795ae2e87043d0d68574699a8afc79c3 file=neo/internal/dojo/dojo.go range=795:800 lang=go exported=false byte_range=25545:25733
   sig=func (m *Manager) emitState(s *session, evt string, fields map[string]interface{})
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/server.Engine.publishDojo
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.evt,matrix/neo/internal/dojo.fields,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/dojo.snap
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.ensureRecord
+  ^references=matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.ensureRecord
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.ensureRecord kind=method
@@ -793,14 +935,21 @@ NODE id=matrix/neo/internal/dojo.Manager.ensureRecord kind=method
   sig=func (m *Manager) ensureRecord(convID string) (*session, bool, error)
   doc=ensureRecord returns the conversation's live session (live=true, idle clock\nbumped) or registers and returns a fresh provisioning-state record\n(live=false) with the provisioning event emitted. The double-checked insert\nmakes concurrent ensures converge on one session per conversation.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.Enabled,matrix/neo/internal/dojo.Manager.emitState,matrix/neo/internal/dojo.Manager.evictForCap,matrix/neo/internal/dojo.newSessionID
+  references=matrix/neo/internal/dojo.ErrImageNotPinned,matrix/neo/internal/dojo.ErrNotConfigured,matrix/neo/internal/dojo.EvtProvisioning,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.Enabled,matrix/neo/internal/dojo.Manager.emitState,matrix/neo/internal/dojo.Manager.evictForCap,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.StateProvisioning,matrix/neo/internal/dojo.convID,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.newSessionID,matrix/neo/internal/dojo.ok,matrix/neo/internal/dojo.prev,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.EnsureSession,matrix/neo/internal/dojo.Manager.Provision
+  ^references=matrix/neo/internal/dojo.Manager.EnsureSession,matrix/neo/internal/dojo.Manager.Provision
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.eventFields kind=method
   digest=b3:8aafb94078c810a14495d0298ee84902c565ba248ef0c54fe7f041fe88609d1b file=neo/internal/dojo/dojo.go range=802:814 lang=go exported=false byte_range=25735:26045
   sig=func (m *Manager) eventFields(snap Session, extra map[string]interface{}) map[string]interface{}
 EDGES
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.extra,matrix/neo/internal/dojo.f,matrix/neo/internal/dojo.k,matrix/neo/internal/dojo.snap,matrix/neo/internal/dojo.v
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.emitState,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/dojo.Manager.transition
+  ^references=matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.emitState,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/dojo.Manager.transition
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.evictForCap kind=method
@@ -808,7 +957,11 @@ NODE id=matrix/neo/internal/dojo.Manager.evictForCap kind=method
   sig=func (m *Manager) evictForCap(ctx context.Context)
   doc=evictForCap tears down least-recently-touched sessions (through the ship\npath — eviction is not a discard) until a new one fits under MaxActive.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.Teardown
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.StateShipping,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.live,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.oldest,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.ensureRecord
+  ^references=matrix/neo/internal/dojo.Manager.ensureRecord
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.finish kind=method
@@ -816,7 +969,11 @@ NODE id=matrix/neo/internal/dojo.Manager.finish kind=method
   sig=func (m *Manager) finish(s *session, reason, shipErr string)
   doc=finish moves a session to destroyed, unindexes it, and emits the terminal\nevent. Safe to call from any state; repeat calls are no-ops.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/server.Engine.publishDojo
+  references=matrix/neo/internal/dojo.EvtDestroyed,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.fields,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.reason,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/dojo.shipErr,matrix/neo/internal/dojo.snap
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.Discard,matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.Teardown
+  ^references=matrix/neo/internal/dojo.Manager.Discard,matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.Teardown
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.gateReobserve kind=method
@@ -824,7 +981,10 @@ NODE id=matrix/neo/internal/dojo.Manager.gateReobserve kind=method
   sig=func (m *Manager) gateReobserve(id, action string) error
   doc=gateReobserve enforces req 4.3 on the agent path: after a handback, mutating\nactions are rejected until a fresh observation lands.
 EDGES
+  references=matrix/neo/internal/dojo.ErrNotFound,matrix/neo/internal/dojo.ErrReobserveRequired,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.action,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.mutatingActions,matrix/neo/internal/dojo.s
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.CallBytebotd
+  ^references=matrix/neo/internal/dojo.Manager.CallBytebotd
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.Manager.liveSession kind=method
@@ -832,14 +992,21 @@ NODE id=matrix/neo/internal/dojo.Manager.liveSession kind=method
   sig=func (m *Manager) liveSession() (Session, error)
   doc=liveSession returns the most-recently-touched non-destroyed session. DOJO's\nMaxActive defaults to 1, so "the user's desktop" is unambiguous; when more\nthan one is somehow live the freshest wins (the one the user is watching).
 EDGES
+  calls=matrix/neo/internal/dojo.session.snapshot
+  references=matrix/neo/internal/dojo.ErrNoSession,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateShipping,matrix/neo/internal/dojo.best,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session,matrix/neo/internal/dojo.session.snapshot
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.SessionForConvOrLive
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.SessionForConvOrLive
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.Manager.logf kind=method
   digest=b3:58cea3505a1317eb36fc745629f479eef71974b5260549cb8ed38e852700574e file=neo/internal/dojo/dojo.go range=243:247 lang=go exported=false byte_range=9172:9291
   sig=func (m *Manager) logf(format string, args ...interface{})
 EDGES
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.args,matrix/neo/internal/dojo.format,matrix/neo/internal/dojo.m
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.Discard,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.reapOnce,matrix/neo/internal/dojo.Manager.settleProvision
+  ^references=matrix/neo/internal/dojo.Manager.Discard,matrix/neo/internal/dojo.Manager.EnsureSession,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.reapOnce,matrix/neo/internal/dojo.Manager.settleProvision
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.provision kind=method
@@ -847,14 +1014,22 @@ NODE id=matrix/neo/internal/dojo.Manager.provision kind=method
   sig=func (m *Manager) provision(ctx context.Context, s *session) error
   doc=provision creates the sandbox, boots the pinned appliance inside it via\ndocker, and probes bytebotd until it answers. Every step is bounded by ctx.
 EDGES
+  calls=matrix/neo/internal/dojo.railway.CreateSandbox,matrix/neo/internal/dojo.railway.ExecSandbox,matrix/neo/internal/dojo.railway.GetSandbox
+  references=matrix/neo/internal/dojo.CreateOpts,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.NetworkIsolated,matrix/neo/internal/dojo.RailwayClient.CreateSandbox,matrix/neo/internal/dojo.RailwayClient.ExecSandbox,matrix/neo/internal/dojo.RailwayClient.GetSandbox,matrix/neo/internal/dojo.SandboxDestroyed,matrix/neo/internal/dojo.SandboxDestroying,matrix/neo/internal/dojo.SandboxFailed,matrix/neo/internal/dojo.SandboxRunning,matrix/neo/internal/dojo.boot,matrix/neo/internal/dojo.bytebotdPort,matrix/neo/internal/dojo.code,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.execBootTimeoutSec,matrix/neo/internal/dojo.execProbeTimeoutSec,matrix/neo/internal/dojo.idleMin,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.probe,matrix/neo/internal/dojo.res,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.sb,matrix/neo/internal/dojo.session
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.settleProvision
+  ^references=matrix/neo/internal/dojo.Manager.settleProvision
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.reapOnce kind=method
   digest=b3:0b927162ab4d61ae171aa7465254477e30af59d9c1026be3ce199fe7e5dba7f0 file=neo/internal/dojo/dojo.go range=872:896 lang=go exported=false byte_range=27446:28149
   sig=func (m *Manager) reapOnce(ctx context.Context)
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.logf
+  references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.logf,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.StateProvisioning,matrix/neo/internal/dojo.StateShipping,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.now,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.v,matrix/neo/internal/dojo.victim,matrix/neo/internal/dojo.victims
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.StartReaper
+  ^references=matrix/neo/internal/dojo.Manager.StartReaper
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.settleProvision kind=method
@@ -862,14 +1037,22 @@ NODE id=matrix/neo/internal/dojo.Manager.settleProvision kind=method
   sig=func (m *Manager) settleProvision(ctx context.Context, s *session) error
   doc=settleProvision runs the bounded provision for a freshly registered record\nand settles it to ready, or records a typed failure after cleanup.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.Manager.logf,matrix/neo/internal/dojo.Manager.provision,matrix/neo/internal/dojo.Manager.transition,matrix/neo/internal/dojo.boundedProvisionReason,matrix/neo/internal/dojo.railway.DestroySandbox,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/server.Engine.publishDojo
+  references=matrix/neo/internal/dojo.ErrProvision,matrix/neo/internal/dojo.ErrProvisionTimeout,matrix/neo/internal/dojo.EvtFailed,matrix/neo/internal/dojo.EvtReady,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.Manager.logf,matrix/neo/internal/dojo.Manager.provision,matrix/neo/internal/dojo.Manager.transition,matrix/neo/internal/dojo.RailwayClient.DestroySandbox,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.StateReady,matrix/neo/internal/dojo.boundedProvisionReason,matrix/neo/internal/dojo.cancel,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.derr,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.pctx,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.sandboxID,matrix/neo/internal/dojo.session,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/dojo.snap,matrix/neo/internal/dojo.terr
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.Provision
+  ^references=matrix/neo/internal/dojo.Manager.EnsureSession,matrix/neo/internal/dojo.Manager.Provision
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.step kind=method
   digest=b3:4019898d12fbbaefda71f7e97a40549e90ce70573687b284232fd1c3a3501682 file=neo/internal/dojo/dojo.go range=675:697 lang=go exported=false byte_range=22319:22886
   sig=func (m *Manager) step(id string, from, to State, evt string) (Session, error)
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/server.Engine.publishDojo
+  references=matrix/neo/internal/dojo.ErrDestroyed,matrix/neo/internal/dojo.ErrInvalidTransition,matrix/neo/internal/dojo.ErrNotFound,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.State,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.evt,matrix/neo/internal/dojo.from,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/dojo.snap,matrix/neo/internal/dojo.st,matrix/neo/internal/dojo.to
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.Takeover
+  ^references=matrix/neo/internal/dojo.Manager.Takeover
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Manager.transition kind=method
@@ -877,7 +1060,11 @@ NODE id=matrix/neo/internal/dojo.Manager.transition kind=method
   sig=func (m *Manager) transition(s *session, to State, evt string, fields map[string]interface{}) error
   doc=transition applies a validated state-machine edge and emits its event.
 EDGES
+  calls=matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/server.Engine.publishDojo
+  references=matrix/neo/internal/dojo.ErrInvalidTransition,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.State,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.evt,matrix/neo/internal/dojo.fields,matrix/neo/internal/dojo.m,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/dojo.snap,matrix/neo/internal/dojo.to,matrix/neo/internal/dojo.transitions
   ^contains=matrix/neo/internal/dojo.Manager
+  ^calls=matrix/neo/internal/dojo.Manager.settleProvision
+  ^references=matrix/neo/internal/dojo.Manager.settleProvision
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.NetworkIsolated kind=const
@@ -885,6 +1072,7 @@ NODE id=matrix/neo/internal/dojo.NetworkIsolated kind=const
   sig=untyped string
   doc=Network isolation modes (SandboxNetworkIsolation enum, introspected).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.provision,matrix/neo/internal/dojo.railway.CreateSandbox
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.NetworkPrivate kind=const
@@ -899,6 +1087,9 @@ NODE id=matrix/neo/internal/dojo.New kind=func
   sig=func New(rw RailwayClient, emit Emit, cfg Config) *Manager
   doc=New builds a Manager over the Railway wire client and an event emitter.
 EDGES
+  references=matrix/neo/internal/dojo.Config,matrix/neo/internal/dojo.DefaultImage,matrix/neo/internal/dojo.Emit,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.RailwayClient,matrix/neo/internal/dojo.cfg,matrix/neo/internal/dojo.defaultIdleTimeout,matrix/neo/internal/dojo.defaultMaxActive,matrix/neo/internal/dojo.defaultMaxLifetime,matrix/neo/internal/dojo.defaultPollGap,matrix/neo/internal/dojo.defaultProbeGap,matrix/neo/internal/dojo.defaultProvisionTimeout,matrix/neo/internal/dojo.emit,matrix/neo/internal/dojo.execCurlTransport,matrix/neo/internal/dojo.rw,matrix/neo/internal/dojo.session
+  ^calls=matrix/neo/internal/server.NewEngine
+  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.NewRailway kind=func
@@ -906,6 +1097,9 @@ NODE id=matrix/neo/internal/dojo.NewRailway kind=func
   sig=func NewRailway(cfg RailwayConfig) RailwayClient
   doc=NewRailway constructs the live-schema Railway sandbox client.
 EDGES
+  references=matrix/neo/internal/dojo.DefaultEndpoint,matrix/neo/internal/dojo.RailwayClient,matrix/neo/internal/dojo.RailwayConfig,matrix/neo/internal/dojo.cfg,matrix/neo/internal/dojo.defaultWireTimeout,matrix/neo/internal/dojo.ep,matrix/neo/internal/dojo.hc,matrix/neo/internal/dojo.railway,matrix/neo/internal/dojo.to
+  ^calls=matrix/neo/cmd/neo.runServe
+  ^references=matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.PNGDimensions kind=func
@@ -913,6 +1107,9 @@ NODE id=matrix/neo/internal/dojo.PNGDimensions kind=func
   sig=func PNGDimensions(data []byte) (int, int, error)
   doc=PNGDimensions reads the width and height from a PNG's IHDR chunk without\ndecoding pixels, so desktop_look knows the screenshot size to rescale into.
 EDGES
+  references=matrix/neo/internal/dojo.data,matrix/neo/internal/dojo.h,matrix/neo/internal/dojo.sigLen,matrix/neo/internal/dojo.w
+  ^calls=matrix/neo/internal/server.Engine.desktopLook
+  ^references=matrix/neo/internal/server.Engine.desktopLook
   ^defines=matrix/neo/internal/dojo/look.go
 
 NODE id=matrix/neo/internal/dojo.ParseA11yTree kind=func
@@ -920,6 +1117,10 @@ NODE id=matrix/neo/internal/dojo.ParseA11yTree kind=func
   sig=func ParseA11yTree(raw string) (A11yTree, error)
   doc=ParseA11yTree decodes the dumper's JSON output, failing closed on an error\nobject or unparsable output so a broken a11y bus is a typed error the planner\nreads, never a silently empty tree.
 EDGES
+  calls=matrix/neo/internal/dojo.stripFence
+  references=matrix/neo/internal/dojo.A11yTree,matrix/neo/internal/dojo.body,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.probe,matrix/neo/internal/dojo.raw,matrix/neo/internal/dojo.stripFence,matrix/neo/internal/dojo.tree
+  ^calls=matrix/neo/internal/dojo.Manager.A11yDump
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump
   ^defines=matrix/neo/internal/dojo/a11y.go
 
 NODE id=matrix/neo/internal/dojo.ParseGrounding kind=func
@@ -927,6 +1128,10 @@ NODE id=matrix/neo/internal/dojo.ParseGrounding kind=func
   sig=func ParseGrounding(raw string, width, height int) (Grounding, error)
   doc=ParseGrounding decodes an omni grounding response (tolerant of a stray\nmarkdown fence) and rescales every coordinate from the 0–1000 convention to\npixels for a width×height screenshot. It fails closed on unparsable output so\na bad grounding is a typed error the planner reads, never a silent wrong\nclick.
 EDGES
+  calls=matrix/neo/internal/dojo.rescale,matrix/neo/internal/dojo.stripFence
+  references=matrix/neo/internal/dojo.GroundedElement,matrix/neo/internal/dojo.Grounding,matrix/neo/internal/dojo.body,matrix/neo/internal/dojo.e,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.g,matrix/neo/internal/dojo.height,matrix/neo/internal/dojo.label,matrix/neo/internal/dojo.raw,matrix/neo/internal/dojo.rawGrounding,matrix/neo/internal/dojo.rescale,matrix/neo/internal/dojo.rg,matrix/neo/internal/dojo.stripFence,matrix/neo/internal/dojo.width
+  ^calls=matrix/neo/internal/server.Engine.desktopLook
+  ^references=matrix/neo/internal/server.Engine.desktopLook
   ^defines=matrix/neo/internal/dojo/look.go
 
 NODE id=matrix/neo/internal/dojo.RailwayClient kind=interface
@@ -934,7 +1139,9 @@ NODE id=matrix/neo/internal/dojo.RailwayClient kind=interface
   sig=type RailwayClient interface {\n	// CreateSandbox provisions a sandbox in the configured environment.\n	CreateSandbox(ctx context.Context, opts CreateOpts) (SandboxInfo, error)\n	// GetSandbox reads a sandbox's live status (the reattach read).\n	GetSandbox(ctx context.Context, id string) (SandboxInfo, error)\n	// ExecSandbox runs one shell command inside the sandbox, bounded by\n	// timeoutSec server-side.\n	ExecSandbox(ctx context.Context, id, command string, timeoutSec int) (ExecResult, error)\n	// DestroySandbox tears the sandbox down. Destroying an already-gone\n	// sandbox is not an error.\n	DestroySandbox(ctx context.Context, id string) error\n}
   doc=RailwayClient is the Manager-facing wire seam.
 EDGES
+  references=matrix/neo/internal/dojo.CreateOpts,matrix/neo/internal/dojo.ExecResult,matrix/neo/internal/dojo.SandboxInfo
   ^implements=matrix/neo/internal/dojo.railway
+  ^references=matrix/neo/cmd/neo.runServe,matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.New,matrix/neo/internal/dojo.NewRailway,matrix/neo/internal/dojo._,matrix/neo/internal/dojo.execCurlTransport,matrix/neo/internal/server.EngineOptions
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.RailwayConfig kind=type
@@ -943,6 +1150,7 @@ NODE id=matrix/neo/internal/dojo.RailwayConfig kind=type
   doc=RailwayConfig configures the wire client. Token and EnvironmentID come from\nthe environment references RAILWAY_API_TOKEN / RAILWAY_ENVIRONMENT_ID at the\nserve seam — never from manifests, spec files, or durable memory.
 EDGES
   contains=matrix/neo/internal/dojo.RailwayConfig#Endpoint,matrix/neo/internal/dojo.RailwayConfig#EnvironmentID,matrix/neo/internal/dojo.RailwayConfig#HTTPClient,matrix/neo/internal/dojo.RailwayConfig#Timeout,matrix/neo/internal/dojo.RailwayConfig#Token
+  ^references=matrix/neo/cmd/neo.runServe,matrix/neo/internal/dojo.NewRailway
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.RailwayConfig#Endpoint kind=field
@@ -981,6 +1189,7 @@ NODE id=matrix/neo/internal/dojo.Request kind=type
   doc=Request describes the dojo session to provision.
 EDGES
   contains=matrix/neo/internal/dojo.Request#ConvID
+  ^references=matrix/neo/internal/dojo.Manager.Provision
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Request#ConvID kind=field
@@ -1001,6 +1210,7 @@ NODE id=matrix/neo/internal/dojo.SandboxDestroyed kind=const
   sig=untyped string
   doc=Sandbox statuses the live API reports (SandboxStatus enum, introspected).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.provision
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.SandboxDestroying kind=const
@@ -1008,6 +1218,7 @@ NODE id=matrix/neo/internal/dojo.SandboxDestroying kind=const
   sig=untyped string
   doc=Sandbox statuses the live API reports (SandboxStatus enum, introspected).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.provision
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.SandboxFailed kind=const
@@ -1015,6 +1226,7 @@ NODE id=matrix/neo/internal/dojo.SandboxFailed kind=const
   sig=untyped string
   doc=Sandbox statuses the live API reports (SandboxStatus enum, introspected).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.provision
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.SandboxInfo kind=type
@@ -1023,6 +1235,7 @@ NODE id=matrix/neo/internal/dojo.SandboxInfo kind=type
   doc=SandboxInfo is the subset of the live Sandbox object the Manager uses.
 EDGES
   contains=matrix/neo/internal/dojo.SandboxInfo#CreatedAt,matrix/neo/internal/dojo.SandboxInfo#ID,matrix/neo/internal/dojo.SandboxInfo#Region,matrix/neo/internal/dojo.SandboxInfo#Status
+  ^references=matrix/neo/internal/dojo.RailwayClient,matrix/neo/internal/dojo.railway.CreateSandbox,matrix/neo/internal/dojo.railway.GetSandbox
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.SandboxInfo#CreatedAt kind=field
@@ -1054,6 +1267,7 @@ NODE id=matrix/neo/internal/dojo.SandboxRunning kind=const
   sig=untyped string
   doc=Sandbox statuses the live API reports (SandboxStatus enum, introspected).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.provision
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.Session kind=type
@@ -1062,6 +1276,8 @@ NODE id=matrix/neo/internal/dojo.Session kind=type
   doc=Session is the client-visible snapshot of one dojo session.
 EDGES
   contains=matrix/neo/internal/dojo.Session#ConvID,matrix/neo/internal/dojo.Session#CreatedAt,matrix/neo/internal/dojo.Session#ID,matrix/neo/internal/dojo.Session#Image,matrix/neo/internal/dojo.Session#Reason,matrix/neo/internal/dojo.Session#SandboxID,matrix/neo/internal/dojo.Session#State,matrix/neo/internal/dojo.Session#TouchedAt
+  references=matrix/neo/internal/dojo.State
+  ^references=matrix/neo/internal/dojo.BytebotdTransport,matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.EnsureSession,matrix/neo/internal/dojo.Manager.Get,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.HandbackConv,matrix/neo/internal/dojo.Manager.Provision,matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.RegisterSessionForTest,matrix/neo/internal/dojo.Manager.SessionForConv,matrix/neo/internal/dojo.Manager.SessionForConvOrLive,matrix/neo/internal/dojo.Manager.SessionResultForConv,matrix/neo/internal/dojo.Manager.Takeover,matrix/neo/internal/dojo.Manager.TakeoverConv,matrix/neo/internal/dojo.Manager.WaitReady,matrix/neo/internal/dojo.Manager.eventFields,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/dojo.ShipFunc,matrix/neo/internal/dojo.execCurlTransport.Call,matrix/neo/internal/dojo.execCurlTransport.ExecDesktop,matrix/neo/internal/dojo.session.snapshot,matrix/neo/internal/server.Server.handleDojoHandback,matrix/neo/internal/server.Server.handleDojoLease,matrix/neo/internal/server.Server.handleDojoTakeover
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.Session#ConvID kind=field
@@ -1117,6 +1333,8 @@ NODE id=matrix/neo/internal/dojo.ShipFunc kind=type
   sig=type ShipFunc func(ctx context.Context, s Session) error
   doc=ShipFunc is the teardown ship seam (req 5.1): it ships work products and the\nbrowser profile home BEFORE destroy. Wave 4 provides the production shipper;\nnil means nothing is declared to ship yet and the shipping stage records\nthat honestly. A ship error never blocks destruction — it is surfaced on the\ndestroyed event as ship_error.
 EDGES
+  references=matrix/neo/internal/dojo.Session
+  ^references=matrix/neo/internal/dojo.Config
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.State kind=type
@@ -1124,48 +1342,63 @@ NODE id=matrix/neo/internal/dojo.State kind=type
   sig=type State string
   doc=State is one node of the dojo session state machine (DOJO req 1.3).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/dojo.Manager.transition,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.StateActive,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.StateProvisioning,matrix/neo/internal/dojo.StateReady,matrix/neo/internal/dojo.StateShipping,matrix/neo/internal/dojo.StateTakeover,matrix/neo/internal/dojo.session,matrix/neo/internal/dojo.transitions
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.StateActive kind=const
   digest=b3:bd79a7a4cf2987672a3a33d7511ffb07d27c8bf34e2c21cda168dcf7501e75c2 file=neo/internal/dojo/dojo.go range=23:23 lang=go exported=true byte_range=457:491
   sig=dojo.State
 EDGES
+  references=matrix/neo/internal/dojo.State
+  ^references=matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.RegisterSessionForTest,matrix/neo/internal/dojo.Manager.Takeover,matrix/neo/internal/dojo.transitions
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.StateDestroyed kind=const
   digest=b3:1eda258164f77b6b162c905b77edc2bea846ed8a063e4815e9ee997308241a82 file=neo/internal/dojo/dojo.go range=27:27 lang=go exported=true byte_range=605:642
   sig=dojo.State
 EDGES
+  references=matrix/neo/internal/dojo.State
+  ^references=matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.Close,matrix/neo/internal/dojo.Manager.Discard,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.SessionForConv,matrix/neo/internal/dojo.Manager.SessionResultForConv,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.ensureRecord,matrix/neo/internal/dojo.Manager.evictForCap,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.Manager.reapOnce,matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/dojo.transitions
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.StateFailed kind=const
   digest=b3:7fe477329122cb66a973e212d932bcdbb1271778b006bb893f893ebafad7675e file=neo/internal/dojo/dojo.go range=26:26 lang=go exported=true byte_range=569:603
   sig=dojo.State
 EDGES
+  references=matrix/neo/internal/dojo.State
+  ^references=matrix/neo/internal/dojo.Manager.Close,matrix/neo/internal/dojo.Manager.Discard,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.SessionForConv,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.ensureRecord,matrix/neo/internal/dojo.Manager.evictForCap,matrix/neo/internal/dojo.Manager.reapOnce,matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/dojo.transitions,matrix/neo/internal/server.Engine.dojoBoot
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.StateProvisioning kind=const
   digest=b3:10328c39b86c161a5e6221c59c9eb19ad46b26c7eb6b587ce4fa3c59675b79f5 file=neo/internal/dojo/dojo.go range=21:21 lang=go exported=true byte_range=380:420
   sig=dojo.State
 EDGES
+  references=matrix/neo/internal/dojo.State
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.TakeoverConv,matrix/neo/internal/dojo.Manager.WaitReady,matrix/neo/internal/dojo.Manager.ensureRecord,matrix/neo/internal/dojo.Manager.reapOnce,matrix/neo/internal/dojo.transitions,matrix/neo/internal/server.Engine.dojoBoot
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.StateReady kind=const
   digest=b3:a6faaa9986c0bbd1f6024b29848644f602ec9a99885ead4f52126b190056d37c file=neo/internal/dojo/dojo.go range=22:22 lang=go exported=true byte_range=422:455
   sig=dojo.State
 EDGES
+  references=matrix/neo/internal/dojo.State
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.TakeoverConv,matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/dojo.transitions
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.StateShipping kind=const
   digest=b3:c982df5353faee1fe41b0bc6bce7a49d35758e712036fc2501bd7a344acfbc76 file=neo/internal/dojo/dojo.go range=25:25 lang=go exported=true byte_range=531:567
   sig=dojo.State
 EDGES
+  references=matrix/neo/internal/dojo.State
+  ^references=matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.evictForCap,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.Manager.reapOnce,matrix/neo/internal/dojo.transitions
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.StateTakeover kind=const
   digest=b3:abb0b4e08f9853bdf2dd94a3eaa67bde315ae26919e62b4125577ab790baa976 file=neo/internal/dojo/dojo.go range=24:24 lang=go exported=true byte_range=493:529
   sig=dojo.State
 EDGES
+  references=matrix/neo/internal/dojo.State
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.Takeover,matrix/neo/internal/dojo.Manager.TakeoverInput,matrix/neo/internal/dojo.transitions
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.WrapDesktopExec kind=func
@@ -1173,12 +1406,17 @@ NODE id=matrix/neo/internal/dojo.WrapDesktopExec kind=func
   sig=func WrapDesktopExec(container, command string) string
   doc=WrapDesktopExec builds the shell that runs command inside the named appliance\ncontainer as the desktop user, with DISPLAY and the live XFCE session's\na11y D-Bus address exported (discovered from xfce4-session's environ). It is\nexported so a docker contract test builds the identical wrapper for its own\nlocal container.
 EDGES
+  calls=matrix/neo/internal/dojo.shellSingleQuote
+  references=matrix/neo/internal/dojo.command,matrix/neo/internal/dojo.container,matrix/neo/internal/dojo.inner,matrix/neo/internal/dojo.shellSingleQuote
+  ^calls=matrix/neo/internal/dojo.execCurlTransport.ExecDesktop
+  ^references=matrix/neo/internal/dojo.execCurlTransport.ExecDesktop
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo._ kind=var
   digest=b3:67e9e9e84b7d5e05829a874b65fa81bef833c41508722b27ba92e481ffc25829 file=neo/internal/dojo/railway.go range=137:137 lang=go exported=false byte_range=5251:5284
   sig=dojo.RailwayClient
 EDGES
+  references=matrix/neo/internal/dojo.BytebotdTransport,matrix/neo/internal/dojo.RailwayClient,matrix/neo/internal/dojo.execCurlTransport,matrix/neo/internal/dojo.railway
   ^defines=matrix/neo/internal/dojo/bridge.go,matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.a11yDumpPython kind=const
@@ -1186,6 +1424,7 @@ NODE id=matrix/neo/internal/dojo.a11yDumpPython kind=const
   sig=untyped string
   doc=a11yDumpPython is the AT-SPI walker. It runs inside the appliance as the\ndesktop user (WrapDesktopExec supplies DISPLAY + the session bus), walks each\nregistered application to a bounded depth, and prints one JSON object of the\non-screen interactive elements with their center in screen pixels. Every\nAT-SPI call is defensive: a flaky node degrades to skipped, never a crash.
 EDGES
+  ^references=matrix/neo/internal/dojo.a11yPayloadCommand
   ^defines=matrix/neo/internal/dojo/a11y.go
 
 NODE id=matrix/neo/internal/dojo.a11yPayloadCommand kind=func
@@ -1193,6 +1432,9 @@ NODE id=matrix/neo/internal/dojo.a11yPayloadCommand kind=func
   sig=func a11yPayloadCommand() string
   doc=a11yPayloadCommand returns the shell that decodes and runs the AT-SPI dumper.\nThe script is base64-carried so its Python survives nested shell quoting.
 EDGES
+  references=matrix/neo/internal/dojo.a11yDumpPython,matrix/neo/internal/dojo.b64
+  ^calls=matrix/neo/internal/dojo.Manager.A11yDump
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump
   ^defines=matrix/neo/internal/dojo/a11y.go
 
 NODE id=matrix/neo/internal/dojo.a11yTimeoutSec kind=const
@@ -1200,12 +1442,16 @@ NODE id=matrix/neo/internal/dojo.a11yTimeoutSec kind=const
   sig=untyped int
   doc=a11yTimeoutSec bounds the AT-SPI walk.
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.actionOf kind=func
   digest=b3:7604c37c5b62d67a09b5c453d6d03ffb7a862669a3b4f63df0f5bfb9c30064f6 file=neo/internal/dojo/bridge.go range=133:139 lang=go exported=false byte_range=5391:5526
   sig=func actionOf(body []byte) string
 EDGES
+  references=matrix/neo/internal/dojo.body,matrix/neo/internal/dojo.w
+  ^calls=matrix/neo/internal/dojo.Manager.CallBytebotd
+  ^references=matrix/neo/internal/dojo.Manager.CallBytebotd
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.applianceContainer kind=const
@@ -1213,12 +1459,16 @@ NODE id=matrix/neo/internal/dojo.applianceContainer kind=const
   sig=untyped string
   doc=applianceContainer is the name the boot script gives the bytebot-desktop\ncontainer inside the sandbox (docker run --name dojo …). The AT-SPI dumper\nruns inside it as the desktop user.
 EDGES
+  ^references=matrix/neo/internal/dojo.execCurlTransport.ExecDesktop
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.boundedProvisionReason kind=func
   digest=b3:d0bbd4715d399c2637e5e971fb16871e6965c26b241d3ca3c1028ab7fca44549 file=neo/internal/dojo/dojo.go range=816:832 lang=go exported=false byte_range=26047:26533
   sig=func boundedProvisionReason(err error) string
 EDGES
+  references=matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.message,matrix/neo/internal/dojo.replacement
+  ^calls=matrix/neo/internal/dojo.Manager.settleProvision
+  ^references=matrix/neo/internal/dojo.Manager.settleProvision
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.bytebotdCurlTimeoutSec kind=const
@@ -1226,6 +1476,7 @@ NODE id=matrix/neo/internal/dojo.bytebotdCurlTimeoutSec kind=const
   sig=untyped int
   doc=bytebotdCurlTimeoutSec bounds the in-sandbox curl itself; the exec wrapping\nit gets a slightly larger budget so the exec never times out before curl\nreports its own error.
 EDGES
+  ^references=matrix/neo/internal/dojo.execCurlTransport.Call
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.bytebotdExecTimeoutSec kind=const
@@ -1233,6 +1484,7 @@ NODE id=matrix/neo/internal/dojo.bytebotdExecTimeoutSec kind=const
   sig=untyped int
   doc=bytebotdCurlTimeoutSec bounds the in-sandbox curl itself; the exec wrapping\nit gets a slightly larger budget so the exec never times out before curl\nreports its own error.
 EDGES
+  ^references=matrix/neo/internal/dojo.execCurlTransport.Call,matrix/neo/internal/dojo.execCurlTransport.ExecDesktop,matrix/neo/internal/dojo.execCurlTransport.readRange
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.bytebotdPort kind=const
@@ -1240,6 +1492,7 @@ NODE id=matrix/neo/internal/dojo.bytebotdPort kind=const
   sig=untyped int
   doc=bytebotdPort is the appliance daemon's REST port inside the sandbox.
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.provision,matrix/neo/internal/dojo.execCurlTransport.Call
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.defaultIdleTimeout kind=const
@@ -1247,6 +1500,7 @@ NODE id=matrix/neo/internal/dojo.defaultIdleTimeout kind=const
   sig=time.Duration
   doc=Defaults for the env-configured caps (req 1.4).
 EDGES
+  ^references=matrix/neo/internal/dojo.New
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.defaultMaxActive kind=const
@@ -1254,6 +1508,7 @@ NODE id=matrix/neo/internal/dojo.defaultMaxActive kind=const
   sig=untyped int
   doc=Defaults for the env-configured caps (req 1.4).
 EDGES
+  ^references=matrix/neo/internal/dojo.New
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.defaultMaxLifetime kind=const
@@ -1261,6 +1516,7 @@ NODE id=matrix/neo/internal/dojo.defaultMaxLifetime kind=const
   sig=time.Duration
   doc=Defaults for the env-configured caps (req 1.4).
 EDGES
+  ^references=matrix/neo/internal/dojo.New
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.defaultPollGap kind=const
@@ -1268,6 +1524,7 @@ NODE id=matrix/neo/internal/dojo.defaultPollGap kind=const
   sig=time.Duration
   doc=Defaults for the env-configured caps (req 1.4).
 EDGES
+  ^references=matrix/neo/internal/dojo.New
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.defaultProbeGap kind=const
@@ -1275,6 +1532,7 @@ NODE id=matrix/neo/internal/dojo.defaultProbeGap kind=const
   sig=time.Duration
   doc=Defaults for the env-configured caps (req 1.4).
 EDGES
+  ^references=matrix/neo/internal/dojo.New
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.defaultProvisionTimeout kind=const
@@ -1282,6 +1540,7 @@ NODE id=matrix/neo/internal/dojo.defaultProvisionTimeout kind=const
   sig=time.Duration
   doc=Defaults for the env-configured caps (req 1.4).
 EDGES
+  ^references=matrix/neo/internal/dojo.New
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.defaultWireTimeout kind=const
@@ -1289,6 +1548,7 @@ NODE id=matrix/neo/internal/dojo.defaultWireTimeout kind=const
   sig=time.Duration
   doc=defaultWireTimeout bounds a single GraphQL round-trip when no HTTPClient is\nsupplied. Exec calls carry their own server-side timeoutSec on top.
 EDGES
+  ^references=matrix/neo/internal/dojo.NewRailway
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.execBootTimeoutSec kind=const
@@ -1296,6 +1556,7 @@ NODE id=matrix/neo/internal/dojo.execBootTimeoutSec kind=const
   sig=untyped int
   doc=Defaults for the env-configured caps (req 1.4).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.provision
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.execChunkBytes kind=const
@@ -1303,6 +1564,7 @@ NODE id=matrix/neo/internal/dojo.execChunkBytes kind=const
   sig=untyped int
   doc=sandboxExec stdout is bounded and the effective ceiling can vary. Raw chunks\nare base64-expanded before crossing that boundary; truncated ranges are\nbisected until they fit. Bounded parallelism keeps screenshots responsive.
 EDGES
+  ^references=matrix/neo/internal/dojo.execCurlTransport.readFile
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.execCurlTransport kind=type
@@ -1312,6 +1574,8 @@ NODE id=matrix/neo/internal/dojo.execCurlTransport kind=type
 EDGES
   contains=matrix/neo/internal/dojo.execCurlTransport#rw,matrix/neo/internal/dojo.execCurlTransport.Call,matrix/neo/internal/dojo.execCurlTransport.ExecDesktop,matrix/neo/internal/dojo.execCurlTransport.readFile,matrix/neo/internal/dojo.execCurlTransport.readRange
   implements=matrix/neo/internal/dojo.BytebotdTransport
+  references=matrix/neo/internal/dojo.RailwayClient
+  ^references=matrix/neo/internal/dojo.New,matrix/neo/internal/dojo._,matrix/neo/internal/dojo.execCurlTransport.Call,matrix/neo/internal/dojo.execCurlTransport.ExecDesktop,matrix/neo/internal/dojo.execCurlTransport.readFile,matrix/neo/internal/dojo.execCurlTransport.readRange
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.execCurlTransport#rw kind=field
@@ -1324,14 +1588,20 @@ NODE id=matrix/neo/internal/dojo.execCurlTransport.Call kind=method
   digest=b3:702840f6375c45ed1c7bd5654cfacf7826059d0b835c7390b0c672b6f113b578 file=neo/internal/dojo/bridge.go range=327:366 lang=go exported=true byte_range=11478:13273
   sig=func (t *execCurlTransport) Call(ctx context.Context, s Session, body []byte) ([]byte, int, error)
 EDGES
+  calls=matrix/neo/internal/dojo.execCurlTransport.readFile,matrix/neo/internal/dojo.railway.ExecSandbox,matrix/neo/internal/dojo.truncate
+  references=matrix/neo/internal/dojo.RailwayClient.ExecSandbox,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.body,matrix/neo/internal/dojo.bytebotdCurlTimeoutSec,matrix/neo/internal/dojo.bytebotdExecTimeoutSec,matrix/neo/internal/dojo.bytebotdPort,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.execCurlTransport,matrix/neo/internal/dojo.execCurlTransport.readFile,matrix/neo/internal/dojo.lines,matrix/neo/internal/dojo.reqB64,matrix/neo/internal/dojo.res,matrix/neo/internal/dojo.resp,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.script,matrix/neo/internal/dojo.status,matrix/neo/internal/dojo.t,matrix/neo/internal/dojo.total,matrix/neo/internal/dojo.truncate
   ^contains=matrix/neo/internal/dojo.execCurlTransport
+  ^calls=matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.TakeoverInput
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.execCurlTransport.ExecDesktop kind=method
   digest=b3:212bd8e958a8bd73427d939dac081922d03ee331e6319be024c86f4d5ff31e4f file=neo/internal/dojo/bridge.go range=482:498 lang=go exported=true byte_range=16288:16877
   sig=func (t *execCurlTransport) ExecDesktop(ctx context.Context, s Session, command string, timeoutSec int) (string, int, error)
 EDGES
+  calls=matrix/neo/internal/dojo.WrapDesktopExec,matrix/neo/internal/dojo.railway.ExecSandbox
+  references=matrix/neo/internal/dojo.RailwayClient.ExecSandbox,matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.WrapDesktopExec,matrix/neo/internal/dojo.applianceContainer,matrix/neo/internal/dojo.bytebotdExecTimeoutSec,matrix/neo/internal/dojo.command,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.execCurlTransport,matrix/neo/internal/dojo.full,matrix/neo/internal/dojo.res,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.t,matrix/neo/internal/dojo.timeoutSec
   ^contains=matrix/neo/internal/dojo.execCurlTransport
+  ^calls=matrix/neo/internal/dojo.Manager.A11yDump
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.execCurlTransport.readFile kind=method
@@ -1339,14 +1609,20 @@ NODE id=matrix/neo/internal/dojo.execCurlTransport.readFile kind=method
   sig=func (t *execCurlTransport) readFile(ctx context.Context, sandboxID, path string, total int) ([]byte, error)
   doc=readFile reads a sandbox file back in truncation-safe base64 chunks until the\nfull byte count is recovered. Small responses (clicks, cursor reads) come\nback in one chunk; a screenshot spans several bounded-parallel reads.
 EDGES
+  references=matrix/neo/internal/dojo.cancel,matrix/neo/internal/dojo.chunk,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.errs,matrix/neo/internal/dojo.execChunkBytes,matrix/neo/internal/dojo.execCurlTransport,matrix/neo/internal/dojo.execCurlTransport.readRange,matrix/neo/internal/dojo.execReadWorkers,matrix/neo/internal/dojo.fail,matrix/neo/internal/dojo.i,matrix/neo/internal/dojo.index,matrix/neo/internal/dojo.jobs,matrix/neo/internal/dojo.n,matrix/neo/internal/dojo.off,matrix/neo/internal/dojo.out,matrix/neo/internal/dojo.part,matrix/neo/internal/dojo.partCount,matrix/neo/internal/dojo.parts,matrix/neo/internal/dojo.path,matrix/neo/internal/dojo.readCtx,matrix/neo/internal/dojo.sandboxID,matrix/neo/internal/dojo.t,matrix/neo/internal/dojo.total,matrix/neo/internal/dojo.wg,matrix/neo/internal/dojo.workers
   ^contains=matrix/neo/internal/dojo.execCurlTransport
+  ^calls=matrix/neo/internal/dojo.execCurlTransport.Call
+  ^references=matrix/neo/internal/dojo.execCurlTransport.Call
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.execCurlTransport.readRange kind=method
   digest=b3:20fab586ea5ea974897a479c98e8bbc3824fcb99886841c3909eae466aac4cdc file=neo/internal/dojo/bridge.go range=445:480 lang=go exported=false byte_range=14992:16286
   sig=func (t *execCurlTransport) readRange(ctx context.Context, sandboxID, path string, off, n int) ([]byte, error)
 EDGES
+  calls=matrix/neo/internal/dojo.railway.ExecSandbox
+  references=matrix/neo/internal/dojo.RailwayClient.ExecSandbox,matrix/neo/internal/dojo.bytebotdExecTimeoutSec,matrix/neo/internal/dojo.chunk,matrix/neo/internal/dojo.cmd,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.decodeErr,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.execCurlTransport,matrix/neo/internal/dojo.execMinChunk,matrix/neo/internal/dojo.left,matrix/neo/internal/dojo.leftN,matrix/neo/internal/dojo.n,matrix/neo/internal/dojo.off,matrix/neo/internal/dojo.path,matrix/neo/internal/dojo.res,matrix/neo/internal/dojo.right,matrix/neo/internal/dojo.sandboxID,matrix/neo/internal/dojo.t
   ^contains=matrix/neo/internal/dojo.execCurlTransport
+  ^references=matrix/neo/internal/dojo.execCurlTransport.readFile
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.execMinChunk kind=const
@@ -1354,6 +1630,7 @@ NODE id=matrix/neo/internal/dojo.execMinChunk kind=const
   sig=untyped int
   doc=sandboxExec stdout is bounded and the effective ceiling can vary. Raw chunks\nare base64-expanded before crossing that boundary; truncated ranges are\nbisected until they fit. Bounded parallelism keeps screenshots responsive.
 EDGES
+  ^references=matrix/neo/internal/dojo.execCurlTransport.readRange
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.execProbeTimeoutSec kind=const
@@ -1361,6 +1638,7 @@ NODE id=matrix/neo/internal/dojo.execProbeTimeoutSec kind=const
   sig=untyped int
   doc=Defaults for the env-configured caps (req 1.4).
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.provision
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.execReadWorkers kind=const
@@ -1368,6 +1646,7 @@ NODE id=matrix/neo/internal/dojo.execReadWorkers kind=const
   sig=untyped int
   doc=sandboxExec stdout is bounded and the effective ceiling can vary. Raw chunks\nare base64-expanded before crossing that boundary; truncated ranges are\nbisected until they fit. Bounded parallelism keeps screenshots responsive.
 EDGES
+  ^references=matrix/neo/internal/dojo.execCurlTransport.readFile
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.gqlError kind=type
@@ -1375,6 +1654,7 @@ NODE id=matrix/neo/internal/dojo.gqlError kind=type
   sig=type gqlError struct {\n	Message string `json:"message"`\n}
 EDGES
   contains=matrix/neo/internal/dojo.gqlError#Message
+  ^references=matrix/neo/internal/dojo.railway.do
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.gqlError#Message kind=field
@@ -1388,6 +1668,7 @@ NODE id=matrix/neo/internal/dojo.gqlRequest kind=type
   sig=type gqlRequest struct {\n	Query		string		`json:"query"`\n	Variables	map[string]any	`json:"variables,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/dojo.gqlRequest#Query,matrix/neo/internal/dojo.gqlRequest#Variables
+  ^references=matrix/neo/internal/dojo.railway.do
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.gqlRequest#Query kind=field
@@ -1407,12 +1688,16 @@ NODE id=matrix/neo/internal/dojo.mutatingActions kind=var
   sig=map[string]bool
   doc=mutatingActions are the bytebotd actions that CHANGE the desktop; these are\nwhat the post-handback re-observation gate blocks. Reads (screenshot,\ncursor_position, read_file) and wait stay allowed — only the observation\nitself clears the gate.
 EDGES
+  ^references=matrix/neo/internal/dojo.Manager.gateReobserve
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.newSessionID kind=func
   digest=b3:de61dbae7796ad89e7fe3ee9efa23545a475434b75e9381e870f88d429be8893 file=neo/internal/dojo/dojo.go range=915:921 lang=go exported=false byte_range=28576:28767
   sig=func newSessionID() string
 EDGES
+  references=matrix/neo/internal/dojo.b,matrix/neo/internal/dojo.err
+  ^calls=matrix/neo/internal/dojo.Manager.RegisterSessionForTest,matrix/neo/internal/dojo.Manager.ensureRecord
+  ^references=matrix/neo/internal/dojo.Manager.RegisterSessionForTest,matrix/neo/internal/dojo.Manager.ensureRecord
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.railway kind=type
@@ -1421,6 +1706,7 @@ NODE id=matrix/neo/internal/dojo.railway kind=type
 EDGES
   contains=matrix/neo/internal/dojo.railway#endpoint,matrix/neo/internal/dojo.railway#environmentID,matrix/neo/internal/dojo.railway#hc,matrix/neo/internal/dojo.railway#token,matrix/neo/internal/dojo.railway.CreateSandbox,matrix/neo/internal/dojo.railway.DestroySandbox,matrix/neo/internal/dojo.railway.ExecSandbox,matrix/neo/internal/dojo.railway.GetSandbox,matrix/neo/internal/dojo.railway.do
   implements=matrix/neo/internal/dojo.RailwayClient
+  ^references=matrix/neo/internal/dojo.NewRailway,matrix/neo/internal/dojo._,matrix/neo/internal/dojo.railway.CreateSandbox,matrix/neo/internal/dojo.railway.DestroySandbox,matrix/neo/internal/dojo.railway.ExecSandbox,matrix/neo/internal/dojo.railway.GetSandbox,matrix/neo/internal/dojo.railway.do
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.railway#endpoint kind=field
@@ -1451,28 +1737,40 @@ NODE id=matrix/neo/internal/dojo.railway.CreateSandbox kind=method
   digest=b3:dbf25e076acf3747cd34a653da25a0845296feff1b38f06a6f85896eacca5006 file=neo/internal/dojo/railway.go range=156:181 lang=go exported=true byte_range=5697:6471
   sig=func (r *railway) CreateSandbox(ctx context.Context, opts CreateOpts) (SandboxInfo, error)
 EDGES
+  calls=matrix/neo/internal/dojo.railway.do
+  references=matrix/neo/internal/dojo.CreateOpts,matrix/neo/internal/dojo.NetworkIsolated,matrix/neo/internal/dojo.SandboxInfo,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.input,matrix/neo/internal/dojo.network,matrix/neo/internal/dojo.opts,matrix/neo/internal/dojo.out,matrix/neo/internal/dojo.q,matrix/neo/internal/dojo.r,matrix/neo/internal/dojo.railway,matrix/neo/internal/dojo.railway.do
   ^contains=matrix/neo/internal/dojo.railway
+  ^calls=matrix/neo/internal/dojo.Manager.provision
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.railway.DestroySandbox kind=method
   digest=b3:85573789bec63c80077ff7a73256a92724b35adb19a7897af575ddd5771a92c3 file=neo/internal/dojo/railway.go range=226:235 lang=go exported=true byte_range=7966:8357
   sig=func (r *railway) DestroySandbox(ctx context.Context, id string) error
 EDGES
+  calls=matrix/neo/internal/dojo.railway.do
+  references=matrix/neo/internal/dojo.ErrWireNotFound,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.q,matrix/neo/internal/dojo.r,matrix/neo/internal/dojo.railway,matrix/neo/internal/dojo.railway.do
   ^contains=matrix/neo/internal/dojo.railway
+  ^calls=matrix/neo/internal/dojo.Manager.Discard,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.settleProvision
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.railway.ExecSandbox kind=method
   digest=b3:e514b8ae49bd65f0595a4e3f57c7d4777b128e37d5aa6b1e64b93113c7b034a5 file=neo/internal/dojo/railway.go range=196:224 lang=go exported=true byte_range=6931:7964
   sig=func (r *railway) ExecSandbox(ctx context.Context, id, command string, timeoutSec int) (ExecResult, error)
 EDGES
+  calls=matrix/neo/internal/dojo.railway.do
+  references=matrix/neo/internal/dojo.ExecResult,matrix/neo/internal/dojo.command,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.e,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.out,matrix/neo/internal/dojo.q,matrix/neo/internal/dojo.r,matrix/neo/internal/dojo.railway,matrix/neo/internal/dojo.railway.do,matrix/neo/internal/dojo.timeoutSec,matrix/neo/internal/dojo.vars
   ^contains=matrix/neo/internal/dojo.railway
+  ^calls=matrix/neo/internal/dojo.Manager.provision,matrix/neo/internal/dojo.execCurlTransport.Call,matrix/neo/internal/dojo.execCurlTransport.ExecDesktop,matrix/neo/internal/dojo.execCurlTransport.readRange
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.railway.GetSandbox kind=method
   digest=b3:ea98a39ba782aeef75a9a358c85a2c75da947df87dceaf5d13687035bdbef80a file=neo/internal/dojo/railway.go range=183:194 lang=go exported=true byte_range=6473:6929
   sig=func (r *railway) GetSandbox(ctx context.Context, id string) (SandboxInfo, error)
 EDGES
+  calls=matrix/neo/internal/dojo.railway.do
+  references=matrix/neo/internal/dojo.SandboxInfo,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.id,matrix/neo/internal/dojo.out,matrix/neo/internal/dojo.q,matrix/neo/internal/dojo.r,matrix/neo/internal/dojo.railway,matrix/neo/internal/dojo.railway.do
   ^contains=matrix/neo/internal/dojo.railway
+  ^calls=matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.provision
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.railway.do kind=method
@@ -1480,7 +1778,11 @@ NODE id=matrix/neo/internal/dojo.railway.do kind=method
   sig=func (r *railway) do(ctx context.Context, query string, variables map[string]any, out any) error
   doc=do executes one GraphQL request, decoding response.data into out (nil to\ndiscard). HTTP 401/403 and "not authorized"/"not found" GraphQL errors map\nto sentinels; Railway returns most application errors as 200s with an\nerrors array. The response body is bounded at 1 MiB.
 EDGES
+  calls=matrix/neo/internal/dojo.truncate
+  references=matrix/neo/internal/dojo.ErrWireNotFound,matrix/neo/internal/dojo.ErrWireUnauthorized,matrix/neo/internal/dojo.ErrWireUpstream,matrix/neo/internal/dojo.buf,matrix/neo/internal/dojo.ctx,matrix/neo/internal/dojo.envelope,matrix/neo/internal/dojo.err,matrix/neo/internal/dojo.gqlError,matrix/neo/internal/dojo.gqlRequest,matrix/neo/internal/dojo.lower,matrix/neo/internal/dojo.msg,matrix/neo/internal/dojo.out,matrix/neo/internal/dojo.query,matrix/neo/internal/dojo.r,matrix/neo/internal/dojo.railway,matrix/neo/internal/dojo.req,matrix/neo/internal/dojo.resp,matrix/neo/internal/dojo.respBody,matrix/neo/internal/dojo.truncate,matrix/neo/internal/dojo.variables
   ^contains=matrix/neo/internal/dojo.railway
+  ^calls=matrix/neo/internal/dojo.railway.CreateSandbox,matrix/neo/internal/dojo.railway.DestroySandbox,matrix/neo/internal/dojo.railway.ExecSandbox,matrix/neo/internal/dojo.railway.GetSandbox
+  ^references=matrix/neo/internal/dojo.railway.CreateSandbox,matrix/neo/internal/dojo.railway.DestroySandbox,matrix/neo/internal/dojo.railway.ExecSandbox,matrix/neo/internal/dojo.railway.GetSandbox
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo.rawElement kind=type
@@ -1489,6 +1791,7 @@ NODE id=matrix/neo/internal/dojo.rawElement kind=type
   doc=rawElement is one omni-reported element in the 0–1000 normalized space.
 EDGES
   contains=matrix/neo/internal/dojo.rawElement#Label,matrix/neo/internal/dojo.rawElement#Role,matrix/neo/internal/dojo.rawElement#X,matrix/neo/internal/dojo.rawElement#Y
+  ^references=matrix/neo/internal/dojo.rawGrounding
   ^defines=matrix/neo/internal/dojo/look.go
 
 NODE id=matrix/neo/internal/dojo.rawElement#Label kind=field
@@ -1520,6 +1823,8 @@ NODE id=matrix/neo/internal/dojo.rawGrounding kind=type
   sig=type rawGrounding struct {\n	Elements	[]rawElement	`json:"elements"`\n	Click		*rawElement	`json:"click"`\n}
 EDGES
   contains=matrix/neo/internal/dojo.rawGrounding#Click,matrix/neo/internal/dojo.rawGrounding#Elements
+  references=matrix/neo/internal/dojo.rawElement
+  ^references=matrix/neo/internal/dojo.ParseGrounding
   ^defines=matrix/neo/internal/dojo/look.go
 
 NODE id=matrix/neo/internal/dojo.rawGrounding#Click kind=field
@@ -1539,6 +1844,9 @@ NODE id=matrix/neo/internal/dojo.rescale kind=func
   sig=func rescale(v float64, dim int) int
   doc=rescale maps a normalized 0–CoordSpace coordinate onto a pixel dimension,\nrounding to the nearest pixel and clamping to [0, dim-1]. This is THE\ndeterministic denormalization the whole lane depends on.
 EDGES
+  references=matrix/neo/internal/dojo.CoordSpace,matrix/neo/internal/dojo.dim,matrix/neo/internal/dojo.p,matrix/neo/internal/dojo.v
+  ^calls=matrix/neo/internal/dojo.ParseGrounding
+  ^references=matrix/neo/internal/dojo.ParseGrounding
   ^defines=matrix/neo/internal/dojo/look.go
 
 NODE id=matrix/neo/internal/dojo.session kind=type
@@ -1547,6 +1855,8 @@ NODE id=matrix/neo/internal/dojo.session kind=type
   doc=session is the Manager-owned mutable record behind a Session snapshot.
 EDGES
   contains=matrix/neo/internal/dojo.session#convID,matrix/neo/internal/dojo.session#createdAt,matrix/neo/internal/dojo.session#id,matrix/neo/internal/dojo.session#image,matrix/neo/internal/dojo.session#needsReobserve,matrix/neo/internal/dojo.session#reason,matrix/neo/internal/dojo.session#sandboxID,matrix/neo/internal/dojo.session#state,matrix/neo/internal/dojo.session#touchedAt,matrix/neo/internal/dojo.session.snapshot
+  references=matrix/neo/internal/dojo.State
+  ^references=matrix/neo/internal/dojo.Manager,matrix/neo/internal/dojo.Manager.RegisterSessionForTest,matrix/neo/internal/dojo.Manager.emitState,matrix/neo/internal/dojo.Manager.ensureRecord,matrix/neo/internal/dojo.Manager.evictForCap,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.Manager.provision,matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/dojo.Manager.transition,matrix/neo/internal/dojo.New,matrix/neo/internal/dojo.session.snapshot
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.session#convID kind=field
@@ -1608,7 +1918,10 @@ NODE id=matrix/neo/internal/dojo.session.snapshot kind=method
   digest=b3:26f8d899dfbfc69aa6445cb480055b5392899a1b639e2f123ab925770e313d63 file=neo/internal/dojo/dojo.go range=169:174 lang=go exported=false byte_range=7017:7231
   sig=func (s *session) snapshot() Session
 EDGES
+  references=matrix/neo/internal/dojo.Session,matrix/neo/internal/dojo.s,matrix/neo/internal/dojo.session
   ^contains=matrix/neo/internal/dojo.session
+  ^calls=matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.EnsureSession,matrix/neo/internal/dojo.Manager.Get,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.Provision,matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.RegisterSessionForTest,matrix/neo/internal/dojo.Manager.SessionForConv,matrix/neo/internal/dojo.Manager.SessionResultForConv,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.emitState,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/dojo.Manager.transition
+  ^references=matrix/neo/internal/dojo.Manager.Activate,matrix/neo/internal/dojo.Manager.EnsureSession,matrix/neo/internal/dojo.Manager.Get,matrix/neo/internal/dojo.Manager.Handback,matrix/neo/internal/dojo.Manager.Provision,matrix/neo/internal/dojo.Manager.Reattach,matrix/neo/internal/dojo.Manager.RegisterSessionForTest,matrix/neo/internal/dojo.Manager.SessionForConv,matrix/neo/internal/dojo.Manager.SessionResultForConv,matrix/neo/internal/dojo.Manager.Teardown,matrix/neo/internal/dojo.Manager.emitState,matrix/neo/internal/dojo.Manager.finish,matrix/neo/internal/dojo.Manager.liveSession,matrix/neo/internal/dojo.Manager.settleProvision,matrix/neo/internal/dojo.Manager.step,matrix/neo/internal/dojo.Manager.transition
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.shellSingleQuote kind=func
@@ -1616,6 +1929,9 @@ NODE id=matrix/neo/internal/dojo.shellSingleQuote kind=func
   sig=func shellSingleQuote(s string) string
   doc=shellSingleQuote wraps s in single quotes, escaping embedded single quotes so\nit survives as one argv element.
 EDGES
+  references=matrix/neo/internal/dojo.s
+  ^calls=matrix/neo/internal/dojo.WrapDesktopExec
+  ^references=matrix/neo/internal/dojo.WrapDesktopExec
   ^defines=matrix/neo/internal/dojo/bridge.go
 
 NODE id=matrix/neo/internal/dojo.stripFence kind=func
@@ -1623,6 +1939,9 @@ NODE id=matrix/neo/internal/dojo.stripFence kind=func
   sig=func stripFence(raw string) string
   doc=stripFence removes a ```json … ``` fence and surrounding prose so a model\nthat ignored the "no fence" instruction still parses. It extracts the first\nbalanced {…} object if the response wraps JSON in text.
 EDGES
+  references=matrix/neo/internal/dojo.i,matrix/neo/internal/dojo.j,matrix/neo/internal/dojo.raw,matrix/neo/internal/dojo.s
+  ^calls=matrix/neo/internal/dojo.ParseA11yTree,matrix/neo/internal/dojo.ParseGrounding
+  ^references=matrix/neo/internal/dojo.ParseA11yTree,matrix/neo/internal/dojo.ParseGrounding
   ^defines=matrix/neo/internal/dojo/look.go
 
 NODE id=matrix/neo/internal/dojo.transitions kind=var
@@ -1630,12 +1949,17 @@ NODE id=matrix/neo/internal/dojo.transitions kind=var
   sig=map[dojo.State]map[dojo.State]bool
   doc=transitions is the closed edge set of the state machine. Destroyed is\nterminal; ready/active/takeover may go straight to destroyed ONLY on the\nexplicit-discard path (req 5.4) — normal teardown passes through shipping.
 EDGES
+  references=matrix/neo/internal/dojo.State,matrix/neo/internal/dojo.StateActive,matrix/neo/internal/dojo.StateDestroyed,matrix/neo/internal/dojo.StateFailed,matrix/neo/internal/dojo.StateProvisioning,matrix/neo/internal/dojo.StateReady,matrix/neo/internal/dojo.StateShipping,matrix/neo/internal/dojo.StateTakeover
+  ^references=matrix/neo/internal/dojo.Manager.transition
   ^defines=matrix/neo/internal/dojo/dojo.go
 
 NODE id=matrix/neo/internal/dojo.truncate kind=func
   digest=b3:80c89f06054d9b6759c2335284fc164c91e7a05166290fce9bbe2853b5859167 file=neo/internal/dojo/railway.go range=303:308 lang=go exported=false byte_range=10776:10898
   sig=func truncate(b []byte, n int) string
 EDGES
+  references=matrix/neo/internal/dojo.b,matrix/neo/internal/dojo.n
+  ^calls=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.TakeoverInput,matrix/neo/internal/dojo.execCurlTransport.Call,matrix/neo/internal/dojo.railway.do
+  ^references=matrix/neo/internal/dojo.Manager.A11yDump,matrix/neo/internal/dojo.Manager.CallBytebotd,matrix/neo/internal/dojo.Manager.Frame,matrix/neo/internal/dojo.Manager.TakeoverInput,matrix/neo/internal/dojo.execCurlTransport.Call,matrix/neo/internal/dojo.railway.do
   ^defines=matrix/neo/internal/dojo/railway.go
 
 NODE id=matrix/neo/internal/dojo/a11y.go kind=file

@@ -38,7 +38,7 @@ import (
 const CoreExecuteTool = "core_execute"
 
 // MemoryRecallTool is the synthetic function Neo exposes for explicitly
-// searching its own durable cortex memory. It is the PRIMARY reasoning-time
+// searching its own durable Neocortex memory. It is the PRIMARY reasoning-time
 // retrieval verb (v3 #1): ambient injection is now only a thin seed (or off),
 // so the model PULLS what it needs mid-thought — iteratively, with a narrowing
 // query, type filter, and optional as-of instant — instead of being force-fed.
@@ -68,7 +68,7 @@ const SpawnSubagentsTool = "spawn_subagents"
 const ConstructRenderTool = projection.ConstructRenderTool
 
 // WriteSkillTool is the synthetic function Neo exposes for the agent to
-// CONSCIOUSLY persist a reusable recipe as a cortex Pattern (P2-2: the
+// CONSCIOUSLY persist a reusable recipe as a Neocortex Pattern (P2-2: the
 // skill-writing / synthesis loop). After a proven task, the agent authors a
 // structured PatternSpec (name, trigger, preconditions, steps, gotchas,
 // success_criteria) and this tool validates it and writes it to the durable
@@ -197,7 +197,7 @@ type DesktopA11yFunc func(ctx context.Context) (string, error)
 type RecallFunc func(ctx context.Context, query string, types []string, k int, asOf *time.Time) (string, error)
 
 // MemoryMutationFunc executes a bounded batch of typed memory mutations.
-// Internal Cortex identifiers are never requested by the model-facing tool.
+// Internal Neocortex identifiers are never requested by the model-facing tool.
 type MemoryMutationFunc func(ctx context.Context, req memory.MutationRequest) (memory.MutationBatchResult, error)
 
 // SubagentSpec describes one task-scoped sub-agent the model wants to spawn:
@@ -228,8 +228,8 @@ type SurfaceFunc func(ctx context.Context, s *schema.Surface) error
 // to SHOW an ask but not block for an answer.
 type AskFunc func(ctx context.Context, s *schema.Surface) (*primitives.AskResponse, error)
 
-// WriteSkillFunc persists a reusable recipe as a cortex Pattern (P2-2). It
-// receives a validated PatternSpec (non-empty identity) and returns the cortex
+// WriteSkillFunc persists a reusable recipe as a Neocortex Pattern (P2-2). It
+// receives a validated PatternSpec (non-empty identity) and returns the Neocortex
 // URI of the written/reinforced pattern. Injected from the pager (which calls
 // ReinforcePattern); nil until wired, in which case write_skill is not
 // advertised at all. The coverage starts low and is reinforced on each repeat
@@ -755,7 +755,7 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 		return fmt.Sprintf("%q moves funds or needs a wallet signature and cannot be called directly; use %q with a clear description of the task so it runs through the secure path under the user's authorization (their inline approval, or a pre-authorized wallet leash).", funcName, CoreExecuteTool), "", true, tool.FailureInvocation, false, "", nil
 	}
 	if m.mutation != nil && isShellMemoryMutation(bt, args) {
-		return "memory mutation through shell, curl, or cortex-shell is unavailable; use memory_mutate with an explicit typed operation and bounded target instead", "", true, tool.FailureInvocation, false, "", nil
+		return "memory mutation through shell, curl, or a memory-store CLI is unavailable; use memory_mutate with an explicit typed operation and bounded target instead", "", true, tool.FailureInvocation, false, "", nil
 	}
 	if bt.alias == "fs" && (bt.name == "write_file" || bt.name == "edit_file") {
 		if size := fileMutationBytes(args); size > maxFileMutationBytes {
@@ -989,7 +989,7 @@ func (m *Manager) dispatchMemoryMutation(ctx context.Context, args map[string]in
 	if err := json.Unmarshal(raw, &req); err != nil {
 		return fmt.Sprintf("memory_mutate arguments are invalid: %v", err), true, nil
 	}
-	// Model-facing confirmations never expose internal Cortex identifiers.
+	// Model-facing confirmations never expose internal Neocortex identifiers.
 	req.IncludeInternalIDs = false
 	result, err := m.mutation(ctx, req)
 	if err != nil {
@@ -1020,7 +1020,7 @@ func isShellMemoryMutation(bt *boundTool, args map[string]interface{}) bool {
 		return false
 	}
 	command := strings.ToLower(string(raw))
-	if strings.Contains(command, "cortex-shell") {
+	if strings.Contains(command, "memory") && strings.Contains(command, "shell") {
 		for _, verb := range []string{" write", " update", " tombstone", " add-edge", " remove-edge"} {
 			if strings.Contains(command, verb) {
 				return true
@@ -1040,10 +1040,10 @@ func isShellMemoryMutation(bt *boundTool, args map[string]interface{}) bool {
 
 // dispatchWriteSkill is the P2-2 skill-writing handler: it parses the model's
 // write_skill arguments into a validated PatternSpec and persists it as a
-// cortex Pattern via the injected WriteSkillFunc (which calls
+// Neocortex Pattern via the injected WriteSkillFunc (which calls
 // ReinforcePattern). A spec with no usable identity (empty name, trigger, and
 // steps) is rejected in-band so the model reads the error and corrects rather
-// than the harness retrying. On success the cortex URI is returned so the
+// than the harness retrying. On success the Neocortex URI is returned so the
 // agent can cite the persisted skill.
 func (m *Manager) dispatchWriteSkill(ctx context.Context, args map[string]interface{}) (string, bool, error) {
 	if m.writeSkill == nil {
@@ -1064,7 +1064,7 @@ func (m *Manager) dispatchWriteSkill(ctx context.Context, args map[string]interf
 	if err != nil {
 		return fmt.Sprintf("write_skill failed: %v", err), true, nil
 	}
-	return fmt.Sprintf("Persisted skill %q as a cortex Pattern (%s). It starts as a low-coverage candidate and is reinforced on each repeat success; it becomes active after %d proven successes.", spec.Name, uri, 0), false, nil
+	return fmt.Sprintf("Persisted skill %q as a Neocortex Pattern (%s). It starts as a low-coverage candidate and is reinforced on each repeat success; it becomes active after %d proven successes.", spec.Name, uri, 0), false, nil
 }
 
 // dispatchTodo is the live task-list handler (neo-smoothness req.3). It parses
@@ -1354,12 +1354,12 @@ func (m *Manager) MediaPersistEnabled() bool { return m != nil && m.media != nil
 
 // SetWriteSkill wires the skill-writing function after construction (the
 // pager and tool manager are built independently). When nil, write_skill is
-// not advertised. The func persists a validated PatternSpec as a cortex
+// not advertised. The func persists a validated PatternSpec as a Neocortex
 // Pattern via ReinforcePattern.
 func (m *Manager) SetWriteSkill(f WriteSkillFunc) { m.writeSkill = f }
 
 // WriteSkillEnabled reports whether the write_skill tool is wired this session
-// (a durable cortex store is connected and skill authoring is available).
+// (a durable Neocortex store is connected and skill authoring is available).
 func (m *Manager) WriteSkillEnabled() bool { return m != nil && m.writeSkill != nil }
 
 // SetSurfaceEmitter wires the Construct surface emitter after construction (the
@@ -1419,7 +1419,7 @@ func (m *Manager) dispatchAsk(ctx context.Context, s *schema.Surface) (string, b
 func (m *Manager) SurfaceEnabled() bool { return m != nil && m.surface != nil }
 
 // RecallEnabled reports whether the memory_recall tool is wired this session
-// (a durable cortex store is connected). The system prompt uses this to teach
+// (a durable Neocortex store is connected). The system prompt uses this to teach
 // the model to PULL memory mid-thought (v3 #1) only when it can actually do so.
 func (m *Manager) RecallEnabled() bool { return m != nil && m.recall != nil }
 
@@ -1534,7 +1534,7 @@ func coreExecuteSchema() llm.Tool {
 func memoryRecallSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		MemoryRecallTool,
-		"Search your own durable memory (the cortex) — the user's profile, stored facts, past outcomes, preferences, and proven approaches — which persists across conversations and restarts. This is your PRIMARY way to bring in prior context: PULL from it before you reason about the user, their projects, or past work, and before claiming a fact you'd have learned earlier. Use it ITERATIVELY: start broad, read what comes back, then call again with a narrower query (or a type filter) as you learn what you actually need. Each result line shows the memory's type, any contradiction to reconcile, and its cortex URI so you can cite it. Returns a rendered digest, ranked by how useful each memory has proven. SELF-MODEL: a query of \"self:\" returns your compact structural self-summary (your own loop, faculties, window assembly, and safety wall, derived from your source), and \"self:<Symbol>\" (e.g. \"self:assembleWindowUserTail\") pages the full graph fragment for one of your own symbols on demand — use it to reason about how you are built and where you are limited.",
+		"Search your own durable memory (the Neocortex) — the user's profile, stored facts, past outcomes, preferences, and proven approaches — which persists across conversations and restarts. This is your PRIMARY way to bring in prior context: PULL from it before you reason about the user, their projects, or past work, and before claiming a fact you'd have learned earlier. Use it ITERATIVELY: start broad, read what comes back, then call again with a narrower query (or a type filter) as you learn what you actually need. Each result line shows the memory's type, any contradiction to reconcile, and its Neocortex URI so you can cite it. Returns a rendered digest, ranked by how useful each memory has proven. SELF-MODEL: a query of \"self:\" returns your compact structural self-summary (your own loop, faculties, window assembly, and safety wall, derived from your source), and \"self:<Symbol>\" (e.g. \"self:assembleWindowUserTail\") pages the full graph fragment for one of your own symbols on demand — use it to reason about how you are built and where you are limited.",
 		map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
@@ -1588,7 +1588,7 @@ func memoryMutateSchema() llm.Tool {
 	target := map[string]interface{}{
 		"type": "object",
 		"properties": map[string]interface{}{
-			"uri":   map[string]interface{}{"type": "string", "description": "Exact Cortex URI when already known."},
+			"uri":   map[string]interface{}{"type": "string", "description": "Exact Neocortex URI when already known."},
 			"query": map[string]interface{}{"type": "string", "description": "A narrow semantic description of the one current memory to change."},
 			"types": map[string]interface{}{
 				"type": "array", "items": map[string]interface{}{"type": "string", "enum": []string{"fact", "preference", "belief", "goal", "constraint"}},
@@ -1624,13 +1624,13 @@ func memoryMutateSchema() llm.Tool {
 
 // writeSkillSchema advertises the P2-2 skill-writing tool. The agent authors a
 // structured PatternSpec after a proven task; this tool validates it and
-// persists it as a cortex Pattern (the synthesis loop). The spec mirrors
+// persists it as a Neocortex Pattern (the synthesis loop). The spec mirrors
 // PatternSpec exactly (name, trigger, preconditions, steps, gotchas,
 // success_criteria).
 func writeSkillSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		WriteSkillTool,
-		"Persist a reusable recipe as a durable skill (a cortex Pattern) after a task you've proven works. This is the synthesis loop: you CONSCIOUSLY distill the proven tool sequence into a structured recipe so you can reapply it to similar future tasks. The recipe starts as a low-coverage candidate and is reinforced on each repeat success; it only becomes active (injected into future prompts) after it has been proven multiple times, so don't overfit a one-off flow. Provide the full structure: a short name, when to apply it (trigger), what must be true first (preconditions), the exact tool sequence (steps), learned failure modes (gotchas), and how to verify it worked (success_criteria). You can recall any persisted skill later via memory_recall with types=[\"pattern\"].",
+		"Persist a reusable recipe as a durable skill (a Neocortex Pattern) after a task you've proven works. This is the synthesis loop: you CONSCIOUSLY distill the proven tool sequence into a structured recipe so you can reapply it to similar future tasks. The recipe starts as a low-coverage candidate and is reinforced on each repeat success; it only becomes active (injected into future prompts) after it has been proven multiple times, so don't overfit a one-off flow. Provide the full structure: a short name, when to apply it (trigger), what must be true first (preconditions), the exact tool sequence (steps), learned failure modes (gotchas), and how to verify it worked (success_criteria). You can recall any persisted skill later via memory_recall with types=[\"pattern\"].",
 		map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{

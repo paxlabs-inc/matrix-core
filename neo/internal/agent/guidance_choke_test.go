@@ -91,7 +91,7 @@ func (r *chokeReporter) all() []string {
 // invariants on the real loop (req.3.3): a run whose close is blocked by the
 // empty-answer guard (guidance genuinely fires and steers the model) ends with
 // (a) the steering visible to the MODEL — the follow-up request body carries
-// the guidance envelope — while (b) the durable cortex transcript records no
+// the guidance envelope — while (b) the durable Neocortex transcript records no
 // guidance and (c) no user-facing Reporter channel carries it.
 func TestGuidanceChokePoint_InvariantsOnRealLoop(t *testing.T) {
 	const nudgeMarker = "Continue: either call a tool to make progress"
@@ -121,8 +121,8 @@ func TestGuidanceChokePoint_InvariantsOnRealLoop(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-guidance-choke"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-guidance-choke"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)
@@ -167,7 +167,7 @@ func TestGuidanceChokePoint_InvariantsOnRealLoop(t *testing.T) {
 		t.Fatalf("the working transcript must hold exactly one guidance turn, got %d", guidanceTurns)
 	}
 
-	// (b) The durable cortex transcript stays guidance-free.
+	// (b) The durable Neocortex transcript stays guidance-free.
 	msgs, err := pager.Transcript(conv, 0, 200)
 	if err != nil {
 		t.Fatalf("pager.Transcript: %v", err)
@@ -177,7 +177,7 @@ func TestGuidanceChokePoint_InvariantsOnRealLoop(t *testing.T) {
 	}
 	for _, m := range msgs {
 		if strings.Contains(m.Content, llm.GuidanceOpen) || strings.Contains(m.Content, nudgeMarker) {
-			t.Fatalf("guidance leaked into the durable cortex transcript: %q", m.Content)
+			t.Fatalf("guidance leaked into the durable Neocortex transcript: %q", m.Content)
 		}
 	}
 

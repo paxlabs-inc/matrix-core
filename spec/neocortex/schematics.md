@@ -299,19 +299,22 @@ FORBIDDEN (no kind exists, cannot enter the log):
  reconnect resumes: acked writes never lost, unacked never double-applied.
 ```
 
-## 11. Migration flow (wave 7)
+## 11. Neo hard cutover flow (wave 7)
 
 ```text
- old store (Pebble, Go)                         new store (cortexd)
- ┌────────────────────────┐   cortexclient/export   ┌──────────────────────┐
- │ sess/  → conversation  │ ──────────────────────▶ │ import gate (same    │
- │ m/,mv/ → assertion     │   walks with CURRENT    │ validators as live   │
- │          (+synth prov) │   decode + vault unseal │ append; provenance   │
- │ tev/   → work events   │                         │ synthesized, marked) │
- │ e/     → edges         │                         └──────────┬───────────┘
- └────────────────────────┘                                    ▼
- fidelity report: EVERY source record = imported | transformed | skipped(reason);
- unaccounted = 0 is the gate. Probe suite: old-substrate recall answers ⊆ new.
- Side-by-side: neo memory seam flag (default OLD) → regression corpus + INV-1
- green on NEW → consumer re-point → owner YES cutover → owner YES deletion.
+ Neo source + module graph                 one permitted memory path
+ ┌────────────────────────┐               ┌──────────────────────────────┐
+ │ no matrix/cortex import│               │ Neocortex-native contracts   │
+ │ no cortex-root config  │──────────────▶│ → UDS client → cortexd       │
+ │ no substrate selector  │               │ → /data/neocortex/<actor>    │
+ │ no legacy proxy/fallback│              └──────────────────────────────┘
+ └────────────────────────┘
+             │
+             └─ structural CI: source scan + complete Go module graph rejection
+
+ cortexd unavailable → typed Neocortex failure → supervisor restart/reconnect
+                    NEVER → Cortex-v1 store, route, proxy, or compatibility branch
+
+ Cortex v1 may remain for unrelated Matrix consumers only outside Neo's source,
+ dependency graph, build artifacts, configuration, and runtime reachability.
 ```

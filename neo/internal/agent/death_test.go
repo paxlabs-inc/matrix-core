@@ -44,8 +44,8 @@ func TestRealStallProducesStructuredDeathRecord(t *testing.T) {
 	// Disable the Cassandra controller so the raw stall path is exercised
 	// (the death capture is independent of the controller either way).
 	cfg.CassandraEnabled = false
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-death-capture"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-death-capture"
 
 	pager, err := memory.Open(cfg)
 	if err != nil {

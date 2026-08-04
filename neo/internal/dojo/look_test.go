@@ -22,15 +22,15 @@ func TestRescaleDeterminism(t *testing.T) {
 		want int
 	}{
 		{0, 1280, 0},
-		{1000, 1280, 1279},   // clamp to dim-1
-		{500, 1280, 640},     // center
-		{500, 960, 480},      // center, other axis
-		{1, 1280, 1},         // round(1.28)=1
-		{999, 960, 959},      // round(959.04)=959
-		{7, 1000, 7},         // identity when dim == CoordSpace
-		{-5, 1280, 0},        // clamp negative
-		{123.4, 1280, 158},   // round(157.95)
-		{876.6, 960, 842},    // round(841.5)=842
+		{1000, 1280, 1279}, // clamp to dim-1
+		{500, 1280, 640},   // center
+		{500, 960, 480},    // center, other axis
+		{1, 1280, 1},       // round(1.28)=1
+		{999, 960, 959},    // round(959.04)=959
+		{7, 1000, 7},       // identity when dim == CoordSpace
+		{-5, 1280, 0},      // clamp negative
+		{123.4, 1280, 158}, // round(157.95)
+		{876.6, 960, 842},  // round(841.5)=842
 	}
 	for _, c := range cases {
 		if got := rescale(c.v, c.dim); got != c.want {

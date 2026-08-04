@@ -12,7 +12,7 @@ import (
 )
 
 // captureWriteSkill is a test WriteSkillFunc that records the last spec it
-// received and returns a fake cortex URI. It stands in for the pager-backed
+// received and returns a fake Neocortex URI. It stands in for the pager-backed
 // implementation wired in production.
 type captureWriteSkill struct {
 	called   bool
@@ -23,13 +23,13 @@ type captureWriteSkill struct {
 func (c *captureWriteSkill) writeSkill(ctx context.Context, spec memory.PatternSpec) (string, error) {
 	c.called = true
 	c.lastSpec = spec
-	c.lastURI = "matrix://cortex/Pattern/test#1"
+	c.lastURI = "matrix://Neocortex/Pattern/test#1"
 	return c.lastURI, nil
 }
 
 // TestWriteSkill_PersistsValidPattern verifies that the write_skill synthetic
 // tool (P2-2) parses its arguments into a validated PatternSpec and dispatches
-// it through the injected WriteSkillFunc, which persists it as a cortex
+// it through the injected WriteSkillFunc, which persists it as a Neocortex
 // Pattern. The spec must survive a full round-trip: the name, trigger,
 // preconditions, steps, gotchas, and success_criteria the model sent must be
 // the spec the write-back function receives.
@@ -85,7 +85,7 @@ func TestWriteSkill_PersistsValidPattern(t *testing.T) {
 
 	// The result must surface the URI so the agent can cite it.
 	if !strings.Contains(out, cap.lastURI) {
-		t.Errorf("write_skill result should contain the cortex URI %q; got %q", cap.lastURI, out)
+		t.Errorf("write_skill result should contain the Neocortex URI %q; got %q", cap.lastURI, out)
 	}
 }
 

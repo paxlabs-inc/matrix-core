@@ -53,7 +53,7 @@ func (s *Server) handleInterviewStart(w http.ResponseWriter, r *http.Request) {
 
 // savePersonalizationProfile is the engine-side writer behind the
 // confirmation-gated save_personalization_profile tool (task 5.3): it decodes
-// the confirmed profile JSON and persists it as the single versioned cortex
+// the confirmed profile JSON and persists it as the single versioned Neocortex
 // record through the real pager (req 13.1).
 func (e *Engine) savePersonalizationProfile(ctx context.Context, profileJSON []byte) (string, error) {
 	if e.pager == nil {

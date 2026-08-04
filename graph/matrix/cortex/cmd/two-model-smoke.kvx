@@ -1,9 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/cortex/cmd/two-model-smoke kind=package
   digest=b3:e40909014c9b45b4ac1048b9dce2d45a5643e0cc024218220a3f1d0fd151640c file=cortex/cmd/two-model-smoke range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke/client.go,matrix/cortex/cmd/two-model-smoke/main.go,matrix/cortex/cmd/two-model-smoke/scenario.go,matrix/cortex/cmd/two-model-smoke/tools.go,matrix/cortex/cmd/two-model-smoke/typed.go
+  imports=matrix/cortex,matrix/cortex/memory,matrix/cortex/query,matrix/cortex/replay,matrix/cortex/store
   ^contains=mod:matrix/cortex
 
 NODE id=matrix/cortex/cmd/two-model-smoke.ChatChoice kind=type
@@ -12,6 +13,8 @@ NODE id=matrix/cortex/cmd/two-model-smoke.ChatChoice kind=type
   doc=ChatChoice is one entry from the choices array. We always read\nchoices[0].
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.ChatChoice#FinishReason,matrix/cortex/cmd/two-model-smoke.ChatChoice#Index,matrix/cortex/cmd/two-model-smoke.ChatChoice#Message
+  references=matrix/cortex/cmd/two-model-smoke.ChatMessage
+  ^references=matrix/cortex/cmd/two-model-smoke.ChatResponse
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.ChatChoice#FinishReason kind=field
@@ -38,6 +41,7 @@ NODE id=matrix/cortex/cmd/two-model-smoke.ChatErrorBody kind=type
   doc=ChatErrorBody is the structured error body returned by both\nproviders on 4xx/5xx.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.ChatErrorBody#Code,matrix/cortex/cmd/two-model-smoke.ChatErrorBody#Message,matrix/cortex/cmd/two-model-smoke.ChatErrorBody#Type
+  ^references=matrix/cortex/cmd/two-model-smoke.ChatResponse
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.ChatErrorBody#Code kind=field
@@ -64,6 +68,8 @@ NODE id=matrix/cortex/cmd/two-model-smoke.ChatMessage kind=type
   doc=ChatMessage is the OpenAI-compatible message shape.\n\nRole is one of "system" | "user" | "assistant" | "tool".\nToolCalls is set on assistant messages that requested tools.\nToolCallID is set on role=="tool" messages identifying which call this\nresult satisfies.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.ChatMessage#Content,matrix/cortex/cmd/two-model-smoke.ChatMessage#Name,matrix/cortex/cmd/two-model-smoke.ChatMessage#Role,matrix/cortex/cmd/two-model-smoke.ChatMessage#ToolCallID,matrix/cortex/cmd/two-model-smoke.ChatMessage#ToolCalls
+  references=matrix/cortex/cmd/two-model-smoke.ToolCall
+  ^references=matrix/cortex/cmd/two-model-smoke.ChatChoice,matrix/cortex/cmd/two-model-smoke.ChatRequest,matrix/cortex/cmd/two-model-smoke.Client.Call,matrix/cortex/cmd/two-model-smoke.agent,matrix/cortex/cmd/two-model-smoke.main,matrix/cortex/cmd/two-model-smoke.runOneTurn
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.ChatMessage#Content kind=field
@@ -102,6 +108,8 @@ NODE id=matrix/cortex/cmd/two-model-smoke.ChatRequest kind=type
   doc=ChatRequest is the request body sent to the chat-completions endpoint.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.ChatRequest#MaxTokens,matrix/cortex/cmd/two-model-smoke.ChatRequest#Messages,matrix/cortex/cmd/two-model-smoke.ChatRequest#Model,matrix/cortex/cmd/two-model-smoke.ChatRequest#Temperature,matrix/cortex/cmd/two-model-smoke.ChatRequest#ToolChoice,matrix/cortex/cmd/two-model-smoke.ChatRequest#Tools
+  references=matrix/cortex/cmd/two-model-smoke.ChatMessage,matrix/cortex/cmd/two-model-smoke.ToolDef
+  ^references=matrix/cortex/cmd/two-model-smoke.Client.Call
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.ChatRequest#MaxTokens kind=field
@@ -146,6 +154,8 @@ NODE id=matrix/cortex/cmd/two-model-smoke.ChatResponse kind=type
   doc=ChatResponse is the response shape (subset of OpenAI's response —\nonly the fields we read).
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.ChatResponse#Choices,matrix/cortex/cmd/two-model-smoke.ChatResponse#Error,matrix/cortex/cmd/two-model-smoke.ChatResponse#ID,matrix/cortex/cmd/two-model-smoke.ChatResponse#Usage
+  references=matrix/cortex/cmd/two-model-smoke.ChatChoice,matrix/cortex/cmd/two-model-smoke.ChatErrorBody,matrix/cortex/cmd/two-model-smoke.ChatUsage
+  ^references=matrix/cortex/cmd/two-model-smoke.Client.Call
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.ChatResponse#Choices kind=field
@@ -178,6 +188,7 @@ NODE id=matrix/cortex/cmd/two-model-smoke.ChatUsage kind=type
   doc=ChatUsage carries token-count diagnostics.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.ChatUsage#CompletionTokens,matrix/cortex/cmd/two-model-smoke.ChatUsage#PromptTokens,matrix/cortex/cmd/two-model-smoke.ChatUsage#TotalTokens
+  ^references=matrix/cortex/cmd/two-model-smoke.ChatResponse,matrix/cortex/cmd/two-model-smoke.Client.Call,matrix/cortex/cmd/two-model-smoke.runOneTurn
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.ChatUsage#CompletionTokens kind=field
@@ -204,6 +215,7 @@ NODE id=matrix/cortex/cmd/two-model-smoke.Client kind=type
   doc=Client carries config + a reusable http.Client. Per-call fields\n(model, messages, tools) are passed at Call time.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.Client#httpClient,matrix/cortex/cmd/two-model-smoke.Client#timeout,matrix/cortex/cmd/two-model-smoke.Client.Call
+  ^references=matrix/cortex/cmd/two-model-smoke.Client.Call,matrix/cortex/cmd/two-model-smoke.NewClient,matrix/cortex/cmd/two-model-smoke.runOneTurn
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Client#httpClient kind=field
@@ -223,7 +235,11 @@ NODE id=matrix/cortex/cmd/two-model-smoke.Client.Call kind=method
   sig=func (c *Client) Call(model string, messages []ChatMessage, tools []ToolDef, temperature float64) (*ChatMessage, *ChatUsage, error)
   doc=Call sends one chat-completions request to the provider determined\nby the model string. Returns the assistant's message (which may\ncontain tool_calls) plus token usage. Errors include the raw\nprovider response body for debuggability.
 EDGES
+  calls=matrix/cortex/cmd/two-model-smoke.detectProvider,matrix/cortex/cmd/two-model-smoke.providerEndpoint,matrix/cortex/cmd/two-model-smoke.providerKey,matrix/cortex/cmd/two-model-smoke.truncate
+  references=matrix/cortex/cmd/two-model-smoke.ChatMessage,matrix/cortex/cmd/two-model-smoke.ChatRequest,matrix/cortex/cmd/two-model-smoke.ChatResponse,matrix/cortex/cmd/two-model-smoke.ChatUsage,matrix/cortex/cmd/two-model-smoke.Client,matrix/cortex/cmd/two-model-smoke.ToolDef,matrix/cortex/cmd/two-model-smoke.apiKey,matrix/cortex/cmd/two-model-smoke.body,matrix/cortex/cmd/two-model-smoke.c,matrix/cortex/cmd/two-model-smoke.detectProvider,matrix/cortex/cmd/two-model-smoke.endpoint,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.httpReq,matrix/cortex/cmd/two-model-smoke.messages,matrix/cortex/cmd/two-model-smoke.model,matrix/cortex/cmd/two-model-smoke.msg,matrix/cortex/cmd/two-model-smoke.parsed,matrix/cortex/cmd/two-model-smoke.provider,matrix/cortex/cmd/two-model-smoke.providerEndpoint,matrix/cortex/cmd/two-model-smoke.providerKey,matrix/cortex/cmd/two-model-smoke.req,matrix/cortex/cmd/two-model-smoke.resp,matrix/cortex/cmd/two-model-smoke.respBody,matrix/cortex/cmd/two-model-smoke.temperature,matrix/cortex/cmd/two-model-smoke.tools,matrix/cortex/cmd/two-model-smoke.truncate
   ^contains=matrix/cortex/cmd/two-model-smoke.Client
+  ^calls=matrix/cortex/cmd/two-model-smoke.runOneTurn
+  ^references=matrix/cortex/cmd/two-model-smoke.runOneTurn
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher kind=type
@@ -232,6 +248,8 @@ NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher kind=type
   doc=Dispatcher executes a tool call against the supplied cortex on\nbehalf of the calling agent (whose identity becomes CreatedBy on\nany writes).
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.Dispatcher#actor,matrix/cortex/cmd/two-model-smoke.Dispatcher#c,matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexAddEdge,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexResolve,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexTombstone,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
+  references=matrix/cortex.Cortex
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexAddEdge,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexResolve,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexTombstone,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch,matrix/cortex/cmd/two-model-smoke.main,matrix/cortex/cmd/two-model-smoke.runOneTurn
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher#actor kind=field
@@ -251,77 +269,121 @@ NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch kind=method
   sig=func (d *Dispatcher) Dispatch(call ToolCall, agentName string) string
   doc=Dispatch runs one tool call. Returns a JSON-encoded result string\nsuitable for the role="tool" reply message. Errors are wrapped in\n{"error":"..."} JSON so the model sees them as structured data.
 EDGES
+  calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch,matrix/cortex/cmd/two-model-smoke.marshalErr
+  references=matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch,matrix/cortex/cmd/two-model-smoke.ToolCall,matrix/cortex/cmd/two-model-smoke.agentName,matrix/cortex/cmd/two-model-smoke.call,matrix/cortex/cmd/two-model-smoke.d,matrix/cortex/cmd/two-model-smoke.enc,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.mErr,matrix/cortex/cmd/two-model-smoke.marshalErr,matrix/cortex/cmd/two-model-smoke.out
   ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^calls=matrix/cortex/cmd/two-model-smoke.runOneTurn
+  ^references=matrix/cortex/cmd/two-model-smoke.runOneTurn
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexAddEdge kind=method
   digest=b3:f6f15728df9206c36381df37bc5ebf0ace7d666c74cef158d0000096b080943b file=cortex/cmd/two-model-smoke/tools.go range=505:529 lang=go exported=false byte_range=18414:19359
   sig=func (d *Dispatcher) cortexAddEdge(args map[string]interface{}, createdBy string) (interface{}, error)
 EDGES
+  calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.ParseURI,matrix/cortex/cmd/two-model-smoke.floatOr,matrix/cortex/memory.ParseEdgeType
+  references=matrix/cortex.AddEdgeMeta,matrix/cortex.Cortex.AddEdge,matrix/cortex.ParseURI,matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.args,matrix/cortex/cmd/two-model-smoke.createdBy,matrix/cortex/cmd/two-model-smoke.d,matrix/cortex/cmd/two-model-smoke.dstID,matrix/cortex/cmd/two-model-smoke.dstURI,matrix/cortex/cmd/two-model-smoke.edgeName,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.et,matrix/cortex/cmd/two-model-smoke.floatOr,matrix/cortex/cmd/two-model-smoke.ok,matrix/cortex/cmd/two-model-smoke.srcID,matrix/cortex/cmd/two-model-smoke.srcURI,matrix/cortex/cmd/two-model-smoke.weight,matrix/cortex/memory.ParseEdgeType,matrix/cortex/memory.URI
   ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind kind=method
   digest=b3:b1f2f300ca8093a9d9c6598c2b34ae91ea7ca501e3796d4fff96ce3de49eeb82 file=cortex/cmd/two-model-smoke/tools.go range=384:416 lang=go exported=false byte_range=14823:15717
   sig=func (d *Dispatcher) cortexFind(args map[string]interface{}) (interface{}, error)
 EDGES
+  calls=matrix/cortex.Cortex.Find,matrix/cortex/cmd/two-model-smoke.clampInt,matrix/cortex/cmd/two-model-smoke.intOr,matrix/cortex/cmd/two-model-smoke.memorySummary,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.Type.Valid
+  references=matrix/cortex.Cortex.Find,matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.args,matrix/cortex/cmd/two-model-smoke.clampInt,matrix/cortex/cmd/two-model-smoke.d,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.i,matrix/cortex/cmd/two-model-smoke.intOr,matrix/cortex/cmd/two-model-smoke.m,matrix/cortex/cmd/two-model-smoke.memorySummary,matrix/cortex/cmd/two-model-smoke.mt,matrix/cortex/cmd/two-model-smoke.near,matrix/cortex/cmd/two-model-smoke.ok,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/cmd/two-model-smoke.q,matrix/cortex/cmd/two-model-smoke.res,matrix/cortex/cmd/two-model-smoke.row,matrix/cortex/cmd/two-model-smoke.rows,matrix/cortex/cmd/two-model-smoke.t,matrix/cortex/cmd/two-model-smoke.tag,matrix/cortex/memory.Type,matrix/cortex/memory.Type.Valid,matrix/cortex/query.FormShort,matrix/cortex/query.HasTag,matrix/cortex/query.Query
   ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList kind=method
   digest=b3:c85e49e3c36e86b080a08f8798db3ef5802616422eb6abaae113b270b0911c85 file=cortex/cmd/two-model-smoke/tools.go range=418:434 lang=go exported=false byte_range=15719:16272
   sig=func (d *Dispatcher) cortexList(args map[string]interface{}) (interface{}, error)
 EDGES
+  calls=matrix/cortex.BuildURI,matrix/cortex.Cortex.ListByType,matrix/cortex/cmd/two-model-smoke.clampInt,matrix/cortex/cmd/two-model-smoke.intOr,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/memory.Type.Valid
+  references=matrix/cortex.BuildURI,matrix/cortex.Cortex.ListByType,matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.args,matrix/cortex/cmd/two-model-smoke.clampInt,matrix/cortex/cmd/two-model-smoke.d,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.id,matrix/cortex/cmd/two-model-smoke.ids,matrix/cortex/cmd/two-model-smoke.intOr,matrix/cortex/cmd/two-model-smoke.limit,matrix/cortex/cmd/two-model-smoke.mt,matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/cmd/two-model-smoke.typeName,matrix/cortex/cmd/two-model-smoke.uris,matrix/cortex/memory.Type.Valid
   ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges kind=method
   digest=b3:8046eb962f729ade2f3eaefaafe100a53172b9f2d618727cf4b1aa4aed57ef21 file=cortex/cmd/two-model-smoke/tools.go range=531:577 lang=go exported=false byte_range=19361:20790
   sig=func (d *Dispatcher) cortexListEdges(args map[string]interface{}) (interface{}, error)
 EDGES
+  calls=matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.ParseURI,matrix/cortex/cmd/two-model-smoke.stringOr
+  references=matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.IterEdgesOptions,matrix/cortex.ParseURI,matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.args,matrix/cortex/cmd/two-model-smoke.collect,matrix/cortex/cmd/two-model-smoke.d,matrix/cortex/cmd/two-model-smoke.dir,matrix/cortex/cmd/two-model-smoke.direction,matrix/cortex/cmd/two-model-smoke.edgeRow,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.hexID,matrix/cortex/cmd/two-model-smoke.opts,matrix/cortex/cmd/two-model-smoke.other,matrix/cortex/cmd/two-model-smoke.rec,matrix/cortex/cmd/two-model-smoke.rows,matrix/cortex/cmd/two-model-smoke.srcID,matrix/cortex/cmd/two-model-smoke.srcURI,matrix/cortex/cmd/two-model-smoke.stringOr,matrix/cortex/memory.EdgeRecord,matrix/cortex/memory.EdgeType.String,matrix/cortex/memory.URI
   ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexResolve kind=method
   digest=b3:4477ce13d85584361646c6d56223f18ae44de689d5c1b0028e1e62722ccbb314 file=cortex/cmd/two-model-smoke/tools.go range=372:382 lang=go exported=false byte_range=14532:14821
   sig=func (d *Dispatcher) cortexResolve(args map[string]interface{}) (interface{}, error)
 EDGES
+  calls=matrix/cortex.Cortex.Resolve,matrix/cortex/cmd/two-model-smoke.memorySummary
+  references=matrix/cortex.Cortex.Resolve,matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.args,matrix/cortex/cmd/two-model-smoke.d,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.m,matrix/cortex/cmd/two-model-smoke.memorySummary,matrix/cortex/cmd/two-model-smoke.uri,matrix/cortex/memory.URI
   ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexTombstone kind=method
   digest=b3:062682032638458e92f26202fdbd848709c632c2b2c508c85f89c2d97c105163 file=cortex/cmd/two-model-smoke/tools.go range=493:503 lang=go exported=false byte_range=18003:18412
   sig=func (d *Dispatcher) cortexTombstone(args map[string]interface{}, createdBy string) (interface{}, error)
 EDGES
+  calls=matrix/cortex.Cortex.Tombstone
+  references=matrix/cortex.Cortex.Tombstone,matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.args,matrix/cortex/cmd/two-model-smoke.createdBy,matrix/cortex/cmd/two-model-smoke.d,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.reason,matrix/cortex/cmd/two-model-smoke.uri,matrix/cortex/memory.URI
   ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate kind=method
   digest=b3:3aad9e0f247235cb95ec898afb4b41f15ef2e7994737b683714ce24ec19f6be5 file=cortex/cmd/two-model-smoke/tools.go range=436:466 lang=go exported=false byte_range=16274:17241
   sig=func (d *Dispatcher) cortexUpdate(args map[string]interface{}, createdBy string) (interface{}, error)
 EDGES
+  calls=matrix/cortex.Cortex.Update,matrix/cortex.ParseURI,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.summarize,matrix/cortex/memory.Type.String
+  references=matrix/cortex.Cortex.Update,matrix/cortex.ParseURI,matrix/cortex.WriteMeta,matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.args,matrix/cortex/cmd/two-model-smoke.createdBy,matrix/cortex/cmd/two-model-smoke.d,matrix/cortex/cmd/two-model-smoke.dataBytes,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.newURI,matrix/cortex/cmd/two-model-smoke.ok,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.rawData,matrix/cortex/cmd/two-model-smoke.summarize,matrix/cortex/cmd/two-model-smoke.t,matrix/cortex/cmd/two-model-smoke.td,matrix/cortex/cmd/two-model-smoke.uri,matrix/cortex/memory.Forms,matrix/cortex/memory.Provenance,matrix/cortex/memory.SourceUserInput,matrix/cortex/memory.Type.String,matrix/cortex/memory.URI
   ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead kind=method
   digest=b3:7769ac0b503a4d59cb526ee9523d0194b279bb714e9283bff34db429df6ea87a file=cortex/cmd/two-model-smoke/tools.go range=468:491 lang=go exported=false byte_range=17243:18001
   sig=func (d *Dispatcher) cortexUpdateHead(args map[string]interface{}, createdBy string) (interface{}, error)
 EDGES
+  calls=matrix/cortex.Cortex.UpdateHead,matrix/cortex/cmd/two-model-smoke.clampInt,matrix/cortex/cmd/two-model-smoke.intOr,matrix/cortex/cmd/two-model-smoke.stringSlice
+  references=matrix/cortex.Cortex.UpdateHead,matrix/cortex.HeadPatch,matrix/cortex.UpdateHeadMeta,matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.args,matrix/cortex/cmd/two-model-smoke.clampInt,matrix/cortex/cmd/two-model-smoke.createdBy,matrix/cortex/cmd/two-model-smoke.d,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.intOr,matrix/cortex/cmd/two-model-smoke.newURI,matrix/cortex/cmd/two-model-smoke.ok,matrix/cortex/cmd/two-model-smoke.patch,matrix/cortex/cmd/two-model-smoke.raw,matrix/cortex/cmd/two-model-smoke.rawTags,matrix/cortex/cmd/two-model-smoke.stringSlice,matrix/cortex/cmd/two-model-smoke.t,matrix/cortex/cmd/two-model-smoke.tags,matrix/cortex/cmd/two-model-smoke.uri,matrix/cortex/cmd/two-model-smoke.v,matrix/cortex/memory.Tag,matrix/cortex/memory.URI
   ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite kind=method
   digest=b3:ae20c1453725f41a7de605c4f9dfad7b2ccd73b770d5e4d6d8ab09d5bdc89553 file=cortex/cmd/two-model-smoke/tools.go range=331:370 lang=go exported=false byte_range=13324:14530
   sig=func (d *Dispatcher) cortexWrite(args map[string]interface{}, createdBy string) (interface{}, error)
 EDGES
+  calls=matrix/cortex.Cortex.Write,matrix/cortex/cmd/two-model-smoke.clampInt,matrix/cortex/cmd/two-model-smoke.intOr,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.stringSlice,matrix/cortex/cmd/two-model-smoke.summarize
+  references=matrix/cortex.Cortex.Write,matrix/cortex.WriteMeta,matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.args,matrix/cortex/cmd/two-model-smoke.clampInt,matrix/cortex/cmd/two-model-smoke.createdBy,matrix/cortex/cmd/two-model-smoke.d,matrix/cortex/cmd/two-model-smoke.dataBytes,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.head,matrix/cortex/cmd/two-model-smoke.importance,matrix/cortex/cmd/two-model-smoke.intOr,matrix/cortex/cmd/two-model-smoke.ok,matrix/cortex/cmd/two-model-smoke.parseTypedJSON,matrix/cortex/cmd/two-model-smoke.rawData,matrix/cortex/cmd/two-model-smoke.rawTags,matrix/cortex/cmd/two-model-smoke.stringSlice,matrix/cortex/cmd/two-model-smoke.summarize,matrix/cortex/cmd/two-model-smoke.t,matrix/cortex/cmd/two-model-smoke.tags,matrix/cortex/cmd/two-model-smoke.td,matrix/cortex/cmd/two-model-smoke.typeName,matrix/cortex/cmd/two-model-smoke.uri,matrix/cortex/memory.Forms,matrix/cortex/memory.Head,matrix/cortex/memory.Provenance,matrix/cortex/memory.SourceUserInput,matrix/cortex/memory.Tag
   ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch kind=method
   digest=b3:d898db6c027a64242553e2e9bee0cd9cd97904e95f43022e058b7c2119da1637 file=cortex/cmd/two-model-smoke/tools.go range=291:327 lang=go exported=false byte_range=12107:13250
   sig=func (d *Dispatcher) dispatch(call ToolCall, agentName string) (interface{}, error)
 EDGES
+  calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexAddEdge,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexResolve,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexTombstone,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/cmd/two-model-smoke.truncate
+  references=matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexAddEdge,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexResolve,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexTombstone,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/cmd/two-model-smoke.ToolCall,matrix/cortex/cmd/two-model-smoke.agentName,matrix/cortex/cmd/two-model-smoke.args,matrix/cortex/cmd/two-model-smoke.call,matrix/cortex/cmd/two-model-smoke.createdBy,matrix/cortex/cmd/two-model-smoke.d,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.truncate
   ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.NewClient kind=func
@@ -329,6 +391,9 @@ NODE id=matrix/cortex/cmd/two-model-smoke.NewClient kind=func
   sig=func NewClient() *Client
   doc=NewClient returns a Client with a sane default timeout (90s — small\nmodels like deepseek-v4-flash can take 30-60s on long tool-calling\nturns).
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.Client
+  ^calls=matrix/cortex/cmd/two-model-smoke.main
+  ^references=matrix/cortex/cmd/two-model-smoke.main
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Provider kind=type
@@ -337,12 +402,14 @@ NODE id=matrix/cortex/cmd/two-model-smoke.Provider kind=type
   doc=Provider identifies the API endpoint + env-var the client uses.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.Provider.String
+  ^references=matrix/cortex/cmd/two-model-smoke.Provider.String,matrix/cortex/cmd/two-model-smoke.ProviderTogether,matrix/cortex/cmd/two-model-smoke.detectProvider,matrix/cortex/cmd/two-model-smoke.providerEndpoint,matrix/cortex/cmd/two-model-smoke.providerKey
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Provider.String kind=method
   digest=b3:bee3bd52fdd35a924d94d8d2440b996d7eb8cf60f10ac7ac59893a0941c7bef5 file=cortex/cmd/two-model-smoke/client.go range=42:50 lang=go exported=true byte_range=1149:1303
   sig=func (p Provider) String() string
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.Provider,matrix/cortex/cmd/two-model-smoke.ProviderFireworks,matrix/cortex/cmd/two-model-smoke.ProviderTogether,matrix/cortex/cmd/two-model-smoke.p
   ^contains=matrix/cortex/cmd/two-model-smoke.Provider
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
@@ -350,12 +417,15 @@ NODE id=matrix/cortex/cmd/two-model-smoke.ProviderFireworks kind=const
   digest=b3:906d42b70b0109e12f9dabe4706424283267d48e9366a8ecfdf9690d9fa38e42 file=cortex/cmd/two-model-smoke/client.go range=39:39 lang=go exported=true byte_range=1128:1145
   sig=main.Provider
 EDGES
+  ^references=matrix/cortex/cmd/two-model-smoke.Provider.String,matrix/cortex/cmd/two-model-smoke.detectProvider,matrix/cortex/cmd/two-model-smoke.providerEndpoint,matrix/cortex/cmd/two-model-smoke.providerKey
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.ProviderTogether kind=const
   digest=b3:d6e8f88d2826b3922a0f4b6721ce5b47e40296822e554f3bee3a8134424f3c03 file=cortex/cmd/two-model-smoke/client.go range=38:38 lang=go exported=true byte_range=1094:1126
   sig=main.Provider
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.Provider
+  ^references=matrix/cortex/cmd/two-model-smoke.Provider.String,matrix/cortex/cmd/two-model-smoke.detectProvider,matrix/cortex/cmd/two-model-smoke.providerEndpoint,matrix/cortex/cmd/two-model-smoke.providerKey
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Scenario kind=type
@@ -364,6 +434,7 @@ NODE id=matrix/cortex/cmd/two-model-smoke.Scenario kind=type
   doc=Scenario describes a two-agent conversation seed.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.Scenario#Description,matrix/cortex/cmd/two-model-smoke.Scenario#Name,matrix/cortex/cmd/two-model-smoke.Scenario#Opening,matrix/cortex/cmd/two-model-smoke.Scenario#SystemA,matrix/cortex/cmd/two-model-smoke.Scenario#SystemB
+  ^references=matrix/cortex/cmd/two-model-smoke.defaultScenario,matrix/cortex/cmd/two-model-smoke.scenarioByName
   ^defines=matrix/cortex/cmd/two-model-smoke/scenario.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.Scenario#Description kind=field
@@ -404,6 +475,8 @@ NODE id=matrix/cortex/cmd/two-model-smoke.ToolCall kind=type
   doc=ToolCall mirrors OpenAI's `tool_calls[]` entry shape.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.ToolCall#Function,matrix/cortex/cmd/two-model-smoke.ToolCall#ID,matrix/cortex/cmd/two-model-smoke.ToolCall#Type
+  references=matrix/cortex/cmd/two-model-smoke.ToolCallFunc
+  ^references=matrix/cortex/cmd/two-model-smoke.ChatMessage,matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch,matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.ToolCall#Function kind=field
@@ -430,6 +503,7 @@ NODE id=matrix/cortex/cmd/two-model-smoke.ToolCallFunc kind=type
   doc=ToolCallFunc carries the function name + JSON-encoded args string.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.ToolCallFunc#Arguments,matrix/cortex/cmd/two-model-smoke.ToolCallFunc#Name
+  ^references=matrix/cortex/cmd/two-model-smoke.ToolCall
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.ToolCallFunc#Arguments kind=field
@@ -450,6 +524,8 @@ NODE id=matrix/cortex/cmd/two-model-smoke.ToolDef kind=type
   doc=ToolDef describes one tool to the model.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.ToolDef#Function,matrix/cortex/cmd/two-model-smoke.ToolDef#Type
+  references=matrix/cortex/cmd/two-model-smoke.ToolDefFunction
+  ^references=matrix/cortex/cmd/two-model-smoke.ChatRequest,matrix/cortex/cmd/two-model-smoke.Client.Call,matrix/cortex/cmd/two-model-smoke.runOneTurn,matrix/cortex/cmd/two-model-smoke.toolDefs
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.ToolDef#Function kind=field
@@ -470,6 +546,7 @@ NODE id=matrix/cortex/cmd/two-model-smoke.ToolDefFunction kind=type
   doc=ToolDefFunction carries the JSON-schema parameter definition.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.ToolDefFunction#Description,matrix/cortex/cmd/two-model-smoke.ToolDefFunction#Name,matrix/cortex/cmd/two-model-smoke.ToolDefFunction#Parameters
+  ^references=matrix/cortex/cmd/two-model-smoke.ToolDef,matrix/cortex/cmd/two-model-smoke.toolDefs
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.ToolDefFunction#Description kind=field
@@ -503,6 +580,8 @@ NODE id=matrix/cortex/cmd/two-model-smoke.agent kind=type
   doc=agent holds per-conversation state. History accumulates across all\nturns this agent participates in; the system prompt is the first\nmessage and stays at index 0.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.agent#History,matrix/cortex/cmd/two-model-smoke.agent#Model,matrix/cortex/cmd/two-model-smoke.agent#Name,matrix/cortex/cmd/two-model-smoke.agent#System,matrix/cortex/cmd/two-model-smoke.agent#Temperature
+  references=matrix/cortex/cmd/two-model-smoke.ChatMessage
+  ^references=matrix/cortex/cmd/two-model-smoke.main,matrix/cortex/cmd/two-model-smoke.runOneTurn
   ^defines=matrix/cortex/cmd/two-model-smoke/main.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.agent#History kind=field
@@ -539,6 +618,9 @@ NODE id=matrix/cortex/cmd/two-model-smoke.clampInt kind=func
   digest=b3:c9a294d1c001cc85de03810e6a1240ef488149c50533b99615d49b2874683fcc file=cortex/cmd/two-model-smoke/tools.go range=661:669 lang=go exported=false byte_range=22438:22540
   sig=func clampInt(v, lo, hi int) int
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.hi,matrix/cortex/cmd/two-model-smoke.lo,matrix/cortex/cmd/two-model-smoke.v
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.defaultScenario kind=func
@@ -546,6 +628,9 @@ NODE id=matrix/cortex/cmd/two-model-smoke.defaultScenario kind=func
   sig=func defaultScenario() Scenario
   doc=defaultScenario sets up collaborative knowledge construction. Agent\nA is the "Researcher": writes typed memories about a topic. Agent B\nis the "Reviewer": queries A's memories and asks for refinement /\nchallenges contradictions / proposes edges.\n\nBoth agents share one cortex actor; their identities (and the\nCreatedBy on each write) are "alice" (A, Researcher) and "bob" (B,\nReviewer). They see each other's writes via cortex_find /\ncortex_list and can build a connected memory graph.
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.Scenario,matrix/cortex/cmd/two-model-smoke.opening,matrix/cortex/cmd/two-model-smoke.sharedRules,matrix/cortex/cmd/two-model-smoke.systemA,matrix/cortex/cmd/two-model-smoke.systemB
+  ^calls=matrix/cortex/cmd/two-model-smoke.scenarioByName
+  ^references=matrix/cortex/cmd/two-model-smoke.scenarioByName
   ^defines=matrix/cortex/cmd/two-model-smoke/scenario.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.detectProvider kind=func
@@ -553,6 +638,9 @@ NODE id=matrix/cortex/cmd/two-model-smoke.detectProvider kind=func
   sig=func detectProvider(model string) (Provider, error)
   doc=detectProvider maps a model string to its provider. Together's\ncatalog uses "openai/<model>" or "<vendor>/<model>" form; Fireworks\nuses "accounts/fireworks/models/<model>". Anything else returns an\nerror so misconfiguration fails loudly.
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.Provider,matrix/cortex/cmd/two-model-smoke.ProviderFireworks,matrix/cortex/cmd/two-model-smoke.ProviderTogether,matrix/cortex/cmd/two-model-smoke.model
+  ^calls=matrix/cortex/cmd/two-model-smoke.Client.Call
+  ^references=matrix/cortex/cmd/two-model-smoke.Client.Call
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.die kind=func
@@ -560,6 +648,9 @@ NODE id=matrix/cortex/cmd/two-model-smoke.die kind=func
   sig=func die(format string, args ...interface{})
   doc=die prints a fatal message and exits with status 1.
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.args,matrix/cortex/cmd/two-model-smoke.format
+  ^calls=matrix/cortex/cmd/two-model-smoke.main
+  ^references=matrix/cortex/cmd/two-model-smoke.main
   ^defines=matrix/cortex/cmd/two-model-smoke/main.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.finalRun kind=func
@@ -567,66 +658,100 @@ NODE id=matrix/cortex/cmd/two-model-smoke.finalRun kind=func
   sig=func finalRun(c *cortex.Cortex, tr *transcript, skip bool)
   doc=finalRun captures pre/post OverallRoot via Cortex.Rebuild and asserts\nthey match. This is the strongest single-call cortex correctness\ncheck (research/04-cortex.md §13.4 "indexes are pure projection of\ncanonical state").
 EDGES
+  calls=matrix/cortex.Cortex.Rebuild,matrix/cortex.Cortex.Snapshot,matrix/cortex/cmd/two-model-smoke.transcript.event,matrix/cortex/replay.VerifyPreservesRoot
+  references=matrix/cortex.Cortex,matrix/cortex.Cortex.Rebuild,matrix/cortex.Cortex.Snapshot,matrix/cortex.RebuildOptions,matrix/cortex/cmd/two-model-smoke.c,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.preSnap,matrix/cortex/cmd/two-model-smoke.res,matrix/cortex/cmd/two-model-smoke.skip,matrix/cortex/cmd/two-model-smoke.tr,matrix/cortex/cmd/two-model-smoke.transcript,matrix/cortex/cmd/two-model-smoke.transcript.event,matrix/cortex/replay.VerifyPreservesRoot
+  ^calls=matrix/cortex/cmd/two-model-smoke.main
+  ^references=matrix/cortex/cmd/two-model-smoke.main
   ^defines=matrix/cortex/cmd/two-model-smoke/main.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.floatOr kind=func
   digest=b3:9dc16b9bab637d9da4f29e518bfbdef47fbf27af7e49e6b0fdb3de3ac5e7a827 file=cortex/cmd/two-model-smoke/tools.go range=639:652 lang=go exported=false byte_range=22091:22316
   sig=func floatOr(v interface{}, def float64) float64
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.def,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.n,matrix/cortex/cmd/two-model-smoke.v,matrix/cortex/cmd/two-model-smoke.x
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexAddEdge
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexAddEdge
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.hexID kind=func
   digest=b3:53acbe9873e5ccd169adf15ee7d0bc8c695e8933530a3247c4f6c4795700dc84 file=cortex/cmd/two-model-smoke/tools.go range=679:681 lang=go exported=false byte_range=22660:22728
   sig=func hexID(id memory.ID) string
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.id,matrix/cortex/memory.ID
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.intOr kind=func
   digest=b3:d44cd8da0ed41b924561510f2a0f232e8e18dedbc10db26d1a336aa855c32171 file=cortex/cmd/two-model-smoke/tools.go range=622:637 lang=go exported=false byte_range=21846:22089
   sig=func intOr(v interface{}, def int) int
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.def,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.n,matrix/cortex/cmd/two-model-smoke.v,matrix/cortex/cmd/two-model-smoke.x
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.main kind=func
   digest=b3:266b5e5ffd2c5e5075b922851d027841ee5f8aa4c287f676274d574709bdf7e6 file=cortex/cmd/two-model-smoke/main.go range=27:159 lang=go exported=false byte_range=590:5183
   sig=func main()
 EDGES
+  calls=matrix/cortex.Cortex.OverallRoot,matrix/cortex.New,matrix/cortex/cmd/two-model-smoke.NewClient,matrix/cortex/cmd/two-model-smoke.die,matrix/cortex/cmd/two-model-smoke.finalRun,matrix/cortex/cmd/two-model-smoke.newTranscript,matrix/cortex/cmd/two-model-smoke.runOneTurn,matrix/cortex/cmd/two-model-smoke.scenarioByName,matrix/cortex/cmd/two-model-smoke.toolDefs,matrix/cortex/cmd/two-model-smoke.transcript.event,matrix/cortex/store.Open,matrix/cortex/store.Store.Close
+  references=matrix/cortex.Cortex.OverallRoot,matrix/cortex.New,matrix/cortex/cmd/two-model-smoke.ChatMessage,matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.NewClient,matrix/cortex/cmd/two-model-smoke.actor,matrix/cortex/cmd/two-model-smoke.agent,matrix/cortex/cmd/two-model-smoke.agentA,matrix/cortex/cmd/two-model-smoke.agentB,matrix/cortex/cmd/two-model-smoke.c,matrix/cortex/cmd/two-model-smoke.client,matrix/cortex/cmd/two-model-smoke.current,matrix/cortex/cmd/two-model-smoke.die,matrix/cortex/cmd/two-model-smoke.dispatcher,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.final,matrix/cortex/cmd/two-model-smoke.finalRun,matrix/cortex/cmd/two-model-smoke.i,matrix/cortex/cmd/two-model-smoke.modelA,matrix/cortex/cmd/two-model-smoke.modelB,matrix/cortex/cmd/two-model-smoke.newTranscript,matrix/cortex/cmd/two-model-smoke.noRebuildAssert,matrix/cortex/cmd/two-model-smoke.other,matrix/cortex/cmd/two-model-smoke.root,matrix/cortex/cmd/two-model-smoke.runOneTurn,matrix/cortex/cmd/two-model-smoke.s,matrix/cortex/cmd/two-model-smoke.scenario,matrix/cortex/cmd/two-model-smoke.scenarioByName,matrix/cortex/cmd/two-model-smoke.scenarioName,matrix/cortex/cmd/two-model-smoke.temperature,matrix/cortex/cmd/two-model-smoke.toolDefs,matrix/cortex/cmd/two-model-smoke.tools,matrix/cortex/cmd/two-model-smoke.toolsPerTurn,matrix/cortex/cmd/two-model-smoke.tr,matrix/cortex/cmd/two-model-smoke.transcript.event,matrix/cortex/cmd/two-model-smoke.transcriptFile,matrix/cortex/cmd/two-model-smoke.transcriptPath,matrix/cortex/cmd/two-model-smoke.turns,matrix/cortex/cmd/two-model-smoke.usage,matrix/cortex/store.Open,matrix/cortex/store.Store.Close
   ^defines=matrix/cortex/cmd/two-model-smoke/main.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.marshalErr kind=func
   digest=b3:bb7f30aed4ae09a5a8ee9ed09734e76d2ccc1b80e49979453cd4aefe241eb46a file=cortex/cmd/two-model-smoke/tools.go range=600:603 lang=go exported=false byte_range=21447:21565
   sig=func marshalErr(err error) string
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.b,matrix/cortex/cmd/two-model-smoke.err
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.memorySummary kind=func
   digest=b3:514995acf56ca91198403de8aeffa5487364059db7fa160cd3efa6590062b994 file=cortex/cmd/two-model-smoke/tools.go range=581:598 lang=go exported=false byte_range=20864:21445
   sig=func memorySummary(m *memory.Memory) map[string]interface{}
 EDGES
+  calls=matrix/cortex.BuildURI,matrix/cortex/memory.Type.String
+  references=matrix/cortex.BuildURI,matrix/cortex/cmd/two-model-smoke.m,matrix/cortex/cmd/two-model-smoke.row,matrix/cortex/memory.Memory,matrix/cortex/memory.Type.String
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexResolve
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexResolve
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.newTranscript kind=func
   digest=b3:cb4b7a9c938a91f826bf1492b710fe0c1b9949869da55f0e2238dc0f66e39267 file=cortex/cmd/two-model-smoke/main.go range=290:290 lang=go exported=false byte_range=9723:9795
   sig=func newTranscript(w io.Writer) *transcript
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.transcript,matrix/cortex/cmd/two-model-smoke.w
+  ^calls=matrix/cortex/cmd/two-model-smoke.main
+  ^references=matrix/cortex/cmd/two-model-smoke.main
   ^defines=matrix/cortex/cmd/two-model-smoke/main.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.oneLineSummary kind=func
   digest=b3:fd5fb3fd65443a173285204e45303eea734f87861226fbe9aa8bc8ca311da151 file=cortex/cmd/two-model-smoke/main.go range=311:321 lang=go exported=false byte_range=10322:10741
   sig=func oneLineSummary(p map[string]interface{}) string
 EDGES
+  calls=matrix/cortex/cmd/two-model-smoke.truncate
+  references=matrix/cortex/cmd/two-model-smoke.k,matrix/cortex/cmd/two-model-smoke.keys,matrix/cortex/cmd/two-model-smoke.ok,matrix/cortex/cmd/two-model-smoke.p,matrix/cortex/cmd/two-model-smoke.parts,matrix/cortex/cmd/two-model-smoke.truncate,matrix/cortex/cmd/two-model-smoke.v
+  ^calls=matrix/cortex/cmd/two-model-smoke.transcript.event
+  ^references=matrix/cortex/cmd/two-model-smoke.transcript.event
   ^defines=matrix/cortex/cmd/two-model-smoke/main.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.parseTypeName kind=func
   digest=b3:d477ca432728f247e6b32534851df30fbbc74060bb09aee2b34bd9f8d189a013 file=cortex/cmd/two-model-smoke/typed.go range=110:132 lang=go exported=false byte_range=2701:3183
   sig=func parseTypeName(name string) memory.Type
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.name,matrix/cortex/memory.Type,matrix/cortex/memory.TypeBelief,matrix/cortex/memory.TypeCapability,matrix/cortex/memory.TypeConstraint,matrix/cortex/memory.TypeEvent,matrix/cortex/memory.TypeFact,matrix/cortex/memory.TypeGoal,matrix/cortex/memory.TypeIdentity,matrix/cortex/memory.TypePattern,matrix/cortex/memory.TypePreference
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList
   ^defines=matrix/cortex/cmd/two-model-smoke/typed.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.parseTypedJSON kind=func
   digest=b3:78884fcdda9accfadc748d8c53fc926d69ccc3a20d7c8ed3a7e1689bff8635b0 file=cortex/cmd/two-model-smoke/typed.go range=23:108 lang=go exported=false byte_range=777:2699
   sig=func parseTypedJSON(typeName, body string) (memory.TypedData, error)
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.body,matrix/cortex/cmd/two-model-smoke.d,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.typeName,matrix/cortex/memory.BeliefData,matrix/cortex/memory.CapabilityData,matrix/cortex/memory.ConstraintData,matrix/cortex/memory.EventData,matrix/cortex/memory.FactData,matrix/cortex/memory.GoalData,matrix/cortex/memory.IdentityData,matrix/cortex/memory.PatternData,matrix/cortex/memory.PreferenceData,matrix/cortex/memory.TypedData
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite
   ^defines=matrix/cortex/cmd/two-model-smoke/typed.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.providerEndpoint kind=func
@@ -634,6 +759,9 @@ NODE id=matrix/cortex/cmd/two-model-smoke.providerEndpoint kind=func
   sig=func providerEndpoint(p Provider) string
   doc=providerEndpoint returns the chat-completions URL.
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.Provider,matrix/cortex/cmd/two-model-smoke.ProviderFireworks,matrix/cortex/cmd/two-model-smoke.ProviderTogether,matrix/cortex/cmd/two-model-smoke.p
+  ^calls=matrix/cortex/cmd/two-model-smoke.Client.Call
+  ^references=matrix/cortex/cmd/two-model-smoke.Client.Call
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.providerKey kind=func
@@ -641,6 +769,9 @@ NODE id=matrix/cortex/cmd/two-model-smoke.providerKey kind=func
   sig=func providerKey(p Provider) (string, error)
   doc=providerKey reads the env var for the given provider.
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.Provider,matrix/cortex/cmd/two-model-smoke.ProviderFireworks,matrix/cortex/cmd/two-model-smoke.ProviderTogether,matrix/cortex/cmd/two-model-smoke.name,matrix/cortex/cmd/two-model-smoke.p,matrix/cortex/cmd/two-model-smoke.v
+  ^calls=matrix/cortex/cmd/two-model-smoke.Client.Call
+  ^references=matrix/cortex/cmd/two-model-smoke.Client.Call
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.runOneTurn kind=func
@@ -648,6 +779,10 @@ NODE id=matrix/cortex/cmd/two-model-smoke.runOneTurn kind=func
   sig=func runOneTurn(client *Client, ag *agent, tools []ToolDef, disp *Dispatcher, maxTools int, tr *transcript) (string, ChatUsage, error)
   doc=runOneTurn drives a single agent through up to N tool calls, then\nreturns the final assistant text. Appends every message (assistant\n+ tool results) to the agent's History so cross-turn context is\npreserved.
 EDGES
+  calls=matrix/cortex/cmd/two-model-smoke.Client.Call,matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch,matrix/cortex/cmd/two-model-smoke.transcript.event,matrix/cortex/cmd/two-model-smoke.truncate
+  references=matrix/cortex/cmd/two-model-smoke.ChatMessage,matrix/cortex/cmd/two-model-smoke.ChatUsage,matrix/cortex/cmd/two-model-smoke.Client,matrix/cortex/cmd/two-model-smoke.Client.Call,matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch,matrix/cortex/cmd/two-model-smoke.ToolDef,matrix/cortex/cmd/two-model-smoke.ag,matrix/cortex/cmd/two-model-smoke.agent,matrix/cortex/cmd/two-model-smoke.before,matrix/cortex/cmd/two-model-smoke.call,matrix/cortex/cmd/two-model-smoke.callTools,matrix/cortex/cmd/two-model-smoke.client,matrix/cortex/cmd/two-model-smoke.disp,matrix/cortex/cmd/two-model-smoke.elapsed,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.hop,matrix/cortex/cmd/two-model-smoke.maxTools,matrix/cortex/cmd/two-model-smoke.msg,matrix/cortex/cmd/two-model-smoke.result,matrix/cortex/cmd/two-model-smoke.tools,matrix/cortex/cmd/two-model-smoke.totalUsage,matrix/cortex/cmd/two-model-smoke.tr,matrix/cortex/cmd/two-model-smoke.transcript,matrix/cortex/cmd/two-model-smoke.transcript.event,matrix/cortex/cmd/two-model-smoke.truncate,matrix/cortex/cmd/two-model-smoke.usage
+  ^calls=matrix/cortex/cmd/two-model-smoke.main
+  ^references=matrix/cortex/cmd/two-model-smoke.main
   ^defines=matrix/cortex/cmd/two-model-smoke/main.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.scenarioByName kind=func
@@ -655,24 +790,37 @@ NODE id=matrix/cortex/cmd/two-model-smoke.scenarioByName kind=func
   sig=func scenarioByName(name string) (Scenario, error)
   doc=scenarioByName returns the Scenario for the given name, or an error.
 EDGES
+  calls=matrix/cortex/cmd/two-model-smoke.defaultScenario
+  references=matrix/cortex/cmd/two-model-smoke.Scenario,matrix/cortex/cmd/two-model-smoke.defaultScenario,matrix/cortex/cmd/two-model-smoke.name
+  ^calls=matrix/cortex/cmd/two-model-smoke.main
+  ^references=matrix/cortex/cmd/two-model-smoke.main
   ^defines=matrix/cortex/cmd/two-model-smoke/scenario.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.stringOr kind=func
   digest=b3:9cd5b94d9ba6711186a450a8ccab88ac5a2ec5c4c391867a0dd3fe13608df374 file=cortex/cmd/two-model-smoke/tools.go range=654:659 lang=go exported=false byte_range=22318:22436
   sig=func stringOr(v interface{}, def string) string
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.def,matrix/cortex/cmd/two-model-smoke.ok,matrix/cortex/cmd/two-model-smoke.s,matrix/cortex/cmd/two-model-smoke.v
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.stringSlice kind=func
   digest=b3:626afb50dbd22672f7db01ca9ba80f3bcebc569c85bcc579d0c0386bedcea9c2 file=cortex/cmd/two-model-smoke/tools.go range=605:620 lang=go exported=false byte_range=21567:21844
   sig=func stringSlice(v interface{}) []string
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.arr,matrix/cortex/cmd/two-model-smoke.e,matrix/cortex/cmd/two-model-smoke.ok,matrix/cortex/cmd/two-model-smoke.out,matrix/cortex/cmd/two-model-smoke.s,matrix/cortex/cmd/two-model-smoke.v
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.summarize kind=func
   digest=b3:14228b25af4e958a4c91d1d7d97132a5381186366e73c13d1b6c66d341e866ce file=cortex/cmd/two-model-smoke/tools.go range=671:677 lang=go exported=false byte_range=22542:22658
   sig=func summarize(s string) string
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.s
+  ^calls=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite
+  ^references=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.toolDefs kind=func
@@ -680,6 +828,9 @@ NODE id=matrix/cortex/cmd/two-model-smoke.toolDefs kind=func
   sig=func toolDefs() []ToolDef
   doc=toolDefs returns the static tool catalog advertised to the LLMs.\nSchemas are valid JSON Schema (subset OpenAI accepts).
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.ToolDef,matrix/cortex/cmd/two-model-smoke.ToolDefFunction
+  ^calls=matrix/cortex/cmd/two-model-smoke.main
+  ^references=matrix/cortex/cmd/two-model-smoke.main
   ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.transcript kind=type
@@ -688,6 +839,7 @@ NODE id=matrix/cortex/cmd/two-model-smoke.transcript kind=type
   doc=transcript is a tiny JSONL writer plus a stderr mirror for live\nprogress visibility. Every line is one event with at least\n{"ts": ..., "kind": ...}.
 EDGES
   contains=matrix/cortex/cmd/two-model-smoke.transcript#w,matrix/cortex/cmd/two-model-smoke.transcript.event
+  ^references=matrix/cortex/cmd/two-model-smoke.finalRun,matrix/cortex/cmd/two-model-smoke.newTranscript,matrix/cortex/cmd/two-model-smoke.runOneTurn,matrix/cortex/cmd/two-model-smoke.transcript.event
   ^defines=matrix/cortex/cmd/two-model-smoke/main.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.transcript#w kind=field
@@ -700,7 +852,11 @@ NODE id=matrix/cortex/cmd/two-model-smoke.transcript.event kind=method
   digest=b3:51776232f22a2933a2ed98e101fc694dc516343bce11721708bc57962f35f3db file=cortex/cmd/two-model-smoke/main.go range=292:309 lang=go exported=false byte_range=9797:10320
   sig=func (t *transcript) event(kind string, payload map[string]interface{})
 EDGES
+  calls=matrix/cortex/cmd/two-model-smoke.oneLineSummary
+  references=matrix/cortex/cmd/two-model-smoke.enc,matrix/cortex/cmd/two-model-smoke.err,matrix/cortex/cmd/two-model-smoke.k,matrix/cortex/cmd/two-model-smoke.kind,matrix/cortex/cmd/two-model-smoke.oneLineSummary,matrix/cortex/cmd/two-model-smoke.payload,matrix/cortex/cmd/two-model-smoke.row,matrix/cortex/cmd/two-model-smoke.t,matrix/cortex/cmd/two-model-smoke.transcript,matrix/cortex/cmd/two-model-smoke.v
   ^contains=matrix/cortex/cmd/two-model-smoke.transcript
+  ^calls=matrix/cortex/cmd/two-model-smoke.finalRun,matrix/cortex/cmd/two-model-smoke.main,matrix/cortex/cmd/two-model-smoke.runOneTurn
+  ^references=matrix/cortex/cmd/two-model-smoke.finalRun,matrix/cortex/cmd/two-model-smoke.main,matrix/cortex/cmd/two-model-smoke.runOneTurn
   ^defines=matrix/cortex/cmd/two-model-smoke/main.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke.truncate kind=func
@@ -708,6 +864,9 @@ NODE id=matrix/cortex/cmd/two-model-smoke.truncate kind=func
   sig=func truncate(s string, n int) string
   doc=truncate is a tiny helper for log-line-friendly bodies.
 EDGES
+  references=matrix/cortex/cmd/two-model-smoke.n,matrix/cortex/cmd/two-model-smoke.s
+  ^calls=matrix/cortex/cmd/two-model-smoke.Client.Call,matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch,matrix/cortex/cmd/two-model-smoke.oneLineSummary,matrix/cortex/cmd/two-model-smoke.runOneTurn
+  ^references=matrix/cortex/cmd/two-model-smoke.Client.Call,matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch,matrix/cortex/cmd/two-model-smoke.oneLineSummary,matrix/cortex/cmd/two-model-smoke.runOneTurn
   ^defines=matrix/cortex/cmd/two-model-smoke/client.go
 
 NODE id=matrix/cortex/cmd/two-model-smoke/client.go kind=file

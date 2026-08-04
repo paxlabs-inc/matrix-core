@@ -19,7 +19,7 @@ import (
 
 // Neo's media plane. Generated and uploaded media (images / video / audio)
 // live on the agent's OWN machine volume — the same /data volume that holds
-// cortex + executor.key — under MediaDir. The media MCP server (tools/media)
+// Neocortex + executor.key — under MediaDir. The media MCP server (tools/media)
 // writes generated outputs there; users upload inputs via POST /upload; and
 // GET /media/<name> streams either back to the browser. Nothing leaves the
 // per-user machine: input images are inlined to the upstream API as base64
@@ -41,7 +41,7 @@ var mediaExtMIME = map[string]string{
 }
 
 // MediaDir resolves the directory Neo serves media from / writes uploads to.
-// An explicit override wins; otherwise it derives from the cortex root's
+// An explicit override wins; otherwise it derives from the Neocortex root's
 // parent (the machine volume), matching how conversation.Dir derives
 // /data/conversations — so generated media lands on /data/media and survives
 // reload / suspend / redeploy.

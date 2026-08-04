@@ -5,7 +5,7 @@
 // automatrixsettings. It holds the operational schedule (enabled, timezone,
 // local delivery time, selected days, brief length, sections, paused, the single
 // MORNING_BRIEF alarm id, the destination conversation, and the last-delivered
-// local date) SEPARATE from the personalization profile (which lives as a cortex
+// local date) SEPARATE from the personalization profile (which lives as a Neocortex
 // record; req 13/14.1). The brief governor re-reads it live on every wake, so a
 // toggle takes effect without a process restart (req 14.3).
 //
@@ -319,7 +319,7 @@ func (st State) clone() State {
 func today() string { return time.Now().UTC().Format("2006-01-02") }
 
 // Dir resolves Neo's brief-settings directory. An explicit override wins; else
-// it derives from the cortex root's parent (matching the automatrix/conversation
+// it derives from the Neocortex root's parent (matching the automatrix/conversation
 // /task/trace stores, so it shares /data with them and survives suspend /
 // redeploy). Returns "" when neither is available (in-memory only).
 func Dir(override, cortexRoot string) string {

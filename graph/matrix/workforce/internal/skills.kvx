@@ -1,45 +1,61 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/skills kind=package
   digest=b3:64ff177d285d7c42390c974fff6ed2f233579810bc9e17fa09fec848ece5a1bf file=workforce/internal/skills range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/skills/catalog.go,matrix/workforce/internal/skills/developer.go,matrix/workforce/internal/skills/doc.go,matrix/workforce/internal/skills/knowledge.go,matrix/workforce/internal/skills/marketinglegal.go,matrix/workforce/internal/skills/operations.go,matrix/workforce/internal/skills/store.go,matrix/workforce/internal/skills/types.go,matrix/workforce/internal/skills/workforce.go
+  imports=matrix/vault,matrix/workforce/internal/contracts
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/actorstate,matrix/workforce/internal/commercialcapability,matrix/workforce/internal/controlapi,matrix/workforce/internal/departmentadapter,matrix/workforce/internal/developer,matrix/workforce/internal/domainwork,matrix/workforce/internal/effect,matrix/workforce/internal/knowledgework,matrix/workforce/internal/modelclient,matrix/workforce/internal/operationswork,matrix/workforce/internal/productcapability,matrix/workforce/internal/provider/customer,matrix/workforce/internal/provider/developer,matrix/workforce/internal/provider/external,matrix/workforce/internal/provider/financial,matrix/workforce/internal/reconcile,matrix/workforce/internal/wakeruntime,matrix/workforce/internal/workcompile
 
 NODE id=matrix/workforce/internal/skills.AccountingSkillIDs kind=func
   digest=b3:9b3cb57d0e4ff04ae8ed9f81195d3e6b267f5a7eaf39c984525aca259eca5408 file=workforce/internal/skills/operations.go range=118:120 lang=go exported=true byte_range=4382:4495
   sig=func AccountingSkillIDs() []contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.accountingSkillIDs
+  ^calls=matrix/workforce/internal/operationswork.operationsSkillAllowed
+  ^references=matrix/workforce/internal/operationswork.operationsSkillAllowed
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.AdministrativeWorkflowSkill kind=const
   digest=b3:e83c947875e690fa3952e294dd69081b4557b407c60db628ff579a8d4cd516ce file=workforce/internal/skills/operations.go range=20:20 lang=go exported=true byte_range=474:547
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.backOfficeSkillIDs
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.BackOfficeSkillIDs kind=func
   digest=b3:f5cc479ae9487e10b023286777ca53f8463db7c8445b3a32acdfb65742285a0e file=workforce/internal/skills/operations.go range=122:124 lang=go exported=true byte_range=4497:4610
   sig=func BackOfficeSkillIDs() []contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.backOfficeSkillIDs
+  ^calls=matrix/workforce/internal/operationswork.operationsSkillAllowed
+  ^references=matrix/workforce/internal/operationswork.operationsSkillAllowed
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.BookkeepingSkill kind=const
   digest=b3:d330f66880808b9b9e79a2359212d26c933ad4ddac1ddc1e3b2e99d9e312f100 file=workforce/internal/skills/operations.go range=15:15 lang=go exported=true byte_range=150:211
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.accountingSkillIDs
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.CampaignOperationsSkill kind=const
   digest=b3:5b1244cab1480f6b564d70c54332cd23699b3af7f9f6bec9647518d580a6e8bf file=workforce/internal/skills/marketinglegal.go range=16:16 lang=go exported=true byte_range=215:280
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.marketingSkillIDs
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.CampaignResearchSkill kind=const
   digest=b3:bb4a6009957a1727c53f18eaeeea860213eaf80548df85f07a1c9597fb11ba45 file=workforce/internal/skills/marketinglegal.go range=15:15 lang=go exported=true byte_range=150:213
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/modelclient.preferredOperation,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.marketingSkillIDs
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.Catalog kind=type
@@ -47,6 +63,8 @@ NODE id=matrix/workforce/internal/skills.Catalog kind=type
   sig=type Catalog struct {\n	contracts	map[contracts.SkillID]Contract\n	digest		contracts.ContentHash\n}
 EDGES
   contains=matrix/workforce/internal/skills.Catalog#contracts,matrix/workforce/internal/skills.Catalog#digest,matrix/workforce/internal/skills.Catalog.Digest,matrix/workforce/internal/skills.Catalog.Resolve
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.Contract
+  ^references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.NewAssembler,matrix/workforce/internal/skills.Catalog.Digest,matrix/workforce/internal/skills.Catalog.Resolve,matrix/workforce/internal/skills.NewCatalog,matrix/workforce/internal/wakeruntime.Runner
   ^defines=matrix/workforce/internal/skills/catalog.go
 
 NODE id=matrix/workforce/internal/skills.Catalog#contracts kind=field
@@ -65,38 +83,52 @@ NODE id=matrix/workforce/internal/skills.Catalog.Digest kind=method
   digest=b3:79b3d97c33b01a79749e4905a0c0ed31bb4df25054b056a3fb9506666d7b70ec file=workforce/internal/skills/catalog.go range=102:107 lang=go exported=true byte_range=3325:3463
   sig=func (catalog *Catalog) Digest() contracts.ContentHash
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/skills.Catalog,matrix/workforce/internal/skills.catalog
   ^contains=matrix/workforce/internal/skills.Catalog
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/cmd/workforced.runContext,matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/cmd/workforced.runContext,matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket
   ^defines=matrix/workforce/internal/skills/catalog.go
 
 NODE id=matrix/workforce/internal/skills.Catalog.Resolve kind=method
   digest=b3:4ec99ec736e74a9482a0d83b2ffa8710767dcef85f64bcc751273dab369892dd file=workforce/internal/skills/catalog.go range=109:129 lang=go exported=true byte_range=3465:4135
   sig=func (catalog *Catalog) Resolve(ids []contracts.SkillID) ([]contracts.SkillRef, error)
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/contracts.SkillRef,matrix/workforce/internal/skills.Catalog,matrix/workforce/internal/skills.catalog,matrix/workforce/internal/skills.id,matrix/workforce/internal/skills.ids,matrix/workforce/internal/skills.ok,matrix/workforce/internal/skills.result,matrix/workforce/internal/skills.seen,matrix/workforce/internal/skills.value
   ^contains=matrix/workforce/internal/skills.Catalog
+  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble
+  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble
   ^defines=matrix/workforce/internal/skills/catalog.go
 
 NODE id=matrix/workforce/internal/skills.ChannelEvidenceSkill kind=const
   digest=b3:5b5cb3730b3ff1d273969e1c5fe805a6f7c5b4a8a4774a2b12633f3298a24d1e file=workforce/internal/skills/marketinglegal.go range=17:17 lang=go exported=true byte_range=282:344
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.marketingSkillIDs
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.CloseWorkflowSkill kind=const
   digest=b3:7c6f81d6b28f392305bea4cf8155ac6fe27097e1105567b4fb095e954547e488 file=workforce/internal/skills/operations.go range=16:16 lang=go exported=true byte_range=213:277
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.accountingSkillIDs
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.ComplianceWorkflowSkill kind=const
   digest=b3:12f837baed201f2a9436a4583cebc1676bdc01c0a42778c3d470f3d31c2d2b0a file=workforce/internal/skills/marketinglegal.go range=20:20 lang=go exported=true byte_range=477:542
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.legalSkillIDs
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.ContentOperationsSkill kind=const
   digest=b3:90be2247b01d995ec53b303c8f4fa5724b19d60c937ca5fc4ef96099d8f9fc4b file=workforce/internal/skills/marketinglegal.go range=18:18 lang=go exported=true byte_range=346:410
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.marketingSkillIDs
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.Contract kind=type
@@ -106,6 +138,8 @@ NODE id=matrix/workforce/internal/skills.Contract kind=type
 EDGES
   contains=matrix/workforce/internal/skills.Contract#Approvals,matrix/workforce/internal/skills.Contract#Capabilities,matrix/workforce/internal/skills.Contract#DataScopes,matrix/workforce/internal/skills.Contract#Digest,matrix/workforce/internal/skills.Contract#ID,matrix/workforce/internal/skills.Contract#Idempotency,matrix/workforce/internal/skills.Contract#InputSchema,matrix/workforce/internal/skills.Contract#Operations,matrix/workforce/internal/skills.Contract#OutputSchema,matrix/workforce/internal/skills.Contract#Postconditions,matrix/workforce/internal/skills.Contract#Preconditions,matrix/workforce/internal/skills.Contract#Probe,matrix/workforce/internal/skills.Contract#Resources,matrix/workforce/internal/skills.Contract#Retry,matrix/workforce/internal/skills.Contract#ScheduleEligibility,matrix/workforce/internal/skills.Contract#SchemaVersion,matrix/workforce/internal/skills.Contract#VerifierDigest,matrix/workforce/internal/skills.Contract#Version,matrix/workforce/internal/skills.Contract.AuthorizeUnattended,matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.Contract.DriftBlind,matrix/workforce/internal/skills.Contract.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.IdempotencyStrategy,matrix/workforce/internal/skills.Operation,matrix/workforce/internal/skills.ProbeContract,matrix/workforce/internal/skills.ResourceEstimate,matrix/workforce/internal/skills.RetryPolicy,matrix/workforce/internal/skills.ScheduleEligibility
+  ^references=matrix/workforce/internal/commercialcapability.Pack,matrix/workforce/internal/productcapability.Pack,matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/skills.Catalog,matrix/workforce/internal/skills.Contract.AuthorizeUnattended,matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.Contract.DriftBlind,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.NewCatalog,matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.SignedContract,matrix/workforce/internal/skills.WorkforcePack,matrix/workforce/internal/skills.compatibilityDigest,matrix/workforce/internal/skills.copyContract,matrix/workforce/internal/workcompile.findOperation
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.Contract#Approvals kind=field
@@ -221,6 +255,8 @@ NODE id=matrix/workforce/internal/skills.Contract.AuthorizeUnattended kind=metho
   sig=func (contract Contract) AuthorizeUnattended(highAutonomy bool) error
   doc=AuthorizeUnattended rejects high-autonomy execution of drift-blind effects.
 EDGES
+  calls=matrix/workforce/internal/skills.Contract.DriftBlind
+  references=matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.Contract.DriftBlind,matrix/workforce/internal/skills.ErrDriftBlindAutonomy,matrix/workforce/internal/skills.contract,matrix/workforce/internal/skills.highAutonomy
   ^contains=matrix/workforce/internal/skills.Contract
   ^defines=matrix/workforce/internal/skills/types.go
 
@@ -229,7 +265,11 @@ NODE id=matrix/workforce/internal/skills.Contract.ComputeDigest kind=method
   sig=func (contract Contract) ComputeDigest() (contracts.ContentHash, error)
   doc=ComputeDigest returns the canonical SHA-256 digest with the digest field omitted.
 EDGES
+  calls=matrix/workforce/internal/skills.sortedCopy
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.ErrInvalidContract,matrix/workforce/internal/skills.contract,matrix/workforce/internal/skills.copyContract,matrix/workforce/internal/skills.encoded,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.index,matrix/workforce/internal/skills.left,matrix/workforce/internal/skills.right,matrix/workforce/internal/skills.sortedCopy,matrix/workforce/internal/skills.sum
   ^contains=matrix/workforce/internal/skills.Contract
+  ^calls=matrix/workforce/internal/commercialcapability.Pack,matrix/workforce/internal/productcapability.Pack,matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.OperationsPack
+  ^references=matrix/workforce/internal/commercialcapability.Pack,matrix/workforce/internal/productcapability.Pack,matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.OperationsPack
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.Contract.DriftBlind kind=method
@@ -237,7 +277,10 @@ NODE id=matrix/workforce/internal/skills.Contract.DriftBlind kind=method
   sig=func (contract Contract) DriftBlind() bool
   doc=DriftBlind reports whether effectful execution lacks an authoritative probe.
 EDGES
+  references=matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.EffectRead,matrix/workforce/internal/skills.contract,matrix/workforce/internal/skills.effectful,matrix/workforce/internal/skills.operation
   ^contains=matrix/workforce/internal/skills.Contract
+  ^calls=matrix/workforce/internal/skills.Contract.AuthorizeUnattended
+  ^references=matrix/workforce/internal/skills.Contract.AuthorizeUnattended
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.Contract.Validate kind=method
@@ -245,25 +288,35 @@ NODE id=matrix/workforce/internal/skills.Contract.Validate kind=method
   sig=func (contract Contract) Validate() error
   doc=Validate enforces the complete versioned skill contract and its declared digest.
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.Operation.validate,matrix/workforce/internal/skills.ProbeContract.validate,matrix/workforce/internal/skills.boundedTexts,matrix/workforce/internal/skills.boundedTokens,matrix/workforce/internal/skills.invalid,matrix/workforce/internal/skills.nonemptyTokens,matrix/workforce/internal/skills.schema,matrix/workforce/internal/skills.token
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.Operation.validate,matrix/workforce/internal/skills.ProbeContract.validate,matrix/workforce/internal/skills.boundedTexts,matrix/workforce/internal/skills.boundedTokens,matrix/workforce/internal/skills.contract,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.expected,matrix/workforce/internal/skills.invalid,matrix/workforce/internal/skills.nonemptyTokens,matrix/workforce/internal/skills.operation,matrix/workforce/internal/skills.schema,matrix/workforce/internal/skills.seenOperations,matrix/workforce/internal/skills.token
   ^contains=matrix/workforce/internal/skills.Contract
+  ^calls=matrix/workforce/internal/commercialcapability.Pack,matrix/workforce/internal/productcapability.Pack,matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.NewCatalog,matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.SignedContract.Validate
+  ^references=matrix/workforce/internal/commercialcapability.Pack,matrix/workforce/internal/productcapability.Pack,matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.NewCatalog,matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.SignedContract.Validate
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ContractAnalysisSkill kind=const
   digest=b3:9420f8950872273b643cb925d43f3080fb6eab8f253ed11434b5b4febd87d54e file=workforce/internal/skills/marketinglegal.go range=21:21 lang=go exported=true byte_range=544:607
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.legalSkillIDs
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.DeveloperBrainUpdateSkill kind=const
   digest=b3:208a4c2edcabd7ff2f547d74bc74c4e3ea1eee1ff11b80f65e7c0c41586c22fc file=workforce/internal/skills/developer.go range=18:18 lang=go exported=true byte_range=423:503
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/productcapability.SkillIDs,matrix/workforce/internal/skills.DeveloperPack
   ^defines=matrix/workforce/internal/skills/developer.go
 
 NODE id=matrix/workforce/internal/skills.DeveloperImplementSkill kind=const
   digest=b3:a00fca5686e1ced552904cf3e6c6546f4f4fbaed70bfd0c3f431016b2c86b9e7 file=workforce/internal/skills/developer.go range=15:15 lang=go exported=true byte_range=208:277
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/modelclient.preferredOperation,matrix/workforce/internal/productcapability.SkillIDs,matrix/workforce/internal/skills.DeveloperPack
   ^defines=matrix/workforce/internal/skills/developer.go
 
 NODE id=matrix/workforce/internal/skills.DeveloperPack kind=func
@@ -271,24 +324,34 @@ NODE id=matrix/workforce/internal/skills.DeveloperPack kind=func
   sig=func DeveloperPack() ([]Contract, error)
   doc=DeveloperPack returns the complete versioned Lead and Executor skill pack.
 EDGES
+  calls=matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.developerInputSchema,matrix/workforce/internal/skills.developerOperation,matrix/workforce/internal/skills.developerOutputSchema,matrix/workforce/internal/skills.developerProbe,matrix/workforce/internal/skills.developerVerifierDigest
+  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.DeveloperBrainUpdateSkill,matrix/workforce/internal/skills.DeveloperImplementSkill,matrix/workforce/internal/skills.DeveloperPlanSkill,matrix/workforce/internal/skills.DeveloperReviewHandoffSkill,matrix/workforce/internal/skills.DeveloperVerifySkill,matrix/workforce/internal/skills.EffectIrreversible,matrix/workforce/internal/skills.EffectRead,matrix/workforce/internal/skills.EffectReversible,matrix/workforce/internal/skills.IdempotencyStrategy,matrix/workforce/internal/skills.Operation,matrix/workforce/internal/skills.ProbeContract,matrix/workforce/internal/skills.ResourceEstimate,matrix/workforce/internal/skills.RetryPolicy,matrix/workforce/internal/skills.ScheduleEligibility,matrix/workforce/internal/skills.contract,matrix/workforce/internal/skills.definition,matrix/workforce/internal/skills.definitions,matrix/workforce/internal/skills.developerInputSchema,matrix/workforce/internal/skills.developerOperation,matrix/workforce/internal/skills.developerOutputSchema,matrix/workforce/internal/skills.developerProbe,matrix/workforce/internal/skills.developerVerifierDigest,matrix/workforce/internal/skills.digest,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.result
+  ^calls=matrix/workforce/internal/productcapability.Pack,matrix/workforce/internal/skills.WorkforcePack
+  ^references=matrix/workforce/internal/productcapability.Pack,matrix/workforce/internal/skills.WorkforcePack
   ^defines=matrix/workforce/internal/skills/developer.go
 
 NODE id=matrix/workforce/internal/skills.DeveloperPlanSkill kind=const
   digest=b3:b7b6c18bc3e5a1d71fd0f9d3ac0538d4e1af4afef12c0d7558803d95cde6a205 file=workforce/internal/skills/developer.go range=14:14 lang=go exported=true byte_range=142:206
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/productcapability.SkillIDs,matrix/workforce/internal/skills.DeveloperPack
   ^defines=matrix/workforce/internal/skills/developer.go
 
 NODE id=matrix/workforce/internal/skills.DeveloperReviewHandoffSkill kind=const
   digest=b3:d2f17802068e1647053d7a69b94281e3ec49d15f65dc28322545adbd1c9b7363 file=workforce/internal/skills/developer.go range=17:17 lang=go exported=true byte_range=347:421
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/productcapability.SkillIDs,matrix/workforce/internal/skills.DeveloperPack
   ^defines=matrix/workforce/internal/skills/developer.go
 
 NODE id=matrix/workforce/internal/skills.DeveloperVerifySkill kind=const
   digest=b3:f89265cdb207bb9193b57865d8d909db0ad317b00a7e308368a0a0affd22b447 file=workforce/internal/skills/developer.go range=16:16 lang=go exported=true byte_range=279:345
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/productcapability.SkillIDs,matrix/workforce/internal/skills.DeveloperPack
   ^defines=matrix/workforce/internal/skills/developer.go
 
 NODE id=matrix/workforce/internal/skills.EffectClass kind=type
@@ -297,6 +360,7 @@ NODE id=matrix/workforce/internal/skills.EffectClass kind=type
   doc=EffectClass classifies the external consequence of a skill operation.
 EDGES
   contains=matrix/workforce/internal/skills.EffectClass.Valid
+  ^references=matrix/workforce/internal/effect.Operation,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/modelclient.authorizedOperation,matrix/workforce/internal/provider/customer.OperationPolicy,matrix/workforce/internal/provider/external.OperationPolicy,matrix/workforce/internal/provider/financial.OperationPolicy,matrix/workforce/internal/skills.EffectClass.Valid,matrix/workforce/internal/skills.EffectIrreversible,matrix/workforce/internal/skills.EffectRead,matrix/workforce/internal/skills.EffectReversible,matrix/workforce/internal/skills.Operation,matrix/workforce/internal/skills.developerOperation,matrix/workforce/internal/skills.irreversibleCost
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.EffectClass.Valid kind=method
@@ -304,7 +368,10 @@ NODE id=matrix/workforce/internal/skills.EffectClass.Valid kind=method
   sig=func (class EffectClass) Valid() bool
   doc=Valid reports whether the effect class is closed and recognized.
 EDGES
+  references=matrix/workforce/internal/skills.EffectClass,matrix/workforce/internal/skills.EffectIrreversible,matrix/workforce/internal/skills.EffectRead,matrix/workforce/internal/skills.EffectReversible,matrix/workforce/internal/skills.class
   ^contains=matrix/workforce/internal/skills.EffectClass
+  ^calls=matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/provider/customer.OperationPolicy.Validate,matrix/workforce/internal/provider/external.OperationPolicy.Validate,matrix/workforce/internal/provider/financial.OperationPolicy.Validate,matrix/workforce/internal/skills.Operation.validate
+  ^references=matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/provider/customer.OperationPolicy.Validate,matrix/workforce/internal/provider/external.OperationPolicy.Validate,matrix/workforce/internal/provider/financial.OperationPolicy.Validate,matrix/workforce/internal/skills.Operation.validate
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.EffectIrreversible kind=const
@@ -312,6 +379,8 @@ NODE id=matrix/workforce/internal/skills.EffectIrreversible kind=const
   sig=skills.EffectClass
   doc=EffectIrreversible is an external mutation that cannot be safely compensated.
 EDGES
+  references=matrix/workforce/internal/skills.EffectClass
+  ^references=matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/provider/customer.irreversiblePolicy,matrix/workforce/internal/provider/financial.Adapter.authorize,matrix/workforce/internal/provider/financial.OperationPolicy.Validate,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.EffectClass.Valid,matrix/workforce/internal/skills.Operation.validate,matrix/workforce/internal/skills.irreversibleCost,matrix/workforce/internal/workcompile.Compiler.Compile
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.EffectRead kind=const
@@ -319,6 +388,8 @@ NODE id=matrix/workforce/internal/skills.EffectRead kind=const
   sig=skills.EffectClass
   doc=EffectRead is an authoritative read-only observation.
 EDGES
+  references=matrix/workforce/internal/skills.EffectClass
+  ^references=matrix/workforce/internal/commercialcapability.Pack,matrix/workforce/internal/productcapability.Pack,matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/provider/customer.DefaultOperationPolicies,matrix/workforce/internal/provider/customer.OperationPolicy.Validate,matrix/workforce/internal/provider/external.OperationPolicy.Validate,matrix/workforce/internal/provider/financial.Adapter.authorize,matrix/workforce/internal/provider/financial.OperationPolicy.Validate,matrix/workforce/internal/skills.Contract.DriftBlind,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.EffectClass.Valid,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.OperationsPack
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.EffectReversible kind=const
@@ -326,6 +397,8 @@ NODE id=matrix/workforce/internal/skills.EffectReversible kind=const
   sig=skills.EffectClass
   doc=EffectReversible is an external mutation with a defined compensation.
 EDGES
+  references=matrix/workforce/internal/skills.EffectClass
+  ^references=matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/provider/customer.Connection.Validate,matrix/workforce/internal/provider/customer.OperationPolicy.Validate,matrix/workforce/internal/provider/customer.reversiblePolicies,matrix/workforce/internal/provider/customer.validateRequestGovernance,matrix/workforce/internal/provider/external.Connection.Validate,matrix/workforce/internal/provider/external.OperationPolicy.Validate,matrix/workforce/internal/provider/external.validateGovernance,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.EffectClass.Valid,matrix/workforce/internal/skills.Operation.validate
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ErrDriftBlindAutonomy kind=var
@@ -333,6 +406,7 @@ NODE id=matrix/workforce/internal/skills.ErrDriftBlindAutonomy kind=var
   sig=error
   doc=ErrDriftBlindAutonomy means an effectful skill lacks an authoritative probe.
 EDGES
+  ^references=matrix/workforce/internal/skills.Contract.AuthorizeUnattended
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ErrInvalidContract kind=var
@@ -340,30 +414,36 @@ NODE id=matrix/workforce/internal/skills.ErrInvalidContract kind=var
   sig=error
   doc=ErrInvalidContract means a skill contract is incomplete or internally inconsistent.
 EDGES
+  ^references=matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.invalid
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ErrReauthorizationRequired kind=var
   digest=b3:c57f89da540396eb07541d20c7feb7fc1468367c3361b698eec83b1af5a6d605 file=workforce/internal/skills/store.go range=25:25 lang=go exported=true byte_range=435:552
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/skills.Store.LoadAccepted
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.ErrSkillConflict kind=var
   digest=b3:cb4c19b0f0257b98243456920b18ff1ac169fe8475c7705d27f888adf6e0f7c8 file=workforce/internal/skills/store.go range=23:23 lang=go exported=true byte_range=286:363
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/skills.Store.LoadAccepted,matrix/workforce/internal/skills.Store.PublishTx,matrix/workforce/internal/skills.Store.verify
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.ErrSkillNotFound kind=var
   digest=b3:0e97c3f30337324e5b1a8dc0f080d3056e45fd5c7b6572ee9473f0c9f1708dec file=workforce/internal/skills/store.go range=24:24 lang=go exported=true byte_range=365:433
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/skills.Store.Load,matrix/workforce/internal/skills.Store.LoadCurrent
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.EvidenceReviewSkill kind=const
   digest=b3:bf15a24e8a191921e5108160f9e238cda99886623dbb7f12598be32c4b2efdce file=workforce/internal/skills/knowledge.go range=17:17 lang=go exported=true byte_range=280:340
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/modelclient.preferredOperation,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.executiveSkillIDs,matrix/workforce/internal/skills.legalSkillIDs,matrix/workforce/internal/skills.researchSkillIDs
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.ExecutiveResearchPack kind=func
@@ -371,6 +451,10 @@ NODE id=matrix/workforce/internal/skills.ExecutiveResearchPack kind=func
   sig=func ExecutiveResearchPack() ([]Contract, error)
   doc=ExecutiveResearchPack returns the deduplicated executable knowledge-work\ncontracts shared by Executive and Research and Development.
 EDGES
+  calls=matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.knowledgeInputSchema,matrix/workforce/internal/skills.knowledgeOutputSchema,matrix/workforce/internal/skills.knowledgeVerifierDigest
+  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.EffectRead,matrix/workforce/internal/skills.EvidenceReviewSkill,matrix/workforce/internal/skills.ExperimentDesignSkill,matrix/workforce/internal/skills.IdempotencyStrategy,matrix/workforce/internal/skills.Operation,matrix/workforce/internal/skills.PortfolioAnalysisSkill,matrix/workforce/internal/skills.PortfolioPlanningSkill,matrix/workforce/internal/skills.ResearchAnalysisSkill,matrix/workforce/internal/skills.ResourceEstimate,matrix/workforce/internal/skills.RetryPolicy,matrix/workforce/internal/skills.ScheduleEligibility,matrix/workforce/internal/skills.TypedHandoffSkill,matrix/workforce/internal/skills.contract,matrix/workforce/internal/skills.definition,matrix/workforce/internal/skills.definitions,matrix/workforce/internal/skills.digest,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.knowledgeInputSchema,matrix/workforce/internal/skills.knowledgeOutputSchema,matrix/workforce/internal/skills.knowledgeVerifierDigest,matrix/workforce/internal/skills.left,matrix/workforce/internal/skills.operation,matrix/workforce/internal/skills.result,matrix/workforce/internal/skills.right
+  ^calls=matrix/workforce/internal/skills.WorkforcePack
+  ^references=matrix/workforce/internal/skills.WorkforcePack
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.ExecutiveSkillIDs kind=func
@@ -378,12 +462,17 @@ NODE id=matrix/workforce/internal/skills.ExecutiveSkillIDs kind=func
   sig=func ExecutiveSkillIDs() []contracts.SkillID
   doc=ExecutiveSkillIDs returns the exact IDs allowed by seeded Executive mandates.
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.executiveSkillIDs
+  ^calls=matrix/workforce/internal/knowledgework.skillAllowed
+  ^references=matrix/workforce/internal/knowledgework.skillAllowed
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.ExperimentDesignSkill kind=const
   digest=b3:7510d8b48f1679db9d9d6d0b2d0164377be48edc5a4ff83b8a2c0c0382331941 file=workforce/internal/skills/knowledge.go range=18:18 lang=go exported=true byte_range=342:404
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/knowledgework.Draft.validate,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.researchSkillIDs
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.IdempotencyStrategy kind=type
@@ -392,6 +481,7 @@ NODE id=matrix/workforce/internal/skills.IdempotencyStrategy kind=type
   doc=IdempotencyStrategy defines the stable identity used across retries and wakes.
 EDGES
   contains=matrix/workforce/internal/skills.IdempotencyStrategy#KeyFields,matrix/workforce/internal/skills.IdempotencyStrategy#ProviderID,matrix/workforce/internal/skills.IdempotencyStrategy#Scope
+  ^references=matrix/workforce/internal/commercialcapability.Pack,matrix/workforce/internal/productcapability.Pack,matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.OperationsPack
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.IdempotencyStrategy#KeyFields kind=field
@@ -416,42 +506,64 @@ NODE id=matrix/workforce/internal/skills.IssueSpottingSkill kind=const
   digest=b3:5c8d86acae4f20fc91cbc909f55b479209a01d8969493db9b9cffdef2cbf5c3d file=workforce/internal/skills/marketinglegal.go range=22:22 lang=go exported=true byte_range=609:669
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/modelclient.preferredOperation,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.legalSkillIDs
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.JurisdictionCheckSkill kind=const
   digest=b3:377e980770561351904c7f5a449f6f19d2d46f0b746c26d25c05f7f50ab041b8 file=workforce/internal/skills/marketinglegal.go range=23:23 lang=go exported=true byte_range=671:735
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.legalSkillIDs
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.LegalSkillIDs kind=func
   digest=b3:400643339bdc91defe3f2ae840674f66f2fa35fead3c039337d7c34a5698023b file=workforce/internal/skills/marketinglegal.go range=118:120 lang=go exported=true byte_range=5000:5103
   sig=func LegalSkillIDs() []contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.legalSkillIDs
+  ^calls=matrix/workforce/internal/domainwork.domainSkillAllowed
+  ^references=matrix/workforce/internal/domainwork.domainSkillAllowed
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.MarketingLegalPack kind=func
   digest=b3:143105087f9fbc342f4ddf85a1058f7151144deb59394dbfb58908600df50867 file=workforce/internal/skills/marketinglegal.go range=36:112 lang=go exported=true byte_range=1065:4885
   sig=func MarketingLegalPack() ([]Contract, error)
 EDGES
+  calls=matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.marketingLegalInputSchema,matrix/workforce/internal/skills.marketingLegalOutputSchema,matrix/workforce/internal/skills.marketingLegalVerifierDigest
+  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.DepartmentLegal,matrix/workforce/internal/contracts.DepartmentMarketing,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.CampaignOperationsSkill,matrix/workforce/internal/skills.CampaignResearchSkill,matrix/workforce/internal/skills.ChannelEvidenceSkill,matrix/workforce/internal/skills.ComplianceWorkflowSkill,matrix/workforce/internal/skills.ContentOperationsSkill,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.ContractAnalysisSkill,matrix/workforce/internal/skills.EffectRead,matrix/workforce/internal/skills.IdempotencyStrategy,matrix/workforce/internal/skills.IssueSpottingSkill,matrix/workforce/internal/skills.JurisdictionCheckSkill,matrix/workforce/internal/skills.Operation,matrix/workforce/internal/skills.PublicationGatesSkill,matrix/workforce/internal/skills.ResourceEstimate,matrix/workforce/internal/skills.RetryPolicy,matrix/workforce/internal/skills.ScheduleEligibility,matrix/workforce/internal/skills.contract,matrix/workforce/internal/skills.definition,matrix/workforce/internal/skills.definitions,matrix/workforce/internal/skills.digest,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.inputSchema,matrix/workforce/internal/skills.left,matrix/workforce/internal/skills.marketingLegalInputSchema,matrix/workforce/internal/skills.marketingLegalOutputSchema,matrix/workforce/internal/skills.marketingLegalVerifierDigest,matrix/workforce/internal/skills.operation,matrix/workforce/internal/skills.outputSchema,matrix/workforce/internal/skills.result,matrix/workforce/internal/skills.right
+  ^calls=matrix/workforce/internal/skills.WorkforcePack
+  ^references=matrix/workforce/internal/skills.WorkforcePack
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.MarketingSkillIDs kind=func
   digest=b3:8b0873be1f7442c78c25fcfd4ea419d239fbb49bf1ed4c2ad9eeb508c5cce5f2 file=workforce/internal/skills/marketinglegal.go range=114:116 lang=go exported=true byte_range=4887:4998
   sig=func MarketingSkillIDs() []contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.marketingSkillIDs
+  ^calls=matrix/workforce/internal/domainwork.domainSkillAllowed
+  ^references=matrix/workforce/internal/domainwork.domainSkillAllowed
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.NewCatalog kind=func
   digest=b3:9bf46d18048f20628d040f7ae414e44be5e83bd3d0fd6e34edc4d0c3c4bb767a file=workforce/internal/skills/catalog.go range=43:75 lang=go exported=true byte_range=954:1992
   sig=func NewCatalog(values []Contract) (*Catalog, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.copyContract
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.Catalog,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.byID,matrix/workforce/internal/skills.canonical,matrix/workforce/internal/skills.catalogEntry,matrix/workforce/internal/skills.catalogEnvelope,matrix/workforce/internal/skills.copyContract,matrix/workforce/internal/skills.entries,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.exists,matrix/workforce/internal/skills.i,matrix/workforce/internal/skills.j,matrix/workforce/internal/skills.sum,matrix/workforce/internal/skills.value,matrix/workforce/internal/skills.values
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/cmd/workforced.runContext
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/cmd/workforced.runContext
   ^defines=matrix/workforce/internal/skills/catalog.go
 
 NODE id=matrix/workforce/internal/skills.NewStore kind=func
   digest=b3:4a9e8abad54bed68c9a608d538271d00ddce5b9aa4430fe42030dd70cfdf33df file=workforce/internal/skills/store.go range=57:78 lang=go exported=true byte_range=1542:2254
   sig=func NewStore(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	keyID string,\n	publicKey ed25519.PublicKey,\n	now func() time.Time,\n) (*Store, error)
 EDGES
+  calls=matrix/vault.UserVault.User
+  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/skills.Store,matrix/workforce/internal/skills.keyID,matrix/workforce/internal/skills.now,matrix/workforce/internal/skills.organizationID,matrix/workforce/internal/skills.pool,matrix/workforce/internal/skills.publicKey,matrix/workforce/internal/skills.tenantID,matrix/workforce/internal/skills.userVault
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/controlapi.Service.ActivateOrganization
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/controlapi.Service.ActivateOrganization
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.Operation kind=type
@@ -460,6 +572,8 @@ NODE id=matrix/workforce/internal/skills.Operation kind=type
   doc=Operation defines one executable operation within a skill.
 EDGES
   contains=matrix/workforce/internal/skills.Operation#Capability,matrix/workforce/internal/skills.Operation#Compensation,matrix/workforce/internal/skills.Operation#CostMicrounits,matrix/workforce/internal/skills.Operation#DataScopes,matrix/workforce/internal/skills.Operation#EffectClass,matrix/workforce/internal/skills.Operation#IdempotencyField,matrix/workforce/internal/skills.Operation#InputSchema,matrix/workforce/internal/skills.Operation#Name,matrix/workforce/internal/skills.Operation#OutputSchema,matrix/workforce/internal/skills.Operation#Providers,matrix/workforce/internal/skills.Operation#ResourceUnits,matrix/workforce/internal/skills.Operation.ApprovalCost,matrix/workforce/internal/skills.Operation.AuthorizesProvider,matrix/workforce/internal/skills.Operation.validate
+  references=matrix/workforce/internal/skills.EffectClass
+  ^references=matrix/workforce/internal/commercialcapability.Pack,matrix/workforce/internal/productcapability.Pack,matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.Operation.ApprovalCost,matrix/workforce/internal/skills.Operation.AuthorizesProvider,matrix/workforce/internal/skills.Operation.validate,matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.copyContract,matrix/workforce/internal/skills.developerOperation,matrix/workforce/internal/workcompile.digestOperation,matrix/workforce/internal/workcompile.findOperation
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.Operation#Capability kind=field
@@ -535,7 +649,10 @@ NODE id=matrix/workforce/internal/skills.Operation.ApprovalCost kind=method
   sig=func (operation Operation) ApprovalCost() uint64
   doc=ApprovalCost returns the exact owner-signed cost of running this operation.
 EDGES
+  references=matrix/workforce/internal/skills.Operation,matrix/workforce/internal/skills.operation
   ^contains=matrix/workforce/internal/skills.Operation
+  ^calls=matrix/workforce/internal/skills.Operation.validate,matrix/workforce/internal/workcompile.Compiler.Compile
+  ^references=matrix/workforce/internal/skills.Operation.validate,matrix/workforce/internal/workcompile.Compiler.Compile
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.Operation.AuthorizesProvider kind=method
@@ -543,38 +660,55 @@ NODE id=matrix/workforce/internal/skills.Operation.AuthorizesProvider kind=metho
   sig=func (operation Operation) AuthorizesProvider(provider string) bool
   doc=AuthorizesProvider reports whether the owner signed this operation for the\nexact adapter.
 EDGES
+  references=matrix/workforce/internal/skills.Operation,matrix/workforce/internal/skills.candidate,matrix/workforce/internal/skills.operation,matrix/workforce/internal/skills.provider
   ^contains=matrix/workforce/internal/skills.Operation
+  ^calls=matrix/workforce/internal/workcompile.Compiler.Compile
+  ^references=matrix/workforce/internal/workcompile.Compiler.Compile
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.Operation.validate kind=method
   digest=b3:63e7f8324f8df011b2ada80d36d6b89189f2b5e12e8cc0f04156f10da109019c file=workforce/internal/skills/types.go range=301:349 lang=go exported=false byte_range=10254:11885
   sig=func (operation Operation) validate() error
 EDGES
+  calls=matrix/workforce/internal/skills.EffectClass.Valid,matrix/workforce/internal/skills.Operation.ApprovalCost,matrix/workforce/internal/skills.invalid,matrix/workforce/internal/skills.nonemptyTokens,matrix/workforce/internal/skills.schema,matrix/workforce/internal/skills.token
+  references=matrix/workforce/internal/skills.EffectClass.Valid,matrix/workforce/internal/skills.EffectIrreversible,matrix/workforce/internal/skills.EffectReversible,matrix/workforce/internal/skills.Operation,matrix/workforce/internal/skills.Operation.ApprovalCost,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.invalid,matrix/workforce/internal/skills.nonemptyTokens,matrix/workforce/internal/skills.operation,matrix/workforce/internal/skills.schema,matrix/workforce/internal/skills.token
   ^contains=matrix/workforce/internal/skills.Operation
+  ^calls=matrix/workforce/internal/skills.Contract.Validate
+  ^references=matrix/workforce/internal/skills.Contract.Validate
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.OperationsPack kind=func
   digest=b3:35e8b06c907a68c797529bd13447869a6b1cd198568498139d72209b7f440d97 file=workforce/internal/skills/operations.go range=37:116 lang=go exported=true byte_range=1109:4380
   sig=func OperationsPack() ([]Contract, error)
 EDGES
+  calls=matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.operationsInputSchema,matrix/workforce/internal/skills.operationsOutputSchema,matrix/workforce/internal/skills.operationsVerifierDigest
+  references=matrix/workforce/internal/contracts.DepartmentAccounting,matrix/workforce/internal/contracts.DepartmentBackOffice,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.AdministrativeWorkflowSkill,matrix/workforce/internal/skills.BookkeepingSkill,matrix/workforce/internal/skills.CloseWorkflowSkill,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.EffectRead,matrix/workforce/internal/skills.IdempotencyStrategy,matrix/workforce/internal/skills.Operation,matrix/workforce/internal/skills.PaymentProposalSkill,matrix/workforce/internal/skills.ReconciliationSkill,matrix/workforce/internal/skills.RecordsSkill,matrix/workforce/internal/skills.ReportingSkill,matrix/workforce/internal/skills.ResourceEstimate,matrix/workforce/internal/skills.RetryPolicy,matrix/workforce/internal/skills.SLATrackingSkill,matrix/workforce/internal/skills.ScheduleEligibility,matrix/workforce/internal/skills.SchedulingSkill,matrix/workforce/internal/skills.VendorCoordinationSkill,matrix/workforce/internal/skills.contract,matrix/workforce/internal/skills.definition,matrix/workforce/internal/skills.definitions,matrix/workforce/internal/skills.digest,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.input,matrix/workforce/internal/skills.left,matrix/workforce/internal/skills.operationsInputSchema,matrix/workforce/internal/skills.operationsOutputSchema,matrix/workforce/internal/skills.operationsVerifierDigest,matrix/workforce/internal/skills.output,matrix/workforce/internal/skills.result,matrix/workforce/internal/skills.right
+  ^calls=matrix/workforce/internal/skills.WorkforcePack
+  ^references=matrix/workforce/internal/skills.WorkforcePack
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.PaymentProposalSkill kind=const
   digest=b3:ed517a90ec94b493756209996f0abfc77d0998ffd95987bc79ca5a8bdb017e8d file=workforce/internal/skills/operations.go range=17:17 lang=go exported=true byte_range=279:345
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/operationswork.AccountingDraft.validate,matrix/workforce/internal/operationswork.Service.Execute,matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.accountingSkillIDs
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.PortfolioAnalysisSkill kind=const
   digest=b3:85ce138f8431e7d31a21a25798cb586b22dcc9702ca461b581945f9b3bf18a68 file=workforce/internal/skills/knowledge.go range=16:16 lang=go exported=true byte_range=215:278
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.executiveSkillIDs
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.PortfolioPlanningSkill kind=const
   digest=b3:9383d1b9b0bb8203f6fa8d523d221ceca07fab7eed5cfdabf04e75b8fa861d53 file=workforce/internal/skills/knowledge.go range=15:15 lang=go exported=true byte_range=150:213
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.executiveSkillIDs
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.ProbeCompletedOutOfBand kind=const
@@ -582,6 +716,8 @@ NODE id=matrix/workforce/internal/skills.ProbeCompletedOutOfBand kind=const
   sig=skills.ProbeOutcome
   doc=ProbeCompletedOutOfBand means the intended effect completed outside this wake.
 EDGES
+  references=matrix/workforce/internal/skills.ProbeOutcome
+  ^references=matrix/workforce/internal/commercialcapability.Adapter.Probe,matrix/workforce/internal/departmentadapter.Adapter.Probe,matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.probeSourceChanges,matrix/workforce/internal/effect.CommandAdapter.Probe,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/productcapability.Adapter.Probe,matrix/workforce/internal/provider/developer.Adapter.Probe,matrix/workforce/internal/provider/external.Adapter.Probe,matrix/workforce/internal/provider/financial.Adapter.Probe,matrix/workforce/internal/reconcile.Service.Sweep,matrix/workforce/internal/reconcile.aggregate,matrix/workforce/internal/skills.ProbeOutcome.Valid
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ProbeConflicted kind=const
@@ -589,6 +725,8 @@ NODE id=matrix/workforce/internal/skills.ProbeConflicted kind=const
   sig=skills.ProbeOutcome
   doc=ProbeConflicted means another actor produced incompatible external state.
 EDGES
+  references=matrix/workforce/internal/skills.ProbeOutcome
+  ^references=matrix/workforce/internal/developer.probeSourceChanges,matrix/workforce/internal/provider/external.Adapter.Probe,matrix/workforce/internal/reconcile.aggregate,matrix/workforce/internal/skills.ProbeOutcome.Valid
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ProbeContract kind=type
@@ -597,6 +735,8 @@ NODE id=matrix/workforce/internal/skills.ProbeContract kind=type
   doc=ProbeContract defines one read-only authoritative reconciliation operation.
 EDGES
   contains=matrix/workforce/internal/skills.ProbeContract#Authoritative,matrix/workforce/internal/skills.ProbeContract#Authority,matrix/workforce/internal/skills.ProbeContract#Operation,matrix/workforce/internal/skills.ProbeContract#OutputSchema,matrix/workforce/internal/skills.ProbeContract#ReadOnly,matrix/workforce/internal/skills.ProbeContract#Timeout,matrix/workforce/internal/skills.ProbeContract#UnavailableMeans,matrix/workforce/internal/skills.ProbeContract#VerifierDigest,matrix/workforce/internal/skills.ProbeContract.validate
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/skills.ProbeOutcome
+  ^references=matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ProbeContract.validate,matrix/workforce/internal/skills.developerProbe
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ProbeContract#Authoritative kind=field
@@ -651,7 +791,11 @@ NODE id=matrix/workforce/internal/skills.ProbeContract.validate kind=method
   digest=b3:8e26a4c031c6b342be67e86715c486ac3545d38ec672da786e51e2baaed23493 file=workforce/internal/skills/types.go range=351:375 lang=go exported=false byte_range=11887:12744
   sig=func (probe ProbeContract) validate(operations map[string]bool) error
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/skills.invalid,matrix/workforce/internal/skills.schema,matrix/workforce/internal/skills.token
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/skills.ProbeContract,matrix/workforce/internal/skills.ProbeUnknown,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.invalid,matrix/workforce/internal/skills.operations,matrix/workforce/internal/skills.probe,matrix/workforce/internal/skills.schema,matrix/workforce/internal/skills.token
   ^contains=matrix/workforce/internal/skills.ProbeContract
+  ^calls=matrix/workforce/internal/skills.Contract.Validate
+  ^references=matrix/workforce/internal/skills.Contract.Validate
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ProbeDrifted kind=const
@@ -659,6 +803,8 @@ NODE id=matrix/workforce/internal/skills.ProbeDrifted kind=const
   sig=skills.ProbeOutcome
   doc=ProbeDrifted means external state materially diverged without a direct conflict.
 EDGES
+  references=matrix/workforce/internal/skills.ProbeOutcome
+  ^references=matrix/workforce/internal/provider/external.Adapter.Probe,matrix/workforce/internal/reconcile.aggregate,matrix/workforce/internal/skills.ProbeOutcome.Valid
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ProbeOutcome kind=type
@@ -667,6 +813,7 @@ NODE id=matrix/workforce/internal/skills.ProbeOutcome kind=type
   doc=ProbeOutcome is the closed authoritative reconciliation result set.
 EDGES
   contains=matrix/workforce/internal/skills.ProbeOutcome.Valid
+  ^references=matrix/workforce/internal/developer.probeSourceChanges,matrix/workforce/internal/effect.CommandAdapter.Probe,matrix/workforce/internal/effect.Gateway.setProbe,matrix/workforce/internal/effect.Gateway.setProbeOutcome,matrix/workforce/internal/effect.ProbeResult,matrix/workforce/internal/effect.Result,matrix/workforce/internal/reconcile.Event,matrix/workforce/internal/reconcile.Service.Sweep,matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/reconcile.aggregate,matrix/workforce/internal/skills.ProbeCompletedOutOfBand,matrix/workforce/internal/skills.ProbeConflicted,matrix/workforce/internal/skills.ProbeContract,matrix/workforce/internal/skills.ProbeDrifted,matrix/workforce/internal/skills.ProbeOutcome.Valid,matrix/workforce/internal/skills.ProbeReversed,matrix/workforce/internal/skills.ProbeUnchanged,matrix/workforce/internal/skills.ProbeUnknown
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ProbeOutcome.Valid kind=method
@@ -674,7 +821,10 @@ NODE id=matrix/workforce/internal/skills.ProbeOutcome.Valid kind=method
   sig=func (outcome ProbeOutcome) Valid() bool
   doc=Valid reports whether the probe outcome is part of the closed contract.
 EDGES
+  references=matrix/workforce/internal/skills.ProbeCompletedOutOfBand,matrix/workforce/internal/skills.ProbeConflicted,matrix/workforce/internal/skills.ProbeDrifted,matrix/workforce/internal/skills.ProbeOutcome,matrix/workforce/internal/skills.ProbeReversed,matrix/workforce/internal/skills.ProbeUnchanged,matrix/workforce/internal/skills.ProbeUnknown,matrix/workforce/internal/skills.outcome
   ^contains=matrix/workforce/internal/skills.ProbeOutcome
+  ^calls=matrix/workforce/internal/effect.CommandAdapter.Probe,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.setProbe,matrix/workforce/internal/effect.Gateway.setProbeOutcome,matrix/workforce/internal/provider/customer.Adapter.Probe,matrix/workforce/internal/reconcile.Service.Sweep
+  ^references=matrix/workforce/internal/effect.CommandAdapter.Probe,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.setProbe,matrix/workforce/internal/effect.Gateway.setProbeOutcome,matrix/workforce/internal/provider/customer.Adapter.Probe,matrix/workforce/internal/reconcile.Service.Sweep
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ProbeReversed kind=const
@@ -682,6 +832,8 @@ NODE id=matrix/workforce/internal/skills.ProbeReversed kind=const
   sig=skills.ProbeOutcome
   doc=ProbeReversed means an earlier observed effect was subsequently undone.
 EDGES
+  references=matrix/workforce/internal/skills.ProbeOutcome
+  ^references=matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/provider/external.Adapter.Probe,matrix/workforce/internal/reconcile.aggregate,matrix/workforce/internal/skills.ProbeOutcome.Valid
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ProbeUnchanged kind=const
@@ -689,6 +841,8 @@ NODE id=matrix/workforce/internal/skills.ProbeUnchanged kind=const
   sig=skills.ProbeOutcome
   doc=ProbeUnchanged means the external state still matches the last observation.
 EDGES
+  references=matrix/workforce/internal/skills.ProbeOutcome
+  ^references=matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.probeSourceChanges,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/provider/external.Adapter.Probe,matrix/workforce/internal/provider/financial.Adapter.Probe,matrix/workforce/internal/reconcile.Service.Sweep,matrix/workforce/internal/reconcile.aggregate,matrix/workforce/internal/skills.ProbeOutcome.Valid
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ProbeUnknown kind=const
@@ -696,36 +850,48 @@ NODE id=matrix/workforce/internal/skills.ProbeUnknown kind=const
   sig=skills.ProbeOutcome
   doc=ProbeUnknown means the authoritative external state cannot be established.
 EDGES
+  references=matrix/workforce/internal/skills.ProbeOutcome
+  ^references=matrix/workforce/internal/commercialcapability.Adapter.Probe,matrix/workforce/internal/departmentadapter.Adapter.Probe,matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.probeSourceChanges,matrix/workforce/internal/effect.CommandAdapter.Probe,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/productcapability.Adapter.Probe,matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/provider/customer.Adapter.Probe,matrix/workforce/internal/provider/developer.Adapter.Probe,matrix/workforce/internal/provider/external.Adapter.Probe,matrix/workforce/internal/provider/financial.Adapter.Probe,matrix/workforce/internal/reconcile.Service.Sweep,matrix/workforce/internal/reconcile.aggregate,matrix/workforce/internal/skills.ProbeContract.validate,matrix/workforce/internal/skills.ProbeOutcome.Valid,matrix/workforce/internal/skills.developerProbe
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.PublicationGatesSkill kind=const
   digest=b3:a3e04e32857a8675dd8c687add0e87c3c26d96b8c584e357693991d838991e7f file=workforce/internal/skills/marketinglegal.go range=19:19 lang=go exported=true byte_range=412:475
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/domainwork.Draft.validate,matrix/workforce/internal/domainwork.Service.Execute,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.marketingSkillIDs
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.ReconciliationSkill kind=const
   digest=b3:887a9b97855be32f2b38dc9d667dddd32ccee21341120f9712e225dbfb234daa file=workforce/internal/skills/operations.go range=18:18 lang=go exported=true byte_range=347:411
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/operationswork.AccountingDraft.validate,matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.accountingSkillIDs
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.RecordsSkill kind=const
   digest=b3:53dce26b8db92bddd86c2f09d056a68b350e319ea5070ac14ace59fecc839ca6 file=workforce/internal/skills/operations.go range=21:21 lang=go exported=true byte_range=549:606
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/modelclient.preferredOperation,matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.backOfficeSkillIDs
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.ReportingSkill kind=const
   digest=b3:b46d02806a1c6bd2f100bb8c0aa013ed8a557adec76369875a68b73d4d388299 file=workforce/internal/skills/operations.go range=19:19 lang=go exported=true byte_range=413:472
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/modelclient.preferredOperation,matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.accountingSkillIDs
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.ResearchAnalysisSkill kind=const
   digest=b3:c4ed0e0c085e1157e1b70442a1281566dd6184ba625dbd7a3a2ace61893d65f9 file=workforce/internal/skills/knowledge.go range=19:19 lang=go exported=true byte_range=406:468
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/modelclient.preferredOperation,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.researchSkillIDs
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.ResearchSkillIDs kind=func
@@ -733,6 +899,9 @@ NODE id=matrix/workforce/internal/skills.ResearchSkillIDs kind=func
   sig=func ResearchSkillIDs() []contracts.SkillID
   doc=ResearchSkillIDs returns the exact IDs allowed by seeded R&D mandates.
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.researchSkillIDs
+  ^calls=matrix/workforce/internal/knowledgework.skillAllowed
+  ^references=matrix/workforce/internal/knowledgework.skillAllowed
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.ResourceEstimate kind=type
@@ -741,6 +910,7 @@ NODE id=matrix/workforce/internal/skills.ResourceEstimate kind=type
   doc=ResourceEstimate declares bounded cost used by deterministic admission.
 EDGES
   contains=matrix/workforce/internal/skills.ResourceEstimate#CostMicros,matrix/workforce/internal/skills.ResourceEstimate#EffectCalls,matrix/workforce/internal/skills.ResourceEstimate#MaxDuration,matrix/workforce/internal/skills.ResourceEstimate#MemoryBytes,matrix/workforce/internal/skills.ResourceEstimate#ModelCalls
+  ^references=matrix/workforce/internal/commercialcapability.Checkpoint,matrix/workforce/internal/commercialcapability.EstimateResources,matrix/workforce/internal/commercialcapability.QualificationProfile,matrix/workforce/internal/commercialcapability.ResourceUsage.Fits,matrix/workforce/internal/commercialcapability.definition,matrix/workforce/internal/commercialcapability.skillDefinition,matrix/workforce/internal/productcapability.EstimateResources,matrix/workforce/internal/productcapability.definition,matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/productcapability.skillDefinition,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/workcompile.Plan
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ResourceEstimate#CostMicros kind=field
@@ -779,6 +949,7 @@ NODE id=matrix/workforce/internal/skills.RetryPolicy kind=type
   doc=RetryPolicy bounds attempts and declares which outcomes may retry.
 EDGES
   contains=matrix/workforce/internal/skills.RetryPolicy#Backoff,matrix/workforce/internal/skills.RetryPolicy#MaxAttempts,matrix/workforce/internal/skills.RetryPolicy#RetryOn
+  ^references=matrix/workforce/internal/commercialcapability.Pack,matrix/workforce/internal/productcapability.Pack,matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.OperationsPack
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.RetryPolicy#Backoff kind=field
@@ -803,6 +974,8 @@ NODE id=matrix/workforce/internal/skills.SLATrackingSkill kind=const
   digest=b3:80987db10e4d18ddfe9b6ccc845b54fa51ca5c12f2a0b355b4a2a1881260c2e9 file=workforce/internal/skills/operations.go range=23:23 lang=go exported=true byte_range=670:732
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.backOfficeSkillIDs
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.ScheduleEligibility kind=type
@@ -811,6 +984,7 @@ NODE id=matrix/workforce/internal/skills.ScheduleEligibility kind=type
   doc=ScheduleEligibility bounds the wake reasons under which the skill may run.
 EDGES
   contains=matrix/workforce/internal/skills.ScheduleEligibility#QuietHours,matrix/workforce/internal/skills.ScheduleEligibility#WakeReasons
+  ^references=matrix/workforce/internal/commercialcapability.Pack,matrix/workforce/internal/productcapability.Pack,matrix/workforce/internal/productcapability.deploymentContract,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.OperationsPack
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.ScheduleEligibility#QuietHours kind=field
@@ -829,12 +1003,16 @@ NODE id=matrix/workforce/internal/skills.SchedulingSkill kind=const
   digest=b3:d9adc6abb95d77ae3ee20047598a828cdc6c94fc3bfb5fbaedf333fbcdc717c0 file=workforce/internal/skills/operations.go range=22:22 lang=go exported=true byte_range=608:668
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.backOfficeSkillIDs
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.SignContract kind=func
   digest=b3:05a76effe526bd60aea69903b74b8837d3f5ffc056e740e031a651f9822769f5 file=workforce/internal/skills/store.go range=80:98 lang=go exported=true byte_range=2256:2803
   sig=func SignContract(\n	value *SignedContract,\n	keyID string,\n	privateKey ed25519.PrivateKey,\n) error
 EDGES
+  calls=matrix/workforce/internal/skills.SignedContract.Validate,matrix/workforce/internal/skills.placeholderSignature
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/skills.SignedContract,matrix/workforce/internal/skills.SignedContract.Validate,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.keyID,matrix/workforce/internal/skills.payload,matrix/workforce/internal/skills.placeholderSignature,matrix/workforce/internal/skills.privateKey,matrix/workforce/internal/skills.value
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.SignedContract kind=type
@@ -843,6 +1021,8 @@ NODE id=matrix/workforce/internal/skills.SignedContract kind=type
 EDGES
   contains=matrix/workforce/internal/skills.SignedContract#Contract,matrix/workforce/internal/skills.SignedContract#EffectiveAt,matrix/workforce/internal/skills.SignedContract#OrganizationID,matrix/workforce/internal/skills.SignedContract#SchemaVersion,matrix/workforce/internal/skills.SignedContract#Signature,matrix/workforce/internal/skills.SignedContract.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/skills.Contract
+  ^references=matrix/workforce/internal/controlapi.ActivationBundle,matrix/workforce/internal/controlapi.ActivationPreview,matrix/workforce/internal/controlapi.Service.PreviewActivation,matrix/workforce/internal/modelclient.Client.Complete,matrix/workforce/internal/modelclient.authorizedOperations,matrix/workforce/internal/modelclient.requestEvidence,matrix/workforce/internal/skills.SignContract,matrix/workforce/internal/skills.SignedContract.Validate,matrix/workforce/internal/skills.Store.Load,matrix/workforce/internal/skills.Store.LoadAccepted,matrix/workforce/internal/skills.Store.LoadCurrent,matrix/workforce/internal/skills.Store.Publish,matrix/workforce/internal/skills.Store.PublishTx,matrix/workforce/internal/skills.Store.verify,matrix/workforce/internal/wakeruntime.Runner.propose
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.SignedContract#Contract kind=field
@@ -879,7 +1059,11 @@ NODE id=matrix/workforce/internal/skills.SignedContract.Validate kind=method
   digest=b3:5c42f2025e60b5ac393b3a1404fa6469a7d24d54c1a810d7f97b35b63f87c961 file=workforce/internal/skills/store.go range=36:45 lang=go exported=true byte_range=901:1300
   sig=func (value SignedContract) Validate() error
 EDGES
+  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/skills.Contract.Validate
+  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.SignedContract,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.value
   ^contains=matrix/workforce/internal/skills.SignedContract
+  ^calls=matrix/workforce/internal/modelclient.Client.Complete,matrix/workforce/internal/skills.SignContract,matrix/workforce/internal/skills.Store.Load,matrix/workforce/internal/skills.Store.PublishTx
+  ^references=matrix/workforce/internal/modelclient.Client.Complete,matrix/workforce/internal/skills.SignContract,matrix/workforce/internal/skills.Store.Load,matrix/workforce/internal/skills.Store.PublishTx
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.Store kind=type
@@ -887,6 +1071,8 @@ NODE id=matrix/workforce/internal/skills.Store kind=type
   sig=type Store struct {\n	pool		*pgxpool.Pool\n	vault		*vault.UserVault\n	tenantID	string\n	organizationID	contracts.OrganizationID\n	keyID		string\n	publicKey	ed25519.PublicKey\n	now		func() time.Time\n}
 EDGES
   contains=matrix/workforce/internal/skills.Store#keyID,matrix/workforce/internal/skills.Store#now,matrix/workforce/internal/skills.Store#organizationID,matrix/workforce/internal/skills.Store#pool,matrix/workforce/internal/skills.Store#publicKey,matrix/workforce/internal/skills.Store#tenantID,matrix/workforce/internal/skills.Store#vault,matrix/workforce/internal/skills.Store.Load,matrix/workforce/internal/skills.Store.LoadAccepted,matrix/workforce/internal/skills.Store.LoadCurrent,matrix/workforce/internal/skills.Store.Publish,matrix/workforce/internal/skills.Store.PublishTx,matrix/workforce/internal/skills.Store.ad,matrix/workforce/internal/skills.Store.verify
+  references=matrix/vault.UserVault,matrix/workforce/internal/contracts.OrganizationID
+  ^references=matrix/workforce/internal/skills.NewStore,matrix/workforce/internal/skills.Store.Load,matrix/workforce/internal/skills.Store.LoadAccepted,matrix/workforce/internal/skills.Store.LoadCurrent,matrix/workforce/internal/skills.Store.Publish,matrix/workforce/internal/skills.Store.PublishTx,matrix/workforce/internal/skills.Store.ad,matrix/workforce/internal/skills.Store.verify,matrix/workforce/internal/wakeruntime.Runner,matrix/workforce/internal/workcompile.Compiler,matrix/workforce/internal/workcompile.New
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.Store#keyID kind=field
@@ -935,20 +1121,30 @@ NODE id=matrix/workforce/internal/skills.Store.Load kind=method
   digest=b3:f8d81b4a01ee56f67bd0c35e4a5d8babcd0b14bc2c6b5e54e7b8dfb13765d320 file=workforce/internal/skills/store.go range=219:248 lang=go exported=true byte_range=6843:7856
   sig=func (store *Store) Load(\n	ctx context.Context,\n	id contracts.SkillID,\n	version uint64,\n) (SignedContract, error)
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/skills.SignedContract.Validate,matrix/workforce/internal/skills.Store.ad,matrix/workforce/internal/skills.Store.verify
+  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.ErrSkillNotFound,matrix/workforce/internal/skills.SignedContract,matrix/workforce/internal/skills.SignedContract.Validate,matrix/workforce/internal/skills.Store,matrix/workforce/internal/skills.Store.ad,matrix/workforce/internal/skills.Store.verify,matrix/workforce/internal/skills.ctx,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.id,matrix/workforce/internal/skills.opened,matrix/workforce/internal/skills.sealed,matrix/workforce/internal/skills.store,matrix/workforce/internal/skills.value,matrix/workforce/internal/skills.version
   ^contains=matrix/workforce/internal/skills.Store
+  ^calls=matrix/workforce/internal/skills.Store.LoadAccepted,matrix/workforce/internal/skills.Store.LoadCurrent
+  ^references=matrix/workforce/internal/skills.Store.LoadAccepted,matrix/workforce/internal/skills.Store.LoadCurrent
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.Store.LoadAccepted kind=method
   digest=b3:db12d6e138ffd6ff9b73ac2762982b32cc8e3736b8e51480cb8b96e6db019a66 file=workforce/internal/skills/store.go range=268:295 lang=go exported=true byte_range=8365:9164
   sig=func (store *Store) LoadAccepted(\n	ctx context.Context,\n	reference contracts.SkillRef,\n) (SignedContract, error)
 EDGES
+  calls=matrix/workforce/internal/skills.Store.Load
+  references=matrix/workforce/internal/contracts.SkillRef,matrix/workforce/internal/skills.ErrReauthorizationRequired,matrix/workforce/internal/skills.ErrSkillConflict,matrix/workforce/internal/skills.SignedContract,matrix/workforce/internal/skills.Store,matrix/workforce/internal/skills.Store.Load,matrix/workforce/internal/skills.ctx,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.materialNewer,matrix/workforce/internal/skills.reference,matrix/workforce/internal/skills.store,matrix/workforce/internal/skills.value
   ^contains=matrix/workforce/internal/skills.Store
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.propose,matrix/workforce/internal/workcompile.Compiler.Compile
+  ^references=matrix/workforce/internal/wakeruntime.Runner.propose,matrix/workforce/internal/workcompile.Compiler.Compile
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.Store.LoadCurrent kind=method
   digest=b3:18b9c7bc11777bb1df61cce72225c4675362097199d4b18b8f5f8ee4d7f4eed5 file=workforce/internal/skills/store.go range=250:266 lang=go exported=true byte_range=7858:8363
   sig=func (store *Store) LoadCurrent(\n	ctx context.Context,\n	id contracts.SkillID,\n) (SignedContract, error)
 EDGES
+  calls=matrix/workforce/internal/skills.Store.Load
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.ErrSkillNotFound,matrix/workforce/internal/skills.SignedContract,matrix/workforce/internal/skills.Store,matrix/workforce/internal/skills.Store.Load,matrix/workforce/internal/skills.ctx,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.id,matrix/workforce/internal/skills.store,matrix/workforce/internal/skills.version
   ^contains=matrix/workforce/internal/skills.Store
   ^defines=matrix/workforce/internal/skills/store.go
 
@@ -956,6 +1152,8 @@ NODE id=matrix/workforce/internal/skills.Store.Publish kind=method
   digest=b3:a801e15f93752b87e8625a69da3059c5f494f7891f1c5e5fa94eabfc876c4e73 file=workforce/internal/skills/store.go range=100:114 lang=go exported=true byte_range=2805:3293
   sig=func (store *Store) Publish(ctx context.Context, value SignedContract) error
 EDGES
+  calls=matrix/workforce/internal/skills.Store.PublishTx
+  references=matrix/workforce/internal/skills.SignedContract,matrix/workforce/internal/skills.Store,matrix/workforce/internal/skills.Store.PublishTx,matrix/workforce/internal/skills.ctx,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.now,matrix/workforce/internal/skills.store,matrix/workforce/internal/skills.tx,matrix/workforce/internal/skills.value
   ^contains=matrix/workforce/internal/skills.Store
   ^defines=matrix/workforce/internal/skills/store.go
 
@@ -964,33 +1162,48 @@ NODE id=matrix/workforce/internal/skills.Store.PublishTx kind=method
   sig=func (store *Store) PublishTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	value SignedContract,\n	now time.Time,\n) error
   doc=PublishTx installs one exact owner-signed skill contract inside an owning\nserializable transaction.
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/vault.UserVault.SealRecord,matrix/workforce/internal/skills.SignedContract.Validate,matrix/workforce/internal/skills.Store.ad,matrix/workforce/internal/skills.Store.verify,matrix/workforce/internal/skills.compatibilityDigest
+  references=matrix/vault.UserVault.OpenRecord,matrix/vault.UserVault.SealRecord,matrix/workforce/internal/skills.ErrSkillConflict,matrix/workforce/internal/skills.SignedContract,matrix/workforce/internal/skills.SignedContract.Validate,matrix/workforce/internal/skills.Store,matrix/workforce/internal/skills.Store.ad,matrix/workforce/internal/skills.Store.verify,matrix/workforce/internal/skills.compatibility,matrix/workforce/internal/skills.compatibilityDigest,matrix/workforce/internal/skills.ctx,matrix/workforce/internal/skills.encoded,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.existingBytes,matrix/workforce/internal/skills.existingDigest,matrix/workforce/internal/skills.existingSealed,matrix/workforce/internal/skills.head,matrix/workforce/internal/skills.material,matrix/workforce/internal/skills.now,matrix/workforce/internal/skills.openErr,matrix/workforce/internal/skills.priorCompatibility,matrix/workforce/internal/skills.sealed,matrix/workforce/internal/skills.store,matrix/workforce/internal/skills.tx,matrix/workforce/internal/skills.value
   ^contains=matrix/workforce/internal/skills.Store
+  ^calls=matrix/workforce/internal/skills.Store.Publish
+  ^references=matrix/workforce/internal/controlapi.Service.ActivateOrganization,matrix/workforce/internal/skills.Store.Publish
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.Store.ad kind=method
   digest=b3:ebf0876d95374d572970fe36a6accabcba9ac50a884067d5a927d5627173f1e2 file=workforce/internal/skills/store.go range=333:339 lang=go exported=false byte_range=10232:10509
   sig=func (store *Store) ad(id contracts.SkillID, version uint64) vault.AD
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.Store,matrix/workforce/internal/skills.id,matrix/workforce/internal/skills.store,matrix/workforce/internal/skills.version
   ^contains=matrix/workforce/internal/skills.Store
+  ^calls=matrix/workforce/internal/skills.Store.Load,matrix/workforce/internal/skills.Store.PublishTx
+  ^references=matrix/workforce/internal/skills.Store.Load,matrix/workforce/internal/skills.Store.PublishTx
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.Store.verify kind=method
   digest=b3:8eb7baab748f980a2645224cd89cc0d09b79b53decd49dde1cdbb949a9f1dbd8 file=workforce/internal/skills/store.go range=297:312 lang=go exported=false byte_range=9166:9693
   sig=func (store *Store) verify(value SignedContract) error
 EDGES
+  calls=matrix/workforce/internal/skills.placeholderSignature
+  references=matrix/workforce/internal/skills.ErrSkillConflict,matrix/workforce/internal/skills.SignedContract,matrix/workforce/internal/skills.Store,matrix/workforce/internal/skills.copyValue,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.payload,matrix/workforce/internal/skills.placeholderSignature,matrix/workforce/internal/skills.signature,matrix/workforce/internal/skills.store,matrix/workforce/internal/skills.value
   ^contains=matrix/workforce/internal/skills.Store
+  ^calls=matrix/workforce/internal/skills.Store.Load,matrix/workforce/internal/skills.Store.PublishTx
+  ^references=matrix/workforce/internal/skills.Store.Load,matrix/workforce/internal/skills.Store.PublishTx
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.TypedHandoffSkill kind=const
   digest=b3:e8533fc65adf9d39c2d5e92597b7cb1888386aee3ea4522b04416e24668f0999 file=workforce/internal/skills/knowledge.go range=20:20 lang=go exported=true byte_range=470:528
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/knowledgework.Draft.validate,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.executiveSkillIDs,matrix/workforce/internal/skills.researchSkillIDs
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.VendorCoordinationSkill kind=const
   digest=b3:4677976c566ebbfd8319de2185c8e7931e63e2cd92ed79ac0cfb8f61657a999e file=workforce/internal/skills/operations.go range=24:24 lang=go exported=true byte_range=734:803
   sig=contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.backOfficeSkillIDs
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.WorkforcePack kind=func
@@ -998,36 +1211,55 @@ NODE id=matrix/workforce/internal/skills.WorkforcePack kind=func
   sig=func WorkforcePack() ([]Contract, error)
   doc=WorkforcePack returns the exact built-in contract set referenced by the\ncanonical seven-department mandates.
 EDGES
+  calls=matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.OperationsPack
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.ExecutiveResearchPack,matrix/workforce/internal/skills.MarketingLegalPack,matrix/workforce/internal/skills.OperationsPack,matrix/workforce/internal/skills.build,matrix/workforce/internal/skills.builders,matrix/workforce/internal/skills.byID,matrix/workforce/internal/skills.duplicate,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.existing,matrix/workforce/internal/skills.left,matrix/workforce/internal/skills.result,matrix/workforce/internal/skills.right,matrix/workforce/internal/skills.value,matrix/workforce/internal/skills.values
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/cmd/workforced.runContext,matrix/workforce/internal/controlapi.Service.ActivateOrganization,matrix/workforce/internal/controlapi.Service.PreviewActivation
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/cmd/workforced.runContext,matrix/workforce/internal/controlapi.Service.ActivateOrganization,matrix/workforce/internal/controlapi.Service.PreviewActivation
   ^defines=matrix/workforce/internal/skills/workforce.go
 
 NODE id=matrix/workforce/internal/skills.accountingSkillIDs kind=var
   digest=b3:097585fcece27319120d1b210e06d73103a81cdf6b7e41ef7b3972bdc1bac867 file=workforce/internal/skills/operations.go range=27:30 lang=go exported=false byte_range=811:953
   sig=[]contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.BookkeepingSkill,matrix/workforce/internal/skills.CloseWorkflowSkill,matrix/workforce/internal/skills.PaymentProposalSkill,matrix/workforce/internal/skills.ReconciliationSkill,matrix/workforce/internal/skills.ReportingSkill
+  ^references=matrix/workforce/internal/skills.AccountingSkillIDs
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.backOfficeSkillIDs kind=var
   digest=b3:dc16e334992e1e18fd57a77ce567190f3121e26da75274cf9fbd611ba2ff6057 file=workforce/internal/skills/operations.go range=32:35 lang=go exported=false byte_range=959:1107
   sig=[]contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.AdministrativeWorkflowSkill,matrix/workforce/internal/skills.RecordsSkill,matrix/workforce/internal/skills.SLATrackingSkill,matrix/workforce/internal/skills.SchedulingSkill,matrix/workforce/internal/skills.VendorCoordinationSkill
+  ^references=matrix/workforce/internal/skills.BackOfficeSkillIDs
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.boolInt kind=func
   digest=b3:3a672777eeffd7feb04318564689035ea7225f20d60842defaf6fd8fa013c138 file=workforce/internal/skills/types.go range=447:452 lang=go exported=false byte_range=14778:14846
   sig=func boolInt(value bool) int
 EDGES
+  references=matrix/workforce/internal/skills.value
+  ^calls=matrix/workforce/internal/skills.boundedTokens
+  ^references=matrix/workforce/internal/skills.boundedTokens
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.boundedTexts kind=func
   digest=b3:cc8247094379998a6dbc94f5d0159c6a4b21aebc61ea353c18e918b581b93e97 file=workforce/internal/skills/types.go range=429:439 lang=go exported=false byte_range=14302:14648
   sig=func boundedTexts(name string, values []string, limit int) error
 EDGES
+  calls=matrix/workforce/internal/skills.invalid
+  references=matrix/workforce/internal/skills.invalid,matrix/workforce/internal/skills.limit,matrix/workforce/internal/skills.name,matrix/workforce/internal/skills.value,matrix/workforce/internal/skills.values
+  ^calls=matrix/workforce/internal/skills.Contract.Validate
+  ^references=matrix/workforce/internal/skills.Contract.Validate
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.boundedTokens kind=func
   digest=b3:db053439a013b68153bfad8ff992f837887e69683dda62bd56494bc3e8004ed1 file=workforce/internal/skills/types.go range=412:427 lang=go exported=false byte_range=13794:14300
   sig=func boundedTokens(name string, values []string, limit int, emptyAllowed bool) error
 EDGES
+  calls=matrix/workforce/internal/skills.boolInt,matrix/workforce/internal/skills.invalid,matrix/workforce/internal/skills.token
+  references=matrix/workforce/internal/skills.boolInt,matrix/workforce/internal/skills.emptyAllowed,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.invalid,matrix/workforce/internal/skills.limit,matrix/workforce/internal/skills.name,matrix/workforce/internal/skills.seen,matrix/workforce/internal/skills.token,matrix/workforce/internal/skills.value,matrix/workforce/internal/skills.values
+  ^calls=matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.nonemptyTokens
+  ^references=matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.nonemptyTokens
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.catalogEntry kind=type
@@ -1035,6 +1267,8 @@ NODE id=matrix/workforce/internal/skills.catalogEntry kind=type
   sig=type catalogEntry struct {\n	ID	contracts.SkillID	`json:"skill_id"`\n	Version	uint64			`json:"version"`\n	Digest	contracts.ContentHash\n}
 EDGES
   contains=matrix/workforce/internal/skills.catalogEntry#Digest,matrix/workforce/internal/skills.catalogEntry#ID,matrix/workforce/internal/skills.catalogEntry#Version
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/skills.NewCatalog,matrix/workforce/internal/skills.catalogEnvelope
   ^defines=matrix/workforce/internal/skills/catalog.go
 
 NODE id=matrix/workforce/internal/skills.catalogEntry#Digest kind=field
@@ -1061,6 +1295,8 @@ NODE id=matrix/workforce/internal/skills.catalogEnvelope kind=type
 EDGES
   contains=matrix/workforce/internal/skills.catalogEnvelope#Entries,matrix/workforce/internal/skills.catalogEnvelope#SchemaVersion,matrix/workforce/internal/skills.catalogEnvelope.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/skills.catalogEntry
+  ^references=matrix/workforce/internal/skills.NewCatalog,matrix/workforce/internal/skills.catalogEnvelope.Validate
   ^defines=matrix/workforce/internal/skills/catalog.go
 
 NODE id=matrix/workforce/internal/skills.catalogEnvelope#Entries kind=field
@@ -1079,6 +1315,7 @@ NODE id=matrix/workforce/internal/skills.catalogEnvelope.Validate kind=method
   digest=b3:27c1109cfcefe3a771af2c20284600df26c61419be1ee5782e8ac14d595492a9 file=workforce/internal/skills/catalog.go range=28:41 lang=go exported=true byte_range=500:952
   sig=func (envelope catalogEnvelope) Validate() error
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/skills.catalogEnvelope,matrix/workforce/internal/skills.entry,matrix/workforce/internal/skills.envelope,matrix/workforce/internal/skills.err
   ^contains=matrix/workforce/internal/skills.catalogEnvelope
   ^defines=matrix/workforce/internal/skills/catalog.go
 
@@ -1086,54 +1323,82 @@ NODE id=matrix/workforce/internal/skills.compatibilityDigest kind=func
   digest=b3:61ebe2ff6f6d32ab0b8f3f1511b5853a3ed21780f2cce4f235032dfdcf62280e file=workforce/internal/skills/store.go range=314:324 lang=go exported=false byte_range=9695:10011
   sig=func compatibilityDigest(contract Contract) (string, error)
 EDGES
+  calls=matrix/workforce/internal/skills.copyContract
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.contract,matrix/workforce/internal/skills.copyContract,matrix/workforce/internal/skills.copyValue,matrix/workforce/internal/skills.encoded,matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.sum
+  ^calls=matrix/workforce/internal/skills.Store.PublishTx
+  ^references=matrix/workforce/internal/skills.Store.PublishTx
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.copyContract kind=func
   digest=b3:32dba45971b0ba3acae4930f9fcc3d47fd5076677b1e4af00b1ce2fa052d8ad2 file=workforce/internal/skills/catalog.go range=77:100 lang=go exported=false byte_range=1994:3323
   sig=func copyContract(value Contract) Contract
 EDGES
+  references=matrix/workforce/internal/skills.Contract,matrix/workforce/internal/skills.Operation,matrix/workforce/internal/skills.index,matrix/workforce/internal/skills.probe,matrix/workforce/internal/skills.value
+  ^calls=matrix/workforce/internal/skills.NewCatalog,matrix/workforce/internal/skills.compatibilityDigest
+  ^references=matrix/workforce/internal/skills.Contract.ComputeDigest,matrix/workforce/internal/skills.NewCatalog,matrix/workforce/internal/skills.compatibilityDigest
   ^defines=matrix/workforce/internal/skills/catalog.go
 
 NODE id=matrix/workforce/internal/skills.developerInputSchema kind=func
   digest=b3:1efdfeb1fd3de3927185ef2791d6fdc8019d849f778de9c06445476afca3aa83 file=workforce/internal/skills/developer.go range=202:354 lang=go exported=false byte_range=6330:12544
   sig=func developerInputSchema(operation string) json.RawMessage
 EDGES
+  references=matrix/workforce/internal/skills.operation,matrix/workforce/internal/skills.required,matrix/workforce/internal/skills.requiredJSON
+  ^calls=matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.developerOperation
+  ^references=matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.developerOperation
   ^defines=matrix/workforce/internal/skills/developer.go
 
 NODE id=matrix/workforce/internal/skills.developerOperation kind=func
   digest=b3:44d0d84d6a47bac7832930abb5b13a873e2cbdd4f33989c8a57dd8193a64e232 file=workforce/internal/skills/developer.go range=162:179 lang=go exported=false byte_range=5130:5698
   sig=func developerOperation(\n	name string,\n	class EffectClass,\n	capability, compensation string,\n) Operation
 EDGES
+  calls=matrix/workforce/internal/skills.developerInputSchema,matrix/workforce/internal/skills.developerOutputSchema,matrix/workforce/internal/skills.irreversibleCost
+  references=matrix/workforce/internal/skills.EffectClass,matrix/workforce/internal/skills.Operation,matrix/workforce/internal/skills.capability,matrix/workforce/internal/skills.class,matrix/workforce/internal/skills.compensation,matrix/workforce/internal/skills.developerInputSchema,matrix/workforce/internal/skills.developerOutputSchema,matrix/workforce/internal/skills.irreversibleCost,matrix/workforce/internal/skills.name
+  ^calls=matrix/workforce/internal/skills.DeveloperPack
+  ^references=matrix/workforce/internal/skills.DeveloperPack
   ^defines=matrix/workforce/internal/skills/developer.go
 
 NODE id=matrix/workforce/internal/skills.developerOutputSchema kind=func
   digest=b3:0387218684bb699a8d238a29ee720c567059f811c66ac36e7668da39f1ef08d8 file=workforce/internal/skills/developer.go range=356:367 lang=go exported=false byte_range=12546:12900
   sig=func developerOutputSchema() json.RawMessage
 EDGES
+  ^calls=matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.developerOperation,matrix/workforce/internal/skills.developerProbe
+  ^references=matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.developerOperation,matrix/workforce/internal/skills.developerProbe
   ^defines=matrix/workforce/internal/skills/developer.go
 
 NODE id=matrix/workforce/internal/skills.developerProbe kind=func
   digest=b3:5ce762358071ce55598c22ae7f9a027ab53c9ce59a60eaec426599664b94f460 file=workforce/internal/skills/developer.go range=190:200 lang=go exported=false byte_range=5949:6328
   sig=func developerProbe(operation string) *ProbeContract
 EDGES
+  calls=matrix/workforce/internal/skills.developerOutputSchema,matrix/workforce/internal/skills.developerVerifierDigest
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.ProbeContract,matrix/workforce/internal/skills.ProbeUnknown,matrix/workforce/internal/skills.developerOutputSchema,matrix/workforce/internal/skills.developerVerifierDigest,matrix/workforce/internal/skills.operation
+  ^calls=matrix/workforce/internal/skills.DeveloperPack
+  ^references=matrix/workforce/internal/skills.DeveloperPack
   ^defines=matrix/workforce/internal/skills/developer.go
 
 NODE id=matrix/workforce/internal/skills.developerVerifierDigest kind=func
   digest=b3:b42233caf6177fa073e76635e0635e5de371ff1303cb6ab94394f63ff0d4a804 file=workforce/internal/skills/developer.go range=369:374 lang=go exported=false byte_range=12902:13153
   sig=func developerVerifierDigest(id contracts.SkillID) contracts.ContentHash
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.id,matrix/workforce/internal/skills.sum
+  ^calls=matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.developerProbe
+  ^references=matrix/workforce/internal/skills.DeveloperPack,matrix/workforce/internal/skills.developerProbe
   ^defines=matrix/workforce/internal/skills/developer.go
 
 NODE id=matrix/workforce/internal/skills.executiveSkillIDs kind=var
   digest=b3:a5f90b73e942a52df9a908d178b9bdb81af30d344d69d826e3ca1f97ee898821 file=workforce/internal/skills/knowledge.go range=23:25 lang=go exported=false byte_range=536:667
   sig=[]contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.EvidenceReviewSkill,matrix/workforce/internal/skills.PortfolioAnalysisSkill,matrix/workforce/internal/skills.PortfolioPlanningSkill,matrix/workforce/internal/skills.TypedHandoffSkill
+  ^references=matrix/workforce/internal/skills.ExecutiveSkillIDs
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.invalid kind=func
   digest=b3:91e4493f0c0d18eb7cf09031449a6f13ef8442861aeff3cc20bc9c0378d18bc3 file=workforce/internal/skills/types.go range=377:379 lang=go exported=false byte_range=12746:12842
   sig=func invalid(message string) error
 EDGES
+  references=matrix/workforce/internal/skills.ErrInvalidContract,matrix/workforce/internal/skills.message
+  ^calls=matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.Operation.validate,matrix/workforce/internal/skills.ProbeContract.validate,matrix/workforce/internal/skills.boundedTexts,matrix/workforce/internal/skills.boundedTokens,matrix/workforce/internal/skills.schema,matrix/workforce/internal/skills.token
+  ^references=matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.Operation.validate,matrix/workforce/internal/skills.ProbeContract.validate,matrix/workforce/internal/skills.boundedTexts,matrix/workforce/internal/skills.boundedTokens,matrix/workforce/internal/skills.schema,matrix/workforce/internal/skills.token
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.irreversibleCost kind=func
@@ -1141,108 +1406,159 @@ NODE id=matrix/workforce/internal/skills.irreversibleCost kind=func
   sig=func irreversibleCost(class EffectClass) uint64
   doc=irreversibleCost is the owner-signed price of one resource unit. Only an\nirreversible operation spends against an approved ceiling.
 EDGES
+  references=matrix/workforce/internal/skills.EffectClass,matrix/workforce/internal/skills.EffectIrreversible,matrix/workforce/internal/skills.class
+  ^calls=matrix/workforce/internal/skills.developerOperation
+  ^references=matrix/workforce/internal/skills.developerOperation
   ^defines=matrix/workforce/internal/skills/developer.go
 
 NODE id=matrix/workforce/internal/skills.knowledgeInputSchema kind=func
   digest=b3:b23e023f6b45b5e161b7b4769de340b36a2743f0a84a9755a2faf4938f1bc123 file=workforce/internal/skills/knowledge.go range=120:147 lang=go exported=false byte_range=4315:5480
   sig=func knowledgeInputSchema(skillID contracts.SkillID) json.RawMessage
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.required,matrix/workforce/internal/skills.requiredJSON,matrix/workforce/internal/skills.skillID
+  ^calls=matrix/workforce/internal/skills.ExecutiveResearchPack
+  ^references=matrix/workforce/internal/skills.ExecutiveResearchPack
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.knowledgeOutputSchema kind=func
   digest=b3:b27e8f21803c11c986a8073e11ed5225e5cb6491b0433e509099407878be6c69 file=workforce/internal/skills/knowledge.go range=149:163 lang=go exported=false byte_range=5482:6032
   sig=func knowledgeOutputSchema() json.RawMessage
 EDGES
+  ^calls=matrix/workforce/internal/skills.ExecutiveResearchPack
+  ^references=matrix/workforce/internal/skills.ExecutiveResearchPack
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.knowledgeVerifierDigest kind=func
   digest=b3:a195d6ededbc3958933150d16dccba900c96296b745fa1f06245df6a63487854 file=workforce/internal/skills/knowledge.go range=165:170 lang=go exported=false byte_range=6034:6285
   sig=func knowledgeVerifierDigest(id contracts.SkillID) contracts.ContentHash
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.id,matrix/workforce/internal/skills.sum
+  ^calls=matrix/workforce/internal/skills.ExecutiveResearchPack
+  ^references=matrix/workforce/internal/skills.ExecutiveResearchPack
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.legalSkillIDs kind=var
   digest=b3:74a7f3ad5aa5cb9ad5143c6514babc2736655f6ef95181a397774d9db5f1cd54 file=workforce/internal/skills/marketinglegal.go range=31:34 lang=go exported=false byte_range=910:1063
   sig=[]contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.ComplianceWorkflowSkill,matrix/workforce/internal/skills.ContractAnalysisSkill,matrix/workforce/internal/skills.EvidenceReviewSkill,matrix/workforce/internal/skills.IssueSpottingSkill,matrix/workforce/internal/skills.JurisdictionCheckSkill
+  ^references=matrix/workforce/internal/skills.LegalSkillIDs
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.marketingLegalInputSchema kind=func
   digest=b3:2f4a084451f65047771d962bc20fa7ea46531a0eeff7806add38e38931968ac4 file=workforce/internal/skills/marketinglegal.go range=122:145 lang=go exported=false byte_range=5105:6080
   sig=func marketingLegalInputSchema(\n	skillID contracts.SkillID,\n	department contracts.DepartmentKind,\n) json.RawMessage
 EDGES
+  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.department,matrix/workforce/internal/skills.skillID
+  ^calls=matrix/workforce/internal/skills.MarketingLegalPack
+  ^references=matrix/workforce/internal/skills.MarketingLegalPack
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.marketingLegalOutputSchema kind=func
   digest=b3:427ccbd15ea7874a4880481309ebd647b67720a671c174ebfae19de6fa824232 file=workforce/internal/skills/marketinglegal.go range=147:160 lang=go exported=false byte_range=6082:6623
   sig=func marketingLegalOutputSchema() json.RawMessage
 EDGES
+  ^calls=matrix/workforce/internal/skills.MarketingLegalPack
+  ^references=matrix/workforce/internal/skills.MarketingLegalPack
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.marketingLegalVerifierDigest kind=func
   digest=b3:d78c395c3e7629a0cbcc6213cecd526a07a0718cf981352fcb8f522fad6b9dce file=workforce/internal/skills/marketinglegal.go range=162:167 lang=go exported=false byte_range=6625:6887
   sig=func marketingLegalVerifierDigest(id contracts.SkillID) contracts.ContentHash
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.id,matrix/workforce/internal/skills.sum
+  ^calls=matrix/workforce/internal/skills.MarketingLegalPack
+  ^references=matrix/workforce/internal/skills.MarketingLegalPack
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.marketingSkillIDs kind=var
   digest=b3:a0e9411e075dc259ced6c18614c48e07bf8785f9a9c034312515dbe86f35ee1d file=workforce/internal/skills/marketinglegal.go range=26:29 lang=go exported=false byte_range=743:904
   sig=[]contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.CampaignOperationsSkill,matrix/workforce/internal/skills.CampaignResearchSkill,matrix/workforce/internal/skills.ChannelEvidenceSkill,matrix/workforce/internal/skills.ContentOperationsSkill,matrix/workforce/internal/skills.PublicationGatesSkill
+  ^references=matrix/workforce/internal/skills.MarketingSkillIDs
   ^defines=matrix/workforce/internal/skills/marketinglegal.go
 
 NODE id=matrix/workforce/internal/skills.nonemptyTokens kind=func
   digest=b3:81c3e516b25845cdf9a658fcdda3e3dbb74ed498c36800bc2577ba271271dfa0 file=workforce/internal/skills/types.go range=408:410 lang=go exported=false byte_range=13672:13792
   sig=func nonemptyTokens(name string, values []string, limit int) error
 EDGES
+  calls=matrix/workforce/internal/skills.boundedTokens
+  references=matrix/workforce/internal/skills.boundedTokens,matrix/workforce/internal/skills.limit,matrix/workforce/internal/skills.name,matrix/workforce/internal/skills.values
+  ^calls=matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.Operation.validate
+  ^references=matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.Operation.validate
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.operationsInputSchema kind=func
   digest=b3:f81d6cbc19e57925865aff81523a47f79134eeeb1f3cedfdfced2fbdd17dd523 file=workforce/internal/skills/operations.go range=126:149 lang=go exported=false byte_range=4612:5583
   sig=func operationsInputSchema(\n	skillID contracts.SkillID,\n	department contracts.DepartmentKind,\n) json.RawMessage
 EDGES
+  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.department,matrix/workforce/internal/skills.skillID
+  ^calls=matrix/workforce/internal/skills.OperationsPack
+  ^references=matrix/workforce/internal/skills.OperationsPack
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.operationsOutputSchema kind=func
   digest=b3:737e46a367c38e3961db5d6159e7107b6318573349f4565f21d193cea6162e14 file=workforce/internal/skills/operations.go range=151:164 lang=go exported=false byte_range=5585:6127
   sig=func operationsOutputSchema() json.RawMessage
 EDGES
+  ^calls=matrix/workforce/internal/skills.OperationsPack
+  ^references=matrix/workforce/internal/skills.OperationsPack
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.operationsVerifierDigest kind=func
   digest=b3:c260c977110a773f89e7517b058b1ebc8d50f2614fba427866e5c4fc181c9eec file=workforce/internal/skills/operations.go range=166:171 lang=go exported=false byte_range=6129:6382
   sig=func operationsVerifierDigest(id contracts.SkillID) contracts.ContentHash
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.id,matrix/workforce/internal/skills.sum
+  ^calls=matrix/workforce/internal/skills.OperationsPack
+  ^references=matrix/workforce/internal/skills.OperationsPack
   ^defines=matrix/workforce/internal/skills/operations.go
 
 NODE id=matrix/workforce/internal/skills.placeholderSignature kind=func
   digest=b3:3c5475a7b4b7287bf0caefa20a02b34a68fca400ac7c93a283879cd6c72eb2ab file=workforce/internal/skills/store.go range=326:331 lang=go exported=false byte_range=10013:10230
   sig=func placeholderSignature(keyID string) contracts.Signature
 EDGES
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/skills.keyID
+  ^calls=matrix/workforce/internal/skills.SignContract,matrix/workforce/internal/skills.Store.verify
+  ^references=matrix/workforce/internal/skills.SignContract,matrix/workforce/internal/skills.Store.verify
   ^defines=matrix/workforce/internal/skills/store.go
 
 NODE id=matrix/workforce/internal/skills.researchSkillIDs kind=var
   digest=b3:e1e999b47d1b531cb5ca6b07c44ae8026c2053ba3c43299592b397cac87d5bf5 file=workforce/internal/skills/knowledge.go range=27:29 lang=go exported=false byte_range=673:801
   sig=[]contracts.SkillID
 EDGES
+  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/skills.EvidenceReviewSkill,matrix/workforce/internal/skills.ExperimentDesignSkill,matrix/workforce/internal/skills.ResearchAnalysisSkill,matrix/workforce/internal/skills.TypedHandoffSkill
+  ^references=matrix/workforce/internal/skills.ResearchSkillIDs
   ^defines=matrix/workforce/internal/skills/knowledge.go
 
 NODE id=matrix/workforce/internal/skills.schema kind=func
   digest=b3:7abbda29166d2f7357415099a58ec121ea771b9a7f6d6ec424a39302f3c0f7e4 file=workforce/internal/skills/types.go range=397:406 lang=go exported=false byte_range=13311:13670
   sig=func schema(name string, value json.RawMessage) error
 EDGES
+  calls=matrix/workforce/internal/skills.invalid
+  references=matrix/workforce/internal/skills.err,matrix/workforce/internal/skills.invalid,matrix/workforce/internal/skills.name,matrix/workforce/internal/skills.object,matrix/workforce/internal/skills.value
+  ^calls=matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.Operation.validate,matrix/workforce/internal/skills.ProbeContract.validate
+  ^references=matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.Operation.validate,matrix/workforce/internal/skills.ProbeContract.validate
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.sortedCopy kind=func
   digest=b3:00e0e63001a10d396b836484a4b312d769287e86902ed8adf1c23b066ce0292e file=workforce/internal/skills/types.go range=441:445 lang=go exported=false byte_range=14650:14776
   sig=func sortedCopy(values []string) []string
 EDGES
+  references=matrix/workforce/internal/skills.result,matrix/workforce/internal/skills.values
+  ^calls=matrix/workforce/internal/skills.Contract.ComputeDigest
+  ^references=matrix/workforce/internal/skills.Contract.ComputeDigest
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills.token kind=func
   digest=b3:7f365f6b4cd385dfacc3039d8fda774cd71d0126846220444ca7b6876455c466 file=workforce/internal/skills/types.go range=381:395 lang=go exported=false byte_range=12844:13309
   sig=func token(name, value string) error
 EDGES
+  calls=matrix/workforce/internal/skills.invalid
+  references=matrix/workforce/internal/skills.char,matrix/workforce/internal/skills.invalid,matrix/workforce/internal/skills.name,matrix/workforce/internal/skills.value
+  ^calls=matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.Operation.validate,matrix/workforce/internal/skills.ProbeContract.validate,matrix/workforce/internal/skills.boundedTokens
+  ^references=matrix/workforce/internal/skills.Contract.Validate,matrix/workforce/internal/skills.Operation.validate,matrix/workforce/internal/skills.ProbeContract.validate,matrix/workforce/internal/skills.boundedTokens
   ^defines=matrix/workforce/internal/skills/types.go
 
 NODE id=matrix/workforce/internal/skills/catalog.go kind=file

@@ -3,7 +3,7 @@
 
 // Package writeback is Neo's automatic background consolidation pass (the
 // frozen spec's write-back, option B): after each turn a cheap model sweeps
-// the transcript and promotes durable learnings into cortex — objective facts
+// the transcript and promotes durable learnings into Neocortex — objective facts
 // (semantic), task outcomes (episodic), and reusable how-to patterns
 // (procedural). The main agent never has to consciously call remember(); this
 // keeps the durable store current so compaction only has to capture the
@@ -116,7 +116,7 @@ func (c *Consolidator) Consolidate(job consolidation.Job) {
 // SYNCHRONOUSLY on the caller's goroutine — not through the async jobs
 // channel. It is called from compact() before evicting older turns so that
 // durable facts/events/patterns in the about-to-be-evicted transcript reach
-// cortex BEFORE the turns are lost from the working window. This closes the
+// Neocortex BEFORE the turns are lost from the working window. This closes the
 // gap where an async sweep could lag behind compaction and lose the last
 // turns. The call respects the context deadline and never panics on a nil
 // receiver. It does NOT touch the async queue (steady-state is unchanged).

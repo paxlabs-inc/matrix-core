@@ -45,7 +45,7 @@ import (
 )
 
 // Notification is a single outbound ping. It carries the RESULT, not the
-// protocol — no Chronos/alarm/marker/cortex jargon (the consumer-product rule).
+// protocol — no Chronos/alarm/marker/Neocortex jargon (the consumer-product rule).
 type Notification struct {
 	Title string // short headline, e.g. the result summary
 	Body  string // the human-readable result

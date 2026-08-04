@@ -151,8 +151,8 @@ func TestExactProjectionRendersCortexTranscriptAfterRealTrim(t *testing.T) {
 	cfg.CassandraEnabled = false
 	cfg.EpistemicPremises = false
 	cfg.EpistemicPredictions = false
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "exact-projection-trim"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "exact-projection-trim"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -173,7 +173,7 @@ func TestExactProjectionRendersCortexTranscriptAfterRealTrim(t *testing.T) {
 	mu.Unlock()
 	messages := decodeWireMessages(t, lastBody)
 	sidecar := messages[len(messages)-1]
-	if sidecar.Role != "system" || !strings.Contains(sidecar.Content, "Exact cortex transcript slice recovered") || !strings.Contains(sidecar.Content, "historical exact message 0") {
+	if sidecar.Role != "system" || !strings.Contains(sidecar.Content, "Exact Neocortex transcript slice recovered") || !strings.Contains(sidecar.Content, "historical exact message 0") {
 		t.Fatalf("trimmed exact transcript was not projected:\n%s", sidecar.Content)
 	}
 	newestUser := ""

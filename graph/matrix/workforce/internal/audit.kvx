@@ -1,16 +1,20 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/audit kind=package
   digest=b3:f2b6a24026d47cef40c76d998aa4897df37f75f1dcc5547d71222226fb93e0ac file=workforce/internal/audit range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/audit/doc.go,matrix/workforce/internal/audit/evaluate.go,matrix/workforce/internal/audit/process.go,matrix/workforce/internal/audit/store.go
+  imports=matrix/vault,matrix/workforce/internal/auditorworker,matrix/workforce/internal/contracts,matrix/workforce/internal/processisolation
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/developer,matrix/workforce/internal/wakeruntime
 
 NODE id=matrix/workforce/internal/audit.CommitRequest kind=type
   digest=b3:77ef2d5225d9fe1adc26306a51166c62ce88c6c0660622ffccd934fff1239ff0 file=workforce/internal/audit/store.go range=36:41 lang=go exported=true byte_range=651:817
   sig=type CommitRequest struct {\n	ID		contracts.VerdictID\n	Packet		contracts.VerdictPacket\n	AuditorLease	contracts.WakeLease\n	Decision	VerifiedDecision\n}
 EDGES
   contains=matrix/workforce/internal/audit.CommitRequest#AuditorLease,matrix/workforce/internal/audit.CommitRequest#Decision,matrix/workforce/internal/audit.CommitRequest#ID,matrix/workforce/internal/audit.CommitRequest#Packet
+  references=matrix/workforce/internal/audit.VerifiedDecision,matrix/workforce/internal/contracts.VerdictID,matrix/workforce/internal/contracts.VerdictPacket,matrix/workforce/internal/contracts.WakeLease
+  ^references=matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.CommitReaudit,matrix/workforce/internal/wakeruntime.Runner.runIndependentAudit
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.CommitRequest#AuditorLease kind=field
@@ -41,48 +45,65 @@ NODE id=matrix/workforce/internal/audit.Decision kind=type
   digest=b3:6f2d5fda8d275382e627e1a587de524cdde962374006166b9e3cbab45a475c26 file=workforce/internal/audit/evaluate.go range=8:8 lang=go exported=true byte_range=109:147
   sig=type Decision auditorworker.Decision
 EDGES
+  references=matrix/workforce/internal/auditorworker.Decision
+  ^references=matrix/workforce/internal/audit.Evaluate,matrix/workforce/internal/audit.Runner.Run,matrix/workforce/internal/audit.Runner.RunVerified,matrix/workforce/internal/audit.VerifiedDecision,matrix/workforce/internal/developer.Auditor.Run
   ^defines=matrix/workforce/internal/audit/evaluate.go
 
 NODE id=matrix/workforce/internal/audit.ErrConflict kind=var
   digest=b3:4c11f1c3ab56690c2b2efb3ba60b54f822676ac300731e80ce6159d4bddb2fcb file=workforce/internal/audit/store.go range=26:26 lang=go exported=true byte_range=325:382
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.CommitReaudit,matrix/workforce/internal/audit.Store.Sample
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.ErrIntegrity kind=var
   digest=b3:2cbabe1a960d41b9b9e530899e100e5b6c1f64597062164cd482d2512879e14e file=workforce/internal/audit/store.go range=28:28 lang=go exported=true byte_range=455:511
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/audit.Store.LoadVerdict,matrix/workforce/internal/audit.Store.verifyVerdict,matrix/workforce/internal/audit.VerifyProof
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.ErrUnauthorized kind=var
   digest=b3:5c31d8cc9182e43c1fadde56f632666845d68c1d8f682aa0ef087bdbbe0d4a0f file=workforce/internal/audit/store.go range=27:27 lang=go exported=true byte_range=384:453
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.CommitReaudit,matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.buildProof
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.Evaluate kind=func
   digest=b3:9752293255fc82f3224252312bd9abe5da833acf4ee989fe34ec7baeba9a755f file=workforce/internal/audit/evaluate.go range=10:12 lang=go exported=true byte_range=149:255
   sig=func Evaluate(packet contracts.VerdictPacket) (Decision, error)
 EDGES
+  calls=matrix/workforce/internal/auditorworker.Evaluate
+  references=matrix/workforce/internal/audit.Decision,matrix/workforce/internal/audit.packet,matrix/workforce/internal/auditorworker.Evaluate,matrix/workforce/internal/contracts.VerdictPacket
+  ^calls=matrix/workforce/internal/audit.Runner.RunVerified
+  ^references=matrix/workforce/internal/audit.Runner.RunVerified
   ^defines=matrix/workforce/internal/audit/evaluate.go
 
 NODE id=matrix/workforce/internal/audit.MaxOutputBytes kind=const
   digest=b3:d5250535e682e52e3e336808c8b25f59ff468c3a7a9156f32dba22c9e4010158 file=workforce/internal/audit/process.go range=19:19 lang=go exported=true byte_range=293:338
   sig=untyped int
 EDGES
+  references=matrix/workforce/internal/auditorworker.MaxOutputBytes
+  ^references=matrix/workforce/internal/audit.Runner.RunVerified
   ^defines=matrix/workforce/internal/audit/process.go
 
 NODE id=matrix/workforce/internal/audit.MaxPacketBytes kind=const
   digest=b3:b36e32e437de1a19e7878fe98c9d8e88226e01981f134be61bc66788cdbfee5f file=workforce/internal/audit/process.go range=18:18 lang=go exported=true byte_range=246:291
   sig=untyped int
 EDGES
+  references=matrix/workforce/internal/auditorworker.MaxPacketBytes
+  ^references=matrix/workforce/internal/audit.Runner.RunVerified
   ^defines=matrix/workforce/internal/audit/process.go
 
 NODE id=matrix/workforce/internal/audit.NewStore kind=func
   digest=b3:15caaa3b89f0e2474507c5570c3b651e0d6fcd9015a7d98782c06d1ac00cc72f file=workforce/internal/audit/store.go range=104:127 lang=go exported=true byte_range=3022:3862
   sig=func NewStore(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	tenantID, keyID string,\n	privateKey ed25519.PrivateKey,\n	authority SeatAuthority,\n	now func() time.Time,\n) (*Store, error)
 EDGES
+  calls=matrix/vault.UserVault.User
+  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/audit.SeatAuthority,matrix/workforce/internal/audit.Store,matrix/workforce/internal/audit.authority,matrix/workforce/internal/audit.keyID,matrix/workforce/internal/audit.now,matrix/workforce/internal/audit.pool,matrix/workforce/internal/audit.privateKey,matrix/workforce/internal/audit.publicKey,matrix/workforce/internal/audit.tenantID,matrix/workforce/internal/audit.userVault
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.PopulationEntry kind=type
@@ -90,6 +111,8 @@ NODE id=matrix/workforce/internal/audit.PopulationEntry kind=type
   sig=type PopulationEntry struct {\n	VerdictID		contracts.VerdictID	`json:"verdict_id"`\n	VerdictHash		contracts.ContentHash	`json:"verdict_hash"`\n	ExecutingDepartmentID	contracts.DepartmentID	`json:"executing_department_id"`\n}
 EDGES
   contains=matrix/workforce/internal/audit.PopulationEntry#ExecutingDepartmentID,matrix/workforce/internal/audit.PopulationEntry#VerdictHash,matrix/workforce/internal/audit.PopulationEntry#VerdictID
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.VerdictID
+  ^references=matrix/workforce/internal/audit.SampleProof,matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.buildProof,matrix/workforce/internal/audit.populationRoot
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.PopulationEntry#ExecutingDepartmentID kind=field
@@ -115,6 +138,7 @@ NODE id=matrix/workforce/internal/audit.Runner kind=type
   sig=type Runner struct {\n	Bubblewrap		string\n	Binary			string\n	DeveloperAuthorityKeyID	string\n	DeveloperAuthorityKey	ed25519.PublicKey\n}
 EDGES
   contains=matrix/workforce/internal/audit.Runner#Binary,matrix/workforce/internal/audit.Runner#Bubblewrap,matrix/workforce/internal/audit.Runner#DeveloperAuthorityKey,matrix/workforce/internal/audit.Runner#DeveloperAuthorityKeyID,matrix/workforce/internal/audit.Runner.Run,matrix/workforce/internal/audit.Runner.RunVerified
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/audit.Runner.Run,matrix/workforce/internal/audit.Runner.RunVerified,matrix/workforce/internal/developer.Auditor,matrix/workforce/internal/developer.NewAuditor,matrix/workforce/internal/wakeruntime.Runner
   ^defines=matrix/workforce/internal/audit/process.go
 
 NODE id=matrix/workforce/internal/audit.Runner#Binary kind=field
@@ -145,14 +169,22 @@ NODE id=matrix/workforce/internal/audit.Runner.Run kind=method
   digest=b3:6a65fa0396037304b80978ca2239ecf38a45349052b7bae749512fed00851269 file=workforce/internal/audit/process.go range=35:41 lang=go exported=true byte_range=640:825
   sig=func (runner Runner) Run(\n	ctx context.Context,\n	packet contracts.VerdictPacket,\n) (Decision, error)
 EDGES
+  calls=matrix/workforce/internal/audit.Runner.RunVerified
+  references=matrix/workforce/internal/audit.Decision,matrix/workforce/internal/audit.Runner,matrix/workforce/internal/audit.Runner.RunVerified,matrix/workforce/internal/audit.ctx,matrix/workforce/internal/audit.err,matrix/workforce/internal/audit.packet,matrix/workforce/internal/audit.runner,matrix/workforce/internal/audit.verified,matrix/workforce/internal/contracts.VerdictPacket
   ^contains=matrix/workforce/internal/audit.Runner
+  ^calls=matrix/workforce/internal/developer.Auditor.Run
+  ^references=matrix/workforce/internal/developer.Auditor.Run
   ^defines=matrix/workforce/internal/audit/process.go
 
 NODE id=matrix/workforce/internal/audit.Runner.RunVerified kind=method
   digest=b3:2ac1959959d0af307c2b7bd3d217a83da3f9a10f37381762af68abf6822b04ad file=workforce/internal/audit/process.go range=43:104 lang=go exported=true byte_range=827:3154
   sig=func (runner Runner) RunVerified(\n	ctx context.Context,\n	packet contracts.VerdictPacket,\n) (VerifiedDecision, error)
 EDGES
+  calls=matrix/workforce/internal/audit.Evaluate,matrix/workforce/internal/audit.hashBytes,matrix/workforce/internal/audit.packetHash,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.VerdictPacket.Validate,matrix/workforce/internal/contracts.VerifyDeveloperAuditEvidence,matrix/workforce/internal/processisolation.Command,matrix/workforce/internal/processisolation.IsolatedCommand.Run
+  references=matrix/workforce/internal/audit.Decision,matrix/workforce/internal/audit.Evaluate,matrix/workforce/internal/audit.MaxOutputBytes,matrix/workforce/internal/audit.MaxPacketBytes,matrix/workforce/internal/audit.Runner,matrix/workforce/internal/audit.VerifiedDecision,matrix/workforce/internal/audit.boundedWriter,matrix/workforce/internal/audit.command,matrix/workforce/internal/audit.ctx,matrix/workforce/internal/audit.decision,matrix/workforce/internal/audit.decisionBytes,matrix/workforce/internal/audit.environment,matrix/workforce/internal/audit.err,matrix/workforce/internal/audit.expected,matrix/workforce/internal/audit.hashBytes,matrix/workforce/internal/audit.input,matrix/workforce/internal/audit.packet,matrix/workforce/internal/audit.packetHash,matrix/workforce/internal/audit.runner,matrix/workforce/internal/audit.stdout,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.VerdictPacket,matrix/workforce/internal/contracts.VerdictPacket.Validate,matrix/workforce/internal/contracts.VerifyDeveloperAuditEvidence,matrix/workforce/internal/processisolation.Command,matrix/workforce/internal/processisolation.IsolatedCommand.Run,matrix/workforce/internal/processisolation.Spec
   ^contains=matrix/workforce/internal/audit.Runner
+  ^calls=matrix/workforce/internal/audit.Runner.Run,matrix/workforce/internal/wakeruntime.Runner.runIndependentAudit
+  ^references=matrix/workforce/internal/audit.Runner.Run,matrix/workforce/internal/wakeruntime.Runner.runIndependentAudit
   ^defines=matrix/workforce/internal/audit/process.go
 
 NODE id=matrix/workforce/internal/audit.SampleProof kind=type
@@ -160,6 +192,8 @@ NODE id=matrix/workforce/internal/audit.SampleProof kind=type
   sig=type SampleProof struct {\n	SchemaVersion	string				`json:"schema_version"`\n	OrganizationID	contracts.OrganizationID	`json:"organization_id"`\n	EpochID		string				`json:"epoch_id"`\n	CutoffAt	time.Time			`json:"cutoff_at"`\n	Policy		SamplingPolicy			`json:"policy"`\n	Population	[]PopulationEntry		`json:"population"`\n	Auditors	[]Seat				`json:"auditors"`\n	PopulationRoot	contracts.ContentHash		`json:"population_root"`\n	Seed		string				`json:"seed"`\n	SeedCommitment	contracts.ContentHash		`json:"seed_commitment"`\n	Selections	[]Selection			`json:"selections"`\n	CreatedAt	time.Time			`json:"created_at"`\n}
 EDGES
   contains=matrix/workforce/internal/audit.SampleProof#Auditors,matrix/workforce/internal/audit.SampleProof#CreatedAt,matrix/workforce/internal/audit.SampleProof#CutoffAt,matrix/workforce/internal/audit.SampleProof#EpochID,matrix/workforce/internal/audit.SampleProof#OrganizationID,matrix/workforce/internal/audit.SampleProof#Policy,matrix/workforce/internal/audit.SampleProof#Population,matrix/workforce/internal/audit.SampleProof#PopulationRoot,matrix/workforce/internal/audit.SampleProof#SchemaVersion,matrix/workforce/internal/audit.SampleProof#Seed,matrix/workforce/internal/audit.SampleProof#SeedCommitment,matrix/workforce/internal/audit.SampleProof#Selections
+  references=matrix/workforce/internal/audit.PopulationEntry,matrix/workforce/internal/audit.SamplingPolicy,matrix/workforce/internal/audit.Seat,matrix/workforce/internal/audit.Selection,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.OrganizationID
+  ^references=matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.VerifyProof,matrix/workforce/internal/audit.buildProof
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.SampleProof#Auditors kind=field
@@ -240,6 +274,7 @@ NODE id=matrix/workforce/internal/audit.SamplingPolicy kind=type
 EDGES
   contains=matrix/workforce/internal/audit.SamplingPolicy#Denominator,matrix/workforce/internal/audit.SamplingPolicy#Maximum,matrix/workforce/internal/audit.SamplingPolicy#Minimum,matrix/workforce/internal/audit.SamplingPolicy#Numerator,matrix/workforce/internal/audit.SamplingPolicy.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  ^references=matrix/workforce/internal/audit.SampleProof,matrix/workforce/internal/audit.SamplingPolicy.Validate,matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.buildProof
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.SamplingPolicy#Denominator kind=field
@@ -270,7 +305,10 @@ NODE id=matrix/workforce/internal/audit.SamplingPolicy.Validate kind=method
   digest=b3:c67d74f9979b10a3c2508a41882b3fd48466683de8c2cc1e0d0eaf9ba5cf0671 file=workforce/internal/audit/store.go range=56:63 lang=go exported=true byte_range=1175:1471
   sig=func (value SamplingPolicy) Validate() error
 EDGES
+  references=matrix/workforce/internal/audit.SamplingPolicy,matrix/workforce/internal/audit.value
   ^contains=matrix/workforce/internal/audit.SamplingPolicy
+  ^calls=matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.VerifyProof
+  ^references=matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.VerifyProof
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.Seat kind=type
@@ -278,6 +316,8 @@ NODE id=matrix/workforce/internal/audit.Seat kind=type
   sig=type Seat struct {\n	ID		contracts.SeatID	`json:"seat_id"`\n	DepartmentID	contracts.DepartmentID	`json:"department_id"`\n}
 EDGES
   contains=matrix/workforce/internal/audit.Seat#DepartmentID,matrix/workforce/internal/audit.Seat#ID
+  references=matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.SeatID
+  ^references=matrix/workforce/internal/audit.SampleProof,matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.buildProof,matrix/workforce/internal/audit.sortedAuditors,matrix/workforce/internal/audit.validAuditors
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.Seat#DepartmentID kind=field
@@ -296,7 +336,9 @@ NODE id=matrix/workforce/internal/audit.SeatAuthority kind=interface
   digest=b3:e428b7c6c0ceafa0a9cfb8686c1beb2f1f8a1e546f07f59f2540ab09daecd834 file=workforce/internal/audit/store.go range=43:47 lang=go exported=true byte_range=819:1061
   sig=type SeatAuthority interface {\n	LoadCurrentSeat(context.Context, contracts.SeatID) (contracts.Seat, error)\n	AuthorizeLease(context.Context, contracts.LeaseID) error\n	LoadLease(context.Context, contracts.LeaseID) (contracts.WakeLease, error)\n}
 EDGES
+  references=matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.WakeLease
   ^implements=matrix/workforce/internal/policy.Store
+  ^references=matrix/workforce/internal/audit.NewStore,matrix/workforce/internal/audit.Store
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.Selection kind=type
@@ -304,6 +346,8 @@ NODE id=matrix/workforce/internal/audit.Selection kind=type
   sig=type Selection struct {\n	VerdictID		contracts.VerdictID	`json:"verdict_id"`\n	ReauditorSeatID		contracts.SeatID	`json:"reauditor_seat_id"`\n	ReauditorDepartmentID	contracts.DepartmentID	`json:"reauditor_department_id"`\n	Score			string			`json:"score"`\n}
 EDGES
   contains=matrix/workforce/internal/audit.Selection#ReauditorDepartmentID,matrix/workforce/internal/audit.Selection#ReauditorSeatID,matrix/workforce/internal/audit.Selection#Score,matrix/workforce/internal/audit.Selection#VerdictID
+  references=matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.VerdictID
+  ^references=matrix/workforce/internal/audit.SampleProof,matrix/workforce/internal/audit.buildProof
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.Selection#ReauditorDepartmentID kind=field
@@ -335,6 +379,8 @@ NODE id=matrix/workforce/internal/audit.Store kind=type
   sig=type Store struct {\n	pool		*pgxpool.Pool\n	vault		*vault.UserVault\n	tenantID	string\n	keyID		string\n	privateKey	ed25519.PrivateKey\n	publicKey	ed25519.PublicKey\n	authority	SeatAuthority\n	now		func() time.Time\n}
 EDGES
   contains=matrix/workforce/internal/audit.Store#authority,matrix/workforce/internal/audit.Store#keyID,matrix/workforce/internal/audit.Store#now,matrix/workforce/internal/audit.Store#pool,matrix/workforce/internal/audit.Store#privateKey,matrix/workforce/internal/audit.Store#publicKey,matrix/workforce/internal/audit.Store#tenantID,matrix/workforce/internal/audit.Store#vault,matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.CommitReaudit,matrix/workforce/internal/audit.Store.LoadVerdict,matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.Store.ad,matrix/workforce/internal/audit.Store.currentTime,matrix/workforce/internal/audit.Store.epochAD,matrix/workforce/internal/audit.Store.signVerdict,matrix/workforce/internal/audit.Store.verifyVerdict
+  references=matrix/vault.UserVault,matrix/workforce/internal/audit.SeatAuthority
+  ^references=matrix/workforce/internal/audit.NewStore,matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.CommitReaudit,matrix/workforce/internal/audit.Store.LoadVerdict,matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.Store.ad,matrix/workforce/internal/audit.Store.currentTime,matrix/workforce/internal/audit.Store.epochAD,matrix/workforce/internal/audit.Store.signVerdict,matrix/workforce/internal/audit.Store.verifyVerdict,matrix/workforce/internal/wakeruntime.Runner
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.Store#authority kind=field
@@ -389,13 +435,19 @@ NODE id=matrix/workforce/internal/audit.Store.Commit kind=method
   digest=b3:6e272b18b4625e99e06bcc7471b707693d8a9d966f0ce162e1770c932b74c685 file=workforce/internal/audit/store.go range=129:257 lang=go exported=true byte_range=3864:8841
   sig=func (store *Store) Commit(\n	ctx context.Context,\n	request CommitRequest,\n) (contracts.Verdict, error)
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/audit.Store.LoadVerdict,matrix/workforce/internal/audit.Store.ad,matrix/workforce/internal/audit.Store.currentTime,matrix/workforce/internal/audit.Store.signVerdict,matrix/workforce/internal/audit.aggregateReason,matrix/workforce/internal/audit.hashBytes,matrix/workforce/internal/audit.packetHash,matrix/workforce/internal/auditorworker.Decision.Validate,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.VerdictPacket.Validate,matrix/workforce/internal/contracts.WakeLease.Validate,matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.LoadCurrentSeat,matrix/workforce/internal/policy.Store.LoadLease
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/audit.CommitRequest,matrix/workforce/internal/audit.ErrConflict,matrix/workforce/internal/audit.ErrUnauthorized,matrix/workforce/internal/audit.SeatAuthority.AuthorizeLease,matrix/workforce/internal/audit.SeatAuthority.LoadCurrentSeat,matrix/workforce/internal/audit.SeatAuthority.LoadLease,matrix/workforce/internal/audit.Store,matrix/workforce/internal/audit.Store.LoadVerdict,matrix/workforce/internal/audit.Store.ad,matrix/workforce/internal/audit.Store.currentTime,matrix/workforce/internal/audit.Store.signVerdict,matrix/workforce/internal/audit.aggregateReason,matrix/workforce/internal/audit.auditorErr,matrix/workforce/internal/audit.auditorSeat,matrix/workforce/internal/audit.command,matrix/workforce/internal/audit.ctx,matrix/workforce/internal/audit.currentLease,matrix/workforce/internal/audit.currentLeaseBytes,matrix/workforce/internal/audit.currentLeaseEncodeErr,matrix/workforce/internal/audit.currentLeaseErr,matrix/workforce/internal/audit.decision,matrix/workforce/internal/audit.decisionBytes,matrix/workforce/internal/audit.encodeErr,matrix/workforce/internal/audit.err,matrix/workforce/internal/audit.executingErr,matrix/workforce/internal/audit.executingSeat,matrix/workforce/internal/audit.existing,matrix/workforce/internal/audit.existingBytes,matrix/workforce/internal/audit.hashBytes,matrix/workforce/internal/audit.intentID,matrix/workforce/internal/audit.leaseErr,matrix/workforce/internal/audit.loadErr,matrix/workforce/internal/audit.now,matrix/workforce/internal/audit.packetBytes,matrix/workforce/internal/audit.packetHash,matrix/workforce/internal/audit.presentIntent,matrix/workforce/internal/audit.presentLease,matrix/workforce/internal/audit.presentLeaseErr,matrix/workforce/internal/audit.request,matrix/workforce/internal/audit.sealedPacket,matrix/workforce/internal/audit.sealedVerdict,matrix/workforce/internal/audit.store,matrix/workforce/internal/audit.verdict,matrix/workforce/internal/audit.verdictBytes,matrix/workforce/internal/audit.verdictHash,matrix/workforce/internal/auditorworker.Decision.Validate,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SeatAuditor,matrix/workforce/internal/contracts.Verdict,matrix/workforce/internal/contracts.VerdictPacket.Validate,matrix/workforce/internal/contracts.WakeLease.Validate
   ^contains=matrix/workforce/internal/audit.Store
+  ^calls=matrix/workforce/internal/audit.Store.CommitReaudit,matrix/workforce/internal/wakeruntime.Runner.runIndependentAudit
+  ^references=matrix/workforce/internal/audit.Store.CommitReaudit,matrix/workforce/internal/wakeruntime.Runner.runIndependentAudit
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.Store.CommitReaudit kind=method
   digest=b3:68dee56f903114233e091bbe7373322a6bf5646689b208dbd9ec6484ee3e6eb2 file=workforce/internal/audit/store.go range=418:509 lang=go exported=true byte_range=14155:17721
   sig=func (store *Store) CommitReaudit(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	epochID string,\n	originalID contracts.VerdictID,\n	request CommitRequest,\n) (contracts.Verdict, bool, error)
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.ad,matrix/workforce/internal/audit.Store.currentTime,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/policy.Store.LoadCurrentSeat
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/audit.CommitRequest,matrix/workforce/internal/audit.ErrConflict,matrix/workforce/internal/audit.ErrUnauthorized,matrix/workforce/internal/audit.SeatAuthority.LoadCurrentSeat,matrix/workforce/internal/audit.Store,matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.ad,matrix/workforce/internal/audit.Store.currentTime,matrix/workforce/internal/audit.auditorErr,matrix/workforce/internal/audit.ctx,matrix/workforce/internal/audit.currentAuditor,matrix/workforce/internal/audit.currentExecuting,matrix/workforce/internal/audit.disagreement,matrix/workforce/internal/audit.encoded,matrix/workforce/internal/audit.epochID,matrix/workforce/internal/audit.err,matrix/workforce/internal/audit.executingDepartment,matrix/workforce/internal/audit.executingErr,matrix/workforce/internal/audit.executingSeat,matrix/workforce/internal/audit.incidentHash,matrix/workforce/internal/audit.now,matrix/workforce/internal/audit.organizationID,matrix/workforce/internal/audit.originalID,matrix/workforce/internal/audit.originalOutcome,matrix/workforce/internal/audit.request,matrix/workforce/internal/audit.sealed,matrix/workforce/internal/audit.selectedDepartment,matrix/workforce/internal/audit.selectedSeat,matrix/workforce/internal/audit.store,matrix/workforce/internal/audit.tx,matrix/workforce/internal/audit.verdict,matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.Verdict,matrix/workforce/internal/contracts.VerdictID,matrix/workforce/internal/contracts.VerdictOutcome
   ^contains=matrix/workforce/internal/audit.Store
   ^defines=matrix/workforce/internal/audit/store.go
 
@@ -403,13 +455,19 @@ NODE id=matrix/workforce/internal/audit.Store.LoadVerdict kind=method
   digest=b3:7d7f4de6dea4e4bef6c290e066e5c9aa6bbb0da4384ce9dd270323b70c52eb7a file=workforce/internal/audit/store.go range=259:282 lang=go exported=true byte_range=8843:9737
   sig=func (store *Store) LoadVerdict(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	id contracts.VerdictID,\n) (contracts.Verdict, error)
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/audit.Store.ad,matrix/workforce/internal/audit.Store.verifyVerdict,matrix/workforce/internal/audit.hashBytes,matrix/workforce/internal/contracts.DecodeCanonical
+  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/audit.ErrIntegrity,matrix/workforce/internal/audit.Store,matrix/workforce/internal/audit.Store.ad,matrix/workforce/internal/audit.Store.verifyVerdict,matrix/workforce/internal/audit.ctx,matrix/workforce/internal/audit.err,matrix/workforce/internal/audit.expectedHash,matrix/workforce/internal/audit.hashBytes,matrix/workforce/internal/audit.id,matrix/workforce/internal/audit.opened,matrix/workforce/internal/audit.organizationID,matrix/workforce/internal/audit.sealed,matrix/workforce/internal/audit.store,matrix/workforce/internal/audit.verdict,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Verdict,matrix/workforce/internal/contracts.VerdictID
   ^contains=matrix/workforce/internal/audit.Store
+  ^calls=matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^references=matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.Store.Sample kind=method
   digest=b3:c92fec54e7c88e22c72415cfef0b8f01344a5bcedb1828409468bb9d3787d4d9 file=workforce/internal/audit/store.go range=284:387 lang=go exported=true byte_range=9739:13162
   sig=func (store *Store) Sample(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	epochID string,\n	cutoff time.Time,\n	policy SamplingPolicy,\n	auditorIDs []contracts.SeatID,\n) (SampleProof, error)
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/audit.SamplingPolicy.Validate,matrix/workforce/internal/audit.Store.currentTime,matrix/workforce/internal/audit.Store.epochAD,matrix/workforce/internal/audit.buildProof,matrix/workforce/internal/audit.sortedAuditors,matrix/workforce/internal/audit.validAuditors,matrix/workforce/internal/policy.Store.LoadCurrentSeat
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/audit.ErrConflict,matrix/workforce/internal/audit.ErrUnauthorized,matrix/workforce/internal/audit.PopulationEntry,matrix/workforce/internal/audit.SampleProof,matrix/workforce/internal/audit.SamplingPolicy,matrix/workforce/internal/audit.SamplingPolicy.Validate,matrix/workforce/internal/audit.Seat,matrix/workforce/internal/audit.SeatAuthority.LoadCurrentSeat,matrix/workforce/internal/audit.Store,matrix/workforce/internal/audit.Store.currentTime,matrix/workforce/internal/audit.Store.epochAD,matrix/workforce/internal/audit.auditorIDs,matrix/workforce/internal/audit.auditors,matrix/workforce/internal/audit.buildProof,matrix/workforce/internal/audit.ctx,matrix/workforce/internal/audit.cutoff,matrix/workforce/internal/audit.entry,matrix/workforce/internal/audit.epochID,matrix/workforce/internal/audit.err,matrix/workforce/internal/audit.id,matrix/workforce/internal/audit.now,matrix/workforce/internal/audit.organizationID,matrix/workforce/internal/audit.policy,matrix/workforce/internal/audit.population,matrix/workforce/internal/audit.proof,matrix/workforce/internal/audit.rows,matrix/workforce/internal/audit.sealedSeed,matrix/workforce/internal/audit.seat,matrix/workforce/internal/audit.seed,matrix/workforce/internal/audit.selection,matrix/workforce/internal/audit.sortedAuditors,matrix/workforce/internal/audit.store,matrix/workforce/internal/audit.tx,matrix/workforce/internal/audit.validAuditors,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatAuditor,matrix/workforce/internal/contracts.SeatID
   ^contains=matrix/workforce/internal/audit.Store
   ^defines=matrix/workforce/internal/audit/store.go
 
@@ -417,35 +475,52 @@ NODE id=matrix/workforce/internal/audit.Store.ad kind=method
   digest=b3:c5cf99b2bbe0572fed9cea3e32532baa6537dffbf449b19524a01afa1ee46288 file=workforce/internal/audit/store.go range=664:674 lang=go exported=false byte_range=22392:22680
   sig=func (store *Store) ad(\n	kind string,\n	organizationID contracts.OrganizationID,\n	id contracts.VerdictID,\n) vault.AD
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/audit.Store,matrix/workforce/internal/audit.id,matrix/workforce/internal/audit.kind,matrix/workforce/internal/audit.organizationID,matrix/workforce/internal/audit.store,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.VerdictID
   ^contains=matrix/workforce/internal/audit.Store
+  ^calls=matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.CommitReaudit,matrix/workforce/internal/audit.Store.LoadVerdict
+  ^references=matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.CommitReaudit,matrix/workforce/internal/audit.Store.LoadVerdict
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.Store.currentTime kind=method
   digest=b3:efd185e02695a0a9c883a04697fff836f332c0db7841e14dd2f381b6c71b3c69 file=workforce/internal/audit/store.go range=687:693 lang=go exported=false byte_range=22950:23166
   sig=func (store *Store) currentTime() (time.Time, error)
 EDGES
+  references=matrix/workforce/internal/audit.Store,matrix/workforce/internal/audit.now,matrix/workforce/internal/audit.store
   ^contains=matrix/workforce/internal/audit.Store
+  ^calls=matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.CommitReaudit,matrix/workforce/internal/audit.Store.Sample
+  ^references=matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.CommitReaudit,matrix/workforce/internal/audit.Store.Sample
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.Store.epochAD kind=method
   digest=b3:4bab8de83ed79ff5e665ef6720f51bf352e803688993bf8e9f18f0ef87e6cb60 file=workforce/internal/audit/store.go range=676:685 lang=go exported=false byte_range=22682:22948
   sig=func (store *Store) epochAD(\n	organizationID contracts.OrganizationID,\n	epochID string,\n) vault.AD
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/audit.Store,matrix/workforce/internal/audit.epochID,matrix/workforce/internal/audit.organizationID,matrix/workforce/internal/audit.store,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SchemaVersionV1
   ^contains=matrix/workforce/internal/audit.Store
+  ^calls=matrix/workforce/internal/audit.Store.Sample
+  ^references=matrix/workforce/internal/audit.Store.Sample
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.Store.signVerdict kind=method
   digest=b3:85336fe6e747ae605611bd4b3a59bb4999e838e0d95dcda70e91c80cc0ce72b4 file=workforce/internal/audit/store.go range=628:639 lang=go exported=false byte_range=21287:21678
   sig=func (store *Store) signVerdict(verdict *contracts.Verdict) error
 EDGES
+  calls=matrix/workforce/internal/audit.placeholder,matrix/workforce/internal/contracts.Verdict.Validate
+  references=matrix/workforce/internal/audit.Store,matrix/workforce/internal/audit.err,matrix/workforce/internal/audit.payload,matrix/workforce/internal/audit.placeholder,matrix/workforce/internal/audit.store,matrix/workforce/internal/audit.verdict,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/contracts.Verdict,matrix/workforce/internal/contracts.Verdict.Validate
   ^contains=matrix/workforce/internal/audit.Store
+  ^calls=matrix/workforce/internal/audit.Store.Commit
+  ^references=matrix/workforce/internal/audit.Store.Commit
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.Store.verifyVerdict kind=method
   digest=b3:2ffc60a1a4cb5959c75d3c02d34029d93bd0c600a4836d7a5a41702087bbab88 file=workforce/internal/audit/store.go range=641:655 lang=go exported=false byte_range=21680:22180
   sig=func (store *Store) verifyVerdict(verdict contracts.Verdict) error
 EDGES
+  calls=matrix/workforce/internal/audit.placeholder
+  references=matrix/workforce/internal/audit.ErrIntegrity,matrix/workforce/internal/audit.Store,matrix/workforce/internal/audit.err,matrix/workforce/internal/audit.payload,matrix/workforce/internal/audit.placeholder,matrix/workforce/internal/audit.signature,matrix/workforce/internal/audit.store,matrix/workforce/internal/audit.verdict,matrix/workforce/internal/contracts.Verdict
   ^contains=matrix/workforce/internal/audit.Store
+  ^calls=matrix/workforce/internal/audit.Store.LoadVerdict
+  ^references=matrix/workforce/internal/audit.Store.LoadVerdict
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.VerifiedDecision kind=type
@@ -453,6 +528,8 @@ NODE id=matrix/workforce/internal/audit.VerifiedDecision kind=type
   sig=type VerifiedDecision struct {\n	decision	Decision\n	packetDigest	contracts.ContentHash\n	decisionDigest	contracts.ContentHash\n}
 EDGES
   contains=matrix/workforce/internal/audit.VerifiedDecision#decision,matrix/workforce/internal/audit.VerifiedDecision#decisionDigest,matrix/workforce/internal/audit.VerifiedDecision#packetDigest
+  references=matrix/workforce/internal/audit.Decision,matrix/workforce/internal/contracts.ContentHash
+  ^references=matrix/workforce/internal/audit.CommitRequest,matrix/workforce/internal/audit.Runner.RunVerified
   ^defines=matrix/workforce/internal/audit/process.go
 
 NODE id=matrix/workforce/internal/audit.VerifiedDecision#decision kind=field
@@ -477,12 +554,17 @@ NODE id=matrix/workforce/internal/audit.VerifyProof kind=func
   digest=b3:bc3adff889fec23fc741b1fa5cd18d2016bd2cafe0aad059851f9f068af20249 file=workforce/internal/audit/store.go range=389:416 lang=go exported=true byte_range=13164:14153
   sig=func VerifyProof(proof SampleProof) error
 EDGES
+  calls=matrix/workforce/internal/audit.SamplingPolicy.Validate,matrix/workforce/internal/audit.buildProof,matrix/workforce/internal/audit.hashBytes,matrix/workforce/internal/audit.populationRoot,matrix/workforce/internal/audit.sortedAuditors,matrix/workforce/internal/audit.validAuditors
+  references=matrix/workforce/internal/audit.ErrIntegrity,matrix/workforce/internal/audit.SampleProof,matrix/workforce/internal/audit.SamplingPolicy.Validate,matrix/workforce/internal/audit.actualBytes,matrix/workforce/internal/audit.buildProof,matrix/workforce/internal/audit.err,matrix/workforce/internal/audit.expected,matrix/workforce/internal/audit.expectedBytes,matrix/workforce/internal/audit.hashBytes,matrix/workforce/internal/audit.populationRoot,matrix/workforce/internal/audit.proof,matrix/workforce/internal/audit.seed,matrix/workforce/internal/audit.sortedAuditors,matrix/workforce/internal/audit.validAuditors,matrix/workforce/internal/contracts.SchemaVersionV1
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.aggregateReason kind=func
   digest=b3:7b8fbcd68f48a7731ec2920f942065c9acaca1a842897bdf543d749eb0b8524b file=workforce/internal/audit/store.go range=622:626 lang=go exported=false byte_range=21109:21285
   sig=func aggregateReason(values []string) string
 EDGES
+  references=matrix/workforce/internal/audit.encoded,matrix/workforce/internal/audit.sum,matrix/workforce/internal/audit.values
+  ^calls=matrix/workforce/internal/audit.Store.Commit
+  ^references=matrix/workforce/internal/audit.Store.Commit
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.boundedWriter kind=type
@@ -490,6 +572,7 @@ NODE id=matrix/workforce/internal/audit.boundedWriter kind=type
   sig=type boundedWriter struct {\n	target		io.Writer\n	remaining	int\n}
 EDGES
   contains=matrix/workforce/internal/audit.boundedWriter#remaining,matrix/workforce/internal/audit.boundedWriter#target,matrix/workforce/internal/audit.boundedWriter.Write
+  ^references=matrix/workforce/internal/audit.Runner.RunVerified,matrix/workforce/internal/audit.boundedWriter.Write
   ^defines=matrix/workforce/internal/audit/process.go
 
 NODE id=matrix/workforce/internal/audit.boundedWriter#remaining kind=field
@@ -508,6 +591,7 @@ NODE id=matrix/workforce/internal/audit.boundedWriter.Write kind=method
   digest=b3:4e14df44d5187054400be33916920e20d900fb98125aff2db9fae0e925ea688d file=workforce/internal/audit/process.go range=111:118 lang=go exported=true byte_range=3223:3469
   sig=func (writer *boundedWriter) Write(value []byte) (int, error)
 EDGES
+  references=matrix/workforce/internal/audit.boundedWriter,matrix/workforce/internal/audit.err,matrix/workforce/internal/audit.n,matrix/workforce/internal/audit.value,matrix/workforce/internal/audit.writer
   ^contains=matrix/workforce/internal/audit.boundedWriter
   ^defines=matrix/workforce/internal/audit/process.go
 
@@ -515,42 +599,65 @@ NODE id=matrix/workforce/internal/audit.buildProof kind=func
   digest=b3:1bc485d986e0d46610dd6a36439b6ae352503fc5af060563e4e2c44f35ebca31 file=workforce/internal/audit/store.go range=511:570 lang=go exported=false byte_range=17723:19714
   sig=func buildProof(\n	organizationID contracts.OrganizationID,\n	epochID string,\n	cutoff, createdAt time.Time,\n	policy SamplingPolicy,\n	auditors []Seat,\n	population []PopulationEntry,\n	seed []byte,\n) (SampleProof, error)
 EDGES
+  calls=matrix/workforce/internal/audit.hashBytes,matrix/workforce/internal/audit.populationRoot,matrix/workforce/internal/audit.sortedAuditors
+  references=matrix/workforce/internal/audit.ErrUnauthorized,matrix/workforce/internal/audit.PopulationEntry,matrix/workforce/internal/audit.SampleProof,matrix/workforce/internal/audit.SamplingPolicy,matrix/workforce/internal/audit.Seat,matrix/workforce/internal/audit.Selection,matrix/workforce/internal/audit.auditor,matrix/workforce/internal/audit.auditors,matrix/workforce/internal/audit.count,matrix/workforce/internal/audit.createdAt,matrix/workforce/internal/audit.cutoff,matrix/workforce/internal/audit.eligible,matrix/workforce/internal/audit.entry,matrix/workforce/internal/audit.epochID,matrix/workforce/internal/audit.hashBytes,matrix/workforce/internal/audit.i,matrix/workforce/internal/audit.index,matrix/workforce/internal/audit.j,matrix/workforce/internal/audit.mac,matrix/workforce/internal/audit.organizationID,matrix/workforce/internal/audit.policy,matrix/workforce/internal/audit.population,matrix/workforce/internal/audit.populationRoot,matrix/workforce/internal/audit.ranked,matrix/workforce/internal/audit.score,matrix/workforce/internal/audit.seed,matrix/workforce/internal/audit.seedHash,matrix/workforce/internal/audit.sortedAuditors,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SchemaVersionV1
+  ^calls=matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.VerifyProof
+  ^references=matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.VerifyProof
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.hashBytes kind=func
   digest=b3:6142229639f65603219857cbb53aab5d2aefd89ea2017579f1283824edcf5a9b file=workforce/internal/audit/store.go range=615:620 lang=go exported=false byte_range=20931:21107
   sig=func hashBytes(value []byte) contracts.ContentHash
 EDGES
+  references=matrix/workforce/internal/audit.sum,matrix/workforce/internal/audit.value,matrix/workforce/internal/contracts.ContentHash
+  ^calls=matrix/workforce/internal/audit.Runner.RunVerified,matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.LoadVerdict,matrix/workforce/internal/audit.VerifyProof,matrix/workforce/internal/audit.buildProof,matrix/workforce/internal/audit.packetHash
+  ^references=matrix/workforce/internal/audit.Runner.RunVerified,matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.LoadVerdict,matrix/workforce/internal/audit.VerifyProof,matrix/workforce/internal/audit.buildProof,matrix/workforce/internal/audit.packetHash
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.packetHash kind=func
   digest=b3:594a8817bc5dc9986abf0ba1fad7cb92555379208cf6f17f6de5f126a4fecc0e file=workforce/internal/audit/store.go range=607:613 lang=go exported=false byte_range=20724:20929
   sig=func packetHash(packet contracts.VerdictPacket) contracts.ContentHash
 EDGES
+  calls=matrix/workforce/internal/audit.hashBytes,matrix/workforce/internal/contracts.EncodeCanonical
+  references=matrix/workforce/internal/audit.encoded,matrix/workforce/internal/audit.err,matrix/workforce/internal/audit.hashBytes,matrix/workforce/internal/audit.packet,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.VerdictPacket
+  ^calls=matrix/workforce/internal/audit.Runner.RunVerified,matrix/workforce/internal/audit.Store.Commit
+  ^references=matrix/workforce/internal/audit.Runner.RunVerified,matrix/workforce/internal/audit.Store.Commit
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.placeholder kind=func
   digest=b3:a2c78cd9b88b3a9b53e6b4596138910d1f369bf9732dd5871ea3ec83a2a21244 file=workforce/internal/audit/store.go range=657:662 lang=go exported=false byte_range=22182:22390
   sig=func placeholder(keyID string) contracts.Signature
 EDGES
+  references=matrix/workforce/internal/audit.keyID,matrix/workforce/internal/contracts.Signature
+  ^calls=matrix/workforce/internal/audit.Store.signVerdict,matrix/workforce/internal/audit.Store.verifyVerdict
+  ^references=matrix/workforce/internal/audit.Store.signVerdict,matrix/workforce/internal/audit.Store.verifyVerdict
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.populationRoot kind=func
   digest=b3:7d78fc1f23e8a587bb5921f60dc82df5c77424966b10b224bec49f00d9bb6b32 file=workforce/internal/audit/store.go range=572:581 lang=go exported=false byte_range=19716:20068
   sig=func populationRoot(population []PopulationEntry) contracts.ContentHash
 EDGES
+  references=matrix/workforce/internal/audit.PopulationEntry,matrix/workforce/internal/audit.entry,matrix/workforce/internal/audit.hash,matrix/workforce/internal/audit.population,matrix/workforce/internal/contracts.ContentHash
+  ^calls=matrix/workforce/internal/audit.VerifyProof,matrix/workforce/internal/audit.buildProof
+  ^references=matrix/workforce/internal/audit.VerifyProof,matrix/workforce/internal/audit.buildProof
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.sortedAuditors kind=func
   digest=b3:bc2e5ce90ebbaf2e1a741d9fa8ec4e35d20aeaecc4bc4a35f3a1c26e2fb890db file=workforce/internal/audit/store.go range=583:592 lang=go exported=false byte_range=20070:20373
   sig=func sortedAuditors(values []Seat) []Seat
 EDGES
+  references=matrix/workforce/internal/audit.Seat,matrix/workforce/internal/audit.i,matrix/workforce/internal/audit.j,matrix/workforce/internal/audit.result,matrix/workforce/internal/audit.values
+  ^calls=matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.VerifyProof,matrix/workforce/internal/audit.buildProof
+  ^references=matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.VerifyProof,matrix/workforce/internal/audit.buildProof
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit.validAuditors kind=func
   digest=b3:522afa4dfbbf17637f60f72945a56ae4bf6cf90e3e3ddeaee20def5f6440b670 file=workforce/internal/audit/store.go range=594:605 lang=go exported=false byte_range=20375:20722
   sig=func validAuditors(values []Seat) bool
 EDGES
+  references=matrix/workforce/internal/audit.Seat,matrix/workforce/internal/audit.departments,matrix/workforce/internal/audit.seen,matrix/workforce/internal/audit.value,matrix/workforce/internal/audit.values,matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.SeatID
+  ^calls=matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.VerifyProof
+  ^references=matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/audit.VerifyProof
   ^defines=matrix/workforce/internal/audit/store.go
 
 NODE id=matrix/workforce/internal/audit/doc.go kind=file

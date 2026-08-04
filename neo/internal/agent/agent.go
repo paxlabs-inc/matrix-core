@@ -49,7 +49,7 @@ import (
 var ErrIncomplete = errors.New("neo: turn incomplete (task not finished)")
 
 // Consolidator is the background write-back hook: it receives a structured
-// evidence job and promotes only cited durable learnings to cortex out-of-band.
+// evidence job and promotes only cited durable learnings to Neocortex out-of-band.
 // Implemented by internal/writeback; optional (nil disables write-back).
 type Consolidator interface {
 	Consolidate(consolidation.Job)
@@ -179,13 +179,13 @@ type Agent struct {
 	working []llm.Message
 	// recentHistory is the server-owned, current snapshot of visible durable
 	// user/assistant turns that precede the active run. Resurrection consumes
-	// this as real protocol history instead of asking Cortex activation to stand
+	// this as real protocol history instead of asking Neocortex activation to stand
 	// in for the live thread. The conversation store refreshes it before every
 	// supervised attempt, so a failure bubble from the immediately prior turn is
 	// available even when the long-lived Agent was not rebuilt.
 	recentHistory []llm.Message
 	// activeGoal is THIS conversation's task, pinned every turn. Held on the
-	// agent (not the pager) so many conversations can share one cortex store
+	// agent (not the pager) so many conversations can share one Neocortex store
 	// without clobbering each other's goal. Lifetime: session.
 	activeGoal     string
 	intentMu       sync.RWMutex
@@ -687,7 +687,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 // ChatAudio runs the same staged turn with one audio-native user message. The
 // ASR result is produced concurrently with the first model generation; before
 // any downstream deliberation/close, the visible user content is replaced by
-// the durable transcript plus sealed media ref and recorded to cortex.
+// the durable transcript plus sealed media ref and recorded to Neocortex.
 func (a *Agent) ChatAudio(ctx context.Context, userInput string, audio *AudioTurn) error {
 	if a.runtimeMode == "resurrection" || a.runtimeErr != nil {
 		return a.chatAudioResurrection(ctx, userInput, audio)
@@ -835,12 +835,12 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn, re
 
 // prepareTurn is the turn half of the prepare stage (MORPHEUS req.3.1), run
 // ONCE at Chat entry. Contract — inputs: the trimmed user input; mutates: the
-// working transcript (appends the user message), the durable cortex transcript
+// working transcript (appends the user message), the durable Neocortex transcript
 // (records it), the turn's surfaced-memory sets, and activationAssemblies;
 // returns: the rendered activation tail (cmTail) frozen for the whole turn.
 //
 // The single memory path (MORPHEUS req.1): the per-turn working set comes
-// from cortex.Activate, computed ONCE per turn and rendered as the trailing
+// from Neocortex.Activate, computed ONCE per turn and rendered as the trailing
 // USER-role tail (the activation snapshot is frozen for the whole turn — the
 // NE-7 discipline). The Q2 first-turn relevance push rides the same tail so
 // the usage-salience attestation loop still learns from what surfaced.
@@ -915,7 +915,7 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData, resumeGui
 		logEpisodic(trigger.Class, len(episodic), injectedTokens, started)
 	}
 	a.emitMemory(bundle, triggerClass, episodic)
-	// Track every cortex memory surfaced this turn so a successful completion
+	// Track every Neocortex memory surfaced this turn so a successful completion
 	// can attest them as USED — the usage-salience + EMA learning signal that
 	// keeps Neo's durable store ranking by what actually helps. The snippets
 	// keep text/type too, so completion can also send the NEGATIVE signal for
@@ -937,7 +937,7 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData, resumeGui
 // index 0 + the append-only live transcript + the rendered Activate bundle as
 // ONE trailing USER-role message (Qwen-template portability). Over-budget
 // trimming is NON-summarizing (cmTrimWorking) because the older turns are
-// durable in cortex and the coarse history rides the durable story-so-far
+// durable in Neocortex and the coarse history rides the durable story-so-far
 // already surfaced in cmTail. The request-body byte cap is independent of the
 // token budget: the token estimate undercounts the serialized JSON, so a
 // window within token budget can still 413 — images strip first (cheaper,
@@ -1028,7 +1028,7 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 		// first strip dead-weight inline images from older turns and retry —
 		// far less lossy than discarding context. Only if that still 413s do
 		// we fall back to the non-summarizing trim (the older turns are
-		// durable in cortex) and retry once more.
+		// durable in Neocortex) and retry once more.
 		if errors.Is(err, llm.ErrRequestTooLarge) {
 			if a.stripOldImages() > 0 {
 				var prepareErr error
@@ -1102,9 +1102,9 @@ func (a *Agent) deliberate(step int, res *llm.ChatResult, streamedReasoning bool
 	t := a.turn
 	a.working = append(a.working, res.Message)
 	// Continuous-memory (task 6.1): record a TOOL-CALLING assistant turn
-	// (content + calls) to the durable cortex transcript. No-op when off. The
+	// (content + calls) to the durable Neocortex transcript. No-op when off. The
 	// ORIGINAL content is recorded here BEFORE the Cassandra controller may
-	// edit the in-window copy, so cortex stays ground truth (req.7.1). A BARE
+	// edit the in-window copy, so Neocortex stays ground truth (req.7.1). A BARE
 	// answer is NOT recorded here: its fate is decided by the close chain, and
 	// recording it before the verdict wrote guard-rejected, never-delivered
 	// answers into durable memory as if the user had seen them — the model
@@ -1189,7 +1189,7 @@ func (a *Agent) closeTurn(ctx context.Context, res *llm.ChatResult, _ bool, user
 	t.closeChurn = 0
 	t.lastCloseContent = ""
 	// The answer is really shipping: record the ORIGINAL bare-answer turn to
-	// the durable cortex transcript now (deliberate defers bare answers to
+	// the durable Neocortex transcript now (deliberate defers bare answers to
 	// this delivery verdict so a rejected close never poisons durable memory
 	// with an answer the user was never shown).
 	a.cmRecordAssistant(res.Message)
@@ -1359,7 +1359,7 @@ func (a *Agent) noteBatch(calls []llm.ToolCall) (repeat, stalled bool) {
 // steer, the self-claim contradiction and forced-revision directives, and the
 // prediction-mismatch guidance — flows through this one function. It builds
 // the turn via llm.GuidanceMessage (the Guidance flag + envelope are what keep
-// steering out of the durable cortex transcript — cmRecordAssistant's
+// steering out of the durable Neocortex transcript — cmRecordAssistant's
 // IsGuidance gate — and off every user-facing surface — StripGuidance at the
 // harness) and appends it to the working transcript. Contract — mutates: the
 // working transcript only; blank text appends nothing. Returns the built
@@ -1531,8 +1531,8 @@ func (a *Agent) nameReasoning(text string) string {
 	return text
 }
 
-// collectSurfaced records the cortex URIs injected into this turn so the loop
-// can attest them as USED on a successful completion — the cortex usage-salience
+// collectSurfaced records the Neocortex URIs injected into this turn so the loop
+// can attest them as USED on a successful completion — the Neocortex usage-salience
 // + EMA learning signal. Accumulates across the opening fault and every
 // mid-turn refault (a set, so re-surfacing across refaults isn't double-counted
 // within the turn).
@@ -1843,7 +1843,7 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 		}
 		a.working = append(a.working, llm.ToolResult(call.ID, name, capped))
 		// Continuous-memory (task 6.1): record the FULL tool result to the
-		// durable cortex transcript (cortex spills oversized payloads itself).
+		// durable Neocortex transcript (Neocortex spills oversized payloads itself).
 		a.cmRecordToolResult(name, evidence)
 		a.noteWebEvidence(name, parsedArgs[i], evidence, isErr)
 		// Epistemic-core Mechanisms 3+4 (req.6.2/7.1): the belief-update seam —
@@ -1950,7 +1950,7 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) er
 		}
 		a.working = append(a.working, llm.ToolResult(call.ID, name, capped))
 		// Continuous-memory (task 6.1): record the FULL tool result to the
-		// durable cortex transcript (cortex spills oversized payloads itself).
+		// durable Neocortex transcript (Neocortex spills oversized payloads itself).
 		a.cmRecordToolResult(name, evidence)
 		a.noteWebEvidence(name, args, evidence, isErr)
 		// Epistemic-core Mechanisms 3+4 (req.6.2/7.1): the belief-update seam,

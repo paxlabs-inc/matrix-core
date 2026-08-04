@@ -149,8 +149,8 @@ func TestStraightToCompleteDeliversAnswerViaEphemeralStub(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-straight-complete"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-straight-complete"
 
 	pager, err := memory.Open(cfg)
 	if err != nil {

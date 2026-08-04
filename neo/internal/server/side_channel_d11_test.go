@@ -322,9 +322,9 @@ func TestSideChannelNonPerturbation_D11(t *testing.T) {
 	}
 
 	// --- R11.1: the side-channel's ONLY effect is the durable surface JSONL.
-	// No signed envelope, no cortex segment, no plan/walk artifact. The engine
+	// No signed envelope, no Neocortex segment, no plan/walk artifact. The engine
 	// under test wires only the broker + store, so the tap is structurally
-	// incapable of mutating cortex/plan/walk or signing. ---
+	// incapable of mutating Neocortex/plan/walk or signing. ---
 	entries, err := os.ReadDir(storeDir)
 	if err != nil {
 		t.Fatalf("read store dir: %v", err)
@@ -336,7 +336,7 @@ func TestSideChannelNonPerturbation_D11(t *testing.T) {
 			names = append(names, en.Name())
 		}
 		t.Fatalf("store dir contains %v — the only side effect must be the surface JSONL %q "+
-			"(no signing / cortex / plan / walk artifacts)", names, wantFile)
+			"(no signing / Neocortex / plan / walk artifacts)", names, wantFile)
 	}
 	if _, err := os.Stat(filepath.Join(storeDir, wantFile)); err != nil {
 		t.Fatalf("expected surface JSONL at %s: %v", filepath.Join(storeDir, wantFile), err)

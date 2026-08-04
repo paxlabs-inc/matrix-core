@@ -33,7 +33,7 @@ import (
 // A session is one conversation thread: its own agent loop (transcript +
 // summary + goal) over the engine's shared models, tools, pager, and
 // consolidator. Turns within a conversation are serialized; distinct
-// conversations run concurrently and share one cortex store safely (the goal
+// conversations run concurrently and share one Neocortex store safely (the goal
 // lives on the agent, not the pager).
 type session struct {
 	id     string // conversation_id
@@ -937,7 +937,7 @@ func deathDigest(prev error) string {
 
 // deathEntry is the SINGLE description of one supervised-attempt death — the
 // shared source for BOTH death-journal read paths (self-model task 3.1,
-// req.4.3), so the immediate successor-prime digest and the durable cortex
+// req.4.3), so the immediate successor-prime digest and the durable Neocortex
 // record cannot describe the same death differently. The where-it-got-stuck
 // Digest is the same deathDigest(err) both paths read; Class and State live on
 // the durable record (the richer surface), while the prime folds in the Digest.
@@ -967,7 +967,7 @@ func newDeathEntry(objective string, attempt int, err error, class delegate.Fail
 	}
 }
 
-// durableSummary renders the entry as the durable cortex death-journal line: the
+// durableSummary renders the entry as the durable Neocortex death-journal line: the
 // unchanged prefix from last session (objective, attempt, class, digest) plus
 // the agent's rich loop-state suffix (self-model task 2.2), so the record
 // carries the actual failure MODE, not just a sentence.
@@ -978,7 +978,7 @@ func (e deathEntry) durableSummary() string {
 	) + e.State
 }
 
-// recordLoopDeath persists a structured death-journal entry to cortex when a
+// recordLoopDeath persists a structured death-journal entry to Neocortex when a
 // supervised attempt died and forced a respawn — the DURABLE read path of the
 // death journal (the immediate path is the successor's resume prime). It is
 // built from the shared deathEntry so it describes the SAME death the successor's
@@ -1464,7 +1464,7 @@ func (s *session) clearGate(nodeID string) {
 // waiter keyed by the Ask surface id and parks on the channel; the HTTP
 // receiver (POST /intents/{id}/asks/{ask_id}/answer) validates the posted
 // response and delivers it. The answer re-enters the agent as the tool result
-// — an INPUT on the same footing as a user message, never a plan/walk/cortex
+// — an INPUT on the same footing as a user message, never a plan/walk/Neocortex
 // mutation.
 
 func (s *session) registerAsk(askID string, ask *primitives.Ask) <-chan *primitives.AskResponse {

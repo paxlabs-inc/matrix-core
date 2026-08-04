@@ -1,16 +1,21 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/processisolation kind=package
   digest=b3:4e698ca991e235ed27bb883adbbe60df95101d24f7bc1093685ffe163bebabca file=workforce/internal/processisolation range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/processisolation/command.go,matrix/workforce/internal/processisolation/verification.go
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/internal/actorstate,matrix/workforce/internal/audit,matrix/workforce/internal/developer
 
 NODE id=matrix/workforce/internal/processisolation.Command kind=func
   digest=b3:18c380e32b2f709e77e3f13cba0f59cccdc386eb76550706fed85b8ec86c470c file=workforce/internal/processisolation/command.go range=76:133 lang=go exported=true byte_range=1921:3907
   sig=func Command(ctx context.Context, spec Spec) (*IsolatedCommand, error)
   doc=Command builds the deny-by-default Bubblewrap command for one trusted\nWorkforce worker binary. The environment values are trusted kernel inputs;\nthe worker process, its output, and all packet content remain untrusted.
 EDGES
+  calls=matrix/workforce/internal/processisolation.absoluteExecutable,matrix/workforce/internal/processisolation.openVerifiedExecutable,matrix/workforce/internal/processisolation.validEnvironmentName,matrix/workforce/internal/processisolation.verifyTrustedLauncher
+  references=matrix/workforce/internal/processisolation.IsolatedCommand,matrix/workforce/internal/processisolation.Spec,matrix/workforce/internal/processisolation.absoluteExecutable,matrix/workforce/internal/processisolation.args,matrix/workforce/internal/processisolation.binary,matrix/workforce/internal/processisolation.binaryFile,matrix/workforce/internal/processisolation.bubblewrap,matrix/workforce/internal/processisolation.command,matrix/workforce/internal/processisolation.ctx,matrix/workforce/internal/processisolation.directory,matrix/workforce/internal/processisolation.err,matrix/workforce/internal/processisolation.key,matrix/workforce/internal/processisolation.keys,matrix/workforce/internal/processisolation.openVerifiedExecutable,matrix/workforce/internal/processisolation.release,matrix/workforce/internal/processisolation.spec,matrix/workforce/internal/processisolation.validEnvironmentName,matrix/workforce/internal/processisolation.value,matrix/workforce/internal/processisolation.verifyTrustedLauncher
+  ^calls=matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/audit.Runner.RunVerified
+  ^references=matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/audit.Runner.RunVerified
   ^defines=matrix/workforce/internal/processisolation/command.go
 
 NODE id=matrix/workforce/internal/processisolation.IsolatedCommand kind=type
@@ -18,6 +23,7 @@ NODE id=matrix/workforce/internal/processisolation.IsolatedCommand kind=type
   sig=type IsolatedCommand struct {\n	*exec.Cmd\n	binary		*os.File\n	directory	string\n}
 EDGES
   contains=matrix/workforce/internal/processisolation.IsolatedCommand#binary,matrix/workforce/internal/processisolation.IsolatedCommand#directory,matrix/workforce/internal/processisolation.IsolatedCommand.Close,matrix/workforce/internal/processisolation.IsolatedCommand.Run
+  ^references=matrix/workforce/internal/processisolation.Command,matrix/workforce/internal/processisolation.IsolatedCommand.Close,matrix/workforce/internal/processisolation.IsolatedCommand.Run
   ^defines=matrix/workforce/internal/processisolation/command.go
 
 NODE id=matrix/workforce/internal/processisolation.IsolatedCommand#binary kind=field
@@ -37,7 +43,10 @@ NODE id=matrix/workforce/internal/processisolation.IsolatedCommand.Close kind=me
   sig=func (command *IsolatedCommand) Close() error
   doc=Close releases the private verified worker image. Run calls it; callers that\nabandon a built command before running it must call it themselves. Each piece\nof state is cleared only once it is actually released, so a failed cleanup\nstays visible to a repeated Close rather than being silently forgotten.
 EDGES
+  references=matrix/workforce/internal/processisolation.IsolatedCommand,matrix/workforce/internal/processisolation.command,matrix/workforce/internal/processisolation.err,matrix/workforce/internal/processisolation.failures
   ^contains=matrix/workforce/internal/processisolation.IsolatedCommand
+  ^calls=matrix/workforce/internal/processisolation.IsolatedCommand.Run
+  ^references=matrix/workforce/internal/processisolation.IsolatedCommand.Run
   ^defines=matrix/workforce/internal/processisolation/command.go
 
 NODE id=matrix/workforce/internal/processisolation.IsolatedCommand.Run kind=method
@@ -45,7 +54,11 @@ NODE id=matrix/workforce/internal/processisolation.IsolatedCommand.Run kind=meth
   sig=func (command *IsolatedCommand) Run() error
   doc=Run executes the isolated worker and always releases the verified image.\nBoth failures are reported: a leaked image is a real condition, and joining\nkeeps the execution error matchable by errors.Is.
 EDGES
+  calls=matrix/workforce/internal/processisolation.IsolatedCommand.Close
+  references=matrix/workforce/internal/processisolation.IsolatedCommand,matrix/workforce/internal/processisolation.IsolatedCommand.Close,matrix/workforce/internal/processisolation.command,matrix/workforce/internal/processisolation.runErr
   ^contains=matrix/workforce/internal/processisolation.IsolatedCommand
+  ^calls=matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/audit.Runner.RunVerified
+  ^references=matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/audit.Runner.RunVerified
   ^defines=matrix/workforce/internal/processisolation/command.go
 
 NODE id=matrix/workforce/internal/processisolation.Spec kind=type
@@ -53,6 +66,7 @@ NODE id=matrix/workforce/internal/processisolation.Spec kind=type
   sig=type Spec struct {\n	Bubblewrap		string\n	Binary			string\n	ExpectedBuildDigest	string\n	Target			string\n	Env			map[string]string\n}
 EDGES
   contains=matrix/workforce/internal/processisolation.Spec#Binary,matrix/workforce/internal/processisolation.Spec#Bubblewrap,matrix/workforce/internal/processisolation.Spec#Env,matrix/workforce/internal/processisolation.Spec#ExpectedBuildDigest,matrix/workforce/internal/processisolation.Spec#Target
+  ^references=matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/audit.Runner.RunVerified,matrix/workforce/internal/processisolation.Command
   ^defines=matrix/workforce/internal/processisolation/command.go
 
 NODE id=matrix/workforce/internal/processisolation.Spec#Binary kind=field
@@ -90,6 +104,10 @@ NODE id=matrix/workforce/internal/processisolation.VerificationCommand kind=func
   sig=func VerificationCommand(\n	ctx context.Context,\n	spec VerificationSpec,\n) (*WorkspaceCommand, error)
   doc=VerificationCommand builds a networkless, capability-free verifier with a\nread-only pinned workspace and a fresh writable cache.
 EDGES
+  calls=matrix/workforce/internal/processisolation.absoluteExecutable,matrix/workforce/internal/processisolation.pathWithin,matrix/workforce/internal/processisolation.verifyTrustedLauncher,matrix/workforce/internal/processisolation.verifyTrustedProgram
+  references=matrix/workforce/internal/processisolation.VerificationSpec,matrix/workforce/internal/processisolation.WorkspaceCommand,matrix/workforce/internal/processisolation.absoluteExecutable,matrix/workforce/internal/processisolation.args,matrix/workforce/internal/processisolation.argument,matrix/workforce/internal/processisolation.before,matrix/workforce/internal/processisolation.bubblewrap,matrix/workforce/internal/processisolation.command,matrix/workforce/internal/processisolation.ctx,matrix/workforce/internal/processisolation.declared,matrix/workforce/internal/processisolation.err,matrix/workforce/internal/processisolation.executable,matrix/workforce/internal/processisolation.opened,matrix/workforce/internal/processisolation.pathWithin,matrix/workforce/internal/processisolation.release,matrix/workforce/internal/processisolation.resolvedExecutable,matrix/workforce/internal/processisolation.root,matrix/workforce/internal/processisolation.sandboxExecutable,matrix/workforce/internal/processisolation.spec,matrix/workforce/internal/processisolation.toolchainRoot,matrix/workforce/internal/processisolation.verifyTrustedLauncher,matrix/workforce/internal/processisolation.verifyTrustedProgram,matrix/workforce/internal/processisolation.workspace
+  ^calls=matrix/workforce/internal/developer.Adapter.runVerification
+  ^references=matrix/workforce/internal/developer.Adapter.runVerification
   ^defines=matrix/workforce/internal/processisolation/verification.go
 
 NODE id=matrix/workforce/internal/processisolation.VerificationSpec kind=type
@@ -98,6 +116,7 @@ NODE id=matrix/workforce/internal/processisolation.VerificationSpec kind=type
   doc=VerificationSpec is one fixed, read-only workspace verification boundary.\nThe executable and arguments are kernel configuration; no agent-controlled\npath, environment, mount, or network access crosses this boundary.
 EDGES
   contains=matrix/workforce/internal/processisolation.VerificationSpec#Arguments,matrix/workforce/internal/processisolation.VerificationSpec#Bubblewrap,matrix/workforce/internal/processisolation.VerificationSpec#Executable,matrix/workforce/internal/processisolation.VerificationSpec#Workspace
+  ^references=matrix/workforce/internal/developer.Adapter.runVerification,matrix/workforce/internal/processisolation.VerificationCommand
   ^defines=matrix/workforce/internal/processisolation/verification.go
 
 NODE id=matrix/workforce/internal/processisolation.VerificationSpec#Arguments kind=field
@@ -130,6 +149,7 @@ NODE id=matrix/workforce/internal/processisolation.WorkspaceCommand kind=type
   doc=WorkspaceCommand owns the pinned workspace descriptor used by Bubblewrap.
 EDGES
   contains=matrix/workforce/internal/processisolation.WorkspaceCommand#workspace,matrix/workforce/internal/processisolation.WorkspaceCommand.Close,matrix/workforce/internal/processisolation.WorkspaceCommand.Run
+  ^references=matrix/workforce/internal/processisolation.VerificationCommand,matrix/workforce/internal/processisolation.WorkspaceCommand.Close,matrix/workforce/internal/processisolation.WorkspaceCommand.Run
   ^defines=matrix/workforce/internal/processisolation/verification.go
 
 NODE id=matrix/workforce/internal/processisolation.WorkspaceCommand#workspace kind=field
@@ -143,7 +163,10 @@ NODE id=matrix/workforce/internal/processisolation.WorkspaceCommand.Close kind=m
   sig=func (command *WorkspaceCommand) Close() error
   doc=Close releases a verification command that was built but not run.
 EDGES
+  references=matrix/workforce/internal/processisolation.WorkspaceCommand,matrix/workforce/internal/processisolation.command,matrix/workforce/internal/processisolation.err
   ^contains=matrix/workforce/internal/processisolation.WorkspaceCommand
+  ^calls=matrix/workforce/internal/developer.Adapter.runVerification,matrix/workforce/internal/processisolation.WorkspaceCommand.Run
+  ^references=matrix/workforce/internal/developer.Adapter.runVerification,matrix/workforce/internal/processisolation.WorkspaceCommand.Run
   ^defines=matrix/workforce/internal/processisolation/verification.go
 
 NODE id=matrix/workforce/internal/processisolation.WorkspaceCommand.Run kind=method
@@ -151,19 +174,27 @@ NODE id=matrix/workforce/internal/processisolation.WorkspaceCommand.Run kind=met
   sig=func (command *WorkspaceCommand) Run() error
   doc=Run executes the verifier and releases the pinned workspace descriptor.
 EDGES
+  calls=matrix/workforce/internal/processisolation.WorkspaceCommand.Close
+  references=matrix/workforce/internal/processisolation.WorkspaceCommand,matrix/workforce/internal/processisolation.WorkspaceCommand.Close,matrix/workforce/internal/processisolation.command
   ^contains=matrix/workforce/internal/processisolation.WorkspaceCommand
+  ^calls=matrix/workforce/internal/developer.Adapter.runVerification
+  ^references=matrix/workforce/internal/developer.Adapter.runVerification
   ^defines=matrix/workforce/internal/processisolation/verification.go
 
 NODE id=matrix/workforce/internal/processisolation.absoluteExecutable kind=func
   digest=b3:8ddf7bf0c6a52e75aaad3f343b170779da9952c22c9a309a3a09918c80d7d9a0 file=workforce/internal/processisolation/command.go range=135:144 lang=go exported=false byte_range=3909:4274
   sig=func absoluteExecutable(value, name string) (string, error)
 EDGES
+  references=matrix/workforce/internal/processisolation.absolute,matrix/workforce/internal/processisolation.err,matrix/workforce/internal/processisolation.name,matrix/workforce/internal/processisolation.value
+  ^calls=matrix/workforce/internal/processisolation.Command,matrix/workforce/internal/processisolation.VerificationCommand
+  ^references=matrix/workforce/internal/processisolation.Command,matrix/workforce/internal/processisolation.VerificationCommand
   ^defines=matrix/workforce/internal/processisolation/command.go
 
 NODE id=matrix/workforce/internal/processisolation.allowedEnvironment kind=var
   digest=b3:8eb0a9b25eb41bbade5242cc56722122468346505a0b1fb80b2f42131b7252a0 file=workforce/internal/processisolation/command.go range=29:33 lang=go exported=false byte_range=484:662
   sig=map[string]struct{}
 EDGES
+  ^references=matrix/workforce/internal/processisolation.validEnvironmentName
   ^defines=matrix/workforce/internal/processisolation/command.go
 
 NODE id=matrix/workforce/internal/processisolation.openVerifiedExecutable kind=func
@@ -171,18 +202,28 @@ NODE id=matrix/workforce/internal/processisolation.openVerifiedExecutable kind=f
   sig=func openVerifiedExecutable(path, expectedDigest string) (*os.File, string, error)
   doc=openVerifiedExecutable returns a read-only descriptor whose bytes cannot\nchange after verification, together with the private directory holding it.\n\nCopying the deployed worker into a private image is what makes verification\nbinding: hashing the deployed inode in place would leave a window in which a\nretained writable descriptor could rewrite those bytes after verification and\nbefore execution. Three properties keep the copy fixed. Its parent must not\nbe an unprotected shared directory, so nobody else can rename or replace the\nprivate directory. The read-only descriptor is reopened through /proc/self/fd\nrather than by path, so the inode is reached from the descriptor already held\ninstead of through a second name lookup a rename could redirect. And the only\nwritable descriptor is closed before the image is hashed, so from that point\nthe bytes behind the returned descriptor cannot be rewritten.\n\nThe image stays linked because Bubblewrap binds it by path; an unlinked inode\ncannot be bind-mounted.
 EDGES
+  calls=matrix/workforce/internal/processisolation.verifyPrivateImageParent
+  references=matrix/workforce/internal/processisolation.character,matrix/workforce/internal/processisolation.closeWritable,matrix/workforce/internal/processisolation.directory,matrix/workforce/internal/processisolation.err,matrix/workforce/internal/processisolation.expectedDigest,matrix/workforce/internal/processisolation.file,matrix/workforce/internal/processisolation.imageInfo,matrix/workforce/internal/processisolation.imagePath,matrix/workforce/internal/processisolation.info,matrix/workforce/internal/processisolation.openedInfo,matrix/workforce/internal/processisolation.path,matrix/workforce/internal/processisolation.release,matrix/workforce/internal/processisolation.source,matrix/workforce/internal/processisolation.statErr,matrix/workforce/internal/processisolation.sum,matrix/workforce/internal/processisolation.verifyPrivateImageParent,matrix/workforce/internal/processisolation.writable,matrix/workforce/internal/processisolation.writableInfo
+  ^calls=matrix/workforce/internal/processisolation.Command
+  ^references=matrix/workforce/internal/processisolation.Command
   ^defines=matrix/workforce/internal/processisolation/command.go
 
 NODE id=matrix/workforce/internal/processisolation.pathWithin kind=func
   digest=b3:ba0150130372a1debcde4ebb210152bb5b0dd31b13f66fd3994b02b1f5a748b1 file=workforce/internal/processisolation/verification.go range=177:181 lang=go exported=false byte_range=5700:5896
   sig=func pathWithin(path, parent string) bool
 EDGES
+  references=matrix/workforce/internal/processisolation.err,matrix/workforce/internal/processisolation.parent,matrix/workforce/internal/processisolation.path,matrix/workforce/internal/processisolation.relative
+  ^calls=matrix/workforce/internal/processisolation.VerificationCommand
+  ^references=matrix/workforce/internal/processisolation.VerificationCommand
   ^defines=matrix/workforce/internal/processisolation/verification.go
 
 NODE id=matrix/workforce/internal/processisolation.validEnvironmentName kind=func
   digest=b3:47f22aa4a4938a8e39b92cb96ec365d099ac7ef748e188e27699b60e061d44d6 file=workforce/internal/processisolation/command.go range=335:350 lang=go exported=false byte_range=12147:12554
   sig=func validEnvironmentName(value string) bool
 EDGES
+  references=matrix/workforce/internal/processisolation.allowed,matrix/workforce/internal/processisolation.allowedEnvironment,matrix/workforce/internal/processisolation.character,matrix/workforce/internal/processisolation.index,matrix/workforce/internal/processisolation.value
+  ^calls=matrix/workforce/internal/processisolation.Command
+  ^references=matrix/workforce/internal/processisolation.Command
   ^defines=matrix/workforce/internal/processisolation/command.go
 
 NODE id=matrix/workforce/internal/processisolation.verifyPrivateImageParent kind=func
@@ -190,6 +231,9 @@ NODE id=matrix/workforce/internal/processisolation.verifyPrivateImageParent kind
   sig=func verifyPrivateImageParent(parent string) error
   doc=verifyPrivateImageParent rejects a temporary parent that other users could\nrename or replace entries in. A shared directory is acceptable only when the\nsticky bit prevents one user from removing another's entries, which is what\nkeeps the private image directory ours for its whole lifetime.
 EDGES
+  references=matrix/workforce/internal/processisolation.err,matrix/workforce/internal/processisolation.info,matrix/workforce/internal/processisolation.ok,matrix/workforce/internal/processisolation.parent,matrix/workforce/internal/processisolation.stat
+  ^calls=matrix/workforce/internal/processisolation.openVerifiedExecutable
+  ^references=matrix/workforce/internal/processisolation.openVerifiedExecutable
   ^defines=matrix/workforce/internal/processisolation/command.go
 
 NODE id=matrix/workforce/internal/processisolation.verifyTrustedLauncher kind=func
@@ -197,6 +241,10 @@ NODE id=matrix/workforce/internal/processisolation.verifyTrustedLauncher kind=fu
   sig=func verifyTrustedLauncher(path string) error
   doc=verifyTrustedLauncher rejects a Bubblewrap launcher that anyone outside the\nkernel's own trust boundary could replace. The launcher runs with the\nworkforced identity before any sandbox argument takes effect, so a\nsubstituted launcher would silently ignore the whole boundary.
 EDGES
+  calls=matrix/workforce/internal/processisolation.verifyTrustedOwner
+  references=matrix/workforce/internal/processisolation.directory,matrix/workforce/internal/processisolation.directoryInfo,matrix/workforce/internal/processisolation.err,matrix/workforce/internal/processisolation.info,matrix/workforce/internal/processisolation.path,matrix/workforce/internal/processisolation.verifyTrustedOwner
+  ^calls=matrix/workforce/internal/processisolation.Command,matrix/workforce/internal/processisolation.VerificationCommand
+  ^references=matrix/workforce/internal/processisolation.Command,matrix/workforce/internal/processisolation.VerificationCommand
   ^defines=matrix/workforce/internal/processisolation/command.go
 
 NODE id=matrix/workforce/internal/processisolation.verifyTrustedOwner kind=func
@@ -204,12 +252,19 @@ NODE id=matrix/workforce/internal/processisolation.verifyTrustedOwner kind=func
   sig=func verifyTrustedOwner(info os.FileInfo, name string) error
   doc=verifyTrustedOwner requires root ownership rather than merely accepting the\nservice's own identity. The launcher is executed by pathname, so anything a\nsame-identity process could replace between verification and execution would\nsilently discard the sandbox.
 EDGES
+  references=matrix/workforce/internal/processisolation.info,matrix/workforce/internal/processisolation.name,matrix/workforce/internal/processisolation.ok,matrix/workforce/internal/processisolation.stat
+  ^calls=matrix/workforce/internal/processisolation.verifyTrustedLauncher,matrix/workforce/internal/processisolation.verifyTrustedProgram
+  ^references=matrix/workforce/internal/processisolation.verifyTrustedLauncher,matrix/workforce/internal/processisolation.verifyTrustedProgram
   ^defines=matrix/workforce/internal/processisolation/command.go
 
 NODE id=matrix/workforce/internal/processisolation.verifyTrustedProgram kind=func
   digest=b3:ed2b5cbae5c2b6953419b813a4c20253816c71a51b18ef7913540a5912cccc14 file=workforce/internal/processisolation/verification.go range=150:175 lang=go exported=false byte_range=4775:5698
   sig=func verifyTrustedProgram(path string) error
 EDGES
+  calls=matrix/workforce/internal/processisolation.verifyTrustedOwner
+  references=matrix/workforce/internal/processisolation.directory,matrix/workforce/internal/processisolation.err,matrix/workforce/internal/processisolation.info,matrix/workforce/internal/processisolation.path,matrix/workforce/internal/processisolation.verifyTrustedOwner
+  ^calls=matrix/workforce/internal/processisolation.VerificationCommand
+  ^references=matrix/workforce/internal/processisolation.VerificationCommand
   ^defines=matrix/workforce/internal/processisolation/verification.go
 
 NODE id=matrix/workforce/internal/processisolation/command.go kind=file

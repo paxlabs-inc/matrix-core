@@ -1,9 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/testauthority kind=package
   digest=b3:8d86ec5c1130168d90b14e58ce943543781458823f98892b0bd0ee5043c64314 file=workforce/internal/testauthority range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/testauthority/authority.go
+  imports=matrix/vault,matrix/workforce/internal/contracts,matrix/workforce/internal/lease,matrix/workforce/internal/policy
   ^contains=mod:matrix/workforce
 
 NODE id=matrix/workforce/internal/testauthority.Fixture kind=type
@@ -11,6 +12,8 @@ NODE id=matrix/workforce/internal/testauthority.Fixture kind=type
   sig=type Fixture struct {\n	store			*policy.Store\n	tenant			string\n	root			policy.OwnerRoot\n	key			ed25519.PrivateKey\n	grant			policy.OwnerGrant\n	now			func() time.Time\n	label			string\n	runtimeMu		sync.Mutex\n	runtimePublished	bool\n}
 EDGES
   contains=matrix/workforce/internal/testauthority.Fixture#grant,matrix/workforce/internal/testauthority.Fixture#key,matrix/workforce/internal/testauthority.Fixture#label,matrix/workforce/internal/testauthority.Fixture#now,matrix/workforce/internal/testauthority.Fixture#root,matrix/workforce/internal/testauthority.Fixture#runtimeMu,matrix/workforce/internal/testauthority.Fixture#runtimePublished,matrix/workforce/internal/testauthority.Fixture#store,matrix/workforce/internal/testauthority.Fixture#tenant,matrix/workforce/internal/testauthority.Fixture.Publish,matrix/workforce/internal/testauthority.Fixture.PublishExact,matrix/workforce/internal/testauthority.Fixture.PublishSeat,matrix/workforce/internal/testauthority.Fixture.Register,matrix/workforce/internal/testauthority.Fixture.Store,matrix/workforce/internal/testauthority.Fixture.ensureRuntimeAuthority
+  references=matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.OwnerRoot,matrix/workforce/internal/policy.Store
+  ^references=matrix/workforce/internal/testauthority.Fixture.Publish,matrix/workforce/internal/testauthority.Fixture.PublishExact,matrix/workforce/internal/testauthority.Fixture.PublishSeat,matrix/workforce/internal/testauthority.Fixture.Register,matrix/workforce/internal/testauthority.Fixture.Store,matrix/workforce/internal/testauthority.Fixture.ensureRuntimeAuthority,matrix/workforce/internal/testauthority.New
   ^defines=matrix/workforce/internal/testauthority/authority.go
 
 NODE id=matrix/workforce/internal/testauthority.Fixture#grant kind=field
@@ -71,6 +74,8 @@ NODE id=matrix/workforce/internal/testauthority.Fixture.Publish kind=method
   digest=b3:ab8b94dcb295a8f5e80667050280a4a32d9997171fa0892e0ae3b9cbe5144ac8 file=workforce/internal/testauthority/authority.go range=130:177 lang=go exported=true byte_range=3633:5700
   sig=func (fixture *Fixture) Publish(\n	ctx context.Context,\n	request lease.Request,\n	allowedSkills ...contracts.SkillID,\n) (Published, error)
 EDGES
+  calls=matrix/workforce/internal/policy.SignMandate,matrix/workforce/internal/testauthority.Fixture.PublishExact,matrix/workforce/internal/testauthority.shortToken
+  references=matrix/workforce/internal/contracts.ClassificationOrganization,matrix/workforce/internal/contracts.DataScope,matrix/workforce/internal/contracts.DepartmentDeveloper,matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.EscalationRule,matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/contracts.Prohibition,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/contracts.SeatBindingID,matrix/workforce/internal/contracts.SeatDID,matrix/workforce/internal/contracts.SeatExecutor,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/lease.Request,matrix/workforce/internal/policy.SignMandate,matrix/workforce/internal/testauthority.Fixture,matrix/workforce/internal/testauthority.Fixture.PublishExact,matrix/workforce/internal/testauthority.Published,matrix/workforce/internal/testauthority.allowedSkills,matrix/workforce/internal/testauthority.ctx,matrix/workforce/internal/testauthority.current,matrix/workforce/internal/testauthority.err,matrix/workforce/internal/testauthority.fixture,matrix/workforce/internal/testauthority.identitySuffix,matrix/workforce/internal/testauthority.mandate,matrix/workforce/internal/testauthority.request,matrix/workforce/internal/testauthority.seat,matrix/workforce/internal/testauthority.shortToken
   ^contains=matrix/workforce/internal/testauthority.Fixture
   ^defines=matrix/workforce/internal/testauthority/authority.go
 
@@ -78,7 +83,11 @@ NODE id=matrix/workforce/internal/testauthority.Fixture.PublishExact kind=method
   digest=b3:25a9a9befa5d2e52df0889476a67e7cae7701487eaf9d33e6cbced4d0366f682 file=workforce/internal/testauthority/authority.go range=179:242 lang=go exported=true byte_range=5702:8094
   sig=func (fixture *Fixture) PublishExact(\n	ctx context.Context,\n	request lease.Request,\n	seat contracts.Seat,\n	mandate contracts.Mandate,\n) (Published, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/policy.SignMandate,matrix/workforce/internal/policy.SignPolicy,matrix/workforce/internal/policy.SignSeat,matrix/workforce/internal/policy.Store.PublishMandate,matrix/workforce/internal/policy.Store.PublishPolicy,matrix/workforce/internal/policy.Store.PublishSeat,matrix/workforce/internal/testauthority.Fixture.ensureRuntimeAuthority
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/contracts.Policy,matrix/workforce/internal/contracts.PolicyRule,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/lease.Request,matrix/workforce/internal/policy.SignMandate,matrix/workforce/internal/policy.SignPolicy,matrix/workforce/internal/policy.SignSeat,matrix/workforce/internal/policy.Store.PublishMandate,matrix/workforce/internal/policy.Store.PublishPolicy,matrix/workforce/internal/policy.Store.PublishSeat,matrix/workforce/internal/testauthority.Fixture,matrix/workforce/internal/testauthority.Fixture.ensureRuntimeAuthority,matrix/workforce/internal/testauthority.Published,matrix/workforce/internal/testauthority.canonical,matrix/workforce/internal/testauthority.ctx,matrix/workforce/internal/testauthority.current,matrix/workforce/internal/testauthority.err,matrix/workforce/internal/testauthority.fixture,matrix/workforce/internal/testauthority.index,matrix/workforce/internal/testauthority.mandate,matrix/workforce/internal/testauthority.policies,matrix/workforce/internal/testauthority.request,matrix/workforce/internal/testauthority.seat,matrix/workforce/internal/testauthority.sum,matrix/workforce/internal/testauthority.value
   ^contains=matrix/workforce/internal/testauthority.Fixture
+  ^calls=matrix/workforce/internal/testauthority.Fixture.Publish
+  ^references=matrix/workforce/internal/testauthority.Fixture.Publish
   ^defines=matrix/workforce/internal/testauthority/authority.go
 
 NODE id=matrix/workforce/internal/testauthority.Fixture.PublishSeat kind=method
@@ -86,6 +95,8 @@ NODE id=matrix/workforce/internal/testauthority.Fixture.PublishSeat kind=method
   sig=func (fixture *Fixture) PublishSeat(ctx context.Context, seat contracts.Seat) error
   doc=PublishSeat signs and publishes one exact seat version through the real policy store.
 EDGES
+  calls=matrix/workforce/internal/policy.SignSeat,matrix/workforce/internal/policy.Store.PublishSeat
+  references=matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/policy.SignSeat,matrix/workforce/internal/policy.Store.PublishSeat,matrix/workforce/internal/testauthority.Fixture,matrix/workforce/internal/testauthority.ctx,matrix/workforce/internal/testauthority.err,matrix/workforce/internal/testauthority.fixture,matrix/workforce/internal/testauthority.seat
   ^contains=matrix/workforce/internal/testauthority.Fixture
   ^defines=matrix/workforce/internal/testauthority/authority.go
 
@@ -93,6 +104,8 @@ NODE id=matrix/workforce/internal/testauthority.Fixture.Register kind=method
   digest=b3:37f6828ec39a8d787f069eda8059475f2a5336621abba58ade578fd60c168de7 file=workforce/internal/testauthority/authority.go range=262:308 lang=go exported=true byte_range=8596:10659
   sig=func (fixture *Fixture) Register(\n	ctx context.Context,\n	published Published,\n	fence contracts.FenceToken,\n	label string,\n) (contracts.WakeLease, error)
 EDGES
+  calls=matrix/workforce/internal/policy.SignWakeLease,matrix/workforce/internal/policy.Store.RegisterLease,matrix/workforce/internal/testauthority.digest
+  references=matrix/workforce/internal/contracts.FenceToken,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.MGSGenomeRef,matrix/workforce/internal/contracts.ModelBinding,matrix/workforce/internal/contracts.ModelBindingID,matrix/workforce/internal/contracts.PolicyRef,matrix/workforce/internal/contracts.RuntimeBinding,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WakeBudget,matrix/workforce/internal/contracts.WakeLease,matrix/workforce/internal/policy.SignWakeLease,matrix/workforce/internal/policy.Store.RegisterLease,matrix/workforce/internal/testauthority.Fixture,matrix/workforce/internal/testauthority.Published,matrix/workforce/internal/testauthority.ctx,matrix/workforce/internal/testauthority.digest,matrix/workforce/internal/testauthority.err,matrix/workforce/internal/testauthority.fence,matrix/workforce/internal/testauthority.fixture,matrix/workforce/internal/testauthority.label,matrix/workforce/internal/testauthority.published,matrix/workforce/internal/testauthority.request,matrix/workforce/internal/testauthority.value
   ^contains=matrix/workforce/internal/testauthority.Fixture
   ^defines=matrix/workforce/internal/testauthority/authority.go
 
@@ -100,6 +113,7 @@ NODE id=matrix/workforce/internal/testauthority.Fixture.Store kind=method
   digest=b3:651e24a56d4facd767b858794117056753545111cb9a48b2b252b39f1453d263 file=workforce/internal/testauthority/authority.go range=112:117 lang=go exported=true byte_range=3044:3152
   sig=func (fixture *Fixture) Store() *policy.Store
 EDGES
+  references=matrix/workforce/internal/policy.Store,matrix/workforce/internal/testauthority.Fixture,matrix/workforce/internal/testauthority.fixture
   ^contains=matrix/workforce/internal/testauthority.Fixture
   ^defines=matrix/workforce/internal/testauthority/authority.go
 
@@ -107,13 +121,19 @@ NODE id=matrix/workforce/internal/testauthority.Fixture.ensureRuntimeAuthority k
   digest=b3:bf93393fc255b2807b196566d31fa665acb187929b0b7f5f97e64276b0df327a file=workforce/internal/testauthority/authority.go range=244:260 lang=go exported=false byte_range=8096:8594
   sig=func (fixture *Fixture) ensureRuntimeAuthority(ctx context.Context) error
 EDGES
+  calls=matrix/workforce/internal/testauthority.PublishRuntimeAuthority
+  references=matrix/workforce/internal/testauthority.Fixture,matrix/workforce/internal/testauthority.PublishRuntimeAuthority,matrix/workforce/internal/testauthority.ctx,matrix/workforce/internal/testauthority.err,matrix/workforce/internal/testauthority.fixture,matrix/workforce/internal/testauthority.publicKey
   ^contains=matrix/workforce/internal/testauthority.Fixture
+  ^calls=matrix/workforce/internal/testauthority.Fixture.PublishExact
+  ^references=matrix/workforce/internal/testauthority.Fixture.PublishExact
   ^defines=matrix/workforce/internal/testauthority/authority.go
 
 NODE id=matrix/workforce/internal/testauthority.New kind=func
   digest=b3:f954cbb84c43f5242291ade731bde1741fa8683ea3eab6ec5d28aaa3fc41096a file=workforce/internal/testauthority/authority.go range=71:110 lang=go exported=true byte_range=1735:3042
   sig=func New(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	tenant string,\n	organizationID contracts.OrganizationID,\n	label string,\n	now func() time.Time,\n) (*Fixture, error)
 EDGES
+  calls=matrix/workforce/internal/policy.New,matrix/workforce/internal/policy.SignOwnerGrant
+  references=matrix/vault.UserVault,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/policy.New,matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.OwnerRoot,matrix/workforce/internal/policy.SignOwnerGrant,matrix/workforce/internal/testauthority.Fixture,matrix/workforce/internal/testauthority.current,matrix/workforce/internal/testauthority.err,matrix/workforce/internal/testauthority.grant,matrix/workforce/internal/testauthority.label,matrix/workforce/internal/testauthority.now,matrix/workforce/internal/testauthority.organizationID,matrix/workforce/internal/testauthority.pool,matrix/workforce/internal/testauthority.privateKey,matrix/workforce/internal/testauthority.publicKey,matrix/workforce/internal/testauthority.root,matrix/workforce/internal/testauthority.store,matrix/workforce/internal/testauthority.tenant,matrix/workforce/internal/testauthority.userVault
   ^defines=matrix/workforce/internal/testauthority/authority.go
 
 NODE id=matrix/workforce/internal/testauthority.PublishRuntimeAuthority kind=func
@@ -121,6 +141,10 @@ NODE id=matrix/workforce/internal/testauthority.PublishRuntimeAuthority kind=fun
   sig=func PublishRuntimeAuthority(\n	ctx context.Context,\n	store *policy.Store,\n	organizationID contracts.OrganizationID,\n	keyID string,\n	publicKey ed25519.PublicKey,\n	privateKey ed25519.PrivateKey,\n	grant policy.OwnerGrant,\n	effectiveAt time.Time,\n) error
   doc=PublishRuntimeAuthority installs a real owner-signed lease-signing\ndelegation for integration paths that construct their own authority store.
 EDGES
+  calls=matrix/workforce/internal/policy.RuntimeAuthorityID,matrix/workforce/internal/policy.SignRuntimeAuthority,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.RuntimeAuthority,matrix/workforce/internal/policy.RuntimeAuthorityID,matrix/workforce/internal/policy.SignRuntimeAuthority,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority,matrix/workforce/internal/policy.WakeLeaseSigningPurpose,matrix/workforce/internal/testauthority.ctx,matrix/workforce/internal/testauthority.effectiveAt,matrix/workforce/internal/testauthority.err,matrix/workforce/internal/testauthority.grant,matrix/workforce/internal/testauthority.keyID,matrix/workforce/internal/testauthority.organizationID,matrix/workforce/internal/testauthority.privateKey,matrix/workforce/internal/testauthority.publicKey,matrix/workforce/internal/testauthority.store,matrix/workforce/internal/testauthority.value
+  ^calls=matrix/workforce/internal/testauthority.Fixture.ensureRuntimeAuthority
+  ^references=matrix/workforce/internal/testauthority.Fixture.ensureRuntimeAuthority
   ^defines=matrix/workforce/internal/testauthority/authority.go
 
 NODE id=matrix/workforce/internal/testauthority.Published kind=type
@@ -128,6 +152,8 @@ NODE id=matrix/workforce/internal/testauthority.Published kind=type
   sig=type Published struct {\n	Request	lease.Request\n	Seat	contracts.Seat\n	Mandate	contracts.Mandate\n}
 EDGES
   contains=matrix/workforce/internal/testauthority.Published#Mandate,matrix/workforce/internal/testauthority.Published#Request,matrix/workforce/internal/testauthority.Published#Seat
+  references=matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/lease.Request
+  ^references=matrix/workforce/internal/testauthority.Fixture.Publish,matrix/workforce/internal/testauthority.Fixture.PublishExact,matrix/workforce/internal/testauthority.Fixture.Register
   ^defines=matrix/workforce/internal/testauthority/authority.go
 
 NODE id=matrix/workforce/internal/testauthority.Published#Mandate kind=field
@@ -152,12 +178,18 @@ NODE id=matrix/workforce/internal/testauthority.digest kind=func
   digest=b3:5736b295e470c8486a6e3d233908b4b89297cb8ff79da66a614e5b7523c7a994 file=workforce/internal/testauthority/authority.go range=310:313 lang=go exported=false byte_range=10661:10836
   sig=func digest(value string) contracts.ContentHash
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/testauthority.sum,matrix/workforce/internal/testauthority.value
+  ^calls=matrix/workforce/internal/testauthority.Fixture.Register
+  ^references=matrix/workforce/internal/testauthority.Fixture.Register
   ^defines=matrix/workforce/internal/testauthority/authority.go
 
 NODE id=matrix/workforce/internal/testauthority.shortToken kind=func
   digest=b3:0cb0c1321879ee57f022b5ed91476f33647e91530b2216c4747494d72477c454 file=workforce/internal/testauthority/authority.go range=315:318 lang=go exported=false byte_range=10838:10952
   sig=func shortToken(value string) string
 EDGES
+  references=matrix/workforce/internal/testauthority.sum,matrix/workforce/internal/testauthority.value
+  ^calls=matrix/workforce/internal/testauthority.Fixture.Publish
+  ^references=matrix/workforce/internal/testauthority.Fixture.Publish
   ^defines=matrix/workforce/internal/testauthority/authority.go
 
 NODE id=matrix/workforce/internal/testauthority/authority.go kind=file

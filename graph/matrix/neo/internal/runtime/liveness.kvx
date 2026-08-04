@@ -1,16 +1,18 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/neo/internal/runtime/liveness kind=package
   digest=b3:d7b1f9d70e7b7565ca41a9ac414c0186a60508a23c9b0eb8973a16127e5f44c4 file=neo/internal/runtime/liveness range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/runtime/liveness/circuit.go,matrix/neo/internal/runtime/liveness/policy.go
   ^contains=mod:matrix/neo
+  ^imports=matrix/neo/internal/runtime/belief,matrix/neo/internal/runtime/loop
 
 NODE id=matrix/neo/internal/runtime/liveness.BreakerConfig kind=type
   digest=b3:8121b4253600f78c87037d8bee0ccf8b460b8f8ffc721ca92a0f6c5e473ccf78 file=neo/internal/runtime/liveness/circuit.go range=26:28 lang=go exported=true byte_range=937:1013
   sig=type BreakerConfig struct {\n	RepeatThreshold int `json:"repeat_threshold"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/liveness.BreakerConfig#RepeatThreshold,matrix/neo/internal/runtime/liveness.BreakerConfig.Observe,matrix/neo/internal/runtime/liveness.BreakerConfig.normalized
+  ^references=matrix/neo/internal/runtime/liveness.BreakerConfig.Observe,matrix/neo/internal/runtime/liveness.BreakerConfig.normalized,matrix/neo/internal/runtime/liveness.DefaultBreakerConfig,matrix/neo/internal/runtime/loop.Config
   ^defines=matrix/neo/internal/runtime/liveness/circuit.go
 
 NODE id=matrix/neo/internal/runtime/liveness.BreakerConfig#RepeatThreshold kind=field
@@ -24,14 +26,21 @@ NODE id=matrix/neo/internal/runtime/liveness.BreakerConfig.Observe kind=method
   sig=func (config BreakerConfig) Observe(state *BreakerState, signature string)
   doc=Observe records one dispatched canonical signature and opens the breaker when\nthat signature has been dispatched more times than the threshold allows. It\nis monotonic: an open breaker never closes inside a turn.
 EDGES
+  calls=matrix/neo/internal/runtime/liveness.BreakerConfig.normalized
+  references=matrix/neo/internal/runtime/liveness.BreakerConfig,matrix/neo/internal/runtime/liveness.BreakerConfig.normalized,matrix/neo/internal/runtime/liveness.BreakerState,matrix/neo/internal/runtime/liveness.config,matrix/neo/internal/runtime/liveness.count,matrix/neo/internal/runtime/liveness.signature,matrix/neo/internal/runtime/liveness.state
   ^contains=matrix/neo/internal/runtime/liveness.BreakerConfig
+  ^calls=matrix/neo/internal/runtime/loop.Loop.runTurn
+  ^references=matrix/neo/internal/runtime/loop.Loop.runTurn
   ^defines=matrix/neo/internal/runtime/liveness/circuit.go
 
 NODE id=matrix/neo/internal/runtime/liveness.BreakerConfig.normalized kind=method
   digest=b3:c71c4bb0cb0965640becea8194548a1468a4432e7d2c59e24ab45c1638a442e9 file=neo/internal/runtime/liveness/circuit.go range=34:39 lang=go exported=false byte_range=1125:1285
   sig=func (config BreakerConfig) normalized() BreakerConfig
 EDGES
+  references=matrix/neo/internal/runtime/liveness.BreakerConfig,matrix/neo/internal/runtime/liveness.DefaultRepeatThreshold,matrix/neo/internal/runtime/liveness.config
   ^contains=matrix/neo/internal/runtime/liveness.BreakerConfig
+  ^calls=matrix/neo/internal/runtime/liveness.BreakerConfig.Observe
+  ^references=matrix/neo/internal/runtime/liveness.BreakerConfig.Observe
   ^defines=matrix/neo/internal/runtime/liveness/circuit.go
 
 NODE id=matrix/neo/internal/runtime/liveness.BreakerState kind=type
@@ -40,6 +49,7 @@ NODE id=matrix/neo/internal/runtime/liveness.BreakerState kind=type
   doc=BreakerState is the serializable repetition ledger for one turn. It rides the\nloop cursor into the durable checkpoint so a resumed turn cannot spend the\nchurn budget twice.
 EDGES
   contains=matrix/neo/internal/runtime/liveness.BreakerState#Open,matrix/neo/internal/runtime/liveness.BreakerState#Reason,matrix/neo/internal/runtime/liveness.BreakerState#Signature,matrix/neo/internal/runtime/liveness.BreakerState#Signatures,matrix/neo/internal/runtime/liveness.BreakerState.Enforce
+  ^references=matrix/neo/internal/runtime/liveness.BreakerConfig.Observe,matrix/neo/internal/runtime/liveness.BreakerState.Enforce,matrix/neo/internal/runtime/loop.cursor
   ^defines=matrix/neo/internal/runtime/liveness/circuit.go
 
 NODE id=matrix/neo/internal/runtime/liveness.BreakerState#Open kind=field
@@ -71,7 +81,10 @@ NODE id=matrix/neo/internal/runtime/liveness.BreakerState.Enforce kind=method
   sig=func (state BreakerState) Enforce(phase string) error
   doc=Enforce fails closed at the turn, provider, and tool phases once the breaker\nis open.
 EDGES
+  references=matrix/neo/internal/runtime/liveness.BreakerState,matrix/neo/internal/runtime/liveness.CircuitError,matrix/neo/internal/runtime/liveness.phase,matrix/neo/internal/runtime/liveness.state
   ^contains=matrix/neo/internal/runtime/liveness.BreakerState
+  ^calls=matrix/neo/internal/runtime/loop.Loop.runTurn
+  ^references=matrix/neo/internal/runtime/loop.Loop.runTurn
   ^defines=matrix/neo/internal/runtime/liveness/circuit.go
 
 NODE id=matrix/neo/internal/runtime/liveness.CanonicalToolSignature kind=func
@@ -79,6 +92,9 @@ NODE id=matrix/neo/internal/runtime/liveness.CanonicalToolSignature kind=func
   sig=func CanonicalToolSignature(name string, arguments json.RawMessage) string
   doc=CanonicalToolSignature is the breaker and same-strategy key: the tool name\nplus its arguments in canonical JSON encoding, so semantically identical\ncalls that differ only in key order or whitespace share one signature. It is\ndeliberately NOT the idempotency key, which is per call ID and therefore\nunique to every dispatch.
 EDGES
+  references=matrix/neo/internal/runtime/liveness.arguments,matrix/neo/internal/runtime/liveness.canonical,matrix/neo/internal/runtime/liveness.digest,matrix/neo/internal/runtime/liveness.encoded,matrix/neo/internal/runtime/liveness.err,matrix/neo/internal/runtime/liveness.name,matrix/neo/internal/runtime/liveness.value
+  ^calls=matrix/neo/internal/runtime/loop.Loop.runTurn
+  ^references=matrix/neo/internal/runtime/loop.Loop.runTurn
   ^defines=matrix/neo/internal/runtime/liveness/circuit.go
 
 NODE id=matrix/neo/internal/runtime/liveness.Cause kind=type
@@ -87,6 +103,7 @@ NODE id=matrix/neo/internal/runtime/liveness.Cause kind=type
   doc=Cause is a user-safe explanation of one measured-state-to-decision edge. It\nexposes the consequence and the provenance category, never premise text,\nmemory content, or a claim about feelings.
 EDGES
   contains=matrix/neo/internal/runtime/liveness.Cause#Code,matrix/neo/internal/runtime/liveness.Cause#Explanation
+  ^references=matrix/neo/internal/runtime/liveness.Derive,matrix/neo/internal/runtime/liveness.Policy
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.Cause#Code kind=field
@@ -107,6 +124,7 @@ NODE id=matrix/neo/internal/runtime/liveness.CircuitError kind=type
   doc=CircuitError is the typed refusal a tripped breaker produces at whichever\nphase observed it.
 EDGES
   contains=matrix/neo/internal/runtime/liveness.CircuitError#Phase,matrix/neo/internal/runtime/liveness.CircuitError#Reason,matrix/neo/internal/runtime/liveness.CircuitError#Signature,matrix/neo/internal/runtime/liveness.CircuitError.Error,matrix/neo/internal/runtime/liveness.CircuitError.Unwrap
+  ^references=matrix/neo/internal/runtime/liveness.BreakerState.Enforce,matrix/neo/internal/runtime/liveness.CircuitError.Error,matrix/neo/internal/runtime/liveness.CircuitError.Unwrap
   ^defines=matrix/neo/internal/runtime/liveness/circuit.go
 
 NODE id=matrix/neo/internal/runtime/liveness.CircuitError#Phase kind=field
@@ -131,13 +149,16 @@ NODE id=matrix/neo/internal/runtime/liveness.CircuitError.Error kind=method
   digest=b3:01f396f3bd8259e4caa7594b0e22d306653d45b8d23eabbb39188d9dd58fe6e3 file=neo/internal/runtime/liveness/circuit.go range=59:64 lang=go exported=true byte_range=1949:2108
   sig=func (err *CircuitError) Error() string
 EDGES
+  references=matrix/neo/internal/runtime/liveness.CircuitError,matrix/neo/internal/runtime/liveness.err
   ^contains=matrix/neo/internal/runtime/liveness.CircuitError
+  ^calls=matrix/neo/internal/runtime/loop.Loop.incomplete
   ^defines=matrix/neo/internal/runtime/liveness/circuit.go
 
 NODE id=matrix/neo/internal/runtime/liveness.CircuitError.Unwrap kind=method
   digest=b3:06025bb3733a4e2a86e172e45275f1e7d09124281da3007d67f50f6c70bd8e90 file=neo/internal/runtime/liveness/circuit.go range=66:66 lang=go exported=true byte_range=2110:2175
   sig=func (err *CircuitError) Unwrap() error
 EDGES
+  references=matrix/neo/internal/runtime/liveness.CircuitError,matrix/neo/internal/runtime/liveness.ErrCircuitOpen
   ^contains=matrix/neo/internal/runtime/liveness.CircuitError
   ^defines=matrix/neo/internal/runtime/liveness/circuit.go
 
@@ -146,12 +167,16 @@ NODE id=matrix/neo/internal/runtime/liveness.ClassifyShape kind=func
   sig=func ClassifyShape(request string) Shape
   doc=ClassifyShape is the one authoritative research-request classifier in the\nruntime. The acceptance gate's source requirement and the exploration budget\nread the same markers so the two can never drift apart.
 EDGES
+  references=matrix/neo/internal/runtime/liveness.Shape,matrix/neo/internal/runtime/liveness.ShapeDirect,matrix/neo/internal/runtime/liveness.ShapeResearch,matrix/neo/internal/runtime/liveness.marker,matrix/neo/internal/runtime/liveness.normalized,matrix/neo/internal/runtime/liveness.request
+  ^calls=matrix/neo/internal/runtime/loop.Loop.derivePolicy,matrix/neo/internal/runtime/loop.requestsResearchAnswer
+  ^references=matrix/neo/internal/runtime/loop.Loop.derivePolicy,matrix/neo/internal/runtime/loop.requestsResearchAnswer
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.DefaultBreakerConfig kind=func
   digest=b3:d08ac8b5b2cc015b87f3f657a8d709d816693b62e5a40643b355a42b8f128b4d file=neo/internal/runtime/liveness/circuit.go range=30:32 lang=go exported=true byte_range=1015:1123
   sig=func DefaultBreakerConfig() BreakerConfig
 EDGES
+  references=matrix/neo/internal/runtime/liveness.BreakerConfig,matrix/neo/internal/runtime/liveness.DefaultRepeatThreshold
   ^defines=matrix/neo/internal/runtime/liveness/circuit.go
 
 NODE id=matrix/neo/internal/runtime/liveness.DefaultRepeatThreshold kind=const
@@ -159,6 +184,7 @@ NODE id=matrix/neo/internal/runtime/liveness.DefaultRepeatThreshold kind=const
   sig=untyped int
   doc=DefaultRepeatThreshold is the number of dispatches of one canonical tool\nsignature a turn may make before the breaker opens. It sits deliberately\nabove the same-strategy retry bound (which tops out at four consecutive\ndispatches of one signature) so both mechanisms stay reachable: the retry\nbound catches consecutive repetition and returns the more informative typed\nincomplete, while the breaker is the phase-crossing backstop that also sees\ninterleaved repetition — the A/B/A/B churn the legacy similarity heuristic\nwas blind to.
 EDGES
+  ^references=matrix/neo/internal/runtime/liveness.BreakerConfig.normalized,matrix/neo/internal/runtime/liveness.DefaultBreakerConfig
   ^defines=matrix/neo/internal/runtime/liveness/circuit.go
 
 NODE id=matrix/neo/internal/runtime/liveness.Derive kind=func
@@ -166,30 +192,41 @@ NODE id=matrix/neo/internal/runtime/liveness.Derive kind=func
   sig=func Derive(input Inputs) (Policy, error)
   doc=Derive applies continuous, bounded modulation over measured context. Required\nverification is always preserved.
 EDGES
+  calls=matrix/neo/internal/runtime/liveness.Policy.Validate,matrix/neo/internal/runtime/liveness.clamp,matrix/neo/internal/runtime/liveness.clampInt,matrix/neo/internal/runtime/liveness.explorationAxis,matrix/neo/internal/runtime/liveness.minInt
+  references=matrix/neo/internal/runtime/liveness.Cause,matrix/neo/internal/runtime/liveness.DetailBalanced,matrix/neo/internal/runtime/liveness.Inputs,matrix/neo/internal/runtime/liveness.Policy,matrix/neo/internal/runtime/liveness.Policy.Validate,matrix/neo/internal/runtime/liveness.ShapeResearch,matrix/neo/internal/runtime/liveness.clamp,matrix/neo/internal/runtime/liveness.clampInt,matrix/neo/internal/runtime/liveness.err,matrix/neo/internal/runtime/liveness.exploration,matrix/neo/internal/runtime/liveness.explorationAxis,matrix/neo/internal/runtime/liveness.input,matrix/neo/internal/runtime/liveness.left,matrix/neo/internal/runtime/liveness.minInt,matrix/neo/internal/runtime/liveness.neutralConfidence,matrix/neo/internal/runtime/liveness.neutralFrustration,matrix/neo/internal/runtime/liveness.neutralLoad,matrix/neo/internal/runtime/liveness.neutralSatisfaction,matrix/neo/internal/runtime/liveness.neutralUrgency,matrix/neo/internal/runtime/liveness.result,matrix/neo/internal/runtime/liveness.right,matrix/neo/internal/runtime/liveness.safetyInvariant
+  ^calls=matrix/neo/internal/runtime/loop.Loop.derivePolicy
+  ^references=matrix/neo/internal/runtime/loop.Loop.derivePolicy
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.DetailBalanced kind=const
   digest=b3:538b8d45f6102e631478682c7cd26db8dcd7f69a82b93324489e3a6fa2cd5117 file=neo/internal/runtime/liveness/policy.go range=52:52 lang=go exported=true byte_range=2655:2697
   sig=liveness.ResponseDetail
 EDGES
+  references=matrix/neo/internal/runtime/liveness.ResponseDetail
+  ^references=matrix/neo/internal/runtime/liveness.Derive,matrix/neo/internal/runtime/liveness.Policy.Validate
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.DetailConcise kind=const
   digest=b3:5bd78abca5a334b251fc2a64e87f6ad1f2480b27298258e4fce5ba44c403bab3 file=neo/internal/runtime/liveness/policy.go range=51:51 lang=go exported=true byte_range=2612:2653
   sig=liveness.ResponseDetail
 EDGES
+  references=matrix/neo/internal/runtime/liveness.ResponseDetail
+  ^references=matrix/neo/internal/runtime/liveness.Policy.Validate
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.DetailDetailed kind=const
   digest=b3:22ac43af877a9eb7e4b453108788821238d0a954f24cdcc8cf4205209a8117c2 file=neo/internal/runtime/liveness/policy.go range=53:53 lang=go exported=true byte_range=2699:2741
   sig=liveness.ResponseDetail
 EDGES
+  references=matrix/neo/internal/runtime/liveness.ResponseDetail
+  ^references=matrix/neo/internal/runtime/liveness.Policy.Validate
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.ErrCircuitOpen kind=var
   digest=b3:7ac14bcf3de281e1123b9cca3ecae12921ee6565aac86271d06d50f5a0f290bf file=neo/internal/runtime/liveness/circuit.go range=24:24 lang=go exported=true byte_range=863:935
   sig=error
 EDGES
+  ^references=matrix/neo/internal/runtime/liveness.CircuitError.Unwrap
   ^defines=matrix/neo/internal/runtime/liveness/circuit.go
 
 NODE id=matrix/neo/internal/runtime/liveness.Inputs kind=type
@@ -197,6 +234,8 @@ NODE id=matrix/neo/internal/runtime/liveness.Inputs kind=type
   sig=type Inputs struct {\n	Measured	MeasuredContext\n	Shape		Shape\n	PriorRepair	bool\n}
 EDGES
   contains=matrix/neo/internal/runtime/liveness.Inputs#Measured,matrix/neo/internal/runtime/liveness.Inputs#PriorRepair,matrix/neo/internal/runtime/liveness.Inputs#Shape
+  references=matrix/neo/internal/runtime/liveness.MeasuredContext,matrix/neo/internal/runtime/liveness.Shape
+  ^references=matrix/neo/internal/runtime/liveness.Derive,matrix/neo/internal/runtime/loop.Loop.derivePolicy
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.Inputs#Measured kind=field
@@ -222,6 +261,9 @@ NODE id=matrix/neo/internal/runtime/liveness.IsExplorationTool kind=func
   sig=func IsExplorationTool(name string) bool
   doc=IsExplorationTool is the one authoritative exploration-tool classifier. The\nexploration budget and the acceptance gate's research-evidence read share it.
 EDGES
+  references=matrix/neo/internal/runtime/liveness.name
+  ^calls=matrix/neo/internal/runtime/loop.Loop.runTurn,matrix/neo/internal/runtime/loop.hasExplorationEvidence
+  ^references=matrix/neo/internal/runtime/loop.Loop.runTurn,matrix/neo/internal/runtime/loop.hasExplorationEvidence
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.MeasuredContext kind=type
@@ -230,6 +272,7 @@ NODE id=matrix/neo/internal/runtime/liveness.MeasuredContext kind=type
   doc=MeasuredContext is the non-secret epistemic counter set available at the loop\nboundary. It never includes premise text or memory content.
 EDGES
   contains=matrix/neo/internal/runtime/liveness.MeasuredContext#ActionsWithoutGrowth,matrix/neo/internal/runtime/liveness.MeasuredContext#UnsupportedPremises
+  ^references=matrix/neo/internal/runtime/belief.State.MeasuredContext,matrix/neo/internal/runtime/liveness.Inputs,matrix/neo/internal/runtime/loop.LivenessSource,matrix/neo/internal/runtime/loop.Loop.derivePolicy
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.MeasuredContext#ActionsWithoutGrowth kind=field
@@ -250,6 +293,8 @@ NODE id=matrix/neo/internal/runtime/liveness.Policy kind=type
   doc=Policy is the typed causal boundary between measured context and the loop.\nSafetyInvariant is constant and Validate fails closed if a caller attempts to\nconstruct a policy outside the supported bounds.
 EDGES
   contains=matrix/neo/internal/runtime/liveness.Policy#AskForHelp,matrix/neo/internal/runtime/liveness.Policy#Causes,matrix/neo/internal/runtime/liveness.Policy#DelegationBias,matrix/neo/internal/runtime/liveness.Policy#Directness,matrix/neo/internal/runtime/liveness.Policy#ExplorationBudget,matrix/neo/internal/runtime/liveness.Policy#OptionalWorkBudget,matrix/neo/internal/runtime/liveness.Policy#Parallelism,matrix/neo/internal/runtime/liveness.Policy#ProposeFollowUpGoal,matrix/neo/internal/runtime/liveness.Policy#RequiredVerification,matrix/neo/internal/runtime/liveness.Policy#ResponseDetail,matrix/neo/internal/runtime/liveness.Policy#SafetyInvariant,matrix/neo/internal/runtime/liveness.Policy#SameStrategyRetries,matrix/neo/internal/runtime/liveness.Policy#SearchBreadth,matrix/neo/internal/runtime/liveness.Policy#ToolCallBudget,matrix/neo/internal/runtime/liveness.Policy#VerificationDepth,matrix/neo/internal/runtime/liveness.Policy.Validate
+  references=matrix/neo/internal/runtime/liveness.Cause,matrix/neo/internal/runtime/liveness.ResponseDetail
+  ^references=matrix/neo/internal/runtime/liveness.Derive,matrix/neo/internal/runtime/liveness.Policy.Validate,matrix/neo/internal/runtime/loop.LivenessTrace,matrix/neo/internal/runtime/loop.Loop.derivePolicy
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.Policy#AskForHelp kind=field
@@ -346,13 +391,17 @@ NODE id=matrix/neo/internal/runtime/liveness.Policy.Validate kind=method
   digest=b3:bc2ad751410677845874a9e57bdf0254d2c9590f6cdc0faa85614425c475f9b1 file=neo/internal/runtime/liveness/policy.go range=226:246 lang=go exported=true byte_range=8835:9777
   sig=func (policy Policy) Validate() error
 EDGES
+  references=matrix/neo/internal/runtime/liveness.DetailBalanced,matrix/neo/internal/runtime/liveness.DetailConcise,matrix/neo/internal/runtime/liveness.DetailDetailed,matrix/neo/internal/runtime/liveness.Policy,matrix/neo/internal/runtime/liveness.policy
   ^contains=matrix/neo/internal/runtime/liveness.Policy
+  ^calls=matrix/neo/internal/runtime/liveness.Derive
+  ^references=matrix/neo/internal/runtime/liveness.Derive
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.ResponseDetail kind=type
   digest=b3:5201c1dd354cba176f806e58ba74ee0492ca136abfb71592b5382860ff2e4784 file=neo/internal/runtime/liveness/policy.go range=48:48 lang=go exported=true byte_range=2575:2601
   sig=type ResponseDetail string
 EDGES
+  ^references=matrix/neo/internal/runtime/liveness.DetailBalanced,matrix/neo/internal/runtime/liveness.DetailConcise,matrix/neo/internal/runtime/liveness.DetailDetailed,matrix/neo/internal/runtime/liveness.Policy
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.Shape kind=type
@@ -360,90 +409,115 @@ NODE id=matrix/neo/internal/runtime/liveness.Shape kind=type
   sig=type Shape string
   doc=Shape is the measured shape of the task the turn was asked to do. It is\nderived from the user request by a deterministic classifier, never inferred\nby a model.
 EDGES
+  ^references=matrix/neo/internal/runtime/liveness.ClassifyShape,matrix/neo/internal/runtime/liveness.Inputs,matrix/neo/internal/runtime/liveness.ShapeDirect,matrix/neo/internal/runtime/liveness.ShapeResearch,matrix/neo/internal/runtime/liveness.explorationAxis
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.ShapeDirect kind=const
   digest=b3:2d073138e804c8cd140863e9a356a2f3608421e1b340b70b3198adedecf7274c file=neo/internal/runtime/liveness/policy.go range=62:62 lang=go exported=true byte_range=2942:2972
   sig=liveness.Shape
 EDGES
+  references=matrix/neo/internal/runtime/liveness.Shape
+  ^references=matrix/neo/internal/runtime/liveness.ClassifyShape,matrix/neo/internal/runtime/liveness.explorationAxis
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.ShapeResearch kind=const
   digest=b3:678cd2748eb04127b47e5652436fae3a03e705384f9e31b392baea530ac87d31 file=neo/internal/runtime/liveness/policy.go range=63:63 lang=go exported=true byte_range=2974:3006
   sig=liveness.Shape
 EDGES
+  references=matrix/neo/internal/runtime/liveness.Shape
+  ^references=matrix/neo/internal/runtime/liveness.ClassifyShape,matrix/neo/internal/runtime/liveness.Derive,matrix/neo/internal/runtime/liveness.explorationAxis,matrix/neo/internal/runtime/loop.requestsResearchAnswer
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.clamp kind=func
   digest=b3:66bfcc7ff1cc42a0c475191c5ac85184e5a5fa9513b6f9e0f73d08513515f9fb file=neo/internal/runtime/liveness/policy.go range=290:292 lang=go exported=false byte_range=11323:11432
   sig=func clamp(value float64, low float64, high float64) float64
 EDGES
+  references=matrix/neo/internal/runtime/liveness.high,matrix/neo/internal/runtime/liveness.low,matrix/neo/internal/runtime/liveness.value
+  ^calls=matrix/neo/internal/runtime/liveness.Derive
+  ^references=matrix/neo/internal/runtime/liveness.Derive
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.clampInt kind=func
   digest=b3:03b599df01b04d7ca13ca7463ec2129c05074d8bb62f21be69ebe4b7367d31d0 file=neo/internal/runtime/liveness/policy.go range=294:302 lang=go exported=false byte_range=11434:11569
   sig=func clampInt(value int, low int, high int) int
 EDGES
+  references=matrix/neo/internal/runtime/liveness.high,matrix/neo/internal/runtime/liveness.low,matrix/neo/internal/runtime/liveness.value
+  ^calls=matrix/neo/internal/runtime/liveness.Derive
+  ^references=matrix/neo/internal/runtime/liveness.Derive
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.directExploration kind=const
   digest=b3:31dee237be6625ceb27f1928a99894f148d19df997b0340984bd38958652cc36 file=neo/internal/runtime/liveness/policy.go range=73:73 lang=go exported=false byte_range=3151:3175
   sig=untyped float
 EDGES
+  ^references=matrix/neo/internal/runtime/liveness.explorationAxis
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.explorationAxis kind=func
   digest=b3:8d6bfb7de5abe8e368f21f64217c94a0b186c8d2b45e1507a56b953bc1db1f47 file=neo/internal/runtime/liveness/policy.go range=279:288 lang=go exported=false byte_range=11055:11321
   sig=func explorationAxis(shape Shape) (float64, error)
 EDGES
+  references=matrix/neo/internal/runtime/liveness.Shape,matrix/neo/internal/runtime/liveness.ShapeDirect,matrix/neo/internal/runtime/liveness.ShapeResearch,matrix/neo/internal/runtime/liveness.directExploration,matrix/neo/internal/runtime/liveness.researchExploration,matrix/neo/internal/runtime/liveness.shape
+  ^calls=matrix/neo/internal/runtime/liveness.Derive
+  ^references=matrix/neo/internal/runtime/liveness.Derive
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.minInt kind=func
   digest=b3:c89b38c8cbd1efb7febae13baf352637c88be5bd3bc6eaa9ee771ce639303435 file=neo/internal/runtime/liveness/policy.go range=304:309 lang=go exported=false byte_range=11571:11661
   sig=func minInt(left int, right int) int
 EDGES
+  references=matrix/neo/internal/runtime/liveness.left,matrix/neo/internal/runtime/liveness.right
+  ^calls=matrix/neo/internal/runtime/liveness.Derive
+  ^references=matrix/neo/internal/runtime/liveness.Derive
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.neutralConfidence kind=const
   digest=b3:fe239bb1cb436c5d2123cc04228309fcf35c7e0ec4346253160fde60b4e61602 file=neo/internal/runtime/liveness/policy.go range=67:67 lang=go exported=false byte_range=3019:3044
   sig=untyped float
 EDGES
+  ^references=matrix/neo/internal/runtime/liveness.Derive
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.neutralFrustration kind=const
   digest=b3:5e1a9e568e16a461d12df8d95ccc79c0c4b17ce33586ad077aaa7e2b7c0dca68 file=neo/internal/runtime/liveness/policy.go range=68:68 lang=go exported=false byte_range=3046:3070
   sig=untyped float
 EDGES
+  ^references=matrix/neo/internal/runtime/liveness.Derive
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.neutralLoad kind=const
   digest=b3:c0b5a58db900e718536ec7c8b6c34d8be0cb0d2481ad9193c61f7cec0873a47c file=neo/internal/runtime/liveness/policy.go range=69:69 lang=go exported=false byte_range=3072:3096
   sig=untyped float
 EDGES
+  ^references=matrix/neo/internal/runtime/liveness.Derive
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.neutralSatisfaction kind=const
   digest=b3:3e88148f97b345db7d6af98f883440d28de67f7fb472fc1c1a644a0ee5f627f9 file=neo/internal/runtime/liveness/policy.go range=70:70 lang=go exported=false byte_range=3098:3122
   sig=untyped float
 EDGES
+  ^references=matrix/neo/internal/runtime/liveness.Derive
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.neutralUrgency kind=const
   digest=b3:9e32da95ed044c33f35cb7c225d0d9d016e1aaf288d17194f31a8ad9b5a03458 file=neo/internal/runtime/liveness/policy.go range=71:71 lang=go exported=false byte_range=3124:3148
   sig=untyped float
 EDGES
+  ^references=matrix/neo/internal/runtime/liveness.Derive
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.researchExploration kind=const
   digest=b3:6fe2d8638dbb2ece6f51be4e5c1251cad51dc2b853b314fd92054f120eb96fb4 file=neo/internal/runtime/liveness/policy.go range=74:74 lang=go exported=false byte_range=3177:3201
   sig=untyped float
 EDGES
+  ^references=matrix/neo/internal/runtime/liveness.explorationAxis
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness.safetyInvariant kind=const
   digest=b3:dc571db23743787c1714118625617db916103f4eea290177113e0fc77ab2404b file=neo/internal/runtime/liveness/policy.go range=77:77 lang=go exported=false byte_range=3211:3329
   sig=untyped string
 EDGES
+  ^references=matrix/neo/internal/runtime/liveness.Derive
   ^defines=matrix/neo/internal/runtime/liveness/policy.go
 
 NODE id=matrix/neo/internal/runtime/liveness/circuit.go kind=file

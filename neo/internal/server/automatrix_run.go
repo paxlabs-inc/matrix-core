@@ -27,7 +27,7 @@ import (
 //  1. mark the opportunity scheduled -> in_progress (the durable, atomic
 //     in-flight marker — a restart never double-runs or loses it, req 2.2/5.1);
 //  2. resume into the opportunity's origin_conversation_id so Neo regains the
-//     thread transcript + cortex memory (context fidelity, req 5.2), building
+//     thread transcript + Neocortex memory (context fidelity, req 5.2), building
 //     the working objective from the summary + rationale;
 //  3. dispatch a SUPERVISED run on the RESTRICTED (no-money) tool surface
 //     (req 3.2/5.3), DECOUPLED from the wake request (context.Background +
@@ -158,7 +158,7 @@ func (e *Engine) settleAutomatrixOpportunity(ctx context.Context, opp memory.Opp
 // ping is then fired BEST-EFFORT + non-blocking via notify.Deliver (req 6.4), so
 // a failed external send neither blocks the run nor disturbs the durable record
 // (honest failure — a ping we couldn't send is never reported as delivered). All
-// copy is RESULT-not-protocol — no Chronos/alarm/marker/cortex jargon (req 6.5,
+// copy is RESULT-not-protocol — no Chronos/alarm/marker/Neocortex jargon (req 6.5,
 // the consumer rule): the title is the helpful thing Neo took on and the body is
 // the result it produced (both plain English, sourced from the opportunity
 // summary + the agent's own final answer). No secrets are recorded or sent — the
@@ -261,7 +261,7 @@ func buildAutomatrixObjective(opp memory.OpportunitySpec) string {
 }
 
 // ResumeInProgressAutomatrix re-dispatches every opportunity left IN_PROGRESS in
-// cortex — proactive runs that were in flight when the daemon was restarted or
+// Neocortex — proactive runs that were in flight when the daemon was restarted or
 // suspended (the Task Durability Rule, req 5.1). Each resumes on the RESTRICTED
 // surface through the same dispatch path (InProgressOpportunities only returns
 // eligible-autonomous items, so a restart can never resume work on the money

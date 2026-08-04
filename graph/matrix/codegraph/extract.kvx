@@ -1,16 +1,22 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/codegraph/extract kind=package
   digest=b3:20bc050dd01aa80df6bea08b1b4405af0a018651ba9736dd7a746e315dd0fdba file=codegraph/extract range=0:0 lang=go exported=true
 EDGES
   contains=matrix/codegraph/extract/build.go,matrix/codegraph/extract/calls.go,matrix/codegraph/extract/extract.go,matrix/codegraph/extract/files.go,matrix/codegraph/extract/gate.go,matrix/codegraph/extract/incremental.go,matrix/codegraph/extract/selfscope.go,matrix/codegraph/extract/typeedges.go
+  imports=matrix/codegraph/merkle,matrix/codegraph/model,matrix/codegraph/store
   ^contains=mod:matrix/codegraph
+  ^imports=matrix/codegraph/cmd/codegraph
 
 NODE id=matrix/codegraph/extract.Build kind=func
   digest=b3:69dd54e99f0edba6f7edce046081a53f8b44f4fd811413e95f11c305e874e42e file=codegraph/extract/build.go range=13:20 lang=go exported=true byte_range=140:375
   sig=func Build(cfg Config) (*Extractor, string, error)
   doc=Build runs a full extraction and returns the graph plus its repo Merkle root.
 EDGES
+  calls=matrix/codegraph/extract.Extractor.Merkle,matrix/codegraph/extract.Extractor.Run,matrix/codegraph/extract.New
+  references=matrix/codegraph/extract.Config,matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.Merkle,matrix/codegraph/extract.Extractor.Run,matrix/codegraph/extract.New,matrix/codegraph/extract.cfg,matrix/codegraph/extract.e,matrix/codegraph/extract.err
+  ^calls=matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.cmdBuild
+  ^references=matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.cmdBuild
   ^defines=matrix/codegraph/extract/build.go
 
 NODE id=matrix/codegraph/extract.CheckStale kind=func
@@ -18,6 +24,10 @@ NODE id=matrix/codegraph/extract.CheckStale kind=func
   sig=func CheckStale(cfg Config, graphDir string) (stale bool, changes merkle.Changes, err error)
   doc=CheckStale reports whether the graph store in graphDir is out of date relative\nto the current source. It is the cheap CI staleness gate: it reads the stored\nrepo file Merkle tree (graph/merkle.kvx) and compares it to a freshly computed\none — a single root comparison, no full graph rebuild. A missing or corrupt\nstore is treated as stale. When stale, the returned Changes name exactly which\nfiles drifted, for an actionable failure message. (Requirements 5.2, 11.1,\n11.2.)
 EDGES
+  calls=matrix/codegraph/extract.FileTree,matrix/codegraph/merkle.Changes.Empty,matrix/codegraph/merkle.Diff,matrix/codegraph/merkle.Read
+  references=matrix/codegraph/extract.Config,matrix/codegraph/extract.FileTree,matrix/codegraph/extract.cfg,matrix/codegraph/extract.changes,matrix/codegraph/extract.cur,matrix/codegraph/extract.err,matrix/codegraph/extract.f,matrix/codegraph/extract.graphDir,matrix/codegraph/extract.stored,matrix/codegraph/merkle.Changes,matrix/codegraph/merkle.Changes.Empty,matrix/codegraph/merkle.Diff,matrix/codegraph/merkle.Read
+  ^calls=matrix/codegraph/cmd/codegraph.cmdCheck
+  ^references=matrix/codegraph/cmd/codegraph.cmdCheck
   ^defines=matrix/codegraph/extract/gate.go
 
 NODE id=matrix/codegraph/extract.Config kind=type
@@ -26,6 +36,7 @@ NODE id=matrix/codegraph/extract.Config kind=type
   doc=Config describes an extraction run.
 EDGES
   contains=matrix/codegraph/extract.Config#Modules,matrix/codegraph/extract.Config#RepoName,matrix/codegraph/extract.Config#RepoRoot
+  ^references=matrix/codegraph/cmd/codegraph.common.config,matrix/codegraph/cmd/codegraph.common.graphDir,matrix/codegraph/extract.Build,matrix/codegraph/extract.CheckStale,matrix/codegraph/extract.Extractor,matrix/codegraph/extract.FileTree,matrix/codegraph/extract.New,matrix/codegraph/extract.RepoFiles,matrix/codegraph/extract.SelfModelConfig,matrix/codegraph/extract.loadPackages
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Config#Modules kind=field
@@ -52,6 +63,8 @@ NODE id=matrix/codegraph/extract.Extractor kind=type
   doc=Extractor accumulates a single graph across one or more module loads.
 EDGES
   contains=matrix/codegraph/extract.Extractor#cfg,matrix/codegraph/extract.Extractor#fileText,matrix/codegraph/extract.Extractor#ix,matrix/codegraph/extract.Extractor#modules,matrix/codegraph/extract.Extractor#pkgOf,matrix/codegraph/extract.Extractor.FileMerkle,matrix/codegraph/extract.Extractor.Index,matrix/codegraph/extract.Extractor.Merkle,matrix/codegraph/extract.Extractor.Modules,matrix/codegraph/extract.Extractor.PackageOf,matrix/codegraph/extract.Extractor.Run,matrix/codegraph/extract.Extractor.WriteStore,matrix/codegraph/extract.Extractor.childDigest,matrix/codegraph/extract.Extractor.embeds,matrix/codegraph/extract.Extractor.extractCalls,matrix/codegraph/extract.Extractor.extractFile,matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractGenDecl,matrix/codegraph/extract.Extractor.extractPackage,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractTypeEdges,matrix/codegraph/extract.Extractor.extractValue,matrix/codegraph/extract.Extractor.finalizeContainers,matrix/codegraph/extract.Extractor.isRepoPkg,matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.Extractor.namedID,matrix/codegraph/extract.Extractor.readFile,matrix/codegraph/extract.Extractor.reextract,matrix/codegraph/extract.Extractor.references,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.Extractor.writeMerkle
+  references=matrix/codegraph/extract.Config,matrix/codegraph/model.Index
+  ^references=matrix/codegraph/extract.Build,matrix/codegraph/extract.Extractor.FileMerkle,matrix/codegraph/extract.Extractor.Index,matrix/codegraph/extract.Extractor.Merkle,matrix/codegraph/extract.Extractor.Modules,matrix/codegraph/extract.Extractor.PackageOf,matrix/codegraph/extract.Extractor.Run,matrix/codegraph/extract.Extractor.WriteStore,matrix/codegraph/extract.Extractor.childDigest,matrix/codegraph/extract.Extractor.embeds,matrix/codegraph/extract.Extractor.extractCalls,matrix/codegraph/extract.Extractor.extractFile,matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractGenDecl,matrix/codegraph/extract.Extractor.extractPackage,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractTypeEdges,matrix/codegraph/extract.Extractor.extractValue,matrix/codegraph/extract.Extractor.finalizeContainers,matrix/codegraph/extract.Extractor.isRepoPkg,matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.Extractor.namedID,matrix/codegraph/extract.Extractor.readFile,matrix/codegraph/extract.Extractor.reextract,matrix/codegraph/extract.Extractor.references,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.Extractor.writeMerkle,matrix/codegraph/extract.IncrementalResult,matrix/codegraph/extract.IncrementalUpdate,matrix/codegraph/extract.New
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor#cfg kind=field
@@ -89,7 +102,11 @@ NODE id=matrix/codegraph/extract.Extractor.FileMerkle kind=method
   sig=func (e *Extractor) FileMerkle() *merkle.Tree
   doc=FileMerkle builds the repo file Merkle tree over the canonical source-file set\n(see RepoFiles), so the persisted tree is identical whether produced by a full\nbuild or recomputed by an incremental update. On walk error it falls back to\nexactly the files the extractor consumed.
 EDGES
+  calls=matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.FileTree,matrix/codegraph/merkle.FromLeaves,matrix/codegraph/merkle.LeafHash
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.FileTree,matrix/codegraph/extract.abs,matrix/codegraph/extract.b,matrix/codegraph/extract.e,matrix/codegraph/extract.err,matrix/codegraph/extract.leaves,matrix/codegraph/extract.t,matrix/codegraph/merkle.FromLeaves,matrix/codegraph/merkle.LeafHash,matrix/codegraph/merkle.Tree
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.writeMerkle
+  ^references=matrix/codegraph/extract.Extractor.writeMerkle
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.Index kind=method
@@ -97,7 +114,10 @@ NODE id=matrix/codegraph/extract.Extractor.Index kind=method
   sig=func (e *Extractor) Index() *model.Index
   doc=Index returns the accumulated graph.
 EDGES
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.e,matrix/codegraph/model.Index
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.cmdBuild
+  ^references=matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.cmdBuild
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.Merkle kind=method
@@ -105,7 +125,11 @@ NODE id=matrix/codegraph/extract.Extractor.Merkle kind=method
   sig=func (e *Extractor) Merkle() string
   doc=Merkle returns a deterministic repo root over all (id, digest) pairs.
 EDGES
+  calls=matrix/codegraph/model.Digest,matrix/codegraph/model.Index.Nodes
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.b,matrix/codegraph/extract.e,matrix/codegraph/extract.n,matrix/codegraph/extract.nodes,matrix/codegraph/model.Digest,matrix/codegraph/model.Index.Nodes
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Build
+  ^references=matrix/codegraph/extract.Build
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.Modules kind=method
@@ -113,6 +137,7 @@ NODE id=matrix/codegraph/extract.Extractor.Modules kind=method
   sig=func (e *Extractor) Modules() map[string]string
   doc=Modules returns the extracted module path -> repo-relative dir map.
 EDGES
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.e
   ^contains=matrix/codegraph/extract.Extractor
   ^defines=matrix/codegraph/extract/extract.go
 
@@ -121,6 +146,7 @@ NODE id=matrix/codegraph/extract.Extractor.PackageOf kind=method
   sig=func (e *Extractor) PackageOf(id string) string
   doc=PackageOf reports the owning package path of a node id, or "" for the repo and\nmodule container nodes (which belong in the manifest).
 EDGES
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.e,matrix/codegraph/extract.id
   ^contains=matrix/codegraph/extract.Extractor
   ^defines=matrix/codegraph/extract/extract.go
 
@@ -129,7 +155,11 @@ NODE id=matrix/codegraph/extract.Extractor.Run kind=method
   sig=func (e *Extractor) Run() error
   doc=Run loads every configured module and extracts nodes and all edge tiers into\nthe shared Index. Container digests and the repo node are finalized last.
 EDGES
+  calls=matrix/codegraph/extract.Extractor.finalizeContainers,matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/model.Index.AddNode
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.finalizeContainers,matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.dir,matrix/codegraph/extract.e,matrix/codegraph/extract.err,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.KindRepo,matrix/codegraph/model.Node
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Build
+  ^references=matrix/codegraph/extract.Build
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.WriteStore kind=method
@@ -137,21 +167,33 @@ NODE id=matrix/codegraph/extract.Extractor.WriteStore kind=method
   sig=func (e *Extractor) WriteStore(outDir, merkle string) error
   doc=WriteStore serializes the graph as sharded .kvx — graph/<pkgPath>.kvx per\npackage plus graph/manifest.kvx for the repo and module container nodes — each\ncarrying the GENERATED banner with merkle. outDir is the graph root; every\npath written inside is already repo-relative.
 EDGES
+  calls=matrix/codegraph/extract.Extractor.writeMerkle,matrix/codegraph/extract.writeFile,matrix/codegraph/model.Index.Nodes
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.writeMerkle,matrix/codegraph/extract.e,matrix/codegraph/extract.err,matrix/codegraph/extract.manifest,matrix/codegraph/extract.merkle,matrix/codegraph/extract.n,matrix/codegraph/extract.outDir,matrix/codegraph/extract.path,matrix/codegraph/extract.pkg,matrix/codegraph/extract.pkgs,matrix/codegraph/extract.shards,matrix/codegraph/extract.writeFile,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.Node
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/cmd/codegraph.cmdBuild
+  ^references=matrix/codegraph/cmd/codegraph.cmdBuild
   ^defines=matrix/codegraph/extract/build.go
 
 NODE id=matrix/codegraph/extract.Extractor.childDigest kind=method
   digest=b3:504b3772bcbaa0802e4f3233f735a679b98e715f4248297653d10c5d431d9d30 file=codegraph/extract/extract.go range=337:347 lang=go exported=false byte_range=10277:10607
   sig=func (e *Extractor) childDigest(id string) string
 EDGES
+  calls=matrix/codegraph/model.Digest,matrix/codegraph/model.Index.Forward,matrix/codegraph/model.Index.Node
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.child,matrix/codegraph/extract.e,matrix/codegraph/extract.id,matrix/codegraph/extract.k,matrix/codegraph/extract.kids,matrix/codegraph/extract.parts,matrix/codegraph/model.Digest,matrix/codegraph/model.EdgeContains,matrix/codegraph/model.Index.Forward,matrix/codegraph/model.Index.Node
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.finalizeContainers
+  ^references=matrix/codegraph/extract.Extractor.finalizeContainers
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.embeds kind=method
   digest=b3:810e354bd34454e065b15bffc90503db506da3b999e55cb0231e95c4a28abd32 file=codegraph/extract/typeedges.go range=67:86 lang=go exported=false byte_range=1555:2134
   sig=func (e *Extractor) embeds(id string, named *types.Named)
 EDGES
+  calls=matrix/codegraph/extract.Extractor.namedID,matrix/codegraph/model.Index.AddEdge
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.namedID,matrix/codegraph/extract.did,matrix/codegraph/extract.e,matrix/codegraph/extract.f,matrix/codegraph/extract.i,matrix/codegraph/extract.id,matrix/codegraph/extract.named,matrix/codegraph/extract.u,matrix/codegraph/model.Edge,matrix/codegraph/model.EdgeEmbeds,matrix/codegraph/model.Index.AddEdge
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.extractTypeEdges
+  ^references=matrix/codegraph/extract.Extractor.extractTypeEdges
   ^defines=matrix/codegraph/extract/typeedges.go
 
 NODE id=matrix/codegraph/extract.Extractor.extractCalls kind=method
@@ -159,42 +201,66 @@ NODE id=matrix/codegraph/extract.Extractor.extractCalls kind=method
   sig=func (e *Extractor) extractCalls(pkgs []*packages.Package)
   doc=extractCalls derives resolved call edges. It builds SSA over the loaded\npackages and runs VTA (seeded by a CHA call graph) so each calls edge names\nthe actual resolved callee, not a name match. Both endpoints must be\nintra-repo; the retained site is the deterministically smallest call location.
 EDGES
+  calls=matrix/codegraph/extract.Extractor.isRepoPkg,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.funcID,matrix/codegraph/extract.pkgPathOf,matrix/codegraph/model.Index.AddEdge
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.isRepoPkg,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.callee,matrix/codegraph/extract.cg,matrix/codegraph/extract.dstID,matrix/codegraph/extract.e,matrix/codegraph/extract.edge,matrix/codegraph/extract.fn,matrix/codegraph/extract.funcID,matrix/codegraph/extract.i,matrix/codegraph/extract.j,matrix/codegraph/extract.k,matrix/codegraph/extract.key,matrix/codegraph/extract.keys,matrix/codegraph/extract.node,matrix/codegraph/extract.ok,matrix/codegraph/extract.pkgPathOf,matrix/codegraph/extract.pkgs,matrix/codegraph/extract.pos,matrix/codegraph/extract.prog,matrix/codegraph/extract.site,matrix/codegraph/extract.sites,matrix/codegraph/extract.srcID,matrix/codegraph/extract.ss,matrix/codegraph/model.Edge,matrix/codegraph/model.EdgeCalls,matrix/codegraph/model.Index.AddEdge
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.Extractor.reextract
+  ^references=matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.Extractor.reextract
   ^defines=matrix/codegraph/extract/calls.go
 
 NODE id=matrix/codegraph/extract.Extractor.extractFile kind=method
   digest=b3:6d68233364c7c555b534b453c425f17e92867f5b475d0b8aa3c1fb7ba6e31a23 file=codegraph/extract/extract.go range=153:179 lang=go exported=false byte_range=4507:5368
   sig=func (e *Extractor) extractFile(p *packages.Package, f *ast.File)
 EDGES
+  calls=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractGenDecl,matrix/codegraph/extract.Extractor.readFile,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/model.Digest,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractGenDecl,matrix/codegraph/extract.Extractor.readFile,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.abs,matrix/codegraph/extract.d,matrix/codegraph/extract.decl,matrix/codegraph/extract.e,matrix/codegraph/extract.f,matrix/codegraph/extract.fileID,matrix/codegraph/extract.lineCount,matrix/codegraph/extract.p,matrix/codegraph/extract.pos,matrix/codegraph/extract.relPath,matrix/codegraph/extract.src,matrix/codegraph/extract.tf,matrix/codegraph/model.Digest,matrix/codegraph/model.Edge,matrix/codegraph/model.EdgeContains,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.KindFile,matrix/codegraph/model.Node,matrix/codegraph/model.Range
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.extractPackage
+  ^references=matrix/codegraph/extract.Extractor.extractPackage
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.extractFunc kind=method
   digest=b3:6746bc9b2294243767e41db618717560627425f3c996e8bbd2d8dd488ef4a4ac file=codegraph/extract/extract.go range=181:206 lang=go exported=false byte_range=5370:6199
   sig=func (e *Extractor) extractFunc(p *packages.Package, relPath string, src []byte, fileID string, d *ast.FuncDecl)
 EDGES
+  calls=matrix/codegraph/extract.Extractor.references,matrix/codegraph/extract.docPos,matrix/codegraph/extract.docText,matrix/codegraph/extract.funcSig,matrix/codegraph/extract.idForObj,matrix/codegraph/extract.methodRecvID,matrix/codegraph/extract.slice,matrix/codegraph/extract.span,matrix/codegraph/model.Digest,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.references,matrix/codegraph/extract.br,matrix/codegraph/extract.d,matrix/codegraph/extract.docPos,matrix/codegraph/extract.docText,matrix/codegraph/extract.e,matrix/codegraph/extract.fileID,matrix/codegraph/extract.funcSig,matrix/codegraph/extract.id,matrix/codegraph/extract.idForObj,matrix/codegraph/extract.kind,matrix/codegraph/extract.methodRecvID,matrix/codegraph/extract.n,matrix/codegraph/extract.obj,matrix/codegraph/extract.ok,matrix/codegraph/extract.p,matrix/codegraph/extract.recv,matrix/codegraph/extract.relPath,matrix/codegraph/extract.rng,matrix/codegraph/extract.slice,matrix/codegraph/extract.span,matrix/codegraph/extract.src,matrix/codegraph/model.Digest,matrix/codegraph/model.Edge,matrix/codegraph/model.EdgeContains,matrix/codegraph/model.EdgeDefines,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.KindMethod,matrix/codegraph/model.Node
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.extractFile
+  ^references=matrix/codegraph/extract.Extractor.extractFile
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.extractGenDecl kind=method
   digest=b3:bcfe1659864a2e1f502b65a00fb9c1e13dca3beba47d36106a3f2c14a17a714e file=codegraph/extract/extract.go range=208:219 lang=go exported=false byte_range=6201:6574
   sig=func (e *Extractor) extractGenDecl(p *packages.Package, relPath string, src []byte, fileID string, d *ast.GenDecl)
 EDGES
+  calls=matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue,matrix/codegraph/extract.d,matrix/codegraph/extract.e,matrix/codegraph/extract.fileID,matrix/codegraph/extract.name,matrix/codegraph/extract.p,matrix/codegraph/extract.relPath,matrix/codegraph/extract.s,matrix/codegraph/extract.spec,matrix/codegraph/extract.src
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.extractFile
+  ^references=matrix/codegraph/extract.Extractor.extractFile
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.extractPackage kind=method
   digest=b3:c54a2942cb0b314c84406c0daf3d2d19b9b036fec8138ff7b888c9ffb3025eb3 file=codegraph/extract/extract.go range=119:151 lang=go exported=false byte_range=3659:4505
   sig=func (e *Extractor) extractPackage(p *packages.Package, moduleID string)
 EDGES
+  calls=matrix/codegraph/extract.Extractor.extractFile,matrix/codegraph/extract.Extractor.isRepoPkg,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.extractFile,matrix/codegraph/extract.Extractor.isRepoPkg,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.e,matrix/codegraph/extract.f,matrix/codegraph/extract.imports,matrix/codegraph/extract.moduleID,matrix/codegraph/extract.p,matrix/codegraph/extract.path,matrix/codegraph/extract.pkgDir,matrix/codegraph/model.Edge,matrix/codegraph/model.EdgeContains,matrix/codegraph/model.EdgeImports,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.KindPackage,matrix/codegraph/model.Node
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.Extractor.reextract
+  ^references=matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.Extractor.reextract
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.extractType kind=method
   digest=b3:5024fc47ad6ef6b04c6c3ab7e1db9de806b1735e82406ef1b971b28ba90c6732 file=codegraph/extract/extract.go range=221:267 lang=go exported=false byte_range=6576:8117
   sig=func (e *Extractor) extractType(p *packages.Package, relPath string, src []byte, fileID string, d *ast.GenDecl, s *ast.TypeSpec)
 EDGES
+  calls=matrix/codegraph/extract.Extractor.references,matrix/codegraph/extract.docPos,matrix/codegraph/extract.docText,matrix/codegraph/extract.idForObj,matrix/codegraph/extract.slice,matrix/codegraph/extract.span,matrix/codegraph/extract.specStart,matrix/codegraph/extract.typeSig,matrix/codegraph/extract.typeString,matrix/codegraph/model.Digest,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.references,matrix/codegraph/extract.br,matrix/codegraph/extract.d,matrix/codegraph/extract.doc,matrix/codegraph/extract.docPos,matrix/codegraph/extract.docText,matrix/codegraph/extract.e,matrix/codegraph/extract.fbr,matrix/codegraph/extract.fid,matrix/codegraph/extract.field,matrix/codegraph/extract.fileID,matrix/codegraph/extract.fname,matrix/codegraph/extract.fobj,matrix/codegraph/extract.frng,matrix/codegraph/extract.id,matrix/codegraph/extract.idForObj,matrix/codegraph/extract.kind,matrix/codegraph/extract.n,matrix/codegraph/extract.obj,matrix/codegraph/extract.ok,matrix/codegraph/extract.p,matrix/codegraph/extract.relPath,matrix/codegraph/extract.rng,matrix/codegraph/extract.s,matrix/codegraph/extract.slice,matrix/codegraph/extract.span,matrix/codegraph/extract.specStart,matrix/codegraph/extract.src,matrix/codegraph/extract.st,matrix/codegraph/extract.typeSig,matrix/codegraph/extract.typeString,matrix/codegraph/model.Digest,matrix/codegraph/model.Edge,matrix/codegraph/model.EdgeContains,matrix/codegraph/model.EdgeDefines,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.KindField,matrix/codegraph/model.Node
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.extractGenDecl
+  ^references=matrix/codegraph/extract.Extractor.extractGenDecl
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.extractTypeEdges kind=method
@@ -202,14 +268,22 @@ NODE id=matrix/codegraph/extract.Extractor.extractTypeEdges kind=method
   sig=func (e *Extractor) extractTypeEdges(pkgs []*packages.Package)
   doc=extractTypeEdges emits implements edges from the type checker (not name\nmatching) and embeds edges for struct/interface embedding. Endpoints are\nrestricted to intra-repo named types.
 EDGES
+  calls=matrix/codegraph/extract.Extractor.embeds,matrix/codegraph/extract.idForObj,matrix/codegraph/model.Index.AddEdge
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.embeds,matrix/codegraph/extract.c,matrix/codegraph/extract.concretes,matrix/codegraph/extract.e,matrix/codegraph/extract.i,matrix/codegraph/extract.id,matrix/codegraph/extract.idForObj,matrix/codegraph/extract.iface,matrix/codegraph/extract.ifaces,matrix/codegraph/extract.j,matrix/codegraph/extract.name,matrix/codegraph/extract.named,matrix/codegraph/extract.namedType,matrix/codegraph/extract.ok,matrix/codegraph/extract.p,matrix/codegraph/extract.pkgs,matrix/codegraph/extract.scope,matrix/codegraph/extract.tn,matrix/codegraph/model.Edge,matrix/codegraph/model.EdgeImplements,matrix/codegraph/model.Index.AddEdge
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.Extractor.reextract
+  ^references=matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.Extractor.reextract
   ^defines=matrix/codegraph/extract/typeedges.go
 
 NODE id=matrix/codegraph/extract.Extractor.extractValue kind=method
   digest=b3:7588790722816632fe9e2bee7d4b08f24c2441b9616719b00f32fc99a56bfd7a file=codegraph/extract/extract.go range=269:293 lang=go exported=false byte_range=8119:8887
   sig=func (e *Extractor) extractValue(p *packages.Package, relPath string, src []byte, fileID string, d *ast.GenDecl, s *ast.ValueSpec, name *ast.Ident)
 EDGES
+  calls=matrix/codegraph/extract.Extractor.references,matrix/codegraph/extract.docPos,matrix/codegraph/extract.docText,matrix/codegraph/extract.idForObj,matrix/codegraph/extract.slice,matrix/codegraph/extract.span,matrix/codegraph/extract.specValueEnd,matrix/codegraph/extract.typeString,matrix/codegraph/model.Digest,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.references,matrix/codegraph/extract.br,matrix/codegraph/extract.d,matrix/codegraph/extract.doc,matrix/codegraph/extract.docPos,matrix/codegraph/extract.docText,matrix/codegraph/extract.e,matrix/codegraph/extract.fileID,matrix/codegraph/extract.id,matrix/codegraph/extract.idForObj,matrix/codegraph/extract.kind,matrix/codegraph/extract.n,matrix/codegraph/extract.name,matrix/codegraph/extract.obj,matrix/codegraph/extract.ok,matrix/codegraph/extract.p,matrix/codegraph/extract.relPath,matrix/codegraph/extract.rng,matrix/codegraph/extract.s,matrix/codegraph/extract.slice,matrix/codegraph/extract.span,matrix/codegraph/extract.specValueEnd,matrix/codegraph/extract.src,matrix/codegraph/extract.typeString,matrix/codegraph/model.Digest,matrix/codegraph/model.Edge,matrix/codegraph/model.EdgeDefines,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.Node
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.extractGenDecl
+  ^references=matrix/codegraph/extract.Extractor.extractGenDecl
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.finalizeContainers kind=method
@@ -217,35 +291,53 @@ NODE id=matrix/codegraph/extract.Extractor.finalizeContainers kind=method
   sig=func (e *Extractor) finalizeContainers()
   doc=finalizeContainers assigns each container (package, module) a digest derived\nfrom its children's digests, so a container's digest moves iff a descendant\nchanged — deterministic and independent of any enrichment.
 EDGES
+  calls=matrix/codegraph/extract.Extractor.childDigest,matrix/codegraph/model.Index.Nodes
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.childDigest,matrix/codegraph/extract.e,matrix/codegraph/extract.kind,matrix/codegraph/extract.n,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.Kind,matrix/codegraph/model.KindModule,matrix/codegraph/model.KindPackage,matrix/codegraph/model.KindRepo
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.Run,matrix/codegraph/extract.IncrementalUpdate
+  ^references=matrix/codegraph/extract.Extractor.Run,matrix/codegraph/extract.IncrementalUpdate
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.isRepoPkg kind=method
   digest=b3:2271d53a8f5f3d0d123f870c7a2511f6dc14409aa5ac7b9cda5214b08f5a92cf file=codegraph/extract/extract.go range=382:384 lang=go exported=false byte_range=11542:11671
   sig=func (e *Extractor) isRepoPkg(path string) bool
 EDGES
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.e,matrix/codegraph/extract.path
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.extractCalls,matrix/codegraph/extract.Extractor.extractPackage,matrix/codegraph/extract.Extractor.namedID
+  ^references=matrix/codegraph/extract.Extractor.extractCalls,matrix/codegraph/extract.Extractor.extractPackage,matrix/codegraph/extract.Extractor.namedID,matrix/codegraph/extract.Extractor.references
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.loadModule kind=method
   digest=b3:215425ae29823a588c3df53137690af432330b49e1dd011c6044b866e8111763 file=codegraph/extract/extract.go range=81:117 lang=go exported=false byte_range=2541:3657
   sig=func (e *Extractor) loadModule(dir string) error
 EDGES
+  calls=matrix/codegraph/extract.Extractor.extractCalls,matrix/codegraph/extract.Extractor.extractPackage,matrix/codegraph/extract.Extractor.extractTypeEdges,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.pathLeaf,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.extractCalls,matrix/codegraph/extract.Extractor.extractPackage,matrix/codegraph/extract.Extractor.extractTypeEdges,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.cfg,matrix/codegraph/extract.dir,matrix/codegraph/extract.e,matrix/codegraph/extract.err,matrix/codegraph/extract.i,matrix/codegraph/extract.j,matrix/codegraph/extract.loadMode,matrix/codegraph/extract.modDir,matrix/codegraph/extract.modPath,matrix/codegraph/extract.moduleID,matrix/codegraph/extract.n,matrix/codegraph/extract.p,matrix/codegraph/extract.pathLeaf,matrix/codegraph/extract.pkgs,matrix/codegraph/model.Edge,matrix/codegraph/model.EdgeContains,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.KindModule,matrix/codegraph/model.Node
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.Run
+  ^references=matrix/codegraph/extract.Extractor.Run
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.namedID kind=method
   digest=b3:bb21f5894c4792a7cd8ad7f30904dbf039d9e8dc346fa4a645b4a6ac88cad8ef file=codegraph/extract/typeedges.go range=88:105 lang=go exported=false byte_range=2136:2460
   sig=func (e *Extractor) namedID(t types.Type) string
 EDGES
+  calls=matrix/codegraph/extract.Extractor.isRepoPkg,matrix/codegraph/extract.idForObj
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.isRepoPkg,matrix/codegraph/extract.e,matrix/codegraph/extract.id,matrix/codegraph/extract.idForObj,matrix/codegraph/extract.named,matrix/codegraph/extract.obj,matrix/codegraph/extract.ok,matrix/codegraph/extract.ptr,matrix/codegraph/extract.t
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.embeds
+  ^references=matrix/codegraph/extract.Extractor.embeds
   ^defines=matrix/codegraph/extract/typeedges.go
 
 NODE id=matrix/codegraph/extract.Extractor.readFile kind=method
   digest=b3:1a16f010d8363481fcd9c861b5b1937eb4cbb67af6d80acf995630a4eac92689 file=codegraph/extract/extract.go range=394:404 lang=go exported=false byte_range=11827:12016
   sig=func (e *Extractor) readFile(abs string) []byte
 EDGES
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.abs,matrix/codegraph/extract.b,matrix/codegraph/extract.e,matrix/codegraph/extract.err,matrix/codegraph/extract.ok
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.extractFile
+  ^references=matrix/codegraph/extract.Extractor.extractFile
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.reextract kind=method
@@ -253,7 +345,11 @@ NODE id=matrix/codegraph/extract.Extractor.reextract kind=method
   sig=func (e *Extractor) reextract(pkgs []*packages.Package)
   doc=reextract runs the full per-package extraction pipeline over an arbitrary set\nof packages (which may span modules), mirroring loadModule for the reloaded\nsubset.
 EDGES
+  calls=matrix/codegraph/extract.Extractor.extractCalls,matrix/codegraph/extract.Extractor.extractPackage,matrix/codegraph/extract.Extractor.extractTypeEdges,matrix/codegraph/extract.Extractor.rel
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.extractCalls,matrix/codegraph/extract.Extractor.extractPackage,matrix/codegraph/extract.Extractor.extractTypeEdges,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.e,matrix/codegraph/extract.i,matrix/codegraph/extract.j,matrix/codegraph/extract.moduleID,matrix/codegraph/extract.p,matrix/codegraph/extract.pkgs
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.IncrementalUpdate
+  ^references=matrix/codegraph/extract.IncrementalUpdate
   ^defines=matrix/codegraph/extract/incremental.go
 
 NODE id=matrix/codegraph/extract.Extractor.references kind=method
@@ -261,14 +357,20 @@ NODE id=matrix/codegraph/extract.Extractor.references kind=method
   sig=func (e *Extractor) references(p *packages.Package, srcID string, node ast.Node)
   doc=references walks a declaration subtree and emits a references edge to every\nintra-repo named object it uses (type-resolved via TypesInfo.Uses), excluding\nself-references.
 EDGES
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.isRepoPkg,matrix/codegraph/extract.did,matrix/codegraph/extract.dup,matrix/codegraph/extract.e,matrix/codegraph/extract.id,matrix/codegraph/extract.idForObj,matrix/codegraph/extract.n,matrix/codegraph/extract.node,matrix/codegraph/extract.obj,matrix/codegraph/extract.ok,matrix/codegraph/extract.p,matrix/codegraph/extract.seen,matrix/codegraph/extract.srcID,matrix/codegraph/model.Edge,matrix/codegraph/model.EdgeReferences,matrix/codegraph/model.Index.AddEdge
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
+  ^references=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.rel kind=method
   digest=b3:05a7b7ec2e719822e8e1638cfa352501bea7b8ba2bd15c3bdb8d9a38da9f50eb file=codegraph/extract/extract.go range=386:392 lang=go exported=false byte_range=11673:11825
   sig=func (e *Extractor) rel(abs string) string
 EDGES
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.abs,matrix/codegraph/extract.e,matrix/codegraph/extract.err,matrix/codegraph/extract.r
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.FileMerkle,matrix/codegraph/extract.Extractor.extractCalls,matrix/codegraph/extract.Extractor.extractFile,matrix/codegraph/extract.Extractor.extractPackage,matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.Extractor.reextract
+  ^references=matrix/codegraph/extract.Extractor.FileMerkle,matrix/codegraph/extract.Extractor.extractCalls,matrix/codegraph/extract.Extractor.extractFile,matrix/codegraph/extract.Extractor.extractPackage,matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.Extractor.reextract
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.Extractor.writeMerkle kind=method
@@ -276,7 +378,11 @@ NODE id=matrix/codegraph/extract.Extractor.writeMerkle kind=method
   sig=func (e *Extractor) writeMerkle(path string) error
   doc=writeMerkle persists the repo file Merkle tree so a later incremental run can\ndiff against it to find exactly the changed files.
 EDGES
+  calls=matrix/codegraph/extract.Extractor.FileMerkle,matrix/codegraph/merkle.Write
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.FileMerkle,matrix/codegraph/extract.e,matrix/codegraph/extract.err,matrix/codegraph/extract.f,matrix/codegraph/extract.path,matrix/codegraph/merkle.Write
   ^contains=matrix/codegraph/extract.Extractor
+  ^calls=matrix/codegraph/extract.Extractor.WriteStore
+  ^references=matrix/codegraph/extract.Extractor.WriteStore
   ^defines=matrix/codegraph/extract/build.go
 
 NODE id=matrix/codegraph/extract.FileTree kind=func
@@ -284,6 +390,10 @@ NODE id=matrix/codegraph/extract.FileTree kind=func
   sig=func FileTree(cfg Config) (*merkle.Tree, error)
   doc=FileTree builds the repo file Merkle tree from the canonical source-file set.
 EDGES
+  calls=matrix/codegraph/extract.RepoFiles,matrix/codegraph/merkle.FromContentMap
+  references=matrix/codegraph/extract.Config,matrix/codegraph/extract.RepoFiles,matrix/codegraph/extract.cfg,matrix/codegraph/extract.err,matrix/codegraph/extract.files,matrix/codegraph/merkle.FromContentMap,matrix/codegraph/merkle.Tree
+  ^calls=matrix/codegraph/extract.CheckStale,matrix/codegraph/extract.Extractor.FileMerkle,matrix/codegraph/extract.IncrementalUpdate
+  ^references=matrix/codegraph/extract.CheckStale,matrix/codegraph/extract.Extractor.FileMerkle,matrix/codegraph/extract.IncrementalUpdate
   ^defines=matrix/codegraph/extract/files.go
 
 NODE id=matrix/codegraph/extract.IncrementalResult kind=type
@@ -292,6 +402,8 @@ NODE id=matrix/codegraph/extract.IncrementalResult kind=type
   doc=IncrementalResult reports what an incremental update touched.
 EDGES
   contains=matrix/codegraph/extract.IncrementalResult#AffectedPkgs,matrix/codegraph/extract.IncrementalResult#Changes,matrix/codegraph/extract.IncrementalResult#Dependents,matrix/codegraph/extract.IncrementalResult#Extractor,matrix/codegraph/extract.IncrementalResult#Moved,matrix/codegraph/extract.IncrementalResult#Removed,matrix/codegraph/extract.IncrementalResult#Tree
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/merkle.Changes,matrix/codegraph/merkle.Tree
+  ^references=matrix/codegraph/extract.IncrementalUpdate
   ^defines=matrix/codegraph/extract/incremental.go
 
 NODE id=matrix/codegraph/extract.IncrementalResult#AffectedPkgs kind=field
@@ -341,6 +453,8 @@ NODE id=matrix/codegraph/extract.IncrementalUpdate kind=func
   sig=func IncrementalUpdate(prior *Extractor, priorTree *merkle.Tree) (*IncrementalResult, error)
   doc=IncrementalUpdate applies a source change to a prior in-memory extraction\nwithout a full rebuild. priorTree is the file Merkle tree captured at the\nprior build (before the change). It:\n\n 1. recomputes the current file tree and diffs it (Requirement 10.1);\n 2. finds the nodes owned by changed/removed files, and via the reverse-edge\n    index the true dependents whose edges must be revalidated (10.3);\n 3. reloads and re-extracts ONLY the affected packages, recomputing their\n    nodes and outgoing edges, and carries every untouched package's nodes and\n    edges over unchanged (10.2);\n 4. recomputes container digests and reports which node digests moved (10.4).\n\nRe-extraction is package-granular because Go type resolution is: a file's\nedges are computed from its type-checked package. Untouched packages are never\nreloaded. This is modular, not whole-program — a change that alters\ninterface-dispatch resolution in an unrelated package is out of scope here and\nis what the full-rebuild equivalence test (task 5.6) guards.
 EDGES
+  calls=matrix/codegraph/extract.Extractor.finalizeContainers,matrix/codegraph/extract.Extractor.reextract,matrix/codegraph/extract.FileTree,matrix/codegraph/extract.New,matrix/codegraph/extract.loadPackages,matrix/codegraph/merkle.Changes.Empty,matrix/codegraph/merkle.Diff,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.Index.Edges,matrix/codegraph/model.Index.Node,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.Index.Reverse
+  references=matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.finalizeContainers,matrix/codegraph/extract.Extractor.reextract,matrix/codegraph/extract.FileTree,matrix/codegraph/extract.IncrementalResult,matrix/codegraph/extract.New,matrix/codegraph/extract.affected,matrix/codegraph/extract.affectedList,matrix/codegraph/extract.cfg,matrix/codegraph/extract.changes,matrix/codegraph/extract.curTree,matrix/codegraph/extract.dep,matrix/codegraph/extract.depList,matrix/codegraph/extract.dependents,matrix/codegraph/extract.dir,matrix/codegraph/extract.e,matrix/codegraph/extract.err,matrix/codegraph/extract.filePatterns,matrix/codegraph/extract.id,matrix/codegraph/extract.importPaths,matrix/codegraph/extract.invalidationEdges,matrix/codegraph/extract.loadPackages,matrix/codegraph/extract.modPath,matrix/codegraph/extract.moved,matrix/codegraph/extract.n,matrix/codegraph/extract.old,matrix/codegraph/extract.out,matrix/codegraph/extract.p,matrix/codegraph/extract.pkg,matrix/codegraph/extract.pkgs,matrix/codegraph/extract.prior,matrix/codegraph/extract.priorTree,matrix/codegraph/extract.rel,matrix/codegraph/extract.removed,matrix/codegraph/extract.res,matrix/codegraph/extract.sub,matrix/codegraph/extract.t,matrix/codegraph/extract.touched,matrix/codegraph/merkle.Changes.Empty,matrix/codegraph/merkle.Diff,matrix/codegraph/merkle.Tree,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.Index.Edges,matrix/codegraph/model.Index.Node,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.Index.Reverse
   ^defines=matrix/codegraph/extract/incremental.go
 
 NODE id=matrix/codegraph/extract.New kind=func
@@ -348,6 +462,10 @@ NODE id=matrix/codegraph/extract.New kind=func
   sig=func New(cfg Config) *Extractor
   doc=New returns an Extractor writing into a fresh Index.
 EDGES
+  calls=matrix/codegraph/model.NewIndex
+  references=matrix/codegraph/extract.Config,matrix/codegraph/extract.Extractor,matrix/codegraph/extract.cfg,matrix/codegraph/model.NewIndex
+  ^calls=matrix/codegraph/extract.Build,matrix/codegraph/extract.IncrementalUpdate
+  ^references=matrix/codegraph/extract.Build,matrix/codegraph/extract.IncrementalUpdate
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.RepoFiles kind=func
@@ -355,54 +473,79 @@ NODE id=matrix/codegraph/extract.RepoFiles kind=func
   sig=func RepoFiles(cfg Config) (map[string][]byte, error)
   doc=RepoFiles returns the canonical source-file set the graph is built over:\nevery non-test .go file under the configured module dirs, keyed by repo-\nrelative slash path -> raw bytes. It skips _test.go files and the vendor,\ntestdata, node_modules, and .git trees — the same set go/packages loads for a\nnon-test build — so the file Merkle tree computed from it stays in lockstep\nwith the extracted graph across full and incremental builds.
 EDGES
+  references=matrix/codegraph/extract.Config,matrix/codegraph/extract.b,matrix/codegraph/extract.cfg,matrix/codegraph/extract.d,matrix/codegraph/extract.err,matrix/codegraph/extract.isGraphSource,matrix/codegraph/extract.mod,matrix/codegraph/extract.out,matrix/codegraph/extract.path,matrix/codegraph/extract.rel,matrix/codegraph/extract.root,matrix/codegraph/extract.seen
+  ^calls=matrix/codegraph/extract.FileTree
+  ^references=matrix/codegraph/extract.FileTree
   ^defines=matrix/codegraph/extract/files.go
 
 NODE id=matrix/codegraph/extract.SelfModelConfig kind=func
   digest=b3:b575fe0fed9a3668d1493959f4508c1ed2fbf1e0ec148767d52b398d0e8924c4 file=codegraph/extract/selfscope.go range=24:45 lang=go exported=true byte_range=306:1125
   sig=func SelfModelConfig(repoRoot string) (Config, error)
 EDGES
+  references=matrix/codegraph/extract.Config,matrix/codegraph/extract.SelfModelModules,matrix/codegraph/extract.SelfModelRequiredPackages,matrix/codegraph/extract.dir,matrix/codegraph/extract.err,matrix/codegraph/extract.info,matrix/codegraph/extract.modules,matrix/codegraph/extract.rel,matrix/codegraph/extract.repoRoot,matrix/codegraph/extract.root,matrix/codegraph/extract.statErr
+  ^calls=matrix/codegraph/cmd/codegraph.common.config
+  ^references=matrix/codegraph/cmd/codegraph.common.config
   ^defines=matrix/codegraph/extract/selfscope.go
 
 NODE id=matrix/codegraph/extract.SelfModelModules kind=var
   digest=b3:210089ef28147d7a9c18308219920059c49316c9ca5b0f44973406221406ec83 file=codegraph/extract/selfscope.go range=9:13 lang=go exported=true byte_range=63:125
   sig=[]string
 EDGES
+  ^references=matrix/codegraph/extract.SelfModelConfig
   ^defines=matrix/codegraph/extract/selfscope.go
 
 NODE id=matrix/codegraph/extract.SelfModelRequiredPackages kind=var
   digest=b3:d7e98c03572722b700aea47f7cbf26aafb765dc919c4bf13c4b5a87fadc0946f file=codegraph/extract/selfscope.go range=15:22 lang=go exported=true byte_range=131:304
   sig=[]string
 EDGES
+  ^references=matrix/codegraph/cmd/codegraph.cmdBuild,matrix/codegraph/extract.SelfModelConfig
   ^defines=matrix/codegraph/extract/selfscope.go
 
 NODE id=matrix/codegraph/extract.docPos kind=func
   digest=b3:1df0c8a263de3561e1a234817bd3af037888685e677079e9a6698f194d53ae57 file=codegraph/extract/extract.go range=466:471 lang=go exported=false byte_range=13448:13552
   sig=func docPos(cg *ast.CommentGroup) token.Pos
 EDGES
+  references=matrix/codegraph/extract.cg
+  ^calls=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
+  ^references=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.docText kind=func
   digest=b3:d87aa49f5078777fe7903e0c46da9bd294c6b49723e00d37cad42ab11cc20cf5 file=codegraph/extract/extract.go range=473:478 lang=go exported=false byte_range=13554:13673
   sig=func docText(cg *ast.CommentGroup) string
 EDGES
+  references=matrix/codegraph/extract.cg
+  ^calls=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
+  ^references=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.funcID kind=func
   digest=b3:af097216d5977141ddbbd36756e8babc8e7b9e41384c5208e0f73d999933d4ee file=codegraph/extract/calls.go range=76:86 lang=go exported=false byte_range=1878:2066
   sig=func funcID(fn *ssa.Function) (string, bool)
 EDGES
+  calls=matrix/codegraph/extract.idForObj
+  references=matrix/codegraph/extract.fn,matrix/codegraph/extract.id,matrix/codegraph/extract.idForObj,matrix/codegraph/extract.obj,matrix/codegraph/extract.ok
+  ^calls=matrix/codegraph/extract.Extractor.extractCalls
+  ^references=matrix/codegraph/extract.Extractor.extractCalls
   ^defines=matrix/codegraph/extract/calls.go
 
 NODE id=matrix/codegraph/extract.funcSig kind=func
   digest=b3:e4abe54953e679ac93fd589a9067ee926a7a8894669c25f0e8b9889a1b6d15ce file=codegraph/extract/extract.go range=512:519 lang=go exported=false byte_range=14515:14771
   sig=func funcSig(fset *token.FileSet, d *ast.FuncDecl) string
 EDGES
+  references=matrix/codegraph/extract.b,matrix/codegraph/extract.d,matrix/codegraph/extract.fset,matrix/codegraph/extract.savedBody,matrix/codegraph/extract.savedDoc
+  ^calls=matrix/codegraph/extract.Extractor.extractFunc
+  ^references=matrix/codegraph/extract.Extractor.extractFunc
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.idForObj kind=func
   digest=b3:4c2d6c7bb7b5e544f6e61c362bf6136fab9197e07c5fd32fac4cc61ef80254b9 file=codegraph/extract/extract.go range=406:435 lang=go exported=false byte_range=12018:12872
   sig=func idForObj(obj types.Object) (string, model.Kind, bool)
 EDGES
+  calls=matrix/codegraph/extract.recvTypeName
+  references=matrix/codegraph/extract.o,matrix/codegraph/extract.obj,matrix/codegraph/extract.ok,matrix/codegraph/extract.p,matrix/codegraph/extract.recv,matrix/codegraph/extract.recvTypeName,matrix/codegraph/extract.sig,matrix/codegraph/model.Kind,matrix/codegraph/model.KindConst,matrix/codegraph/model.KindFunc,matrix/codegraph/model.KindInterface,matrix/codegraph/model.KindMethod,matrix/codegraph/model.KindType,matrix/codegraph/model.KindVar
+  ^calls=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractTypeEdges,matrix/codegraph/extract.Extractor.extractValue,matrix/codegraph/extract.Extractor.namedID,matrix/codegraph/extract.funcID
+  ^references=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractTypeEdges,matrix/codegraph/extract.Extractor.extractValue,matrix/codegraph/extract.Extractor.namedID,matrix/codegraph/extract.Extractor.references,matrix/codegraph/extract.funcID
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.invalidationEdges kind=var
@@ -410,18 +553,23 @@ NODE id=matrix/codegraph/extract.invalidationEdges kind=var
   sig=[]model.EdgeType
   doc=invalidationEdges are the edge types over which a change propagates to\ndependents: if a node is changed or removed, whatever calls it, references it,\nor implements it may need its own edges revalidated.
 EDGES
+  references=matrix/codegraph/model.EdgeCalls,matrix/codegraph/model.EdgeImplements,matrix/codegraph/model.EdgeReferences,matrix/codegraph/model.EdgeType
+  ^references=matrix/codegraph/extract.IncrementalUpdate
   ^defines=matrix/codegraph/extract/incremental.go
 
 NODE id=matrix/codegraph/extract.isGraphSource kind=func
   digest=b3:c61e06b3b9c3e1bddc8395d5bbb835e26bba1aa32d139200efeb4ddc9f07fc7d file=codegraph/extract/files.go range=58:66 lang=go exported=false byte_range=1406:1603
   sig=func isGraphSource(name string) bool
 EDGES
+  references=matrix/codegraph/extract.name
+  ^references=matrix/codegraph/extract.RepoFiles
   ^defines=matrix/codegraph/extract/files.go
 
 NODE id=matrix/codegraph/extract.loadMode kind=const
   digest=b3:0d994342bb965d3f7815c14eb9c02376927d479c6c09355feda0f7efec73b9fa file=codegraph/extract/extract.go range=24:26 lang=go exported=false byte_range=518:733
   sig=packages.LoadMode
 EDGES
+  ^references=matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.loadPackages
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.loadPackages kind=func
@@ -429,12 +577,18 @@ NODE id=matrix/codegraph/extract.loadPackages kind=func
   sig=func loadPackages(cfg Config, filePatterns, importPaths []string) ([]*packages.Package, error)
   doc=loadPackages loads a bounded set of packages by file= query and/or import path\npattern, returning the deduplicated repo packages that type-checked.
 EDGES
+  references=matrix/codegraph/extract.Config,matrix/codegraph/extract.cfg,matrix/codegraph/extract.err,matrix/codegraph/extract.filePatterns,matrix/codegraph/extract.importPaths,matrix/codegraph/extract.loadMode,matrix/codegraph/extract.loaded,matrix/codegraph/extract.out,matrix/codegraph/extract.p,matrix/codegraph/extract.patterns,matrix/codegraph/extract.pc,matrix/codegraph/extract.seen
+  ^calls=matrix/codegraph/extract.IncrementalUpdate
+  ^references=matrix/codegraph/extract.IncrementalUpdate
   ^defines=matrix/codegraph/extract/incremental.go
 
 NODE id=matrix/codegraph/extract.methodRecvID kind=func
   digest=b3:ef0dd88a4fc69399dc3351364115644a83a996478a170c519426a894742ba91d file=codegraph/extract/extract.go range=437:454 lang=go exported=false byte_range=12874:13260
   sig=func methodRecvID(obj types.Object) string
 EDGES
+  references=matrix/codegraph/extract.fn,matrix/codegraph/extract.named,matrix/codegraph/extract.obj,matrix/codegraph/extract.ok,matrix/codegraph/extract.ptr,matrix/codegraph/extract.sig,matrix/codegraph/extract.t
+  ^calls=matrix/codegraph/extract.Extractor.extractFunc
+  ^references=matrix/codegraph/extract.Extractor.extractFunc
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.namedType kind=type
@@ -442,6 +596,7 @@ NODE id=matrix/codegraph/extract.namedType kind=type
   sig=type namedType struct {\n	id	string\n	named	*types.Named\n}
 EDGES
   contains=matrix/codegraph/extract.namedType#id,matrix/codegraph/extract.namedType#named
+  ^references=matrix/codegraph/extract.Extractor.extractTypeEdges
   ^defines=matrix/codegraph/extract/typeedges.go
 
 NODE id=matrix/codegraph/extract.namedType#id kind=field
@@ -460,60 +615,91 @@ NODE id=matrix/codegraph/extract.pathLeaf kind=func
   digest=b3:3309b742a533e3898186ecb3c71c0433ace16ab79f634b4e940e542b3b986219 file=codegraph/extract/extract.go range=537:542 lang=go exported=false byte_range=15156:15265
   sig=func pathLeaf(p string) string
 EDGES
+  references=matrix/codegraph/extract.i,matrix/codegraph/extract.p
+  ^calls=matrix/codegraph/extract.Extractor.loadModule
+  ^references=matrix/codegraph/extract.Extractor.loadModule
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.pkgPathOf kind=func
   digest=b3:6f4b3028b22ba9ef2e0319fe426efbe8097ed8bb9432bd05627326fc5533601e file=codegraph/extract/calls.go range=88:96 lang=go exported=false byte_range=2068:2239
   sig=func pkgPathOf(fn *ssa.Function) string
 EDGES
+  references=matrix/codegraph/extract.fn,matrix/codegraph/extract.obj
+  ^calls=matrix/codegraph/extract.Extractor.extractCalls
+  ^references=matrix/codegraph/extract.Extractor.extractCalls
   ^defines=matrix/codegraph/extract/calls.go
 
 NODE id=matrix/codegraph/extract.recvTypeName kind=func
   digest=b3:ff05b36eca42c28f98d635c34131d29eceba997c88076f1a6c0ba6af843b6c6e file=codegraph/extract/extract.go range=456:464 lang=go exported=false byte_range=13262:13446
   sig=func recvTypeName(t types.Type) string
 EDGES
+  references=matrix/codegraph/extract.named,matrix/codegraph/extract.ok,matrix/codegraph/extract.ptr,matrix/codegraph/extract.t
+  ^calls=matrix/codegraph/extract.idForObj
+  ^references=matrix/codegraph/extract.idForObj
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.slice kind=func
   digest=b3:7dd1c73380a1c42684f5c7a9bbf499878a97d30eadea3e9912469c0ae2109140 file=codegraph/extract/extract.go range=491:496 lang=go exported=false byte_range=14007:14204
   sig=func slice(src []byte, br model.ByteRange) []byte
 EDGES
+  references=matrix/codegraph/extract.br,matrix/codegraph/extract.src,matrix/codegraph/model.ByteRange
+  ^calls=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
+  ^references=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.span kind=func
   digest=b3:684f7d15a5bfe18be522d10a3f5868ba024d4def962d2342ed3f5be13b341e5c file=codegraph/extract/extract.go range=480:489 lang=go exported=false byte_range=13675:14005
   sig=func span(fset *token.FileSet, docStart, start, end token.Pos) (model.Range, model.ByteRange)
 EDGES
+  references=matrix/codegraph/extract.docStart,matrix/codegraph/extract.end,matrix/codegraph/extract.from,matrix/codegraph/extract.fset,matrix/codegraph/extract.pe,matrix/codegraph/extract.ps,matrix/codegraph/extract.start,matrix/codegraph/model.ByteRange,matrix/codegraph/model.Range
+  ^calls=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
+  ^references=matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.specStart kind=func
   digest=b3:7ca797387ce160e0bd476fd864f89d76f2159e5e7674bf0c35ff93da0c8cc279 file=codegraph/extract/extract.go range=498:503 lang=go exported=false byte_range=14206:14382
   sig=func specStart(d *ast.GenDecl, s *ast.TypeSpec) token.Pos
 EDGES
+  references=matrix/codegraph/extract.d,matrix/codegraph/extract.s
+  ^calls=matrix/codegraph/extract.Extractor.extractType
+  ^references=matrix/codegraph/extract.Extractor.extractType
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.specValueEnd kind=func
   digest=b3:5e971582ae2f5b111891d979acbe910b1e8ea75858591729566b854d3f38dba6 file=codegraph/extract/extract.go range=505:510 lang=go exported=false byte_range=14384:14513
   sig=func specValueEnd(s *ast.ValueSpec, name *ast.Ident) token.Pos
 EDGES
+  references=matrix/codegraph/extract.name,matrix/codegraph/extract.s
+  ^calls=matrix/codegraph/extract.Extractor.extractValue
+  ^references=matrix/codegraph/extract.Extractor.extractValue
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.typeSig kind=func
   digest=b3:c31081a73ed77a626a133c83409a779718204a1af69c9da42302ccadfa919dac file=codegraph/extract/extract.go range=521:528 lang=go exported=false byte_range=14773:15003
   sig=func typeSig(fset *token.FileSet, s *ast.TypeSpec) string
 EDGES
+  references=matrix/codegraph/extract.b,matrix/codegraph/extract.fset,matrix/codegraph/extract.s
+  ^calls=matrix/codegraph/extract.Extractor.extractType
+  ^references=matrix/codegraph/extract.Extractor.extractType
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.typeString kind=func
   digest=b3:065a4b131f7b8bb9eb992225bf1ef1b962efb8c1a46933babfeda5d53bba0d57 file=codegraph/extract/extract.go range=530:535 lang=go exported=false byte_range=15005:15154
   sig=func typeString(t types.Type) string
 EDGES
+  references=matrix/codegraph/extract.p,matrix/codegraph/extract.t
+  ^calls=matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
+  ^references=matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue
   ^defines=matrix/codegraph/extract/extract.go
 
 NODE id=matrix/codegraph/extract.writeFile kind=func
   digest=b3:0352672f8d10f61dc9914cc829a49a0fbccbf1a688b7ea78edddc8e61877fbe3 file=codegraph/extract/build.go range=74:84 lang=go exported=false byte_range=1990:2250
   sig=func writeFile(path string, ix *model.Index, nodes []*model.Node, merkle string) error
 EDGES
+  calls=matrix/codegraph/store.WriteNodes
+  references=matrix/codegraph/extract.err,matrix/codegraph/extract.f,matrix/codegraph/extract.ix,matrix/codegraph/extract.merkle,matrix/codegraph/extract.nodes,matrix/codegraph/extract.path,matrix/codegraph/model.Index,matrix/codegraph/model.Node,matrix/codegraph/store.WriteNodes
+  ^calls=matrix/codegraph/extract.Extractor.WriteStore
+  ^references=matrix/codegraph/extract.Extractor.WriteStore
   ^defines=matrix/codegraph/extract/build.go
 
 NODE id=matrix/codegraph/extract/build.go kind=file

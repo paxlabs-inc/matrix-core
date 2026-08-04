@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/companyruntime kind=package
   digest=b3:f0d25aa79ae06e3aefd90e3e7dd41859fa1db121897cd5b40003dea61b163a8e file=workforce/internal/companyruntime range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go,matrix/workforce/internal/companyruntime/coordinator.go,matrix/workforce/internal/companyruntime/cycle_dispatch.go,matrix/workforce/internal/companyruntime/signing.go,matrix/workforce/internal/companyruntime/store.go,matrix/workforce/internal/companyruntime/types.go,matrix/workforce/internal/companyruntime/verifier.go
+  imports=matrix/vault,matrix/workforce/internal/autonomouscompany,matrix/workforce/internal/companylifecycle,matrix/workforce/internal/contracts,matrix/workforce/internal/initiative,matrix/workforce/internal/learning,matrix/workforce/internal/mission,matrix/workforce/internal/portfolio,matrix/workforce/internal/productcapability,matrix/workforce/internal/projectbrain,matrix/workforce/internal/squad,matrix/workforce/internal/workorder,matrix/workforce/scheduler
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/controlapi,matrix/workforce/internal/productexecution
 
 NODE id=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor kind=type
   digest=b3:615736b2a0630df2c8c78fd96aa586b6751d95e2af7554604b6c529353ae714f file=workforce/internal/companyruntime/autonomous_next_cycle.go range=19:21 lang=go exported=true byte_range=285:354
@@ -12,6 +14,8 @@ NODE id=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor kin
 EDGES
   contains=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor#coordinator,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ReconcileNextCycle,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.companyCyclePlan,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.completionBinding,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.cycleState,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.dispatchBinding,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ensureCycleRun,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.validateSnapshot
   implements=matrix/workforce/internal/autonomouscompany.NextCycleExecutor
+  references=matrix/workforce/internal/companyruntime.Coordinator
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ReconcileNextCycle,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.companyCyclePlan,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.completionBinding,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.cycleState,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.dispatchBinding,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ensureCycleRun,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.validateSnapshot,matrix/workforce/internal/companyruntime.NewAutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime._
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go
 
 NODE id=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor#coordinator kind=field
@@ -24,6 +28,8 @@ NODE id=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.Dis
   digest=b3:e68c35e71db71b55fe9c6533062aa99c192597bdb4013ace2f6c75cdaa9e8846 file=workforce/internal/companyruntime/autonomous_next_cycle.go range=32:76 lang=go exported=true byte_range=680:2155
   sig=func (executor *AutonomousNextCycleExecutor) DispatchNextCycle(\n	ctx context.Context,\n	snapshot autonomouscompany.NextCycleSnapshot,\n) (autonomouscompany.NextCycleUpdate, error)
 EDGES
+  calls=matrix/workforce/internal/autonomouscompany.NewNextCycleUpdate,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.companyCyclePlan,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.dispatchBinding,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ensureCycleRun,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.validateSnapshot,matrix/workforce/internal/companyruntime.Coordinator.DispatchCycle,matrix/workforce/internal/companyruntime.Store.LoadCurrent
+  references=matrix/workforce/internal/autonomouscompany.EvidenceBinding,matrix/workforce/internal/autonomouscompany.NewNextCycleUpdate,matrix/workforce/internal/autonomouscompany.NextCycleRunning,matrix/workforce/internal/autonomouscompany.NextCycleSnapshot,matrix/workforce/internal/autonomouscompany.NextCycleUpdate,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.companyCyclePlan,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.dispatchBinding,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ensureCycleRun,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.validateSnapshot,matrix/workforce/internal/companyruntime.Coordinator.DispatchCycle,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.binding,matrix/workforce/internal/companyruntime.configuration,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.executor,matrix/workforce/internal/companyruntime.plan,matrix/workforce/internal/companyruntime.snapshot
   ^contains=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go
 
@@ -31,6 +37,8 @@ NODE id=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.Rec
   digest=b3:6f8f248f32f25e4503c7992d9a26e59744a66d0b8c80603adc5676123a7ad62a file=workforce/internal/companyruntime/autonomous_next_cycle.go range=78:138 lang=go exported=true byte_range=2157:4025
   sig=func (executor *AutonomousNextCycleExecutor) ReconcileNextCycle(\n	ctx context.Context,\n	snapshot autonomouscompany.NextCycleSnapshot,\n) (autonomouscompany.NextCycleUpdate, error)
 EDGES
+  calls=matrix/workforce/internal/autonomouscompany.NewNextCycleUpdate,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.completionBinding,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.cycleState,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.validateSnapshot,matrix/workforce/internal/companyruntime.CycleDispatcher.Reconcile
+  references=matrix/workforce/internal/autonomouscompany.EvidenceBinding,matrix/workforce/internal/autonomouscompany.NewNextCycleUpdate,matrix/workforce/internal/autonomouscompany.NextCycleFailed,matrix/workforce/internal/autonomouscompany.NextCyclePassed,matrix/workforce/internal/autonomouscompany.NextCycleRunning,matrix/workforce/internal/autonomouscompany.NextCycleSnapshot,matrix/workforce/internal/autonomouscompany.NextCycleUncertain,matrix/workforce/internal/autonomouscompany.NextCycleUpdate,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.completionBinding,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.cycleState,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.validateSnapshot,matrix/workforce/internal/companyruntime.CycleDispatcher.Reconcile,matrix/workforce/internal/companyruntime.compareAutonomousEvidence,matrix/workforce/internal/companyruntime.completion,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.dispatch,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.evidence,matrix/workforce/internal/companyruntime.executor,matrix/workforce/internal/companyruntime.snapshot,matrix/workforce/internal/companyruntime.state,matrix/workforce/internal/companyruntime.updatedAt
   ^contains=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go
 
@@ -38,42 +46,66 @@ NODE id=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.com
   digest=b3:d487023b9508d8171646ddbceb7b9655d26fb598f7d9f856192b3429336d0360 file=workforce/internal/companyruntime/autonomous_next_cycle.go range=153:183 lang=go exported=false byte_range=4619:5705
   sig=func (executor *AutonomousNextCycleExecutor) companyCyclePlan(\n	snapshot autonomouscompany.NextCycleSnapshot,\n	configuration StartConfiguration,\n) (portfolio.CyclePlan, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.autonomousCycleCoverage,matrix/workforce/internal/portfolio.CyclePlan.Validate
+  references=matrix/workforce/internal/autonomouscompany.NextCycleSnapshot,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.autonomousCycleCoverage,matrix/workforce/internal/companyruntime.capabilities,matrix/workforce/internal/companyruntime.configuration,matrix/workforce/internal/companyruntime.departments,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.kind,matrix/workforce/internal/companyruntime.plan,matrix/workforce/internal/companyruntime.snapshot,matrix/workforce/internal/learning.ActionDiscover,matrix/workforce/internal/portfolio.CadenceDiscovery,matrix/workforce/internal/portfolio.CadenceLearning,matrix/workforce/internal/portfolio.CyclePlan,matrix/workforce/internal/portfolio.CyclePlan.Validate
   ^contains=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor
+  ^calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go
 
 NODE id=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.completionBinding kind=method
   digest=b3:0a6773369dbeb694a5fa902d243890a8dd803fb83fc7101955425dd0c5af4596 file=workforce/internal/companyruntime/autonomous_next_cycle.go range=319:384 lang=go exported=false byte_range=11137:13700
   sig=func (executor *AutonomousNextCycleExecutor) completionBinding(\n	ctx context.Context,\n	snapshot autonomouscompany.NextCycleSnapshot,\n) (autonomouscompany.EvidenceBinding, error)
 EDGES
+  calls=matrix/workforce/internal/autonomouscompany.EvidenceBinding.Validate
+  references=matrix/workforce/internal/autonomouscompany.EvidenceBinding,matrix/workforce/internal/autonomouscompany.EvidenceBinding.Validate,matrix/workforce/internal/autonomouscompany.EvidenceNextCycleCompletionReceipt,matrix/workforce/internal/autonomouscompany.EvidenceSchemaVersion,matrix/workforce/internal/autonomouscompany.NextCycleSnapshot,matrix/workforce/internal/autonomouscompany.ReconciliationNotApplicable,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime.authority,matrix/workforce/internal/companyruntime.binding,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.disposition,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.executor,matrix/workforce/internal/companyruntime.freshUntil,matrix/workforce/internal/companyruntime.observedAt,matrix/workforce/internal/companyruntime.receiptHash,matrix/workforce/internal/companyruntime.snapshot,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ValidityActive
   ^contains=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor
+  ^calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ReconcileNextCycle
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ReconcileNextCycle
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go
 
 NODE id=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.cycleState kind=method
   digest=b3:18fccff3c0c592e695aab8f4850f01b2dc5976c60eaf03ef2df9771659563bab file=workforce/internal/companyruntime/autonomous_next_cycle.go range=299:317 lang=go exported=false byte_range=10341:11135
   sig=func (executor *AutonomousNextCycleExecutor) cycleState(\n	ctx context.Context,\n	snapshot autonomouscompany.NextCycleSnapshot,\n) (autonomouscompany.EvidenceBinding, string, time.Time, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.dispatchBinding
+  references=matrix/workforce/internal/autonomouscompany.EvidenceBinding,matrix/workforce/internal/autonomouscompany.NextCycleSnapshot,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.dispatchBinding,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.dispatch,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.executor,matrix/workforce/internal/companyruntime.snapshot,matrix/workforce/internal/companyruntime.state,matrix/workforce/internal/companyruntime.updatedAt
   ^contains=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor
+  ^calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ReconcileNextCycle
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ReconcileNextCycle
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go
 
 NODE id=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.dispatchBinding kind=method
   digest=b3:729ca860dae0be5eadb09647b6f9b5f44d1f7a141c54c22db160ee5d3fccfe03 file=workforce/internal/companyruntime/autonomous_next_cycle.go range=241:297 lang=go exported=false byte_range=8190:10339
   sig=func (executor *AutonomousNextCycleExecutor) dispatchBinding(\n	ctx context.Context,\n	snapshot autonomouscompany.NextCycleSnapshot,\n) (autonomouscompany.EvidenceBinding, error)
 EDGES
+  calls=matrix/workforce/internal/autonomouscompany.EvidenceBinding.Validate
+  references=matrix/workforce/internal/autonomouscompany.EvidenceBinding,matrix/workforce/internal/autonomouscompany.EvidenceBinding.Validate,matrix/workforce/internal/autonomouscompany.EvidenceNextCycleDispatchReceipt,matrix/workforce/internal/autonomouscompany.EvidenceSchemaVersion,matrix/workforce/internal/autonomouscompany.NextCycleSnapshot,matrix/workforce/internal/autonomouscompany.ReconciliationNotApplicable,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime.authority,matrix/workforce/internal/companyruntime.binding,matrix/workforce/internal/companyruntime.canonicalHash,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.executor,matrix/workforce/internal/companyruntime.freshUntil,matrix/workforce/internal/companyruntime.observedAt,matrix/workforce/internal/companyruntime.snapshot,matrix/workforce/internal/companyruntime.state,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ValidityActive
   ^contains=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor
+  ^calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.cycleState
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.cycleState
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go
 
 NODE id=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ensureCycleRun kind=method
   digest=b3:4500d7eb5890594dbc4e503b1b6faf2763b8d0b474a5e753579b6f34428ffdfa file=workforce/internal/companyruntime/autonomous_next_cycle.go range=185:239 lang=go exported=false byte_range=5707:8188
   sig=func (executor *AutonomousNextCycleExecutor) ensureCycleRun(\n	ctx context.Context,\n	plan portfolio.CyclePlan,\n) error
 EDGES
+  calls=matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/portfolio.CyclePlan.Validate
+  references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime.command,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.departments,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.executor,matrix/workforce/internal/companyruntime.existing,matrix/workforce/internal/companyruntime.existingDepartments,matrix/workforce/internal/companyruntime.index,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.plan,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/portfolio.CyclePlan,matrix/workforce/internal/portfolio.CyclePlan.Validate
   ^contains=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor
+  ^calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go
 
 NODE id=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.validateSnapshot kind=method
   digest=b3:189e4ef6aa25cc80b3d578fc76cf2fcfe255ac3be040f7a6458a75cf17151a5b file=workforce/internal/companyruntime/autonomous_next_cycle.go range=140:151 lang=go exported=false byte_range=4027:4617
   sig=func (executor *AutonomousNextCycleExecutor) validateSnapshot(\n	snapshot autonomouscompany.NextCycleSnapshot,\n) error
 EDGES
+  calls=matrix/workforce/internal/autonomouscompany.NextCyclePlan.Validate,matrix/workforce/internal/contracts.ContentHash.Validate
+  references=matrix/workforce/internal/autonomouscompany.NextCyclePlan.Validate,matrix/workforce/internal/autonomouscompany.NextCycleSnapshot,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime.executor,matrix/workforce/internal/companyruntime.snapshot,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/learning.ActionHumanReview
   ^contains=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor
+  ^calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ReconcileNextCycle
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ReconcileNextCycle
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go
 
 NODE id=matrix/workforce/internal/companyruntime.CadenceSchedule kind=type
@@ -81,6 +113,8 @@ NODE id=matrix/workforce/internal/companyruntime.CadenceSchedule kind=type
   sig=type CadenceSchedule struct {\n	Kind		portfolio.CadenceKind	`json:"kind"`\n	IntervalSeconds	uint64			`json:"interval_seconds"`\n	FirstDueAt	time.Time		`json:"first_due_at"`\n}
 EDGES
   contains=matrix/workforce/internal/companyruntime.CadenceSchedule#FirstDueAt,matrix/workforce/internal/companyruntime.CadenceSchedule#IntervalSeconds,matrix/workforce/internal/companyruntime.CadenceSchedule#Kind
+  references=matrix/workforce/internal/portfolio.CadenceKind
+  ^references=matrix/workforce/internal/companyruntime.DefaultStartDraft,matrix/workforce/internal/companyruntime.StartDraft
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.CadenceSchedule#FirstDueAt kind=field
@@ -106,6 +140,8 @@ NODE id=matrix/workforce/internal/companyruntime.Coordinator kind=type
   sig=type Coordinator struct {\n	pool		*pgxpool.Pool\n	store		*Store\n	mission		*mission.Store\n	portfolio	*portfolio.Store\n	lifecycle	*companylifecycle.Store\n	compiler	*initiative.Compiler\n	plans		*initiative.Store\n	dispatch	*initiative.Dispatcher\n	cycles		*CycleDispatcher\n	now		func() time.Time\n}
 EDGES
   contains=matrix/workforce/internal/companyruntime.Coordinator#compiler,matrix/workforce/internal/companyruntime.Coordinator#cycles,matrix/workforce/internal/companyruntime.Coordinator#dispatch,matrix/workforce/internal/companyruntime.Coordinator#lifecycle,matrix/workforce/internal/companyruntime.Coordinator#mission,matrix/workforce/internal/companyruntime.Coordinator#now,matrix/workforce/internal/companyruntime.Coordinator#plans,matrix/workforce/internal/companyruntime.Coordinator#pool,matrix/workforce/internal/companyruntime.Coordinator#portfolio,matrix/workforce/internal/companyruntime.Coordinator#store,matrix/workforce/internal/companyruntime.Coordinator.AttachCycleDispatcher,matrix/workforce/internal/companyruntime.Coordinator.CompanyAuthority,matrix/workforce/internal/companyruntime.Coordinator.DispatchCycle,matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.Coordinator.RunDue,matrix/workforce/internal/companyruntime.Coordinator.Store,matrix/workforce/internal/companyruntime.Coordinator.authorityBinding
+  references=matrix/workforce/internal/companylifecycle.Store,matrix/workforce/internal/companyruntime.CycleDispatcher,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/initiative.Compiler,matrix/workforce/internal/initiative.Dispatcher,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/mission.Store,matrix/workforce/internal/portfolio.Store
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime.Coordinator.AttachCycleDispatcher,matrix/workforce/internal/companyruntime.Coordinator.CompanyAuthority,matrix/workforce/internal/companyruntime.Coordinator.DispatchCycle,matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.Coordinator.RunDue,matrix/workforce/internal/companyruntime.Coordinator.Store,matrix/workforce/internal/companyruntime.Coordinator.authorityBinding,matrix/workforce/internal/companyruntime.NewAutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime.NewCoordinator,matrix/workforce/internal/companyruntime.NewCoordinatorWithDispatcher,matrix/workforce/internal/controlapi.Service,matrix/workforce/internal/controlapi.Service.AttachCompanyRuntime
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.Coordinator#compiler kind=field
@@ -172,56 +208,83 @@ NODE id=matrix/workforce/internal/companyruntime.Coordinator.AttachCycleDispatch
   digest=b3:91a0907bd7d10bb13937e4e5e6abedaf872b24af0f7ddb4d36bb6543cb311d25 file=workforce/internal/companyruntime/coordinator.go range=54:60 lang=go exported=true byte_range=1680:1935
   sig=func (coordinator *Coordinator) AttachCycleDispatcher(dispatcher *CycleDispatcher) error
 EDGES
+  references=matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.CycleDispatcher,matrix/workforce/internal/companyruntime.coordinator,matrix/workforce/internal/companyruntime.dispatcher
   ^contains=matrix/workforce/internal/companyruntime.Coordinator
+  ^calls=matrix/workforce/cmd/workforced.runContext
+  ^references=matrix/workforce/cmd/workforced.runContext
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.Coordinator.CompanyAuthority kind=method
   digest=b3:2694f386d2d98c0b8dd22939f518987487a379aeeca3b667fb7eea8cda2c86a7 file=workforce/internal/companyruntime/coordinator.go range=31:52 lang=go exported=true byte_range=651:1678
   sig=func (coordinator *Coordinator) CompanyAuthority(\n	ctx context.Context,\n) (workorder.CompanyAuthority, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/workorder.CompanyAuthority.Validate
+  references=matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.authority,matrix/workforce/internal/companyruntime.coordinator,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.current,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.CompanyAuthority.Validate
   ^contains=matrix/workforce/internal/companyruntime.Coordinator
+  ^calls=matrix/workforce/internal/controlapi.Service.FundCompanyInitiative
+  ^references=matrix/workforce/internal/controlapi.Service.FundCompanyInitiative
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.Coordinator.DispatchCycle kind=method
   digest=b3:731f0f5f5acf665c1a413fca40061cbda4e39b2cbeff3112e7d12a0ca7c123d2 file=workforce/internal/companyruntime/coordinator.go range=62:74 lang=go exported=true byte_range=1937:2374
   sig=func (coordinator *Coordinator) DispatchCycle(\n	ctx context.Context,\n	plan portfolio.CyclePlan,\n) (CycleDispatchResult, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/companyruntime.Store.LoadCurrent
+  references=matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.CycleDispatchResult,matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.configuration,matrix/workforce/internal/companyruntime.coordinator,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.plan,matrix/workforce/internal/portfolio.CyclePlan
   ^contains=matrix/workforce/internal/companyruntime.Coordinator
+  ^calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle
+  ^references=matrix/workforce/cmd/workforced.runContext,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.Coordinator.DispatchReady kind=method
   digest=b3:0164685298914a99b6140ee6cb00148c8fdbf8e529e03b77191d5f8410ab8170 file=workforce/internal/companyruntime/coordinator.go range=122:193 lang=go exported=true byte_range=3743:6172
   sig=func (coordinator *Coordinator) DispatchReady(\n	ctx context.Context,\n	limit uint16,\n) ([]initiative.DispatchResult, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store.LoadCurrent
+  references=matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.companyAuthority,matrix/workforce/internal/companyruntime.coordinator,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.current,matrix/workforce/internal/companyruntime.currentPlan,matrix/workforce/internal/companyruntime.dispatched,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.initiativeID,matrix/workforce/internal/companyruntime.initiativeIDs,matrix/workforce/internal/companyruntime.limit,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.remaining,matrix/workforce/internal/companyruntime.results,matrix/workforce/internal/companyruntime.rows,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/initiative.DispatchResult,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/workorder.CompanyAuthority
   ^contains=matrix/workforce/internal/companyruntime.Coordinator
+  ^references=matrix/workforce/cmd/workforced.runContext
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative kind=method
   digest=b3:5c608625a666fed9c41b8f05e26f6e790162ff932232545e34a1d9982977ef9b file=workforce/internal/companyruntime/coordinator.go range=276:505 lang=go exported=true byte_range=9063:19764
   sig=func (coordinator *Coordinator) FundInitiative(\n	ctx context.Context,\n	request FundingRequest,\n) (FundingResult, error)
 EDGES
+  calls=matrix/workforce/internal/companylifecycle.Store.CreateInitiative,matrix/workforce/internal/companylifecycle.Store.Transition,matrix/workforce/internal/companyruntime.Coordinator.authorityBinding,matrix/workforce/internal/companyruntime.FundingRequest.Validate,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.Controller,matrix/workforce/internal/companyruntime.idempotencyKey,matrix/workforce/internal/companyruntime.receiptID,matrix/workforce/internal/companyruntime.transitionID,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/portfolio.Controller.Decide
+  references=matrix/workforce/internal/companylifecycle.CapitalImpact,matrix/workforce/internal/companylifecycle.CreateRequest,matrix/workforce/internal/companylifecycle.Decision,matrix/workforce/internal/companylifecycle.DecisionAdvance,matrix/workforce/internal/companylifecycle.DecisionGo,matrix/workforce/internal/companylifecycle.Initiative,matrix/workforce/internal/companylifecycle.InitiativeID,matrix/workforce/internal/companylifecycle.InitiativeSchemaVersion,matrix/workforce/internal/companylifecycle.OpportunityID,matrix/workforce/internal/companylifecycle.State,matrix/workforce/internal/companylifecycle.StateDecide,matrix/workforce/internal/companylifecycle.StateFund,matrix/workforce/internal/companylifecycle.StateScreen,matrix/workforce/internal/companylifecycle.StateValidate,matrix/workforce/internal/companylifecycle.Store.CreateInitiative,matrix/workforce/internal/companylifecycle.Store.Transition,matrix/workforce/internal/companylifecycle.TransitionRequest,matrix/workforce/internal/companylifecycle.TransitionSchemaVersion,matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.Coordinator.authorityBinding,matrix/workforce/internal/companyruntime.FundingRequest,matrix/workforce/internal/companyruntime.FundingRequest.Validate,matrix/workforce/internal/companyruntime.FundingResult,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.Controller,matrix/workforce/internal/companyruntime.authorityBinding,matrix/workforce/internal/companyruntime.checkpoint,matrix/workforce/internal/companyruntime.clauseID,matrix/workforce/internal/companyruntime.committed,matrix/workforce/internal/companyruntime.companyAuthority,matrix/workforce/internal/companyruntime.configuration,matrix/workforce/internal/companyruntime.controller,matrix/workforce/internal/companyruntime.coordinator,matrix/workforce/internal/companyruntime.create,matrix/workforce/internal/companyruntime.createHash,matrix/workforce/internal/companyruntime.created,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.current,matrix/workforce/internal/companyruntime.decision,matrix/workforce/internal/companyruntime.decisionDeduplicated,matrix/workforce/internal/companyruntime.decisionHash,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.hashErr,matrix/workforce/internal/companyruntime.idempotencyKey,matrix/workforce/internal/companyruntime.initiativeValue,matrix/workforce/internal/companyruntime.lifecycleID,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.plan,matrix/workforce/internal/companyruntime.receiptID,matrix/workforce/internal/companyruntime.request,matrix/workforce/internal/companyruntime.requestHash,matrix/workforce/internal/companyruntime.result,matrix/workforce/internal/companyruntime.step,matrix/workforce/internal/companyruntime.steps,matrix/workforce/internal/companyruntime.storedDecision,matrix/workforce/internal/companyruntime.storedHash,matrix/workforce/internal/companyruntime.storedInitiative,matrix/workforce/internal/companyruntime.storedOpportunity,matrix/workforce/internal/companyruntime.transition,matrix/workforce/internal/companyruntime.transitionID,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/companyruntime.zeroImpact,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/initiative.CapitalAllocation,matrix/workforce/internal/initiative.CompileInput,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Initiative,matrix/workforce/internal/initiative.InitiativeSchemaVersion,matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/portfolio.Controller.Decide,matrix/workforce/internal/portfolio.DecisionGO,matrix/workforce/internal/workorder.CompanyAuthority
   ^contains=matrix/workforce/internal/companyruntime.Coordinator
+  ^calls=matrix/workforce/internal/controlapi.Service.FundCompanyInitiative
+  ^references=matrix/workforce/internal/controlapi.Service.FundCompanyInitiative
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.Coordinator.RunDue kind=method
   digest=b3:b9c3a69043f3567a9717524defeccb8839739de14bf58661ebd9fd26196f7b59 file=workforce/internal/companyruntime/coordinator.go range=199:274 lang=go exported=true byte_range=6252:9061
   sig=func (coordinator *Coordinator) RunDue(ctx context.Context, limit uint16) ([]portfolio.CyclePlan, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.CycleDispatcher.Reconcile,matrix/workforce/internal/companyruntime.Store.Controller,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/portfolio.Controller.ClaimCyclePlans,matrix/workforce/internal/portfolio.CyclePlan.Validate,matrix/workforce/internal/portfolio.Store.DetectStarvation
+  references=matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.CycleDispatcher.Reconcile,matrix/workforce/internal/companyruntime.Store.Controller,matrix/workforce/internal/companyruntime.controller,matrix/workforce/internal/companyruntime.coordinator,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.departments,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.index,matrix/workforce/internal/companyruntime.limit,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.plan,matrix/workforce/internal/companyruntime.plans,matrix/workforce/internal/companyruntime.recovered,matrix/workforce/internal/companyruntime.rows,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/portfolio.Controller.ClaimCyclePlans,matrix/workforce/internal/portfolio.CyclePlan,matrix/workforce/internal/portfolio.CyclePlan.Validate,matrix/workforce/internal/portfolio.Store.DetectStarvation
   ^contains=matrix/workforce/internal/companyruntime.Coordinator
+  ^references=matrix/workforce/cmd/workforced.runContext
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.Coordinator.Store kind=method
   digest=b3:b52ee8a3e54af8e5ee74fca3eca7d06ac9762add19bacb7101a7f51486a68d89 file=workforce/internal/companyruntime/coordinator.go range=195:197 lang=go exported=true byte_range=6174:6250
   sig=func (coordinator *Coordinator) Store() *Store
 EDGES
+  references=matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.coordinator
   ^contains=matrix/workforce/internal/companyruntime.Coordinator
+  ^calls=matrix/workforce/internal/controlapi.Service.CurrentCompanyRuntime,matrix/workforce/internal/controlapi.Service.PreviewCompanyStart,matrix/workforce/internal/controlapi.Service.StartCompany
+  ^references=matrix/workforce/internal/controlapi.Service.CurrentCompanyRuntime,matrix/workforce/internal/controlapi.Service.PreviewCompanyStart,matrix/workforce/internal/controlapi.Service.StartCompany
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.Coordinator.authorityBinding kind=method
   digest=b3:ee65332ca451d544da2c226f9c1865e7e92a6e84d38b8d048b46f7715dfe9b72 file=workforce/internal/companyruntime/coordinator.go range=507:549 lang=go exported=false byte_range=19766:21857
   sig=func (coordinator *Coordinator) authorityBinding(\n	ctx context.Context,\n	authority mission.ActivationAuthority,\n	configuration StartConfiguration,\n	seatID contracts.SeatID,\n	clauseID string,\n) (companylifecycle.AuthorityBinding, error)
 EDGES
+  references=matrix/workforce/internal/companylifecycle.AuthorityBinding,matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.active,matrix/workforce/internal/companyruntime.authority,matrix/workforce/internal/companyruntime.clauseID,matrix/workforce/internal/companyruntime.configuration,matrix/workforce/internal/companyruntime.coordinator,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.expiresAt,matrix/workforce/internal/companyruntime.mandateHash,matrix/workforce/internal/companyruntime.mandateID,matrix/workforce/internal/companyruntime.mandateVersion,matrix/workforce/internal/companyruntime.seatID,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.MandateID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/mission.ActivationAuthority
   ^contains=matrix/workforce/internal/companyruntime.Coordinator
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.CycleDispatchResult kind=type
@@ -229,6 +292,7 @@ NODE id=matrix/workforce/internal/companyruntime.CycleDispatchResult kind=type
   sig=type CycleDispatchResult struct {\n	CycleID		string		`json:"cycle_id"`\n	WorkOrderID	string		`json:"work_order_id"`\n	GoalID		string		`json:"goal_id"`\n	IntentIDs	[]string	`json:"intent_ids"`\n	WakeID		string		`json:"wake_id"`\n	Deduplicated	bool		`json:"deduplicated"`\n}
 EDGES
   contains=matrix/workforce/internal/companyruntime.CycleDispatchResult#CycleID,matrix/workforce/internal/companyruntime.CycleDispatchResult#Deduplicated,matrix/workforce/internal/companyruntime.CycleDispatchResult#GoalID,matrix/workforce/internal/companyruntime.CycleDispatchResult#IntentIDs,matrix/workforce/internal/companyruntime.CycleDispatchResult#WakeID,matrix/workforce/internal/companyruntime.CycleDispatchResult#WorkOrderID
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.DispatchCycle,matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/companyruntime.CycleDispatcher.persist
   ^defines=matrix/workforce/internal/companyruntime/cycle_dispatch.go
 
 NODE id=matrix/workforce/internal/companyruntime.CycleDispatchResult#CycleID kind=field
@@ -272,6 +336,8 @@ NODE id=matrix/workforce/internal/companyruntime.CycleDispatcher kind=type
   sig=type CycleDispatcher struct {\n	store		*Store\n	scheduler	*scheduler.Store\n	runtime		CycleRuntimeBinding\n}
 EDGES
   contains=matrix/workforce/internal/companyruntime.CycleDispatcher#runtime,matrix/workforce/internal/companyruntime.CycleDispatcher#scheduler,matrix/workforce/internal/companyruntime.CycleDispatcher#store,matrix/workforce/internal/companyruntime.CycleDispatcher.Authority,matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/companyruntime.CycleDispatcher.Reconcile,matrix/workforce/internal/companyruntime.CycleDispatcher.orderAD,matrix/workforce/internal/companyruntime.CycleDispatcher.persist
+  references=matrix/workforce/internal/companyruntime.CycleRuntimeBinding,matrix/workforce/internal/companyruntime.Store,matrix/workforce/scheduler.Store
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.Coordinator.AttachCycleDispatcher,matrix/workforce/internal/companyruntime.CycleDispatcher.Authority,matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/companyruntime.CycleDispatcher.Reconcile,matrix/workforce/internal/companyruntime.CycleDispatcher.orderAD,matrix/workforce/internal/companyruntime.CycleDispatcher.persist,matrix/workforce/internal/companyruntime.NewCycleDispatcher
   ^defines=matrix/workforce/internal/companyruntime/cycle_dispatch.go
 
 NODE id=matrix/workforce/internal/companyruntime.CycleDispatcher#runtime kind=field
@@ -296,35 +362,54 @@ NODE id=matrix/workforce/internal/companyruntime.CycleDispatcher.Authority kind=
   digest=b3:7023ff551683a353f44200a04b1cba4e3798cb6235048c32aaf23590357a3450 file=workforce/internal/companyruntime/cycle_dispatch.go range=68:106 lang=go exported=true byte_range=1739:3497
   sig=func (dispatcher *CycleDispatcher) Authority(\n	ctx context.Context,\n) (workorder.CompanyCycleAuthority, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/contracts.HashCanonical
+  references=matrix/workforce/internal/companyruntime.CycleDispatcher,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.companyState,matrix/workforce/internal/companyruntime.configuration,matrix/workforce/internal/companyruntime.configurationHash,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.dispatcher,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/workorder.CompanyCycleAuthority
   ^contains=matrix/workforce/internal/companyruntime.CycleDispatcher
+  ^calls=matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch
   ^defines=matrix/workforce/internal/companyruntime/cycle_dispatch.go
 
 NODE id=matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch kind=method
   digest=b3:cba7e2963568f6f6fcdec616efebd9c9a670bc6460233ad0b6c57bfc1f7566e4 file=workforce/internal/companyruntime/cycle_dispatch.go range=108:175 lang=go exported=true byte_range=3499:6787
   sig=func (dispatcher *CycleDispatcher) Dispatch(\n	ctx context.Context,\n	plan portfolio.CyclePlan,\n	configuration StartConfiguration,\n) (CycleDispatchResult, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.CycleDispatcher.Authority,matrix/workforce/internal/companyruntime.CycleDispatcher.persist,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/portfolio.CyclePlan.Validate,matrix/workforce/internal/workorder.SignCompanyCycle
+  references=matrix/workforce/internal/companyruntime.CycleDispatchResult,matrix/workforce/internal/companyruntime.CycleDispatcher,matrix/workforce/internal/companyruntime.CycleDispatcher.Authority,matrix/workforce/internal/companyruntime.CycleDispatcher.persist,matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.authority,matrix/workforce/internal/companyruntime.capability,matrix/workforce/internal/companyruntime.configuration,matrix/workforce/internal/companyruntime.configurationHash,matrix/workforce/internal/companyruntime.criteria,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.cycleLimit,matrix/workforce/internal/companyruntime.deadline,matrix/workforce/internal/companyruntime.dispatcher,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.index,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.order,matrix/workforce/internal/companyruntime.plan,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/portfolio.CyclePlan,matrix/workforce/internal/portfolio.CyclePlan.Validate,matrix/workforce/internal/workorder.Budget,matrix/workforce/internal/workorder.CompanyCycleBinding,matrix/workforce/internal/workorder.CompanyCycleOrder,matrix/workforce/internal/workorder.CompanyCycleOrderSchemaVersion,matrix/workforce/internal/workorder.SignCompanyCycle
   ^contains=matrix/workforce/internal/companyruntime.CycleDispatcher
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.DispatchCycle
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.DispatchCycle
   ^defines=matrix/workforce/internal/companyruntime/cycle_dispatch.go
 
 NODE id=matrix/workforce/internal/companyruntime.CycleDispatcher.Reconcile kind=method
   digest=b3:99939b207413e5f26694a8cf4015188ef5f1ffe9f2153efa0de2f6831f49bb4e file=workforce/internal/companyruntime/cycle_dispatch.go range=177:202 lang=go exported=true byte_range=6789:7798
   sig=func (dispatcher *CycleDispatcher) Reconcile(ctx context.Context) error
 EDGES
+  calls=matrix/workforce/internal/companyruntime.Store.currentTime
+  references=matrix/workforce/internal/companyruntime.CycleDispatcher,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.dispatcher,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.now
   ^contains=matrix/workforce/internal/companyruntime.CycleDispatcher
+  ^calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ReconcileNextCycle,matrix/workforce/internal/companyruntime.Coordinator.RunDue
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ReconcileNextCycle,matrix/workforce/internal/companyruntime.Coordinator.RunDue
   ^defines=matrix/workforce/internal/companyruntime/cycle_dispatch.go
 
 NODE id=matrix/workforce/internal/companyruntime.CycleDispatcher.orderAD kind=method
   digest=b3:1bd79f0f38965665030909cdebc54746e05e240d828540bbb707f44b1cf5bb8b file=workforce/internal/companyruntime/cycle_dispatch.go range=413:419 lang=go exported=false byte_range=16970:17281
   sig=func (dispatcher *CycleDispatcher) orderAD(order workorder.CompanyCycleOrder) vault.AD
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/companyruntime.CycleDispatcher,matrix/workforce/internal/companyruntime.dispatcher,matrix/workforce/internal/companyruntime.order,matrix/workforce/internal/workorder.CompanyCycleOrder,matrix/workforce/internal/workorder.CompanyCycleOrderSchemaVersion
   ^contains=matrix/workforce/internal/companyruntime.CycleDispatcher
+  ^calls=matrix/workforce/internal/companyruntime.CycleDispatcher.persist
+  ^references=matrix/workforce/internal/companyruntime.CycleDispatcher.persist
   ^defines=matrix/workforce/internal/companyruntime/cycle_dispatch.go
 
 NODE id=matrix/workforce/internal/companyruntime.CycleDispatcher.persist kind=method
   digest=b3:3bc0780e3a83f60f57f20ccf09a723601c86775ac14a0049b0a0bc2f68a9b747 file=workforce/internal/companyruntime/cycle_dispatch.go range=204:411 lang=go exported=false byte_range=7800:16968
   sig=func (dispatcher *CycleDispatcher) persist(\n	ctx context.Context,\n	plan portfolio.CyclePlan,\n	order workorder.CompanyCycleOrder,\n	configurationHash contracts.ContentHash,\n	now time.Time,\n) (CycleDispatchResult, error)
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/companyruntime.CycleDispatcher.orderAD,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/scheduler.Store.EnqueueTx
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/companyruntime.CycleDispatchResult,matrix/workforce/internal/companyruntime.CycleDispatcher,matrix/workforce/internal/companyruntime.CycleDispatcher.orderAD,matrix/workforce/internal/companyruntime.authorities,matrix/workforce/internal/companyruntime.canonical,matrix/workforce/internal/companyruntime.canonicalHash,matrix/workforce/internal/companyruntime.committedSpend,matrix/workforce/internal/companyruntime.configurationHash,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.cycleState,matrix/workforce/internal/companyruntime.department,matrix/workforce/internal/companyruntime.dispatcher,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.existingHash,matrix/workforce/internal/companyruntime.existingID,matrix/workforce/internal/companyruntime.goalID,matrix/workforce/internal/companyruntime.hash,matrix/workforce/internal/companyruntime.index,matrix/workforce/internal/companyruntime.intentID,matrix/workforce/internal/companyruntime.intentIDs,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.order,matrix/workforce/internal/companyruntime.plan,matrix/workforce/internal/companyruntime.result,matrix/workforce/internal/companyruntime.sealed,matrix/workforce/internal/companyruntime.seatAuthority,matrix/workforce/internal/companyruntime.state,matrix/workforce/internal/companyruntime.title,matrix/workforce/internal/companyruntime.tx,matrix/workforce/internal/companyruntime.wake,matrix/workforce/internal/companyruntime.wakeID,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.CyclePlan,matrix/workforce/internal/workorder.CompanyCycleOrder,matrix/workforce/scheduler.Budget,matrix/workforce/scheduler.MGSBinding,matrix/workforce/scheduler.ModelBinding,matrix/workforce/scheduler.Store.EnqueueTx,matrix/workforce/scheduler.TriggerRecurring,matrix/workforce/scheduler.WakeEnvelope
   ^contains=matrix/workforce/internal/companyruntime.CycleDispatcher
+  ^calls=matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch
+  ^references=matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch
   ^defines=matrix/workforce/internal/companyruntime/cycle_dispatch.go
 
 NODE id=matrix/workforce/internal/companyruntime.CycleRuntimeBinding kind=type
@@ -333,6 +418,7 @@ NODE id=matrix/workforce/internal/companyruntime.CycleRuntimeBinding kind=type
 EDGES
   contains=matrix/workforce/internal/companyruntime.CycleRuntimeBinding#MGSDigest,matrix/workforce/internal/companyruntime.CycleRuntimeBinding#MGSReference,matrix/workforce/internal/companyruntime.CycleRuntimeBinding#ModelID,matrix/workforce/internal/companyruntime.CycleRuntimeBinding#ModelProvider,matrix/workforce/internal/companyruntime.CycleRuntimeBinding.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  ^references=matrix/workforce/cmd/workforced.runContext,matrix/workforce/internal/companyruntime.CycleDispatcher,matrix/workforce/internal/companyruntime.CycleRuntimeBinding.Validate,matrix/workforce/internal/companyruntime.NewCycleDispatcher
   ^defines=matrix/workforce/internal/companyruntime/cycle_dispatch.go
 
 NODE id=matrix/workforce/internal/companyruntime.CycleRuntimeBinding#MGSDigest kind=field
@@ -363,19 +449,25 @@ NODE id=matrix/workforce/internal/companyruntime.CycleRuntimeBinding.Validate ki
   digest=b3:348a3d7212b280d7fe5941e31c0bbcc1fb659d0b0eb6410b12881379e97862dc file=workforce/internal/companyruntime/cycle_dispatch.go range=28:40 lang=go exported=true byte_range=432:945
   sig=func (value CycleRuntimeBinding) Validate() error
 EDGES
+  calls=matrix/workforce/internal/companyruntime.validToken
+  references=matrix/workforce/internal/companyruntime.CycleRuntimeBinding,matrix/workforce/internal/companyruntime.character,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/companyruntime.value
   ^contains=matrix/workforce/internal/companyruntime.CycleRuntimeBinding
+  ^calls=matrix/workforce/internal/companyruntime.NewCycleDispatcher
+  ^references=matrix/workforce/internal/companyruntime.NewCycleDispatcher
   ^defines=matrix/workforce/internal/companyruntime/cycle_dispatch.go
 
 NODE id=matrix/workforce/internal/companyruntime.DefaultStartDraft kind=func
   digest=b3:42dbc74bd9054a887d77798d180b401ba35b0226ea0ec42e8139db3280e9ecb1 file=workforce/internal/companyruntime/store.go range=70:95 lang=go exported=true byte_range=2179:3459
   sig=func DefaultStartDraft(at, expiresAt time.Time, maximumCapital, maximumRisk uint64) StartDraft
 EDGES
+  references=matrix/workforce/internal/companyruntime.CadenceSchedule,matrix/workforce/internal/companyruntime.StartDraft,matrix/workforce/internal/companyruntime.at,matrix/workforce/internal/companyruntime.cadences,matrix/workforce/internal/companyruntime.expiresAt,matrix/workforce/internal/companyruntime.index,matrix/workforce/internal/companyruntime.interval,matrix/workforce/internal/companyruntime.kind,matrix/workforce/internal/companyruntime.kinds,matrix/workforce/internal/companyruntime.maximumCapital,matrix/workforce/internal/companyruntime.maximumRisk,matrix/workforce/internal/portfolio.CadenceCapital,matrix/workforce/internal/portfolio.CadenceCommercial,matrix/workforce/internal/portfolio.CadenceDiscovery,matrix/workforce/internal/portfolio.CadenceKind,matrix/workforce/internal/portfolio.CadenceLearning,matrix/workforce/internal/portfolio.CadenceOperations,matrix/workforce/internal/portfolio.CadencePortfolio,matrix/workforce/internal/portfolio.CadenceProduct,matrix/workforce/internal/portfolio.FactorWeights
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.ErrNotStarted kind=var
   digest=b3:d04e77881ff03b65a3794d0defba6676050111ad0b7d4bfff4ae899c156e1818 file=workforce/internal/companyruntime/store.go range=37:37 lang=go exported=true byte_range=764:853
   sig=error
 EDGES
+  ^references=matrix/workforce/cmd/workforced.runContext,matrix/workforce/internal/companyruntime.Store.LoadCurrent
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.FundingRequest kind=type
@@ -384,6 +476,8 @@ NODE id=matrix/workforce/internal/companyruntime.FundingRequest kind=type
 EDGES
   contains=matrix/workforce/internal/companyruntime.FundingRequest#Alternatives,matrix/workforce/internal/companyruntime.FundingRequest#Assessment,matrix/workforce/internal/companyruntime.FundingRequest#CapitalImpact,matrix/workforce/internal/companyruntime.FundingRequest#CompanyState,matrix/workforce/internal/companyruntime.FundingRequest#Correction,matrix/workforce/internal/companyruntime.FundingRequest#DecisionID,matrix/workforce/internal/companyruntime.FundingRequest#DecisionIdempotencyKey,matrix/workforce/internal/companyruntime.FundingRequest#Evidence,matrix/workforce/internal/companyruntime.FundingRequest#FundingID,matrix/workforce/internal/companyruntime.FundingRequest#Initiative,matrix/workforce/internal/companyruntime.FundingRequest#OpportunityID,matrix/workforce/internal/companyruntime.FundingRequest#PortfolioID,matrix/workforce/internal/companyruntime.FundingRequest#ProductExecution,matrix/workforce/internal/companyruntime.FundingRequest#RequestedBySeatID,matrix/workforce/internal/companyruntime.FundingRequest.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/companylifecycle.CapitalImpact,matrix/workforce/internal/companylifecycle.CompanyStateBinding,matrix/workforce/internal/companylifecycle.CorrectionBinding,matrix/workforce/internal/companylifecycle.EvidenceBinding,matrix/workforce/internal/companylifecycle.PortfolioID,matrix/workforce/internal/companyruntime.InitiativeDraft,matrix/workforce/internal/companyruntime.ProductExecutionPlan,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/portfolio.Alternative,matrix/workforce/internal/portfolio.Assessment,matrix/workforce/internal/portfolio.DecisionID,matrix/workforce/internal/portfolio.OpportunityID
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.FundingRequest.Validate,matrix/workforce/internal/controlapi.Service.FundCompanyInitiative,matrix/workforce/internal/controlapi.Service.handleCompanyFunding
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.FundingRequest#Alternatives kind=field
@@ -474,7 +568,11 @@ NODE id=matrix/workforce/internal/companyruntime.FundingRequest.Validate kind=me
   digest=b3:edaf5c60b829ae2bb365eb8e432fbb4e8d5a1e5031a11703c36f940be0c90c1f file=workforce/internal/companyruntime/types.go range=236:272 lang=go exported=true byte_range=11786:13135
   sig=func (value FundingRequest) Validate() error
 EDGES
+  calls=matrix/workforce/internal/companylifecycle.CapitalImpact.Validate,matrix/workforce/internal/companylifecycle.CompanyStateBinding.Validate,matrix/workforce/internal/companylifecycle.CorrectionBinding.Validate,matrix/workforce/internal/companylifecycle.EvidenceBinding.Validate,matrix/workforce/internal/companyruntime.ProductExecutionPlan.Validate,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/portfolio.Assessment.Validate
+  references=matrix/workforce/internal/companylifecycle.CapitalImpact.Validate,matrix/workforce/internal/companylifecycle.CompanyStateBinding.Validate,matrix/workforce/internal/companylifecycle.CorrectionBinding.Validate,matrix/workforce/internal/companylifecycle.EvidenceBinding.Validate,matrix/workforce/internal/companyruntime.FundingRequest,matrix/workforce/internal/companyruntime.ProductExecutionPlan.Validate,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.index,matrix/workforce/internal/companyruntime.initiativeID,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/portfolio.Assessment.Validate
   ^contains=matrix/workforce/internal/companyruntime.FundingRequest
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.FundingResult kind=type
@@ -482,6 +580,8 @@ NODE id=matrix/workforce/internal/companyruntime.FundingResult kind=type
   sig=type FundingResult struct {\n	Decision	portfolio.DecisionReceipt	`json:"decision"`\n	Checkpoint	companylifecycle.Checkpoint	`json:"checkpoint"`\n	Plan		initiative.Plan			`json:"plan"`\n	State		string				`json:"state"`\n	Deduplicated	bool				`json:"deduplicated"`\n}
 EDGES
   contains=matrix/workforce/internal/companyruntime.FundingResult#Checkpoint,matrix/workforce/internal/companyruntime.FundingResult#Decision,matrix/workforce/internal/companyruntime.FundingResult#Deduplicated,matrix/workforce/internal/companyruntime.FundingResult#Plan,matrix/workforce/internal/companyruntime.FundingResult#State
+  references=matrix/workforce/internal/companylifecycle.Checkpoint,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/portfolio.DecisionReceipt
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/controlapi.Service.FundCompanyInitiative
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.FundingResult#Checkpoint kind=field
@@ -520,6 +620,8 @@ NODE id=matrix/workforce/internal/companyruntime.GateAuthorization kind=type
 EDGES
   contains=matrix/workforce/internal/companyruntime.GateAuthorization#AuthorityClauseID,matrix/workforce/internal/companyruntime.GateAuthorization#AuthorizedAt,matrix/workforce/internal/companyruntime.GateAuthorization#ExpiresAt,matrix/workforce/internal/companyruntime.GateAuthorization#InitiativeID,matrix/workforce/internal/companyruntime.GateAuthorization#Limits,matrix/workforce/internal/companyruntime.GateAuthorization#OrganizationID,matrix/workforce/internal/companyruntime.GateAuthorization#PolicyDecisionHash,matrix/workforce/internal/companyruntime.GateAuthorization#PolicyDecisionID,matrix/workforce/internal/companyruntime.GateAuthorization#RequestHash,matrix/workforce/internal/companyruntime.GateAuthorization#SchemaVersion,matrix/workforce/internal/companyruntime.GateAuthorization#Signature,matrix/workforce/internal/companyruntime.GateAuthorization#TransitionID,matrix/workforce/internal/companyruntime.GateAuthorization.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/companylifecycle.CapitalLimits,matrix/workforce/internal/companylifecycle.InitiativeID,matrix/workforce/internal/companylifecycle.TransitionID,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature
+  ^references=matrix/workforce/internal/companyruntime.GateAuthorization.Validate,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.loadGateAuthorization,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationTx,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier,matrix/workforce/internal/companyruntime.gateSigningBytes,matrix/workforce/internal/companyruntime.signGateAuthorization,matrix/workforce/internal/companyruntime.verifyGateAuthorization
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.GateAuthorization#AuthorityClauseID kind=field
@@ -598,13 +700,18 @@ NODE id=matrix/workforce/internal/companyruntime.GateAuthorization.Validate kind
   digest=b3:958c7ec3f58f77295a4d5bbb283b7b6d1985ab9bf8f158613f9ba4352b92555d file=workforce/internal/companyruntime/types.go range=126:144 lang=go exported=true byte_range=6233:6986
   sig=func (value GateAuthorization) Validate() error
 EDGES
+  calls=matrix/workforce/internal/companylifecycle.CapitalLimits.Validate,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.Signature.Validate
+  references=matrix/workforce/internal/companylifecycle.CapitalLimits.Validate,matrix/workforce/internal/companyruntime.GateAuthorization,matrix/workforce/internal/companyruntime.GateAuthorizationSchemaVersion,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.Signature.Validate
   ^contains=matrix/workforce/internal/companyruntime.GateAuthorization
+  ^calls=matrix/workforce/internal/companyruntime.signGateAuthorization,matrix/workforce/internal/companyruntime.verifyGateAuthorization,matrix/workforce/internal/contracts.EncodeCanonical
+  ^references=matrix/workforce/internal/companyruntime.signGateAuthorization,matrix/workforce/internal/companyruntime.verifyGateAuthorization
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.GateAuthorizationSchemaVersion kind=const
   digest=b3:4c323af9e0d8d0e74613b7bb79c82b86faa5e07864fbf35f3e228ed3666d6fed file=workforce/internal/companyruntime/types.go range=20:20 lang=go exported=true byte_range=443:520
   sig=untyped string
 EDGES
+  ^references=matrix/workforce/internal/companyruntime.GateAuthorization.Validate,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.gateAD
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.InitiativeDraft kind=type
@@ -612,6 +719,8 @@ NODE id=matrix/workforce/internal/companyruntime.InitiativeDraft kind=type
   sig=type InitiativeDraft struct {\n	Version			uint64				`json:"version"`\n	AllocationID		string				`json:"capital_allocation_id"`\n	Currency		string				`json:"currency"`\n	CapabilityPlan		initiative.CapabilityPlan	`json:"capability_plan"`\n	Objective		string				`json:"objective"`\n	ExecutionCriteria	[]string			`json:"execution_criteria"`\n	BusinessCriteria	[]string			`json:"business_criteria"`\n	BusinessGates		[]initiative.BusinessGate	`json:"business_gates"`\n	Deadline		time.Time			`json:"deadline"`\n	Blueprint		initiative.Blueprint		`json:"blueprint"`\n}
 EDGES
   contains=matrix/workforce/internal/companyruntime.InitiativeDraft#AllocationID,matrix/workforce/internal/companyruntime.InitiativeDraft#Blueprint,matrix/workforce/internal/companyruntime.InitiativeDraft#BusinessCriteria,matrix/workforce/internal/companyruntime.InitiativeDraft#BusinessGates,matrix/workforce/internal/companyruntime.InitiativeDraft#CapabilityPlan,matrix/workforce/internal/companyruntime.InitiativeDraft#Currency,matrix/workforce/internal/companyruntime.InitiativeDraft#Deadline,matrix/workforce/internal/companyruntime.InitiativeDraft#ExecutionCriteria,matrix/workforce/internal/companyruntime.InitiativeDraft#Objective,matrix/workforce/internal/companyruntime.InitiativeDraft#Version
+  references=matrix/workforce/internal/initiative.Blueprint,matrix/workforce/internal/initiative.BusinessGate,matrix/workforce/internal/initiative.CapabilityPlan
+  ^references=matrix/workforce/internal/companyruntime.FundingRequest
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.InitiativeDraft#AllocationID kind=field
@@ -678,30 +787,46 @@ NODE id=matrix/workforce/internal/companyruntime.NewAutonomousNextCycleExecutor 
   digest=b3:cffea11b984d10917df5237262047700dc19d86a722b8d5692d12981b023dd1a file=workforce/internal/companyruntime/autonomous_next_cycle.go range=23:30 lang=go exported=true byte_range=356:678
   sig=func NewAutonomousNextCycleExecutor(\n	coordinator *Coordinator,\n) (*AutonomousNextCycleExecutor, error)
 EDGES
+  references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.coordinator
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go
 
 NODE id=matrix/workforce/internal/companyruntime.NewCoordinator kind=func
   digest=b3:aa2f999c10f39d3bcb67bcf7141e326aeceb94050217fc71d893f22b5c091dd5 file=workforce/internal/companyruntime/coordinator.go range=76:95 lang=go exported=true byte_range=2376:3085
   sig=func NewCoordinator(\n	pool *pgxpool.Pool,\n	store *Store,\n	missionStore *mission.Store,\n	portfolioStore *portfolio.Store,\n	lifecycleStore *companylifecycle.Store,\n	compiler *initiative.Compiler,\n	planStore *initiative.Store,\n	now func() time.Time,\n) (*Coordinator, error)
 EDGES
+  references=matrix/workforce/internal/companylifecycle.Store,matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.compiler,matrix/workforce/internal/companyruntime.lifecycleStore,matrix/workforce/internal/companyruntime.missionStore,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.planStore,matrix/workforce/internal/companyruntime.pool,matrix/workforce/internal/companyruntime.portfolioStore,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/initiative.Compiler,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/mission.Store,matrix/workforce/internal/portfolio.Store
+  ^calls=matrix/workforce/internal/companyruntime.NewCoordinatorWithDispatcher
+  ^references=matrix/workforce/internal/companyruntime.NewCoordinatorWithDispatcher
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.NewCoordinatorWithDispatcher kind=func
   digest=b3:e6830e0a3636deaa523f11b81d527d14ec1c7de0522439f272eb9d406f8887c3 file=workforce/internal/companyruntime/coordinator.go range=97:120 lang=go exported=true byte_range=3087:3741
   sig=func NewCoordinatorWithDispatcher(\n	pool *pgxpool.Pool,\n	store *Store,\n	missionStore *mission.Store,\n	portfolioStore *portfolio.Store,\n	lifecycleStore *companylifecycle.Store,\n	compiler *initiative.Compiler,\n	planStore *initiative.Store,\n	dispatcher *initiative.Dispatcher,\n	now func() time.Time,\n) (*Coordinator, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.NewCoordinator
+  references=matrix/workforce/internal/companylifecycle.Store,matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.NewCoordinator,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.compiler,matrix/workforce/internal/companyruntime.coordinator,matrix/workforce/internal/companyruntime.dispatcher,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.lifecycleStore,matrix/workforce/internal/companyruntime.missionStore,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.planStore,matrix/workforce/internal/companyruntime.pool,matrix/workforce/internal/companyruntime.portfolioStore,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/initiative.Compiler,matrix/workforce/internal/initiative.Dispatcher,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/mission.Store,matrix/workforce/internal/portfolio.Store
+  ^calls=matrix/workforce/cmd/workforced.runContext
+  ^references=matrix/workforce/cmd/workforced.runContext
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.NewCycleDispatcher kind=func
   digest=b3:835b8871d50e22a95d85441469ab9fbf77deb5e32b4f659d14b1a4dcbebf125b file=workforce/internal/companyruntime/cycle_dispatch.go range=57:66 lang=go exported=true byte_range=1349:1737
   sig=func NewCycleDispatcher(\n	store *Store,\n	schedulerStore *scheduler.Store,\n	runtime CycleRuntimeBinding,\n) (*CycleDispatcher, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.CycleRuntimeBinding.Validate
+  references=matrix/workforce/internal/companyruntime.CycleDispatcher,matrix/workforce/internal/companyruntime.CycleRuntimeBinding,matrix/workforce/internal/companyruntime.CycleRuntimeBinding.Validate,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.runtime,matrix/workforce/internal/companyruntime.schedulerStore,matrix/workforce/internal/companyruntime.store,matrix/workforce/scheduler.Store
+  ^calls=matrix/workforce/cmd/workforced.runContext
+  ^references=matrix/workforce/cmd/workforced.runContext
   ^defines=matrix/workforce/internal/companyruntime/cycle_dispatch.go
 
 NODE id=matrix/workforce/internal/companyruntime.NewStore kind=func
   digest=b3:60c27c44fb49f076e801b0105ae27031b30accc5cd8067636444d24838307797 file=workforce/internal/companyruntime/store.go range=39:68 lang=go exported=true byte_range=855:2177
   sig=func NewStore(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	missionStore *mission.Store,\n	portfolioStore *portfolio.Store,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	founderKeyID string,\n	founderPublicKey ed25519.PublicKey,\n	controllerKeyID string,\n	controllerPrivate ed25519.PrivateKey,\n	now func() time.Time,\n) (*Store, error)
 EDGES
+  calls=matrix/vault.UserVault.User,matrix/workforce/internal/companyruntime.validToken
+  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.controllerKeyID,matrix/workforce/internal/companyruntime.controllerPrivate,matrix/workforce/internal/companyruntime.founderKeyID,matrix/workforce/internal/companyruntime.founderPublicKey,matrix/workforce/internal/companyruntime.missionStore,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.organizationID,matrix/workforce/internal/companyruntime.pool,matrix/workforce/internal/companyruntime.portfolioStore,matrix/workforce/internal/companyruntime.privateKey,matrix/workforce/internal/companyruntime.tenantID,matrix/workforce/internal/companyruntime.userVault,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/mission.Store,matrix/workforce/internal/portfolio.Store
+  ^calls=matrix/workforce/cmd/workforced.runContext
+  ^references=matrix/workforce/cmd/workforced.runContext
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.ProductExecutionPlan kind=type
@@ -709,6 +834,8 @@ NODE id=matrix/workforce/internal/companyruntime.ProductExecutionPlan kind=type
   sig=type ProductExecutionPlan struct {\n	ExecutionID		string				`json:"execution_id"`\n	ProjectID		contracts.ProjectID		`json:"project_id"`\n	WorkspaceID		contracts.WorkspaceID		`json:"workspace_id"`\n	SquadRequirement	squad.Requirement		`json:"squad_requirement"`\n	Stages			[]ProductStagePlan		`json:"stages"`\n	HandoffID		productcapability.HandoffID	`json:"handoff_id"`\n	BaselineSource		projectbrain.GraphSnapshot	`json:"baseline_source"`\n	BrainViewDigest		contracts.ContentHash		`json:"project_brain_view_digest"`\n	CompanyStateRecordID	string				`json:"company_state_record_id"`\n	IdempotencyKey		string				`json:"idempotency_key"`\n}
 EDGES
   contains=matrix/workforce/internal/companyruntime.ProductExecutionPlan#BaselineSource,matrix/workforce/internal/companyruntime.ProductExecutionPlan#BrainViewDigest,matrix/workforce/internal/companyruntime.ProductExecutionPlan#CompanyStateRecordID,matrix/workforce/internal/companyruntime.ProductExecutionPlan#ExecutionID,matrix/workforce/internal/companyruntime.ProductExecutionPlan#HandoffID,matrix/workforce/internal/companyruntime.ProductExecutionPlan#IdempotencyKey,matrix/workforce/internal/companyruntime.ProductExecutionPlan#ProjectID,matrix/workforce/internal/companyruntime.ProductExecutionPlan#SquadRequirement,matrix/workforce/internal/companyruntime.ProductExecutionPlan#Stages,matrix/workforce/internal/companyruntime.ProductExecutionPlan#WorkspaceID,matrix/workforce/internal/companyruntime.ProductExecutionPlan.Validate
+  references=matrix/workforce/internal/companyruntime.ProductStagePlan,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.WorkspaceID,matrix/workforce/internal/productcapability.HandoffID,matrix/workforce/internal/projectbrain.GraphSnapshot,matrix/workforce/internal/squad.Requirement
+  ^references=matrix/workforce/internal/companyruntime.FundingRequest,matrix/workforce/internal/companyruntime.ProductExecutionPlan.Validate
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.ProductExecutionPlan#BaselineSource kind=field
@@ -775,7 +902,11 @@ NODE id=matrix/workforce/internal/companyruntime.ProductExecutionPlan.Validate k
   digest=b3:78740dbe3f999eebe837649a90fe87b93b5aba879b7a353e2c6116f26ca7baa8 file=workforce/internal/companyruntime/types.go range=195:226 lang=go exported=true byte_range=9836:11454
   sig=func (value ProductExecutionPlan) Validate(\n	organizationID contracts.OrganizationID,\n	initiativeID string,\n) error
 EDGES
+  calls=matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/squad.Requirement.Validate
+  references=matrix/workforce/internal/companyruntime.ProductExecutionPlan,matrix/workforce/internal/companyruntime.expected,matrix/workforce/internal/companyruntime.index,matrix/workforce/internal/companyruntime.initiativeID,matrix/workforce/internal/companyruntime.organizationID,matrix/workforce/internal/companyruntime.seenNeeds,matrix/workforce/internal/companyruntime.seenNodes,matrix/workforce/internal/companyruntime.stage,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/squad.Requirement.Validate
   ^contains=matrix/workforce/internal/companyruntime.ProductExecutionPlan
+  ^calls=matrix/workforce/internal/companyruntime.FundingRequest.Validate
+  ^references=matrix/workforce/internal/companyruntime.FundingRequest.Validate
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.ProductStagePlan kind=type
@@ -783,6 +914,7 @@ NODE id=matrix/workforce/internal/companyruntime.ProductStagePlan kind=type
   sig=type ProductStagePlan struct {\n	Stage		string	`json:"stage"`\n	PlanNodeID	string	`json:"plan_node_id"`\n	NeedID		string	`json:"need_id"`\n}
 EDGES
   contains=matrix/workforce/internal/companyruntime.ProductStagePlan#NeedID,matrix/workforce/internal/companyruntime.ProductStagePlan#PlanNodeID,matrix/workforce/internal/companyruntime.ProductStagePlan#Stage
+  ^references=matrix/workforce/internal/companyruntime.ProductExecutionPlan
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.ProductStagePlan#NeedID kind=field
@@ -807,6 +939,8 @@ NODE id=matrix/workforce/internal/companyruntime.SignStartConfiguration kind=fun
   digest=b3:c1abd53ff7746dad5d5c81a137d64f51fa1b64876313038a05b36d8f93bb7fca file=workforce/internal/companyruntime/signing.go range=11:24 lang=go exported=true byte_range=120:666
   sig=func SignStartConfiguration(value *StartConfiguration, keyID string, privateKey ed25519.PrivateKey) error
 EDGES
+  calls=matrix/workforce/internal/companyruntime.StartConfiguration.Validate,matrix/workforce/internal/companyruntime.startSigningBytes,matrix/workforce/internal/companyruntime.validToken
+  references=matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.StartConfiguration.Validate,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.keyID,matrix/workforce/internal/companyruntime.payload,matrix/workforce/internal/companyruntime.privateKey,matrix/workforce/internal/companyruntime.startSigningBytes,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.Signature
   ^defines=matrix/workforce/internal/companyruntime/signing.go
 
 NODE id=matrix/workforce/internal/companyruntime.StartConfiguration kind=type
@@ -815,6 +949,8 @@ NODE id=matrix/workforce/internal/companyruntime.StartConfiguration kind=type
 EDGES
   contains=matrix/workforce/internal/companyruntime.StartConfiguration#Cadences,matrix/workforce/internal/companyruntime.StartConfiguration#CapitalEnvelopeHash,matrix/workforce/internal/companyruntime.StartConfiguration#CapitalEnvelopeVersion,matrix/workforce/internal/companyruntime.StartConfiguration#ConstitutionHash,matrix/workforce/internal/companyruntime.StartConfiguration#ConstitutionVersion,matrix/workforce/internal/companyruntime.StartConfiguration#EffectiveAt,matrix/workforce/internal/companyruntime.StartConfiguration#ExpiresAt,matrix/workforce/internal/companyruntime.StartConfiguration#ID,matrix/workforce/internal/companyruntime.StartConfiguration#IssuerPolicyHash,matrix/workforce/internal/companyruntime.StartConfiguration#IssuerPolicyVersion,matrix/workforce/internal/companyruntime.StartConfiguration#MissionHash,matrix/workforce/internal/companyruntime.StartConfiguration#MissionVersion,matrix/workforce/internal/companyruntime.StartConfiguration#OrganizationID,matrix/workforce/internal/companyruntime.StartConfiguration#Procedure,matrix/workforce/internal/companyruntime.StartConfiguration#SchemaVersion,matrix/workforce/internal/companyruntime.StartConfiguration#Signature,matrix/workforce/internal/companyruntime.StartConfiguration#Version,matrix/workforce/internal/companyruntime.StartConfiguration.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/portfolio.Cadence,matrix/workforce/internal/portfolio.DecisionProcedure
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.companyCyclePlan,matrix/workforce/internal/companyruntime.Coordinator.authorityBinding,matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/companyruntime.SignStartConfiguration,matrix/workforce/internal/companyruntime.StartConfiguration.Validate,matrix/workforce/internal/companyruntime.StartResult,matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.Controller,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.Store.loadCurrentTx,matrix/workforce/internal/companyruntime.Store.verifyCurrentRoots,matrix/workforce/internal/companyruntime.Store.verifyMissionRootsTx,matrix/workforce/internal/companyruntime.VerifyStartConfiguration,matrix/workforce/internal/companyruntime.startSigningBytes,matrix/workforce/internal/controlapi.Service.CurrentCompanyRuntime,matrix/workforce/internal/controlapi.Service.PreviewCompanyStart,matrix/workforce/internal/controlapi.Service.StartCompany,matrix/workforce/internal/controlapi.Service.handleCompanyStart
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.StartConfiguration#Cadences kind=field
@@ -923,13 +1059,18 @@ NODE id=matrix/workforce/internal/companyruntime.StartConfiguration.Validate kin
   digest=b3:4e274fbbf7333ce3e7017d063c50565854c0611abf1502a54f25e1e68beab484 file=workforce/internal/companyruntime/types.go range=67:103 lang=go exported=true byte_range=3274:5104
   sig=func (value StartConfiguration) Validate() error
 EDGES
+  calls=matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/portfolio.Cadence.Validate,matrix/workforce/internal/portfolio.DecisionProcedure.Validate
+  references=matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.StartConfigurationSchemaVersion,matrix/workforce/internal/companyruntime.cadence,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.hash,matrix/workforce/internal/companyruntime.index,matrix/workforce/internal/companyruntime.previous,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/portfolio.Cadence.Validate,matrix/workforce/internal/portfolio.DecisionProcedure.Validate
   ^contains=matrix/workforce/internal/companyruntime.StartConfiguration
+  ^calls=matrix/workforce/internal/companyruntime.SignStartConfiguration,matrix/workforce/internal/companyruntime.VerifyStartConfiguration,matrix/workforce/internal/contracts.EncodeCanonical
+  ^references=matrix/workforce/internal/companyruntime.SignStartConfiguration,matrix/workforce/internal/companyruntime.VerifyStartConfiguration
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.StartConfigurationSchemaVersion kind=const
   digest=b3:c86c3acb1afb7c28e7c3ba48438ee2cb743b29676424fbe5e3f6d2f796412230 file=workforce/internal/companyruntime/types.go range=19:19 lang=go exported=true byte_range=370:441
   sig=untyped string
 EDGES
+  ^references=matrix/workforce/internal/companyruntime.StartConfiguration.Validate,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.Store.configAD
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.StartDraft kind=type
@@ -937,6 +1078,8 @@ NODE id=matrix/workforce/internal/companyruntime.StartDraft kind=type
   sig=type StartDraft struct {\n	Version				uint64			`json:"version"`\n	EffectiveAt			time.Time		`json:"effective_at"`\n	ExpiresAt			time.Time		`json:"expires_at"`\n	Weights				portfolio.FactorWeights	`json:"weights"`\n	GOThresholdBPS			uint16			`json:"go_threshold_bps"`\n	ValidateThresholdBPS		uint16			`json:"validate_threshold_bps"`\n	NoGOThresholdBPS		uint16			`json:"no_go_threshold_bps"`\n	MinimumLegalSafetyBPS		uint16			`json:"minimum_legal_safety_bps"`\n	MinimumSecuritySafetyBPS	uint16			`json:"minimum_security_safety_bps"`\n	MaximumActiveInitiatives	uint16			`json:"maximum_active_initiatives"`\n	MaximumNoEvidenceCycles		uint16			`json:"maximum_no_evidence_cycles"`\n	MaximumCapitalMicrounits	uint64			`json:"maximum_capital_microunits"`\n	MaximumRiskMicrounits		uint64			`json:"maximum_risk_microunits"`\n	AuthorityClauses		[]string		`json:"authority_clauses"`\n	Cadences			[]CadenceSchedule	`json:"cadences"`\n}
 EDGES
   contains=matrix/workforce/internal/companyruntime.StartDraft#AuthorityClauses,matrix/workforce/internal/companyruntime.StartDraft#Cadences,matrix/workforce/internal/companyruntime.StartDraft#EffectiveAt,matrix/workforce/internal/companyruntime.StartDraft#ExpiresAt,matrix/workforce/internal/companyruntime.StartDraft#GOThresholdBPS,matrix/workforce/internal/companyruntime.StartDraft#MaximumActiveInitiatives,matrix/workforce/internal/companyruntime.StartDraft#MaximumCapitalMicrounits,matrix/workforce/internal/companyruntime.StartDraft#MaximumNoEvidenceCycles,matrix/workforce/internal/companyruntime.StartDraft#MaximumRiskMicrounits,matrix/workforce/internal/companyruntime.StartDraft#MinimumLegalSafetyBPS,matrix/workforce/internal/companyruntime.StartDraft#MinimumSecuritySafetyBPS,matrix/workforce/internal/companyruntime.StartDraft#NoGOThresholdBPS,matrix/workforce/internal/companyruntime.StartDraft#ValidateThresholdBPS,matrix/workforce/internal/companyruntime.StartDraft#Version,matrix/workforce/internal/companyruntime.StartDraft#Weights
+  references=matrix/workforce/internal/companyruntime.CadenceSchedule,matrix/workforce/internal/portfolio.FactorWeights
+  ^references=matrix/workforce/internal/companyruntime.DefaultStartDraft,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/controlapi.Service.PreviewCompanyStart,matrix/workforce/internal/controlapi.Service.handleCompanyStartPreview
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.StartDraft#AuthorityClauses kind=field
@@ -1034,6 +1177,8 @@ NODE id=matrix/workforce/internal/companyruntime.StartResult kind=type
   sig=type StartResult struct {\n	Configuration	StartConfiguration	`json:"configuration"`\n	Deduplicated	bool			`json:"deduplicated"`\n	ActivatedAt	time.Time		`json:"activated_at"`\n}
 EDGES
   contains=matrix/workforce/internal/companyruntime.StartResult#ActivatedAt,matrix/workforce/internal/companyruntime.StartResult#Configuration,matrix/workforce/internal/companyruntime.StartResult#Deduplicated
+  references=matrix/workforce/internal/companyruntime.StartConfiguration
+  ^references=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/controlapi.Service.StartCompany
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.StartResult#ActivatedAt kind=field
@@ -1060,6 +1205,8 @@ NODE id=matrix/workforce/internal/companyruntime.Store kind=type
 EDGES
   contains=matrix/workforce/internal/companyruntime.Store#controllerKeyID,matrix/workforce/internal/companyruntime.Store#controllerPrivate,matrix/workforce/internal/companyruntime.Store#controllerPublic,matrix/workforce/internal/companyruntime.Store#founderKeyID,matrix/workforce/internal/companyruntime.Store#founderPublicKey,matrix/workforce/internal/companyruntime.Store#mission,matrix/workforce/internal/companyruntime.Store#now,matrix/workforce/internal/companyruntime.Store#organizationID,matrix/workforce/internal/companyruntime.Store#pool,matrix/workforce/internal/companyruntime.Store#portfolio,matrix/workforce/internal/companyruntime.Store#tenantID,matrix/workforce/internal/companyruntime.Store#vault,matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.BindCompanyState,matrix/workforce/internal/companyruntime.Store.Controller,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.Store.SnapshotCorrections,matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate,matrix/workforce/internal/companyruntime.Store.configAD,matrix/workforce/internal/companyruntime.Store.correctionCountsTx,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.Store.gateAD,matrix/workforce/internal/companyruntime.Store.loadCurrentTx,matrix/workforce/internal/companyruntime.Store.loadGateAuthorization,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationTx,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier,matrix/workforce/internal/companyruntime.Store.verifyCompanyStateTx,matrix/workforce/internal/companyruntime.Store.verifyCorrectionTx,matrix/workforce/internal/companyruntime.Store.verifyCurrentRoots,matrix/workforce/internal/companyruntime.Store.verifyEvidenceTx,matrix/workforce/internal/companyruntime.Store.verifyMandateTx,matrix/workforce/internal/companyruntime.Store.verifyMissionRootsTx
   implements=matrix/workforce/internal/companylifecycle.GateVerifier
+  references=matrix/vault.UserVault,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/mission.Store,matrix/workforce/internal/portfolio.Store
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.Coordinator.Store,matrix/workforce/internal/companyruntime.CycleDispatcher,matrix/workforce/internal/companyruntime.NewCoordinator,matrix/workforce/internal/companyruntime.NewCoordinatorWithDispatcher,matrix/workforce/internal/companyruntime.NewCycleDispatcher,matrix/workforce/internal/companyruntime.NewStore,matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.BindCompanyState,matrix/workforce/internal/companyruntime.Store.Controller,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.Store.SnapshotCorrections,matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate,matrix/workforce/internal/companyruntime.Store.configAD,matrix/workforce/internal/companyruntime.Store.correctionCountsTx,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.Store.gateAD,matrix/workforce/internal/companyruntime.Store.loadCurrentTx,matrix/workforce/internal/companyruntime.Store.loadGateAuthorization,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationTx,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier,matrix/workforce/internal/companyruntime.Store.verifyCompanyStateTx,matrix/workforce/internal/companyruntime.Store.verifyCorrectionTx,matrix/workforce/internal/companyruntime.Store.verifyCurrentRoots,matrix/workforce/internal/companyruntime.Store.verifyEvidenceTx,matrix/workforce/internal/companyruntime.Store.verifyMandateTx,matrix/workforce/internal/companyruntime.Store.verifyMissionRootsTx,matrix/workforce/internal/companyruntime._,matrix/workforce/internal/productexecution.NewStore,matrix/workforce/internal/productexecution.Store
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store#controllerKeyID kind=field
@@ -1138,184 +1285,276 @@ NODE id=matrix/workforce/internal/companyruntime.Store.Activate kind=method
   digest=b3:27f6b51784fd1632b123011eadf391c9ca14209f9ec64297a8b3dcb2b7019490 file=workforce/internal/companyruntime/store.go range=193:297 lang=go exported=true byte_range=7883:12828
   sig=func (store *Store) Activate(ctx context.Context, value StartConfiguration) (StartResult, error)
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/companyruntime.Store.configAD,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.Store.verifyCurrentRoots,matrix/workforce/internal/companyruntime.VerifyStartConfiguration,matrix/workforce/internal/companyruntime.digest,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/portfolio.Store.RegisterCadence,matrix/workforce/internal/portfolio.VerifyCadence,matrix/workforce/internal/portfolio.VerifyProcedure
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.StartResult,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.configAD,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.Store.verifyCurrentRoots,matrix/workforce/internal/companyruntime.VerifyStartConfiguration,matrix/workforce/internal/companyruntime.canonical,matrix/workforce/internal/companyruntime.canonicalHash,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.currentHash,matrix/workforce/internal/companyruntime.currentVersion,matrix/workforce/internal/companyruntime.digest,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.index,matrix/workforce/internal/companyruntime.lockKey,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.procedureHash,matrix/workforce/internal/companyruntime.sealed,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.tx,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/portfolio.Store.RegisterCadence,matrix/workforce/internal/portfolio.VerifyCadence,matrix/workforce/internal/portfolio.VerifyProcedure
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/controlapi.Service.StartCompany
+  ^references=matrix/workforce/internal/controlapi.Service.StartCompany
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.AuthorizeGate kind=method
   digest=b3:0dee9aa1d89790d7f45462a8a7333f4856813be8d6785130d7bc763327a540ef file=workforce/internal/companyruntime/verifier.go range=151:257 lang=go exported=true byte_range=6383:11076
   sig=func (store *Store) AuthorizeGate(\n	ctx context.Context,\n	transitionID companylifecycle.TransitionID,\n	initiativeID companylifecycle.InitiativeID,\n	requestHash contracts.ContentHash,\n	decision portfolio.DecisionReceipt,\n	clauseID string,\n) (GateAuthorization, error)
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/companylifecycle.CapitalLimits.Validate,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.Store.gateAD,matrix/workforce/internal/companyruntime.Store.loadGateAuthorization,matrix/workforce/internal/companyruntime.digest,matrix/workforce/internal/companyruntime.signGateAuthorization,matrix/workforce/internal/companyruntime.slicesContains,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/portfolio.VerifyDecision
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/companylifecycle.CapitalLimits,matrix/workforce/internal/companylifecycle.CapitalLimits.Validate,matrix/workforce/internal/companylifecycle.InitiativeID,matrix/workforce/internal/companylifecycle.TransitionID,matrix/workforce/internal/companyruntime.GateAuthorization,matrix/workforce/internal/companyruntime.GateAuthorizationSchemaVersion,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.Store.gateAD,matrix/workforce/internal/companyruntime.Store.loadGateAuthorization,matrix/workforce/internal/companyruntime.authority,matrix/workforce/internal/companyruntime.canonical,matrix/workforce/internal/companyruntime.canonicalHash,matrix/workforce/internal/companyruntime.clauseID,matrix/workforce/internal/companyruntime.configuration,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.current,matrix/workforce/internal/companyruntime.decision,matrix/workforce/internal/companyruntime.decisionHash,matrix/workforce/internal/companyruntime.digest,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.existing,matrix/workforce/internal/companyruntime.expiresAt,matrix/workforce/internal/companyruntime.initiativeID,matrix/workforce/internal/companyruntime.limits,matrix/workforce/internal/companyruntime.limitsHash,matrix/workforce/internal/companyruntime.loadErr,matrix/workforce/internal/companyruntime.maximumAllocation,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.requestHash,matrix/workforce/internal/companyruntime.result,matrix/workforce/internal/companyruntime.sealed,matrix/workforce/internal/companyruntime.signGateAuthorization,matrix/workforce/internal/companyruntime.slicesContains,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.transitionID,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/portfolio.DecisionGO,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.VerifyDecision
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/productexecution.Store.advanceLifecycle
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/productexecution.Store.advanceLifecycle
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.BindCompanyState kind=method
   digest=b3:2fbd906dc5ecfa8a12a27d6c3cc8a90ea891094e98e2e5337708fd0cd4760bc6 file=workforce/internal/companyruntime/verifier.go range=116:149 lang=go exported=true byte_range=4799:6381
   sig=func (store *Store) BindCompanyState(\n	ctx context.Context,\n	recordID string,\n) (companylifecycle.CompanyStateBinding, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.validToken
+  references=matrix/workforce/internal/companylifecycle.CompanyStateBinding,matrix/workforce/internal/companylifecycle.CompanyStateID,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.expiresAt,matrix/workforce/internal/companyruntime.hash,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.nowErr,matrix/workforce/internal/companyruntime.observedAt,matrix/workforce/internal/companyruntime.recordID,matrix/workforce/internal/companyruntime.state,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.truth,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/companyruntime.version,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.SchemaVersionV1
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/productexecution.Store.advanceLifecycle
+  ^references=matrix/workforce/internal/productexecution.Store.advanceLifecycle
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.Controller kind=method
   digest=b3:db72f953b3935d79d3f453a38157afd49645cedc814877f89ea9ab2dd624ce3b file=workforce/internal/companyruntime/store.go range=337:344 lang=go exported=true byte_range=14723:15084
   sig=func (store *Store) Controller(ctx context.Context) (*portfolio.Controller, StartConfiguration, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/portfolio.NewController
+  references=matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.configuration,matrix/workforce/internal/companyruntime.controller,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/portfolio.Controller,matrix/workforce/internal/portfolio.NewController
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.Coordinator.RunDue
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.Coordinator.RunDue
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.LoadCurrent kind=method
   digest=b3:a7cc6a386c2867fc1682d4ef3042e26788b8ec8bff6fa6d23c68ea6c6d0097d3 file=workforce/internal/companyruntime/store.go range=299:335 lang=go exported=true byte_range=12830:14721
   sig=func (store *Store) LoadCurrent(ctx context.Context) (StartConfiguration, error)
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/companyruntime.Store.configAD,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.Store.verifyCurrentRoots,matrix/workforce/internal/companyruntime.VerifyStartConfiguration,matrix/workforce/internal/companyruntime.digest,matrix/workforce/internal/contracts.DecodeCanonical
+  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/companyruntime.ErrNotStarted,matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.configAD,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.Store.verifyCurrentRoots,matrix/workforce/internal/companyruntime.VerifyStartConfiguration,matrix/workforce/internal/companyruntime.canonical,matrix/workforce/internal/companyruntime.configID,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.digest,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.expectedHash,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.sealed,matrix/workforce/internal/companyruntime.state,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/companyruntime.version,matrix/workforce/internal/contracts.DecodeCanonical
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle,matrix/workforce/internal/companyruntime.Coordinator.DispatchCycle,matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/companyruntime.CycleDispatcher.Authority,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.Controller,matrix/workforce/internal/controlapi.Service.CurrentCompanyRuntime,matrix/workforce/internal/productexecution.Store.authorityForBinding
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.DispatchNextCycle,matrix/workforce/internal/companyruntime.Coordinator.DispatchCycle,matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/companyruntime.CycleDispatcher.Authority,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.Controller,matrix/workforce/internal/controlapi.Service.CurrentCompanyRuntime,matrix/workforce/internal/productexecution.Store.authorityForBinding
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.PreviewStart kind=method
   digest=b3:7da86d85c9b24515f950d56a8bb6683656aa9830e70988cd0af4e040f344a14e file=workforce/internal/companyruntime/store.go range=97:191 lang=go exported=true byte_range=3461:7881
   sig=func (store *Store) PreviewStart(ctx context.Context, draft StartDraft) (StartConfiguration, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.signaturePlaceholder,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/portfolio.CadenceKind.Valid
+  references=matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.StartConfigurationSchemaVersion,matrix/workforce/internal/companyruntime.StartDraft,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.authority,matrix/workforce/internal/companyruntime.cadences,matrix/workforce/internal/companyruntime.capitalHash,matrix/workforce/internal/companyruntime.constitutionHash,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.current,matrix/workforce/internal/companyruntime.draft,matrix/workforce/internal/companyruntime.duplicate,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.expiresAt,matrix/workforce/internal/companyruntime.index,matrix/workforce/internal/companyruntime.issuerHash,matrix/workforce/internal/companyruntime.left,matrix/workforce/internal/companyruntime.missionHash,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.procedure,matrix/workforce/internal/companyruntime.right,matrix/workforce/internal/companyruntime.schedule,matrix/workforce/internal/companyruntime.seen,matrix/workforce/internal/companyruntime.signaturePlaceholder,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/portfolio.Cadence,matrix/workforce/internal/portfolio.CadenceKind,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.DecisionProcedure,matrix/workforce/internal/portfolio.ProcedureSchemaVersion
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/controlapi.Service.PreviewCompanyStart
+  ^references=matrix/workforce/internal/controlapi.Service.PreviewCompanyStart
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.SnapshotCorrections kind=method
   digest=b3:df5deeacd321d0ffc054564f52202cb6cf3501ca9d7408364b8cc606aff39e1b file=workforce/internal/companyruntime/verifier.go range=58:114 lang=go exported=true byte_range=2212:4797
   sig=func (store *Store) SnapshotCorrections(ctx context.Context) (companylifecycle.CorrectionBinding, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.Store.correctionCountsTx,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/contracts.HashCanonical
+  references=matrix/workforce/internal/companylifecycle.CorrectionBinding,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.correctionCountsTx,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.contaminated,matrix/workforce/internal/companyruntime.correctionSnapshotPayload,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.hash,matrix/workforce/internal/companyruntime.lockKey,matrix/workforce/internal/companyruntime.material,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.payload,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.tx,matrix/workforce/internal/companyruntime.version,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/contracts.SchemaVersionV1
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/productexecution.Store.advanceLifecycle
+  ^references=matrix/workforce/internal/productexecution.Store.advanceLifecycle
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate kind=method
   digest=b3:e4016ccad183274d6bc0b533a0122216a98318f31c0fbae8813bd07ba4b0a754 file=workforce/internal/companyruntime/verifier.go range=259:371 lang=go exported=true byte_range=11078:16620
   sig=func (store *Store) VerifyLifecycleGate(\n	ctx context.Context,\n	tx pgx.Tx,\n	request companylifecycle.GateVerificationRequest,\n) (companylifecycle.GateVerificationGrant, error)
 EDGES
+  calls=matrix/workforce/internal/companylifecycle.EvidenceSetHash,matrix/workforce/internal/companyruntime.Store.loadCurrentTx,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationTx,matrix/workforce/internal/companyruntime.Store.verifyCompanyStateTx,matrix/workforce/internal/companyruntime.Store.verifyCorrectionTx,matrix/workforce/internal/companyruntime.Store.verifyEvidenceTx,matrix/workforce/internal/companyruntime.Store.verifyMandateTx,matrix/workforce/internal/companyruntime.Store.verifyMissionRootsTx,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/contracts.HashCanonical
+  references=matrix/workforce/internal/companylifecycle.EvidenceSetHash,matrix/workforce/internal/companylifecycle.GateGrantSchemaVersion,matrix/workforce/internal/companylifecycle.GateVerificationGrant,matrix/workforce/internal/companylifecycle.GateVerificationRequest,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.loadCurrentTx,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationTx,matrix/workforce/internal/companyruntime.Store.verifyCompanyStateTx,matrix/workforce/internal/companyruntime.Store.verifyCorrectionTx,matrix/workforce/internal/companyruntime.Store.verifyEvidenceTx,matrix/workforce/internal/companyruntime.Store.verifyMandateTx,matrix/workforce/internal/companyruntime.Store.verifyMissionRootsTx,matrix/workforce/internal/companyruntime.allocated,matrix/workforce/internal/companyruntime.authorityHash,matrix/workforce/internal/companyruntime.authorization,matrix/workforce/internal/companyruntime.authorizationHash,matrix/workforce/internal/companyruntime.companyHash,matrix/workforce/internal/companyruntime.configuration,matrix/workforce/internal/companyruntime.correctionHash,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.evidenceHash,matrix/workforce/internal/companyruntime.expiresAt,matrix/workforce/internal/companyruntime.gateVerificationReceipt,matrix/workforce/internal/companyruntime.impactHash,matrix/workforce/internal/companyruntime.receiptHash,matrix/workforce/internal/companyruntime.request,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.tx,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/contracts.HashCanonical
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companylifecycle.Store.CreateInitiative,matrix/workforce/internal/companylifecycle.Store.Transition
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.configAD kind=method
   digest=b3:d2525a8d82c0e093340633597bad3c4b1676b10877936f3d4deb9b32fb5a4214 file=workforce/internal/companyruntime/store.go range=374:380 lang=go exported=false byte_range=16498:16780
   sig=func (store *Store) configAD(id string, version uint64) vault.AD
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/companyruntime.StartConfigurationSchemaVersion,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.id,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.version
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.loadCurrentTx
+  ^references=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.loadCurrentTx
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.correctionCountsTx kind=method
   digest=b3:f787d2bb7e8aea2c5baa66ec8a7115dddebd2e8456c4e0cfa1e4033b15c72e79 file=workforce/internal/companyruntime/verifier.go range=646:663 lang=go exported=false byte_range=28885:29630
   sig=func (store *Store) correctionCountsTx(\n	ctx context.Context,\n	querier interface {\n		QueryRow(context.Context, string, ...any) pgx.Row\n	},\n) (uint32, uint32, error)
 EDGES
+  references=matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.contaminated,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.material,matrix/workforce/internal/companyruntime.querier,matrix/workforce/internal/companyruntime.store
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.SnapshotCorrections,matrix/workforce/internal/companyruntime.Store.verifyCorrectionTx
+  ^references=matrix/workforce/internal/companyruntime.Store.SnapshotCorrections,matrix/workforce/internal/companyruntime.Store.verifyCorrectionTx
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.currentTime kind=method
   digest=b3:e676bea11a078e6e0784225919ac9cc4805629be1a948af15b99526cd592a722 file=workforce/internal/companyruntime/store.go range=366:372 lang=go exported=false byte_range=16298:16496
   sig=func (store *Store) currentTime() (time.Time, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.validUTC
+  references=matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.validUTC
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.CycleDispatcher.Authority,matrix/workforce/internal/companyruntime.CycleDispatcher.Reconcile,matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.BindCompanyState,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.Store.SnapshotCorrections
+  ^references=matrix/workforce/internal/companyruntime.CycleDispatcher.Authority,matrix/workforce/internal/companyruntime.CycleDispatcher.Reconcile,matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.BindCompanyState,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.Store.SnapshotCorrections
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.gateAD kind=method
   digest=b3:20f55e4566398943bcb76f3321e8b4657730b1e3430385267eb30383fd333972 file=workforce/internal/companyruntime/store.go range=382:388 lang=go exported=false byte_range=16782:17011
   sig=func (store *Store) gateAD(id string) vault.AD
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/companyruntime.GateAuthorizationSchemaVersion,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.id,matrix/workforce/internal/companyruntime.store
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier
+  ^references=matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.loadCurrentTx kind=method
   digest=b3:a634c3e29385a865d7bee0febf07d422969a9ad4f0946a3c6b1a6914a340986a file=workforce/internal/companyruntime/verifier.go range=373:401 lang=go exported=false byte_range=16622:18039
   sig=func (store *Store) loadCurrentTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	at time.Time,\n) (StartConfiguration, error)
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/companyruntime.Store.configAD,matrix/workforce/internal/companyruntime.VerifyStartConfiguration,matrix/workforce/internal/companyruntime.digest,matrix/workforce/internal/contracts.DecodeCanonical
+  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.configAD,matrix/workforce/internal/companyruntime.VerifyStartConfiguration,matrix/workforce/internal/companyruntime.at,matrix/workforce/internal/companyruntime.canonical,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.digest,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.expectedHash,matrix/workforce/internal/companyruntime.id,matrix/workforce/internal/companyruntime.sealed,matrix/workforce/internal/companyruntime.state,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.tx,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/companyruntime.version,matrix/workforce/internal/contracts.DecodeCanonical
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
+  ^references=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.loadGateAuthorization kind=method
   digest=b3:15527a343f1183f068b194bc0ae47b87fe72bf7f23bdb89a05d3db33139bddcd file=workforce/internal/companyruntime/verifier.go range=403:412 lang=go exported=false byte_range=18041:18364
   sig=func (store *Store) loadGateAuthorization(\n	ctx context.Context,\n	querier interface {\n		QueryRow(context.Context, string, ...any) pgx.Row\n	},\n	transitionID companylifecycle.TransitionID,\n) (GateAuthorization, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier
+  references=matrix/workforce/internal/companylifecycle.TransitionID,matrix/workforce/internal/companyruntime.GateAuthorization,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.querier,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.transitionID,matrix/workforce/internal/companyruntime.value
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.AuthorizeGate
+  ^references=matrix/workforce/internal/companyruntime.Store.AuthorizeGate
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationTx kind=method
   digest=b3:eac53c99444a8411d89ce54f61e52c4c03d2447f13e36ea44e3f4d91119de766 file=workforce/internal/companyruntime/verifier.go range=414:420 lang=go exported=false byte_range=18366:18615
   sig=func (store *Store) loadGateAuthorizationTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	transitionID companylifecycle.TransitionID,\n) (GateAuthorization, contracts.ContentHash, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier
+  references=matrix/workforce/internal/companylifecycle.TransitionID,matrix/workforce/internal/companyruntime.GateAuthorization,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.transitionID,matrix/workforce/internal/companyruntime.tx,matrix/workforce/internal/contracts.ContentHash
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
+  ^references=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier kind=method
   digest=b3:319b29d5de17ed5b3f8ba12d4ec2fa6c86adec54a0bebfa8a1878ca4c6438737 file=workforce/internal/companyruntime/verifier.go range=422:448 lang=go exported=false byte_range=18617:19985
   sig=func (store *Store) loadGateAuthorizationWithQuerier(\n	ctx context.Context,\n	querier interface {\n		QueryRow(context.Context, string, ...any) pgx.Row\n	},\n	transitionID companylifecycle.TransitionID,\n) (GateAuthorization, contracts.ContentHash, error)
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/companyruntime.Store.gateAD,matrix/workforce/internal/companyruntime.digest,matrix/workforce/internal/companyruntime.verifyGateAuthorization,matrix/workforce/internal/contracts.DecodeCanonical
+  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/companylifecycle.TransitionID,matrix/workforce/internal/companyruntime.GateAuthorization,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.gateAD,matrix/workforce/internal/companyruntime.canonical,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.digest,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.expectedHash,matrix/workforce/internal/companyruntime.querier,matrix/workforce/internal/companyruntime.sealed,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.transitionID,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/companyruntime.verifyGateAuthorization,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.DecodeCanonical
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.loadGateAuthorization,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationTx
+  ^references=matrix/workforce/internal/companyruntime.Store.loadGateAuthorization,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationTx
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.verifyCompanyStateTx kind=method
   digest=b3:c733dd4ea4f7af4d706dfaf3cc3869bff29bba9eea4806e176154b865480ea62 file=workforce/internal/companyruntime/verifier.go range=573:613 lang=go exported=false byte_range=25673:27506
   sig=func (store *Store) verifyCompanyStateTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	binding companylifecycle.CompanyStateBinding,\n	at time.Time,\n) error
 EDGES
+  references=matrix/workforce/internal/companylifecycle.CompanyStateBinding,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.at,matrix/workforce/internal/companyruntime.binding,matrix/workforce/internal/companyruntime.contaminated,matrix/workforce/internal/companyruntime.contentHash,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.effectiveAt,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.expiresAt,matrix/workforce/internal/companyruntime.headState,matrix/workforce/internal/companyruntime.observedAt,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.truth,matrix/workforce/internal/companyruntime.tx,matrix/workforce/internal/companyruntime.validity,matrix/workforce/internal/companyruntime.version
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
+  ^references=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.verifyCorrectionTx kind=method
   digest=b3:312176ba8702d31a76361dfdf1916f05799063a5bd6ead28be7e49c6feb2d72d file=workforce/internal/companyruntime/verifier.go range=615:644 lang=go exported=false byte_range=27508:28883
   sig=func (store *Store) verifyCorrectionTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	binding companylifecycle.CorrectionBinding,\n) error
 EDGES
+  calls=matrix/workforce/internal/companyruntime.Store.correctionCountsTx
+  references=matrix/workforce/internal/companylifecycle.CorrectionBinding,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.Store.correctionCountsTx,matrix/workforce/internal/companyruntime.binding,matrix/workforce/internal/companyruntime.checkedAt,matrix/workforce/internal/companyruntime.contaminated,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.currentContaminated,matrix/workforce/internal/companyruntime.currentMaterial,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.hash,matrix/workforce/internal/companyruntime.material,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.tx
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
+  ^references=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.verifyCurrentRoots kind=method
   digest=b3:1eddace9be4857cdb3a9334966122cc1ba6e22d82f6633246d37eb4786471555 file=workforce/internal/companyruntime/store.go range=346:364 lang=go exported=false byte_range=15086:16296
   sig=func (store *Store) verifyCurrentRoots(ctx context.Context, value StartConfiguration, now time.Time) error
 EDGES
+  calls=matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store.LoadCurrent
+  references=matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.authority,matrix/workforce/internal/companyruntime.capitalErr,matrix/workforce/internal/companyruntime.capitalHash,matrix/workforce/internal/companyruntime.constitutionErr,matrix/workforce/internal/companyruntime.constitutionHash,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.current,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.issuerErr,matrix/workforce/internal/companyruntime.issuerHash,matrix/workforce/internal/companyruntime.missionErr,matrix/workforce/internal/companyruntime.missionHash,matrix/workforce/internal/companyruntime.now,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store.LoadCurrent
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.LoadCurrent
+  ^references=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.LoadCurrent
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.verifyEvidenceTx kind=method
   digest=b3:b9a906d7ab8d27b18eee13011d569f12fd072e0366b0e41d7d655c850a88f667 file=workforce/internal/companyruntime/verifier.go range=665:728 lang=go exported=false byte_range=29632:32661
   sig=func (store *Store) verifyEvidenceTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	evidence []companylifecycle.EvidenceBinding,\n	at time.Time,\n) error
 EDGES
+  references=matrix/workforce/internal/companylifecycle.EvidenceBinding,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.at,matrix/workforce/internal/companyruntime.contaminated,matrix/workforce/internal/companyruntime.contentHash,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.effectiveAt,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.evidence,matrix/workforce/internal/companyruntime.evidenceHash,matrix/workforce/internal/companyruntime.evidenceValidity,matrix/workforce/internal/companyruntime.expiresAt,matrix/workforce/internal/companyruntime.headState,matrix/workforce/internal/companyruntime.item,matrix/workforce/internal/companyruntime.observedAt,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.truth,matrix/workforce/internal/companyruntime.tx,matrix/workforce/internal/companyruntime.validity,matrix/workforce/internal/companyruntime.verdictHash,matrix/workforce/internal/companyruntime.version
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
+  ^references=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.verifyMandateTx kind=method
   digest=b3:9303cd4cfd83ca387f65fafab906ceb3f5326c05aadc94052c7dab572086b1ee file=workforce/internal/companyruntime/verifier.go range=531:571 lang=go exported=false byte_range=23840:25671
   sig=func (store *Store) verifyMandateTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	binding companylifecycle.AuthorityBinding,\n	at time.Time,\n) error
 EDGES
+  references=matrix/workforce/internal/companylifecycle.AuthorityBinding,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.active,matrix/workforce/internal/companyruntime.at,matrix/workforce/internal/companyruntime.binding,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.effectiveAt,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.hash,matrix/workforce/internal/companyruntime.mandateID,matrix/workforce/internal/companyruntime.mandateVersion,matrix/workforce/internal/companyruntime.revoked,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.tx,matrix/workforce/internal/contracts.MandateID
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
+  ^references=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.Store.verifyMissionRootsTx kind=method
   digest=b3:e15a33e2fbeba66f93571c5a2876b45ddd0bf67827ad8c521a183c44377f8356 file=workforce/internal/companyruntime/verifier.go range=450:529 lang=go exported=false byte_range=19987:23838
   sig=func (store *Store) verifyMissionRootsTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	configuration StartConfiguration,\n	binding companylifecycle.AuthorityBinding,\n) error
 EDGES
+  references=matrix/workforce/internal/companylifecycle.AuthorityBinding,matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/companyruntime.binding,matrix/workforce/internal/companyruntime.capitalVersion,matrix/workforce/internal/companyruntime.configuration,matrix/workforce/internal/companyruntime.constitutionVersion,matrix/workforce/internal/companyruntime.ctx,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.exists,matrix/workforce/internal/companyruntime.expected,matrix/workforce/internal/companyruntime.hash,matrix/workforce/internal/companyruntime.issuerRevokedAt,matrix/workforce/internal/companyruntime.issuerVersion,matrix/workforce/internal/companyruntime.kind,matrix/workforce/internal/companyruntime.missionVersion,matrix/workforce/internal/companyruntime.revoked,matrix/workforce/internal/companyruntime.root,matrix/workforce/internal/companyruntime.rows,matrix/workforce/internal/companyruntime.seen,matrix/workforce/internal/companyruntime.state,matrix/workforce/internal/companyruntime.store,matrix/workforce/internal/companyruntime.tx,matrix/workforce/internal/companyruntime.version
   ^contains=matrix/workforce/internal/companyruntime.Store
+  ^calls=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
+  ^references=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.VerifyStartConfiguration kind=func
   digest=b3:807427779e00cfecac44f7128c26491a0345670bbe8c62210d49dd2b814da93b file=workforce/internal/companyruntime/signing.go range=26:39 lang=go exported=true byte_range=668:1308
   sig=func VerifyStartConfiguration(value StartConfiguration, keyID string, publicKey ed25519.PublicKey) error
 EDGES
+  calls=matrix/workforce/internal/companyruntime.StartConfiguration.Validate,matrix/workforce/internal/companyruntime.startSigningBytes
+  references=matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.StartConfiguration.Validate,matrix/workforce/internal/companyruntime.decodeErr,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.keyID,matrix/workforce/internal/companyruntime.payload,matrix/workforce/internal/companyruntime.publicKey,matrix/workforce/internal/companyruntime.signature,matrix/workforce/internal/companyruntime.startSigningBytes,matrix/workforce/internal/companyruntime.value
+  ^calls=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.loadCurrentTx
+  ^references=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.loadCurrentTx
   ^defines=matrix/workforce/internal/companyruntime/signing.go
 
 NODE id=matrix/workforce/internal/companyruntime._ kind=var
   digest=b3:9ef27326742af386def03f86e2c95dcb4c4f7fb32b73797cde519313775eb055 file=workforce/internal/companyruntime/verifier.go range=739:739 lang=go exported=false byte_range=32820:32867
   sig=companylifecycle.GateVerifier
 EDGES
+  references=matrix/workforce/internal/autonomouscompany.NextCycleExecutor,matrix/workforce/internal/companylifecycle.GateVerifier,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor,matrix/workforce/internal/companyruntime.Store
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go,matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.autonomousCycleCoverage kind=func
   digest=b3:47f96ea52e62b93a66abea6ef809535d37449972e812d9fec73a2f84a2a27157 file=workforce/internal/companyruntime/autonomous_next_cycle.go range=394:423 lang=go exported=false byte_range=14054:14818
   sig=func autonomousCycleCoverage(\n	kind portfolio.CadenceKind,\n) ([]contracts.DepartmentKind, []string)
 EDGES
+  references=matrix/workforce/internal/companyruntime.capabilities,matrix/workforce/internal/companyruntime.departments,matrix/workforce/internal/companyruntime.kind,matrix/workforce/internal/contracts.DepartmentAccounting,matrix/workforce/internal/contracts.DepartmentExecutive,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.DepartmentResearch,matrix/workforce/internal/portfolio.CadenceDiscovery,matrix/workforce/internal/portfolio.CadenceKind,matrix/workforce/internal/portfolio.CadenceLearning
+  ^calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.companyCyclePlan
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.companyCyclePlan
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go
 
 NODE id=matrix/workforce/internal/companyruntime.canonicalCadences kind=func
   digest=b3:d1dfc564068aca1db6ef3351ccd2778bd078052fed7ed293ee1f19a65aa1f7e9 file=workforce/internal/companyruntime/types.go range=274:280 lang=go exported=false byte_range=13137:13365
   sig=func canonicalCadences(values []portfolio.Cadence) bool
 EDGES
+  calls=matrix/workforce/internal/companyruntime.hasDuplicate
+  references=matrix/workforce/internal/companyruntime.hasDuplicate,matrix/workforce/internal/companyruntime.index,matrix/workforce/internal/companyruntime.kinds,matrix/workforce/internal/companyruntime.values,matrix/workforce/internal/portfolio.Cadence
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.compareAutonomousEvidence kind=func
   digest=b3:0503125e0bc6b7e202b989018eb6b0b25f0dd4c43e62f587b96b697bf7ad19fd file=workforce/internal/companyruntime/autonomous_next_cycle.go range=386:392 lang=go exported=false byte_range=13702:14052
   sig=func compareAutonomousEvidence(left, right autonomouscompany.EvidenceBinding) int
 EDGES
+  references=matrix/workforce/internal/autonomouscompany.EvidenceBinding,matrix/workforce/internal/companyruntime.left,matrix/workforce/internal/companyruntime.leftKey,matrix/workforce/internal/companyruntime.right,matrix/workforce/internal/companyruntime.rightKey
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ReconcileNextCycle
   ^defines=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go
 
 NODE id=matrix/workforce/internal/companyruntime.correctionSnapshotPayload kind=type
@@ -1324,6 +1563,8 @@ NODE id=matrix/workforce/internal/companyruntime.correctionSnapshotPayload kind=
 EDGES
   contains=matrix/workforce/internal/companyruntime.correctionSnapshotPayload#CheckedAt,matrix/workforce/internal/companyruntime.correctionSnapshotPayload#OrganizationID,matrix/workforce/internal/companyruntime.correctionSnapshotPayload#SchemaVersion,matrix/workforce/internal/companyruntime.correctionSnapshotPayload#SnapshotID,matrix/workforce/internal/companyruntime.correctionSnapshotPayload#UnresolvedContaminatedCount,matrix/workforce/internal/companyruntime.correctionSnapshotPayload#UnresolvedMaterialCount,matrix/workforce/internal/companyruntime.correctionSnapshotPayload#Version,matrix/workforce/internal/companyruntime.correctionSnapshotPayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.OrganizationID
+  ^references=matrix/workforce/internal/companyruntime.Store.SnapshotCorrections,matrix/workforce/internal/companyruntime.correctionSnapshotPayload.Validate
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.correctionSnapshotPayload#CheckedAt kind=field
@@ -1372,6 +1613,7 @@ NODE id=matrix/workforce/internal/companyruntime.correctionSnapshotPayload.Valid
   digest=b3:3b2963cb7b7ea8f6844c619e51770a5632eeb5355f5292aa75ff94b4ed62b51d file=workforce/internal/companyruntime/verifier.go range=25:31 lang=go exported=true byte_range=817:1134
   sig=func (value correctionSnapshotPayload) Validate() error
 EDGES
+  references=matrix/workforce/internal/companyruntime.correctionSnapshotPayload,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.SchemaVersionV1
   ^contains=matrix/workforce/internal/companyruntime.correctionSnapshotPayload
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
@@ -1379,12 +1621,19 @@ NODE id=matrix/workforce/internal/companyruntime.digest kind=func
   digest=b3:0b01411abafde869f92dc289013457d25d6ab68c26d0b740b1729820609cbdef file=workforce/internal/companyruntime/store.go range=390:393 lang=go exported=false byte_range=17013:17113
   sig=func digest(value []byte) string
 EDGES
+  references=matrix/workforce/internal/companyruntime.sum,matrix/workforce/internal/companyruntime.value
+  ^calls=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.loadCurrentTx,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier
+  ^references=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.LoadCurrent,matrix/workforce/internal/companyruntime.Store.loadCurrentTx,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier
   ^defines=matrix/workforce/internal/companyruntime/store.go
 
 NODE id=matrix/workforce/internal/companyruntime.gateSigningBytes kind=func
   digest=b3:2f99ada7b152e8b38106cf7b310661b6386178305654bbbca48a05495abe7295 file=workforce/internal/companyruntime/signing.go range=76:79 lang=go exported=false byte_range=2669:2838
   sig=func gateSigningBytes(value GateAuthorization, keyID string) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.signaturePlaceholder,matrix/workforce/internal/contracts.EncodeCanonical
+  references=matrix/workforce/internal/companyruntime.GateAuthorization,matrix/workforce/internal/companyruntime.keyID,matrix/workforce/internal/companyruntime.signaturePlaceholder,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.EncodeCanonical
+  ^calls=matrix/workforce/internal/companyruntime.signGateAuthorization,matrix/workforce/internal/companyruntime.verifyGateAuthorization
+  ^references=matrix/workforce/internal/companyruntime.signGateAuthorization,matrix/workforce/internal/companyruntime.verifyGateAuthorization
   ^defines=matrix/workforce/internal/companyruntime/signing.go
 
 NODE id=matrix/workforce/internal/companyruntime.gateVerificationReceipt kind=type
@@ -1393,6 +1642,8 @@ NODE id=matrix/workforce/internal/companyruntime.gateVerificationReceipt kind=ty
 EDGES
   contains=matrix/workforce/internal/companyruntime.gateVerificationReceipt#AuthorizationHash,matrix/workforce/internal/companyruntime.gateVerificationReceipt#Limits,matrix/workforce/internal/companyruntime.gateVerificationReceipt#PolicyDecisionHash,matrix/workforce/internal/companyruntime.gateVerificationReceipt#RequestHash,matrix/workforce/internal/companyruntime.gateVerificationReceipt#SchemaVersion,matrix/workforce/internal/companyruntime.gateVerificationReceipt#TransitionID,matrix/workforce/internal/companyruntime.gateVerificationReceipt#VerifiedAt,matrix/workforce/internal/companyruntime.gateVerificationReceipt.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/companylifecycle.CapitalLimits,matrix/workforce/internal/companylifecycle.TransitionID,matrix/workforce/internal/contracts.ContentHash
+  ^references=matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate,matrix/workforce/internal/companyruntime.gateVerificationReceipt.Validate
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.gateVerificationReceipt#AuthorizationHash kind=field
@@ -1441,6 +1692,7 @@ NODE id=matrix/workforce/internal/companyruntime.gateVerificationReceipt.Validat
   digest=b3:27da4164aced83bec3e28d8ef8e1454cc9287d373c61c5de074ba40cb0f5e7a9 file=workforce/internal/companyruntime/verifier.go range=43:56 lang=go exported=true byte_range=1698:2210
   sig=func (value gateVerificationReceipt) Validate() error
 EDGES
+  references=matrix/workforce/internal/companylifecycle.CapitalLimits.Validate,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.gateVerificationReceipt,matrix/workforce/internal/companyruntime.hash,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/companyruntime.validUTC,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ContentHash.Validate
   ^contains=matrix/workforce/internal/companyruntime.gateVerificationReceipt
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
@@ -1448,66 +1700,102 @@ NODE id=matrix/workforce/internal/companyruntime.hasDuplicate kind=func
   digest=b3:2aac808a9f1fd45ef4bec9f319109898eac76de6dd59e15e290a8a3cf9e7e073 file=workforce/internal/companyruntime/types.go range=282:289 lang=go exported=false byte_range=13367:13534
   sig=func hasDuplicate(values []string) bool
 EDGES
+  references=matrix/workforce/internal/companyruntime.index,matrix/workforce/internal/companyruntime.values
+  ^calls=matrix/workforce/internal/companyruntime.canonicalCadences
+  ^references=matrix/workforce/internal/companyruntime.canonicalCadences
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.idempotencyKey kind=func
   digest=b3:91ef615cb36ba78572a9f5fe278b79194697a3dff7e157d69dd7092d0af0b26e file=workforce/internal/companyruntime/coordinator.go range=559:561 lang=go exported=false byte_range=22177:22285
   sig=func idempotencyKey(fundingID, stage string) string
 EDGES
+  references=matrix/workforce/internal/companyruntime.fundingID,matrix/workforce/internal/companyruntime.stage
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.receiptID kind=func
   digest=b3:2af5276389ae9a8ca0f54192252b8bd9826d39621360273e1e934ecdd17f0c1f file=workforce/internal/companyruntime/coordinator.go range=555:557 lang=go exported=false byte_range=22016:22175
   sig=func receiptID(fundingID, stage string) companylifecycle.DecisionReceiptID
 EDGES
+  references=matrix/workforce/internal/companylifecycle.DecisionReceiptID,matrix/workforce/internal/companyruntime.fundingID,matrix/workforce/internal/companyruntime.stage
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.signGateAuthorization kind=func
   digest=b3:45d3139c3405df562bc3842e54f64d9b404d69017b249003c35f7bfe8bc73fa8 file=workforce/internal/companyruntime/signing.go range=41:54 lang=go exported=false byte_range=1310:1856
   sig=func signGateAuthorization(value *GateAuthorization, keyID string, privateKey ed25519.PrivateKey) error
 EDGES
+  calls=matrix/workforce/internal/companyruntime.GateAuthorization.Validate,matrix/workforce/internal/companyruntime.gateSigningBytes,matrix/workforce/internal/companyruntime.validToken
+  references=matrix/workforce/internal/companyruntime.GateAuthorization,matrix/workforce/internal/companyruntime.GateAuthorization.Validate,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.gateSigningBytes,matrix/workforce/internal/companyruntime.keyID,matrix/workforce/internal/companyruntime.payload,matrix/workforce/internal/companyruntime.privateKey,matrix/workforce/internal/companyruntime.validToken,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.Signature
+  ^calls=matrix/workforce/internal/companyruntime.Store.AuthorizeGate
+  ^references=matrix/workforce/internal/companyruntime.Store.AuthorizeGate
   ^defines=matrix/workforce/internal/companyruntime/signing.go
 
 NODE id=matrix/workforce/internal/companyruntime.signaturePlaceholder kind=func
   digest=b3:a2184bfd239f38ddb59593be3209b43ced51a4934efd3fc309dd1e7353c3e09c file=workforce/internal/companyruntime/signing.go range=81:86 lang=go exported=false byte_range=2840:3057
   sig=func signaturePlaceholder(keyID string) contracts.Signature
 EDGES
+  references=matrix/workforce/internal/companyruntime.keyID,matrix/workforce/internal/contracts.Signature
+  ^calls=matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.gateSigningBytes,matrix/workforce/internal/companyruntime.startSigningBytes
+  ^references=matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.gateSigningBytes,matrix/workforce/internal/companyruntime.startSigningBytes
   ^defines=matrix/workforce/internal/companyruntime/signing.go
 
 NODE id=matrix/workforce/internal/companyruntime.slicesContains kind=func
   digest=b3:9fcca9c9012e58d5151a77568c965279c79aa62251097437f064849e06ac2d37 file=workforce/internal/companyruntime/verifier.go range=730:737 lang=go exported=false byte_range=32663:32814
   sig=func slicesContains(values []string, target string) bool
 EDGES
+  references=matrix/workforce/internal/companyruntime.target,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/companyruntime.values
+  ^calls=matrix/workforce/internal/companyruntime.Store.AuthorizeGate
+  ^references=matrix/workforce/internal/companyruntime.Store.AuthorizeGate
   ^defines=matrix/workforce/internal/companyruntime/verifier.go
 
 NODE id=matrix/workforce/internal/companyruntime.startSigningBytes kind=func
   digest=b3:e55a3a7dfe9b752fbeae1e02fdf29a3011830f14b5b01b714c85c88ab4c62258 file=workforce/internal/companyruntime/signing.go range=71:74 lang=go exported=false byte_range=2496:2667
   sig=func startSigningBytes(value StartConfiguration, keyID string) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/companyruntime.signaturePlaceholder,matrix/workforce/internal/contracts.EncodeCanonical
+  references=matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.keyID,matrix/workforce/internal/companyruntime.signaturePlaceholder,matrix/workforce/internal/companyruntime.value,matrix/workforce/internal/contracts.EncodeCanonical
+  ^calls=matrix/workforce/internal/companyruntime.SignStartConfiguration,matrix/workforce/internal/companyruntime.VerifyStartConfiguration
+  ^references=matrix/workforce/internal/companyruntime.SignStartConfiguration,matrix/workforce/internal/companyruntime.VerifyStartConfiguration
   ^defines=matrix/workforce/internal/companyruntime/signing.go
 
 NODE id=matrix/workforce/internal/companyruntime.transitionID kind=func
   digest=b3:1d0d0b7bffffe6392dc31cf378f298ce750108830ba808d4e0f4fc7bda24926c file=workforce/internal/companyruntime/coordinator.go range=551:553 lang=go exported=false byte_range=21859:22014
   sig=func transitionID(fundingID, stage string) companylifecycle.TransitionID
 EDGES
+  references=matrix/workforce/internal/companylifecycle.TransitionID,matrix/workforce/internal/companyruntime.fundingID,matrix/workforce/internal/companyruntime.stage
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.loadGateAuthorization,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationTx,matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier
   ^defines=matrix/workforce/internal/companyruntime/coordinator.go
 
 NODE id=matrix/workforce/internal/companyruntime.validToken kind=func
   digest=b3:8aa5c3c7c4652427e27097eb76582cce23f8b8e746ac42f7794428aa00b49b4f file=workforce/internal/companyruntime/types.go range=291:304 lang=go exported=false byte_range=13536:13916
   sig=func validToken(value string) bool
 EDGES
+  references=matrix/workforce/internal/companyruntime.character,matrix/workforce/internal/companyruntime.value
+  ^calls=matrix/workforce/internal/companyruntime.CycleRuntimeBinding.Validate,matrix/workforce/internal/companyruntime.FundingRequest.Validate,matrix/workforce/internal/companyruntime.GateAuthorization.Validate,matrix/workforce/internal/companyruntime.NewStore,matrix/workforce/internal/companyruntime.ProductExecutionPlan.Validate,matrix/workforce/internal/companyruntime.SignStartConfiguration,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.BindCompanyState,matrix/workforce/internal/companyruntime.signGateAuthorization
+  ^references=matrix/workforce/internal/companyruntime.CycleRuntimeBinding.Validate,matrix/workforce/internal/companyruntime.FundingRequest.Validate,matrix/workforce/internal/companyruntime.GateAuthorization.Validate,matrix/workforce/internal/companyruntime.NewStore,matrix/workforce/internal/companyruntime.ProductExecutionPlan.Validate,matrix/workforce/internal/companyruntime.SignStartConfiguration,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.BindCompanyState,matrix/workforce/internal/companyruntime.correctionSnapshotPayload.Validate,matrix/workforce/internal/companyruntime.gateVerificationReceipt.Validate,matrix/workforce/internal/companyruntime.signGateAuthorization
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.validUTC kind=func
   digest=b3:a0beee5b6bbe8dd3ff5ef521bfd147e9b7a7c4ce79ae888de69822b6d3078f75 file=workforce/internal/companyruntime/types.go range=306:308 lang=go exported=false byte_range=13918:14013
   sig=func validUTC(value time.Time) bool
 EDGES
+  references=matrix/workforce/internal/companyruntime.value
+  ^calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ensureCycleRun,matrix/workforce/internal/companyruntime.Coordinator.CompanyAuthority,matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.Coordinator.RunDue,matrix/workforce/internal/companyruntime.FundingRequest.Validate,matrix/workforce/internal/companyruntime.GateAuthorization.Validate,matrix/workforce/internal/companyruntime.StartConfiguration.Validate,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate,matrix/workforce/internal/companyruntime.Store.currentTime
+  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ensureCycleRun,matrix/workforce/internal/companyruntime.Coordinator.CompanyAuthority,matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.Coordinator.RunDue,matrix/workforce/internal/companyruntime.FundingRequest.Validate,matrix/workforce/internal/companyruntime.GateAuthorization.Validate,matrix/workforce/internal/companyruntime.StartConfiguration.Validate,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.Store.VerifyLifecycleGate,matrix/workforce/internal/companyruntime.Store.currentTime,matrix/workforce/internal/companyruntime.correctionSnapshotPayload.Validate,matrix/workforce/internal/companyruntime.gateVerificationReceipt.Validate
   ^defines=matrix/workforce/internal/companyruntime/types.go
 
 NODE id=matrix/workforce/internal/companyruntime.verifyGateAuthorization kind=func
   digest=b3:1b48bb2e6acf0e618693148c8c4d34ac2f5aa5e866e19c79f20659a1d781cf8a file=workforce/internal/companyruntime/signing.go range=56:69 lang=go exported=false byte_range=1858:2494
   sig=func verifyGateAuthorization(value GateAuthorization, keyID string, publicKey ed25519.PublicKey) error
 EDGES
+  calls=matrix/workforce/internal/companyruntime.GateAuthorization.Validate,matrix/workforce/internal/companyruntime.gateSigningBytes
+  references=matrix/workforce/internal/companyruntime.GateAuthorization,matrix/workforce/internal/companyruntime.GateAuthorization.Validate,matrix/workforce/internal/companyruntime.decodeErr,matrix/workforce/internal/companyruntime.err,matrix/workforce/internal/companyruntime.gateSigningBytes,matrix/workforce/internal/companyruntime.keyID,matrix/workforce/internal/companyruntime.payload,matrix/workforce/internal/companyruntime.publicKey,matrix/workforce/internal/companyruntime.signature,matrix/workforce/internal/companyruntime.value
+  ^calls=matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier
+  ^references=matrix/workforce/internal/companyruntime.Store.loadGateAuthorizationWithQuerier
   ^defines=matrix/workforce/internal/companyruntime/signing.go
 
 NODE id=matrix/workforce/internal/companyruntime/autonomous_next_cycle.go kind=file

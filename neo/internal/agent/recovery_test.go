@@ -88,8 +88,8 @@ func TestLocalRecoveryTurnsInvalidCallsIntoContinuedObservations(t *testing.T) {
 func TestMissingMemoryTargetFinalizesUsefulWorkWithoutTurnDeath(t *testing.T) {
 	ctx := context.Background()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "missing-memory-target-recovery"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "missing-memory-target-recovery"
 	cfg.InteractionPosture = true
 	cfg.SessionCurrentIntent = true
 	cfg.SessionExactProjection = true

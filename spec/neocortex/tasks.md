@@ -115,21 +115,21 @@
 
 ## W7 — Migration, absorption, and gated cutover
 
-- [-] 7. Export, side-by-side qualification, consumer re-point, owner gates
-  - [-] 7.1 Pebble export and the import fidelity proof
-    - Build the Go exporter walking the existing Pebble store with current decode and vault unseal: sessions to conversation events, memories to assertion events with synthesized provenance, tool events one to one, edges preserved; stream through the cortexd import gate.
-    - Produce the fidelity report accounting for every source record (imported, transformed, skipped-with-reason); zero unaccounted records is the gate.
-    - Prove round-trip semantics on a real production-shaped store copy: post-import recall surfaces the same memories the old substrate surfaced for a probe suite, and MEMORY VERIFIED holds on the new root.
-    - _Requirements: 9.1_
-  - [ ] 7.2 Side-by-side qualification behind the memory seam
-    - Wire the substrate flag (default old cortex) through the neo memory seam so the resurrection loop, server, and tools run on either substrate without code changes elsewhere.
-    - Run the fixed-incident regression corpus, the INV-1 property, and the Moltbook/duplicate/poisoning reproductions on the new substrate; run real conversations on a dev daemon against cortexd.
+- [-] 7. Neo hard cutover, absorption, consumer re-point
+  - [x] 7.1 Remove Cortex v1 from Neo completely
+    - Remove matrix/cortex from every Neo source file, test, module requirement, configuration field, CLI flag, constructor, runtime branch, and proxy path. Remove the substrate selector and all silent fallback behavior.
+    - Make Neo's memory contracts and implementations Neocortex-native. Startup requires the real cortexd socket and scoped token; loss or unavailability returns an honest typed Neocortex error without touching Cortex v1.
+    - Add a structural CI gate proving the Neo source tree and complete module graph cannot reach matrix/cortex. Exercise the real Neo daemon against the real cortexd process, including unavailable-cortexd behavior.
+    - _Requirements: 9.1, 9.2, 7.3, 7.4_
+  - [-] 7.2 Neocortex-only Neo qualification
+    - Run the fixed-incident regression corpus, the INV-1 property, and the Moltbook/duplicate/poisoning reproductions with Neo built and run only against Neocortex.
+    - Run real conversations on a dev daemon against cortexd, including process loss/restart, and prove no Neo process or build artifact opens a Cortex-v1 store.
     - Record exact green checks and any divergences; a behavioral divergence is a stop, not a footnote.
-    - _Requirements: 9.2, 9.3_
+    - _Requirements: 9.1, 9.2, 9.3_
   - [ ] 7.3 Consumer re-point and the owner cutover gate
     - Re-point external consumers to cortexd clients: executor daemon cortex routes, bridge, MCP tooling; derive the MCL compile-cache seed from the neocortex checkpoint root under an owner-approved rule.
-    - Assemble the cutover evidence package: qualification results, fidelity report, INV-1 CI status, performance envelope, and the rollback plan (flag back to old cortex with no data loss).
-    - Present cutover and any old-cortex deletion as explicit owner YES decisions; take neither action without them.
+    - Assemble the consumer re-point evidence package: qualification results, INV-1 CI status, performance envelope, and an honest Neocortex failure/recovery plan with no Cortex-v1 fallback.
+    - Keep unrelated-consumer migration, production restart/deployment, and deletion of Cortex-v1 data as explicit owner gates.
     - _Requirements: 9.4, 9.5_
 
 ## Task Dependency Graph

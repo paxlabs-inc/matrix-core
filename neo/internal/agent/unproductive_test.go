@@ -74,8 +74,8 @@ func TestEmptyAnswerLoopBoundedByUnifiedCounter(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-empty-answer"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-empty-answer"
 
 	// Sanity: the bound must be materially below the step budget, else the test
 	// would not distinguish the unified escalation from the budget-only bound.

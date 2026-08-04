@@ -289,6 +289,7 @@ func runDaemon(args []string) {
 		skillsRoot            = fs.String("skills-root", "/root/matrix/skills", "skill repository root")
 		cortexRoot            = fs.String("cortex-root", "", "cortex storage root (REQUIRED)")
 		cortexActor           = fs.String("cortex-actor", "executor", "cortex actor namespace")
+		memoryDisabled        = fs.Bool("memory-disabled", false, "disable the daemon memory subsystem (Neo owns memory through Neocortex)")
 		journalDir            = fs.String("journal-dir", "/root/matrix/journal/logs", "envelope journal directory")
 		transcriptsDir        = fs.String("transcripts-dir", "/root/matrix/journal/logs/_transcripts", "per-message JSONL transcript directory")
 		keyfile               = fs.String("keyfile", "/root/matrix/.matrix/executor.key", "ed25519 seed path (created if absent)")
@@ -394,7 +395,10 @@ func runDaemon(args []string) {
 		fmt.Fprintf(os.Stderr, "daemon: sandbox preset active — temp cortex %s, hash embedder stub, no gateway/metering, no snapshots, paxeer spend off\n", *cortexRoot)
 	}
 
-	if *cortexRoot == "" {
+	if *memoryDisabled {
+		*cortexRoot = ""
+	}
+	if *cortexRoot == "" && !*memoryDisabled {
 		fatalf("daemon: -cortex-root is required")
 	}
 

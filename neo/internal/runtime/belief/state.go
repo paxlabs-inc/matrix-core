@@ -12,8 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"matrix/cortex"
-	"matrix/cortex/journal"
+	"matrix/cortexclient"
 	"matrix/neo/internal/runtime/liveness"
 	runtimeloop "matrix/neo/internal/runtime/loop"
 )
@@ -33,23 +32,23 @@ var (
 )
 
 type Premise struct {
-	ID        string                    `json:"id"`
-	Statement string                    `json:"statement"`
-	Status    PremiseStatus             `json:"status"`
-	Citation  *cortex.ToolEventCitation `json:"citation,omitempty"`
+	ID        string                          `json:"id"`
+	Statement string                          `json:"statement"`
+	Status    PremiseStatus                   `json:"status"`
+	Citation  *cortexclient.ToolEventCitation `json:"citation,omitempty"`
 }
 
 type Prediction struct {
-	ToolName string                   `json:"tool_name"`
-	Expect   string                   `json:"expect"`
-	Verdict  string                   `json:"verdict"`
-	Citation cortex.ToolEventCitation `json:"citation"`
+	ToolName string                         `json:"tool_name"`
+	Expect   string                         `json:"expect"`
+	Verdict  string                         `json:"verdict"`
+	Citation cortexclient.ToolEventCitation `json:"citation"`
 }
 
 type Subgoal struct {
-	ID        string                     `json:"id"`
-	Completed bool                       `json:"completed"`
-	Evidence  []cortex.ToolEventCitation `json:"evidence,omitempty"`
+	ID        string                           `json:"id"`
+	Completed bool                             `json:"completed"`
+	Evidence  []cortexclient.ToolEventCitation `json:"evidence,omitempty"`
 }
 
 type Capability struct {
@@ -66,8 +65,8 @@ type DurableState struct {
 
 type CitationVerifier interface {
 	VerifyToolEventCitation(
-		cortex.ToolEventCitation,
-	) (journal.ToolEventPayload, error)
+		cortexclient.ToolEventCitation,
+	) (cortexclient.ToolEventPayload, error)
 }
 
 type CognitionStore interface {
@@ -142,14 +141,14 @@ func (state *State) AddPremise(
 func (state *State) CitePremise(
 	ctx context.Context,
 	id string,
-	citation cortex.ToolEventCitation,
+	citation cortexclient.ToolEventCitation,
 ) error {
 	payload, err := state.verifier.VerifyToolEventCitation(citation)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrCitationRequired, err)
 	}
 	if payload.Error != "" ||
-		payload.MatchVerdict != cortex.ToolMatchMatched {
+		payload.MatchVerdict != cortexclient.ToolMatchMatched {
 		return ErrCitationRequired
 	}
 	return state.mutate(ctx, func(next *DurableState) error {
@@ -167,14 +166,14 @@ func (state *State) CitePremise(
 func (state *State) RefutePremise(
 	ctx context.Context,
 	id string,
-	citation cortex.ToolEventCitation,
+	citation cortexclient.ToolEventCitation,
 ) error {
 	payload, err := state.verifier.VerifyToolEventCitation(citation)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrCitationRequired, err)
 	}
 	if payload.Error == "" &&
-		payload.MatchVerdict != cortex.ToolMatchMismatched {
+		payload.MatchVerdict != cortexclient.ToolMatchMismatched {
 		return ErrCitationRequired
 	}
 	return state.mutate(ctx, func(next *DurableState) error {
@@ -228,14 +227,14 @@ func (state *State) ObserveToolExecution(
 		subgoal := next.Subgoals[execution.SubgoalID]
 		subgoal.ID = execution.SubgoalID
 		if execution.Error == "" &&
-			execution.MatchVerdict == cortex.ToolMatchMatched {
+			execution.MatchVerdict == cortexclient.ToolMatchMatched {
 			subgoal.Completed = true
 			subgoal.Evidence = append(subgoal.Evidence, citation)
 			capability := next.Capabilities[execution.Call.Name]
 			capability.ToolName = execution.Call.Name
 			capability.VerifiedSuccesses++
 			next.Capabilities[execution.Call.Name] = capability
-		} else if execution.MatchVerdict == cortex.ToolMatchMismatched ||
+		} else if execution.MatchVerdict == cortexclient.ToolMatchMismatched ||
 			execution.Error != "" {
 			id := "prediction:" + execution.Call.ID
 			next.Premises[id] = Premise{
@@ -267,7 +266,7 @@ func (state *State) MeasuredContext() liveness.MeasuredContext {
 	}
 	for index := len(state.durable.Predictions) - 1; index >= 0; index-- {
 		if state.durable.Predictions[index].Verdict ==
-			cortex.ToolMatchMatched {
+			cortexclient.ToolMatchMatched {
 			break
 		}
 		measured.ActionsWithoutGrowth++
@@ -306,7 +305,7 @@ func (state *State) mutate(
 
 func executionMatchesPayload(
 	execution runtimeloop.ToolExecution,
-	payload journal.ToolEventPayload,
+	payload cortexclient.ToolEventPayload,
 ) error {
 	if payload.CallID != execution.Call.ID ||
 		payload.ToolName != execution.Call.Name ||

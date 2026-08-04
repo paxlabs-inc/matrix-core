@@ -1,16 +1,22 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/gateway/internal/ledger kind=package
   digest=b3:85e686952625ce8be4e8534ab100ace1d4140234913a30a91b367ff40310ec77 file=gateway/internal/ledger range=0:0 lang=go exported=true
 EDGES
   contains=matrix/gateway/internal/ledger/ledger.go,matrix/gateway/internal/ledger/postgres.go
+  imports=matrix/gateway/internal/rates
   ^contains=mod:matrix/gateway
+  ^imports=matrix/gateway/cmd/matrix-gateway,matrix/gateway/internal/proxy
 
 NODE id=matrix/gateway/internal/ledger.CheckBudget kind=func
   digest=b3:9031cf10848bbdbd30059fcee318905c0991ab1e754aa4f3e889bfacc08ea8b9 file=gateway/internal/ledger/ledger.go range=208:230 lang=go exported=true byte_range=6342:7063
   sig=func CheckBudget(spent, projection, capPax string) (remaining string, exhausted bool, err error)
   doc=CheckBudget reports whether an actor has remaining headroom for a\nprojected cost. spend + projection must be <= cap. Wraps the typed\nbudget-exhausted error so callers can use errors.Is.
 EDGES
+  calls=matrix/gateway/internal/rates.AddPax,matrix/gateway/internal/rates.CmpPax,matrix/gateway/internal/rates.SubPax
+  references=matrix/gateway/internal/ledger.capPax,matrix/gateway/internal/ledger.cmp,matrix/gateway/internal/ledger.err,matrix/gateway/internal/ledger.projTotal,matrix/gateway/internal/ledger.projection,matrix/gateway/internal/ledger.rem,matrix/gateway/internal/ledger.spent,matrix/gateway/internal/rates.AddPax,matrix/gateway/internal/rates.CmpPax,matrix/gateway/internal/rates.SubPax
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
+  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
 NODE id=matrix/gateway/internal/ledger.DailyCap kind=type
@@ -44,6 +50,7 @@ NODE id=matrix/gateway/internal/ledger.DefaultDailyPaxCap kind=const
   sig=untyped string
   doc=DefaultDailyPaxCap is the seed value applied when an actor has no\nrow in daily_budget_caps. Plan §5.15 quotes "10 PAX/day default".
 EDGES
+  ^references=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/internal/ledger.NewMemory,matrix/gateway/internal/ledger.NewPostgres
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
 NODE id=matrix/gateway/internal/ledger.Entry kind=type
@@ -52,6 +59,7 @@ NODE id=matrix/gateway/internal/ledger.Entry kind=type
   doc=Entry is one row in credit_ledger.
 EDGES
   contains=matrix/gateway/internal/ledger.Entry#ActorDID,matrix/gateway/internal/ledger.Entry#CostPax,matrix/gateway/internal/ledger.Entry#GoalID,matrix/gateway/internal/ledger.Entry#IntentID,matrix/gateway/internal/ledger.Entry#KindRoute,matrix/gateway/internal/ledger.Entry#Model,matrix/gateway/internal/ledger.Entry#OccurredAt,matrix/gateway/internal/ledger.Entry#RateTableVersion,matrix/gateway/internal/ledger.Entry#Slot,matrix/gateway/internal/ledger.Entry#TokensInput,matrix/gateway/internal/ledger.Entry#TokensOutput
+  ^references=matrix/gateway/internal/ledger.Ledger,matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.Memory.Record,matrix/gateway/internal/ledger.Memory.Snapshot,matrix/gateway/internal/ledger.Postgres.Record,matrix/gateway/internal/proxy.Server.maybeDebit
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
 NODE id=matrix/gateway/internal/ledger.Entry#ActorDID kind=field
@@ -132,7 +140,9 @@ NODE id=matrix/gateway/internal/ledger.Ledger kind=interface
   sig=type Ledger interface {\n	// Record persists a single credit_ledger row. MUST be idempotent\n	// w.r.t. (actor, intent, occurred_at) — duplicate writes are\n	// allowed (Postgres rolls them up downstream); see plan §5.15.\n	Record(ctx context.Context, e Entry) error\n\n	// DailySpend returns the actor's PAX-denominated total spent\n	// during the UTC date containing `now`. Returned as a canonical\n	// decimal string so callers can pass it straight to rates.AddPax\n	// without re-parsing.\n	DailySpend(ctx context.Context, actor string, now time.Time) (string, error)\n\n	// DailyCap returns the actor's PAX-denominated daily cap. When the\n	// actor has no row in daily_budget_caps, the default is returned.\n	DailyCap(ctx context.Context, actor string) (string, error)\n\n	// Close releases any underlying resources (connection pool).\n	Close() error\n}
   doc=Ledger is the abstract interface implemented by both in-memory and\nPostgres backends.
 EDGES
+  references=matrix/gateway/internal/ledger.Entry
   ^implements=matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.Postgres
+  ^references=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/internal/ledger._,matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.Server
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
 NODE id=matrix/gateway/internal/ledger.Memory kind=type
@@ -142,6 +152,8 @@ NODE id=matrix/gateway/internal/ledger.Memory kind=type
 EDGES
   contains=matrix/gateway/internal/ledger.Memory#caps,matrix/gateway/internal/ledger.Memory#defCap,matrix/gateway/internal/ledger.Memory#mu,matrix/gateway/internal/ledger.Memory#nowFunc,matrix/gateway/internal/ledger.Memory#rows,matrix/gateway/internal/ledger.Memory.Close,matrix/gateway/internal/ledger.Memory.DailyCap,matrix/gateway/internal/ledger.Memory.DailySpend,matrix/gateway/internal/ledger.Memory.Record,matrix/gateway/internal/ledger.Memory.SetCap,matrix/gateway/internal/ledger.Memory.SetClock,matrix/gateway/internal/ledger.Memory.Snapshot,matrix/gateway/internal/ledger.Memory.clock
   implements=matrix/gateway/internal/ledger.Ledger
+  references=matrix/gateway/internal/ledger.Entry
+  ^references=matrix/gateway/internal/ledger.Memory.Close,matrix/gateway/internal/ledger.Memory.DailyCap,matrix/gateway/internal/ledger.Memory.DailySpend,matrix/gateway/internal/ledger.Memory.Record,matrix/gateway/internal/ledger.Memory.SetCap,matrix/gateway/internal/ledger.Memory.SetClock,matrix/gateway/internal/ledger.Memory.Snapshot,matrix/gateway/internal/ledger.Memory.clock,matrix/gateway/internal/ledger.NewMemory,matrix/gateway/internal/ledger._
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
 NODE id=matrix/gateway/internal/ledger.Memory#caps kind=field
@@ -179,7 +191,9 @@ NODE id=matrix/gateway/internal/ledger.Memory.Close kind=method
   sig=func (m *Memory) Close() error
   doc=Close is a no-op; Memory holds no resources.
 EDGES
+  references=matrix/gateway/internal/ledger.Memory
   ^contains=matrix/gateway/internal/ledger.Memory
+  ^calls=matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
 NODE id=matrix/gateway/internal/ledger.Memory.DailyCap kind=method
@@ -187,7 +201,9 @@ NODE id=matrix/gateway/internal/ledger.Memory.DailyCap kind=method
   sig=func (m *Memory) DailyCap(_ context.Context, actor string) (string, error)
   doc=DailyCap returns the configured cap for the actor, defaulting when\nnone has been set.
 EDGES
+  references=matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.actor,matrix/gateway/internal/ledger.m,matrix/gateway/internal/ledger.ok,matrix/gateway/internal/ledger.v
   ^contains=matrix/gateway/internal/ledger.Memory
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
 NODE id=matrix/gateway/internal/ledger.Memory.DailySpend kind=method
@@ -195,7 +211,10 @@ NODE id=matrix/gateway/internal/ledger.Memory.DailySpend kind=method
   sig=func (m *Memory) DailySpend(_ context.Context, actor string, now time.Time) (string, error)
   doc=DailySpend sums entries occurring on the same UTC calendar day as now.
 EDGES
+  calls=matrix/gateway/internal/ledger.Memory.clock,matrix/gateway/internal/ledger.startOfUTCDay,matrix/gateway/internal/rates.AddPax
+  references=matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.Memory.clock,matrix/gateway/internal/ledger.actor,matrix/gateway/internal/ledger.dayEnd,matrix/gateway/internal/ledger.dayStart,matrix/gateway/internal/ledger.e,matrix/gateway/internal/ledger.err,matrix/gateway/internal/ledger.i,matrix/gateway/internal/ledger.m,matrix/gateway/internal/ledger.next,matrix/gateway/internal/ledger.now,matrix/gateway/internal/ledger.startOfUTCDay,matrix/gateway/internal/ledger.total,matrix/gateway/internal/rates.AddPax
   ^contains=matrix/gateway/internal/ledger.Memory
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
 NODE id=matrix/gateway/internal/ledger.Memory.Record kind=method
@@ -203,7 +222,10 @@ NODE id=matrix/gateway/internal/ledger.Memory.Record kind=method
   sig=func (m *Memory) Record(_ context.Context, e Entry) error
   doc=Record appends an entry. The OccurredAt field is filled with the\nmemory clock when zero so tests don't need to populate it.
 EDGES
+  calls=matrix/gateway/internal/ledger.Memory.clock
+  references=matrix/gateway/internal/ledger.Entry,matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.Memory.clock,matrix/gateway/internal/ledger.e,matrix/gateway/internal/ledger.m,matrix/gateway/internal/rates.RateTableVersion
   ^contains=matrix/gateway/internal/ledger.Memory
+  ^calls=matrix/gateway/internal/proxy.Server.maybeDebit
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
 NODE id=matrix/gateway/internal/ledger.Memory.SetCap kind=method
@@ -211,6 +233,7 @@ NODE id=matrix/gateway/internal/ledger.Memory.SetCap kind=method
   sig=func (m *Memory) SetCap(actor, capPax string)
   doc=SetCap updates the cap for an actor. Test/admin-only.
 EDGES
+  references=matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.actor,matrix/gateway/internal/ledger.capPax,matrix/gateway/internal/ledger.m
   ^contains=matrix/gateway/internal/ledger.Memory
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
@@ -219,6 +242,7 @@ NODE id=matrix/gateway/internal/ledger.Memory.SetClock kind=method
   sig=func (m *Memory) SetClock(now func() time.Time)
   doc=SetClock injects a clock for tests so DailySpend boundary cases are\ndeterministic. nil resets to wall clock.
 EDGES
+  references=matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.m,matrix/gateway/internal/ledger.now
   ^contains=matrix/gateway/internal/ledger.Memory
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
@@ -227,6 +251,7 @@ NODE id=matrix/gateway/internal/ledger.Memory.Snapshot kind=method
   sig=func (m *Memory) Snapshot() []Entry
   doc=Snapshot returns a copy of all recorded rows. Test-only.
 EDGES
+  references=matrix/gateway/internal/ledger.Entry,matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.m,matrix/gateway/internal/ledger.out
   ^contains=matrix/gateway/internal/ledger.Memory
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
@@ -234,7 +259,10 @@ NODE id=matrix/gateway/internal/ledger.Memory.clock kind=method
   digest=b3:7a581b277cc9a2314c54418a2e843de58958a95fc6dbd19323c3f4a81d2263ac file=gateway/internal/ledger/ledger.go range=120:125 lang=go exported=false byte_range=4126:4236
   sig=func (m *Memory) clock() time.Time
 EDGES
+  references=matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.m
   ^contains=matrix/gateway/internal/ledger.Memory
+  ^calls=matrix/gateway/internal/ledger.Memory.DailySpend,matrix/gateway/internal/ledger.Memory.Record
+  ^references=matrix/gateway/internal/ledger.Memory.DailySpend,matrix/gateway/internal/ledger.Memory.Record
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
 NODE id=matrix/gateway/internal/ledger.NewMemory kind=func
@@ -242,6 +270,9 @@ NODE id=matrix/gateway/internal/ledger.NewMemory kind=func
   sig=func NewMemory(defCap string) *Memory
   doc=NewMemory constructs a Memory ledger with the supplied default cap.\nEmpty defCap → DefaultDailyPaxCap.
 EDGES
+  references=matrix/gateway/internal/ledger.DefaultDailyPaxCap,matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.defCap
+  ^calls=matrix/gateway/cmd/matrix-gateway.run
+  ^references=matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
 NODE id=matrix/gateway/internal/ledger.NewPostgres kind=func
@@ -249,6 +280,9 @@ NODE id=matrix/gateway/internal/ledger.NewPostgres kind=func
   sig=func NewPostgres(db *sql.DB, defCap string) *Postgres
   doc=NewPostgres returns a Ledger that talks to the supplied *sql.DB.\ndefCap is the default daily cap applied when an actor has no row\nin daily_budget_caps; empty falls back to DefaultDailyPaxCap.\n\nThe caller retains ownership of db.Close(); Close() on the returned\nPostgres is a no-op so callers can safely share one *sql.DB across\nthe gateway lifetime + a future admin endpoint.
 EDGES
+  references=matrix/gateway/internal/ledger.DefaultDailyPaxCap,matrix/gateway/internal/ledger.Postgres,matrix/gateway/internal/ledger.db,matrix/gateway/internal/ledger.defCap
+  ^calls=matrix/gateway/cmd/matrix-gateway.run
+  ^references=matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/internal/ledger/postgres.go
 
 NODE id=matrix/gateway/internal/ledger.Postgres kind=type
@@ -258,6 +292,7 @@ NODE id=matrix/gateway/internal/ledger.Postgres kind=type
 EDGES
   contains=matrix/gateway/internal/ledger.Postgres#db,matrix/gateway/internal/ledger.Postgres#defCap,matrix/gateway/internal/ledger.Postgres.Close,matrix/gateway/internal/ledger.Postgres.DailyCap,matrix/gateway/internal/ledger.Postgres.DailySpend,matrix/gateway/internal/ledger.Postgres.Record
   implements=matrix/gateway/internal/ledger.Ledger
+  ^references=matrix/gateway/internal/ledger.NewPostgres,matrix/gateway/internal/ledger.Postgres.Close,matrix/gateway/internal/ledger.Postgres.DailyCap,matrix/gateway/internal/ledger.Postgres.DailySpend,matrix/gateway/internal/ledger.Postgres.Record,matrix/gateway/internal/ledger._
   ^defines=matrix/gateway/internal/ledger/postgres.go
 
 NODE id=matrix/gateway/internal/ledger.Postgres#db kind=field
@@ -277,7 +312,9 @@ NODE id=matrix/gateway/internal/ledger.Postgres.Close kind=method
   sig=func (p *Postgres) Close() error
   doc=Close is a no-op; the *sql.DB is owned by the caller. Returning nil\nkeeps the Ledger interface contract trivial for callers using\ndefer ledger.Close().
 EDGES
+  references=matrix/gateway/internal/ledger.Postgres
   ^contains=matrix/gateway/internal/ledger.Postgres
+  ^calls=matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/internal/ledger/postgres.go
 
 NODE id=matrix/gateway/internal/ledger.Postgres.DailyCap kind=method
@@ -285,7 +322,9 @@ NODE id=matrix/gateway/internal/ledger.Postgres.DailyCap kind=method
   sig=func (p *Postgres) DailyCap(ctx context.Context, actor string) (string, error)
   doc=DailyCap reads daily_budget_caps; returns the default when empty.
 EDGES
+  references=matrix/gateway/internal/ledger.Postgres,matrix/gateway/internal/ledger.actor,matrix/gateway/internal/ledger.capPax,matrix/gateway/internal/ledger.ctx,matrix/gateway/internal/ledger.err,matrix/gateway/internal/ledger.p,matrix/gateway/internal/ledger.q
   ^contains=matrix/gateway/internal/ledger.Postgres
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/ledger/postgres.go
 
 NODE id=matrix/gateway/internal/ledger.Postgres.DailySpend kind=method
@@ -293,7 +332,9 @@ NODE id=matrix/gateway/internal/ledger.Postgres.DailySpend kind=method
   sig=func (p *Postgres) DailySpend(ctx context.Context, actor string, now time.Time) (string, error)
   doc=DailySpend returns the actor's PAX-denominated total spent on the\nUTC calendar day containing now. Uses NUMERIC arithmetic in Postgres\nso precision matches credit_ledger.cost_pax exactly.
 EDGES
+  references=matrix/gateway/internal/ledger.Postgres,matrix/gateway/internal/ledger.actor,matrix/gateway/internal/ledger.ctx,matrix/gateway/internal/ledger.dayEnd,matrix/gateway/internal/ledger.dayStart,matrix/gateway/internal/ledger.err,matrix/gateway/internal/ledger.now,matrix/gateway/internal/ledger.p,matrix/gateway/internal/ledger.q,matrix/gateway/internal/ledger.spent
   ^contains=matrix/gateway/internal/ledger.Postgres
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/ledger/postgres.go
 
 NODE id=matrix/gateway/internal/ledger.Postgres.Record kind=method
@@ -301,7 +342,10 @@ NODE id=matrix/gateway/internal/ledger.Postgres.Record kind=method
   sig=func (p *Postgres) Record(ctx context.Context, e Entry) error
   doc=Record inserts a row into credit_ledger. Idempotency notes:\nthe schema does NOT enforce a unique key on (actor, intent, ts) so\nduplicates are accepted; downstream rollups MUST sum without DISTINCT.\nThis is intentional — re-tries on transient network errors should\nbe safe, and reconciliation is a problem for a future audit job.
 EDGES
+  calls=matrix/gateway/internal/ledger.nullIfEmpty
+  references=matrix/gateway/internal/ledger.Entry,matrix/gateway/internal/ledger.Postgres,matrix/gateway/internal/ledger.ctx,matrix/gateway/internal/ledger.e,matrix/gateway/internal/ledger.err,matrix/gateway/internal/ledger.nullIfEmpty,matrix/gateway/internal/ledger.p,matrix/gateway/internal/ledger.q,matrix/gateway/internal/rates.RateTableVersion
   ^contains=matrix/gateway/internal/ledger.Postgres
+  ^calls=matrix/gateway/internal/proxy.Server.maybeDebit
   ^defines=matrix/gateway/internal/ledger/postgres.go
 
 NODE id=matrix/gateway/internal/ledger._ kind=var
@@ -309,6 +353,7 @@ NODE id=matrix/gateway/internal/ledger._ kind=var
   sig=ledger.Ledger
   doc=Compile-time assertion.
 EDGES
+  references=matrix/gateway/internal/ledger.Ledger,matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.Postgres
   ^defines=matrix/gateway/internal/ledger/ledger.go,matrix/gateway/internal/ledger/postgres.go
 
 NODE id=matrix/gateway/internal/ledger.nullIfEmpty kind=func
@@ -316,6 +361,9 @@ NODE id=matrix/gateway/internal/ledger.nullIfEmpty kind=func
   sig=func nullIfEmpty(s string) any
   doc=nullIfEmpty wraps a string into a sql.NullString to keep optional\ncolumns (intent/goal/slot/kind_route) NULL when unset, mirroring\nthe schema's nullability.
 EDGES
+  references=matrix/gateway/internal/ledger.s
+  ^calls=matrix/gateway/internal/ledger.Postgres.Record
+  ^references=matrix/gateway/internal/ledger.Postgres.Record
   ^defines=matrix/gateway/internal/ledger/postgres.go
 
 NODE id=matrix/gateway/internal/ledger.startOfUTCDay kind=func
@@ -323,6 +371,9 @@ NODE id=matrix/gateway/internal/ledger.startOfUTCDay kind=func
   sig=func startOfUTCDay(t time.Time) time.Time
   doc=startOfUTCDay zeroes the H/M/S/ns fields and forces UTC.
 EDGES
+  references=matrix/gateway/internal/ledger.t,matrix/gateway/internal/ledger.u
+  ^calls=matrix/gateway/internal/ledger.Memory.DailySpend
+  ^references=matrix/gateway/internal/ledger.Memory.DailySpend
   ^defines=matrix/gateway/internal/ledger/ledger.go
 
 NODE id=matrix/gateway/internal/ledger/ledger.go kind=file

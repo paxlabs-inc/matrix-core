@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"matrix/cortex"
+	"matrix/cortexclient"
 	"matrix/neo/internal/runtime/liveness"
 	"matrix/neo/internal/runtime/protocol"
 	"matrix/neo/internal/runtime/provider"
@@ -95,14 +95,14 @@ type Dependencies struct {
 }
 
 type ToolExecution struct {
-	Call           protocol.NormalizedToolCall `json:"call"`
-	Result         json.RawMessage             `json:"result"`
-	Error          string                      `json:"error,omitempty"`
-	Expect         string                      `json:"expect,omitempty"`
-	IdempotencyKey string                      `json:"idempotency_key"`
-	MatchVerdict   string                      `json:"match_verdict"`
-	SubgoalID      string                      `json:"subgoal_id"`
-	Citation       *cortex.ToolEventCitation   `json:"citation,omitempty"`
+	Call           protocol.NormalizedToolCall     `json:"call"`
+	Result         json.RawMessage                 `json:"result"`
+	Error          string                          `json:"error,omitempty"`
+	Expect         string                          `json:"expect,omitempty"`
+	IdempotencyKey string                          `json:"idempotency_key"`
+	MatchVerdict   string                          `json:"match_verdict"`
+	SubgoalID      string                          `json:"subgoal_id"`
+	Citation       *cortexclient.ToolEventCitation `json:"citation,omitempty"`
 }
 
 type Response struct {
@@ -561,7 +561,7 @@ func (loop *Loop) runTurn(
 		// A revision step runs tools-stripped so the model must revise the
 		// plan rather than dispatch another sibling call, and the doubt line
 		// rides this ONE request only — it is never appended to
-		// checkpoint.Messages, so the durable window and the cortex
+		// checkpoint.Messages, so the durable window and the Neocortex
 		// transcript stay free of controller guidance.
 		if pendingDoubt != "" {
 			request.Messages = foldDoubt(request.Messages, pendingDoubt)
@@ -1035,7 +1035,7 @@ func (loop *Loop) injectToolResult(
 ) {
 	execution := ToolExecution{
 		Call: call, Result: result, Error: failure,
-		MatchVerdict: cortex.ToolMatchUnknown,
+		MatchVerdict: cortexclient.ToolMatchUnknown,
 		SubgoalID:    loop.subgoalFor(call),
 	}
 	response.ToolEvents = append(response.ToolEvents, execution)

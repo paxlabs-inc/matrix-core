@@ -4,7 +4,7 @@ package server
 
 // Tests for the ORACLE guided personalization interview (task 5.3, req 12).
 //
-// Everything under test is REAL: the real Engine + cortex pager (t.TempDir()),
+// Everything under test is REAL: the real Engine + Neocortex pager (t.TempDir()),
 // the real conversation store meta sidecar (the interview flag), the real
 // tools.Manager with the real engine-wired profile writer, the real interview
 // agent (advertised set + charter captured off the actual model request), and
@@ -60,8 +60,8 @@ func capturingModelServer(t *testing.T) (*httptest.Server, func() string) {
 func newInterviewTestEngine(t *testing.T, modelURL string) (*Engine, *memory.Pager) {
 	t.Helper()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-interview-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-interview-test"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)
@@ -132,7 +132,7 @@ func TestInterviewSession_SurfaceAndWritebackExclusion(t *testing.T) {
 }
 
 // TestPersonalizationSave_ConfirmationGate drives the REAL dispatch path with
-// the REAL engine-wired writer over the REAL cortex: an unconfirmed save is
+// the REAL engine-wired writer over the REAL Neocortex: an unconfirmed save is
 // refused in-band and persists NOTHING; a confirmed save persists the single
 // record; a second confirmed save VERSIONS the same record rather than adding
 // one; skipped groups stay empty (req 12.2/12.3, 13.1).

@@ -1,17 +1,21 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/effect kind=package
   digest=b3:322e94d52453f6afed8b6cc95d30330dde0f049967f5f17088cc32208d914a75 file=workforce/internal/effect range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/effect/command.go,matrix/workforce/internal/effect/doc.go,matrix/workforce/internal/effect/gateway.go,matrix/workforce/internal/effect/types.go
+  imports=matrix/vault,matrix/workforce/internal/approval,matrix/workforce/internal/circuit,matrix/workforce/internal/contracts,matrix/workforce/internal/dependency,matrix/workforce/internal/lease,matrix/workforce/internal/policy,matrix/workforce/internal/skills
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/commercialcapability,matrix/workforce/internal/departmentadapter,matrix/workforce/internal/developer,matrix/workforce/internal/productcapability,matrix/workforce/internal/productexecution,matrix/workforce/internal/provider/customer,matrix/workforce/internal/provider/developer,matrix/workforce/internal/provider/external,matrix/workforce/internal/provider/financial,matrix/workforce/internal/reconcile,matrix/workforce/internal/wakeruntime,matrix/workforce/internal/workcompile
 
 NODE id=matrix/workforce/internal/effect.Adapter kind=interface
   digest=b3:02f4dc56bf90d44ed835698305fc4363f7539633e3357869ba6a54d8c4b0638e file=workforce/internal/effect/types.go range=147:153 lang=go exported=true byte_range=4946:5250
   sig=type Adapter interface {\n	Name() string\n	Dispatch(context.Context, Operation) (DispatchResult, error)\n	Probe(context.Context, Operation) (ProbeResult, error)\n}
   doc=Adapter is a real provider boundary. Implementations own credentials and must\npropagate the supplied idempotency identity where supported.
 EDGES
+  references=matrix/workforce/internal/effect.DispatchResult,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/effect.ProbeResult
   ^implements=matrix/workforce/internal/commercialcapability.Adapter,matrix/workforce/internal/departmentadapter.Adapter,matrix/workforce/internal/developer.Adapter,matrix/workforce/internal/effect.CommandAdapter,matrix/workforce/internal/productcapability.Adapter,matrix/workforce/internal/provider/customer.Adapter,matrix/workforce/internal/provider/developer.Adapter,matrix/workforce/internal/provider/external.Adapter,matrix/workforce/internal/provider/financial.Adapter
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/commercialcapability._,matrix/workforce/internal/departmentadapter.New,matrix/workforce/internal/departmentadapter._,matrix/workforce/internal/developer._,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.probePreflight,matrix/workforce/internal/effect.New,matrix/workforce/internal/productcapability._,matrix/workforce/internal/provider/customer.Adapter,matrix/workforce/internal/provider/customer.LoadAdapters,matrix/workforce/internal/provider/customer.NewAdapter,matrix/workforce/internal/provider/customer._,matrix/workforce/internal/provider/external.LoadAdapters,matrix/workforce/internal/provider/external._,matrix/workforce/internal/provider/financial.Adapter,matrix/workforce/internal/provider/financial.LoadAdapters,matrix/workforce/internal/provider/financial.NewAdapter,matrix/workforce/internal/provider/financial._
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.CommandAdapter kind=type
@@ -21,6 +25,7 @@ NODE id=matrix/workforce/internal/effect.CommandAdapter kind=type
 EDGES
   contains=matrix/workforce/internal/effect.CommandAdapter#directory,matrix/workforce/internal/effect.CommandAdapter#directoryPath,matrix/workforce/internal/effect.CommandAdapter#environment,matrix/workforce/internal/effect.CommandAdapter#executable,matrix/workforce/internal/effect.CommandAdapter#executableDigest,matrix/workforce/internal/effect.CommandAdapter#name,matrix/workforce/internal/effect.CommandAdapter#now,matrix/workforce/internal/effect.CommandAdapter#operations,matrix/workforce/internal/effect.CommandAdapter#probes,matrix/workforce/internal/effect.CommandAdapter.Dispatch,matrix/workforce/internal/effect.CommandAdapter.Name,matrix/workforce/internal/effect.CommandAdapter.Probe,matrix/workforce/internal/effect.CommandAdapter.run
   implements=matrix/workforce/internal/effect.Adapter
+  ^references=matrix/workforce/internal/effect.CommandAdapter.Dispatch,matrix/workforce/internal/effect.CommandAdapter.Name,matrix/workforce/internal/effect.CommandAdapter.Probe,matrix/workforce/internal/effect.CommandAdapter.run,matrix/workforce/internal/effect.NewCommandAdapter
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.CommandAdapter#directory kind=field
@@ -82,6 +87,8 @@ NODE id=matrix/workforce/internal/effect.CommandAdapter.Dispatch kind=method
   sig=func (adapter *CommandAdapter) Dispatch(\n	ctx context.Context,\n	operation Operation,\n) (DispatchResult, error)
   doc=Dispatch starts one allowlisted external mutation.
 EDGES
+  calls=matrix/workforce/internal/effect.CommandAdapter.run
+  references=matrix/workforce/internal/effect.CommandAdapter,matrix/workforce/internal/effect.CommandAdapter.run,matrix/workforce/internal/effect.DispatchResult,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/effect.adapter,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.operation
   ^contains=matrix/workforce/internal/effect.CommandAdapter
   ^defines=matrix/workforce/internal/effect/command.go
 
@@ -90,6 +97,7 @@ NODE id=matrix/workforce/internal/effect.CommandAdapter.Name kind=method
   sig=func (adapter *CommandAdapter) Name() string
   doc=Name returns the stable provider identity.
 EDGES
+  references=matrix/workforce/internal/effect.CommandAdapter,matrix/workforce/internal/effect.adapter
   ^contains=matrix/workforce/internal/effect.CommandAdapter
   ^defines=matrix/workforce/internal/effect/command.go
 
@@ -98,6 +106,8 @@ NODE id=matrix/workforce/internal/effect.CommandAdapter.Probe kind=method
   sig=func (adapter *CommandAdapter) Probe(\n	ctx context.Context,\n	operation Operation,\n) (ProbeResult, error)
   doc=Probe performs one allowlisted read-only authoritative observation.
 EDGES
+  calls=matrix/workforce/internal/effect.CommandAdapter.run,matrix/workforce/internal/skills.ProbeOutcome.Valid
+  references=matrix/workforce/internal/effect.CommandAdapter,matrix/workforce/internal/effect.CommandAdapter.run,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/effect.ProbeResult,matrix/workforce/internal/effect.adapter,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.envelope,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.operation,matrix/workforce/internal/effect.result,matrix/workforce/internal/skills.ProbeCompletedOutOfBand,matrix/workforce/internal/skills.ProbeOutcome,matrix/workforce/internal/skills.ProbeOutcome.Valid,matrix/workforce/internal/skills.ProbeUnknown
   ^contains=matrix/workforce/internal/effect.CommandAdapter
   ^defines=matrix/workforce/internal/effect/command.go
 
@@ -105,7 +115,11 @@ NODE id=matrix/workforce/internal/effect.CommandAdapter.run kind=method
   digest=b3:adfd287a2bc79620631ce710d116d0dad3a6fb111483826c15c1c4688d892af1 file=workforce/internal/effect/command.go range=144:193 lang=go exported=false byte_range=4262:6085
   sig=func (adapter *CommandAdapter) run(\n	ctx context.Context,\n	operation Operation,\n	commands map[string][]string,\n) (DispatchResult, error)
 EDGES
+  calls=matrix/workforce/internal/effect.externalID,matrix/workforce/internal/effect.hashOpenedFile,matrix/workforce/internal/effect.limitedBuffer.Bytes
+  references=matrix/workforce/internal/effect.CommandAdapter,matrix/workforce/internal/effect.DispatchResult,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/effect.adapter,matrix/workforce/internal/effect.arguments,matrix/workforce/internal/effect.command,matrix/workforce/internal/effect.commands,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.current,matrix/workforce/internal/effect.currentDigest,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.externalID,matrix/workforce/internal/effect.hashOpenedFile,matrix/workforce/internal/effect.limitedBuffer,matrix/workforce/internal/effect.limitedBuffer.Bytes,matrix/workforce/internal/effect.ok,matrix/workforce/internal/effect.opened,matrix/workforce/internal/effect.openedErr,matrix/workforce/internal/effect.operation,matrix/workforce/internal/effect.output,matrix/workforce/internal/effect.result,matrix/workforce/internal/effect.statErr
   ^contains=matrix/workforce/internal/effect.CommandAdapter
+  ^calls=matrix/workforce/internal/effect.CommandAdapter.Dispatch,matrix/workforce/internal/effect.CommandAdapter.Probe
+  ^references=matrix/workforce/internal/effect.CommandAdapter.Dispatch,matrix/workforce/internal/effect.CommandAdapter.Probe
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.DispatchResult kind=type
@@ -114,6 +128,7 @@ NODE id=matrix/workforce/internal/effect.DispatchResult kind=type
   doc=DispatchResult states whether provider dispatch began and carries observation.
 EDGES
   contains=matrix/workforce/internal/effect.DispatchResult#ExternalID,matrix/workforce/internal/effect.DispatchResult#Observation,matrix/workforce/internal/effect.DispatchResult#ObservedAt,matrix/workforce/internal/effect.DispatchResult#Started
+  ^references=matrix/workforce/internal/commercialcapability.Adapter.Dispatch,matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.developerResult,matrix/workforce/internal/effect.Adapter,matrix/workforce/internal/effect.CommandAdapter.Dispatch,matrix/workforce/internal/effect.CommandAdapter.run,matrix/workforce/internal/effect.Gateway.commitEvidence,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.ProbeResult,matrix/workforce/internal/productcapability.Adapter.Dispatch,matrix/workforce/internal/provider/customer.Adapter.Dispatch,matrix/workforce/internal/provider/developer.Adapter.Dispatch,matrix/workforce/internal/provider/external.Adapter.Dispatch,matrix/workforce/internal/provider/external.Adapter.Probe,matrix/workforce/internal/provider/financial.Adapter.Dispatch,matrix/workforce/internal/provider/financial.Adapter.Probe
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.DispatchResult#ExternalID kind=field
@@ -145,6 +160,7 @@ NODE id=matrix/workforce/internal/effect.ErrAmbiguous kind=var
   sig=error
   doc=ErrAmbiguous means dispatch may have happened and must reconcile before retry.
 EDGES
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/reconcile.Service.Sweep,matrix/workforce/internal/wakeruntime.Runner.executeEffect
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.ErrConflict kind=var
@@ -152,6 +168,7 @@ NODE id=matrix/workforce/internal/effect.ErrConflict kind=var
   sig=error
   doc=ErrConflict means an idempotency identity was reused for different work.
 EDGES
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.LoadResult,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.beginDispatch,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.Gateway.prepare,matrix/workforce/internal/effect.Gateway.setProbe,matrix/workforce/internal/effect.Gateway.setProbeOutcome,matrix/workforce/internal/effect.Gateway.setState
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.ErrRejected kind=var
@@ -159,6 +176,7 @@ NODE id=matrix/workforce/internal/effect.ErrRejected kind=var
   sig=error
   doc=ErrRejected means preflight or a definitely-before-send failure rejected work.
 EDGES
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.beginDispatch,matrix/workforce/internal/effect.Gateway.consumeApproval,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.probePreflight,matrix/workforce/internal/effect.Gateway.requireCompiledProposal,matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.ErrUncertain kind=var
@@ -166,6 +184,7 @@ NODE id=matrix/workforce/internal/effect.ErrUncertain kind=var
   sig=error
   doc=ErrUncertain means the gateway cannot prove durable state and fails closed.
 EDGES
+  ^references=matrix/workforce/internal/effect.Gateway.Pending,matrix/workforce/internal/effect.Gateway.beginDispatch,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.Gateway.consumeApproval,matrix/workforce/internal/effect.Gateway.lookup,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.prepare,matrix/workforce/internal/effect.Gateway.probePreflight,matrix/workforce/internal/effect.Gateway.requireCompiledProposal,matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval,matrix/workforce/internal/effect.Gateway.setProbe,matrix/workforce/internal/effect.Gateway.setProbeOutcome,matrix/workforce/internal/effect.Gateway.setState
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.Gateway kind=type
@@ -174,6 +193,8 @@ NODE id=matrix/workforce/internal/effect.Gateway kind=type
   doc=Gateway is the single local writer for external effects.
 EDGES
   contains=matrix/workforce/internal/effect.Gateway#adapters,matrix/workforce/internal/effect.Gateway#authority,matrix/workforce/internal/effect.Gateway#breakers,matrix/workforce/internal/effect.Gateway#leases,matrix/workforce/internal/effect.Gateway#now,matrix/workforce/internal/effect.Gateway#policy,matrix/workforce/internal/effect.Gateway#pool,matrix/workforce/internal/effect.Gateway#tenantID,matrix/workforce/internal/effect.Gateway#vault,matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.LoadResult,matrix/workforce/internal/effect.Gateway.Pending,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.admit,matrix/workforce/internal/effect.Gateway.beginDispatch,matrix/workforce/internal/effect.Gateway.commitEvidence,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.Gateway.consumeApproval,matrix/workforce/internal/effect.Gateway.lookup,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.prepare,matrix/workforce/internal/effect.Gateway.probePreflight,matrix/workforce/internal/effect.Gateway.requireCompiledProposal,matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval,matrix/workforce/internal/effect.Gateway.setProbe,matrix/workforce/internal/effect.Gateway.setProbeOutcome,matrix/workforce/internal/effect.Gateway.setState
+  references=matrix/vault.UserVault,matrix/workforce/internal/approval.Authority,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/effect.Adapter,matrix/workforce/internal/lease.Store,matrix/workforce/internal/policy.Store
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.LoadResult,matrix/workforce/internal/effect.Gateway.Pending,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.admit,matrix/workforce/internal/effect.Gateway.beginDispatch,matrix/workforce/internal/effect.Gateway.commitEvidence,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.Gateway.consumeApproval,matrix/workforce/internal/effect.Gateway.lookup,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.prepare,matrix/workforce/internal/effect.Gateway.probePreflight,matrix/workforce/internal/effect.Gateway.requireCompiledProposal,matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval,matrix/workforce/internal/effect.Gateway.setProbe,matrix/workforce/internal/effect.Gateway.setProbeOutcome,matrix/workforce/internal/effect.Gateway.setState,matrix/workforce/internal/effect.New,matrix/workforce/internal/productexecution.NewStore,matrix/workforce/internal/productexecution.Store,matrix/workforce/internal/reconcile.New,matrix/workforce/internal/reconcile.Service,matrix/workforce/internal/wakeruntime.Runner
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway#adapters kind=field
@@ -235,7 +256,11 @@ NODE id=matrix/workforce/internal/effect.Gateway.Execute kind=method
   sig=func (gateway *Gateway) Execute(ctx context.Context, proposal Proposal) (Result, error)
   doc=Execute preflights, durably marks dispatch, invokes one real adapter, and\nrecords authoritative evidence or ambiguity without blind retry.
 EDGES
+  calls=matrix/workforce/internal/circuit.Store.Fail,matrix/workforce/internal/circuit.Store.Release,matrix/workforce/internal/circuit.Store.Succeed,matrix/workforce/internal/commercialcapability.Adapter.Dispatch,matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/effect.Gateway.admit,matrix/workforce/internal/effect.Gateway.beginDispatch,matrix/workforce/internal/effect.Gateway.commitEvidence,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.prepare,matrix/workforce/internal/effect.Gateway.setState,matrix/workforce/internal/productcapability.Adapter.Dispatch,matrix/workforce/internal/provider/customer.Adapter.Dispatch,matrix/workforce/internal/provider/external.Adapter.Dispatch,matrix/workforce/internal/provider/financial.Adapter.Dispatch
+  references=matrix/workforce/internal/circuit.Store.Fail,matrix/workforce/internal/circuit.Store.Release,matrix/workforce/internal/circuit.Store.Succeed,matrix/workforce/internal/effect.Adapter.Dispatch,matrix/workforce/internal/effect.ErrAmbiguous,matrix/workforce/internal/effect.ErrConflict,matrix/workforce/internal/effect.ErrRejected,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Gateway.admit,matrix/workforce/internal/effect.Gateway.beginDispatch,matrix/workforce/internal/effect.Gateway.commitEvidence,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.prepare,matrix/workforce/internal/effect.Gateway.setState,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.Result,matrix/workforce/internal/effect.StateDispatching,matrix/workforce/internal/effect.StateExternallyAmbiguous,matrix/workforce/internal/effect.StateFailed,matrix/workforce/internal/effect.StatePrepared,matrix/workforce/internal/effect.StateSucceeded,matrix/workforce/internal/effect.adapter,matrix/workforce/internal/effect.cancel,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.dispatchContext,matrix/workforce/internal/effect.dispatchErr,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.existing,matrix/workforce/internal/effect.found,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.now,matrix/workforce/internal/effect.observation,matrix/workforce/internal/effect.permit,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.proposalHash,matrix/workforce/internal/effect.result
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/productexecution.Store.ExecuteDeployment,matrix/workforce/internal/wakeruntime.Runner.executeEffect
+  ^references=matrix/workforce/internal/productexecution.Store.ExecuteDeployment,matrix/workforce/internal/wakeruntime.Runner.executeEffect
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.LoadResult kind=method
@@ -243,7 +268,11 @@ NODE id=matrix/workforce/internal/effect.Gateway.LoadResult kind=method
   sig=func (gateway *Gateway) LoadResult(\n	ctx context.Context,\n	proposal Proposal,\n) (Result, error)
   doc=LoadResult returns the durable projection for one exact compiled proposal\nwithout dispatching, probing, or requiring still-live execution authority.
 EDGES
+  calls=matrix/workforce/internal/effect.Gateway.lookup,matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/effect.ProposalHash
+  references=matrix/workforce/internal/effect.ErrConflict,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Gateway.lookup,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/effect.ProposalHash,matrix/workforce/internal/effect.Result,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.found,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.stored
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.observeEffect,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
+  ^references=matrix/workforce/internal/wakeruntime.Runner.observeEffect,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.Pending kind=method
@@ -251,7 +280,11 @@ NODE id=matrix/workforce/internal/effect.Gateway.Pending kind=method
   sig=func (gateway *Gateway) Pending(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n) ([]Proposal, error)
   doc=Pending returns exact Vault-opened proposals that require a read-only sweep.
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/effect.validateToken
+  references=matrix/vault.AD,matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.organizationID,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.result,matrix/workforce/internal/effect.rows,matrix/workforce/internal/effect.sealed,matrix/workforce/internal/effect.validateToken
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/reconcile.Service.Sweep
+  ^references=matrix/workforce/internal/reconcile.Service.Sweep
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.Reconcile kind=method
@@ -259,14 +292,22 @@ NODE id=matrix/workforce/internal/effect.Gateway.Reconcile kind=method
   sig=func (gateway *Gateway) Reconcile(ctx context.Context, proposal Proposal) (Result, error)
   doc=Reconcile probes one ambiguous or dispatching operation and commits only an\nauthoritative provider observation.
 EDGES
+  calls=matrix/workforce/internal/circuit.Store.Fail,matrix/workforce/internal/circuit.Store.Release,matrix/workforce/internal/circuit.Store.Succeed,matrix/workforce/internal/commercialcapability.Adapter.Probe,matrix/workforce/internal/departmentadapter.Adapter.Probe,matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/effect.Gateway.admit,matrix/workforce/internal/effect.Gateway.commitEvidence,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.Gateway.lookup,matrix/workforce/internal/effect.Gateway.probePreflight,matrix/workforce/internal/effect.Gateway.setProbe,matrix/workforce/internal/effect.Gateway.setProbeOutcome,matrix/workforce/internal/productcapability.Adapter.Probe,matrix/workforce/internal/provider/customer.Adapter.Probe,matrix/workforce/internal/provider/external.Adapter.Probe,matrix/workforce/internal/provider/financial.Adapter.Probe,matrix/workforce/internal/skills.ProbeOutcome.Valid
+  references=matrix/workforce/internal/circuit.Store.Fail,matrix/workforce/internal/circuit.Store.Release,matrix/workforce/internal/circuit.Store.Succeed,matrix/workforce/internal/effect.Adapter.Probe,matrix/workforce/internal/effect.ErrAmbiguous,matrix/workforce/internal/effect.ErrConflict,matrix/workforce/internal/effect.ErrRejected,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Gateway.admit,matrix/workforce/internal/effect.Gateway.commitEvidence,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.Gateway.lookup,matrix/workforce/internal/effect.Gateway.probePreflight,matrix/workforce/internal/effect.Gateway.setProbe,matrix/workforce/internal/effect.Gateway.setProbeOutcome,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.Result,matrix/workforce/internal/effect.StateDispatching,matrix/workforce/internal/effect.StateExternallyAmbiguous,matrix/workforce/internal/effect.StateFailed,matrix/workforce/internal/effect.StateSucceeded,matrix/workforce/internal/effect.adapter,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.existing,matrix/workforce/internal/effect.found,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.permit,matrix/workforce/internal/effect.probe,matrix/workforce/internal/effect.probeErr,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.proposalHash,matrix/workforce/internal/effect.result,matrix/workforce/internal/effect.safeCode,matrix/workforce/internal/skills.ProbeCompletedOutOfBand,matrix/workforce/internal/skills.ProbeOutcome.Valid,matrix/workforce/internal/skills.ProbeReversed,matrix/workforce/internal/skills.ProbeUnchanged,matrix/workforce/internal/skills.ProbeUnknown
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/productexecution.Store.ReconcileDeployment,matrix/workforce/internal/reconcile.Service.Sweep,matrix/workforce/internal/wakeruntime.Runner.reconcileEffect
+  ^references=matrix/workforce/internal/productexecution.Store.ReconcileDeployment,matrix/workforce/internal/reconcile.Service.Sweep,matrix/workforce/internal/wakeruntime.Runner.reconcileEffect
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.admit kind=method
   digest=b3:1fd8a54dd50fcfdd2f3e1472c4bd710f77d31f331a9671aa1480b9648599132c file=workforce/internal/effect/gateway.go range=1074:1081 lang=go exported=false byte_range=38584:38926
   sig=func (gateway *Gateway) admit(ctx context.Context, proposal Proposal) (circuit.Permit, error)
 EDGES
+  calls=matrix/workforce/internal/circuit.Keys,matrix/workforce/internal/circuit.Store.Admit
+  references=matrix/workforce/internal/circuit.Keys,matrix/workforce/internal/circuit.Permit,matrix/workforce/internal/circuit.Store.Admit,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.keys,matrix/workforce/internal/effect.proposal
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.beginDispatch kind=method
@@ -274,56 +315,87 @@ NODE id=matrix/workforce/internal/effect.Gateway.beginDispatch kind=method
   sig=func (gateway *Gateway) beginDispatch(\n	ctx context.Context,\n	proposal Proposal,\n	preflightTime time.Time,\n) error
   doc=beginDispatch is the single authorization-spend point. It serializes the\nprepared effect with runtime-lease cancellation, signed-authority\ninvalidation, and approval revocation, revalidates all three while their\ndurable rows are locked, and only then makes the dispatching transition.
 EDGES
+  calls=matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval
+  references=matrix/workforce/internal/contracts.FenceToken,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/effect.ErrConflict,matrix/workforce/internal/effect.ErrRejected,matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.State,matrix/workforce/internal/effect.StatePrepared,matrix/workforce/internal/effect.authorityExpiry,matrix/workforce/internal/effect.authoritySeat,matrix/workforce/internal/effect.command,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.dispatchTime,matrix/workforce/internal/effect.effectState,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.preflightTime,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.runtimeExpiry,matrix/workforce/internal/effect.runtimeFence,matrix/workforce/internal/effect.runtimeSeat,matrix/workforce/internal/effect.runtimeState,matrix/workforce/internal/effect.tx,matrix/workforce/internal/lease.StateActive
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.Execute
+  ^references=matrix/workforce/internal/effect.Gateway.Execute
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.commitEvidence kind=method
   digest=b3:b93357f6f34e02f32793bdc1e9dbaad6eee8bfd4c47c790108a75e45200b99e5 file=workforce/internal/effect/gateway.go range=687:693 lang=go exported=false byte_range=24131:24347
   sig=func (gateway *Gateway) commitEvidence(\n	ctx context.Context,\n	proposal Proposal,\n	observation DispatchResult,\n) (Result, error)
 EDGES
+  calls=matrix/workforce/internal/effect.Gateway.commitEvidenceState
+  references=matrix/workforce/internal/effect.DispatchResult,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.Result,matrix/workforce/internal/effect.StateSucceeded,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.observation,matrix/workforce/internal/effect.proposal
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.commitEvidenceState kind=method
   digest=b3:dafce3ab4f8c2007015dd7f2764dac87988f63ee79dbff9d9d8e928709299d27 file=workforce/internal/effect/gateway.go range=695:764 lang=go exported=false byte_range=24349:27413
   sig=func (gateway *Gateway) commitEvidenceState(\n	ctx context.Context,\n	proposal Proposal,\n	observation DispatchResult,\n	state State,\n	safeCode string,\n) (Result, error)
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/effect.Gateway.setState
+  references=matrix/vault.AD,matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/effect.DispatchResult,matrix/workforce/internal/effect.ErrAmbiguous,matrix/workforce/internal/effect.ErrConflict,matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Gateway.setState,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.Result,matrix/workforce/internal/effect.State,matrix/workforce/internal/effect.StateExternallyAmbiguous,matrix/workforce/internal/effect.StateFailed,matrix/workforce/internal/effect.StateSucceeded,matrix/workforce/internal/effect.command,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.evidenceHash,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.observation,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.safeCode,matrix/workforce/internal/effect.sealed,matrix/workforce/internal/effect.state,matrix/workforce/internal/effect.sum,matrix/workforce/internal/effect.tx
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.commitEvidence
+  ^references=matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.commitEvidence
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.consumeApproval kind=method
   digest=b3:824103620ab37c8af21559dfae2ab237d82017d5bd7bfd5ab10042024beb8e7e file=workforce/internal/effect/gateway.go range=920:1018 lang=go exported=false byte_range=32859:36622
   sig=func (gateway *Gateway) consumeApproval(\n	ctx context.Context,\n	tx pgx.Tx,\n	proposal Proposal,\n	now time.Time,\n) error
 EDGES
+  calls=matrix/workforce/internal/approval.BatchApproval.Authorizes,matrix/workforce/internal/approval.OpenSealedBatch
+  references=matrix/workforce/internal/approval.BatchApproval.Authorizes,matrix/workforce/internal/approval.OpenSealedBatch,matrix/workforce/internal/effect.ErrRejected,matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.batch,matrix/workforce/internal/effect.canonicalHash,matrix/workforce/internal/effect.ceiling,matrix/workforce/internal/effect.ceilingBatch,matrix/workforce/internal/effect.consumed,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.expiresAt,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.key,matrix/workforce/internal/effect.now,matrix/workforce/internal/effect.prior,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.recorded,matrix/workforce/internal/effect.revokedAt,matrix/workforce/internal/effect.sealed,matrix/workforce/internal/effect.tx
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.prepare
+  ^references=matrix/workforce/internal/effect.Gateway.prepare
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.lookup kind=method
   digest=b3:9e80174e095b81e4a545cdc754ac525ec89fdd3972ff177bf520e1e8a1cac245 file=workforce/internal/effect/gateway.go range=790:827 lang=go exported=false byte_range=28033:29423
   sig=func (gateway *Gateway) lookup(\n	ctx context.Context,\n	proposal Proposal,\n) (storedResult, bool, error)
 EDGES
+  references=matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.observedAt,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.stored,matrix/workforce/internal/effect.storedResult
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.LoadResult,matrix/workforce/internal/effect.Gateway.Reconcile
+  ^references=matrix/workforce/internal/effect.Gateway.LoadResult,matrix/workforce/internal/effect.Gateway.Reconcile
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.preflight kind=method
   digest=b3:3d5e27b01ee8c2c753141686f66f86e304e7a1d609e78020e46955624d0fb9ae file=workforce/internal/effect/gateway.go range=350:394 lang=go exported=false byte_range=12222:13706
   sig=func (gateway *Gateway) preflight(\n	ctx context.Context,\n	proposal Proposal,\n) (time.Time, Adapter, string, error)
 EDGES
+  calls=matrix/workforce/internal/effect.Gateway.requireCompiledProposal,matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/effect.ProposalHash,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.LoadLease
+  references=matrix/workforce/internal/effect.Adapter,matrix/workforce/internal/effect.ErrRejected,matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Gateway.requireCompiledProposal,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/effect.ProposalHash,matrix/workforce/internal/effect.adapter,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.exists,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.grant,matrix/workforce/internal/effect.now,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.proposalHash,matrix/workforce/internal/effect.registered,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.LoadLease
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.Execute
+  ^references=matrix/workforce/internal/effect.Gateway.Execute
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.prepare kind=method
   digest=b3:17b92b2fa7e1f885ea67790f588661524579be6a38bb495d8a64c1d84780a557 file=workforce/internal/effect/gateway.go range=418:502 lang=go exported=false byte_range=14328:18089
   sig=func (gateway *Gateway) prepare(\n	ctx context.Context,\n	proposal Proposal,\n	proposalHash string,\n	now time.Time,\n) (Result, bool, error)
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/effect.Gateway.consumeApproval
+  references=matrix/vault.AD,matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/effect.ErrConflict,matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Gateway.consumeApproval,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.Result,matrix/workforce/internal/effect.StatePrepared,matrix/workforce/internal/effect.command,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.now,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.proposalHash,matrix/workforce/internal/effect.result,matrix/workforce/internal/effect.sealedProposal,matrix/workforce/internal/effect.storedHash,matrix/workforce/internal/effect.tx
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.Execute
+  ^references=matrix/workforce/internal/effect.Gateway.Execute
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.probePreflight kind=method
   digest=b3:9514132e40ac4563654fa7966fb2cbf2e259863654aada60033faaed543fcaef file=workforce/internal/effect/gateway.go range=396:416 lang=go exported=false byte_range=13708:14326
   sig=func (gateway *Gateway) probePreflight(\n	ctx context.Context,\n	proposal Proposal,\n) (Adapter, string, error)
 EDGES
+  calls=matrix/workforce/internal/effect.Gateway.requireCompiledProposal,matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/effect.ProposalHash
+  references=matrix/workforce/internal/effect.Adapter,matrix/workforce/internal/effect.ErrRejected,matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Gateway.requireCompiledProposal,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/effect.ProposalHash,matrix/workforce/internal/effect.adapter,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.exists,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.now,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.proposalHash
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.Reconcile
+  ^references=matrix/workforce/internal/effect.Gateway.Reconcile
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.requireCompiledProposal kind=method
@@ -331,7 +403,11 @@ NODE id=matrix/workforce/internal/effect.Gateway.requireCompiledProposal kind=me
   sig=func (gateway *Gateway) requireCompiledProposal(\n	ctx context.Context,\n	proposal Proposal,\n	proposalHash string,\n) error
   doc=requireCompiledProposal admits a dispatch only when the durable compiled plan\nauthorizes this exact proposal. The relational hash column alone is not\nsufficient authority: it is a projection, so the Vault-sealed plan is opened\nand the operation the compiler actually approved is compared field for field.
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/effect.ProposalHash
+  references=matrix/vault.AD,matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/effect.ErrRejected,matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.ProposalHash,matrix/workforce/internal/effect.compiled,matrix/workforce/internal/effect.compiledPlanEnvelope,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.envelope,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.opened,matrix/workforce/internal/effect.planHash,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.proposalHash,matrix/workforce/internal/effect.sealed
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.probePreflight
+  ^references=matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.probePreflight
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval kind=method
@@ -339,28 +415,44 @@ NODE id=matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval kind=m
   sig=func (gateway *Gateway) reverifyPreparedApproval(\n	ctx context.Context,\n	tx pgx.Tx,\n	proposal Proposal,\n	now time.Time,\n) error
   doc=reverifyPreparedApproval re-establishes owner authority for an irreversible\neffect that was prepared by an earlier attempt and is about to be dispatched\nnow. It re-checks the signed batch, its revocation and expiry, and this\nproposal's exact recorded consumption. It never charges again: the\nconsumption row written at preparation is the authority being confirmed.
 EDGES
+  calls=matrix/workforce/internal/approval.BatchApproval.Authorizes,matrix/workforce/internal/approval.OpenSealedBatch
+  references=matrix/workforce/internal/approval.BatchApproval.Authorizes,matrix/workforce/internal/approval.OpenSealedBatch,matrix/workforce/internal/effect.ErrRejected,matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.batch,matrix/workforce/internal/effect.canonicalHash,matrix/workforce/internal/effect.ceiling,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.expiresAt,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.now,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.recorded,matrix/workforce/internal/effect.revokedAt,matrix/workforce/internal/effect.sealed,matrix/workforce/internal/effect.tx
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.beginDispatch
+  ^references=matrix/workforce/internal/effect.Gateway.beginDispatch
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.setProbe kind=method
   digest=b3:b6a2fda45b6a91a9c4b30b6704ffe80c50aafe623bb8ad4de16d4a6cff9488b8 file=workforce/internal/effect/gateway.go range=637:662 lang=go exported=false byte_range=22572:23433
   sig=func (gateway *Gateway) setProbe(\n	ctx context.Context,\n	proposal Proposal,\n	outcome skills.ProbeOutcome,\n	externalID, safeCode string,\n) error
 EDGES
+  calls=matrix/workforce/internal/skills.ProbeOutcome.Valid
+  references=matrix/workforce/internal/effect.ErrConflict,matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.command,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.externalID,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.now,matrix/workforce/internal/effect.outcome,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.safeCode,matrix/workforce/internal/skills.ProbeOutcome,matrix/workforce/internal/skills.ProbeOutcome.Valid
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.Reconcile
+  ^references=matrix/workforce/internal/effect.Gateway.Reconcile
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.setProbeOutcome kind=method
   digest=b3:7dbf07ea32580f05cbff50f811d6b73cb1fe9f92e2c4846526a187a399533dbd file=workforce/internal/effect/gateway.go range=664:685 lang=go exported=false byte_range=23435:24129
   sig=func (gateway *Gateway) setProbeOutcome(\n	ctx context.Context,\n	proposal Proposal,\n	outcome skills.ProbeOutcome,\n) error
 EDGES
+  calls=matrix/workforce/internal/skills.ProbeOutcome.Valid
+  references=matrix/workforce/internal/effect.ErrConflict,matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.command,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.outcome,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/skills.ProbeOutcome,matrix/workforce/internal/skills.ProbeOutcome.Valid
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.Reconcile
+  ^references=matrix/workforce/internal/effect.Gateway.Reconcile
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Gateway.setState kind=method
   digest=b3:db76a468fac44f6f873489beb09c8c2f151680e72ebb1131b7b00203faee2920 file=workforce/internal/effect/gateway.go range=504:528 lang=go exported=false byte_range=18091:18872
   sig=func (gateway *Gateway) setState(\n	ctx context.Context,\n	proposal Proposal,\n	state State,\n	externalID, safeCode string,\n) error
 EDGES
+  calls=matrix/workforce/internal/effect.State.Valid
+  references=matrix/workforce/internal/effect.ErrConflict,matrix/workforce/internal/effect.ErrUncertain,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.State,matrix/workforce/internal/effect.State.Valid,matrix/workforce/internal/effect.command,matrix/workforce/internal/effect.ctx,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.externalID,matrix/workforce/internal/effect.gateway,matrix/workforce/internal/effect.now,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.safeCode,matrix/workforce/internal/effect.state
   ^contains=matrix/workforce/internal/effect.Gateway
+  ^calls=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.commitEvidenceState
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.commitEvidenceState
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.New kind=func
@@ -368,6 +460,10 @@ NODE id=matrix/workforce/internal/effect.New kind=func
   sig=func New(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	leases *lease.Store,\n	leaseAuthority *policy.Store,\n	breakers *circuit.Store,\n	tenantID string,\n	ownerAuthority approval.Authority,\n	now func() time.Time,\n	adapters ...Adapter,\n) (*Gateway, error)
   doc=New constructs a credential-isolating effect gateway.\n\nownerAuthority is the owner identity whose signature makes an approval\nauthoritative. A gateway built without it cannot dispatch irreversible\neffects at all: it has no way to tell an owner-approved batch from one merely\nsealed by the tenant, so it refuses rather than guesses.
 EDGES
+  calls=matrix/vault.UserVault.User,matrix/workforce/internal/approval.Authority.Clone,matrix/workforce/internal/approval.Authority.Validate,matrix/workforce/internal/commercialcapability.Adapter.Name,matrix/workforce/internal/departmentadapter.Adapter.Name,matrix/workforce/internal/developer.Adapter.Name,matrix/workforce/internal/effect.validateToken,matrix/workforce/internal/productcapability.Adapter.Name,matrix/workforce/internal/provider/customer.Adapter.Name,matrix/workforce/internal/provider/external.Adapter.Name,matrix/workforce/internal/provider/financial.Adapter.Name
+  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/approval.Authority,matrix/workforce/internal/approval.Authority.Clone,matrix/workforce/internal/approval.Authority.Validate,matrix/workforce/internal/circuit.Store,matrix/workforce/internal/effect.Adapter,matrix/workforce/internal/effect.Adapter.Name,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.adapter,matrix/workforce/internal/effect.adapters,matrix/workforce/internal/effect.breakers,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.exists,matrix/workforce/internal/effect.leaseAuthority,matrix/workforce/internal/effect.leases,matrix/workforce/internal/effect.name,matrix/workforce/internal/effect.now,matrix/workforce/internal/effect.ownerAuthority,matrix/workforce/internal/effect.pool,matrix/workforce/internal/effect.registry,matrix/workforce/internal/effect.tenantID,matrix/workforce/internal/effect.userVault,matrix/workforce/internal/effect.validateToken,matrix/workforce/internal/lease.Store,matrix/workforce/internal/policy.Store
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.NewCommandAdapter kind=func
@@ -375,6 +471,8 @@ NODE id=matrix/workforce/internal/effect.NewCommandAdapter kind=func
   sig=func NewCommandAdapter(\n	name, executable string,\n	operations, probes map[string][]string,\n	environment []string,\n	directory string,\n	now func() time.Time,\n) (*CommandAdapter, error)
   doc=NewCommandAdapter constructs a real fixed-command provider adapter.
 EDGES
+  calls=matrix/workforce/internal/effect.cloneCommands,matrix/workforce/internal/effect.openPinnedDirectory,matrix/workforce/internal/effect.openPinnedExecutable,matrix/workforce/internal/effect.validateCommand,matrix/workforce/internal/effect.validateEnvironment,matrix/workforce/internal/effect.validateToken
+  references=matrix/workforce/internal/effect.CommandAdapter,matrix/workforce/internal/effect.arguments,matrix/workforce/internal/effect.cloneCommands,matrix/workforce/internal/effect.directory,matrix/workforce/internal/effect.directoryFile,matrix/workforce/internal/effect.environment,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.executable,matrix/workforce/internal/effect.executableDigest,matrix/workforce/internal/effect.executableFile,matrix/workforce/internal/effect.name,matrix/workforce/internal/effect.now,matrix/workforce/internal/effect.openPinnedDirectory,matrix/workforce/internal/effect.openPinnedExecutable,matrix/workforce/internal/effect.operation,matrix/workforce/internal/effect.operations,matrix/workforce/internal/effect.probes,matrix/workforce/internal/effect.validateCommand,matrix/workforce/internal/effect.validateEnvironment,matrix/workforce/internal/effect.validateToken
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.Operation kind=type
@@ -383,6 +481,8 @@ NODE id=matrix/workforce/internal/effect.Operation kind=type
   doc=Operation is the immutable provider request after gateway preflight.
 EDGES
   contains=matrix/workforce/internal/effect.Operation#ApprovalCost,matrix/workforce/internal/effect.Operation#ApprovalID,matrix/workforce/internal/effect.Operation#Deadline,matrix/workforce/internal/effect.Operation#EffectClass,matrix/workforce/internal/effect.Operation#Fence,matrix/workforce/internal/effect.Operation#IdempotencyKey,matrix/workforce/internal/effect.Operation#Input,matrix/workforce/internal/effect.Operation#IntentID,matrix/workforce/internal/effect.Operation#Irreversible,matrix/workforce/internal/effect.Operation#LeaseID,matrix/workforce/internal/effect.Operation#Name,matrix/workforce/internal/effect.Operation#OrganizationID,matrix/workforce/internal/effect.Operation#ProposalID,matrix/workforce/internal/effect.Operation#SeatID
+  references=matrix/workforce/internal/contracts.ApprovalID,matrix/workforce/internal/contracts.FenceToken,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/skills.EffectClass
+  ^references=matrix/workforce/internal/commercialcapability.Adapter.Dispatch,matrix/workforce/internal/commercialcapability.Adapter.Probe,matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/departmentadapter.Adapter.Probe,matrix/workforce/internal/departmentadapter.openPayload,matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.developerResult,matrix/workforce/internal/developer.matchEffectGrant,matrix/workforce/internal/developer.operationExternalID,matrix/workforce/internal/effect.Adapter,matrix/workforce/internal/effect.CommandAdapter.Dispatch,matrix/workforce/internal/effect.CommandAdapter.Probe,matrix/workforce/internal/effect.CommandAdapter.run,matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/productcapability.Adapter.Dispatch,matrix/workforce/internal/productcapability.Adapter.Probe,matrix/workforce/internal/provider/customer.Adapter.Dispatch,matrix/workforce/internal/provider/customer.Adapter.Probe,matrix/workforce/internal/provider/customer.Adapter.authorize,matrix/workforce/internal/provider/customer.Adapter.recordAuthorizationDenial,matrix/workforce/internal/provider/developer.Adapter.Dispatch,matrix/workforce/internal/provider/developer.Adapter.Probe,matrix/workforce/internal/provider/developer.Adapter.authorize,matrix/workforce/internal/provider/external.Adapter.Dispatch,matrix/workforce/internal/provider/external.Adapter.Probe,matrix/workforce/internal/provider/external.Adapter.authorize,matrix/workforce/internal/provider/external.Adapter.callJSONConnector,matrix/workforce/internal/provider/external.Adapter.callMatrixMCP,matrix/workforce/internal/provider/external.Adapter.callProvider,matrix/workforce/internal/provider/external.Adapter.observation,matrix/workforce/internal/provider/financial.Adapter.Dispatch,matrix/workforce/internal/provider/financial.Adapter.Probe,matrix/workforce/internal/provider/financial.Adapter.authorize,matrix/workforce/internal/provider/financial.Adapter.recordAuthorizationDenial,matrix/workforce/internal/provider/financial.Store.claimDispatch,matrix/workforce/internal/provider/financial.Store.claimProbe,matrix/workforce/internal/provider/financial.Store.requireUnfrozen,matrix/workforce/internal/provider/financial.upstreamOperation
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.Operation#ApprovalCost kind=field
@@ -475,6 +575,8 @@ NODE id=matrix/workforce/internal/effect.ProbeResult kind=type
   doc=ProbeResult carries a closed authoritative drift outcome and any observation.
 EDGES
   contains=matrix/workforce/internal/effect.ProbeResult#Dispatch,matrix/workforce/internal/effect.ProbeResult#Outcome,matrix/workforce/internal/effect.ProbeResult#Reason,matrix/workforce/internal/effect.ProbeResult#TerminalFailure
+  references=matrix/workforce/internal/effect.DispatchResult,matrix/workforce/internal/skills.ProbeOutcome
+  ^references=matrix/workforce/internal/commercialcapability.Adapter.Probe,matrix/workforce/internal/departmentadapter.Adapter.Probe,matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/effect.Adapter,matrix/workforce/internal/effect.CommandAdapter.Probe,matrix/workforce/internal/productcapability.Adapter.Probe,matrix/workforce/internal/provider/customer.Adapter.Probe,matrix/workforce/internal/provider/developer.Adapter.Probe,matrix/workforce/internal/provider/external.Adapter.Probe,matrix/workforce/internal/provider/financial.Adapter.Probe
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.ProbeResult#Dispatch kind=field
@@ -508,6 +610,8 @@ NODE id=matrix/workforce/internal/effect.Proposal kind=type
 EDGES
   contains=matrix/workforce/internal/effect.Proposal#ApprovalCost,matrix/workforce/internal/effect.Proposal#ApprovalID,matrix/workforce/internal/effect.Proposal#Deadline,matrix/workforce/internal/effect.Proposal#EffectClass,matrix/workforce/internal/effect.Proposal#Fence,matrix/workforce/internal/effect.Proposal#ID,matrix/workforce/internal/effect.Proposal#IdempotencyKey,matrix/workforce/internal/effect.Proposal#Input,matrix/workforce/internal/effect.Proposal#IntentID,matrix/workforce/internal/effect.Proposal#Irreversible,matrix/workforce/internal/effect.Proposal#LeaseID,matrix/workforce/internal/effect.Proposal#NodeID,matrix/workforce/internal/effect.Proposal#Operation,matrix/workforce/internal/effect.Proposal#OperationDigest,matrix/workforce/internal/effect.Proposal#OrganizationID,matrix/workforce/internal/effect.Proposal#Provider,matrix/workforce/internal/effect.Proposal#SeatID,matrix/workforce/internal/effect.Proposal#SkillDigest,matrix/workforce/internal/effect.Proposal#SkillID,matrix/workforce/internal/effect.Proposal.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ApprovalID,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.FenceToken,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/skills.EffectClass
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.LoadResult,matrix/workforce/internal/effect.Gateway.Pending,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.admit,matrix/workforce/internal/effect.Gateway.beginDispatch,matrix/workforce/internal/effect.Gateway.commitEvidence,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.Gateway.consumeApproval,matrix/workforce/internal/effect.Gateway.lookup,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.prepare,matrix/workforce/internal/effect.Gateway.probePreflight,matrix/workforce/internal/effect.Gateway.requireCompiledProposal,matrix/workforce/internal/effect.Gateway.reverifyPreparedApproval,matrix/workforce/internal/effect.Gateway.setProbe,matrix/workforce/internal/effect.Gateway.setProbeOutcome,matrix/workforce/internal/effect.Gateway.setState,matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/effect.ProposalHash,matrix/workforce/internal/effect.compiledPlanEnvelope,matrix/workforce/internal/productexecution.DeploymentRequest,matrix/workforce/internal/workcompile.Compiler.Compile,matrix/workforce/internal/workcompile.Plan
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.Proposal#ApprovalCost kind=field
@@ -629,7 +733,11 @@ NODE id=matrix/workforce/internal/effect.Proposal.Validate kind=method
   sig=func (proposal Proposal) Validate() error
   doc=Validate enforces the complete preflight identity and bounded input.
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.FenceToken.Validate,matrix/workforce/internal/effect.validateToken,matrix/workforce/internal/skills.EffectClass.Valid
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.FenceToken.Validate,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.name,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.validateToken,matrix/workforce/internal/effect.value,matrix/workforce/internal/skills.EffectClass.Valid,matrix/workforce/internal/skills.EffectIrreversible
   ^contains=matrix/workforce/internal/effect.Proposal
+  ^calls=matrix/workforce/internal/effect.Gateway.LoadResult,matrix/workforce/internal/effect.Gateway.Pending,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.probePreflight,matrix/workforce/internal/productexecution.DeploymentRequest.Validate,matrix/workforce/internal/workcompile.Plan.Validate
+  ^references=matrix/workforce/internal/effect.Gateway.LoadResult,matrix/workforce/internal/effect.Gateway.Pending,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.probePreflight,matrix/workforce/internal/productexecution.DeploymentRequest.Validate,matrix/workforce/internal/workcompile.Plan.Validate
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.ProposalHash kind=func
@@ -637,6 +745,9 @@ NODE id=matrix/workforce/internal/effect.ProposalHash kind=func
   sig=func ProposalHash(proposal Proposal) string
   doc=ProposalHash binds every dispatch-relevant proposal field to one compiled\nplan authorization.
 EDGES
+  references=matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/effect.canonical,matrix/workforce/internal/effect.part,matrix/workforce/internal/effect.proposal,matrix/workforce/internal/effect.sum
+  ^calls=matrix/workforce/internal/effect.Gateway.LoadResult,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.probePreflight,matrix/workforce/internal/effect.Gateway.requireCompiledProposal,matrix/workforce/internal/productexecution.Store.deploymentReplay,matrix/workforce/internal/productexecution.Store.prepareDeployment,matrix/workforce/internal/workcompile.Compiler.Compile
+  ^references=matrix/workforce/internal/effect.Gateway.LoadResult,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/effect.Gateway.probePreflight,matrix/workforce/internal/effect.Gateway.requireCompiledProposal,matrix/workforce/internal/productexecution.Store.deploymentReplay,matrix/workforce/internal/productexecution.Store.prepareDeployment,matrix/workforce/internal/workcompile.Compiler.Compile
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.Result kind=type
@@ -645,6 +756,8 @@ NODE id=matrix/workforce/internal/effect.Result kind=type
   doc=Result is the durable effect projection safe to return to a seat.
 EDGES
   contains=matrix/workforce/internal/effect.Result#Deduplicated,matrix/workforce/internal/effect.Result#EvidenceHash,matrix/workforce/internal/effect.Result#ExternalID,matrix/workforce/internal/effect.Result#ObservedAt,matrix/workforce/internal/effect.Result#ProbeOutcome,matrix/workforce/internal/effect.Result#ProposalID,matrix/workforce/internal/effect.Result#SafeErrorCode,matrix/workforce/internal/effect.Result#State
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/effect.State,matrix/workforce/internal/skills.ProbeOutcome
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.LoadResult,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.commitEvidence,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.Gateway.prepare,matrix/workforce/internal/effect.storedResult,matrix/workforce/internal/productexecution.Store.ReconcileDeployment,matrix/workforce/internal/productexecution.Store.commitFailedEffect,matrix/workforce/internal/productexecution.Store.finalizeDeployment,matrix/workforce/internal/productexecution.Store.finishDeploymentResult,matrix/workforce/internal/reconcile.Service.Sweep
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.Result#Deduplicated kind=field
@@ -701,6 +814,7 @@ NODE id=matrix/workforce/internal/effect.State kind=type
   doc=State is the closed durable effect lifecycle.
 EDGES
   contains=matrix/workforce/internal/effect.State.Valid
+  ^references=matrix/workforce/internal/effect.Gateway.beginDispatch,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.Gateway.setState,matrix/workforce/internal/effect.Result,matrix/workforce/internal/effect.State.Valid,matrix/workforce/internal/effect.StateDispatching,matrix/workforce/internal/effect.StateExternallyAmbiguous,matrix/workforce/internal/effect.StateFailed,matrix/workforce/internal/effect.StatePrepared,matrix/workforce/internal/effect.StateSucceeded,matrix/workforce/internal/reconcile.Event
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.State.Valid kind=method
@@ -708,7 +822,10 @@ NODE id=matrix/workforce/internal/effect.State.Valid kind=method
   sig=func (state State) Valid() bool
   doc=Valid reports whether state is recognized.
 EDGES
+  references=matrix/workforce/internal/effect.State,matrix/workforce/internal/effect.StateDispatching,matrix/workforce/internal/effect.StateExternallyAmbiguous,matrix/workforce/internal/effect.StateFailed,matrix/workforce/internal/effect.StatePrepared,matrix/workforce/internal/effect.StateSucceeded,matrix/workforce/internal/effect.state
   ^contains=matrix/workforce/internal/effect.State
+  ^calls=matrix/workforce/internal/effect.Gateway.setState
+  ^references=matrix/workforce/internal/effect.Gateway.setState
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.StateDispatching kind=const
@@ -716,6 +833,8 @@ NODE id=matrix/workforce/internal/effect.StateDispatching kind=const
   sig=effect.State
   doc=StateDispatching is durable before provider invocation.
 EDGES
+  references=matrix/workforce/internal/effect.State
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.State.Valid,matrix/workforce/internal/productexecution.Store.finishDeploymentResult
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.StateExternallyAmbiguous kind=const
@@ -723,6 +842,8 @@ NODE id=matrix/workforce/internal/effect.StateExternallyAmbiguous kind=const
   sig=effect.State
   doc=StateExternallyAmbiguous requires reconciliation and forbids blind retry.
 EDGES
+  references=matrix/workforce/internal/effect.State
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.State.Valid,matrix/workforce/internal/productexecution.Store.finishDeploymentResult,matrix/workforce/internal/reconcile.Service.Sweep
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.StateFailed kind=const
@@ -730,6 +851,8 @@ NODE id=matrix/workforce/internal/effect.StateFailed kind=const
   sig=effect.State
   doc=StateFailed definitely did not dispatch or authoritatively failed.
 EDGES
+  references=matrix/workforce/internal/effect.State
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.State.Valid,matrix/workforce/internal/productexecution.Store.finishDeploymentResult
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.StatePrepared kind=const
@@ -737,6 +860,8 @@ NODE id=matrix/workforce/internal/effect.StatePrepared kind=const
   sig=effect.State
   doc=StatePrepared is durable but has not started provider dispatch.
 EDGES
+  references=matrix/workforce/internal/effect.State
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.beginDispatch,matrix/workforce/internal/effect.Gateway.prepare,matrix/workforce/internal/effect.State.Valid
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.StateSucceeded kind=const
@@ -744,24 +869,31 @@ NODE id=matrix/workforce/internal/effect.StateSucceeded kind=const
   sig=effect.State
   doc=StateSucceeded has authoritative evidence.
 EDGES
+  references=matrix/workforce/internal/effect.State
+  ^references=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Gateway.commitEvidence,matrix/workforce/internal/effect.Gateway.commitEvidenceState,matrix/workforce/internal/effect.State.Valid,matrix/workforce/internal/productexecution.Store.ReconcileDeployment,matrix/workforce/internal/productexecution.Store.finishDeploymentResult,matrix/workforce/internal/wakeruntime.Runner.executeEffect,matrix/workforce/internal/wakeruntime.Runner.observeEffect,matrix/workforce/internal/wakeruntime.Runner.reconcileEffect
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect._ kind=var
   digest=b3:30b1cd1efbd7aeed5419d8b4f0edbac717a155a1a3b7be06027971dca1f02d61 file=workforce/internal/effect/command.go range=376:376 lang=go exported=false byte_range=12077:12112
   sig=io.Writer
 EDGES
+  references=matrix/workforce/internal/effect.limitedBuffer
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.cloneCommands kind=func
   digest=b3:2c8e9e7d2d4fc89b080a7e22221ba66da80f3dc47e116a553f7117f8f597ea55 file=workforce/internal/effect/command.go range=363:369 lang=go exported=false byte_range=11656:11896
   sig=func cloneCommands(source map[string][]string) map[string][]string
 EDGES
+  references=matrix/workforce/internal/effect.arguments,matrix/workforce/internal/effect.operation,matrix/workforce/internal/effect.result,matrix/workforce/internal/effect.source
+  ^calls=matrix/workforce/internal/effect.NewCommandAdapter
+  ^references=matrix/workforce/internal/effect.NewCommandAdapter
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.commandOutputLimit kind=const
   digest=b3:abbcf7b7d9107cdc8ac6c7ea4f0f4d0ef20c7e59fa5e61c64d557fa49310e5c2 file=workforce/internal/effect/command.go range=22:22 lang=go exported=false byte_range=229:259
   sig=untyped int
 EDGES
+  ^references=matrix/workforce/internal/effect.limitedBuffer.Write
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.compiledPlanEnvelope kind=type
@@ -770,6 +902,8 @@ NODE id=matrix/workforce/internal/effect.compiledPlanEnvelope kind=type
   doc=compiledPlanEnvelope is the authenticated subset of one sealed compiled plan.\nThe plan is written by the compiler, which cannot be imported here, so only\nthe dispatch-authorizing fields are decoded.
 EDGES
   contains=matrix/workforce/internal/effect.compiledPlanEnvelope#Operation,matrix/workforce/internal/effect.compiledPlanEnvelope#PlanHash
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/effect.Proposal
+  ^references=matrix/workforce/internal/effect.Gateway.requireCompiledProposal
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.compiledPlanEnvelope#Operation kind=field
@@ -788,12 +922,18 @@ NODE id=matrix/workforce/internal/effect.externalID kind=func
   digest=b3:cdb3a9308c1ba1651e219be045e3ded12726c7930108d9c175457b6bf54deabb file=workforce/internal/effect/command.go range=371:374 lang=go exported=false byte_range=11898:12071
   sig=func externalID(provider, idempotencyKey string) string
 EDGES
+  references=matrix/workforce/internal/effect.idempotencyKey,matrix/workforce/internal/effect.provider,matrix/workforce/internal/effect.sum
+  ^calls=matrix/workforce/internal/effect.CommandAdapter.run
+  ^references=matrix/workforce/internal/effect.CommandAdapter.run,matrix/workforce/internal/effect.Gateway.setProbe,matrix/workforce/internal/effect.Gateway.setState
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.hashOpenedFile kind=func
   digest=b3:aca2cd1d52b316d4a2a7120d304798b1cbdd671c54cd64e54e2c86f28e859da3 file=workforce/internal/effect/command.go range=298:310 lang=go exported=false byte_range=9377:9840
   sig=func hashOpenedFile(file *os.File) ([sha256.Size]byte, error)
 EDGES
+  references=matrix/workforce/internal/effect.digest,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.file,matrix/workforce/internal/effect.hash,matrix/workforce/internal/effect.info
+  ^calls=matrix/workforce/internal/effect.CommandAdapter.run,matrix/workforce/internal/effect.openPinnedExecutable
+  ^references=matrix/workforce/internal/effect.CommandAdapter.run,matrix/workforce/internal/effect.openPinnedExecutable
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.limitedBuffer kind=type
@@ -801,6 +941,7 @@ NODE id=matrix/workforce/internal/effect.limitedBuffer kind=type
   sig=type limitedBuffer struct {\n	buffer		bytes.Buffer\n	exceeded	bool\n}
 EDGES
   contains=matrix/workforce/internal/effect.limitedBuffer#buffer,matrix/workforce/internal/effect.limitedBuffer#exceeded,matrix/workforce/internal/effect.limitedBuffer.Bytes,matrix/workforce/internal/effect.limitedBuffer.Write
+  ^references=matrix/workforce/internal/effect.CommandAdapter.run,matrix/workforce/internal/effect._,matrix/workforce/internal/effect.limitedBuffer.Bytes,matrix/workforce/internal/effect.limitedBuffer.Write
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.limitedBuffer#buffer kind=field
@@ -819,13 +960,17 @@ NODE id=matrix/workforce/internal/effect.limitedBuffer.Bytes kind=method
   digest=b3:e69cffca31339491e78b07b9a34c4894c91a0f922e69b19e0f714294ed41936a file=workforce/internal/effect/command.go range=212:212 lang=go exported=true byte_range=6499:6575
   sig=func (buffer *limitedBuffer) Bytes() []byte
 EDGES
+  references=matrix/workforce/internal/effect.buffer,matrix/workforce/internal/effect.limitedBuffer
   ^contains=matrix/workforce/internal/effect.limitedBuffer
+  ^calls=matrix/workforce/internal/effect.CommandAdapter.run
+  ^references=matrix/workforce/internal/effect.CommandAdapter.run
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.limitedBuffer.Write kind=method
   digest=b3:02b86dd87952d9a4e72b46b4a250c9fe84e813a7d5c207d718d796f929a9fff5 file=workforce/internal/effect/command.go range=200:210 lang=go exported=true byte_range=6156:6497
   sig=func (buffer *limitedBuffer) Write(value []byte) (int, error)
 EDGES
+  references=matrix/workforce/internal/effect.buffer,matrix/workforce/internal/effect.commandOutputLimit,matrix/workforce/internal/effect.limitedBuffer,matrix/workforce/internal/effect.remaining,matrix/workforce/internal/effect.value
   ^contains=matrix/workforce/internal/effect.limitedBuffer
   ^defines=matrix/workforce/internal/effect/command.go
 
@@ -833,12 +978,20 @@ NODE id=matrix/workforce/internal/effect.openPinnedDirectory kind=func
   digest=b3:c48d178ee71378935b1ac6faa7da9806c9b6af98c08c6def63b709675ad505ec file=workforce/internal/effect/command.go range=248:276 lang=go exported=false byte_range=7808:8732
   sig=func openPinnedDirectory(path string) (*os.File, error)
 EDGES
+  calls=matrix/workforce/internal/effect.validateTrustedDirectoryAncestry
+  references=matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.file,matrix/workforce/internal/effect.info,matrix/workforce/internal/effect.opened,matrix/workforce/internal/effect.path,matrix/workforce/internal/effect.resolved,matrix/workforce/internal/effect.validateTrustedDirectoryAncestry
+  ^calls=matrix/workforce/internal/effect.NewCommandAdapter
+  ^references=matrix/workforce/internal/effect.NewCommandAdapter
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.openPinnedExecutable kind=func
   digest=b3:60c56cf7ec976011cdafd1cf368d95c3c35c324f3485a833a228329395d5b5d0 file=workforce/internal/effect/command.go range=214:246 lang=go exported=false byte_range=6577:7806
   sig=func openPinnedExecutable(path string) (*os.File, [sha256.Size]byte, error)
 EDGES
+  calls=matrix/workforce/internal/effect.hashOpenedFile
+  references=matrix/workforce/internal/effect.digest,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.file,matrix/workforce/internal/effect.hashOpenedFile,matrix/workforce/internal/effect.info,matrix/workforce/internal/effect.ok,matrix/workforce/internal/effect.opened,matrix/workforce/internal/effect.path,matrix/workforce/internal/effect.resolved,matrix/workforce/internal/effect.stat
+  ^calls=matrix/workforce/internal/effect.NewCommandAdapter
+  ^references=matrix/workforce/internal/effect.NewCommandAdapter
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.storedResult kind=type
@@ -846,6 +999,8 @@ NODE id=matrix/workforce/internal/effect.storedResult kind=type
   sig=type storedResult struct {\n	result		Result\n	proposalHash	string\n}
 EDGES
   contains=matrix/workforce/internal/effect.storedResult#proposalHash,matrix/workforce/internal/effect.storedResult#result
+  references=matrix/workforce/internal/effect.Result
+  ^references=matrix/workforce/internal/effect.Gateway.lookup
   ^defines=matrix/workforce/internal/effect/gateway.go
 
 NODE id=matrix/workforce/internal/effect.storedResult#proposalHash kind=field
@@ -864,24 +1019,37 @@ NODE id=matrix/workforce/internal/effect.validateCommand kind=func
   digest=b3:d8744d3249c3537206b5a6b7e7123027f7354cf67aebd4144da68a1ac9abcc3b file=workforce/internal/effect/command.go range=312:325 lang=go exported=false byte_range=9842:10323
   sig=func validateCommand(operation string, arguments []string) error
 EDGES
+  calls=matrix/workforce/internal/effect.validateToken
+  references=matrix/workforce/internal/effect.argument,matrix/workforce/internal/effect.arguments,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.operation,matrix/workforce/internal/effect.validateToken
+  ^calls=matrix/workforce/internal/effect.NewCommandAdapter
+  ^references=matrix/workforce/internal/effect.NewCommandAdapter
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.validateEnvironment kind=func
   digest=b3:7c0b2f25a3aec02ec56957fae426acbc1bf4a2f87cb080844d37763bdaac3328 file=workforce/internal/effect/command.go range=327:361 lang=go exported=false byte_range=10325:11654
   sig=func validateEnvironment(environment []string) error
 EDGES
+  references=matrix/workforce/internal/effect.character,matrix/workforce/internal/effect.entry,matrix/workforce/internal/effect.environment,matrix/workforce/internal/effect.exists,matrix/workforce/internal/effect.found,matrix/workforce/internal/effect.index,matrix/workforce/internal/effect.key,matrix/workforce/internal/effect.rejected,matrix/workforce/internal/effect.seen,matrix/workforce/internal/effect.unsafe,matrix/workforce/internal/effect.value
+  ^calls=matrix/workforce/internal/effect.NewCommandAdapter
+  ^references=matrix/workforce/internal/effect.NewCommandAdapter
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect.validateToken kind=func
   digest=b3:f5f1b96d9659cdeffda403238f02bd1b8a6609d09b837ab54ad137d35dc08720 file=workforce/internal/effect/types.go range=173:187 lang=go exported=false byte_range=5765:6231
   sig=func validateToken(name, value string) error
 EDGES
+  references=matrix/workforce/internal/effect.char,matrix/workforce/internal/effect.name,matrix/workforce/internal/effect.value
+  ^calls=matrix/workforce/internal/effect.Gateway.Pending,matrix/workforce/internal/effect.New,matrix/workforce/internal/effect.NewCommandAdapter,matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/effect.validateCommand
+  ^references=matrix/workforce/internal/effect.Gateway.Pending,matrix/workforce/internal/effect.New,matrix/workforce/internal/effect.NewCommandAdapter,matrix/workforce/internal/effect.Proposal.Validate,matrix/workforce/internal/effect.validateCommand
   ^defines=matrix/workforce/internal/effect/types.go
 
 NODE id=matrix/workforce/internal/effect.validateTrustedDirectoryAncestry kind=func
   digest=b3:4e0f9451cfb7c18da79a8bb11ae750d732eaf541958109c18664486f4c395161 file=workforce/internal/effect/command.go range=278:296 lang=go exported=false byte_range=8734:9375
   sig=func validateTrustedDirectoryAncestry(path string) error
 EDGES
+  references=matrix/workforce/internal/effect.current,matrix/workforce/internal/effect.err,matrix/workforce/internal/effect.info,matrix/workforce/internal/effect.ok,matrix/workforce/internal/effect.parent,matrix/workforce/internal/effect.path,matrix/workforce/internal/effect.stat
+  ^calls=matrix/workforce/internal/effect.openPinnedDirectory
+  ^references=matrix/workforce/internal/effect.openPinnedDirectory
   ^defines=matrix/workforce/internal/effect/command.go
 
 NODE id=matrix/workforce/internal/effect/command.go kind=file

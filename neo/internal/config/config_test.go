@@ -117,47 +117,26 @@ func TestLoadEnvOverridesDefault(t *testing.T) {
 	}
 }
 
-func TestMemorySubstrateDefaultsToCortex(t *testing.T) {
-	if got := Default().MemorySubstrate; got != SubstrateCortex {
-		t.Fatalf("Default MemorySubstrate = %q, want %q", got, SubstrateCortex)
-	}
-	t.Setenv("NEO_MEMORY_SUBSTRATE", "")
+func TestNeocortexEnvWiring(t *testing.T) {
+	t.Setenv("NEO_NEOCORTEX_SOCKET", "/tmp/neocortex-config-test.sock")
+	t.Setenv("NEO_NEOCORTEX_TOKEN", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	t.Setenv("NEO_NEOCORTEX_ACTOR", "neo-test")
+	t.Setenv("NEO_DATA_ROOT", "/tmp/neo-data")
 	c, err := Load("")
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if c.MemorySubstrate != SubstrateCortex {
-		t.Fatalf("loaded MemorySubstrate = %q, want %q", c.MemorySubstrate, SubstrateCortex)
+	if c.NeocortexSocket != "/tmp/neocortex-config-test.sock" {
+		t.Fatalf("NeocortexSocket = %q", c.NeocortexSocket)
 	}
-}
-
-func TestMemorySubstrateEnvSelectsNeocortex(t *testing.T) {
-	t.Setenv("NEO_MEMORY_SUBSTRATE", "  NeoCortex  ")
-	t.Setenv("NEO_CORTEXD_SOCKET", "/tmp/neocortex-config-test.sock")
-	t.Setenv("NEO_CORTEXD_TOKEN", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
-	c, err := Load("")
-	if err != nil {
-		t.Fatalf("Load: %v", err)
+	if c.NeocortexToken != "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" {
+		t.Fatalf("NeocortexToken = %q", c.NeocortexToken)
 	}
-	if c.MemorySubstrate != SubstrateNeocortex {
-		t.Fatalf("MemorySubstrate = %q, want %q", c.MemorySubstrate, SubstrateNeocortex)
+	if c.NeocortexActor != "neo-test" {
+		t.Fatalf("NeocortexActor = %q", c.NeocortexActor)
 	}
-	if c.CortexdSocket != "/tmp/neocortex-config-test.sock" {
-		t.Fatalf("CortexdSocket = %q", c.CortexdSocket)
-	}
-	if c.CortexdToken != "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" {
-		t.Fatalf("CortexdToken = %q", c.CortexdToken)
-	}
-}
-
-func TestMemorySubstrateUnknownValueFailsClosedToCortex(t *testing.T) {
-	t.Setenv("NEO_MEMORY_SUBSTRATE", "experimental")
-	c, err := Load("")
-	if err != nil {
-		t.Fatalf("Load: %v", err)
-	}
-	if c.MemorySubstrate != SubstrateCortex {
-		t.Fatalf("MemorySubstrate = %q, want fail-closed %q", c.MemorySubstrate, SubstrateCortex)
+	if c.DataRoot != "/tmp/neo-data" {
+		t.Fatalf("DataRoot = %q", c.DataRoot)
 	}
 }
 
@@ -167,7 +146,7 @@ func TestLoadKVXOverlayThenEnvPrecedence(t *testing.T) {
 	doc := `
 [runtime]
 agent_name = "Trinity"
-cortex_actor = "neo-test"
+neocortex_actor = "neo-test"
 
 [models]
 main = "accounts/fireworks/routers/from-kvx"
@@ -295,19 +274,19 @@ func TestSandboxPreset_UsesStubEmbedder(t *testing.T) {
 	}
 }
 
-func TestSandboxPreset_UsesTempCortex(t *testing.T) {
-	// A sandbox profile MUST use a throwaway cortex root so no production
-	// brain is touched. The path is under the OS temp dir and namespaced
+func TestSandboxPresetUsesTempDataRoot(t *testing.T) {
+	// A sandbox profile MUST use a throwaway runtime root so no production
+	// state is touched. The path is under the OS temp dir and namespaced
 	// "matrix-sandbox" so it is identifiable and cleanable.
 	c := Sandbox()
-	if c.CortexRoot == "" {
-		t.Fatal("sandbox CortexRoot must not be empty")
+	if c.DataRoot == "" {
+		t.Fatal("sandbox DataRoot must not be empty")
 	}
-	if c.CortexRoot == Default().CortexRoot {
-		t.Errorf("sandbox CortexRoot = production default %q — must be a temp dir", c.CortexRoot)
+	if c.DataRoot == Default().DataRoot {
+		t.Errorf("sandbox DataRoot = production default %q — must be a temp dir", c.DataRoot)
 	}
-	if c.CortexActor != "sandbox" {
-		t.Errorf("sandbox CortexActor = %q, want \"sandbox\"", c.CortexActor)
+	if c.NeocortexActor != "sandbox" {
+		t.Errorf("sandbox NeocortexActor = %q, want \"sandbox\"", c.NeocortexActor)
 	}
 }
 
@@ -336,8 +315,8 @@ func TestSandboxPreset_DefaultProfileUnaffected(t *testing.T) {
 	// Config contains slices ([]string), so a direct != comparison is not
 	// valid. Instead verify the key fields the preset overrides are still
 	// the production defaults.
-	if d.CortexRoot != d2.CortexRoot {
-		t.Errorf("Default CortexRoot mutated: %q vs %q", d.CortexRoot, d2.CortexRoot)
+	if d.DataRoot != d2.DataRoot {
+		t.Errorf("Default DataRoot mutated: %q vs %q", d.DataRoot, d2.DataRoot)
 	}
 	if d.DaemonURL != d2.DaemonURL {
 		t.Errorf("Default DaemonURL mutated: %q vs %q", d.DaemonURL, d2.DaemonURL)
@@ -348,10 +327,10 @@ func TestSandboxPreset_DefaultProfileUnaffected(t *testing.T) {
 	if d.EmbedModel != d2.EmbedModel {
 		t.Errorf("Default EmbedModel mutated: %q vs %q", d.EmbedModel, d2.EmbedModel)
 	}
-	// The sandbox profile must NOT share the production cortex root.
+	// The sandbox profile must NOT share the production runtime root.
 	s := Sandbox()
-	if s.CortexRoot == d.CortexRoot {
-		t.Error("sandbox CortexRoot must differ from the production default")
+	if s.DataRoot == d.DataRoot {
+		t.Error("sandbox DataRoot must differ from the production default")
 	}
 }
 
@@ -415,7 +394,7 @@ func TestActivationBudgetDerivation(t *testing.T) {
 		{32768, 0, 3000},        // small local-model override keeps the historical floor
 		{150000, 0, 3000},       // at/below the floor knee
 		{256000, 0, 5120},       // proportional in between
-		{4000000, 0, 24000},     // capped under cortex.MaxActivateBudgetTokens
+		{4000000, 0, 24000},     // capped under Neocortex.MaxActivateBudgetTokens
 		{1000000, 12345, 12345}, // explicit knob wins verbatim
 	}
 	for _, tc := range cases {

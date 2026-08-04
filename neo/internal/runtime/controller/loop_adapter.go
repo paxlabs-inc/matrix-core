@@ -6,7 +6,7 @@ package controller
 import (
 	"context"
 
-	"matrix/cortex"
+	"matrix/cortexclient"
 	"matrix/neo/internal/runtime/loop"
 )
 
@@ -26,7 +26,7 @@ func (controller *Controller) ObserveMismatch(
 		return "", false
 	}
 	signals := Signals{Step: step, Citation: execution.Citation}
-	if execution.MatchVerdict == cortex.ToolMatchMismatched ||
+	if execution.MatchVerdict == cortexclient.ToolMatchMismatched ||
 		execution.Error != "" {
 		signals.MismatchedEvidence = 1
 	}

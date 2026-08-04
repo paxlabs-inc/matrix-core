@@ -42,8 +42,8 @@ func TestCapabilitySurfaceDerivedAndPersisted(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-capability-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-capability-test"
 	cfg.SelfModelGraph = graph
 	pager, err := memory.Open(cfg) // LoadStructuralSelf runs against the real artifact
 	if err != nil {

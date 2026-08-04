@@ -1,21 +1,6 @@
 // Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// continuous.go implements the Neo side of the continuous-memory collapse —
-// the ONLY memory path (MORPHEUS req.1): Neo is reduced to
-//
-//	Append(conv, message) -> Activate(conv, query, budget) -> render -> transport
-//
-// cortex owns the durable transcript (via AppendMessage), the temporal ladder,
-// the activation composer, and the durable story-so-far. This file holds ONLY
-// the agent-side glue: recording each message to cortex, rendering the
-// cortex.Activate bundle into a USER-role trailing message, and a
-// non-summarizing window trim. All selection/ranking/recency lives in
-// cortex.Activate — there is no independent agent-side brain logic.
-//
-// Everything degrades gracefully without a pager (nil = no cortex wired, e.g.
-// a bare test agent): records are dropped, the activation bundle is nil, and
-// the window carries just the charter + reframe tail.
 package agent
 
 import (
@@ -24,15 +9,12 @@ import (
 	"fmt"
 	"strings"
 
-	"matrix/cortex"
-	cmem "matrix/cortex/memory"
+	"matrix/cortexclient"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/o1"
 )
 
-// cmConvID scopes the cortex session/transcript store: the agent's conversation
-// id, or "cli" on the bare CLI path (mirrors turnIntentID's fallback).
 func (a *Agent) cmConvID() string {
 	if a.convID != "" {
 		return a.convID
@@ -40,68 +22,45 @@ func (a *Agent) cmConvID() string {
 	return "cli"
 }
 
-// cmRecordUser appends a user message to the cortex transcript.
-func (a *Agent) cmRecordUser(content string) {
+func (a *Agent) memorySeam() *cortexclient.LoopSeam {
 	if a.pager == nil {
-		return
+		return nil
 	}
-	content = strings.TrimSpace(content)
-	if content == "" {
-		return
+	seam, err := a.pager.NewNeocortexLoopSeam(a.cmConvID(), a.cfg.ActivationBudget())
+	if err != nil {
+		return nil
 	}
-	a.cmAppend(cortex.Message{
-		ConversationID: a.cmConvID(),
-		Role:           cortex.RoleUser,
-		Content:        content,
-	})
+	return seam
 }
 
-// cmRecordAssistant appends an assistant turn to the cortex transcript: its
-// content (if any) as an assistant message, and each tool call as a tool_call
-// message (name + canonical-JSON args, losslessly).
-func (a *Agent) cmRecordAssistant(msg llm.Message) {
-	if a.pager == nil {
-		return
+func (a *Agent) cmRecordUser(content string) {
+	if seam := a.memorySeam(); seam != nil {
+		seam.RecordUser(strings.TrimSpace(content))
 	}
-	// Guidance-channel turns are internal steering, never durable transcript.
+}
+
+func (a *Agent) cmRecordAssistant(msg llm.Message) {
 	if msg.IsGuidance() {
 		return
 	}
-	conv := a.cmConvID()
-	if c := strings.TrimSpace(msg.Content); c != "" {
-		a.cmAppend(cortex.Message{
-			ConversationID: conv,
-			Role:           cortex.RoleAssistant,
-			Content:        c,
-		})
+	seam := a.memorySeam()
+	if seam == nil {
+		return
 	}
-	for _, tc := range msg.ToolCalls {
-		var args []byte
-		if s := tc.Function.Arguments; s != "" {
-			args = []byte(s)
-		}
-		a.cmAppend(cortex.Message{
-			ConversationID: conv,
-			Role:           cortex.RoleToolCall,
-			ToolName:       tc.Function.Name,
-			ToolArgs:       args,
-		})
+	if content := strings.TrimSpace(msg.Content); content != "" {
+		seam.RecordAssistantWorking(content)
+	}
+	for _, call := range msg.ToolCalls {
+		payload, _ := json.Marshal(map[string]any{"tool": call.Function.Name, "arguments": json.RawMessage(call.Function.Arguments)})
+		seam.RecordAssistantWorking(string(payload))
 	}
 }
 
-// cmRecordToolResult appends a tool result to the cortex transcript. cortex
-// spills an oversized tool_result to a resolvable ref on its own (the overflow
-// discipline lives in session.go), so the full content is handed over.
 func (a *Agent) cmRecordToolResult(name, content string) {
-	if a.pager == nil {
-		return
+	if seam := a.memorySeam(); seam != nil {
+		payload, _ := json.Marshal(map[string]string{"tool": name, "result": content})
+		seam.RecordAssistantWorking(string(payload))
 	}
-	a.cmAppend(cortex.Message{
-		ConversationID: a.cmConvID(),
-		Role:           cortex.RoleToolResult,
-		ToolName:       name,
-		Content:        content,
-	})
 }
 
 func (a *Agent) persistO1State() {
@@ -113,18 +72,8 @@ func (a *Agent) persistO1State() {
 		a.turn.runLedger.AddHazard("o1-ledger-snapshot")
 		return
 	}
-	uri, err := a.pager.AppendMessage(cortex.Message{
-		ConversationID: a.cmConvID(),
-		Role:           cortex.RoleToolResult,
-		ToolName:       "o1_state",
-		Content:        string(snapshot),
-	})
-	if err != nil {
+	if _, err := a.pager.NeocortexClient().WriteCheckpoint(context.Background(), "neo.o1."+a.cmConvID(), snapshot); err != nil {
 		a.turn.runLedger.AddHazard("o1-ledger-persistence")
-		return
-	}
-	if _, seq, ok := cortex.ParseSessionURI(uri); ok {
-		a.turn.noteSessionSeq(seq)
 	}
 }
 
@@ -132,119 +81,56 @@ func (a *Agent) restoreO1State(contractID string) *o1.RunLedger {
 	if a.pager == nil {
 		return nil
 	}
-	messages, err := a.pager.Transcript(a.cmConvID(), 0, 0)
+	blob, _, err := a.pager.NeocortexClient().LatestCheckpoint(context.Background(), "neo.o1."+a.cmConvID())
 	if err != nil {
 		return nil
 	}
-	for i := len(messages) - 1; i >= 0; i-- {
-		message := messages[i]
-		if message.Role != cortex.RoleToolResult || message.ToolName != "o1_state" {
-			continue
-		}
-		ledger, err := o1.RestoreRunLedger([]byte(message.Content))
-		if err == nil && ledger.ContractID == contractID && ledger.TerminalProof == nil {
-			return ledger
-		}
+	ledger, err := o1.RestoreRunLedger(blob)
+	if err == nil && ledger.ContractID == contractID && ledger.TerminalProof == nil {
+		return ledger
 	}
 	return nil
 }
 
-// cmAppend writes one message to the cortex session store. Best-effort: a
-// durable-append failure does not crash the turn (the in-memory transcript
-// remains the live source for THIS turn); durability is a background concern.
-// The allocated session seq is folded into the current turn's seq range
-// (DEJA-VU req 1.1) so end-of-turn consolidation can stamp derived_from
-// provenance edges back to the exact transcript slice this turn produced.
-func (a *Agent) cmAppend(m cortex.Message) {
-	uri, err := a.pager.AppendMessage(m)
-	if err != nil {
-		return
-	}
-	if a.turn == nil {
-		return
-	}
-	if _, seq, ok := cortex.ParseSessionURI(uri); ok {
-		a.turn.noteSessionSeq(seq)
-	}
-}
-
-// provenanceRange returns the conversation id and inclusive session seq span
-// consolidation should stamp onto every memory it writes this turn (DEJA-VU req
-// 1.1). It returns a blank conv (disabling provenance linking) when nothing was
-// appended this turn (no pager / bare agent), so a memory is never linked to a
-// slice that does not exist.
-func (a *Agent) provenanceRange() (conv string, seqLo, seqHi uint64) {
+func (a *Agent) provenanceRange() (string, uint64, uint64) {
 	if a.turn == nil || !a.turn.haveSeq {
 		return "", 0, 0
 	}
 	return a.cmConvID(), a.turn.seqLo, a.turn.seqHi
 }
 
-// cmActivate computes this turn's activation bundle ONCE (Pinned computed once
-// per turn — the NE-7 fix is realised by cortex's per-turn pinned cache plus
-// this single call site). Best-effort: on error it returns nil and the turn
-// degrades to the bare charter window (req.7.5 graceful degradation).
-func (a *Agent) cmActivate(query string) *cortex.ActivationBundle {
+func (a *Agent) cmActivate(query string) *cortexclient.Bundle {
 	if a.pager == nil {
 		return nil
 	}
-	// Window-proportional budget (config.ActivationBudget): a 1M window
-	// carries a ~20K-token bundle instead of cortex's legacy 3K default, so
-	// the durable-memory field is as rich as the window affords.
-	b, err := a.pager.Activate(a.cmConvID(), query, cortex.Budget{Tokens: a.cfg.ActivationBudget()})
+	bundle, err := a.pager.Activate(context.Background(), a.cmConvID(), query, a.cfg.ActivationBudget())
 	if err != nil {
 		return nil
 	}
-	return b
+	return bundle
 }
 
-// cmRelevancePush is the Q2 first-message relevance push. cortex.Activate's
-// pushed tiers (Pinned/Timeline/Recent) are recency-based and query-INDEPENDENT
-// (activate.go: the query arg is unused), so on the OPENING message the agent
-// carries recency but nothing matched to what the user actually asked unless it
-// reactively calls memory_recall. This runs the pager's relevance retrieval
-// (semantic HNSW + the always-on salience lane + edge cascade) ONCE, on turn 1
-// only, and returns both the retrieved snippets (so the caller can fold them
-// into the turn's surfaced set for the usage-salience learning loop) and a
-// rendered block to append to the activation tail. After turn 1 the pull-not-
-// push philosophy resumes (the model pages in the rest via memory_recall).
-//
-// Returns (nil, "") when disabled, off the first turn, without a pager, or when
-// retrieval yields nothing — a pure read, no durable state is touched.
 func (a *Agent) cmRelevancePush(ctx context.Context, query string) ([]memory.Snippet, string) {
 	if !a.cfg.FirstTurnRelevancePush || a.turnSeq != 1 || a.pager == nil {
 		return nil, ""
 	}
-	snips, err := a.pager.Retrieve(ctx, query)
-	if err != nil || len(snips) == 0 {
+	snippets, err := a.pager.Retrieve(ctx, query)
+	if err != nil || len(snippets) == 0 {
 		return nil, ""
 	}
-	var b strings.Builder
-	b.WriteString("\nRelevant to your message (auto-recalled from memory; call memory_recall for more — may be stale, the live conversation wins). One exception: an exact operational identifier here that you established before (a host, base URL, endpoint, credential, account id, or address) is AUTHORITATIVE — use it verbatim instead of guessing a variant:\n")
-	for _, s := range snips {
-		line := strings.TrimSpace(s.Text)
-		if line == "" {
-			continue
+	var out strings.Builder
+	out.WriteString("\nRelevant to your message; the current conversation has authority over older material:\n")
+	for _, snippet := range snippets {
+		if line := strings.TrimSpace(snippet.Text); line != "" {
+			fmt.Fprintf(&out, "- %s\n", line)
 		}
-		b.WriteString("- ")
-		b.WriteString(line)
-		if s.Note != "" {
-			b.WriteString(" [")
-			b.WriteString(s.Note)
-			b.WriteString("]")
-		}
-		b.WriteString("\n")
 	}
-	return snips, b.String()
+	return snippets, out.String()
 }
 
-// MemoryEvent is the legible, protocol-free view of the memory Neo carries into
-// a turn (continuous-memory task 7.1, req.10): the durable story-so-far and a
-// coarse timeline of past activity. It deliberately carries NO journal / MMR /
-// rollup / snapshot jargon and no raw URIs — only the RESULT a user should see.
 type MemoryEvent struct {
-	StorySoFar      string   // durable rolling summary of this conversation
-	Timeline        []string // coarse timeline short-forms, oldest first
+	StorySoFar      string
+	Timeline        []string
 	TriggerClass    string
 	SelectionReason string
 	Excerpts        []EpisodicMemoryEvent
@@ -259,178 +145,54 @@ type EpisodicMemoryEvent struct {
 	Text           string `json:"text"`
 }
 
-// MemoryObserver receives the per-turn MemoryEvent. nil disables surfacing; the
-// agent loop stays oblivious to the presentation layer (mirrors AuditObserver).
 type MemoryObserver func(MemoryEvent)
 
-// emitMemory hands the harness a legible summary of this turn's activation
-// bundle so the client can show the memory Neo carries (task 7.1). Pure
-// side-channel: it reads the already-computed read-only bundle, mutates nothing,
-// and is a no-op when no observer is wired or there is nothing to show.
-func (a *Agent) emitMemory(b *cortex.ActivationBundle, triggerClass string, excerpts []memory.EpisodicExcerpt) {
+func (a *Agent) emitMemory(bundle *cortexclient.Bundle, triggerClass string, excerpts []memory.EpisodicExcerpt) {
 	if a.memObserver == nil {
 		return
 	}
-	var story string
-	var timeline []string
-	var selectionReason string
-	if b != nil {
-		story = strings.TrimSpace(b.StorySoFar)
-		selectionReason = strings.TrimSpace(b.SelectionReason)
-		timeline = make([]string, 0, len(b.Timeline))
-		for _, r := range b.Timeline {
-			if sf := strings.TrimSpace(r.ShortForm); sf != "" {
-				timeline = append(timeline, sf)
+	event := MemoryEvent{TriggerClass: triggerClass}
+	if bundle != nil {
+		for _, section := range bundle.Sections {
+			for _, item := range section.Items {
+				line := strings.TrimSpace(string(item.Content))
+				if line != "" {
+					event.Timeline = append(event.Timeline, line)
+				}
 			}
 		}
 	}
-	ev := MemoryEvent{StorySoFar: story, Timeline: timeline, TriggerClass: triggerClass, SelectionReason: selectionReason}
-	for _, ex := range excerpts {
-		ev.Excerpts = append(ev.Excerpts, EpisodicMemoryEvent{ConversationID: ex.ConversationID, Date: ex.Date.UTC().Format("2006-01-02"), SeqLo: ex.SeqLo, SeqHi: ex.SeqHi, Exact: ex.Exact, Text: ex.Text})
+	for _, excerpt := range excerpts {
+		event.Excerpts = append(event.Excerpts, EpisodicMemoryEvent{ConversationID: excerpt.ConversationID, Date: excerpt.Date.UTC().Format("2006-01-02"), SeqLo: excerpt.SeqLo, SeqHi: excerpt.SeqHi, Exact: excerpt.Exact, Text: excerpt.Text})
 	}
-	if ev.StorySoFar == "" && len(ev.Timeline) == 0 && len(ev.Excerpts) == 0 && ev.SelectionReason == "" {
-		return
+	if len(event.Timeline) > 0 || len(event.Excerpts) > 0 {
+		a.memObserver(event)
 	}
-	a.memObserver(ev)
 }
 
-// renderActivationBundle renders the cortex.Activate bundle into the trailing
-// working-memory block — the single window law's memory tail (MORPHEUS req.1.3).
-// It frames the block as in-progress reference (never a new instruction — the
-// leading line tells the model to continue, not restart), then surfaces the
-// standing objective as background, the Pinned tier (identity, hard constraints,
-// active cortex goals), the durable story-so-far, the T0 timeline and T1 recent
-// tiers, and a note that exact specifics page in on demand via memory_recall
-// (T3 handles — the pull-over-push philosophy, req.9.5). The transcript slice is
-// NOT re-rendered here: the live transcript is the window's middle already.
-//
-// The block is delivered by the caller as a USER-role trailing message
-// (assembleWindowUserTail) so strict Qwen-derived chat templates accept it (the
-// prompt-window portability fix), keeping the byte-stable system prefix at
-// index 0.
-func (a *Agent) renderActivationBundle(b *cortex.ActivationBundle) string {
-	var sb strings.Builder
-
-	sb.WriteString("(Reference notes, not a new message — this conversation is already in progress. Continue from the live exchange above; do NOT restart it or re-answer an earlier request.)\n")
-
+func (a *Agent) renderActivationBundle(bundle *cortexclient.Bundle) string {
+	var out strings.Builder
+	out.WriteString("(Reference notes, not a new message — this conversation is already in progress. Continue from the live exchange above; do NOT restart it or re-answer an earlier request.)\n")
 	if !a.cfg.SessionCurrentIntent {
 		if goal := strings.TrimSpace(a.activeGoal); goal != "" {
-			fmt.Fprintf(&sb, "Standing objective for this conversation (background, already underway — not a fresh request): %s\n", goal)
+			fmt.Fprintf(&out, "Standing objective for this conversation: %s\n", goal)
 		}
-	} else {
-		if objective := a.currentObjective(); objective != "" {
-			fmt.Fprintf(&sb, "Current user objective (authoritative; newer than any historical task): %s\n", objective)
-		}
-		if goal, ok := a.CurrentPersistentGoal(); ok && goal.Objective != a.currentObjective() {
-			fmt.Fprintf(&sb, "Persistent unfinished goal (subordinate background, not the current request): %s\n", goal.Objective)
-		}
-		for _, loop := range a.OpenLoops() {
-			fmt.Fprintf(&sb, "Open loop (unresolved background, never an overriding objective): %s\n", loop.Summary)
-		}
+	} else if objective := a.currentObjective(); objective != "" {
+		fmt.Fprintf(&out, "Current user objective (authoritative; newer than any historical task): %s\n", objective)
 	}
-
-	if b == nil {
-		return sb.String()
-	}
-
-	sb.WriteString("\nYour durable memory (cortex manages this for you; the live exchange above is most current and wins on any conflict):\n")
-
-	if len(b.Pinned) > 0 {
-		sb.WriteString("Pinned:\n")
-		for _, m := range b.Pinned {
-			if line := renderPinnedMemory(m); line != "" {
-				sb.WriteString("- ")
-				sb.WriteString(line)
-				sb.WriteString("\n")
-			}
+	if bundle != nil {
+		if a.cfg.SessionExactProjection {
+			out.WriteString("\nExact Neocortex transcript slice recovered after live-window trimming:\n")
+		}
+		if rendered := strings.TrimSpace(cortexclient.RenderBundle(bundle, nil)); rendered != "" {
+			out.WriteString("\nDurable Neocortex activation; the live exchange wins on conflict:\n")
+			out.WriteString(rendered)
+			out.WriteByte('\n')
 		}
 	}
-
-	if s := strings.TrimSpace(b.StorySoFar); s != "" {
-		sb.WriteString("Story so far:\n")
-		sb.WriteString(s)
-		sb.WriteString("\n")
-	}
-
-	if len(b.Timeline) > 0 {
-		sb.WriteString("Timeline (coarse, older first):\n")
-		for _, r := range b.Timeline {
-			if sf := strings.TrimSpace(r.ShortForm); sf != "" {
-				sb.WriteString("- ")
-				sb.WriteString(sf)
-				sb.WriteString("\n")
-			}
-		}
-	}
-
-	if len(b.Recent) > 0 {
-		sb.WriteString("Recent activity (page in with memory_recall):\n")
-		for _, ep := range b.Recent {
-			if u := strings.TrimSpace(string(ep.Ref.URI)); u != "" {
-				sb.WriteString("- ")
-				sb.WriteString(u)
-				sb.WriteString("\n")
-			}
-		}
-	}
-
-	if n := len(b.ReachableURIs); n > 0 {
-		fmt.Fprintf(&sb, "More available on demand — call memory_recall to page in exact specifics (%d further items reachable).\n", n)
-	}
-	if reason := strings.TrimSpace(b.SelectionReason); reason != "" {
-		sb.WriteString("Activation selection: ")
-		sb.WriteString(reason)
-		sb.WriteString(".\n")
-	}
-	if a.cfg.SessionExactProjection && !workingCoversCortexTranscript(a.working, b.Transcript) {
-		sb.WriteString("Exact cortex transcript slice recovered because the live protocol window no longer contains the full active-session tail:\n")
-		for _, message := range b.Transcript {
-			encoded, err := json.Marshal(message)
-			if err != nil {
-				continue
-			}
-			sb.Write(encoded)
-			sb.WriteString("\n")
-		}
-	}
-
-	return sb.String()
+	return out.String()
 }
 
-func workingCoversCortexTranscript(working []llm.Message, transcript []cortex.Message) bool {
-	protocolEvents := 0
-	for _, message := range working {
-		switch message.Role {
-		case llm.RoleUser, llm.RoleTool:
-			protocolEvents++
-		case llm.RoleAssistant:
-			if strings.TrimSpace(message.Content) != "" {
-				protocolEvents++
-			}
-			protocolEvents += len(message.ToolCalls)
-		}
-	}
-	return protocolEvents >= len(transcript)
-}
-
-// renderPinnedMemory renders one Pinned-tier cortex memory to a single line,
-// preferring the medium then short rendered form. Empty when neither form has
-// content.
-func renderPinnedMemory(m *cmem.Memory) string {
-	if m == nil {
-		return ""
-	}
-	if s := strings.TrimSpace(m.Version.Forms.Medium); s != "" {
-		return s
-	}
-	return strings.TrimSpace(m.Version.Forms.Short)
-}
-
-// assembleWindowUserTail is the continuous-memory window assembly: the
-// byte-stable system prefix at index 0, the append-only live transcript, then
-// the rendered Activate bundle as ONE trailing USER-role message (req.9.4 — the
-// Qwen-template portability fix). The transcript slice is never mutated (the
-// inner append allocates a fresh backing array).
 func assembleWindowUserTail(stableSystem string, transcript []llm.Message, tail string) []llm.Message {
 	return append(append([]llm.Message{llm.SystemMessage(stableSystem)}, transcript...), llm.UserMessage(tail))
 }
@@ -443,13 +205,6 @@ func assembleWindowContextSidecar(stableSystem string, transcript []llm.Message,
 	return window
 }
 
-// cmTrimWorking is the continuous-memory replacement for a.compact (retired,
-// req.9.3): it bounds the live in-memory window WITHOUT an LLM summarization
-// pass, because the older turns are already durable in cortex (task 6.1) and
-// the coarse history is carried by the durable story-so-far (task 4.2), which
-// Activate re-surfaces every turn. It keeps the most recent user turns verbatim
-// and drops older ones; when the window is a single long turn (no older section
-// to carve), it strips dead-weight inline images and keeps a provider-safe tail.
 func (a *Agent) cmTrimWorking() {
 	if a.cfg.SessionExactProjection {
 		a.compactExactWorking()

@@ -73,8 +73,8 @@ func TestCassandraFiresOnRealLoopSpiral(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-cassandra-spiral"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-cassandra-spiral"
 	if !cfg.CassandraEnabled {
 		t.Fatal("precondition: the controller must be enabled by default")
 	}

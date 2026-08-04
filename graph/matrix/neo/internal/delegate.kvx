@@ -1,16 +1,18 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/neo/internal/delegate kind=package
   digest=b3:95be87bfa9f34060f6c7b195903120f2366ac85cf7fbfc0141fb40bbb52b6c19 file=neo/internal/delegate range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/delegate/classify.go,matrix/neo/internal/delegate/client.go
   ^contains=mod:matrix/neo
+  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/agent,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/delegate.Approver kind=type
   digest=b3:1814c762336e58ba7939e729fbc0fda40320157fe6b1dc7537adf3faea6098bf file=neo/internal/delegate/client.go range=36:40 lang=go exported=true byte_range=1352:1780
   sig=type Approver func(ctx context.Context, nodeID, question string, options []string) (approved bool, answer string)
   doc=Approver is asked to approve an in-walk gate (typically a spend). nodeID is\nthe gate's node identifier (so a UI can route the user's answer back to the\nexact gate). It returns whether to approve and an optional free-text answer.\nA nil Approver denies every gate (safe default — no unattended spends).
 EDGES
+  ^references=matrix/neo/cmd/neo.newApprover,matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.Options,matrix/neo/internal/server.Engine.approverFor
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.ClassConflict kind=const
@@ -18,6 +20,7 @@ NODE id=matrix/neo/internal/delegate.ClassConflict kind=const
   sig=delegate.FailureClass
   doc=ClassConflict is the deterministic-ID 409 "already exists in async\nregistry": the work is already in flight. It is NOT a failure — the\ndelegate resolves the existing intent and attaches to it (the\nattach-to-existing handler, P2).
 EDGES
+  ^references=matrix/neo/internal/delegate.Client.Run,matrix/neo/internal/delegate.FailureClass.String,matrix/neo/internal/delegate.classifyHTTP
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.ClassDeterministic kind=const
@@ -25,6 +28,7 @@ NODE id=matrix/neo/internal/delegate.ClassDeterministic kind=const
   sig=delegate.FailureClass
   doc=ClassDeterministic will recur identically on a re-submit of the same\nrequest: a validation reject, a leash/mode/cap denial (403), a\nwrong-strategy / not-owner rejection, or an unparseable intent. It is\nNEVER retried and NEVER respawned over — it is surfaced as a terminal\nresult so the agent stops-and-asks or reports an honest partial.
 EDGES
+  ^references=matrix/neo/internal/agent.Agent.chatResurrectionWithGuidance,matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.escalateGuidance,matrix/neo/internal/agent.Agent.noteNormalizedFailure,matrix/neo/internal/agent.normalizedRecoveryClass,matrix/neo/internal/agent.runtimeFailureClass,matrix/neo/internal/delegate.FailureClass.String,matrix/neo/internal/delegate.classifyHTTP,matrix/neo/internal/server.superviseDecision
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.ClassNone kind=const
@@ -32,6 +36,8 @@ NODE id=matrix/neo/internal/delegate.ClassNone kind=const
   sig=delegate.FailureClass
   doc=ClassNone means there is no failure to classify (a clean outcome, or an\nerror shape the seam does not recognize — left to the existing path).
 EDGES
+  references=matrix/neo/internal/delegate.FailureClass
+  ^references=matrix/neo/internal/agent.Agent.Reset,matrix/neo/internal/agent.Agent.chatResurrectionWithGuidance,matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.noteFailureClass,matrix/neo/internal/agent.normalizedRecoveryClass,matrix/neo/internal/delegate.ClassOf,matrix/neo/internal/delegate.classifyHTTP
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.ClassOf kind=func
@@ -39,6 +45,10 @@ NODE id=matrix/neo/internal/delegate.ClassOf kind=func
   sig=func ClassOf(err error) FailureClass
   doc=ClassOf extracts the shared FailureClass carried by err. A daemon HTTP error\n(anywhere in the wrap chain) is mapped by status+body; a context\ncancellation / deadline is left unclassified (the loop handles ctx\nseparately); any other non-nil error is treated as transient (a transport\nfailure — connection refused, reset, timeout). A nil error is ClassNone.
 EDGES
+  calls=matrix/neo/internal/delegate.classifyHTTP
+  references=matrix/neo/internal/delegate.ClassNone,matrix/neo/internal/delegate.ClassTransient,matrix/neo/internal/delegate.FailureClass,matrix/neo/internal/delegate.classifyHTTP,matrix/neo/internal/delegate.err,matrix/neo/internal/delegate.he,matrix/neo/internal/delegate.httpError
+  ^calls=matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/delegate.Client.Run
+  ^references=matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/delegate.Client.Run
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.ClassPending kind=const
@@ -46,6 +56,7 @@ NODE id=matrix/neo/internal/delegate.ClassPending kind=const
   sig=delegate.FailureClass
   doc=ClassPending is a structured 422 needing slot values: a clarify. It is\ncarried back as an actionable slot-fill (the clarify pass-through, P4),\nnot reworded prose.
 EDGES
+  ^references=matrix/neo/internal/delegate.FailureClass.String,matrix/neo/internal/delegate.classifyHTTP
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.ClassTransient kind=const
@@ -53,6 +64,7 @@ NODE id=matrix/neo/internal/delegate.ClassTransient kind=const
   sig=delegate.FailureClass
   doc=ClassTransient is safe to retry with bounded backoff: a connection\nrefusal, a timeout, a 5xx, or a rate-limit (429). The single-flight 409\n("another intent is in flight; retry") is transient too — it clears once\nthe in-flight intent completes.
 EDGES
+  ^references=matrix/neo/internal/agent.normalizedRecoveryClass,matrix/neo/internal/agent.runtimeFailureClass,matrix/neo/internal/delegate.ClassOf,matrix/neo/internal/delegate.FailureClass.String,matrix/neo/internal/delegate.classifyHTTP
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.Client kind=type
@@ -61,6 +73,8 @@ NODE id=matrix/neo/internal/delegate.Client kind=type
   doc=Client delegates prose intents to the MCL daemon.
 EDGES
   contains=matrix/neo/internal/delegate.Client#approve,matrix/neo/internal/delegate.Client#base,matrix/neo/internal/delegate.Client#did,matrix/neo/internal/delegate.Client#gateClaim,matrix/neo/internal/delegate.Client#http,matrix/neo/internal/delegate.Client#maxWait,matrix/neo/internal/delegate.Client#notify,matrix/neo/internal/delegate.Client#pollEvery,matrix/neo/internal/delegate.Client#skill,matrix/neo/internal/delegate.Client#sseBackoff,matrix/neo/internal/delegate.Client#sseMaxReconnect,matrix/neo/internal/delegate.Client#streamHTTP,matrix/neo/internal/delegate.Client#token,matrix/neo/internal/delegate.Client#wallet,matrix/neo/internal/delegate.Client.Run,matrix/neo/internal/delegate.Client.answerGate,matrix/neo/internal/delegate.Client.attach,matrix/neo/internal/delegate.Client.checkTerminal,matrix/neo/internal/delegate.Client.do,matrix/neo/internal/delegate.Client.handleGates,matrix/neo/internal/delegate.Client.readEventStream,matrix/neo/internal/delegate.Client.status,matrix/neo/internal/delegate.Client.submit,matrix/neo/internal/delegate.Client.subscribeEvents,matrix/neo/internal/delegate.Client.track
+  references=matrix/neo/internal/delegate.Approver
+  ^references=matrix/neo/internal/delegate.Client.Run,matrix/neo/internal/delegate.Client.answerGate,matrix/neo/internal/delegate.Client.attach,matrix/neo/internal/delegate.Client.checkTerminal,matrix/neo/internal/delegate.Client.do,matrix/neo/internal/delegate.Client.handleGates,matrix/neo/internal/delegate.Client.readEventStream,matrix/neo/internal/delegate.Client.status,matrix/neo/internal/delegate.Client.submit,matrix/neo/internal/delegate.Client.subscribeEvents,matrix/neo/internal/delegate.Client.track,matrix/neo/internal/delegate.New
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Client#approve kind=field
@@ -156,14 +170,22 @@ NODE id=matrix/neo/internal/delegate.Client.Run kind=method
   sig=func (c *Client) Run(ctx context.Context, prose string) (string, error)
   doc=Run submits the intent and blocks until it terminates, servicing approval\ngates inline (via track). On a deterministic-id conflict (a 409 "already\nexists in async registry") it does NOT fail or re-submit: the work is\nalready in flight, so it ATTACHES to the existing intent and tracks it to\nits terminal outcome (or returns that outcome directly if it is already\nterminal). Returns the deliverable answer, or an error describing the\nfailure / clarification needed / timeout (which the model relays).
 EDGES
+  calls=matrix/neo/cmd/neo.stdoutReporter.Notice,matrix/neo/internal/delegate.ClassOf,matrix/neo/internal/delegate.Client.attach,matrix/neo/internal/delegate.Client.submit,matrix/neo/internal/delegate.Client.track,matrix/neo/internal/delegate.existingIntentID
+  references=matrix/neo/internal/delegate.ClassConflict,matrix/neo/internal/delegate.ClassOf,matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.Client.attach,matrix/neo/internal/delegate.Client.submit,matrix/neo/internal/delegate.Client.track,matrix/neo/internal/delegate.c,matrix/neo/internal/delegate.ctx,matrix/neo/internal/delegate.err,matrix/neo/internal/delegate.existing,matrix/neo/internal/delegate.existingIntentID,matrix/neo/internal/delegate.id,matrix/neo/internal/delegate.prose
   ^contains=matrix/neo/internal/delegate.Client
+  ^calls=matrix/neo/internal/server.Engine.coreExecute,matrix/neo/internal/tools.Manager.dispatchCoreExecute
+  ^references=matrix/neo/cmd/neo.runInteractive,matrix/neo/internal/server.Engine.coreExecute
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Client.answerGate kind=method
   digest=b3:31a773eec1c5b6da9d0653760e5aa61f112a530866e72cf18212056f8ab72762 file=neo/internal/delegate/client.go range=456:463 lang=go exported=false byte_range=16184:16548
   sig=func (c *Client) answerGate(ctx context.Context, intentID, nodeID string, approved bool, answer string) error
 EDGES
+  calls=matrix/neo/internal/delegate.Client.do
+  references=matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.Client.do,matrix/neo/internal/delegate.answer,matrix/neo/internal/delegate.approved,matrix/neo/internal/delegate.body,matrix/neo/internal/delegate.c,matrix/neo/internal/delegate.ctx,matrix/neo/internal/delegate.intentID,matrix/neo/internal/delegate.nodeID,matrix/neo/internal/delegate.path
   ^contains=matrix/neo/internal/delegate.Client
+  ^calls=matrix/neo/internal/delegate.Client.handleGates
+  ^references=matrix/neo/internal/delegate.Client.handleGates
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Client.attach kind=method
@@ -171,7 +193,11 @@ NODE id=matrix/neo/internal/delegate.Client.attach kind=method
   sig=func (c *Client) attach(ctx context.Context, id string) (string, error)
   doc=attach joins a run that is already in flight (a deterministic-id conflict).\nIf the conflicting intent is ALREADY terminal by the time we look, its\noutcome is returned in plain language — never re-submitted as fresh prose.\nOtherwise it is tracked exactly as the create path would: gate servicing and\nterminal detection ride the SAME track loop, so the existing approval gate\nsurfaces through the same approver/notify wiring.
 EDGES
+  calls=matrix/neo/cmd/neo.stdoutReporter.Notice,matrix/neo/internal/delegate.Client.checkTerminal,matrix/neo/internal/delegate.Client.track
+  references=matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.Client.checkTerminal,matrix/neo/internal/delegate.Client.track,matrix/neo/internal/delegate.ans,matrix/neo/internal/delegate.c,matrix/neo/internal/delegate.ctx,matrix/neo/internal/delegate.done,matrix/neo/internal/delegate.id,matrix/neo/internal/delegate.rerr
   ^contains=matrix/neo/internal/delegate.Client
+  ^calls=matrix/neo/internal/delegate.Client.Run
+  ^references=matrix/neo/internal/delegate.Client.Run
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Client.checkTerminal kind=method
@@ -179,21 +205,33 @@ NODE id=matrix/neo/internal/delegate.Client.checkTerminal kind=method
   sig=func (c *Client) checkTerminal(ctx context.Context, intentID string) (string, error, bool)
   doc=checkTerminal fetches the authoritative status and classifies it.
 EDGES
+  calls=matrix/neo/internal/delegate.Client.status,matrix/neo/internal/delegate.classifyTerminal
+  references=matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.Client.status,matrix/neo/internal/delegate.c,matrix/neo/internal/delegate.classifyTerminal,matrix/neo/internal/delegate.ctx,matrix/neo/internal/delegate.err,matrix/neo/internal/delegate.intentID,matrix/neo/internal/delegate.st
   ^contains=matrix/neo/internal/delegate.Client
+  ^calls=matrix/neo/internal/delegate.Client.attach,matrix/neo/internal/delegate.Client.track
+  ^references=matrix/neo/internal/delegate.Client.attach,matrix/neo/internal/delegate.Client.track
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Client.do kind=method
   digest=b3:e4134b9c1aa80efd3559c70e25af1ec783a3b230ae72bd005a2a185831edb529 file=neo/internal/delegate/client.go range=485:527 lang=go exported=false byte_range=17086:18374
   sig=func (c *Client) do(ctx context.Context, method, path string, body, out interface{}) error
 EDGES
+  calls=matrix/neo/internal/delegate.truncate
+  references=matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.b,matrix/neo/internal/delegate.body,matrix/neo/internal/delegate.c,matrix/neo/internal/delegate.ctx,matrix/neo/internal/delegate.data,matrix/neo/internal/delegate.err,matrix/neo/internal/delegate.httpError,matrix/neo/internal/delegate.method,matrix/neo/internal/delegate.out,matrix/neo/internal/delegate.path,matrix/neo/internal/delegate.rdr,matrix/neo/internal/delegate.req,matrix/neo/internal/delegate.resp,matrix/neo/internal/delegate.truncate
   ^contains=matrix/neo/internal/delegate.Client
+  ^calls=matrix/neo/internal/delegate.Client.answerGate,matrix/neo/internal/delegate.Client.handleGates,matrix/neo/internal/delegate.Client.status,matrix/neo/internal/delegate.Client.submit
+  ^references=matrix/neo/internal/delegate.Client.answerGate,matrix/neo/internal/delegate.Client.handleGates,matrix/neo/internal/delegate.Client.status,matrix/neo/internal/delegate.Client.submit
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Client.handleGates kind=method
   digest=b3:859860ee87f8fdf9179841a550b18c14250540e6ea3a2b3410b2953046a9ce58 file=neo/internal/delegate/client.go range=425:454 lang=go exported=false byte_range=15004:16182
   sig=func (c *Client) handleGates(ctx context.Context, intentID string, answered map[string]bool)
 EDGES
+  calls=matrix/neo/internal/delegate.Client.answerGate,matrix/neo/internal/delegate.Client.do,matrix/neo/internal/server.Engine.claimGate
+  references=matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.Client.answerGate,matrix/neo/internal/delegate.Client.do,matrix/neo/internal/delegate.answer,matrix/neo/internal/delegate.answered,matrix/neo/internal/delegate.approved,matrix/neo/internal/delegate.c,matrix/neo/internal/delegate.ctx,matrix/neo/internal/delegate.err,matrix/neo/internal/delegate.g,matrix/neo/internal/delegate.intentID,matrix/neo/internal/delegate.out,matrix/neo/internal/delegate.pendingGateDTO
   ^contains=matrix/neo/internal/delegate.Client
+  ^calls=matrix/neo/internal/delegate.Client.track
+  ^references=matrix/neo/internal/delegate.Client.track
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Client.readEventStream kind=method
@@ -201,21 +239,31 @@ NODE id=matrix/neo/internal/delegate.Client.readEventStream kind=method
   sig=func (c *Client) readEventStream(ctx context.Context, intentID string, evCh chan<- sseEvent) error
   doc=readEventStream performs one SSE subscription, forwarding parsed events to\nevCh until the stream ends, errors, or ctx is cancelled.
 EDGES
+  references=matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.c,matrix/neo/internal/delegate.ctx,matrix/neo/internal/delegate.err,matrix/neo/internal/delegate.ev,matrix/neo/internal/delegate.evCh,matrix/neo/internal/delegate.intentID,matrix/neo/internal/delegate.line,matrix/neo/internal/delegate.payload,matrix/neo/internal/delegate.req,matrix/neo/internal/delegate.resp,matrix/neo/internal/delegate.scanner,matrix/neo/internal/delegate.sseEvent,matrix/neo/internal/delegate.u
   ^contains=matrix/neo/internal/delegate.Client
+  ^references=matrix/neo/internal/delegate.Client.subscribeEvents
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Client.status kind=method
   digest=b3:3ff0aab3ebcf839b8e6d636f37a4b9a62eebf662937782de25c6fa14abf75ba4 file=neo/internal/delegate/client.go range=477:483 lang=go exported=false byte_range=16832:17084
   sig=func (c *Client) status(ctx context.Context, intentID string) (*statusResp, error)
 EDGES
+  calls=matrix/neo/internal/delegate.Client.do
+  references=matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.Client.do,matrix/neo/internal/delegate.c,matrix/neo/internal/delegate.ctx,matrix/neo/internal/delegate.err,matrix/neo/internal/delegate.intentID,matrix/neo/internal/delegate.out,matrix/neo/internal/delegate.statusResp
   ^contains=matrix/neo/internal/delegate.Client
+  ^calls=matrix/neo/internal/delegate.Client.checkTerminal
+  ^references=matrix/neo/internal/delegate.Client.checkTerminal
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Client.submit kind=method
   digest=b3:ae12a04ed020adbe45486d355279c560512b41b6c6c13691320c1c165960fe87 file=neo/internal/delegate/client.go range=402:417 lang=go exported=false byte_range=14414:14861
   sig=func (c *Client) submit(ctx context.Context, prose string) (string, error)
 EDGES
+  calls=matrix/neo/internal/delegate.Client.do
+  references=matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.Client.do,matrix/neo/internal/delegate.body,matrix/neo/internal/delegate.c,matrix/neo/internal/delegate.ctx,matrix/neo/internal/delegate.err,matrix/neo/internal/delegate.out,matrix/neo/internal/delegate.prose
   ^contains=matrix/neo/internal/delegate.Client
+  ^calls=matrix/neo/internal/delegate.Client.Run
+  ^references=matrix/neo/internal/delegate.Client.Run
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Client.subscribeEvents kind=method
@@ -223,7 +271,10 @@ NODE id=matrix/neo/internal/delegate.Client.subscribeEvents kind=method
   sig=func (c *Client) subscribeEvents(ctx context.Context, intentID string) (<-chan sseEvent, <-chan struct{})
   doc=subscribeEvents opens a goroutine that subscribes to the daemon's\nGET /events?intent_id=<id> SSE stream and delivers parsed events on evCh.\nOn a stream error it attempts a bounded number of reconnects (sseBackoff\nbetween each); once exhausted it signals failCh once and closes evCh. evCh\nis also closed on a clean stream end or context cancellation. The poller is\nexpected to keep driving regardless, so a closed evCh is never fatal.
 EDGES
+  references=matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.Client.readEventStream,matrix/neo/internal/delegate.attempt,matrix/neo/internal/delegate.c,matrix/neo/internal/delegate.ctx,matrix/neo/internal/delegate.err,matrix/neo/internal/delegate.evCh,matrix/neo/internal/delegate.failCh,matrix/neo/internal/delegate.intentID,matrix/neo/internal/delegate.sseEvent
   ^contains=matrix/neo/internal/delegate.Client
+  ^calls=matrix/neo/internal/delegate.Client.track
+  ^references=matrix/neo/internal/delegate.Client.track
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Client.track kind=method
@@ -231,7 +282,11 @@ NODE id=matrix/neo/internal/delegate.Client.track kind=method
   sig=func (c *Client) track(ctx context.Context, id string) (string, error)
   doc=track drives an intent (freshly created or attached-to) to its terminal\noutcome, servicing approval gates inline. It subscribes to the daemon's SSE\nevent stream and drives gate/terminal transitions from events (sub-ms\nlatency). A poller is retained as an explicit safety net + fallback: it\ncovers the dispatch→subscribe race and silent stream drops, and becomes the\nsole driver once the SSE stream's bounded reconnect attempts exhaust. The\nper-run answered set (touched only from this goroutine) guarantees a gate is\nnever answered twice within this call even when an event and a poll tick both\nobserve it; the optional shared gateClaim guard (keyed on intent id + node\nid) additionally prevents two concurrent attaches to the same intent from\ndouble-answering the same gate.
 EDGES
+  calls=matrix/neo/cmd/neo.stdoutReporter.Notice,matrix/neo/internal/delegate.Client.checkTerminal,matrix/neo/internal/delegate.Client.handleGates,matrix/neo/internal/delegate.Client.subscribeEvents,matrix/neo/internal/delegate.isGateEvent,matrix/neo/internal/delegate.isTerminalEvent
+  references=matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.Client.checkTerminal,matrix/neo/internal/delegate.Client.handleGates,matrix/neo/internal/delegate.Client.subscribeEvents,matrix/neo/internal/delegate.ans,matrix/neo/internal/delegate.answered,matrix/neo/internal/delegate.c,matrix/neo/internal/delegate.ctx,matrix/neo/internal/delegate.deadline,matrix/neo/internal/delegate.done,matrix/neo/internal/delegate.ev,matrix/neo/internal/delegate.evCh,matrix/neo/internal/delegate.failCh,matrix/neo/internal/delegate.id,matrix/neo/internal/delegate.isGateEvent,matrix/neo/internal/delegate.isTerminalEvent,matrix/neo/internal/delegate.ok,matrix/neo/internal/delegate.rerr,matrix/neo/internal/delegate.sseCancel,matrix/neo/internal/delegate.sseCtx,matrix/neo/internal/delegate.tick
   ^contains=matrix/neo/internal/delegate.Client
+  ^calls=matrix/neo/internal/delegate.Client.Run,matrix/neo/internal/delegate.Client.attach
+  ^references=matrix/neo/internal/delegate.Client.Run,matrix/neo/internal/delegate.Client.attach
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.FailureClass kind=type
@@ -240,6 +295,7 @@ NODE id=matrix/neo/internal/delegate.FailureClass kind=type
   doc=FailureClass is the single shared taxonomy for an outcome crossing the\nNeo<->MCL seam. Both the tool-dispatch ladder (agent.dispatchWithRetry) and\nthe task supervisor (server.superviseDecision) read THIS classification, so\nthe retry / stop / attach / ask decision is made once, never re-guessed per\nlayer.
 EDGES
   contains=matrix/neo/internal/delegate.FailureClass.String
+  ^references=matrix/neo/internal/agent.Agent,matrix/neo/internal/agent.Agent.LastFailureClass,matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.noteFailureClass,matrix/neo/internal/agent.Agent.noteNormalizedFailure,matrix/neo/internal/agent.Agent.runToolCalls,matrix/neo/internal/agent.Agent.runToolCallsSerial,matrix/neo/internal/agent.normalizedRecoveryClass,matrix/neo/internal/agent.runtimeFailureClass,matrix/neo/internal/agent.turn,matrix/neo/internal/delegate.ClassNone,matrix/neo/internal/delegate.ClassOf,matrix/neo/internal/delegate.FailureClass.String,matrix/neo/internal/delegate.classifyHTTP,matrix/neo/internal/server.deathEntry,matrix/neo/internal/server.newDeathEntry,matrix/neo/internal/server.session.recordLoopDeath,matrix/neo/internal/server.superviseDecision
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.FailureClass.String kind=method
@@ -247,6 +303,7 @@ NODE id=matrix/neo/internal/delegate.FailureClass.String kind=method
   sig=func (c FailureClass) String() string
   doc=String renders the class for diagnostics.
 EDGES
+  references=matrix/neo/internal/delegate.ClassConflict,matrix/neo/internal/delegate.ClassDeterministic,matrix/neo/internal/delegate.ClassPending,matrix/neo/internal/delegate.ClassTransient,matrix/neo/internal/delegate.FailureClass,matrix/neo/internal/delegate.c
   ^contains=matrix/neo/internal/delegate.FailureClass
   ^defines=matrix/neo/internal/delegate/classify.go
 
@@ -255,6 +312,9 @@ NODE id=matrix/neo/internal/delegate.New kind=func
   sig=func New(o Options) *Client
   doc=New builds a delegation client.
 EDGES
+  references=matrix/neo/internal/delegate.Client,matrix/neo/internal/delegate.Options,matrix/neo/internal/delegate.mw,matrix/neo/internal/delegate.notify,matrix/neo/internal/delegate.o,matrix/neo/internal/delegate.poll,matrix/neo/internal/delegate.to
+  ^calls=matrix/neo/cmd/neo.runInteractive,matrix/neo/internal/server.Engine.coreExecute
+  ^references=matrix/neo/cmd/neo.runInteractive,matrix/neo/internal/server.Engine.coreExecute
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Options kind=type
@@ -263,6 +323,8 @@ NODE id=matrix/neo/internal/delegate.Options kind=type
   doc=Options configures a Client.
 EDGES
   contains=matrix/neo/internal/delegate.Options#Approver,matrix/neo/internal/delegate.Options#BaseURL,matrix/neo/internal/delegate.Options#CallerDID,matrix/neo/internal/delegate.Options#CallerWallet,matrix/neo/internal/delegate.Options#GateClaim,matrix/neo/internal/delegate.Options#MaxWait,matrix/neo/internal/delegate.Options#Notify,matrix/neo/internal/delegate.Options#PollInterval,matrix/neo/internal/delegate.Options#Skill,matrix/neo/internal/delegate.Options#Timeout,matrix/neo/internal/delegate.Options#Token
+  references=matrix/neo/internal/delegate.Approver
+  ^references=matrix/neo/cmd/neo.runInteractive,matrix/neo/internal/delegate.New,matrix/neo/internal/server.Engine.coreExecute
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.Options#Approver kind=field
@@ -336,6 +398,10 @@ NODE id=matrix/neo/internal/delegate.clarifyText kind=func
   digest=b3:9da7b8c9e60136b6217d6f6475aa855908eb37e2c0d291ae56b3c73ca410d908 file=neo/internal/delegate/client.go range=529:537 lang=go exported=false byte_range=18376:18611
   sig=func clarifyText(raw json.RawMessage) string
 EDGES
+  calls=matrix/neo/internal/delegate.truncate
+  references=matrix/neo/internal/delegate.err,matrix/neo/internal/delegate.m,matrix/neo/internal/delegate.ok,matrix/neo/internal/delegate.q,matrix/neo/internal/delegate.raw,matrix/neo/internal/delegate.truncate
+  ^calls=matrix/neo/internal/delegate.classifyTerminal
+  ^references=matrix/neo/internal/delegate.classifyTerminal
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.classifyHTTP kind=func
@@ -343,6 +409,9 @@ NODE id=matrix/neo/internal/delegate.classifyHTTP kind=func
   sig=func classifyHTTP(status int, body string) FailureClass
   doc=classifyHTTP maps an HTTP status + response body to a FailureClass. The\nmapping is the design's taxonomy: 409 already-exists -> conflict, 403 ->\ndeterministic, 422 -> pending, 5xx / 429 -> transient, any other 4xx\n(validation / unparseable / not-owner) -> deterministic.
 EDGES
+  references=matrix/neo/internal/delegate.ClassConflict,matrix/neo/internal/delegate.ClassDeterministic,matrix/neo/internal/delegate.ClassNone,matrix/neo/internal/delegate.ClassPending,matrix/neo/internal/delegate.ClassTransient,matrix/neo/internal/delegate.FailureClass,matrix/neo/internal/delegate.body,matrix/neo/internal/delegate.status
+  ^calls=matrix/neo/internal/delegate.ClassOf
+  ^references=matrix/neo/internal/delegate.ClassOf
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.classifyTerminal kind=func
@@ -350,6 +419,10 @@ NODE id=matrix/neo/internal/delegate.classifyTerminal kind=func
   sig=func classifyTerminal(st *statusResp) (string, error, bool)
   doc=classifyTerminal maps an authoritative status response to a result/error when\nthe status is terminal (or a clarification is required). done is false when\nthe run is still in flight.
 EDGES
+  calls=matrix/neo/internal/delegate.clarifyText
+  references=matrix/neo/internal/delegate.ans,matrix/neo/internal/delegate.clarifyText,matrix/neo/internal/delegate.st,matrix/neo/internal/delegate.statusResp
+  ^calls=matrix/neo/internal/delegate.Client.checkTerminal
+  ^references=matrix/neo/internal/delegate.Client.checkTerminal
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.existingIntentID kind=func
@@ -357,6 +430,10 @@ NODE id=matrix/neo/internal/delegate.existingIntentID kind=func
   sig=func existingIntentID(err error) string
   doc=existingIntentID recovers the in-flight intent id from a conflict error (a\n409 "already exists in async registry"), so the delegate can ATTACH to the\nwork already underway instead of re-submitting. Returns "" when err is not a\ndaemon HTTP error or no id is present in the body.
 EDGES
+  calls=matrix/neo/internal/delegate.parseExistingIntentID
+  references=matrix/neo/internal/delegate.err,matrix/neo/internal/delegate.he,matrix/neo/internal/delegate.httpError,matrix/neo/internal/delegate.parseExistingIntentID
+  ^calls=matrix/neo/internal/delegate.Client.Run
+  ^references=matrix/neo/internal/delegate.Client.Run
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.httpError kind=type
@@ -365,6 +442,7 @@ NODE id=matrix/neo/internal/delegate.httpError kind=type
   doc=httpError carries the daemon's HTTP status code and (truncated) response body\nso the classifier can map an outcome to a FailureClass. It is the typed error\nthe delegate's request helper returns on a non-2xx response; it survives\nfmt.Errorf("...: %w", err) wrapping, so callers far up the chain (the\ndispatch ladder, the supervisor) recover the class via ClassOf.
 EDGES
   contains=matrix/neo/internal/delegate.httpError#body,matrix/neo/internal/delegate.httpError#status,matrix/neo/internal/delegate.httpError.Error,matrix/neo/internal/delegate.httpError.Status
+  ^references=matrix/neo/internal/delegate.ClassOf,matrix/neo/internal/delegate.Client.do,matrix/neo/internal/delegate.existingIntentID,matrix/neo/internal/delegate.httpError.Error,matrix/neo/internal/delegate.httpError.Status
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.httpError#body kind=field
@@ -383,6 +461,7 @@ NODE id=matrix/neo/internal/delegate.httpError.Error kind=method
   digest=b3:d1c39a751c7110ad8b8cf247820a4fdb617a5c1eaffe0c136a701edd6f836b32 file=neo/internal/delegate/classify.go range=74:76 lang=go exported=true byte_range=2649:2740
   sig=func (e *httpError) Error() string
 EDGES
+  references=matrix/neo/internal/delegate.e,matrix/neo/internal/delegate.httpError
   ^contains=matrix/neo/internal/delegate.httpError
   ^defines=matrix/neo/internal/delegate/classify.go
 
@@ -391,6 +470,7 @@ NODE id=matrix/neo/internal/delegate.httpError.Status kind=method
   sig=func (e *httpError) Status() int
   doc=Status reports the HTTP status code carried by the error.
 EDGES
+  references=matrix/neo/internal/delegate.e,matrix/neo/internal/delegate.httpError
   ^contains=matrix/neo/internal/delegate.httpError
   ^defines=matrix/neo/internal/delegate/classify.go
 
@@ -399,6 +479,9 @@ NODE id=matrix/neo/internal/delegate.isGateEvent kind=func
   sig=func isGateEvent(t string) bool
   doc=isGateEvent reports whether an event type relates to an approval gate (the\ndaemon emits gate.invoked when a gate becomes pending).
 EDGES
+  references=matrix/neo/internal/delegate.t
+  ^calls=matrix/neo/internal/delegate.Client.track
+  ^references=matrix/neo/internal/delegate.Client.track
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.isTerminalEvent kind=func
@@ -406,6 +489,9 @@ NODE id=matrix/neo/internal/delegate.isTerminalEvent kind=func
   sig=func isTerminalEvent(t string) bool
   doc=isTerminalEvent reports whether an event type signals a terminal lifecycle\ntransition (completed via attest, failed, or cancelled). These mirror the\ndaemon's lifecycleAdvance terminal kinds.
 EDGES
+  references=matrix/neo/internal/delegate.t
+  ^calls=matrix/neo/internal/delegate.Client.track
+  ^references=matrix/neo/internal/delegate.Client.track
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.parseExistingIntentID kind=func
@@ -413,6 +499,9 @@ NODE id=matrix/neo/internal/delegate.parseExistingIntentID kind=func
   sig=func parseExistingIntentID(body string) string
   doc=parseExistingIntentID extracts the quoted intent id from a daemon conflict\nbody. The daemon returns {"error":"intent \\"<ID>\\" already exists in async\nregistry"}; the id is the first double-quoted token of that message.
 EDGES
+  references=matrix/neo/internal/delegate.body,matrix/neo/internal/delegate.env,matrix/neo/internal/delegate.i,matrix/neo/internal/delegate.j,matrix/neo/internal/delegate.msg,matrix/neo/internal/delegate.rest
+  ^calls=matrix/neo/internal/delegate.existingIntentID
+  ^references=matrix/neo/internal/delegate.existingIntentID
   ^defines=matrix/neo/internal/delegate/classify.go
 
 NODE id=matrix/neo/internal/delegate.pendingGateDTO kind=type
@@ -420,6 +509,7 @@ NODE id=matrix/neo/internal/delegate.pendingGateDTO kind=type
   sig=type pendingGateDTO struct {\n	NodeID		string		`json:"node_id"`\n	Question	string		`json:"question"`\n	Options		[]string	`json:"options"`\n}
 EDGES
   contains=matrix/neo/internal/delegate.pendingGateDTO#NodeID,matrix/neo/internal/delegate.pendingGateDTO#Options,matrix/neo/internal/delegate.pendingGateDTO#Question
+  ^references=matrix/neo/internal/delegate.Client.handleGates
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.pendingGateDTO#NodeID kind=field
@@ -445,6 +535,7 @@ NODE id=matrix/neo/internal/delegate.resultBody kind=type
   sig=type resultBody struct {\n	Answer	string	`json:"answer"`\n	Status	string	`json:"status"`\n}
 EDGES
   contains=matrix/neo/internal/delegate.resultBody#Answer,matrix/neo/internal/delegate.resultBody#Status
+  ^references=matrix/neo/internal/delegate.statusResp
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.resultBody#Answer kind=field
@@ -465,6 +556,7 @@ NODE id=matrix/neo/internal/delegate.sseEvent kind=type
   doc=sseEvent mirrors the daemon's wire-format event (executor sseEvent / Neo\nserver.Event): {seq,ts,phase,type,fields}. Only Type is used for routing.
 EDGES
   contains=matrix/neo/internal/delegate.sseEvent#Fields,matrix/neo/internal/delegate.sseEvent#Phase,matrix/neo/internal/delegate.sseEvent#Seq,matrix/neo/internal/delegate.sseEvent#TS,matrix/neo/internal/delegate.sseEvent#Type
+  ^references=matrix/neo/internal/delegate.Client.readEventStream,matrix/neo/internal/delegate.Client.subscribeEvents
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.sseEvent#Fields kind=field
@@ -502,6 +594,8 @@ NODE id=matrix/neo/internal/delegate.statusResp kind=type
   sig=type statusResp struct {\n	Status	string		`json:"status"`\n	Error	string		`json:"error"`\n	Result	*resultBody	`json:"result"`\n	Clarify	json.RawMessage	`json:"clarify"`\n}
 EDGES
   contains=matrix/neo/internal/delegate.statusResp#Clarify,matrix/neo/internal/delegate.statusResp#Error,matrix/neo/internal/delegate.statusResp#Result,matrix/neo/internal/delegate.statusResp#Status
+  references=matrix/neo/internal/delegate.resultBody
+  ^references=matrix/neo/internal/delegate.Client.status,matrix/neo/internal/delegate.classifyTerminal
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate.statusResp#Clarify kind=field
@@ -532,6 +626,9 @@ NODE id=matrix/neo/internal/delegate.truncate kind=func
   digest=b3:fa889a1906a97a6dfdd149bfff89105f3c005f9843a42f37d300e9afa306d009 file=neo/internal/delegate/client.go range=539:544 lang=go exported=false byte_range=18613:18708
   sig=func truncate(s string, n int) string
 EDGES
+  references=matrix/neo/internal/delegate.n,matrix/neo/internal/delegate.s
+  ^calls=matrix/neo/internal/delegate.Client.do,matrix/neo/internal/delegate.clarifyText
+  ^references=matrix/neo/internal/delegate.Client.do,matrix/neo/internal/delegate.clarifyText
   ^defines=matrix/neo/internal/delegate/client.go
 
 NODE id=matrix/neo/internal/delegate/classify.go kind=file

@@ -1,27 +1,36 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/neo/internal/machinemailsettings kind=package
   digest=b3:4663c67d9ed377a27b54a630b6011b0548ecc159ae6ca0f79ab6ba53dd49830c file=neo/internal/machinemailsettings range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/machinemailsettings/machinemailsettings.go
+  imports=matrix/vault
   ^contains=mod:matrix/neo
+  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/machinemailsettings.Dir kind=func
   digest=b3:a29fa302f1b85b2a3eb7a3175785dfaa91d88dde114a2de00450e6235ceca02c file=neo/internal/machinemailsettings/machinemailsettings.go range=160:168 lang=go exported=true byte_range=3245:3495
   sig=func Dir(override, cortexRoot string) string
 EDGES
+  references=matrix/neo/internal/machinemailsettings.cortexRoot,matrix/neo/internal/machinemailsettings.override,matrix/neo/internal/machinemailsettings.root,matrix/neo/internal/machinemailsettings.value
+  ^calls=matrix/neo/cmd/neo.runServe
+  ^references=matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.ErrEncryptionRequired kind=var
   digest=b3:4515ae30c08a1217a26e9cc03a8dc5a12b205608940ef4fbb7a10ebd4ee8b709 file=neo/internal/machinemailsettings/machinemailsettings.go range=22:22 lang=go exported=true byte_range=290:369
   sig=error
 EDGES
+  ^references=matrix/neo/internal/machinemailsettings.Store.persistLocked,matrix/neo/internal/server.Server.handleMachineMail,matrix/neo/internal/server.machineMailBridge.Configure
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.Open kind=func
   digest=b3:34dbdabe3e21f394652c07c74c202d20725ac37d0fba32c01d6000a99900e994 file=neo/internal/machinemailsettings/machinemailsettings.go range=38:38 lang=go exported=true byte_range=609:684
   sig=func Open(dir string) *Store
 EDGES
+  references=matrix/neo/internal/machinemailsettings.Store,matrix/neo/internal/machinemailsettings.dir
+  ^calls=matrix/neo/internal/server.NewEngine
+  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.State kind=type
@@ -29,6 +38,7 @@ NODE id=matrix/neo/internal/machinemailsettings.State kind=type
   sig=type State struct {\n	APIKey string `json:"api_key"`\n}
 EDGES
   contains=matrix/neo/internal/machinemailsettings.State#APIKey,matrix/neo/internal/machinemailsettings.State.Configured
+  ^references=matrix/neo/internal/machinemailsettings.State.Configured,matrix/neo/internal/machinemailsettings.Store,matrix/neo/internal/machinemailsettings.Store.Clear,matrix/neo/internal/machinemailsettings.Store.Replace,matrix/neo/internal/machinemailsettings.Store.View,matrix/neo/internal/machinemailsettings.Store.loadLocked
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.State#APIKey kind=field
@@ -41,7 +51,10 @@ NODE id=matrix/neo/internal/machinemailsettings.State.Configured kind=method
   digest=b3:10c64f32debfd4a20b9ae731ff013b49539fc6ed00f96a6f8f19f4468b90b42b file=neo/internal/machinemailsettings/machinemailsettings.go range=28:28 lang=go exported=true byte_range=426:503
   sig=func (s State) Configured() bool
 EDGES
+  references=matrix/neo/internal/machinemailsettings.State,matrix/neo/internal/machinemailsettings.s
   ^contains=matrix/neo/internal/machinemailsettings.State
+  ^calls=matrix/neo/internal/server.machineMailBridge.Configure,matrix/neo/internal/server.machineMailBridge.Disconnect,matrix/neo/internal/server.machineMailBridge.Status
+  ^references=matrix/neo/internal/server.machineMailBridge.Configure,matrix/neo/internal/server.machineMailBridge.Disconnect,matrix/neo/internal/server.machineMailBridge.Status
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.Store kind=type
@@ -49,6 +62,8 @@ NODE id=matrix/neo/internal/machinemailsettings.Store kind=type
   sig=type Store struct {\n	dir	string\n	mu	sync.Mutex\n	state	State\n	vault	*vault.Session\n	user	string\n}
 EDGES
   contains=matrix/neo/internal/machinemailsettings.Store#dir,matrix/neo/internal/machinemailsettings.Store#mu,matrix/neo/internal/machinemailsettings.Store#state,matrix/neo/internal/machinemailsettings.Store#user,matrix/neo/internal/machinemailsettings.Store#vault,matrix/neo/internal/machinemailsettings.Store.Clear,matrix/neo/internal/machinemailsettings.Store.Persistent,matrix/neo/internal/machinemailsettings.Store.Replace,matrix/neo/internal/machinemailsettings.Store.Secure,matrix/neo/internal/machinemailsettings.Store.SetVault,matrix/neo/internal/machinemailsettings.Store.View,matrix/neo/internal/machinemailsettings.Store.ad,matrix/neo/internal/machinemailsettings.Store.loadLocked,matrix/neo/internal/machinemailsettings.Store.path,matrix/neo/internal/machinemailsettings.Store.persistLocked
+  references=matrix/neo/internal/machinemailsettings.State,matrix/vault.Session
+  ^references=matrix/neo/internal/machinemailsettings.Open,matrix/neo/internal/machinemailsettings.Store.Clear,matrix/neo/internal/machinemailsettings.Store.Persistent,matrix/neo/internal/machinemailsettings.Store.Replace,matrix/neo/internal/machinemailsettings.Store.Secure,matrix/neo/internal/machinemailsettings.Store.SetVault,matrix/neo/internal/machinemailsettings.Store.View,matrix/neo/internal/machinemailsettings.Store.ad,matrix/neo/internal/machinemailsettings.Store.loadLocked,matrix/neo/internal/machinemailsettings.Store.path,matrix/neo/internal/machinemailsettings.Store.persistLocked,matrix/neo/internal/server.machineMailBridge,matrix/neo/internal/server.newMachineMailBridge
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.Store#dir kind=field
@@ -85,88 +100,127 @@ NODE id=matrix/neo/internal/machinemailsettings.Store.Clear kind=method
   digest=b3:3c991d9535c6b7253708e47b3b661ac4b2b5a321164a74e421aa35376d38cecf file=neo/internal/machinemailsettings/machinemailsettings.go range=87:100 lang=go exported=true byte_range=1533:1830
   sig=func (s *Store) Clear() error
 EDGES
+  calls=matrix/neo/internal/machinemailsettings.Store.path
+  references=matrix/neo/internal/machinemailsettings.State,matrix/neo/internal/machinemailsettings.Store,matrix/neo/internal/machinemailsettings.Store.path,matrix/neo/internal/machinemailsettings.err,matrix/neo/internal/machinemailsettings.s
   ^contains=matrix/neo/internal/machinemailsettings.Store
+  ^calls=matrix/neo/internal/server.machineMailBridge.Disconnect
+  ^references=matrix/neo/internal/server.machineMailBridge.Disconnect
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.Store.Persistent kind=method
   digest=b3:c6d7bb95b7647d1991edcf500e2d4c6d2b0b575dd632b03a86162df54f4079a2 file=neo/internal/machinemailsettings/machinemailsettings.go range=51:51 lang=go exported=true byte_range=858:926
   sig=func (s *Store) Persistent() bool
 EDGES
+  references=matrix/neo/internal/machinemailsettings.Store,matrix/neo/internal/machinemailsettings.s
   ^contains=matrix/neo/internal/machinemailsettings.Store
+  ^calls=matrix/neo/internal/machinemailsettings.Store.Secure
+  ^references=matrix/neo/internal/machinemailsettings.Store.Secure
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.Store.Replace kind=method
   digest=b3:9433fe410143e26f4600aa3d43b347b28873447a7c32dee00abb5c314fcb5413 file=neo/internal/machinemailsettings/machinemailsettings.go range=72:85 lang=go exported=true byte_range=1201:1531
   sig=func (s *Store) Replace(apiKey string) error
 EDGES
+  calls=matrix/neo/internal/machinemailsettings.Store.persistLocked
+  references=matrix/neo/internal/machinemailsettings.State,matrix/neo/internal/machinemailsettings.Store,matrix/neo/internal/machinemailsettings.Store.persistLocked,matrix/neo/internal/machinemailsettings.apiKey,matrix/neo/internal/machinemailsettings.err,matrix/neo/internal/machinemailsettings.previous,matrix/neo/internal/machinemailsettings.s
   ^contains=matrix/neo/internal/machinemailsettings.Store
+  ^calls=matrix/neo/internal/server.machineMailBridge.Configure
+  ^references=matrix/neo/internal/server.machineMailBridge.Configure
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.Store.Secure kind=method
   digest=b3:1593f3ef76d2b03b973bd6f4c3efedcc349a97af5d715574dae2c61a5f906c62 file=neo/internal/machinemailsettings/machinemailsettings.go range=53:61 lang=go exported=true byte_range=928:1080
   sig=func (s *Store) Secure() bool
 EDGES
+  calls=matrix/neo/internal/machinemailsettings.Store.Persistent,matrix/vault.Session.Encrypting
+  references=matrix/neo/internal/machinemailsettings.Store,matrix/neo/internal/machinemailsettings.Store.Persistent,matrix/neo/internal/machinemailsettings.s,matrix/vault.Session.Encrypting
   ^contains=matrix/neo/internal/machinemailsettings.Store
+  ^calls=matrix/neo/internal/server.machineMailBridge.Configure,matrix/neo/internal/server.machineMailBridge.Status
+  ^references=matrix/neo/internal/server.machineMailBridge.Configure,matrix/neo/internal/server.machineMailBridge.Status
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.Store.SetVault kind=method
   digest=b3:96846495d99f22850c5d387d9df210ec4ce7e891e2b411eeaf21758d4a237fe2 file=neo/internal/machinemailsettings/machinemailsettings.go range=40:49 lang=go exported=true byte_range=686:856
   sig=func (s *Store) SetVault(sess *vault.Session, user string)
 EDGES
+  calls=matrix/neo/internal/machinemailsettings.Store.loadLocked
+  references=matrix/neo/internal/machinemailsettings.Store,matrix/neo/internal/machinemailsettings.Store.loadLocked,matrix/neo/internal/machinemailsettings.s,matrix/neo/internal/machinemailsettings.sess,matrix/neo/internal/machinemailsettings.user,matrix/vault.Session
   ^contains=matrix/neo/internal/machinemailsettings.Store
+  ^calls=matrix/neo/internal/server.NewEngine
+  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.Store.View kind=method
   digest=b3:d6036fce8377c742a4e92bb46380aa4d93013e4bac49a36fcb6c4b50a206f3be file=neo/internal/machinemailsettings/machinemailsettings.go range=63:70 lang=go exported=true byte_range=1082:1199
   sig=func (s *Store) View() State
 EDGES
+  references=matrix/neo/internal/machinemailsettings.State,matrix/neo/internal/machinemailsettings.Store,matrix/neo/internal/machinemailsettings.s
   ^contains=matrix/neo/internal/machinemailsettings.Store
+  ^calls=matrix/neo/internal/server.machineMailBridge.Configure,matrix/neo/internal/server.machineMailBridge.Disconnect,matrix/neo/internal/server.machineMailBridge.Restore,matrix/neo/internal/server.machineMailBridge.Status
+  ^references=matrix/neo/internal/server.machineMailBridge.Configure,matrix/neo/internal/server.machineMailBridge.Disconnect,matrix/neo/internal/server.machineMailBridge.Restore,matrix/neo/internal/server.machineMailBridge.Status
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.Store.ad kind=method
   digest=b3:9dd08079faa78850afb6f8c564ec31a3f15ccb3632d665b5fe8d1ae9b11b98b4 file=neo/internal/machinemailsettings/machinemailsettings.go range=102:104 lang=go exported=false byte_range=1832:1943
   sig=func (s *Store) ad() vault.AD
 EDGES
+  references=matrix/neo/internal/machinemailsettings.Store,matrix/neo/internal/machinemailsettings.s,matrix/neo/internal/machinemailsettings.schemaSettings1,matrix/neo/internal/machinemailsettings.storeSettings,matrix/vault.AD
   ^contains=matrix/neo/internal/machinemailsettings.Store
+  ^calls=matrix/neo/internal/machinemailsettings.Store.loadLocked,matrix/neo/internal/machinemailsettings.Store.persistLocked
+  ^references=matrix/neo/internal/machinemailsettings.Store.loadLocked,matrix/neo/internal/machinemailsettings.Store.persistLocked
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.Store.loadLocked kind=method
   digest=b3:30040dbeab021c8f5bab72ca8144597a94682e326c52c62a2c8eddb154c0dcea file=neo/internal/machinemailsettings/machinemailsettings.go range=106:127 lang=go exported=false byte_range=1945:2355
   sig=func (s *Store) loadLocked()
 EDGES
+  calls=matrix/neo/internal/machinemailsettings.Store.ad,matrix/neo/internal/machinemailsettings.Store.path,matrix/vault.IsVault,matrix/vault.Session.Encrypting,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
+  references=matrix/neo/internal/machinemailsettings.State,matrix/neo/internal/machinemailsettings.Store,matrix/neo/internal/machinemailsettings.Store.ad,matrix/neo/internal/machinemailsettings.Store.path,matrix/neo/internal/machinemailsettings.b,matrix/neo/internal/machinemailsettings.err,matrix/neo/internal/machinemailsettings.plain,matrix/neo/internal/machinemailsettings.s,matrix/neo/internal/machinemailsettings.state,matrix/neo/internal/machinemailsettings.uv,matrix/vault.IsVault,matrix/vault.Session.Encrypting,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
   ^contains=matrix/neo/internal/machinemailsettings.Store
+  ^calls=matrix/neo/internal/machinemailsettings.Store.SetVault
+  ^references=matrix/neo/internal/machinemailsettings.Store.SetVault
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.Store.path kind=method
   digest=b3:b86d76964e3877b18a8e9a492a324387261f960947fa8e0671c9253c1ee2a5dc file=neo/internal/machinemailsettings/machinemailsettings.go range=158:158 lang=go exported=false byte_range=3168:3243
   sig=func (s *Store) path() string
 EDGES
+  references=matrix/neo/internal/machinemailsettings.Store,matrix/neo/internal/machinemailsettings.s,matrix/neo/internal/machinemailsettings.settingsFile
   ^contains=matrix/neo/internal/machinemailsettings.Store
+  ^calls=matrix/neo/internal/machinemailsettings.Store.Clear,matrix/neo/internal/machinemailsettings.Store.loadLocked,matrix/neo/internal/machinemailsettings.Store.persistLocked
+  ^references=matrix/neo/internal/machinemailsettings.Store.Clear,matrix/neo/internal/machinemailsettings.Store.loadLocked,matrix/neo/internal/machinemailsettings.Store.persistLocked
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.Store.persistLocked kind=method
   digest=b3:5ccd31359d26102885b36f412fea6ead9861b947d32cbbae5913aed0d861fb19 file=neo/internal/machinemailsettings/machinemailsettings.go range=129:156 lang=go exported=false byte_range=2357:3166
   sig=func (s *Store) persistLocked() error
 EDGES
+  calls=matrix/neo/internal/machinemailsettings.Store.ad,matrix/neo/internal/machinemailsettings.Store.path,matrix/vault.Session.Encrypting,matrix/vault.Session.MaybeSealFile
+  references=matrix/neo/internal/machinemailsettings.ErrEncryptionRequired,matrix/neo/internal/machinemailsettings.Store,matrix/neo/internal/machinemailsettings.Store.ad,matrix/neo/internal/machinemailsettings.Store.path,matrix/neo/internal/machinemailsettings.b,matrix/neo/internal/machinemailsettings.err,matrix/neo/internal/machinemailsettings.s,matrix/neo/internal/machinemailsettings.tmp,matrix/vault.Session.Encrypting,matrix/vault.Session.MaybeSealFile
   ^contains=matrix/neo/internal/machinemailsettings.Store
+  ^calls=matrix/neo/internal/machinemailsettings.Store.Replace
+  ^references=matrix/neo/internal/machinemailsettings.Store.Replace
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.schemaSettings1 kind=const
   digest=b3:faa34ce9fc52891adf9e2f01568bfafe7461f0aaa00539fc0fe3c9206b800290 file=neo/internal/machinemailsettings/machinemailsettings.go range=19:19 lang=go exported=false byte_range=239:282
   sig=untyped string
 EDGES
+  ^references=matrix/neo/internal/machinemailsettings.Store.ad
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.settingsFile kind=const
   digest=b3:da2922e09e31854d7508169611e6311ab3e0fde394aff50254e13a796a9600f6 file=neo/internal/machinemailsettings/machinemailsettings.go range=15:15 lang=go exported=false byte_range=140:182
   sig=untyped string
 EDGES
+  ^references=matrix/neo/internal/machinemailsettings.Store.path
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings.storeSettings kind=const
   digest=b3:f28d5a7e9a38bc02dd90435367eb1fc99111c534299a28c0128513440734fa13 file=neo/internal/machinemailsettings/machinemailsettings.go range=18:18 lang=go exported=false byte_range=193:237
   sig=untyped string
 EDGES
+  ^references=matrix/neo/internal/machinemailsettings.Store.ad
   ^defines=matrix/neo/internal/machinemailsettings/machinemailsettings.go
 
 NODE id=matrix/neo/internal/machinemailsettings/machinemailsettings.go kind=file

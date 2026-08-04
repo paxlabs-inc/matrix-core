@@ -198,7 +198,7 @@ func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, ind
 			Main:          subMain,
 			Cheap:         e.cheap,
 			Tools:         e.tools,
-			Pager:         e.pager, // shared cortex READ lane; no consolidator (no write-back noise)
+			Pager:         e.pager, // shared Neocortex READ lane; no consolidator (no write-back noise)
 			Runtime:       e.runtime,
 			Reporter:      rep,
 			Observer:      func(ev agent.ToolEvent) { e.surfaceSubagentStep(r, swarmID, index, spec.Name, ev) },
@@ -377,7 +377,7 @@ const subagentMaxInheritedPatterns = 5
 // subagentSelfModelBrief renders the shared self-model each sub-agent inherits
 // at spawn (self-model task 4.3, req.9.1): the structural self-summary (how the
 // agent is built) plus the most salient how-I-fail patterns (what to avoid). It
-// is resolved once per swarm from the shared cortex pager. Returns "" when no
+// is resolved once per swarm from the shared Neocortex pager. Returns "" when no
 // pager is wired or the self-model is empty (a fresh install before the
 // self-graph is loaded) — the sub-agent then runs on its persona + bounds alone,
 // never blocked on the self-model.

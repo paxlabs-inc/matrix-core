@@ -120,12 +120,12 @@ func TestDisabledStoreNoop(t *testing.T) {
 	}
 }
 
-// TestDir derives a tasks dir beside the cortex root, override wins.
+// TestDir derives a tasks dir beside the Neocortex root, override wins.
 func TestDir(t *testing.T) {
-	if got := Dir("", "/data/.cortex"); got != filepath.FromSlash("/data/tasks") {
+	if got := Dir("", "/data/.Neocortex"); got != filepath.FromSlash("/data/tasks") {
 		t.Errorf("derived dir = %q, want /data/tasks", got)
 	}
-	if got := Dir("/custom/tasks", "/data/.cortex"); got != "/custom/tasks" {
+	if got := Dir("/custom/tasks", "/data/.Neocortex"); got != "/custom/tasks" {
 		t.Errorf("override should win, got %q", got)
 	}
 	if got := Dir("", ""); got != "" {

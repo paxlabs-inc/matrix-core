@@ -6,7 +6,7 @@ package server
 // Wake-path tests for the AUTOMATRIX idle-wake handler (task 3.3, req
 // 4.3–4.7). The pure decider tests exercise the REAL decision/jitter/skip
 // logic over REAL memory.OpportunitySpec values with a seeded REAL *rand.Rand —
-// no doubles at all. The handler tests drive the REAL Engine + a REAL cortex
+// no doubles at all. The handler tests drive the REAL Engine + a REAL Neocortex
 // pager (under t.TempDir(), hash embedder) so PendingOpportunities is the
 // genuine code path; the AutomatrixGovernor is a faithful in-package
 // implementation of the seam that stores real state and records real calls
@@ -52,14 +52,14 @@ func (g *stateGovernor) Reschedule(_ context.Context, next time.Time) error {
 	return nil
 }
 
-// newWakeTestEngine builds a real Engine backed by a real cortex pager under
+// newWakeTestEngine builds a real Engine backed by a real Neocortex pager under
 // t.TempDir() (hash embedder, fully offline). The RNG is seeded for
 // determinism; the skip probability is pinned per test.
 func newWakeTestEngine(t *testing.T) (*Engine, *memory.Pager) {
 	t.Helper()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-automatrix-wake-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-automatrix-wake-test"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)

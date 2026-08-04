@@ -23,16 +23,16 @@ import (
 
 // TestPinnedOncePerTurnAndMidTurnWritesDeferred proves the NE-7 discipline on
 // the real loop's SINGLE memory path: the activation bundle is assembled ONCE
-// per turn, and a cortex write landing MID-TURN (while the loop is between
+// per turn, and a Neocortex write landing MID-TURN (while the loop is between
 // steps) does not mutate the rendered snapshot — it surfaces on the NEXT turn.
-// Real Agent.Chat, real cortex pager, real httptest SSE endpoint; the mid-turn
+// Real Agent.Chat, real Neocortex pager, real httptest SSE endpoint; the mid-turn
 // write happens inside the model handler, which genuinely executes between
 // loop steps.
 func TestPinnedOncePerTurnAndMidTurnWritesDeferred(t *testing.T) {
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-prefix-discipline"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-prefix-discipline"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)
@@ -54,7 +54,7 @@ func TestPinnedOncePerTurnAndMidTurnWritesDeferred(t *testing.T) {
 		mu.Unlock()
 
 		// The FIRST model call of a turn is in flight while the loop is
-		// mid-turn: write a hard constraint into the REAL cortex here, before
+		// mid-turn: write a hard constraint into the REAL Neocortex here, before
 		// the loop assembles step 2's window.
 		writeMu.Lock()
 		if !wrote {
@@ -104,7 +104,7 @@ func TestPinnedOncePerTurnAndMidTurnWritesDeferred(t *testing.T) {
 	}
 	for i, b := range turn1 {
 		if strings.Contains(b, "never deploy on fridays") {
-			t.Fatalf("mid-turn cortex write leaked into the frozen turn-1 snapshot (model call %d)", i+1)
+			t.Fatalf("mid-turn Neocortex write leaked into the frozen turn-1 snapshot (model call %d)", i+1)
 		}
 	}
 

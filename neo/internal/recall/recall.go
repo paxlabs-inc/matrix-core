@@ -9,7 +9,7 @@
 // It is the leanest form of the Context Assembler's recall stage
 // (MCL/assembler.frozen.kvx [side_lane]): turns are embedded + cosine-ranked
 // IN MEMORY, recomputed lazily from the durable conversation store on demand —
-// a derivable, disposable index that never touches cortex or the replay chain
+// a derivable, disposable index that never touches Neocortex or the replay chain
 // (preserving the conversation side-channel invariant). When the real Loom
 // pipeline lands this becomes the cortex_recall stage's conversational source.
 //
@@ -26,9 +26,12 @@ import (
 	"strings"
 	"sync"
 
-	"matrix/cortex/embed"
 	"matrix/neo/internal/conversation"
 )
+
+type Embedder interface {
+	Embed(string) ([]float32, error)
+}
 
 // Hit is one recalled past turn, rendered verbatim (high-entropy tokens are
 // never paraphrased — the trust contract).
@@ -52,7 +55,7 @@ type turnVec struct {
 type Recaller struct {
 	conv   *conversation.Store
 	convID string
-	emb    embed.Embedder
+	emb    Embedder
 	topK   int
 	budget int // token ceiling (bytes/4 heuristic) for the recalled block
 
@@ -64,7 +67,7 @@ type Recaller struct {
 // New builds a Recaller for convID. A nil embedder or disabled store yields a
 // safe no-op recaller (Relevant returns nil). topK / budgetTokens fall back to
 // sane defaults when non-positive.
-func New(conv *conversation.Store, convID string, emb embed.Embedder, topK, budgetTokens int) *Recaller {
+func New(conv *conversation.Store, convID string, emb Embedder, topK, budgetTokens int) *Recaller {
 	if topK <= 0 {
 		topK = 6
 	}
@@ -118,7 +121,7 @@ func (r *Recaller) Relevant(ctx context.Context, queryText string) []Hit {
 	}
 	scores := make([]scored, len(r.cache))
 	for i := range r.cache {
-		scores[i] = scored{i, embed.Cosine(qv, r.cache[i].vec)}
+		scores[i] = scored{i, cosine(qv, r.cache[i].vec)}
 	}
 	sort.SliceStable(scores, func(a, b int) bool { return scores[a].score > scores[b].score })
 
@@ -139,6 +142,30 @@ func (r *Recaller) Relevant(ctx context.Context, queryText string) []Hit {
 		used += cost
 	}
 	return out
+}
+
+func cosine(a, b []float32) float32 {
+	if len(a) == 0 || len(a) != len(b) {
+		return 0
+	}
+	var dot, aa, bb float32
+	for i := range a {
+		dot += a[i] * b[i]
+		aa += a[i] * a[i]
+		bb += b[i] * b[i]
+	}
+	if aa == 0 || bb == 0 {
+		return 0
+	}
+	return dot / sqrt32(aa*bb)
+}
+
+func sqrt32(value float32) float32 {
+	x := value
+	for i := 0; i < 12; i++ {
+		x = (x + value/x) / 2
+	}
+	return x
 }
 
 // refreshLocked embeds any turns appended since the last call, extending the

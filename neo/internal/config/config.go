@@ -7,7 +7,7 @@
 // discipline, and the execution surface (which actions stay "Natural" vs.
 // escalate to MCL) — comes from the frozen design spec at neo/neo.frozen.kvx
 // and is encoded as the Default() values here. Deployment wiring (models,
-// cortex location, the daemon URL used for core_execute delegation) is
+// Neocortex location, the daemon URL used for core_execute delegation) is
 // overlaid from an optional runtime .kvx file and then from environment
 // variables, so a fresh checkout runs with zero config.
 //
@@ -23,26 +23,14 @@ import (
 	"matrix/vault"
 )
 
-// Memory substrate values for Config.MemorySubstrate. The resurrection loop
-// runs on the old cortex until the owner flips the flag (NEOCORTEX wave 7).
-const (
-	SubstrateCortex    = "cortex"
-	SubstrateNeocortex = "neocortex"
-)
-
 // Config is Neo's fully-resolved runtime configuration.
 type Config struct {
 	// --- identity / runtime wiring ---
-	AgentName   string // human label, "Morpheus" (the market identity; "Neo" stays a valid configured name)
-	CortexRoot  string // root dir of the cortex brain (per-actor stores live under it)
-	CortexActor string // actor scope for Neo's memory store
-	// MemorySubstrate selects the memory backend for the resurrection loop
-	// seam: "cortex" (the live default) or "neocortex" (cortexd side-by-side
-	// qualification). The default never flips without an explicit owner
-	// decision; any unrecognized value resolves to "cortex".
-	MemorySubstrate string
-	CortexdSocket   string // unix socket path of the per-user cortexd daemon
-	CortexdToken    string // hex capability token scoping this actor's cortexd namespace
+	AgentName       string // human label, "Morpheus" (the market identity; "Neo" stays a valid configured name)
+	DataRoot        string // root for Neo-owned sidecars and runtime state
+	NeocortexActor  string // actor scope for Neo's Neocortex namespace
+	NeocortexSocket string // unix socket path of the Neocortex engine
+	NeocortexToken  string // hex capability token scoping this actor's namespace
 	DaemonURL       string // base URL of the MCL daemon for core_execute delegation
 	ManifestPath    string // agent manifest declaring MCP servers (agents/default.json)
 	SkillsRoot      string // skills corpus root (procedural-pattern promotion target)
@@ -52,7 +40,7 @@ type Config struct {
 	MainModel  string // the conversational tool-calling loop
 	CheapModel string // compaction + summary validation + cheap relation-classify
 	// ConsolidationModel extracts durable learnings from each turn's transcript
-	// into cortex (memory write-back). A stronger model than CheapModel because
+	// into Neocortex (memory write-back). A stronger model than CheapModel because
 	// extraction quality directly sets memory quality; still cheap-tier (it runs
 	// once per turn in the background). Must be on the gateway neo-slot whitelist.
 	ConsolidationModel string
@@ -65,11 +53,11 @@ type Config struct {
 	CassandraModel         string
 	CassandraEscalateModel string
 
-	// --- memory budget (context window = RAM; cortex = disk) ---
+	// --- memory budget (context window = RAM; Neocortex = disk) ---
 	ContextWindowTokens   int // total model context window, for budget math
 	SoftPct               int // cooperative compaction threshold (finish atomic step, then compact)
 	HardPct               int // forced compaction threshold (runaway backstop)
-	RetrievalTopK         int // page-fault: top-K cortex records per retrieval
+	RetrievalTopK         int // page-fault: top-K Neocortex records per retrieval
 	RetrievalBudgetTokens int // token ceiling for retrieved records
 	// AmbientRetrievalTopK caps the ambient (push) memory seed injected into
 	// the system block each turn (v3 #1: reasoning-time retrieval). 0 = fully
@@ -81,7 +69,7 @@ type Config struct {
 	PinnedBudgetTokens   int // token ceiling for the always-injected pinned block
 	RecallTopK           int // conversational recall: top-K relevant past turns per turn
 	RecallBudgetTokens   int // token ceiling for the recalled past-turns block
-	// ActivationBudgetTokens caps the per-turn cortex activation bundle (the
+	// ActivationBudgetTokens caps the per-turn Neocortex activation bundle (the
 	// continuous-memory trailing tail: pinned + timeline + recent + transcript
 	// slice + story-so-far). 0 = derive from the window via ActivationBudget()
 	// — window-proportional so a 1M window carries a rich bundle while a 32K
@@ -89,7 +77,7 @@ type Config struct {
 	ActivationBudgetTokens int
 
 	// FirstTurnRelevancePush injects a bounded RELEVANCE retrieval into the
-	// activation window on the FIRST turn of a conversation only. cortex.Activate's
+	// activation window on the FIRST turn of a conversation only. Neocortex.Activate's
 	// pushed tiers (Pinned/Timeline/Recent) are recency-based and query-INDEPENDENT
 	// (activate.go: the query arg is unused), so on the opening message the agent
 	// carries recency but NOT relevance-to-the-ask unless it reactively calls
@@ -290,7 +278,7 @@ type Config struct {
 
 	// --- data-at-rest vault (set programmatically by runServe after
 	// vault.Boot, never from env; nil = legacy plaintext dev/CLI) ---
-	Vault     *vault.Session // fail-closed sealing session for every store incl. cortex
+	Vault     *vault.Session // fail-closed sealing session for every store incl. Neocortex
 	VaultUser string         // user DID bound into sealed objects' associated data
 }
 
@@ -307,14 +295,13 @@ type RuntimeProviderConfig struct {
 // operational contract (neo/neo.frozen.kvx).
 func Default() Config {
 	return Config{
-		AgentName:       "Morpheus",
-		CortexRoot:      "/root/.cortex",
-		CortexActor:     "neo",
-		MemorySubstrate: SubstrateCortex,
-		DaemonURL:       "http://127.0.0.1:8080",
-		ManifestPath:    "agents/default.json",
-		SkillsRoot:      "skills",
-		SelfModelGraph:  "graph/self-model",
+		AgentName:      "Morpheus",
+		DataRoot:       "/root/.neocortex",
+		NeocortexActor: "neo",
+		DaemonURL:      "http://127.0.0.1:8080",
+		ManifestPath:   "agents/default.json",
+		SkillsRoot:     "skills",
+		SelfModelGraph: "graph/self-model",
 
 		MainModel:          "mimo-v2.5-pro",
 		CheapModel:         "mimo-v2.5-pro",
@@ -448,7 +435,7 @@ func Default() Config {
 }
 
 // Sandbox returns a hermetic local-dev preset that wires a throwaway temp
-// cortex, the existing Hash embedder stub, a no-op chain RPC (empty
+// Neocortex, the existing Hash embedder stub, a no-op chain RPC (empty
 // DaemonURL), and metering disabled (empty GatewayURL) — by composing the
 // EXISTING override points (Config struct fields) only. No new runtime
 // paths are introduced; every field set here is one a kvx profile or env
@@ -472,11 +459,9 @@ func Default() Config {
 func Sandbox() Config {
 	c := Default()
 	c.AgentName = "Morpheus (sandbox)"
-	// Throwaway cortex root under the OS temp dir so no production brain
-	// is touched. os.MkdirAll is deferred to the caller (memory.Open /
-	// newInfra) which already creates the path; here we only name it.
-	c.CortexRoot = os.TempDir() + "/matrix-sandbox-cortex"
-	c.CortexActor = "sandbox"
+	// Throwaway runtime root so sandbox sidecars cannot touch production data.
+	c.DataRoot = os.TempDir() + "/matrix-sandbox-neocortex"
+	c.NeocortexActor = "sandbox"
 	// No live chain / core_execute delegation: blank the daemon URL so
 	// delegate calls short-circuit rather than dialing 127.0.0.1:8080.
 	c.DaemonURL = ""
@@ -518,8 +503,8 @@ func Load(path string) (Config, error) {
 func (c *Config) applyDoc(d *kvxDoc) {
 	if d.has("runtime") {
 		c.AgentName = d.strOr("runtime", "agent_name", c.AgentName)
-		c.CortexRoot = d.strOr("runtime", "cortex_root", c.CortexRoot)
-		c.CortexActor = d.strOr("runtime", "cortex_actor", c.CortexActor)
+		c.DataRoot = d.strOr("runtime", "data_root", c.DataRoot)
+		c.NeocortexActor = d.strOr("runtime", "neocortex_actor", c.NeocortexActor)
 		c.DaemonURL = d.strOr("runtime", "daemon_url", c.DaemonURL)
 		c.ManifestPath = d.strOr("runtime", "manifest_path", c.ManifestPath)
 		c.SkillsRoot = d.strOr("runtime", "skills_root", c.SkillsRoot)
@@ -658,16 +643,10 @@ func (c *Config) applyEnv() {
 	c.EmbedModel = envOr("NEO_EMBED_MODEL", c.EmbedModel)
 	c.CassandraModel = envOr("NEO_CASSANDRA_MODEL", c.CassandraModel)
 	c.CassandraEscalateModel = envOr("NEO_CASSANDRA_ESCALATE_MODEL", c.CassandraEscalateModel)
-	c.CortexRoot = envOr("NEO_CORTEX_ROOT", c.CortexRoot)
-	c.CortexActor = envOr("NEO_CORTEX_ACTOR", c.CortexActor)
-	c.MemorySubstrate = strings.ToLower(strings.TrimSpace(
-		envOr("NEO_MEMORY_SUBSTRATE", c.MemorySubstrate),
-	))
-	if c.MemorySubstrate != SubstrateNeocortex {
-		c.MemorySubstrate = SubstrateCortex
-	}
-	c.CortexdSocket = envOr("NEO_CORTEXD_SOCKET", c.CortexdSocket)
-	c.CortexdToken = envOr("NEO_CORTEXD_TOKEN", c.CortexdToken)
+	c.DataRoot = envOr("NEO_DATA_ROOT", c.DataRoot)
+	c.NeocortexActor = envOr("NEO_NEOCORTEX_ACTOR", c.NeocortexActor)
+	c.NeocortexSocket = envOr("NEO_NEOCORTEX_SOCKET", c.NeocortexSocket)
+	c.NeocortexToken = envOr("NEO_NEOCORTEX_TOKEN", c.NeocortexToken)
 	c.DaemonURL = envOr("NEO_DAEMON_URL", c.DaemonURL)
 	c.ManifestPath = envOr("NEO_MANIFEST", c.ManifestPath)
 	c.SkillsRoot = envOr("NEO_SKILLS_ROOT", c.SkillsRoot)
@@ -899,14 +878,14 @@ func (c Config) HardBudgetTokens() int {
 }
 
 // Bounds for the derived activation-bundle budget (ActivationBudget below).
-// The floor is the historical cortex default (small windows keep their exact
-// prior behavior); the ceiling stays under cortex.MaxActivateBudgetTokens.
+// The floor is the historical Neocortex default (small windows keep their exact
+// prior behavior); the ceiling stays under Neocortex.MaxActivateBudgetTokens.
 const (
 	activationBudgetFloorTokens = 3000
 	activationBudgetCapTokens   = 24000
 )
 
-// ActivationBudget returns the per-turn cortex activation-bundle token budget.
+// ActivationBudget returns the per-turn Neocortex activation-bundle token budget.
 // An explicit ActivationBudgetTokens wins verbatim; otherwise it derives
 // window-proportionally (2% of the context window) clamped to
 // [activationBudgetFloorTokens, activationBudgetCapTokens] — 1M → 20000,

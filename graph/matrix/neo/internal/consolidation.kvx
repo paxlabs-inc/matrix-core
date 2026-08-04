@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/neo/internal/consolidation kind=package
   digest=b3:1312c8cba5701f17d0421bdf26a103ab041a7740cfd618248d1b287400154dcb file=neo/internal/consolidation range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/consolidation/job.go
   ^contains=mod:matrix/neo
+  ^imports=matrix/neo/internal/agent,matrix/neo/internal/runtime/loop,matrix/neo/internal/writeback
 
 NODE id=matrix/neo/internal/consolidation.Evidence kind=type
   digest=b3:1fb6fdbda4f1cd60bcc9c9b2cebf05f37d1183c5877b8bcd9c5678e7d0786633 file=neo/internal/consolidation/job.go range=21:26 lang=go exported=true byte_range=448:550
   sig=type Evidence struct {\n	Kind		EvidenceKind\n	Content		string\n	ToolName	string\n	AttemptID	string\n}
 EDGES
   contains=matrix/neo/internal/consolidation.Evidence#AttemptID,matrix/neo/internal/consolidation.Evidence#Content,matrix/neo/internal/consolidation.Evidence#Kind,matrix/neo/internal/consolidation.Evidence#ToolName
+  references=matrix/neo/internal/consolidation.EvidenceKind
+  ^references=matrix/neo/internal/agent.Agent.consolidateWorking,matrix/neo/internal/consolidation.Job,matrix/neo/internal/consolidation.evidenceKey,matrix/neo/internal/consolidation.mergeEvidence,matrix/neo/internal/runtime/loop.DeliveryChoke.consolidate,matrix/neo/internal/runtime/loop.neocortexConsolidationAssertion,matrix/neo/internal/writeback.Consolidator.ConsolidateSync
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.Evidence#AttemptID kind=field
@@ -41,30 +44,39 @@ NODE id=matrix/neo/internal/consolidation.EvidenceAssistant kind=const
   digest=b3:3cd3b0ba6a0ff3463e1b215219ed0a514f63aaaef0dbc42fb163739858da60b1 file=neo/internal/consolidation/job.go range=17:17 lang=go exported=true byte_range=347:391
   sig=consolidation.EvidenceKind
 EDGES
+  references=matrix/neo/internal/consolidation.EvidenceKind
+  ^references=matrix/neo/internal/agent.Agent.consolidateWorking,matrix/neo/internal/runtime/loop.DeliveryChoke.consolidate
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.EvidenceKind kind=type
   digest=b3:91b3d145fdd89ee3fcbb98864384b2727a8240768d0e3eb08f2f72f40f085884 file=neo/internal/consolidation/job.go range=12:12 lang=go exported=true byte_range=230:254
   sig=type EvidenceKind string
 EDGES
+  ^references=matrix/neo/internal/consolidation.Evidence,matrix/neo/internal/consolidation.EvidenceAssistant,matrix/neo/internal/consolidation.EvidenceTool,matrix/neo/internal/consolidation.EvidenceUser,matrix/neo/internal/consolidation.EvidenceVerified
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.EvidenceTool kind=const
   digest=b3:461e6bb47be99a84b69a5a4f8a13e97e0e8d04e581a7e3aed8d84df2c8b8b807 file=neo/internal/consolidation/job.go range=16:16 lang=go exported=true byte_range=306:345
   sig=consolidation.EvidenceKind
 EDGES
+  references=matrix/neo/internal/consolidation.EvidenceKind
+  ^references=matrix/neo/internal/agent.Agent.consolidateWorking,matrix/neo/internal/runtime/loop.DeliveryChoke.consolidate
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.EvidenceUser kind=const
   digest=b3:d49166671b83cf93067dd780c1efd5880f249ae8eb08686e06b603395e562e8c file=neo/internal/consolidation/job.go range=15:15 lang=go exported=true byte_range=265:304
   sig=consolidation.EvidenceKind
 EDGES
+  references=matrix/neo/internal/consolidation.EvidenceKind
+  ^references=matrix/neo/internal/agent.Agent.consolidateWorking,matrix/neo/internal/runtime/loop.DeliveryChoke.consolidate
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.EvidenceVerified kind=const
   digest=b3:c902948ef1237065dbfc6c5d0f54be0c8dba24d38f88da3b0df515bb64f7ca2c file=neo/internal/consolidation/job.go range=18:18 lang=go exported=true byte_range=393:444
   sig=consolidation.EvidenceKind
 EDGES
+  references=matrix/neo/internal/consolidation.EvidenceKind
+  ^references=matrix/neo/internal/agent.Agent.consolidateWorking,matrix/neo/internal/writeback.Consolidator.ConsolidateSync
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.Job kind=type
@@ -72,6 +84,8 @@ NODE id=matrix/neo/internal/consolidation.Job kind=type
   sig=type Job struct {\n	IntentID	string\n	Attempt		int\n	Terminal	bool\n	Objective	string\n	Context		[]Message\n	Evidence	[]Evidence\n	Outcome		string\n	Conv		string\n	HaveSeq		bool\n	SeqLo		uint64\n	SeqHi		uint64\n}
 EDGES
   contains=matrix/neo/internal/consolidation.Job#Attempt,matrix/neo/internal/consolidation.Job#Context,matrix/neo/internal/consolidation.Job#Conv,matrix/neo/internal/consolidation.Job#Evidence,matrix/neo/internal/consolidation.Job#HaveSeq,matrix/neo/internal/consolidation.Job#IntentID,matrix/neo/internal/consolidation.Job#Objective,matrix/neo/internal/consolidation.Job#Outcome,matrix/neo/internal/consolidation.Job#SeqHi,matrix/neo/internal/consolidation.Job#SeqLo,matrix/neo/internal/consolidation.Job#Terminal,matrix/neo/internal/consolidation.Job.Empty
+  references=matrix/neo/internal/consolidation.Evidence,matrix/neo/internal/consolidation.Message
+  ^references=matrix/neo/internal/agent.Agent.consolidateWorking,matrix/neo/internal/agent.Consolidator,matrix/neo/internal/consolidation.Job.Empty,matrix/neo/internal/consolidation.Merge,matrix/neo/internal/consolidation.Render,matrix/neo/internal/runtime/loop.Consolidator,matrix/neo/internal/runtime/loop.DeliveryChoke.consolidate,matrix/neo/internal/runtime/loop.NeocortexAdapter.Consolidate,matrix/neo/internal/runtime/loop.neocortexConsolidationAssertion,matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.Consolidator.Consolidate,matrix/neo/internal/writeback.Consolidator.ConsolidateSync,matrix/neo/internal/writeback.Consolidator.drain,matrix/neo/internal/writeback.Consolidator.linkProvenance,matrix/neo/internal/writeback.Consolidator.process,matrix/neo/internal/writeback.New
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.Job#Attempt kind=field
@@ -144,13 +158,20 @@ NODE id=matrix/neo/internal/consolidation.Job.Empty kind=method
   digest=b3:e10aa7671d5e662847f76b4d6a49a969adf05a2bc2287d6109d1390a4e46927f file=neo/internal/consolidation/job.go range=47:57 lang=go exported=true byte_range=828:1080
   sig=func (j Job) Empty() bool
 EDGES
+  references=matrix/neo/internal/consolidation.Job,matrix/neo/internal/consolidation.evidence,matrix/neo/internal/consolidation.j
   ^contains=matrix/neo/internal/consolidation.Job
+  ^calls=matrix/neo/internal/writeback.Consolidator.Consolidate
+  ^references=matrix/neo/internal/writeback.Consolidator.Consolidate
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.Merge kind=func
   digest=b3:9f521c83ab06385b251e51e5ced2d1bbee3bf00db9e0ee7f9d1e7eace222272c file=neo/internal/consolidation/job.go range=59:88 lang=go exported=true byte_range=1082:2021
   sig=func Merge(current, next Job) Job
 EDGES
+  calls=matrix/neo/internal/consolidation.mergeEvidence,matrix/neo/internal/consolidation.mergeMessages
+  references=matrix/neo/internal/consolidation.Job,matrix/neo/internal/consolidation.current,matrix/neo/internal/consolidation.mergeEvidence,matrix/neo/internal/consolidation.mergeMessages,matrix/neo/internal/consolidation.next
+  ^calls=matrix/neo/internal/writeback.Consolidator.Consolidate
+  ^references=matrix/neo/internal/writeback.Consolidator.Consolidate
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.Message kind=type
@@ -158,6 +179,7 @@ NODE id=matrix/neo/internal/consolidation.Message kind=type
   sig=type Message struct {\n	Role	string\n	Content	string\n}
 EDGES
   contains=matrix/neo/internal/consolidation.Message#Content,matrix/neo/internal/consolidation.Message#Role
+  ^references=matrix/neo/internal/consolidation.Job,matrix/neo/internal/consolidation.mergeMessages
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.Message#Content kind=field
@@ -176,30 +198,46 @@ NODE id=matrix/neo/internal/consolidation.Render kind=func
   digest=b3:0013a674ea6ad8370ec84fe03190de84133c12acad95458d8ea52e1769ef2c0c file=neo/internal/consolidation/job.go range=90:132 lang=go exported=true byte_range=2023:3505
   sig=func Render(j Job) (string, map[int]struct{})
 EDGES
+  references=matrix/neo/internal/consolidation.Job,matrix/neo/internal/consolidation.attempt,matrix/neo/internal/consolidation.b,matrix/neo/internal/consolidation.content,matrix/neo/internal/consolidation.evidence,matrix/neo/internal/consolidation.i,matrix/neo/internal/consolidation.id,matrix/neo/internal/consolidation.j,matrix/neo/internal/consolidation.message,matrix/neo/internal/consolidation.objective,matrix/neo/internal/consolidation.outcome,matrix/neo/internal/consolidation.tool,matrix/neo/internal/consolidation.valid
+  ^calls=matrix/neo/internal/writeback.Consolidator.process
+  ^references=matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.ValidCitations kind=func
   digest=b3:09bfce102aea922082e56a5d36caa96950d4c9c903d0e91a2493b356970f14ed file=neo/internal/consolidation/job.go range=134:144 lang=go exported=true byte_range=3507:3701
   sig=func ValidCitations(ids []int, valid map[int]struct{}) bool
 EDGES
+  references=matrix/neo/internal/consolidation.id,matrix/neo/internal/consolidation.ids,matrix/neo/internal/consolidation.ok,matrix/neo/internal/consolidation.valid
+  ^calls=matrix/neo/internal/writeback.Consolidator.process
+  ^references=matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.evidenceKey kind=func
   digest=b3:84fdab36e79445272a789f7848d7344442dc9aa397abbf2ed58f276087e6e69b file=neo/internal/consolidation/job.go range=166:169 lang=go exported=false byte_range=4201:4388
   sig=func evidenceKey(e Evidence) string
 EDGES
+  references=matrix/neo/internal/consolidation.Evidence,matrix/neo/internal/consolidation.e
+  ^calls=matrix/neo/internal/consolidation.mergeEvidence
+  ^references=matrix/neo/internal/consolidation.mergeEvidence
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.mergeEvidence kind=func
   digest=b3:d65fd608d55b4256ec43c32e50e8ce870d0e01b7cec4cc258653e57f5fb7d19a file=neo/internal/consolidation/job.go range=146:164 lang=go exported=false byte_range=3703:4199
   sig=func mergeEvidence(left, right []Evidence) []Evidence
 EDGES
+  calls=matrix/neo/internal/consolidation.evidenceKey
+  references=matrix/neo/internal/consolidation.Evidence,matrix/neo/internal/consolidation.evidence,matrix/neo/internal/consolidation.evidenceKey,matrix/neo/internal/consolidation.i,matrix/neo/internal/consolidation.k,matrix/neo/internal/consolidation.key,matrix/neo/internal/consolidation.left,matrix/neo/internal/consolidation.ok,matrix/neo/internal/consolidation.out,matrix/neo/internal/consolidation.right,matrix/neo/internal/consolidation.seen
+  ^calls=matrix/neo/internal/consolidation.Merge
+  ^references=matrix/neo/internal/consolidation.Merge
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation.mergeMessages kind=func
   digest=b3:5353be3137ee09d79fafa93d5958a40c4faafa4c7ba8a90c956590c2f18851b3 file=neo/internal/consolidation/job.go range=171:186 lang=go exported=false byte_range=4390:4856
   sig=func mergeMessages(left, right []Message) []Message
 EDGES
+  references=matrix/neo/internal/consolidation.Message,matrix/neo/internal/consolidation.key,matrix/neo/internal/consolidation.left,matrix/neo/internal/consolidation.message,matrix/neo/internal/consolidation.ok,matrix/neo/internal/consolidation.out,matrix/neo/internal/consolidation.right,matrix/neo/internal/consolidation.seen
+  ^calls=matrix/neo/internal/consolidation.Merge
+  ^references=matrix/neo/internal/consolidation.Merge
   ^defines=matrix/neo/internal/consolidation/job.go
 
 NODE id=matrix/neo/internal/consolidation/job.go kind=file

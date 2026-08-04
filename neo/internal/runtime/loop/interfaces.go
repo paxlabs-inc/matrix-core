@@ -7,7 +7,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"matrix/cortex"
+	"matrix/cortexclient"
 	"matrix/neo/internal/consolidation"
 	"matrix/neo/internal/runtime/liveness"
 	"matrix/neo/internal/runtime/protocol"
@@ -120,7 +120,7 @@ type EvidenceJournal interface {
 	CommitToolExecution(
 		context.Context,
 		ToolExecution,
-	) (cortex.ToolEventCitation, error)
+	) (cortexclient.ToolEventCitation, error)
 }
 
 type EvidenceObserver interface {
@@ -143,7 +143,7 @@ type LivenessSource interface {
 // execution; when the controller decides the step warrants doubt it returns
 // the first-person line to fold into the NEXT request-time clone. The line is
 // never appended to durable state, so controller guidance cannot reach the
-// durable transcript or the cortex transcript.
+// durable transcript or the Neocortex transcript.
 type DoubtController interface {
 	ObserveMismatch(context.Context, int, ToolExecution) (string, bool)
 }

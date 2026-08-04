@@ -212,8 +212,8 @@ func TestBriefPauseKeepsAlarm(t *testing.T) {
 func newBriefTestServer(t *testing.T) (*httptest.Server, *recordingBriefAlarmController) {
 	t.Helper()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-brief-control-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-brief-control-test"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)

@@ -89,7 +89,7 @@ func primeKeyedAgent(t *testing.T, url string, pager *memory.Pager, convID strin
 //
 //  1. a real predecessor dies on the REAL agent.Chat loop (a genuine
 //     no_progress_stall, ErrIncomplete with a where-it-got-stuck digest);
-//  2. the death is persisted as a REAL cortex death-journal Event and is
+//  2. the death is persisted as a REAL Neocortex death-journal Event and is
 //     surfaced again by ordinary recall (the durable read path);
 //  3. the successor's catch-up prime is built by the REAL resumePrime, folding
 //     the predecessor's digest with a do-NOT-repeat framing (the immediate read
@@ -98,7 +98,7 @@ func primeKeyedAgent(t *testing.T, url string, pager *memory.Pager, convID strin
 //     losing move — it converges — while a BLIND respawn (same model, objective
 //     only) repeats the losing move and dies again.
 //
-// Real cortex, real death-journal entry, real resume prime, real Chat loop — the
+// Real Neocortex, real death-journal entry, real resume prime, real Chat loop — the
 // difference between converging and looping is exactly the inherited death
 // knowledge.
 func TestE2E_BlindRespawnCuredBySelfAwareness(t *testing.T) {
@@ -107,8 +107,8 @@ func TestE2E_BlindRespawnCuredBySelfAwareness(t *testing.T) {
 	srv := primeKeyedServer(t, &calls, &mu)
 
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-e2e-respawn"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-e2e-respawn"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)
@@ -157,8 +157,19 @@ func TestE2E_BlindRespawnCuredBySelfAwareness(t *testing.T) {
 		t.Fatalf("a successor born knowing how its predecessor died must converge, not repeat; got: %v", serr)
 	}
 
-	// --- 4b. BLIND respawn (no death knowledge): repeats the losing move ---
-	blind := primeKeyedAgent(t, srv.URL, pager, "conv-respawn-blind")
+	// --- 4b. BLIND respawn (an isolated Neocortex with no inherited death
+	// knowledge): repeats the losing move. A second conversation on the shared
+	// substrate is intentionally not blind because Neocortex recall spans the
+	// agent's durable history.
+	blindCfg := cfg
+	blindCfg.DataRoot = t.TempDir()
+	blindCfg.NeocortexActor = "neo-e2e-respawn-blind"
+	blindPager, err := memory.Open(blindCfg)
+	if err != nil {
+		t.Fatalf("open isolated blind Neocortex: %v", err)
+	}
+	defer blindPager.Close()
+	blind := primeKeyedAgent(t, srv.URL, blindPager, "conv-respawn-blind")
 	blindErr := blind.Chat(ctx, objective)
 	if blindErr == nil || !errors.Is(blindErr, agent.ErrIncomplete) {
 		t.Fatalf("a blind respawn (no inherited death knowledge) must repeat the losing move and die again; got: %v", blindErr)

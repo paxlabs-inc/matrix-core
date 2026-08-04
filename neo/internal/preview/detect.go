@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -32,7 +33,7 @@ type StartSpec struct {
 func DetectStart(root string) (StartSpec, bool) {
 	if pkg, ok := readPackageJSON(root); ok {
 		fw := nodeFrameworks(pkg)
-		port := nodePort(fw)
+		port := nodePort(pkg, fw)
 		env := map[string]string{"HOST": "0.0.0.0", "PORT": port, "BROWSER": "none"}
 		switch {
 		case pkg.Scripts["dev"] != "":
@@ -84,6 +85,7 @@ type packageJSON struct {
 	Scripts         map[string]string `json:"scripts"`
 	Dependencies    map[string]string `json:"dependencies"`
 	DevDependencies map[string]string `json:"devDependencies"`
+	Config          map[string]string `json:"config"`
 }
 
 func readPackageJSON(root string) (packageJSON, bool) {
@@ -128,7 +130,12 @@ func nodeFrameworks(pkg packageJSON) map[string]bool {
 }
 
 // nodePort picks the conventional dev-server port for the detected framework.
-func nodePort(fw map[string]bool) string {
+func nodePort(pkg packageJSON, fw map[string]bool) string {
+	if configured := strings.TrimSpace(pkg.Config["port"]); configured != "" {
+		if port, err := strconv.Atoi(configured); err == nil && port > 0 && port <= 65535 {
+			return configured
+		}
+	}
 	switch {
 	case fw["next"], fw["remix"]:
 		return "3000"

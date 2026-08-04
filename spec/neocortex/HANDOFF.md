@@ -1,6 +1,14 @@
 # HANDOFF neocortex
 
-Waves 1-5 are done. Task 6.1 is the sole task in progress. The old Cortex module remains the live substrate and no cutover, deletion, migration, or production action is authorized.
+Waves 1-6 and Task 7.1 are done. Task 7.2 is the sole task in progress. Neo is hard-cut to Neocortex: its source, tests, module graph, configuration, CLI, Railway launch path, and runtime have no Cortex-v1 selector or fallback. Unrelated Cortex-v1 consumers remain outside Neo and are not authorized for deletion or migration.
+
+Verified on 2026-08-04 for Task 7.1:
+
+- `scripts/check-neo-neocortex-only.sh` passes and is wired into the Neo CI agent gate. It rejects Cortex-v1 imports/module edges, substrate selectors/adapters, and retired Railway Neo environment keys.
+- `go test -race -timeout=10m ./...` passes in `neo`, including the real managed cortexd socket path, typed unavailable-engine behavior, Neocortex activation/transcript/checkpoint use, belief writes with provenance, typed retractions, runtime evidence, and the full server/agent regressions.
+- `go test ./...` passes in `cortexclient`; `go test ./cmd/mcl-execute -run '^$'` passes in `executor`; `bash -n deploy/railway/entrypoint.sh` passes.
+- Railway Neo mode starts cortexd first, injects only the scoped Neocortex socket/token into Neo, passes `-memory-disabled` to the co-located MCL daemon, and has no legacy Neo memory environment or fallback branch.
+- No production deployment, restart, unrelated-consumer migration, or Cortex-v1 data deletion was performed.
 
 Verified on 2026-08-03:
 
@@ -135,4 +143,4 @@ Task 5.3 evidence:
 - All thirteen Debug tests pass. The literal kill-at-every-LSN path passes ASan+UBSan, TSan, and strict clang-tidy; two fresh static amd64 builds compare byte-for-byte, and the property cross-builds as a static AArch64 ELF.
 - Current reproducible SHA-256 values are `e823819d957f894630badd6a7e0c6c901598c82d1f885d2d4164fe3e89b79fa6` for the INV-1 continuity test and `2dc66bdbd4fd4ef2bf16f9d07dbef915259d0c35013dc143e552749e9a1286c2` for `libneocortex_activate.a`.
 
-Next eligible work is Task 6.1: the versioned FlatBuffers Unix-socket cortexd process, capability isolation, idempotent append, subscriptions, and admin surface.
+Next work is Task 7.2: run the fixed-incident/INV-1 qualification corpus and real dev-daemon cortexd loss/restart conversations, then record exact evidence before any consumer re-point or production gate.

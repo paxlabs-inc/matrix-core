@@ -11,8 +11,6 @@ import (
 	"strings"
 	"sync"
 
-	"matrix/cortex"
-	"matrix/cortex/journal"
 	"matrix/cortexclient"
 	"matrix/neo/internal/consolidation"
 	"matrix/neo/internal/runtime/protocol"
@@ -29,7 +27,7 @@ type NeocortexAdapter struct {
 
 	mu             sync.Mutex
 	recordError    error
-	toolExecutions map[cortex.ToolEventCitation]journal.ToolEventPayload
+	toolExecutions map[cortexclient.ToolEventCitation]cortexclient.ToolEventPayload
 }
 
 func NewNeocortexAdapter(
@@ -42,7 +40,7 @@ func NewNeocortexAdapter(
 	}
 	return &NeocortexAdapter{
 		seam:           seam,
-		toolExecutions: make(map[cortex.ToolEventCitation]journal.ToolEventPayload),
+		toolExecutions: make(map[cortexclient.ToolEventCitation]cortexclient.ToolEventPayload),
 	}, nil
 }
 
@@ -89,7 +87,7 @@ func (adapter *NeocortexAdapter) ProvenanceRange() (string, uint64, uint64) {
 func (adapter *NeocortexAdapter) CommitToolExecution(
 	ctx context.Context,
 	execution ToolExecution,
-) (cortex.ToolEventCitation, error) {
+) (cortexclient.ToolEventCitation, error) {
 	callID := strings.TrimSpace(execution.Call.ID)
 	if callID == "" {
 		callID = execution.IdempotencyKey
@@ -106,9 +104,9 @@ func (adapter *NeocortexAdapter) CommitToolExecution(
 		SubgoalID:      execution.SubgoalID,
 	})
 	if err != nil {
-		return cortex.ToolEventCitation{}, err
+		return cortexclient.ToolEventCitation{}, err
 	}
-	payload := journal.ToolEventPayload{
+	payload := cortexclient.ToolEventPayload{
 		SchemaVersion:  1,
 		CallID:         execution.Call.ID,
 		ToolName:       execution.Call.Name,
@@ -127,17 +125,17 @@ func (adapter *NeocortexAdapter) CommitToolExecution(
 }
 
 // VerifyToolEventCitation verifies live cortexd evidence against the exact
-// execution that produced the acknowledged MMR coordinates. The legacy Cortex
+// execution that produced the acknowledged MMR coordinates. The legacy Neocortex
 // journal has a different coordinate system and must never be consulted for a
 // cortexd citation.
 func (adapter *NeocortexAdapter) VerifyToolEventCitation(
-	citation cortex.ToolEventCitation,
-) (journal.ToolEventPayload, error) {
+	citation cortexclient.ToolEventCitation,
+) (cortexclient.ToolEventPayload, error) {
 	adapter.mu.Lock()
 	payload, ok := adapter.toolExecutions[citation]
 	adapter.mu.Unlock()
 	if !ok {
-		return journal.ToolEventPayload{}, cortex.ErrToolCitationMismatch
+		return cortexclient.ToolEventPayload{}, cortexclient.ErrToolCitationMismatch
 	}
 	payload.Arguments = append([]byte(nil), payload.Arguments...)
 	return payload, nil

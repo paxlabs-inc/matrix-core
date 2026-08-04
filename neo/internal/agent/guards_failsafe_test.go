@@ -119,8 +119,8 @@ func TestSelfAwarenessPreventsLoopEarlierGuardsAreFailsafe(t *testing.T) {
 		srv := reframeKeyedServer(t, calls, mu, loopAlways)
 		cfg := config.Default()
 		cfg.CassandraEnabled = false // isolate the no-progress stall failsafe
-		cfg.CortexRoot = t.TempDir()
-		cfg.CortexActor = "neo-self-aware-failsafe"
+		cfg.DataRoot = t.TempDir()
+		cfg.NeocortexActor = "neo-self-aware-failsafe"
 		pager, err := memory.Open(cfg)
 		if err != nil {
 			t.Fatalf("memory.Open: %v", err)

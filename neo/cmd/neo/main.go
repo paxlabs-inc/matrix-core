@@ -2,7 +2,7 @@
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Command neo runs the Neo default agent as an interactive CLI: a normal
-// function-calling conversational loop with cortex-backed memory, the shared
+// function-calling conversational loop with Neocortex-backed memory, the shared
 // MCP tool surface, and core_execute delegation to the MCL pipeline.
 //
 // Usage:
@@ -52,8 +52,8 @@ func runInteractive() {
 	var (
 		configPath = flag.String("config", "", "path to a runtime neo.kvx config (optional)")
 		manifest   = flag.String("manifest", "", "agent manifest with MCP servers (overrides config)")
-		cortexRoot = flag.String("cortex-root", "", "cortex brain root dir (overrides config)")
-		actor      = flag.String("actor", "", "cortex actor name (overrides config)")
+		dataRoot   = flag.String("data-root", "", "Neo runtime data root (overrides config)")
+		actor      = flag.String("actor", "", "Neocortex actor name (overrides config)")
 		prompt     = flag.String("prompt", "", "run a single turn with this prompt, then exit")
 		noTools    = flag.Bool("no-tools", false, "skip native and integration tools (chat-only)")
 	)
@@ -67,11 +67,11 @@ func runInteractive() {
 	if *manifest != "" {
 		cfg.ManifestPath = *manifest
 	}
-	if *cortexRoot != "" {
-		cfg.CortexRoot = *cortexRoot
+	if *dataRoot != "" {
+		cfg.DataRoot = *dataRoot
 	}
 	if *actor != "" {
-		cfg.CortexActor = *actor
+		cfg.NeocortexActor = *actor
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -92,11 +92,11 @@ func runInteractive() {
 		cheap = nil // compaction falls back to the main model
 	}
 
-	// --- memory (best-effort) ---
+	// Neocortex is required: Neo has no alternate memory engine.
 	pager, err := memory.Open(cfg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "neo: memory unavailable (%v) — continuing without persistent recall\n", err)
-		pager = nil
+		fmt.Fprintf(os.Stderr, "neo: Neocortex unavailable: %v\n", err)
+		os.Exit(1)
 	}
 	defer func() {
 		if pager != nil {
@@ -117,7 +117,7 @@ func runInteractive() {
 			StderrSink:      os.Stderr,
 			NativeRoot:      workspaceDir,
 			NativeReadRoots: []string{"/data/media", strings.TrimSpace(os.Getenv("MATRIX_MEDIA_DIR"))},
-			NativeStateDir:  filepath.Join(filepath.Dir(cfg.CortexRoot), "native-services"),
+			NativeStateDir:  filepath.Join(filepath.Dir(cfg.DataRoot), "native-services"),
 			NativeGitPath:   nativeGitPath,
 		})
 		if err != nil {
@@ -295,7 +295,7 @@ func printBanner(cfg config.Config, tm *tools.Manager, pager *memory.Pager) {
 		if pager.HasEmbedder() {
 			mode = "semantic+salience"
 		}
-		fmt.Printf("  memory: %s (actor=%s, %s recall)\n", cfg.CortexRoot, cfg.CortexActor, mode)
+		fmt.Printf("  memory: %s (actor=%s, %s recall)\n", cfg.DataRoot, cfg.NeocortexActor, mode)
 	} else {
 		fmt.Printf("  memory: (none)\n")
 	}

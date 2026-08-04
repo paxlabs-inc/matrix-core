@@ -88,11 +88,11 @@ Crash isolation: a cortexd death never takes the agent down. The client degrades
 
 C++23, pinned toolchain, hardened libc++, `-fno-exceptions` core with `std::expected` typed errors on every fallible path. No raw owning pointers or naked new/delete; per-request `std::pmr` arenas; static allocation budget with bounded queues. Dependencies are exactly the vendored, digest-pinned set in the lock: liburing, LMDB, BLAKE3, libsodium, FlatBuffers, CRoaring, highway, xxhash+crc32c. CI: ASan/UBSan/TSan matrices, libFuzzer on every decoder (frame parser, schema verifier, protocol framing, query input) with corpora in-tree, rapidcheck-style properties (replay convergence, upsert idempotency, MMR consistency, AEAD round-trips), the deterministic simulation harness, golden vectors, clang-tidy at zero warnings, reproducible cross-compiled amd64/arm64 static builds.
 
-## 11. Migration and cutover
+## 11. Neo hard cutover
 
-Export, not conversion: a Go tool walks the existing Pebble store with the current decode + vault unseal paths and replays through the cortexd import gate — sessions → conversation events, memories → assertion events with synthesized provenance, ToolEvents 1:1, edges preserved. The fidelity report accounts for every source record; zero unaccounted is the gate.
+The owner approved a clean-memory hard cutover for Neo on 2026-08-04. Neo has one memory substrate: Neocortex. Its source tree, tests, complete Go module graph, configuration, CLI, constructors, proxy routes, and runtime artifacts contain no reachable Cortex-v1 path. There is no substrate selector and no compatibility fallback. Missing or unhealthy cortexd is an honest typed Neocortex failure handled by the restart/reconnect discipline; it never causes a legacy store to open.
 
-Old and new run side by side behind the memory seam under an explicit flag defaulting to old cortex. Gates before any default flip: fixed-incident regression corpus green on the new substrate, INV-1 property green, Moltbook/duplicate/poisoning reproductions structurally handled, real dev-daemon conversations. Consumer re-point (executor routes, bridge, MCP tooling, MCL compile-cache seed from the neocortex checkpoint root) follows qualification. Cutover and old-cortex deletion are each explicit owner YES decisions; the rollback plan is the flag, with no data loss in either direction during the side-by-side window.
+Cortex v1 may temporarily remain for unrelated Matrix consumers, but it is outside Neo's build and runtime boundary. External-consumer re-pointing and deletion of unrelated data remain separately owner-gated. The Neo cutover gate is structural as well as behavioral: source and module-graph checks prove exclusion, and real-daemon qualification proves the sole Neocortex path.
 
 ## 12. Explicit v1 omissions
 

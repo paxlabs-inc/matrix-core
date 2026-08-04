@@ -19,7 +19,7 @@
 // logged, never fatal, and a disabled store (empty dir) is a safe no-op so
 // dev/CLI runs are unchanged.
 //
-// It is a pure side-channel: it never touches cortex, signs anything, or
+// It is a pure side-channel: it never touches Neocortex, signs anything, or
 // perturbs replay — task continuity is independent storage, exactly like the
 // conversation store it mirrors.
 package task
@@ -333,7 +333,7 @@ func (s *Store) Get(convID string) (Task, bool) {
 }
 
 // Dir resolves Neo's task directory. An explicit override wins; else it is
-// derived from the cortex root's parent (matching the conversation store, so
+// derived from the Neocortex root's parent (matching the conversation store, so
 // tasks live beside history under /data in prod and survive suspend/redeploy).
 // Returns "" when neither is available (persistence disabled).
 func Dir(override, cortexRoot string) string {

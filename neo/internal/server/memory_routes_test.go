@@ -17,8 +17,8 @@ import (
 
 func TestMemoryRoutesReadNeoPagerMemories(t *testing.T) {
 	cfg := neoconfig.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "timeline-route-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "timeline-route-test"
 	pager, err := neomemory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)
@@ -92,7 +92,7 @@ func TestMemoryRoutesReadNeoPagerMemories(t *testing.T) {
 	if mutateRes.Code != http.StatusOK || !strings.Contains(mutateRes.Body.String(), "Matrix Timeline") {
 		t.Fatalf("POST /memory/mutate status = %d, body = %s", mutateRes.Code, mutateRes.Body.String())
 	}
-	if strings.Contains(mutateRes.Body.String(), "matrix://cortex/") {
+	if strings.Contains(mutateRes.Body.String(), "matrix://Neocortex/") {
 		t.Fatalf("mutation response exposed internal URI by default: %s", mutateRes.Body.String())
 	}
 }

@@ -29,7 +29,7 @@ type graphSubgoal struct {
 	Evidence []string // evidence digests discharged under this subgoal
 }
 
-// taskGraph is the run-state graph. Plain agent-core state (no new cortex
+// taskGraph is the run-state graph. Plain agent-core state (no new Neocortex
 // memory types); reset per turn with the rest of the epistemic run state.
 type taskGraph struct {
 	Goal     string

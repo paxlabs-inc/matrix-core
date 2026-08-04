@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/executor/internal/snapshot kind=package
   digest=b3:9c545a633508126066501b3c13e9458bf202f2916ddc18ddc78e4ae7e6b1f2ba file=executor/internal/snapshot range=0:0 lang=go exported=true
 EDGES
   contains=matrix/executor/internal/snapshot/snapshot.go,matrix/executor/internal/snapshot/vault.go
+  imports=matrix/executor/tool,matrix/vault
   ^contains=mod:matrix/executor
+  ^imports=matrix/executor/cmd/mcl-execute
 
 NODE id=matrix/executor/internal/snapshot.Config kind=type
   digest=b3:ea42d0deb3954cd271fb22e7e85043587102638142d455f0c83edb0a6f14b6b9 file=executor/internal/snapshot/snapshot.go range=46:89 lang=go exported=true byte_range=1557:3234
@@ -12,6 +14,7 @@ NODE id=matrix/executor/internal/snapshot.Config kind=type
   doc=Config configures the snapshot Manager.\n\nDataDir, Endpoint, Bucket, and UserID are mandatory; without them,\nNew returns ErrIncomplete. AccessKey / SecretKey may be empty when\nthe endpoint is reachable anonymously (rare; mostly useful for\nintegration testing against a public test bucket).
 EDGES
   contains=matrix/executor/internal/snapshot.Config#AccessKey,matrix/executor/internal/snapshot.Config#Bucket,matrix/executor/internal/snapshot.Config#DataDir,matrix/executor/internal/snapshot.Config#Endpoint,matrix/executor/internal/snapshot.Config#Logf,matrix/executor/internal/snapshot.Config#Now,matrix/executor/internal/snapshot.Config#PushInterval,matrix/executor/internal/snapshot.Config#SecretKey,matrix/executor/internal/snapshot.Config#UserID
+  ^references=matrix/executor/cmd/mcl-execute.runDaemon,matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.New
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.Config#AccessKey kind=field
@@ -81,6 +84,7 @@ NODE id=matrix/executor/internal/snapshot.DefaultPushInterval kind=const
   sig=time.Duration
   doc=DefaultPushInterval is the gap between periodic snapshot pushes when\nConfig.PushInterval is zero.
 EDGES
+  ^references=matrix/executor/cmd/mcl-execute.runDaemon,matrix/executor/internal/snapshot.Manager.Start
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.ErrIncomplete kind=var
@@ -88,6 +92,7 @@ NODE id=matrix/executor/internal/snapshot.ErrIncomplete kind=var
   sig=error
   doc=ErrIncomplete is returned by New when required Config fields are\nmissing. The error wraps a list of the missing fields.
 EDGES
+  ^references=matrix/executor/internal/snapshot.New
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.ErrNoSnapshot kind=var
@@ -95,6 +100,7 @@ NODE id=matrix/executor/internal/snapshot.ErrNoSnapshot kind=var
   sig=error
   doc=ErrNoSnapshot is returned by Pull when no latest.tar.zst exists yet\nfor the user (fresh-Machine, first-boot scenario).
 EDGES
+  ^references=matrix/executor/cmd/mcl-execute.runDaemon,matrix/executor/internal/snapshot.Manager.BootPull
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.Manager kind=type
@@ -103,6 +109,8 @@ NODE id=matrix/executor/internal/snapshot.Manager kind=type
   doc=Manager owns the snapshot lifecycle for one daemon process.\n\nUse New to construct, BootPull at boot, Start to launch the periodic\nticker, Push for ad-hoc pushes, and Stop to halt the ticker and run\na final push. Manager methods are safe to call concurrently; the\nunderlying S3 operations are serialized via pushMu.
 EDGES
   contains=matrix/executor/internal/snapshot.Manager#cfg,matrix/executor/internal/snapshot.Manager#doneCh,matrix/executor/internal/snapshot.Manager#pushMu,matrix/executor/internal/snapshot.Manager#s3,matrix/executor/internal/snapshot.Manager#sealUser,matrix/executor/internal/snapshot.Manager#startOnce,matrix/executor/internal/snapshot.Manager#stopCh,matrix/executor/internal/snapshot.Manager#stopOnce,matrix/executor/internal/snapshot.Manager#vault,matrix/executor/internal/snapshot.Manager.BootPull,matrix/executor/internal/snapshot.Manager.IsSeeded,matrix/executor/internal/snapshot.Manager.Push,matrix/executor/internal/snapshot.Manager.SeededPath,matrix/executor/internal/snapshot.Manager.SetVault,matrix/executor/internal/snapshot.Manager.Start,matrix/executor/internal/snapshot.Manager.Stop,matrix/executor/internal/snapshot.Manager.ensureKeyfile,matrix/executor/internal/snapshot.Manager.keyfileKey,matrix/executor/internal/snapshot.Manager.log,matrix/executor/internal/snapshot.Manager.markSeeded,matrix/executor/internal/snapshot.Manager.openSealedTarball,matrix/executor/internal/snapshot.Manager.pushKeyfile,matrix/executor/internal/snapshot.Manager.sealFile,matrix/executor/internal/snapshot.Manager.tick,matrix/executor/internal/snapshot.Manager.userPrefix
+  references=matrix/executor/internal/snapshot.Config,matrix/vault.Session
+  ^references=matrix/executor/cmd/mcl-execute.daemonState,matrix/executor/cmd/mcl-execute.runDaemon,matrix/executor/internal/snapshot.Manager.BootPull,matrix/executor/internal/snapshot.Manager.IsSeeded,matrix/executor/internal/snapshot.Manager.Push,matrix/executor/internal/snapshot.Manager.SeededPath,matrix/executor/internal/snapshot.Manager.SetVault,matrix/executor/internal/snapshot.Manager.Start,matrix/executor/internal/snapshot.Manager.Stop,matrix/executor/internal/snapshot.Manager.ensureKeyfile,matrix/executor/internal/snapshot.Manager.keyfileKey,matrix/executor/internal/snapshot.Manager.log,matrix/executor/internal/snapshot.Manager.markSeeded,matrix/executor/internal/snapshot.Manager.openSealedTarball,matrix/executor/internal/snapshot.Manager.pushKeyfile,matrix/executor/internal/snapshot.Manager.sealFile,matrix/executor/internal/snapshot.Manager.tick,matrix/executor/internal/snapshot.Manager.userPrefix,matrix/executor/internal/snapshot.New
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.Manager#cfg kind=field
@@ -170,7 +178,11 @@ NODE id=matrix/executor/internal/snapshot.Manager.BootPull kind=method
   sig=func (m *Manager) BootPull(ctx context.Context) (bool, error)
   doc=BootPull restores the user's most recent snapshot into DataDir if and\nonly if the sentinel file is missing. It is the caller's\nresponsibility to invoke BootPull before opening the cortex Pebble DB.\n\nBehavior matrix:\n\n  - sentinel present                 → no-op, returns (false, nil)\n  - no remote snapshot for the user  → tarball mkdir + sentinel write,\n    returns (false, ErrNoSnapshot wrapped) so caller can log fresh-start\n  - remote snapshot present          → mc cp + tar extract + sentinel\n    write, returns (true, nil)\n\nAny error from mc / tar / fs is returned without writing the sentinel,\nso a transient pull failure retries on next boot.
 EDGES
+  calls=matrix/executor/internal/snapshot.Manager.IsSeeded,matrix/executor/internal/snapshot.Manager.ensureKeyfile,matrix/executor/internal/snapshot.Manager.log,matrix/executor/internal/snapshot.Manager.markSeeded,matrix/executor/internal/snapshot.Manager.openSealedTarball,matrix/executor/internal/snapshot.Manager.userPrefix,matrix/executor/internal/snapshot.isVaultFile,matrix/executor/internal/snapshot.untarZst
+  references=matrix/executor/internal/snapshot.ErrNoSnapshot,matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.Manager.IsSeeded,matrix/executor/internal/snapshot.Manager.ensureKeyfile,matrix/executor/internal/snapshot.Manager.log,matrix/executor/internal/snapshot.Manager.markSeeded,matrix/executor/internal/snapshot.Manager.openSealedTarball,matrix/executor/internal/snapshot.Manager.userPrefix,matrix/executor/internal/snapshot.ctx,matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.isVaultFile,matrix/executor/internal/snapshot.latestKey,matrix/executor/internal/snapshot.m,matrix/executor/internal/snapshot.mErr,matrix/executor/internal/snapshot.plainPath,matrix/executor/internal/snapshot.response,matrix/executor/internal/snapshot.sealed,matrix/executor/internal/snapshot.st,matrix/executor/internal/snapshot.tarPath,matrix/executor/internal/snapshot.tmp,matrix/executor/internal/snapshot.tmpPath,matrix/executor/internal/snapshot.untarZst
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/cmd/mcl-execute.runDaemon
+  ^references=matrix/executor/cmd/mcl-execute.runDaemon
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.IsSeeded kind=method
@@ -178,7 +190,11 @@ NODE id=matrix/executor/internal/snapshot.Manager.IsSeeded kind=method
   sig=func (m *Manager) IsSeeded() bool
   doc=IsSeeded returns true iff the sentinel file is present on disk.
 EDGES
+  calls=matrix/executor/internal/snapshot.Manager.SeededPath
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.Manager.SeededPath,matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.m
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/cmd/mcl-execute.daemonState.handleSnapshotsList,matrix/executor/internal/snapshot.Manager.BootPull
+  ^references=matrix/executor/cmd/mcl-execute.daemonState.handleSnapshotsList,matrix/executor/internal/snapshot.Manager.BootPull
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.Push kind=method
@@ -186,7 +202,11 @@ NODE id=matrix/executor/internal/snapshot.Manager.Push kind=method
   sig=func (m *Manager) Push(ctx context.Context) (string, error)
   doc=Push tar+zstd's the DataDir tree, uploads it to\nusers/<uid>/snapshots/<ts>.tar.zst, then atomically updates\nusers/<uid>/latest.tar.zst via a server-side copy.\n\nReturns the timestamp-suffixed object key on success. Concurrent Push\ncalls serialize on pushMu (cortex-quiescence isn't promised; this\nonly prevents two concurrent mc cp uploads racing the alias write).
 EDGES
+  calls=matrix/executor/internal/snapshot.Manager.log,matrix/executor/internal/snapshot.Manager.pushKeyfile,matrix/executor/internal/snapshot.Manager.sealFile,matrix/executor/internal/snapshot.Manager.userPrefix,matrix/executor/internal/snapshot.tarZst,matrix/vault.Session.Encrypting
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.Manager.log,matrix/executor/internal/snapshot.Manager.pushKeyfile,matrix/executor/internal/snapshot.Manager.sealFile,matrix/executor/internal/snapshot.Manager.userPrefix,matrix/executor/internal/snapshot.ctx,matrix/executor/internal/snapshot.encPath,matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.latestKey,matrix/executor/internal/snapshot.m,matrix/executor/internal/snapshot.snapKey,matrix/executor/internal/snapshot.st,matrix/executor/internal/snapshot.tarZst,matrix/executor/internal/snapshot.tmp,matrix/executor/internal/snapshot.tmpPath,matrix/executor/internal/snapshot.ts,matrix/executor/internal/snapshot.uploadPath,matrix/vault.Session.Encrypting
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/cmd/mcl-execute.daemonState.handleSnapshotsPush,matrix/executor/internal/snapshot.Manager.tick
+  ^references=matrix/executor/cmd/mcl-execute.daemonState.handleSnapshotsPush,matrix/executor/internal/snapshot.Manager.Stop,matrix/executor/internal/snapshot.Manager.tick
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.SeededPath kind=method
@@ -194,7 +214,10 @@ NODE id=matrix/executor/internal/snapshot.Manager.SeededPath kind=method
   sig=func (m *Manager) SeededPath() string
   doc=SeededPath is the absolute path to the sentinel file.
 EDGES
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.SeededSentinel,matrix/executor/internal/snapshot.m
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/cmd/mcl-execute.daemonState.handleSnapshotsList,matrix/executor/internal/snapshot.Manager.IsSeeded,matrix/executor/internal/snapshot.Manager.markSeeded
+  ^references=matrix/executor/cmd/mcl-execute.daemonState.handleSnapshotsList,matrix/executor/internal/snapshot.Manager.IsSeeded,matrix/executor/internal/snapshot.Manager.markSeeded
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.SetVault kind=method
@@ -202,7 +225,10 @@ NODE id=matrix/executor/internal/snapshot.Manager.SetVault kind=method
   sig=func (m *Manager) SetVault(sess *vault.Session, user string)
   doc=SetVault wires the fail-closed data-at-rest session and owning user DID.\nCalled once after the daemon's vault boots and before Start; a nil session\nkeeps legacy plaintext tarballs (dev/CLI).
 EDGES
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.m,matrix/executor/internal/snapshot.sess,matrix/executor/internal/snapshot.user,matrix/vault.Session
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/cmd/mcl-execute.runDaemon
+  ^references=matrix/executor/cmd/mcl-execute.runDaemon
   ^defines=matrix/executor/internal/snapshot/vault.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.Start kind=method
@@ -210,7 +236,10 @@ NODE id=matrix/executor/internal/snapshot.Manager.Start kind=method
   sig=func (m *Manager) Start(ctx context.Context)
   doc=Start launches the periodic-push ticker if cfg.PushInterval >= 0.\nIdempotent: subsequent calls are no-ops. Returns immediately.\n\nPushInterval == 0 → DefaultPushInterval (5 minutes).\nPushInterval  < 0 → no ticker; periodic pushes disabled (only\nBootPull and Stop's final push remain).
 EDGES
+  references=matrix/executor/internal/snapshot.DefaultPushInterval,matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.Manager.log,matrix/executor/internal/snapshot.Manager.tick,matrix/executor/internal/snapshot.ctx,matrix/executor/internal/snapshot.interval,matrix/executor/internal/snapshot.m
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/cmd/mcl-execute.runDaemon
+  ^references=matrix/executor/cmd/mcl-execute.runDaemon
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.Stop kind=method
@@ -218,7 +247,10 @@ NODE id=matrix/executor/internal/snapshot.Manager.Stop kind=method
   sig=func (m *Manager) Stop(ctx context.Context) error
   doc=Stop halts the periodic ticker and runs one final Push using ctx.\nIdempotent: subsequent calls are no-ops.\n\nReturns the error from the final Push (or nil); the ticker shutdown\nitself never errors.
 EDGES
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.Manager.Push,matrix/executor/internal/snapshot.Manager.log,matrix/executor/internal/snapshot.ctx,matrix/executor/internal/snapshot.m,matrix/executor/internal/snapshot.pushErr
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/cmd/mcl-execute.runDaemon
+  ^references=matrix/executor/cmd/mcl-execute.runDaemon
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.ensureKeyfile kind=method
@@ -226,7 +258,11 @@ NODE id=matrix/executor/internal/snapshot.Manager.ensureKeyfile kind=method
   sig=func (m *Manager) ensureKeyfile(ctx context.Context) error
   doc=ensureKeyfile makes sure vault.KeyfilePath(DataDir) exists, pulling the\nsidecar object on a fresh volume. A sealed snapshot with no local keyfile\nand no sidecar is unrecoverable and errors loudly.
 EDGES
+  calls=matrix/executor/internal/snapshot.Manager.keyfileKey,matrix/vault.KeyfilePath
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.Manager.keyfileKey,matrix/executor/internal/snapshot.ctx,matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.m,matrix/executor/internal/snapshot.path,matrix/executor/internal/snapshot.tmp,matrix/vault.KeyfilePath
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/internal/snapshot.Manager.BootPull
+  ^references=matrix/executor/internal/snapshot.Manager.BootPull
   ^defines=matrix/executor/internal/snapshot/vault.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.keyfileKey kind=method
@@ -234,7 +270,11 @@ NODE id=matrix/executor/internal/snapshot.Manager.keyfileKey kind=method
   sig=func (m *Manager) keyfileKey() string
   doc=keyfileKey is the sidecar object carrying the wrapped per-user keyfile.
 EDGES
+  calls=matrix/executor/internal/snapshot.Manager.userPrefix
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.Manager.userPrefix,matrix/executor/internal/snapshot.m
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/internal/snapshot.Manager.ensureKeyfile,matrix/executor/internal/snapshot.Manager.pushKeyfile
+  ^references=matrix/executor/internal/snapshot.Manager.ensureKeyfile,matrix/executor/internal/snapshot.Manager.pushKeyfile
   ^defines=matrix/executor/internal/snapshot/vault.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.log kind=method
@@ -242,7 +282,10 @@ NODE id=matrix/executor/internal/snapshot.Manager.log kind=method
   sig=func (m *Manager) log(event string, fields map[string]interface{})
   doc=log emits a lifecycle event when a Logf is wired; otherwise no-op.\nfields is allocated lazily when nil.
 EDGES
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.event,matrix/executor/internal/snapshot.fields,matrix/executor/internal/snapshot.m
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/internal/snapshot.Manager.BootPull,matrix/executor/internal/snapshot.Manager.Push,matrix/executor/internal/snapshot.Manager.tick
+  ^references=matrix/executor/internal/snapshot.Manager.BootPull,matrix/executor/internal/snapshot.Manager.Push,matrix/executor/internal/snapshot.Manager.Start,matrix/executor/internal/snapshot.Manager.Stop,matrix/executor/internal/snapshot.Manager.tick
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.markSeeded kind=method
@@ -250,7 +293,11 @@ NODE id=matrix/executor/internal/snapshot.Manager.markSeeded kind=method
   sig=func (m *Manager) markSeeded() error
   doc=markSeeded creates the sentinel file (and parent .matrix/ dir) so\nfuture boots skip the pull.
 EDGES
+  calls=matrix/executor/internal/snapshot.Manager.SeededPath
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.Manager.SeededPath,matrix/executor/internal/snapshot.dir,matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.f,matrix/executor/internal/snapshot.m
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/internal/snapshot.Manager.BootPull
+  ^references=matrix/executor/internal/snapshot.Manager.BootPull
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.openSealedTarball kind=method
@@ -258,7 +305,11 @@ NODE id=matrix/executor/internal/snapshot.Manager.openSealedTarball kind=method
   sig=func (m *Manager) openSealedTarball(ctx context.Context, src, dst string) error
   doc=openSealedTarball decrypt-verifies the sealed tarball at src into dst. The\nsession is bootstrapped from the local keyfile (pulled by ensureKeyfile on\nfresh volumes): the keyfile names its owning user, and the KEK comes from\nthe environment — nothing inside the sealed object is needed to open it.
 EDGES
+  calls=matrix/executor/internal/snapshot.snapAD,matrix/vault.Boot,matrix/vault.ConfigFromEnv,matrix/vault.KeyfilePath,matrix/vault.ParseKeyfile,matrix/vault.Session.UserVault,matrix/vault.UserVault.StreamReader
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.ctx,matrix/executor/internal/snapshot.dst,matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.in,matrix/executor/internal/snapshot.kb,matrix/executor/internal/snapshot.kf,matrix/executor/internal/snapshot.m,matrix/executor/internal/snapshot.out,matrix/executor/internal/snapshot.sess,matrix/executor/internal/snapshot.snapAD,matrix/executor/internal/snapshot.sr,matrix/executor/internal/snapshot.src,matrix/executor/internal/snapshot.uv,matrix/vault.Boot,matrix/vault.ConfigFromEnv,matrix/vault.KeyfilePath,matrix/vault.ParseKeyfile,matrix/vault.Session.UserVault,matrix/vault.UserVault.StreamReader
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/internal/snapshot.Manager.BootPull
+  ^references=matrix/executor/internal/snapshot.Manager.BootPull
   ^defines=matrix/executor/internal/snapshot/vault.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.pushKeyfile kind=method
@@ -266,7 +317,11 @@ NODE id=matrix/executor/internal/snapshot.Manager.pushKeyfile kind=method
   sig=func (m *Manager) pushKeyfile(ctx context.Context) error
   doc=pushKeyfile mirrors the wrapped keyfile beside the snapshots so a fresh\nmachine can bootstrap decryption of a sealed tarball.
 EDGES
+  calls=matrix/executor/internal/snapshot.Manager.keyfileKey,matrix/vault.KeyfilePath
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.Manager.keyfileKey,matrix/executor/internal/snapshot.ctx,matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.m,matrix/executor/internal/snapshot.path,matrix/vault.KeyfilePath
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/internal/snapshot.Manager.Push
+  ^references=matrix/executor/internal/snapshot.Manager.Push
   ^defines=matrix/executor/internal/snapshot/vault.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.sealFile kind=method
@@ -274,7 +329,11 @@ NODE id=matrix/executor/internal/snapshot.Manager.sealFile kind=method
   sig=func (m *Manager) sealFile(src, dst string) error
   doc=sealFile streams src into dst as chunked AEAD ciphertext. Caller has\nverified the session is encrypting.
 EDGES
+  calls=matrix/executor/internal/snapshot.snapAD,matrix/vault.Session.UserVault,matrix/vault.StreamWriter.Close,matrix/vault.UserVault.StreamWriter
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.dst,matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.in,matrix/executor/internal/snapshot.m,matrix/executor/internal/snapshot.out,matrix/executor/internal/snapshot.snapAD,matrix/executor/internal/snapshot.src,matrix/executor/internal/snapshot.sw,matrix/executor/internal/snapshot.uv,matrix/vault.Session.UserVault,matrix/vault.StreamWriter.Close,matrix/vault.UserVault.StreamWriter
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/internal/snapshot.Manager.Push
+  ^references=matrix/executor/internal/snapshot.Manager.Push
   ^defines=matrix/executor/internal/snapshot/vault.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.tick kind=method
@@ -282,7 +341,10 @@ NODE id=matrix/executor/internal/snapshot.Manager.tick kind=method
   sig=func (m *Manager) tick(parent context.Context, interval time.Duration)
   doc=tick runs until ctx is cancelled OR Stop closes stopCh, then closes\ndoneCh and exits. Each tick fires Push with a fresh per-tick context\nderived from the parent so a long-running upload that misses the next\ntick doesn't block the ticker (each Push contends pushMu — slow\nuploads delay the next attempt rather than overlapping).
 EDGES
+  calls=matrix/executor/internal/snapshot.Manager.Push,matrix/executor/internal/snapshot.Manager.log
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.Manager.Push,matrix/executor/internal/snapshot.Manager.log,matrix/executor/internal/snapshot.cancel,matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.interval,matrix/executor/internal/snapshot.m,matrix/executor/internal/snapshot.parent,matrix/executor/internal/snapshot.pushCtx,matrix/executor/internal/snapshot.t
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^references=matrix/executor/internal/snapshot.Manager.Start
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.Manager.userPrefix kind=method
@@ -290,7 +352,10 @@ NODE id=matrix/executor/internal/snapshot.Manager.userPrefix kind=method
   sig=func (m *Manager) userPrefix() string
   doc=userPrefix returns "users/<UserID>".
 EDGES
+  references=matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.m
   ^contains=matrix/executor/internal/snapshot.Manager
+  ^calls=matrix/executor/internal/snapshot.Manager.BootPull,matrix/executor/internal/snapshot.Manager.Push,matrix/executor/internal/snapshot.Manager.keyfileKey
+  ^references=matrix/executor/internal/snapshot.Manager.BootPull,matrix/executor/internal/snapshot.Manager.Push,matrix/executor/internal/snapshot.Manager.keyfileKey
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.New kind=func
@@ -298,6 +363,9 @@ NODE id=matrix/executor/internal/snapshot.New kind=func
   sig=func New(cfg Config) (*Manager, error)
   doc=New validates cfg and returns a Manager.\n\nReturns ErrIncomplete (wrapped with the missing-field list) when any\nrequired field is empty. Endpoint is parsed with url.Parse; a\nmalformed URL also returns an error.
 EDGES
+  references=matrix/executor/internal/snapshot.Config,matrix/executor/internal/snapshot.ErrIncomplete,matrix/executor/internal/snapshot.Manager,matrix/executor/internal/snapshot.cfg,matrix/executor/internal/snapshot.creds,matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.missing,matrix/executor/internal/snapshot.s3,matrix/executor/internal/snapshot.u
+  ^calls=matrix/executor/cmd/mcl-execute.runDaemon
+  ^references=matrix/executor/cmd/mcl-execute.runDaemon
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.SeededSentinel kind=const
@@ -305,6 +373,7 @@ NODE id=matrix/executor/internal/snapshot.SeededSentinel kind=const
   sig=untyped string
   doc=SeededSentinel is the path (relative to DataDir) that marks a Volume\nas already-seeded. New Machines pull latest.tar.zst the first time\nthis file is missing; once it's present, subsequent boots skip the\npull. The sentinel itself is part of the tarball, so a restore from\na previous snapshot lands in seeded state.
 EDGES
+  ^references=matrix/executor/internal/snapshot.Manager.SeededPath
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.isVaultFile kind=func
@@ -312,6 +381,10 @@ NODE id=matrix/executor/internal/snapshot.isVaultFile kind=func
   sig=func isVaultFile(path string) (bool, error)
   doc=isVaultFile sniffs whether the file at path begins with the vault magic.
 EDGES
+  calls=matrix/vault.IsVault
+  references=matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.f,matrix/executor/internal/snapshot.head,matrix/executor/internal/snapshot.n,matrix/executor/internal/snapshot.path,matrix/vault.IsVault
+  ^calls=matrix/executor/internal/snapshot.Manager.BootPull
+  ^references=matrix/executor/internal/snapshot.Manager.BootPull
   ^defines=matrix/executor/internal/snapshot/vault.go
 
 NODE id=matrix/executor/internal/snapshot.snapAD kind=func
@@ -319,18 +392,23 @@ NODE id=matrix/executor/internal/snapshot.snapAD kind=func
   sig=func snapAD(user string) vault.AD
   doc=snapAD is the tarball's associated data. It deliberately binds the user\nonly — the same object bytes live under snapshots/<ts>.tar.zst AND the\nserver-side-copied latest.tar.zst alias, so the object key cannot be\nbound. Within the stream, chunk order and termination are bound per chunk.
 EDGES
+  references=matrix/executor/internal/snapshot.snapSchema1,matrix/executor/internal/snapshot.snapStore,matrix/executor/internal/snapshot.user,matrix/vault.AD
+  ^calls=matrix/executor/internal/snapshot.Manager.openSealedTarball,matrix/executor/internal/snapshot.Manager.sealFile
+  ^references=matrix/executor/internal/snapshot.Manager.openSealedTarball,matrix/executor/internal/snapshot.Manager.sealFile
   ^defines=matrix/executor/internal/snapshot/vault.go
 
 NODE id=matrix/executor/internal/snapshot.snapSchema1 kind=const
   digest=b3:16b637759b89375db783c17ace6fe6b1d8f1364977cef09bdcac80d492c88c6a file=executor/internal/snapshot/vault.go range=32:32 lang=go exported=false byte_range=1199:1221
   sig=untyped string
 EDGES
+  ^references=matrix/executor/internal/snapshot.snapAD
   ^defines=matrix/executor/internal/snapshot/vault.go
 
 NODE id=matrix/executor/internal/snapshot.snapStore kind=const
   digest=b3:c8c7432a0b2fca5b75db93f1324fdb5244dde5883f8a0d2454484576c1dce1b9 file=executor/internal/snapshot/vault.go range=31:31 lang=go exported=false byte_range=1164:1197
   sig=untyped string
 EDGES
+  ^references=matrix/executor/internal/snapshot.snapAD
   ^defines=matrix/executor/internal/snapshot/vault.go
 
 NODE id=matrix/executor/internal/snapshot.tarZst kind=func
@@ -338,6 +416,10 @@ NODE id=matrix/executor/internal/snapshot.tarZst kind=func
   sig=func tarZst(ctx context.Context, src, dst string) error
   doc=tarZst archives src/ as zstd-compressed tar at dst. Shells to\n`tar -I zstd -cf <dst> -C <src> .` so we avoid pulling a Go zstd\ndependency. The image's apt-installed zstd + tar are required at\nruntime (verified in deploy/railway/Dockerfile).
 EDGES
+  calls=matrix/executor/tool.AgentEnvironment
+  references=matrix/executor/internal/snapshot.cmd,matrix/executor/internal/snapshot.ctx,matrix/executor/internal/snapshot.dst,matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.src,matrix/executor/internal/snapshot.stderr,matrix/executor/tool.AgentEnvironment
+  ^calls=matrix/executor/internal/snapshot.Manager.Push
+  ^references=matrix/executor/internal/snapshot.Manager.Push
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot.untarZst kind=func
@@ -345,6 +427,10 @@ NODE id=matrix/executor/internal/snapshot.untarZst kind=func
   sig=func untarZst(ctx context.Context, src, dst string) error
   doc=untarZst extracts src (zstd-compressed tar) into dst/. dst must\nalready exist; tar will create subdirs as needed. Shells to\n`tar -I zstd -xf <src> -C <dst>`.
 EDGES
+  calls=matrix/executor/tool.AgentEnvironment
+  references=matrix/executor/internal/snapshot.cmd,matrix/executor/internal/snapshot.ctx,matrix/executor/internal/snapshot.dst,matrix/executor/internal/snapshot.err,matrix/executor/internal/snapshot.src,matrix/executor/internal/snapshot.stderr,matrix/executor/tool.AgentEnvironment
+  ^calls=matrix/executor/internal/snapshot.Manager.BootPull
+  ^references=matrix/executor/internal/snapshot.Manager.BootPull
   ^defines=matrix/executor/internal/snapshot/snapshot.go
 
 NODE id=matrix/executor/internal/snapshot/snapshot.go kind=file

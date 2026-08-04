@@ -99,7 +99,7 @@ type turn struct {
 	// step each trigger CLASS last fired (per-trigger cooldown, lazily
 	// allocated); casRecord is the dual-record audit ground truth —
 	// {original_content, cassandra_mod, trigger, side, step, target} for every
-	// modification (guardrail 3). None of it is durable: cortex keeps the
+	// modification (guardrail 3). None of it is durable: Neocortex keeps the
 	// original (req.7.1) and the audit rides the side-channel.
 	casModsThisTurn int
 	casCooldown     map[modTrigger]int
@@ -207,7 +207,7 @@ type turn struct {
 	convergeNudged  bool
 	distinctToolSet map[string]struct{}
 
-	// Session seq range (DEJA-VU req 1.1): the inclusive span of cortex
+	// Session seq range (DEJA-VU req 1.1): the inclusive span of Neocortex
 	// session seqs appended during THIS turn (via cmAppend), tracked so
 	// end-of-turn consolidation can stamp a derived_from provenance edge from
 	// every memory it writes back to the exact transcript slice it came from.
@@ -217,7 +217,7 @@ type turn struct {
 	seqHi   uint64
 	haveSeq bool
 
-	// Surfaced-memory sets: every cortex memory surfaced this turn, so a
+	// Surfaced-memory sets: every Neocortex memory surfaced this turn, so a
 	// successful completion can attest USED vs IGNORED (the usage-salience +
 	// EMA learning signal). Keyed by URI; snippets keep text/type for the
 	// rejection gate.
@@ -248,7 +248,7 @@ func newTurn() *turn {
 	}
 }
 
-// noteSessionSeq folds one appended cortex session seq into the turn's
+// noteSessionSeq folds one appended Neocortex session seq into the turn's
 // inclusive [seqLo, seqHi] range (DEJA-VU req 1.1). The first call opens the
 // range; subsequent calls widen it.
 func (t *turn) noteSessionSeq(seq uint64) {

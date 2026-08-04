@@ -12,7 +12,7 @@ package server
 //     REAL tools.Manager, against the model HTTP endpoint behind an httptest
 //     server (the established neo seam) — so the restricted surface, the
 //     supervised loop, and the completion gate are the genuine code paths;
-//   • the opportunity lifecycle is the REAL cortex pager under t.TempDir()
+//   • the opportunity lifecycle is the REAL Neocortex pager under t.TempDir()
 //     (hash embedder, fully offline) — RememberOpportunity / SetOpportunityStatus
 //     / FailOpportunityAttempt / OpportunityByURI are the production methods.
 //
@@ -35,15 +35,15 @@ import (
 	"matrix/neo/internal/tools"
 )
 
-// newRunTestEngine builds a real Engine with a real cortex pager (t.TempDir(),
+// newRunTestEngine builds a real Engine with a real Neocortex pager (t.TempDir(),
 // hash embedder), a real tools.Manager (whose full Schemas() advertises the
 // money core_execute tool), and the main model pointed at modelURL. Returns the
 // engine and the pager.
 func newRunTestEngine(t *testing.T, modelURL string) (*Engine, *memory.Pager) {
 	t.Helper()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-automatrix-run-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-automatrix-run-test"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)

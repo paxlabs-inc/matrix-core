@@ -12,8 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"matrix/cortex"
-	"matrix/cortex/journal"
+	"matrix/cortexclient"
 	"matrix/neo/internal/runtime/loop"
 	"matrix/neo/internal/runtime/protocol"
 	"matrix/neo/internal/runtime/turnstate"
@@ -156,8 +155,8 @@ type TaskPacket struct {
 }
 
 type EvidenceRef struct {
-	Criterion string                   `json:"criterion"`
-	Citation  cortex.ToolEventCitation `json:"citation"`
+	Criterion string                         `json:"criterion"`
+	Citation  cortexclient.ToolEventCitation `json:"citation"`
 }
 
 type ExternalEffect struct {
@@ -268,8 +267,8 @@ type Executor interface {
 
 type CitationVerifier interface {
 	VerifyToolEventCitation(
-		cortex.ToolEventCitation,
-	) (journal.ToolEventPayload, error)
+		cortexclient.ToolEventCitation,
+	) (cortexclient.ToolEventPayload, error)
 }
 
 type ToolMetadata interface {

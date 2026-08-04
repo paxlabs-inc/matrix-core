@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/codegraph/store kind=package
   digest=b3:48ff5ae8b2182a943ca10a11d04842dc86175429ce7b51e4e91bcd43affa4f2d file=codegraph/store range=0:0 lang=go exported=true
 EDGES
   contains=matrix/codegraph/store/load.go,matrix/codegraph/store/parse.go,matrix/codegraph/store/store.go
+  imports=matrix/codegraph/model
   ^contains=mod:matrix/codegraph
+  ^imports=matrix/codegraph/cmd/codegraph,matrix/codegraph/extract,matrix/codegraph/mcp,matrix/neo/internal/memory
 
 NODE id=matrix/codegraph/store.BannerPrefix kind=const
   digest=b3:c31038b7d8d8bfa0ad148802cf1777e5f05683c1182bb9304c33382c972da53b file=codegraph/store/store.go range=19:21 lang=go exported=true byte_range=489:662
   sig=untyped string
   doc=BannerPrefix is the first-line marker; the repo Merkle root follows it so\nstaleness is detectable.
 EDGES
+  ^references=matrix/codegraph/store.Parse,matrix/codegraph/store.WriteNodes
   ^defines=matrix/codegraph/store/store.go
 
 NODE id=matrix/codegraph/store.Load kind=func
@@ -18,6 +21,10 @@ NODE id=matrix/codegraph/store.Load kind=func
   sig=func Load(dir string) (*model.Index, string, error)
   doc=Load reads a whole sharded graph store from dir — every *.kvx shard plus\nmanifest.kvx — and reconstructs the combined Index. merkle.kvx (the repo file\nMerkle tree, not a graph shard) is skipped. The returned merkle is the banner\nroot shared by the shards. Occurrence sites are not serialized, so a loaded\ngraph carries edges without sites — matching what a fresh Write emits.
 EDGES
+  calls=matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.Index.Edges,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.NewIndex,matrix/codegraph/store.Parse
+  references=matrix/codegraph/model.Index,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.Index.Edges,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.NewIndex,matrix/codegraph/store.Parse,matrix/codegraph/store.combined,matrix/codegraph/store.d,matrix/codegraph/store.dir,matrix/codegraph/store.e,matrix/codegraph/store.err,matrix/codegraph/store.f,matrix/codegraph/store.files,matrix/codegraph/store.ix,matrix/codegraph/store.m,matrix/codegraph/store.merkle,matrix/codegraph/store.n,matrix/codegraph/store.path
+  ^calls=matrix/codegraph/cmd/codegraph.cmdDiff,matrix/neo/internal/memory.Pager.LookupStructuralSelf
+  ^references=matrix/codegraph/cmd/codegraph.cmdDiff,matrix/codegraph/mcp.New,matrix/neo/internal/memory.Pager.LookupStructuralSelf
   ^defines=matrix/codegraph/store/load.go
 
 NODE id=matrix/codegraph/store.Parse kind=func
@@ -25,6 +32,10 @@ NODE id=matrix/codegraph/store.Parse kind=func
   sig=func Parse(r io.Reader) (*model.Index, string, error)
   doc=Parse reads a graph-store file and reconstructs the Index plus the Merkle root\ncarried by the banner. Forward and reverse edge lines are both replayed into\nthe index (reverse lines let a per-package shard record edges whose source\nlives in another shard); duplicates collapse.
 EDGES
+  calls=matrix/codegraph/model.NewIndex,matrix/codegraph/store.applyAttr,matrix/codegraph/store.parseEdge,matrix/codegraph/store.parseNodeHeader
+  references=matrix/codegraph/model.Index,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.NewIndex,matrix/codegraph/model.Node,matrix/codegraph/store.BannerPrefix,matrix/codegraph/store.applyAttr,matrix/codegraph/store.body,matrix/codegraph/store.cur,matrix/codegraph/store.err,matrix/codegraph/store.flush,matrix/codegraph/store.inEdges,matrix/codegraph/store.ix,matrix/codegraph/store.line,matrix/codegraph/store.merkle,matrix/codegraph/store.n,matrix/codegraph/store.ok,matrix/codegraph/store.parseEdge,matrix/codegraph/store.parseNodeHeader,matrix/codegraph/store.r,matrix/codegraph/store.sc,matrix/codegraph/store.text
+  ^calls=matrix/codegraph/store.Load
+  ^references=matrix/codegraph/store.Load
   ^defines=matrix/codegraph/store/parse.go
 
 NODE id=matrix/codegraph/store.Write kind=func
@@ -32,6 +43,8 @@ NODE id=matrix/codegraph/store.Write kind=func
   sig=func Write(w io.Writer, ix *model.Index, merkle string) error
   doc=Write serializes every node owned by ix (those added via AddNode) and their\nforward + reverse edges to w, prefixed by the GENERATED banner carrying merkle.
 EDGES
+  calls=matrix/codegraph/model.Index.Nodes,matrix/codegraph/store.WriteNodes
+  references=matrix/codegraph/model.Index,matrix/codegraph/model.Index.Nodes,matrix/codegraph/store.WriteNodes,matrix/codegraph/store.ix,matrix/codegraph/store.merkle,matrix/codegraph/store.w
   ^defines=matrix/codegraph/store/store.go
 
 NODE id=matrix/codegraph/store.WriteNodes kind=func
@@ -39,18 +52,29 @@ NODE id=matrix/codegraph/store.WriteNodes kind=func
   sig=func WriteNodes(w io.Writer, ix *model.Index, nodes []*model.Node, merkle string) error
   doc=WriteNodes serializes a chosen subset of nodes (already sorted by id) using\nix as the global edge index, so a per-package shard still renders the reverse\nedges whose source lives in another shard. The subset must be sorted by id.
 EDGES
+  calls=matrix/codegraph/store.writeNode
+  references=matrix/codegraph/model.Index,matrix/codegraph/model.Node,matrix/codegraph/store.BannerPrefix,matrix/codegraph/store.bw,matrix/codegraph/store.ix,matrix/codegraph/store.merkle,matrix/codegraph/store.n,matrix/codegraph/store.nodes,matrix/codegraph/store.w,matrix/codegraph/store.writeNode
+  ^calls=matrix/codegraph/extract.writeFile,matrix/codegraph/store.Write
+  ^references=matrix/codegraph/extract.writeFile,matrix/codegraph/store.Write
   ^defines=matrix/codegraph/store/store.go
 
 NODE id=matrix/codegraph/store.applyAttr kind=func
   digest=b3:36ef9348d6f2e89401f31e5a9c8d5441ed453b9127648d3ad6f68baef8cacbd0 file=codegraph/store/parse.go range=97:134 lang=go exported=false byte_range=2274:3217
   sig=func applyAttr(n *model.Node, body string) error
 EDGES
+  calls=matrix/codegraph/store.setScalar,matrix/codegraph/store.unescape
+  references=matrix/codegraph/model.Node,matrix/codegraph/store.body,matrix/codegraph/store.err,matrix/codegraph/store.f,matrix/codegraph/store.k,matrix/codegraph/store.n,matrix/codegraph/store.ok,matrix/codegraph/store.setScalar,matrix/codegraph/store.tok,matrix/codegraph/store.unescape,matrix/codegraph/store.v
+  ^calls=matrix/codegraph/store.Parse
+  ^references=matrix/codegraph/store.Parse
   ^defines=matrix/codegraph/store/parse.go
 
 NODE id=matrix/codegraph/store.escape kind=func
   digest=b3:52368e2ebf15caaa476af25f303d12a54a84466fbf3312cabd4fd54981f5c72a file=codegraph/store/store.go range=89:94 lang=go exported=false byte_range=2896:3059
   sig=func escape(s string) string
 EDGES
+  references=matrix/codegraph/store.s
+  ^calls=matrix/codegraph/store.writeNode
+  ^references=matrix/codegraph/store.writeNode
   ^defines=matrix/codegraph/store/store.go
 
 NODE id=matrix/codegraph/store.formatSalience kind=func
@@ -58,42 +82,66 @@ NODE id=matrix/codegraph/store.formatSalience kind=func
   sig=func formatSalience(f float64) string
   doc=formatSalience renders with exactly 4 decimals, half-even rounding.
 EDGES
+  references=matrix/codegraph/store.f
+  ^calls=matrix/codegraph/store.writeNode
+  ^references=matrix/codegraph/store.writeNode
   ^defines=matrix/codegraph/store/store.go
 
 NODE id=matrix/codegraph/store.parseEdge kind=func
   digest=b3:8884370f24e16c156976a31f292bfb51ea1e299e5194bfc35c7e64d8c3a4fa4c file=codegraph/store/parse.go range=186:205 lang=go exported=false byte_range=4333:4848
   sig=func parseEdge(ix *model.Index, nodeID, body string) error
 EDGES
+  calls=matrix/codegraph/model.Index.AddEdge
+  references=matrix/codegraph/model.Edge,matrix/codegraph/model.EdgeType,matrix/codegraph/model.Index,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/store.body,matrix/codegraph/store.et,matrix/codegraph/store.ix,matrix/codegraph/store.list,matrix/codegraph/store.nodeID,matrix/codegraph/store.ok,matrix/codegraph/store.other,matrix/codegraph/store.reverse,matrix/codegraph/store.typ
+  ^calls=matrix/codegraph/store.Parse
+  ^references=matrix/codegraph/store.Parse
   ^defines=matrix/codegraph/store/parse.go
 
 NODE id=matrix/codegraph/store.parseNodeHeader kind=func
   digest=b3:4d238c8cb88a9116482f5f5225a89e2120363f2580243fc7687ff991c1246667 file=codegraph/store/parse.go range=75:95 lang=go exported=false byte_range=1764:2272
   sig=func parseNodeHeader(text string) (*model.Node, error)
 EDGES
+  references=matrix/codegraph/model.Kind,matrix/codegraph/model.Node,matrix/codegraph/store.k,matrix/codegraph/store.n,matrix/codegraph/store.ok,matrix/codegraph/store.text,matrix/codegraph/store.tok,matrix/codegraph/store.v
+  ^calls=matrix/codegraph/store.Parse
+  ^references=matrix/codegraph/store.Parse
   ^defines=matrix/codegraph/store/parse.go
 
 NODE id=matrix/codegraph/store.parseRange kind=func
   digest=b3:63844f9d04a2542181dd850f2185495e76159ecf14dafc491fe37886430d53dc file=codegraph/store/parse.go range=173:184 lang=go exported=false byte_range=3980:4331
   sig=func parseRange(v string) (model.Range, error)
 EDGES
+  references=matrix/codegraph/model.Range,matrix/codegraph/store.a,matrix/codegraph/store.b,matrix/codegraph/store.el,matrix/codegraph/store.err1,matrix/codegraph/store.err2,matrix/codegraph/store.ok,matrix/codegraph/store.sl,matrix/codegraph/store.v
+  ^calls=matrix/codegraph/store.setScalar
+  ^references=matrix/codegraph/store.setScalar
   ^defines=matrix/codegraph/store/parse.go
 
 NODE id=matrix/codegraph/store.setScalar kind=func
   digest=b3:d53003d92d7b490a9cba346091475108efa861900904e94e606212bcd0242bb0 file=codegraph/store/parse.go range=136:171 lang=go exported=false byte_range=3219:3978
   sig=func setScalar(n *model.Node, k, v string) error
 EDGES
+  calls=matrix/codegraph/store.parseRange
+  references=matrix/codegraph/model.ByteRange,matrix/codegraph/model.Node,matrix/codegraph/store.a,matrix/codegraph/store.b,matrix/codegraph/store.eb,matrix/codegraph/store.err,matrix/codegraph/store.err1,matrix/codegraph/store.err2,matrix/codegraph/store.k,matrix/codegraph/store.n,matrix/codegraph/store.ok,matrix/codegraph/store.parseRange,matrix/codegraph/store.r,matrix/codegraph/store.sb,matrix/codegraph/store.v
+  ^calls=matrix/codegraph/store.applyAttr
+  ^references=matrix/codegraph/store.applyAttr
   ^defines=matrix/codegraph/store/parse.go
 
 NODE id=matrix/codegraph/store.unescape kind=func
   digest=b3:9f5a8e21858149325dfb3fd5bb1bf37d983d409a11907b28fd13c4b8a042d175 file=codegraph/store/store.go range=96:122 lang=go exported=false byte_range=3061:3491
   sig=func unescape(s string) string
 EDGES
+  references=matrix/codegraph/store.b,matrix/codegraph/store.i,matrix/codegraph/store.s
+  ^calls=matrix/codegraph/store.applyAttr
+  ^references=matrix/codegraph/store.applyAttr
   ^defines=matrix/codegraph/store/store.go
 
 NODE id=matrix/codegraph/store.writeNode kind=func
   digest=b3:3bb407f306d4d5d0108b3d7508fc8d45922b21121205269dff38498bad62ad90 file=codegraph/store/store.go range=42:82 lang=go exported=false byte_range=1439:2711
   sig=func writeNode(bw *bufio.Writer, ix *model.Index, n *model.Node)
 EDGES
+  calls=matrix/codegraph/model.ByteRange.IsZero,matrix/codegraph/model.Index.Forward,matrix/codegraph/model.Index.Reverse,matrix/codegraph/model.Range.String,matrix/codegraph/store.escape,matrix/codegraph/store.formatSalience
+  references=matrix/codegraph/model.ByteRange.IsZero,matrix/codegraph/model.EdgeTypes,matrix/codegraph/model.Index,matrix/codegraph/model.Index.Forward,matrix/codegraph/model.Index.Reverse,matrix/codegraph/model.Node,matrix/codegraph/model.Range.String,matrix/codegraph/store.bw,matrix/codegraph/store.dsts,matrix/codegraph/store.escape,matrix/codegraph/store.formatSalience,matrix/codegraph/store.ix,matrix/codegraph/store.n,matrix/codegraph/store.srcs,matrix/codegraph/store.t
+  ^calls=matrix/codegraph/store.WriteNodes
+  ^references=matrix/codegraph/store.WriteNodes
   ^defines=matrix/codegraph/store/store.go
 
 NODE id=matrix/codegraph/store/load.go kind=file

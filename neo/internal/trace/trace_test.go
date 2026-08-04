@@ -4,7 +4,7 @@
 package trace
 
 // Tests for the F3 durable workspace-trace sidecar store: async persistence of
-// the workspace SSE frames, the retained-event cap, and the sidecar-not-cortex
+// the workspace SSE frames, the retained-event cap, and the sidecar-not-Neocortex
 // guarantee. Every test drives the REAL store against a real temp dir — no
 // fakes (the store's whole job is real disk persistence).
 
@@ -112,13 +112,13 @@ func TestTrace_RetainedCapEnforced(t *testing.T) {
 }
 
 // TestTrace_NotJournaledIntoCortex proves the store is a pure SIDECAR (m9/f4):
-// every byte it writes lands under its OWN dir, never in a sibling cortex tree,
-// and the package has no cortex coupling (it imports none — a structural
+// every byte it writes lands under its OWN dir, never in a sibling Neocortex tree,
+// and the package has no Neocortex coupling (it imports none — a structural
 // guarantee this test backs with a runtime artifact check).
 func TestTrace_NotJournaledIntoCortex(t *testing.T) {
 	root := t.TempDir()
 	traceDir := filepath.Join(root, "trace")
-	cortexDir := filepath.Join(root, "cortex") // sibling that MUST stay untouched
+	cortexDir := filepath.Join(root, "Neocortex") // sibling that MUST stay untouched
 
 	st := Open(traceDir)
 	defer st.Close()
@@ -139,10 +139,10 @@ func TestTrace_NotJournaledIntoCortex(t *testing.T) {
 		t.Fatalf("trace dir must contain exactly the run's JSONL, got %v", names)
 	}
 
-	// No cortex tree was created as a side effect — the store touches only its
+	// No Neocortex tree was created as a side effect — the store touches only its
 	// own dir.
 	if _, err := os.Stat(cortexDir); !os.IsNotExist(err) {
-		t.Errorf("sidecar store must NEVER create a cortex tree (stat %s: %v)", cortexDir, err)
+		t.Errorf("sidecar store must NEVER create a Neocortex tree (stat %s: %v)", cortexDir, err)
 	}
 
 	// A disabled store (empty dir) is a total no-op: Record/Load/Flush/Close

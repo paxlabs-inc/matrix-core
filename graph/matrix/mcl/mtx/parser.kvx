@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/mcl/mtx/parser kind=package
   digest=b3:f49c0c17ffd398508a0d13a7e98aa00718ed3553f0155acd912a2e38d7fe04a4 file=MCL/mtx/parser range=0:0 lang=go exported=true
 EDGES
   contains=matrix/mcl/mtx/parser/parser.go
+  imports=matrix/mcl/mtx/ast,matrix/mcl/mtx/lexer,matrix/mcl/mtx/token
   ^contains=mod:matrix/mcl
+  ^imports=matrix/bridge/cmd/mclc-cortex,matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/executor/runtime,matrix/mcl/cmd/mclc
 
 NODE id=matrix/mcl/mtx/parser.Error kind=type
   digest=b3:5f5f6bb13d001c0aafa567802e8622ad05b0c0accce2e98680cdcc1e67100aaa file=MCL/mtx/parser/parser.go range=21:25 lang=go exported=true byte_range=590:695
@@ -12,6 +14,8 @@ NODE id=matrix/mcl/mtx/parser.Error kind=type
   doc=Error is a parse error at a specific source position.
 EDGES
   contains=matrix/mcl/mtx/parser.Error#Msg,matrix/mcl/mtx/parser.Error#Pos,matrix/mcl/mtx/parser.Error.Error
+  references=matrix/mcl/mtx/token.Pos
+  ^references=matrix/mcl/mtx/parser.Error.Error,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.Errors,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/parser.Parser.errorf
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Error#Msg kind=field
@@ -30,6 +34,7 @@ NODE id=matrix/mcl/mtx/parser.Error.Error kind=method
   digest=b3:44fa41f11097743bafc0f8dcee89ed13bdd42058ba9475032b793b8a9a17b576 file=MCL/mtx/parser/parser.go range=27:29 lang=go exported=true byte_range=697:775
   sig=func (e *Error) Error() string
 EDGES
+  references=matrix/mcl/mtx/parser.Error,matrix/mcl/mtx/parser.e
   ^contains=matrix/mcl/mtx/parser.Error
   ^defines=matrix/mcl/mtx/parser/parser.go
 
@@ -38,6 +43,10 @@ NODE id=matrix/mcl/mtx/parser.New kind=func
   sig=func New(src []byte) *Parser
   doc=New creates a parser over the given source bytes.
 EDGES
+  calls=matrix/mcl/mtx/lexer.New,matrix/mcl/mtx/parser.Parser.advance
+  references=matrix/mcl/mtx/lexer.New,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.l,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.src
+  ^calls=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.extractOnBlockHints,matrix/executor/runtime.SkillLoader.Load,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.cmdHash,matrix/mcl/cmd/mclc.cmdParse,matrix/mcl/cmd/mclc.cmdValidate
+  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.extractOnBlockHints,matrix/executor/runtime.SkillLoader.Load,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.cmdHash,matrix/mcl/cmd/mclc.cmdParse,matrix/mcl/cmd/mclc.cmdValidate
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser kind=type
@@ -46,6 +55,8 @@ NODE id=matrix/mcl/mtx/parser.Parser kind=type
   doc=Parser produces an AST from a lexer token stream.
 EDGES
   contains=matrix/mcl/mtx/parser.Parser#errors,matrix/mcl/mtx/parser.Parser#lex,matrix/mcl/mtx/parser.Parser#tok,matrix/mcl/mtx/parser.Parser.Errors,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseCondition,matrix/mcl/mtx/parser.Parser.parseDottedValue,matrix/mcl/mtx/parser.Parser.parseFailEntry,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry,matrix/mcl/mtx/parser.Parser.parseNoneEntry,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseOptionList,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseRefEntry,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSection,matrix/mcl/mtx/parser.Parser.parseSectionEntry,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody,matrix/mcl/mtx/parser.Parser.parseSlotExpr,matrix/mcl/mtx/parser.Parser.parseSlotModifier,matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair,matrix/mcl/mtx/parser.Parser.parseTypeRef,matrix/mcl/mtx/parser.Parser.parseUnknownBlock,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.Parser.parseValueList,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.Parser.skipToNewline
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/parser.Error,matrix/mcl/mtx/token.Token
+  ^references=matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Errors,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseCondition,matrix/mcl/mtx/parser.Parser.parseDottedValue,matrix/mcl/mtx/parser.Parser.parseFailEntry,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry,matrix/mcl/mtx/parser.Parser.parseNoneEntry,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseOptionList,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseRefEntry,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSection,matrix/mcl/mtx/parser.Parser.parseSectionEntry,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody,matrix/mcl/mtx/parser.Parser.parseSlotExpr,matrix/mcl/mtx/parser.Parser.parseSlotModifier,matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair,matrix/mcl/mtx/parser.Parser.parseTypeRef,matrix/mcl/mtx/parser.Parser.parseUnknownBlock,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.Parser.parseValueList,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.Parser.skipToNewline
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser#errors kind=field
@@ -71,6 +82,7 @@ NODE id=matrix/mcl/mtx/parser.Parser.Errors kind=method
   sig=func (p *Parser) Errors() []*Error
   doc=Errors returns all parse errors.
 EDGES
+  references=matrix/mcl/mtx/parser.Error,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.p
   ^contains=matrix/mcl/mtx/parser.Parser
   ^defines=matrix/mcl/mtx/parser/parser.go
 
@@ -79,14 +91,22 @@ NODE id=matrix/mcl/mtx/parser.Parser.Parse kind=method
   sig=func (p *Parser) Parse() (*ast.File, []*Error)
   doc=Parse parses the entire file and returns the AST plus any errors.
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.parseSection,matrix/mcl/mtx/parser.Parser.skipNewlines
+  references=matrix/mcl/mtx/ast.File,matrix/mcl/mtx/parser.Error,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.parseSection,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.file,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.sec,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.SECTION
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.extractOnBlockHints,matrix/executor/runtime.SkillLoader.Load,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.cmdHash,matrix/mcl/cmd/mclc.cmdParse,matrix/mcl/cmd/mclc.cmdValidate
+  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.extractOnBlockHints,matrix/executor/runtime.SkillLoader.Load,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.cmdHash,matrix/mcl/cmd/mclc.cmdParse,matrix/mcl/cmd/mclc.cmdValidate
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.advance kind=method
   digest=b3:37dd5259e7e86564f4d3130ef777f85f57a617f72e6d00f637be071c7500e150 file=MCL/mtx/parser/parser.go range=967:969 lang=go exported=false byte_range=22509:22566
   sig=func (p *Parser) advance()
 EDGES
+  calls=matrix/mcl/mtx/lexer.Lexer.NextToken
+  references=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.p
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseCondition,matrix/mcl/mtx/parser.Parser.parseDottedValue,matrix/mcl/mtx/parser.Parser.parseFailEntry,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry,matrix/mcl/mtx/parser.Parser.parseNoneEntry,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseOptionList,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseRefEntry,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSection,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody,matrix/mcl/mtx/parser.Parser.parseSlotExpr,matrix/mcl/mtx/parser.Parser.parseSlotModifier,matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair,matrix/mcl/mtx/parser.Parser.parseTypeRef,matrix/mcl/mtx/parser.Parser.parseUnknownBlock,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.Parser.parseValueList,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.Parser.skipToNewline
+  ^references=matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseCondition,matrix/mcl/mtx/parser.Parser.parseDottedValue,matrix/mcl/mtx/parser.Parser.parseFailEntry,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry,matrix/mcl/mtx/parser.Parser.parseNoneEntry,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseOptionList,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseRefEntry,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSection,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody,matrix/mcl/mtx/parser.Parser.parseSlotExpr,matrix/mcl/mtx/parser.Parser.parseSlotModifier,matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair,matrix/mcl/mtx/parser.Parser.parseTypeRef,matrix/mcl/mtx/parser.Parser.parseUnknownBlock,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.Parser.parseValueList,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.Parser.skipToNewline
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.consumeCompoundValue kind=method
@@ -94,42 +114,65 @@ NODE id=matrix/mcl/mtx/parser.Parser.consumeCompoundValue kind=method
   sig=func (p *Parser) consumeCompoundValue(first ast.Value) ast.Value
   doc=consumeCompoundValue consumes remaining inline tokens after the first value\nto form a compound value like "core/verb.mtx" or "verb_vocab@1".
 EDGES
+  calls=matrix/mcl/mtx/ast.BoolValue.Pos,matrix/mcl/mtx/ast.FloatValue.Pos,matrix/mcl/mtx/ast.IdentValue.Pos,matrix/mcl/mtx/ast.IntValue.Pos,matrix/mcl/mtx/ast.OptionListValue.Pos,matrix/mcl/mtx/ast.SlotExprValue.Pos,matrix/mcl/mtx/ast.StringValue.Pos,matrix/mcl/mtx/ast.URIValue.Pos,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.valueToString
+  references=matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.Node.Pos,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.buf,matrix/mcl/mtx/parser.first,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.valueToString,matrix/mcl/mtx/token.COMMA,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.NEWLINE,matrix/mcl/mtx/token.RBRACKET,matrix/mcl/mtx/token.RPAREN
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseValueList
+  ^references=matrix/mcl/mtx/parser.Parser.parseValueList
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.errorf kind=method
   digest=b3:b1a2d5b41cf5ad196c7e555cc98d242d3e346ed1b2eed01a06c59e534ea0742f file=MCL/mtx/parser/parser.go range=1006:1011 lang=go exported=false byte_range=23289:23448
   sig=func (p *Parser) errorf(format string, args ...interface{})
 EDGES
+  references=matrix/mcl/mtx/parser.Error,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.args,matrix/mcl/mtx/parser.format,matrix/mcl/mtx/parser.p
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseCondition,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSectionEntry,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody,matrix/mcl/mtx/parser.Parser.parseUnknownBlock,matrix/mcl/mtx/parser.Parser.parseValue
+  ^references=matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseCondition,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSectionEntry,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody,matrix/mcl/mtx/parser.Parser.parseUnknownBlock,matrix/mcl/mtx/parser.Parser.parseValue
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.expect kind=method
   digest=b3:021c4b5df5ff1b932e8b976a02248b9f402dd40ebc216ee1089b3f0f6472c0a8 file=MCL/mtx/parser/parser.go range=971:977 lang=go exported=false byte_range=22568:22726
   sig=func (p *Parser) expect(ty token.Type)
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf
+  references=matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.ty,matrix/mcl/mtx/token.Type
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseCondition,matrix/mcl/mtx/parser.Parser.parseFailEntry,matrix/mcl/mtx/parser.Parser.parseOptionList,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody,matrix/mcl/mtx/parser.Parser.parseSlotModifier,matrix/mcl/mtx/parser.Parser.parseTypeRef,matrix/mcl/mtx/parser.Parser.parseUnknownBlock
+  ^references=matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseCondition,matrix/mcl/mtx/parser.Parser.parseFailEntry,matrix/mcl/mtx/parser.Parser.parseOptionList,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody,matrix/mcl/mtx/parser.Parser.parseSlotModifier,matrix/mcl/mtx/parser.Parser.parseTypeRef,matrix/mcl/mtx/parser.Parser.parseUnknownBlock
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.expectNewline kind=method
   digest=b3:3231171c261a7f0ba698952c0a49772737910a2fbbb3d465bba05fd88f1e289e file=MCL/mtx/parser/parser.go range=979:989 lang=go exported=false byte_range=22728:23030
   sig=func (p *Parser) expectNewline()
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance
+  references=matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.NEWLINE
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseFailEntry,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/parser.Parser.parseNoneEntry,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseRefEntry,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSection,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody,matrix/mcl/mtx/parser.Parser.parseSlotModifier,matrix/mcl/mtx/parser.Parser.parseUnknownBlock
+  ^references=matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseFailEntry,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/parser.Parser.parseNoneEntry,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseRefEntry,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSection,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody,matrix/mcl/mtx/parser.Parser.parseSlotModifier,matrix/mcl/mtx/parser.Parser.parseUnknownBlock
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseClarifyBlock kind=method
   digest=b3:7d665b8d244a4353476e79f2286356202828629d29b382a74bcbc6bb6939e5fb file=MCL/mtx/parser/parser.go range=551:595 lang=go exported=false byte_range=12227:13174
   sig=func (p *Parser) parseClarifyBlock() *ast.ClarifyBlock
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.Parser.skipNewlines
+  references=matrix/mcl/mtx/ast.ClarifyBlock,matrix/mcl/mtx/ast.ClarifyModifier,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.cb,matrix/mcl/mtx/parser.key,matrix/mcl/mtx/parser.modPos,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.val,matrix/mcl/mtx/token.DOT,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.EQUALS,matrix/mcl/mtx/token.INDENT,matrix/mcl/mtx/token.KwEnd,matrix/mcl/mtx/token.KwSlot,matrix/mcl/mtx/token.SECTION
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry
+  ^references=matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseCondition kind=method
   digest=b3:03b60747363d700c69fff0679f900580fc3430a88e4ee9a9b0936df3b749211d file=MCL/mtx/parser/parser.go range=293:337 lang=go exported=false byte_range=6185:7534
   sig=func (p *Parser) parseCondition() ast.Condition
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.parseValue
+  references=matrix/mcl/mtx/ast.Condition,matrix/mcl/mtx/ast.ConfidenceCondition,matrix/mcl/mtx/ast.SlotValCondition,matrix/mcl/mtx/ast.UnknownCondition,matrix/mcl/mtx/ast.VerbCondition,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.op,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/parser.slotName,matrix/mcl/mtx/parser.threshold,matrix/mcl/mtx/parser.val,matrix/mcl/mtx/parser.verb,matrix/mcl/mtx/token.DOT,matrix/mcl/mtx/token.EQEQ,matrix/mcl/mtx/token.EQUALS,matrix/mcl/mtx/token.GT,matrix/mcl/mtx/token.GTEQ,matrix/mcl/mtx/token.KwConfidence,matrix/mcl/mtx/token.KwSlot,matrix/mcl/mtx/token.KwUnknown,matrix/mcl/mtx/token.KwVerb,matrix/mcl/mtx/token.LT,matrix/mcl/mtx/token.LTEQ
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseOnBlock
+  ^references=matrix/mcl/mtx/parser.Parser.parseOnBlock
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseDottedValue kind=method
@@ -137,63 +180,99 @@ NODE id=matrix/mcl/mtx/parser.Parser.parseDottedValue kind=method
   sig=func (p *Parser) parseDottedValue(first string, pos token.Pos) ast.Value
   doc=parseDottedValue handles compound dotted values like "1.0.0" or "intent.draft.prose".\nThe first part has already been consumed; we're at the DOT.
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/token.Type.IsKeyword
+  references=matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.buf,matrix/mcl/mtx/parser.first,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/token.DOT,matrix/mcl/mtx/token.FLOAT,matrix/mcl/mtx/token.IDENT,matrix/mcl/mtx/token.INT,matrix/mcl/mtx/token.Pos,matrix/mcl/mtx/token.Type.IsKeyword
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseValue
+  ^references=matrix/mcl/mtx/parser.Parser.parseValue
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseFailEntry kind=method
   digest=b3:8402fcba7f43fc722ef10566b8433ea5a2fd4eb7c638bc509b0b49480b474878 file=MCL/mtx/parser/parser.go range=599:624 lang=go exported=false byte_range=13204:13707
   sig=func (p *Parser) parseFailEntry(name string, pos token.Pos) *ast.FailEntry
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline
+  references=matrix/mcl/mtx/ast.FailEntry,matrix/mcl/mtx/ast.FailModifier,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.fe,matrix/mcl/mtx/parser.key,matrix/mcl/mtx/parser.modPos,matrix/mcl/mtx/parser.name,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/parser.val,matrix/mcl/mtx/token.EQUALS,matrix/mcl/mtx/token.INDENT,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry
+  ^references=matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseKVPairContinuation kind=method
   digest=b3:8ee5fb75513b1f235596b88260e5af882a022a6c95d41da9af581f8abbae3fc6 file=MCL/mtx/parser/parser.go range=647:679 lang=go exported=false byte_range=14272:15057
   sig=func (p *Parser) parseKVPairContinuation(firstName string, pos token.Pos) ast.Entry
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseValueList
+  references=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.KVPair,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseValueList,matrix/mcl/mtx/parser.firstName,matrix/mcl/mtx/parser.keys,matrix/mcl/mtx/parser.kv,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.part,matrix/mcl/mtx/parser.pb,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/token.DOT,matrix/mcl/mtx/token.EQUALS,matrix/mcl/mtx/token.NEWLINE,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry,matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair
+  ^references=matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry,matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry kind=method
   digest=b3:28d72c6c2787dcc762eb05d6c5ccd7449bd748be6928e1d921deab7d2d450c3f file=MCL/mtx/parser/parser.go range=628:645 lang=go exported=false byte_range=13745:14270
   sig=func (p *Parser) parseKVPairOrFailEntry() ast.Entry
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.parseFailEntry,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation
+  references=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.parseFailEntry,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/parser.name,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/token.DOT,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.EQUALS,matrix/mcl/mtx/token.NEWLINE
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry
+  ^references=matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseNoneEntry kind=method
   digest=b3:704a8cd7b392de2b24d9fcd769fecf495862e4353643ceb90721976e3b23a2d9 file=MCL/mtx/parser/parser.go range=948:953 lang=go exported=false byte_range=22149:22304
   sig=func (p *Parser) parseNoneEntry() *ast.NoneEntry
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expectNewline
+  references=matrix/mcl/mtx/ast.NoneEntry,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.ne,matrix/mcl/mtx/parser.p
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseSectionEntry
+  ^references=matrix/mcl/mtx/parser.Parser.parseSectionEntry
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseOnBlock kind=method
   digest=b3:2deef3537d937e2347e9b9f0b3e3514934b6ea93e8b435b338d9e2d50ac8df6b file=MCL/mtx/parser/parser.go range=266:291 lang=go exported=false byte_range=5584:6183
   sig=func (p *Parser) parseOnBlock() *ast.OnBlock
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseCondition,matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.skipNewlines
+  references=matrix/mcl/mtx/ast.OnBlock,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseCondition,matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.entry,matrix/mcl/mtx/parser.ob,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.KwEnd,matrix/mcl/mtx/token.SECTION
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry
+  ^references=matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseOnEntry kind=method
   digest=b3:e5e96bf94ed5a205c2640af7544c7e878ca6273cf99f71fc227a83fd5182ede8 file=MCL/mtx/parser/parser.go range=339:365 lang=go exported=false byte_range=7536:8267
   sig=func (p *Parser) parseOnEntry() ast.Entry
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseUnknownBlock
+  references=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseUnknownBlock,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/token.INDENT,matrix/mcl/mtx/token.KwClarify,matrix/mcl/mtx/token.KwEnd,matrix/mcl/mtx/token.KwOn,matrix/mcl/mtx/token.KwPrompt,matrix/mcl/mtx/token.KwResolve,matrix/mcl/mtx/token.KwUnknown
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseOnBlock
+  ^references=matrix/mcl/mtx/parser.Parser.parseOnBlock
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseOptionList kind=method
   digest=b3:ba51652e242041f0b4d90e85f261ee49c00c96835683e69980cfbb9b713cac8e file=MCL/mtx/parser/parser.go range=935:944 lang=go exported=false byte_range=21800:22114
   sig=func (p *Parser) parseOptionList() ast.Value
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.parseValue
+  references=matrix/mcl/mtx/ast.OptionListValue,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.ol,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.NEWLINE,matrix/mcl/mtx/token.RBRACKET
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseValue
+  ^references=matrix/mcl/mtx/parser.Parser.parseValue
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parsePromptBlock kind=method
   digest=b3:09d9a0933f7aec7e1dd7c15b6c8a25fbec215b8306238eededdb5a1ca8da013f file=MCL/mtx/parser/parser.go range=369:430 lang=go exported=false byte_range=8296:9661
   sig=func (p *Parser) parsePromptBlock() *ast.PromptBlock
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.Parser.skipToNewline
+  references=matrix/mcl/mtx/ast.PromptBlock,matrix/mcl/mtx/ast.PromptRole,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.Parser.skipToNewline,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.pb,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/parser.role,matrix/mcl/mtx/parser.text,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.EQUALS,matrix/mcl/mtx/token.INDENT,matrix/mcl/mtx/token.KwAssistant,matrix/mcl/mtx/token.KwEnd,matrix/mcl/mtx/token.KwSystem,matrix/mcl/mtx/token.KwUser,matrix/mcl/mtx/token.SECTION,matrix/mcl/mtx/token.STRING
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry
+  ^references=matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parsePromptBlockBody kind=method
@@ -201,56 +280,88 @@ NODE id=matrix/mcl/mtx/parser.Parser.parsePromptBlockBody kind=method
   sig=func (p *Parser) parsePromptBlockBody(pos token.Pos) *ast.PromptBlock
   doc=parsePromptBlockBody parses the body of a prompt block (after the\nopening NEWLINE has been consumed by the caller). Used for both\nstandalone `prompt ... end` and named `X.prompt ... end` blocks.
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.Parser.skipToNewline
+  references=matrix/mcl/mtx/ast.PromptBlock,matrix/mcl/mtx/ast.PromptRole,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.Parser.skipToNewline,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.pb,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/parser.role,matrix/mcl/mtx/parser.rolePos,matrix/mcl/mtx/parser.text,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.EQUALS,matrix/mcl/mtx/token.INDENT,matrix/mcl/mtx/token.KwAssistant,matrix/mcl/mtx/token.KwEnd,matrix/mcl/mtx/token.KwSystem,matrix/mcl/mtx/token.KwUser,matrix/mcl/mtx/token.Pos,matrix/mcl/mtx/token.SECTION,matrix/mcl/mtx/token.STRING
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseKVPairContinuation
+  ^references=matrix/mcl/mtx/parser.Parser.parseKVPairContinuation
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseRefEntry kind=method
   digest=b3:d272525a3f741430c74156c2d99a3e7f22a90c37ddf47eccd1346145ea0fced8 file=MCL/mtx/parser/parser.go range=955:963 lang=go exported=false byte_range=22306:22485
   sig=func (p *Parser) parseRefEntry() *ast.RefEntry
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expectNewline
+  references=matrix/mcl/mtx/ast.RefEntry,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.re
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseSectionEntry
+  ^references=matrix/mcl/mtx/parser.Parser.parseSectionEntry
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseResolveStmt kind=method
   digest=b3:c6a8401f3e14a153a977028cc864d7d427cb3883e5197a051eb9dfabc2375a4c file=MCL/mtx/parser/parser.go range=434:499 lang=go exported=false byte_range=9695:11220
   sig=func (p *Parser) parseResolveStmt() *ast.ResolveStmt
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseSlotExpr,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.Parser.skipToNewline
+  references=matrix/mcl/mtx/ast.CortexArg,matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.ResolveStmt,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseSlotExpr,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.Parser.skipToNewline,matrix/mcl/mtx/parser.arg,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.rs,matrix/mcl/mtx/token.ARROW,matrix/mcl/mtx/token.COMMA,matrix/mcl/mtx/token.DOT,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.EQUALS,matrix/mcl/mtx/token.KwCortexContext,matrix/mcl/mtx/token.KwCortexFind,matrix/mcl/mtx/token.KwCortexResolve,matrix/mcl/mtx/token.KwSlot,matrix/mcl/mtx/token.LPAREN,matrix/mcl/mtx/token.NEWLINE,matrix/mcl/mtx/token.RPAREN
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry
+  ^references=matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseSection kind=method
   digest=b3:101aa0086f3f262bcf14a407245ee6f28658be90e430f97f4e4a6ed781aca4a1 file=MCL/mtx/parser/parser.go range=75:100 lang=go exported=false byte_range=1688:2244
   sig=func (p *Parser) parseSection() *ast.Section
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseSectionEntry,matrix/mcl/mtx/parser.Parser.skipNewlines
+  references=matrix/mcl/mtx/ast.Section,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseSectionEntry,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.entry,matrix/mcl/mtx/parser.name,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.sec,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.SECTION
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.Parse
+  ^references=matrix/mcl/mtx/parser.Parser.Parse
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseSectionEntry kind=method
   digest=b3:67b6810ff68a19fcde55b9dffe4451bdb50dc89027c1b71597db50771ab3cd3d file=MCL/mtx/parser/parser.go range=104:144 lang=go exported=false byte_range=2276:3153
   sig=func (p *Parser) parseSectionEntry() ast.Entry
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry,matrix/mcl/mtx/parser.Parser.parseNoneEntry,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parseRefEntry,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair,matrix/mcl/mtx/parser.Parser.parseUnknownBlock,matrix/mcl/mtx/parser.Parser.skipToNewline
+  references=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseKVPairOrFailEntry,matrix/mcl/mtx/parser.Parser.parseNoneEntry,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parseRefEntry,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair,matrix/mcl/mtx/parser.Parser.parseUnknownBlock,matrix/mcl/mtx/parser.Parser.skipToNewline,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.INDENT,matrix/mcl/mtx/token.KwClarify,matrix/mcl/mtx/token.KwNone,matrix/mcl/mtx/token.KwOn,matrix/mcl/mtx/token.KwPrompt,matrix/mcl/mtx/token.KwResolve,matrix/mcl/mtx/token.KwSlot,matrix/mcl/mtx/token.KwUnknown,matrix/mcl/mtx/token.SECTION,matrix/mcl/mtx/token.URI
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseSection
+  ^references=matrix/mcl/mtx/parser.Parser.parseSection
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseSlotDeclBody kind=method
   digest=b3:92fcaaddc0da0d4ea8b505c5036d2b8f3c1b35d7a9bc0181c481aa4af7e9f054 file=MCL/mtx/parser/parser.go range=162:189 lang=go exported=false byte_range=3577:4178
   sig=func (p *Parser) parseSlotDeclBody(pos token.Pos) *ast.SlotDecl
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseSlotModifier,matrix/mcl/mtx/parser.Parser.parseTypeRef,matrix/mcl/mtx/parser.Parser.skipToNewline,matrix/mcl/mtx/token.Type.IsKeyword
+  references=matrix/mcl/mtx/ast.SlotDecl,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseSlotModifier,matrix/mcl/mtx/parser.Parser.parseTypeRef,matrix/mcl/mtx/parser.Parser.skipToNewline,matrix/mcl/mtx/parser.mod,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/parser.sd,matrix/mcl/mtx/token.COLON,matrix/mcl/mtx/token.IDENT,matrix/mcl/mtx/token.INDENT,matrix/mcl/mtx/token.Pos,matrix/mcl/mtx/token.Type.IsKeyword
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair
+  ^references=matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseSlotExpr kind=method
   digest=b3:dec4eacb801b3dc8dfa51d38e8a5096b34d1b3c711fd17f68122a75082ccbb07 file=MCL/mtx/parser/parser.go range=923:933 lang=go exported=false byte_range=21507:21798
   sig=func (p *Parser) parseSlotExpr() ast.Value
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance
+  references=matrix/mcl/mtx/ast.SlotExprValue,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.parts,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/token.DOT
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseValue
+  ^references=matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseValue
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseSlotModifier kind=method
   digest=b3:0b4ac09ff3127974d8925b6f406ed9eb79d7b1cb27696bc12130a4f3d155414d file=MCL/mtx/parser/parser.go range=191:225 lang=go exported=false byte_range=4180:4857
   sig=func (p *Parser) parseSlotModifier() *ast.SlotModifier
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseValue
+  references=matrix/mcl/mtx/ast.ModDefault,matrix/mcl/mtx/ast.ModHint,matrix/mcl/mtx/ast.ModMax,matrix/mcl/mtx/ast.ModOptional,matrix/mcl/mtx/ast.ModRequired,matrix/mcl/mtx/ast.SlotModifier,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.key,matrix/mcl/mtx/parser.mod,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/parser.val,matrix/mcl/mtx/token.EQUALS,matrix/mcl/mtx/token.KwOptional,matrix/mcl/mtx/token.KwRequired
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseSlotDeclBody
+  ^references=matrix/mcl/mtx/parser.Parser.parseSlotDeclBody
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair kind=method
@@ -258,28 +369,44 @@ NODE id=matrix/mcl/mtx/parser.Parser.parseSlotOrKVPair kind=method
   sig=func (p *Parser) parseSlotOrKVPair() ast.Entry
   doc=parseSlotOrKVPair disambiguates "slot name: Type" from "slot.weight.X=Y".
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody
+  references=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.parseKVPairContinuation,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/token.DOT
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseSectionEntry
+  ^references=matrix/mcl/mtx/parser.Parser.parseSectionEntry
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseTypeRef kind=method
   digest=b3:7a37216ce3cc4a10d936005d3b087e2c43fabfb0ca6d61689bfcc9a2d3d120d1 file=MCL/mtx/parser/parser.go range=229:262 lang=go exported=false byte_range=4888:5559
   sig=func (p *Parser) parseTypeRef() ast.TypeRef
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expect
+  references=matrix/mcl/mtx/ast.TypeRef,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.tr,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.GT,matrix/mcl/mtx/token.KwEnum,matrix/mcl/mtx/token.LBRACKET,matrix/mcl/mtx/token.LT,matrix/mcl/mtx/token.NEWLINE,matrix/mcl/mtx/token.PIPE,matrix/mcl/mtx/token.RBRACKET
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseSlotDeclBody
+  ^references=matrix/mcl/mtx/parser.Parser.parseSlotDeclBody
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseUnknownBlock kind=method
   digest=b3:6cbf05da3dabd7bcdc622f3bfa428e3c2183f622407d47ea6436e9bb6c4bcd1b file=MCL/mtx/parser/parser.go range=503:547 lang=go exported=false byte_range=11250:12197
   sig=func (p *Parser) parseUnknownBlock() *ast.UnknownBlock
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.Parser.skipNewlines
+  references=matrix/mcl/mtx/ast.UnknownBlock,matrix/mcl/mtx/ast.UnknownModifier,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.expect,matrix/mcl/mtx/parser.Parser.expectNewline,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.Parser.skipNewlines,matrix/mcl/mtx/parser.key,matrix/mcl/mtx/parser.modPos,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.ub,matrix/mcl/mtx/parser.val,matrix/mcl/mtx/token.DOT,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.EQUALS,matrix/mcl/mtx/token.INDENT,matrix/mcl/mtx/token.KwEnd,matrix/mcl/mtx/token.KwSlot,matrix/mcl/mtx/token.SECTION
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry
+  ^references=matrix/mcl/mtx/parser.Parser.parseOnEntry,matrix/mcl/mtx/parser.Parser.parseSectionEntry
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseValue kind=method
   digest=b3:1ef676079b782e2fa05b2d2cc876f070eaf33f6efb912d8692d9ad5b5aeb2824 file=MCL/mtx/parser/parser.go range=683:749 lang=go exported=false byte_range=15087:16755
   sig=func (p *Parser) parseValue() ast.Value
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.parseDottedValue,matrix/mcl/mtx/parser.Parser.parseOptionList,matrix/mcl/mtx/parser.Parser.parseSlotExpr,matrix/mcl/mtx/token.Type.IsKeyword
+  references=matrix/mcl/mtx/ast.BoolValue,matrix/mcl/mtx/ast.FloatValue,matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.IntValue,matrix/mcl/mtx/ast.StringValue,matrix/mcl/mtx/ast.URIValue,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.errorf,matrix/mcl/mtx/parser.Parser.parseDottedValue,matrix/mcl/mtx/parser.Parser.parseOptionList,matrix/mcl/mtx/parser.Parser.parseSlotExpr,matrix/mcl/mtx/parser.name,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/parser.pos,matrix/mcl/mtx/parser.raw,matrix/mcl/mtx/parser.text,matrix/mcl/mtx/parser.uri,matrix/mcl/mtx/token.BoolFalse,matrix/mcl/mtx/token.BoolTrue,matrix/mcl/mtx/token.DOT,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.FLOAT,matrix/mcl/mtx/token.IDENT,matrix/mcl/mtx/token.INT,matrix/mcl/mtx/token.KwSlot,matrix/mcl/mtx/token.LBRACKET,matrix/mcl/mtx/token.NEWLINE,matrix/mcl/mtx/token.STRING,matrix/mcl/mtx/token.Type.IsKeyword,matrix/mcl/mtx/token.URI
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseCondition,matrix/mcl/mtx/parser.Parser.parseOptionList,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSlotModifier,matrix/mcl/mtx/parser.Parser.parseUnknownBlock,matrix/mcl/mtx/parser.Parser.parseValueList
+  ^references=matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseCondition,matrix/mcl/mtx/parser.Parser.parseOptionList,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSlotModifier,matrix/mcl/mtx/parser.Parser.parseUnknownBlock,matrix/mcl/mtx/parser.Parser.parseValueList
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.parseValueList kind=method
@@ -287,27 +414,42 @@ NODE id=matrix/mcl/mtx/parser.Parser.parseValueList kind=method
   sig=func (p *Parser) parseValueList() ast.Value
   doc=parseValueList handles the value position in kv_pair, which may be a\nspace-separated list of identifiers, or a compound value with slashes/at-signs.
 EDGES
+  calls=matrix/mcl/mtx/ast.BoolValue.Pos,matrix/mcl/mtx/ast.FloatValue.Pos,matrix/mcl/mtx/ast.IdentValue.Pos,matrix/mcl/mtx/ast.IntValue.Pos,matrix/mcl/mtx/ast.OptionListValue.Pos,matrix/mcl/mtx/ast.SlotExprValue.Pos,matrix/mcl/mtx/ast.StringValue.Pos,matrix/mcl/mtx/ast.URIValue.Pos,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/token.Type.IsKeyword
+  references=matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.Node.Pos,matrix/mcl/mtx/ast.SpaceListValue,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.Parser.consumeCompoundValue,matrix/mcl/mtx/parser.Parser.parseValue,matrix/mcl/mtx/parser.compound,matrix/mcl/mtx/parser.first,matrix/mcl/mtx/parser.firstItem,matrix/mcl/mtx/parser.ident,matrix/mcl/mtx/parser.item,matrix/mcl/mtx/parser.items,matrix/mcl/mtx/parser.ok,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/token.AT,matrix/mcl/mtx/token.COLON,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.IDENT,matrix/mcl/mtx/token.NEWLINE,matrix/mcl/mtx/token.SLASH,matrix/mcl/mtx/token.Type.IsKeyword
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parseKVPairContinuation
+  ^references=matrix/mcl/mtx/parser.Parser.parseKVPairContinuation
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.skipNewlines kind=method
   digest=b3:606bfd78f64d6693589a8b265df95d5f7ec0cba2b4ab5901b260baad9e3d6dc0 file=MCL/mtx/parser/parser.go range=991:995 lang=go exported=false byte_range=23032:23119
   sig=func (p *Parser) skipNewlines()
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance
+  references=matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/token.NEWLINE
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseSection,matrix/mcl/mtx/parser.Parser.parseUnknownBlock
+  ^references=matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/parser.Parser.parseClarifyBlock,matrix/mcl/mtx/parser.Parser.parseOnBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseSection,matrix/mcl/mtx/parser.Parser.parseUnknownBlock
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.Parser.skipToNewline kind=method
   digest=b3:e41a83f0eea18ab988259230fa407e79bc7a311c584e2d4760abb57a57406bef file=MCL/mtx/parser/parser.go range=997:1004 lang=go exported=false byte_range=23121:23287
   sig=func (p *Parser) skipToNewline()
 EDGES
+  calls=matrix/mcl/mtx/parser.Parser.advance
+  references=matrix/mcl/mtx/parser.Parser,matrix/mcl/mtx/parser.Parser.advance,matrix/mcl/mtx/parser.p,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.NEWLINE
   ^contains=matrix/mcl/mtx/parser.Parser
+  ^calls=matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSectionEntry,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody
+  ^references=matrix/mcl/mtx/parser.Parser.parsePromptBlock,matrix/mcl/mtx/parser.Parser.parsePromptBlockBody,matrix/mcl/mtx/parser.Parser.parseResolveStmt,matrix/mcl/mtx/parser.Parser.parseSectionEntry,matrix/mcl/mtx/parser.Parser.parseSlotDeclBody
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser.valueToString kind=func
   digest=b3:2d20e39b8aa495f2625043d2409539cc265d47c95ff66610f6001810acc45848 file=MCL/mtx/parser/parser.go range=908:921 lang=go exported=false byte_range=21251:21505
   sig=func valueToString(v ast.Value) string
 EDGES
+  references=matrix/mcl/mtx/ast.FloatValue,matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.IntValue,matrix/mcl/mtx/ast.StringValue,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/parser.v,matrix/mcl/mtx/parser.val
+  ^calls=matrix/mcl/mtx/parser.Parser.consumeCompoundValue
+  ^references=matrix/mcl/mtx/parser.Parser.consumeCompoundValue
   ^defines=matrix/mcl/mtx/parser/parser.go
 
 NODE id=matrix/mcl/mtx/parser/parser.go kind=file

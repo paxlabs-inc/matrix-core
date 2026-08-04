@@ -1,16 +1,21 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/router/internal/mw kind=package
   digest=b3:fe09f7f3447eb9374394cd70e013dfd83189fbf6192f952dbb8a8c19366bc01a file=router/internal/mw range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/mw/mw.go
+  imports=matrix/router/internal/jwt,matrix/router/internal/proxy
   ^contains=mod:matrix/router
+  ^imports=matrix/router/cmd/matrix-router
 
 NODE id=matrix/router/internal/mw.AccessLog kind=func
   digest=b3:da161152e2ffd3ae61672b01479dac12a77c196aaaa8b3570caaa4b4b2265e18 file=router/internal/mw/mw.go range=175:187 lang=go exported=true byte_range=7149:7695
   sig=func AccessLog(log Logf) func(http.Handler) http.Handler
   doc=AccessLog records method/path/status/latency for every request. The\nstatus capture uses a wrapped ResponseWriter; flushing is preserved\nso SSE responses still stream live.
 EDGES
+  references=matrix/router/internal/mw.Logf,matrix/router/internal/mw.log,matrix/router/internal/mw.next,matrix/router/internal/mw.r,matrix/router/internal/mw.rw,matrix/router/internal/mw.start,matrix/router/internal/mw.statusWriter,matrix/router/internal/mw.w
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/mw/mw.go
 
 NODE id=matrix/router/internal/mw.Admin kind=func
@@ -18,6 +23,9 @@ NODE id=matrix/router/internal/mw.Admin kind=func
   sig=func Admin(token string, log Logf) func(http.Handler) http.Handler
   doc=Admin returns middleware that requires Authorization: Bearer\n<admin-token> matching token via constant-time compare. When token\nis empty the middleware returns 503 — operationally a misconfigured\ndeploy SHOULD fail open-loud not silent-pass.
 EDGES
+  references=matrix/router/internal/mw.Logf,matrix/router/internal/mw.bearerOf,matrix/router/internal/mw.log,matrix/router/internal/mw.next,matrix/router/internal/mw.r,matrix/router/internal/mw.supplied,matrix/router/internal/mw.token,matrix/router/internal/mw.w
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/mw/mw.go
 
 NODE id=matrix/router/internal/mw.CORS kind=func
@@ -25,6 +33,9 @@ NODE id=matrix/router/internal/mw.CORS kind=func
   sig=func CORS(allowed []string, log Logf) func(http.Handler) http.Handler
   doc=CORS returns middleware that answers browser cross-origin requests from the\nNext.js client (served from a different origin than this API). It reflects an\nallowed Origin, advertises the methods + headers the client sends\n(Authorization, Content-Type, X-Request-Id), and short-circuits the preflight\nOPTIONS with 204 BEFORE any auth middleware runs — a preflight carries no\ntoken, so it must never reach mw.JWT.\n\nallowed is the operator allow-list (ROUTER_CORS_ORIGINS). An entry of "*" (or\nan empty list) allows any origin; because the client authenticates with a\nBearer token and never sends cookies (credentials: 'omit'), reflecting the\norigin without Allow-Credentials is safe.
 EDGES
+  references=matrix/router/internal/mw.Logf,matrix/router/internal/mw.allowAll,matrix/router/internal/mw.allowed,matrix/router/internal/mw.next,matrix/router/internal/mw.o,matrix/router/internal/mw.origin,matrix/router/internal/mw.r,matrix/router/internal/mw.reqHeaders,matrix/router/internal/mw.set,matrix/router/internal/mw.w
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/mw/mw.go
 
 NODE id=matrix/router/internal/mw.JWT kind=func
@@ -32,6 +43,9 @@ NODE id=matrix/router/internal/mw.JWT kind=func
   sig=func JWT(v *jwt.Verifier, log Logf) func(http.Handler) http.Handler
   doc=JWT returns middleware that validates an Authorization: Bearer <jwt>\nheader against the provided Verifier. On success, the verified\nSubject is stashed in request context via proxy.WithSubject.\n\nThe Verifier internally dispatches on the JWT alg header:\nHS256 → legacy SUPABASE_JWT_SECRET; ES256/RS256/EdDSA → JWKS at\nSUPABASE_URL/auth/v1/.well-known/jwks.json. See router/internal/jwt.\n\nFailure mapping:\n\n	missing/empty header        -> 401 (unauthenticated)\n	malformed token             -> 401 (bad token)\n	expired                     -> 401 (refresh-needed)\n	bad signature               -> 401 (intentionally indistinguishable\n	                                    from "wrong key" to avoid\n	                                    leaking server config)\n\nDistinguishable error categories surface in the WWW-Authenticate\nheader so a smart client can decide whether to refresh.
 EDGES
+  references=matrix/router/internal/jwt.ErrExpired,matrix/router/internal/jwt.ErrNotYetValid,matrix/router/internal/jwt.Verifier,matrix/router/internal/jwt.Verifier.Verify,matrix/router/internal/mw.Logf,matrix/router/internal/mw.PreviewCookie,matrix/router/internal/mw.bearerOf,matrix/router/internal/mw.c,matrix/router/internal/mw.cat,matrix/router/internal/mw.claims,matrix/router/internal/mw.ctx,matrix/router/internal/mw.err,matrix/router/internal/mw.log,matrix/router/internal/mw.next,matrix/router/internal/mw.r,matrix/router/internal/mw.tok,matrix/router/internal/mw.v,matrix/router/internal/mw.w,matrix/router/internal/proxy.WithEmail,matrix/router/internal/proxy.WithSubject
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/mw/mw.go
 
 NODE id=matrix/router/internal/mw.Logf kind=type
@@ -39,6 +53,7 @@ NODE id=matrix/router/internal/mw.Logf kind=type
   sig=type Logf func(format string, args ...interface{})
   doc=Logf is the log sink used by middleware. Cmd/main.go wires this to\nos.Stderr; callers can swap to a structured logger if desired.
 EDGES
+  ^references=matrix/router/internal/mw.AccessLog,matrix/router/internal/mw.Admin,matrix/router/internal/mw.CORS,matrix/router/internal/mw.JWT
   ^defines=matrix/router/internal/mw/mw.go
 
 NODE id=matrix/router/internal/mw.PreviewCookie kind=const
@@ -46,6 +61,7 @@ NODE id=matrix/router/internal/mw.PreviewCookie kind=const
   sig=untyped string
   doc=PreviewCookie is the path-scoped cookie the preview handler sets so an\niframed preview app's same-origin subresource requests authenticate without\na token on every URL. mw.JWT reads it as the lowest-precedence token source.
 EDGES
+  ^references=matrix/router/internal/mw.JWT
   ^defines=matrix/router/internal/mw/mw.go
 
 NODE id=matrix/router/internal/mw.bearerOf kind=func
@@ -53,6 +69,8 @@ NODE id=matrix/router/internal/mw.bearerOf kind=func
   sig=func bearerOf(h string) string
   doc=bearerOf extracts the token from "Bearer <tok>" with case-insensitive\nscheme match. Returns "" when the header is empty / wrong scheme.
 EDGES
+  references=matrix/router/internal/mw.h,matrix/router/internal/mw.prefix
+  ^references=matrix/router/internal/mw.Admin,matrix/router/internal/mw.JWT
   ^defines=matrix/router/internal/mw/mw.go
 
 NODE id=matrix/router/internal/mw.statusWriter kind=type
@@ -60,6 +78,7 @@ NODE id=matrix/router/internal/mw.statusWriter kind=type
   sig=type statusWriter struct {\n	http.ResponseWriter\n	status	int\n	wrote	bool\n}
 EDGES
   contains=matrix/router/internal/mw.statusWriter#status,matrix/router/internal/mw.statusWriter#wrote,matrix/router/internal/mw.statusWriter.Flush,matrix/router/internal/mw.statusWriter.Unwrap,matrix/router/internal/mw.statusWriter.Write,matrix/router/internal/mw.statusWriter.WriteHeader
+  ^references=matrix/router/internal/mw.AccessLog,matrix/router/internal/mw.statusWriter.Flush,matrix/router/internal/mw.statusWriter.Unwrap,matrix/router/internal/mw.statusWriter.Write,matrix/router/internal/mw.statusWriter.WriteHeader
   ^defines=matrix/router/internal/mw/mw.go
 
 NODE id=matrix/router/internal/mw.statusWriter#status kind=field
@@ -79,6 +98,7 @@ NODE id=matrix/router/internal/mw.statusWriter.Flush kind=method
   sig=func (s *statusWriter) Flush()
   doc=Flush forwards to the underlying ResponseWriter when it implements\nhttp.Flusher. Required for SSE.
 EDGES
+  references=matrix/router/internal/mw.f,matrix/router/internal/mw.ok,matrix/router/internal/mw.s,matrix/router/internal/mw.statusWriter
   ^contains=matrix/router/internal/mw.statusWriter
   ^defines=matrix/router/internal/mw/mw.go
 
@@ -87,6 +107,7 @@ NODE id=matrix/router/internal/mw.statusWriter.Unwrap kind=method
   sig=func (s *statusWriter) Unwrap() http.ResponseWriter
   doc=Hijack forwards to the underlying ResponseWriter when it implements\nhttp.Hijacker. Required for httputil.ReverseProxy WebSockets / long\nlived streams.
 EDGES
+  references=matrix/router/internal/mw.s,matrix/router/internal/mw.statusWriter
   ^contains=matrix/router/internal/mw.statusWriter
   ^defines=matrix/router/internal/mw/mw.go
 
@@ -94,6 +115,7 @@ NODE id=matrix/router/internal/mw.statusWriter.Write kind=method
   digest=b3:e3b85517c4bf0d78098bbc4cca3cab98d38a485a4ea314a3066d1a8eade4704e file=router/internal/mw/mw.go range=204:209 lang=go exported=true byte_range=7918:8042
   sig=func (s *statusWriter) Write(b []byte) (int, error)
 EDGES
+  references=matrix/router/internal/mw.b,matrix/router/internal/mw.s,matrix/router/internal/mw.statusWriter
   ^contains=matrix/router/internal/mw.statusWriter
   ^defines=matrix/router/internal/mw/mw.go
 
@@ -101,7 +123,9 @@ NODE id=matrix/router/internal/mw.statusWriter.WriteHeader kind=method
   digest=b3:9f320d59299c550247e776ba6861ff01f266b76bd840162982bb2e1eb553c203 file=router/internal/mw/mw.go range=195:202 lang=go exported=true byte_range=7773:7916
   sig=func (s *statusWriter) WriteHeader(code int)
 EDGES
+  references=matrix/router/internal/mw.code,matrix/router/internal/mw.s,matrix/router/internal/mw.statusWriter
   ^contains=matrix/router/internal/mw.statusWriter
+  ^calls=matrix/router/internal/exa.Handler.writeJSON,matrix/router/internal/finance.Handler.writeJSON
   ^defines=matrix/router/internal/mw/mw.go
 
 NODE id=matrix/router/internal/mw/mw.go kind=file

@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/mcl/mtx/lexer kind=package
   digest=b3:f32e75a21972e95f13cc13e06f2ac58a48f12eaba567479ae5ab9354c9c7b342 file=MCL/mtx/lexer range=0:0 lang=go exported=true
 EDGES
   contains=matrix/mcl/mtx/lexer/lexer.go
+  imports=matrix/mcl/mtx/token
   ^contains=mod:matrix/mcl
+  ^imports=matrix/mcl/mtx/parser
 
 NODE id=matrix/mcl/mtx/lexer.Lexer kind=type
   digest=b3:00daf52e8328497cc5319dc03aeabc99095370406bdcb59fe912c14f50ae6594 file=MCL/mtx/lexer/lexer.go range=24:37 lang=go exported=true byte_range=770:1245
@@ -12,6 +14,7 @@ NODE id=matrix/mcl/mtx/lexer.Lexer kind=type
   doc=Lexer scans MatrixScript source bytes and produces tokens.
 EDGES
   contains=matrix/mcl/mtx/lexer.Lexer#atLineStart,matrix/mcl/mtx/lexer.Lexer#ch,matrix/mcl/mtx/lexer.Lexer#col,matrix/mcl/mtx/lexer.Lexer#line,matrix/mcl/mtx/lexer.Lexer#lineOff,matrix/mcl/mtx/lexer.Lexer#pos,matrix/mcl/mtx/lexer.Lexer#readPos,matrix/mcl/mtx/lexer.Lexer#src,matrix/mcl/mtx/lexer.Lexer.AllTokens,matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.currentPos,matrix/mcl/mtx/lexer.Lexer.newLine,matrix/mcl/mtx/lexer.Lexer.peekByte,matrix/mcl/mtx/lexer.Lexer.peekByteAt,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.Lexer.scanComment,matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword,matrix/mcl/mtx/lexer.Lexer.scanLineStart,matrix/mcl/mtx/lexer.Lexer.scanNumber,matrix/mcl/mtx/lexer.Lexer.scanSection,matrix/mcl/mtx/lexer.Lexer.scanString,matrix/mcl/mtx/lexer.Lexer.scanURI,matrix/mcl/mtx/lexer.Lexer.skipInlineWhitespace
+  ^references=matrix/mcl/mtx/lexer.Lexer.AllTokens,matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.currentPos,matrix/mcl/mtx/lexer.Lexer.newLine,matrix/mcl/mtx/lexer.Lexer.peekByte,matrix/mcl/mtx/lexer.Lexer.peekByteAt,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.Lexer.scanComment,matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword,matrix/mcl/mtx/lexer.Lexer.scanLineStart,matrix/mcl/mtx/lexer.Lexer.scanNumber,matrix/mcl/mtx/lexer.Lexer.scanSection,matrix/mcl/mtx/lexer.Lexer.scanString,matrix/mcl/mtx/lexer.Lexer.scanURI,matrix/mcl/mtx/lexer.Lexer.skipInlineWhitespace,matrix/mcl/mtx/lexer.New,matrix/mcl/mtx/parser.Parser
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer#atLineStart kind=field
@@ -67,6 +70,8 @@ NODE id=matrix/mcl/mtx/lexer.Lexer.AllTokens kind=method
   sig=func (l *Lexer) AllTokens() []token.Token
   doc=AllTokens drains the lexer and returns all tokens including EOF.
 EDGES
+  calls=matrix/mcl/mtx/lexer.Lexer.NextToken
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/lexer.tok,matrix/mcl/mtx/lexer.tokens,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.Token
   ^contains=matrix/mcl/mtx/lexer.Lexer
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
@@ -75,84 +80,127 @@ NODE id=matrix/mcl/mtx/lexer.Lexer.NextToken kind=method
   sig=func (l *Lexer) NextToken() token.Token
   doc=NextToken returns the next token from the input.
 EDGES
+  calls=matrix/mcl/mtx/lexer.Lexer.currentPos,matrix/mcl/mtx/lexer.Lexer.newLine,matrix/mcl/mtx/lexer.Lexer.peekByte,matrix/mcl/mtx/lexer.Lexer.peekByteAt,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.Lexer.scanComment,matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword,matrix/mcl/mtx/lexer.Lexer.scanLineStart,matrix/mcl/mtx/lexer.Lexer.scanNumber,matrix/mcl/mtx/lexer.Lexer.scanString,matrix/mcl/mtx/lexer.Lexer.skipInlineWhitespace,matrix/mcl/mtx/lexer.isDigit,matrix/mcl/mtx/lexer.isIdentStart
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.Lexer.currentPos,matrix/mcl/mtx/lexer.Lexer.newLine,matrix/mcl/mtx/lexer.Lexer.peekByte,matrix/mcl/mtx/lexer.Lexer.peekByteAt,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.Lexer.scanComment,matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword,matrix/mcl/mtx/lexer.Lexer.scanLineStart,matrix/mcl/mtx/lexer.Lexer.scanNumber,matrix/mcl/mtx/lexer.Lexer.scanString,matrix/mcl/mtx/lexer.Lexer.skipInlineWhitespace,matrix/mcl/mtx/lexer.ch,matrix/mcl/mtx/lexer.isDigit,matrix/mcl/mtx/lexer.isIdentStart,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/lexer.pos,matrix/mcl/mtx/token.ARROW,matrix/mcl/mtx/token.AT,matrix/mcl/mtx/token.COLON,matrix/mcl/mtx/token.COMMA,matrix/mcl/mtx/token.DOT,matrix/mcl/mtx/token.ELLIPSIS,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.EQEQ,matrix/mcl/mtx/token.EQUALS,matrix/mcl/mtx/token.GT,matrix/mcl/mtx/token.GTEQ,matrix/mcl/mtx/token.ILLEGAL,matrix/mcl/mtx/token.LBRACE,matrix/mcl/mtx/token.LBRACKET,matrix/mcl/mtx/token.LPAREN,matrix/mcl/mtx/token.LT,matrix/mcl/mtx/token.LTEQ,matrix/mcl/mtx/token.NEWLINE,matrix/mcl/mtx/token.PIPE,matrix/mcl/mtx/token.RBRACE,matrix/mcl/mtx/token.RBRACKET,matrix/mcl/mtx/token.RPAREN,matrix/mcl/mtx/token.SLASH,matrix/mcl/mtx/token.Token
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.AllTokens,matrix/mcl/mtx/lexer.Lexer.scanComment,matrix/mcl/mtx/lexer.Lexer.scanLineStart,matrix/mcl/mtx/parser.Parser.advance
+  ^references=matrix/mcl/mtx/lexer.Lexer.AllTokens,matrix/mcl/mtx/lexer.Lexer.scanComment,matrix/mcl/mtx/lexer.Lexer.scanLineStart,matrix/mcl/mtx/parser.Parser.advance
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.currentPos kind=method
   digest=b3:4d0f68e0d57168ce16210c4cbe5989dbf4a4491ebe92c0be894de7560725b005 file=MCL/mtx/lexer/lexer.go range=419:425 lang=go exported=false byte_range=10302:10418
   sig=func (l *Lexer) currentPos() token.Pos
 EDGES
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/token.Pos
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanLineStart
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanLineStart
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.newLine kind=method
   digest=b3:e2866fc4bf6b47e361f9c45e3febe5d1c4ea32137400b7ca3d2af895ca19346c file=MCL/mtx/lexer/lexer.go range=427:432 lang=go exported=false byte_range=10420:10511
   sig=func (l *Lexer) newLine()
 EDGES
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.l
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanLineStart
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanLineStart
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.peekByte kind=method
   digest=b3:508962946b146b1c9c6c35e4ee2240b002101b6f5e3999d93ec23f325011c011 file=MCL/mtx/lexer/lexer.go range=404:409 lang=go exported=false byte_range=10063:10167
   sig=func (l *Lexer) peekByte() byte
 EDGES
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.l
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword,matrix/mcl/mtx/lexer.Lexer.scanLineStart,matrix/mcl/mtx/lexer.Lexer.scanNumber
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword,matrix/mcl/mtx/lexer.Lexer.scanLineStart,matrix/mcl/mtx/lexer.Lexer.scanNumber
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.peekByteAt kind=method
   digest=b3:8dc4ebb36c234c3eea5364306fa9425e586a2612bdb58187e0addc6583eff572 file=MCL/mtx/lexer/lexer.go range=411:417 lang=go exported=false byte_range=10169:10300
   sig=func (l *Lexer) peekByteAt(offset int) byte
 EDGES
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.idx,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/lexer.offset
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.readRune kind=method
   digest=b3:3aa89c4d5838e00e2136f0cdefefda09a0227d4eaeae51d55191a515e44bbc0f file=MCL/mtx/lexer/lexer.go range=390:402 lang=go exported=false byte_range=9836:10061
   sig=func (l *Lexer) readRune()
 EDGES
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/lexer.r,matrix/mcl/mtx/lexer.w
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanComment,matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword,matrix/mcl/mtx/lexer.Lexer.scanLineStart,matrix/mcl/mtx/lexer.Lexer.scanNumber,matrix/mcl/mtx/lexer.Lexer.scanSection,matrix/mcl/mtx/lexer.Lexer.scanString,matrix/mcl/mtx/lexer.Lexer.scanURI,matrix/mcl/mtx/lexer.Lexer.skipInlineWhitespace,matrix/mcl/mtx/lexer.New
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanComment,matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword,matrix/mcl/mtx/lexer.Lexer.scanLineStart,matrix/mcl/mtx/lexer.Lexer.scanNumber,matrix/mcl/mtx/lexer.Lexer.scanSection,matrix/mcl/mtx/lexer.Lexer.scanString,matrix/mcl/mtx/lexer.Lexer.scanURI,matrix/mcl/mtx/lexer.Lexer.skipInlineWhitespace,matrix/mcl/mtx/lexer.New
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.scanComment kind=method
   digest=b3:e5c999763de6f09f13ed38937b3ff82748e964b997cdbba1b41c9b78b2d4d055 file=MCL/mtx/lexer/lexer.go range=250:260 lang=go exported=false byte_range=6094:6538
   sig=func (l *Lexer) scanComment(pos token.Pos) token.Token
 EDGES
+  calls=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.readRune
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/token.Pos,matrix/mcl/mtx/token.Token
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanLineStart
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanLineStart
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword kind=method
   digest=b3:95f17fa416d7046384d3e5423d73e81bf93d93242790b265960d344ca2205bc8 file=MCL/mtx/lexer/lexer.go range=324:369 lang=go exported=false byte_range=7836:9235
   sig=func (l *Lexer) scanIdentOrKeyword(pos token.Pos) token.Token
 EDGES
+  calls=matrix/mcl/mtx/lexer.Lexer.peekByte,matrix/mcl/mtx/lexer.Lexer.peekByteAt,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.Lexer.scanURI,matrix/mcl/mtx/lexer.isIdentContinue,matrix/mcl/mtx/token.LookupIdent
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.Lexer.peekByte,matrix/mcl/mtx/lexer.Lexer.peekByteAt,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.Lexer.scanURI,matrix/mcl/mtx/lexer.compound,matrix/mcl/mtx/lexer.dotPos,matrix/mcl/mtx/lexer.fnName,matrix/mcl/mtx/lexer.fnStart,matrix/mcl/mtx/lexer.isIdentContinue,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/lexer.lit,matrix/mcl/mtx/lexer.pos,matrix/mcl/mtx/lexer.start,matrix/mcl/mtx/lexer.ty,matrix/mcl/mtx/token.IDENT,matrix/mcl/mtx/token.KwCortexContext,matrix/mcl/mtx/token.KwCortexFind,matrix/mcl/mtx/token.KwCortexResolve,matrix/mcl/mtx/token.LookupIdent,matrix/mcl/mtx/token.Pos,matrix/mcl/mtx/token.Token
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.scanLineStart kind=method
   digest=b3:ea0382ca02134f4e5dc824e5a0519ca04b25840a5aed398ff3d9b5010c2b5bda file=MCL/mtx/lexer/lexer.go range=193:231 lang=go exported=false byte_range=4777:5730
   sig=func (l *Lexer) scanLineStart() token.Token
 EDGES
+  calls=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.currentPos,matrix/mcl/mtx/lexer.Lexer.newLine,matrix/mcl/mtx/lexer.Lexer.peekByte,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.Lexer.scanComment,matrix/mcl/mtx/lexer.Lexer.scanSection
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.currentPos,matrix/mcl/mtx/lexer.Lexer.newLine,matrix/mcl/mtx/lexer.Lexer.peekByte,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.Lexer.scanComment,matrix/mcl/mtx/lexer.Lexer.scanSection,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/lexer.pos,matrix/mcl/mtx/token.EOF,matrix/mcl/mtx/token.INDENT,matrix/mcl/mtx/token.NEWLINE,matrix/mcl/mtx/token.Token
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.scanNumber kind=method
   digest=b3:02843464b97169710da4a46ee263cc0840c0f18a7048f903c38c0c9e44bbd953 file=MCL/mtx/lexer/lexer.go range=305:320 lang=go exported=false byte_range=7395:7799
   sig=func (l *Lexer) scanNumber(pos token.Pos) token.Token
 EDGES
+  calls=matrix/mcl/mtx/lexer.Lexer.peekByte,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.isDigit
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.Lexer.peekByte,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.isDigit,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/lexer.pos,matrix/mcl/mtx/lexer.start,matrix/mcl/mtx/token.FLOAT,matrix/mcl/mtx/token.INT,matrix/mcl/mtx/token.Pos,matrix/mcl/mtx/token.Token
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.scanSection kind=method
   digest=b3:c4870a8dc249c09c9faf70427acb299849636653cad7ff9f45bbdf4816779e21 file=MCL/mtx/lexer/lexer.go range=235:246 lang=go exported=false byte_range=5761:6069
   sig=func (l *Lexer) scanSection(pos token.Pos) token.Token
 EDGES
+  calls=matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.isDigit,matrix/mcl/mtx/lexer.isUpperLetter
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.isDigit,matrix/mcl/mtx/lexer.isUpperLetter,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/lexer.lit,matrix/mcl/mtx/lexer.pos,matrix/mcl/mtx/lexer.start,matrix/mcl/mtx/token.Pos,matrix/mcl/mtx/token.SECTION,matrix/mcl/mtx/token.Token
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.scanLineStart
+  ^references=matrix/mcl/mtx/lexer.Lexer.scanLineStart
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.scanString kind=method
   digest=b3:787314afcf7a1bcd374ecf298f141e1a13d9a4890dfb6a5816d84e2ad47955d8 file=MCL/mtx/lexer/lexer.go range=264:301 lang=go exported=false byte_range=6569:7372
   sig=func (l *Lexer) scanString(pos token.Pos) token.Token
 EDGES
+  calls=matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.appendRune
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.appendRune,matrix/mcl/mtx/lexer.buf,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/lexer.pos,matrix/mcl/mtx/token.ILLEGAL,matrix/mcl/mtx/token.Pos,matrix/mcl/mtx/token.STRING,matrix/mcl/mtx/token.Token
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.scanURI kind=method
@@ -160,14 +208,22 @@ NODE id=matrix/mcl/mtx/lexer.Lexer.scanURI kind=method
   sig=func (l *Lexer) scanURI(pos token.Pos, start int) token.Token
   doc=scanURI scans a matrix:// URI starting from the 'm' of 'matrix'.\nThe 'matrix' part has already been consumed; we're at ':'.
 EDGES
+  calls=matrix/mcl/mtx/lexer.Lexer.readRune
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/lexer.pos,matrix/mcl/mtx/lexer.start,matrix/mcl/mtx/token.Pos,matrix/mcl/mtx/token.Token,matrix/mcl/mtx/token.URI
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword
+  ^references=matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.Lexer.skipInlineWhitespace kind=method
   digest=b3:1cbb867463d121ea28450222bf3bbbff4dba04d8b9e0e76954050e6502a47f30 file=MCL/mtx/lexer/lexer.go range=434:438 lang=go exported=false byte_range=10513:10608
   sig=func (l *Lexer) skipInlineWhitespace()
 EDGES
+  calls=matrix/mcl/mtx/lexer.Lexer.readRune
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.l
   ^contains=matrix/mcl/mtx/lexer.Lexer
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.New kind=func
@@ -175,6 +231,10 @@ NODE id=matrix/mcl/mtx/lexer.New kind=func
   sig=func New(src []byte) *Lexer
   doc=New creates a Lexer over src. src is normalised (CRLF→LF) internally.
 EDGES
+  calls=matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.normaliseCRLF
+  references=matrix/mcl/mtx/lexer.Lexer,matrix/mcl/mtx/lexer.Lexer.readRune,matrix/mcl/mtx/lexer.l,matrix/mcl/mtx/lexer.norm,matrix/mcl/mtx/lexer.normaliseCRLF,matrix/mcl/mtx/lexer.src
+  ^calls=matrix/mcl/mtx/parser.New
+  ^references=matrix/mcl/mtx/parser.New
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer._ kind=var
@@ -188,36 +248,55 @@ NODE id=matrix/mcl/mtx/lexer.appendRune kind=func
   digest=b3:fbf9d057903d2d0a566fcc89c0b458a6ec9e6ee0e2e788c9ea53d5f303e20fb4 file=MCL/mtx/lexer/lexer.go range=460:467 lang=go exported=false byte_range=10991:11186
   sig=func appendRune(buf []byte, r rune) []byte
 EDGES
+  references=matrix/mcl/mtx/lexer.buf,matrix/mcl/mtx/lexer.n,matrix/mcl/mtx/lexer.r,matrix/mcl/mtx/lexer.tmp
+  ^calls=matrix/mcl/mtx/lexer.Lexer.scanString
+  ^references=matrix/mcl/mtx/lexer.Lexer.scanString
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.isDigit kind=func
   digest=b3:0d550925aec213a059288ea65184a0a8be994d1b503db2073a92d289ad6cd41a file=MCL/mtx/lexer/lexer.go range=450:452 lang=go exported=false byte_range=10843:10901
   sig=func isDigit(r rune) bool
 EDGES
+  references=matrix/mcl/mtx/lexer.r
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanNumber,matrix/mcl/mtx/lexer.Lexer.scanSection,matrix/mcl/mtx/lexer.isIdentContinue
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.Lexer.scanNumber,matrix/mcl/mtx/lexer.Lexer.scanSection,matrix/mcl/mtx/lexer.isIdentContinue
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.isIdentContinue kind=func
   digest=b3:74cfc2c0a42ef7ba21a487cb3e60203b976da8c43e35ce52de6714f8b21edba6 file=MCL/mtx/lexer/lexer.go range=446:448 lang=go exported=false byte_range=10742:10841
   sig=func isIdentContinue(r rune) bool
 EDGES
+  calls=matrix/mcl/mtx/lexer.isDigit,matrix/mcl/mtx/lexer.isIdentStart
+  references=matrix/mcl/mtx/lexer.isDigit,matrix/mcl/mtx/lexer.isIdentStart,matrix/mcl/mtx/lexer.r
+  ^calls=matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword
+  ^references=matrix/mcl/mtx/lexer.Lexer.scanIdentOrKeyword
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.isIdentStart kind=func
   digest=b3:bf43ce8882604d29e505a7d18095b056f402daf082c28e62285eb5ab1b82e92b file=MCL/mtx/lexer/lexer.go range=442:444 lang=go exported=false byte_range=10649:10740
   sig=func isIdentStart(r rune) bool
 EDGES
+  references=matrix/mcl/mtx/lexer.r
+  ^calls=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.isIdentContinue
+  ^references=matrix/mcl/mtx/lexer.Lexer.NextToken,matrix/mcl/mtx/lexer.isIdentContinue
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.isUpperLetter kind=func
   digest=b3:6618de5bf984ec79b60158736b4cf5f481e5edb7bf1fc8c8bd846387dd1276ef file=MCL/mtx/lexer/lexer.go range=454:456 lang=go exported=false byte_range=10903:10967
   sig=func isUpperLetter(r rune) bool
 EDGES
+  references=matrix/mcl/mtx/lexer.r
+  ^calls=matrix/mcl/mtx/lexer.Lexer.scanSection
+  ^references=matrix/mcl/mtx/lexer.Lexer.scanSection
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer.normaliseCRLF kind=func
   digest=b3:dafb629609d3ec15d6ab0e59a9cd836b172c10745fe45c0f5cbdb37f8d178de1 file=MCL/mtx/lexer/lexer.go range=469:494 lang=go exported=false byte_range=11188:11684
   sig=func normaliseCRLF(src []byte) []byte
 EDGES
+  references=matrix/mcl/mtx/lexer.b,matrix/mcl/mtx/lexer.hasCR,matrix/mcl/mtx/lexer.i,matrix/mcl/mtx/lexer.out,matrix/mcl/mtx/lexer.src
+  ^calls=matrix/mcl/mtx/lexer.New
+  ^references=matrix/mcl/mtx/lexer.New
   ^defines=matrix/mcl/mtx/lexer/lexer.go
 
 NODE id=matrix/mcl/mtx/lexer/lexer.go kind=file

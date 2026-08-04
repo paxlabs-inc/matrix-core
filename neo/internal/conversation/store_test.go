@@ -450,11 +450,11 @@ func TestRecoveryHandoffIsDurableModelContextWithoutVisibleTurns(t *testing.T) {
 }
 
 func TestDir(t *testing.T) {
-	if got := Dir("/explicit", "/data/cortex"); got != "/explicit" {
+	if got := Dir("/explicit", "/data/Neocortex"); got != "/explicit" {
 		t.Errorf("explicit override should win, got %q", got)
 	}
-	if got := Dir("", "/data/cortex"); got != "/data/conversations" {
-		t.Errorf("should derive sibling of cortex root, got %q", got)
+	if got := Dir("", "/data/Neocortex"); got != "/data/conversations" {
+		t.Errorf("should derive sibling of Neocortex root, got %q", got)
 	}
 	if got := Dir("", ""); got != "" {
 		t.Errorf("no roots should disable, got %q", got)

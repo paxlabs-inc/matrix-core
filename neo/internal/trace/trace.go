@@ -13,7 +13,7 @@
 // timeline per run as append-only JSONL (one line per event), so the workspace
 // survives reload, suspend, redeploy, and reopen-from-history.
 //
-// It is a pure SIDECAR: it never touches cortex, signs anything, or perturbs
+// It is a pure SIDECAR: it never touches Neocortex, signs anything, or perturbs
 // replay. The persisted events are the exact transcript SSE frames the client
 // already renders, so a reopen replays them through the same reducer the live
 // stream uses.
@@ -459,7 +459,7 @@ func countLines(path string) int {
 }
 
 // Dir resolves Neo's trace directory. An explicit override wins; else it is
-// derived from the cortex root's parent (matching the conversation + task
+// derived from the Neocortex root's parent (matching the conversation + task
 // stores, so the workspace trace shares /data with them and survives suspend /
 // redeploy). Returns "" when neither is available (persistence disabled).
 func Dir(override, cortexRoot string) string {

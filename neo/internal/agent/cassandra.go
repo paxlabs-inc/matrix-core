@@ -37,7 +37,7 @@ import (
 // auditEventMod is the single Cassandra 2.0 audit event: one silent modification
 // of a prior assistant message. It rides the existing AuditObserver side-channel
 // (engine.publishAudit -> broker) as a pure observability signal — it signs
-// nothing, writes no cortex on the happy path, and is a no-op when no observer is
+// nothing, writes no Neocortex on the happy path, and is a no-op when no observer is
 // wired (CLI / tests).
 const auditEventMod = "cassandra.mod"
 
@@ -189,10 +189,10 @@ func (a *Agent) cassandraStep(sig cassandraSignals) bool {
 // fold is additive (the original text is preserved and the mod is layered AFTER
 // it as the agent's next thought), so guardrail 2 (metacognition-only, never a
 // rewrite of facts) holds by construction. The dual-record + audit event
-// (guardrail 3) are written BEFORE the mutation, and the durable cortex
+// (guardrail 3) are written BEFORE the mutation, and the durable Neocortex
 // transcript is NOT rewritten — a tool-calling turn's original was already
 // recorded at deliberate, and a bare answer's original is recorded from the
-// untouched res.Message only if it delivers (closeTurn) — so cortex stays
+// untouched res.Message only if it delivers (closeTurn) — so Neocortex stays
 // ground truth (req.7.1). Returns false (no-op) if the target is out of range
 // or is not an assistant message.
 func (a *Agent) cassandraEdit(target int, mod string, trig modTrigger, side modSide, step int) bool {

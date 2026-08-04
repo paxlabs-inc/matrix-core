@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/codegraph/retrieve kind=package
   digest=b3:54b3bdb075febbbe360ec53a4ff5488d16c9570fa0c93f9c9563fe6fbd2ba936 file=codegraph/retrieve range=0:0 lang=go exported=true
 EDGES
   contains=matrix/codegraph/retrieve/diff.go,matrix/codegraph/retrieve/retrieve.go
+  imports=matrix/codegraph/model
   ^contains=mod:matrix/codegraph
+  ^imports=matrix/codegraph/cmd/codegraph,matrix/codegraph/mcp,matrix/codegraph/selfmodel
 
 NODE id=matrix/codegraph/retrieve.API kind=type
   digest=b3:7483ed5736c1e9556280a32e6c160031f37713ba39a0ac79fbf492dd5f12783e file=codegraph/retrieve/retrieve.go range=22:23 lang=go exported=true byte_range=539:637
@@ -12,6 +14,8 @@ NODE id=matrix/codegraph/retrieve.API kind=type
   doc=API answers retrieval queries over an in-memory graph Index.
 EDGES
   contains=matrix/codegraph/retrieve.API#ix,matrix/codegraph/retrieve.API.Impact,matrix/codegraph/retrieve.API.Neighbors,matrix/codegraph/retrieve.API.SymbolLookup
+  references=matrix/codegraph/model.Index
+  ^references=matrix/codegraph/mcp.Server,matrix/codegraph/retrieve.API.Impact,matrix/codegraph/retrieve.API.Neighbors,matrix/codegraph/retrieve.API.SymbolLookup,matrix/codegraph/retrieve.New
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve.API#ix kind=field
@@ -25,7 +29,11 @@ NODE id=matrix/codegraph/retrieve.API.Impact kind=method
   sig=func (a *API) Impact(id string, maxDepth int) string
   doc=Impact returns the affected NODE set for id: the reverse-edge transitive\nclosure over calls, references, and implements. The root id is excluded (it\nis what changed; the fragment lists what it would break). maxDepth <= 0 or\nbeyond MaxImpactDepth clamps to MaxImpactDepth. The result is a compact .kvx\nfragment of ids/locations/summaries — never raw source.
 EDGES
+  calls=matrix/codegraph/model.Index.Node,matrix/codegraph/model.Index.Reverse,matrix/codegraph/retrieve.renderNode
+  references=matrix/codegraph/model.Index.Node,matrix/codegraph/model.Index.Reverse,matrix/codegraph/retrieve.API,matrix/codegraph/retrieve.ImpactEdges,matrix/codegraph/retrieve.MaxImpactDepth,matrix/codegraph/retrieve.a,matrix/codegraph/retrieve.affected,matrix/codegraph/retrieve.b,matrix/codegraph/retrieve.cur,matrix/codegraph/retrieve.d,matrix/codegraph/retrieve.frontier,matrix/codegraph/retrieve.id,matrix/codegraph/retrieve.ids,matrix/codegraph/retrieve.maxDepth,matrix/codegraph/retrieve.n,matrix/codegraph/retrieve.next,matrix/codegraph/retrieve.nid,matrix/codegraph/retrieve.renderNode,matrix/codegraph/retrieve.seen,matrix/codegraph/retrieve.src,matrix/codegraph/retrieve.t,matrix/codegraph/retrieve.x
   ^contains=matrix/codegraph/retrieve.API
+  ^calls=matrix/codegraph/cmd/codegraph.cmdImpact
+  ^references=matrix/codegraph/cmd/codegraph.cmdImpact,matrix/codegraph/mcp.New
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve.API.Neighbors kind=method
@@ -33,7 +41,11 @@ NODE id=matrix/codegraph/retrieve.API.Neighbors kind=method
   sig=func (a *API) Neighbors(id string, edge model.EdgeType, dir model.Direction, depth int) (string, error)
   doc=Neighbors returns a bounded subgraph around id over edge type edge (or all\ntypes when edge == "") in the given direction, to at most MaxDepth. Depth\nbeyond MaxDepth is rejected rather than expanded.
 EDGES
+  calls=matrix/codegraph/model.Index.Neighbors,matrix/codegraph/model.Index.Node,matrix/codegraph/retrieve.renderEdges,matrix/codegraph/retrieve.renderNode
+  references=matrix/codegraph/model.Direction,matrix/codegraph/model.EdgeType,matrix/codegraph/model.Index.Neighbors,matrix/codegraph/model.Index.Node,matrix/codegraph/retrieve.API,matrix/codegraph/retrieve.MaxDepth,matrix/codegraph/retrieve.a,matrix/codegraph/retrieve.b,matrix/codegraph/retrieve.cur,matrix/codegraph/retrieve.d,matrix/codegraph/retrieve.depth,matrix/codegraph/retrieve.dir,matrix/codegraph/retrieve.edge,matrix/codegraph/retrieve.frontier,matrix/codegraph/retrieve.id,matrix/codegraph/retrieve.ids,matrix/codegraph/retrieve.n,matrix/codegraph/retrieve.nb,matrix/codegraph/retrieve.next,matrix/codegraph/retrieve.nid,matrix/codegraph/retrieve.renderEdges,matrix/codegraph/retrieve.renderNode,matrix/codegraph/retrieve.set,matrix/codegraph/retrieve.v,matrix/codegraph/retrieve.visited
   ^contains=matrix/codegraph/retrieve.API
+  ^calls=matrix/codegraph/cmd/codegraph.cmdNeighbors
+  ^references=matrix/codegraph/cmd/codegraph.cmdNeighbors,matrix/codegraph/mcp.New
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve.API.SymbolLookup kind=method
@@ -41,7 +53,11 @@ NODE id=matrix/codegraph/retrieve.API.SymbolLookup kind=method
   sig=func (a *API) SymbolLookup(name string, kind model.Kind) string
   doc=SymbolLookup returns the NODE fragment(s) whose name matches: exact matches\nfirst, and only if there are none, a fuzzy (substring) fallback. kind, when\nnon-empty, filters by node kind.
 EDGES
+  calls=matrix/codegraph/model.Index.Nodes,matrix/codegraph/retrieve.renderNode
+  references=matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.Kind,matrix/codegraph/model.Node,matrix/codegraph/retrieve.API,matrix/codegraph/retrieve.a,matrix/codegraph/retrieve.b,matrix/codegraph/retrieve.exact,matrix/codegraph/retrieve.fuzzy,matrix/codegraph/retrieve.kind,matrix/codegraph/retrieve.n,matrix/codegraph/retrieve.name,matrix/codegraph/retrieve.renderNode,matrix/codegraph/retrieve.res
   ^contains=matrix/codegraph/retrieve.API
+  ^calls=matrix/codegraph/cmd/codegraph.cmdLookup,matrix/codegraph/selfmodel.Distill,matrix/codegraph/selfmodel.Lookup
+  ^references=matrix/codegraph/cmd/codegraph.cmdLookup,matrix/codegraph/mcp.New,matrix/codegraph/selfmodel.Distill,matrix/codegraph/selfmodel.Lookup
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve.Diff kind=func
@@ -49,6 +65,10 @@ NODE id=matrix/codegraph/retrieve.Diff kind=func
   sig=func Diff(a, b *model.Index) string
   doc=Diff compares two graphs by node digest and edge set and returns a compact,\nguard-conformant .kvx fragment: added/removed/changed node ids (by digest) and\nper-source edge deltas. It contains only ids, kinds, digests, and edge triples\n— never raw source. a is the base ("rev_a"), b is the new revision ("rev_b").
 EDGES
+  calls=matrix/codegraph/model.Index.Node,matrix/codegraph/model.Index.Nodes,matrix/codegraph/retrieve.edgeSet
+  references=matrix/codegraph/model.Index,matrix/codegraph/model.Index.Node,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.Kind,matrix/codegraph/retrieve.a,matrix/codegraph/retrieve.aEdges,matrix/codegraph/retrieve.b,matrix/codegraph/retrieve.bEdges,matrix/codegraph/retrieve.d,matrix/codegraph/retrieve.deltas,matrix/codegraph/retrieve.e,matrix/codegraph/retrieve.edgeSet,matrix/codegraph/retrieve.edgesAdded,matrix/codegraph/retrieve.edgesRemoved,matrix/codegraph/retrieve.ensure,matrix/codegraph/retrieve.id,matrix/codegraph/retrieve.ids,matrix/codegraph/retrieve.kind,matrix/codegraph/retrieve.kindOf,matrix/codegraph/retrieve.n,matrix/codegraph/retrieve.nAdded,matrix/codegraph/retrieve.nChanged,matrix/codegraph/retrieve.nRemoved,matrix/codegraph/retrieve.nodeDelta,matrix/codegraph/retrieve.old,matrix/codegraph/retrieve.sb,matrix/codegraph/retrieve.t
+  ^calls=matrix/codegraph/cmd/codegraph.cmdDiff
+  ^references=matrix/codegraph/cmd/codegraph.cmdDiff,matrix/codegraph/mcp.New
   ^defines=matrix/codegraph/retrieve/diff.go
 
 NODE id=matrix/codegraph/retrieve.ImpactEdges kind=var
@@ -56,6 +76,8 @@ NODE id=matrix/codegraph/retrieve.ImpactEdges kind=var
   sig=[]model.EdgeType
   doc=ImpactEdges are the edge types whose reverse closure defines blast radius:\nchanging a node affects everything that calls it, references it, or (for an\ninterface) implements it.
 EDGES
+  references=matrix/codegraph/model.EdgeCalls,matrix/codegraph/model.EdgeImplements,matrix/codegraph/model.EdgeReferences,matrix/codegraph/model.EdgeType
+  ^references=matrix/codegraph/retrieve.API.Impact
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve.MaxDepth kind=const
@@ -63,6 +85,7 @@ NODE id=matrix/codegraph/retrieve.MaxDepth kind=const
   sig=untyped int
   doc=MaxDepth bounds neighbors traversal.
 EDGES
+  ^references=matrix/codegraph/retrieve.API.Neighbors
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve.MaxImpactDepth kind=const
@@ -70,6 +93,7 @@ NODE id=matrix/codegraph/retrieve.MaxImpactDepth kind=const
   sig=untyped int
   doc=MaxImpactDepth bounds the transitive closure so a hub node cannot expand the\nwalk unboundedly.
 EDGES
+  ^references=matrix/codegraph/retrieve.API.Impact
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve.New kind=func
@@ -77,12 +101,19 @@ NODE id=matrix/codegraph/retrieve.New kind=func
   sig=func New(ix *model.Index) *API
   doc=New wraps an Index in the retrieval API.
 EDGES
+  references=matrix/codegraph/model.Index,matrix/codegraph/retrieve.API,matrix/codegraph/retrieve.ix
+  ^calls=matrix/codegraph/cmd/codegraph.cmdImpact,matrix/codegraph/cmd/codegraph.cmdLookup,matrix/codegraph/cmd/codegraph.cmdNeighbors,matrix/codegraph/mcp.New,matrix/codegraph/selfmodel.Distill,matrix/codegraph/selfmodel.Lookup
+  ^references=matrix/codegraph/cmd/codegraph.cmdImpact,matrix/codegraph/cmd/codegraph.cmdLookup,matrix/codegraph/cmd/codegraph.cmdNeighbors,matrix/codegraph/mcp.New,matrix/codegraph/selfmodel.Distill,matrix/codegraph/selfmodel.Lookup
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve.edgeSet kind=func
   digest=b3:b931f533d3acd1f863049f24d02ae0ac770c718415cbce5f0a195541847964ee file=codegraph/retrieve/diff.go range=140:146 lang=go exported=false byte_range=3226:3403
   sig=func edgeSet(ix *model.Index) map[edgeTriple]bool
 EDGES
+  calls=matrix/codegraph/model.Index.Edges
+  references=matrix/codegraph/model.Index,matrix/codegraph/model.Index.Edges,matrix/codegraph/retrieve.e,matrix/codegraph/retrieve.edgeTriple,matrix/codegraph/retrieve.ix,matrix/codegraph/retrieve.out
+  ^calls=matrix/codegraph/retrieve.Diff
+  ^references=matrix/codegraph/retrieve.Diff
   ^defines=matrix/codegraph/retrieve/diff.go
 
 NODE id=matrix/codegraph/retrieve.edgeTriple kind=type
@@ -90,6 +121,8 @@ NODE id=matrix/codegraph/retrieve.edgeTriple kind=type
   sig=type edgeTriple struct {\n	src	string\n	typ	model.EdgeType\n	dst	string\n}
 EDGES
   contains=matrix/codegraph/retrieve.edgeTriple#dst,matrix/codegraph/retrieve.edgeTriple#src,matrix/codegraph/retrieve.edgeTriple#typ
+  references=matrix/codegraph/model.EdgeType
+  ^references=matrix/codegraph/retrieve.edgeSet
   ^defines=matrix/codegraph/retrieve/diff.go
 
 NODE id=matrix/codegraph/retrieve.edgeTriple#dst kind=field
@@ -116,6 +149,8 @@ NODE id=matrix/codegraph/retrieve.nodeDelta kind=type
   doc=nodeDelta accumulates the change to one node id across both the node set and\nthe edge set, so a single NODE record in the fragment carries everything that\nmoved for that id.
 EDGES
   contains=matrix/codegraph/retrieve.nodeDelta#addEdges,matrix/codegraph/retrieve.nodeDelta#digestA,matrix/codegraph/retrieve.nodeDelta#digestB,matrix/codegraph/retrieve.nodeDelta#kind,matrix/codegraph/retrieve.nodeDelta#remEdges,matrix/codegraph/retrieve.nodeDelta#status
+  references=matrix/codegraph/model.Kind
+  ^references=matrix/codegraph/retrieve.Diff
   ^defines=matrix/codegraph/retrieve/diff.go
 
 NODE id=matrix/codegraph/retrieve.nodeDelta#addEdges kind=field
@@ -158,18 +193,29 @@ NODE id=matrix/codegraph/retrieve.oneLine kind=func
   digest=b3:4908b464ac72f2432354707f255a9d3227ba972dee3dbfa0634969b23dabbcea file=codegraph/retrieve/retrieve.go range=201:209 lang=go exported=false byte_range=5767:5992
   sig=func oneLine(s string, cap int) string
 EDGES
+  references=matrix/codegraph/retrieve.cap,matrix/codegraph/retrieve.s
+  ^calls=matrix/codegraph/retrieve.renderNode
+  ^references=matrix/codegraph/retrieve.renderNode
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve.renderEdges kind=func
   digest=b3:fde51dd82f1773a1dba1f47cdd6e8ddafbd49628b05c8808b6f857e2a825945f file=codegraph/retrieve/retrieve.go range=172:189 lang=go exported=false byte_range=5012:5604
   sig=func renderEdges(b *strings.Builder, ix *model.Index, id string, edge model.EdgeType, dir model.Direction, set map[string]bool)
 EDGES
+  calls=matrix/codegraph/model.Index.Forward,matrix/codegraph/model.Index.Reverse,matrix/codegraph/retrieve.within
+  references=matrix/codegraph/model.Both,matrix/codegraph/model.Direction,matrix/codegraph/model.EdgeType,matrix/codegraph/model.EdgeTypes,matrix/codegraph/model.In,matrix/codegraph/model.Index,matrix/codegraph/model.Index.Forward,matrix/codegraph/model.Index.Reverse,matrix/codegraph/model.Out,matrix/codegraph/retrieve.b,matrix/codegraph/retrieve.dir,matrix/codegraph/retrieve.dsts,matrix/codegraph/retrieve.edge,matrix/codegraph/retrieve.id,matrix/codegraph/retrieve.ix,matrix/codegraph/retrieve.set,matrix/codegraph/retrieve.srcs,matrix/codegraph/retrieve.t,matrix/codegraph/retrieve.types,matrix/codegraph/retrieve.within
+  ^calls=matrix/codegraph/retrieve.API.Neighbors
+  ^references=matrix/codegraph/retrieve.API.Neighbors
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve.renderNode kind=func
   digest=b3:3b88495d1f61992f8c72729c354018509878887c29a4a8309aacd95ff333dbde file=codegraph/retrieve/retrieve.go range=162:170 lang=go exported=false byte_range=4693:5010
   sig=func renderNode(b *strings.Builder, n *model.Node)
 EDGES
+  calls=matrix/codegraph/model.Range.String,matrix/codegraph/retrieve.oneLine
+  references=matrix/codegraph/model.Node,matrix/codegraph/model.Range.String,matrix/codegraph/retrieve.b,matrix/codegraph/retrieve.n,matrix/codegraph/retrieve.oneLine,matrix/codegraph/retrieve.sigCap
+  ^calls=matrix/codegraph/retrieve.API.Impact,matrix/codegraph/retrieve.API.Neighbors,matrix/codegraph/retrieve.API.SymbolLookup
+  ^references=matrix/codegraph/retrieve.API.Impact,matrix/codegraph/retrieve.API.Neighbors,matrix/codegraph/retrieve.API.SymbolLookup
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve.sigCap kind=const
@@ -177,12 +223,16 @@ NODE id=matrix/codegraph/retrieve.sigCap kind=const
   sig=untyped int
   doc=sigCap caps the rendered signature length so a fragment stays compact and\nnever approximates a full source range.
 EDGES
+  ^references=matrix/codegraph/retrieve.renderNode
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve.within kind=func
   digest=b3:0baf2293816dfbef78adb93fe8ba98b2104620b125a77ba8ae2758c5222d5805 file=codegraph/retrieve/retrieve.go range=191:199 lang=go exported=false byte_range=5606:5765
   sig=func within(ids []string, set map[string]bool) []string
 EDGES
+  references=matrix/codegraph/retrieve.ids,matrix/codegraph/retrieve.out,matrix/codegraph/retrieve.set,matrix/codegraph/retrieve.x
+  ^calls=matrix/codegraph/retrieve.renderEdges
+  ^references=matrix/codegraph/retrieve.renderEdges
   ^defines=matrix/codegraph/retrieve/retrieve.go
 
 NODE id=matrix/codegraph/retrieve/diff.go kind=file

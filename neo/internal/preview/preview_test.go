@@ -7,12 +7,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -520,11 +523,19 @@ func TestLifecycleAgainstRealServingTarget(t *testing.T) {
 
 	// A real project whose dev script binds a real listener on $PORT.
 	root := t.TempDir()
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("reserve preview port: %v", err)
+	}
+	port := strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
+	if err := listener.Close(); err != nil {
+		t.Fatalf("release preview port: %v", err)
+	}
 	must(t, os.WriteFile(filepath.Join(root, "package.json"),
-		[]byte(`{"name":"demo","scripts":{"dev":"exec python3 -m http.server $PORT --bind 127.0.0.1"}}`), 0o644))
+		[]byte(fmt.Sprintf(`{"name":"demo","config":{"port":%q},"scripts":{"dev":"exec python3 -m http.server $PORT --bind 127.0.0.1"}}`, port)), 0o644))
 	must(t, os.WriteFile(filepath.Join(root, "index.html"), []byte("<h1>real preview</h1>\n"), 0o644))
 
-	ls := &localSandbox{t: t, dir: t.TempDir(), port: "3000"}
+	ls := &localSandbox{t: t, dir: t.TempDir(), port: port}
 	t.Cleanup(func() { _ = ls.Destroy(context.Background(), "local-1") })
 	if _, err := exec.LookPath("npm"); err != nil {
 		t.Skip("npm not available")
@@ -541,12 +552,13 @@ func TestLifecycleAgainstRealServingTarget(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Provision against the real server: %v", err)
 	}
-	if info.Port != "3000" {
-		t.Fatalf("port = %q, want 3000", info.Port)
+	if info.Port != port {
+		t.Fatalf("port = %q, want %s", info.Port, port)
 	}
 
 	// The target REALLY serves: fetch the deployed file over real HTTP.
-	resp, err := http.Get("http://127.0.0.1:3000/index.html")
+	previewURL := "http://127.0.0.1:" + port + "/index.html"
+	resp, err := http.Get(previewURL)
 	if err != nil {
 		t.Fatalf("GET real target: %v", err)
 	}
@@ -569,7 +581,7 @@ func TestLifecycleAgainstRealServingTarget(t *testing.T) {
 	}
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
-		if _, err := http.Get("http://127.0.0.1:3000/index.html"); err != nil {
+		if _, err := http.Get(previewURL); err != nil {
 			return // listener really gone
 		}
 		time.Sleep(200 * time.Millisecond)

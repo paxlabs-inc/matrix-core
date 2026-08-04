@@ -104,14 +104,15 @@ Neocortex replaces the Go cortex module with a C++23 engine (cortexd) built as a
 4. THE dependency set SHALL be exactly the vendored, digest-pinned list in agent.lock.kvx; the build SHALL be reproducible and cross-compiled for amd64 and arm64 with a static runtime.
 5. EVERY untrusted input boundary (socket frames, imported events, on-disk state) SHALL be verified before trust; a malformed input SHALL produce a typed rejection, never undefined behavior, proven by fuzz corpora kept in-tree.
 
-## Requirement 9: Migration, absorption, and gated cutover
+## Requirement 9: Hard Neo cutover, absorption, and structural Cortex-v1 exclusion
 
-**User Story:** As the owner, I want the rewrite to land without losing a byte of memory or destabilizing the live agent, so cutover is an evidence-backed decision, not a leap.
+**User Story:** As the owner, I want Neo to know only Neocortex, so Cortex-v1 cannot influence, fail, or silently recover any Neo turn.
 
 ### Acceptance Criteria
 
-1. A Go export tool SHALL walk the existing Pebble store with the current decode and vault unseal paths and replay it through a cortexd import gate: sessions become conversation events, memories become assertion events with synthesized provenance, tool events map one to one, and edges are preserved; an import fidelity report SHALL account for every source record.
-2. NEO SHALL run old and new substrates side by side behind the memory seam under an explicit flag, defaulting to the old cortex; the fixed-incident regression corpus and the INV-1 property SHALL be green on the new substrate before any default flips.
+1. NO Neo source file, test, module dependency, build target, configuration key, command-line flag, or runtime construction path SHALL import, name as a selectable substrate, open, query, write, proxy, or fall back to matrix/cortex. A structural CI gate SHALL prove the exclusion.
+2. NEOCORTEX SHALL be Neo's sole memory engine with no substrate selector. Startup SHALL require a valid Neocortex client configuration; an unavailable or unhealthy cortexd SHALL produce an honest typed failure and SHALL never route to Cortex v1.
 3. THE hello-world sessionjournal lane SHALL be absorbed: its event kinds and exact provider-byte sidecar are promoted into the log taxonomy, and no second event-sourcing system SHALL remain on the cutover path.
 4. EXTERNAL consumers (executor daemon cortex routes, bridge, MCP tooling) SHALL be re-pointed to cortexd clients; the MCL compile-cache seed SHALL derive from the neocortex checkpoint root by an owner-approved rule.
-5. CUTOVER and any deletion of the old cortex module SHALL each require explicit owner YES; until then the old module stays intact and every consumer keeps a working path.
+5. CORTEX v1 MAY remain temporarily for unrelated consumers, but it SHALL be outside Neo's source and module graph and unreachable from the Neo process. Deletion or migration of unrelated consumers remains separately owner-gated.
+

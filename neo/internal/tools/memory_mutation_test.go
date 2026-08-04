@@ -14,8 +14,8 @@ import (
 
 func TestMemoryMutationToolUsesTypedPathAndBlocksShellMutation(t *testing.T) {
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "memory-mutation-tool-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "memory-mutation-tool-test"
 	pager, err := neomemory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)
@@ -43,7 +43,7 @@ func TestMemoryMutationToolUsesTypedPathAndBlocksShellMutation(t *testing.T) {
 	if err != nil || isErr {
 		t.Fatalf("typed mutation: content=%q isErr=%v err=%v", content, isErr, err)
 	}
-	if !strings.Contains(content, "Helix") || strings.Contains(content, "matrix://cortex/") {
+	if !strings.Contains(content, "Helix") || strings.Contains(content, "matrix://Neocortex/") {
 		t.Fatalf("plain confirmation mismatch: %q", content)
 	}
 

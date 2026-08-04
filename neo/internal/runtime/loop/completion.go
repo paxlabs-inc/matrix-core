@@ -7,7 +7,7 @@ import (
 	"context"
 	"sync"
 
-	"matrix/cortex"
+	"matrix/cortexclient"
 )
 
 type StateCompletionGate struct {
@@ -34,7 +34,7 @@ func (gate *EvidenceCompletionGate) ObserveToolExecution(
 	execution ToolExecution,
 ) error {
 	if gate == nil || execution.Error != "" || execution.Citation == nil ||
-		execution.MatchVerdict != string(cortex.ToolMatchMatched) {
+		execution.MatchVerdict != cortexclient.ToolMatchMatched {
 		return nil
 	}
 	gate.mu.Lock()

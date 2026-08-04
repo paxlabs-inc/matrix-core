@@ -14,7 +14,7 @@ import (
 	"matrix/neo/internal/memory"
 )
 
-// Q2 — warm-on-open. These exercise the REAL Engine over a REAL Pager + cortex
+// Q2 — warm-on-open. These exercise the REAL Engine over a REAL Pager + Neocortex
 // store (only the co-located daemon is unreachable, which fetchUserProfile
 // tolerates). They prove the first inbound HTTP request warms the embedder/HNSW
 // substrate once, off the request's critical path, and that the flag gates it.
@@ -22,8 +22,8 @@ import (
 func warmEngine(t *testing.T, warm bool) *Engine {
 	t.Helper()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-warm-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-warm-test"
 	cfg.WarmOnOpen = warm
 	pager, err := memory.Open(cfg)
 	if err != nil {

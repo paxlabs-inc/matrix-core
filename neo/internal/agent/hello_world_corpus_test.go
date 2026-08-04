@@ -134,8 +134,8 @@ func runHelloWorldCorpus(t *testing.T, variant helloWorldVariant, turns []string
 
 	journal := openRealAgentJournal(t)
 	cfg := config.Default()
-	cfg.CortexRoot = filepath.Join(root, "cortex")
-	cfg.CortexActor = "hello-world-" + variant.Name
+	cfg.DataRoot = filepath.Join(root, "Neocortex")
+	cfg.NeocortexActor = "hello-world-" + variant.Name
 	cfg.SessionCurrentIntent = variant.CurrentIntent
 	cfg.SessionExactProjection = variant.Exact
 	cfg.InteractionPosture = variant.Posture

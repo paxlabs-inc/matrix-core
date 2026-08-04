@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/initiative kind=package
   digest=b3:c7da12914027aa13039017e4a94ba0b7c25a6b4b9411c8293e7f3cf2dd93e6d6 file=workforce/internal/initiative range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/initiative/compiler.go,matrix/workforce/internal/initiative/dispatch.go,matrix/workforce/internal/initiative/mutation.go,matrix/workforce/internal/initiative/store.go,matrix/workforce/internal/initiative/types.go
+  imports=matrix/vault,matrix/workforce/internal/companystate,matrix/workforce/internal/contracts,matrix/workforce/internal/mission,matrix/workforce/internal/portfolio,matrix/workforce/internal/workorder,matrix/workforce/scheduler
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/companyruntime,matrix/workforce/internal/productexecution
 
 NODE id=matrix/workforce/internal/initiative.AuthorityBinding kind=type
   digest=b3:28e36d4aa976efa7d1ef29ba37963d4fcc13b55fe982b47834dce2897600c4ee file=workforce/internal/initiative/types.go range=397:405 lang=go exported=true byte_range=15274:15733
   sig=type AuthorityBinding struct {\n	MissionVersion		uint64	`json:"mission_version"`\n	ConstitutionVersion	uint64	`json:"constitution_version"`\n	CapitalEnvelopeVersion	uint64	`json:"capital_envelope_version"`\n	IssuerPolicyVersion	uint64	`json:"issuer_policy_version"`\n	PortfolioDecisionID	string	`json:"portfolio_decision_id"`\n	CapitalAllocationID	string	`json:"capital_allocation_id"`\n	CapabilityPlanID	string	`json:"capability_plan_id"`\n}
 EDGES
   contains=matrix/workforce/internal/initiative.AuthorityBinding#CapabilityPlanID,matrix/workforce/internal/initiative.AuthorityBinding#CapitalAllocationID,matrix/workforce/internal/initiative.AuthorityBinding#CapitalEnvelopeVersion,matrix/workforce/internal/initiative.AuthorityBinding#ConstitutionVersion,matrix/workforce/internal/initiative.AuthorityBinding#IssuerPolicyVersion,matrix/workforce/internal/initiative.AuthorityBinding#MissionVersion,matrix/workforce/internal/initiative.AuthorityBinding#PortfolioDecisionID
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Plan
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.AuthorityBinding#CapabilityPlanID kind=field
@@ -61,6 +64,8 @@ NODE id=matrix/workforce/internal/initiative.Blueprint kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.Blueprint#Edges,matrix/workforce/internal/initiative.Blueprint#ID,matrix/workforce/internal/initiative.Blueprint#InitiativeID,matrix/workforce/internal/initiative.Blueprint#Nodes,matrix/workforce/internal/initiative.Blueprint#OrganizationID,matrix/workforce/internal/initiative.Blueprint#SchemaVersion,matrix/workforce/internal/initiative.Blueprint#Version,matrix/workforce/internal/initiative.Blueprint.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/initiative.Edge,matrix/workforce/internal/initiative.NodeTemplate,matrix/workforce/internal/portfolio.InitiativeID
+  ^references=matrix/workforce/internal/companyruntime.InitiativeDraft,matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.CompileInput,matrix/workforce/internal/initiative.validateGraph
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.Blueprint#Edges kind=field
@@ -109,13 +114,18 @@ NODE id=matrix/workforce/internal/initiative.Blueprint.Validate kind=method
   digest=b3:9945801e08027b503ad3af4143bfa787fa6f4cfb72c8435b03fead2eba0e1b32 file=workforce/internal/initiative/types.go range=370:395 lang=go exported=true byte_range=14190:15272
   sig=func (value Blueprint) Validate() error
 EDGES
+  calls=matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.validToken
+  references=matrix/workforce/internal/initiative.Blueprint,matrix/workforce/internal/initiative.BlueprintSchemaVersion,matrix/workforce/internal/initiative.NodeApprovalGate,matrix/workforce/internal/initiative.NodeBranch,matrix/workforce/internal/initiative.NodeDecisionGate,matrix/workforce/internal/initiative.NodeEffectGate,matrix/workforce/internal/initiative.NodeEvidenceGate,matrix/workforce/internal/initiative.NodeIntent,matrix/workforce/internal/initiative.NodeKind,matrix/workforce/internal/initiative.NodeOutcomeGate,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.NodeTerminalCancel,matrix/workforce/internal/initiative.NodeTerminalFailure,matrix/workforce/internal/initiative.NodeTerminalSuccess,matrix/workforce/internal/initiative.NodeWorkOrder,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.kinds,matrix/workforce/internal/initiative.previous,matrix/workforce/internal/initiative.required,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.Blueprint
+  ^calls=matrix/workforce/internal/initiative.Compiler.Compile
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.BlueprintSchemaVersion kind=const
   digest=b3:b4d6fe35fada74ccde2e9c95364624e14044ee0b5d295e065f821fb4e4c2a84c file=workforce/internal/initiative/types.go range=19:19 lang=go exported=true byte_range=446:507
   sig=untyped string
 EDGES
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.BranchCase kind=type
@@ -123,6 +133,8 @@ NODE id=matrix/workforce/internal/initiative.BranchCase kind=type
   sig=type BranchCase struct {\n	Outcome		GateOutcome	`json:"outcome"`\n	Successor	string		`json:"successor_node_id"`\n}
 EDGES
   contains=matrix/workforce/internal/initiative.BranchCase#Outcome,matrix/workforce/internal/initiative.BranchCase#Successor
+  references=matrix/workforce/internal/initiative.GateOutcome
+  ^references=matrix/workforce/internal/initiative.BranchSpec
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.BranchCase#Outcome kind=field
@@ -143,6 +155,8 @@ NODE id=matrix/workforce/internal/initiative.BranchSpec kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.BranchSpec#Cases,matrix/workforce/internal/initiative.BranchSpec#GateNodeID,matrix/workforce/internal/initiative.BranchSpec.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/initiative.BranchCase
+  ^references=matrix/workforce/internal/initiative.BranchSpec.Validate,matrix/workforce/internal/initiative.NodeTemplate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.BranchSpec#Cases kind=field
@@ -161,7 +175,11 @@ NODE id=matrix/workforce/internal/initiative.BranchSpec.Validate kind=method
   digest=b3:0a40d60d07bd3b86fdbce373fc1f62398d92a307b5f9e056b5502ed2fa3e3271 file=workforce/internal/initiative/types.go range=231:248 lang=go exported=true byte_range=9366:10066
   sig=func (value BranchSpec) Validate() error
 EDGES
+  calls=matrix/workforce/internal/initiative.GateOutcome.Valid,matrix/workforce/internal/initiative.validToken
+  references=matrix/workforce/internal/initiative.BranchSpec,matrix/workforce/internal/initiative.GateOutcome,matrix/workforce/internal/initiative.GateOutcome.Valid,matrix/workforce/internal/initiative.branch,matrix/workforce/internal/initiative.previous,matrix/workforce/internal/initiative.successors,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.BranchSpec
+  ^calls=matrix/workforce/internal/initiative.NodeTemplate.Validate
+  ^references=matrix/workforce/internal/initiative.NodeTemplate.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.BusinessGate kind=type
@@ -170,6 +188,8 @@ NODE id=matrix/workforce/internal/initiative.BusinessGate kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.BusinessGate#AuthoritativeSources,matrix/workforce/internal/initiative.BusinessGate#Comparator,matrix/workforce/internal/initiative.BusinessGate#ID,matrix/workforce/internal/initiative.BusinessGate#MaximumFreshness,matrix/workforce/internal/initiative.BusinessGate#MetricID,matrix/workforce/internal/initiative.BusinessGate#MinimumObservations,matrix/workforce/internal/initiative.BusinessGate#SuccessCriterion,matrix/workforce/internal/initiative.BusinessGate#ThresholdMicrounits,matrix/workforce/internal/initiative.BusinessGate.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/companystate.RecordReference
+  ^references=matrix/workforce/internal/companyruntime.InitiativeDraft,matrix/workforce/internal/initiative.BusinessGate.Validate,matrix/workforce/internal/initiative.Initiative
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.BusinessGate#AuthoritativeSources kind=field
@@ -224,7 +244,11 @@ NODE id=matrix/workforce/internal/initiative.BusinessGate.Validate kind=method
   digest=b3:5db23c8132516cc0f8b4c84accd4107629ed6f1763472fff9cf11a6812030900 file=workforce/internal/initiative/types.go range=89:107 lang=go exported=true byte_range=3304:4190
   sig=func (value BusinessGate) Validate() error
 EDGES
+  calls=matrix/workforce/internal/companystate.RecordReference.Validate,matrix/workforce/internal/initiative.validToken
+  references=matrix/workforce/internal/companystate.RecordReference.Validate,matrix/workforce/internal/initiative.BusinessGate,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.previous,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.BusinessGate
+  ^calls=matrix/workforce/internal/initiative.Initiative.Validate
+  ^references=matrix/workforce/internal/initiative.Initiative.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.CancelRequest kind=type
@@ -232,6 +256,8 @@ NODE id=matrix/workforce/internal/initiative.CancelRequest kind=type
   sig=type CancelRequest struct {\n	Previous	Plan\n	Authority	workorder.CompanyAuthority\n	Reason		string\n	AuthorityRef	string\n	Evidence	[]companystate.RecordReference\n	CancelledAt	time.Time\n}
 EDGES
   contains=matrix/workforce/internal/initiative.CancelRequest#Authority,matrix/workforce/internal/initiative.CancelRequest#AuthorityRef,matrix/workforce/internal/initiative.CancelRequest#CancelledAt,matrix/workforce/internal/initiative.CancelRequest#Evidence,matrix/workforce/internal/initiative.CancelRequest#Previous,matrix/workforce/internal/initiative.CancelRequest#Reason
+  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/workorder.CompanyAuthority
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.CancelRequest#Authority kind=field
@@ -276,6 +302,8 @@ NODE id=matrix/workforce/internal/initiative.CapabilityPlan kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.CapabilityPlan#Hash,matrix/workforce/internal/initiative.CapabilityPlan#ID,matrix/workforce/internal/initiative.CapabilityPlan#Requirements,matrix/workforce/internal/initiative.CapabilityPlan#Version,matrix/workforce/internal/initiative.CapabilityPlan.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/initiative.CapabilityRequirement
+  ^references=matrix/workforce/internal/companyruntime.InitiativeDraft,matrix/workforce/internal/initiative.CapabilityPlan.Validate,matrix/workforce/internal/initiative.CapabilityPlanHash,matrix/workforce/internal/initiative.Initiative,matrix/workforce/internal/initiative.capabilitiesCover,matrix/workforce/internal/initiative.capabilityPlanHash
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.CapabilityPlan#Hash kind=field
@@ -306,13 +334,21 @@ NODE id=matrix/workforce/internal/initiative.CapabilityPlan.Validate kind=method
   digest=b3:cc72d4afa8944483746868b0e860b0455a76804f1f8f6703ca2b2fecfa6c6336 file=workforce/internal/initiative/types.go range=63:76 lang=go exported=true byte_range=2086:2647
   sig=func (value CapabilityPlan) Validate() error
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/initiative.CapabilityRequirement.Validate,matrix/workforce/internal/initiative.validToken
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/initiative.CapabilityPlan,matrix/workforce/internal/initiative.CapabilityRequirement.Validate,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.previous,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.CapabilityPlan
+  ^calls=matrix/workforce/internal/initiative.Initiative.Validate
+  ^references=matrix/workforce/internal/initiative.Initiative.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.CapabilityPlanHash kind=func
   digest=b3:4bf4b8dbd041914e10fdf41d859a92d4d27b6c13f2bbaccfcce666871514e3aa file=workforce/internal/initiative/compiler.go range=521:536 lang=go exported=true byte_range=19539:20240
   sig=func CapabilityPlanHash(value CapabilityPlan) (contracts.ContentHash, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.sha256Hash
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.CapabilityPlan,matrix/workforce/internal/initiative.CapabilityRequirement,matrix/workforce/internal/initiative.canonical,matrix/workforce/internal/initiative.canonicalValue,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.payload,matrix/workforce/internal/initiative.sha256Hash,matrix/workforce/internal/initiative.value
+  ^calls=matrix/workforce/internal/initiative.capabilityPlanHash
+  ^references=matrix/workforce/internal/initiative.capabilityPlanHash
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.CapabilityRequirement kind=type
@@ -321,6 +357,8 @@ NODE id=matrix/workforce/internal/initiative.CapabilityRequirement kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.CapabilityRequirement#Department,matrix/workforce/internal/initiative.CapabilityRequirement#ID,matrix/workforce/internal/initiative.CapabilityRequirement#Independent,matrix/workforce/internal/initiative.CapabilityRequirement#MinimumSeats,matrix/workforce/internal/initiative.CapabilityRequirement#Operations,matrix/workforce/internal/initiative.CapabilityRequirement#SkillID,matrix/workforce/internal/initiative.CapabilityRequirement.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.SkillID
+  ^references=matrix/workforce/internal/initiative.CapabilityPlan,matrix/workforce/internal/initiative.CapabilityPlanHash,matrix/workforce/internal/initiative.CapabilityRequirement.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.CapabilityRequirement#Department kind=field
@@ -363,7 +401,11 @@ NODE id=matrix/workforce/internal/initiative.CapabilityRequirement.Validate kind
   digest=b3:e15a2fcabba77608560284cb69ac79b7f200d1c384d8d14287b9b63b2d396a5c file=workforce/internal/initiative/types.go range=47:54 lang=go exported=true byte_range=1499:1819
   sig=func (value CapabilityRequirement) Validate() error
 EDGES
+  calls=matrix/workforce/internal/contracts.DepartmentKind.Valid,matrix/workforce/internal/initiative.validSet,matrix/workforce/internal/initiative.validToken
+  references=matrix/workforce/internal/contracts.DepartmentKind.Valid,matrix/workforce/internal/initiative.CapabilityRequirement,matrix/workforce/internal/initiative.validSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.CapabilityRequirement
+  ^calls=matrix/workforce/internal/initiative.CapabilityPlan.Validate
+  ^references=matrix/workforce/internal/initiative.CapabilityPlan.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.CapitalAllocation kind=type
@@ -372,6 +414,7 @@ NODE id=matrix/workforce/internal/initiative.CapitalAllocation kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.CapitalAllocation#CapitalMicrounits,matrix/workforce/internal/initiative.CapitalAllocation#Currency,matrix/workforce/internal/initiative.CapitalAllocation#ID,matrix/workforce/internal/initiative.CapitalAllocation#RiskMicrounits,matrix/workforce/internal/initiative.CapitalAllocation.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/initiative.CapitalAllocation.Validate,matrix/workforce/internal/initiative.Initiative
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.CapitalAllocation#CapitalMicrounits kind=field
@@ -402,7 +445,11 @@ NODE id=matrix/workforce/internal/initiative.CapitalAllocation.Validate kind=met
   digest=b3:a2bdb728dbc45bdf671ce63dc6f5be7525163cf77d90b1c933a6f95a3ce54d30 file=workforce/internal/initiative/types.go range=31:36 lang=go exported=true byte_range=877:1099
   sig=func (value CapitalAllocation) Validate() error
 EDGES
+  calls=matrix/workforce/internal/initiative.validToken
+  references=matrix/workforce/internal/initiative.CapitalAllocation,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.CapitalAllocation
+  ^calls=matrix/workforce/internal/initiative.Initiative.Validate
+  ^references=matrix/workforce/internal/initiative.Initiative.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.CommitResult kind=type
@@ -410,6 +457,7 @@ NODE id=matrix/workforce/internal/initiative.CommitResult kind=type
   sig=type CommitResult struct {\n	PlanID		string\n	PlanVersion	uint64\n	WorkOrderIDs	[]string\n	Deduplicated	bool\n}
 EDGES
   contains=matrix/workforce/internal/initiative.CommitResult#Deduplicated,matrix/workforce/internal/initiative.CommitResult#PlanID,matrix/workforce/internal/initiative.CommitResult#PlanVersion,matrix/workforce/internal/initiative.CommitResult#WorkOrderIDs
+  ^references=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation,matrix/workforce/internal/initiative.Store.findPlanTx,matrix/workforce/internal/initiative.commitResult
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.CommitResult#Deduplicated kind=field
@@ -441,6 +489,8 @@ NODE id=matrix/workforce/internal/initiative.CompileInput kind=type
   sig=type CompileInput struct {\n	Authority		mission.ActivationAuthority\n	Decision		portfolio.DecisionReceipt\n	DecisionKeyID		string\n	DecisionPublicKey	ed25519.PublicKey\n	Initiative		Initiative\n	Blueprint		Blueprint\n	CompiledAt		time.Time\n}
 EDGES
   contains=matrix/workforce/internal/initiative.CompileInput#Authority,matrix/workforce/internal/initiative.CompileInput#Blueprint,matrix/workforce/internal/initiative.CompileInput#CompiledAt,matrix/workforce/internal/initiative.CompileInput#Decision,matrix/workforce/internal/initiative.CompileInput#DecisionKeyID,matrix/workforce/internal/initiative.CompileInput#DecisionPublicKey,matrix/workforce/internal/initiative.CompileInput#Initiative
+  references=matrix/workforce/internal/initiative.Blueprint,matrix/workforce/internal/initiative.Initiative,matrix/workforce/internal/mission.ActivationAuthority,matrix/workforce/internal/portfolio.DecisionReceipt
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/initiative.ReplanRequest,matrix/workforce/internal/initiative.validateCompileBindings
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.CompileInput#Authority kind=field
@@ -490,6 +540,8 @@ NODE id=matrix/workforce/internal/initiative.CompiledNode kind=type
   sig=type CompiledNode struct {\n	Template		NodeTemplate		`json:"template"`\n	Order			*workorder.CompanyOrder	`json:"company_order"`\n	Digest			contracts.ContentHash	`json:"digest"`\n	State			NodeState		`json:"state"`\n	ReceiptReferences	[]contracts.ReceiptID	`json:"receipt_references"`\n}
 EDGES
   contains=matrix/workforce/internal/initiative.CompiledNode#Digest,matrix/workforce/internal/initiative.CompiledNode#Order,matrix/workforce/internal/initiative.CompiledNode#ReceiptReferences,matrix/workforce/internal/initiative.CompiledNode#State,matrix/workforce/internal/initiative.CompiledNode#Template
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ReceiptID,matrix/workforce/internal/initiative.NodeState,matrix/workforce/internal/initiative.NodeTemplate,matrix/workforce/internal/workorder.CompanyOrder
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.Dispatcher.dispatch,matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.Dispatcher.ready,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.Store.insertCompanyOrderTx,matrix/workforce/internal/initiative.compiledNodeDigest,matrix/workforce/internal/initiative.findCompiledNode,matrix/workforce/internal/productexecution.Store.stageOrders
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.CompiledNode#Digest kind=field
@@ -527,6 +579,7 @@ NODE id=matrix/workforce/internal/initiative.Compiler kind=type
   sig=type Compiler struct {\n	founderKeyID		string\n	founderPublicKey	ed25519.PublicKey\n	issuerPrivateKey	ed25519.PrivateKey\n}
 EDGES
   contains=matrix/workforce/internal/initiative.Compiler#founderKeyID,matrix/workforce/internal/initiative.Compiler#founderPublicKey,matrix/workforce/internal/initiative.Compiler#issuerPrivateKey,matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/initiative.Compiler.signMutation,matrix/workforce/internal/initiative.Compiler.signPlan
+  ^references=matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.NewCoordinator,matrix/workforce/internal/companyruntime.NewCoordinatorWithDispatcher,matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/initiative.Compiler.signMutation,matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.NewCompiler
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.Compiler#founderKeyID kind=field
@@ -551,6 +604,8 @@ NODE id=matrix/workforce/internal/initiative.Compiler.Cancel kind=method
   digest=b3:b174d188991dc4e00bef37700aae746ed8bfadd32ffa1d5f08987728cc108fc7 file=workforce/internal/initiative/mutation.go range=247:289 lang=go exported=true byte_range=9994:11883
   sig=func (compiler *Compiler) Cancel(request CancelRequest) (Plan, Mutation, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.Compiler.signMutation,matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.validRecordSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC
+  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/contracts.ReceiptID,matrix/workforce/internal/initiative.CancelRequest,matrix/workforce/internal/initiative.Compiler,matrix/workforce/internal/initiative.Compiler.signMutation,matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.ErrMutation,matrix/workforce/internal/initiative.Mutation,matrix/workforce/internal/initiative.MutationCancel,matrix/workforce/internal/initiative.MutationSchemaVersion,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.PreservedReceipt,matrix/workforce/internal/initiative.StateCancelled,matrix/workforce/internal/initiative.StateInvalidated,matrix/workforce/internal/initiative.StatePending,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.compiler,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.mutation,matrix/workforce/internal/initiative.next,matrix/workforce/internal/initiative.node,matrix/workforce/internal/initiative.request,matrix/workforce/internal/initiative.validRecordSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC
   ^contains=matrix/workforce/internal/initiative.Compiler
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
@@ -558,13 +613,19 @@ NODE id=matrix/workforce/internal/initiative.Compiler.Compile kind=method
   digest=b3:13289a8fe55f36dd74fca8dd3be52f7ec5e0912e50d57af31a99734e9c52e157 file=workforce/internal/initiative/compiler.go range=125:251 lang=go exported=true byte_range=4234:9323
   sig=func (compiler *Compiler) Compile(input CompileInput) (Plan, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.VerifyInitiative,matrix/workforce/internal/initiative.capabilityPlanHash,matrix/workforce/internal/initiative.compiledNodeDigest,matrix/workforce/internal/initiative.ensureOutcomeGateClosure,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/initiative.validateCompileBindings,matrix/workforce/internal/initiative.validateGraph,matrix/workforce/internal/mission.VerifyActivationAuthority,matrix/workforce/internal/portfolio.VerifyDecision
+  references=matrix/workforce/internal/initiative.AuthorityBinding,matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.CompileInput,matrix/workforce/internal/initiative.CompiledNode,matrix/workforce/internal/initiative.Compiler,matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.Edge,matrix/workforce/internal/initiative.ErrAuthority,matrix/workforce/internal/initiative.ErrBudgetSplitting,matrix/workforce/internal/initiative.ErrDuplicateEffect,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.PlanSchemaVersion,matrix/workforce/internal/initiative.StatePending,matrix/workforce/internal/initiative.VerifyInitiative,matrix/workforce/internal/initiative.capabilityPlanHash,matrix/workforce/internal/initiative.capital,matrix/workforce/internal/initiative.companyAuthority,matrix/workforce/internal/initiative.compileErr,matrix/workforce/internal/initiative.compiled,matrix/workforce/internal/initiative.compiledNodeDigest,matrix/workforce/internal/initiative.compiler,matrix/workforce/internal/initiative.digest,matrix/workforce/internal/initiative.digestErr,matrix/workforce/internal/initiative.duplicate,matrix/workforce/internal/initiative.effects,matrix/workforce/internal/initiative.ensureOutcomeGateClosure,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.expected,matrix/workforce/internal/initiative.identity,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.input,matrix/workforce/internal/initiative.left,matrix/workforce/internal/initiative.leftKey,matrix/workforce/internal/initiative.order,matrix/workforce/internal/initiative.owner,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.planID,matrix/workforce/internal/initiative.right,matrix/workforce/internal/initiative.rightKey,matrix/workforce/internal/initiative.risk,matrix/workforce/internal/initiative.template,matrix/workforce/internal/initiative.topological,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/initiative.validateCompileBindings,matrix/workforce/internal/initiative.validateGraph,matrix/workforce/internal/initiative.workSpec,matrix/workforce/internal/mission.VerifyActivationAuthority,matrix/workforce/internal/portfolio.VerifyDecision,matrix/workforce/internal/workorder.CompanyAuthority
   ^contains=matrix/workforce/internal/initiative.Compiler
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/initiative.Compiler.Replan
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/initiative.Compiler.Replan
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.Compiler.Replan kind=method
   digest=b3:29d7b93338801a05c288d10827f1a1330fbfd7e55d44e028ac71a40081c0ef2b file=workforce/internal/initiative/mutation.go range=125:236 lang=go exported=true byte_range=4677:9790
   sig=func (compiler *Compiler) Replan(request ReplanRequest) (Plan, Mutation, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.signMutation,matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.Completion.Validate,matrix/workforce/internal/initiative.Invalidation.Validate,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.findCompiledNode,matrix/workforce/internal/initiative.sortedCompletions,matrix/workforce/internal/initiative.sortedInvalidations,matrix/workforce/internal/initiative.validRecordSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC
+  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/contracts.ReceiptID,matrix/workforce/internal/initiative.Compiler,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.signMutation,matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.Completion.Validate,matrix/workforce/internal/initiative.ErrDuplicateEffect,matrix/workforce/internal/initiative.ErrMutation,matrix/workforce/internal/initiative.Invalidation,matrix/workforce/internal/initiative.Invalidation.Validate,matrix/workforce/internal/initiative.Mutation,matrix/workforce/internal/initiative.MutationInvalidate,matrix/workforce/internal/initiative.MutationReplan,matrix/workforce/internal/initiative.MutationSchemaVersion,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.PreservedReceipt,matrix/workforce/internal/initiative.ReplanRequest,matrix/workforce/internal/initiative.StateInvalidated,matrix/workforce/internal/initiative.StatePreserved,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.committedEffects,matrix/workforce/internal/initiative.companyAuthority,matrix/workforce/internal/initiative.compiler,matrix/workforce/internal/initiative.completion,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.exists,matrix/workforce/internal/initiative.findCompiledNode,matrix/workforce/internal/initiative.identity,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.invalidated,matrix/workforce/internal/initiative.mustInvalidate,matrix/workforce/internal/initiative.mutation,matrix/workforce/internal/initiative.newNode,matrix/workforce/internal/initiative.next,matrix/workforce/internal/initiative.node,matrix/workforce/internal/initiative.nodeID,matrix/workforce/internal/initiative.oldNode,matrix/workforce/internal/initiative.owner,matrix/workforce/internal/initiative.preserved,matrix/workforce/internal/initiative.priorNode,matrix/workforce/internal/initiative.request,matrix/workforce/internal/initiative.sortedCompletions,matrix/workforce/internal/initiative.sortedInvalidations,matrix/workforce/internal/initiative.validRecordSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/initiative.value,matrix/workforce/internal/workorder.CompanyAuthority
   ^contains=matrix/workforce/internal/initiative.Compiler
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
@@ -572,21 +633,33 @@ NODE id=matrix/workforce/internal/initiative.Compiler.compileOrder kind=method
   digest=b3:8928ab65a2b17dedb5c9b9310312523cdbdd7323bee5c63a84c4f72d69992183 file=workforce/internal/initiative/compiler.go range=279:333 lang=go exported=false byte_range=10919:13750
   sig=func (compiler *Compiler) compileOrder(\n	input CompileInput,\n	authority workorder.CompanyAuthority,\n	planID string,\n	template NodeTemplate,\n) (workorder.CompanyOrder, uint64, uint64, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.capabilitiesCover,matrix/workforce/internal/initiative.reservedClass,matrix/workforce/internal/workorder.ExpectedCompanyIssueIdentity,matrix/workforce/internal/workorder.SignCompany
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/initiative.CompileInput,matrix/workforce/internal/initiative.Compiler,matrix/workforce/internal/initiative.ErrAuthority,matrix/workforce/internal/initiative.NodeTemplate,matrix/workforce/internal/initiative.authority,matrix/workforce/internal/initiative.capabilitiesCover,matrix/workforce/internal/initiative.compiler,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.gateIDs,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.input,matrix/workforce/internal/initiative.order,matrix/workforce/internal/initiative.planID,matrix/workforce/internal/initiative.reservedClass,matrix/workforce/internal/initiative.spec,matrix/workforce/internal/initiative.template,matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.CompanyBinding,matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.CompanyOrderSchemaVersion,matrix/workforce/internal/workorder.ExpectedCompanyIssueIdentity,matrix/workforce/internal/workorder.IssuerCompanyController,matrix/workforce/internal/workorder.SignCompany
   ^contains=matrix/workforce/internal/initiative.Compiler
+  ^calls=matrix/workforce/internal/initiative.Compiler.Compile
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.Compiler.signMutation kind=method
   digest=b3:83b1efbb6b649c7a2306ea029042554417c845b97d9321f01914870315b2f662 file=workforce/internal/initiative/mutation.go range=405:415 lang=go exported=false byte_range=16582:16950
   sig=func (compiler *Compiler) signMutation(value *Mutation, keyID string) error
 EDGES
+  calls=matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.mutationSigningBytes
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/initiative.Compiler,matrix/workforce/internal/initiative.Mutation,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.compiler,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.keyID,matrix/workforce/internal/initiative.mutationSigningBytes,matrix/workforce/internal/initiative.payload,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.Compiler
+  ^calls=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Replan
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Replan
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.Compiler.signPlan kind=method
   digest=b3:cd944dfabfc995c15bd6caf56f60021f48780ff76798642d3f6caaef91843f43 file=workforce/internal/initiative/compiler.go range=563:584 lang=go exported=false byte_range=21019:21693
   sig=func (compiler *Compiler) signPlan(plan *Plan, keyID string) error
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.planSigningBytes,matrix/workforce/internal/initiative.sha256Hash,matrix/workforce/internal/initiative.validatePlanCore
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/initiative.Compiler,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.canonical,matrix/workforce/internal/initiative.canonicalValue,matrix/workforce/internal/initiative.compiler,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.hashPayload,matrix/workforce/internal/initiative.keyID,matrix/workforce/internal/initiative.payload,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.planSigningBytes,matrix/workforce/internal/initiative.sha256Hash,matrix/workforce/internal/initiative.validatePlanCore
   ^contains=matrix/workforce/internal/initiative.Compiler
+  ^calls=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.Replan
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.Replan
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.Completion kind=type
@@ -595,6 +668,8 @@ NODE id=matrix/workforce/internal/initiative.Completion kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.Completion#CommittedEffectIdentities,matrix/workforce/internal/initiative.Completion#CompletedAt,matrix/workforce/internal/initiative.Completion#NodeID,matrix/workforce/internal/initiative.Completion#ReceiptReferences,matrix/workforce/internal/initiative.Completion.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ReceiptID
+  ^references=matrix/workforce/internal/initiative.Completion.Validate,matrix/workforce/internal/initiative.ReplanRequest,matrix/workforce/internal/initiative.sortedCompletions
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.Completion#CommittedEffectIdentities kind=field
@@ -625,7 +700,11 @@ NODE id=matrix/workforce/internal/initiative.Completion.Validate kind=method
   digest=b3:b7eb7edc27316e54616c5016ede735e1586387750cf58a9627de6abf33d86fcc file=workforce/internal/initiative/mutation.go range=26:33 lang=go exported=true byte_range=630:918
   sig=func (value Completion) Validate() error
 EDGES
+  calls=matrix/workforce/internal/initiative.validReceiptSet,matrix/workforce/internal/initiative.validSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC
+  references=matrix/workforce/internal/initiative.Completion,matrix/workforce/internal/initiative.validReceiptSet,matrix/workforce/internal/initiative.validSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.Completion
+  ^calls=matrix/workforce/internal/initiative.Compiler.Replan
+  ^references=matrix/workforce/internal/initiative.Compiler.Replan
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.CurrentPlan kind=type
@@ -633,6 +712,8 @@ NODE id=matrix/workforce/internal/initiative.CurrentPlan kind=type
   sig=type CurrentPlan struct {\n	Plan	Plan\n	State	string\n}
 EDGES
   contains=matrix/workforce/internal/initiative.CurrentPlan#Plan,matrix/workforce/internal/initiative.CurrentPlan#State
+  references=matrix/workforce/internal/initiative.Plan
+  ^references=matrix/workforce/internal/initiative.Store.LoadCurrent
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.CurrentPlan#Plan kind=field
@@ -652,6 +733,7 @@ NODE id=matrix/workforce/internal/initiative.DispatchResult kind=type
   sig=type DispatchResult struct {\n	InitiativeID	string		`json:"initiative_id"`\n	PlanVersion	uint64		`json:"plan_version"`\n	PlanNodeID	string		`json:"plan_node_id"`\n	WorkOrderID	string		`json:"work_order_id"`\n	GoalID		string		`json:"goal_id"`\n	IntentIDs	[]string	`json:"intent_ids"`\n	WakeID		string		`json:"wake_id"`\n	Deduplicated	bool		`json:"deduplicated"`\n}
 EDGES
   contains=matrix/workforce/internal/initiative.DispatchResult#Deduplicated,matrix/workforce/internal/initiative.DispatchResult#GoalID,matrix/workforce/internal/initiative.DispatchResult#InitiativeID,matrix/workforce/internal/initiative.DispatchResult#IntentIDs,matrix/workforce/internal/initiative.DispatchResult#PlanNodeID,matrix/workforce/internal/initiative.DispatchResult#PlanVersion,matrix/workforce/internal/initiative.DispatchResult#WakeID,matrix/workforce/internal/initiative.DispatchResult#WorkOrderID
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.Dispatcher.dispatch
   ^defines=matrix/workforce/internal/initiative/dispatch.go
 
 NODE id=matrix/workforce/internal/initiative.DispatchResult#Deduplicated kind=field
@@ -707,6 +789,8 @@ NODE id=matrix/workforce/internal/initiative.Dispatcher kind=type
   sig=type Dispatcher struct {\n	pool		*pgxpool.Pool\n	scheduler	*scheduler.Store\n	tenantID	string\n	organizationID	contracts.OrganizationID\n	now		func() time.Time\n}
 EDGES
   contains=matrix/workforce/internal/initiative.Dispatcher#now,matrix/workforce/internal/initiative.Dispatcher#organizationID,matrix/workforce/internal/initiative.Dispatcher#pool,matrix/workforce/internal/initiative.Dispatcher#scheduler,matrix/workforce/internal/initiative.Dispatcher#tenantID,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.Dispatcher.dispatch,matrix/workforce/internal/initiative.Dispatcher.gateOutcome,matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.Dispatcher.ready
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/scheduler.Store
+  ^references=matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.NewCoordinatorWithDispatcher,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.Dispatcher.dispatch,matrix/workforce/internal/initiative.Dispatcher.gateOutcome,matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.Dispatcher.ready,matrix/workforce/internal/initiative.NewDispatcher
   ^defines=matrix/workforce/internal/initiative/dispatch.go
 
 NODE id=matrix/workforce/internal/initiative.Dispatcher#now kind=field
@@ -743,35 +827,55 @@ NODE id=matrix/workforce/internal/initiative.Dispatcher.DispatchReady kind=metho
   digest=b3:e1d434644effd3cbee58d32e219e54604ecc3470ab1df9b7e5b4c02741cceffc file=workforce/internal/initiative/dispatch.go range=53:100 lang=go exported=true byte_range=1327:2804
   sig=func (dispatcher *Dispatcher) DispatchReady(\n	ctx context.Context,\n	plan Plan,\n	authority workorder.CompanyAuthority,\n	limit uint16,\n) ([]DispatchResult, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.Dispatcher.dispatch,matrix/workforce/internal/initiative.Dispatcher.ready,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.validUTC
+  references=matrix/workforce/internal/initiative.CompiledNode,matrix/workforce/internal/initiative.DispatchResult,matrix/workforce/internal/initiative.Dispatcher,matrix/workforce/internal/initiative.Dispatcher.dispatch,matrix/workforce/internal/initiative.Dispatcher.ready,matrix/workforce/internal/initiative.Edge,matrix/workforce/internal/initiative.NodeWorkOrder,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.StatePending,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.authority,matrix/workforce/internal/initiative.ctx,matrix/workforce/internal/initiative.dispatcher,matrix/workforce/internal/initiative.edge,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.incoming,matrix/workforce/internal/initiative.limit,matrix/workforce/internal/initiative.node,matrix/workforce/internal/initiative.nodeID,matrix/workforce/internal/initiative.nodes,matrix/workforce/internal/initiative.now,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.ready,matrix/workforce/internal/initiative.result,matrix/workforce/internal/initiative.results,matrix/workforce/internal/initiative.scheduledAt,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/workorder.CompanyAuthority
   ^contains=matrix/workforce/internal/initiative.Dispatcher
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.DispatchReady
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.DispatchReady
   ^defines=matrix/workforce/internal/initiative/dispatch.go
 
 NODE id=matrix/workforce/internal/initiative.Dispatcher.dispatch kind=method
   digest=b3:f9f086c3cda0e2c5989df5ba1b281cfdb078e5c856eb827382d49899a04b0731 file=workforce/internal/initiative/dispatch.go range=238:409 lang=go exported=false byte_range=7200:14385
   sig=func (dispatcher *Dispatcher) dispatch(\n	ctx context.Context,\n	plan Plan,\n	node CompiledNode,\n	authority workorder.CompanyAuthority,\n	scheduledAt, now time.Time,\n) (DispatchResult, error)
 EDGES
+  calls=matrix/workforce/internal/workorder.VerifyCompany,matrix/workforce/scheduler.Store.EnqueueTx
+  references=matrix/workforce/internal/initiative.CompiledNode,matrix/workforce/internal/initiative.DispatchResult,matrix/workforce/internal/initiative.Dispatcher,matrix/workforce/internal/initiative.ErrStoreConflict,matrix/workforce/internal/initiative.ErrStoreState,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.authorities,matrix/workforce/internal/initiative.authority,matrix/workforce/internal/initiative.ctx,matrix/workforce/internal/initiative.currentPlanID,matrix/workforce/internal/initiative.currentVersion,matrix/workforce/internal/initiative.department,matrix/workforce/internal/initiative.dispatcher,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.existingGoal,matrix/workforce/internal/initiative.existingNode,matrix/workforce/internal/initiative.existingWake,matrix/workforce/internal/initiative.goalID,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.intentID,matrix/workforce/internal/initiative.intentIDs,matrix/workforce/internal/initiative.node,matrix/workforce/internal/initiative.now,matrix/workforce/internal/initiative.order,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.planState,matrix/workforce/internal/initiative.result,matrix/workforce/internal/initiative.scheduledAt,matrix/workforce/internal/initiative.seatAuthority,matrix/workforce/internal/initiative.state,matrix/workforce/internal/initiative.title,matrix/workforce/internal/initiative.tx,matrix/workforce/internal/initiative.wake,matrix/workforce/internal/initiative.wakeID,matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.VerifyCompany,matrix/workforce/scheduler.Budget,matrix/workforce/scheduler.MGSBinding,matrix/workforce/scheduler.ModelBinding,matrix/workforce/scheduler.Store.EnqueueTx,matrix/workforce/scheduler.TriggerDependency,matrix/workforce/scheduler.WakeEnvelope
   ^contains=matrix/workforce/internal/initiative.Dispatcher
+  ^calls=matrix/workforce/internal/initiative.Dispatcher.DispatchReady
+  ^references=matrix/workforce/internal/initiative.Dispatcher.DispatchReady
   ^defines=matrix/workforce/internal/initiative/dispatch.go
 
 NODE id=matrix/workforce/internal/initiative.Dispatcher.gateOutcome kind=method
   digest=b3:bf6e4ba177c6de4dc93c9443076ae5ecf46e76cc3e683e3091461d7d3e999bac file=workforce/internal/initiative/dispatch.go range=216:236 lang=go exported=false byte_range=6480:7198
   sig=func (dispatcher *Dispatcher) gateOutcome(\n	ctx context.Context,\n	plan Plan,\n	nodeID string,\n) (GateOutcome, bool, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.GateOutcome.Valid
+  references=matrix/workforce/internal/initiative.Dispatcher,matrix/workforce/internal/initiative.GateOutcome,matrix/workforce/internal/initiative.GateOutcome.Valid,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.ctx,matrix/workforce/internal/initiative.dispatcher,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.nodeID,matrix/workforce/internal/initiative.outcome,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.state
   ^contains=matrix/workforce/internal/initiative.Dispatcher
+  ^calls=matrix/workforce/internal/initiative.Dispatcher.nodeOutcome
+  ^references=matrix/workforce/internal/initiative.Dispatcher.nodeOutcome
   ^defines=matrix/workforce/internal/initiative/dispatch.go
 
 NODE id=matrix/workforce/internal/initiative.Dispatcher.nodeOutcome kind=method
   digest=b3:4ee7f0dd2869a6dfd1d4cf1bd90549ad9d7f58a5399d9415912dfe0cf60dd9dd file=workforce/internal/initiative/dispatch.go range=125:214 lang=go exported=false byte_range=3397:6478
   sig=func (dispatcher *Dispatcher) nodeOutcome(\n	ctx context.Context,\n	plan Plan,\n	nodes map[string]CompiledNode,\n	nodeID string,\n) (GateOutcome, bool, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.Dispatcher.gateOutcome
+  references=matrix/workforce/internal/initiative.CompiledNode,matrix/workforce/internal/initiative.Dispatcher,matrix/workforce/internal/initiative.Dispatcher.gateOutcome,matrix/workforce/internal/initiative.ErrStoreState,matrix/workforce/internal/initiative.GateOutcome,matrix/workforce/internal/initiative.NodeBranch,matrix/workforce/internal/initiative.NodeEvidenceGate,matrix/workforce/internal/initiative.NodeOutcomeGate,matrix/workforce/internal/initiative.NodeWorkOrder,matrix/workforce/internal/initiative.OutcomeExpired,matrix/workforce/internal/initiative.OutcomeFailed,matrix/workforce/internal/initiative.OutcomeSatisfied,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.active,matrix/workforce/internal/initiative.ctx,matrix/workforce/internal/initiative.dispatcher,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.exists,matrix/workforce/internal/initiative.node,matrix/workforce/internal/initiative.nodeID,matrix/workforce/internal/initiative.nodes,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.reference,matrix/workforce/internal/initiative.state
   ^contains=matrix/workforce/internal/initiative.Dispatcher
+  ^calls=matrix/workforce/internal/initiative.Dispatcher.ready
+  ^references=matrix/workforce/internal/initiative.Dispatcher.ready
   ^defines=matrix/workforce/internal/initiative/dispatch.go
 
 NODE id=matrix/workforce/internal/initiative.Dispatcher.ready kind=method
   digest=b3:3f3ef0ddb14fb51fda67207f3611697f655c118b9e1d6e59322046182316177a file=workforce/internal/initiative/dispatch.go range=102:123 lang=go exported=false byte_range=2806:3395
   sig=func (dispatcher *Dispatcher) ready(\n	ctx context.Context,\n	plan Plan,\n	nodes map[string]CompiledNode,\n	edges []Edge,\n	now time.Time,\n) (bool, time.Time, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.Dispatcher.nodeOutcome
+  references=matrix/workforce/internal/initiative.CompiledNode,matrix/workforce/internal/initiative.Dispatcher,matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.Edge,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.committed,matrix/workforce/internal/initiative.ctx,matrix/workforce/internal/initiative.dispatcher,matrix/workforce/internal/initiative.edge,matrix/workforce/internal/initiative.edges,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.nodes,matrix/workforce/internal/initiative.now,matrix/workforce/internal/initiative.outcome,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.scheduledAt
   ^contains=matrix/workforce/internal/initiative.Dispatcher
+  ^calls=matrix/workforce/internal/initiative.Dispatcher.DispatchReady
+  ^references=matrix/workforce/internal/initiative.Dispatcher.DispatchReady
   ^defines=matrix/workforce/internal/initiative/dispatch.go
 
 NODE id=matrix/workforce/internal/initiative.Edge kind=type
@@ -780,6 +884,8 @@ NODE id=matrix/workforce/internal/initiative.Edge kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.Edge#Prerequisite,matrix/workforce/internal/initiative.Edge#Schedule,matrix/workforce/internal/initiative.Edge#Successor,matrix/workforce/internal/initiative.Edge#When,matrix/workforce/internal/initiative.Edge.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/initiative.GateOutcome,matrix/workforce/internal/initiative.SuccessorSchedule
+  ^references=matrix/workforce/internal/initiative.Blueprint,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.Dispatcher.ready,matrix/workforce/internal/initiative.Edge.Validate,matrix/workforce/internal/initiative.Plan
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.Edge#Prerequisite kind=field
@@ -810,55 +916,67 @@ NODE id=matrix/workforce/internal/initiative.Edge.Validate kind=method
   digest=b3:a2d879bce7471d89cf38ef8ea3ef72f3846c287f1cc2ebcff30c5a9c2228e20f file=workforce/internal/initiative/types.go range=351:358 lang=go exported=true byte_range=13428:13733
   sig=func (value Edge) Validate() error
 EDGES
+  calls=matrix/workforce/internal/initiative.GateOutcome.Valid,matrix/workforce/internal/initiative.SuccessorSchedule.Validate,matrix/workforce/internal/initiative.validToken
+  references=matrix/workforce/internal/initiative.Edge,matrix/workforce/internal/initiative.GateOutcome.Valid,matrix/workforce/internal/initiative.SuccessorSchedule.Validate,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.Edge
+  ^calls=matrix/workforce/internal/initiative.validateGraph,matrix/workforce/internal/initiative.validatePlanCore
+  ^references=matrix/workforce/internal/initiative.validateGraph,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.ErrAuthority kind=var
   digest=b3:1b865623e5e668924615cc94a4f83b87faac6fe62115cafeb9c6e71a96a09ef4 file=workforce/internal/initiative/compiler.go range=23:23 lang=go exported=true byte_range=327:392
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.VerifyInitiative,matrix/workforce/internal/initiative.VerifyMutation,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.issuerKey,matrix/workforce/internal/initiative.validateCompileBindings
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.ErrBudgetSplitting kind=var
   digest=b3:67b068b956565e8dffc8dd5f47edf9d5696bda96e56c89f8e73a27b6e0c0c244 file=workforce/internal/initiative/compiler.go range=25:25 lang=go exported=true byte_range=454:526
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.ErrCycle kind=var
   digest=b3:376e33c7b6fa25e9e4b4585fe607016f7b9586d076b1454f6e95f1d7e61450d4 file=workforce/internal/initiative/compiler.go range=24:24 lang=go exported=true byte_range=394:452
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/initiative.validateGraph,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.ErrDuplicateEffect kind=var
   digest=b3:0622dc9024e4fabaeeec7633435a9c038da200634a0da660069ec025bf644aab file=workforce/internal/initiative/compiler.go range=26:26 lang=go exported=true byte_range=528:600
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.ErrMutation kind=var
   digest=b3:93c7b8a9531160e1ffd9b70f40d225abc551311d89418bebc7dacc9407dd8411 file=workforce/internal/initiative/mutation.go range=17:17 lang=go exported=true byte_range=240:300
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Replan
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.ErrStoreConflict kind=var
   digest=b3:fdb0d8bc4a1470656a15d4597fec3c43baa45fdcd4fbfae13203591fa5e4e346 file=workforce/internal/initiative/store.go range=22:22 lang=go exported=true byte_range=316:382
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/initiative.Dispatcher.dispatch,matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation,matrix/workforce/internal/initiative.Store.findPlanTx,matrix/workforce/internal/initiative.Store.insertCompanyOrderTx
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.ErrStoreState kind=var
   digest=b3:01ace689e0490934a00f3c85565d00290388b3bcf96b0082c67cae821c239290 file=workforce/internal/initiative/store.go range=23:23 lang=go exported=true byte_range=384:456
   sig=error
 EDGES
+  ^references=matrix/workforce/internal/initiative.Dispatcher.dispatch,matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation,matrix/workforce/internal/initiative.Store.LoadCurrent
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.ExactAuthoritySummary kind=func
   digest=b3:9f3ad86a301c846622b9325da2d16f5d837bd46d8032d66b771663718cb1b7fe file=workforce/internal/initiative/compiler.go range=760:767 lang=go exported=true byte_range=28525:28916
   sig=func ExactAuthoritySummary(plan Plan) string
 EDGES
+  references=matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.plan
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.GateOutcome kind=type
@@ -866,13 +984,17 @@ NODE id=matrix/workforce/internal/initiative.GateOutcome kind=type
   sig=type GateOutcome string
 EDGES
   contains=matrix/workforce/internal/initiative.GateOutcome.Valid
+  ^references=matrix/workforce/internal/initiative.BranchCase,matrix/workforce/internal/initiative.BranchSpec.Validate,matrix/workforce/internal/initiative.Dispatcher.gateOutcome,matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.Edge,matrix/workforce/internal/initiative.GateOutcome.Valid,matrix/workforce/internal/initiative.GateResult,matrix/workforce/internal/initiative.OutcomeExpired,matrix/workforce/internal/initiative.OutcomeFailed,matrix/workforce/internal/initiative.OutcomeSatisfied
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.GateOutcome.Valid kind=method
   digest=b3:7bb7d42879186c8fab319d09b678245a429565b93f5c65c58cbabe69e22a25e6 file=workforce/internal/initiative/types.go range=195:197 lang=go exported=true byte_range=8134:8262
   sig=func (value GateOutcome) Valid() bool
 EDGES
+  references=matrix/workforce/internal/initiative.GateOutcome,matrix/workforce/internal/initiative.OutcomeExpired,matrix/workforce/internal/initiative.OutcomeFailed,matrix/workforce/internal/initiative.OutcomeSatisfied,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.GateOutcome
+  ^calls=matrix/workforce/internal/initiative.BranchSpec.Validate,matrix/workforce/internal/initiative.Dispatcher.gateOutcome,matrix/workforce/internal/initiative.Edge.Validate,matrix/workforce/internal/initiative.Successors
+  ^references=matrix/workforce/internal/initiative.BranchSpec.Validate,matrix/workforce/internal/initiative.Dispatcher.gateOutcome,matrix/workforce/internal/initiative.Edge.Validate,matrix/workforce/internal/initiative.Successors
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.GateResult kind=type
@@ -880,6 +1002,8 @@ NODE id=matrix/workforce/internal/initiative.GateResult kind=type
   sig=type GateResult struct {\n	GateNodeID	string				`json:"gate_node_id"`\n	Outcome		GateOutcome			`json:"outcome"`\n	Evidence	[]companystate.RecordReference	`json:"evidence"`\n	CommittedAt	time.Time			`json:"committed_at"`\n}
 EDGES
   contains=matrix/workforce/internal/initiative.GateResult#CommittedAt,matrix/workforce/internal/initiative.GateResult#Evidence,matrix/workforce/internal/initiative.GateResult#GateNodeID,matrix/workforce/internal/initiative.GateResult#Outcome
+  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/initiative.GateOutcome
+  ^references=matrix/workforce/internal/initiative.Successors
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.GateResult#CommittedAt kind=field
@@ -912,6 +1036,8 @@ NODE id=matrix/workforce/internal/initiative.GateSpec kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.GateSpec#AuthorityClauses,matrix/workforce/internal/initiative.GateSpec#Evidence,matrix/workforce/internal/initiative.GateSpec#ExpiresAt,matrix/workforce/internal/initiative.GateSpec#PredicateID,matrix/workforce/internal/initiative.GateSpec.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/companystate.RecordReference
+  ^references=matrix/workforce/internal/initiative.GateSpec.Validate,matrix/workforce/internal/initiative.NodeTemplate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.GateSpec#AuthorityClauses kind=field
@@ -942,7 +1068,11 @@ NODE id=matrix/workforce/internal/initiative.GateSpec.Validate kind=method
   digest=b3:db3b41236525e4499b60f1daaedf67b8dedd5e027371b6ce0ed7f473da983779 file=workforce/internal/initiative/types.go range=206:219 lang=go exported=true byte_range=8573:9131
   sig=func (value GateSpec) Validate() error
 EDGES
+  calls=matrix/workforce/internal/companystate.RecordReference.Validate,matrix/workforce/internal/initiative.validSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC
+  references=matrix/workforce/internal/companystate.RecordReference.Validate,matrix/workforce/internal/initiative.GateSpec,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.previous,matrix/workforce/internal/initiative.validSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.GateSpec
+  ^calls=matrix/workforce/internal/initiative.NodeTemplate.Validate
+  ^references=matrix/workforce/internal/initiative.NodeTemplate.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.Initiative kind=type
@@ -951,6 +1081,8 @@ NODE id=matrix/workforce/internal/initiative.Initiative kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.Initiative#Allocation,matrix/workforce/internal/initiative.Initiative#BusinessCriteria,matrix/workforce/internal/initiative.Initiative#BusinessGates,matrix/workforce/internal/initiative.Initiative#CapabilityPlan,matrix/workforce/internal/initiative.Initiative#CapitalEnvelopeVersion,matrix/workforce/internal/initiative.Initiative#ConstitutionID,matrix/workforce/internal/initiative.Initiative#ConstitutionVersion,matrix/workforce/internal/initiative.Initiative#CreatedAt,matrix/workforce/internal/initiative.Initiative#Deadline,matrix/workforce/internal/initiative.Initiative#ExecutionCriteria,matrix/workforce/internal/initiative.Initiative#ID,matrix/workforce/internal/initiative.Initiative#IssuerPolicyVersion,matrix/workforce/internal/initiative.Initiative#MissionID,matrix/workforce/internal/initiative.Initiative#MissionVersion,matrix/workforce/internal/initiative.Initiative#Objective,matrix/workforce/internal/initiative.Initiative#OrganizationID,matrix/workforce/internal/initiative.Initiative#PortfolioDecisionID,matrix/workforce/internal/initiative.Initiative#SchemaVersion,matrix/workforce/internal/initiative.Initiative#Signature,matrix/workforce/internal/initiative.Initiative#Version,matrix/workforce/internal/initiative.Initiative.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/initiative.BusinessGate,matrix/workforce/internal/initiative.CapabilityPlan,matrix/workforce/internal/initiative.CapitalAllocation,matrix/workforce/internal/portfolio.DecisionID,matrix/workforce/internal/portfolio.InitiativeID
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/initiative.CompileInput,matrix/workforce/internal/initiative.Initiative.Validate,matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.VerifyInitiative,matrix/workforce/internal/initiative.ensureOutcomeGateClosure,matrix/workforce/internal/initiative.initiativeSigningBytes,matrix/workforce/internal/initiative.validateGraph
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.Initiative#Allocation kind=field
@@ -1077,13 +1209,18 @@ NODE id=matrix/workforce/internal/initiative.Initiative.Validate kind=method
   digest=b3:382377daee2fc5fdb54e5557de1897c700d71c59b2455a82d3f0bec7be969e24 file=workforce/internal/initiative/types.go range=132:158 lang=go exported=true byte_range=5685:7121
   sig=func (value Initiative) Validate() error
 EDGES
+  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/initiative.BusinessGate.Validate,matrix/workforce/internal/initiative.CapabilityPlan.Validate,matrix/workforce/internal/initiative.CapitalAllocation.Validate,matrix/workforce/internal/initiative.validSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC
+  references=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/initiative.BusinessGate.Validate,matrix/workforce/internal/initiative.CapabilityPlan.Validate,matrix/workforce/internal/initiative.CapitalAllocation.Validate,matrix/workforce/internal/initiative.Initiative,matrix/workforce/internal/initiative.InitiativeSchemaVersion,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.previous,matrix/workforce/internal/initiative.validSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.Initiative
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.VerifyInitiative
+  ^references=matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.VerifyInitiative
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.InitiativeSchemaVersion kind=const
   digest=b3:90593a8049d64b3e6ae16275d8715384a5284b1596650dbc02cc5447b2241d36 file=workforce/internal/initiative/types.go range=18:18 lang=go exported=true byte_range=393:444
   sig=untyped string
 EDGES
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/initiative.Initiative.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.Invalidation kind=type
@@ -1092,6 +1229,8 @@ NODE id=matrix/workforce/internal/initiative.Invalidation kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.Invalidation#AuthorityRef,matrix/workforce/internal/initiative.Invalidation#CorrectionID,matrix/workforce/internal/initiative.Invalidation#Evidence,matrix/workforce/internal/initiative.Invalidation#NodeID,matrix/workforce/internal/initiative.Invalidation#Reason,matrix/workforce/internal/initiative.Invalidation.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/contracts.CorrectionID
+  ^references=matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Invalidation.Validate,matrix/workforce/internal/initiative.Mutation,matrix/workforce/internal/initiative.ReplanRequest,matrix/workforce/internal/initiative.sortedInvalidations
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.Invalidation#AuthorityRef kind=field
@@ -1128,7 +1267,11 @@ NODE id=matrix/workforce/internal/initiative.Invalidation.Validate kind=method
   digest=b3:b9705e07269f1ee272754e90b21930c0d0dc9f9492c13db8094ff075e8a3264d file=workforce/internal/initiative/mutation.go range=43:51 lang=go exported=true byte_range=1272:1630
   sig=func (value Invalidation) Validate() error
 EDGES
+  calls=matrix/workforce/internal/initiative.validRecordSet,matrix/workforce/internal/initiative.validToken
+  references=matrix/workforce/internal/initiative.Invalidation,matrix/workforce/internal/initiative.validRecordSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.Invalidation
+  ^calls=matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Mutation.Validate
+  ^references=matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Mutation.Validate
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.Mutation kind=type
@@ -1137,6 +1280,8 @@ NODE id=matrix/workforce/internal/initiative.Mutation kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.Mutation#AuthorityRef,matrix/workforce/internal/initiative.Mutation#Evidence,matrix/workforce/internal/initiative.Mutation#FromPlanID,matrix/workforce/internal/initiative.Mutation#FromPlanVersion,matrix/workforce/internal/initiative.Mutation#ID,matrix/workforce/internal/initiative.Mutation#InitiativeID,matrix/workforce/internal/initiative.Mutation#Invalidations,matrix/workforce/internal/initiative.Mutation#Kind,matrix/workforce/internal/initiative.Mutation#MutatedAt,matrix/workforce/internal/initiative.Mutation#OrganizationID,matrix/workforce/internal/initiative.Mutation#PreservedReceipts,matrix/workforce/internal/initiative.Mutation#Reason,matrix/workforce/internal/initiative.Mutation#SchemaVersion,matrix/workforce/internal/initiative.Mutation#Signature,matrix/workforce/internal/initiative.Mutation#ToPlanID,matrix/workforce/internal/initiative.Mutation#ToPlanVersion,matrix/workforce/internal/initiative.Mutation.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/initiative.Invalidation,matrix/workforce/internal/initiative.MutationKind,matrix/workforce/internal/initiative.PreservedReceipt
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Compiler.signMutation,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.Store.CommitMutation,matrix/workforce/internal/initiative.Store.mutationAD,matrix/workforce/internal/initiative.Store.prepareMutation,matrix/workforce/internal/initiative.VerifyMutation,matrix/workforce/internal/initiative.mutationSigningBytes
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.Mutation#AuthorityRef kind=field
@@ -1239,91 +1384,126 @@ NODE id=matrix/workforce/internal/initiative.Mutation.Validate kind=method
   digest=b3:99f8bcfdef356eadfc6620a74d043d3199cf5d536a9bb9864d9430afe431da59 file=workforce/internal/initiative/mutation.go range=85:112 lang=go exported=true byte_range=3112:4423
   sig=func (value Mutation) Validate() error
 EDGES
+  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/initiative.Invalidation.Validate,matrix/workforce/internal/initiative.validReceiptSet,matrix/workforce/internal/initiative.validRecordSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC
+  references=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/initiative.Invalidation.Validate,matrix/workforce/internal/initiative.Mutation,matrix/workforce/internal/initiative.MutationCancel,matrix/workforce/internal/initiative.MutationInvalidate,matrix/workforce/internal/initiative.MutationReplan,matrix/workforce/internal/initiative.MutationSchemaVersion,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.preserved,matrix/workforce/internal/initiative.previous,matrix/workforce/internal/initiative.validReceiptSet,matrix/workforce/internal/initiative.validRecordSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.Mutation
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.Compiler.signMutation,matrix/workforce/internal/initiative.VerifyMutation
+  ^references=matrix/workforce/internal/initiative.Compiler.signMutation,matrix/workforce/internal/initiative.VerifyMutation
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.MutationCancel kind=const
   digest=b3:22a4697279085db6f75581d98001f8f95f23c449ec5c5178b92725ae3d96f8f3 file=workforce/internal/initiative/mutation.go range=57:57 lang=go exported=true byte_range=1711:1753
   sig=initiative.MutationKind
 EDGES
+  references=matrix/workforce/internal/initiative.MutationKind
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.Store.CommitMutation
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.MutationInvalidate kind=const
   digest=b3:59aa50c071098ae572ace66ade7dbfdc85695b4c6c65ad041777401a6c2ecb92 file=workforce/internal/initiative/mutation.go range=58:58 lang=go exported=true byte_range=1755:1801
   sig=initiative.MutationKind
 EDGES
+  references=matrix/workforce/internal/initiative.MutationKind
+  ^references=matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.Store.CommitMutation
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.MutationKind kind=type
   digest=b3:f7c7d2b6315cc3705fdb08dc254663678c1db78e312974edbfd8450bb4e805b9 file=workforce/internal/initiative/mutation.go range=53:53 lang=go exported=true byte_range=1632:1656
   sig=type MutationKind string
 EDGES
+  ^references=matrix/workforce/internal/initiative.Mutation,matrix/workforce/internal/initiative.MutationCancel,matrix/workforce/internal/initiative.MutationInvalidate,matrix/workforce/internal/initiative.MutationReplan
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.MutationReplan kind=const
   digest=b3:6787b3f178fb1ec818e34390e2f6f616ef0f784566a656d5f8069ecbb195f5db file=workforce/internal/initiative/mutation.go range=56:56 lang=go exported=true byte_range=1667:1709
   sig=initiative.MutationKind
 EDGES
+  references=matrix/workforce/internal/initiative.MutationKind
+  ^references=matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Mutation.Validate
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.MutationSchemaVersion kind=const
   digest=b3:85878075562a531c243351f8c8075086d00853e644c504cc95119153e5af4244 file=workforce/internal/initiative/types.go range=21:21 lang=go exported=true byte_range=567:632
   sig=untyped string
 EDGES
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.Store.mutationAD
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NewCompiler kind=func
   digest=b3:a47983a6fcef7ef879263f8a6dd3887e3d9dc216986da358e2dfb46dc33acd15 file=workforce/internal/initiative/compiler.go range=35:49 lang=go exported=true byte_range=728:1279
   sig=func NewCompiler(\n	founderKeyID string,\n	founderPublicKey ed25519.PublicKey,\n	issuerPrivateKey ed25519.PrivateKey,\n) (*Compiler, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.validToken
+  references=matrix/workforce/internal/initiative.Compiler,matrix/workforce/internal/initiative.founderKeyID,matrix/workforce/internal/initiative.founderPublicKey,matrix/workforce/internal/initiative.issuerPrivateKey,matrix/workforce/internal/initiative.validToken
+  ^calls=matrix/workforce/cmd/workforced.runContext
+  ^references=matrix/workforce/cmd/workforced.runContext
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.NewDispatcher kind=func
   digest=b3:2c60dfe9b6de2177a81124093c4de45bd03af5d67cb13a71528c8e47470680e8 file=workforce/internal/initiative/dispatch.go range=37:51 lang=go exported=true byte_range=820:1325
   sig=func NewDispatcher(\n	pool *pgxpool.Pool,\n	schedulerStore *scheduler.Store,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	now func() time.Time,\n) (*Dispatcher, error)
 EDGES
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/initiative.Dispatcher,matrix/workforce/internal/initiative.now,matrix/workforce/internal/initiative.organizationID,matrix/workforce/internal/initiative.pool,matrix/workforce/internal/initiative.schedulerStore,matrix/workforce/internal/initiative.tenantID,matrix/workforce/scheduler.Store
+  ^calls=matrix/workforce/cmd/workforced.runContext
+  ^references=matrix/workforce/cmd/workforced.runContext
   ^defines=matrix/workforce/internal/initiative/dispatch.go
 
 NODE id=matrix/workforce/internal/initiative.NewStore kind=func
   digest=b3:32d722fa2dd83dfbdffc97466934dbe57dc36a92cd09834b1fe1551ecbd28c21 file=workforce/internal/initiative/store.go range=46:64 lang=go exported=true byte_range=812:1426
   sig=func NewStore(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	now func() time.Time,\n) (*Store, error)
 EDGES
+  calls=matrix/vault.UserVault.User
+  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.now,matrix/workforce/internal/initiative.organizationID,matrix/workforce/internal/initiative.pool,matrix/workforce/internal/initiative.tenantID,matrix/workforce/internal/initiative.userVault
+  ^calls=matrix/workforce/cmd/workforced.runContext
+  ^references=matrix/workforce/cmd/workforced.runContext
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.NodeApprovalGate kind=const
   digest=b3:3a45d490e3ebb5ea384216323824e10ebcf2a9646eb1719620ccde465d004f29 file=workforce/internal/initiative/types.go range=167:167 lang=go exported=true byte_range=7336:7382
   sig=initiative.NodeKind
 EDGES
+  references=matrix/workforce/internal/initiative.NodeKind
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.validateGraph
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeBranch kind=const
   digest=b3:1b862da7210934f90cca47845e43236ebb3e2ae0bd133d42a22e235785a19eb7 file=workforce/internal/initiative/types.go range=170:170 lang=go exported=true byte_range=7477:7516
   sig=initiative.NodeKind
 EDGES
+  references=matrix/workforce/internal/initiative.NodeKind
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.Successors,matrix/workforce/internal/initiative.ensureOutcomeGateClosure,matrix/workforce/internal/initiative.validateGraph
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeDecisionGate kind=const
   digest=b3:69dd1e2741e6d46399fa15438b65ab6530740cc449e2531119ea9d0685ab9730 file=workforce/internal/initiative/types.go range=165:165 lang=go exported=true byte_range=7240:7286
   sig=initiative.NodeKind
 EDGES
+  references=matrix/workforce/internal/initiative.NodeKind
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.validateGraph
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeEffectGate kind=const
   digest=b3:d633c10c954e81edebaa227c3a434eb3d202dd5d10c24a0ca65c5c06eff3e957 file=workforce/internal/initiative/types.go range=168:168 lang=go exported=true byte_range=7384:7428
   sig=initiative.NodeKind
 EDGES
+  references=matrix/workforce/internal/initiative.NodeKind
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.validateGraph
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeEvidenceGate kind=const
   digest=b3:dff2067a293968dd1d0b66bcd206014e0f78ea85d460b612c03cdf9ceb59f49b file=workforce/internal/initiative/types.go range=166:166 lang=go exported=true byte_range=7288:7334
   sig=initiative.NodeKind
 EDGES
+  references=matrix/workforce/internal/initiative.NodeKind
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.validateGraph
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeIntent kind=const
   digest=b3:0e4823558d8a8b344df65f75edb61df515b92b768d8be23c3667c70591561118 file=workforce/internal/initiative/types.go range=164:164 lang=go exported=true byte_range=7199:7238
   sig=initiative.NodeKind
 EDGES
+  references=matrix/workforce/internal/initiative.NodeKind
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeTemplate.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeKind kind=type
@@ -1331,25 +1511,32 @@ NODE id=matrix/workforce/internal/initiative.NodeKind kind=type
   sig=type NodeKind string
 EDGES
   contains=matrix/workforce/internal/initiative.NodeKind.Valid
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.NodeApprovalGate,matrix/workforce/internal/initiative.NodeBranch,matrix/workforce/internal/initiative.NodeDecisionGate,matrix/workforce/internal/initiative.NodeEffectGate,matrix/workforce/internal/initiative.NodeEvidenceGate,matrix/workforce/internal/initiative.NodeIntent,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeOutcomeGate,matrix/workforce/internal/initiative.NodeTemplate,matrix/workforce/internal/initiative.NodeTerminalCancel,matrix/workforce/internal/initiative.NodeTerminalFailure,matrix/workforce/internal/initiative.NodeTerminalSuccess,matrix/workforce/internal/initiative.NodeWorkOrder,matrix/workforce/internal/initiative.TerminalSpec.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeKind.Valid kind=method
   digest=b3:9712d9563d7f14f16709ce8d5f5db1b9ab38804a89b72a5ad2002538fc9453f6 file=workforce/internal/initiative/types.go range=176:185 lang=go exported=true byte_range=7675:7969
   sig=func (value NodeKind) Valid() bool
 EDGES
+  references=matrix/workforce/internal/initiative.NodeApprovalGate,matrix/workforce/internal/initiative.NodeBranch,matrix/workforce/internal/initiative.NodeDecisionGate,matrix/workforce/internal/initiative.NodeEffectGate,matrix/workforce/internal/initiative.NodeEvidenceGate,matrix/workforce/internal/initiative.NodeIntent,matrix/workforce/internal/initiative.NodeKind,matrix/workforce/internal/initiative.NodeOutcomeGate,matrix/workforce/internal/initiative.NodeTerminalCancel,matrix/workforce/internal/initiative.NodeTerminalFailure,matrix/workforce/internal/initiative.NodeTerminalSuccess,matrix/workforce/internal/initiative.NodeWorkOrder,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.NodeKind
+  ^calls=matrix/workforce/internal/initiative.NodeTemplate.Validate
+  ^references=matrix/workforce/internal/initiative.NodeTemplate.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeOutcomeGate kind=const
   digest=b3:20fe26f657bfcc7ae08b809e33ddd0d4e9897ef93c0942ab3895ad1c6cbb6b1a file=workforce/internal/initiative/types.go range=169:169 lang=go exported=true byte_range=7430:7475
   sig=initiative.NodeKind
 EDGES
+  references=matrix/workforce/internal/initiative.NodeKind
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.Store.insertPlanTx,matrix/workforce/internal/initiative.ensureOutcomeGateClosure,matrix/workforce/internal/initiative.validateGraph
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeState kind=type
   digest=b3:a3291d9b62a1d1e64df99fdf304c71b7752d6907878713788bff47e57d560ffc file=workforce/internal/initiative/types.go range=407:407 lang=go exported=true byte_range=15735:15756
   sig=type NodeState string
 EDGES
+  ^references=matrix/workforce/internal/initiative.CompiledNode,matrix/workforce/internal/initiative.StateCancelled,matrix/workforce/internal/initiative.StateInvalidated,matrix/workforce/internal/initiative.StatePending,matrix/workforce/internal/initiative.StatePreserved
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeTemplate kind=type
@@ -1358,6 +1545,8 @@ NODE id=matrix/workforce/internal/initiative.NodeTemplate kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.NodeTemplate#Branch,matrix/workforce/internal/initiative.NodeTemplate#Gate,matrix/workforce/internal/initiative.NodeTemplate#ID,matrix/workforce/internal/initiative.NodeTemplate#Kind,matrix/workforce/internal/initiative.NodeTemplate#Terminal,matrix/workforce/internal/initiative.NodeTemplate#Title,matrix/workforce/internal/initiative.NodeTemplate#WorkOrder,matrix/workforce/internal/initiative.NodeTemplate.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/initiative.BranchSpec,matrix/workforce/internal/initiative.GateSpec,matrix/workforce/internal/initiative.NodeKind,matrix/workforce/internal/initiative.TerminalSpec,matrix/workforce/internal/initiative.WorkOrderSpec
+  ^references=matrix/workforce/internal/initiative.Blueprint,matrix/workforce/internal/initiative.CompiledNode,matrix/workforce/internal/initiative.Compiler.compileOrder,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.compiledNodeDigest,matrix/workforce/internal/initiative.validateGraph
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeTemplate#Branch kind=field
@@ -1406,49 +1595,67 @@ NODE id=matrix/workforce/internal/initiative.NodeTemplate.Validate kind=method
   digest=b3:a1fe86cf31f71754b8c4e73966633556896f54fbb933a160bf00d496cbc75f0f file=workforce/internal/initiative/types.go range=284:327 lang=go exported=true byte_range=11306:12729
   sig=func (value NodeTemplate) Validate() error
 EDGES
+  calls=matrix/workforce/internal/initiative.BranchSpec.Validate,matrix/workforce/internal/initiative.GateSpec.Validate,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.TerminalSpec.Validate,matrix/workforce/internal/initiative.validSet,matrix/workforce/internal/initiative.validToken
+  references=matrix/workforce/internal/initiative.BranchSpec.Validate,matrix/workforce/internal/initiative.GateSpec.Validate,matrix/workforce/internal/initiative.NodeApprovalGate,matrix/workforce/internal/initiative.NodeBranch,matrix/workforce/internal/initiative.NodeDecisionGate,matrix/workforce/internal/initiative.NodeEffectGate,matrix/workforce/internal/initiative.NodeEvidenceGate,matrix/workforce/internal/initiative.NodeIntent,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeOutcomeGate,matrix/workforce/internal/initiative.NodeTemplate,matrix/workforce/internal/initiative.NodeTerminalCancel,matrix/workforce/internal/initiative.NodeTerminalFailure,matrix/workforce/internal/initiative.NodeTerminalSuccess,matrix/workforce/internal/initiative.NodeWorkOrder,matrix/workforce/internal/initiative.TerminalSpec.Validate,matrix/workforce/internal/initiative.set,matrix/workforce/internal/initiative.validSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.NodeTemplate
+  ^calls=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.validatePlanCore
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeTerminalCancel kind=const
   digest=b3:3908ffe14eab1001534e5b3b2df7cbde342badb941783114c800015aea2304cd file=workforce/internal/initiative/types.go range=173:173 lang=go exported=true byte_range=7620:7671
   sig=initiative.NodeKind
 EDGES
+  references=matrix/workforce/internal/initiative.NodeKind
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.TerminalSpec.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeTerminalFailure kind=const
   digest=b3:bbbca4971ec025b8f8293cd0247a83571ae07cf38f636705c6eb08299ae622af file=workforce/internal/initiative/types.go range=172:172 lang=go exported=true byte_range=7569:7618
   sig=initiative.NodeKind
 EDGES
+  references=matrix/workforce/internal/initiative.NodeKind
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.TerminalSpec.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeTerminalSuccess kind=const
   digest=b3:27a59244c38b534a743bb9a9a58dd8e314eee579f3f9677d8acfdae372d8905e file=workforce/internal/initiative/types.go range=171:171 lang=go exported=true byte_range=7518:7567
   sig=initiative.NodeKind
 EDGES
+  references=matrix/workforce/internal/initiative.NodeKind
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.TerminalSpec.Validate,matrix/workforce/internal/initiative.ensureOutcomeGateClosure
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.NodeWorkOrder kind=const
   digest=b3:c4599255003b283da64fae15011257a793432e46a18dc39b004707695e9eca01 file=workforce/internal/initiative/types.go range=163:163 lang=go exported=true byte_range=7154:7197
   sig=initiative.NodeKind
 EDGES
+  references=matrix/workforce/internal/initiative.NodeKind
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.NodeKind.Valid,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.validatePlanCore,matrix/workforce/internal/productexecution.Store.stageOrders
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.OutcomeExpired kind=const
   digest=b3:13b470cf6ea8fb3dea43438b213a89ef09ed4a79f14241d0b288759ccbd8aaa7 file=workforce/internal/initiative/types.go range=192:192 lang=go exported=true byte_range=8090:8130
   sig=initiative.GateOutcome
 EDGES
+  references=matrix/workforce/internal/initiative.GateOutcome
+  ^references=matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.GateOutcome.Valid
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.OutcomeFailed kind=const
   digest=b3:605c93f9dad9cab76a8272767ce54fe305d8204a359895673535aa4fe2334ef7 file=workforce/internal/initiative/types.go range=191:191 lang=go exported=true byte_range=8049:8088
   sig=initiative.GateOutcome
 EDGES
+  references=matrix/workforce/internal/initiative.GateOutcome
+  ^references=matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.GateOutcome.Valid
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.OutcomeSatisfied kind=const
   digest=b3:0afb57115b30c5ff8496fff2ebad271cc0bfd7f663238157be6e617694f644c2 file=workforce/internal/initiative/types.go range=190:190 lang=go exported=true byte_range=8005:8047
   sig=initiative.GateOutcome
 EDGES
+  references=matrix/workforce/internal/initiative.GateOutcome
+  ^references=matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.GateOutcome.Valid
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.Plan kind=type
@@ -1456,6 +1663,8 @@ NODE id=matrix/workforce/internal/initiative.Plan kind=type
   sig=type Plan struct {\n	SchemaVersion		string				`json:"schema_version"`\n	ID			string				`json:"plan_id"`\n	Version			uint64				`json:"version"`\n	OrganizationID		contracts.OrganizationID	`json:"organization_id"`\n	InitiativeID		portfolio.InitiativeID		`json:"initiative_id"`\n	InitiativeVersion	uint64				`json:"initiative_version"`\n	BlueprintID		string				`json:"blueprint_id"`\n	BlueprintVersion	uint64				`json:"blueprint_version"`\n	Authority		AuthorityBinding		`json:"authority"`\n	Nodes			[]CompiledNode			`json:"nodes"`\n	Edges			[]Edge				`json:"edges"`\n	TopologicalOrder	[]string			`json:"topological_order"`\n	CapitalMicrounits	uint64				`json:"capital_microunits"`\n	RiskMicrounits		uint64				`json:"risk_microunits"`\n	CompiledAt		time.Time			`json:"compiled_at"`\n	Hash			contracts.ContentHash		`json:"hash"`\n	Signature		contracts.Signature		`json:"signature"`\n}
 EDGES
   contains=matrix/workforce/internal/initiative.Plan#Authority,matrix/workforce/internal/initiative.Plan#BlueprintID,matrix/workforce/internal/initiative.Plan#BlueprintVersion,matrix/workforce/internal/initiative.Plan#CapitalMicrounits,matrix/workforce/internal/initiative.Plan#CompiledAt,matrix/workforce/internal/initiative.Plan#Edges,matrix/workforce/internal/initiative.Plan#Hash,matrix/workforce/internal/initiative.Plan#ID,matrix/workforce/internal/initiative.Plan#InitiativeID,matrix/workforce/internal/initiative.Plan#InitiativeVersion,matrix/workforce/internal/initiative.Plan#Nodes,matrix/workforce/internal/initiative.Plan#OrganizationID,matrix/workforce/internal/initiative.Plan#RiskMicrounits,matrix/workforce/internal/initiative.Plan#SchemaVersion,matrix/workforce/internal/initiative.Plan#Signature,matrix/workforce/internal/initiative.Plan#TopologicalOrder,matrix/workforce/internal/initiative.Plan#Version
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/initiative.AuthorityBinding,matrix/workforce/internal/initiative.CompiledNode,matrix/workforce/internal/initiative.Edge,matrix/workforce/internal/portfolio.InitiativeID
+  ^references=matrix/workforce/internal/companyruntime.FundingResult,matrix/workforce/internal/initiative.CancelRequest,matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.CurrentPlan,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.Dispatcher.dispatch,matrix/workforce/internal/initiative.Dispatcher.gateOutcome,matrix/workforce/internal/initiative.Dispatcher.nodeOutcome,matrix/workforce/internal/initiative.Dispatcher.ready,matrix/workforce/internal/initiative.ExactAuthoritySummary,matrix/workforce/internal/initiative.ReplanRequest,matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation,matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/initiative.Store.findPlanTx,matrix/workforce/internal/initiative.Store.insertCompanyOrderTx,matrix/workforce/internal/initiative.Store.insertPlanTx,matrix/workforce/internal/initiative.Store.planAD,matrix/workforce/internal/initiative.Store.preparePlan,matrix/workforce/internal/initiative.Successors,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.commitResult,matrix/workforce/internal/initiative.ensureOutcomeGateClosure,matrix/workforce/internal/initiative.planSigningBytes,matrix/workforce/internal/initiative.reachableWithout,matrix/workforce/internal/initiative.validatePlanCore,matrix/workforce/internal/productexecution.Store.stageOrders
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.Plan#Authority kind=field
@@ -1564,6 +1773,7 @@ NODE id=matrix/workforce/internal/initiative.PlanSchemaVersion kind=const
   digest=b3:c8830704d63a7baece4838fcef8a5a6df1ce5b6802a1b2bbc31ea5e08c14b4b7 file=workforce/internal/initiative/types.go range=20:20 lang=go exported=true byte_range=509:565
   sig=untyped string
 EDGES
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Store.planAD,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.PreservedReceipt kind=type
@@ -1571,6 +1781,8 @@ NODE id=matrix/workforce/internal/initiative.PreservedReceipt kind=type
   sig=type PreservedReceipt struct {\n	NodeID		string			`json:"node_id"`\n	Receipts	[]contracts.ReceiptID	`json:"receipts"`\n}
 EDGES
   contains=matrix/workforce/internal/initiative.PreservedReceipt#NodeID,matrix/workforce/internal/initiative.PreservedReceipt#Receipts
+  references=matrix/workforce/internal/contracts.ReceiptID
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Mutation
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.PreservedReceipt#NodeID kind=field
@@ -1590,6 +1802,8 @@ NODE id=matrix/workforce/internal/initiative.ReplanRequest kind=type
   sig=type ReplanRequest struct {\n	Previous	Plan\n	Next		CompileInput\n	Completions	[]Completion\n	Invalidations	[]Invalidation\n	Reason		string\n	AuthorityRef	string\n	Evidence	[]companystate.RecordReference\n	RequestedAt	time.Time\n}
 EDGES
   contains=matrix/workforce/internal/initiative.ReplanRequest#AuthorityRef,matrix/workforce/internal/initiative.ReplanRequest#Completions,matrix/workforce/internal/initiative.ReplanRequest#Evidence,matrix/workforce/internal/initiative.ReplanRequest#Invalidations,matrix/workforce/internal/initiative.ReplanRequest#Next,matrix/workforce/internal/initiative.ReplanRequest#Previous,matrix/workforce/internal/initiative.ReplanRequest#Reason,matrix/workforce/internal/initiative.ReplanRequest#RequestedAt
+  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/initiative.CompileInput,matrix/workforce/internal/initiative.Completion,matrix/workforce/internal/initiative.Invalidation,matrix/workforce/internal/initiative.Plan
+  ^references=matrix/workforce/internal/initiative.Compiler.Replan
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.ReplanRequest#AuthorityRef kind=field
@@ -1645,6 +1859,8 @@ NODE id=matrix/workforce/internal/initiative.ScheduledSuccessor kind=type
   sig=type ScheduledSuccessor struct {\n	NodeID		string			`json:"node_id"`\n	Schedule	SuccessorSchedule	`json:"schedule"`\n}
 EDGES
   contains=matrix/workforce/internal/initiative.ScheduledSuccessor#NodeID,matrix/workforce/internal/initiative.ScheduledSuccessor#Schedule
+  references=matrix/workforce/internal/initiative.SuccessorSchedule
+  ^references=matrix/workforce/internal/initiative.Successors
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.ScheduledSuccessor#NodeID kind=field
@@ -1663,36 +1879,49 @@ NODE id=matrix/workforce/internal/initiative.SignInitiative kind=func
   digest=b3:5ebca7bf1153a7929558b2076b5f0aae2f8d1c9b77b8b4be07d1fc6251e76307 file=workforce/internal/initiative/compiler.go range=61:94 lang=go exported=true byte_range=1554:2969
   sig=func SignInitiative(\n	value *Initiative,\n	authority workorder.CompanyAuthority,\n	privateKey ed25519.PrivateKey,\n) error
 EDGES
+  calls=matrix/workforce/internal/initiative.Initiative.Validate,matrix/workforce/internal/initiative.initiativeSigningBytes,matrix/workforce/internal/initiative.issuerKey,matrix/workforce/internal/workorder.CompanyAuthority.Validate
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/initiative.ErrAuthority,matrix/workforce/internal/initiative.Initiative,matrix/workforce/internal/initiative.Initiative.Validate,matrix/workforce/internal/initiative.authority,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.initiativeSigningBytes,matrix/workforce/internal/initiative.issuerKey,matrix/workforce/internal/initiative.issuerPublicKey,matrix/workforce/internal/initiative.payload,matrix/workforce/internal/initiative.privateKey,matrix/workforce/internal/initiative.value,matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.CompanyAuthority.Validate
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.SortedEffectIdentities kind=func
   digest=b3:b405a4f9bc6b0bb9489ed6cb635d7a1a193c6dd43609792ee4ab9726378f40e2 file=workforce/internal/initiative/compiler.go range=754:758 lang=go exported=true byte_range=28349:28523
   sig=func SortedEffectIdentities(order workorder.CompanyOrder) []string
 EDGES
+  references=matrix/workforce/internal/initiative.order,matrix/workforce/internal/initiative.values,matrix/workforce/internal/workorder.CompanyOrder
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.StateCancelled kind=const
   digest=b3:f10b03dbd547d09c3243290049f37c374e5602c39f8e83cc425e832b1e8e1853 file=workforce/internal/initiative/types.go range=413:413 lang=go exported=true byte_range=15893:15933
   sig=initiative.NodeState
 EDGES
+  references=matrix/workforce/internal/initiative.NodeState
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.StateInvalidated kind=const
   digest=b3:91e3da1fc6cf9286e30104e8c741e4ac9b7ca79c74e4bd1908a4cac0c19bb4b9 file=workforce/internal/initiative/types.go range=412:412 lang=go exported=true byte_range=15849:15891
   sig=initiative.NodeState
 EDGES
+  references=matrix/workforce/internal/initiative.NodeState
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.StatePending kind=const
   digest=b3:21020aa975b96b50fdecd33bc1355c9d69e868971220710d253c2e13f15425e4 file=workforce/internal/initiative/types.go range=410:410 lang=go exported=true byte_range=15767:15805
   sig=initiative.NodeState
 EDGES
+  references=matrix/workforce/internal/initiative.NodeState
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.validatePlanCore,matrix/workforce/internal/productexecution.Store.stageOrders
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.StatePreserved kind=const
   digest=b3:5af1ad8073b4c7a341856215373ccb3f40b49f1b4d4cdbe6a08c3bbf248aa9d7 file=workforce/internal/initiative/types.go range=411:411 lang=go exported=true byte_range=15807:15847
   sig=initiative.NodeState
 EDGES
+  references=matrix/workforce/internal/initiative.NodeState
+  ^references=matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.Store kind=type
@@ -1700,6 +1929,8 @@ NODE id=matrix/workforce/internal/initiative.Store kind=type
   sig=type Store struct {\n	pool		*pgxpool.Pool\n	vault		*vault.UserVault\n	tenantID	string\n	organizationID	contracts.OrganizationID\n	now		func() time.Time\n}
 EDGES
   contains=matrix/workforce/internal/initiative.Store#now,matrix/workforce/internal/initiative.Store#organizationID,matrix/workforce/internal/initiative.Store#pool,matrix/workforce/internal/initiative.Store#tenantID,matrix/workforce/internal/initiative.Store#vault,matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation,matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/initiative.Store.currentTime,matrix/workforce/internal/initiative.Store.findPlanTx,matrix/workforce/internal/initiative.Store.insertCompanyOrderTx,matrix/workforce/internal/initiative.Store.insertPlanTx,matrix/workforce/internal/initiative.Store.lockInitiative,matrix/workforce/internal/initiative.Store.mutationAD,matrix/workforce/internal/initiative.Store.orderAD,matrix/workforce/internal/initiative.Store.planAD,matrix/workforce/internal/initiative.Store.prepareMutation,matrix/workforce/internal/initiative.Store.preparePlan
+  references=matrix/vault.UserVault,matrix/workforce/internal/contracts.OrganizationID
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.NewCoordinator,matrix/workforce/internal/companyruntime.NewCoordinatorWithDispatcher,matrix/workforce/internal/initiative.NewStore,matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation,matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/initiative.Store.currentTime,matrix/workforce/internal/initiative.Store.findPlanTx,matrix/workforce/internal/initiative.Store.insertCompanyOrderTx,matrix/workforce/internal/initiative.Store.insertPlanTx,matrix/workforce/internal/initiative.Store.lockInitiative,matrix/workforce/internal/initiative.Store.mutationAD,matrix/workforce/internal/initiative.Store.orderAD,matrix/workforce/internal/initiative.Store.planAD,matrix/workforce/internal/initiative.Store.prepareMutation,matrix/workforce/internal/initiative.Store.preparePlan,matrix/workforce/internal/productexecution.NewStore,matrix/workforce/internal/productexecution.Store
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.Store#now kind=field
@@ -1736,13 +1967,19 @@ NODE id=matrix/workforce/internal/initiative.Store.Commit kind=method
   digest=b3:0aa40335924ead3f6b67a9db88515ac41710cd4effc4bd9aa3fdd5a4794c6531 file=workforce/internal/initiative/store.go range=110:169 lang=go exported=true byte_range=3402:5584
   sig=func (store *Store) Commit(\n	ctx context.Context,\n	plan Plan,\n	authority workorder.CompanyAuthority,\n) (CommitResult, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.Store.currentTime,matrix/workforce/internal/initiative.Store.findPlanTx,matrix/workforce/internal/initiative.Store.insertPlanTx,matrix/workforce/internal/initiative.Store.lockInitiative,matrix/workforce/internal/initiative.Store.preparePlan,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.commitResult
+  references=matrix/workforce/internal/initiative.CommitResult,matrix/workforce/internal/initiative.ErrStoreConflict,matrix/workforce/internal/initiative.ErrStoreState,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.Store.currentTime,matrix/workforce/internal/initiative.Store.findPlanTx,matrix/workforce/internal/initiative.Store.insertPlanTx,matrix/workforce/internal/initiative.Store.lockInitiative,matrix/workforce/internal/initiative.Store.preparePlan,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.authority,matrix/workforce/internal/initiative.commitResult,matrix/workforce/internal/initiative.ctx,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.found,matrix/workforce/internal/initiative.headCount,matrix/workforce/internal/initiative.now,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.prepared,matrix/workforce/internal/initiative.result,matrix/workforce/internal/initiative.store,matrix/workforce/internal/initiative.tx,matrix/workforce/internal/workorder.CompanyAuthority
   ^contains=matrix/workforce/internal/initiative.Store
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.Store.CommitMutation kind=method
   digest=b3:7d440c7e6599b4c88dc872d935e4b2358ed97574a42564578eb15180574b8208 file=workforce/internal/initiative/store.go range=171:307 lang=go exported=true byte_range=5586:11310
   sig=func (store *Store) CommitMutation(\n	ctx context.Context,\n	next Plan,\n	mutation Mutation,\n	authority workorder.CompanyAuthority,\n) (CommitResult, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.Store.currentTime,matrix/workforce/internal/initiative.Store.findPlanTx,matrix/workforce/internal/initiative.Store.insertPlanTx,matrix/workforce/internal/initiative.Store.lockInitiative,matrix/workforce/internal/initiative.Store.prepareMutation,matrix/workforce/internal/initiative.Store.preparePlan,matrix/workforce/internal/initiative.VerifyMutation,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.commitResult
+  references=matrix/workforce/internal/initiative.CommitResult,matrix/workforce/internal/initiative.ErrStoreConflict,matrix/workforce/internal/initiative.ErrStoreState,matrix/workforce/internal/initiative.Mutation,matrix/workforce/internal/initiative.MutationCancel,matrix/workforce/internal/initiative.MutationInvalidate,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.Store.currentTime,matrix/workforce/internal/initiative.Store.findPlanTx,matrix/workforce/internal/initiative.Store.insertPlanTx,matrix/workforce/internal/initiative.Store.lockInitiative,matrix/workforce/internal/initiative.Store.prepareMutation,matrix/workforce/internal/initiative.Store.preparePlan,matrix/workforce/internal/initiative.VerifyMutation,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.authority,matrix/workforce/internal/initiative.command,matrix/workforce/internal/initiative.commitResult,matrix/workforce/internal/initiative.ctx,matrix/workforce/internal/initiative.currentPlanID,matrix/workforce/internal/initiative.currentState,matrix/workforce/internal/initiative.currentVersion,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.existingMutationHash,matrix/workforce/internal/initiative.findErr,matrix/workforce/internal/initiative.found,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.invalidation,matrix/workforce/internal/initiative.mutation,matrix/workforce/internal/initiative.next,matrix/workforce/internal/initiative.nextState,matrix/workforce/internal/initiative.now,matrix/workforce/internal/initiative.preparedMutation,matrix/workforce/internal/initiative.preparedPlan,matrix/workforce/internal/initiative.preserved,matrix/workforce/internal/initiative.receiptID,matrix/workforce/internal/initiative.recordIDs,matrix/workforce/internal/initiative.result,matrix/workforce/internal/initiative.store,matrix/workforce/internal/initiative.tx,matrix/workforce/internal/workorder.CompanyAuthority
   ^contains=matrix/workforce/internal/initiative.Store
   ^defines=matrix/workforce/internal/initiative/store.go
 
@@ -1750,77 +1987,117 @@ NODE id=matrix/workforce/internal/initiative.Store.LoadCurrent kind=method
   digest=b3:e18e746d164fc01309c551977e0e322852afe753c8625c3c6b5f8aaab6c39d2f file=workforce/internal/initiative/store.go range=66:108 lang=go exported=true byte_range=1428:3400
   sig=func (store *Store) LoadCurrent(\n	ctx context.Context,\n	initiativeID string,\n	authority workorder.CompanyAuthority,\n) (CurrentPlan, error)
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/initiative.Store.planAD,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.hashBytes,matrix/workforce/internal/initiative.validToken
+  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/initiative.CurrentPlan,matrix/workforce/internal/initiative.ErrStoreState,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.Store.planAD,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.authority,matrix/workforce/internal/initiative.body,matrix/workforce/internal/initiative.canonical,matrix/workforce/internal/initiative.canonicalHash,matrix/workforce/internal/initiative.canonicalValue,matrix/workforce/internal/initiative.ctx,matrix/workforce/internal/initiative.decoded,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.hashBytes,matrix/workforce/internal/initiative.initiativeID,matrix/workforce/internal/initiative.planID,matrix/workforce/internal/initiative.sealed,matrix/workforce/internal/initiative.state,matrix/workforce/internal/initiative.store,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.version,matrix/workforce/internal/portfolio.InitiativeID,matrix/workforce/internal/workorder.CompanyAuthority
   ^contains=matrix/workforce/internal/initiative.Store
+  ^calls=matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/productexecution.Store.Start,matrix/workforce/internal/productexecution.Store.currentStageOrder
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/productexecution.Store.Start,matrix/workforce/internal/productexecution.Store.currentStageOrder
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.Store.currentTime kind=method
   digest=b3:5626129aacbf68a4bb5b3adb1a24f9c71a058cf10bd035bb0c2e1f7f735bfb85 file=workforce/internal/initiative/store.go range=536:542 lang=go exported=false byte_range=20757:20957
   sig=func (store *Store) currentTime() (time.Time, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.validUTC
+  references=matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.now,matrix/workforce/internal/initiative.store,matrix/workforce/internal/initiative.validUTC
   ^contains=matrix/workforce/internal/initiative.Store
+  ^calls=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation
+  ^references=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.Store.findPlanTx kind=method
   digest=b3:1d0973bf7375004d6020a6a115ed63a4e202ed68a6a6865ef683db3d1356d798 file=workforce/internal/initiative/store.go range=489:512 lang=go exported=false byte_range=19240:20055
   sig=func (store *Store) findPlanTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	plan Plan,\n	canonicalHash string,\n) (CommitResult, bool, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.commitResult
+  references=matrix/workforce/internal/initiative.CommitResult,matrix/workforce/internal/initiative.ErrStoreConflict,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.canonicalHash,matrix/workforce/internal/initiative.commitResult,matrix/workforce/internal/initiative.ctx,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.existingHash,matrix/workforce/internal/initiative.existingPlanID,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.store,matrix/workforce/internal/initiative.tx
   ^contains=matrix/workforce/internal/initiative.Store
+  ^calls=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation
+  ^references=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.Store.insertCompanyOrderTx kind=method
   digest=b3:4afd8f8420e0c9e7a4e3809681571213217127110ef882a2a00349719e565ce7 file=workforce/internal/initiative/store.go range=412:487 lang=go exported=false byte_range=15632:19238
   sig=func (store *Store) insertCompanyOrderTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	plan Plan,\n	node CompiledNode,\n	now time.Time,\n) error
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.Store.orderAD,matrix/workforce/internal/initiative.hashBytes
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.CompiledNode,matrix/workforce/internal/initiative.ErrStoreConflict,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.Store.orderAD,matrix/workforce/internal/initiative.binding,matrix/workforce/internal/initiative.canonical,matrix/workforce/internal/initiative.command,matrix/workforce/internal/initiative.ctx,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.existingInitiative,matrix/workforce/internal/initiative.hashBytes,matrix/workforce/internal/initiative.identity,matrix/workforce/internal/initiative.node,matrix/workforce/internal/initiative.now,matrix/workforce/internal/initiative.order,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.sealed,matrix/workforce/internal/initiative.store,matrix/workforce/internal/initiative.tx
   ^contains=matrix/workforce/internal/initiative.Store
+  ^calls=matrix/workforce/internal/initiative.Store.insertPlanTx
+  ^references=matrix/workforce/internal/initiative.Store.insertPlanTx
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.Store.insertPlanTx kind=method
   digest=b3:bcf3794561cde67bc3c900024241061239e48b2cb4124f63fea1203dfd2960c8 file=workforce/internal/initiative/store.go range=338:410 lang=go exported=false byte_range=12377:15630
   sig=func (store *Store) insertPlanTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	plan Plan,\n	prepared preparedRecord,\n	now time.Time,\n) error
 EDGES
+  calls=matrix/workforce/internal/initiative.Store.insertCompanyOrderTx
+  references=matrix/workforce/internal/initiative.NodeOutcomeGate,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.Store.insertCompanyOrderTx,matrix/workforce/internal/initiative.ctx,matrix/workforce/internal/initiative.edge,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.node,matrix/workforce/internal/initiative.now,matrix/workforce/internal/initiative.outcome,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.prepared,matrix/workforce/internal/initiative.preparedRecord,matrix/workforce/internal/initiative.store,matrix/workforce/internal/initiative.tx
   ^contains=matrix/workforce/internal/initiative.Store
+  ^calls=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation
+  ^references=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.Store.lockInitiative kind=method
   digest=b3:e6f15b083657cec2a1b7db6201a3dc6fc0e80ed0937f6d366dea9d88e43623ea file=workforce/internal/initiative/store.go range=527:534 lang=go exported=false byte_range=20408:20755
   sig=func (store *Store) lockInitiative(ctx context.Context, tx pgx.Tx, initiativeID string) error
 EDGES
+  references=matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.ctx,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.initiativeID,matrix/workforce/internal/initiative.store,matrix/workforce/internal/initiative.tx
   ^contains=matrix/workforce/internal/initiative.Store
+  ^calls=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation
+  ^references=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.Store.mutationAD kind=method
   digest=b3:f346777faef2e46259aa25d5f333670f3d1b0aedf622338b9ba6cf537dd0a854 file=workforce/internal/initiative/store.go range=552:558 lang=go exported=false byte_range=21219:21461
   sig=func (store *Store) mutationAD(mutation Mutation) vault.AD
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/initiative.Mutation,matrix/workforce/internal/initiative.MutationSchemaVersion,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.mutation,matrix/workforce/internal/initiative.store
   ^contains=matrix/workforce/internal/initiative.Store
+  ^calls=matrix/workforce/internal/initiative.Store.prepareMutation
+  ^references=matrix/workforce/internal/initiative.Store.prepareMutation
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.Store.orderAD kind=method
   digest=b3:8efc57d8c6fc0b0e345bff6f45e1c56bde180afaa539c555c16dc1762093dc0c file=workforce/internal/initiative/store.go range=560:566 lang=go exported=false byte_range=21463:21721
   sig=func (store *Store) orderAD(order workorder.CompanyOrder) vault.AD
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.order,matrix/workforce/internal/initiative.store,matrix/workforce/internal/workorder.CompanyOrder,matrix/workforce/internal/workorder.CompanyOrderSchemaVersion
   ^contains=matrix/workforce/internal/initiative.Store
+  ^calls=matrix/workforce/internal/initiative.Store.insertCompanyOrderTx
+  ^references=matrix/workforce/internal/initiative.Store.insertCompanyOrderTx
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.Store.planAD kind=method
   digest=b3:538b8c048cda7cad06029f9b316eab6b919eb5fefb7b015199d370c556fe7a61 file=workforce/internal/initiative/store.go range=544:550 lang=go exported=false byte_range=20959:21217
   sig=func (store *Store) planAD(plan Plan) vault.AD
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.PlanSchemaVersion,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.store
   ^contains=matrix/workforce/internal/initiative.Store
+  ^calls=matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/initiative.Store.preparePlan
+  ^references=matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/initiative.Store.preparePlan
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.Store.prepareMutation kind=method
   digest=b3:c89718b6972135d6381cc98880d3cf52b6c82772d084acd892eb6243bd0bf500 file=workforce/internal/initiative/store.go range=326:336 lang=go exported=false byte_range=11881:12375
   sig=func (store *Store) prepareMutation(mutation Mutation) (preparedRecord, error)
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.Store.mutationAD,matrix/workforce/internal/initiative.hashBytes
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.Mutation,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.Store.mutationAD,matrix/workforce/internal/initiative.canonical,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.hashBytes,matrix/workforce/internal/initiative.mutation,matrix/workforce/internal/initiative.preparedRecord,matrix/workforce/internal/initiative.sealed,matrix/workforce/internal/initiative.store
   ^contains=matrix/workforce/internal/initiative.Store
+  ^calls=matrix/workforce/internal/initiative.Store.CommitMutation
+  ^references=matrix/workforce/internal/initiative.Store.CommitMutation
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.Store.preparePlan kind=method
   digest=b3:d9a81cf4b439fb2b4448c88511feb25054ef9b6fc33206582bc99f49aa6ee56c file=workforce/internal/initiative/store.go range=314:324 lang=go exported=false byte_range=11388:11879
   sig=func (store *Store) preparePlan(plan Plan) (preparedRecord, error)
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.Store.planAD,matrix/workforce/internal/initiative.hashBytes
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.Store,matrix/workforce/internal/initiative.Store.planAD,matrix/workforce/internal/initiative.canonical,matrix/workforce/internal/initiative.canonicalValue,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.hashBytes,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.preparedRecord,matrix/workforce/internal/initiative.sealed,matrix/workforce/internal/initiative.store
   ^contains=matrix/workforce/internal/initiative.Store
+  ^calls=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation
+  ^references=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.SuccessorSchedule kind=type
@@ -1829,6 +2106,7 @@ NODE id=matrix/workforce/internal/initiative.SuccessorSchedule kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.SuccessorSchedule#Deadline,matrix/workforce/internal/initiative.SuccessorSchedule#NotBefore,matrix/workforce/internal/initiative.SuccessorSchedule#PriorityDelta,matrix/workforce/internal/initiative.SuccessorSchedule.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  ^references=matrix/workforce/internal/initiative.Edge,matrix/workforce/internal/initiative.ScheduledSuccessor,matrix/workforce/internal/initiative.SuccessorSchedule.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.SuccessorSchedule#Deadline kind=field
@@ -1853,13 +2131,19 @@ NODE id=matrix/workforce/internal/initiative.SuccessorSchedule.Validate kind=met
   digest=b3:5430f14ccf31744fd28e7420775294ead93a9066202f5766526dabf607e5d1f8 file=workforce/internal/initiative/types.go range=335:342 lang=go exported=true byte_range=12903:13203
   sig=func (value SuccessorSchedule) Validate() error
 EDGES
+  calls=matrix/workforce/internal/initiative.validUTC
+  references=matrix/workforce/internal/initiative.SuccessorSchedule,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.SuccessorSchedule
+  ^calls=matrix/workforce/internal/initiative.Edge.Validate
+  ^references=matrix/workforce/internal/initiative.Edge.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.Successors kind=func
   digest=b3:f1b322530e8ac818591433eae502606003cd87af15fea3c48641302f64afbe25 file=workforce/internal/initiative/mutation.go range=303:339 lang=go exported=true byte_range=12295:13876
   sig=func Successors(plan Plan, completedNodeID string, result *GateResult, at time.Time) ([]ScheduledSuccessor, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.GateOutcome.Valid,matrix/workforce/internal/initiative.findCompiledNode,matrix/workforce/internal/initiative.validRecordSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC
+  references=matrix/workforce/internal/initiative.GateOutcome.Valid,matrix/workforce/internal/initiative.GateResult,matrix/workforce/internal/initiative.NodeBranch,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.ScheduledSuccessor,matrix/workforce/internal/initiative.at,matrix/workforce/internal/initiative.completed,matrix/workforce/internal/initiative.completedNodeID,matrix/workforce/internal/initiative.edge,matrix/workforce/internal/initiative.expectedGateID,matrix/workforce/internal/initiative.findCompiledNode,matrix/workforce/internal/initiative.left,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.result,matrix/workforce/internal/initiative.right,matrix/workforce/internal/initiative.validRecordSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/initiative.values
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.TerminalSpec kind=type
@@ -1867,6 +2151,7 @@ NODE id=matrix/workforce/internal/initiative.TerminalSpec kind=type
   sig=type TerminalSpec struct {\n	Disposition			string	`json:"disposition"`\n	RequiresBusinessOutcomes	bool	`json:"requires_business_outcomes"`\n}
 EDGES
   contains=matrix/workforce/internal/initiative.TerminalSpec#Disposition,matrix/workforce/internal/initiative.TerminalSpec#RequiresBusinessOutcomes,matrix/workforce/internal/initiative.TerminalSpec.Validate
+  ^references=matrix/workforce/internal/initiative.NodeTemplate,matrix/workforce/internal/initiative.TerminalSpec.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.TerminalSpec#Disposition kind=field
@@ -1885,13 +2170,20 @@ NODE id=matrix/workforce/internal/initiative.TerminalSpec.Validate kind=method
   digest=b3:1392e67cb79c37518ffc67a13eafe45644163ff53cbed8249922d3749dddbadd file=workforce/internal/initiative/types.go range=255:264 lang=go exported=true byte_range=10221:10627
   sig=func (value TerminalSpec) Validate(kind NodeKind) error
 EDGES
+  references=matrix/workforce/internal/initiative.NodeKind,matrix/workforce/internal/initiative.NodeTerminalCancel,matrix/workforce/internal/initiative.NodeTerminalFailure,matrix/workforce/internal/initiative.NodeTerminalSuccess,matrix/workforce/internal/initiative.TerminalSpec,matrix/workforce/internal/initiative.expected,matrix/workforce/internal/initiative.kind,matrix/workforce/internal/initiative.value
   ^contains=matrix/workforce/internal/initiative.TerminalSpec
+  ^calls=matrix/workforce/internal/initiative.NodeTemplate.Validate
+  ^references=matrix/workforce/internal/initiative.NodeTemplate.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.VerifyInitiative kind=func
   digest=b3:36647de9f9f9a2a3ed0c6d729361ba074776a0851f00f26af5b18b4b7125dd0e file=workforce/internal/initiative/compiler.go range=96:123 lang=go exported=true byte_range=2971:4232
   sig=func VerifyInitiative(value Initiative, authority workorder.CompanyAuthority) error
 EDGES
+  calls=matrix/workforce/internal/initiative.Initiative.Validate,matrix/workforce/internal/initiative.initiativeSigningBytes,matrix/workforce/internal/initiative.issuerKey,matrix/workforce/internal/workorder.CompanyAuthority.Validate
+  references=matrix/workforce/internal/initiative.ErrAuthority,matrix/workforce/internal/initiative.Initiative,matrix/workforce/internal/initiative.Initiative.Validate,matrix/workforce/internal/initiative.authority,matrix/workforce/internal/initiative.decodeErr,matrix/workforce/internal/initiative.decoded,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.initiativeSigningBytes,matrix/workforce/internal/initiative.issuerKey,matrix/workforce/internal/initiative.issuerPublicKey,matrix/workforce/internal/initiative.payload,matrix/workforce/internal/initiative.value,matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.CompanyAuthority.Validate
+  ^calls=matrix/workforce/internal/initiative.Compiler.Compile
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.VerifyMutation kind=func
@@ -1899,12 +2191,20 @@ NODE id=matrix/workforce/internal/initiative.VerifyMutation kind=func
   sig=func VerifyMutation(value Mutation, authority workorder.CompanyAuthority) error
   doc=VerifyMutation authenticates a controller-signed plan mutation against the\nexact current founder-signed issuer policy.
 EDGES
+  calls=matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.issuerKey,matrix/workforce/internal/initiative.mutationSigningBytes,matrix/workforce/internal/workorder.CompanyAuthority.Validate
+  references=matrix/workforce/internal/initiative.ErrAuthority,matrix/workforce/internal/initiative.Mutation,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.authority,matrix/workforce/internal/initiative.decoded,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.issuerKey,matrix/workforce/internal/initiative.issuerPublicKey,matrix/workforce/internal/initiative.mutationSigningBytes,matrix/workforce/internal/initiative.payload,matrix/workforce/internal/initiative.value,matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.CompanyAuthority.Validate
+  ^calls=matrix/workforce/internal/initiative.Store.CommitMutation
+  ^references=matrix/workforce/internal/initiative.Store.CommitMutation
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.VerifyPlan kind=func
   digest=b3:b6db25c2911b82c3305a8e7112c98ec70ee9cd72e66a09826127e2b956e4924c file=workforce/internal/initiative/mutation.go range=341:374 lang=go exported=true byte_range=13878:15574
   sig=func VerifyPlan(plan Plan, authority workorder.CompanyAuthority) error
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/initiative.issuerKey,matrix/workforce/internal/initiative.planSigningBytes,matrix/workforce/internal/initiative.sha256Hash,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/initiative.validatePlanCore,matrix/workforce/internal/workorder.CompanyAuthority.Validate
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/initiative.ErrAuthority,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.PlanSchemaVersion,matrix/workforce/internal/initiative.authority,matrix/workforce/internal/initiative.canonical,matrix/workforce/internal/initiative.canonicalValue,matrix/workforce/internal/initiative.decodeErr,matrix/workforce/internal/initiative.decoded,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.hashPayload,matrix/workforce/internal/initiative.issuerKey,matrix/workforce/internal/initiative.issuerPublicKey,matrix/workforce/internal/initiative.payload,matrix/workforce/internal/initiative.payloadErr,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.planSigningBytes,matrix/workforce/internal/initiative.sha256Hash,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/initiative.validatePlanCore,matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.CompanyAuthority.Validate
+  ^calls=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation,matrix/workforce/internal/initiative.Store.LoadCurrent
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation,matrix/workforce/internal/initiative.Store.LoadCurrent
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.WorkOrderSpec kind=type
@@ -1912,6 +2212,8 @@ NODE id=matrix/workforce/internal/initiative.WorkOrderSpec kind=type
   sig=type WorkOrderSpec struct {\n	Order			workorder.CompanyOrder	`json:"order"`\n	Class			string			`json:"class"`\n	CapitalMicrounits	uint64			`json:"capital_microunits"`\n	RiskMicrounits		uint64			`json:"risk_microunits"`\n	EffectIdentities	[]string		`json:"effect_identities"`\n}
 EDGES
   contains=matrix/workforce/internal/initiative.WorkOrderSpec#CapitalMicrounits,matrix/workforce/internal/initiative.WorkOrderSpec#Class,matrix/workforce/internal/initiative.WorkOrderSpec#EffectIdentities,matrix/workforce/internal/initiative.WorkOrderSpec#Order,matrix/workforce/internal/initiative.WorkOrderSpec#RiskMicrounits
+  references=matrix/workforce/internal/workorder.CompanyOrder
+  ^references=matrix/workforce/internal/initiative.NodeTemplate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.WorkOrderSpec#CapitalMicrounits kind=field
@@ -1950,6 +2252,8 @@ NODE id=matrix/workforce/internal/initiative.canonicalValue kind=type
 EDGES
   contains=matrix/workforce/internal/initiative.canonicalValue#Value,matrix/workforce/internal/initiative.canonicalValue.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/initiative.T
+  ^references=matrix/workforce/internal/initiative.CapabilityPlanHash,matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/initiative.Store.preparePlan,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.canonicalValue.Validate,matrix/workforce/internal/initiative.compiledNodeDigest,matrix/workforce/internal/initiative.planSigningBytes
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.canonicalValue#Value kind=field
@@ -1962,6 +2266,7 @@ NODE id=matrix/workforce/internal/initiative.canonicalValue.Validate kind=method
   digest=b3:055d5d5249963ba9fba7b3565ef1de2792d8a40f53dc4142e9a96d02276a34d6 file=workforce/internal/initiative/compiler.go range=546:546 lang=go exported=true byte_range=20421:20478
   sig=func (*canonicalValue[T]) Validate() error
 EDGES
+  references=matrix/workforce/internal/initiative.T,matrix/workforce/internal/initiative.canonicalValue
   ^contains=matrix/workforce/internal/initiative.canonicalValue
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
@@ -1969,66 +2274,105 @@ NODE id=matrix/workforce/internal/initiative.capabilitiesCover kind=func
   digest=b3:41f661c69da763bde031d644e18c144a1794bbdfb5dbbbe0e08d4ab2fceb7d1e file=workforce/internal/initiative/compiler.go range=505:519 lang=go exported=false byte_range=19199:19537
   sig=func capabilitiesCover(plan CapabilityPlan, departments []contracts.DepartmentKind) bool
 EDGES
+  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/initiative.CapabilityPlan,matrix/workforce/internal/initiative.covered,matrix/workforce/internal/initiative.department,matrix/workforce/internal/initiative.departments,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.requirement
+  ^calls=matrix/workforce/internal/initiative.Compiler.compileOrder
+  ^references=matrix/workforce/internal/initiative.Compiler.compileOrder
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.capabilityPlanHash kind=func
   digest=b3:59f009324ed558810a52dbd0610786eb17e36d013439e9306de10cdcc96c8e57 file=workforce/internal/initiative/compiler.go range=538:540 lang=go exported=false byte_range=20242:20356
   sig=func capabilityPlanHash(value CapabilityPlan) (contracts.ContentHash, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.CapabilityPlanHash
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/initiative.CapabilityPlan,matrix/workforce/internal/initiative.CapabilityPlanHash,matrix/workforce/internal/initiative.value
+  ^calls=matrix/workforce/internal/initiative.Compiler.Compile
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.commitResult kind=func
   digest=b3:6cb4bd2ace68a94ca87c58fd7ead605998cafc0473301df08a56e0d6864e2b00 file=workforce/internal/initiative/store.go range=514:525 lang=go exported=false byte_range=20057:20406
   sig=func commitResult(plan Plan, deduplicated bool) CommitResult
 EDGES
+  references=matrix/workforce/internal/initiative.CommitResult,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.deduplicated,matrix/workforce/internal/initiative.node,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.workOrderIDs
+  ^calls=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation,matrix/workforce/internal/initiative.Store.findPlanTx
+  ^references=matrix/workforce/internal/initiative.Store.Commit,matrix/workforce/internal/initiative.Store.CommitMutation,matrix/workforce/internal/initiative.Store.findPlanTx
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.compiledNodeDigest kind=func
   digest=b3:2236908edf5e0f3f34f277e0f5823479502015306ea4069ec98cc856591ac973 file=workforce/internal/initiative/compiler.go range=548:561 lang=go exported=false byte_range=20480:21017
   sig=func compiledNodeDigest(value CompiledNode) (contracts.ContentHash, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.sha256Hash
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.CompiledNode,matrix/workforce/internal/initiative.NodeTemplate,matrix/workforce/internal/initiative.canonical,matrix/workforce/internal/initiative.canonicalValue,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.payload,matrix/workforce/internal/initiative.sha256Hash,matrix/workforce/internal/initiative.value,matrix/workforce/internal/workorder.CompanyOrder
+  ^calls=matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.validatePlanCore
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.ensureOutcomeGateClosure kind=func
   digest=b3:1ab4627a337864d2e1f8ac195ea74dc60307ddc59b4c6e73008ab4c64dc83e77 file=workforce/internal/initiative/compiler.go range=414:451 lang=go exported=false byte_range=16460:17803
   sig=func ensureOutcomeGateClosure(plan Plan, initiative Initiative) error
 EDGES
+  calls=matrix/workforce/internal/initiative.findCompiledNode,matrix/workforce/internal/initiative.reachableWithout
+  references=matrix/workforce/internal/initiative.Initiative,matrix/workforce/internal/initiative.NodeBranch,matrix/workforce/internal/initiative.NodeOutcomeGate,matrix/workforce/internal/initiative.NodeTerminalSuccess,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.duplicate,matrix/workforce/internal/initiative.edge,matrix/workforce/internal/initiative.exists,matrix/workforce/internal/initiative.findCompiledNode,matrix/workforce/internal/initiative.gate,matrix/workforce/internal/initiative.initiative,matrix/workforce/internal/initiative.node,matrix/workforce/internal/initiative.nodeID,matrix/workforce/internal/initiative.outcomeNodes,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.predecessor,matrix/workforce/internal/initiative.predicateID,matrix/workforce/internal/initiative.reachableWithout,matrix/workforce/internal/initiative.successID
+  ^calls=matrix/workforce/internal/initiative.Compiler.Compile
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.findCompiledNode kind=func
   digest=b3:9fbb7e1e80ca39762a088962ad2f9b19957bd4c48590a11b4f472154bc32d640 file=workforce/internal/initiative/compiler.go range=745:752 lang=go exported=false byte_range=28166:28347
   sig=func findCompiledNode(nodes []CompiledNode, id string) *CompiledNode
 EDGES
+  references=matrix/workforce/internal/initiative.CompiledNode,matrix/workforce/internal/initiative.id,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.nodes
+  ^calls=matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Successors,matrix/workforce/internal/initiative.ensureOutcomeGateClosure
+  ^references=matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Successors,matrix/workforce/internal/initiative.ensureOutcomeGateClosure
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.hashBytes kind=func
   digest=b3:980b4082d013c29f829633c7a28088f12ce5a53a57857fbe53fea95a042ee6ad file=workforce/internal/initiative/store.go range=568:571 lang=go exported=false byte_range=21723:21826
   sig=func hashBytes(value []byte) string
 EDGES
+  references=matrix/workforce/internal/initiative.sum,matrix/workforce/internal/initiative.value
+  ^calls=matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/initiative.Store.insertCompanyOrderTx,matrix/workforce/internal/initiative.Store.prepareMutation,matrix/workforce/internal/initiative.Store.preparePlan
+  ^references=matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/initiative.Store.insertCompanyOrderTx,matrix/workforce/internal/initiative.Store.prepareMutation,matrix/workforce/internal/initiative.Store.preparePlan
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.initiativeSigningBytes kind=func
   digest=b3:fbdfd73df16d030587aff9eb6a390d78ac4f1aba8ab1de68eef64db10390dbf1 file=workforce/internal/initiative/compiler.go range=720:723 lang=go exported=false byte_range=27286:27454
   sig=func initiativeSigningBytes(value Initiative, keyID string) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.signaturePlaceholder
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.Initiative,matrix/workforce/internal/initiative.keyID,matrix/workforce/internal/initiative.signaturePlaceholder,matrix/workforce/internal/initiative.value
+  ^calls=matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.VerifyInitiative
+  ^references=matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.VerifyInitiative
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.issuerKey kind=func
   digest=b3:6ab864de7b04a89b94fb0c7e5de0f81988aa299d256bf06f5ec3ecf8d70f936c file=workforce/internal/initiative/compiler.go range=732:738 lang=go exported=false byte_range=27675:27991
   sig=func issuerKey(policy mission.CompanyIssuerPolicy) (ed25519.PublicKey, error)
 EDGES
+  references=matrix/workforce/internal/initiative.ErrAuthority,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.policy,matrix/workforce/internal/initiative.value,matrix/workforce/internal/mission.CompanyIssuerPolicy
+  ^calls=matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.VerifyInitiative,matrix/workforce/internal/initiative.VerifyMutation,matrix/workforce/internal/initiative.VerifyPlan
+  ^references=matrix/workforce/internal/initiative.SignInitiative,matrix/workforce/internal/initiative.VerifyInitiative,matrix/workforce/internal/initiative.VerifyMutation,matrix/workforce/internal/initiative.VerifyPlan
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.mutationSigningBytes kind=func
   digest=b3:daa4ef1ad8cd07dc5fa1812448f053492f673a3c88180be0299cb6c3a52ddccd file=workforce/internal/initiative/mutation.go range=417:420 lang=go exported=false byte_range=16952:17116
   sig=func mutationSigningBytes(value Mutation, keyID string) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.signaturePlaceholder
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.Mutation,matrix/workforce/internal/initiative.keyID,matrix/workforce/internal/initiative.signaturePlaceholder,matrix/workforce/internal/initiative.value
+  ^calls=matrix/workforce/internal/initiative.Compiler.signMutation,matrix/workforce/internal/initiative.VerifyMutation
+  ^references=matrix/workforce/internal/initiative.Compiler.signMutation,matrix/workforce/internal/initiative.VerifyMutation
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.planSigningBytes kind=func
   digest=b3:a9cf3b2615a6a20c5da5a890c2d0ea078af591569c74396f2e6c0bbb76692b86 file=workforce/internal/initiative/compiler.go range=715:718 lang=go exported=false byte_range=27102:27284
   sig=func planSigningBytes(plan Plan, keyID string) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.signaturePlaceholder
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.canonicalValue,matrix/workforce/internal/initiative.keyID,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.signaturePlaceholder
+  ^calls=matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.VerifyPlan
+  ^references=matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.VerifyPlan
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.preparedRecord kind=type
@@ -2036,6 +2380,7 @@ NODE id=matrix/workforce/internal/initiative.preparedRecord kind=type
   sig=type preparedRecord struct {\n	canonicalHash	string\n	sealed		[]byte\n}
 EDGES
   contains=matrix/workforce/internal/initiative.preparedRecord#canonicalHash,matrix/workforce/internal/initiative.preparedRecord#sealed
+  ^references=matrix/workforce/internal/initiative.Store.insertPlanTx,matrix/workforce/internal/initiative.Store.prepareMutation,matrix/workforce/internal/initiative.Store.preparePlan
   ^defines=matrix/workforce/internal/initiative/store.go
 
 NODE id=matrix/workforce/internal/initiative.preparedRecord#canonicalHash kind=field
@@ -2054,90 +2399,141 @@ NODE id=matrix/workforce/internal/initiative.reachableWithout kind=func
   digest=b3:4fc5a913fbf61c97d81f0a1ea359cd0a7b076b899fe6be96742260026f45f70a file=workforce/internal/initiative/compiler.go range=453:494 lang=go exported=false byte_range=17805:18949
   sig=func reachableWithout(plan Plan, targetID, omittedID string) bool
 EDGES
+  references=matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.adjacent,matrix/workforce/internal/initiative.degree,matrix/workforce/internal/initiative.edge,matrix/workforce/internal/initiative.exists,matrix/workforce/internal/initiative.node,matrix/workforce/internal/initiative.nodeID,matrix/workforce/internal/initiative.omittedID,matrix/workforce/internal/initiative.originalIndegree,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.queue,matrix/workforce/internal/initiative.seen,matrix/workforce/internal/initiative.targetID
+  ^calls=matrix/workforce/internal/initiative.ensureOutcomeGateClosure
+  ^references=matrix/workforce/internal/initiative.ensureOutcomeGateClosure
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.reservedClass kind=func
   digest=b3:67b2e73a49a274b64e7a78e3d1d44737ac96104107d8723901ada50d2481dacc file=workforce/internal/initiative/compiler.go range=496:503 lang=go exported=false byte_range=18951:19197
   sig=func reservedClass(constitution mission.CompanyConstitution, class string) bool
 EDGES
+  references=matrix/workforce/internal/initiative.class,matrix/workforce/internal/initiative.constitution,matrix/workforce/internal/initiative.reserved,matrix/workforce/internal/mission.CompanyConstitution
+  ^calls=matrix/workforce/internal/initiative.Compiler.compileOrder
+  ^references=matrix/workforce/internal/initiative.Compiler.compileOrder
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.sameCompanyOrder kind=func
   digest=b3:e50306115c9f4c6038bfa86c0fe0df855c4c787f54bdaa03681be5e077c10f19 file=workforce/internal/initiative/compiler.go range=709:713 lang=go exported=false byte_range=26823:27100
   sig=func sameCompanyOrder(left, right workorder.CompanyOrder) bool
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/initiative.left,matrix/workforce/internal/initiative.leftCanonical,matrix/workforce/internal/initiative.leftErr,matrix/workforce/internal/initiative.right,matrix/workforce/internal/initiative.rightCanonical,matrix/workforce/internal/initiative.rightErr,matrix/workforce/internal/workorder.CompanyOrder
+  ^calls=matrix/workforce/internal/initiative.validatePlanCore
+  ^references=matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.sha256Hash kind=func
   digest=b3:d0a12e74e9a4ade1b281e27c56fda8178cb4d677415318ca704c5172db84e49a file=workforce/internal/initiative/compiler.go range=740:743 lang=go exported=false byte_range=27993:28164
   sig=func sha256Hash(value []byte) contracts.ContentHash
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/initiative.sum,matrix/workforce/internal/initiative.value
+  ^calls=matrix/workforce/internal/initiative.CapabilityPlanHash,matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.compiledNodeDigest
+  ^references=matrix/workforce/internal/initiative.CapabilityPlanHash,matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.compiledNodeDigest
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.signaturePlaceholder kind=func
   digest=b3:a2184bfd239f38ddb59593be3209b43ced51a4934efd3fc309dd1e7353c3e09c file=workforce/internal/initiative/compiler.go range=725:730 lang=go exported=false byte_range=27456:27673
   sig=func signaturePlaceholder(keyID string) contracts.Signature
 EDGES
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/initiative.keyID
+  ^calls=matrix/workforce/internal/initiative.initiativeSigningBytes,matrix/workforce/internal/initiative.mutationSigningBytes,matrix/workforce/internal/initiative.planSigningBytes
+  ^references=matrix/workforce/internal/initiative.initiativeSigningBytes,matrix/workforce/internal/initiative.mutationSigningBytes,matrix/workforce/internal/initiative.planSigningBytes
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.sortedCompletions kind=func
   digest=b3:ed13eaa3df47731154bff4999cdc0dd3042b0bc2d77887db01cc0dfb01af6099 file=workforce/internal/initiative/mutation.go range=450:459 lang=go exported=false byte_range=17733:17927
   sig=func sortedCompletions(values []Completion) bool
 EDGES
+  references=matrix/workforce/internal/initiative.Completion,matrix/workforce/internal/initiative.previous,matrix/workforce/internal/initiative.value,matrix/workforce/internal/initiative.values
+  ^calls=matrix/workforce/internal/initiative.Compiler.Replan
+  ^references=matrix/workforce/internal/initiative.Compiler.Replan
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.sortedInvalidations kind=func
   digest=b3:6a258dfe984ada5fe125e6232ca4ea07196d72d71624f1796a4563f5b1e77d94 file=workforce/internal/initiative/mutation.go range=461:470 lang=go exported=false byte_range=17929:18127
   sig=func sortedInvalidations(values []Invalidation) bool
 EDGES
+  references=matrix/workforce/internal/initiative.Invalidation,matrix/workforce/internal/initiative.previous,matrix/workforce/internal/initiative.value,matrix/workforce/internal/initiative.values
+  ^calls=matrix/workforce/internal/initiative.Compiler.Replan
+  ^references=matrix/workforce/internal/initiative.Compiler.Replan
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.validReceiptSet kind=func
   digest=b3:b63d510254c95b4b29d4a13c6fba8a7c685c8abe4de532ccb8c03e2a9cd7d9af file=workforce/internal/initiative/mutation.go range=436:448 lang=go exported=false byte_range=17431:17731
   sig=func validReceiptSet(values []contracts.ReceiptID) bool
 EDGES
+  calls=matrix/workforce/internal/initiative.validToken
+  references=matrix/workforce/internal/contracts.ReceiptID,matrix/workforce/internal/initiative.previous,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.value,matrix/workforce/internal/initiative.values
+  ^calls=matrix/workforce/internal/initiative.Completion.Validate,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.validatePlanCore
+  ^references=matrix/workforce/internal/initiative.Completion.Validate,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.validRecordSet kind=func
   digest=b3:26fffcddadaecb9c6a283e2eeda5318c9aea2eae4f4f60900a591a1123d33721 file=workforce/internal/initiative/mutation.go range=422:434 lang=go exported=false byte_range=17118:17429
   sig=func validRecordSet(values []companystate.RecordReference) bool
 EDGES
+  calls=matrix/workforce/internal/companystate.RecordReference.Validate
+  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/companystate.RecordReference.Validate,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.previous,matrix/workforce/internal/initiative.values
+  ^calls=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Invalidation.Validate,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.Successors
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Invalidation.Validate,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.Successors
   ^defines=matrix/workforce/internal/initiative/mutation.go
 
 NODE id=matrix/workforce/internal/initiative.validSet kind=func
   digest=b3:339a5d00dc82073eb7abb8f23e32613d74f90bd0ed1788a54357f236fa70ca93 file=workforce/internal/initiative/types.go range=444:454 lang=go exported=false byte_range=17418:17764
   sig=func validSet(values []string, minimum, maximum, maxBytes int) bool
 EDGES
+  references=matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.maxBytes,matrix/workforce/internal/initiative.maximum,matrix/workforce/internal/initiative.minimum,matrix/workforce/internal/initiative.value,matrix/workforce/internal/initiative.values
+  ^calls=matrix/workforce/internal/initiative.CapabilityRequirement.Validate,matrix/workforce/internal/initiative.Completion.Validate,matrix/workforce/internal/initiative.GateSpec.Validate,matrix/workforce/internal/initiative.Initiative.Validate,matrix/workforce/internal/initiative.NodeTemplate.Validate
+  ^references=matrix/workforce/internal/initiative.CapabilityRequirement.Validate,matrix/workforce/internal/initiative.Completion.Validate,matrix/workforce/internal/initiative.GateSpec.Validate,matrix/workforce/internal/initiative.Initiative.Validate,matrix/workforce/internal/initiative.NodeTemplate.Validate
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.validToken kind=func
   digest=b3:ad105833466e2bb3d047a8ec074f57a6b7e035c1ecdf91092bf39dc822421b58 file=workforce/internal/initiative/types.go range=456:469 lang=go exported=false byte_range=17766:18146
   sig=func validToken(value string) bool
 EDGES
+  references=matrix/workforce/internal/initiative.character,matrix/workforce/internal/initiative.value
+  ^calls=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.BranchSpec.Validate,matrix/workforce/internal/initiative.BusinessGate.Validate,matrix/workforce/internal/initiative.CapabilityPlan.Validate,matrix/workforce/internal/initiative.CapabilityRequirement.Validate,matrix/workforce/internal/initiative.CapitalAllocation.Validate,matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Completion.Validate,matrix/workforce/internal/initiative.Edge.Validate,matrix/workforce/internal/initiative.GateSpec.Validate,matrix/workforce/internal/initiative.Initiative.Validate,matrix/workforce/internal/initiative.Invalidation.Validate,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.NewCompiler,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/initiative.Successors,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.validReceiptSet,matrix/workforce/internal/initiative.validateCompileBindings,matrix/workforce/internal/initiative.validatePlanCore
+  ^references=matrix/workforce/internal/initiative.Blueprint.Validate,matrix/workforce/internal/initiative.BranchSpec.Validate,matrix/workforce/internal/initiative.BusinessGate.Validate,matrix/workforce/internal/initiative.CapabilityPlan.Validate,matrix/workforce/internal/initiative.CapabilityRequirement.Validate,matrix/workforce/internal/initiative.CapitalAllocation.Validate,matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Completion.Validate,matrix/workforce/internal/initiative.Edge.Validate,matrix/workforce/internal/initiative.GateSpec.Validate,matrix/workforce/internal/initiative.Initiative.Validate,matrix/workforce/internal/initiative.Invalidation.Validate,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.NewCompiler,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/initiative.Successors,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.validReceiptSet,matrix/workforce/internal/initiative.validateCompileBindings,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.validUTC kind=func
   digest=b3:a0beee5b6bbe8dd3ff5ef521bfd147e9b7a7c4ce79ae888de69822b6d3078f75 file=workforce/internal/initiative/types.go range=471:473 lang=go exported=false byte_range=18148:18243
   sig=func validUTC(value time.Time) bool
 EDGES
+  references=matrix/workforce/internal/initiative.value
+  ^calls=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Completion.Validate,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.GateSpec.Validate,matrix/workforce/internal/initiative.Initiative.Validate,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.Store.currentTime,matrix/workforce/internal/initiative.SuccessorSchedule.Validate,matrix/workforce/internal/initiative.Successors,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.validatePlanCore
+  ^references=matrix/workforce/internal/initiative.Compiler.Cancel,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/initiative.Compiler.Replan,matrix/workforce/internal/initiative.Completion.Validate,matrix/workforce/internal/initiative.Dispatcher.DispatchReady,matrix/workforce/internal/initiative.GateSpec.Validate,matrix/workforce/internal/initiative.Initiative.Validate,matrix/workforce/internal/initiative.Mutation.Validate,matrix/workforce/internal/initiative.Store.currentTime,matrix/workforce/internal/initiative.SuccessorSchedule.Validate,matrix/workforce/internal/initiative.Successors,matrix/workforce/internal/initiative.VerifyPlan,matrix/workforce/internal/initiative.validatePlanCore
   ^defines=matrix/workforce/internal/initiative/types.go
 
 NODE id=matrix/workforce/internal/initiative.validateCompileBindings kind=func
   digest=b3:ea9898e9a0086ccc3c7c767c9b3a3d11d39a7837b587af558485ed0892f7d2b8 file=workforce/internal/initiative/compiler.go range=253:277 lang=go exported=false byte_range=9325:10917
   sig=func validateCompileBindings(input CompileInput) error
 EDGES
+  calls=matrix/workforce/internal/initiative.validToken
+  references=matrix/workforce/internal/initiative.CompileInput,matrix/workforce/internal/initiative.ErrAuthority,matrix/workforce/internal/initiative.initiative,matrix/workforce/internal/initiative.initiativeID,matrix/workforce/internal/initiative.input,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/portfolio.DecisionGO
+  ^calls=matrix/workforce/internal/initiative.Compiler.Compile
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.validateGraph kind=func
   digest=b3:652bf5e40eac9c05d222504651f6ae3112233ddb92a925d7541df8b8f1add4d8 file=workforce/internal/initiative/compiler.go range=335:412 lang=go exported=false byte_range=13752:16458
   sig=func validateGraph(blueprint Blueprint, initiative Initiative) ([]string, error)
 EDGES
+  calls=matrix/workforce/internal/initiative.Edge.Validate
+  references=matrix/workforce/internal/initiative.Blueprint,matrix/workforce/internal/initiative.Edge.Validate,matrix/workforce/internal/initiative.ErrCycle,matrix/workforce/internal/initiative.Initiative,matrix/workforce/internal/initiative.NodeApprovalGate,matrix/workforce/internal/initiative.NodeBranch,matrix/workforce/internal/initiative.NodeDecisionGate,matrix/workforce/internal/initiative.NodeEffectGate,matrix/workforce/internal/initiative.NodeEvidenceGate,matrix/workforce/internal/initiative.NodeOutcomeGate,matrix/workforce/internal/initiative.NodeTemplate,matrix/workforce/internal/initiative.adjacent,matrix/workforce/internal/initiative.blueprint,matrix/workforce/internal/initiative.branch,matrix/workforce/internal/initiative.degree,matrix/workforce/internal/initiative.edge,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.from,matrix/workforce/internal/initiative.fromExists,matrix/workforce/internal/initiative.gate,matrix/workforce/internal/initiative.id,matrix/workforce/internal/initiative.indegree,matrix/workforce/internal/initiative.initiative,matrix/workforce/internal/initiative.key,matrix/workforce/internal/initiative.node,matrix/workforce/internal/initiative.nodes,matrix/workforce/internal/initiative.ok,matrix/workforce/internal/initiative.order,matrix/workforce/internal/initiative.pair,matrix/workforce/internal/initiative.ready,matrix/workforce/internal/initiative.seenEdges,matrix/workforce/internal/initiative.seenPairs,matrix/workforce/internal/initiative.successor,matrix/workforce/internal/initiative.toExists
+  ^calls=matrix/workforce/internal/initiative.Compiler.Compile
+  ^references=matrix/workforce/internal/initiative.Compiler.Compile
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative.validatePlanCore kind=func
   digest=b3:3d53e5ab113d1b488006b586163ca0457ff314026bc7a85c9b7046b793a46ff9 file=workforce/internal/initiative/compiler.go range=586:707 lang=go exported=false byte_range=21695:26821
   sig=func validatePlanCore(plan Plan) error
 EDGES
+  calls=matrix/workforce/internal/initiative.Edge.Validate,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.compiledNodeDigest,matrix/workforce/internal/initiative.sameCompanyOrder,matrix/workforce/internal/initiative.validReceiptSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/workorder.CompanyOrder.Validate
+  references=matrix/workforce/internal/initiative.Edge.Validate,matrix/workforce/internal/initiative.ErrBudgetSplitting,matrix/workforce/internal/initiative.ErrCycle,matrix/workforce/internal/initiative.ErrDuplicateEffect,matrix/workforce/internal/initiative.NodeTemplate.Validate,matrix/workforce/internal/initiative.NodeWorkOrder,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.PlanSchemaVersion,matrix/workforce/internal/initiative.StateCancelled,matrix/workforce/internal/initiative.StateInvalidated,matrix/workforce/internal/initiative.StatePending,matrix/workforce/internal/initiative.StatePreserved,matrix/workforce/internal/initiative.adjacent,matrix/workforce/internal/initiative.capital,matrix/workforce/internal/initiative.compiledNodeDigest,matrix/workforce/internal/initiative.degree,matrix/workforce/internal/initiative.duplicate,matrix/workforce/internal/initiative.edge,matrix/workforce/internal/initiative.effects,matrix/workforce/internal/initiative.err,matrix/workforce/internal/initiative.exists,matrix/workforce/internal/initiative.expectedDigest,matrix/workforce/internal/initiative.identity,matrix/workforce/internal/initiative.indegree,matrix/workforce/internal/initiative.index,matrix/workforce/internal/initiative.key,matrix/workforce/internal/initiative.node,matrix/workforce/internal/initiative.nodeID,matrix/workforce/internal/initiative.order,matrix/workforce/internal/initiative.owner,matrix/workforce/internal/initiative.plan,matrix/workforce/internal/initiative.previousEdge,matrix/workforce/internal/initiative.previousNode,matrix/workforce/internal/initiative.ready,matrix/workforce/internal/initiative.risk,matrix/workforce/internal/initiative.sameCompanyOrder,matrix/workforce/internal/initiative.successor,matrix/workforce/internal/initiative.validReceiptSet,matrix/workforce/internal/initiative.validToken,matrix/workforce/internal/initiative.validUTC,matrix/workforce/internal/workorder.CompanyOrder.Validate
+  ^calls=matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.VerifyPlan
+  ^references=matrix/workforce/internal/initiative.Compiler.signPlan,matrix/workforce/internal/initiative.VerifyPlan
   ^defines=matrix/workforce/internal/initiative/compiler.go
 
 NODE id=matrix/workforce/internal/initiative/compiler.go kind=file

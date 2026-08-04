@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/mcl/mtx/interpreter kind=package
   digest=b3:dd89cad179d6005f10e5baa382e1186e2e6ecb2b9d22224d31eb3ad2a843b41d file=MCL/mtx/interpreter range=0:0 lang=go exported=true
 EDGES
   contains=matrix/mcl/mtx/interpreter/interpreter.go
+  imports=matrix/mcl/mtx/ast
   ^contains=mod:matrix/mcl
+  ^imports=matrix/bridge,matrix/bridge/cmd/mclc-cortex,matrix/codegraph/enrich,matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/mcl/cmd/mclc,matrix/mcl/llm,matrix/mcl/mtx/validator
 
 NODE id=matrix/mcl/mtx/interpreter.ClarifyQuestion kind=type
   digest=b3:f6071024ff02bcbf4d21f83735c85c850fbe1028066536a22481cf7e41009b15 file=MCL/mtx/interpreter/interpreter.go range=120:128 lang=go exported=true byte_range=4529:4743
@@ -12,6 +14,7 @@ NODE id=matrix/mcl/mtx/interpreter.ClarifyQuestion kind=type
   doc=ClarifyQuestion is a question to present to the user.
 EDGES
   contains=matrix/mcl/mtx/interpreter.ClarifyQuestion#Default,matrix/mcl/mtx/interpreter.ClarifyQuestion#Options,matrix/mcl/mtx/interpreter.ClarifyQuestion#Prompt,matrix/mcl/mtx/interpreter.ClarifyQuestion#Required,matrix/mcl/mtx/interpreter.ClarifyQuestion#SlotName,matrix/mcl/mtx/interpreter.ClarifyQuestion#TypeName
+  ^references=matrix/executor/cmd/mcl-e2e.CompileResult,matrix/executor/cmd/mcl-execute.clarifyPrompts,matrix/executor/cmd/mcl-execute.compileResult,matrix/executor/cmd/mcl-execute.dtoFromQuestions,matrix/executor/cmd/mcl-execute.errClarifyRequired,matrix/executor/cmd/mcl-execute.promptClarifyAnswers,matrix/mcl/mtx/interpreter.Interpreter.execClarify,matrix/mcl/mtx/interpreter.RunResult
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.ClarifyQuestion#Default kind=field
@@ -55,6 +58,8 @@ NODE id=matrix/mcl/mtx/interpreter.Cortex kind=interface
   sig=type Cortex interface {\n	// Find executes cortex.find with typed predicates.\n	Find(ctx context.Context, args map[string]string) ([]CortexResult, error)\n\n	// Resolve executes cortex.resolve for exact resolution.\n	Resolve(ctx context.Context, expr string) (*CortexResult, error)\n\n	// Context executes cortex.context for cold-start bundle retrieval.\n	Context(ctx context.Context, args map[string]string) (string, error)\n}
   doc=Cortex is the interface for the three cortex primitives.\nThe interpreter calls these when executing resolve statements.
 EDGES
+  references=matrix/mcl/mtx/interpreter.CortexResult
+  ^references=matrix/executor/cmd/mcl-execute.compile,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.New
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.CortexResult kind=type
@@ -63,6 +68,7 @@ NODE id=matrix/mcl/mtx/interpreter.CortexResult kind=type
   doc=CortexResult is a single memory returned from a cortex query.
 EDGES
   contains=matrix/mcl/mtx/interpreter.CortexResult#Summary,matrix/mcl/mtx/interpreter.CortexResult#Type,matrix/mcl/mtx/interpreter.CortexResult#URI
+  ^references=matrix/bridge.Adapter.Find,matrix/bridge.Adapter.Resolve,matrix/bridge.memoryToResult,matrix/mcl/mtx/interpreter.Cortex
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.CortexResult#Summary kind=field
@@ -88,6 +94,9 @@ NODE id=matrix/mcl/mtx/interpreter.ExtractKindValue kind=func
   sig=func ExtractKindValue(v ast.Value) string
   doc=ExtractKindValue returns the wire-form text of a `kind = ...` value\nnode from an on-block KVPair. Accepts both quoted strings (the\ncanonical form) and bare identifiers (an ergonomic short-hand that\nmirrors how `verb=` is written in conditions). Returns "" for\nunsupported value types (number, bool, list, URI) so the validator's\nV11 rule can flag the call site instead of silently dropping a\nmalformed annotation.
 EDGES
+  references=matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.StringValue,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/interpreter.v,matrix/mcl/mtx/interpreter.x
+  ^calls=matrix/executor/cmd/mcl-execute.extractOnBlockHints,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock
+  ^references=matrix/executor/cmd/mcl-execute.extractOnBlockHints,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.ExtractPositiveIntValue kind=func
@@ -95,6 +104,9 @@ NODE id=matrix/mcl/mtx/interpreter.ExtractPositiveIntValue kind=func
   sig=func ExtractPositiveIntValue(v ast.Value) (int, bool)
   doc=ExtractPositiveIntValue returns the integer value of an *ast.IntValue\nnode when it parses cleanly and is strictly positive. Returns\n(0, false) otherwise. Used by the on-block `output_cardinality = <N>`\nmetadata KV (Session 31c P3c). Strict positivity matches the\nvalidator's V12 contract and prevents zero/negative values from\nsilently disabling the planner hint.
 EDGES
+  references=matrix/mcl/mtx/ast.IntValue,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/interpreter.err,matrix/mcl/mtx/interpreter.iv,matrix/mcl/mtx/interpreter.n,matrix/mcl/mtx/interpreter.ok,matrix/mcl/mtx/interpreter.v
+  ^calls=matrix/executor/cmd/mcl-execute.extractOnBlockHints,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock
+  ^references=matrix/executor/cmd/mcl-execute.extractOnBlockHints,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter kind=type
@@ -103,6 +115,8 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter kind=type
   doc=Interpreter walks a SKILL.mtx AST and executes its §PROCEDURE.
 EDGES
   contains=matrix/mcl/mtx/interpreter.Interpreter#cortex,matrix/mcl/mtx/interpreter.Interpreter#file,matrix/mcl/mtx/interpreter.Interpreter#llm,matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/interpreter.Interpreter.execClarify,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/interpreter.Interpreter.execPrompt,matrix/mcl/mtx/interpreter.Interpreter.execResolve,matrix/mcl/mtx/interpreter.Interpreter.execUnknown,matrix/mcl/mtx/interpreter.Interpreter.findSection,matrix/mcl/mtx/interpreter.Interpreter.formatSlots,matrix/mcl/mtx/interpreter.Interpreter.formatUnknowns,matrix/mcl/mtx/interpreter.Interpreter.initSlots,matrix/mcl/mtx/interpreter.Interpreter.interpolate,matrix/mcl/mtx/interpreter.Interpreter.interpolateValue,matrix/mcl/mtx/interpreter.Interpreter.resolveVar
+  references=matrix/mcl/mtx/ast.File,matrix/mcl/mtx/interpreter.Cortex,matrix/mcl/mtx/interpreter.LLM
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/interpreter.Interpreter.execClarify,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/interpreter.Interpreter.execPrompt,matrix/mcl/mtx/interpreter.Interpreter.execResolve,matrix/mcl/mtx/interpreter.Interpreter.execUnknown,matrix/mcl/mtx/interpreter.Interpreter.findSection,matrix/mcl/mtx/interpreter.Interpreter.formatSlots,matrix/mcl/mtx/interpreter.Interpreter.formatUnknowns,matrix/mcl/mtx/interpreter.Interpreter.initSlots,matrix/mcl/mtx/interpreter.Interpreter.interpolate,matrix/mcl/mtx/interpreter.Interpreter.interpolateValue,matrix/mcl/mtx/interpreter.Interpreter.resolveVar,matrix/mcl/mtx/interpreter.New
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter#cortex kind=field
@@ -128,7 +142,11 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.Run kind=method
   sig=func (interp *Interpreter) Run(ctx context.Context, input *RunInput) (*RunResult, error)
   doc=Run executes the §PROCEDURE section with the given runtime input.
 EDGES
+  calls=matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/interpreter.Interpreter.findSection,matrix/mcl/mtx/interpreter.Interpreter.initSlots
+  references=matrix/mcl/mtx/ast.OnBlock,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/interpreter.Interpreter.findSection,matrix/mcl/mtx/interpreter.Interpreter.initSlots,matrix/mcl/mtx/interpreter.RunInput,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.Slot,matrix/mcl/mtx/interpreter.ctx,matrix/mcl/mtx/interpreter.desc,matrix/mcl/mtx/interpreter.entry,matrix/mcl/mtx/interpreter.err,matrix/mcl/mtx/interpreter.input,matrix/mcl/mtx/interpreter.interp,matrix/mcl/mtx/interpreter.matched,matrix/mcl/mtx/interpreter.ob,matrix/mcl/mtx/interpreter.ok,matrix/mcl/mtx/interpreter.proc,matrix/mcl/mtx/interpreter.result
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.compile,matrix/mcl/cmd/mclc.cmdCompile
+  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.compile,matrix/mcl/cmd/mclc.cmdCompile
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.evalCondition kind=method
@@ -136,7 +154,11 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.evalCondition kind=method
   sig=func (interp *Interpreter) evalCondition(cond ast.Condition, input *RunInput, result *RunResult) (matched bool, desc string)
   doc=evalCondition evaluates an on-block condition against the current state.\nReturns (matched, description).
 EDGES
+  calls=matrix/mcl/mtx/interpreter.valueToString
+  references=matrix/mcl/mtx/ast.Condition,matrix/mcl/mtx/ast.ConfidenceCondition,matrix/mcl/mtx/ast.SlotValCondition,matrix/mcl/mtx/ast.UnknownCondition,matrix/mcl/mtx/ast.VerbCondition,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.RunInput,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.c,matrix/mcl/mtx/interpreter.cond,matrix/mcl/mtx/interpreter.err,matrix/mcl/mtx/interpreter.expected,matrix/mcl/mtx/interpreter.hasBlocking,matrix/mcl/mtx/interpreter.input,matrix/mcl/mtx/interpreter.matched,matrix/mcl/mtx/interpreter.result,matrix/mcl/mtx/interpreter.slot,matrix/mcl/mtx/interpreter.threshold,matrix/mcl/mtx/interpreter.u,matrix/mcl/mtx/interpreter.valueToString
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.execClarify kind=method
@@ -144,7 +166,11 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.execClarify kind=method
   sig=func (interp *Interpreter) execClarify(cb *ast.ClarifyBlock, result *RunResult)
   doc=execClarify generates a clarify question from a clarify block.
 EDGES
+  calls=matrix/mcl/mtx/interpreter.valueToString
+  references=matrix/mcl/mtx/ast.ClarifyBlock,matrix/mcl/mtx/ast.OptionListValue,matrix/mcl/mtx/interpreter.ClarifyQuestion,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.cb,matrix/mcl/mtx/interpreter.item,matrix/mcl/mtx/interpreter.mod,matrix/mcl/mtx/interpreter.ok,matrix/mcl/mtx/interpreter.ol,matrix/mcl/mtx/interpreter.q,matrix/mcl/mtx/interpreter.result,matrix/mcl/mtx/interpreter.valueToString
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.execOnBlock
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.execOnBlock
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.execOnBlock kind=method
@@ -152,7 +178,11 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.execOnBlock kind=method
   sig=func (interp *Interpreter) execOnBlock(ctx context.Context, ob *ast.OnBlock, input *RunInput, result *RunResult) error
   doc=execOnBlock executes all entries in a matched on-block.
 EDGES
+  calls=matrix/mcl/mtx/interpreter.ExtractKindValue,matrix/mcl/mtx/interpreter.ExtractPositiveIntValue,matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/interpreter.Interpreter.execClarify,matrix/mcl/mtx/interpreter.Interpreter.execPrompt,matrix/mcl/mtx/interpreter.Interpreter.execResolve,matrix/mcl/mtx/interpreter.Interpreter.execUnknown
+  references=matrix/mcl/mtx/ast.ClarifyBlock,matrix/mcl/mtx/ast.KVPair,matrix/mcl/mtx/ast.OnBlock,matrix/mcl/mtx/ast.PromptBlock,matrix/mcl/mtx/ast.ResolveStmt,matrix/mcl/mtx/ast.UnknownBlock,matrix/mcl/mtx/interpreter.ExtractKindValue,matrix/mcl/mtx/interpreter.ExtractPositiveIntValue,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/interpreter.Interpreter.execClarify,matrix/mcl/mtx/interpreter.Interpreter.execPrompt,matrix/mcl/mtx/interpreter.Interpreter.execResolve,matrix/mcl/mtx/interpreter.Interpreter.execUnknown,matrix/mcl/mtx/interpreter.RunInput,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.ctx,matrix/mcl/mtx/interpreter.e,matrix/mcl/mtx/interpreter.entry,matrix/mcl/mtx/interpreter.err,matrix/mcl/mtx/interpreter.input,matrix/mcl/mtx/interpreter.interp,matrix/mcl/mtx/interpreter.matched,matrix/mcl/mtx/interpreter.n,matrix/mcl/mtx/interpreter.ob,matrix/mcl/mtx/interpreter.ok,matrix/mcl/mtx/interpreter.result,matrix/mcl/mtx/interpreter.v
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.Run
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.Run
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.execPrompt kind=method
@@ -160,7 +190,11 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.execPrompt kind=method
   sig=func (interp *Interpreter) execPrompt(ctx context.Context, pb *ast.PromptBlock, input *RunInput, result *RunResult) error
   doc=execPrompt interpolates a prompt block and calls the LLM.
 EDGES
+  calls=matrix/mcl/llm.Client.Decode,matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.responsesClient.Decode,matrix/mcl/mtx/interpreter.Interpreter.interpolate
+  references=matrix/mcl/mtx/ast.PromptBlock,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.Interpreter.interpolate,matrix/mcl/mtx/interpreter.LLM.Decode,matrix/mcl/mtx/interpreter.Message,matrix/mcl/mtx/interpreter.RunInput,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.content,matrix/mcl/mtx/interpreter.ctx,matrix/mcl/mtx/interpreter.err,matrix/mcl/mtx/interpreter.input,matrix/mcl/mtx/interpreter.interp,matrix/mcl/mtx/interpreter.messages,matrix/mcl/mtx/interpreter.output,matrix/mcl/mtx/interpreter.pb,matrix/mcl/mtx/interpreter.result,matrix/mcl/mtx/interpreter.role
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.execOnBlock
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.execOnBlock
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.execResolve kind=method
@@ -168,7 +202,11 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.execResolve kind=method
   sig=func (interp *Interpreter) execResolve(ctx context.Context, rs *ast.ResolveStmt, input *RunInput, result *RunResult) error
   doc=execResolve calls the cortex to resolve a slot value.
 EDGES
+  calls=matrix/mcl/mtx/interpreter.Interpreter.interpolateValue
+  references=matrix/mcl/mtx/ast.ResolveStmt,matrix/mcl/mtx/interpreter.Cortex.Context,matrix/mcl/mtx/interpreter.Cortex.Find,matrix/mcl/mtx/interpreter.Cortex.Resolve,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.Interpreter.interpolateValue,matrix/mcl/mtx/interpreter.RunInput,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.Slot,matrix/mcl/mtx/interpreter.SlotEmpty,matrix/mcl/mtx/interpreter.SlotResolved,matrix/mcl/mtx/interpreter.arg,matrix/mcl/mtx/interpreter.args,matrix/mcl/mtx/interpreter.bundle,matrix/mcl/mtx/interpreter.ctx,matrix/mcl/mtx/interpreter.err,matrix/mcl/mtx/interpreter.expr,matrix/mcl/mtx/interpreter.input,matrix/mcl/mtx/interpreter.interp,matrix/mcl/mtx/interpreter.positional,matrix/mcl/mtx/interpreter.res,matrix/mcl/mtx/interpreter.result,matrix/mcl/mtx/interpreter.results,matrix/mcl/mtx/interpreter.rs,matrix/mcl/mtx/interpreter.slot,matrix/mcl/mtx/interpreter.val
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.execOnBlock
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.execOnBlock
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.execUnknown kind=method
@@ -176,7 +214,11 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.execUnknown kind=method
   sig=func (interp *Interpreter) execUnknown(ub *ast.UnknownBlock, result *RunResult)
   doc=execUnknown registers an unknown gap from an unknown block.
 EDGES
+  calls=matrix/mcl/mtx/interpreter.valueToString
+  references=matrix/mcl/mtx/ast.UnknownBlock,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.SlotResolved,matrix/mcl/mtx/interpreter.Unknown,matrix/mcl/mtx/interpreter.mod,matrix/mcl/mtx/interpreter.result,matrix/mcl/mtx/interpreter.slot,matrix/mcl/mtx/interpreter.u,matrix/mcl/mtx/interpreter.ub,matrix/mcl/mtx/interpreter.valueToString
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.execOnBlock
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.execOnBlock
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.findSection kind=method
@@ -184,7 +226,10 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.findSection kind=method
   sig=func (interp *Interpreter) findSection(name string) *ast.Section
   doc=findSection returns the first section with the given name, or nil.
 EDGES
+  references=matrix/mcl/mtx/ast.Section,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.interp,matrix/mcl/mtx/interpreter.name,matrix/mcl/mtx/interpreter.sec
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.Interpreter.initSlots
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.Interpreter.initSlots
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.formatSlots kind=method
@@ -192,7 +237,10 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.formatSlots kind=method
   sig=func (interp *Interpreter) formatSlots(result *RunResult) string
   doc=formatSlots builds a summary of all currently-filled slots.
 EDGES
+  references=matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.SlotDefault,matrix/mcl/mtx/interpreter.SlotEmpty,matrix/mcl/mtx/interpreter.SlotRaw,matrix/mcl/mtx/interpreter.SlotResolved,matrix/mcl/mtx/interpreter.parts,matrix/mcl/mtx/interpreter.result,matrix/mcl/mtx/interpreter.slot,matrix/mcl/mtx/interpreter.status
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.resolveVar
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.resolveVar
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.formatUnknowns kind=method
@@ -200,7 +248,10 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.formatUnknowns kind=method
   sig=func (interp *Interpreter) formatUnknowns(result *RunResult) string
   doc=formatUnknowns builds a summary of declared unknowns.
 EDGES
+  references=matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.parts,matrix/mcl/mtx/interpreter.result,matrix/mcl/mtx/interpreter.u
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.resolveVar
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.resolveVar
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.initSlots kind=method
@@ -208,7 +259,11 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.initSlots kind=method
   sig=func (interp *Interpreter) initSlots(result *RunResult, input *RunInput)
   doc=initSlots populates result.Slots from §INPUTS declarations and pre-filled values.
 EDGES
+  calls=matrix/mcl/mtx/interpreter.Interpreter.findSection,matrix/mcl/mtx/interpreter.formatTypeRef,matrix/mcl/mtx/interpreter.valueToString
+  references=matrix/mcl/mtx/ast.ModDefault,matrix/mcl/mtx/ast.ModOptional,matrix/mcl/mtx/ast.ModRequired,matrix/mcl/mtx/ast.SlotDecl,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.Interpreter.findSection,matrix/mcl/mtx/interpreter.RunInput,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.Slot,matrix/mcl/mtx/interpreter.SlotDefault,matrix/mcl/mtx/interpreter.SlotEmpty,matrix/mcl/mtx/interpreter.SlotRaw,matrix/mcl/mtx/interpreter.entry,matrix/mcl/mtx/interpreter.formatTypeRef,matrix/mcl/mtx/interpreter.input,matrix/mcl/mtx/interpreter.inputs,matrix/mcl/mtx/interpreter.interp,matrix/mcl/mtx/interpreter.mod,matrix/mcl/mtx/interpreter.ok,matrix/mcl/mtx/interpreter.result,matrix/mcl/mtx/interpreter.sd,matrix/mcl/mtx/interpreter.slot,matrix/mcl/mtx/interpreter.val,matrix/mcl/mtx/interpreter.valueToString
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.Run
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.Run
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.interpolate kind=method
@@ -216,7 +271,11 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.interpolate kind=method
   sig=func (interp *Interpreter) interpolate(text string, input *RunInput, result *RunResult) string
   doc=interpolate expands {variables} in a prompt string per spec §8.
 EDGES
+  calls=matrix/mcl/mtx/interpreter.Interpreter.resolveVar
+  references=matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.Interpreter.resolveVar,matrix/mcl/mtx/interpreter.RunInput,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.b,matrix/mcl/mtx/interpreter.end,matrix/mcl/mtx/interpreter.i,matrix/mcl/mtx/interpreter.input,matrix/mcl/mtx/interpreter.interp,matrix/mcl/mtx/interpreter.result,matrix/mcl/mtx/interpreter.text,matrix/mcl/mtx/interpreter.varName
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.execPrompt
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.execPrompt
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.interpolateValue kind=method
@@ -224,7 +283,11 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.interpolateValue kind=method
   sig=func (interp *Interpreter) interpolateValue(v ast.Value, input *RunInput, result *RunResult) string
   doc=interpolateValue resolves a Value node to a string, expanding slot references.
 EDGES
+  calls=matrix/mcl/mtx/interpreter.valueToString
+  references=matrix/mcl/mtx/ast.SlotExprValue,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.RunInput,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.result,matrix/mcl/mtx/interpreter.slot,matrix/mcl/mtx/interpreter.slotName,matrix/mcl/mtx/interpreter.v,matrix/mcl/mtx/interpreter.val,matrix/mcl/mtx/interpreter.valueToString
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.execResolve
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.execResolve
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Interpreter.resolveVar kind=method
@@ -232,7 +295,11 @@ NODE id=matrix/mcl/mtx/interpreter.Interpreter.resolveVar kind=method
   sig=func (interp *Interpreter) resolveVar(name string, input *RunInput, result *RunResult) string
   doc=resolveVar resolves a single interpolation variable name.
 EDGES
+  calls=matrix/mcl/mtx/interpreter.Interpreter.formatSlots,matrix/mcl/mtx/interpreter.Interpreter.formatUnknowns
+  references=matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.Interpreter.formatSlots,matrix/mcl/mtx/interpreter.Interpreter.formatUnknowns,matrix/mcl/mtx/interpreter.RunInput,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.input,matrix/mcl/mtx/interpreter.interp,matrix/mcl/mtx/interpreter.name,matrix/mcl/mtx/interpreter.parts,matrix/mcl/mtx/interpreter.result,matrix/mcl/mtx/interpreter.slot,matrix/mcl/mtx/interpreter.slotName
   ^contains=matrix/mcl/mtx/interpreter.Interpreter
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.interpolate
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.interpolate
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.LLM kind=interface
@@ -240,7 +307,10 @@ NODE id=matrix/mcl/mtx/interpreter.LLM kind=interface
   sig=type LLM interface {\n	// Decode sends messages to the LLM with an optional grammar constraint\n	// and returns the raw text output.\n	// grammar is a schema identifier (e.g. "intent_frame@1") or "" for unconstrained.\n	Decode(ctx context.Context, messages []Message, grammar string) (string, error)\n}
   doc=LLM is the interface for grammar-constrained LLM decoding (D18).\nThe compiler model is small, seedable, and grammar-constrained.
 EDGES
+  references=matrix/mcl/mtx/interpreter.Message
   ^implements=matrix/mcl/llm.Client,matrix/mcl/llm.messagesClient,matrix/mcl/llm.responsesClient
+  ^embeds=matrix/mcl/mtx/interpreter.StreamingLLM
+  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/codegraph/enrich.CodySummarizer,matrix/executor/cmd/mcl-execute.criticDecoder,matrix/executor/cmd/mcl-execute.llmStepHandler,matrix/executor/cmd/mcl-execute.llmStepHandler.clientFor,matrix/executor/cmd/mcl-execute.newLLMStepHandlerOpts,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/llm.New,matrix/mcl/llm._,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.New,matrix/mcl/mtx/interpreter.StreamingLLM
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Message kind=type
@@ -249,6 +319,7 @@ NODE id=matrix/mcl/mtx/interpreter.Message kind=type
   doc=Message is a single chat message sent to the LLM.
 EDGES
   contains=matrix/mcl/mtx/interpreter.Message#Content,matrix/mcl/mtx/interpreter.Message#Role
+  ^references=matrix/codegraph/enrich.CodySummarizer.Summarize,matrix/executor/cmd/mcl-e2e.CompileResult,matrix/executor/cmd/mcl-execute.criticDecoder.Decode,matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.llmStepHandler.HandleStep,matrix/executor/cmd/mcl-execute.llmStepHandler.streamStep,matrix/executor/cmd/mcl-execute.reasoningDecoder,matrix/executor/cmd/mcl-execute.synthesize,matrix/mcl/llm.Client.Decode,matrix/mcl/llm.Client.DecodeWithReasoning,matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.Client.decodeMessage,matrix/mcl/llm.InjectIdentity,matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream,matrix/mcl/llm.messagesClient.buildRequest,matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream,matrix/mcl/llm.responsesClient.buildRequest,matrix/mcl/mtx/interpreter.Interpreter.execPrompt,matrix/mcl/mtx/interpreter.LLM,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.StreamingLLM
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Message#Content kind=field
@@ -268,6 +339,9 @@ NODE id=matrix/mcl/mtx/interpreter.New kind=func
   sig=func New(file *ast.File, llm LLM, cortex Cortex) *Interpreter
   doc=New creates an interpreter for the given parsed SKILL.mtx AST.
 EDGES
+  references=matrix/mcl/mtx/ast.File,matrix/mcl/mtx/interpreter.Cortex,matrix/mcl/mtx/interpreter.Interpreter,matrix/mcl/mtx/interpreter.LLM,matrix/mcl/mtx/interpreter.cortex,matrix/mcl/mtx/interpreter.file,matrix/mcl/mtx/interpreter.llm
+  ^calls=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.compile,matrix/mcl/cmd/mclc.cmdCompile
+  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.compile,matrix/mcl/cmd/mclc.cmdCompile
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.RunInput kind=type
@@ -276,6 +350,7 @@ NODE id=matrix/mcl/mtx/interpreter.RunInput kind=type
   doc=RunInput is the runtime state fed into the interpreter by the pipeline.
 EDGES
   contains=matrix/mcl/mtx/interpreter.RunInput#Bundle,matrix/mcl/mtx/interpreter.RunInput#Confidence,matrix/mcl/mtx/interpreter.RunInput#Grammar,matrix/mcl/mtx/interpreter.RunInput#Prose,matrix/mcl/mtx/interpreter.RunInput#SlotValues,matrix/mcl/mtx/interpreter.RunInput#Verb
+  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.compile,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/interpreter.Interpreter.execPrompt,matrix/mcl/mtx/interpreter.Interpreter.execResolve,matrix/mcl/mtx/interpreter.Interpreter.initSlots,matrix/mcl/mtx/interpreter.Interpreter.interpolate,matrix/mcl/mtx/interpreter.Interpreter.interpolateValue,matrix/mcl/mtx/interpreter.Interpreter.resolveVar
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.RunInput#Bundle kind=field
@@ -320,6 +395,8 @@ NODE id=matrix/mcl/mtx/interpreter.RunResult kind=type
   doc=RunResult is what the interpreter produces after walking §PROCEDURE.
 EDGES
   contains=matrix/mcl/mtx/interpreter.RunResult#ClarifyQuestions,matrix/mcl/mtx/interpreter.RunResult#Executed,matrix/mcl/mtx/interpreter.RunResult#FrameJSON,matrix/mcl/mtx/interpreter.RunResult#MatchedCondition,matrix/mcl/mtx/interpreter.RunResult#OutputCardinalityHint,matrix/mcl/mtx/interpreter.RunResult#PromptMessages,matrix/mcl/mtx/interpreter.RunResult#Slots,matrix/mcl/mtx/interpreter.RunResult#StepKindHint,matrix/mcl/mtx/interpreter.RunResult#Unknowns
+  references=matrix/mcl/mtx/interpreter.ClarifyQuestion,matrix/mcl/mtx/interpreter.Message,matrix/mcl/mtx/interpreter.Slot,matrix/mcl/mtx/interpreter.Unknown
+  ^references=matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-execute.buildIntent,matrix/executor/cmd/mcl-execute.compile,matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/interpreter.Interpreter.execClarify,matrix/mcl/mtx/interpreter.Interpreter.execOnBlock,matrix/mcl/mtx/interpreter.Interpreter.execPrompt,matrix/mcl/mtx/interpreter.Interpreter.execResolve,matrix/mcl/mtx/interpreter.Interpreter.execUnknown,matrix/mcl/mtx/interpreter.Interpreter.formatSlots,matrix/mcl/mtx/interpreter.Interpreter.formatUnknowns,matrix/mcl/mtx/interpreter.Interpreter.initSlots,matrix/mcl/mtx/interpreter.Interpreter.interpolate,matrix/mcl/mtx/interpreter.Interpreter.interpolateValue,matrix/mcl/mtx/interpreter.Interpreter.resolveVar
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.RunResult#ClarifyQuestions kind=field
@@ -391,6 +468,8 @@ NODE id=matrix/mcl/mtx/interpreter.Slot kind=type
   doc=Slot tracks the state of a single input slot during interpretation.
 EDGES
   contains=matrix/mcl/mtx/interpreter.Slot#Default,matrix/mcl/mtx/interpreter.Slot#Name,matrix/mcl/mtx/interpreter.Slot#RawProse,matrix/mcl/mtx/interpreter.Slot#Required,matrix/mcl/mtx/interpreter.Slot#Status,matrix/mcl/mtx/interpreter.Slot#TypeName,matrix/mcl/mtx/interpreter.Slot#Value
+  references=matrix/mcl/mtx/interpreter.SlotStatus
+  ^references=matrix/executor/cmd/mcl-e2e.CompileResult,matrix/executor/cmd/mcl-execute.compileResult,matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.Interpreter.execResolve,matrix/mcl/mtx/interpreter.Interpreter.initSlots,matrix/mcl/mtx/interpreter.RunResult
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Slot#Default kind=field
@@ -439,24 +518,29 @@ NODE id=matrix/mcl/mtx/interpreter.SlotDefault kind=const
   digest=b3:ff0dfe181054c3bda1dbf81cefae92a3fa54ce51dd363ab0d215314277b2b158 file=MCL/mtx/interpreter/interpreter.go range=97:97 lang=go exported=true byte_range=3817:3828
   sig=interpreter.SlotStatus
 EDGES
+  ^references=matrix/bridge/cmd/mclc-cortex.statusName,matrix/mcl/cmd/mclc.statusName,matrix/mcl/mtx/interpreter.Interpreter.formatSlots,matrix/mcl/mtx/interpreter.Interpreter.initSlots
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.SlotEmpty kind=const
   digest=b3:3d27af4e5cc352108a349ace17151ed1f7e77b88c131ee2fffe59cc3767b9e8f file=MCL/mtx/interpreter/interpreter.go range=94:94 lang=go exported=true byte_range=3640:3670
   sig=interpreter.SlotStatus
 EDGES
+  references=matrix/mcl/mtx/interpreter.SlotStatus
+  ^references=matrix/bridge/cmd/mclc-cortex.statusName,matrix/mcl/cmd/mclc.statusName,matrix/mcl/mtx/interpreter.Interpreter.execResolve,matrix/mcl/mtx/interpreter.Interpreter.formatSlots,matrix/mcl/mtx/interpreter.Interpreter.initSlots
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.SlotRaw kind=const
   digest=b3:5d677010d42a2c768f99fe4fd4d3d93c5cc130cedf9d5edf580fe774869563c5 file=MCL/mtx/interpreter/interpreter.go range=95:95 lang=go exported=true byte_range=3688:3695
   sig=interpreter.SlotStatus
 EDGES
+  ^references=matrix/bridge/cmd/mclc-cortex.statusName,matrix/mcl/cmd/mclc.statusName,matrix/mcl/mtx/interpreter.Interpreter.formatSlots,matrix/mcl/mtx/interpreter.Interpreter.initSlots
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.SlotResolved kind=const
   digest=b3:140bc93577d9a6d13c1530cd4086a277fa62524a44e0bc50ca556f40df167c64 file=MCL/mtx/interpreter/interpreter.go range=96:96 lang=go exported=true byte_range=3754:3766
   sig=interpreter.SlotStatus
 EDGES
+  ^references=matrix/bridge/cmd/mclc-cortex.statusName,matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-execute.buildIntent,matrix/mcl/cmd/mclc.statusName,matrix/mcl/mtx/interpreter.Interpreter.execResolve,matrix/mcl/mtx/interpreter.Interpreter.execUnknown,matrix/mcl/mtx/interpreter.Interpreter.formatSlots
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.SlotStatus kind=type
@@ -464,6 +548,7 @@ NODE id=matrix/mcl/mtx/interpreter.SlotStatus kind=type
   sig=type SlotStatus int
   doc=SlotStatus tracks the resolution state of a single slot.
 EDGES
+  ^references=matrix/bridge/cmd/mclc-cortex.statusName,matrix/mcl/cmd/mclc.statusName,matrix/mcl/mtx/interpreter.Slot,matrix/mcl/mtx/interpreter.SlotEmpty
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.StreamingLLM kind=interface
@@ -471,7 +556,10 @@ NODE id=matrix/mcl/mtx/interpreter.StreamingLLM kind=interface
   sig=type StreamingLLM interface {\n	LLM\n	Stream(ctx context.Context, messages []Message, grammar string,\n		onDelta func(delta string)) (string, error)\n}
   doc=StreamingLLM is the optional capability extension implemented by clients\nthat can emit incremental tokens via OpenAI-compatible Server-Sent Events\n(text/event-stream with stream=true on /v1/chat/completions).\n\nSession 31c (model router P3a). Callers that want incremental UX should\ntype-assert the LLM to this interface and fall back to Decode when the\nassertion fails:\n\n	if s, ok := llm.(interpreter.StreamingLLM); ok {\n	    text, err := s.Stream(ctx, msgs, grammar, onDelta)\n	} else {\n	    text, err := llm.Decode(ctx, msgs, grammar)\n	}\n\nStream MUST return the same final text that an equivalent Decode call\nwould have returned (so step canonicalization remains identical whether\nthe call streamed or not). onDelta is invoked synchronously on the\ncaller's goroutine for every received content fragment; an empty delta\nis permitted (some providers emit role-only opening chunks). Stream\nMUST NOT invoke onDelta after returning.
 EDGES
+  embeds=matrix/mcl/mtx/interpreter.LLM
+  references=matrix/mcl/mtx/interpreter.LLM,matrix/mcl/mtx/interpreter.Message
   ^implements=matrix/mcl/llm.Client,matrix/mcl/llm.messagesClient,matrix/mcl/llm.responsesClient
+  ^references=matrix/executor/cmd/mcl-execute.llmStepHandler.HandleStep,matrix/executor/cmd/mcl-execute.llmStepHandler.streamStep,matrix/mcl/llm._
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Unknown kind=type
@@ -480,6 +568,7 @@ NODE id=matrix/mcl/mtx/interpreter.Unknown kind=type
   doc=Unknown is a declared gap blocking or delaying execution.
 EDGES
   contains=matrix/mcl/mtx/interpreter.Unknown#Default,matrix/mcl/mtx/interpreter.Unknown#Options,matrix/mcl/mtx/interpreter.Unknown#Reason,matrix/mcl/mtx/interpreter.Unknown#Severity,matrix/mcl/mtx/interpreter.Unknown#SlotName
+  ^references=matrix/executor/cmd/mcl-e2e.CompileResult,matrix/executor/cmd/mcl-execute.blockingUnknowns,matrix/executor/cmd/mcl-execute.compileResult,matrix/mcl/mtx/interpreter.Interpreter.execUnknown,matrix/mcl/mtx/interpreter.RunResult
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.Unknown#Default kind=field
@@ -517,6 +606,9 @@ NODE id=matrix/mcl/mtx/interpreter.formatTypeRef kind=func
   sig=func formatTypeRef(tr ast.TypeRef) string
   doc=formatTypeRef formats a TypeRef back to string form.
 EDGES
+  references=matrix/mcl/mtx/ast.TypeRef,matrix/mcl/mtx/interpreter.name,matrix/mcl/mtx/interpreter.tr
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.initSlots
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.initSlots
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter.valueToString kind=func
@@ -524,6 +616,9 @@ NODE id=matrix/mcl/mtx/interpreter.valueToString kind=func
   sig=func valueToString(v ast.Value) string
   doc=valueToString extracts a string representation from an AST Value node.
 EDGES
+  references=matrix/mcl/mtx/ast.BoolValue,matrix/mcl/mtx/ast.FloatValue,matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.IntValue,matrix/mcl/mtx/ast.OptionListValue,matrix/mcl/mtx/ast.SlotExprValue,matrix/mcl/mtx/ast.SpaceListValue,matrix/mcl/mtx/ast.StringValue,matrix/mcl/mtx/ast.URIValue,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/interpreter.item,matrix/mcl/mtx/interpreter.items,matrix/mcl/mtx/interpreter.v,matrix/mcl/mtx/interpreter.val
+  ^calls=matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/interpreter.Interpreter.execClarify,matrix/mcl/mtx/interpreter.Interpreter.execUnknown,matrix/mcl/mtx/interpreter.Interpreter.initSlots,matrix/mcl/mtx/interpreter.Interpreter.interpolateValue
+  ^references=matrix/mcl/mtx/interpreter.Interpreter.evalCondition,matrix/mcl/mtx/interpreter.Interpreter.execClarify,matrix/mcl/mtx/interpreter.Interpreter.execUnknown,matrix/mcl/mtx/interpreter.Interpreter.initSlots,matrix/mcl/mtx/interpreter.Interpreter.interpolateValue
   ^defines=matrix/mcl/mtx/interpreter/interpreter.go
 
 NODE id=matrix/mcl/mtx/interpreter/interpreter.go kind=file

@@ -1,16 +1,20 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/neo/internal/codingruntime kind=package
   digest=b3:28986e7a2170515e36494819f838252a262adeb2cf34ec2145e036964fe7e6b4 file=neo/internal/codingruntime range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/codingruntime/reducer.go,matrix/neo/internal/codingruntime/store.go
+  imports=matrix/neo/internal/codingworker,matrix/vault
   ^contains=mod:matrix/neo
+  ^imports=matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/codingruntime.Answer kind=type
   digest=b3:1d9c795b0bda757874624f4263e0e627ef610188c6e6d1ff04675b03797e52d1 file=neo/internal/codingruntime/store.go range=129:135 lang=go exported=true byte_range=4318:4529
   sig=type Answer struct {\n	ID		string		`json:"id"`\n	TargetID	string		`json:"target_id"`\n	Kind		AnswerKind	`json:"kind"`\n	Text		string		`json:"text"`\n	CreatedAt	time.Time	`json:"created_at"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.Answer#CreatedAt,matrix/neo/internal/codingruntime.Answer#ID,matrix/neo/internal/codingruntime.Answer#Kind,matrix/neo/internal/codingruntime.Answer#TargetID,matrix/neo/internal/codingruntime.Answer#Text
+  references=matrix/neo/internal/codingruntime.AnswerKind
+  ^references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Job.Public,matrix/neo/internal/codingruntime.PublicJob,matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.CreateQueued
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Answer#CreatedAt kind=field
@@ -47,18 +51,23 @@ NODE id=matrix/neo/internal/codingruntime.AnswerApproval kind=const
   digest=b3:76e4bea20410b46fa83e76cb7322676875447343c16cecb022401e88e855a4d3 file=neo/internal/codingruntime/store.go range=126:126 lang=go exported=true byte_range=4276:4314
   sig=codingruntime.AnswerKind
 EDGES
+  references=matrix/neo/internal/codingruntime.AnswerKind
+  ^references=matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/server.Server.answerBuildJob,matrix/neo/internal/server.buildWorkerService.claimNextInput
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.AnswerKind kind=type
   digest=b3:3726d3d4c537f0255389ad5ec1550224a204f6814b45f5bb07c7ea55d223fe04 file=neo/internal/codingruntime/store.go range=122:122 lang=go exported=true byte_range=4203:4225
   sig=type AnswerKind string
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Answer,matrix/neo/internal/codingruntime.AnswerApproval,matrix/neo/internal/codingruntime.AnswerQuestion,matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/server.Server.answerBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.AnswerQuestion kind=const
   digest=b3:c63d58de992ce470fc4c7a31fcb4ed1d34deb34b79dd977ff11f953247d63f05 file=neo/internal/codingruntime/store.go range=125:125 lang=go exported=true byte_range=4236:4274
   sig=codingruntime.AnswerKind
 EDGES
+  references=matrix/neo/internal/codingruntime.AnswerKind
+  ^references=matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/server.Server.answerBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.BuildBrief kind=type
@@ -66,6 +75,7 @@ NODE id=matrix/neo/internal/codingruntime.BuildBrief kind=type
   sig=type BuildBrief struct {\n	Intent			string			`json:"intent"`\n	Constraints		[]string		`json:"constraints,omitempty"`\n	AcceptanceCriteria	[]string		`json:"acceptance_criteria,omitempty"`\n	ProjectContext		map[string]string	`json:"project_context,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.BuildBrief#AcceptanceCriteria,matrix/neo/internal/codingruntime.BuildBrief#Constraints,matrix/neo/internal/codingruntime.BuildBrief#Intent,matrix/neo/internal/codingruntime.BuildBrief#ProjectContext
+  ^references=matrix/neo/internal/codingruntime.CreateRequest,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.PublicJob,matrix/neo/internal/codingruntime.cloneBrief,matrix/neo/internal/server.Engine.acceptBuild,matrix/neo/internal/server.Engine.agentBuild,matrix/neo/internal/server.buildBriefBody.runtimeBrief,matrix/neo/internal/server.initialBuildPrompt
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.BuildBrief#AcceptanceCriteria kind=field
@@ -97,6 +107,7 @@ NODE id=matrix/neo/internal/codingruntime.Correction kind=type
   sig=type Correction struct {\n	ID		string		`json:"id"`\n	Text		string		`json:"text"`\n	CreatedAt	time.Time	`json:"created_at"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.Correction#CreatedAt,matrix/neo/internal/codingruntime.Correction#ID,matrix/neo/internal/codingruntime.Correction#Text
+  ^references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Job.Public,matrix/neo/internal/codingruntime.PublicJob,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/server.initialBuildPrompt
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Correction#CreatedAt kind=field
@@ -122,6 +133,8 @@ NODE id=matrix/neo/internal/codingruntime.CreateRequest kind=type
   sig=type CreateRequest struct {\n	ID		string\n	ActorID		string\n	ConversationID	string\n	UserServerID	string\n	ProjectID	string\n	CWD		string\n	Brief		BuildBrief\n	IdempotencyKey	string\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.CreateRequest#ActorID,matrix/neo/internal/codingruntime.CreateRequest#Brief,matrix/neo/internal/codingruntime.CreateRequest#CWD,matrix/neo/internal/codingruntime.CreateRequest#ConversationID,matrix/neo/internal/codingruntime.CreateRequest#ID,matrix/neo/internal/codingruntime.CreateRequest#IdempotencyKey,matrix/neo/internal/codingruntime.CreateRequest#ProjectID,matrix/neo/internal/codingruntime.CreateRequest#UserServerID
+  references=matrix/neo/internal/codingruntime.BuildBrief
+  ^references=matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.createHash,matrix/neo/internal/codingruntime.normalizeCreate,matrix/neo/internal/codingruntime.validateCreate,matrix/neo/internal/server.Engine.acceptBuild
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.CreateRequest#ActorID kind=field
@@ -177,6 +190,8 @@ NODE id=matrix/neo/internal/codingruntime.DeliveryBatch kind=type
   sig=type DeliveryBatch struct {\n	DeliveryID	string			`json:"delivery_id"`\n	SourceEventIDs	[]string		`json:"source_event_ids"`\n	Evidence	[]EvidenceRecord	`json:"evidence,omitempty"`\n	NextLifecycle	Lifecycle		`json:"next_lifecycle,omitempty"`\n	Terminal	*TerminalResult		`json:"terminal,omitempty"`\n	Wake		*WakeRequest		`json:"wake,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.DeliveryBatch#DeliveryID,matrix/neo/internal/codingruntime.DeliveryBatch#Evidence,matrix/neo/internal/codingruntime.DeliveryBatch#NextLifecycle,matrix/neo/internal/codingruntime.DeliveryBatch#SourceEventIDs,matrix/neo/internal/codingruntime.DeliveryBatch#Terminal,matrix/neo/internal/codingruntime.DeliveryBatch#Wake
+  references=matrix/neo/internal/codingruntime.EvidenceRecord,matrix/neo/internal/codingruntime.Lifecycle,matrix/neo/internal/codingruntime.TerminalResult,matrix/neo/internal/codingruntime.WakeRequest
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.normalizeDelivery,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.validateDelivery,matrix/neo/internal/server.buildWorkerService.applyDelivery,matrix/neo/internal/server.buildWorkerService.preparePreview,matrix/neo/internal/server.buildWorkerService.recordWorkerFailure
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.DeliveryBatch#DeliveryID kind=field
@@ -220,6 +235,7 @@ NODE id=matrix/neo/internal/codingruntime.DeliveryReceipt kind=type
   sig=type DeliveryReceipt struct {\n	DeliveryID	string		`json:"delivery_id"`\n	Digest		string		`json:"digest"`\n	SourceEventIDs	[]string	`json:"source_event_ids"`\n	AppliedAt	time.Time	`json:"applied_at"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.DeliveryReceipt#AppliedAt,matrix/neo/internal/codingruntime.DeliveryReceipt#DeliveryID,matrix/neo/internal/codingruntime.DeliveryReceipt#Digest,matrix/neo/internal/codingruntime.DeliveryReceipt#SourceEventIDs
+  ^references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CreateQueued
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.DeliveryReceipt#AppliedAt kind=field
@@ -250,114 +266,141 @@ NODE id=matrix/neo/internal/codingruntime.ErrDeliveryConflict kind=var
   digest=b3:0085034a0f303fb1617b5911383609839c1b0bec0ffc37cd75a42ba374bdc9c9 file=neo/internal/codingruntime/store.go range=34:34 lang=go exported=true byte_range=793:862
   sig=error
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/server.buildWorkerService.deliverPendingBuildWakes
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.ErrDisabled kind=var
   digest=b3:0e2c2eddd5a0fa7c5a78180b6a6db45172c5d6e1cee767f1b0bb93994252d0e9 file=neo/internal/codingruntime/store.go range=28:28 lang=go exported=true byte_range=353:426
   sig=error
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Store.CreateQueued
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.ErrIdempotencyConflict kind=var
   digest=b3:73687b4e1706e371453d45864fc6c4e279e225090ebf3597bb26a27c6aa5cbd7 file=neo/internal/codingruntime/store.go range=31:31 lang=go exported=true byte_range=574:646
   sig=error
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/server.Server.createBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.ErrInvalid kind=var
   digest=b3:dbf13924a991835f85408fbecd9d0da28feca2c958d562a6a07f24e7102dfe05 file=neo/internal/codingruntime/store.go range=29:29 lang=go exported=true byte_range=428:497
   sig=error
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.Store.BindRuntime,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.validateCreate,matrix/neo/internal/codingruntime.validateDelivery,matrix/neo/internal/codingruntime.validateWake
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.ErrInvalidTransition kind=var
   digest=b3:157f56ca14b8aa7de3401fbe73093ebe8ffaa9b4e050083167924f31f453c6cc file=neo/internal/codingruntime/store.go range=32:32 lang=go exported=true byte_range=648:722
   sig=error
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/codingruntime.validateDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.ErrInvalidWorkerEvent kind=var
   digest=b3:4fe171e797c706b11468d90740d322de049ad8c017ebff1f781c81f206611aac file=neo/internal/codingruntime/reducer.go range=32:32 lang=go exported=true byte_range=429:494
   sig=error
 EDGES
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.ErrNotFound kind=var
   digest=b3:5a8dd6a6efde11896f14a75e15bc604a03e49c677537c6d81acc51b91eaf9354 file=neo/internal/codingruntime/store.go range=27:27 lang=go exported=true byte_range=286:351
   sig=error
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.update,matrix/neo/internal/server.buildWorkerService.applyDelivery,matrix/neo/internal/server.writeBuildMutationError
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.ErrRevisionConflict kind=var
   digest=b3:a010809700572e4d375aa755001c87896ab945bfc3a03b91ab0b9200c3b6c888 file=neo/internal/codingruntime/store.go range=30:30 lang=go exported=true byte_range=499:572
   sig=error
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.update,matrix/neo/internal/server.Engine.interruptRecoveryBuilds,matrix/neo/internal/server.Server.interruptBuildJob,matrix/neo/internal/server.buildWorkerService.applyDelivery,matrix/neo/internal/server.buildWorkerService.dispatchActiveInput,matrix/neo/internal/server.writeBuildMutationError
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.ErrSourceEventConflict kind=var
   digest=b3:3fc245c9ef55edd5d3fd002d8826afc4180a5a9318f155048d0f33a066b89ca1 file=neo/internal/codingruntime/store.go range=35:35 lang=go exported=true byte_range=864:937
   sig=error
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Store.ApplyDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.ErrTerminal kind=var
   digest=b3:30d2d11582ec2677ba96ef1525df70f8f7474877da82f4fa3427c68b2661e9f1 file=neo/internal/codingruntime/store.go range=33:33 lang=go exported=true byte_range=724:791
   sig=error
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.BindRuntime,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/server.Server.interruptBuildJob,matrix/neo/internal/server.writeBuildMutationError
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.EvidenceApproval kind=const
   digest=b3:4324a35035b8e2abc73c7612d4ffb6f4d69c442f6bb79c0ec475178a7643c6ab file=neo/internal/codingruntime/store.go range=94:94 lang=go exported=true byte_range=3024:3070
   sig=codingruntime.EvidenceKind
 EDGES
+  references=matrix/neo/internal/codingruntime.EvidenceKind
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/server.Server.answerBuildJob,matrix/neo/internal/server.viewBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.EvidenceBlocker kind=const
   digest=b3:c4f937e18bd600b8970e726b3b09cdc7f1274fbf537fe66ea0688f505af2ad4b file=neo/internal/codingruntime/store.go range=95:95 lang=go exported=true byte_range=3072:3117
   sig=codingruntime.EvidenceKind
 EDGES
+  references=matrix/neo/internal/codingruntime.EvidenceKind
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/server.buildWorkerService.recordWorkerFailure,matrix/neo/internal/server.projectBuildEvidence
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.EvidenceCommand kind=const
   digest=b3:4d7049fb3526230c43d843c9d47a5282ea220ac253020607b07170559452268f file=neo/internal/codingruntime/store.go range=88:88 lang=go exported=true byte_range=2735:2780
   sig=codingruntime.EvidenceKind
 EDGES
+  references=matrix/neo/internal/codingruntime.EvidenceKind
+  ^references=matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.EvidenceDiff kind=const
   digest=b3:257fd73db78ed0b932f256ebda938b900c4bf3353c9e8f9cc9bced2e1077f81d file=neo/internal/codingruntime/store.go range=90:90 lang=go exported=true byte_range=2833:2875
   sig=codingruntime.EvidenceKind
 EDGES
+  references=matrix/neo/internal/codingruntime.EvidenceKind
+  ^references=matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.EvidenceError kind=const
   digest=b3:035827be761f112d98e268ae2fb02f2536c6ad0011784fecc77c6175c6d81680 file=neo/internal/codingruntime/store.go range=96:96 lang=go exported=true byte_range=3119:3162
   sig=codingruntime.EvidenceKind
 EDGES
+  references=matrix/neo/internal/codingruntime.EvidenceKind
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.EvidenceFileChange kind=const
   digest=b3:9eb3a561d3fe8c3d4027db1de1033758343d9291eb66b5f7ac1e8871210add11 file=neo/internal/codingruntime/store.go range=89:89 lang=go exported=true byte_range=2782:2831
   sig=codingruntime.EvidenceKind
 EDGES
+  references=matrix/neo/internal/codingruntime.EvidenceKind
+  ^references=matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/server.projectBuildEvidence
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.EvidenceKind kind=type
   digest=b3:91b3d145fdd89ee3fcbb98864384b2727a8240768d0e3eb08f2f72f40f085884 file=neo/internal/codingruntime/store.go range=84:84 lang=go exported=true byte_range=2654:2678
   sig=type EvidenceKind string
 EDGES
+  ^references=matrix/neo/internal/codingruntime.EvidenceApproval,matrix/neo/internal/codingruntime.EvidenceBlocker,matrix/neo/internal/codingruntime.EvidenceCommand,matrix/neo/internal/codingruntime.EvidenceDiff,matrix/neo/internal/codingruntime.EvidenceError,matrix/neo/internal/codingruntime.EvidenceFileChange,matrix/neo/internal/codingruntime.EvidencePreview,matrix/neo/internal/codingruntime.EvidenceQuestion,matrix/neo/internal/codingruntime.EvidenceRecord,matrix/neo/internal/codingruntime.EvidenceStatus,matrix/neo/internal/codingruntime.EvidenceVerification,matrix/neo/internal/codingruntime.PublicEvidence,matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/server.buildWakePrompt
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.EvidencePreview kind=const
   digest=b3:e48933d4e0fa215317abb3d230dc0fa8580e617c65e378e2ea427f85bea9faf8 file=neo/internal/codingruntime/store.go range=92:92 lang=go exported=true byte_range=2929:2974
   sig=codingruntime.EvidenceKind
 EDGES
+  references=matrix/neo/internal/codingruntime.EvidenceKind
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/server.buildWorkerService.preparePreview,matrix/neo/internal/server.viewBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.EvidenceQuestion kind=const
   digest=b3:b91c613cc2387d97e0f5fb91eac96deefb5f44ecc397f0152e2ec2c3c1c88824 file=neo/internal/codingruntime/store.go range=93:93 lang=go exported=true byte_range=2976:3022
   sig=codingruntime.EvidenceKind
 EDGES
+  references=matrix/neo/internal/codingruntime.EvidenceKind
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/server.Server.answerBuildJob,matrix/neo/internal/server.viewBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.EvidenceRecord kind=type
@@ -365,6 +408,8 @@ NODE id=matrix/neo/internal/codingruntime.EvidenceRecord kind=type
   sig=type EvidenceRecord struct {\n	ID		string			`json:"id"`\n	Kind		EvidenceKind		`json:"kind"`\n	Summary		string			`json:"summary,omitempty"`\n	Command		string			`json:"command,omitempty"`\n	Path		string			`json:"path,omitempty"`\n	Diff		string			`json:"diff,omitempty"`\n	Check		string			`json:"check,omitempty"`\n	Passed		*bool			`json:"passed,omitempty"`\n	PreviewURL	string			`json:"preview_url,omitempty"`\n	Question	string			`json:"question,omitempty"`\n	Error		string			`json:"error,omitempty"`\n	Details		map[string]interface{}	`json:"details,omitempty"`\n	RecordedAt	time.Time		`json:"recorded_at"`\n	SourceEventID	string			`json:"source_event_id"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.EvidenceRecord#Check,matrix/neo/internal/codingruntime.EvidenceRecord#Command,matrix/neo/internal/codingruntime.EvidenceRecord#Details,matrix/neo/internal/codingruntime.EvidenceRecord#Diff,matrix/neo/internal/codingruntime.EvidenceRecord#Error,matrix/neo/internal/codingruntime.EvidenceRecord#ID,matrix/neo/internal/codingruntime.EvidenceRecord#Kind,matrix/neo/internal/codingruntime.EvidenceRecord#Passed,matrix/neo/internal/codingruntime.EvidenceRecord#Path,matrix/neo/internal/codingruntime.EvidenceRecord#PreviewURL,matrix/neo/internal/codingruntime.EvidenceRecord#Question,matrix/neo/internal/codingruntime.EvidenceRecord#RecordedAt,matrix/neo/internal/codingruntime.EvidenceRecord#SourceEventID,matrix/neo/internal/codingruntime.EvidenceRecord#Summary
+  references=matrix/neo/internal/codingruntime.EvidenceKind
+  ^references=matrix/neo/internal/codingruntime.DeliveryBatch,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/server.buildWorkerService.recordWorkerFailure
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.EvidenceRecord#Check kind=field
@@ -455,12 +500,16 @@ NODE id=matrix/neo/internal/codingruntime.EvidenceStatus kind=const
   digest=b3:ea4719f443a2919c1f13c4055b868fa76b1d2460f6fceaa9283b11e00e7913cc file=neo/internal/codingruntime/store.go range=87:87 lang=go exported=true byte_range=2689:2733
   sig=codingruntime.EvidenceKind
 EDGES
+  references=matrix/neo/internal/codingruntime.EvidenceKind
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.EvidenceVerification kind=const
   digest=b3:2a566ae49e6d481b11952b17ac2ea8d733bdeee505390bb4916f7caaf5f1c34b file=neo/internal/codingruntime/store.go range=91:91 lang=go exported=true byte_range=2877:2927
   sig=codingruntime.EvidenceKind
 EDGES
+  references=matrix/neo/internal/codingruntime.EvidenceKind
+  ^references=matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/server.projectBuildEvidence
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Job kind=type
@@ -468,6 +517,8 @@ NODE id=matrix/neo/internal/codingruntime.Job kind=type
   sig=type Job struct {\n	ID			string			`json:"id"`\n	ActorID			string			`json:"actor_id"`\n	ConversationID		string			`json:"conversation_id"`\n	UserServerID		string			`json:"user_server_id"`\n	ProjectID		string			`json:"project_id"`\n	CWD			string			`json:"cwd"`\n	Brief			BuildBrief		`json:"brief"`\n	Lifecycle		Lifecycle		`json:"lifecycle"`\n	Outcome			Outcome			`json:"outcome,omitempty"`\n	OutcomeSummary		string			`json:"outcome_summary,omitempty"`\n	Evidence		[]EvidenceRecord	`json:"evidence"`\n	Corrections		[]Correction		`json:"corrections"`\n	Answers			[]Answer		`json:"answers"`\n	Runtime			RuntimeBinding		`json:"runtime"`\n	IdempotencyKey		string			`json:"idempotency_key"`\n	IdempotencyHash		string			`json:"idempotency_hash"`\n	Deliveries		[]DeliveryReceipt	`json:"deliveries"`\n	ProcessedSourceIDs	[]string		`json:"processed_source_event_ids"`\n	WakeOutbox		[]WakeEnvelope		`json:"wake_outbox"`\n	CreatedAt		time.Time		`json:"created_at"`\n	UpdatedAt		time.Time		`json:"updated_at"`\n	StartedAt		*time.Time		`json:"started_at,omitempty"`\n	EndedAt			*time.Time		`json:"ended_at,omitempty"`\n	Revision		uint64			`json:"revision"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.Job#ActorID,matrix/neo/internal/codingruntime.Job#Answers,matrix/neo/internal/codingruntime.Job#Brief,matrix/neo/internal/codingruntime.Job#CWD,matrix/neo/internal/codingruntime.Job#ConversationID,matrix/neo/internal/codingruntime.Job#Corrections,matrix/neo/internal/codingruntime.Job#CreatedAt,matrix/neo/internal/codingruntime.Job#Deliveries,matrix/neo/internal/codingruntime.Job#EndedAt,matrix/neo/internal/codingruntime.Job#Evidence,matrix/neo/internal/codingruntime.Job#ID,matrix/neo/internal/codingruntime.Job#IdempotencyHash,matrix/neo/internal/codingruntime.Job#IdempotencyKey,matrix/neo/internal/codingruntime.Job#Lifecycle,matrix/neo/internal/codingruntime.Job#Outcome,matrix/neo/internal/codingruntime.Job#OutcomeSummary,matrix/neo/internal/codingruntime.Job#ProcessedSourceIDs,matrix/neo/internal/codingruntime.Job#ProjectID,matrix/neo/internal/codingruntime.Job#Revision,matrix/neo/internal/codingruntime.Job#Runtime,matrix/neo/internal/codingruntime.Job#StartedAt,matrix/neo/internal/codingruntime.Job#UpdatedAt,matrix/neo/internal/codingruntime.Job#UserServerID,matrix/neo/internal/codingruntime.Job#WakeOutbox,matrix/neo/internal/codingruntime.Job.Public,matrix/neo/internal/codingruntime.Job.Terminal
+  references=matrix/neo/internal/codingruntime.Answer,matrix/neo/internal/codingruntime.BuildBrief,matrix/neo/internal/codingruntime.Correction,matrix/neo/internal/codingruntime.DeliveryReceipt,matrix/neo/internal/codingruntime.EvidenceRecord,matrix/neo/internal/codingruntime.Lifecycle,matrix/neo/internal/codingruntime.Outcome,matrix/neo/internal/codingruntime.RuntimeBinding,matrix/neo/internal/codingruntime.WakeEnvelope
+  ^references=matrix/neo/internal/codingruntime.Job.Public,matrix/neo/internal/codingruntime.Job.Terminal,matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.BindRuntime,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.FindByIdempotency,matrix/neo/internal/codingruntime.Store.Get,matrix/neo/internal/codingruntime.Store.List,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/codingruntime.Store.findByIdempotencyLocked,matrix/neo/internal/codingruntime.Store.listLocked,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.update,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.applyTerminal,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.enqueueWake,matrix/neo/internal/server.Engine,matrix/neo/internal/server.Engine.acceptBuild,matrix/neo/internal/server.Server.interruptBuildJob,matrix/neo/internal/server.buildWakePrompt,matrix/neo/internal/server.buildWorkerService.Enqueue,matrix/neo/internal/server.buildWorkerService.Interrupt,matrix/neo/internal/server.buildWorkerService.applyDelivery,matrix/neo/internal/server.buildWorkerService.claimNextInput,matrix/neo/internal/server.buildWorkerService.preparePreview,matrix/neo/internal/server.buildWorkerService.process,matrix/neo/internal/server.initialBuildPrompt,matrix/neo/internal/server.viewBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Job#ActorID kind=field
@@ -618,14 +669,22 @@ NODE id=matrix/neo/internal/codingruntime.Job.Public kind=method
   digest=b3:c49a2775207581c865a0033897cd20dae9640153fcae750ea1f6802bbd6543de file=neo/internal/codingruntime/store.go range=277:295 lang=go exported=true byte_range=9798:10721
   sig=func (j Job) Public() PublicJob
 EDGES
+  calls=matrix/neo/internal/codingruntime.cloneBool,matrix/neo/internal/codingruntime.cloneBrief,matrix/neo/internal/codingruntime.cloneTime
+  references=matrix/neo/internal/codingruntime.Answer,matrix/neo/internal/codingruntime.Correction,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.PublicEvidence,matrix/neo/internal/codingruntime.PublicJob,matrix/neo/internal/codingruntime.cloneBool,matrix/neo/internal/codingruntime.cloneBrief,matrix/neo/internal/codingruntime.cloneTime,matrix/neo/internal/codingruntime.evidence,matrix/neo/internal/codingruntime.item,matrix/neo/internal/codingruntime.j
   ^contains=matrix/neo/internal/codingruntime.Job
+  ^calls=matrix/neo/internal/server.buildWakePrompt,matrix/neo/internal/server.viewBuildJob
+  ^references=matrix/neo/internal/server.buildWakePrompt,matrix/neo/internal/server.viewBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Job.Terminal kind=method
   digest=b3:8f4bd133165710c385de433d80ab37c5f41589a10778a0eeb1c7c3110d1109c7 file=neo/internal/codingruntime/store.go range=204:204 lang=go exported=true byte_range=7232:7294
   sig=func (j Job) Terminal() bool
 EDGES
+  calls=matrix/neo/internal/codingruntime.Lifecycle.Terminal
+  references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Lifecycle.Terminal,matrix/neo/internal/codingruntime.j
   ^contains=matrix/neo/internal/codingruntime.Job
+  ^calls=matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/server.Engine.StartBuildWorker,matrix/neo/internal/server.Engine.interruptRecoveryBuilds,matrix/neo/internal/server.Server.interruptBuildJob,matrix/neo/internal/server.buildWorkerService.Enqueue,matrix/neo/internal/server.buildWorkerService.dispatchActiveInput,matrix/neo/internal/server.buildWorkerService.process,matrix/neo/internal/server.buildWorkerService.run
+  ^references=matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.BindRuntime,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/server.Engine.StartBuildWorker,matrix/neo/internal/server.Engine.interruptRecoveryBuilds,matrix/neo/internal/server.Server.interruptBuildJob,matrix/neo/internal/server.buildWorkerService.Enqueue,matrix/neo/internal/server.buildWorkerService.dispatchActiveInput,matrix/neo/internal/server.buildWorkerService.process,matrix/neo/internal/server.buildWorkerService.run
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Lifecycle kind=type
@@ -633,103 +692,137 @@ NODE id=matrix/neo/internal/codingruntime.Lifecycle kind=type
   sig=type Lifecycle string
 EDGES
   contains=matrix/neo/internal/codingruntime.Lifecycle.Terminal
+  ^references=matrix/neo/internal/codingruntime.DeliveryBatch,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Lifecycle.Terminal,matrix/neo/internal/codingruntime.LifecycleAccepted,matrix/neo/internal/codingruntime.LifecycleBlocked,matrix/neo/internal/codingruntime.LifecycleFailed,matrix/neo/internal/codingruntime.LifecycleInterrupted,matrix/neo/internal/codingruntime.LifecycleNeedsApproval,matrix/neo/internal/codingruntime.LifecycleNeedsInput,matrix/neo/internal/codingruntime.LifecycleQueued,matrix/neo/internal/codingruntime.LifecycleRunning,matrix/neo/internal/codingruntime.LifecycleVerified,matrix/neo/internal/codingruntime.PublicJob,matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/codingruntime.TerminalResult,matrix/neo/internal/codingruntime.allowedTransition,matrix/neo/internal/codingruntime.knownLifecycle,matrix/neo/internal/server.buildJobView
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Lifecycle.Terminal kind=method
   digest=b3:0b298d58b2fe3397e007938885166ac0f9b3502e89ab154a811508379b8b9565 file=neo/internal/codingruntime/store.go range=52:54 lang=go exported=true byte_range=1404:1526
   sig=func (l Lifecycle) Terminal() bool
 EDGES
+  references=matrix/neo/internal/codingruntime.Lifecycle,matrix/neo/internal/codingruntime.LifecycleFailed,matrix/neo/internal/codingruntime.LifecycleInterrupted,matrix/neo/internal/codingruntime.LifecycleVerified,matrix/neo/internal/codingruntime.l
   ^contains=matrix/neo/internal/codingruntime.Lifecycle
+  ^calls=matrix/neo/internal/codingruntime.Job.Terminal,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/codingruntime.validateDelivery
+  ^references=matrix/neo/internal/codingruntime.Job.Terminal,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/codingruntime.validateDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.LifecycleAccepted kind=const
   digest=b3:15c609f9a13114697c064deba5cc26cb2acbc64df3759ee289fe0e0b71f14613 file=neo/internal/codingruntime/store.go range=41:41 lang=go exported=true byte_range=973:1018
   sig=codingruntime.Lifecycle
 EDGES
+  references=matrix/neo/internal/codingruntime.Lifecycle
+  ^references=matrix/neo/internal/codingruntime.allowedTransition,matrix/neo/internal/codingruntime.knownLifecycle
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.LifecycleBlocked kind=const
   digest=b3:0c236aaff6ae1bec64c4315a7be5dc8580c6f5d11d1b4fa9b2aa4a7611b29393 file=neo/internal/codingruntime/store.go range=46:46 lang=go exported=true byte_range=1214:1258
   sig=codingruntime.Lifecycle
 EDGES
+  references=matrix/neo/internal/codingruntime.Lifecycle
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.allowedTransition,matrix/neo/internal/codingruntime.knownLifecycle,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/server.buildWorkerService.process,matrix/neo/internal/server.buildWorkerService.recordWorkerFailure
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.LifecycleFailed kind=const
   digest=b3:9b0aa7bd4958ce5e2313f6b1279f3a1813d8747c3f7fcc67e8098a88ab133d91 file=neo/internal/codingruntime/store.go range=48:48 lang=go exported=true byte_range=1310:1353
   sig=codingruntime.Lifecycle
 EDGES
+  references=matrix/neo/internal/codingruntime.Lifecycle
+  ^references=matrix/neo/internal/codingruntime.Lifecycle.Terminal,matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.knownLifecycle,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.validTerminal
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.LifecycleInterrupted kind=const
   digest=b3:27fd5501592fc50fd25a755d78aa4ff5745091975ade64db973f428b8f1f9028 file=neo/internal/codingruntime/store.go range=47:47 lang=go exported=true byte_range=1260:1308
   sig=codingruntime.Lifecycle
 EDGES
+  references=matrix/neo/internal/codingruntime.Lifecycle
+  ^references=matrix/neo/internal/codingruntime.Lifecycle.Terminal,matrix/neo/internal/codingruntime.knownLifecycle,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.validTerminal,matrix/neo/internal/server.Engine.interruptRecoveryBuilds,matrix/neo/internal/server.Server.interruptBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.LifecycleNeedsApproval kind=const
   digest=b3:f03aea2b48ffac7ee6a41d855c4260704120c9e9ef0e40bb89cc9e229e8b78f4 file=neo/internal/codingruntime/store.go range=45:45 lang=go exported=true byte_range=1161:1212
   sig=codingruntime.Lifecycle
 EDGES
+  references=matrix/neo/internal/codingruntime.Lifecycle
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.allowedTransition,matrix/neo/internal/codingruntime.knownLifecycle,matrix/neo/internal/server.buildWorkerService.process
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.LifecycleNeedsInput kind=const
   digest=b3:fedfec9f143df3bc6bcef3e46e4b1bb5ef99e32a58a269838dbb4e71ba432d3a file=neo/internal/codingruntime/store.go range=44:44 lang=go exported=true byte_range=1111:1159
   sig=codingruntime.Lifecycle
 EDGES
+  references=matrix/neo/internal/codingruntime.Lifecycle
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.allowedTransition,matrix/neo/internal/codingruntime.knownLifecycle,matrix/neo/internal/server.buildWorkerService.process
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.LifecycleQueued kind=const
   digest=b3:a1efe00306b765ce8752d9796889ed3b36b0414d6a07122269a885bf31099a1f file=neo/internal/codingruntime/store.go range=42:42 lang=go exported=true byte_range=1020:1063
   sig=codingruntime.Lifecycle
 EDGES
+  references=matrix/neo/internal/codingruntime.Lifecycle
+  ^references=matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.allowedTransition,matrix/neo/internal/codingruntime.knownLifecycle
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.LifecycleRunning kind=const
   digest=b3:02855184ce722ec22c68a1a2f334d334ce43d68ad874ac77b84012c5aa8ad6a5 file=neo/internal/codingruntime/store.go range=43:43 lang=go exported=true byte_range=1065:1109
   sig=codingruntime.Lifecycle
 EDGES
+  references=matrix/neo/internal/codingruntime.Lifecycle
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/codingruntime.allowedTransition,matrix/neo/internal/codingruntime.knownLifecycle,matrix/neo/internal/server.buildWorkerService.process
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.LifecycleVerified kind=const
   digest=b3:1a123e5acbf7fa75992d94e75fdaac3a1930f46bb58279ff5cc8770495d2e114 file=neo/internal/codingruntime/store.go range=49:49 lang=go exported=true byte_range=1355:1400
   sig=codingruntime.Lifecycle
 EDGES
+  references=matrix/neo/internal/codingruntime.Lifecycle
+  ^references=matrix/neo/internal/codingruntime.Lifecycle.Terminal,matrix/neo/internal/codingruntime.knownLifecycle,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.validTerminal,matrix/neo/internal/server.buildWorkerService.process
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Open kind=func
   digest=b3:34dbdabe3e21f394652c07c74c202d20725ac37d0fba32c01d6000a99900e994 file=neo/internal/codingruntime/store.go range=304:304 lang=go exported=true byte_range=10814:10889
   sig=func Open(dir string) *Store
 EDGES
+  references=matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.dir
+  ^calls=matrix/neo/internal/server.NewEngine
+  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Outcome kind=type
   digest=b3:ee59bbf32333e5b0c93de897dc3947b7daa270a09609a04ac826df17289f5054 file=neo/internal/codingruntime/store.go range=56:56 lang=go exported=true byte_range=1528:1547
   sig=type Outcome string
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.OutcomeFailed,matrix/neo/internal/codingruntime.OutcomeInterrupted,matrix/neo/internal/codingruntime.OutcomeNone,matrix/neo/internal/codingruntime.OutcomeVerified,matrix/neo/internal/codingruntime.PublicJob,matrix/neo/internal/codingruntime.TerminalResult,matrix/neo/internal/server.buildJobView
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.OutcomeFailed kind=const
   digest=b3:9f0261aed740c885f51dc8baf5486b6b1c47258d93fd6f55a91516aed47548d5 file=neo/internal/codingruntime/store.go range=61:61 lang=go exported=true byte_range=1632:1669
   sig=codingruntime.Outcome
 EDGES
+  references=matrix/neo/internal/codingruntime.Outcome
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.validTerminal
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.OutcomeInterrupted kind=const
   digest=b3:cf7b084b498a4ca8eb45f53547486e15d5b2bda09d3d057c60eb04fb3adf147d file=neo/internal/codingruntime/store.go range=62:62 lang=go exported=true byte_range=1671:1713
   sig=codingruntime.Outcome
 EDGES
+  references=matrix/neo/internal/codingruntime.Outcome
+  ^references=matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.validTerminal,matrix/neo/internal/server.Engine.interruptRecoveryBuilds,matrix/neo/internal/server.Server.interruptBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.OutcomeNone kind=const
   digest=b3:9216816f3f6bf9266297066ff2cf4c94f5848faaf851299b39c2dc43c2b40b40 file=neo/internal/codingruntime/store.go range=59:59 lang=go exported=true byte_range=1558:1589
   sig=codingruntime.Outcome
 EDGES
+  references=matrix/neo/internal/codingruntime.Outcome
+  ^references=matrix/neo/internal/codingruntime.Store.CreateQueued
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.OutcomeVerified kind=const
   digest=b3:b8c13a1821ee0362f81095a7d582c44fe787a1017ef96002cdfc2c393b435293 file=neo/internal/codingruntime/store.go range=60:60 lang=go exported=true byte_range=1591:1630
   sig=codingruntime.Outcome
 EDGES
+  references=matrix/neo/internal/codingruntime.Outcome
+  ^references=matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.validTerminal
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.PendingWake kind=type
@@ -737,6 +830,8 @@ NODE id=matrix/neo/internal/codingruntime.PendingWake kind=type
   sig=type PendingWake struct {\n	JobID	string\n	Wake	WakeEnvelope\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.PendingWake#JobID,matrix/neo/internal/codingruntime.PendingWake#Wake
+  references=matrix/neo/internal/codingruntime.WakeEnvelope
+  ^references=matrix/neo/internal/codingruntime.Store.PendingWakes
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.PendingWake#JobID kind=field
@@ -756,6 +851,8 @@ NODE id=matrix/neo/internal/codingruntime.PublicEvidence kind=type
   sig=type PublicEvidence struct {\n	ID		string		`json:"id"`\n	Kind		EvidenceKind	`json:"kind"`\n	Summary		string		`json:"summary,omitempty"`\n	Command		string		`json:"command,omitempty"`\n	Path		string		`json:"path,omitempty"`\n	Diff		string		`json:"diff,omitempty"`\n	Check		string		`json:"check,omitempty"`\n	Passed		*bool		`json:"passed,omitempty"`\n	PreviewURL	string		`json:"preview_url,omitempty"`\n	Question	string		`json:"question,omitempty"`\n	Error		string		`json:"error,omitempty"`\n	RecordedAt	time.Time	`json:"recorded_at"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.PublicEvidence#Check,matrix/neo/internal/codingruntime.PublicEvidence#Command,matrix/neo/internal/codingruntime.PublicEvidence#Diff,matrix/neo/internal/codingruntime.PublicEvidence#Error,matrix/neo/internal/codingruntime.PublicEvidence#ID,matrix/neo/internal/codingruntime.PublicEvidence#Kind,matrix/neo/internal/codingruntime.PublicEvidence#Passed,matrix/neo/internal/codingruntime.PublicEvidence#Path,matrix/neo/internal/codingruntime.PublicEvidence#PreviewURL,matrix/neo/internal/codingruntime.PublicEvidence#Question,matrix/neo/internal/codingruntime.PublicEvidence#RecordedAt,matrix/neo/internal/codingruntime.PublicEvidence#Summary
+  references=matrix/neo/internal/codingruntime.EvidenceKind
+  ^references=matrix/neo/internal/codingruntime.Job.Public,matrix/neo/internal/codingruntime.PublicJob,matrix/neo/internal/server.projectBuildEvidence
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.PublicEvidence#Check kind=field
@@ -835,6 +932,8 @@ NODE id=matrix/neo/internal/codingruntime.PublicJob kind=type
   sig=type PublicJob struct {\n	ID		string			`json:"id"`\n	ConversationID	string			`json:"conversation_id"`\n	ProjectID	string			`json:"project_id"`\n	Brief		BuildBrief		`json:"brief"`\n	Lifecycle	Lifecycle		`json:"lifecycle"`\n	Outcome		Outcome			`json:"outcome,omitempty"`\n	OutcomeSummary	string			`json:"outcome_summary,omitempty"`\n	Evidence	[]PublicEvidence	`json:"evidence"`\n	Corrections	[]Correction		`json:"corrections"`\n	Answers		[]Answer		`json:"answers"`\n	CreatedAt	time.Time		`json:"created_at"`\n	UpdatedAt	time.Time		`json:"updated_at"`\n	StartedAt	*time.Time		`json:"started_at,omitempty"`\n	EndedAt		*time.Time		`json:"ended_at,omitempty"`\n	Revision	uint64			`json:"revision"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.PublicJob#Answers,matrix/neo/internal/codingruntime.PublicJob#Brief,matrix/neo/internal/codingruntime.PublicJob#ConversationID,matrix/neo/internal/codingruntime.PublicJob#Corrections,matrix/neo/internal/codingruntime.PublicJob#CreatedAt,matrix/neo/internal/codingruntime.PublicJob#EndedAt,matrix/neo/internal/codingruntime.PublicJob#Evidence,matrix/neo/internal/codingruntime.PublicJob#ID,matrix/neo/internal/codingruntime.PublicJob#Lifecycle,matrix/neo/internal/codingruntime.PublicJob#Outcome,matrix/neo/internal/codingruntime.PublicJob#OutcomeSummary,matrix/neo/internal/codingruntime.PublicJob#ProjectID,matrix/neo/internal/codingruntime.PublicJob#Revision,matrix/neo/internal/codingruntime.PublicJob#StartedAt,matrix/neo/internal/codingruntime.PublicJob#UpdatedAt
+  references=matrix/neo/internal/codingruntime.Answer,matrix/neo/internal/codingruntime.BuildBrief,matrix/neo/internal/codingruntime.Correction,matrix/neo/internal/codingruntime.Lifecycle,matrix/neo/internal/codingruntime.Outcome,matrix/neo/internal/codingruntime.PublicEvidence
+  ^references=matrix/neo/internal/codingruntime.Job.Public
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.PublicJob#Answers kind=field
@@ -932,6 +1031,10 @@ NODE id=matrix/neo/internal/codingruntime.ReduceEvent kind=func
   sig=func ReduceEvent(event codingworker.Event) (DeliveryBatch, bool, error)
   doc=ReduceEvent converts one private AgentCore gateway event into a bounded,\nproduct-owned delivery. The boolean is false for protocol chatter that must\nnever be persisted or shown (token deltas, reasoning, runtime metadata, and\nother non-product events).
 EDGES
+  calls=matrix/neo/internal/codingruntime.boolValue,matrix/neo/internal/codingruntime.decodeEventPayload,matrix/neo/internal/codingruntime.firstString,matrix/neo/internal/codingruntime.ignoredWorkerEvent,matrix/neo/internal/codingruntime.isBlockedStatus,matrix/neo/internal/codingruntime.nonEmptyDetails,matrix/neo/internal/codingruntime.productTool,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/codingruntime.safePreviewURL,matrix/neo/internal/codingruntime.safeStrings,matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.safeToken,matrix/neo/internal/codingruntime.stableEventIDs,matrix/neo/internal/codingruntime.stringValue,matrix/neo/internal/codingruntime.toolProgressSummary,matrix/neo/internal/codingruntime.wakeDedupKey
+  references=matrix/neo/internal/codingruntime.DeliveryBatch,matrix/neo/internal/codingruntime.ErrInvalidWorkerEvent,matrix/neo/internal/codingruntime.EvidenceApproval,matrix/neo/internal/codingruntime.EvidenceBlocker,matrix/neo/internal/codingruntime.EvidenceError,matrix/neo/internal/codingruntime.EvidencePreview,matrix/neo/internal/codingruntime.EvidenceQuestion,matrix/neo/internal/codingruntime.EvidenceRecord,matrix/neo/internal/codingruntime.EvidenceStatus,matrix/neo/internal/codingruntime.LifecycleBlocked,matrix/neo/internal/codingruntime.LifecycleFailed,matrix/neo/internal/codingruntime.LifecycleNeedsApproval,matrix/neo/internal/codingruntime.LifecycleNeedsInput,matrix/neo/internal/codingruntime.LifecycleRunning,matrix/neo/internal/codingruntime.OutcomeFailed,matrix/neo/internal/codingruntime.TerminalResult,matrix/neo/internal/codingruntime.WakeApprovalRequired,matrix/neo/internal/codingruntime.WakeBlocked,matrix/neo/internal/codingruntime.WakeFailed,matrix/neo/internal/codingruntime.WakeInputRequired,matrix/neo/internal/codingruntime.WakeRequest,matrix/neo/internal/codingruntime.batch,matrix/neo/internal/codingruntime.boolValue,matrix/neo/internal/codingruntime.command,matrix/neo/internal/codingruntime.context,matrix/neo/internal/codingruntime.decodeEventPayload,matrix/neo/internal/codingruntime.deliveryID,matrix/neo/internal/codingruntime.description,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.event,matrix/neo/internal/codingruntime.firstString,matrix/neo/internal/codingruntime.i,matrix/neo/internal/codingruntime.ignoredWorkerEvent,matrix/neo/internal/codingruntime.isBlockedStatus,matrix/neo/internal/codingruntime.kind,matrix/neo/internal/codingruntime.label,matrix/neo/internal/codingruntime.maxChoiceCount,matrix/neo/internal/codingruntime.maxChoiceRunes,matrix/neo/internal/codingruntime.maxCommandRunes,matrix/neo/internal/codingruntime.maxStatusRunes,matrix/neo/internal/codingruntime.maxSummaryRunes,matrix/neo/internal/codingruntime.message,matrix/neo/internal/codingruntime.name,matrix/neo/internal/codingruntime.nonEmptyDetails,matrix/neo/internal/codingruntime.payload,matrix/neo/internal/codingruntime.previewURL,matrix/neo/internal/codingruntime.productTool,matrix/neo/internal/codingruntime.question,matrix/neo/internal/codingruntime.reason,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/codingruntime.safePreviewURL,matrix/neo/internal/codingruntime.safeStrings,matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.safeToken,matrix/neo/internal/codingruntime.sessionID,matrix/neo/internal/codingruntime.sourceID,matrix/neo/internal/codingruntime.stableEventIDs,matrix/neo/internal/codingruntime.stringValue,matrix/neo/internal/codingruntime.summary,matrix/neo/internal/codingruntime.text,matrix/neo/internal/codingruntime.toolProgressSummary,matrix/neo/internal/codingruntime.wakeDedupKey,matrix/neo/internal/codingworker.Event
+  ^calls=matrix/neo/internal/server.buildWorkerService.process
+  ^references=matrix/neo/internal/server.buildWorkerService.process
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.RuntimeBinding kind=type
@@ -939,6 +1042,7 @@ NODE id=matrix/neo/internal/codingruntime.RuntimeBinding kind=type
   sig=type RuntimeBinding struct {\n	SessionID		string		`json:"session_id,omitempty"`\n	ServiceInstanceID	string		`json:"service_instance_id,omitempty"`\n	LastObservedEventID	string		`json:"last_observed_event_id,omitempty"`\n	InitialPromptTried	bool		`json:"initial_prompt_tried,omitempty"`\n	LastCorrectionID	string		`json:"last_correction_id,omitempty"`\n	LastAnswerID		string		`json:"last_answer_id,omitempty"`\n	PreviewTarget		string		`json:"preview_target,omitempty"`\n	BoundAt			*time.Time	`json:"bound_at,omitempty"`\n	ObservedAt		*time.Time	`json:"observed_at,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.RuntimeBinding#BoundAt,matrix/neo/internal/codingruntime.RuntimeBinding#InitialPromptTried,matrix/neo/internal/codingruntime.RuntimeBinding#LastAnswerID,matrix/neo/internal/codingruntime.RuntimeBinding#LastCorrectionID,matrix/neo/internal/codingruntime.RuntimeBinding#LastObservedEventID,matrix/neo/internal/codingruntime.RuntimeBinding#ObservedAt,matrix/neo/internal/codingruntime.RuntimeBinding#PreviewTarget,matrix/neo/internal/codingruntime.RuntimeBinding#ServiceInstanceID,matrix/neo/internal/codingruntime.RuntimeBinding#SessionID
+  ^references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store.BindRuntime,matrix/neo/internal/server.buildWorkerService.process
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.RuntimeBinding#BoundAt kind=field
@@ -1000,6 +1104,8 @@ NODE id=matrix/neo/internal/codingruntime.Store kind=type
   sig=type Store struct {\n	mu	sync.Mutex\n	dir	string\n	vault	*vault.Session\n	user	string\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.Store#dir,matrix/neo/internal/codingruntime.Store#mu,matrix/neo/internal/codingruntime.Store#user,matrix/neo/internal/codingruntime.Store#vault,matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.BindRuntime,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.FindByIdempotency,matrix/neo/internal/codingruntime.Store.Get,matrix/neo/internal/codingruntime.Store.List,matrix/neo/internal/codingruntime.Store.PendingWakes,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.SetVault,matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/codingruntime.Store.ad,matrix/neo/internal/codingruntime.Store.findByIdempotencyLocked,matrix/neo/internal/codingruntime.Store.listLocked,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.pathLocked,matrix/neo/internal/codingruntime.Store.update,matrix/neo/internal/codingruntime.Store.writeLocked
+  references=matrix/vault.Session
+  ^references=matrix/neo/internal/codingruntime.Open,matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.BindRuntime,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.FindByIdempotency,matrix/neo/internal/codingruntime.Store.Get,matrix/neo/internal/codingruntime.Store.List,matrix/neo/internal/codingruntime.Store.PendingWakes,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.SetVault,matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/codingruntime.Store.ad,matrix/neo/internal/codingruntime.Store.findByIdempotencyLocked,matrix/neo/internal/codingruntime.Store.listLocked,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.pathLocked,matrix/neo/internal/codingruntime.Store.update,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/server.Engine
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store#dir kind=field
@@ -1030,62 +1136,95 @@ NODE id=matrix/neo/internal/codingruntime.Store.AckWake kind=method
   digest=b3:03323a965b68490a865d0c31914fa736b28934a68721689eec5be47297a6640e file=neo/internal/codingruntime/store.go range=706:738 lang=go exported=true byte_range=22360:23178
   sig=func (s *Store) AckWake(jobID, wakeID string) (Job, bool, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.cloneTime
+  references=matrix/neo/internal/codingruntime.ErrNotFound,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.WakeAcked,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.cloneTime,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.i,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.wakeID
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/server.buildWorkerService.deliverPendingBuildWakes
+  ^references=matrix/neo/internal/server.buildWorkerService.deliverPendingBuildWakes
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.AddAnswer kind=method
   digest=b3:9d1ee32b067e1d7ec74fbc39aa7ddf057cfae5ac31e11122149a055151a56de1 file=neo/internal/codingruntime/store.go range=462:481 lang=go exported=true byte_range=15422:16320
   sig=func (s *Store) AddAnswer(jobID string, expectedRevision uint64, targetID string, kind AnswerKind, text string) (Job, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.update
+  references=matrix/neo/internal/codingruntime.Answer,matrix/neo/internal/codingruntime.AnswerApproval,matrix/neo/internal/codingruntime.AnswerKind,matrix/neo/internal/codingruntime.AnswerQuestion,matrix/neo/internal/codingruntime.ErrInvalid,matrix/neo/internal/codingruntime.ErrInvalidTransition,matrix/neo/internal/codingruntime.ErrTerminal,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Job.Terminal,matrix/neo/internal/codingruntime.LifecycleNeedsApproval,matrix/neo/internal/codingruntime.LifecycleNeedsInput,matrix/neo/internal/codingruntime.LifecycleQueued,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.update,matrix/neo/internal/codingruntime.expectedRevision,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.kind,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.targetID,matrix/neo/internal/codingruntime.text
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/server.Server.answerBuildJob
+  ^references=matrix/neo/internal/server.Server.answerBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.AddCorrection kind=method
   digest=b3:24f7b8dbe1dcb39092c082d3dfc30d064632b5ee4a1f4d2397cd8807f330ef42 file=neo/internal/codingruntime/store.go range=445:460 lang=go exported=true byte_range=14787:15420
   sig=func (s *Store) AddCorrection(jobID string, expectedRevision uint64, text string) (Job, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.update
+  references=matrix/neo/internal/codingruntime.Correction,matrix/neo/internal/codingruntime.ErrInvalid,matrix/neo/internal/codingruntime.ErrTerminal,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Job.Terminal,matrix/neo/internal/codingruntime.LifecycleBlocked,matrix/neo/internal/codingruntime.LifecycleNeedsApproval,matrix/neo/internal/codingruntime.LifecycleNeedsInput,matrix/neo/internal/codingruntime.LifecycleQueued,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.update,matrix/neo/internal/codingruntime.expectedRevision,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.text
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/server.Server.correctBuildJob
+  ^references=matrix/neo/internal/server.Server.correctBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.ApplyDelivery kind=method
   digest=b3:2d0b507fe7a515551ce311ba6a1731ab3d5483b83bcf415d6e0e7efcd923d5bc file=neo/internal/codingruntime/store.go range=518:593 lang=go exported=true byte_range=17314:19600
   sig=func (s *Store) ApplyDelivery(jobID string, expectedRevision uint64, batch DeliveryBatch) (Job, bool, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Job.Terminal,matrix/neo/internal/codingruntime.Lifecycle.Terminal,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.allowedTransition,matrix/neo/internal/codingruntime.applyTerminal,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.cloneTime,matrix/neo/internal/codingruntime.contains,matrix/neo/internal/codingruntime.digestJSON,matrix/neo/internal/codingruntime.enqueueWake,matrix/neo/internal/codingruntime.normalizeDelivery,matrix/neo/internal/codingruntime.validateDelivery
+  references=matrix/neo/internal/codingruntime.DeliveryBatch,matrix/neo/internal/codingruntime.DeliveryReceipt,matrix/neo/internal/codingruntime.ErrDeliveryConflict,matrix/neo/internal/codingruntime.ErrInvalidTransition,matrix/neo/internal/codingruntime.ErrNotFound,matrix/neo/internal/codingruntime.ErrRevisionConflict,matrix/neo/internal/codingruntime.ErrSourceEventConflict,matrix/neo/internal/codingruntime.ErrTerminal,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Job.Terminal,matrix/neo/internal/codingruntime.Lifecycle.Terminal,matrix/neo/internal/codingruntime.LifecycleRunning,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.allowedTransition,matrix/neo/internal/codingruntime.already,matrix/neo/internal/codingruntime.applyTerminal,matrix/neo/internal/codingruntime.batch,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.cloneTime,matrix/neo/internal/codingruntime.contains,matrix/neo/internal/codingruntime.digest,matrix/neo/internal/codingruntime.digestJSON,matrix/neo/internal/codingruntime.enqueueWake,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.evidence,matrix/neo/internal/codingruntime.expectedRevision,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.normalizeDelivery,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.receipt,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.sourceID,matrix/neo/internal/codingruntime.validateDelivery
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/server.buildWorkerService.applyDelivery
+  ^references=matrix/neo/internal/server.buildWorkerService.applyDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.BindRuntime kind=method
   digest=b3:7dee722e67cc6ceb5d99b9bd8996ebab723cc300ea93bba2cc3a5dd2d548c4ad file=neo/internal/codingruntime/store.go range=420:443 lang=go exported=true byte_range=13933:14785
   sig=func (s *Store) BindRuntime(jobID string, expectedRevision uint64, binding RuntimeBinding) (Job, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.update
+  references=matrix/neo/internal/codingruntime.ErrInvalid,matrix/neo/internal/codingruntime.ErrTerminal,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Job.Terminal,matrix/neo/internal/codingruntime.RuntimeBinding,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.update,matrix/neo/internal/codingruntime.binding,matrix/neo/internal/codingruntime.cloneTime,matrix/neo/internal/codingruntime.expectedRevision,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.s
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/server.buildWorkerService.claimNextInput,matrix/neo/internal/server.buildWorkerService.preparePreview,matrix/neo/internal/server.buildWorkerService.process
+  ^references=matrix/neo/internal/server.buildWorkerService.claimNextInput,matrix/neo/internal/server.buildWorkerService.preparePreview,matrix/neo/internal/server.buildWorkerService.process
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal kind=method
   digest=b3:6db99c7f4e8324f7dac73d4bad2cd966239bef490718fc79f9bfb2e77c4ce02d file=neo/internal/codingruntime/store.go range=483:516 lang=go exported=true byte_range=16322:17312
   sig=func (s *Store) CompareAndSetTerminal(jobID string, expectedRevision uint64, result TerminalResult) (Job, bool, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Job.Terminal,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.applyTerminal,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.validTerminal
+  references=matrix/neo/internal/codingruntime.ErrInvalid,matrix/neo/internal/codingruntime.ErrNotFound,matrix/neo/internal/codingruntime.ErrRevisionConflict,matrix/neo/internal/codingruntime.ErrTerminal,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Job.Terminal,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.TerminalResult,matrix/neo/internal/codingruntime.applyTerminal,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.expectedRevision,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.result,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.validTerminal
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/server.Engine.interruptRecoveryBuilds,matrix/neo/internal/server.Server.interruptBuildJob
+  ^references=matrix/neo/internal/server.Engine.interruptRecoveryBuilds,matrix/neo/internal/server.Server.interruptBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.CreateQueued kind=method
   digest=b3:27f1cdaf77802c8fa3bb53a41052424314dedada6956a595da876318bf7250e8 file=neo/internal/codingruntime/store.go range=318:367 lang=go exported=true byte_range=11133:12720
   sig=func (s *Store) CreateQueued(input CreateRequest) (Job, bool, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.findByIdempotencyLocked,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.createHash,matrix/neo/internal/codingruntime.normalizeCreate,matrix/neo/internal/codingruntime.safeID,matrix/neo/internal/codingruntime.validateCreate
+  references=matrix/neo/internal/codingruntime.Answer,matrix/neo/internal/codingruntime.Correction,matrix/neo/internal/codingruntime.CreateRequest,matrix/neo/internal/codingruntime.DeliveryReceipt,matrix/neo/internal/codingruntime.ErrDisabled,matrix/neo/internal/codingruntime.ErrIdempotencyConflict,matrix/neo/internal/codingruntime.ErrInvalid,matrix/neo/internal/codingruntime.EvidenceRecord,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.LifecycleQueued,matrix/neo/internal/codingruntime.OutcomeNone,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.findByIdempotencyLocked,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.WakeEnvelope,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.createHash,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.hash,matrix/neo/internal/codingruntime.input,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.normalizeCreate,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.prior,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.safeID,matrix/neo/internal/codingruntime.validateCreate
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/server.Engine.acceptBuild
+  ^references=matrix/neo/internal/server.Engine.acceptBuild
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.Enabled kind=method
   digest=b3:a7396ca24e938312c33ae8183afa585ec818312faceab725a705479c95a8b161 file=neo/internal/codingruntime/store.go range=306:306 lang=go exported=true byte_range=10891:10956
   sig=func (s *Store) Enabled() bool
 EDGES
+  references=matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.s
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.FindByIdempotency,matrix/neo/internal/codingruntime.Store.Get,matrix/neo/internal/codingruntime.Store.List,matrix/neo/internal/codingruntime.Store.PendingWakes,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.pathLocked,matrix/neo/internal/codingruntime.Store.update,matrix/neo/internal/server.Engine.StartBuildWorker,matrix/neo/internal/server.Server.handleBuildJobs
+  ^references=matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.FindByIdempotency,matrix/neo/internal/codingruntime.Store.Get,matrix/neo/internal/codingruntime.Store.List,matrix/neo/internal/codingruntime.Store.PendingWakes,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.pathLocked,matrix/neo/internal/codingruntime.Store.update,matrix/neo/internal/server.Engine.StartBuildWorker,matrix/neo/internal/server.Server.handleBuildJobs
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.EnqueueWake kind=method
   digest=b3:ec37bc2df90d1f90173120abb6cfeedba666c59256060296c91da4470b8472e7 file=neo/internal/codingruntime/store.go range=595:628 lang=go exported=true byte_range=19602:20481
   sig=func (s *Store) EnqueueWake(jobID string, expectedRevision uint64, request WakeRequest) (Job, bool, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.enqueueWake,matrix/neo/internal/codingruntime.normalizeWake,matrix/neo/internal/codingruntime.validateWake
+  references=matrix/neo/internal/codingruntime.ErrNotFound,matrix/neo/internal/codingruntime.ErrRevisionConflict,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.WakeRequest,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.enqueueWake,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.expectedRevision,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.normalizeWake,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.request,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.validateWake,matrix/neo/internal/codingruntime.wake
   ^contains=matrix/neo/internal/codingruntime.Store
   ^defines=matrix/neo/internal/codingruntime/store.go
 
@@ -1093,6 +1232,8 @@ NODE id=matrix/neo/internal/codingruntime.Store.FindByIdempotency kind=method
   digest=b3:c6364a165d43e1545963416ed011ad280f678e3ca20c61160c4c854f2573e30b file=neo/internal/codingruntime/store.go range=379:387 lang=go exported=true byte_range=12931:13212
   sig=func (s *Store) FindByIdempotency(key string) (Job, bool, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.findByIdempotencyLocked,matrix/neo/internal/codingruntime.cloneJob
+  references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.findByIdempotencyLocked,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.key,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.s
   ^contains=matrix/neo/internal/codingruntime.Store
   ^defines=matrix/neo/internal/codingruntime/store.go
 
@@ -1100,41 +1241,62 @@ NODE id=matrix/neo/internal/codingruntime.Store.Get kind=method
   digest=b3:ab3eda326fd64f6860812f29a735fe06ad9ca5a66cd08292d96c134502953eaa file=neo/internal/codingruntime/store.go range=369:377 lang=go exported=true byte_range=12722:12929
   sig=func (s *Store) Get(jobID string) (Job, bool, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.cloneJob
+  references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.s
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/server.Engine.interruptRecoveryBuilds,matrix/neo/internal/server.Server.answerBuildJob,matrix/neo/internal/server.Server.correctBuildJob,matrix/neo/internal/server.Server.handleBuildJobs,matrix/neo/internal/server.Server.interruptBuildJob,matrix/neo/internal/server.Server.proxyBuildPreview,matrix/neo/internal/server.buildWorkerService.applyDelivery,matrix/neo/internal/server.buildWorkerService.deliverPendingBuildWakes,matrix/neo/internal/server.buildWorkerService.dispatchActiveInput,matrix/neo/internal/server.buildWorkerService.run
+  ^references=matrix/neo/internal/server.Engine.interruptRecoveryBuilds,matrix/neo/internal/server.Server.answerBuildJob,matrix/neo/internal/server.Server.correctBuildJob,matrix/neo/internal/server.Server.handleBuildJobs,matrix/neo/internal/server.Server.interruptBuildJob,matrix/neo/internal/server.Server.proxyBuildPreview,matrix/neo/internal/server.buildWorkerService.applyDelivery,matrix/neo/internal/server.buildWorkerService.deliverPendingBuildWakes,matrix/neo/internal/server.buildWorkerService.dispatchActiveInput,matrix/neo/internal/server.buildWorkerService.run
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.List kind=method
   digest=b3:1ad1e88725c1edf4edf2979cba65a1ac67cbb8cc562eb19334cb35ff1f7cbf31 file=neo/internal/codingruntime/store.go range=389:396 lang=go exported=true byte_range=13214:13352
   sig=func (s *Store) List() ([]Job, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.listLocked
+  references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.listLocked,matrix/neo/internal/codingruntime.s
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/server.Engine.StartBuildWorker,matrix/neo/internal/server.Engine.interruptRecoveryBuilds,matrix/neo/internal/server.Server.listBuildJobs
+  ^references=matrix/neo/internal/server.Engine.StartBuildWorker,matrix/neo/internal/server.Engine.interruptRecoveryBuilds,matrix/neo/internal/server.Server.listBuildJobs
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.PendingWakes kind=method
   digest=b3:04e213b08b91a02f959d1dcc64f70a94cfcee80a7849406b9c43dfb2a1c8a54f file=neo/internal/codingruntime/store.go range=630:661 lang=go exported=true byte_range=20483:21363
   sig=func (s *Store) PendingWakes(now time.Time, limit int) ([]PendingWake, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.listLocked
+  references=matrix/neo/internal/codingruntime.PendingWake,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.listLocked,matrix/neo/internal/codingruntime.WakePending,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.i,matrix/neo/internal/codingruntime.j,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobs,matrix/neo/internal/codingruntime.limit,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.pending,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.wake
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/server.buildWorkerService.deliverPendingBuildWakes
+  ^references=matrix/neo/internal/server.buildWorkerService.deliverPendingBuildWakes
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.RecordWakeAttempt kind=method
   digest=b3:2b01b8ff69d93480d59adc5003914d6c27f5bb6afe647103fd2c3830dd988b25 file=neo/internal/codingruntime/store.go range=663:704 lang=go exported=true byte_range=21365:22358
   sig=func (s *Store) RecordWakeAttempt(jobID, wakeID, failure string, retryAt time.Time) (Job, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.cloneTime
+  references=matrix/neo/internal/codingruntime.ErrNotFound,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.WakeAcked,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.cloneTime,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.failure,matrix/neo/internal/codingruntime.found,matrix/neo/internal/codingruntime.i,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.retryAt,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.wakeID
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/server.buildWorkerService.deliverPendingBuildWakes
+  ^references=matrix/neo/internal/server.buildWorkerService.deliverPendingBuildWakes
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.SetVault kind=method
   digest=b3:a76e88df3379d4dc6fdd62072596c579521fa158cf91572d93807fd398e1ef2c file=neo/internal/codingruntime/store.go range=308:316 lang=go exported=true byte_range=10958:11131
   sig=func (s *Store) SetVault(session *vault.Session, user string)
 EDGES
+  references=matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.session,matrix/neo/internal/codingruntime.user,matrix/vault.Session
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/server.NewEngine
+  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.Transition kind=method
   digest=b3:dd0155d286d6a85bc956f099ff6c9a9f8ef71a80db18c8bbc90ebf3a9ef5661c file=neo/internal/codingruntime/store.go range=398:418 lang=go exported=true byte_range=13354:13931
   sig=func (s *Store) Transition(jobID string, expectedRevision uint64, next Lifecycle) (Job, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Lifecycle.Terminal,matrix/neo/internal/codingruntime.Store.update,matrix/neo/internal/codingruntime.knownLifecycle
+  references=matrix/neo/internal/codingruntime.ErrInvalidTransition,matrix/neo/internal/codingruntime.ErrTerminal,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Job.Terminal,matrix/neo/internal/codingruntime.Lifecycle,matrix/neo/internal/codingruntime.Lifecycle.Terminal,matrix/neo/internal/codingruntime.LifecycleRunning,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.update,matrix/neo/internal/codingruntime.allowedTransition,matrix/neo/internal/codingruntime.cloneTime,matrix/neo/internal/codingruntime.expectedRevision,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.knownLifecycle,matrix/neo/internal/codingruntime.next,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.s
   ^contains=matrix/neo/internal/codingruntime.Store
   ^defines=matrix/neo/internal/codingruntime/store.go
 
@@ -1142,49 +1304,76 @@ NODE id=matrix/neo/internal/codingruntime.Store.ad kind=method
   digest=b3:2e3d9ff64c1057f97409a51a83d8560391ae8bf5b62ab08ebc2aa62684bd2a08 file=neo/internal/codingruntime/store.go range=780:782 lang=go exported=false byte_range=24095:24224
   sig=func (s *Store) ad(jobID string) vault.AD
 EDGES
+  references=matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.schemaName,matrix/neo/internal/codingruntime.storeName,matrix/vault.AD
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked
+  ^references=matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.findByIdempotencyLocked kind=method
   digest=b3:d64ecda34601c6f0c0055c7ed41c53a7a69e2443b52c61ff8ae5d5f3c9ec2f95 file=neo/internal/codingruntime/store.go range=895:906 lang=go exported=false byte_range=26544:26813
   sig=func (s *Store) findByIdempotencyLocked(key string) (Job, bool, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.listLocked
+  references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.listLocked,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobs,matrix/neo/internal/codingruntime.key,matrix/neo/internal/codingruntime.s
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.FindByIdempotency
+  ^references=matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.FindByIdempotency
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.listLocked kind=method
   digest=b3:d47ae6c1eab4e79187da8002c9058d2fd12e3a02d51a34b3859eecd5384e85fa file=neo/internal/codingruntime/store.go range=870:893 lang=go exported=false byte_range=25930:26542
   sig=func (s *Store) listLocked() ([]Job, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.cloneJob
+  references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.entries,matrix/neo/internal/codingruntime.entry,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.i,matrix/neo/internal/codingruntime.j,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobs,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.s
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/codingruntime.Store.List,matrix/neo/internal/codingruntime.Store.PendingWakes,matrix/neo/internal/codingruntime.Store.findByIdempotencyLocked
+  ^references=matrix/neo/internal/codingruntime.Store.List,matrix/neo/internal/codingruntime.Store.PendingWakes,matrix/neo/internal/codingruntime.Store.findByIdempotencyLocked
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.loadLocked kind=method
   digest=b3:de1f2474b421ef644c833393a069cead6089a715af6a88855702ae32cbcefa58 file=neo/internal/codingruntime/store.go range=784:812 lang=go exported=false byte_range=24226:24894
   sig=func (s *Store) loadLocked(jobID string) (Job, bool, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.ad,matrix/neo/internal/codingruntime.Store.pathLocked,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
+  references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.ad,matrix/neo/internal/codingruntime.Store.pathLocked,matrix/neo/internal/codingruntime.b,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.path,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.uv,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.Get,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.listLocked,matrix/neo/internal/codingruntime.Store.update
+  ^references=matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.Get,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.listLocked,matrix/neo/internal/codingruntime.Store.update
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.pathLocked kind=method
   digest=b3:f2d47cbe68417248c08f00902d87e3dfce8c47a3bef38fb37394118c26b5f7f5 file=neo/internal/codingruntime/store.go range=773:778 lang=go exported=false byte_range=23946:24093
   sig=func (s *Store) pathLocked(jobID string) string
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.safeID
+  references=matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.safeID
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked
+  ^references=matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.update kind=method
   digest=b3:3d5f535e9f351bf6292378b813920dcfb9b9221b0ea3fbda04873aeb24c8bb74 file=neo/internal/codingruntime/store.go range=740:771 lang=go exported=false byte_range=23180:23944
   sig=func (s *Store) update(jobID string, expectedRevision uint64, mutate func(*Job, time.Time) error) (Job, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.cloneJob
+  references=matrix/neo/internal/codingruntime.ErrNotFound,matrix/neo/internal/codingruntime.ErrRevisionConflict,matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.Enabled,matrix/neo/internal/codingruntime.Store.loadLocked,matrix/neo/internal/codingruntime.Store.writeLocked,matrix/neo/internal/codingruntime.after,matrix/neo/internal/codingruntime.before,matrix/neo/internal/codingruntime.cloneJob,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.expectedRevision,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.jobID,matrix/neo/internal/codingruntime.mutate,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.s
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.Store.BindRuntime,matrix/neo/internal/codingruntime.Store.Transition
+  ^references=matrix/neo/internal/codingruntime.Store.AddAnswer,matrix/neo/internal/codingruntime.Store.AddCorrection,matrix/neo/internal/codingruntime.Store.BindRuntime,matrix/neo/internal/codingruntime.Store.Transition
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.Store.writeLocked kind=method
   digest=b3:679b78e014aa337898fc6f866e5fec199990d38b5bc55088708d4c903ada36c1 file=neo/internal/codingruntime/store.go range=814:868 lang=go exported=false byte_range=24896:25928
   sig=func (s *Store) writeLocked(job Job) error
 EDGES
+  calls=matrix/neo/internal/codingruntime.Store.ad,matrix/neo/internal/codingruntime.Store.pathLocked,matrix/vault.Session.MaybeSealFile
+  references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.Store,matrix/neo/internal/codingruntime.Store.ad,matrix/neo/internal/codingruntime.Store.pathLocked,matrix/neo/internal/codingruntime.b,matrix/neo/internal/codingruntime.clean,matrix/neo/internal/codingruntime.closeErr,matrix/neo/internal/codingruntime.dir,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.s,matrix/neo/internal/codingruntime.tmp,matrix/neo/internal/codingruntime.tmpName,matrix/vault.Session.MaybeSealFile
   ^contains=matrix/neo/internal/codingruntime.Store
+  ^calls=matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.update
+  ^references=matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.update
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.TerminalResult kind=type
@@ -1192,6 +1381,8 @@ NODE id=matrix/neo/internal/codingruntime.TerminalResult kind=type
   sig=type TerminalResult struct {\n	Lifecycle	Lifecycle	`json:"lifecycle"`\n	Outcome		Outcome		`json:"outcome"`\n	Summary		string		`json:"summary,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.TerminalResult#Lifecycle,matrix/neo/internal/codingruntime.TerminalResult#Outcome,matrix/neo/internal/codingruntime.TerminalResult#Summary
+  references=matrix/neo/internal/codingruntime.Lifecycle,matrix/neo/internal/codingruntime.Outcome
+  ^references=matrix/neo/internal/codingruntime.DeliveryBatch,matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.applyTerminal,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.validTerminal,matrix/neo/internal/server.Engine.interruptRecoveryBuilds,matrix/neo/internal/server.Server.interruptBuildJob
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.TerminalResult#Lifecycle kind=field
@@ -1216,18 +1407,24 @@ NODE id=matrix/neo/internal/codingruntime.WakeAcked kind=const
   digest=b3:fa0aa0bdaaa79674ae39e84044a1a7f2eb42a9d9562cc2a8377f25c76aad818d file=neo/internal/codingruntime/store.go range=152:152 lang=go exported=true byte_range=4910:4941
   sig=codingruntime.WakeState
 EDGES
+  references=matrix/neo/internal/codingruntime.WakeState
+  ^references=matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.WakeApprovalRequired kind=const
   digest=b3:8b5ad85a0392d275ab2844dcf2ad96e29a303dba1b575cc7944a14514ae0919a file=neo/internal/codingruntime/store.go range=141:141 lang=go exported=true byte_range=4612:4663
   sig=codingruntime.WakeKind
 EDGES
+  references=matrix/neo/internal/codingruntime.WakeKind
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.knownWakeKind
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.WakeBlocked kind=const
   digest=b3:be95748bbd744f16ae00670e49cbc0969322ad6395aaeaa8acfc818735bba52e file=neo/internal/codingruntime/store.go range=142:142 lang=go exported=true byte_range=4665:4706
   sig=codingruntime.WakeKind
 EDGES
+  references=matrix/neo/internal/codingruntime.WakeKind
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.knownWakeKind,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/server.buildWorkerService.recordWorkerFailure
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.WakeEnvelope kind=type
@@ -1235,6 +1432,8 @@ NODE id=matrix/neo/internal/codingruntime.WakeEnvelope kind=type
   sig=type WakeEnvelope struct {\n	ID		string		`json:"id"`\n	DedupKey	string		`json:"dedup_key"`\n	Kind		WakeKind	`json:"kind"`\n	Reason		string		`json:"reason"`\n	SourceEventID	string		`json:"source_event_id,omitempty"`\n	State		WakeState	`json:"state"`\n	Attempts	int		`json:"attempts"`\n	CreatedAt	time.Time	`json:"created_at"`\n	NextAttemptAt	time.Time	`json:"next_attempt_at"`\n	LastAttemptAt	*time.Time	`json:"last_attempt_at,omitempty"`\n	AckedAt		*time.Time	`json:"acked_at,omitempty"`\n	LastError	string		`json:"last_error,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.WakeEnvelope#AckedAt,matrix/neo/internal/codingruntime.WakeEnvelope#Attempts,matrix/neo/internal/codingruntime.WakeEnvelope#CreatedAt,matrix/neo/internal/codingruntime.WakeEnvelope#DedupKey,matrix/neo/internal/codingruntime.WakeEnvelope#ID,matrix/neo/internal/codingruntime.WakeEnvelope#Kind,matrix/neo/internal/codingruntime.WakeEnvelope#LastAttemptAt,matrix/neo/internal/codingruntime.WakeEnvelope#LastError,matrix/neo/internal/codingruntime.WakeEnvelope#NextAttemptAt,matrix/neo/internal/codingruntime.WakeEnvelope#Reason,matrix/neo/internal/codingruntime.WakeEnvelope#SourceEventID,matrix/neo/internal/codingruntime.WakeEnvelope#State
+  references=matrix/neo/internal/codingruntime.WakeKind,matrix/neo/internal/codingruntime.WakeState
+  ^references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.PendingWake,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.enqueueWake,matrix/neo/internal/server.buildWakePrompt
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.WakeEnvelope#AckedAt kind=field
@@ -1313,30 +1512,39 @@ NODE id=matrix/neo/internal/codingruntime.WakeFailed kind=const
   digest=b3:4cbfef45a1fda79364dfb6f9d62f4bc6c5415d788794aa95e1687bcd5e10657c file=neo/internal/codingruntime/store.go range=143:143 lang=go exported=true byte_range=4708:4748
   sig=codingruntime.WakeKind
 EDGES
+  references=matrix/neo/internal/codingruntime.WakeKind
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.knownWakeKind,matrix/neo/internal/codingruntime.reduceMessageComplete
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.WakeInputRequired kind=const
   digest=b3:9b4d503f2889fb027f1a36290fd2afd6be0cd46b9898ec70bc58b73680d686c7 file=neo/internal/codingruntime/store.go range=140:140 lang=go exported=true byte_range=4562:4610
   sig=codingruntime.WakeKind
 EDGES
+  references=matrix/neo/internal/codingruntime.WakeKind
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.knownWakeKind
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.WakeInterrupted kind=const
   digest=b3:c67cb4712acea24fbd0f4239af1f093fa305a407a9a9534b889fdd17f8a7414e file=neo/internal/codingruntime/store.go range=144:144 lang=go exported=true byte_range=4750:4795
   sig=codingruntime.WakeKind
 EDGES
+  references=matrix/neo/internal/codingruntime.WakeKind
+  ^references=matrix/neo/internal/codingruntime.knownWakeKind,matrix/neo/internal/codingruntime.reduceMessageComplete
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.WakeKind kind=type
   digest=b3:7e0660371394665a6d608877b396dbaef5da8710b061e4b1ef164d8c72e51fdf file=neo/internal/codingruntime/store.go range=137:137 lang=go exported=true byte_range=4531:4551
   sig=type WakeKind string
 EDGES
+  ^references=matrix/neo/internal/codingruntime.WakeApprovalRequired,matrix/neo/internal/codingruntime.WakeBlocked,matrix/neo/internal/codingruntime.WakeEnvelope,matrix/neo/internal/codingruntime.WakeFailed,matrix/neo/internal/codingruntime.WakeInputRequired,matrix/neo/internal/codingruntime.WakeInterrupted,matrix/neo/internal/codingruntime.WakeRequest,matrix/neo/internal/codingruntime.WakeVerified,matrix/neo/internal/codingruntime.knownWakeKind,matrix/neo/internal/codingruntime.wakeDedupKey
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.WakePending kind=const
   digest=b3:64ab46697a032ea68eccc8345788f4822399571999e6e59f3457f856ff6b5135 file=neo/internal/codingruntime/store.go range=151:151 lang=go exported=true byte_range=4875:4908
   sig=codingruntime.WakeState
 EDGES
+  references=matrix/neo/internal/codingruntime.WakeState
+  ^references=matrix/neo/internal/codingruntime.Store.PendingWakes,matrix/neo/internal/codingruntime.enqueueWake
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.WakeRequest kind=type
@@ -1344,6 +1552,8 @@ NODE id=matrix/neo/internal/codingruntime.WakeRequest kind=type
   sig=type WakeRequest struct {\n	DedupKey	string		`json:"dedup_key"`\n	Kind		WakeKind	`json:"kind"`\n	Reason		string		`json:"reason"`\n	SourceEventID	string		`json:"source_event_id,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/codingruntime.WakeRequest#DedupKey,matrix/neo/internal/codingruntime.WakeRequest#Kind,matrix/neo/internal/codingruntime.WakeRequest#Reason,matrix/neo/internal/codingruntime.WakeRequest#SourceEventID
+  references=matrix/neo/internal/codingruntime.WakeKind
+  ^references=matrix/neo/internal/codingruntime.DeliveryBatch,matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.enqueueWake,matrix/neo/internal/codingruntime.normalizeWake,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.validateWake,matrix/neo/internal/server.buildWorkerService.recordWorkerFailure
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.WakeRequest#DedupKey kind=field
@@ -1374,402 +1584,592 @@ NODE id=matrix/neo/internal/codingruntime.WakeState kind=type
   digest=b3:d91db6e4743d0d89337773f8993317317e4d1b427842d9d34a40b56b27cd77b3 file=neo/internal/codingruntime/store.go range=148:148 lang=go exported=true byte_range=4843:4864
   sig=type WakeState string
 EDGES
+  ^references=matrix/neo/internal/codingruntime.WakeAcked,matrix/neo/internal/codingruntime.WakeEnvelope,matrix/neo/internal/codingruntime.WakePending
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.WakeVerified kind=const
   digest=b3:d6426d1b3b8f2f481afda7134459d616f4c90997c20dce491030d47f7bcbb33a file=neo/internal/codingruntime/store.go range=145:145 lang=go exported=true byte_range=4797:4839
   sig=codingruntime.WakeKind
 EDGES
+  references=matrix/neo/internal/codingruntime.WakeKind
+  ^references=matrix/neo/internal/codingruntime.knownWakeKind,matrix/neo/internal/codingruntime.reduceMessageComplete
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.allowedTransition kind=func
   digest=b3:843b70e850edef1c23e43615ce71756516d339ed131c1a03d605629ecf3643a0 file=neo/internal/codingruntime/store.go range=1065:1078 lang=go exported=false byte_range=32387:32947
   sig=func allowedTransition(from, to Lifecycle) bool
 EDGES
+  references=matrix/neo/internal/codingruntime.Lifecycle,matrix/neo/internal/codingruntime.LifecycleAccepted,matrix/neo/internal/codingruntime.LifecycleBlocked,matrix/neo/internal/codingruntime.LifecycleNeedsApproval,matrix/neo/internal/codingruntime.LifecycleNeedsInput,matrix/neo/internal/codingruntime.LifecycleQueued,matrix/neo/internal/codingruntime.LifecycleRunning,matrix/neo/internal/codingruntime.from,matrix/neo/internal/codingruntime.to
+  ^calls=matrix/neo/internal/codingruntime.Store.ApplyDelivery
+  ^references=matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.Transition
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.applyTerminal kind=func
   digest=b3:f9a9e2e57e1937e7dc46b37dbf70d0d8385f8a73d0cfe2d7d2adc73177d4db36 file=neo/internal/codingruntime/store.go range=1045:1050 lang=go exported=false byte_range=31851:32072
   sig=func applyTerminal(job *Job, result TerminalResult, now time.Time)
 EDGES
+  calls=matrix/neo/internal/codingruntime.cloneTime
+  references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.TerminalResult,matrix/neo/internal/codingruntime.cloneTime,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.result
+  ^calls=matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal
+  ^references=matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.bearerCredential kind=var
   digest=b3:36a9a5ffd1b7044dcd8e0743de586a02225d8b04fdbb37597c8fb410009816b0 file=neo/internal/codingruntime/reducer.go range=34:34 lang=go exported=false byte_range=642:722
   sig=*regexp.Regexp
 EDGES
+  ^references=matrix/neo/internal/codingruntime.safeText
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.boolValue kind=func
   digest=b3:e34e1ab961ff31b0298070d8cd67f6d593f1c0b798011d169aa739465fcd48c3 file=neo/internal/codingruntime/reducer.go range=620:625 lang=go exported=false byte_range=21079:21194
   sig=func boolValue(value interface{}) interface{}
 EDGES
+  references=matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.typed,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.capRunes kind=func
   digest=b3:77a410bae274e7f535ce799abeedf3e20dfb6adf7a5110f2f8876ce1717d3a57 file=neo/internal/codingruntime/reducer.go range=410:421 lang=go exported=false byte_range=15841:16195
   sig=func capRunes(value string, limit int) string
 EDGES
+  references=matrix/neo/internal/codingruntime.limit,matrix/neo/internal/codingruntime.marker,matrix/neo/internal/codingruntime.markerRunes,matrix/neo/internal/codingruntime.runes,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.safeToken,matrix/neo/internal/codingruntime.verificationSummary
+  ^references=matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.safeToken,matrix/neo/internal/codingruntime.verificationSummary
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.changedPaths kind=func
   digest=b3:248b93e0e4a961ef4010e3540b7e9c90bcfa542fdc9c983fd5199fbec308a88f file=neo/internal/codingruntime/reducer.go range=502:528 lang=go exported=false byte_range=18163:18887
   sig=func changedPaths(args, result map[string]interface{}, privateID string) []string
 EDGES
+  calls=matrix/neo/internal/codingruntime.firstString,matrix/neo/internal/codingruntime.stringValue
+  references=matrix/neo/internal/codingruntime.add,matrix/neo/internal/codingruntime.args,matrix/neo/internal/codingruntime.exists,matrix/neo/internal/codingruntime.firstString,matrix/neo/internal/codingruntime.item,matrix/neo/internal/codingruntime.items,matrix/neo/internal/codingruntime.key,matrix/neo/internal/codingruntime.maxTodoCount,matrix/neo/internal/codingruntime.path,matrix/neo/internal/codingruntime.paths,matrix/neo/internal/codingruntime.privateID,matrix/neo/internal/codingruntime.result,matrix/neo/internal/codingruntime.safePath,matrix/neo/internal/codingruntime.seen,matrix/neo/internal/codingruntime.stringValue,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.reduceToolComplete
+  ^references=matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.cleanStrings kind=func
   digest=b3:3569ff906eea0f8195cc8ed1be29322cad2f7908e5dd9ed2f56db832cd1133bb file=neo/internal/codingruntime/store.go range=1121:1136 lang=go exported=false byte_range=34184:34537
   sig=func cleanStrings(values []string) []string
 EDGES
+  references=matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.out,matrix/neo/internal/codingruntime.seen,matrix/neo/internal/codingruntime.value,matrix/neo/internal/codingruntime.values
+  ^calls=matrix/neo/internal/codingruntime.normalizeCreate
+  ^references=matrix/neo/internal/codingruntime.normalizeCreate
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.cloneBool kind=func
   digest=b3:aba456f228598804468ddc6ee9cb2ff6a1a6e783bd347eba58bba844db764b85 file=neo/internal/codingruntime/store.go range=1204:1210 lang=go exported=false byte_range=35867:35971
   sig=func cloneBool(input *bool) *bool
 EDGES
+  references=matrix/neo/internal/codingruntime.input,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.Job.Public
+  ^references=matrix/neo/internal/codingruntime.Job.Public
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.cloneBrief kind=func
   digest=b3:583adebba7cc4bd80eedcda2c54f01ed23970036d20a1eccfcaf779ddef0a4d4 file=neo/internal/codingruntime/store.go range=1177:1183 lang=go exported=false byte_range=35248:35535
   sig=func cloneBrief(brief BuildBrief) BuildBrief
 EDGES
+  calls=matrix/neo/internal/codingruntime.cloneStringMap
+  references=matrix/neo/internal/codingruntime.BuildBrief,matrix/neo/internal/codingruntime.brief,matrix/neo/internal/codingruntime.cloneStringMap
+  ^calls=matrix/neo/internal/codingruntime.Job.Public
+  ^references=matrix/neo/internal/codingruntime.Job.Public
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.cloneJob kind=func
   digest=b3:f1d8fb32c75d411e9d4ac44c06074f19bd354d498fdbd10360de859409fb7c4c file=neo/internal/codingruntime/store.go range=1165:1175 lang=go exported=false byte_range=35058:35246
   sig=func cloneJob(job Job) Job
 EDGES
+  references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.b,matrix/neo/internal/codingruntime.clone,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.job
+  ^calls=matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.FindByIdempotency,matrix/neo/internal/codingruntime.Store.Get,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.listLocked,matrix/neo/internal/codingruntime.Store.update
+  ^references=matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.Store.FindByIdempotency,matrix/neo/internal/codingruntime.Store.Get,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.listLocked,matrix/neo/internal/codingruntime.Store.update
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.cloneStringMap kind=func
   digest=b3:5cb2a93c2a7d0217a2b2d65ae19bf358db2b2fb18d8f17bc5036507630d9922a file=neo/internal/codingruntime/store.go range=1185:1194 lang=go exported=false byte_range=35537:35749
   sig=func cloneStringMap(input map[string]string) map[string]string
 EDGES
+  references=matrix/neo/internal/codingruntime.input,matrix/neo/internal/codingruntime.key,matrix/neo/internal/codingruntime.out,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.cloneBrief
+  ^references=matrix/neo/internal/codingruntime.cloneBrief
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.cloneTime kind=func
   digest=b3:59c0259b8b0aac9e5ea7f00df6b48c5da1e4923900d0306330b1456ab30e10c7 file=neo/internal/codingruntime/store.go range=1196:1202 lang=go exported=false byte_range=35751:35865
   sig=func cloneTime(input *time.Time) *time.Time
 EDGES
+  references=matrix/neo/internal/codingruntime.input,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.Job.Public,matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.applyTerminal
+  ^references=matrix/neo/internal/codingruntime.Job.Public,matrix/neo/internal/codingruntime.Store.AckWake,matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.BindRuntime,matrix/neo/internal/codingruntime.Store.RecordWakeAttempt,matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/codingruntime.applyTerminal
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.contains kind=func
   digest=b3:a61d265076bdc39d23fef7fa0817031d64b464b96fb038ea7f28d91edbf96f45 file=neo/internal/codingruntime/store.go range=1145:1152 lang=go exported=false byte_range=34693:34838
   sig=func contains(values []string, target string) bool
 EDGES
+  references=matrix/neo/internal/codingruntime.target,matrix/neo/internal/codingruntime.value,matrix/neo/internal/codingruntime.values
+  ^calls=matrix/neo/internal/codingruntime.Store.ApplyDelivery
+  ^references=matrix/neo/internal/codingruntime.Store.ApplyDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.createHash kind=func
   digest=b3:2d15c6f550134df5bd393b8c16f23fb27935bab92296259108692317bbe64f43 file=neo/internal/codingruntime/store.go range=942:946 lang=go exported=false byte_range=28393:28517
   sig=func createHash(input CreateRequest) (string, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.digestJSON
+  references=matrix/neo/internal/codingruntime.CreateRequest,matrix/neo/internal/codingruntime.digestJSON,matrix/neo/internal/codingruntime.input
+  ^calls=matrix/neo/internal/codingruntime.Store.CreateQueued
+  ^references=matrix/neo/internal/codingruntime.Store.CreateQueued
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.credentialAssignment kind=var
   digest=b3:310bf3f82c40881083d0a7367a3bea66cf274b11c65b358a5758ddb5316dcb2f file=neo/internal/codingruntime/reducer.go range=33:33 lang=go exported=false byte_range=496:640
   sig=*regexp.Regexp
 EDGES
+  ^references=matrix/neo/internal/codingruntime.safeText
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.decodeEventPayload kind=func
   digest=b3:1128e5e240ccab9063ac88885c429f90780c782ff91272596efd040edcdc765c file=neo/internal/codingruntime/reducer.go range=185:205 lang=go exported=false byte_range=7064:7689
   sig=func decodeEventPayload(raw json.RawMessage) (map[string]interface{}, error)
 EDGES
+  references=matrix/neo/internal/codingruntime.decoder,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.payload,matrix/neo/internal/codingruntime.raw
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.digestJSON kind=func
   digest=b3:949a30a7981de8a3c319f2a5d4ca5e24acd39ac045f3f92286b5eaacb660b358 file=neo/internal/codingruntime/store.go range=1107:1114 lang=go exported=false byte_range=33732:33919
   sig=func digestJSON(value interface{}) (string, error)
 EDGES
+  references=matrix/neo/internal/codingruntime.b,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.sum,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.createHash
+  ^references=matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.createHash
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.duplicates kind=func
   digest=b3:6e2a6847b8780764a40f8b28db1991aaa0d4b19c6a36fae679f39ff9d4d8e181 file=neo/internal/codingruntime/store.go range=1154:1163 lang=go exported=false byte_range=34840:35056
   sig=func duplicates(values []string) bool
 EDGES
+  references=matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.seen,matrix/neo/internal/codingruntime.value,matrix/neo/internal/codingruntime.values
+  ^calls=matrix/neo/internal/codingruntime.validateDelivery
+  ^references=matrix/neo/internal/codingruntime.validateDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.enqueueWake kind=func
   digest=b3:7eded5362b839761dd3d84606dd1ca85a5d9ffeb72be58ca9811040a163bff74 file=neo/internal/codingruntime/store.go range=1031:1043 lang=go exported=false byte_range=31409:31849
   sig=func enqueueWake(job *Job, request WakeRequest, now time.Time) bool
 EDGES
+  references=matrix/neo/internal/codingruntime.Job,matrix/neo/internal/codingruntime.WakeEnvelope,matrix/neo/internal/codingruntime.WakePending,matrix/neo/internal/codingruntime.WakeRequest,matrix/neo/internal/codingruntime.job,matrix/neo/internal/codingruntime.now,matrix/neo/internal/codingruntime.request,matrix/neo/internal/codingruntime.wake
+  ^calls=matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.EnqueueWake
+  ^references=matrix/neo/internal/codingruntime.Store.ApplyDelivery,matrix/neo/internal/codingruntime.Store.EnqueueWake
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.firstString kind=func
   digest=b3:cb0624ac849f8d6c1c5822e832f96edb4d4ceb9a777e8fd1d1227b8e0e33627e file=neo/internal/codingruntime/reducer.go range=611:618 lang=go exported=false byte_range=20868:21077
   sig=func firstString(object map[string]interface{}, keys ...string) string
 EDGES
+  calls=matrix/neo/internal/codingruntime.stringValue
+  references=matrix/neo/internal/codingruntime.key,matrix/neo/internal/codingruntime.keys,matrix/neo/internal/codingruntime.object,matrix/neo/internal/codingruntime.stringValue,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.changedPaths,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/codingruntime.safeTodos
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.changedPaths,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/codingruntime.safeTodos
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.ignoredWorkerEvent kind=func
   digest=b3:78503f236fd6bc82362e8813585f66694ea8ec25734e673d9478b10a9dc9373e file=neo/internal/codingruntime/reducer.go range=324:331 lang=go exported=false byte_range=12484:13072
   sig=func ignoredWorkerEvent(eventType string) bool
 EDGES
+  references=matrix/neo/internal/codingruntime.eventType
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.intValue kind=func
   digest=b3:a7f472f7d8fe11c3491c8c3e7e6c3ff2c97e8aa391e6e913c972fb1518268be7 file=neo/internal/codingruntime/reducer.go range=627:639 lang=go exported=false byte_range=21196:21489
   sig=func intValue(value interface{}) (int, bool)
 EDGES
+  references=matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.integer,matrix/neo/internal/codingruntime.typed,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.reduceToolComplete
+  ^references=matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.isBlockedStatus kind=func
   digest=b3:d8e15e7281940f72328b12dffc422ce9a92d333a3388456ebdb347dea9508c96 file=neo/internal/codingruntime/reducer.go range=571:575 lang=go exported=false byte_range=19924:20199
   sig=func isBlockedStatus(kind, text string) bool
 EDGES
+  references=matrix/neo/internal/codingruntime.kind,matrix/neo/internal/codingruntime.lower,matrix/neo/internal/codingruntime.text
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.knownEvidenceKind kind=func
   digest=b3:a7cd04e3c25761e7f4dfc05bd6f8fe8ae8b02c6aa3ec78802ab0c65c3306d298 file=neo/internal/codingruntime/store.go range=1098:1105 lang=go exported=false byte_range=33441:33730
   sig=func knownEvidenceKind(value EvidenceKind) bool
 EDGES
+  references=matrix/neo/internal/codingruntime.EvidenceApproval,matrix/neo/internal/codingruntime.EvidenceBlocker,matrix/neo/internal/codingruntime.EvidenceCommand,matrix/neo/internal/codingruntime.EvidenceDiff,matrix/neo/internal/codingruntime.EvidenceError,matrix/neo/internal/codingruntime.EvidenceFileChange,matrix/neo/internal/codingruntime.EvidenceKind,matrix/neo/internal/codingruntime.EvidencePreview,matrix/neo/internal/codingruntime.EvidenceQuestion,matrix/neo/internal/codingruntime.EvidenceStatus,matrix/neo/internal/codingruntime.EvidenceVerification,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.validateDelivery
+  ^references=matrix/neo/internal/codingruntime.validateDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.knownLifecycle kind=func
   digest=b3:e97d7091185e9da42ddc1febfeabdaf44e985638c1e71c15b1ecc1e4d3ceeeec file=neo/internal/codingruntime/store.go range=1080:1087 lang=go exported=false byte_range=32949:33233
   sig=func knownLifecycle(value Lifecycle) bool
 EDGES
+  references=matrix/neo/internal/codingruntime.Lifecycle,matrix/neo/internal/codingruntime.LifecycleAccepted,matrix/neo/internal/codingruntime.LifecycleBlocked,matrix/neo/internal/codingruntime.LifecycleFailed,matrix/neo/internal/codingruntime.LifecycleInterrupted,matrix/neo/internal/codingruntime.LifecycleNeedsApproval,matrix/neo/internal/codingruntime.LifecycleNeedsInput,matrix/neo/internal/codingruntime.LifecycleQueued,matrix/neo/internal/codingruntime.LifecycleRunning,matrix/neo/internal/codingruntime.LifecycleVerified,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/codingruntime.validateDelivery
+  ^references=matrix/neo/internal/codingruntime.Store.Transition,matrix/neo/internal/codingruntime.validateDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.knownWakeKind kind=func
   digest=b3:1aaa82386827a27ba6a40dfaafcfeea68bc08c5916e266a279cdff98383524d6 file=neo/internal/codingruntime/store.go range=1089:1096 lang=go exported=false byte_range=33235:33439
   sig=func knownWakeKind(value WakeKind) bool
 EDGES
+  references=matrix/neo/internal/codingruntime.WakeApprovalRequired,matrix/neo/internal/codingruntime.WakeBlocked,matrix/neo/internal/codingruntime.WakeFailed,matrix/neo/internal/codingruntime.WakeInputRequired,matrix/neo/internal/codingruntime.WakeInterrupted,matrix/neo/internal/codingruntime.WakeKind,matrix/neo/internal/codingruntime.WakeVerified,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.validateWake
+  ^references=matrix/neo/internal/codingruntime.validateWake
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.maxChoiceCount kind=const
   digest=b3:23932b941e9ba0ae63684809d4633962c995fb3b38f99697fea9e07bf718a542 file=neo/internal/codingruntime/reducer.go range=26:26 lang=go exported=false byte_range=353:373
   sig=untyped int
 EDGES
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.maxChoiceRunes kind=const
   digest=b3:ad5420e7714dcfc196893d5b18e6dd145e9f07d869ea144598863a9bf4399fba file=neo/internal/codingruntime/reducer.go range=27:27 lang=go exported=false byte_range=375:396
   sig=untyped int
 EDGES
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.safeTodos,matrix/neo/internal/codingruntime.verificationSummary
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.maxCommandRunes kind=const
   digest=b3:f2c4f8c956418d4a3af0969d77e35ac087fa83a1c4eb72c906b84c000961307e file=neo/internal/codingruntime/reducer.go range=23:23 lang=go exported=false byte_range=277:300
   sig=untyped int
 EDGES
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.maxDiffRunes kind=const
   digest=b3:7b595dd115b997a593a80079090a3913b3c41f087f0c30db91d8635cf0aaeb8e file=neo/internal/codingruntime/reducer.go range=24:24 lang=go exported=false byte_range=302:326
   sig=untyped int
 EDGES
+  ^references=matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.maxPathRunes kind=const
   digest=b3:1be9790a08b7693ccf94a30b37327c8513fe22e110d8ffe2dc61b73301010686 file=neo/internal/codingruntime/reducer.go range=25:25 lang=go exported=false byte_range=328:351
   sig=untyped int
 EDGES
+  ^references=matrix/neo/internal/codingruntime.safePath,matrix/neo/internal/codingruntime.safePreviewURL
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.maxStatusRunes kind=const
   digest=b3:0bc7f0f01dcd8bd914e4526ca45d73885325b849b32ca02879579fe7743b56b6 file=neo/internal/codingruntime/reducer.go range=22:22 lang=go exported=false byte_range=252:275
   sig=untyped int
 EDGES
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.maxSummaryRunes kind=const
   digest=b3:71d915fa8873a8c6d420d71313a68a4337d78e9a9174d9f4f355fc9add222e22 file=neo/internal/codingruntime/reducer.go range=21:21 lang=go exported=false byte_range=227:250
   sig=untyped int
 EDGES
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.maxTodoCount kind=const
   digest=b3:29f82b2fd6ae763b51f8ffb862c19ea514ebe243042bfa1070b8d95050b27e30 file=neo/internal/codingruntime/reducer.go range=28:28 lang=go exported=false byte_range=398:418
   sig=untyped int
 EDGES
+  ^references=matrix/neo/internal/codingruntime.changedPaths,matrix/neo/internal/codingruntime.safeTodos,matrix/neo/internal/codingruntime.scrubFingerprint
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.nonEmptyDetails kind=func
   digest=b3:5b0707e474c6a18a676bbde6c6350240bb294d082a49d8b43f7a5ee751ba779c file=neo/internal/codingruntime/reducer.go range=577:596 lang=go exported=false byte_range=20201:20583
   sig=func nonEmptyDetails(details map[string]interface{}) map[string]interface{}
 EDGES
+  references=matrix/neo/internal/codingruntime.details,matrix/neo/internal/codingruntime.key,matrix/neo/internal/codingruntime.typed,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.normalizeCreate kind=func
   digest=b3:f41c86af1c661d290fc82f948544837b7abf7ef1492e316c3556b75a833b14ca file=neo/internal/codingruntime/store.go range=908:927 lang=go exported=false byte_range=26815:27784
   sig=func normalizeCreate(input CreateRequest) CreateRequest
 EDGES
+  calls=matrix/neo/internal/codingruntime.cleanStrings
+  references=matrix/neo/internal/codingruntime.CreateRequest,matrix/neo/internal/codingruntime.cleanContext,matrix/neo/internal/codingruntime.cleanStrings,matrix/neo/internal/codingruntime.input,matrix/neo/internal/codingruntime.key,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.Store.CreateQueued
+  ^references=matrix/neo/internal/codingruntime.Store.CreateQueued
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.normalizeDelivery kind=func
   digest=b3:389a1ad9977c06dfac205163e2eb52cd04579c65375bf75238e6ddb34f4b7200 file=neo/internal/codingruntime/store.go range=948:968 lang=go exported=false byte_range=28519:29323
   sig=func normalizeDelivery(batch DeliveryBatch) DeliveryBatch
 EDGES
+  calls=matrix/neo/internal/codingruntime.normalizeWake,matrix/neo/internal/codingruntime.stableEvidenceID
+  references=matrix/neo/internal/codingruntime.DeliveryBatch,matrix/neo/internal/codingruntime.batch,matrix/neo/internal/codingruntime.i,matrix/neo/internal/codingruntime.normalizeWake,matrix/neo/internal/codingruntime.stableEvidenceID,matrix/neo/internal/codingruntime.wake
+  ^calls=matrix/neo/internal/codingruntime.Store.ApplyDelivery
+  ^references=matrix/neo/internal/codingruntime.Store.ApplyDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.normalizeWake kind=func
   digest=b3:c6fe08f72bfe689099bc5c51934c31261fb9900c5662b38e49d3f1a148b7e926 file=neo/internal/codingruntime/store.go range=1017:1022 lang=go exported=false byte_range=30969:31190
   sig=func normalizeWake(wake WakeRequest) WakeRequest
 EDGES
+  references=matrix/neo/internal/codingruntime.WakeRequest,matrix/neo/internal/codingruntime.wake
+  ^calls=matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.normalizeDelivery
+  ^references=matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.normalizeDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.objectValue kind=func
   digest=b3:1667fc67e0b5908b155c911ea7ae65fd48f456c0e8cc337e75ee7d3f049f7c05 file=neo/internal/codingruntime/reducer.go range=598:604 lang=go exported=false byte_range=20585:20764
   sig=func objectValue(value interface{}) map[string]interface{}
 EDGES
+  references=matrix/neo/internal/codingruntime.object,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/codingruntime.safeTodos,matrix/neo/internal/codingruntime.scrubFingerprint
+  ^references=matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/codingruntime.safeTodos,matrix/neo/internal/codingruntime.scrubFingerprint
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.productTool kind=func
   digest=b3:a13a35460f83523ebaf53725cd363688a374783171625ca64650c04dee44a0f7 file=neo/internal/codingruntime/reducer.go range=333:342 lang=go exported=false byte_range=13074:13449
   sig=func productTool(name string) bool
 EDGES
+  references=matrix/neo/internal/codingruntime.name
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.reduceToolComplete
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.providerCredential kind=var
   digest=b3:b3ef863606d5a9889c89d89cf2909573701853ba611c9838df3a6b2b6fb2662c file=neo/internal/codingruntime/reducer.go range=35:35 lang=go exported=false byte_range=724:815
   sig=*regexp.Regexp
 EDGES
+  ^references=matrix/neo/internal/codingruntime.safeText
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.reduceMessageComplete kind=func
   digest=b3:203ce9852feabbaf37fcef5102676be4d555693afb61a2cb65247af0df52063f file=neo/internal/codingruntime/reducer.go range=207:242 lang=go exported=false byte_range=7691:9614
   sig=func reduceMessageComplete(batch *DeliveryBatch, payload map[string]interface{}, sessionID string)
 EDGES
+  calls=matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.stringValue
+  references=matrix/neo/internal/codingruntime.DeliveryBatch,matrix/neo/internal/codingruntime.EvidenceBlocker,matrix/neo/internal/codingruntime.EvidenceError,matrix/neo/internal/codingruntime.EvidenceRecord,matrix/neo/internal/codingruntime.EvidenceStatus,matrix/neo/internal/codingruntime.LifecycleBlocked,matrix/neo/internal/codingruntime.LifecycleFailed,matrix/neo/internal/codingruntime.LifecycleInterrupted,matrix/neo/internal/codingruntime.LifecycleVerified,matrix/neo/internal/codingruntime.OutcomeFailed,matrix/neo/internal/codingruntime.OutcomeInterrupted,matrix/neo/internal/codingruntime.OutcomeVerified,matrix/neo/internal/codingruntime.TerminalResult,matrix/neo/internal/codingruntime.WakeBlocked,matrix/neo/internal/codingruntime.WakeFailed,matrix/neo/internal/codingruntime.WakeInterrupted,matrix/neo/internal/codingruntime.WakeRequest,matrix/neo/internal/codingruntime.WakeVerified,matrix/neo/internal/codingruntime.batch,matrix/neo/internal/codingruntime.errorText,matrix/neo/internal/codingruntime.maxSummaryRunes,matrix/neo/internal/codingruntime.payload,matrix/neo/internal/codingruntime.reason,matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.sessionID,matrix/neo/internal/codingruntime.status,matrix/neo/internal/codingruntime.stringValue,matrix/neo/internal/codingruntime.text
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.reduceToolComplete kind=func
   digest=b3:aca054ab63b553462677216298b549c81da4ee9a9f044d56f5deaf8b2f635b94 file=neo/internal/codingruntime/reducer.go range=244:322 lang=go exported=false byte_range=9616:12482
   sig=func reduceToolComplete(payload map[string]interface{}, sessionID string) []EvidenceRecord
 EDGES
+  calls=matrix/neo/internal/codingruntime.changedPaths,matrix/neo/internal/codingruntime.firstString,matrix/neo/internal/codingruntime.intValue,matrix/neo/internal/codingruntime.objectValue,matrix/neo/internal/codingruntime.productTool,matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.safeTodos,matrix/neo/internal/codingruntime.safeToken,matrix/neo/internal/codingruntime.stringValue,matrix/neo/internal/codingruntime.todoSummary,matrix/neo/internal/codingruntime.verificationSummary
+  references=matrix/neo/internal/codingruntime.EvidenceCommand,matrix/neo/internal/codingruntime.EvidenceDiff,matrix/neo/internal/codingruntime.EvidenceError,matrix/neo/internal/codingruntime.EvidenceFileChange,matrix/neo/internal/codingruntime.EvidenceRecord,matrix/neo/internal/codingruntime.EvidenceStatus,matrix/neo/internal/codingruntime.EvidenceVerification,matrix/neo/internal/codingruntime.args,matrix/neo/internal/codingruntime.changeSummary,matrix/neo/internal/codingruntime.changedPaths,matrix/neo/internal/codingruntime.command,matrix/neo/internal/codingruntime.commandSummary,matrix/neo/internal/codingruntime.diff,matrix/neo/internal/codingruntime.errorText,matrix/neo/internal/codingruntime.evidence,matrix/neo/internal/codingruntime.exitCode,matrix/neo/internal/codingruntime.firstString,matrix/neo/internal/codingruntime.intValue,matrix/neo/internal/codingruntime.maxCommandRunes,matrix/neo/internal/codingruntime.maxDiffRunes,matrix/neo/internal/codingruntime.maxStatusRunes,matrix/neo/internal/codingruntime.maxSummaryRunes,matrix/neo/internal/codingruntime.name,matrix/neo/internal/codingruntime.objectValue,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.passed,matrix/neo/internal/codingruntime.path,matrix/neo/internal/codingruntime.paths,matrix/neo/internal/codingruntime.payload,matrix/neo/internal/codingruntime.productTool,matrix/neo/internal/codingruntime.result,matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.safeTodos,matrix/neo/internal/codingruntime.safeToken,matrix/neo/internal/codingruntime.sessionID,matrix/neo/internal/codingruntime.stringValue,matrix/neo/internal/codingruntime.summary,matrix/neo/internal/codingruntime.todoSummary,matrix/neo/internal/codingruntime.todos,matrix/neo/internal/codingruntime.verificationCommand,matrix/neo/internal/codingruntime.verificationSummary
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.safeID kind=func
   digest=b3:f5a245aca9a640738e5efd2577ba4b5e86d253bebff6eab2ec76a6e54dfae604 file=neo/internal/codingruntime/store.go range=1138:1143 lang=go exported=false byte_range=34539:34691
   sig=func safeID(id string) bool
 EDGES
+  references=matrix/neo/internal/codingruntime.id
+  ^calls=matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.pathLocked
+  ^references=matrix/neo/internal/codingruntime.Store.CreateQueued,matrix/neo/internal/codingruntime.Store.pathLocked
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.safePath kind=func
   digest=b3:e882fbe786a4b861366e05d44e293ae304f59e59027679d03a585be9531f5d68 file=neo/internal/codingruntime/reducer.go range=423:443 lang=go exported=false byte_range=16197:16708
   sig=func safePath(value, privateID string) string
 EDGES
+  calls=matrix/neo/internal/codingruntime.safeText
+  references=matrix/neo/internal/codingruntime.maxPathRunes,matrix/neo/internal/codingruntime.parts,matrix/neo/internal/codingruntime.privateID,matrix/neo/internal/codingruntime.r,matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.value
+  ^references=matrix/neo/internal/codingruntime.changedPaths
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.safePreviewURL kind=func
   digest=b3:780f36d491571762443e9f6468fd07452b4dcf2a276ff57a6e0d0ea41ed0fb3c file=neo/internal/codingruntime/reducer.go range=445:454 lang=go exported=false byte_range=16710:17048
   sig=func safePreviewURL(value, privateID string) string
 EDGES
+  calls=matrix/neo/internal/codingruntime.safeText
+  references=matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.maxPathRunes,matrix/neo/internal/codingruntime.parsed,matrix/neo/internal/codingruntime.privateID,matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.safeStrings kind=func
   digest=b3:d2d129f372c3c5b3ba34dfd6186d5dae6ef161edbb3793e6a927302463ce353c file=neo/internal/codingruntime/reducer.go range=456:472 lang=go exported=false byte_range=17050:17458
   sig=func safeStrings(value interface{}, privateID string, count, runeLimit int) []string
 EDGES
+  calls=matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.stringValue
+  references=matrix/neo/internal/codingruntime.count,matrix/neo/internal/codingruntime.item,matrix/neo/internal/codingruntime.items,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.out,matrix/neo/internal/codingruntime.privateID,matrix/neo/internal/codingruntime.runeLimit,matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.stringValue,matrix/neo/internal/codingruntime.text,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.safeText kind=func
   digest=b3:e791db44c9ea98c86cedfeccdd8ea1d737eb996a09c51fbf1332d3e760034a80 file=neo/internal/codingruntime/reducer.go range=394:408 lang=go exported=false byte_range=15225:15839
   sig=func safeText(value, privateID string, maxRunes int) string
 EDGES
+  calls=matrix/neo/internal/codingruntime.capRunes
+  references=matrix/neo/internal/codingruntime.bearerCredential,matrix/neo/internal/codingruntime.capRunes,matrix/neo/internal/codingruntime.credentialAssignment,matrix/neo/internal/codingruntime.index,matrix/neo/internal/codingruntime.match,matrix/neo/internal/codingruntime.maxRunes,matrix/neo/internal/codingruntime.privateID,matrix/neo/internal/codingruntime.providerCredential,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/codingruntime.safePath,matrix/neo/internal/codingruntime.safePreviewURL,matrix/neo/internal/codingruntime.safeStrings,matrix/neo/internal/codingruntime.safeTodos
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/codingruntime.safePath,matrix/neo/internal/codingruntime.safePreviewURL,matrix/neo/internal/codingruntime.safeStrings,matrix/neo/internal/codingruntime.safeTodos
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.safeTodos kind=func
   digest=b3:6fe6b2b08cbb90d76524122d9bba75791e9cec6aaac05af3b454f02727c96747 file=neo/internal/codingruntime/reducer.go range=474:500 lang=go exported=false byte_range=17460:18161
   sig=func safeTodos(value interface{}, privateID string) []map[string]interface{}
 EDGES
+  calls=matrix/neo/internal/codingruntime.firstString,matrix/neo/internal/codingruntime.objectValue,matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.safeToken,matrix/neo/internal/codingruntime.stringValue
+  references=matrix/neo/internal/codingruntime.content,matrix/neo/internal/codingruntime.firstString,matrix/neo/internal/codingruntime.item,matrix/neo/internal/codingruntime.items,matrix/neo/internal/codingruntime.maxChoiceRunes,matrix/neo/internal/codingruntime.maxTodoCount,matrix/neo/internal/codingruntime.objectValue,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.out,matrix/neo/internal/codingruntime.privateID,matrix/neo/internal/codingruntime.row,matrix/neo/internal/codingruntime.safeText,matrix/neo/internal/codingruntime.safeToken,matrix/neo/internal/codingruntime.status,matrix/neo/internal/codingruntime.stringValue,matrix/neo/internal/codingruntime.todo,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.reduceToolComplete
+  ^references=matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.safeToken kind=func
   digest=b3:21470d0ba9f4d49dbbc49fc1bcc27fd72d6336af81391f19ac1b316b49aae5bd file=neo/internal/codingruntime/reducer.go range=641:652 lang=go exported=false byte_range=21491:21831
   sig=func safeToken(value string, limit int) string
 EDGES
+  calls=matrix/neo/internal/codingruntime.capRunes
+  references=matrix/neo/internal/codingruntime.capRunes,matrix/neo/internal/codingruntime.char,matrix/neo/internal/codingruntime.limit,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/codingruntime.safeTodos
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/codingruntime.safeTodos
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.schemaName kind=const
   digest=b3:7047acc12ae97026c89d6a13155f23d3d7c1ca9b3dcc267bce81c157f04567e6 file=neo/internal/codingruntime/store.go range=23:23 lang=go exported=false byte_range=248:275
   sig=untyped string
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Store.ad
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.scrubFingerprint kind=func
   digest=b3:378c1ed61772b737a32eb47848ca98d934b2d24980e9cca28419364f65ac8424 file=neo/internal/codingruntime/reducer.go range=359:388 lang=go exported=false byte_range=14101:15107
   sig=func scrubFingerprint(value interface{}) map[string]interface{}
 EDGES
+  calls=matrix/neo/internal/codingruntime.objectValue
+  references=matrix/neo/internal/codingruntime.clean,matrix/neo/internal/codingruntime.item,matrix/neo/internal/codingruntime.items,matrix/neo/internal/codingruntime.key,matrix/neo/internal/codingruntime.lower,matrix/neo/internal/codingruntime.maxTodoCount,matrix/neo/internal/codingruntime.nested,matrix/neo/internal/codingruntime.object,matrix/neo/internal/codingruntime.objectValue,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.raw,matrix/neo/internal/codingruntime.typed,matrix/neo/internal/codingruntime.value
+  ^calls=matrix/neo/internal/codingruntime.stableEventIDs
+  ^references=matrix/neo/internal/codingruntime.stableEventIDs
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.stableEventIDs kind=func
   digest=b3:f2787040cd5ae399160bd830544fc41371f8cabe63143fb527daff739db35dfd file=neo/internal/codingruntime/reducer.go range=344:357 lang=go exported=false byte_range=13451:14099
   sig=func stableEventIDs(eventType string, payload map[string]interface{}) (string, string, error)
 EDGES
+  calls=matrix/neo/internal/codingruntime.scrubFingerprint
+  references=matrix/neo/internal/codingruntime.clean,matrix/neo/internal/codingruntime.deliverySum,matrix/neo/internal/codingruntime.encoded,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.eventType,matrix/neo/internal/codingruntime.payload,matrix/neo/internal/codingruntime.scrubFingerprint,matrix/neo/internal/codingruntime.sourceID,matrix/neo/internal/codingruntime.sourceSum
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.stableEvidenceID kind=func
   digest=b3:fba1e811a1e3b521b9161a4112aaa9189430cd4d91aa2067fea316b0370eab49 file=neo/internal/codingruntime/store.go range=1116:1119 lang=go exported=false byte_range=33921:34182
   sig=func stableEvidenceID(deliveryID, sourceEventID string, index int) string
 EDGES
+  references=matrix/neo/internal/codingruntime.deliveryID,matrix/neo/internal/codingruntime.index,matrix/neo/internal/codingruntime.sourceEventID,matrix/neo/internal/codingruntime.sum
+  ^calls=matrix/neo/internal/codingruntime.normalizeDelivery
+  ^references=matrix/neo/internal/codingruntime.normalizeDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.storeName kind=const
   digest=b3:5b95f20f03e666b7cbeb1afba315f49f28a8f8672331c775c9c2825f0bd6ef2c file=neo/internal/codingruntime/store.go range=22:22 lang=go exported=false byte_range=213:246
   sig=untyped string
 EDGES
+  ^references=matrix/neo/internal/codingruntime.Store.ad
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.stringValue kind=func
   digest=b3:be477f302045d2ee1b2106407316052288b346ee3b91113f9f1e1da03e6f897a file=neo/internal/codingruntime/reducer.go range=606:609 lang=go exported=false byte_range=20766:20866
   sig=func stringValue(value interface{}) string
 EDGES
+  references=matrix/neo/internal/codingruntime.value,matrix/neo/internal/codingruntime.valueString
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.changedPaths,matrix/neo/internal/codingruntime.firstString,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/codingruntime.safeStrings,matrix/neo/internal/codingruntime.safeTodos,matrix/neo/internal/codingruntime.todoSummary
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent,matrix/neo/internal/codingruntime.changedPaths,matrix/neo/internal/codingruntime.firstString,matrix/neo/internal/codingruntime.reduceMessageComplete,matrix/neo/internal/codingruntime.reduceToolComplete,matrix/neo/internal/codingruntime.safeStrings,matrix/neo/internal/codingruntime.safeTodos,matrix/neo/internal/codingruntime.todoSummary
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.todoSummary kind=func
   digest=b3:384357012db86c63c9ecef9b97875049ae23ef3fdf82fa0ef87df30aa35644ae file=neo/internal/codingruntime/reducer.go range=530:549 lang=go exported=false byte_range=18889:19444
   sig=func todoSummary(todos []map[string]interface{}) string
 EDGES
+  calls=matrix/neo/internal/codingruntime.stringValue
+  references=matrix/neo/internal/codingruntime.counts,matrix/neo/internal/codingruntime.key,matrix/neo/internal/codingruntime.keys,matrix/neo/internal/codingruntime.parts,matrix/neo/internal/codingruntime.status,matrix/neo/internal/codingruntime.stringValue,matrix/neo/internal/codingruntime.todo,matrix/neo/internal/codingruntime.todos
+  ^calls=matrix/neo/internal/codingruntime.reduceToolComplete
+  ^references=matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.toolProgressSummary kind=func
   digest=b3:a597d06040d1ef99bee1dbe2db2c772f9e7900c814d924b46f380f0027c919b1 file=neo/internal/codingruntime/reducer.go range=551:562 lang=go exported=false byte_range=19446:19717
   sig=func toolProgressSummary(name, context string) string
 EDGES
+  references=matrix/neo/internal/codingruntime.context,matrix/neo/internal/codingruntime.name
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.validTerminal kind=func
   digest=b3:0446478e520d77beab546da8eae10709b060635a33fc9b30332c50071dcf94c4 file=neo/internal/codingruntime/store.go range=1052:1063 lang=go exported=false byte_range=32074:32385
   sig=func validTerminal(result TerminalResult) bool
 EDGES
+  references=matrix/neo/internal/codingruntime.LifecycleFailed,matrix/neo/internal/codingruntime.LifecycleInterrupted,matrix/neo/internal/codingruntime.LifecycleVerified,matrix/neo/internal/codingruntime.OutcomeFailed,matrix/neo/internal/codingruntime.OutcomeInterrupted,matrix/neo/internal/codingruntime.OutcomeVerified,matrix/neo/internal/codingruntime.TerminalResult,matrix/neo/internal/codingruntime.result
+  ^calls=matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.validateDelivery
+  ^references=matrix/neo/internal/codingruntime.Store.CompareAndSetTerminal,matrix/neo/internal/codingruntime.validateDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.validateCreate kind=func
   digest=b3:21677e334d8789c5a075d55e21fe4235c89534864c0e3b2f5246847ca031e285 file=neo/internal/codingruntime/store.go range=929:940 lang=go exported=false byte_range=27786:28391
   sig=func validateCreate(input CreateRequest) error
 EDGES
+  references=matrix/neo/internal/codingruntime.CreateRequest,matrix/neo/internal/codingruntime.ErrInvalid,matrix/neo/internal/codingruntime.input
+  ^calls=matrix/neo/internal/codingruntime.Store.CreateQueued
+  ^references=matrix/neo/internal/codingruntime.Store.CreateQueued
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.validateDelivery kind=func
   digest=b3:b1188e5cebf23a38513a4b5932d67b64571de414e26336273e0f01f8a9c1a39b file=neo/internal/codingruntime/store.go range=970:1015 lang=go exported=false byte_range=29325:30967
   sig=func validateDelivery(batch DeliveryBatch) error
 EDGES
+  calls=matrix/neo/internal/codingruntime.Lifecycle.Terminal,matrix/neo/internal/codingruntime.duplicates,matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/codingruntime.knownLifecycle,matrix/neo/internal/codingruntime.validTerminal,matrix/neo/internal/codingruntime.validateWake
+  references=matrix/neo/internal/codingruntime.DeliveryBatch,matrix/neo/internal/codingruntime.ErrInvalid,matrix/neo/internal/codingruntime.ErrInvalidTransition,matrix/neo/internal/codingruntime.Lifecycle.Terminal,matrix/neo/internal/codingruntime.batch,matrix/neo/internal/codingruntime.duplicates,matrix/neo/internal/codingruntime.err,matrix/neo/internal/codingruntime.evidence,matrix/neo/internal/codingruntime.id,matrix/neo/internal/codingruntime.knownEvidenceKind,matrix/neo/internal/codingruntime.knownLifecycle,matrix/neo/internal/codingruntime.ok,matrix/neo/internal/codingruntime.sources,matrix/neo/internal/codingruntime.validTerminal,matrix/neo/internal/codingruntime.validateWake
+  ^calls=matrix/neo/internal/codingruntime.Store.ApplyDelivery
+  ^references=matrix/neo/internal/codingruntime.Store.ApplyDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.validateWake kind=func
   digest=b3:4c5f68c1fef05f85a30d49209f083482070d71bb7a1b40fe3242661af2796080 file=neo/internal/codingruntime/store.go range=1024:1029 lang=go exported=false byte_range=31192:31407
   sig=func validateWake(wake WakeRequest) error
 EDGES
+  calls=matrix/neo/internal/codingruntime.knownWakeKind
+  references=matrix/neo/internal/codingruntime.ErrInvalid,matrix/neo/internal/codingruntime.WakeRequest,matrix/neo/internal/codingruntime.knownWakeKind,matrix/neo/internal/codingruntime.wake
+  ^calls=matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.validateDelivery
+  ^references=matrix/neo/internal/codingruntime.Store.EnqueueWake,matrix/neo/internal/codingruntime.validateDelivery
   ^defines=matrix/neo/internal/codingruntime/store.go
 
 NODE id=matrix/neo/internal/codingruntime.verificationCommand kind=var
   digest=b3:970e6d5894c27275b57f7326fdc15154cd04c414099e42d87e9ab038cf039487 file=neo/internal/codingruntime/reducer.go range=36:36 lang=go exported=false byte_range=817:1201
   sig=*regexp.Regexp
 EDGES
+  ^references=matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.verificationSummary kind=func
   digest=b3:318aff9d10f6e253f6edd24bd14e18595a581f8515ddb22fafe4ee091cd8914e file=neo/internal/codingruntime/reducer.go range=564:569 lang=go exported=false byte_range=19719:19922
   sig=func verificationSummary(command string, passed bool) string
 EDGES
+  calls=matrix/neo/internal/codingruntime.capRunes
+  references=matrix/neo/internal/codingruntime.capRunes,matrix/neo/internal/codingruntime.command,matrix/neo/internal/codingruntime.maxChoiceRunes,matrix/neo/internal/codingruntime.passed
+  ^calls=matrix/neo/internal/codingruntime.reduceToolComplete
+  ^references=matrix/neo/internal/codingruntime.reduceToolComplete
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime.wakeDedupKey kind=func
   digest=b3:8a9bb0ff483d7091b95f5e3adba436a2bb3759fc27a71ba09f18d64d9744fb26 file=neo/internal/codingruntime/reducer.go range=390:392 lang=go exported=false byte_range=15109:15223
   sig=func wakeDedupKey(kind WakeKind, sourceID string) string
 EDGES
+  references=matrix/neo/internal/codingruntime.WakeKind,matrix/neo/internal/codingruntime.kind,matrix/neo/internal/codingruntime.sourceID
+  ^calls=matrix/neo/internal/codingruntime.ReduceEvent
+  ^references=matrix/neo/internal/codingruntime.ReduceEvent
   ^defines=matrix/neo/internal/codingruntime/reducer.go
 
 NODE id=matrix/neo/internal/codingruntime/reducer.go kind=file

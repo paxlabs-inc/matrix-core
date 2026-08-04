@@ -32,7 +32,7 @@ func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[stri
 	// goals/constraints and found nothing needing attention. Anything else
 	// (non-sentinel answer, or a non-heartbeat turn) is delivered normally.
 	if isHeartbeatWake(userInput) && shouldSuppressHeartbeat(answer) {
-		// Still consolidate + attest the (heartbeat) turn so cortex learns, but
+		// Still consolidate + attest the (heartbeat) turn so Neocortex learns, but
 		// produce NO user-facing output.
 		a.consolidateWorking("", true)
 		a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
@@ -44,7 +44,7 @@ func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[stri
 	// is SUPPRESSED — Neo had idle time but found nothing worth doing right now,
 	// so the sentinel never reaches the user. Anything else is delivered.
 	if isAutomatrixWake(userInput) && shouldSuppressAutomatrix(answer) {
-		// Still consolidate + attest the (Automatrix) turn so cortex learns, but
+		// Still consolidate + attest the (Automatrix) turn so Neocortex learns, but
 		// produce NO user-facing output.
 		a.consolidateWorking("", true)
 		a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
@@ -67,7 +67,7 @@ func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[stri
 	// [memory.writeback] step_5: consolidate before any compaction nils the
 	// working transcript.
 	a.consolidateWorking(answer, true)
-	// Attest surfaced memories so cortex salience + EMA learn from what helped
+	// Attest surfaced memories so Neocortex salience + EMA learn from what helped
 	// vs. what merely crowded the budget. Cheap, best-effort.
 	a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
 }

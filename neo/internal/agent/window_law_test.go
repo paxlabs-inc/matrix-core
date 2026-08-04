@@ -26,7 +26,7 @@ import (
 // prefix at index 0 across every step, append-only transcript, ONE trailing
 // USER-role tail in fixed section order — and ONE oversize-recovery path
 // (cmTrimWorking) proven at both the 1M default and a small 32K window, on the
-// REAL loop (real Agent.Chat, real pager over a temp cortex, real httptest SSE
+// REAL loop (real Agent.Chat, real pager over a temp Neocortex, real httptest SSE
 // model endpoint).
 
 type wireMessage struct {
@@ -105,8 +105,8 @@ func TestWindowLaw_GoldenOnRealMultiStepTurn(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-window-law"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-window-law"
 	a := windowLawAgent(t, cfg, srv.URL)
 
 	if err := a.Chat(context.Background(), "look something up and report"); err != nil {
@@ -195,8 +195,8 @@ func TestWindowLaw_TrimFiresUnderPressureAt32K(t *testing.T) {
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
 	cfg.ContextWindowTokens = 32000
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-window-32k"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-window-32k"
 	a := windowLawAgent(t, cfg, srv.URL)
 
 	// ~45K tokens of history: decisively over the 32K window's hard budget.
@@ -247,8 +247,8 @@ func TestWindowLaw_NoTrimWithoutPressureAt1M(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-window-1m"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-window-1m"
 	a := windowLawAgent(t, cfg, srv.URL)
 
 	var history []llm.Message
@@ -303,8 +303,8 @@ func TestWindowLaw_413RecoveryReentersTheOnePath(t *testing.T) {
 
 	cfg := config.Default() // 1M window: no token pressure, only the byte cap
 	cfg.CassandraEnabled = false
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-window-413"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-window-413"
 	a := windowLawAgent(t, cfg, srv.URL)
 
 	filler := strings.Repeat("bytes that inflate the serialized request body well past the ceiling ", 600) // ~40KB per turn

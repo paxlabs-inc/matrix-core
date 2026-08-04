@@ -24,7 +24,7 @@ package server
 //   POST /automatrix/inbox/read      {id} -> mark one completion read
 //
 // The opt-in toggle and read go through the production AutomatrixGovernor (the
-// concrete type wired in serve.go); the queue reads/writes go through the cortex
+// concrete type wired in serve.go); the queue reads/writes go through the Neocortex
 // pager; the inbox through the durable automatrixlog store. No secrets are read
 // or returned — only the result-not-protocol surfaces.
 

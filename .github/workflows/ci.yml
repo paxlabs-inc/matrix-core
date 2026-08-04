@@ -52,6 +52,10 @@ jobs:
         working-directory: ${{ matrix.module }}
         run: go mod download
 
+      - name: Neo Neocortex-only structural gate
+        if: matrix.module == 'neo'
+        run: scripts/check-neo-neocortex-only.sh
+
       - name: gofmt
         working-directory: ${{ matrix.module }}
         run: |

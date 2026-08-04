@@ -18,7 +18,7 @@ package agent
 //
 // Everything real: a real httptest OpenAI-SSE model the real llm.Client talks
 // to, a real tools.Manager with the production memory seams wired to a real
-// cortex Pager on a temp store, the real turn loop, and the real supervisor.
+// Neocortex Pager on a temp store, the real turn loop, and the real supervisor.
 // No fake, mock, stub, canned provider, or placeholder stands in for the
 // behavior being proven.
 //
@@ -266,7 +266,7 @@ func TestO1Qualification_InProcessWorkflows_RealPath(t *testing.T) {
 	// Case 2 — durable memory mutation + recall with REAL effect
 	// reconciliation. Proves criterion.effects closes only from a genuinely
 	// recorded-and-reconciled effect (the successful memory_mutate), and the
-	// recall reads it back — the whole loop over a real cortex store.
+	// recall reads it back — the whole loop over a real Neocortex store.
 	t.Run("memory_effect_reconciliation", func(t *testing.T) {
 		const answer = "Your favorite color is blue."
 		var (
@@ -289,8 +289,8 @@ func TestO1Qualification_InProcessWorkflows_RealPath(t *testing.T) {
 		cfg.CassandraEnabled = false
 		cfg.EpistemicPremises = false
 		cfg.EpistemicPredictions = false
-		cfg.CortexRoot = t.TempDir()
-		cfg.CortexActor = "o1-qual-memory"
+		cfg.DataRoot = t.TempDir()
+		cfg.NeocortexActor = "o1-qual-memory"
 		pager, err := memory.Open(cfg)
 		if err != nil {
 			t.Fatalf("memory.Open: %v", err)

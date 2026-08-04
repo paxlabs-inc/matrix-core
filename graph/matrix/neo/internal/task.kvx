@@ -1,296 +1,375 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/neo/internal/task kind=package
-  digest=b3:345acf2239a0129e19545ecbf62695c21f3ccb1631d69fff3ca603041260fe30 file=neo/internal/task range=0:0 lang=go exported=true
+  digest=b3:1815753e5f5716a107d098361d251ee73aff6373bb54a83c3c2bf988e641ab62 file=neo/internal/task range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/task/store.go
+  imports=matrix/vault
   ^contains=mod:matrix/neo
+  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/runtime/loop,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/task.Dir kind=func
-  digest=b3:19dbc6c090c0b95e42c4dd1f631cb6ff3189c494ad07af249db66d0a8244797e file=neo/internal/task/store.go range=335:347 lang=go exported=true byte_range=11594:12115
+  digest=b3:dfb6494c426af84dc95d2cbe14cc1570e7a80bdc17ebaeabb9c95d3d3c123a4d file=neo/internal/task/store.go range=335:347 lang=go exported=true byte_range=11597:12121
   sig=func Dir(override, cortexRoot string) string
-  doc=Dir resolves Neo's task directory. An explicit override wins; else it is\nderived from the cortex root's parent (matching the conversation store, so\ntasks live beside history under /data in prod and survive suspend/redeploy).\nReturns "" when neither is available (persistence disabled).
+  doc=Dir resolves Neo's task directory. An explicit override wins; else it is\nderived from the Neocortex root's parent (matching the conversation store, so\ntasks live beside history under /data in prod and survive suspend/redeploy).\nReturns "" when neither is available (persistence disabled).
 EDGES
+  references=matrix/neo/internal/task.c,matrix/neo/internal/task.cortexRoot,matrix/neo/internal/task.o,matrix/neo/internal/task.override
+  ^calls=matrix/neo/cmd/neo.runServe
+  ^references=matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.KindBrief kind=const
-  digest=b3:34d27476aecb4f26650ae7fea16263e3be3de841121e05f575dcff2d7ff39eb2 file=neo/internal/task/store.go range=50:55 lang=go exported=true byte_range=1826:2230
+  digest=b3:34d27476aecb4f26650ae7fea16263e3be3de841121e05f575dcff2d7ff39eb2 file=neo/internal/task/store.go range=50:55 lang=go exported=true byte_range=1829:2233
   sig=untyped string
   doc=KindBrief marks a task whose objective is an autonomous MORNING_BRIEF run\n(ORACLE task 5.4). The normal boot reaper (Running) EXCLUDES these — a\nbrief must never resume on the full interactive/money surface — and the\ndedicated brief-resume path (RunningKind) picks them up on the restricted\nbrief surface instead. An empty Kind is an ordinary interactive task.
 EDGES
+  ^references=matrix/neo/internal/server.Engine.ResumeInProgressBriefs,matrix/neo/internal/server.Engine.dispatchBriefRun
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Open kind=func
-  digest=b3:95153b6d2fa250dc9e1abece1ba6af40419d59de99e86b07359301444466d547 file=neo/internal/task/store.go range=99:103 lang=go exported=true byte_range=4040:4257
+  digest=b3:95153b6d2fa250dc9e1abece1ba6af40419d59de99e86b07359301444466d547 file=neo/internal/task/store.go range=99:103 lang=go exported=true byte_range=4043:4260
   sig=func Open(dir string) *Store
   doc=Open builds a store rooted at dir. An empty dir yields a disabled store\n(every method is a safe no-op) so dev/CLI runs work unchanged.
 EDGES
+  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.dir
+  ^calls=matrix/neo/internal/server.NewEngine
+  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Status kind=type
-  digest=b3:56a0ad1ea6b137d8a74eb95bd4d220a4578efc9a33cfc5af0804a20bb9f510b2 file=neo/internal/task/store.go range=46:47 lang=go exported=true byte_range=1758:1815
+  digest=b3:56a0ad1ea6b137d8a74eb95bd4d220a4578efc9a33cfc5af0804a20bb9f510b2 file=neo/internal/task/store.go range=46:47 lang=go exported=true byte_range=1761:1818
   sig=type Status string
   doc=Status is a task's lifecycle state.
 EDGES
+  ^references=matrix/neo/internal/server.Engine.settleApprovedOpportunity,matrix/neo/internal/server.Engine.settleAutomatrixOpportunity,matrix/neo/internal/server.Server.handleAutomatrixApprove,matrix/neo/internal/server.run,matrix/neo/internal/server.session.deliverCeiling,matrix/neo/internal/server.session.deliverDeterministicStop,matrix/neo/internal/server.session.dispatchLocked,matrix/neo/internal/server.session.dispatchLockedAs,matrix/neo/internal/server.session.submitIdempotent,matrix/neo/internal/server.session.submitWith,matrix/neo/internal/server.session.superviseAutomatrixTask,matrix/neo/internal/server.session.superviseBriefTask,matrix/neo/internal/server.session.superviseTask,matrix/neo/internal/task.StatusCeiling,matrix/neo/internal/task.StatusDone,matrix/neo/internal/task.StatusInterrupted,matrix/neo/internal/task.StatusRunning,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Task
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.StatusCeiling kind=const
-  digest=b3:1b8ef6bab32692b3bc5157ce67e6aff66cd4d7cdaf47d1a637781a7143f3dd9d file=neo/internal/task/store.go range=64:66 lang=go exported=true byte_range=2498:2673
+  digest=b3:1b8ef6bab32692b3bc5157ce67e6aff66cd4d7cdaf47d1a637781a7143f3dd9d file=neo/internal/task/store.go range=64:66 lang=go exported=true byte_range=2501:2676
   sig=task.Status
   doc=StatusCeiling marks a task that hit the supervisor's hard ceiling\n(wall-clock or max respawns) and was delivered as an honest partial.
 EDGES
+  references=matrix/neo/internal/task.Status
+  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/server.session.deliverCeiling,matrix/neo/internal/server.session.deliverDeterministicStop,matrix/neo/internal/server.session.drive,matrix/neo/internal/server.session.superviseAutomatrixTask,matrix/neo/internal/server.session.superviseBriefTask
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.StatusDone kind=const
-  digest=b3:78e47d5bc0f75a5cf048633bcda9d827fcebe028743e7ecc6cee17b03705c664 file=neo/internal/task/store.go range=62:63 lang=go exported=true byte_range=2412:2496
+  digest=b3:78e47d5bc0f75a5cf048633bcda9d827fcebe028743e7ecc6cee17b03705c664 file=neo/internal/task/store.go range=62:63 lang=go exported=true byte_range=2415:2499
   sig=task.Status
   doc=StatusDone marks a task the completion gate accepted.
 EDGES
+  references=matrix/neo/internal/task.Status
+  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/server.Engine.dispatchBriefRun,matrix/neo/internal/server.Engine.settleApprovedOpportunity,matrix/neo/internal/server.Engine.settleAutomatrixOpportunity,matrix/neo/internal/server.session.superviseAutomatrixTask,matrix/neo/internal/server.session.superviseBriefTask,matrix/neo/internal/server.session.superviseTask
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.StatusInterrupted kind=const
-  digest=b3:3c188dd74b3c38ac8b5818ddebd7a4d6f24959215cf23a975a4525fe38a3257b file=neo/internal/task/store.go range=67:69 lang=go exported=true byte_range=2675:2850
+  digest=b3:3c188dd74b3c38ac8b5818ddebd7a4d6f24959215cf23a975a4525fe38a3257b file=neo/internal/task/store.go range=67:69 lang=go exported=true byte_range=2678:2853
   sig=task.Status
   doc=StatusInterrupted marks a task the user explicitly stopped or superseded\nwith a new message. The reaper must NOT resume these.
 EDGES
+  references=matrix/neo/internal/task.Status
+  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/server.Engine.settleApprovedOpportunity,matrix/neo/internal/server.session.drive,matrix/neo/internal/server.session.superviseTask
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.StatusRunning kind=const
-  digest=b3:77a90641e15d154fc2527d642b07182b379e8fbe49f8ddfaa21bd2233223656b file=neo/internal/task/store.go range=59:61 lang=go exported=true byte_range=2243:2410
+  digest=b3:77a90641e15d154fc2527d642b07182b379e8fbe49f8ddfaa21bd2233223656b file=neo/internal/task/store.go range=59:61 lang=go exported=true byte_range=2246:2413
   sig=task.Status
   doc=StatusRunning marks a task that has been dispatched and is not yet\nfinished. The reaper resumes exactly these after a restart.
 EDGES
+  references=matrix/neo/internal/task.Status
+  ^references=matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.running
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store kind=type
-  digest=b3:cfdde9be45fef1920ce0369871d28b59417b626f1f93376c3bdf2b23a4ba5778 file=neo/internal/task/store.go range=86:97 lang=go exported=true byte_range=3593:4038
+  digest=b3:cfdde9be45fef1920ce0369871d28b59417b626f1f93376c3bdf2b23a4ba5778 file=neo/internal/task/store.go range=86:97 lang=go exported=true byte_range=3596:4041
   sig=type Store struct {\n	mu	sync.Mutex\n	dir	string\n\n	// vault seals each task file (whole-file AEAD, tmp+rename) when encrypting;\n	// nil = plaintext dev/CLI. user is the DID bound into the file's associated\n	// data so a record cannot be read across users.\n	vault	*vault.Session\n	user	string\n}
   doc=Store is Neo's durable task ledger. One mutex guards all access; a per-user\ndaemon has at most a handful of conversations, so this is plenty fast.
 EDGES
   contains=matrix/neo/internal/task.Store#dir,matrix/neo/internal/task.Store#mu,matrix/neo/internal/task.Store#user,matrix/neo/internal/task.Store#vault,matrix/neo/internal/task.Store.Begin,matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.Running,matrix/neo/internal/task.Store.RunningKind,matrix/neo/internal/task.Store.SetVault,matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Store.running,matrix/neo/internal/task.Store.writeLocked
+  references=matrix/vault.Session
+  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler,matrix/neo/internal/server.Engine,matrix/neo/internal/task.Open,matrix/neo/internal/task.Store.Begin,matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.Running,matrix/neo/internal/task.Store.RunningKind,matrix/neo/internal/task.Store.SetVault,matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Store.running,matrix/neo/internal/task.Store.writeLocked
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store#dir kind=field
-  digest=b3:7c4974b33207052e1ad5cbf5d42e280f9267cc0d0077d2de0f7524e692427f50 file=neo/internal/task/store.go range=90:90 lang=go exported=false byte_range=3783:3793
+  digest=b3:7c4974b33207052e1ad5cbf5d42e280f9267cc0d0077d2de0f7524e692427f50 file=neo/internal/task/store.go range=90:90 lang=go exported=false byte_range=3786:3796
   sig=string
 EDGES
   ^contains=matrix/neo/internal/task.Store
 
 NODE id=matrix/neo/internal/task.Store#mu kind=field
-  digest=b3:1a708959b007248f2220cf2e77d08f481b8daacea806d7eb1762f37792d66b44 file=neo/internal/task/store.go range=89:89 lang=go exported=false byte_range=3767:3781
+  digest=b3:1a708959b007248f2220cf2e77d08f481b8daacea806d7eb1762f37792d66b44 file=neo/internal/task/store.go range=89:89 lang=go exported=false byte_range=3770:3784
   sig=sync.Mutex
 EDGES
   ^contains=matrix/neo/internal/task.Store
 
 NODE id=matrix/neo/internal/task.Store#user kind=field
-  digest=b3:d6e3aa39dcac5194e82f4d88b0e0a05b1aa2e4c600d380e23a30f8afcefb41c5 file=neo/internal/task/store.go range=96:96 lang=go exported=false byte_range=4024:4036
+  digest=b3:d6e3aa39dcac5194e82f4d88b0e0a05b1aa2e4c600d380e23a30f8afcefb41c5 file=neo/internal/task/store.go range=96:96 lang=go exported=false byte_range=4027:4039
   sig=string
 EDGES
   ^contains=matrix/neo/internal/task.Store
 
 NODE id=matrix/neo/internal/task.Store#vault kind=field
-  digest=b3:a5dc5d5d1556b8838bf9bebac9c48fcfa332510d31dfbc6d1222c36905cc64ca file=neo/internal/task/store.go range=92:95 lang=go exported=false byte_range=3796:4022
+  digest=b3:a5dc5d5d1556b8838bf9bebac9c48fcfa332510d31dfbc6d1222c36905cc64ca file=neo/internal/task/store.go range=92:95 lang=go exported=false byte_range=3799:4025
   sig=*vault.Session
   doc=vault seals each task file (whole-file AEAD, tmp+rename) when encrypting;\nnil = plaintext dev/CLI. user is the DID bound into the file's associated\ndata so a record cannot be read across users.
 EDGES
   ^contains=matrix/neo/internal/task.Store
 
 NODE id=matrix/neo/internal/task.Store.Begin kind=method
-  digest=b3:b9178c9b82539ff76d75ed96c8ad121e59ed86ad2a17d731322dd44c3004bd83 file=neo/internal/task/store.go range=207:214 lang=go exported=true byte_range=7554:8042
+  digest=b3:b9178c9b82539ff76d75ed96c8ad121e59ed86ad2a17d731322dd44c3004bd83 file=neo/internal/task/store.go range=207:214 lang=go exported=true byte_range=7557:8045
   sig=func (s *Store) Begin(convID, runID, objective string)
   doc=Begin records (or replaces) a conversation's task as running, owned by runID.\nA new dispatch for a conversation supersedes any previous task — the new\nrunID becomes the CAS token, so a superseded older run's later Finish is a\nno-op. Created is preserved across a same-conversation supersession only if\nthe objective is unchanged (a genuine resume); otherwise it resets.
 EDGES
+  calls=matrix/neo/internal/task.Store.BeginKind
+  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.convID,matrix/neo/internal/task.objective,matrix/neo/internal/task.runID,matrix/neo/internal/task.s
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/server.session.drive
+  ^references=matrix/neo/internal/server.session.drive
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.BeginKind kind=method
-  digest=b3:1742fd1ade7567858d6e124044113154be4929d0a221a307fc48fcb3a4022ebf file=neo/internal/task/store.go range=216:241 lang=go exported=true byte_range=8044:8915
+  digest=b3:1742fd1ade7567858d6e124044113154be4929d0a221a307fc48fcb3a4022ebf file=neo/internal/task/store.go range=216:241 lang=go exported=true byte_range=8047:8918
   sig=func (s *Store) BeginKind(convID, runID, objective, kind string)
   doc=BeginKind is Begin with an explicit task kind ("" = interactive; KindBrief =\nautonomous morning brief). The kind steers the boot reaper: an interactive\ntask resumes on the full surface (Running), a brief on the restricted brief\nsurface (RunningKind) — a brief must never resume on the money surface.
 EDGES
+  calls=matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
+  references=matrix/neo/internal/task.StatusRunning,matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked,matrix/neo/internal/task.Task,matrix/neo/internal/task.convID,matrix/neo/internal/task.created,matrix/neo/internal/task.kind,matrix/neo/internal/task.now,matrix/neo/internal/task.objective,matrix/neo/internal/task.ok,matrix/neo/internal/task.prev,matrix/neo/internal/task.runID,matrix/neo/internal/task.s
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/server.Engine.dispatchBriefRun,matrix/neo/internal/task.Store.Begin
+  ^references=matrix/neo/internal/server.Engine.dispatchBriefRun,matrix/neo/internal/task.Store.Begin
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.Checkpoint kind=method
-  digest=b3:ff7c3bee62e874e47ced9bb3bcabef585bce29bd1aed6d05fe1ea32dd068c560 file=neo/internal/task/store.go range=243:259 lang=go exported=true byte_range=8917:9424
+  digest=b3:ff7c3bee62e874e47ced9bb3bcabef585bce29bd1aed6d05fe1ea32dd068c560 file=neo/internal/task/store.go range=243:259 lang=go exported=true byte_range=8920:9427
   sig=func (s *Store) Checkpoint(convID, runID string, attempt int, note string)
   doc=Checkpoint records progress for runID's task (the attempt counter + a short\nnote). Compare-and-set on runID: a superseded run's checkpoint is ignored.
 EDGES
+  calls=matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
+  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked,matrix/neo/internal/task.attempt,matrix/neo/internal/task.convID,matrix/neo/internal/task.note,matrix/neo/internal/task.ok,matrix/neo/internal/task.runID,matrix/neo/internal/task.s,matrix/neo/internal/task.t
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.session.superviseTask
+  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.session.superviseTask
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.Enabled kind=method
-  digest=b3:7ee9e38ccc8392a851473d2022e1d350a39a14aa9839d862e6605b5c0828361a file=neo/internal/task/store.go range=127:128 lang=go exported=true byte_range=5120:5255
+  digest=b3:7ee9e38ccc8392a851473d2022e1d350a39a14aa9839d862e6605b5c0828361a file=neo/internal/task/store.go range=127:128 lang=go exported=true byte_range=5123:5258
   sig=func (s *Store) Enabled() bool
   doc=Enabled reports whether persistence is on (a non-empty directory).
 EDGES
+  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.s
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeInProgressBriefs,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Store.running
+  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeInProgressBriefs,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Store.running
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.Finish kind=method
-  digest=b3:0a9403848c157819617048b87b688e6256752db2b427cdb634b988d48f67d907 file=neo/internal/task/store.go range=261:276 lang=go exported=true byte_range=9426:9874
+  digest=b3:0a9403848c157819617048b87b688e6256752db2b427cdb634b988d48f67d907 file=neo/internal/task/store.go range=261:276 lang=go exported=true byte_range=9429:9877
   sig=func (s *Store) Finish(convID, runID string, status Status)
   doc=Finish marks runID's task terminal. Compare-and-set on runID: a superseded\nolder run can never clobber the record of the run that replaced it.
 EDGES
+  calls=matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
+  references=matrix/neo/internal/task.Status,matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked,matrix/neo/internal/task.convID,matrix/neo/internal/task.ok,matrix/neo/internal/task.runID,matrix/neo/internal/task.s,matrix/neo/internal/task.status,matrix/neo/internal/task.t
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/server.session.drive
+  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/server.Engine.dispatchBriefRun,matrix/neo/internal/server.session.drive
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.Get kind=method
-  digest=b3:f9394a96f74173bbd6c77dc53fa833ff5cbd0dcbd933602d8986dc514407f467 file=neo/internal/task/store.go range=325:333 lang=go exported=true byte_range=11364:11592
+  digest=b3:f9394a96f74173bbd6c77dc53fa833ff5cbd0dcbd933602d8986dc514407f467 file=neo/internal/task/store.go range=325:333 lang=go exported=true byte_range=11367:11595
   sig=func (s *Store) Get(convID string) (Task, bool)
   doc=Get returns a conversation's task record, if any.
 EDGES
+  calls=matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked
+  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Task,matrix/neo/internal/task.convID,matrix/neo/internal/task.s
   ^contains=matrix/neo/internal/task.Store
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.Running kind=method
-  digest=b3:289726cb5acf2f4973b51e2948f7b18f53e3f895e1cba7442986090b97589df3 file=neo/internal/task/store.go range=278:285 lang=go exported=true byte_range=9876:10324
+  digest=b3:289726cb5acf2f4973b51e2948f7b18f53e3f895e1cba7442986090b97589df3 file=neo/internal/task/store.go range=278:285 lang=go exported=true byte_range=9879:10327
   sig=func (s *Store) Running() []Task
   doc=Running returns every INTERACTIVE conversation whose task is still running —\nthe set the normal boot reaper must resume on the full surface. Brief tasks\n(KindBrief) are deliberately EXCLUDED: they must resume only on the\nrestricted brief surface via RunningKind, never on the money surface.\nBest-effort: unreadable files are skipped.
 EDGES
+  calls=matrix/neo/internal/task.Store.running
+  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.running,matrix/neo/internal/task.Task,matrix/neo/internal/task.s,matrix/neo/internal/task.t
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks
+  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.RunningKind kind=method
-  digest=b3:3fa28149f860d73b77c28faf05b6630be0ae5c5fa237abcb7eb2f0b956441fc7 file=neo/internal/task/store.go range=287:293 lang=go exported=true byte_range=10326:10700
+  digest=b3:3fa28149f860d73b77c28faf05b6630be0ae5c5fa237abcb7eb2f0b956441fc7 file=neo/internal/task/store.go range=287:293 lang=go exported=true byte_range=10329:10703
   sig=func (s *Store) RunningKind(kind string) []Task
   doc=RunningKind returns every still-running task of the given kind — the dedicated\nresume set for a specialized surface (e.g. KindBrief for the restricted\nmorning-brief runner). Best-effort: unreadable files are skipped.
 EDGES
+  calls=matrix/neo/internal/task.Store.running
+  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.running,matrix/neo/internal/task.Task,matrix/neo/internal/task.kind,matrix/neo/internal/task.s,matrix/neo/internal/task.t
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/server.Engine.ResumeInProgressBriefs
+  ^references=matrix/neo/internal/server.Engine.ResumeInProgressBriefs
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.SetVault kind=method
-  digest=b3:a498a7bd2bacd9cbd9b3762878e4a459c6f93a2defe6c4493ef5a8cfd62c41d1 file=neo/internal/task/store.go range=105:116 lang=go exported=true byte_range=4259:4620
+  digest=b3:a498a7bd2bacd9cbd9b3762878e4a459c6f93a2defe6c4493ef5a8cfd62c41d1 file=neo/internal/task/store.go range=105:116 lang=go exported=true byte_range=4262:4623
   sig=func (s *Store) SetVault(sess *vault.Session, user string)
   doc=SetVault wires the fail-closed data-at-rest session and owning user DID into\nthe store. Called once at engine assembly before any write; a nil session\nleaves the store writing legacy plaintext (dev/CLI).
 EDGES
+  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.s,matrix/neo/internal/task.sess,matrix/neo/internal/task.user,matrix/vault.Session
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/server.NewEngine
+  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.ad kind=method
-  digest=b3:900e91173e1de7acb889222cdbfa9685b7913e48d78cf79f09b4574515f5efc4 file=neo/internal/task/store.go range=118:125 lang=go exported=false byte_range=4622:5118
+  digest=b3:900e91173e1de7acb889222cdbfa9685b7913e48d78cf79f09b4574515f5efc4 file=neo/internal/task/store.go range=118:125 lang=go exported=false byte_range=4625:5121
   sig=func (s *Store) ad(convID string) vault.AD
   doc=ad reconstructs the associated data for a task file from where it lives (this\nuser, this conversation) — never stored, so a file moved between users or\nconversations fails authentication.
 EDGES
+  calls=matrix/neo/internal/task.sanitize
+  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.convID,matrix/neo/internal/task.s,matrix/neo/internal/task.sanitize,matrix/neo/internal/task.schemaTask1,matrix/neo/internal/task.storeTask,matrix/vault.AD
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
+  ^references=matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.loadLocked kind=method
-  digest=b3:9de2ccbcf03ded5eb88a4c9c1954d101965ba2a8323ecf6f3423f3c08e7f59d2 file=neo/internal/task/store.go range=145:175 lang=go exported=false byte_range=5703:6555
+  digest=b3:9de2ccbcf03ded5eb88a4c9c1954d101965ba2a8323ecf6f3423f3c08e7f59d2 file=neo/internal/task/store.go range=145:175 lang=go exported=false byte_range=5706:6558
   sig=func (s *Store) loadLocked(convID string) (Task, bool)
   doc=loadLocked reads a record; a missing/corrupt file yields (zero, false).\nCaller MUST hold s.mu.
 EDGES
+  calls=matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.pathLocked,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
+  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Task,matrix/neo/internal/task.convID,matrix/neo/internal/task.data,matrix/neo/internal/task.err,matrix/neo/internal/task.oerr,matrix/neo/internal/task.path,matrix/neo/internal/task.plain,matrix/neo/internal/task.s,matrix/neo/internal/task.t,matrix/neo/internal/task.uv,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.running
+  ^references=matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.running
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.pathLocked kind=method
-  digest=b3:c203e894258ab639ea08023d37fdb831c8a507db66f41f168eff3958bb8b579a file=neo/internal/task/store.go range=130:135 lang=go exported=false byte_range=5257:5414
+  digest=b3:c203e894258ab639ea08023d37fdb831c8a507db66f41f168eff3958bb8b579a file=neo/internal/task/store.go range=130:135 lang=go exported=false byte_range=5260:5417
   sig=func (s *Store) pathLocked(convID string) string
 EDGES
+  calls=matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.sanitize
+  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.convID,matrix/neo/internal/task.s,matrix/neo/internal/task.sanitize
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
+  ^references=matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.running kind=method
-  digest=b3:2966a0db214b05b9b0a0499b37f6bf92f2081642f0c1238dbc7529143aa603bb file=neo/internal/task/store.go range=295:323 lang=go exported=false byte_range=10702:11362
+  digest=b3:2966a0db214b05b9b0a0499b37f6bf92f2081642f0c1238dbc7529143aa603bb file=neo/internal/task/store.go range=295:323 lang=go exported=false byte_range=10705:11365
   sig=func (s *Store) running(keep func(Task) bool) []Task
   doc=running collects every still-running task whose record satisfies keep.
 EDGES
+  calls=matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked
+  references=matrix/neo/internal/task.StatusRunning,matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Task,matrix/neo/internal/task.convID,matrix/neo/internal/task.e,matrix/neo/internal/task.entries,matrix/neo/internal/task.err,matrix/neo/internal/task.keep,matrix/neo/internal/task.name,matrix/neo/internal/task.ok,matrix/neo/internal/task.out,matrix/neo/internal/task.s,matrix/neo/internal/task.t
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/task.Store.Running,matrix/neo/internal/task.Store.RunningKind
+  ^references=matrix/neo/internal/task.Store.Running,matrix/neo/internal/task.Store.RunningKind
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.writeLocked kind=method
-  digest=b3:fecb6380a54113f24c1b4d4cf6a95e37a873d81079c9780ad72f3cc4d28ab5a5 file=neo/internal/task/store.go range=177:205 lang=go exported=false byte_range=6557:7552
+  digest=b3:fecb6380a54113f24c1b4d4cf6a95e37a873d81079c9780ad72f3cc4d28ab5a5 file=neo/internal/task/store.go range=177:205 lang=go exported=false byte_range=6560:7555
   sig=func (s *Store) writeLocked(t Task)
   doc=writeLocked persists t atomically (tmp + rename). Caller MUST hold s.mu.
 EDGES
+  calls=matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.pathLocked,matrix/vault.Session.MaybeSealFile
+  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Task,matrix/neo/internal/task.data,matrix/neo/internal/task.err,matrix/neo/internal/task.path,matrix/neo/internal/task.s,matrix/neo/internal/task.t,matrix/neo/internal/task.tmp,matrix/vault.Session.MaybeSealFile
   ^contains=matrix/neo/internal/task.Store
+  ^calls=matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Finish
+  ^references=matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Finish
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Task kind=type
-  digest=b3:4a585aaf24bf5c195a3fc911a5d7a7acd0b948deb7032bfb4d2ed06a0999c2ee file=neo/internal/task/store.go range=72:84 lang=go exported=true byte_range=2854:3591
+  digest=b3:4a585aaf24bf5c195a3fc911a5d7a7acd0b948deb7032bfb4d2ed06a0999c2ee file=neo/internal/task/store.go range=72:84 lang=go exported=true byte_range=2857:3594
   sig=type Task struct {\n	ConvID		string		`json:"conversation_id"`\n	RunID		string		`json:"run_id"`		// the supervising run/intent id (the CAS token)\n	Objective	string		`json:"objective"`	// the original user request the task must fulfil\n	Kind		string		`json:"kind,omitempty"`	// "" = interactive task; KindBrief = autonomous morning brief\n	Status		Status		`json:"status"`\n	Attempt		int		`json:"attempt"`	// how many supervised attempts have run\n	Note		string		`json:"note,omitempty"`	// last checkpoint note (diagnostic)\n	Created		time.Time	`json:"created"`\n	Updated		time.Time	`json:"updated"`\n}
   doc=Task is the persisted supervision record for one conversation's active (or\nlast) task.
 EDGES
   contains=matrix/neo/internal/task.Task#Attempt,matrix/neo/internal/task.Task#ConvID,matrix/neo/internal/task.Task#Created,matrix/neo/internal/task.Task#Kind,matrix/neo/internal/task.Task#Note,matrix/neo/internal/task.Task#Objective,matrix/neo/internal/task.Task#RunID,matrix/neo/internal/task.Task#Status,matrix/neo/internal/task.Task#Updated
+  references=matrix/neo/internal/task.Status
+  ^references=matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.Running,matrix/neo/internal/task.Store.RunningKind,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.running,matrix/neo/internal/task.Store.writeLocked
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Task#Attempt kind=field
-  digest=b3:a08f2b62573a6f2e8c1ed566c473e1636ca80fc319d1e4263d30b1a4ed9bad0b file=neo/internal/task/store.go range=80:80 lang=go exported=true byte_range=3347:3383
+  digest=b3:a08f2b62573a6f2e8c1ed566c473e1636ca80fc319d1e4263d30b1a4ed9bad0b file=neo/internal/task/store.go range=80:80 lang=go exported=true byte_range=3350:3386
   sig=int
 EDGES
   ^contains=matrix/neo/internal/task.Task
 
 NODE id=matrix/neo/internal/task.Task#ConvID kind=field
-  digest=b3:61afb8f6298dd7f9dd54a0c061340fa4dfc7467b0abbaaa2ccefb37d88dcb041 file=neo/internal/task/store.go range=75:75 lang=go exported=true byte_range=2967:3011
+  digest=b3:61afb8f6298dd7f9dd54a0c061340fa4dfc7467b0abbaaa2ccefb37d88dcb041 file=neo/internal/task/store.go range=75:75 lang=go exported=true byte_range=2970:3014
   sig=string
 EDGES
   ^contains=matrix/neo/internal/task.Task
 
 NODE id=matrix/neo/internal/task.Task#Created kind=field
-  digest=b3:4c6f9892c806ce0f5c2c6941013d89723967c797c9f9accd5411f52295c2c962 file=neo/internal/task/store.go range=82:82 lang=go exported=true byte_range=3515:3551
+  digest=b3:4c6f9892c806ce0f5c2c6941013d89723967c797c9f9accd5411f52295c2c962 file=neo/internal/task/store.go range=82:82 lang=go exported=true byte_range=3518:3554
   sig=time.Time
 EDGES
   ^contains=matrix/neo/internal/task.Task
 
 NODE id=matrix/neo/internal/task.Task#Kind kind=field
-  digest=b3:bb551172d74af5c45740fbfdfd5a65185de2b852f15a5a5184e0a8de746469a6 file=neo/internal/task/store.go range=78:78 lang=go exported=true byte_range=3202:3245
+  digest=b3:bb551172d74af5c45740fbfdfd5a65185de2b852f15a5a5184e0a8de746469a6 file=neo/internal/task/store.go range=78:78 lang=go exported=true byte_range=3205:3248
   sig=string
 EDGES
   ^contains=matrix/neo/internal/task.Task
 
 NODE id=matrix/neo/internal/task.Task#Note kind=field
-  digest=b3:5a922a5bde05415eecc31dd6f45d1e33095de676f7b7657804936beafa149b11 file=neo/internal/task/store.go range=81:81 lang=go exported=true byte_range=3433:3476
+  digest=b3:5a922a5bde05415eecc31dd6f45d1e33095de676f7b7657804936beafa149b11 file=neo/internal/task/store.go range=81:81 lang=go exported=true byte_range=3436:3479
   sig=string
 EDGES
   ^contains=matrix/neo/internal/task.Task
 
 NODE id=matrix/neo/internal/task.Task#Objective kind=field
-  digest=b3:1c475840db34c73dd14aaeca970641e1ebf31ec3ff5accf451c92bb330211548 file=neo/internal/task/store.go range=77:77 lang=go exported=true byte_range=3107:3145
+  digest=b3:1c475840db34c73dd14aaeca970641e1ebf31ec3ff5accf451c92bb330211548 file=neo/internal/task/store.go range=77:77 lang=go exported=true byte_range=3110:3148
   sig=string
 EDGES
   ^contains=matrix/neo/internal/task.Task
 
 NODE id=matrix/neo/internal/task.Task#RunID kind=field
-  digest=b3:81bbb038732aa970041f050e85d3b18043a43a9e3fdc93b4ad3eba57fe5924d9 file=neo/internal/task/store.go range=76:76 lang=go exported=true byte_range=3013:3048
+  digest=b3:81bbb038732aa970041f050e85d3b18043a43a9e3fdc93b4ad3eba57fe5924d9 file=neo/internal/task/store.go range=76:76 lang=go exported=true byte_range=3016:3051
   sig=string
 EDGES
   ^contains=matrix/neo/internal/task.Task
 
 NODE id=matrix/neo/internal/task.Task#Status kind=field
-  digest=b3:7bf2ff235749c423fee13137445e671e1849ad6cb28ef0f07827bf356bde2c15 file=neo/internal/task/store.go range=79:79 lang=go exported=true byte_range=3310:3345
+  digest=b3:7bf2ff235749c423fee13137445e671e1849ad6cb28ef0f07827bf356bde2c15 file=neo/internal/task/store.go range=79:79 lang=go exported=true byte_range=3313:3348
   sig=task.Status
 EDGES
   ^contains=matrix/neo/internal/task.Task
 
 NODE id=matrix/neo/internal/task.Task#Updated kind=field
-  digest=b3:bdbdc315379e6648828db6ee332cdfb6d3603675c158bf33e4dbf4f0a37106d2 file=neo/internal/task/store.go range=83:83 lang=go exported=true byte_range=3553:3589
+  digest=b3:bdbdc315379e6648828db6ee332cdfb6d3603675c158bf33e4dbf4f0a37106d2 file=neo/internal/task/store.go range=83:83 lang=go exported=true byte_range=3556:3592
   sig=time.Time
 EDGES
   ^contains=matrix/neo/internal/task.Task
 
 NODE id=matrix/neo/internal/task.sanitize kind=func
-  digest=b3:bb89f21108085c9fb142afe71a74010bb61a913729da6584cdd8307f8bf8ab18 file=neo/internal/task/store.go range=137:143 lang=go exported=false byte_range=5416:5701
+  digest=b3:bb89f21108085c9fb142afe71a74010bb61a913729da6584cdd8307f8bf8ab18 file=neo/internal/task/store.go range=137:143 lang=go exported=false byte_range=5419:5704
   sig=func sanitize(id string) string
   doc=sanitize keeps a conversation id safe as a filename (it is server-minted as\nconv_<hex>, but guard against path separators regardless).
 EDGES
+  references=matrix/neo/internal/task.id
+  ^calls=matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.pathLocked
+  ^references=matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.pathLocked
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.schemaTask1 kind=const
-  digest=b3:4e380ba9561907adc4d730b2e99ef1af2b5b8d88e69fdcbf3b22bc14048704b4 file=neo/internal/task/store.go range=39:43 lang=go exported=false byte_range=1558:1754
+  digest=b3:4e380ba9561907adc4d730b2e99ef1af2b5b8d88e69fdcbf3b22bc14048704b4 file=neo/internal/task/store.go range=39:43 lang=go exported=false byte_range=1561:1757
   sig=untyped string
   doc=Store type and schema bound into each task file's associated data, so a\nsealed record cannot be read across users or conversations.
 EDGES
+  ^references=matrix/neo/internal/task.Store.ad
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.storeTask kind=const
-  digest=b3:5635bc309e03cdffe2c068f1ed363a9b3d9c478ef55bb529b75201e27eb889a8 file=neo/internal/task/store.go range=39:42 lang=go exported=false byte_range=1558:1729
+  digest=b3:5635bc309e03cdffe2c068f1ed363a9b3d9c478ef55bb529b75201e27eb889a8 file=neo/internal/task/store.go range=39:42 lang=go exported=false byte_range=1561:1732
   sig=untyped string
   doc=Store type and schema bound into each task file's associated data, so a\nsealed record cannot be read across users or conversations.
 EDGES
+  ^references=matrix/neo/internal/task.Store.ad
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task/store.go kind=file
-  digest=b3:38c1ca4e725ae64fb193ad2f6ea20936950a2399e112293d1b28f94a4e5f946d file=neo/internal/task/store.go range=1:347 lang=go exported=true
+  digest=b3:55c0bf149f87aaa50fe73278110d0756198a90099c9bd0e2a685415a85571f38 file=neo/internal/task/store.go range=1:347 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/task.Dir,matrix/neo/internal/task.KindBrief,matrix/neo/internal/task.Open,matrix/neo/internal/task.Status,matrix/neo/internal/task.StatusCeiling,matrix/neo/internal/task.StatusDone,matrix/neo/internal/task.StatusInterrupted,matrix/neo/internal/task.StatusRunning,matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Begin,matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.Running,matrix/neo/internal/task.Store.RunningKind,matrix/neo/internal/task.Store.SetVault,matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Store.running,matrix/neo/internal/task.Store.writeLocked,matrix/neo/internal/task.Task,matrix/neo/internal/task.sanitize,matrix/neo/internal/task.schemaTask1,matrix/neo/internal/task.storeTask
   ^contains=matrix/neo/internal/task

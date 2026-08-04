@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/mission kind=package
   digest=b3:18b48bf82816fb8e409873e0d5459fee10ced45a4a3566d22ef249813dffe815 file=workforce/internal/mission range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/mission/draft.go,matrix/workforce/internal/mission/issuer_verification.go,matrix/workforce/internal/mission/signing.go,matrix/workforce/internal/mission/store.go,matrix/workforce/internal/mission/types.go
+  imports=matrix/vault,matrix/workforce/internal/contracts
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/companyruntime,matrix/workforce/internal/controlapi,matrix/workforce/internal/executive,matrix/workforce/internal/initiative,matrix/workforce/internal/productexecution,matrix/workforce/internal/workorder
 
 NODE id=matrix/workforce/internal/mission.ActivationAuthority kind=type
   digest=b3:c55189862090854ddb3a69c900492ef605dc083892925db8eed95b1010edc23a file=workforce/internal/mission/types.go range=427:435 lang=go exported=true byte_range=19192:19653
@@ -13,6 +15,8 @@ NODE id=matrix/workforce/internal/mission.ActivationAuthority kind=type
 EDGES
   contains=matrix/workforce/internal/mission.ActivationAuthority#Capital,matrix/workforce/internal/mission.ActivationAuthority#Constitution,matrix/workforce/internal/mission.ActivationAuthority#IssuerPolicy,matrix/workforce/internal/mission.ActivationAuthority#Mission,matrix/workforce/internal/mission.ActivationAuthority#Organization,matrix/workforce/internal/mission.ActivationAuthority.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/mission.CapitalEnvelope,matrix/workforce/internal/mission.CompanyConstitution,matrix/workforce/internal/mission.CompanyIssuerPolicy,matrix/workforce/internal/mission.FounderMission,matrix/workforce/internal/mission.OrganizationV2
+  ^references=matrix/workforce/internal/companyruntime.Coordinator.authorityBinding,matrix/workforce/internal/controlapi.ActivationBundle,matrix/workforce/internal/controlapi.ActivationPreview,matrix/workforce/internal/controlapi.AuthorityChangeBundle,matrix/workforce/internal/controlapi.AuthorityChangePreview,matrix/workforce/internal/controlapi.FounderKeyRotationBundle,matrix/workforce/internal/controlapi.FounderKeyRotationPreview,matrix/workforce/internal/controlapi.MigrationBundle,matrix/workforce/internal/controlapi.MigrationPreview,matrix/workforce/internal/executive.CompileInput,matrix/workforce/internal/executive.compiledMatchesMission,matrix/workforce/internal/executive.validateCompiledLimits,matrix/workforce/internal/initiative.CompileInput,matrix/workforce/internal/mission.ActivationAuthority.Validate,matrix/workforce/internal/mission.BuildActivationDraft,matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.CurrentAuthority,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation,matrix/workforce/internal/mission.VerifyActivationAuthority
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ActivationAuthority#Capital kind=field
@@ -50,7 +54,11 @@ NODE id=matrix/workforce/internal/mission.ActivationAuthority.Validate kind=meth
   sig=func (value ActivationAuthority) Validate() error
   doc=Validate enforces cross-record identity, version, time, and capital bounds.
 EDGES
+  calls=matrix/workforce/internal/mission.CapitalEnvelope.Validate,matrix/workforce/internal/mission.CompanyConstitution.Validate,matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate,matrix/workforce/internal/mission.FounderMission.Validate,matrix/workforce/internal/mission.OrganizationV2.Validate
+  references=matrix/workforce/internal/mission.ActivationAuthority,matrix/workforce/internal/mission.CapitalEnvelope.Validate,matrix/workforce/internal/mission.CompanyConstitution.Validate,matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate,matrix/workforce/internal/mission.FounderMission.Validate,matrix/workforce/internal/mission.OrganizationV2.Validate,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.organizationID,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.ActivationAuthority
+  ^calls=matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.VerifyActivationAuthority
+  ^references=matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.VerifyActivationAuthority
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ActivationDraft kind=type
@@ -59,6 +67,8 @@ NODE id=matrix/workforce/internal/mission.ActivationDraft kind=type
   doc=ActivationDraft contains founder-entered values before exact local signing.
 EDGES
   contains=matrix/workforce/internal/mission.ActivationDraft#Autonomy,matrix/workforce/internal/mission.ActivationDraft#Currency,matrix/workforce/internal/mission.ActivationDraft#DataBoundaries,matrix/workforce/internal/mission.ActivationDraft#EscalationConditions,matrix/workforce/internal/mission.ActivationDraft#EthicalProhibitions,matrix/workforce/internal/mission.ActivationDraft#ExposureCeilingMicrounits,matrix/workforce/internal/mission.ActivationDraft#FailureConditions,matrix/workforce/internal/mission.ActivationDraft#LegalProhibitions,matrix/workforce/internal/mission.ActivationDraft#MaxWorkOrderMicrounits,matrix/workforce/internal/mission.ActivationDraft#MinimumRunwayDays,matrix/workforce/internal/mission.ActivationDraft#OperatingScopes,matrix/workforce/internal/mission.ActivationDraft#PauseConditions,matrix/workforce/internal/mission.ActivationDraft#PermittedBusinessDomains,matrix/workforce/internal/mission.ActivationDraft#PermittedCounterparties,matrix/workforce/internal/mission.ActivationDraft#PermittedJurisdictions,matrix/workforce/internal/mission.ActivationDraft#Purpose,matrix/workforce/internal/mission.ActivationDraft#RiskTolerance,matrix/workforce/internal/mission.ActivationDraft#ShutdownConditions,matrix/workforce/internal/mission.ActivationDraft#SpendCeilingMicrounits,matrix/workforce/internal/mission.ActivationDraft#StartingMicrounits,matrix/workforce/internal/mission.ActivationDraft#StrategicPrinciples,matrix/workforce/internal/mission.ActivationDraft#SuccessConditions,matrix/workforce/internal/mission.ActivationDraft#TargetOutcomes
+  references=matrix/workforce/internal/mission.AutonomyLevel,matrix/workforce/internal/mission.OperatingScope,matrix/workforce/internal/mission.RiskTolerance
+  ^references=matrix/workforce/internal/controlapi.ActivationPreviewRequest,matrix/workforce/internal/controlapi.AuthorityChangePreviewRequest,matrix/workforce/internal/controlapi.FounderKeyRotationPreviewRequest,matrix/workforce/internal/controlapi.MigrationPreviewRequest,matrix/workforce/internal/mission.BuildActivationDraft,matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.sortDraft
   ^defines=matrix/workforce/internal/mission/draft.go
 
 NODE id=matrix/workforce/internal/mission.ActivationDraft#Autonomy kind=field
@@ -205,6 +215,7 @@ NODE id=matrix/workforce/internal/mission.AuthorityChangeImpact kind=type
   doc=AuthorityChangeImpact is the current durable mutation radius of a material\nfounder authority change. Counts are read from one database snapshot.
 EDGES
   contains=matrix/workforce/internal/mission.AuthorityChangeImpact#ActiveAuthorityLeases,matrix/workforce/internal/mission.AuthorityChangeImpact#ActiveRuntimeLeases,matrix/workforce/internal/mission.AuthorityChangeImpact#DispatchedWakes,matrix/workforce/internal/mission.AuthorityChangeImpact#QueuedWakes,matrix/workforce/internal/mission.AuthorityChangeImpact#UnsettledEffects
+  ^references=matrix/workforce/internal/mission.Store.AnalyzeChange,matrix/workforce/internal/mission.Store.analyzeChange
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.AuthorityChangeImpact#ActiveAuthorityLeases kind=field
@@ -241,6 +252,8 @@ NODE id=matrix/workforce/internal/mission.AutonomyBoundedAuto kind=const
   digest=b3:7088ae1ec7fccefed4bd6e3facd632ccbafc4dd06a4ba9ea44f92f9abef49b10 file=workforce/internal/mission/types.go range=53:53 lang=go exported=true byte_range=1616:1669
   sig=mission.AutonomyLevel
 EDGES
+  references=matrix/workforce/internal/mission.AutonomyLevel
+  ^references=matrix/workforce/internal/executive.Compile,matrix/workforce/internal/mission.AutonomyLevel.Valid
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.AutonomyLevel kind=type
@@ -249,6 +262,7 @@ NODE id=matrix/workforce/internal/mission.AutonomyLevel kind=type
   doc=AutonomyLevel is the maximum decision autonomy granted by the founder.
 EDGES
   contains=matrix/workforce/internal/mission.AutonomyLevel.Valid
+  ^references=matrix/workforce/internal/mission.ActivationDraft,matrix/workforce/internal/mission.AutonomyBoundedAuto,matrix/workforce/internal/mission.AutonomyLevel.Valid,matrix/workforce/internal/mission.AutonomyReviewRequired,matrix/workforce/internal/mission.AutonomySupervised,matrix/workforce/internal/mission.CompanyConstitution
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.AutonomyLevel.Valid kind=method
@@ -256,19 +270,26 @@ NODE id=matrix/workforce/internal/mission.AutonomyLevel.Valid kind=method
   sig=func (value AutonomyLevel) Valid() bool
   doc=Valid reports whether the autonomy class is executable.
 EDGES
+  references=matrix/workforce/internal/mission.AutonomyBoundedAuto,matrix/workforce/internal/mission.AutonomyLevel,matrix/workforce/internal/mission.AutonomyReviewRequired,matrix/workforce/internal/mission.AutonomySupervised,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.AutonomyLevel
+  ^calls=matrix/workforce/internal/mission.CompanyConstitution.Validate
+  ^references=matrix/workforce/internal/mission.CompanyConstitution.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.AutonomyReviewRequired kind=const
   digest=b3:6e1b910dfc0c5f62a1a2c83137cd652f62e1ce35dcde0e423134f9339516a4ee file=workforce/internal/mission/types.go range=52:52 lang=go exported=true byte_range=1558:1614
   sig=mission.AutonomyLevel
 EDGES
+  references=matrix/workforce/internal/mission.AutonomyLevel
+  ^references=matrix/workforce/internal/mission.AutonomyLevel.Valid
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.AutonomySupervised kind=const
   digest=b3:9f05f914021374f688a5eb8f03060f98d5fcf1b294721bf0d7ee5dd544a47d43 file=workforce/internal/mission/types.go range=51:51 lang=go exported=true byte_range=1505:1556
   sig=mission.AutonomyLevel
 EDGES
+  references=matrix/workforce/internal/mission.AutonomyLevel
+  ^references=matrix/workforce/internal/mission.AutonomyLevel.Valid
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.BuildActivationDraft kind=func
@@ -276,6 +297,10 @@ NODE id=matrix/workforce/internal/mission.BuildActivationDraft kind=func
   sig=func BuildActivationDraft(\n	organizationID contracts.OrganizationID,\n	ownerID contracts.OwnerID,\n	effectiveAt time.Time,\n	founderKeyID string,\n	issuerKeyID string,\n	issuerPublicKey ed25519.PublicKey,\n	draft ActivationDraft,\n) (ActivationAuthority, error)
   doc=BuildActivationDraft produces the exact closed authority bundle the browser\npreviews and signs; all caller-provided sets are normalized deterministically.
 EDGES
+  calls=matrix/workforce/internal/mission.BuildAuthorityDraft
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/mission.ActivationAuthority,matrix/workforce/internal/mission.ActivationDraft,matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.draft,matrix/workforce/internal/mission.effectiveAt,matrix/workforce/internal/mission.founderKeyID,matrix/workforce/internal/mission.issuerKeyID,matrix/workforce/internal/mission.issuerPublicKey,matrix/workforce/internal/mission.organizationID,matrix/workforce/internal/mission.ownerID
+  ^calls=matrix/workforce/internal/controlapi.Service.PreviewActivation,matrix/workforce/internal/controlapi.Service.PreviewMigration
+  ^references=matrix/workforce/internal/controlapi.Service.PreviewActivation,matrix/workforce/internal/controlapi.Service.PreviewMigration
   ^defines=matrix/workforce/internal/mission/draft.go
 
 NODE id=matrix/workforce/internal/mission.BuildAuthorityDraft kind=func
@@ -283,6 +308,10 @@ NODE id=matrix/workforce/internal/mission.BuildAuthorityDraft kind=func
   sig=func BuildAuthorityDraft(\n	organizationID contracts.OrganizationID,\n	ownerID contracts.OwnerID,\n	effectiveAt time.Time,\n	founderKeyID string,\n	issuerKeyID string,\n	issuerPublicKey ed25519.PublicKey,\n	version uint64,\n	draft ActivationDraft,\n) (ActivationAuthority, error)
   doc=BuildAuthorityDraft produces one exact later authority version for a\nfounder-reviewed material change.
 EDGES
+  calls=matrix/workforce/internal/mission.ActivationAuthority.Validate,matrix/workforce/internal/mission.defaultReservedDecisions,matrix/workforce/internal/mission.signaturePlaceholder,matrix/workforce/internal/mission.sortDraft
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/mission.ActivationAuthority,matrix/workforce/internal/mission.ActivationAuthority.Validate,matrix/workforce/internal/mission.ActivationDraft,matrix/workforce/internal/mission.CapitalEnvelope,matrix/workforce/internal/mission.CapitalSchemaVersion,matrix/workforce/internal/mission.CompanyConstitution,matrix/workforce/internal/mission.CompanyIssuerPolicy,matrix/workforce/internal/mission.ConstitutionSchemaVersion,matrix/workforce/internal/mission.FounderMission,matrix/workforce/internal/mission.IssuerPolicySchemaVersion,matrix/workforce/internal/mission.MissionSchemaVersion,matrix/workforce/internal/mission.OrganizationV2,matrix/workforce/internal/mission.OrganizationV2SchemaVersion,matrix/workforce/internal/mission.defaultReservedDecisions,matrix/workforce/internal/mission.draft,matrix/workforce/internal/mission.effectiveAt,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.founderKeyID,matrix/workforce/internal/mission.issuerKeyID,matrix/workforce/internal/mission.issuerPublicKey,matrix/workforce/internal/mission.organizationID,matrix/workforce/internal/mission.ownerID,matrix/workforce/internal/mission.placeholder,matrix/workforce/internal/mission.reserved,matrix/workforce/internal/mission.signaturePlaceholder,matrix/workforce/internal/mission.sortDraft,matrix/workforce/internal/mission.value,matrix/workforce/internal/mission.version
+  ^calls=matrix/workforce/internal/controlapi.Service.PreviewAuthorityChange,matrix/workforce/internal/controlapi.Service.PreviewFounderKeyRotation,matrix/workforce/internal/mission.BuildActivationDraft
+  ^references=matrix/workforce/internal/controlapi.Service.PreviewAuthorityChange,matrix/workforce/internal/controlapi.Service.PreviewFounderKeyRotation,matrix/workforce/internal/mission.BuildActivationDraft
   ^defines=matrix/workforce/internal/mission/draft.go
 
 NODE id=matrix/workforce/internal/mission.CapitalEnvelope kind=type
@@ -292,6 +321,8 @@ NODE id=matrix/workforce/internal/mission.CapitalEnvelope kind=type
 EDGES
   contains=matrix/workforce/internal/mission.CapitalEnvelope#Currency,matrix/workforce/internal/mission.CapitalEnvelope#EffectiveAt,matrix/workforce/internal/mission.CapitalEnvelope#ExposureCeilingMicrounits,matrix/workforce/internal/mission.CapitalEnvelope#ID,matrix/workforce/internal/mission.CapitalEnvelope#MinimumRunwayDays,matrix/workforce/internal/mission.CapitalEnvelope#OrganizationID,matrix/workforce/internal/mission.CapitalEnvelope#SchemaVersion,matrix/workforce/internal/mission.CapitalEnvelope#Signature,matrix/workforce/internal/mission.CapitalEnvelope#SpendCeilingMicrounits,matrix/workforce/internal/mission.CapitalEnvelope#StartingMicrounits,matrix/workforce/internal/mission.CapitalEnvelope#Version,matrix/workforce/internal/mission.CapitalEnvelope.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature
+  ^references=matrix/workforce/internal/mission.ActivationAuthority,matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.CapitalEnvelope.Validate,matrix/workforce/internal/mission.SignCapitalEnvelope,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.capitalSigningBytes
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.CapitalEnvelope#Currency kind=field
@@ -365,7 +396,11 @@ NODE id=matrix/workforce/internal/mission.CapitalEnvelope.Validate kind=method
   sig=func (value CapitalEnvelope) Validate() error
   doc=Validate rejects zero, internally inconsistent, or binary-floating capital.
 EDGES
+  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.validateToken
+  references=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/mission.CapitalEnvelope,matrix/workforce/internal/mission.CapitalSchemaVersion,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.validateToken,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.CapitalEnvelope
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.ActivationAuthority.Validate
+  ^references=matrix/workforce/internal/mission.ActivationAuthority.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.CapitalSchemaVersion kind=const
@@ -373,6 +408,7 @@ NODE id=matrix/workforce/internal/mission.CapitalSchemaVersion kind=const
   sig=untyped string
   doc=CapitalSchemaVersion is the canonical capital-envelope schema.
 EDGES
+  ^references=matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.CapitalEnvelope.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.CompanyConstitution kind=type
@@ -382,6 +418,8 @@ NODE id=matrix/workforce/internal/mission.CompanyConstitution kind=type
 EDGES
   contains=matrix/workforce/internal/mission.CompanyConstitution#Autonomy,matrix/workforce/internal/mission.CompanyConstitution#DataBoundaries,matrix/workforce/internal/mission.CompanyConstitution#EffectiveAt,matrix/workforce/internal/mission.CompanyConstitution#EscalationConditions,matrix/workforce/internal/mission.CompanyConstitution#EthicalProhibitions,matrix/workforce/internal/mission.CompanyConstitution#ID,matrix/workforce/internal/mission.CompanyConstitution#LegalProhibitions,matrix/workforce/internal/mission.CompanyConstitution#OperatingScopes,matrix/workforce/internal/mission.CompanyConstitution#OrganizationID,matrix/workforce/internal/mission.CompanyConstitution#OwnerID,matrix/workforce/internal/mission.CompanyConstitution#PauseConditions,matrix/workforce/internal/mission.CompanyConstitution#PermittedCounterparties,matrix/workforce/internal/mission.CompanyConstitution#PermittedJurisdictions,matrix/workforce/internal/mission.CompanyConstitution#ReservedDecisions,matrix/workforce/internal/mission.CompanyConstitution#RiskTolerance,matrix/workforce/internal/mission.CompanyConstitution#SchemaVersion,matrix/workforce/internal/mission.CompanyConstitution#ShutdownConditions,matrix/workforce/internal/mission.CompanyConstitution#Signature,matrix/workforce/internal/mission.CompanyConstitution#Version,matrix/workforce/internal/mission.CompanyConstitution.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/mission.AutonomyLevel,matrix/workforce/internal/mission.OperatingScope,matrix/workforce/internal/mission.ReservedDecision,matrix/workforce/internal/mission.RiskTolerance
+  ^references=matrix/workforce/internal/initiative.reservedClass,matrix/workforce/internal/mission.ActivationAuthority,matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.CompanyConstitution.Validate,matrix/workforce/internal/mission.SignCompanyConstitution,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.constitutionSigningBytes
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.CompanyConstitution#Autonomy kind=field
@@ -503,7 +541,11 @@ NODE id=matrix/workforce/internal/mission.CompanyConstitution.Validate kind=meth
   sig=func (value CompanyConstitution) Validate() error
   doc=Validate enforces explicit prohibitions, jurisdictions, data boundaries,\nfounder reservations, and safe-stop conditions.
 EDGES
+  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/mission.AutonomyLevel.Valid,matrix/workforce/internal/mission.OperatingScope.Validate,matrix/workforce/internal/mission.ReservedDecision.Validate,matrix/workforce/internal/mission.RiskTolerance.Valid,matrix/workforce/internal/mission.adjacentDuplicate,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.validateStringSet
+  references=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/mission.AutonomyLevel.Valid,matrix/workforce/internal/mission.CompanyConstitution,matrix/workforce/internal/mission.ConstitutionSchemaVersion,matrix/workforce/internal/mission.OperatingScope.Validate,matrix/workforce/internal/mission.ReservedDecision.Validate,matrix/workforce/internal/mission.RiskTolerance.Valid,matrix/workforce/internal/mission.adjacentDuplicate,matrix/workforce/internal/mission.entries,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.index,matrix/workforce/internal/mission.kinds,matrix/workforce/internal/mission.name,matrix/workforce/internal/mission.previousScope,matrix/workforce/internal/mission.scopeKey,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.validateStringSet,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.CompanyConstitution
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.ActivationAuthority.Validate
+  ^references=matrix/workforce/internal/mission.ActivationAuthority.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.CompanyIssuerPolicy kind=type
@@ -513,6 +555,8 @@ NODE id=matrix/workforce/internal/mission.CompanyIssuerPolicy kind=type
 EDGES
   contains=matrix/workforce/internal/mission.CompanyIssuerPolicy#AllowedWorkOrderClasses,matrix/workforce/internal/mission.CompanyIssuerPolicy#CapitalEnvelopeVersion,matrix/workforce/internal/mission.CompanyIssuerPolicy#ConstitutionVersion,matrix/workforce/internal/mission.CompanyIssuerPolicy#EffectiveAt,matrix/workforce/internal/mission.CompanyIssuerPolicy#ExpiresAt,matrix/workforce/internal/mission.CompanyIssuerPolicy#ID,matrix/workforce/internal/mission.CompanyIssuerPolicy#IssuerKeyID,matrix/workforce/internal/mission.CompanyIssuerPolicy#IssuerPublicKey,matrix/workforce/internal/mission.CompanyIssuerPolicy#MaxWorkOrderMicrounits,matrix/workforce/internal/mission.CompanyIssuerPolicy#MissionVersion,matrix/workforce/internal/mission.CompanyIssuerPolicy#OrganizationID,matrix/workforce/internal/mission.CompanyIssuerPolicy#SchemaVersion,matrix/workforce/internal/mission.CompanyIssuerPolicy#Signature,matrix/workforce/internal/mission.CompanyIssuerPolicy#Version,matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature
+  ^references=matrix/workforce/internal/initiative.issuerKey,matrix/workforce/internal/mission.ActivationAuthority,matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate,matrix/workforce/internal/mission.SignCompanyIssuerPolicy,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy,matrix/workforce/internal/mission.issuerSigningBytes,matrix/workforce/internal/workorder.CompanyAuthority,matrix/workforce/internal/workorder.decodeIssuerPublicKey
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.CompanyIssuerPolicy#AllowedWorkOrderClasses kind=field
@@ -604,7 +648,11 @@ NODE id=matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate kind=meth
   sig=func (value CompanyIssuerPolicy) Validate() error
   doc=Validate enforces a current, bounded controller delegation.
 EDGES
+  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.validateStringSet,matrix/workforce/internal/mission.validateToken
+  references=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/mission.CompanyIssuerPolicy,matrix/workforce/internal/mission.IssuerPolicySchemaVersion,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.issuerPublicKey,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.validateStringSet,matrix/workforce/internal/mission.validateToken,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.CompanyIssuerPolicy
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.ActivationAuthority.Validate,matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy
+  ^references=matrix/workforce/internal/mission.ActivationAuthority.Validate,matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ConstitutionSchemaVersion kind=const
@@ -612,6 +660,7 @@ NODE id=matrix/workforce/internal/mission.ConstitutionSchemaVersion kind=const
   sig=untyped string
   doc=ConstitutionSchemaVersion is the canonical Company Constitution schema.
 EDGES
+  ^references=matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.CompanyConstitution.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.CurrentAuthority kind=type
@@ -620,6 +669,8 @@ NODE id=matrix/workforce/internal/mission.CurrentAuthority kind=type
   doc=CurrentAuthority is the authenticated current company root plus its\nexecutable pause and issuer-revocation projection.
 EDGES
   contains=matrix/workforce/internal/mission.CurrentAuthority#Authority,matrix/workforce/internal/mission.CurrentAuthority#IssuerRevokedAt,matrix/workforce/internal/mission.CurrentAuthority#State,matrix/workforce/internal/mission.CurrentAuthority.Executable
+  references=matrix/workforce/internal/mission.ActivationAuthority
+  ^references=matrix/workforce/internal/executive.Store.verifyMissionProjectionTx,matrix/workforce/internal/mission.CurrentAuthority.Executable,matrix/workforce/internal/mission.Store.LoadCurrent
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.CurrentAuthority#Authority kind=field
@@ -645,7 +696,10 @@ NODE id=matrix/workforce/internal/mission.CurrentAuthority.Executable kind=metho
   sig=func (value CurrentAuthority) Executable(now time.Time) bool
   doc=Executable reports whether the current company root permits new controller work.
 EDGES
+  references=matrix/workforce/internal/mission.CurrentAuthority,matrix/workforce/internal/mission.now,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.CurrentAuthority
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/companyruntime.Coordinator.CompanyAuthority,matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.Store.verifyCurrentRoots,matrix/workforce/internal/executive.Store.ConsumeDecision,matrix/workforce/internal/executive.Store.Decide,matrix/workforce/internal/executive.Store.InstallPolicy,matrix/workforce/internal/executive.Store.LoadCurrentAuthority,matrix/workforce/internal/productexecution.Store.Start,matrix/workforce/internal/productexecution.Store.currentStageOrder
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/companyruntime.Coordinator.CompanyAuthority,matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.Store.verifyCurrentRoots,matrix/workforce/internal/executive.Store.ConsumeDecision,matrix/workforce/internal/executive.Store.Decide,matrix/workforce/internal/executive.Store.InstallPolicy,matrix/workforce/internal/executive.Store.LoadCurrentAuthority,matrix/workforce/internal/productexecution.Store.Start,matrix/workforce/internal/productexecution.Store.currentStageOrder
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.ErrConflict kind=var
@@ -653,6 +707,7 @@ NODE id=matrix/workforce/internal/mission.ErrConflict kind=var
   sig=error
   doc=ErrConflict reports a non-identical replay or stale authority version.
 EDGES
+  ^references=matrix/workforce/internal/controlapi.Service.ChangeAuthority,matrix/workforce/internal/controlapi.Service.MigrateOrganization,matrix/workforce/internal/controlapi.Service.RotateFounderKey,matrix/workforce/internal/mission.Store.CommitActivationTx,matrix/workforce/internal/mission.Store.CommitVersionTx
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.ErrIntegrity kind=var
@@ -660,6 +715,7 @@ NODE id=matrix/workforce/internal/mission.ErrIntegrity kind=var
   sig=error
   doc=ErrIntegrity reports a sealed-record or canonical-hash mismatch.
 EDGES
+  ^references=matrix/workforce/internal/controlapi.Service.currentCompanyAuthority,matrix/workforce/internal/mission.Store.CommitActivationTx,matrix/workforce/internal/mission.Store.LoadCurrent
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.FounderMission kind=type
@@ -669,6 +725,8 @@ NODE id=matrix/workforce/internal/mission.FounderMission kind=type
 EDGES
   contains=matrix/workforce/internal/mission.FounderMission#EffectiveAt,matrix/workforce/internal/mission.FounderMission#FailureConditions,matrix/workforce/internal/mission.FounderMission#ID,matrix/workforce/internal/mission.FounderMission#OrganizationID,matrix/workforce/internal/mission.FounderMission#OwnerID,matrix/workforce/internal/mission.FounderMission#PermittedBusinessDomains,matrix/workforce/internal/mission.FounderMission#Purpose,matrix/workforce/internal/mission.FounderMission#SchemaVersion,matrix/workforce/internal/mission.FounderMission#Signature,matrix/workforce/internal/mission.FounderMission#StrategicPrinciples,matrix/workforce/internal/mission.FounderMission#SuccessConditions,matrix/workforce/internal/mission.FounderMission#TargetOutcomes,matrix/workforce/internal/mission.FounderMission#Version,matrix/workforce/internal/mission.FounderMission.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/contracts.Signature
+  ^references=matrix/workforce/internal/mission.ActivationAuthority,matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.FounderMission.Validate,matrix/workforce/internal/mission.SignFounderMission,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.missionSigningBytes
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.FounderMission#EffectiveAt kind=field
@@ -754,7 +812,11 @@ NODE id=matrix/workforce/internal/mission.FounderMission.Validate kind=method
   sig=func (value FounderMission) Validate() error
   doc=Validate enforces a bounded mission with explicit success and failure.
 EDGES
+  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.validateStringSet,matrix/workforce/internal/mission.validateText
+  references=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/mission.FounderMission,matrix/workforce/internal/mission.MissionSchemaVersion,matrix/workforce/internal/mission.entries,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.name,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.validateStringSet,matrix/workforce/internal/mission.validateText,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.FounderMission
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.ActivationAuthority.Validate
+  ^references=matrix/workforce/internal/mission.ActivationAuthority.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.IssuerPolicySchemaVersion kind=const
@@ -762,6 +824,7 @@ NODE id=matrix/workforce/internal/mission.IssuerPolicySchemaVersion kind=const
   sig=untyped string
   doc=IssuerPolicySchemaVersion is the canonical company issuer-policy schema.
 EDGES
+  ^references=matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.MissionSchemaVersion kind=const
@@ -769,6 +832,7 @@ NODE id=matrix/workforce/internal/mission.MissionSchemaVersion kind=const
   sig=untyped string
   doc=MissionSchemaVersion is the canonical Founder Mission schema.
 EDGES
+  ^references=matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.FounderMission.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.NewStore kind=func
@@ -776,6 +840,10 @@ NODE id=matrix/workforce/internal/mission.NewStore kind=func
   sig=func NewStore(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	ownerID contracts.OwnerID,\n	keyID string,\n	publicKey ed25519.PublicKey,\n	now func() time.Time,\n) (*Store, error)
   doc=NewStore constructs a tenant- and organization-bound company authority store.
 EDGES
+  calls=matrix/vault.UserVault.User
+  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/mission.Store,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.now,matrix/workforce/internal/mission.organizationID,matrix/workforce/internal/mission.ownerID,matrix/workforce/internal/mission.pool,matrix/workforce/internal/mission.publicKey,matrix/workforce/internal/mission.tenantID,matrix/workforce/internal/mission.userVault
+  ^calls=matrix/workforce/cmd/workforced.runContext,matrix/workforce/internal/controlapi.Service.ActivateOrganization,matrix/workforce/internal/controlapi.Service.ChangeAuthority,matrix/workforce/internal/controlapi.Service.MigrateOrganization,matrix/workforce/internal/controlapi.Service.PreviewAuthorityChange,matrix/workforce/internal/controlapi.Service.RotateFounderKey,matrix/workforce/internal/controlapi.Service.listFounderResource
+  ^references=matrix/workforce/cmd/workforced.runContext,matrix/workforce/internal/controlapi.Service.ActivateOrganization,matrix/workforce/internal/controlapi.Service.ChangeAuthority,matrix/workforce/internal/controlapi.Service.MigrateOrganization,matrix/workforce/internal/controlapi.Service.PreviewAuthorityChange,matrix/workforce/internal/controlapi.Service.RotateFounderKey,matrix/workforce/internal/controlapi.Service.listFounderResource
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.OperatingScope kind=type
@@ -784,6 +852,8 @@ NODE id=matrix/workforce/internal/mission.OperatingScope kind=type
   doc=OperatingScope is one founder-authorized connection boundary. ScopeID names\nan already connected resource and MUST NOT contain a secret or credential.
 EDGES
   contains=matrix/workforce/internal/mission.OperatingScope#AllowedActions,matrix/workforce/internal/mission.OperatingScope#DataClassifications,matrix/workforce/internal/mission.OperatingScope#ExpiresAt,matrix/workforce/internal/mission.OperatingScope#Jurisdictions,matrix/workforce/internal/mission.OperatingScope#Kind,matrix/workforce/internal/mission.OperatingScope#Purpose,matrix/workforce/internal/mission.OperatingScope#ScopeID,matrix/workforce/internal/mission.OperatingScope.Validate
+  references=matrix/workforce/internal/mission.OperatingScopeKind
+  ^references=matrix/workforce/internal/mission.ActivationDraft,matrix/workforce/internal/mission.CompanyConstitution,matrix/workforce/internal/mission.OperatingScope.Validate,matrix/workforce/internal/mission.sortDraft
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.OperatingScope#AllowedActions kind=field
@@ -833,31 +903,43 @@ NODE id=matrix/workforce/internal/mission.OperatingScope.Validate kind=method
   sig=func (value OperatingScope) Validate(effectiveAt time.Time) error
   doc=Validate rejects open-ended, unclassified, expired, or non-canonical scopes.
 EDGES
+  calls=matrix/workforce/internal/mission.OperatingScopeKind.Valid,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.validateStringSet,matrix/workforce/internal/mission.validateText,matrix/workforce/internal/mission.validateToken
+  references=matrix/workforce/internal/mission.OperatingScope,matrix/workforce/internal/mission.OperatingScopeKind.Valid,matrix/workforce/internal/mission.effectiveAt,matrix/workforce/internal/mission.entries,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.name,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.validateStringSet,matrix/workforce/internal/mission.validateText,matrix/workforce/internal/mission.validateToken,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.OperatingScope
+  ^calls=matrix/workforce/internal/mission.CompanyConstitution.Validate
+  ^references=matrix/workforce/internal/mission.CompanyConstitution.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.OperatingScopeBrowser kind=const
   digest=b3:ea71675fafa14e1becc2ab73f52f153a6f47b59e93bb5e399cb2ca738124a4f2 file=workforce/internal/mission/types.go range=72:72 lang=go exported=true byte_range=2155:2209
   sig=mission.OperatingScopeKind
 EDGES
+  references=matrix/workforce/internal/mission.OperatingScopeKind
+  ^references=matrix/workforce/internal/mission.OperatingScopeKind.Valid
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.OperatingScopeChannel kind=const
   digest=b3:1b6312ce86cf5a2e8525f88a640f90eb07b465f4594e84710d4171309f6b282a file=workforce/internal/mission/types.go range=73:73 lang=go exported=true byte_range=2211:2265
   sig=mission.OperatingScopeKind
 EDGES
+  references=matrix/workforce/internal/mission.OperatingScopeKind
+  ^references=matrix/workforce/internal/mission.OperatingScopeKind.Valid
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.OperatingScopeCustomer kind=const
   digest=b3:135208ed4bcfbc081e7012ad2a2f1749488a3fdc5f350a4b006ce71f5aa89c5b file=workforce/internal/mission/types.go range=74:74 lang=go exported=true byte_range=2267:2322
   sig=mission.OperatingScopeKind
 EDGES
+  references=matrix/workforce/internal/mission.OperatingScopeKind
+  ^references=matrix/workforce/internal/mission.OperatingScopeKind.Valid
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.OperatingScopeFinancial kind=const
   digest=b3:fa6948a1b180dc753c09ec3fa89f058ccd5329e65bf6b64199c76c2dbc9e4ed4 file=workforce/internal/mission/types.go range=75:75 lang=go exported=true byte_range=2324:2380
   sig=mission.OperatingScopeKind
 EDGES
+  references=matrix/workforce/internal/mission.OperatingScopeKind
+  ^references=matrix/workforce/internal/mission.OperatingScopeKind.Valid
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.OperatingScopeKind kind=type
@@ -866,6 +948,7 @@ NODE id=matrix/workforce/internal/mission.OperatingScopeKind kind=type
   doc=OperatingScopeKind identifies an owner-connected external authority domain.\nA scope is a reference to a connection, never a credential container.
 EDGES
   contains=matrix/workforce/internal/mission.OperatingScopeKind.Valid
+  ^references=matrix/workforce/internal/mission.OperatingScope,matrix/workforce/internal/mission.OperatingScopeBrowser,matrix/workforce/internal/mission.OperatingScopeChannel,matrix/workforce/internal/mission.OperatingScopeCustomer,matrix/workforce/internal/mission.OperatingScopeFinancial,matrix/workforce/internal/mission.OperatingScopeKind.Valid,matrix/workforce/internal/mission.OperatingScopeProject
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.OperatingScopeKind.Valid kind=method
@@ -873,13 +956,18 @@ NODE id=matrix/workforce/internal/mission.OperatingScopeKind.Valid kind=method
   sig=func (value OperatingScopeKind) Valid() bool
   doc=Valid reports whether the scope kind has a closed authority meaning.
 EDGES
+  references=matrix/workforce/internal/mission.OperatingScopeBrowser,matrix/workforce/internal/mission.OperatingScopeChannel,matrix/workforce/internal/mission.OperatingScopeCustomer,matrix/workforce/internal/mission.OperatingScopeFinancial,matrix/workforce/internal/mission.OperatingScopeKind,matrix/workforce/internal/mission.OperatingScopeProject,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.OperatingScopeKind
+  ^calls=matrix/workforce/internal/mission.OperatingScope.Validate
+  ^references=matrix/workforce/internal/mission.OperatingScope.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.OperatingScopeProject kind=const
   digest=b3:9f5c9415099b7e78c46b89d821654b856c97468abb1d04063605d958e55dc6b7 file=workforce/internal/mission/types.go range=71:71 lang=go exported=true byte_range=2099:2153
   sig=mission.OperatingScopeKind
 EDGES
+  references=matrix/workforce/internal/mission.OperatingScopeKind
+  ^references=matrix/workforce/internal/mission.OperatingScopeKind.Valid
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.OrganizationV2 kind=type
@@ -889,6 +977,8 @@ NODE id=matrix/workforce/internal/mission.OrganizationV2 kind=type
 EDGES
   contains=matrix/workforce/internal/mission.OrganizationV2#CapitalEnvelopeVersion,matrix/workforce/internal/mission.OrganizationV2#ConstitutionVersion,matrix/workforce/internal/mission.OrganizationV2#EffectiveAt,matrix/workforce/internal/mission.OrganizationV2#ID,matrix/workforce/internal/mission.OrganizationV2#IssuerPolicyVersion,matrix/workforce/internal/mission.OrganizationV2#MissionVersion,matrix/workforce/internal/mission.OrganizationV2#OrganizationID,matrix/workforce/internal/mission.OrganizationV2#OwnerID,matrix/workforce/internal/mission.OrganizationV2#SchemaVersion,matrix/workforce/internal/mission.OrganizationV2#Signature,matrix/workforce/internal/mission.OrganizationV2#TemplateID,matrix/workforce/internal/mission.OrganizationV2#TemplateVersion,matrix/workforce/internal/mission.OrganizationV2#Version,matrix/workforce/internal/mission.OrganizationV2.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/contracts.Signature
+  ^references=matrix/workforce/internal/mission.ActivationAuthority,matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.OrganizationV2.Validate,matrix/workforce/internal/mission.SignOrganizationV2,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.organizationV2SigningBytes
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.OrganizationV2#CapitalEnvelopeVersion kind=field
@@ -974,7 +1064,11 @@ NODE id=matrix/workforce/internal/mission.OrganizationV2.Validate kind=method
   sig=func (value OrganizationV2) Validate() error
   doc=Validate enforces the default v1 topology projection without granting any\ncapability or authority beyond the separately signed records it references.
 EDGES
+  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/mission.validUTC
+  references=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/mission.OrganizationV2,matrix/workforce/internal/mission.OrganizationV2SchemaVersion,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.OrganizationV2
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.ActivationAuthority.Validate
+  ^references=matrix/workforce/internal/mission.ActivationAuthority.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.OrganizationV2SchemaVersion kind=const
@@ -982,6 +1076,7 @@ NODE id=matrix/workforce/internal/mission.OrganizationV2SchemaVersion kind=const
   sig=untyped string
   doc=OrganizationV2SchemaVersion is the canonical capability-era organization schema.
 EDGES
+  ^references=matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.OrganizationV2.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.PreparedActivation kind=type
@@ -990,6 +1085,8 @@ NODE id=matrix/workforce/internal/mission.PreparedActivation kind=type
   doc=PreparedActivation is an immutable, verified, Vault-sealed authority set\nthat can be committed in the legacy organization's serializable transaction.
 EDGES
   contains=matrix/workforce/internal/mission.PreparedActivation#keyID,matrix/workforce/internal/mission.PreparedActivation#organizationID,matrix/workforce/internal/mission.PreparedActivation#ownerID,matrix/workforce/internal/mission.PreparedActivation#records
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/mission.preparedRecord
+  ^references=matrix/workforce/internal/mission.Store.CommitActivationTx,matrix/workforce/internal/mission.Store.CommitVersionTx,matrix/workforce/internal/mission.Store.PrepareActivation
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.PreparedActivation#keyID kind=field
@@ -1020,36 +1117,48 @@ NODE id=matrix/workforce/internal/mission.ReservedCapitalIncrease kind=const
   digest=b3:61f24b0ba8877a8d391152ca0c58d7e7cad065450befb57d4a28712a771f9782 file=workforce/internal/mission/types.go range=134:134 lang=go exported=true byte_range=4604:4683
   sig=mission.ReservedDecisionKind
 EDGES
+  references=matrix/workforce/internal/mission.ReservedDecisionKind
+  ^references=matrix/workforce/internal/executive.OperationClass.ReservedKind,matrix/workforce/internal/executive.evaluate,matrix/workforce/internal/mission.ReservedDecisionKind.Valid,matrix/workforce/internal/mission.defaultReservedDecisions
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ReservedConstitutionChange kind=const
   digest=b3:4ebf46fd6814d71493c21539e8b007b0f471f69c3ae5a8aef99d20e0db6c44c6 file=workforce/internal/mission/types.go range=133:133 lang=go exported=true byte_range=4530:4602
   sig=mission.ReservedDecisionKind
 EDGES
+  references=matrix/workforce/internal/mission.ReservedDecisionKind
+  ^references=matrix/workforce/internal/executive.OperationClass.ReservedKind,matrix/workforce/internal/mission.ReservedDecisionKind.Valid,matrix/workforce/internal/mission.defaultReservedDecisions
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ReservedControlRelaxation kind=const
   digest=b3:cf5e0b98d4bee6ccb08651c8bdf103c5028994214a11e7c451ab1283b54843b0 file=workforce/internal/mission/types.go range=140:140 lang=go exported=true byte_range=5066:5137
   sig=mission.ReservedDecisionKind
 EDGES
+  references=matrix/workforce/internal/mission.ReservedDecisionKind
+  ^references=matrix/workforce/internal/executive.OperationClass.ReservedKind,matrix/workforce/internal/executive.evaluate,matrix/workforce/internal/executive.evaluateReviews,matrix/workforce/internal/mission.ReservedDecisionKind.Valid,matrix/workforce/internal/mission.defaultReservedDecisions
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ReservedCorporateAction kind=const
   digest=b3:f4a0fcb8cb017d3fabf121a5c7ca5fc45756f541c19889b41d96f7826cb16c98 file=workforce/internal/mission/types.go range=139:139 lang=go exported=true byte_range=4982:5064
   sig=mission.ReservedDecisionKind
 EDGES
+  references=matrix/workforce/internal/mission.ReservedDecisionKind
+  ^references=matrix/workforce/internal/executive.OperationClass.ReservedKind,matrix/workforce/internal/mission.ReservedDecisionKind.Valid,matrix/workforce/internal/mission.defaultReservedDecisions
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ReservedCustodyOrWithdrawal kind=const
   digest=b3:4c1aafab6454a0b685dc2d6d6715d621900fabf2e714f66d500ef762b3a6af70 file=workforce/internal/mission/types.go range=138:138 lang=go exported=true byte_range=4906:4980
   sig=mission.ReservedDecisionKind
 EDGES
+  references=matrix/workforce/internal/mission.ReservedDecisionKind
+  ^references=matrix/workforce/internal/executive.OperationClass.ReservedKind,matrix/workforce/internal/mission.ReservedDecisionKind.Valid,matrix/workforce/internal/mission.defaultReservedDecisions
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ReservedDebtOrLeverage kind=const
   digest=b3:b5bf559126469c0e4f8e7037ed70283007ddf6abca53a528cb3e50784bbb9229 file=workforce/internal/mission/types.go range=135:135 lang=go exported=true byte_range=4685:4754
   sig=mission.ReservedDecisionKind
 EDGES
+  references=matrix/workforce/internal/mission.ReservedDecisionKind
+  ^references=matrix/workforce/internal/executive.OperationClass.ReservedKind,matrix/workforce/internal/mission.ReservedDecisionKind.Valid,matrix/workforce/internal/mission.defaultReservedDecisions
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ReservedDecision kind=type
@@ -1059,6 +1168,8 @@ NODE id=matrix/workforce/internal/mission.ReservedDecision kind=type
 EDGES
   contains=matrix/workforce/internal/mission.ReservedDecision#ClauseID,matrix/workforce/internal/mission.ReservedDecision#Description,matrix/workforce/internal/mission.ReservedDecision#Escalation,matrix/workforce/internal/mission.ReservedDecision#Kind,matrix/workforce/internal/mission.ReservedDecision.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/mission.ReservedDecisionKind
+  ^references=matrix/workforce/internal/mission.CompanyConstitution,matrix/workforce/internal/mission.ReservedDecision.Validate,matrix/workforce/internal/mission.defaultReservedDecisions
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ReservedDecision#ClauseID kind=field
@@ -1090,7 +1201,11 @@ NODE id=matrix/workforce/internal/mission.ReservedDecision.Validate kind=method
   sig=func (value ReservedDecision) Validate() error
   doc=Validate rejects an incomplete or open-ended reserved decision.
 EDGES
+  calls=matrix/workforce/internal/mission.ReservedDecisionKind.Valid,matrix/workforce/internal/mission.validateText,matrix/workforce/internal/mission.validateToken
+  references=matrix/workforce/internal/mission.ReservedDecision,matrix/workforce/internal/mission.ReservedDecisionKind.Valid,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.validateText,matrix/workforce/internal/mission.validateToken,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.ReservedDecision
+  ^calls=matrix/workforce/internal/mission.CompanyConstitution.Validate
+  ^references=matrix/workforce/internal/mission.CompanyConstitution.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ReservedDecisionKind kind=type
@@ -1099,6 +1214,7 @@ NODE id=matrix/workforce/internal/mission.ReservedDecisionKind kind=type
   doc=ReservedDecisionKind identifies authority that the company controller can\nnever acquire from a Work Order or Executive decision.
 EDGES
   contains=matrix/workforce/internal/mission.ReservedDecisionKind.Valid
+  ^references=matrix/workforce/internal/executive.FounderDecisionRequest,matrix/workforce/internal/executive.OperationClass.ReservedKind,matrix/workforce/internal/executive.evaluation,matrix/workforce/internal/executive.founderEvaluation,matrix/workforce/internal/mission.ReservedCapitalIncrease,matrix/workforce/internal/mission.ReservedConstitutionChange,matrix/workforce/internal/mission.ReservedControlRelaxation,matrix/workforce/internal/mission.ReservedCorporateAction,matrix/workforce/internal/mission.ReservedCustodyOrWithdrawal,matrix/workforce/internal/mission.ReservedDebtOrLeverage,matrix/workforce/internal/mission.ReservedDecision,matrix/workforce/internal/mission.ReservedDecisionKind.Valid,matrix/workforce/internal/mission.ReservedMaterialTransfer,matrix/workforce/internal/mission.ReservedMissionChange,matrix/workforce/internal/mission.ReservedRestrictedRegion
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ReservedDecisionKind.Valid kind=method
@@ -1106,25 +1222,34 @@ NODE id=matrix/workforce/internal/mission.ReservedDecisionKind.Valid kind=method
   sig=func (value ReservedDecisionKind) Valid() bool
   doc=Valid reports whether the reserved decision has a closed meaning.
 EDGES
+  references=matrix/workforce/internal/mission.ReservedCapitalIncrease,matrix/workforce/internal/mission.ReservedConstitutionChange,matrix/workforce/internal/mission.ReservedControlRelaxation,matrix/workforce/internal/mission.ReservedCorporateAction,matrix/workforce/internal/mission.ReservedCustodyOrWithdrawal,matrix/workforce/internal/mission.ReservedDebtOrLeverage,matrix/workforce/internal/mission.ReservedDecisionKind,matrix/workforce/internal/mission.ReservedMaterialTransfer,matrix/workforce/internal/mission.ReservedMissionChange,matrix/workforce/internal/mission.ReservedRestrictedRegion,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.ReservedDecisionKind
+  ^calls=matrix/workforce/internal/executive.FounderDecisionRequest.Validate,matrix/workforce/internal/mission.ReservedDecision.Validate
+  ^references=matrix/workforce/internal/executive.FounderDecisionRequest.Validate,matrix/workforce/internal/mission.ReservedDecision.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ReservedMaterialTransfer kind=const
   digest=b3:c34cea8af9b457d97e45f8a51d5e69da0c68335a69efcd6f6183dfb72afee4c2 file=workforce/internal/mission/types.go range=136:136 lang=go exported=true byte_range=4756:4826
   sig=mission.ReservedDecisionKind
 EDGES
+  references=matrix/workforce/internal/mission.ReservedDecisionKind
+  ^references=matrix/workforce/internal/executive.OperationClass.ReservedKind,matrix/workforce/internal/mission.ReservedDecisionKind.Valid,matrix/workforce/internal/mission.defaultReservedDecisions
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ReservedMissionChange kind=const
   digest=b3:168963c4ecfe634841fc09ff5e4b79a90df9ac801cf13494b1810181e48963e7 file=workforce/internal/mission/types.go range=132:132 lang=go exported=true byte_range=4461:4528
   sig=mission.ReservedDecisionKind
 EDGES
+  references=matrix/workforce/internal/mission.ReservedDecisionKind
+  ^references=matrix/workforce/internal/executive.OperationClass.ReservedKind,matrix/workforce/internal/mission.ReservedDecisionKind.Valid,matrix/workforce/internal/mission.defaultReservedDecisions
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.ReservedRestrictedRegion kind=const
   digest=b3:3a5a0f9d82097e9c13447dd89e9dfdfac030093e15ce8c6299fc526fbb06f60b file=workforce/internal/mission/types.go range=137:137 lang=go exported=true byte_range=4828:4904
   sig=mission.ReservedDecisionKind
 EDGES
+  references=matrix/workforce/internal/mission.ReservedDecisionKind
+  ^references=matrix/workforce/internal/executive.OperationClass.ReservedKind,matrix/workforce/internal/executive.evaluate,matrix/workforce/internal/mission.ReservedDecisionKind.Valid,matrix/workforce/internal/mission.defaultReservedDecisions
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.RiskTolerance kind=type
@@ -1133,6 +1258,7 @@ NODE id=matrix/workforce/internal/mission.RiskTolerance kind=type
   doc=RiskTolerance is the closed founder-selected operating risk class.
 EDGES
   contains=matrix/workforce/internal/mission.RiskTolerance.Valid
+  ^references=matrix/workforce/internal/mission.ActivationDraft,matrix/workforce/internal/mission.CompanyConstitution,matrix/workforce/internal/mission.RiskTolerance.Valid,matrix/workforce/internal/mission.RiskToleranceHigh,matrix/workforce/internal/mission.RiskToleranceLow,matrix/workforce/internal/mission.RiskToleranceModerate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.RiskTolerance.Valid kind=method
@@ -1140,25 +1266,34 @@ NODE id=matrix/workforce/internal/mission.RiskTolerance.Valid kind=method
   sig=func (value RiskTolerance) Valid() bool
   doc=Valid reports whether the risk class is executable.
 EDGES
+  references=matrix/workforce/internal/mission.RiskTolerance,matrix/workforce/internal/mission.RiskToleranceHigh,matrix/workforce/internal/mission.RiskToleranceLow,matrix/workforce/internal/mission.RiskToleranceModerate,matrix/workforce/internal/mission.value
   ^contains=matrix/workforce/internal/mission.RiskTolerance
+  ^calls=matrix/workforce/internal/mission.CompanyConstitution.Validate
+  ^references=matrix/workforce/internal/mission.CompanyConstitution.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.RiskToleranceHigh kind=const
   digest=b3:abc4a374310cbfce37c0259d605e6ddd67b6c5a845860a2ca6e8c16bddf9fcda file=workforce/internal/mission/types.go range=34:34 lang=go exported=true byte_range=1123:1167
   sig=mission.RiskTolerance
 EDGES
+  references=matrix/workforce/internal/mission.RiskTolerance
+  ^references=matrix/workforce/internal/mission.RiskTolerance.Valid
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.RiskToleranceLow kind=const
   digest=b3:6925eed8ba89e2f88d77c7fed0efb9232f0db8b9d939827eb96f2229302fb530 file=workforce/internal/mission/types.go range=32:32 lang=go exported=true byte_range=1028:1071
   sig=mission.RiskTolerance
 EDGES
+  references=matrix/workforce/internal/mission.RiskTolerance
+  ^references=matrix/workforce/internal/mission.RiskTolerance.Valid
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.RiskToleranceModerate kind=const
   digest=b3:19f38c9c5a740f9c326030424d14e9a765e0050de4082332edcdcf9febf0c1cc file=workforce/internal/mission/types.go range=33:33 lang=go exported=true byte_range=1073:1121
   sig=mission.RiskTolerance
 EDGES
+  references=matrix/workforce/internal/mission.RiskTolerance
+  ^references=matrix/workforce/internal/mission.RiskTolerance.Valid
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.SignCapitalEnvelope kind=func
@@ -1166,6 +1301,8 @@ NODE id=matrix/workforce/internal/mission.SignCapitalEnvelope kind=func
   sig=func SignCapitalEnvelope(value *CapitalEnvelope, keyID string, key ed25519.PrivateKey) error
   doc=SignCapitalEnvelope signs the exact delegated capital limits.
 EDGES
+  calls=matrix/workforce/internal/mission.capitalSigningBytes,matrix/workforce/internal/mission.sign
+  references=matrix/workforce/internal/mission.CapitalEnvelope,matrix/workforce/internal/mission.capitalSigningBytes,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.key,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.payload,matrix/workforce/internal/mission.sign,matrix/workforce/internal/mission.value
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.SignCompanyConstitution kind=func
@@ -1173,6 +1310,8 @@ NODE id=matrix/workforce/internal/mission.SignCompanyConstitution kind=func
   sig=func SignCompanyConstitution(value *CompanyConstitution, keyID string, key ed25519.PrivateKey) error
   doc=SignCompanyConstitution signs every canonical Constitution field with the\nlocal founder key.
 EDGES
+  calls=matrix/workforce/internal/mission.constitutionSigningBytes,matrix/workforce/internal/mission.sign
+  references=matrix/workforce/internal/mission.CompanyConstitution,matrix/workforce/internal/mission.constitutionSigningBytes,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.key,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.payload,matrix/workforce/internal/mission.sign,matrix/workforce/internal/mission.value
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.SignCompanyIssuerPolicy kind=func
@@ -1180,6 +1319,8 @@ NODE id=matrix/workforce/internal/mission.SignCompanyIssuerPolicy kind=func
   sig=func SignCompanyIssuerPolicy(value *CompanyIssuerPolicy, keyID string, key ed25519.PrivateKey) error
   doc=SignCompanyIssuerPolicy signs the controller's bounded issuance authority.
 EDGES
+  calls=matrix/workforce/internal/mission.issuerSigningBytes,matrix/workforce/internal/mission.sign
+  references=matrix/workforce/internal/mission.CompanyIssuerPolicy,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.issuerSigningBytes,matrix/workforce/internal/mission.key,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.payload,matrix/workforce/internal/mission.sign,matrix/workforce/internal/mission.value
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.SignFounderMission kind=func
@@ -1187,6 +1328,8 @@ NODE id=matrix/workforce/internal/mission.SignFounderMission kind=func
   sig=func SignFounderMission(value *FounderMission, keyID string, key ed25519.PrivateKey) error
   doc=SignFounderMission signs every canonical Mission field with the local\nfounder key.
 EDGES
+  calls=matrix/workforce/internal/mission.missionSigningBytes,matrix/workforce/internal/mission.sign
+  references=matrix/workforce/internal/mission.FounderMission,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.key,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.missionSigningBytes,matrix/workforce/internal/mission.payload,matrix/workforce/internal/mission.sign,matrix/workforce/internal/mission.value
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.SignOrganizationV2 kind=func
@@ -1194,6 +1337,8 @@ NODE id=matrix/workforce/internal/mission.SignOrganizationV2 kind=func
   sig=func SignOrganizationV2(value *OrganizationV2, keyID string, key ed25519.PrivateKey) error
   doc=SignOrganizationV2 signs the exact default-template projection and its\nbindings to the founder company-authority records.
 EDGES
+  calls=matrix/workforce/internal/mission.organizationV2SigningBytes,matrix/workforce/internal/mission.sign
+  references=matrix/workforce/internal/mission.OrganizationV2,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.key,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.organizationV2SigningBytes,matrix/workforce/internal/mission.payload,matrix/workforce/internal/mission.sign,matrix/workforce/internal/mission.value
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.Store kind=type
@@ -1202,6 +1347,8 @@ NODE id=matrix/workforce/internal/mission.Store kind=type
   doc=Store owns founder company authority persistence and current-version reads.
 EDGES
   contains=matrix/workforce/internal/mission.Store#keyID,matrix/workforce/internal/mission.Store#now,matrix/workforce/internal/mission.Store#organizationID,matrix/workforce/internal/mission.Store#ownerID,matrix/workforce/internal/mission.Store#pool,matrix/workforce/internal/mission.Store#publicKey,matrix/workforce/internal/mission.Store#tenantID,matrix/workforce/internal/mission.Store#vault,matrix/workforce/internal/mission.Store.AnalyzeChange,matrix/workforce/internal/mission.Store.CommitActivationTx,matrix/workforce/internal/mission.Store.CommitVersionTx,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation,matrix/workforce/internal/mission.Store.analyzeChange,matrix/workforce/internal/mission.Store.authorityAD
+  references=matrix/vault.UserVault,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.NewCoordinator,matrix/workforce/internal/companyruntime.NewCoordinatorWithDispatcher,matrix/workforce/internal/companyruntime.NewStore,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/executive.NewStore,matrix/workforce/internal/executive.Store,matrix/workforce/internal/mission.NewStore,matrix/workforce/internal/mission.Store.AnalyzeChange,matrix/workforce/internal/mission.Store.CommitActivationTx,matrix/workforce/internal/mission.Store.CommitVersionTx,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation,matrix/workforce/internal/mission.Store.analyzeChange,matrix/workforce/internal/mission.Store.authorityAD,matrix/workforce/internal/productexecution.NewStore,matrix/workforce/internal/productexecution.Store
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.Store#keyID kind=field
@@ -1257,7 +1404,11 @@ NODE id=matrix/workforce/internal/mission.Store.AnalyzeChange kind=method
   sig=func (store *Store) AnalyzeChange(ctx context.Context, now time.Time) (AuthorityChangeImpact, error)
   doc=AnalyzeChange reports the exact current lease, wake, and effect radius that\nwill be paused or invalidated by CommitVersionTx.
 EDGES
+  calls=matrix/workforce/internal/mission.Store.analyzeChange
+  references=matrix/workforce/internal/mission.AuthorityChangeImpact,matrix/workforce/internal/mission.Store,matrix/workforce/internal/mission.Store.analyzeChange,matrix/workforce/internal/mission.ctx,matrix/workforce/internal/mission.now,matrix/workforce/internal/mission.store
   ^contains=matrix/workforce/internal/mission.Store
+  ^calls=matrix/workforce/internal/controlapi.Service.PreviewAuthorityChange
+  ^references=matrix/workforce/internal/controlapi.Service.PreviewAuthorityChange
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.Store.CommitActivationTx kind=method
@@ -1265,7 +1416,10 @@ NODE id=matrix/workforce/internal/mission.Store.CommitActivationTx kind=method
   sig=func (store *Store) CommitActivationTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	prepared PreparedActivation,\n	legacyOrganizationVersion uint64,\n	now time.Time,\n) (bool, error)
   doc=CommitActivationTx installs the prepared authority and organization-v2\ncompatibility projection in the caller's serializable transaction.
 EDGES
+  references=matrix/workforce/internal/mission.ErrConflict,matrix/workforce/internal/mission.ErrIntegrity,matrix/workforce/internal/mission.PreparedActivation,matrix/workforce/internal/mission.Store,matrix/workforce/internal/mission.ctx,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.existing,matrix/workforce/internal/mission.hash,matrix/workforce/internal/mission.index,matrix/workforce/internal/mission.legacyOrganizationVersion,matrix/workforce/internal/mission.now,matrix/workforce/internal/mission.prepared,matrix/workforce/internal/mission.record,matrix/workforce/internal/mission.store,matrix/workforce/internal/mission.tx
   ^contains=matrix/workforce/internal/mission.Store
+  ^calls=matrix/workforce/internal/controlapi.Service.MigrateOrganization
+  ^references=matrix/workforce/internal/controlapi.Service.ActivateOrganization,matrix/workforce/internal/controlapi.Service.MigrateOrganization
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.Store.CommitVersionTx kind=method
@@ -1273,7 +1427,11 @@ NODE id=matrix/workforce/internal/mission.Store.CommitVersionTx kind=method
   sig=func (store *Store) CommitVersionTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	prepared PreparedActivation,\n	expectedVersion uint64,\n	now time.Time,\n) error
   doc=CommitVersionTx installs one founder-signed material authority version,\ninvalidates every affected lease, pauses new initiation, and emits immutable\nchange receipts in the caller's serializable transaction.
 EDGES
+  calls=matrix/workforce/internal/mission.Store.analyzeChange
+  references=matrix/workforce/internal/mission.ErrConflict,matrix/workforce/internal/mission.PreparedActivation,matrix/workforce/internal/mission.Store,matrix/workforce/internal/mission.Store.analyzeChange,matrix/workforce/internal/mission.ctx,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.expectedVersion,matrix/workforce/internal/mission.head,matrix/workforce/internal/mission.impact,matrix/workforce/internal/mission.index,matrix/workforce/internal/mission.now,matrix/workforce/internal/mission.prepared,matrix/workforce/internal/mission.record,matrix/workforce/internal/mission.result,matrix/workforce/internal/mission.store,matrix/workforce/internal/mission.totalAffected,matrix/workforce/internal/mission.tx
   ^contains=matrix/workforce/internal/mission.Store
+  ^calls=matrix/workforce/internal/controlapi.Service.ChangeAuthority,matrix/workforce/internal/controlapi.Service.RotateFounderKey
+  ^references=matrix/workforce/internal/controlapi.Service.ChangeAuthority,matrix/workforce/internal/controlapi.Service.RotateFounderKey
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.Store.LoadCurrent kind=method
@@ -1281,7 +1439,11 @@ NODE id=matrix/workforce/internal/mission.Store.LoadCurrent kind=method
   sig=func (store *Store) LoadCurrent(ctx context.Context) (CurrentAuthority, error)
   doc=LoadCurrent authenticates every Vault-sealed current authority record and\nverifies the complete founder signature set before returning company state.
 EDGES
+  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/mission.Store.authorityAD,matrix/workforce/internal/mission.VerifyActivationAuthority
+  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/mission.ActivationAuthority,matrix/workforce/internal/mission.CapitalEnvelope,matrix/workforce/internal/mission.CompanyConstitution,matrix/workforce/internal/mission.CompanyIssuerPolicy,matrix/workforce/internal/mission.CurrentAuthority,matrix/workforce/internal/mission.ErrIntegrity,matrix/workforce/internal/mission.FounderMission,matrix/workforce/internal/mission.OrganizationV2,matrix/workforce/internal/mission.Store,matrix/workforce/internal/mission.Store.authorityAD,matrix/workforce/internal/mission.VerifyActivationAuthority,matrix/workforce/internal/mission.authority,matrix/workforce/internal/mission.authorityKind,matrix/workforce/internal/mission.canonical,matrix/workforce/internal/mission.ctx,matrix/workforce/internal/mission.current,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.expectedHash,matrix/workforce/internal/mission.id,matrix/workforce/internal/mission.kind,matrix/workforce/internal/mission.kindCapital,matrix/workforce/internal/mission.kindConstitution,matrix/workforce/internal/mission.kindIssuer,matrix/workforce/internal/mission.kindMission,matrix/workforce/internal/mission.kindOrganization,matrix/workforce/internal/mission.revokedAt,matrix/workforce/internal/mission.rows,matrix/workforce/internal/mission.sealed,matrix/workforce/internal/mission.seen,matrix/workforce/internal/mission.store,matrix/workforce/internal/mission.sum,matrix/workforce/internal/mission.value,matrix/workforce/internal/mission.version
   ^contains=matrix/workforce/internal/mission.Store
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/companyruntime.Coordinator.CompanyAuthority,matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.Store.verifyCurrentRoots,matrix/workforce/internal/controlapi.Service.listFounderResource,matrix/workforce/internal/executive.Store.ConsumeDecision,matrix/workforce/internal/executive.Store.Decide,matrix/workforce/internal/executive.Store.InstallPolicy,matrix/workforce/internal/executive.Store.LoadCurrentAuthority,matrix/workforce/internal/productexecution.Store.Start,matrix/workforce/internal/productexecution.Store.currentStageOrder
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/companyruntime.Coordinator.CompanyAuthority,matrix/workforce/internal/companyruntime.Coordinator.DispatchReady,matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.Store.verifyCurrentRoots,matrix/workforce/internal/controlapi.Service.listFounderResource,matrix/workforce/internal/executive.Store.ConsumeDecision,matrix/workforce/internal/executive.Store.Decide,matrix/workforce/internal/executive.Store.InstallPolicy,matrix/workforce/internal/executive.Store.LoadCurrentAuthority,matrix/workforce/internal/productexecution.Store.Start,matrix/workforce/internal/productexecution.Store.currentStageOrder
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.Store.PrepareActivation kind=method
@@ -1289,21 +1451,31 @@ NODE id=matrix/workforce/internal/mission.Store.PrepareActivation kind=method
   sig=func (store *Store) PrepareActivation(value ActivationAuthority) (PreparedActivation, error)
   doc=PrepareActivation verifies founder signatures and seals all authority before\nthe activation transaction starts.
 EDGES
+  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.Store.authorityAD,matrix/workforce/internal/mission.VerifyActivationAuthority
+  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Validatable,matrix/workforce/internal/mission.ActivationAuthority,matrix/workforce/internal/mission.PreparedActivation,matrix/workforce/internal/mission.Store,matrix/workforce/internal/mission.Store.authorityAD,matrix/workforce/internal/mission.VerifyActivationAuthority,matrix/workforce/internal/mission.authorityKind,matrix/workforce/internal/mission.canonical,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.index,matrix/workforce/internal/mission.kindCapital,matrix/workforce/internal/mission.kindConstitution,matrix/workforce/internal/mission.kindIssuer,matrix/workforce/internal/mission.kindMission,matrix/workforce/internal/mission.kindOrganization,matrix/workforce/internal/mission.now,matrix/workforce/internal/mission.prepared,matrix/workforce/internal/mission.preparedRecord,matrix/workforce/internal/mission.sealed,matrix/workforce/internal/mission.store,matrix/workforce/internal/mission.sum,matrix/workforce/internal/mission.value,matrix/workforce/internal/mission.values
   ^contains=matrix/workforce/internal/mission.Store
+  ^calls=matrix/workforce/internal/controlapi.Service.ActivateOrganization,matrix/workforce/internal/controlapi.Service.ChangeAuthority,matrix/workforce/internal/controlapi.Service.MigrateOrganization,matrix/workforce/internal/controlapi.Service.RotateFounderKey
+  ^references=matrix/workforce/internal/controlapi.Service.ActivateOrganization,matrix/workforce/internal/controlapi.Service.ChangeAuthority,matrix/workforce/internal/controlapi.Service.MigrateOrganization,matrix/workforce/internal/controlapi.Service.RotateFounderKey
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.Store.analyzeChange kind=method
   digest=b3:0e73cbbde2d6199cbadeb098d505157a70eb4bab3858ee8568c249e737dfa45c file=workforce/internal/mission/store.go range=191:223 lang=go exported=false byte_range=6651:8161
   sig=func (store *Store) analyzeChange(\n	ctx context.Context,\n	querier authorityImpactQuerier,\n	now time.Time,\n) (AuthorityChangeImpact, error)
 EDGES
+  references=matrix/workforce/internal/mission.AuthorityChangeImpact,matrix/workforce/internal/mission.Store,matrix/workforce/internal/mission.authorityImpactQuerier,matrix/workforce/internal/mission.authorityImpactQuerier.QueryRow,matrix/workforce/internal/mission.ctx,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.impact,matrix/workforce/internal/mission.now,matrix/workforce/internal/mission.querier,matrix/workforce/internal/mission.store
   ^contains=matrix/workforce/internal/mission.Store
+  ^calls=matrix/workforce/internal/mission.Store.AnalyzeChange,matrix/workforce/internal/mission.Store.CommitVersionTx
+  ^references=matrix/workforce/internal/mission.Store.AnalyzeChange,matrix/workforce/internal/mission.Store.CommitVersionTx
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.Store.authorityAD kind=method
   digest=b3:5977724dfaf9c5aed646bd2bb5d3fca00b4c9512cbf6847e4c57a2873243677d file=workforce/internal/mission/store.go range=498:505 lang=go exported=false byte_range=19897:20191
   sig=func (store *Store) authorityAD(kind authorityKind, id string, version uint64) vault.AD
 EDGES
+  references=matrix/vault.AD,matrix/workforce/internal/mission.Store,matrix/workforce/internal/mission.authorityKind,matrix/workforce/internal/mission.id,matrix/workforce/internal/mission.kind,matrix/workforce/internal/mission.store,matrix/workforce/internal/mission.version
   ^contains=matrix/workforce/internal/mission.Store
+  ^calls=matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation
+  ^references=matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.VerifyActivationAuthority kind=func
@@ -1311,6 +1483,10 @@ NODE id=matrix/workforce/internal/mission.VerifyActivationAuthority kind=func
   sig=func VerifyActivationAuthority(value ActivationAuthority, keyID string, key ed25519.PublicKey) error
   doc=VerifyActivationAuthority verifies every record against the same founder\nauthority and rejects cross-record inconsistencies.
 EDGES
+  calls=matrix/workforce/internal/mission.ActivationAuthority.Validate,matrix/workforce/internal/mission.capitalSigningBytes,matrix/workforce/internal/mission.constitutionSigningBytes,matrix/workforce/internal/mission.issuerSigningBytes,matrix/workforce/internal/mission.missionSigningBytes,matrix/workforce/internal/mission.organizationV2SigningBytes,matrix/workforce/internal/mission.verifyPrepared
+  references=matrix/workforce/internal/mission.ActivationAuthority,matrix/workforce/internal/mission.ActivationAuthority.Validate,matrix/workforce/internal/mission.capitalSigningBytes,matrix/workforce/internal/mission.constitutionSigningBytes,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.issuerSigningBytes,matrix/workforce/internal/mission.key,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.missionSigningBytes,matrix/workforce/internal/mission.organizationV2SigningBytes,matrix/workforce/internal/mission.payload,matrix/workforce/internal/mission.value,matrix/workforce/internal/mission.verifyPrepared
+  ^calls=matrix/workforce/internal/executive.Compile,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation
+  ^references=matrix/workforce/internal/executive.Compile,matrix/workforce/internal/initiative.Compiler.Compile,matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy kind=func
@@ -1318,90 +1494,132 @@ NODE id=matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy kind=func
   sig=func VerifyCompanyIssuerPolicy(\n	value CompanyIssuerPolicy,\n	founderKeyID string,\n	founderPublicKey ed25519.PublicKey,\n	at time.Time,\n) error
   doc=VerifyCompanyIssuerPolicy verifies the founder signature and establishes\nthat the exact issuer delegation is effective at the supplied UTC instant.
 EDGES
+  calls=matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate,matrix/workforce/internal/mission.issuerSigningBytes,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.verifyPrepared
+  references=matrix/workforce/internal/mission.CompanyIssuerPolicy,matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate,matrix/workforce/internal/mission.at,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.founderKeyID,matrix/workforce/internal/mission.founderPublicKey,matrix/workforce/internal/mission.issuerSigningBytes,matrix/workforce/internal/mission.payload,matrix/workforce/internal/mission.validUTC,matrix/workforce/internal/mission.value,matrix/workforce/internal/mission.verifyPrepared
+  ^calls=matrix/workforce/internal/executive.Compile,matrix/workforce/internal/workorder.CompanyAuthority.Validate
+  ^references=matrix/workforce/internal/executive.Compile,matrix/workforce/internal/workorder.CompanyAuthority.Validate
   ^defines=matrix/workforce/internal/mission/issuer_verification.go
 
 NODE id=matrix/workforce/internal/mission.adjacentDuplicate kind=func
   digest=b3:8dcc3ab16cc58a663b85cc590a128d6cff150c19962731d6be38cd4367aa576e file=workforce/internal/mission/types.go range=511:518 lang=go exported=false byte_range=22592:22764
   sig=func adjacentDuplicate(values []string) bool
 EDGES
+  references=matrix/workforce/internal/mission.index,matrix/workforce/internal/mission.values
+  ^calls=matrix/workforce/internal/mission.CompanyConstitution.Validate,matrix/workforce/internal/mission.validateStringSet
+  ^references=matrix/workforce/internal/mission.CompanyConstitution.Validate,matrix/workforce/internal/mission.validateStringSet
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.authorityImpactQuerier kind=interface
   digest=b3:d9ca33a7b04872955c466544251615687cef526620d717d14bd3214e90b9b9e2 file=workforce/internal/mission/store.go range=178:180 lang=go exported=false byte_range=6126:6218
   sig=type authorityImpactQuerier interface {\n	QueryRow(context.Context, string, ...any) pgx.Row\n}
 EDGES
+  ^references=matrix/workforce/internal/mission.Store.analyzeChange
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.authorityKind kind=type
   digest=b3:25e009550b626f5104e65cb7e68f0fbfcda0b56093f60bb82c735f6640db6675 file=workforce/internal/mission/store.go range=27:27 lang=go exported=false byte_range=546:571
   sig=type authorityKind string
 EDGES
+  ^references=matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation,matrix/workforce/internal/mission.Store.authorityAD,matrix/workforce/internal/mission.kindCapital,matrix/workforce/internal/mission.kindConstitution,matrix/workforce/internal/mission.kindIssuer,matrix/workforce/internal/mission.kindMission,matrix/workforce/internal/mission.kindOrganization,matrix/workforce/internal/mission.preparedRecord
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.capitalSigningBytes kind=func
   digest=b3:bfd50089b343de527b9f87c567552411cccb1a821d7f0c2772cbae9f8c017d60 file=workforce/internal/mission/signing.go range=131:134 lang=go exported=false byte_range=4958:5128
   sig=func capitalSigningBytes(value CapitalEnvelope, keyID string) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.signaturePlaceholder
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.CapitalEnvelope,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.signaturePlaceholder,matrix/workforce/internal/mission.value
+  ^calls=matrix/workforce/internal/mission.SignCapitalEnvelope,matrix/workforce/internal/mission.VerifyActivationAuthority
+  ^references=matrix/workforce/internal/mission.SignCapitalEnvelope,matrix/workforce/internal/mission.VerifyActivationAuthority
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.constitutionSigningBytes kind=func
   digest=b3:5464d6cb8da0e2e3b751414c3c1abc550f2ebbff5a36fba56a67ec60cf65a1c4 file=workforce/internal/mission/signing.go range=126:129 lang=go exported=false byte_range=4777:4956
   sig=func constitutionSigningBytes(value CompanyConstitution, keyID string) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.signaturePlaceholder
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.CompanyConstitution,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.signaturePlaceholder,matrix/workforce/internal/mission.value
+  ^calls=matrix/workforce/internal/mission.SignCompanyConstitution,matrix/workforce/internal/mission.VerifyActivationAuthority
+  ^references=matrix/workforce/internal/mission.SignCompanyConstitution,matrix/workforce/internal/mission.VerifyActivationAuthority
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.defaultReservedDecisions kind=func
   digest=b3:500e69c2e5a681897855417dfc60637d6b2fb6f3fe67a443b19326e2e648a28a file=workforce/internal/mission/draft.go range=171:187 lang=go exported=false byte_range=7363:9260
   sig=func defaultReservedDecisions() []ReservedDecision
 EDGES
+  references=matrix/workforce/internal/mission.ReservedCapitalIncrease,matrix/workforce/internal/mission.ReservedConstitutionChange,matrix/workforce/internal/mission.ReservedControlRelaxation,matrix/workforce/internal/mission.ReservedCorporateAction,matrix/workforce/internal/mission.ReservedCustodyOrWithdrawal,matrix/workforce/internal/mission.ReservedDebtOrLeverage,matrix/workforce/internal/mission.ReservedDecision,matrix/workforce/internal/mission.ReservedMaterialTransfer,matrix/workforce/internal/mission.ReservedMissionChange,matrix/workforce/internal/mission.ReservedRestrictedRegion,matrix/workforce/internal/mission.left,matrix/workforce/internal/mission.right,matrix/workforce/internal/mission.stringsCompare,matrix/workforce/internal/mission.values
+  ^calls=matrix/workforce/internal/mission.BuildAuthorityDraft
+  ^references=matrix/workforce/internal/mission.BuildAuthorityDraft
   ^defines=matrix/workforce/internal/mission/draft.go
 
 NODE id=matrix/workforce/internal/mission.issuerSigningBytes kind=func
   digest=b3:6d911fcd77ce3126ccd813d5e2a2f3da17f480a933f0f6ce86485355c4310185 file=workforce/internal/mission/signing.go range=136:139 lang=go exported=false byte_range=5130:5303
   sig=func issuerSigningBytes(value CompanyIssuerPolicy, keyID string) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.signaturePlaceholder
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.CompanyIssuerPolicy,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.signaturePlaceholder,matrix/workforce/internal/mission.value
+  ^calls=matrix/workforce/internal/mission.SignCompanyIssuerPolicy,matrix/workforce/internal/mission.VerifyActivationAuthority,matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy
+  ^references=matrix/workforce/internal/mission.SignCompanyIssuerPolicy,matrix/workforce/internal/mission.VerifyActivationAuthority,matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.kindCapital kind=const
   digest=b3:db985e4642dc42914749bc594a87114d42cb7e4719a56688f9a1f5d82fc3697a file=workforce/internal/mission/store.go range=32:32 lang=go exported=false byte_range=691:742
   sig=mission.authorityKind
 EDGES
+  references=matrix/workforce/internal/mission.authorityKind
+  ^references=matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.kindConstitution kind=const
   digest=b3:94c84700fdf26202d56b78ff5587f790bc1df99d996e2d213730db7b99383dfd file=workforce/internal/mission/store.go range=31:31 lang=go exported=false byte_range=634:689
   sig=mission.authorityKind
 EDGES
+  references=matrix/workforce/internal/mission.authorityKind
+  ^references=matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.kindIssuer kind=const
   digest=b3:843a152ef82ba65463dd62a11ed215c606a074d6f1cb9265024f13ea2ff50eaa file=workforce/internal/mission/store.go range=33:33 lang=go exported=false byte_range=744:800
   sig=mission.authorityKind
 EDGES
+  references=matrix/workforce/internal/mission.authorityKind
+  ^references=matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.kindMission kind=const
   digest=b3:2a23837460559c658f7ef0a55ae534e6c1e14b69d75443d019bc2543ef2482db file=workforce/internal/mission/store.go range=30:30 lang=go exported=false byte_range=582:632
   sig=mission.authorityKind
 EDGES
+  references=matrix/workforce/internal/mission.authorityKind
+  ^references=matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.kindOrganization kind=const
   digest=b3:751275c7b40e3ccbbaf6c153040f685efe0a4d1a770f3fdccdf47fc6560f77f4 file=workforce/internal/mission/store.go range=34:34 lang=go exported=false byte_range=802:852
   sig=mission.authorityKind
 EDGES
+  references=matrix/workforce/internal/mission.authorityKind
+  ^references=matrix/workforce/internal/mission.Store.LoadCurrent,matrix/workforce/internal/mission.Store.PrepareActivation
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.missionSigningBytes kind=func
   digest=b3:5deb9466d0e755f59271fdce0214143f4b3a698057206c5365d3b04dfc47a4a6 file=workforce/internal/mission/signing.go range=121:124 lang=go exported=false byte_range=4606:4775
   sig=func missionSigningBytes(value FounderMission, keyID string) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.signaturePlaceholder
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.FounderMission,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.signaturePlaceholder,matrix/workforce/internal/mission.value
+  ^calls=matrix/workforce/internal/mission.SignFounderMission,matrix/workforce/internal/mission.VerifyActivationAuthority
+  ^references=matrix/workforce/internal/mission.SignFounderMission,matrix/workforce/internal/mission.VerifyActivationAuthority
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.organizationV2SigningBytes kind=func
   digest=b3:5d131c1d78f0ec3da939973188b1e90b998de8b3c64a43bb23d6fe2fdb80536b file=workforce/internal/mission/signing.go range=141:144 lang=go exported=false byte_range=5305:5481
   sig=func organizationV2SigningBytes(value OrganizationV2, keyID string) ([]byte, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.signaturePlaceholder
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/mission.OrganizationV2,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.signaturePlaceholder,matrix/workforce/internal/mission.value
+  ^calls=matrix/workforce/internal/mission.SignOrganizationV2,matrix/workforce/internal/mission.VerifyActivationAuthority
+  ^references=matrix/workforce/internal/mission.SignOrganizationV2,matrix/workforce/internal/mission.VerifyActivationAuthority
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.preparedRecord kind=type
@@ -1409,6 +1627,8 @@ NODE id=matrix/workforce/internal/mission.preparedRecord kind=type
   sig=type preparedRecord struct {\n	kind		authorityKind\n	id		string\n	version		uint64\n	effectiveAt	time.Time\n	canonical	[]byte\n	hash		string\n	sealed		[]byte\n}
 EDGES
   contains=matrix/workforce/internal/mission.preparedRecord#canonical,matrix/workforce/internal/mission.preparedRecord#effectiveAt,matrix/workforce/internal/mission.preparedRecord#hash,matrix/workforce/internal/mission.preparedRecord#id,matrix/workforce/internal/mission.preparedRecord#kind,matrix/workforce/internal/mission.preparedRecord#sealed,matrix/workforce/internal/mission.preparedRecord#version
+  references=matrix/workforce/internal/mission.authorityKind
+  ^references=matrix/workforce/internal/mission.PreparedActivation,matrix/workforce/internal/mission.Store.PrepareActivation
   ^defines=matrix/workforce/internal/mission/store.go
 
 NODE id=matrix/workforce/internal/mission.preparedRecord#canonical kind=field
@@ -1457,60 +1677,91 @@ NODE id=matrix/workforce/internal/mission.sign kind=func
   digest=b3:cc6600d43d0b32badd806633f42bb027a657329865fd8319e825ea5b525c2d2e file=workforce/internal/mission/signing.go range=95:107 lang=go exported=false byte_range=3684:4118
   sig=func sign(target *contracts.Signature, keyID string, key ed25519.PrivateKey, payload []byte, err error) error
 EDGES
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.key,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.payload,matrix/workforce/internal/mission.target
+  ^calls=matrix/workforce/internal/mission.SignCapitalEnvelope,matrix/workforce/internal/mission.SignCompanyConstitution,matrix/workforce/internal/mission.SignCompanyIssuerPolicy,matrix/workforce/internal/mission.SignFounderMission,matrix/workforce/internal/mission.SignOrganizationV2
+  ^references=matrix/workforce/internal/mission.SignCapitalEnvelope,matrix/workforce/internal/mission.SignCompanyConstitution,matrix/workforce/internal/mission.SignCompanyIssuerPolicy,matrix/workforce/internal/mission.SignFounderMission,matrix/workforce/internal/mission.SignOrganizationV2
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.signaturePlaceholder kind=func
   digest=b3:a2184bfd239f38ddb59593be3209b43ced51a4934efd3fc309dd1e7353c3e09c file=workforce/internal/mission/signing.go range=146:151 lang=go exported=false byte_range=5483:5700
   sig=func signaturePlaceholder(keyID string) contracts.Signature
 EDGES
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/mission.keyID
+  ^calls=matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.capitalSigningBytes,matrix/workforce/internal/mission.constitutionSigningBytes,matrix/workforce/internal/mission.issuerSigningBytes,matrix/workforce/internal/mission.missionSigningBytes,matrix/workforce/internal/mission.organizationV2SigningBytes
+  ^references=matrix/workforce/internal/mission.BuildAuthorityDraft,matrix/workforce/internal/mission.capitalSigningBytes,matrix/workforce/internal/mission.constitutionSigningBytes,matrix/workforce/internal/mission.issuerSigningBytes,matrix/workforce/internal/mission.missionSigningBytes,matrix/workforce/internal/mission.organizationV2SigningBytes
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.sortDraft kind=func
   digest=b3:1ac8dfc83db8786dd00ea60d241e0b659dbcbce4d9d88cac4e539f5292f56808 file=workforce/internal/mission/draft.go range=146:169 lang=go exported=false byte_range=6406:7361
   sig=func sortDraft(value *ActivationDraft)
 EDGES
+  references=matrix/workforce/internal/mission.ActivationDraft,matrix/workforce/internal/mission.OperatingScope,matrix/workforce/internal/mission.index,matrix/workforce/internal/mission.left,matrix/workforce/internal/mission.result,matrix/workforce/internal/mission.right,matrix/workforce/internal/mission.set,matrix/workforce/internal/mission.sets,matrix/workforce/internal/mission.stringsCompare,matrix/workforce/internal/mission.value
+  ^calls=matrix/workforce/internal/mission.BuildAuthorityDraft
+  ^references=matrix/workforce/internal/mission.BuildAuthorityDraft
   ^defines=matrix/workforce/internal/mission/draft.go
 
 NODE id=matrix/workforce/internal/mission.stringsCompare kind=func
   digest=b3:1a3987a675ff17af01d62b4a305c2928937bdd21d0b15353bd9326a54354e1d5 file=workforce/internal/mission/draft.go range=189:197 lang=go exported=false byte_range=9262:9386
   sig=func stringsCompare(left, right string) int
 EDGES
+  references=matrix/workforce/internal/mission.left,matrix/workforce/internal/mission.right
+  ^references=matrix/workforce/internal/mission.defaultReservedDecisions,matrix/workforce/internal/mission.sortDraft
   ^defines=matrix/workforce/internal/mission/draft.go
 
 NODE id=matrix/workforce/internal/mission.validUTC kind=func
   digest=b3:a0beee5b6bbe8dd3ff5ef521bfd147e9b7a7c4ce79ae888de69822b6d3078f75 file=workforce/internal/mission/types.go range=520:522 lang=go exported=false byte_range=22766:22861
   sig=func validUTC(value time.Time) bool
 EDGES
+  references=matrix/workforce/internal/mission.value
+  ^calls=matrix/workforce/internal/mission.CapitalEnvelope.Validate,matrix/workforce/internal/mission.CompanyConstitution.Validate,matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate,matrix/workforce/internal/mission.FounderMission.Validate,matrix/workforce/internal/mission.OperatingScope.Validate,matrix/workforce/internal/mission.OrganizationV2.Validate,matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy
+  ^references=matrix/workforce/internal/mission.CapitalEnvelope.Validate,matrix/workforce/internal/mission.CompanyConstitution.Validate,matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate,matrix/workforce/internal/mission.FounderMission.Validate,matrix/workforce/internal/mission.OperatingScope.Validate,matrix/workforce/internal/mission.OrganizationV2.Validate,matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.validateStringSet kind=func
   digest=b3:708b0c1701d9fe8a40fde062dd7b71b2b7857700798ed18486c16bd16ddbbffc file=workforce/internal/mission/types.go range=496:509 lang=go exported=false byte_range=22089:22590
   sig=func validateStringSet(name string, values []string, minimum, maximum, maxBytes int) error
 EDGES
+  calls=matrix/workforce/internal/mission.adjacentDuplicate,matrix/workforce/internal/mission.validateText
+  references=matrix/workforce/internal/mission.adjacentDuplicate,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.index,matrix/workforce/internal/mission.maxBytes,matrix/workforce/internal/mission.maximum,matrix/workforce/internal/mission.minimum,matrix/workforce/internal/mission.name,matrix/workforce/internal/mission.validateText,matrix/workforce/internal/mission.values
+  ^calls=matrix/workforce/internal/mission.CompanyConstitution.Validate,matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate,matrix/workforce/internal/mission.FounderMission.Validate,matrix/workforce/internal/mission.OperatingScope.Validate
+  ^references=matrix/workforce/internal/mission.CompanyConstitution.Validate,matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate,matrix/workforce/internal/mission.FounderMission.Validate,matrix/workforce/internal/mission.OperatingScope.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.validateText kind=func
   digest=b3:9355972617e1d1162d9182bc3ed0882adb7f3ab2ca630c82bbcbeb0c0957f918 file=workforce/internal/mission/types.go range=482:487 lang=go exported=false byte_range=21672:21873
   sig=func validateText(name, value string, max int) error
 EDGES
+  references=matrix/workforce/internal/mission.max,matrix/workforce/internal/mission.name,matrix/workforce/internal/mission.value
+  ^calls=matrix/workforce/internal/mission.FounderMission.Validate,matrix/workforce/internal/mission.OperatingScope.Validate,matrix/workforce/internal/mission.ReservedDecision.Validate,matrix/workforce/internal/mission.validateStringSet
+  ^references=matrix/workforce/internal/mission.FounderMission.Validate,matrix/workforce/internal/mission.OperatingScope.Validate,matrix/workforce/internal/mission.ReservedDecision.Validate,matrix/workforce/internal/mission.validateStringSet
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.validateToken kind=func
   digest=b3:eb67ef5910522f13e47db4c3eb3f2811cb71c45bd3d77f4b2de29d4b9c569b59 file=workforce/internal/mission/types.go range=489:494 lang=go exported=false byte_range=21875:22087
   sig=func validateToken(name, value string) error
 EDGES
+  references=matrix/workforce/internal/mission.name,matrix/workforce/internal/mission.value
+  ^calls=matrix/workforce/internal/mission.CapitalEnvelope.Validate,matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate,matrix/workforce/internal/mission.OperatingScope.Validate,matrix/workforce/internal/mission.ReservedDecision.Validate
+  ^references=matrix/workforce/internal/mission.CapitalEnvelope.Validate,matrix/workforce/internal/mission.CompanyIssuerPolicy.Validate,matrix/workforce/internal/mission.OperatingScope.Validate,matrix/workforce/internal/mission.ReservedDecision.Validate
   ^defines=matrix/workforce/internal/mission/types.go
 
 NODE id=matrix/workforce/internal/mission.verify kind=func
   digest=b3:fe70e74ad2efa1cdaa958cec628d19e56735806d3c5c508b67e39aef7dd52117 file=workforce/internal/mission/signing.go range=109:119 lang=go exported=false byte_range=4120:4604
   sig=func verify(signature contracts.Signature, keyID string, key ed25519.PublicKey, payload []byte) error
 EDGES
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/mission.decoded,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.key,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.payload,matrix/workforce/internal/mission.signature
+  ^calls=matrix/workforce/internal/mission.verifyPrepared
+  ^references=matrix/workforce/internal/mission.verifyPrepared
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission.verifyPrepared kind=func
   digest=b3:b676dfe750ee0bae736f0cce0eafb9f8ab1cd05fea3886505f365207dd9cba6a file=workforce/internal/mission/signing.go range=88:93 lang=go exported=false byte_range=3478:3682
   sig=func verifyPrepared(signature contracts.Signature, keyID string, key ed25519.PublicKey, payload []byte, err error) error
 EDGES
+  calls=matrix/workforce/internal/mission.verify
+  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/mission.err,matrix/workforce/internal/mission.key,matrix/workforce/internal/mission.keyID,matrix/workforce/internal/mission.payload,matrix/workforce/internal/mission.signature,matrix/workforce/internal/mission.verify
+  ^calls=matrix/workforce/internal/mission.VerifyActivationAuthority,matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy
+  ^references=matrix/workforce/internal/mission.VerifyActivationAuthority,matrix/workforce/internal/mission.VerifyCompanyIssuerPolicy
   ^defines=matrix/workforce/internal/mission/signing.go
 
 NODE id=matrix/workforce/internal/mission/draft.go kind=file

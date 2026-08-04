@@ -18,8 +18,8 @@ import (
 
 	"matrix/construct/backchannel"
 	"matrix/construct/schema/primitives"
-	cxself "matrix/cortex/self"
 	"matrix/neo/internal/conversation"
+	"matrix/neo/internal/memory"
 	"matrix/neo/internal/runrecord"
 	"matrix/neo/internal/trace"
 )
@@ -88,7 +88,7 @@ func (s *Server) routes() []routeFact {
 		{"/conversations", "GET /conversations — list conversation history from your durable store", s.handleConversations},
 		{"/conversations/", "", s.handleConversations},
 		// Memory reads must come from Neo's pager. The co-located daemon owns a
-		// separate Cortex actor and therefore cannot see Neo's learned memories.
+		// separate Neocortex actor and therefore cannot see Neo's learned memories.
 		{"/memory/recent", "GET /memory/recent — list your learned memories from Neo's durable store", s.handleMemoryRecent},
 		{"/memory/types", "GET /memory/types — count your learned memories by type", s.handleMemoryTypes},
 		{"/memory/search", "POST /memory/search — search your learned memories", s.handleMemorySearch},
@@ -173,8 +173,8 @@ var (
 // Handler registers, plus the declared is/is-not facts. Derived, never
 // hand-written into the prompt, so the resident section cannot drift from the
 // live serving surface (req.2.2).
-func (s *Server) SurfaceFacts() cxself.SurfaceFacts {
-	facts := cxself.SurfaceFacts{
+func (s *Server) SurfaceFacts() memory.SurfaceFacts {
+	facts := memory.SurfaceFacts{
 		Is:    append([]string(nil), surfaceIs...),
 		IsNot: append([]string(nil), surfaceIsNot...),
 	}
@@ -187,7 +187,7 @@ func (s *Server) SurfaceFacts() cxself.SurfaceFacts {
 }
 
 // recordSurface persists the derived surface facts into the durable structural
-// self-model (best-effort: a fresh install without a cortex pager simply keeps
+// self-model (best-effort: a fresh install without a Neocortex pager simply keeps
 // the honest "unknown" rendering).
 func (s *Server) recordSurface() {
 	if s.engine == nil || s.engine.pager == nil {
@@ -222,7 +222,7 @@ func (s *Server) warmOnFirstRequest(next http.Handler) http.Handler {
 // selfModelDiag is the read-only inspection payload: what the agent currently
 // believes about ITSELF — its resident structural summary (how it is built) and
 // its active failure-pattern memories (how it tends to fail) — plus the scope
-// and context limit that back them. It is a pure projection of the shared cortex
+// and context limit that back them. It is a pure projection of the shared Neocortex
 // self-model; it never mutates it.
 type selfModelDiag struct {
 	Identity        string               `json:"identity"`
@@ -249,7 +249,7 @@ func (s *Server) handleDiagSelfModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.engine == nil || s.engine.pager == nil {
-		http.Error(w, "self-model unavailable (no cortex pager)", http.StatusServiceUnavailable)
+		http.Error(w, "self-model unavailable (no Neocortex pager)", http.StatusServiceUnavailable)
 		return
 	}
 	model, err := s.engine.pager.SelfModel(r.Context())
@@ -329,13 +329,6 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	msg = dispatchMsg
-	if s.engine.MaybeHandleEpisodicSweep(msg) {
-		writeJSON(w, http.StatusAccepted, map[string]interface{}{
-			"conversation_id": convID,
-			"kind":            "episodic_sweep",
-		})
-		return
-	}
 	// Chronos AUTOMATRIX idle-wake: NOT a normal user turn. The engine wake
 	// handler re-reads the per-user opt-in, defers on a busy session, enforces
 	// the per-day cap, picks one eligible opportunity (handed to the supervised

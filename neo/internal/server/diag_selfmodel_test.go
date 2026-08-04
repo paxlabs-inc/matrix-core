@@ -18,11 +18,11 @@ import (
 // TestDiagSelfModelReturnsRealResidentSummaryAndFailurePatterns proves req.13.1
 // + 13.3: the read-only inspection surface returns the REAL resident
 // self-summary and the REAL active failure-pattern memories for a seeded agent —
-// resolved through the shared cortex self-model, no fakes.
+// resolved through the shared Neocortex self-model, no fakes.
 func TestDiagSelfModelReturnsRealResidentSummaryAndFailurePatterns(t *testing.T) {
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-diag-selfmodel"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-diag-selfmodel"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)
@@ -32,10 +32,10 @@ func TestDiagSelfModelReturnsRealResidentSummaryAndFailurePatterns(t *testing.T)
 
 	const summary = "Neo assembles system, transcript, then a trailing memory tail; coding and execution are faculties; core_execute is the value-transfer wall."
 	const pattern = "I loop when a trailing memory tail is treated as the live request"
-	if _, err := pager.WriteStructuralSelf(ctx, memory.StructuralSelf{Summary: summary, Scope: []string{"neo", "cortex"}, ContextLimit: 131072}); err != nil {
+	if _, err := pager.WriteStructuralSelf(ctx, memory.StructuralSelf{Summary: summary, Scope: []string{"neo", "Neocortex"}, ContextLimit: 131072}); err != nil {
 		t.Fatalf("WriteStructuralSelf: %v", err)
 	}
-	if _, err := pager.WriteFailurePattern(ctx, pattern, []string{"matrix://cortex/Event/death#1"}); err != nil {
+	if _, err := pager.WriteFailurePattern(ctx, pattern, []string{"matrix://Neocortex/Event/death#1"}); err != nil {
 		t.Fatalf("WriteFailurePattern: %v", err)
 	}
 

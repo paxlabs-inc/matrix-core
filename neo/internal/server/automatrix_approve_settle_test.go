@@ -8,7 +8,7 @@ package server
 // clearly finished task never reached OpportunityDone and never appeared in the
 // completion inbox (the empty "Done" tab). settleApprovedOpportunity is the
 // run-terminal observer that closes that loop. These tests drive it against the
-// REAL cortex pager, the REAL durable inbox, and the REAL conversation store —
+// REAL Neocortex pager, the REAL durable inbox, and the REAL conversation store —
 // no fakes.
 
 import (
@@ -23,8 +23,8 @@ import (
 func newApproveSettleEngine(t *testing.T) (*Engine, *memory.Pager) {
 	t.Helper()
 	cfg := config.Default()
-	cfg.CortexRoot = t.TempDir()
-	cfg.CortexActor = "neo-approve-settle-test"
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-approve-settle-test"
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		t.Fatalf("memory.Open: %v", err)
@@ -69,7 +69,7 @@ func seedScheduledOpportunity(t *testing.T, e *Engine, pager *memory.Pager, summ
 	return opp
 }
 
-// statusOf reads an opportunity's live status back from cortex.
+// statusOf reads an opportunity's live status back from Neocortex.
 func statusOf(t *testing.T, pager *memory.Pager, uri string) memory.OpportunityStatus {
 	t.Helper()
 	opp, ok, err := pager.OpportunityByURI(context.Background(), uri)

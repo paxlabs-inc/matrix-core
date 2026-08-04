@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/workforce/internal/developer kind=package
   digest=b3:a02551dc3362cfc973d3bc3a9d8e891d9905710633c8837416480bb53e57b51c file=workforce/internal/developer range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/developer/adapter.go,matrix/workforce/internal/developer/auditor.go,matrix/workforce/internal/developer/authority.go,matrix/workforce/internal/developer/types.go
+  imports=matrix/workforce/internal/audit,matrix/workforce/internal/contracts,matrix/workforce/internal/dependency,matrix/workforce/internal/effect,matrix/workforce/internal/lease,matrix/workforce/internal/processisolation,matrix/workforce/internal/projectbrain,matrix/workforce/internal/skills
   ^contains=mod:matrix/workforce
+  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/productcapability,matrix/workforce/internal/wakeruntime
 
 NODE id=matrix/workforce/internal/developer.Adapter kind=type
   digest=b3:1537bce8f9b2df42026ca761b7e3153a87abc6f6b1bdef74616388cd3597cb58 file=workforce/internal/developer/adapter.go range=50:57 lang=go exported=true byte_range=1513:1781
@@ -13,6 +15,8 @@ NODE id=matrix/workforce/internal/developer.Adapter kind=type
 EDGES
   contains=matrix/workforce/internal/developer.Adapter#authority,matrix/workforce/internal/developer.Adapter#brain,matrix/workforce/internal/developer.Adapter#now,matrix/workforce/internal/developer.Adapter#verifications,matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Name,matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.Adapter.runVerification
   implements=matrix/workforce/internal/effect.Adapter
+  references=matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.VerificationCommand,matrix/workforce/internal/projectbrain.Store
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Name,matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.Adapter.runVerification,matrix/workforce/internal/developer.NewAdapter,matrix/workforce/internal/developer._
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.Adapter#authority kind=field
@@ -44,7 +48,10 @@ NODE id=matrix/workforce/internal/developer.Adapter.Dispatch kind=method
   sig=func (adapter *Adapter) Dispatch(\n	ctx context.Context,\n	operation effect.Operation,\n) (effect.DispatchResult, error)
   doc=Dispatch executes one allowlisted Developer operation after exact scope\nauthority is revalidated.
 EDGES
+  calls=matrix/workforce/internal/developer.Adapter.runVerification,matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.SupportsOperation,matrix/workforce/internal/developer.decodeOperationEnvelope,matrix/workforce/internal/developer.developerResult,matrix/workforce/internal/developer.inspectScopedSource,matrix/workforce/internal/developer.matchEffectGrant,matrix/workforce/internal/developer.recordsOfKind,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
+  references=matrix/workforce/internal/developer.Adapter,matrix/workforce/internal/developer.Adapter.runVerification,matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.SupportsOperation,matrix/workforce/internal/developer.adapter,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.decodeOperationEnvelope,matrix/workforce/internal/developer.developerResult,matrix/workforce/internal/developer.envelope,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.evidence,matrix/workforce/internal/developer.existing,matrix/workforce/internal/developer.files,matrix/workforce/internal/developer.inspectScopedSource,matrix/workforce/internal/developer.matchEffectGrant,matrix/workforce/internal/developer.now,matrix/workforce/internal/developer.operation,matrix/workforce/internal/developer.recordsOfKind,matrix/workforce/internal/developer.result,matrix/workforce/internal/developer.view,matrix/workforce/internal/effect.DispatchResult,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/projectbrain.KindHandoff,matrix/workforce/internal/projectbrain.RecordID,matrix/workforce/internal/projectbrain.Store.Commit,matrix/workforce/internal/projectbrain.Store.View
   ^contains=matrix/workforce/internal/developer.Adapter
+  ^calls=matrix/workforce/internal/effect.Gateway.Execute,matrix/workforce/internal/provider/customer.Adapter.Dispatch,matrix/workforce/internal/provider/financial.Adapter.Dispatch
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.Adapter.Name kind=method
@@ -52,7 +59,9 @@ NODE id=matrix/workforce/internal/developer.Adapter.Name kind=method
   sig=func (adapter *Adapter) Name() string
   doc=Name returns the stable effect-provider identity.
 EDGES
+  references=matrix/workforce/internal/developer.Adapter,matrix/workforce/internal/developer.developerAdapterName
   ^contains=matrix/workforce/internal/developer.Adapter
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/effect.New,matrix/workforce/internal/provider/customer.Adapter.authorize,matrix/workforce/internal/provider/customer.LoadAdapters,matrix/workforce/internal/provider/customer.NewAdapter,matrix/workforce/internal/provider/financial.Adapter.authorize,matrix/workforce/internal/provider/financial.LoadAdapters,matrix/workforce/internal/provider/financial.NewAdapter
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.Adapter.Probe kind=method
@@ -60,14 +69,21 @@ NODE id=matrix/workforce/internal/developer.Adapter.Probe kind=method
   sig=func (adapter *Adapter) Probe(\n	ctx context.Context,\n	operation effect.Operation,\n) (effect.ProbeResult, error)
   doc=Probe performs a read-only authoritative observation for an unresolved\nDeveloper operation.
 EDGES
+  calls=matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.decodeOperationEnvelope,matrix/workforce/internal/developer.developerResult,matrix/workforce/internal/developer.matchEffectGrant,matrix/workforce/internal/developer.operationExternalID,matrix/workforce/internal/developer.probeSourceChanges,matrix/workforce/internal/projectbrain.Store.View
+  references=matrix/workforce/internal/developer.Adapter,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.adapter,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.decodeOperationEnvelope,matrix/workforce/internal/developer.developerResult,matrix/workforce/internal/developer.envelope,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.evidence,matrix/workforce/internal/developer.matchEffectGrant,matrix/workforce/internal/developer.operation,matrix/workforce/internal/developer.operationExternalID,matrix/workforce/internal/developer.outcome,matrix/workforce/internal/developer.probeSourceChanges,matrix/workforce/internal/developer.record,matrix/workforce/internal/developer.result,matrix/workforce/internal/developer.resultErr,matrix/workforce/internal/developer.view,matrix/workforce/internal/effect.DispatchResult,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/effect.ProbeResult,matrix/workforce/internal/projectbrain.Store.View,matrix/workforce/internal/skills.ProbeCompletedOutOfBand,matrix/workforce/internal/skills.ProbeUnchanged,matrix/workforce/internal/skills.ProbeUnknown
   ^contains=matrix/workforce/internal/developer.Adapter
+  ^calls=matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/provider/customer.Adapter.Probe,matrix/workforce/internal/provider/financial.Adapter.Probe
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.Adapter.runVerification kind=method
   digest=b3:5d85875d7cf7726690b2369d44de1740836d6bf22a084b2b1798bbc76e55a176 file=workforce/internal/developer/adapter.go range=266:299 lang=go exported=false byte_range=9325:10425
   sig=func (adapter *Adapter) runVerification(\n	ctx context.Context,\n	root, id string,\n) (verificationResult, error)
 EDGES
+  calls=matrix/workforce/internal/developer.boundedDeveloperOutput.Bytes,matrix/workforce/internal/developer.boundedDeveloperOutput.String,matrix/workforce/internal/developer.hashBytes,matrix/workforce/internal/processisolation.VerificationCommand,matrix/workforce/internal/processisolation.WorkspaceCommand.Close,matrix/workforce/internal/processisolation.WorkspaceCommand.Run
+  references=matrix/workforce/internal/developer.Adapter,matrix/workforce/internal/developer.adapter,matrix/workforce/internal/developer.boundedDeveloperOutput,matrix/workforce/internal/developer.boundedDeveloperOutput.Bytes,matrix/workforce/internal/developer.boundedDeveloperOutput.String,matrix/workforce/internal/developer.cancel,matrix/workforce/internal/developer.command,matrix/workforce/internal/developer.commandSpec,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.exists,matrix/workforce/internal/developer.hashBytes,matrix/workforce/internal/developer.id,matrix/workforce/internal/developer.output,matrix/workforce/internal/developer.root,matrix/workforce/internal/developer.runContext,matrix/workforce/internal/developer.verificationResult,matrix/workforce/internal/processisolation.VerificationCommand,matrix/workforce/internal/processisolation.VerificationSpec,matrix/workforce/internal/processisolation.WorkspaceCommand.Close,matrix/workforce/internal/processisolation.WorkspaceCommand.Run
   ^contains=matrix/workforce/internal/developer.Adapter
+  ^calls=matrix/workforce/internal/developer.Adapter.Dispatch
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.AuditPacket kind=type
@@ -77,6 +93,8 @@ NODE id=matrix/workforce/internal/developer.AuditPacket kind=type
 EDGES
   contains=matrix/workforce/internal/developer.AuditPacket#AssembledAt,matrix/workforce/internal/developer.AuditPacket#BlastRadius,matrix/workforce/internal/developer.AuditPacket#ChangedSource,matrix/workforce/internal/developer.AuditPacket#Graph,matrix/workforce/internal/developer.AuditPacket#Intent,matrix/workforce/internal/developer.AuditPacket#Invariants,matrix/workforce/internal/developer.AuditPacket#ProjectID,matrix/workforce/internal/developer.AuditPacket#SchemaVersion,matrix/workforce/internal/developer.AuditPacket#TestEvidence,matrix/workforce/internal/developer.AuditPacket#Verifier,matrix/workforce/internal/developer.AuditPacket#ViewDigest,matrix/workforce/internal/developer.AuditPacket#WorkspaceID,matrix/workforce/internal/developer.AuditPacket.AttachToVerdict,matrix/workforce/internal/developer.AuditPacket.Digest,matrix/workforce/internal/developer.AuditPacket.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.Intent,matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.VerificationProcedureRef,matrix/workforce/internal/contracts.WorkspaceID,matrix/workforce/internal/developer.ChangedFile,matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.GraphSnapshot,matrix/workforce/internal/projectbrain.ImpactNode
+  ^references=matrix/workforce/internal/developer.AuditPacket.AttachToVerdict,matrix/workforce/internal/developer.AuditPacket.Digest,matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/developer.Auditor.Run
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.AuditPacket#AssembledAt kind=field
@@ -156,7 +174,11 @@ NODE id=matrix/workforce/internal/developer.AuditPacket.AttachToVerdict kind=met
   sig=func (packet AuditPacket) AttachToVerdict(\n	verdict contracts.VerdictPacket,\n	keyID string,\n	privateKey ed25519.PrivateKey,\n) (contracts.VerdictPacket, error)
   doc=AttachToVerdict binds this Project Brain and source projection into the real\nVerdictPacket consumed by workforce-auditor.
 EDGES
+  calls=matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/contracts.SignDeveloperAuditEvidence,matrix/workforce/internal/contracts.VerdictPacket.Validate,matrix/workforce/internal/developer.AuditPacket.Validate
+  references=matrix/workforce/internal/contracts.DeveloperAuditEvidence,matrix/workforce/internal/contracts.DeveloperChangedFile,matrix/workforce/internal/contracts.DeveloperGraphFile,matrix/workforce/internal/contracts.DeveloperImpactNode,matrix/workforce/internal/contracts.DeveloperInvariantRef,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SignDeveloperAuditEvidence,matrix/workforce/internal/contracts.VerdictPacket,matrix/workforce/internal/contracts.VerdictPacket.Validate,matrix/workforce/internal/developer.AuditPacket,matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.evidence,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.invariant,matrix/workforce/internal/developer.keyID,matrix/workforce/internal/developer.node,matrix/workforce/internal/developer.packet,matrix/workforce/internal/developer.privateKey,matrix/workforce/internal/developer.recordHash,matrix/workforce/internal/developer.verdict
   ^contains=matrix/workforce/internal/developer.AuditPacket
+  ^calls=matrix/workforce/internal/developer.Auditor.Run
+  ^references=matrix/workforce/internal/developer.Auditor.Run
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.AuditPacket.Digest kind=method
@@ -164,6 +186,8 @@ NODE id=matrix/workforce/internal/developer.AuditPacket.Digest kind=method
   sig=func (packet AuditPacket) Digest() (contracts.ContentHash, error)
   doc=Digest returns the canonical closed-packet identity without retaining state.
 EDGES
+  calls=matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/developer.AuditPacket.Validate
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/developer.AuditPacket,matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.packet
   ^contains=matrix/workforce/internal/developer.AuditPacket
   ^defines=matrix/workforce/internal/developer/types.go
 
@@ -172,7 +196,11 @@ NODE id=matrix/workforce/internal/developer.AuditPacket.Validate kind=method
   sig=func (packet AuditPacket) Validate() error
   doc=Validate enforces the exact memoryless Auditor boundary.
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/contracts.Intent.Validate,matrix/workforce/internal/contracts.VerificationProcedureRef.Validate,matrix/workforce/internal/developer.relativePath,matrix/workforce/internal/developer.token,matrix/workforce/internal/projectbrain.EngineeringRecord.ContentExpired,matrix/workforce/internal/projectbrain.EngineeringRecord.Validate,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/contracts.Intent.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.VerificationProcedureRef.Validate,matrix/workforce/internal/developer.AuditPacket,matrix/workforce/internal/developer.changed,matrix/workforce/internal/developer.changedPaths,matrix/workforce/internal/developer.current,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.evidence,matrix/workforce/internal/developer.exists,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.graphFiles,matrix/workforce/internal/developer.invariant,matrix/workforce/internal/developer.node,matrix/workforce/internal/developer.packet,matrix/workforce/internal/developer.path,matrix/workforce/internal/developer.relativePath,matrix/workforce/internal/developer.token,matrix/workforce/internal/projectbrain.EngineeringRecord.ContentExpired,matrix/workforce/internal/projectbrain.EngineeringRecord.Validate,matrix/workforce/internal/projectbrain.GraphFile,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate,matrix/workforce/internal/projectbrain.KindInvariant
   ^contains=matrix/workforce/internal/developer.AuditPacket
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/developer.AuditPacket.AttachToVerdict,matrix/workforce/internal/developer.AuditPacket.Digest
+  ^references=matrix/workforce/internal/developer.AuditPacket.AttachToVerdict,matrix/workforce/internal/developer.AuditPacket.Digest
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.Auditor kind=type
@@ -181,6 +209,8 @@ NODE id=matrix/workforce/internal/developer.Auditor kind=type
   doc=Auditor is the workforced-owned Developer review boundary. It assembles and\nsigns the exact current Developer evidence, then invokes the same fresh\nworkforce-auditor process used for every other verdict.
 EDGES
   contains=matrix/workforce/internal/developer.Auditor#keyID,matrix/workforce/internal/developer.Auditor#privateKey,matrix/workforce/internal/developer.Auditor#runner,matrix/workforce/internal/developer.Auditor.Run
+  references=matrix/workforce/internal/audit.Runner
+  ^references=matrix/workforce/internal/developer.Auditor.Run,matrix/workforce/internal/developer.NewAuditor
   ^defines=matrix/workforce/internal/developer/auditor.go
 
 NODE id=matrix/workforce/internal/developer.Auditor#keyID kind=field
@@ -206,6 +236,8 @@ NODE id=matrix/workforce/internal/developer.Auditor.Run kind=method
   sig=func (dispatcher *Auditor) Run(\n	ctx context.Context,\n	base contracts.VerdictPacket,\n	packet AuditPacket,\n) (audit.Decision, error)
   doc=Run signs the closed Developer extension and executes a fresh isolated\nAuditor process. No Project Brain store, transcript, or prior verdict crosses\nthis boundary.
 EDGES
+  calls=matrix/workforce/internal/audit.Runner.Run,matrix/workforce/internal/developer.AuditPacket.AttachToVerdict
+  references=matrix/workforce/internal/audit.Decision,matrix/workforce/internal/audit.Runner.Run,matrix/workforce/internal/contracts.VerdictPacket,matrix/workforce/internal/developer.AuditPacket,matrix/workforce/internal/developer.AuditPacket.AttachToVerdict,matrix/workforce/internal/developer.Auditor,matrix/workforce/internal/developer.base,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.dispatcher,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.packet,matrix/workforce/internal/developer.verdict
   ^contains=matrix/workforce/internal/developer.Auditor
   ^defines=matrix/workforce/internal/developer/auditor.go
 
@@ -215,6 +247,8 @@ NODE id=matrix/workforce/internal/developer.Authority kind=type
   doc=Authority is the only Developer change-scope acquisition and authorization path.
 EDGES
   contains=matrix/workforce/internal/developer.Authority#brain,matrix/workforce/internal/developer.Authority#graph,matrix/workforce/internal/developer.Authority#leases,matrix/workforce/internal/developer.Authority#now,matrix/workforce/internal/developer.Authority#pool,matrix/workforce/internal/developer.Authority#tenantID,matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/developer.Authority.appendCommittedScopeEvent,matrix/workforce/internal/developer.Authority.appendScopeEvent,matrix/workforce/internal/developer.Authority.claim,matrix/workforce/internal/developer.Authority.currentTime,matrix/workforce/internal/developer.Authority.latestFileHash,matrix/workforce/internal/developer.Authority.openBoundScope,matrix/workforce/internal/developer.Authority.requireTaskReady,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.Authority.resolveCoordination
+  references=matrix/workforce/internal/lease.Store,matrix/workforce/internal/projectbrain.CodeGraph,matrix/workforce/internal/projectbrain.Store
+  ^references=matrix/workforce/internal/developer.Adapter,matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/developer.Authority.appendCommittedScopeEvent,matrix/workforce/internal/developer.Authority.appendScopeEvent,matrix/workforce/internal/developer.Authority.claim,matrix/workforce/internal/developer.Authority.currentTime,matrix/workforce/internal/developer.Authority.latestFileHash,matrix/workforce/internal/developer.Authority.openBoundScope,matrix/workforce/internal/developer.Authority.requireTaskReady,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.NewAdapter,matrix/workforce/internal/developer.NewAuthority,matrix/workforce/internal/wakeruntime.Runner
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Authority#brain kind=field
@@ -258,6 +292,8 @@ NODE id=matrix/workforce/internal/developer.Authority.Acquire kind=method
   sig=func (authority *Authority) Acquire(\n	ctx context.Context,\n	request lease.Request,\n	scope ScopeRequest,\n) (Grant, error)
   doc=Acquire resolves live CodeGraph state, acquires a fenced wake lease, and then\natomically claims the non-conflicting Developer resource set.
 EDGES
+  calls=matrix/workforce/internal/developer.Authority.claim,matrix/workforce/internal/developer.Authority.currentTime,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.ScopeRequest.Validate,matrix/workforce/internal/developer.canonicalWorkspaceRoot,matrix/workforce/internal/lease.Store.Acquire,matrix/workforce/internal/lease.Store.Cancel,matrix/workforce/internal/projectbrain.Store.AuthorizeCapability
+  references=matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.Authority.claim,matrix/workforce/internal/developer.Authority.currentTime,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.Grant,matrix/workforce/internal/developer.ScopeRequest,matrix/workforce/internal/developer.ScopeRequest.Validate,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.cancelErr,matrix/workforce/internal/developer.canonicalRoot,matrix/workforce/internal/developer.canonicalWorkspaceRoot,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.leaseGrant,matrix/workforce/internal/developer.now,matrix/workforce/internal/developer.request,matrix/workforce/internal/developer.resolved,matrix/workforce/internal/developer.scope,matrix/workforce/internal/lease.Request,matrix/workforce/internal/lease.Store.Acquire,matrix/workforce/internal/lease.Store.Cancel,matrix/workforce/internal/projectbrain.CapabilityChangeScope,matrix/workforce/internal/projectbrain.Store.AuthorizeCapability
   ^contains=matrix/workforce/internal/developer.Authority
   ^defines=matrix/workforce/internal/developer/authority.go
 
@@ -266,7 +302,11 @@ NODE id=matrix/workforce/internal/developer.Authority.ApplyScopedChanges kind=me
   sig=func (authority *Authority) ApplyScopedChanges(\n	ctx context.Context,\n	grant Grant,\n	operation string,\n	changes []SourceChange,\n) ([]ChangedFile, error)
   doc=ApplyScopedChanges is the only source-mutation path owned by Developer\nauthority. It rechecks the signed capability, live fence, durable exact\nscope, dependency state, and current scoped bytes immediately before\natomically replacing regular files. Successful and failed attempts append\nimmutable scope events.
 EDGES
+  calls=matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.appendCommittedScopeEvent,matrix/workforce/internal/developer.Authority.appendScopeEvent,matrix/workforce/internal/developer.Authority.latestFileHash,matrix/workforce/internal/developer.SourceChange.Validate,matrix/workforce/internal/developer.applySourceFiles,matrix/workforce/internal/developer.hashBytes,matrix/workforce/internal/developer.hashChangedEvidence
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.appendCommittedScopeEvent,matrix/workforce/internal/developer.Authority.appendScopeEvent,matrix/workforce/internal/developer.Authority.latestFileHash,matrix/workforce/internal/developer.ChangedFile,matrix/workforce/internal/developer.ErrSourceDrift,matrix/workforce/internal/developer.Grant,matrix/workforce/internal/developer.SourceChange,matrix/workforce/internal/developer.SourceChange.Validate,matrix/workforce/internal/developer.allowed,matrix/workforce/internal/developer.applySourceFiles,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.change,matrix/workforce/internal/developer.changes,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.current,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.eventErr,matrix/workforce/internal/developer.evidence,matrix/workforce/internal/developer.evidenceHash,matrix/workforce/internal/developer.exists,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.grant,matrix/workforce/internal/developer.hashBytes,matrix/workforce/internal/developer.hashChangedEvidence,matrix/workforce/internal/developer.maxDeveloperChangeBytes,matrix/workforce/internal/developer.operation,matrix/workforce/internal/developer.original,matrix/workforce/internal/developer.seen,matrix/workforce/internal/developer.stateErr,matrix/workforce/internal/developer.total,matrix/workforce/internal/projectbrain.GraphFile
   ^contains=matrix/workforce/internal/developer.Authority
+  ^calls=matrix/workforce/internal/developer.Adapter.Dispatch
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Authority.Authorize kind=method
@@ -274,77 +314,120 @@ NODE id=matrix/workforce/internal/developer.Authority.Authorize kind=method
   sig=func (authority *Authority) Authorize(\n	ctx context.Context,\n	grant Grant,\n) error
   doc=Authorize proves both the generic fence and exact Developer source scope are current.
 EDGES
+  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/developer.Authority.currentTime,matrix/workforce/internal/developer.Authority.latestFileHash,matrix/workforce/internal/developer.Authority.requireTaskReady,matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.graphFilePaths,matrix/workforce/internal/developer.hashScopedFile,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/projectbrain.Store.AuthorizeCapability
+  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.Authority.currentTime,matrix/workforce/internal/developer.Authority.latestFileHash,matrix/workforce/internal/developer.Authority.requireTaskReady,matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.ErrConflict,matrix/workforce/internal/developer.ErrSourceDrift,matrix/workforce/internal/developer.Grant,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.ScopeRequest,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.canonical,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.current,matrix/workforce/internal/developer.currentPlan,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.expected,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.grant,matrix/workforce/internal/developer.graphFilePaths,matrix/workforce/internal/developer.hashErr,matrix/workforce/internal/developer.hashScopedFile,matrix/workforce/internal/developer.now,matrix/workforce/internal/developer.payload,matrix/workforce/internal/developer.planErr,matrix/workforce/internal/developer.stateErr,matrix/workforce/internal/developer.stored,matrix/workforce/internal/lease.ErrStaleFence,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/projectbrain.CapabilityChangeScope,matrix/workforce/internal/projectbrain.Store.AuthorizeCapability
   ^contains=matrix/workforce/internal/developer.Authority
+  ^calls=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.Authority.Bind
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.Authority.Bind
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Authority.Bind kind=method
   digest=b3:e9e5a61dc1a4c2c3652c768e81e13080282d68261602d925495b6796abbc3b25 file=workforce/internal/developer/authority.go range=118:185 lang=go exported=true byte_range=3507:5395
   sig=func (authority *Authority) Bind(\n	ctx context.Context,\n	leaseGrant lease.Grant,\n	scope ScopeRequest,\n) (Grant, error)
 EDGES
+  calls=matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.claim,matrix/workforce/internal/developer.Authority.currentTime,matrix/workforce/internal/developer.Authority.openBoundScope,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.ScopeRequest.Validate,matrix/workforce/internal/developer.canonicalWorkspaceRoot,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/projectbrain.Store.AuthorizeCapability
+  references=matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.claim,matrix/workforce/internal/developer.Authority.currentTime,matrix/workforce/internal/developer.Authority.openBoundScope,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.Grant,matrix/workforce/internal/developer.ScopeRequest,matrix/workforce/internal/developer.ScopeRequest.Validate,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.canonicalRoot,matrix/workforce/internal/developer.canonicalWorkspaceRoot,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.current,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.existing,matrix/workforce/internal/developer.found,matrix/workforce/internal/developer.grant,matrix/workforce/internal/developer.leaseGrant,matrix/workforce/internal/developer.now,matrix/workforce/internal/developer.resolved,matrix/workforce/internal/developer.scope,matrix/workforce/internal/lease.ErrStaleFence,matrix/workforce/internal/lease.Grant,matrix/workforce/internal/lease.Store.Authorize,matrix/workforce/internal/projectbrain.CapabilityChangeScope,matrix/workforce/internal/projectbrain.Store.AuthorizeCapability
   ^contains=matrix/workforce/internal/developer.Authority
+  ^calls=matrix/workforce/internal/wakeruntime.Runner.bindRuntimeGrant
+  ^references=matrix/workforce/internal/wakeruntime.Runner.bindRuntimeGrant
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Authority.appendCommittedScopeEvent kind=method
   digest=b3:527f664ac25177c1dab7782883bb0ff16c3d4e2e8e53a0fd716a06ce6a9622dd file=workforce/internal/developer/authority.go range=415:462 lang=go exported=false byte_range=12695:14107
   sig=func (authority *Authority) appendCommittedScopeEvent(\n	ctx context.Context,\n	grant Grant,\n	operation string,\n	evidenceHash contracts.ContentHash,\n	files []ChangedFile,\n) error
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/developer.Authority.currentTime
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.Authority.currentTime,matrix/workforce/internal/developer.ChangedFile,matrix/workforce/internal/developer.Grant,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.eventID,matrix/workforce/internal/developer.evidenceHash,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.files,matrix/workforce/internal/developer.grant,matrix/workforce/internal/developer.now,matrix/workforce/internal/developer.operation,matrix/workforce/internal/developer.scopeHash,matrix/workforce/internal/developer.tx
   ^contains=matrix/workforce/internal/developer.Authority
+  ^calls=matrix/workforce/internal/developer.Authority.ApplyScopedChanges
+  ^references=matrix/workforce/internal/developer.Authority.ApplyScopedChanges
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Authority.appendScopeEvent kind=method
   digest=b3:cb6377bf328405ff048c6e8cda7ede801a0deb3391664c00906c8b7b6dd0a0bc file=workforce/internal/developer/authority.go range=490:524 lang=go exported=false byte_range=14899:15842
   sig=func (authority *Authority) appendScopeEvent(\n	ctx context.Context,\n	grant Grant,\n	eventKind, operation string,\n	evidence contracts.ContentHash,\n	reason string,\n) error
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/developer.Authority.currentTime
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.Authority.currentTime,matrix/workforce/internal/developer.Grant,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.eventKind,matrix/workforce/internal/developer.evidence,matrix/workforce/internal/developer.evidenceDigest,matrix/workforce/internal/developer.grant,matrix/workforce/internal/developer.now,matrix/workforce/internal/developer.operation,matrix/workforce/internal/developer.reason,matrix/workforce/internal/developer.reasonCode,matrix/workforce/internal/developer.scopeHash
   ^contains=matrix/workforce/internal/developer.Authority
+  ^calls=matrix/workforce/internal/developer.Authority.ApplyScopedChanges
+  ^references=matrix/workforce/internal/developer.Authority.ApplyScopedChanges
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Authority.claim kind=method
   digest=b3:349d7c15deb72da7cc2502fd3f50fa0c0ca36292e5de5059ddf9cc2f838b64a1 file=workforce/internal/developer/authority.go range=602:694 lang=go exported=false byte_range=18516:21736
   sig=func (authority *Authority) claim(\n	ctx context.Context,\n	grant lease.Grant,\n	scope ResolvedScope,\n	now time.Time,\n) error
 EDGES
+  calls=matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/developer.coordinationAllows,matrix/workforce/internal/developer.optionalPlan,matrix/workforce/internal/developer.requireTaskReadyTx,matrix/workforce/internal/developer.scopeClaims
+  references=matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.ErrConflict,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.claim,matrix/workforce/internal/developer.claims,matrix/workforce/internal/developer.conflictingLease,matrix/workforce/internal/developer.conflictingPayload,matrix/workforce/internal/developer.coordinationAllows,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.decodeErr,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.existing,matrix/workforce/internal/developer.grant,matrix/workforce/internal/developer.lock,matrix/workforce/internal/developer.now,matrix/workforce/internal/developer.optionalPlan,matrix/workforce/internal/developer.requireTaskReadyTx,matrix/workforce/internal/developer.scope,matrix/workforce/internal/developer.scopeClaims,matrix/workforce/internal/developer.scopeHash,matrix/workforce/internal/developer.scopePayload,matrix/workforce/internal/developer.tx,matrix/workforce/internal/lease.Grant
   ^contains=matrix/workforce/internal/developer.Authority
+  ^calls=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Bind
+  ^references=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Bind
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Authority.currentTime kind=method
   digest=b3:6857b881040b46d02a2af5c017d42c7fcf7a3acf629ed7d99799a4079ba8d784 file=workforce/internal/developer/authority.go range=1322:1328 lang=go exported=false byte_range=39587:39822
   sig=func (authority *Authority) currentTime() (time.Time, error)
 EDGES
+  references=matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.now
   ^contains=matrix/workforce/internal/developer.Authority
+  ^calls=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/developer.Authority.appendCommittedScopeEvent,matrix/workforce/internal/developer.Authority.appendScopeEvent,matrix/workforce/internal/developer.Authority.resolve
+  ^references=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/developer.Authority.appendCommittedScopeEvent,matrix/workforce/internal/developer.Authority.appendScopeEvent,matrix/workforce/internal/developer.Authority.resolve
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Authority.latestFileHash kind=method
   digest=b3:db1a5f74749981660a6f6bf025db734c167efccbacf0d5210a3a23e45a97f307 file=workforce/internal/developer/authority.go range=464:488 lang=go exported=false byte_range=14109:14897
   sig=func (authority *Authority) latestFileHash(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	leaseID contracts.LeaseID,\n	file projectbrain.GraphFile,\n) (contracts.ContentHash, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.current,matrix/workforce/internal/developer.digest,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.leaseID,matrix/workforce/internal/developer.organizationID,matrix/workforce/internal/projectbrain.GraphFile
   ^contains=matrix/workforce/internal/developer.Authority
+  ^calls=matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.Authority.Authorize
+  ^references=matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.Authority.Authorize
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Authority.openBoundScope kind=method
   digest=b3:7a2336f02bde87767b56d7a30d6305fde95eeff6f3b9cd8f68316a2fc25fde60 file=workforce/internal/developer/authority.go range=187:222 lang=go exported=false byte_range=5397:6531
   sig=func (authority *Authority) openBoundScope(\n	ctx context.Context,\n	leaseGrant lease.Grant,\n	request ScopeRequest,\n) (ResolvedScope, bool, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/developer.graphFilePaths,matrix/workforce/internal/developer.sameStrings
+  references=matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.ErrConflict,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.ScopeRequest,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.existing,matrix/workforce/internal/developer.graphFilePaths,matrix/workforce/internal/developer.leaseGrant,matrix/workforce/internal/developer.payload,matrix/workforce/internal/developer.request,matrix/workforce/internal/developer.sameStrings,matrix/workforce/internal/lease.Grant
   ^contains=matrix/workforce/internal/developer.Authority
+  ^calls=matrix/workforce/internal/developer.Authority.Bind
+  ^references=matrix/workforce/internal/developer.Authority.Bind
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Authority.requireTaskReady kind=method
   digest=b3:c3478d3438f428250f39df7c187958152528c4af98011888bbe73d71497f3f95 file=workforce/internal/developer/authority.go range=696:712 lang=go exported=false byte_range=21738:22206
   sig=func (authority *Authority) requireTaskReady(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	nodeID dependency.NodeID,\n) error
 EDGES
+  calls=matrix/workforce/internal/developer.requireTaskReadyTx
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.nodeID,matrix/workforce/internal/developer.organizationID,matrix/workforce/internal/developer.requireTaskReadyTx,matrix/workforce/internal/developer.tx
   ^contains=matrix/workforce/internal/developer.Authority
+  ^calls=matrix/workforce/internal/developer.Authority.Authorize
+  ^references=matrix/workforce/internal/developer.Authority.Authorize
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Authority.resolve kind=method
   digest=b3:d2b92effceec7582e17c2041f7bbb225412963dd396ed5159a25dc497e93b2a4 file=workforce/internal/developer/authority.go range=526:600 lang=go exported=false byte_range=15844:18514
   sig=func (authority *Authority) resolve(\n	ctx context.Context,\n	request ScopeRequest,\n	now time.Time,\n) (ResolvedScope, error)
 EDGES
+  calls=matrix/workforce/internal/developer.Authority.currentTime,matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.coordinationCoversScope,matrix/workforce/internal/developer.sortedUnique,matrix/workforce/internal/developer.uniqueImpact,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles,matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected
+  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.Authority.currentTime,matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.ErrConflict,matrix/workforce/internal/developer.ErrSourceDrift,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.ScopeRequest,matrix/workforce/internal/developer.affected,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.blast,matrix/workforce/internal/developer.byPath,matrix/workforce/internal/developer.coordination,matrix/workforce/internal/developer.coordinationCoversScope,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.exists,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.files,matrix/workforce/internal/developer.impact,matrix/workforce/internal/developer.left,matrix/workforce/internal/developer.node,matrix/workforce/internal/developer.path,matrix/workforce/internal/developer.request,matrix/workforce/internal/developer.resolved,matrix/workforce/internal/developer.resolvedAt,matrix/workforce/internal/developer.right,matrix/workforce/internal/developer.sortedUnique,matrix/workforce/internal/developer.source,matrix/workforce/internal/developer.sourcePaths,matrix/workforce/internal/developer.symbol,matrix/workforce/internal/developer.uniqueImpact,matrix/workforce/internal/projectbrain.CodeGraph.CaptureFiles,matrix/workforce/internal/projectbrain.CodeGraph.Impact,matrix/workforce/internal/projectbrain.CodeGraph.TestsAffected,matrix/workforce/internal/projectbrain.GraphFile,matrix/workforce/internal/projectbrain.ImpactNode
   ^contains=matrix/workforce/internal/developer.Authority
+  ^calls=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Bind
+  ^references=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Bind
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Authority.resolveCoordination kind=method
   digest=b3:33812ce7d430858e846233febbff1e79367501ba42dd61595051ba6c82d20e8d file=workforce/internal/developer/authority.go range=755:830 lang=go exported=false byte_range=23364:25713
   sig=func (authority *Authority) resolveCoordination(\n	ctx context.Context,\n	request ScopeRequest,\n	source projectbrain.GraphSnapshot,\n) (*CoordinationPlan, error)
 EDGES
+  calls=matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/developer.CoordinationPlan.Validate,matrix/workforce/internal/developer.containsNode,matrix/workforce/internal/developer.containsSeat,matrix/workforce/internal/developer.coordinationSourceCurrent,matrix/workforce/internal/developer.sortedUnique,matrix/workforce/internal/developer.uniqueNodeIDs,matrix/workforce/internal/developer.uniqueSeatIDs,matrix/workforce/internal/projectbrain.Store.View
+  references=matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.CoordinationPlan,matrix/workforce/internal/developer.CoordinationPlan.Validate,matrix/workforce/internal/developer.ErrConflict,matrix/workforce/internal/developer.ScopeRequest,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.claim,matrix/workforce/internal/developer.containsNode,matrix/workforce/internal/developer.containsSeat,matrix/workforce/internal/developer.coordinationSourceCurrent,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.digest,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.index,matrix/workforce/internal/developer.plan,matrix/workforce/internal/developer.record,matrix/workforce/internal/developer.request,matrix/workforce/internal/developer.seatPrefix,matrix/workforce/internal/developer.selected,matrix/workforce/internal/developer.sortedUnique,matrix/workforce/internal/developer.source,matrix/workforce/internal/developer.statement,matrix/workforce/internal/developer.taskPrefix,matrix/workforce/internal/developer.uniqueNodeIDs,matrix/workforce/internal/developer.uniqueSeatIDs,matrix/workforce/internal/developer.view,matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.GraphSnapshot,matrix/workforce/internal/projectbrain.KindPlan,matrix/workforce/internal/projectbrain.Store.View
   ^contains=matrix/workforce/internal/developer.Authority
+  ^calls=matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.resolve
+  ^references=matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.resolve
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.ChangedFile kind=type
@@ -353,6 +436,8 @@ NODE id=matrix/workforce/internal/developer.ChangedFile kind=type
   doc=ChangedFile is current source evidence delivered to a memoryless Auditor.
 EDGES
   contains=matrix/workforce/internal/developer.ChangedFile#AfterHash,matrix/workforce/internal/developer.ChangedFile#BeforeHash,matrix/workforce/internal/developer.ChangedFile#Path
+  references=matrix/workforce/internal/contracts.ContentHash
+  ^references=matrix/workforce/internal/developer.AuditPacket,matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.Authority.appendCommittedScopeEvent,matrix/workforce/internal/developer.applySourceFiles,matrix/workforce/internal/developer.hashChangedEvidence,matrix/workforce/internal/developer.inspectScopedSource,matrix/workforce/internal/developer.probeSourceChanges
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.ChangedFile#AfterHash kind=field
@@ -380,6 +465,8 @@ NODE id=matrix/workforce/internal/developer.CoordinationPlan kind=type
 EDGES
   contains=matrix/workforce/internal/developer.CoordinationPlan#Digest,matrix/workforce/internal/developer.CoordinationPlan#ExpiresAt,matrix/workforce/internal/developer.CoordinationPlan#Files,matrix/workforce/internal/developer.CoordinationPlan#RecordID,matrix/workforce/internal/developer.CoordinationPlan#Seats,matrix/workforce/internal/developer.CoordinationPlan#Tasks,matrix/workforce/internal/developer.CoordinationPlan.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/projectbrain.RecordID
+  ^references=matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.CoordinationPlan.Validate,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.coordinationCoversScope
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.CoordinationPlan#Digest kind=field
@@ -423,7 +510,11 @@ NODE id=matrix/workforce/internal/developer.CoordinationPlan.Validate kind=metho
   sig=func (plan CoordinationPlan) Validate() error
   doc=Validate requires explicit bounded participants and source resources.
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/developer.token,matrix/workforce/internal/developer.uniqueBounded
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/developer.CoordinationPlan,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.index,matrix/workforce/internal/developer.plan,matrix/workforce/internal/developer.seat,matrix/workforce/internal/developer.seatValues,matrix/workforce/internal/developer.task,matrix/workforce/internal/developer.taskValues,matrix/workforce/internal/developer.token,matrix/workforce/internal/developer.uniqueBounded
   ^contains=matrix/workforce/internal/developer.CoordinationPlan
+  ^calls=matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.ResolvedScope.Validate
+  ^references=matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.ResolvedScope.Validate
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.ErrConflict kind=var
@@ -431,6 +522,7 @@ NODE id=matrix/workforce/internal/developer.ErrConflict kind=var
   sig=error
   doc=ErrConflict reports an overlapping active Developer change scope.
 EDGES
+  ^references=matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.claim,matrix/workforce/internal/developer.Authority.openBoundScope,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.Authority.resolveCoordination
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.ErrDependency kind=var
@@ -438,6 +530,7 @@ NODE id=matrix/workforce/internal/developer.ErrDependency kind=var
   sig=error
   doc=ErrDependency reports a task whose durable work-graph prerequisites are not ready.
 EDGES
+  ^references=matrix/workforce/internal/developer.requireTaskReadyTx
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.ErrSourceDrift kind=var
@@ -445,6 +538,7 @@ NODE id=matrix/workforce/internal/developer.ErrSourceDrift kind=var
   sig=error
   doc=ErrSourceDrift reports a scope whose source changed after acquisition.
 EDGES
+  ^references=matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.applySourceFiles,matrix/workforce/internal/developer.inspectScopedSource
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.Grant kind=type
@@ -453,6 +547,8 @@ NODE id=matrix/workforce/internal/developer.Grant kind=type
   doc=Grant combines the generic fenced wake lease with its Developer-only change scope.
 EDGES
   contains=matrix/workforce/internal/developer.Grant#Lease,matrix/workforce/internal/developer.Grant#Scope
+  references=matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/lease.Grant
+  ^references=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/developer.Authority.appendCommittedScopeEvent,matrix/workforce/internal/developer.Authority.appendScopeEvent,matrix/workforce/internal/developer.OperationEnvelope,matrix/workforce/internal/developer.matchEffectGrant,matrix/workforce/internal/productcapability.DeveloperExecutionInput
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.Grant#Lease kind=field
@@ -472,6 +568,10 @@ NODE id=matrix/workforce/internal/developer.NewAdapter kind=func
   sig=func NewAdapter(\n	authority *Authority,\n	brain *projectbrain.Store,\n	verifications []VerificationCommand,\n	now func() time.Time,\n) (*Adapter, error)
   doc=NewAdapter constructs the executable Developer provider boundary.
 EDGES
+  calls=matrix/workforce/internal/developer.validateVerificationCommand
+  references=matrix/workforce/internal/developer.Adapter,matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.VerificationCommand,matrix/workforce/internal/developer.authority,matrix/workforce/internal/developer.brain,matrix/workforce/internal/developer.command,matrix/workforce/internal/developer.commands,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.exists,matrix/workforce/internal/developer.now,matrix/workforce/internal/developer.validateVerificationCommand,matrix/workforce/internal/developer.verifications,matrix/workforce/internal/projectbrain.Store
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.NewAuditor kind=func
@@ -479,6 +579,7 @@ NODE id=matrix/workforce/internal/developer.NewAuditor kind=func
   sig=func NewAuditor(\n	runner audit.Runner,\n	keyID string,\n	privateKey ed25519.PrivateKey,\n) (*Auditor, error)
   doc=NewAuditor constructs a Developer Auditor dispatcher bound to one trusted\nkernel evidence-signing authority.
 EDGES
+  references=matrix/workforce/internal/audit.Runner,matrix/workforce/internal/developer.Auditor,matrix/workforce/internal/developer.keyID,matrix/workforce/internal/developer.privateKey,matrix/workforce/internal/developer.runner
   ^defines=matrix/workforce/internal/developer/auditor.go
 
 NODE id=matrix/workforce/internal/developer.NewAuthority kind=func
@@ -486,6 +587,9 @@ NODE id=matrix/workforce/internal/developer.NewAuthority kind=func
   sig=func NewAuthority(\n	pool *pgxpool.Pool,\n	leases *lease.Store,\n	graph *projectbrain.CodeGraph,\n	brain *projectbrain.Store,\n	tenantID string,\n	now func() time.Time,\n) (*Authority, error)
   doc=NewAuthority constructs a fail-closed Developer authority.
 EDGES
+  references=matrix/workforce/internal/developer.Authority,matrix/workforce/internal/developer.brain,matrix/workforce/internal/developer.graph,matrix/workforce/internal/developer.leases,matrix/workforce/internal/developer.now,matrix/workforce/internal/developer.pool,matrix/workforce/internal/developer.tenantID,matrix/workforce/internal/lease.Store,matrix/workforce/internal/projectbrain.CodeGraph,matrix/workforce/internal/projectbrain.Store
+  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.OperationEnvelope kind=type
@@ -494,6 +598,8 @@ NODE id=matrix/workforce/internal/developer.OperationEnvelope kind=type
   doc=OperationEnvelope is the typed input accepted by every executable Developer\nskill operation. The generic effect identity must match Grant before any\noperation can read or mutate the workspace.
 EDGES
   contains=matrix/workforce/internal/developer.OperationEnvelope#BrainGrant,matrix/workforce/internal/developer.OperationEnvelope#Changes,matrix/workforce/internal/developer.OperationEnvelope#Grant,matrix/workforce/internal/developer.OperationEnvelope#ProbeGrant,matrix/workforce/internal/developer.OperationEnvelope#Record,matrix/workforce/internal/developer.OperationEnvelope#SchemaVersion,matrix/workforce/internal/developer.OperationEnvelope#Verification
+  references=matrix/workforce/internal/developer.Grant,matrix/workforce/internal/developer.SourceChange,matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.EngineeringRecord
+  ^references=matrix/workforce/internal/developer.decodeOperationEnvelope
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.OperationEnvelope#BrainGrant kind=field
@@ -545,6 +651,8 @@ NODE id=matrix/workforce/internal/developer.ResolvedScope kind=type
 EDGES
   contains=matrix/workforce/internal/developer.ResolvedScope#AffectedTests,matrix/workforce/internal/developer.ResolvedScope#BlastRadius,matrix/workforce/internal/developer.ResolvedScope#Capability,matrix/workforce/internal/developer.ResolvedScope#Coordination,matrix/workforce/internal/developer.ResolvedScope#CoordinationGrant,matrix/workforce/internal/developer.ResolvedScope#CoordinationPlanID,matrix/workforce/internal/developer.ResolvedScope#Files,matrix/workforce/internal/developer.ResolvedScope#ProjectID,matrix/workforce/internal/developer.ResolvedScope#ResolvedAt,matrix/workforce/internal/developer.ResolvedScope#SchemaVersion,matrix/workforce/internal/developer.ResolvedScope#Source,matrix/workforce/internal/developer.ResolvedScope#Symbols,matrix/workforce/internal/developer.ResolvedScope#TaskNodeID,matrix/workforce/internal/developer.ResolvedScope#WorkspaceID,matrix/workforce/internal/developer.ResolvedScope#WorkspaceRoot,matrix/workforce/internal/developer.ResolvedScope.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.WorkspaceID,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/developer.CoordinationPlan,matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.GraphFile,matrix/workforce/internal/projectbrain.GraphSnapshot,matrix/workforce/internal/projectbrain.ImpactNode,matrix/workforce/internal/projectbrain.RecordID
+  ^references=matrix/workforce/internal/developer.Authority.claim,matrix/workforce/internal/developer.Authority.openBoundScope,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.Grant,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.coordinationAllows,matrix/workforce/internal/developer.coordinationCoversScope,matrix/workforce/internal/developer.inspectScopedSource,matrix/workforce/internal/developer.scopeClaims,matrix/workforce/internal/productcapability.scopesOverlap
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.ResolvedScope#AffectedTests kind=field
@@ -642,7 +750,11 @@ NODE id=matrix/workforce/internal/developer.ResolvedScope.Validate kind=method
   sig=func (scope ResolvedScope) Validate() error
   doc=Validate enforces a bounded, content-addressed current change projection.
 EDGES
+  calls=matrix/workforce/internal/developer.CoordinationPlan.Validate,matrix/workforce/internal/developer.relativePath,matrix/workforce/internal/developer.token,matrix/workforce/internal/developer.uniqueBounded,matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate
+  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/developer.CoordinationPlan.Validate,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.current,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.exists,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.node,matrix/workforce/internal/developer.relativePath,matrix/workforce/internal/developer.scope,matrix/workforce/internal/developer.sourceFiles,matrix/workforce/internal/developer.test,matrix/workforce/internal/developer.token,matrix/workforce/internal/developer.uniqueBounded,matrix/workforce/internal/projectbrain.CapabilityChangeScope,matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.GraphFile,matrix/workforce/internal/projectbrain.GraphSnapshot.Validate
   ^contains=matrix/workforce/internal/developer.ResolvedScope
+  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/productcapability.DeveloperExecutionInput.ValidateAt
+  ^references=matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/productcapability.DeveloperExecutionInput.ValidateAt
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.ScopeRequest kind=type
@@ -652,6 +764,8 @@ NODE id=matrix/workforce/internal/developer.ScopeRequest kind=type
 EDGES
   contains=matrix/workforce/internal/developer.ScopeRequest#Capability,matrix/workforce/internal/developer.ScopeRequest#CoordinationGrant,matrix/workforce/internal/developer.ScopeRequest#CoordinationPlanID,matrix/workforce/internal/developer.ScopeRequest#Files,matrix/workforce/internal/developer.ScopeRequest#ProjectID,matrix/workforce/internal/developer.ScopeRequest#SchemaVersion,matrix/workforce/internal/developer.ScopeRequest#Symbols,matrix/workforce/internal/developer.ScopeRequest#TaskNodeID,matrix/workforce/internal/developer.ScopeRequest#WorkspaceID,matrix/workforce/internal/developer.ScopeRequest#WorkspaceRoot,matrix/workforce/internal/developer.ScopeRequest.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.WorkspaceID,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/projectbrain.CapabilityGrant,matrix/workforce/internal/projectbrain.RecordID
+  ^references=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/developer.Authority.openBoundScope,matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.ScopeRequest.Validate,matrix/workforce/internal/wakeruntime.Runner.bindRuntimeGrant
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.ScopeRequest#Capability kind=field
@@ -719,7 +833,11 @@ NODE id=matrix/workforce/internal/developer.ScopeRequest.Validate kind=method
   sig=func (scope ScopeRequest) Validate() error
   doc=Validate rejects ambient, unbounded, duplicate, or coordination-free scope.
 EDGES
+  calls=matrix/workforce/internal/developer.token,matrix/workforce/internal/developer.uniqueBounded,matrix/workforce/internal/projectbrain.CapabilityGrant.Validate
+  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/developer.ScopeRequest,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.name,matrix/workforce/internal/developer.scope,matrix/workforce/internal/developer.token,matrix/workforce/internal/developer.uniqueBounded,matrix/workforce/internal/developer.value,matrix/workforce/internal/projectbrain.CapabilityChangeScope,matrix/workforce/internal/projectbrain.CapabilityGrant.Validate,matrix/workforce/internal/projectbrain.CapabilityRead
   ^contains=matrix/workforce/internal/developer.ScopeRequest
+  ^calls=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Bind
+  ^references=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Bind
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.SourceChange kind=type
@@ -729,6 +847,8 @@ NODE id=matrix/workforce/internal/developer.SourceChange kind=type
 EDGES
   contains=matrix/workforce/internal/developer.SourceChange#BeforeHash,matrix/workforce/internal/developer.SourceChange#Content,matrix/workforce/internal/developer.SourceChange#Path,matrix/workforce/internal/developer.SourceChange.Validate
   implements=matrix/workforce/internal/contracts.Validatable
+  references=matrix/workforce/internal/contracts.ContentHash
+  ^references=matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.OperationEnvelope,matrix/workforce/internal/developer.SourceChange.Validate,matrix/workforce/internal/developer.applySourceFiles,matrix/workforce/internal/developer.preparedSourceChange,matrix/workforce/internal/developer.probeSourceChanges
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.SourceChange#BeforeHash kind=field
@@ -754,7 +874,11 @@ NODE id=matrix/workforce/internal/developer.SourceChange.Validate kind=method
   sig=func (change SourceChange) Validate() error
   doc=Validate rejects unscoped or oversized source mutation material.
 EDGES
+  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/developer.relativePath
+  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/developer.SourceChange,matrix/workforce/internal/developer.change,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.relativePath
   ^contains=matrix/workforce/internal/developer.SourceChange
+  ^calls=matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.probeSourceChanges
+  ^references=matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.probeSourceChanges
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.SupportsOperation kind=func
@@ -762,6 +886,9 @@ NODE id=matrix/workforce/internal/developer.SupportsOperation kind=func
   sig=func SupportsOperation(name string) bool
   doc=SupportsOperation reports whether the executable adapter owns the declared\nDeveloper skill operation.
 EDGES
+  references=matrix/workforce/internal/developer.name
+  ^calls=matrix/workforce/internal/developer.Adapter.Dispatch
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.VerificationCommand kind=type
@@ -770,6 +897,7 @@ NODE id=matrix/workforce/internal/developer.VerificationCommand kind=type
   doc=VerificationCommand is one fixed real verification subprocess available to\nthe Developer skill runtime. Agents select its ID but cannot supply a binary,\narguments, environment, or working directory.
 EDGES
   contains=matrix/workforce/internal/developer.VerificationCommand#Arguments,matrix/workforce/internal/developer.VerificationCommand#Bubblewrap,matrix/workforce/internal/developer.VerificationCommand#Executable,matrix/workforce/internal/developer.VerificationCommand#ID,matrix/workforce/internal/developer.VerificationCommand#Timeout
+  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/developer.Adapter,matrix/workforce/internal/developer.NewAdapter,matrix/workforce/internal/developer.validateVerificationCommand
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.VerificationCommand#Arguments kind=field
@@ -806,12 +934,17 @@ NODE id=matrix/workforce/internal/developer._ kind=var
   digest=b3:1a10e8f04da91dadcd31e908039b1298c6915a1066b84e4e93dceac52c791e9f file=workforce/internal/developer/adapter.go range=480:480 lang=go exported=false byte_range=15764:15798
   sig=effect.Adapter
 EDGES
+  references=matrix/workforce/internal/developer.Adapter,matrix/workforce/internal/effect.Adapter
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.applySourceFiles kind=func
   digest=b3:18cc294fa7e010314f5c129b3c65a7a14e4c0a881f9b579c9ebf485a6a558733 file=workforce/internal/developer/authority.go range=1115:1219 lang=go exported=false byte_range=33995:37081
   sig=func applySourceFiles(\n	ctx context.Context,\n	root string,\n	changes []SourceChange,\n) ([]ChangedFile, error)
 EDGES
+  calls=matrix/workforce/internal/developer.canonicalWorkspaceRoot,matrix/workforce/internal/developer.cleanupPrepared,matrix/workforce/internal/developer.hashBytes,matrix/workforce/internal/developer.hashScopedFile,matrix/workforce/internal/developer.rollbackSourceFiles,matrix/workforce/internal/developer.scopedRegularPath,matrix/workforce/internal/developer.syncDirectory
+  references=matrix/workforce/internal/developer.ChangedFile,matrix/workforce/internal/developer.ErrSourceDrift,matrix/workforce/internal/developer.SourceChange,matrix/workforce/internal/developer.after,matrix/workforce/internal/developer.before,matrix/workforce/internal/developer.canonicalRoot,matrix/workforce/internal/developer.canonicalWorkspaceRoot,matrix/workforce/internal/developer.change,matrix/workforce/internal/developer.changes,matrix/workforce/internal/developer.cleanupPrepared,matrix/workforce/internal/developer.closeErr,matrix/workforce/internal/developer.committed,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.current,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.evidence,matrix/workforce/internal/developer.hashBytes,matrix/workforce/internal/developer.hashScopedFile,matrix/workforce/internal/developer.index,matrix/workforce/internal/developer.info,matrix/workforce/internal/developer.item,matrix/workforce/internal/developer.path,matrix/workforce/internal/developer.prepared,matrix/workforce/internal/developer.preparedSourceChange,matrix/workforce/internal/developer.rollbackErr,matrix/workforce/internal/developer.rollbackSourceFiles,matrix/workforce/internal/developer.root,matrix/workforce/internal/developer.scopedRegularPath,matrix/workforce/internal/developer.syncDirectory,matrix/workforce/internal/developer.temp,matrix/workforce/internal/developer.tempPath
+  ^calls=matrix/workforce/internal/developer.Authority.ApplyScopedChanges
+  ^references=matrix/workforce/internal/developer.Authority.ApplyScopedChanges
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.boundedDeveloperOutput kind=type
@@ -819,6 +952,7 @@ NODE id=matrix/workforce/internal/developer.boundedDeveloperOutput kind=type
   sig=type boundedDeveloperOutput struct {\n	value		bytes.Buffer\n	exceeded	bool\n}
 EDGES
   contains=matrix/workforce/internal/developer.boundedDeveloperOutput#exceeded,matrix/workforce/internal/developer.boundedDeveloperOutput#value,matrix/workforce/internal/developer.boundedDeveloperOutput.Bytes,matrix/workforce/internal/developer.boundedDeveloperOutput.String,matrix/workforce/internal/developer.boundedDeveloperOutput.Write
+  ^references=matrix/workforce/internal/developer.Adapter.runVerification,matrix/workforce/internal/developer.boundedDeveloperOutput.Bytes,matrix/workforce/internal/developer.boundedDeveloperOutput.String,matrix/workforce/internal/developer.boundedDeveloperOutput.Write
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.boundedDeveloperOutput#exceeded kind=field
@@ -837,20 +971,27 @@ NODE id=matrix/workforce/internal/developer.boundedDeveloperOutput.Bytes kind=me
   digest=b3:8285e967d67012eac5012f9fa3da8f1d90f2fac5ef4b122d82669476e12d383d file=workforce/internal/developer/adapter.go range=477:477 lang=go exported=true byte_range=15586:15671
   sig=func (output *boundedDeveloperOutput) Bytes() []byte
 EDGES
+  references=matrix/workforce/internal/developer.boundedDeveloperOutput,matrix/workforce/internal/developer.output
   ^contains=matrix/workforce/internal/developer.boundedDeveloperOutput
+  ^calls=matrix/workforce/internal/developer.Adapter.runVerification
+  ^references=matrix/workforce/internal/developer.Adapter.runVerification
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.boundedDeveloperOutput.String kind=method
   digest=b3:67c69c68e1fa5e902ceccd29abb4224127a20696f28cdc2463749b1a61cd9bf7 file=workforce/internal/developer/adapter.go range=478:478 lang=go exported=true byte_range=15672:15758
   sig=func (output *boundedDeveloperOutput) String() string
 EDGES
+  references=matrix/workforce/internal/developer.boundedDeveloperOutput,matrix/workforce/internal/developer.output
   ^contains=matrix/workforce/internal/developer.boundedDeveloperOutput
+  ^calls=matrix/workforce/internal/developer.Adapter.runVerification
+  ^references=matrix/workforce/internal/developer.Adapter.runVerification
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.boundedDeveloperOutput.Write kind=method
   digest=b3:f452b395bb497db0a85885eab52bd54fde581dc47984d0e33a96aeff5a94ab89 file=workforce/internal/developer/adapter.go range=462:475 lang=go exported=true byte_range=15213:15584
   sig=func (output *boundedDeveloperOutput) Write(value []byte) (int, error)
 EDGES
+  references=matrix/workforce/internal/developer.accepted,matrix/workforce/internal/developer.boundedDeveloperOutput,matrix/workforce/internal/developer.developerOperationOutput,matrix/workforce/internal/developer.output,matrix/workforce/internal/developer.remaining,matrix/workforce/internal/developer.value
   ^contains=matrix/workforce/internal/developer.boundedDeveloperOutput
   ^defines=matrix/workforce/internal/developer/adapter.go
 
@@ -858,126 +999,189 @@ NODE id=matrix/workforce/internal/developer.canonicalWorkspaceRoot kind=func
   digest=b3:887a5f8dbbde8fb2f28a741236344edb24ef57d5b66910c60f9f23eb77ffd993 file=workforce/internal/developer/authority.go range=1052:1065 lang=go exported=false byte_range=32011:32487
   sig=func canonicalWorkspaceRoot(root string) (string, error)
 EDGES
+  references=matrix/workforce/internal/developer.canonical,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.info,matrix/workforce/internal/developer.root
+  ^calls=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/developer.applySourceFiles,matrix/workforce/internal/developer.hashScopedFile
+  ^references=matrix/workforce/internal/developer.Authority.Acquire,matrix/workforce/internal/developer.Authority.Bind,matrix/workforce/internal/developer.applySourceFiles,matrix/workforce/internal/developer.hashScopedFile
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.claim kind=func
   digest=b3:c770c8cbb78a3cdd82355c5a2f8ca13a10eac5568974a3b6b194f5db55564ace file=workforce/internal/developer/authority.go range=1005:1011 lang=go exported=false byte_range=30568:30778
   sig=func claim(kind, value string, exclusive bool) scopeClaim
 EDGES
+  references=matrix/workforce/internal/developer.exclusive,matrix/workforce/internal/developer.kind,matrix/workforce/internal/developer.scopeClaim,matrix/workforce/internal/developer.sum,matrix/workforce/internal/developer.value
+  ^calls=matrix/workforce/internal/developer.scopeClaims
+  ^references=matrix/workforce/internal/developer.Authority.claim,matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.coordinationSourceCurrent,matrix/workforce/internal/developer.scopeClaims
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.cleanupPrepared kind=func
   digest=b3:4af784b4ee2716006173b13981cdc9044fde194980dc7722b5c6679423f98bb3 file=workforce/internal/developer/authority.go range=1275:1281 lang=go exported=false byte_range=38555:38711
   sig=func cleanupPrepared(prepared []preparedSourceChange)
 EDGES
+  references=matrix/workforce/internal/developer.item,matrix/workforce/internal/developer.prepared,matrix/workforce/internal/developer.preparedSourceChange
+  ^calls=matrix/workforce/internal/developer.applySourceFiles
+  ^references=matrix/workforce/internal/developer.applySourceFiles
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.containsNode kind=func
   digest=b3:3a09706936cafb8b149e5c6bb0fd727b2f2c5f2f324a613e5c87fd481df0d08d file=workforce/internal/developer/authority.go range=929:936 lang=go exported=false byte_range=28429:28600
   sig=func containsNode(values []dependency.NodeID, target dependency.NodeID) bool
 EDGES
+  references=matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/developer.target,matrix/workforce/internal/developer.value,matrix/workforce/internal/developer.values
+  ^calls=matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.coordinationAllows
+  ^references=matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.coordinationAllows
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.containsSeat kind=func
   digest=b3:82cfc8a52c3c110b128a65f4b017d0714c1e04ed0b43a1302a497dca3fb149ae file=workforce/internal/developer/authority.go range=938:945 lang=go exported=false byte_range=28602:28771
   sig=func containsSeat(values []contracts.SeatID, target contracts.SeatID) bool
 EDGES
+  references=matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/developer.target,matrix/workforce/internal/developer.value,matrix/workforce/internal/developer.values
+  ^calls=matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.coordinationAllows
+  ^references=matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.coordinationAllows
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.coordinationAllows kind=func
   digest=b3:a1a33e1ab800a1193412e38194c0306c90abe12ac531f9f70796e422f6b08075 file=workforce/internal/developer/authority.go range=877:893 lang=go exported=false byte_range=26801:27451
   sig=func coordinationAllows(\n	resource scopeClaim,\n	current ResolvedScope,\n	existing ResolvedScope,\n) bool
 EDGES
+  calls=matrix/workforce/internal/developer.containsNode,matrix/workforce/internal/developer.containsSeat
+  references=matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.containsNode,matrix/workforce/internal/developer.containsSeat,matrix/workforce/internal/developer.current,matrix/workforce/internal/developer.existing,matrix/workforce/internal/developer.plan,matrix/workforce/internal/developer.resource,matrix/workforce/internal/developer.scopeClaim
+  ^calls=matrix/workforce/internal/developer.Authority.claim
+  ^references=matrix/workforce/internal/developer.Authority.claim
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.coordinationCoversScope kind=func
   digest=b3:7fd1e3c7881f59a812e34e5780ace9d344da98114ff005cbac67ae62dcb252d0 file=workforce/internal/developer/authority.go range=854:875 lang=go exported=false byte_range=26296:26799
   sig=func coordinationCoversScope(plan CoordinationPlan, scope ResolvedScope) bool
 EDGES
+  references=matrix/workforce/internal/developer.CoordinationPlan,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.files,matrix/workforce/internal/developer.node,matrix/workforce/internal/developer.path,matrix/workforce/internal/developer.plan,matrix/workforce/internal/developer.scope,matrix/workforce/internal/developer.test
+  ^calls=matrix/workforce/internal/developer.Authority.resolve
+  ^references=matrix/workforce/internal/developer.Authority.resolve
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.coordinationSourceCurrent kind=func
   digest=b3:4279e4cbde721ac2684c6b03b59d14bf113602f1a971c706e4de16c4bd40ca89 file=workforce/internal/developer/authority.go range=832:852 lang=go exported=false byte_range=25715:26294
   sig=func coordinationSourceCurrent(\n	record projectbrain.EngineeringRecord,\n	source projectbrain.GraphSnapshot,\n) bool
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/developer.claim,matrix/workforce/internal/developer.claimed,matrix/workforce/internal/developer.existing,matrix/workforce/internal/developer.exists,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.hash,matrix/workforce/internal/developer.path,matrix/workforce/internal/developer.record,matrix/workforce/internal/developer.source,matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.GraphSnapshot
+  ^calls=matrix/workforce/internal/developer.Authority.resolveCoordination
+  ^references=matrix/workforce/internal/developer.Authority.resolveCoordination
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.decodeOperationEnvelope kind=func
   digest=b3:0aef99da54981476a36a32357e62642057c236512e6ff52b04c5bd5267999b00 file=workforce/internal/developer/adapter.go range=318:333 lang=go exported=false byte_range=11029:11654
   sig=func decodeOperationEnvelope(input []byte) (OperationEnvelope, error)
 EDGES
+  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/developer.OperationEnvelope,matrix/workforce/internal/developer.decoder,matrix/workforce/internal/developer.envelope,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.input
+  ^calls=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Probe
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Probe
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.developerAdapterName kind=const
   digest=b3:1ec9d74a02b81e8107c90b61d59f3947d7c49da1a241d1f0b70846433cddb5c3 file=workforce/internal/developer/adapter.go range=22:22 lang=go exported=false byte_range=334:372
   sig=untyped string
 EDGES
+  ^references=matrix/workforce/internal/developer.Adapter.Name,matrix/workforce/internal/developer.operationExternalID
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.developerOperationOutput kind=const
   digest=b3:ba9f824e210117850816028fa9e44e907907f7c59147ebf473bf32c2b5a172fe file=workforce/internal/developer/adapter.go range=23:23 lang=go exported=false byte_range=374:408
   sig=untyped int
 EDGES
+  ^references=matrix/workforce/internal/developer.boundedDeveloperOutput.Write,matrix/workforce/internal/developer.developerResult
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.developerResult kind=func
   digest=b3:ba96025a7df2e50060c34fa9260d4206efbf39233500804533794d5c5877e62a file=workforce/internal/developer/adapter.go range=404:432 lang=go exported=false byte_range=13618:14501
   sig=func developerResult(\n	operation effect.Operation,\n	now time.Time,\n	value any,\n) (effect.DispatchResult, error)
 EDGES
+  calls=matrix/workforce/internal/developer.hashBytes,matrix/workforce/internal/developer.operationExternalID
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/developer.developerOperationOutput,matrix/workforce/internal/developer.encoded,matrix/workforce/internal/developer.envelope,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.hashBytes,matrix/workforce/internal/developer.now,matrix/workforce/internal/developer.observation,matrix/workforce/internal/developer.operation,matrix/workforce/internal/developer.operationExternalID,matrix/workforce/internal/developer.value,matrix/workforce/internal/effect.DispatchResult,matrix/workforce/internal/effect.Operation
+  ^calls=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Probe
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Probe
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.graphFilePaths kind=func
   digest=b3:89ae6a0811c330838d2ae08cab60c6291db13ca8fa337a3ed5454b938e05b449 file=workforce/internal/developer/authority.go range=895:901 lang=go exported=false byte_range=27453:27635
   sig=func graphFilePaths(files []projectbrain.GraphFile) []string
 EDGES
+  references=matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.files,matrix/workforce/internal/developer.index,matrix/workforce/internal/developer.result,matrix/workforce/internal/projectbrain.GraphFile
+  ^calls=matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.openBoundScope
+  ^references=matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.Authority.openBoundScope
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.hashBytes kind=func
   digest=b3:6142229639f65603219857cbb53aab5d2aefd89ea2017579f1283824edcf5a9b file=workforce/internal/developer/authority.go range=1293:1298 lang=go exported=false byte_range=38921:39097
   sig=func hashBytes(value []byte) contracts.ContentHash
 EDGES
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/developer.sum,matrix/workforce/internal/developer.value
+  ^calls=matrix/workforce/internal/developer.Adapter.runVerification,matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.applySourceFiles,matrix/workforce/internal/developer.developerResult,matrix/workforce/internal/developer.operationExternalID,matrix/workforce/internal/developer.probeSourceChanges
+  ^references=matrix/workforce/internal/developer.Adapter.runVerification,matrix/workforce/internal/developer.Authority.ApplyScopedChanges,matrix/workforce/internal/developer.applySourceFiles,matrix/workforce/internal/developer.developerResult,matrix/workforce/internal/developer.operationExternalID,matrix/workforce/internal/developer.probeSourceChanges
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.hashChangedEvidence kind=func
   digest=b3:27f0d57cd142619ab0e044415388b728d7b0022ad0939442cc41783f2973f89b file=workforce/internal/developer/authority.go range=1300:1313 lang=go exported=false byte_range=39099:39470
   sig=func hashChangedEvidence(values []ChangedFile) contracts.ContentHash
 EDGES
+  calls=matrix/workforce/internal/developer.resourceKey
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/developer.ChangedFile,matrix/workforce/internal/developer.hasher,matrix/workforce/internal/developer.resourceKey,matrix/workforce/internal/developer.value,matrix/workforce/internal/developer.values
+  ^calls=matrix/workforce/internal/developer.Authority.ApplyScopedChanges
+  ^references=matrix/workforce/internal/developer.Authority.ApplyScopedChanges
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.hashScopedFile kind=func
   digest=b3:488c1b9bc6125b079c1edccce786f35e85b7548538e1682e72ab39da004e03e0 file=workforce/internal/developer/authority.go range=1067:1104 lang=go exported=false byte_range=32489:33827
   sig=func hashScopedFile(root, relative string) (contracts.ContentHash, error)
 EDGES
+  calls=matrix/workforce/internal/developer.canonicalWorkspaceRoot,matrix/workforce/internal/developer.relativePath
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/developer.canonicalRoot,matrix/workforce/internal/developer.canonicalWorkspaceRoot,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.info,matrix/workforce/internal/developer.path,matrix/workforce/internal/developer.relative,matrix/workforce/internal/developer.relativePath,matrix/workforce/internal/developer.resolved,matrix/workforce/internal/developer.root,matrix/workforce/internal/developer.sum,matrix/workforce/internal/developer.within
+  ^calls=matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.applySourceFiles,matrix/workforce/internal/developer.inspectScopedSource,matrix/workforce/internal/developer.probeSourceChanges
+  ^references=matrix/workforce/internal/developer.Authority.Authorize,matrix/workforce/internal/developer.applySourceFiles,matrix/workforce/internal/developer.inspectScopedSource,matrix/workforce/internal/developer.probeSourceChanges
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.inspectScopedSource kind=func
   digest=b3:400378d9028f5ad95767e6bf027a743029c0947222746b1b5225952919362cc3 file=workforce/internal/developer/adapter.go range=345:357 lang=go exported=false byte_range=12009:12440
   sig=func inspectScopedSource(scope ResolvedScope) ([]ChangedFile, error)
 EDGES
+  calls=matrix/workforce/internal/developer.hashScopedFile
+  references=matrix/workforce/internal/developer.ChangedFile,matrix/workforce/internal/developer.ErrSourceDrift,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.current,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.hashScopedFile,matrix/workforce/internal/developer.result,matrix/workforce/internal/developer.scope
+  ^calls=matrix/workforce/internal/developer.Adapter.Dispatch
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.matchEffectGrant kind=func
   digest=b3:e714f98b91ef903627567991be5a92f60b8a6e6d568a8ba4bf29e1b4e5e15238 file=workforce/internal/developer/adapter.go range=335:343 lang=go exported=false byte_range=11656:12007
   sig=func matchEffectGrant(operation effect.Operation, grant Grant) error
 EDGES
+  references=matrix/workforce/internal/developer.Grant,matrix/workforce/internal/developer.grant,matrix/workforce/internal/developer.operation,matrix/workforce/internal/effect.Operation
+  ^calls=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Probe
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch,matrix/workforce/internal/developer.Adapter.Probe
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.maxDeveloperChangeBytes kind=const
   digest=b3:68cdc227dbecddc8abc966e682e84acc32a01430e37fec57823a12a37a817229 file=workforce/internal/developer/authority.go range=36:36 lang=go exported=false byte_range=878:912
   sig=untyped int
 EDGES
+  ^references=matrix/workforce/internal/developer.Authority.ApplyScopedChanges
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.operationExternalID kind=func
   digest=b3:d8459fac025f2bbc5391d3bd2998d2766d0d97c77704fac5741d238719d9f110 file=workforce/internal/developer/adapter.go range=434:439 lang=go exported=false byte_range=14503:14696
   sig=func operationExternalID(operation effect.Operation) string
 EDGES
+  calls=matrix/workforce/internal/developer.hashBytes
+  references=matrix/workforce/internal/developer.developerAdapterName,matrix/workforce/internal/developer.hashBytes,matrix/workforce/internal/developer.operation,matrix/workforce/internal/developer.value,matrix/workforce/internal/effect.Operation
+  ^calls=matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.developerResult
+  ^references=matrix/workforce/internal/developer.Adapter.Probe,matrix/workforce/internal/developer.developerResult
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.optionalPlan kind=func
   digest=b3:7a23fc53c5a06fa55ed45d5833d7b03c57fdbf0a34fb2e8190063e2262fc463b file=workforce/internal/developer/authority.go range=1315:1320 lang=go exported=false byte_range=39472:39585
   sig=func optionalPlan(value *projectbrain.RecordID) any
 EDGES
+  references=matrix/workforce/internal/developer.value,matrix/workforce/internal/projectbrain.RecordID
+  ^calls=matrix/workforce/internal/developer.Authority.claim
+  ^references=matrix/workforce/internal/developer.Authority.claim
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.preparedSourceChange kind=type
@@ -985,6 +1189,8 @@ NODE id=matrix/workforce/internal/developer.preparedSourceChange kind=type
   sig=type preparedSourceChange struct {\n	change		SourceChange\n	path		string\n	tempPath	string\n	before		[]byte\n	mode		os.FileMode\n	after		contracts.ContentHash\n}
 EDGES
   contains=matrix/workforce/internal/developer.preparedSourceChange#after,matrix/workforce/internal/developer.preparedSourceChange#before,matrix/workforce/internal/developer.preparedSourceChange#change,matrix/workforce/internal/developer.preparedSourceChange#mode,matrix/workforce/internal/developer.preparedSourceChange#path,matrix/workforce/internal/developer.preparedSourceChange#tempPath
+  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/developer.SourceChange
+  ^references=matrix/workforce/internal/developer.applySourceFiles,matrix/workforce/internal/developer.cleanupPrepared,matrix/workforce/internal/developer.rollbackSourceFiles
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.preparedSourceChange#after kind=field
@@ -1027,42 +1233,64 @@ NODE id=matrix/workforce/internal/developer.probeSourceChanges kind=func
   digest=b3:1a0eef808b903acfff97deeb3a5b07501a63c861aeca5cf89d52edeeb96652db file=workforce/internal/developer/adapter.go range=359:402 lang=go exported=false byte_range=12442:13616
   sig=func probeSourceChanges(\n	root string,\n	changes []SourceChange,\n) (skills.ProbeOutcome, []byte, error)
 EDGES
+  calls=matrix/workforce/internal/developer.SourceChange.Validate,matrix/workforce/internal/developer.hashBytes,matrix/workforce/internal/developer.hashScopedFile
+  references=matrix/workforce/internal/developer.ChangedFile,matrix/workforce/internal/developer.SourceChange,matrix/workforce/internal/developer.SourceChange.Validate,matrix/workforce/internal/developer.after,matrix/workforce/internal/developer.before,matrix/workforce/internal/developer.change,matrix/workforce/internal/developer.changes,matrix/workforce/internal/developer.current,matrix/workforce/internal/developer.encoded,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.evidence,matrix/workforce/internal/developer.expectedAfter,matrix/workforce/internal/developer.hashBytes,matrix/workforce/internal/developer.hashScopedFile,matrix/workforce/internal/developer.root,matrix/workforce/internal/skills.ProbeCompletedOutOfBand,matrix/workforce/internal/skills.ProbeConflicted,matrix/workforce/internal/skills.ProbeOutcome,matrix/workforce/internal/skills.ProbeUnchanged,matrix/workforce/internal/skills.ProbeUnknown
+  ^calls=matrix/workforce/internal/developer.Adapter.Probe
+  ^references=matrix/workforce/internal/developer.Adapter.Probe
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.recordsOfKind kind=func
   digest=b3:66d0f363fb91d9442ccfb1769a92e88100c1936e5e56624bf1f31c8f82ab815b file=workforce/internal/developer/adapter.go range=441:455 lang=go exported=false byte_range=14698:15133
   sig=func recordsOfKind(\n	records []projectbrain.EngineeringRecord,\n	kind projectbrain.Kind,\n) []projectbrain.EngineeringRecord
 EDGES
+  references=matrix/workforce/internal/developer.kind,matrix/workforce/internal/developer.left,matrix/workforce/internal/developer.record,matrix/workforce/internal/developer.records,matrix/workforce/internal/developer.result,matrix/workforce/internal/developer.right,matrix/workforce/internal/projectbrain.EngineeringRecord,matrix/workforce/internal/projectbrain.Kind
+  ^calls=matrix/workforce/internal/developer.Adapter.Dispatch
+  ^references=matrix/workforce/internal/developer.Adapter.Dispatch
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.relativePath kind=func
   digest=b3:21a21d35feb578410b5fc876ab2428072e0117efc2f120a5b60bb2ed3eec1322 file=workforce/internal/developer/types.go range=504:514 lang=go exported=false byte_range=19656:20079
   sig=func relativePath(value string) error
 EDGES
+  references=matrix/workforce/internal/developer.cleaned,matrix/workforce/internal/developer.value
+  ^calls=matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.SourceChange.Validate,matrix/workforce/internal/developer.hashScopedFile,matrix/workforce/internal/developer.scopedRegularPath,matrix/workforce/internal/developer.uniqueBounded
+  ^references=matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.SourceChange.Validate,matrix/workforce/internal/developer.hashScopedFile,matrix/workforce/internal/developer.scopedRegularPath,matrix/workforce/internal/developer.uniqueBounded
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.requireTaskReadyTx kind=func
   digest=b3:7ca7a3de1405fd23214a3a0f07c9308f681e48f276e67b2f90a8327160c55bde file=workforce/internal/developer/authority.go range=714:753 lang=go exported=false byte_range=22208:23362
   sig=func requireTaskReadyTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	nodeID dependency.NodeID,\n) error
 EDGES
+  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/developer.ErrDependency,matrix/workforce/internal/developer.blockers,matrix/workforce/internal/developer.contested,matrix/workforce/internal/developer.ctx,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.nodeID,matrix/workforce/internal/developer.organizationID,matrix/workforce/internal/developer.state,matrix/workforce/internal/developer.tenantID,matrix/workforce/internal/developer.tx
+  ^calls=matrix/workforce/internal/developer.Authority.claim,matrix/workforce/internal/developer.Authority.requireTaskReady
+  ^references=matrix/workforce/internal/developer.Authority.claim,matrix/workforce/internal/developer.Authority.requireTaskReady
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.resourceKey kind=func
   digest=b3:65f53f047039c82bbb50e35a4f07464e6e9b2b26912b076812e8e68ca4e19425 file=workforce/internal/developer/authority.go range=992:1003 lang=go exported=false byte_range=30239:30566
   sig=func resourceKey(kind string, values ...string) string
 EDGES
+  references=matrix/workforce/internal/developer.kind,matrix/workforce/internal/developer.part,matrix/workforce/internal/developer.value,matrix/workforce/internal/developer.values
+  ^calls=matrix/workforce/internal/developer.hashChangedEvidence,matrix/workforce/internal/developer.scopeClaims
+  ^references=matrix/workforce/internal/developer.hashChangedEvidence,matrix/workforce/internal/developer.scopeClaims
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.rollbackSourceFiles kind=func
   digest=b3:32045d9183355935ab563aa5125fac924adc67b982eaf6be89589ec8e144ef96 file=workforce/internal/developer/authority.go range=1245:1273 lang=go exported=false byte_range=37850:38553
   sig=func rollbackSourceFiles(committed []preparedSourceChange) error
 EDGES
+  references=matrix/workforce/internal/developer.chmodErr,matrix/workforce/internal/developer.committed,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.index,matrix/workforce/internal/developer.item,matrix/workforce/internal/developer.preparedSourceChange,matrix/workforce/internal/developer.result,matrix/workforce/internal/developer.temp
+  ^calls=matrix/workforce/internal/developer.applySourceFiles
+  ^references=matrix/workforce/internal/developer.applySourceFiles
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.sameStrings kind=func
   digest=b3:151e9d7426cbb31db3a1b84b8045747e4392e3f7a417345aaf176a451f593497 file=workforce/internal/developer/authority.go range=224:238 lang=go exported=false byte_range=6533:6847
   sig=func sameStrings(left, right []string) bool
 EDGES
+  references=matrix/workforce/internal/developer.index,matrix/workforce/internal/developer.left,matrix/workforce/internal/developer.right
+  ^calls=matrix/workforce/internal/developer.Authority.openBoundScope
+  ^references=matrix/workforce/internal/developer.Authority.openBoundScope
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.scopeClaim kind=type
@@ -1070,6 +1298,7 @@ NODE id=matrix/workforce/internal/developer.scopeClaim kind=type
   sig=type scopeClaim struct {\n	kind		string\n	hash		string\n	resource	string\n	exclusive	bool\n}
 EDGES
   contains=matrix/workforce/internal/developer.scopeClaim#exclusive,matrix/workforce/internal/developer.scopeClaim#hash,matrix/workforce/internal/developer.scopeClaim#kind,matrix/workforce/internal/developer.scopeClaim#resource
+  ^references=matrix/workforce/internal/developer.claim,matrix/workforce/internal/developer.coordinationAllows,matrix/workforce/internal/developer.scopeClaims,matrix/workforce/internal/developer.uniqueClaims
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.scopeClaim#exclusive kind=field
@@ -1100,66 +1329,103 @@ NODE id=matrix/workforce/internal/developer.scopeClaims kind=func
   digest=b3:36fc7b1270108118242cf66d95cffdcdbf2c964c8fe3c1343afd41e750b89b43 file=workforce/internal/developer/authority.go range=954:990 lang=go exported=false byte_range=28871:30237
   sig=func scopeClaims(scope ResolvedScope) []scopeClaim
 EDGES
+  calls=matrix/workforce/internal/developer.claim,matrix/workforce/internal/developer.resourceKey,matrix/workforce/internal/developer.uniqueClaims
+  references=matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.claim,matrix/workforce/internal/developer.file,matrix/workforce/internal/developer.left,matrix/workforce/internal/developer.node,matrix/workforce/internal/developer.project,matrix/workforce/internal/developer.resourceKey,matrix/workforce/internal/developer.right,matrix/workforce/internal/developer.scope,matrix/workforce/internal/developer.scopeClaim,matrix/workforce/internal/developer.symbol,matrix/workforce/internal/developer.test,matrix/workforce/internal/developer.uniqueClaims,matrix/workforce/internal/developer.values,matrix/workforce/internal/developer.workspace
+  ^calls=matrix/workforce/internal/developer.Authority.claim
+  ^references=matrix/workforce/internal/developer.Authority.claim
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.scopedRegularPath kind=func
   digest=b3:9a06fd532de49c73a71d0ea2efa4c2e55e17d092efb08d695e8e11d137e5d799 file=workforce/internal/developer/authority.go range=1221:1243 lang=go exported=false byte_range=37083:37848
   sig=func scopedRegularPath(root, relative string) (string, os.FileInfo, error)
 EDGES
+  calls=matrix/workforce/internal/developer.relativePath
+  references=matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.info,matrix/workforce/internal/developer.path,matrix/workforce/internal/developer.relative,matrix/workforce/internal/developer.relativePath,matrix/workforce/internal/developer.resolved,matrix/workforce/internal/developer.root,matrix/workforce/internal/developer.within
+  ^calls=matrix/workforce/internal/developer.applySourceFiles
+  ^references=matrix/workforce/internal/developer.applySourceFiles
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.sortedUnique kind=func
   digest=b3:698b79d7dbf53ff73037fef59c0781bcd1a311a6af8a4f884939a36b8020e5ba file=workforce/internal/developer/types.go range=531:542 lang=go exported=false byte_range=20532:20801
   sig=func sortedUnique(values []string) []string
 EDGES
+  references=matrix/workforce/internal/developer.result,matrix/workforce/internal/developer.value,matrix/workforce/internal/developer.values,matrix/workforce/internal/developer.write
+  ^calls=matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.Authority.resolveCoordination
+  ^references=matrix/workforce/internal/developer.Authority.resolve,matrix/workforce/internal/developer.Authority.resolveCoordination
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.syncDirectory kind=func
   digest=b3:7780064de0ee0fda3825a66179265f130852259d4f2f346b32c706ea768d1fe0 file=workforce/internal/developer/authority.go range=1283:1291 lang=go exported=false byte_range=38713:38919
   sig=func syncDirectory(path string) error
 EDGES
+  references=matrix/workforce/internal/developer.closeErr,matrix/workforce/internal/developer.directory,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.path,matrix/workforce/internal/developer.syncErr
+  ^calls=matrix/workforce/internal/developer.applySourceFiles
+  ^references=matrix/workforce/internal/developer.applySourceFiles
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.token kind=func
   digest=b3:e2cb5fed4066d20bf1d586a9693057818256b9e0d20e90a949f3247195a111df file=workforce/internal/developer/types.go range=516:529 lang=go exported=false byte_range=20081:20530
   sig=func token(name, value string) error
 EDGES
+  references=matrix/workforce/internal/developer.char,matrix/workforce/internal/developer.name,matrix/workforce/internal/developer.value
+  ^calls=matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/developer.CoordinationPlan.Validate,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.ScopeRequest.Validate,matrix/workforce/internal/developer.uniqueBounded,matrix/workforce/internal/developer.validateVerificationCommand
+  ^references=matrix/workforce/internal/developer.AuditPacket.Validate,matrix/workforce/internal/developer.CoordinationPlan.Validate,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.ScopeRequest.Validate,matrix/workforce/internal/developer.uniqueBounded,matrix/workforce/internal/developer.validateVerificationCommand
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.uniqueBounded kind=func
   digest=b3:3d064aec09889081973a22a0c75e4415d7d14e155864f9663bdb0f4993b21546 file=workforce/internal/developer/types.go range=486:502 lang=go exported=false byte_range=19199:19654
   sig=func uniqueBounded(name string, values []string, paths bool) error
 EDGES
+  calls=matrix/workforce/internal/developer.relativePath,matrix/workforce/internal/developer.token
+  references=matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.exists,matrix/workforce/internal/developer.name,matrix/workforce/internal/developer.paths,matrix/workforce/internal/developer.relativePath,matrix/workforce/internal/developer.seen,matrix/workforce/internal/developer.token,matrix/workforce/internal/developer.value,matrix/workforce/internal/developer.values
+  ^calls=matrix/workforce/internal/developer.CoordinationPlan.Validate,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.ScopeRequest.Validate
+  ^references=matrix/workforce/internal/developer.CoordinationPlan.Validate,matrix/workforce/internal/developer.ResolvedScope.Validate,matrix/workforce/internal/developer.ScopeRequest.Validate
   ^defines=matrix/workforce/internal/developer/types.go
 
 NODE id=matrix/workforce/internal/developer.uniqueClaims kind=func
   digest=b3:c70f4fc94bb98bdf458185a4ba5d72497ef65e714e5110b4f9d952d47928799e file=workforce/internal/developer/authority.go range=1013:1026 lang=go exported=false byte_range=30780:31209
   sig=func uniqueClaims(values []scopeClaim) []scopeClaim
 EDGES
+  references=matrix/workforce/internal/developer.byResource,matrix/workforce/internal/developer.existing,matrix/workforce/internal/developer.found,matrix/workforce/internal/developer.result,matrix/workforce/internal/developer.scopeClaim,matrix/workforce/internal/developer.value,matrix/workforce/internal/developer.values
+  ^calls=matrix/workforce/internal/developer.scopeClaims
+  ^references=matrix/workforce/internal/developer.scopeClaims
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.uniqueImpact kind=func
   digest=b3:d65465b67c2656870b397e39208ac4856a4a0dba4a8a29e60c57c16d29c77ef6 file=workforce/internal/developer/authority.go range=1028:1050 lang=go exported=false byte_range=31211:32009
   sig=func uniqueImpact(values []projectbrain.ImpactNode) []projectbrain.ImpactNode
 EDGES
+  references=matrix/workforce/internal/developer.key,matrix/workforce/internal/developer.left,matrix/workforce/internal/developer.result,matrix/workforce/internal/developer.right,matrix/workforce/internal/developer.seen,matrix/workforce/internal/developer.value,matrix/workforce/internal/developer.values,matrix/workforce/internal/projectbrain.ImpactNode
+  ^calls=matrix/workforce/internal/developer.Authority.resolve
+  ^references=matrix/workforce/internal/developer.Authority.resolve
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.uniqueNodeIDs kind=func
   digest=b3:9db8ae2f6a533be80a43b48f02e6a893f1900f7d78182eb8655f26a2d14712a1 file=workforce/internal/developer/authority.go range=903:914 lang=go exported=false byte_range=27637:28033
   sig=func uniqueNodeIDs(values []dependency.NodeID) []dependency.NodeID
 EDGES
+  references=matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/developer.left,matrix/workforce/internal/developer.result,matrix/workforce/internal/developer.right,matrix/workforce/internal/developer.seen,matrix/workforce/internal/developer.value,matrix/workforce/internal/developer.values
+  ^calls=matrix/workforce/internal/developer.Authority.resolveCoordination
+  ^references=matrix/workforce/internal/developer.Authority.resolveCoordination
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.uniqueSeatIDs kind=func
   digest=b3:55a2f4e214aa9cfd6be5f3981f50940d27955187c9f0a0de0e16d40291c5a5a1 file=workforce/internal/developer/authority.go range=916:927 lang=go exported=false byte_range=28035:28427
   sig=func uniqueSeatIDs(values []contracts.SeatID) []contracts.SeatID
 EDGES
+  references=matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/developer.left,matrix/workforce/internal/developer.result,matrix/workforce/internal/developer.right,matrix/workforce/internal/developer.seen,matrix/workforce/internal/developer.value,matrix/workforce/internal/developer.values
+  ^calls=matrix/workforce/internal/developer.Authority.resolveCoordination
+  ^references=matrix/workforce/internal/developer.Authority.resolveCoordination
   ^defines=matrix/workforce/internal/developer/authority.go
 
 NODE id=matrix/workforce/internal/developer.validateVerificationCommand kind=func
   digest=b3:dac221119a082d9cc410b129addbf778c1d6fd2f65c9dd72973280a600acdd6c file=workforce/internal/developer/adapter.go range=301:316 lang=go exported=false byte_range=10427:11027
   sig=func validateVerificationCommand(command VerificationCommand) error
 EDGES
+  calls=matrix/workforce/internal/developer.token
+  references=matrix/workforce/internal/developer.VerificationCommand,matrix/workforce/internal/developer.command,matrix/workforce/internal/developer.err,matrix/workforce/internal/developer.token,matrix/workforce/internal/developer.value
+  ^calls=matrix/workforce/internal/developer.NewAdapter
+  ^references=matrix/workforce/internal/developer.NewAdapter
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.verificationResult kind=type
@@ -1167,6 +1433,8 @@ NODE id=matrix/workforce/internal/developer.verificationResult kind=type
   sig=type verificationResult struct {\n	ID		string			`json:"id"`\n	Output		string			`json:"output"`\n	Evidence	contracts.ContentHash	`json:"evidence"`\n}
 EDGES
   contains=matrix/workforce/internal/developer.verificationResult#Evidence,matrix/workforce/internal/developer.verificationResult#ID,matrix/workforce/internal/developer.verificationResult#Output
+  references=matrix/workforce/internal/contracts.ContentHash
+  ^references=matrix/workforce/internal/developer.Adapter.runVerification
   ^defines=matrix/workforce/internal/developer/adapter.go
 
 NODE id=matrix/workforce/internal/developer.verificationResult#Evidence kind=field

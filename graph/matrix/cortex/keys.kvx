@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/cortex/keys kind=package
   digest=b3:df8e3ef9beb6686b447cd5a943bae31e71e61322280af0d094b548c5d6523ca9 file=cortex/keys range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/keys/keys.go
   ^contains=mod:matrix/cortex
+  ^imports=matrix/cortex,matrix/cortex/cmd/cortex-shell,matrix/cortex/query,matrix/cortex/replay,matrix/cortex/salience,matrix/cortex/snapshot,matrix/cortex/store,matrix/executor/compilecache
 
 NODE id=matrix/cortex/keys.AccumMMRLeafCount kind=var
   digest=b3:cdd37aac278c15a3d26a21c8e11a395ecd32ad7affd5c1a8578f47132834f617 file=cortex/keys/keys.go range=732:734 lang=go exported=true byte_range=28625:28849
   sig=[]byte
   doc=AccumMMRLeafCount returns accum/mmr/leafcount, the MMR leaf-count key.\nValue is uint64 BE; absent means zero leaves appended.
 EDGES
+  references=matrix/cortex/keys.PrefixAccum
+  ^references=matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.Reset,matrix/cortex/snapshot.MMR.StageAppend,matrix/cortex/snapshot.MMR.leafCountVia
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.AccumMMRNodeKey kind=func
@@ -18,6 +21,10 @@ NODE id=matrix/cortex/keys.AccumMMRNodeKey kind=func
   sig=func AccumMMRNodeKey(pos uint64) []byte
   doc=AccumMMRNodeKey returns accum/mmr/n/<pos:8> for one MMR node hash. Position\nuses the standard 1-indexed depth-first MMR numbering (research/04-cortex.md\n§7.1 references the Grin/CT MMR shape).
 EDGES
+  calls=matrix/cortex/keys.PutUint64BE
+  references=matrix/cortex/keys.PrefixAccum,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.out,matrix/cortex/keys.pos
+  ^calls=matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.MMR.StageAppend,matrix/cortex/snapshot.MMR.nodeVia
+  ^references=matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.MMR.StageAppend,matrix/cortex/snapshot.MMR.nodeVia
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.CheckpointIntentPrefix kind=func
@@ -25,6 +32,8 @@ NODE id=matrix/cortex/keys.CheckpointIntentPrefix kind=func
   sig=func CheckpointIntentPrefix(intentID string) ([]byte, error)
   doc=CheckpointIntentPrefix returns chk/<lpstr intent_id>/, the prefix\nfor scanning every step's checkpoint under one intent (audit and\nre-entry helpers). Same constraints as CheckpointKey.
 EDGES
+  calls=matrix/cortex/keys.PutLPString,matrix/cortex/keys.ValidateNoSeparator
+  references=matrix/cortex/keys.PrefixCheckpoint,matrix/cortex/keys.PutLPString,matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/keys.err,matrix/cortex/keys.intentID,matrix/cortex/keys.out
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.CheckpointKey kind=func
@@ -32,6 +41,10 @@ NODE id=matrix/cortex/keys.CheckpointKey kind=func
   sig=func CheckpointKey(intentID, stepID string) ([]byte, error)
   doc=CheckpointKey returns chk/<lpstr intent_id>/<lpstr step_id>.\n\nSpec: research/03-retrieval-patterns.md §5.1 step 3 + §5.3 (the\ncortex.compact primitive). Phase 9 / Andrew lock A1.\n\nBoth components are 1-byte length-prefixed strings (PutLPString), so\nthe variable-width tail is unambiguously parseable. The literal '/'\nbetween them is cosmetic — the parser uses lengths, not delimiters —\nbut matches the visual style of EdgeFromKey/EdgeToKey.\n\nCaller-supplied ids may not contain '/' (validated). Empty ids\nrejected at the API surface (cortex.Compact); we only enforce the\n255-byte and no-slash constraints here.
 EDGES
+  calls=matrix/cortex/keys.PutLPString,matrix/cortex/keys.ValidateNoSeparator
+  references=matrix/cortex/keys.PrefixCheckpoint,matrix/cortex/keys.PutLPString,matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/keys.err,matrix/cortex/keys.intentID,matrix/cortex/keys.out,matrix/cortex/keys.stepID
+  ^calls=matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.LoadCheckpoint
+  ^references=matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.LoadCheckpoint
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EdgeFromKey kind=func
@@ -39,6 +52,9 @@ NODE id=matrix/cortex/keys.EdgeFromKey kind=func
   sig=func EdgeFromKey(src ULID, edge byte, dst ULID) []byte
   doc=EdgeFromKey returns e/from/<src:16>/<edge:1>/<dst:16>.\n\nLayout: a single byte slash separates the src ULID from the 1-byte edge\ntype, then another slash separates edge type from dst ULID. Slashes inside\nULIDs are not possible (binary ULIDs may contain 0x2F, so use FIXED widths,\nnot slash as delimiter inside the binary fields). Here the slash is\nCOSMETIC after fixed-width src; the parser uses widths, not delimiters.
 EDGES
+  references=matrix/cortex/keys.PrefixEdgeFrom,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.dst,matrix/cortex/keys.edge,matrix/cortex/keys.out,matrix/cortex/keys.src
+  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.stageSupersedesEdge
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.stageSupersedesEdge
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EdgeFromPrefix kind=func
@@ -46,6 +62,9 @@ NODE id=matrix/cortex/keys.EdgeFromPrefix kind=func
   sig=func EdgeFromPrefix(src ULID) []byte
   doc=EdgeFromPrefix returns e/from/<src:16>/, suitable for scanning all outgoing\nedges from src (any edge type, any dst, sorted by edge byte then dst).
 EDGES
+  references=matrix/cortex/keys.PrefixEdgeFrom,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.out,matrix/cortex/keys.src
+  ^calls=matrix/cortex.Cortex.iterEdges
+  ^references=matrix/cortex.Cortex.iterEdges,matrix/cortex/query.planCandidatesGraph
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EdgeFromTypePrefix kind=func
@@ -53,6 +72,9 @@ NODE id=matrix/cortex/keys.EdgeFromTypePrefix kind=func
   sig=func EdgeFromTypePrefix(src ULID, edge byte) []byte
   doc=EdgeFromTypePrefix returns e/from/<src:16>/<edge:1>, suitable for scanning\noutgoing edges of one specific type from src. Sorted ascending by dst.
 EDGES
+  references=matrix/cortex/keys.PrefixEdgeFrom,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.edge,matrix/cortex/keys.out,matrix/cortex/keys.src
+  ^calls=matrix/cortex.Cortex.iterEdges
+  ^references=matrix/cortex.Cortex.iterEdges
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EdgeToKey kind=func
@@ -60,6 +82,9 @@ NODE id=matrix/cortex/keys.EdgeToKey kind=func
   sig=func EdgeToKey(dst ULID, edge byte, src ULID) []byte
   doc=EdgeToKey returns e/to/<dst:16>/<edge:1>/<src:16>.
 EDGES
+  references=matrix/cortex/keys.PrefixEdgeTo,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.dst,matrix/cortex/keys.edge,matrix/cortex/keys.out,matrix/cortex/keys.src
+  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.stageSupersedesEdge
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.stageSupersedesEdge
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EdgeToPrefix kind=func
@@ -67,6 +92,9 @@ NODE id=matrix/cortex/keys.EdgeToPrefix kind=func
   sig=func EdgeToPrefix(dst ULID) []byte
   doc=EdgeToPrefix returns e/to/<dst:16>/.
 EDGES
+  references=matrix/cortex/keys.PrefixEdgeTo,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.dst,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.iterEdges
+  ^references=matrix/cortex.Cortex.iterEdges,matrix/cortex/query.planCandidatesGraph
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EdgeToTypePrefix kind=func
@@ -74,6 +102,9 @@ NODE id=matrix/cortex/keys.EdgeToTypePrefix kind=func
   sig=func EdgeToTypePrefix(dst ULID, edge byte) []byte
   doc=EdgeToTypePrefix returns e/to/<dst:16>/<edge:1>, suitable for scanning\nincoming edges of one specific type into dst. Sorted ascending by src.
 EDGES
+  references=matrix/cortex/keys.PrefixEdgeTo,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.dst,matrix/cortex/keys.edge,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.iterEdges
+  ^references=matrix/cortex.Cortex.iterEdges
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EnrichKey kind=func
@@ -81,6 +112,10 @@ NODE id=matrix/cortex/keys.EnrichKey kind=func
   sig=func EnrichKey(tier uint8, start uint64) []byte
   doc=EnrichKey returns enr/<tier:1><start:8 BE>.\n\nContinuous-memory task 2.3: the OPTIONAL LLM-enrichment record for one\nrollup window, stored in a lane PARALLEL to roll/ under the SAME (tier,\nwindow-start) identity. Same layout/posture as RollupKey (1-byte tier +\n8-byte big-endian window start, byte-sort == (tier, start) sort). The\nenrichment is a SEPARATE derived record — the stored RollupRecord is never\nmutated to reference it — so the deterministic rollup floor stays\nbyte-stable; the enrichment is resolved by the same window key and treated\nas stale/absent whenever its SourceRecordHash no longer matches the current\nrollup. Never an anchored SMT write.
 EDGES
+  calls=matrix/cortex/keys.PutUint64BE
+  references=matrix/cortex/keys.PrefixEnrich,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.out,matrix/cortex/keys.start,matrix/cortex/keys.tier
+  ^calls=matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.LoadEnrichment
+  ^references=matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.LoadEnrichment
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.EnrichTierPrefix kind=func
@@ -88,6 +123,7 @@ NODE id=matrix/cortex/keys.EnrichTierPrefix kind=func
   sig=func EnrichTierPrefix(tier uint8) []byte
   doc=EnrichTierPrefix returns enr/<tier:1>, the prefix for scanning every\nenrichment of one tier in ascending window-start order.
 EDGES
+  references=matrix/cortex/keys.PrefixEnrich,matrix/cortex/keys.out,matrix/cortex/keys.tier
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ErrBadPrefix kind=var
@@ -95,6 +131,7 @@ NODE id=matrix/cortex/keys.ErrBadPrefix kind=var
   sig=error
   doc=Errors returned by decoders.
 EDGES
+  ^references=matrix/cortex/keys.ParseCheckpointKey,matrix/cortex/keys.ParseEdgeFromKey,matrix/cortex/keys.ParseEdgeToKey,matrix/cortex/keys.ParseEnrichKey,matrix/cortex/keys.ParseIdxActorObjKey,matrix/cortex/keys.ParseIdxFrameKey,matrix/cortex/keys.ParseIdxTagKey,matrix/cortex/keys.ParseIdxTypeKey,matrix/cortex/keys.ParseJournalKey,matrix/cortex/keys.ParseMetaGoalStateKey,matrix/cortex/keys.ParseMetaSessionHead,matrix/cortex/keys.ParseRollupKey,matrix/cortex/keys.ParseSessionKey,matrix/cortex/keys.ParseSnapshotKey
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ErrBadStrLen kind=var
@@ -102,6 +139,7 @@ NODE id=matrix/cortex/keys.ErrBadStrLen kind=var
   sig=error
   doc=Errors returned by decoders.
 EDGES
+  ^references=matrix/cortex/keys.PutLPString
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ErrShortKey kind=var
@@ -109,6 +147,7 @@ NODE id=matrix/cortex/keys.ErrShortKey kind=var
   sig=error
   doc=Errors returned by decoders.
 EDGES
+  ^references=matrix/cortex/keys.ParseCheckpointKey,matrix/cortex/keys.ParseEdgeFromKey,matrix/cortex/keys.ParseEdgeToKey,matrix/cortex/keys.ParseEnrichKey,matrix/cortex/keys.ParseIdxActorObjKey,matrix/cortex/keys.ParseIdxFrameKey,matrix/cortex/keys.ParseIdxTagKey,matrix/cortex/keys.ParseIdxTypeKey,matrix/cortex/keys.ParseJournalKey,matrix/cortex/keys.ParseMetaGoalStateKey,matrix/cortex/keys.ParseRollupKey,matrix/cortex/keys.ParseSnapshotKey,matrix/cortex/keys.ReadLPString,matrix/cortex/keys.ReadUint64BE
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxActorObjKey kind=func
@@ -116,6 +155,10 @@ NODE id=matrix/cortex/keys.IdxActorObjKey kind=func
   sig=func IdxActorObjKey(verb byte, objHash [ObjHashSize]byte, createdUnixNano uint64, id ULID) []byte
   doc=IdxActorObjKey returns idx/actor_obj/<verb:1>/<obj_hash:16>/<created:8>/<id:16>.\n\nSpec: research/04-cortex.md §2.3 — the outcome-history secondary\nindex. Scanned by cortex.context's Outcomes tier with the\n(verb, obj_hash) prefix; results sort ascending by created and the\ncomposer takes the LAST N entries (= most recent N outcomes).\n\nPhase 8 caller: cortex.Write emits one of these per FrameRef in\nh.Frames ONLY when h.Type == TypeEvent. Other memory types\n(Preference, Belief, ...) stamp idx/frame but never idx/actor_obj,\nbecause outcomes-by-(verb,object) is an Event-only concept per\nresearch/03-retrieval-patterns.md §2.1 ("1-3 prior similar intents\nand their outcomes").\n\nThe created field is a Unix-nanosecond timestamp cast to uint64\nbig-endian, identical to idx/type's created handling — keeps\nbyte-sort=time-sort over the plausible post-1970 range.
 EDGES
+  calls=matrix/cortex/keys.PutUint64BE
+  references=matrix/cortex/keys.ObjHashSize,matrix/cortex/keys.PrefixIdxActorObj,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.createdUnixNano,matrix/cortex/keys.id,matrix/cortex/keys.objHash,matrix/cortex/keys.out,matrix/cortex/keys.verb
+  ^calls=matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex/replay.rebuildOneMemory
+  ^references=matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex/replay.rebuildOneMemory
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxActorObjPrefixVerb kind=func
@@ -123,6 +166,7 @@ NODE id=matrix/cortex/keys.IdxActorObjPrefixVerb kind=func
   sig=func IdxActorObjPrefixVerb(verb byte) []byte
   doc=IdxActorObjPrefixVerb returns idx/actor_obj/<verb:1>/, the broadest\nscan prefix (debug-only).
 EDGES
+  references=matrix/cortex/keys.PrefixIdxActorObj,matrix/cortex/keys.out,matrix/cortex/keys.verb
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxActorObjPrefixVerbObj kind=func
@@ -130,6 +174,9 @@ NODE id=matrix/cortex/keys.IdxActorObjPrefixVerbObj kind=func
   sig=func IdxActorObjPrefixVerbObj(verb byte, objHash [ObjHashSize]byte) []byte
   doc=IdxActorObjPrefixVerbObj returns idx/actor_obj/<verb:1>/<obj_hash:16>/,\nthe prefix the Outcomes tier scans for one (verb, obj_ref) tuple.\nEntries inside this prefix sort ascending by created; the composer\nreverses to take the most-recent N.
 EDGES
+  references=matrix/cortex/keys.ObjHashSize,matrix/cortex/keys.PrefixIdxActorObj,matrix/cortex/keys.objHash,matrix/cortex/keys.out,matrix/cortex/keys.verb
+  ^calls=matrix/cortex.Cortex.findIdxActorObjKey,matrix/cortex.Cortex.tierOutcomes
+  ^references=matrix/cortex.Cortex.findIdxActorObjKey,matrix/cortex.Cortex.tierOutcomes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxFrameKey kind=func
@@ -137,6 +184,9 @@ NODE id=matrix/cortex/keys.IdxFrameKey kind=func
   sig=func IdxFrameKey(verb, objKind byte, objHash [ObjHashSize]byte, id ULID) []byte
   doc=IdxFrameKey returns idx/frame/<verb:1>/<obj_kind:1>/<obj_hash:16>/<id:16>.\n\nSpec: research/04-cortex.md §2.3 — the frame-relevance secondary\nindex. Scanned by cortex.context's Frame-relevant tier with the\n(verb, kind, obj_hash) prefix to retrieve every memory a skill\nstamped as relevant for that frame.\n\nPhase 8 caller: cortex.Write emits one of these per FrameRef in\nh.Frames (auto-derivation across all memory types). Insertion order\ninside the prefix is byte-sort over the trailing memory ID, which\nequals creation order under ULID monotonicity — good enough for the\nsalience-rank step downstream.\n\nNo `created` byte is stored in the key (cf. idx/tag and idx/type):\nthe composer always salience-ranks frame matches, never time-ranks,\nso adding 8 bytes per row would inflate the index without giving\nany new scan affordance.
 EDGES
+  references=matrix/cortex/keys.ObjHashSize,matrix/cortex/keys.PrefixIdxFrame,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.id,matrix/cortex/keys.objHash,matrix/cortex/keys.objKind,matrix/cortex/keys.out,matrix/cortex/keys.verb
+  ^calls=matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex/replay.rebuildOneMemory
+  ^references=matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex/replay.rebuildOneMemory
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxFramePrefixVerb kind=func
@@ -144,6 +194,7 @@ NODE id=matrix/cortex/keys.IdxFramePrefixVerb kind=func
   sig=func IdxFramePrefixVerb(verb byte) []byte
   doc=IdxFramePrefixVerb returns idx/frame/<verb:1>/, the broadest scan\nprefix. Used by debug tools that want to enumerate every frame entry\nfor one verb; the cortex.context composer never scans this wide.
 EDGES
+  references=matrix/cortex/keys.PrefixIdxFrame,matrix/cortex/keys.out,matrix/cortex/keys.verb
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxFramePrefixVerbKind kind=func
@@ -151,6 +202,7 @@ NODE id=matrix/cortex/keys.IdxFramePrefixVerbKind kind=func
   sig=func IdxFramePrefixVerbKind(verb, objKind byte) []byte
   doc=IdxFramePrefixVerbKind returns idx/frame/<verb:1>/<kind:1>/, useful\nfor "every (verb, kind) pair regardless of object" scans. Mainly a\ndebug surface; the Phase 8 composer uses IdxFramePrefixVerbKindObj.
 EDGES
+  references=matrix/cortex/keys.PrefixIdxFrame,matrix/cortex/keys.objKind,matrix/cortex/keys.out,matrix/cortex/keys.verb
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxFramePrefixVerbKindObj kind=func
@@ -158,6 +210,9 @@ NODE id=matrix/cortex/keys.IdxFramePrefixVerbKindObj kind=func
   sig=func IdxFramePrefixVerbKindObj(verb, objKind byte, objHash [ObjHashSize]byte) []byte
   doc=IdxFramePrefixVerbKindObj returns idx/frame/<verb:1>/<kind:1>/<obj_hash:16>/,\nthe prefix the cortex.context Frame-relevant tier scans for each\n(verb, kind, obj_ref) tuple in ContextOpts.Objects. One scan per\ntuple; results unioned across tuples then salience-ranked.
 EDGES
+  references=matrix/cortex/keys.ObjHashSize,matrix/cortex/keys.PrefixIdxFrame,matrix/cortex/keys.objHash,matrix/cortex/keys.objKind,matrix/cortex/keys.out,matrix/cortex/keys.verb
+  ^calls=matrix/cortex.Cortex.tierFrameRelevant
+  ^references=matrix/cortex.Cortex.tierFrameRelevant
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxSMTNamespacePrefix kind=func
@@ -165,6 +220,10 @@ NODE id=matrix/cortex/keys.IdxSMTNamespacePrefix kind=func
   sig=func IdxSMTNamespacePrefix(ns string) ([]byte, error)
   doc=IdxSMTNamespacePrefix returns idx/smt/<ns>/n/, the prefix for scanning all\nnode entries of one SMT (used during a drop+rebuild on replay).
 EDGES
+  calls=matrix/cortex/keys.ValidateNoSeparator
+  references=matrix/cortex/keys.PrefixIdxSMT,matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/keys.err,matrix/cortex/keys.ns,matrix/cortex/keys.out
+  ^calls=matrix/cortex/snapshot.SMT.Reset
+  ^references=matrix/cortex/snapshot.SMT.Reset
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxSMTNodeKey kind=func
@@ -172,6 +231,10 @@ NODE id=matrix/cortex/keys.IdxSMTNodeKey kind=func
   sig=func IdxSMTNodeKey(ns string, depth uint16, path [32]byte) ([]byte, error)
   doc=IdxSMTNodeKey returns idx/smt/<ns>/n/<depth:2>/<path:32> for one SMT\ninternal node. Depth 0 = root level (subtree below has remaining depth\n256); depth 256 = leaf level. Path is the bit string from the root with\nthe top `depth` bits significant; lower bits MUST be zero (caller\nresponsibility, normalized via SMTNormalizePath).\n\nNamespace is a short ASCII tag ("memories", "edges"). The validator\nrejects '/' so the key is unambiguous.
 EDGES
+  calls=matrix/cortex/keys.ValidateNoSeparator
+  references=matrix/cortex/keys.PrefixIdxSMT,matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/keys.d,matrix/cortex/keys.depth,matrix/cortex/keys.err,matrix/cortex/keys.ns,matrix/cortex/keys.out,matrix/cortex/keys.path
+  ^calls=matrix/cortex/snapshot.SMT.readNode,matrix/cortex/snapshot.SMT.stageNode
+  ^references=matrix/cortex/snapshot.SMT.readNode,matrix/cortex/snapshot.SMT.stageNode
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxTagKey kind=func
@@ -179,6 +242,10 @@ NODE id=matrix/cortex/keys.IdxTagKey kind=func
   sig=func IdxTagKey(tagHash [TagHashSize]byte, createdUnixNano uint64, id ULID) []byte
   doc=IdxTagKey returns idx/tag/<tag_hash:8>/<created:8>/<id:16>.\n\n`tagHash` is the first 8 bytes of sha256(tag) (caller computed); we hash\nbecause tags are arbitrary user strings up to 64 bytes and we want\nfixed-width keys. Uniqueness is enforced by appending the full ID at the\ntail, so collisions in the 8-byte prefix only inflate scan candidates,\nthey never silently merge memories.
 EDGES
+  calls=matrix/cortex/keys.PutUint64BE
+  references=matrix/cortex/keys.PrefixIdxTag,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.TagHashSize,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.createdUnixNano,matrix/cortex/keys.id,matrix/cortex/keys.out,matrix/cortex/keys.tagHash
+  ^calls=matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex/replay.rebuildOneMemory
+  ^references=matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex/replay.rebuildOneMemory
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxTagPrefix kind=func
@@ -186,6 +253,9 @@ NODE id=matrix/cortex/keys.IdxTagPrefix kind=func
   sig=func IdxTagPrefix(tagHash [TagHashSize]byte) []byte
   doc=IdxTagPrefix returns idx/tag/<tag_hash:8>/, the prefix for scanning every\nmemory tagged with a given tag in creation-time order.
 EDGES
+  references=matrix/cortex/keys.PrefixIdxTag,matrix/cortex/keys.TagHashSize,matrix/cortex/keys.out,matrix/cortex/keys.tagHash
+  ^calls=matrix/cortex.Cortex.findIdxTagKey,matrix/cortex/query.scanIdxTag
+  ^references=matrix/cortex.Cortex.findIdxTagKey,matrix/cortex/query.scanIdxTag
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxTypeKey kind=func
@@ -193,6 +263,10 @@ NODE id=matrix/cortex/keys.IdxTypeKey kind=func
   sig=func IdxTypeKey(memType byte, createdUnixNano uint64, id ULID) []byte
   doc=IdxTypeKey returns idx/type/<type:1>/<created:8>/<id:16>.\n`created` is a Unix nanosecond timestamp (int64 cast to uint64 BE — sign bit\nhandled by caller; negative times are unused in production).
 EDGES
+  calls=matrix/cortex/keys.PutUint64BE
+  references=matrix/cortex/keys.PrefixIdxType,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.createdUnixNano,matrix/cortex/keys.id,matrix/cortex/keys.memType,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex/replay.rebuildOneMemory
+  ^references=matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex/replay.rebuildOneMemory
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.IdxTypePrefix kind=func
@@ -200,6 +274,9 @@ NODE id=matrix/cortex/keys.IdxTypePrefix kind=func
   sig=func IdxTypePrefix(memType byte) []byte
   doc=IdxTypePrefix returns idx/type/<type:1>/, the prefix for scanning all\nmemories of a given type in time order.
 EDGES
+  references=matrix/cortex/keys.PrefixIdxType,matrix/cortex/keys.memType,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex/query.scanByTypes
+  ^references=matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex/query.scanByTypes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.JournalKey kind=func
@@ -207,6 +284,10 @@ NODE id=matrix/cortex/keys.JournalKey kind=func
   sig=func JournalKey(seq uint64) []byte
   doc=JournalKey returns j/<seq:8>. Sorted ascending by seq.
 EDGES
+  calls=matrix/cortex/keys.PutUint64BE
+  references=matrix/cortex/keys.PrefixJournal,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.out,matrix/cortex/keys.seq
+  ^calls=matrix/cortex.Cortex.journalEntryAt,matrix/cortex.readJournalEntry,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/store.Store.AppendJournal,matrix/cortex/store.WriteBatch.AppendJournal
+  ^references=matrix/cortex.Cortex.journalEntryAt,matrix/cortex.readJournalEntry,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/store.Store.AppendJournal,matrix/cortex/store.WriteBatch.AppendJournal
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.JournalRange kind=func
@@ -214,6 +295,10 @@ NODE id=matrix/cortex/keys.JournalRange kind=func
   sig=func JournalRange() (start, end []byte)
   doc=JournalRange returns the [start, end) byte range covering all journal keys.\nPass this to a Pebble iterator to walk the full journal in seq order.
 EDGES
+  calls=matrix/cortex/keys.PrefixRange
+  references=matrix/cortex/keys.PrefixJournal,matrix/cortex/keys.PrefixRange
+  ^calls=matrix/cortex/store.Store.IterJournal
+  ^references=matrix/cortex/store.Store.IterJournal
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MemoryHeadKey kind=func
@@ -221,6 +306,9 @@ NODE id=matrix/cortex/keys.MemoryHeadKey kind=func
   sig=func MemoryHeadKey(id ULID) []byte
   doc=MemoryHeadKey returns m/<id:16>.
 EDGES
+  references=matrix/cortex/keys.PrefixMemoryHead,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.id,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.embedderState.commitEmbedding,matrix/cortex.loadHead,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/query.Run,matrix/cortex/replay.applySalienceBumps
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.embedderState.commitEmbedding,matrix/cortex.loadHead,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/query.Run,matrix/cortex/replay.applySalienceBumps
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MemoryVersionKey kind=func
@@ -228,6 +316,10 @@ NODE id=matrix/cortex/keys.MemoryVersionKey kind=func
   sig=func MemoryVersionKey(id ULID, version uint64) []byte
   doc=MemoryVersionKey returns mv/<id:16>/v/<version:8>.\n\nThe literal "/v/" in the middle keeps versions of one memory contiguous\nunder the same id prefix scan: mv/<id>/v/.
 EDGES
+  calls=matrix/cortex/keys.PutUint64BE
+  references=matrix/cortex/keys.PrefixMemoryVersion,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.id,matrix/cortex/keys.out,matrix/cortex/keys.version
+  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.loadVersion,matrix/cortex/query.Run,matrix/cortex/replay.readVersion
+  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.loadVersion,matrix/cortex/query.Run,matrix/cortex/replay.readVersion
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MemoryVersionPrefix kind=func
@@ -235,6 +327,9 @@ NODE id=matrix/cortex/keys.MemoryVersionPrefix kind=func
   sig=func MemoryVersionPrefix(id ULID) []byte
   doc=MemoryVersionPrefix returns mv/<id:16>/v/, the prefix for a single memory's\nversion history (byte-sorted ascending by version).
 EDGES
+  references=matrix/cortex/keys.PrefixMemoryVersion,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.id,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.Versions
+  ^references=matrix/cortex.Cortex.Versions
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MetaCompileCacheKey kind=func
@@ -242,6 +337,9 @@ NODE id=matrix/cortex/keys.MetaCompileCacheKey kind=func
   sig=func MetaCompileCacheKey(hex string) []byte
   doc=MetaCompileCacheKey returns meta/compile_cache/<hex>. hex must be the\nlowercase hex-encoded sha256 of the cache-key tuple. Caller validates\nlength=64 + lowercase-hex; this helper does not (so the same builder\nworks for prefix scans during cache prune / inspect).
 EDGES
+  references=matrix/cortex/keys.PrefixMetaCompileCache,matrix/cortex/keys.hex,matrix/cortex/keys.out
+  ^calls=matrix/executor/compilecache.Lookup,matrix/executor/compilecache.Store
+  ^references=matrix/executor/compilecache.Lookup,matrix/executor/compilecache.Store
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MetaGoalStateKey kind=func
@@ -249,6 +347,9 @@ NODE id=matrix/cortex/keys.MetaGoalStateKey kind=func
   sig=func MetaGoalStateKey(goalID ULID) []byte
   doc=MetaGoalStateKey returns meta/goal_state/<goal_id:16>.
 EDGES
+  references=matrix/cortex/keys.PrefixMetaGoalState,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.goalID,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.DeleteGoalState,matrix/cortex.Cortex.ReadGoalState,matrix/cortex.Cortex.WriteGoalState
+  ^references=matrix/cortex.Cortex.DeleteGoalState,matrix/cortex.Cortex.ReadGoalState,matrix/cortex.Cortex.WriteGoalState
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MetaJournalHead kind=var
@@ -256,6 +357,8 @@ NODE id=matrix/cortex/keys.MetaJournalHead kind=var
   sig=[]byte
   doc=MetaJournalHead is the meta-namespace key holding the next-to-allocate\njournal sequence number for this actor. Stored as a uint64 big-endian.
 EDGES
+  references=matrix/cortex/keys.PrefixMeta
+  ^references=matrix/cortex/store.Store.AppendJournal,matrix/cortex/store.Store.loadHead,matrix/cortex/store.WriteBatch.AppendJournal
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MetaSalienceWeights kind=var
@@ -263,6 +366,8 @@ NODE id=matrix/cortex/keys.MetaSalienceWeights kind=var
   sig=[]byte
   doc=MetaSalienceWeights is the meta-namespace key holding the per-actor\nEMA-learned salience weights (research/04-cortex.md §8.3, "Stored at\nsalience/<actor>/weights"). One Pebble key per actor; the cortex is\nper-actor by construction so no actor suffix is needed in-key. Value is\ncanonical CBOR salience.Weights; absent key ⇒ DefaultWeights (cold\nstart) per §8.2. Lives under meta/ rather than salience/ to avoid\ncolliding with the binary-ULID-suffix salience/<id:16> namespace\n(Phase 12 lock).
 EDGES
+  references=matrix/cortex/keys.PrefixMeta
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex/replay.applyLearnWeights,matrix/cortex/replay.derivedSingleMetaKeys,matrix/cortex/salience.ReadWeights
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.MetaSessionHead kind=func
@@ -270,6 +375,10 @@ NODE id=matrix/cortex/keys.MetaSessionHead kind=func
   sig=func MetaSessionHead(conv string) ([]byte, error)
   doc=MetaSessionHead returns meta/session_head/<lpstr conv>. conv must not\ncontain '/' and must be <=255 bytes (validated).
 EDGES
+  calls=matrix/cortex/keys.PutLPString,matrix/cortex/keys.ValidateNoSeparator
+  references=matrix/cortex/keys.PrefixMetaSessionHead,matrix/cortex/keys.PutLPString,matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/keys.conv,matrix/cortex/keys.err,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.AppendMessage
+  ^references=matrix/cortex.Cortex.AppendMessage
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ObjHashSize kind=const
@@ -277,6 +386,7 @@ NODE id=matrix/cortex/keys.ObjHashSize kind=const
   sig=untyped int
   doc=ObjHashSize is the byte length of obj_id components in idx/frame and\nidx/actor_obj keys. Mirrors memory.ObjHashSize but kept here so the\nkeys package has no import on memory (which would create a dependency\ncycle: memory → keys for ULID + keys → memory for ObjHashSize).
 EDGES
+  ^references=matrix/cortex/keys.IdxActorObjKey,matrix/cortex/keys.IdxActorObjPrefixVerbObj,matrix/cortex/keys.IdxFrameKey,matrix/cortex/keys.IdxFramePrefixVerbKindObj,matrix/cortex/keys.ParseIdxActorObjKey,matrix/cortex/keys.ParseIdxFrameKey
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseCheckpointKey kind=func
@@ -284,6 +394,8 @@ NODE id=matrix/cortex/keys.ParseCheckpointKey kind=func
   sig=func ParseCheckpointKey(k []byte) (intentID, stepID string, err error)
   doc=ParseCheckpointKey extracts (intentID, stepID) from a chk/ key.\nReturns ErrBadPrefix if k doesn't start with chk/, ErrShortKey on\ntruncation, or wraps lpstring decode errors.
 EDGES
+  calls=matrix/cortex/keys.ReadLPString,matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.PrefixCheckpoint,matrix/cortex/keys.ReadLPString,matrix/cortex/keys.err,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.intentID,matrix/cortex/keys.k,matrix/cortex/keys.stepID,matrix/cortex/keys.tail
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseEdgeFromKey kind=func
@@ -291,6 +403,9 @@ NODE id=matrix/cortex/keys.ParseEdgeFromKey kind=func
   sig=func ParseEdgeFromKey(k []byte) (src ULID, edge byte, dst ULID, err error)
   doc=ParseEdgeFromKey extracts (src, edge, dst) from an e/from/ key. Returns\nErrShortKey on wrong length and ErrBadPrefix when k does not start with\ne/from/. Mirrors ParseEdgeToKey.
 EDGES
+  calls=matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.PrefixEdgeFrom,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.dst,matrix/cortex/keys.edge,matrix/cortex/keys.err,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.k,matrix/cortex/keys.src,matrix/cortex/keys.tail,matrix/cortex/keys.wantLen
+  ^references=matrix/cortex/replay.rebuildEdgesSMT
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseEdgeToKey kind=func
@@ -298,6 +413,8 @@ NODE id=matrix/cortex/keys.ParseEdgeToKey kind=func
   sig=func ParseEdgeToKey(k []byte) (dst ULID, edge byte, src ULID, err error)
   doc=ParseEdgeToKey extracts (dst, edge, src) from an e/to/ key.
 EDGES
+  calls=matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.PrefixEdgeTo,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.dst,matrix/cortex/keys.edge,matrix/cortex/keys.err,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.k,matrix/cortex/keys.src,matrix/cortex/keys.tail,matrix/cortex/keys.wantLen
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseEnrichKey kind=func
@@ -305,6 +422,8 @@ NODE id=matrix/cortex/keys.ParseEnrichKey kind=func
   sig=func ParseEnrichKey(k []byte) (tier uint8, start uint64, err error)
   doc=ParseEnrichKey extracts (tier, start) from an enr/ key. Returns\nErrBadPrefix when k does not start with enr/, ErrShortKey on truncation.
 EDGES
+  calls=matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.PrefixEnrich,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.k,matrix/cortex/keys.start,matrix/cortex/keys.tail,matrix/cortex/keys.tier,matrix/cortex/keys.wantLen
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseIdxActorObjKey kind=func
@@ -312,6 +431,9 @@ NODE id=matrix/cortex/keys.ParseIdxActorObjKey kind=func
   sig=func ParseIdxActorObjKey(k []byte) (verb byte, objHash [ObjHashSize]byte, createdUnixNano uint64, id ULID, err error)
   doc=ParseIdxActorObjKey extracts (verb, objHash, createdUnixNano, id)\nfrom an idx/actor_obj key.
 EDGES
+  calls=matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.ObjHashSize,matrix/cortex/keys.PrefixIdxActorObj,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.createdUnixNano,matrix/cortex/keys.err,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.id,matrix/cortex/keys.k,matrix/cortex/keys.objHash,matrix/cortex/keys.tail,matrix/cortex/keys.verb,matrix/cortex/keys.wantLen
+  ^references=matrix/cortex.Cortex.tierOutcomes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseIdxFrameKey kind=func
@@ -319,6 +441,9 @@ NODE id=matrix/cortex/keys.ParseIdxFrameKey kind=func
   sig=func ParseIdxFrameKey(k []byte) (verb, objKind byte, objHash [ObjHashSize]byte, id ULID, err error)
   doc=ParseIdxFrameKey extracts (verb, objKind, objHash, id) from an\nidx/frame key. Strict-length check; bad-prefix / short-key errors as\nelsewhere. The composer relies on the returned ID alone (the prefix\nalready pinned verb+kind+obj_hash) but the full tuple is returned\nfor symmetry with ParseIdxTagKey / ParseIdxTypeKey.
 EDGES
+  calls=matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.ObjHashSize,matrix/cortex/keys.PrefixIdxFrame,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.err,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.id,matrix/cortex/keys.k,matrix/cortex/keys.objHash,matrix/cortex/keys.objKind,matrix/cortex/keys.tail,matrix/cortex/keys.verb,matrix/cortex/keys.wantLen
+  ^references=matrix/cortex.Cortex.tierFrameRelevant
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseIdxTagKey kind=func
@@ -326,6 +451,9 @@ NODE id=matrix/cortex/keys.ParseIdxTagKey kind=func
   sig=func ParseIdxTagKey(k []byte) (uint64, ULID, error)
   doc=ParseIdxTagKey extracts (createdUnixNano, id) from an idx/tag key. Returns\nErrShortKey if k is the wrong length and ErrBadPrefix if it does not begin\nwith idx/tag/. The tag-hash component is opaque to consumers and not\nreturned (the prefix already pinned which tag we scanned).
 EDGES
+  calls=matrix/cortex/keys.ReadUint64BE,matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.PrefixIdxTag,matrix/cortex/keys.ReadUint64BE,matrix/cortex/keys.TagHashSize,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.created,matrix/cortex/keys.err,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.id,matrix/cortex/keys.k,matrix/cortex/keys.rest,matrix/cortex/keys.tail,matrix/cortex/keys.wantLen
+  ^references=matrix/cortex/query.scanIdxTag
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseIdxTypeKey kind=func
@@ -333,6 +461,9 @@ NODE id=matrix/cortex/keys.ParseIdxTypeKey kind=func
   sig=func ParseIdxTypeKey(k []byte) (memType byte, created uint64, id ULID, err error)
   doc=ParseIdxTypeKey extracts (memType, createdUnixNano, id) from an idx/type\nkey. Mirrors ParseIdxTagKey for symmetry.
 EDGES
+  calls=matrix/cortex/keys.ReadUint64BE,matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.PrefixIdxType,matrix/cortex/keys.ReadUint64BE,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.created,matrix/cortex/keys.err,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.id,matrix/cortex/keys.k,matrix/cortex/keys.rest,matrix/cortex/keys.t,matrix/cortex/keys.wantLen
+  ^references=matrix/cortex.Cortex.scanTypePrefix,matrix/cortex/query.scanByTypes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseJournalKey kind=func
@@ -340,6 +471,9 @@ NODE id=matrix/cortex/keys.ParseJournalKey kind=func
   sig=func ParseJournalKey(k []byte) (uint64, error)
   doc=ParseJournalKey extracts the seq from a journal key. Returns ErrBadPrefix\nif k does not start with j/.
 EDGES
+  calls=matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.PrefixJournal,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.k
+  ^references=matrix/cortex/replay.rebuildJournalMMR,matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseMetaGoalStateKey kind=func
@@ -347,6 +481,8 @@ NODE id=matrix/cortex/keys.ParseMetaGoalStateKey kind=func
   sig=func ParseMetaGoalStateKey(k []byte) (ULID, error)
   doc=ParseMetaGoalStateKey extracts the goal ULID from a meta/goal_state/ key.\nReturns ErrShortKey on truncation, ErrBadPrefix when k is not a goal-state\nkey.
 EDGES
+  calls=matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.PrefixMetaGoalState,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.id,matrix/cortex/keys.k,matrix/cortex/keys.wantLen
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseMetaSessionHead kind=func
@@ -354,6 +490,8 @@ NODE id=matrix/cortex/keys.ParseMetaSessionHead kind=func
   sig=func ParseMetaSessionHead(k []byte) (conv string, err error)
   doc=ParseMetaSessionHead extracts the conversation id from a\nmeta/session_head/ key. Returns ErrBadPrefix when k is not a\nsession-head key, or wraps the lpstring decode error.
 EDGES
+  calls=matrix/cortex/keys.ReadLPString,matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.PrefixMetaSessionHead,matrix/cortex/keys.ReadLPString,matrix/cortex/keys.conv,matrix/cortex/keys.err,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.k,matrix/cortex/keys.tail
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseRollupKey kind=func
@@ -361,6 +499,9 @@ NODE id=matrix/cortex/keys.ParseRollupKey kind=func
   sig=func ParseRollupKey(k []byte) (tier uint8, start uint64, err error)
   doc=ParseRollupKey extracts (tier, start) from a roll/ key. Returns\nErrBadPrefix when k does not start with roll/, ErrShortKey on truncation.
 EDGES
+  calls=matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.PrefixRollup,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.k,matrix/cortex/keys.start,matrix/cortex/keys.tail,matrix/cortex/keys.tier,matrix/cortex/keys.wantLen
+  ^references=matrix/cortex.Cortex.Rollups
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseSessionKey kind=func
@@ -368,6 +509,9 @@ NODE id=matrix/cortex/keys.ParseSessionKey kind=func
   sig=func ParseSessionKey(k []byte) (conv string, seq uint64, err error)
   doc=ParseSessionKey extracts (conv, seq) from a sess/ key. Returns\nErrBadPrefix if k doesn't start with sess/, ErrShortKey on truncation,\nor wraps the lpstring decode error.
 EDGES
+  calls=matrix/cortex/keys.ReadLPString,matrix/cortex/keys.ReadUint64BE,matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.PrefixSession,matrix/cortex/keys.ReadLPString,matrix/cortex/keys.ReadUint64BE,matrix/cortex/keys.conv,matrix/cortex/keys.err,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.k,matrix/cortex/keys.seq,matrix/cortex/keys.tail
+  ^references=matrix/cortex.Cortex.Transcript,matrix/cortex.Cortex.transcriptSliceApprox
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ParseSnapshotKey kind=func
@@ -375,6 +519,8 @@ NODE id=matrix/cortex/keys.ParseSnapshotKey kind=func
   sig=func ParseSnapshotKey(k []byte) (uint64, error)
   doc=ParseSnapshotKey extracts the seq from a snap/ key. Returns ErrBadPrefix\nif k does not start with snap/. Used by snapshot iteration helpers.
 EDGES
+  calls=matrix/cortex/keys.hasPrefix
+  references=matrix/cortex/keys.ErrBadPrefix,matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.PrefixSnapshot,matrix/cortex/keys.hasPrefix,matrix/cortex/keys.k
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixAccum kind=var
@@ -382,6 +528,7 @@ NODE id=matrix/cortex/keys.PrefixAccum kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.AccumMMRLeafCount,matrix/cortex/keys.AccumMMRNodeKey,matrix/cortex/replay.derivedPrefixes,matrix/cortex/snapshot.MMR.Reset
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixCheckpoint kind=var
@@ -389,6 +536,7 @@ NODE id=matrix/cortex/keys.PrefixCheckpoint kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.CheckpointIntentPrefix,matrix/cortex/keys.CheckpointKey,matrix/cortex/keys.ParseCheckpointKey,matrix/cortex/store.sealedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixEdgeFrom kind=var
@@ -396,6 +544,7 @@ NODE id=matrix/cortex/keys.PrefixEdgeFrom kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.EdgeFromKey,matrix/cortex/keys.EdgeFromPrefix,matrix/cortex/keys.EdgeFromTypePrefix,matrix/cortex/keys.ParseEdgeFromKey,matrix/cortex/replay.rebuildEdgesSMT,matrix/cortex/snapshot.countEdges
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixEdgeTo kind=var
@@ -403,6 +552,7 @@ NODE id=matrix/cortex/keys.PrefixEdgeTo kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.EdgeToKey,matrix/cortex/keys.EdgeToPrefix,matrix/cortex/keys.EdgeToTypePrefix,matrix/cortex/keys.ParseEdgeToKey
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixEnrich kind=var
@@ -410,6 +560,7 @@ NODE id=matrix/cortex/keys.PrefixEnrich kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.EnrichKey,matrix/cortex/keys.EnrichTierPrefix,matrix/cortex/keys.ParseEnrichKey,matrix/cortex/store.sealedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixIdxActorObj kind=var
@@ -417,6 +568,7 @@ NODE id=matrix/cortex/keys.PrefixIdxActorObj kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.IdxActorObjKey,matrix/cortex/keys.IdxActorObjPrefixVerb,matrix/cortex/keys.IdxActorObjPrefixVerbObj,matrix/cortex/keys.ParseIdxActorObjKey,matrix/cortex/replay.derivedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixIdxFrame kind=var
@@ -424,6 +576,7 @@ NODE id=matrix/cortex/keys.PrefixIdxFrame kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.IdxFrameKey,matrix/cortex/keys.IdxFramePrefixVerb,matrix/cortex/keys.IdxFramePrefixVerbKind,matrix/cortex/keys.IdxFramePrefixVerbKindObj,matrix/cortex/keys.ParseIdxFrameKey,matrix/cortex/replay.derivedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixIdxSMT kind=var
@@ -431,6 +584,7 @@ NODE id=matrix/cortex/keys.PrefixIdxSMT kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.IdxSMTNamespacePrefix,matrix/cortex/keys.IdxSMTNodeKey,matrix/cortex/replay.derivedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixIdxTag kind=var
@@ -438,6 +592,7 @@ NODE id=matrix/cortex/keys.PrefixIdxTag kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.IdxTagKey,matrix/cortex/keys.IdxTagPrefix,matrix/cortex/keys.ParseIdxTagKey,matrix/cortex/replay.derivedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixIdxType kind=var
@@ -445,6 +600,7 @@ NODE id=matrix/cortex/keys.PrefixIdxType kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.IdxTypeKey,matrix/cortex/keys.IdxTypePrefix,matrix/cortex/keys.ParseIdxTypeKey,matrix/cortex/replay.derivedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixJournal kind=var
@@ -452,6 +608,7 @@ NODE id=matrix/cortex/keys.PrefixJournal kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.JournalKey,matrix/cortex/keys.JournalRange,matrix/cortex/keys.ParseJournalKey,matrix/cortex/replay.rebuildJournalMMR,matrix/cortex/replay.rebuildSalienceFromJournal,matrix/cortex/store.sealedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixLexical kind=var
@@ -459,6 +616,7 @@ NODE id=matrix/cortex/keys.PrefixLexical kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex.Cortex.RebuildLexicalIndex,matrix/cortex/replay.derivedPrefixes,matrix/cortex/store.sealedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixLexicalDoc kind=var
@@ -466,6 +624,7 @@ NODE id=matrix/cortex/keys.PrefixLexicalDoc kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex.Cortex.queryLexical,matrix/cortex.lexicalDocKey
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixLexicalTerm kind=var
@@ -473,6 +632,7 @@ NODE id=matrix/cortex/keys.PrefixLexicalTerm kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex.lexicalTermPrefix
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixMemoryHead kind=var
@@ -480,6 +640,7 @@ NODE id=matrix/cortex/keys.PrefixMemoryHead kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex.Cortex.backfillMemoryBatch,matrix/cortex/keys.MemoryHeadKey,matrix/cortex/replay.rebuildMemoriesIndexes,matrix/cortex/snapshot.countMemories,matrix/cortex/store.sealedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixMemoryVersion kind=var
@@ -487,6 +648,7 @@ NODE id=matrix/cortex/keys.PrefixMemoryVersion kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.MemoryVersionKey,matrix/cortex/keys.MemoryVersionPrefix,matrix/cortex/store.sealedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixMeta kind=var
@@ -494,6 +656,7 @@ NODE id=matrix/cortex/keys.PrefixMeta kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex.metaEmbedCursor,matrix/cortex.metaEmbedModel,matrix/cortex.metaEmbedVertexNext,matrix/cortex/keys.MetaJournalHead,matrix/cortex/keys.MetaSalienceWeights,matrix/cortex/keys.PrefixMetaCompileCache,matrix/cortex/keys.PrefixMetaGoalState,matrix/cortex/keys.PrefixMetaSessionHead,matrix/cortex/replay.metaEmbedCursor,matrix/cortex/replay.metaEmbedModel,matrix/cortex/replay.metaEmbedVertexNext,matrix/cortex/snapshot.keyMetaSnapshotSeq
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixMetaCompileCache kind=var
@@ -501,6 +664,8 @@ NODE id=matrix/cortex/keys.PrefixMetaCompileCache kind=var
   sig=[]byte
   doc=PrefixMetaCompileCache is the meta/ sub-namespace for the per-actor\ncompile-cache sidecar (Session 31d · P4). Each cached compile is\nstored under meta/compile_cache/<sha256_hex:64> where the hex hash\nis the cache key derived from\n\n	sha256(skill_digest || US || prose || US || cortex_snapshot_hash\n	  || US || verb || US || model_digest)\n\nThe cache is a SIDECAR (mirrors meta/salience_weights posture from\nPhase 12): runtime policy state only, NEVER part of cortex\nOverallRoot. Tombstoning a memory or rolling a new snapshot does NOT\ninvalidate cached entries — they are key-tied to the cortex root\nhash captured at compile time, so the next compile against a fresh\nroot simply misses and recomputes. Entry value is canonical-CBOR\ncompileCacheEntry (see executor/compilecache).
 EDGES
+  references=matrix/cortex/keys.PrefixMeta
+  ^references=matrix/cortex/keys.MetaCompileCacheKey
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixMetaGoalState kind=var
@@ -508,6 +673,8 @@ NODE id=matrix/cortex/keys.PrefixMetaGoalState kind=var
   sig=[]byte
   doc=PrefixMetaGoalState is the meta/ sub-namespace for the per-actor\ngoal runtime state sidecar (Session 32 ambient architect).\n\nOne Pebble key per Goal at meta/goal_state/<goal_id:16> holding a\ncanonical-CBOR cortex.GoalRuntimeState (see cortex/goal_state.go):\nscheduler debounce timestamp, daily counters, failure streak, last\ndecision, etc.\n\nSIDECAR posture: mirrors meta/salience_weights (Phase 12) and\nmeta/compile_cache (sess#31d). Runtime policy state ONLY; NEVER part\nof the cortex OverallRoot. Replay rebuilds drop these keys (replay/\ndrop.go); a freshly-rebuilt actor has cold-start scheduler state and\nthe next scheduler tick simply re-derives debounce/counters from\ncortex memories + journaled cost events.\n\nWhy a sidecar: scheduler state mutates on every tick (≈1Hz under load).\nIncluding it in the canonical root would force a journal entry per\ntick — an expensive footgun for an audit-grade ledger. The plan\n(S32Q4) explicitly pins this posture.
 EDGES
+  references=matrix/cortex/keys.PrefixMeta
+  ^references=matrix/cortex.Cortex.ListGoalStates,matrix/cortex/keys.MetaGoalStateKey,matrix/cortex/keys.ParseMetaGoalStateKey
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixMetaSessionHead kind=var
@@ -515,6 +682,8 @@ NODE id=matrix/cortex/keys.PrefixMetaSessionHead kind=var
   sig=[]byte
   doc=PrefixMetaSessionHead is the meta/ sub-namespace for the per-conversation\nsession sequence allocator (continuous-memory task 1.1).\n\nOne Pebble key per conversation at meta/session_head/<lpstr conv> holding\nthe next-to-allocate uint64 (8 bytes BE) session seq for that\nconversation. AppendMessage reads it (default 0 when absent) under the\nheld write batch, uses it as this message's seq, and writes seq+1 back —\nso per-conversation seqs are monotonic and gap-free.\n\nCANONICAL, not derived. Unlike meta/salience_weights or meta/goal_state\n(sidecar runtime state cleared on replay drop+rebuild), this counter is\nthe source of truth for the gap-free session seq and MUST be preserved\nacross replay exactly like meta/journal_head. It is deliberately NOT\nadded to replay/drop.go derivedSingleMetaKeys.
 EDGES
+  references=matrix/cortex/keys.PrefixMeta
+  ^references=matrix/cortex/keys.MetaSessionHead,matrix/cortex/keys.ParseMetaSessionHead
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixRange kind=func
@@ -522,6 +691,9 @@ NODE id=matrix/cortex/keys.PrefixRange kind=func
   sig=func PrefixRange(prefix []byte) (lower, upper []byte)
   doc=PrefixRange returns [prefix, upper) such that every Pebble key beginning\nwith prefix lies in the half-open range. Returns nil upper if prefix has no\nsuccessor (all 0xFF bytes); callers should treat that as "scan to end".
 EDGES
+  references=matrix/cortex/keys.i,matrix/cortex/keys.lower,matrix/cortex/keys.prefix,matrix/cortex/keys.upper
+  ^calls=matrix/cortex/keys.JournalRange,matrix/cortex/replay.DropDerived,matrix/cortex/store.Store.PrefixIter
+  ^references=matrix/cortex/keys.JournalRange,matrix/cortex/replay.DropDerived,matrix/cortex/store.Store.PrefixIter
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixRollup kind=var
@@ -529,6 +701,7 @@ NODE id=matrix/cortex/keys.PrefixRollup kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.ParseRollupKey,matrix/cortex/keys.RollupKey,matrix/cortex/keys.RollupTierPrefix,matrix/cortex/store.sealedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixSalience kind=var
@@ -536,6 +709,7 @@ NODE id=matrix/cortex/keys.PrefixSalience kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.SalienceKey,matrix/cortex/replay.derivedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixSession kind=var
@@ -543,6 +717,7 @@ NODE id=matrix/cortex/keys.PrefixSession kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex.Cortex.RebuildLexicalIndex,matrix/cortex.Cortex.backfillSessionBatch,matrix/cortex.Cortex.transcriptSliceApprox,matrix/cortex/keys.ParseSessionKey,matrix/cortex/keys.SessionConvPrefix,matrix/cortex/keys.SessionKey,matrix/cortex/store.sealedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixSessionBlob kind=var
@@ -550,6 +725,7 @@ NODE id=matrix/cortex/keys.PrefixSessionBlob kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.SessionBlobKey,matrix/cortex/store.sealedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixSnapshot kind=var
@@ -557,6 +733,7 @@ NODE id=matrix/cortex/keys.PrefixSnapshot kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.ParseSnapshotKey,matrix/cortex/keys.SnapshotKey,matrix/cortex/snapshot.State.IterSnapshots
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixStory kind=var
@@ -564,6 +741,7 @@ NODE id=matrix/cortex/keys.PrefixStory kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.StoryKey,matrix/cortex/store.sealedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixTombstone kind=var
@@ -571,6 +749,7 @@ NODE id=matrix/cortex/keys.PrefixTombstone kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex/keys.TombstoneKey,matrix/cortex/snapshot.countMemories
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixToolEventIdem kind=var
@@ -578,6 +757,7 @@ NODE id=matrix/cortex/keys.PrefixToolEventIdem kind=var
   sig=[]byte
   doc=PrefixToolEventIdem maps a runtime idempotency key to the journal seq\nof the KindToolEvent entry that recorded it — tev/idem/<sha256:32> →\n<seq:8>. Written in the same atomic batch as the journal entry it\npoints at, so a replayed tool execution resolves to the existing leaf\nwith one point lookup instead of a journal scan.
 EDGES
+  ^references=matrix/cortex/keys.ToolEventIdemKey
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PrefixVecMeta kind=var
@@ -585,6 +765,7 @@ NODE id=matrix/cortex/keys.PrefixVecMeta kind=var
   sig=[]byte
   doc=Namespace prefixes (§2.2 / §2.3). Kept as short ASCII so dump tools are\nhuman-readable. Each prefix ends with '/' for hierarchy.
 EDGES
+  ^references=matrix/cortex.loadOrBuildIndex,matrix/cortex.pebbleVectorStore.GetVector,matrix/cortex/keys.VecMetaKey,matrix/cortex/store.sealedPrefixes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PutLPString kind=func
@@ -592,6 +773,9 @@ NODE id=matrix/cortex/keys.PutLPString kind=func
   sig=func PutLPString(dst []byte, s string) ([]byte, error)
   doc=PutLPString appends a 1-byte length-prefixed ASCII/UTF-8 string. Returns an\nerror if s exceeds 255 bytes; in that case caller should hash s instead.
 EDGES
+  references=matrix/cortex/keys.ErrBadStrLen,matrix/cortex/keys.dst,matrix/cortex/keys.s
+  ^calls=matrix/cortex.lexicalDocKey,matrix/cortex.lexicalPostingKey,matrix/cortex/keys.CheckpointIntentPrefix,matrix/cortex/keys.CheckpointKey,matrix/cortex/keys.MetaSessionHead,matrix/cortex/keys.SessionBlobKey,matrix/cortex/keys.SessionConvPrefix,matrix/cortex/keys.SessionKey,matrix/cortex/keys.StoryKey
+  ^references=matrix/cortex.lexicalDocKey,matrix/cortex.lexicalPostingKey,matrix/cortex/keys.CheckpointIntentPrefix,matrix/cortex/keys.CheckpointKey,matrix/cortex/keys.MetaSessionHead,matrix/cortex/keys.SessionBlobKey,matrix/cortex/keys.SessionConvPrefix,matrix/cortex/keys.SessionKey,matrix/cortex/keys.StoryKey
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.PutUint64BE kind=func
@@ -599,6 +783,9 @@ NODE id=matrix/cortex/keys.PutUint64BE kind=func
   sig=func PutUint64BE(dst []byte, v uint64) []byte
   doc=PutUint64BE appends an 8-byte big-endian uint64 to dst.
 EDGES
+  references=matrix/cortex/keys.buf,matrix/cortex/keys.dst,matrix/cortex/keys.v
+  ^calls=matrix/cortex.Cortex.AppendMessage,matrix/cortex.lexicalDocKey,matrix/cortex.lexicalPostingKey,matrix/cortex/keys.AccumMMRNodeKey,matrix/cortex/keys.EnrichKey,matrix/cortex/keys.IdxActorObjKey,matrix/cortex/keys.IdxTagKey,matrix/cortex/keys.IdxTypeKey,matrix/cortex/keys.JournalKey,matrix/cortex/keys.MemoryVersionKey,matrix/cortex/keys.RollupKey,matrix/cortex/keys.SessionBlobKey,matrix/cortex/keys.SessionKey,matrix/cortex/keys.SnapshotKey
+  ^references=matrix/cortex.Cortex.AppendMessage,matrix/cortex.lexicalDocKey,matrix/cortex.lexicalPostingKey,matrix/cortex/keys.AccumMMRNodeKey,matrix/cortex/keys.EnrichKey,matrix/cortex/keys.IdxActorObjKey,matrix/cortex/keys.IdxTagKey,matrix/cortex/keys.IdxTypeKey,matrix/cortex/keys.JournalKey,matrix/cortex/keys.MemoryVersionKey,matrix/cortex/keys.RollupKey,matrix/cortex/keys.SessionBlobKey,matrix/cortex/keys.SessionKey,matrix/cortex/keys.SnapshotKey
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ReadLPString kind=func
@@ -606,6 +793,9 @@ NODE id=matrix/cortex/keys.ReadLPString kind=func
   sig=func ReadLPString(src []byte) (s string, rest []byte, err error)
   doc=ReadLPString reads a 1-byte length-prefixed string.
 EDGES
+  references=matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.n,matrix/cortex/keys.src
+  ^calls=matrix/cortex/keys.ParseCheckpointKey,matrix/cortex/keys.ParseMetaSessionHead,matrix/cortex/keys.ParseSessionKey
+  ^references=matrix/cortex/keys.ParseCheckpointKey,matrix/cortex/keys.ParseMetaSessionHead,matrix/cortex/keys.ParseSessionKey
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ReadUint64BE kind=func
@@ -613,6 +803,9 @@ NODE id=matrix/cortex/keys.ReadUint64BE kind=func
   sig=func ReadUint64BE(src []byte) (v uint64, rest []byte, err error)
   doc=ReadUint64BE reads an 8-byte big-endian uint64 from src; returns the value\nand the remainder of src after the 8 bytes.
 EDGES
+  references=matrix/cortex/keys.ErrShortKey,matrix/cortex/keys.src
+  ^calls=matrix/cortex.Cortex.AppendMessage,matrix/cortex/keys.ParseIdxTagKey,matrix/cortex/keys.ParseIdxTypeKey,matrix/cortex/keys.ParseSessionKey
+  ^references=matrix/cortex.Cortex.AppendMessage,matrix/cortex/keys.ParseIdxTagKey,matrix/cortex/keys.ParseIdxTypeKey,matrix/cortex/keys.ParseSessionKey
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.RollupKey kind=func
@@ -620,6 +813,10 @@ NODE id=matrix/cortex/keys.RollupKey kind=func
   sig=func RollupKey(tier uint8, start uint64) []byte
   doc=RollupKey returns roll/<tier:1><start:8 BE>.\n\nContinuous-memory task 2.1: the derived temporal-ladder rollup record for\none time window. The 1-byte tier followed by an 8-byte big-endian window\nstart (Unix nanoseconds, cast from int64) guarantees byte-sort == (tier,\nstart) sort, so a tier prefix scan (RollupTierPrefix) yields records in\nascending window-start order. Same key-family posture as chk/ (compaction\ncheckpoints) and sess/ (session transcript): a derived record keyed by its\nown identity — here the (tier, window-start) time window — NOT a 10th\nmemory type and never an anchored SMT write.
 EDGES
+  calls=matrix/cortex/keys.PutUint64BE
+  references=matrix/cortex/keys.PrefixRollup,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.out,matrix/cortex/keys.start,matrix/cortex/keys.tier
+  ^calls=matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.LoadRollup,matrix/cortex.Cortex.buildCoarseRollup
+  ^references=matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.LoadRollup,matrix/cortex.Cortex.buildCoarseRollup
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.RollupTierPrefix kind=func
@@ -627,6 +824,9 @@ NODE id=matrix/cortex/keys.RollupTierPrefix kind=func
   sig=func RollupTierPrefix(tier uint8) []byte
   doc=RollupTierPrefix returns roll/<tier:1>, the prefix for scanning every\nrollup of one tier in ascending window-start order.
 EDGES
+  references=matrix/cortex/keys.PrefixRollup,matrix/cortex/keys.out,matrix/cortex/keys.tier
+  ^calls=matrix/cortex.Cortex.Rollups
+  ^references=matrix/cortex.Cortex.Rollups
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.SalienceKey kind=func
@@ -634,6 +834,9 @@ NODE id=matrix/cortex/keys.SalienceKey kind=func
   sig=func SalienceKey(id ULID) []byte
   doc=SalienceKey returns salience/<id:16>.
 EDGES
+  references=matrix/cortex/keys.PrefixSalience,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.id,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/salience.Read
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/salience.Read
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.SessionBlobKey kind=func
@@ -641,6 +844,10 @@ NODE id=matrix/cortex/keys.SessionBlobKey kind=func
   sig=func SessionBlobKey(conv string, seq uint64) ([]byte, error)
   doc=SessionBlobKey returns sessblob/<lpstr conv><seq:8 BE>. Holds a large\ntool_result payload that was spilled out of the session record proper\n(overflow discipline — keeps sess/ a page-in target rather than resident\nbloat). Same layout/constraints as SessionKey.
 EDGES
+  calls=matrix/cortex/keys.PutLPString,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.ValidateNoSeparator
+  references=matrix/cortex/keys.PrefixSessionBlob,matrix/cortex/keys.PutLPString,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/keys.conv,matrix/cortex/keys.err,matrix/cortex/keys.out,matrix/cortex/keys.seq
+  ^calls=matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.ResolveToolResult
+  ^references=matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.ResolveToolResult
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.SessionConvPrefix kind=func
@@ -648,6 +855,10 @@ NODE id=matrix/cortex/keys.SessionConvPrefix kind=func
   sig=func SessionConvPrefix(conv string) ([]byte, error)
   doc=SessionConvPrefix returns sess/<lpstr conv>, the prefix for scanning\nevery message record of one conversation in ascending seq order. Same\nconstraints as SessionKey.
 EDGES
+  calls=matrix/cortex/keys.PutLPString,matrix/cortex/keys.ValidateNoSeparator
+  references=matrix/cortex/keys.PrefixSession,matrix/cortex/keys.PutLPString,matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/keys.conv,matrix/cortex/keys.err,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.Transcript
+  ^references=matrix/cortex.Cortex.Transcript
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.SessionKey kind=func
@@ -655,6 +866,10 @@ NODE id=matrix/cortex/keys.SessionKey kind=func
   sig=func SessionKey(conv string, seq uint64) ([]byte, error)
   doc=SessionKey returns sess/<lpstr conv><seq:8 BE>.\n\nContinuous-memory task 1.1: the durable session/transcript record for\none message. The 1-byte length-prefixed conversation id followed by an\n8-byte big-endian seq guarantees byte-sort == (conv, seq) sort, so a\nprefix scan on one conversation (SessionConvPrefix) yields records in\nascending seq order. The length prefix disambiguates conversations whose\nids are prefixes of one another (e.g. "a" vs "ab").\n\nconv must not contain '/' and must be <=255 bytes (validated).
 EDGES
+  calls=matrix/cortex/keys.PutLPString,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.ValidateNoSeparator
+  references=matrix/cortex/keys.PrefixSession,matrix/cortex/keys.PutLPString,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/keys.conv,matrix/cortex/keys.err,matrix/cortex/keys.out,matrix/cortex/keys.seq
+  ^calls=matrix/cortex.Cortex.AppendMessage
+  ^references=matrix/cortex.Cortex.AppendMessage
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.SnapshotKey kind=func
@@ -662,6 +877,10 @@ NODE id=matrix/cortex/keys.SnapshotKey kind=func
   sig=func SnapshotKey(seq uint64) []byte
   doc=SnapshotKey returns snap/<seq:8>.
 EDGES
+  calls=matrix/cortex/keys.PutUint64BE
+  references=matrix/cortex/keys.PrefixSnapshot,matrix/cortex/keys.PutUint64BE,matrix/cortex/keys.out,matrix/cortex/keys.seq
+  ^calls=matrix/cortex/snapshot.State.LoadSnapshot,matrix/cortex/snapshot.State.Snapshot
+  ^references=matrix/cortex/snapshot.State.LoadSnapshot,matrix/cortex/snapshot.State.Snapshot
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.StoryKey kind=func
@@ -669,6 +888,10 @@ NODE id=matrix/cortex/keys.StoryKey kind=func
   sig=func StoryKey(conv string) ([]byte, error)
   doc=StoryKey returns story/<lpstr conv>.\n\nContinuous-memory task 4.2: the durable per-conversation "story so far"\nrecord — a single record per conversation (NOT keyed by seq/window like\nsess/ or roll/) that is overwritten as the conversation's transcript\ngrows. The 1-byte length-prefixed conversation id disambiguates\nconversations whose ids are prefixes of one another, matching the\nSessionKey/RollupKey discipline. Same derived-lane posture: rebuildable\nfrom the conversation's own sess/ transcript, no anchored SMT write.\n\nconv must not contain '/' and must be <=255 bytes (validated).
 EDGES
+  calls=matrix/cortex/keys.PutLPString,matrix/cortex/keys.ValidateNoSeparator
+  references=matrix/cortex/keys.PrefixStory,matrix/cortex/keys.PutLPString,matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/keys.conv,matrix/cortex/keys.err,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.LoadStorySoFar
+  ^references=matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.LoadStorySoFar
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.TagHashSize kind=const
@@ -676,6 +899,7 @@ NODE id=matrix/cortex/keys.TagHashSize kind=const
   sig=untyped int
   doc=TagHashSize is the prefix length of the tag hash kept in idx/tag keys.\nEight bytes is sufficient: collision probability ≈ 1/2^32 between any two\ntags in an actor's tag set, which is bounded at MaxTagsPerMemory*N memories\n(well under 2^16 tags per actor in realistic loads).
 EDGES
+  ^references=matrix/cortex.hashTag,matrix/cortex/keys.IdxTagKey,matrix/cortex/keys.IdxTagPrefix,matrix/cortex/keys.ParseIdxTagKey,matrix/cortex/query.HashTag,matrix/cortex/query.scanIdxTag,matrix/cortex/replay.hashTag
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.TombstoneKey kind=func
@@ -683,6 +907,9 @@ NODE id=matrix/cortex/keys.TombstoneKey kind=func
   sig=func TombstoneKey(id ULID) []byte
   doc=TombstoneKey returns tomb/<id:16>.
 EDGES
+  references=matrix/cortex/keys.PrefixTombstone,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.id,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.Tombstone
+  ^references=matrix/cortex.Cortex.Tombstone
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ToolEventIdemKey kind=func
@@ -690,6 +917,9 @@ NODE id=matrix/cortex/keys.ToolEventIdemKey kind=func
   sig=func ToolEventIdemKey(key string) []byte
   doc=ToolEventIdemKey returns tev/idem/<sha256(key):32>, the point-lookup key\nmapping a runtime idempotency key to the seq of the KindToolEvent journal\nentry that already recorded it. The idempotency key is hashed rather than\nembedded so tool names and argument digests never appear in a key (store\nkeys are not sealed), and so the key stays fixed-width.
 EDGES
+  references=matrix/cortex/keys.PrefixToolEventIdem,matrix/cortex/keys.key,matrix/cortex/keys.out,matrix/cortex/keys.sum
+  ^calls=matrix/cortex.Cortex.RecordToolEvent,matrix/cortex.Cortex.findToolEventByIdempotency
+  ^references=matrix/cortex.Cortex.RecordToolEvent,matrix/cortex.Cortex.findToolEventByIdempotency
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ULID kind=type
@@ -697,6 +927,8 @@ NODE id=matrix/cortex/keys.ULID kind=type
   sig=type ULID [ULIDSize]byte
   doc=ULID is a 16-byte binary ULID. We mirror oklog/ulid/v2's representation but\nkeep keys/ free of that import so callers can choose.
 EDGES
+  references=matrix/cortex/keys.ULIDSize
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.iterEdges,matrix/cortex.Cortex.resolveNear,matrix/cortex.loadHead,matrix/cortex.loadVersion,matrix/cortex.toKeysULID,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/keys.EdgeFromKey,matrix/cortex/keys.EdgeFromPrefix,matrix/cortex/keys.EdgeFromTypePrefix,matrix/cortex/keys.EdgeToKey,matrix/cortex/keys.EdgeToPrefix,matrix/cortex/keys.EdgeToTypePrefix,matrix/cortex/keys.IdxActorObjKey,matrix/cortex/keys.IdxFrameKey,matrix/cortex/keys.IdxTagKey,matrix/cortex/keys.IdxTypeKey,matrix/cortex/keys.MemoryHeadKey,matrix/cortex/keys.MemoryVersionKey,matrix/cortex/keys.MemoryVersionPrefix,matrix/cortex/keys.MetaGoalStateKey,matrix/cortex/keys.ParseEdgeFromKey,matrix/cortex/keys.ParseEdgeToKey,matrix/cortex/keys.ParseIdxActorObjKey,matrix/cortex/keys.ParseIdxFrameKey,matrix/cortex/keys.ParseIdxTagKey,matrix/cortex/keys.ParseIdxTypeKey,matrix/cortex/keys.ParseMetaGoalStateKey,matrix/cortex/keys.SalienceKey,matrix/cortex/keys.TombstoneKey,matrix/cortex/keys.VecMetaKey,matrix/cortex/query.Run,matrix/cortex/query.journalLateBinding,matrix/cortex/query.planCandidatesGraph,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.toKeysULID,matrix/cortex/salience.Read
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ULIDSize kind=const
@@ -704,6 +936,7 @@ NODE id=matrix/cortex/keys.ULIDSize kind=const
   sig=untyped int
   doc=ULIDSize is the binary ULID length in bytes.
 EDGES
+  ^references=matrix/cortex.loadOrBuildIndex,matrix/cortex/keys.EdgeFromKey,matrix/cortex/keys.EdgeFromPrefix,matrix/cortex/keys.EdgeFromTypePrefix,matrix/cortex/keys.EdgeToKey,matrix/cortex/keys.EdgeToPrefix,matrix/cortex/keys.EdgeToTypePrefix,matrix/cortex/keys.IdxActorObjKey,matrix/cortex/keys.IdxFrameKey,matrix/cortex/keys.IdxTagKey,matrix/cortex/keys.IdxTypeKey,matrix/cortex/keys.MemoryHeadKey,matrix/cortex/keys.MemoryVersionKey,matrix/cortex/keys.MemoryVersionPrefix,matrix/cortex/keys.MetaGoalStateKey,matrix/cortex/keys.ParseEdgeFromKey,matrix/cortex/keys.ParseEdgeToKey,matrix/cortex/keys.ParseIdxActorObjKey,matrix/cortex/keys.ParseIdxFrameKey,matrix/cortex/keys.ParseIdxTagKey,matrix/cortex/keys.ParseIdxTypeKey,matrix/cortex/keys.ParseMetaGoalStateKey,matrix/cortex/keys.SalienceKey,matrix/cortex/keys.TombstoneKey,matrix/cortex/keys.ULID,matrix/cortex/keys.VecMetaKey,matrix/cortex/replay.rebuildMemoriesIndexes
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.ValidateNoSeparator kind=func
@@ -711,6 +944,9 @@ NODE id=matrix/cortex/keys.ValidateNoSeparator kind=func
   sig=func ValidateNoSeparator(s string) error
   doc=ValidateNoSeparator returns an error if s contains '/' (0x2F). Path\ncomponents inside keys must not contain the separator.
 EDGES
+  references=matrix/cortex/keys.i,matrix/cortex/keys.s
+  ^calls=matrix/cortex/keys.CheckpointIntentPrefix,matrix/cortex/keys.CheckpointKey,matrix/cortex/keys.IdxSMTNamespacePrefix,matrix/cortex/keys.IdxSMTNodeKey,matrix/cortex/keys.MetaSessionHead,matrix/cortex/keys.SessionBlobKey,matrix/cortex/keys.SessionConvPrefix,matrix/cortex/keys.SessionKey,matrix/cortex/keys.StoryKey,matrix/cortex/store.Open
+  ^references=matrix/cortex/keys.CheckpointIntentPrefix,matrix/cortex/keys.CheckpointKey,matrix/cortex/keys.IdxSMTNamespacePrefix,matrix/cortex/keys.IdxSMTNodeKey,matrix/cortex/keys.MetaSessionHead,matrix/cortex/keys.SessionBlobKey,matrix/cortex/keys.SessionConvPrefix,matrix/cortex/keys.SessionKey,matrix/cortex/keys.StoryKey,matrix/cortex/store.Open
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.VecMetaKey kind=func
@@ -718,6 +954,9 @@ NODE id=matrix/cortex/keys.VecMetaKey kind=func
   sig=func VecMetaKey(id ULID) []byte
   doc=VecMetaKey returns vec/meta/<id:16>.
 EDGES
+  references=matrix/cortex/keys.PrefixVecMeta,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/keys.id,matrix/cortex/keys.out
+  ^calls=matrix/cortex.Cortex.resolveNear,matrix/cortex.embedderState.commitEmbedding
+  ^references=matrix/cortex.Cortex.resolveNear,matrix/cortex.embedderState.commitEmbedding
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys.hasPrefix kind=func
@@ -725,6 +964,9 @@ NODE id=matrix/cortex/keys.hasPrefix kind=func
   sig=func hasPrefix(b, p []byte) bool
   doc=hasPrefix reports whether b begins with p, allocation-free.
 EDGES
+  references=matrix/cortex/keys.b,matrix/cortex/keys.i,matrix/cortex/keys.p
+  ^calls=matrix/cortex/keys.ParseCheckpointKey,matrix/cortex/keys.ParseEdgeFromKey,matrix/cortex/keys.ParseEdgeToKey,matrix/cortex/keys.ParseEnrichKey,matrix/cortex/keys.ParseIdxActorObjKey,matrix/cortex/keys.ParseIdxFrameKey,matrix/cortex/keys.ParseIdxTagKey,matrix/cortex/keys.ParseIdxTypeKey,matrix/cortex/keys.ParseJournalKey,matrix/cortex/keys.ParseMetaGoalStateKey,matrix/cortex/keys.ParseMetaSessionHead,matrix/cortex/keys.ParseRollupKey,matrix/cortex/keys.ParseSessionKey,matrix/cortex/keys.ParseSnapshotKey
+  ^references=matrix/cortex/keys.ParseCheckpointKey,matrix/cortex/keys.ParseEdgeFromKey,matrix/cortex/keys.ParseEdgeToKey,matrix/cortex/keys.ParseEnrichKey,matrix/cortex/keys.ParseIdxActorObjKey,matrix/cortex/keys.ParseIdxFrameKey,matrix/cortex/keys.ParseIdxTagKey,matrix/cortex/keys.ParseIdxTypeKey,matrix/cortex/keys.ParseJournalKey,matrix/cortex/keys.ParseMetaGoalStateKey,matrix/cortex/keys.ParseMetaSessionHead,matrix/cortex/keys.ParseRollupKey,matrix/cortex/keys.ParseSessionKey,matrix/cortex/keys.ParseSnapshotKey
   ^defines=matrix/cortex/keys/keys.go
 
 NODE id=matrix/cortex/keys/keys.go kind=file

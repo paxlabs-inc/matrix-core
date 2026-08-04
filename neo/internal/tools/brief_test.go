@@ -63,7 +63,7 @@ func TestBriefSchemasPositiveAllowlist(t *testing.T) {
 }
 
 // TestBriefSchemasNoRecallWhenUnwired proves memory_recall is absent when the
-// cortex recall seam is not wired.
+// Neocortex recall seam is not wired.
 func TestBriefSchemasNoRecallWhenUnwired(t *testing.T) {
 	m := briefTestManager()
 	m.recall = nil

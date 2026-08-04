@@ -202,16 +202,16 @@ func (a *Agent) systemPrompt() string {
 
 	if a.tools != nil && a.tools.RecallEnabled() {
 		b.WriteString("Your memory:\n")
-		b.WriteString("- You have a durable memory (the cortex) that persists across conversations and restarts. Treat it as a tool you PULL from, not a blob you're handed: call memory_recall to fetch what's relevant before you reason about the user, their projects, or past work — and before claiming a fact you'd have learned earlier.\n")
+		b.WriteString("- You have a durable memory (the Neocortex) that persists across conversations and restarts. Treat it as a tool you PULL from, not a blob you're handed: call memory_recall to fetch what's relevant before you reason about the user, their projects, or past work — and before claiming a fact you'd have learned earlier.\n")
 		b.WriteString("- Use it iteratively: start with a broad query, read what comes back, then call memory_recall again with a narrower query (or a type filter) as you learn what you actually need. Narrow with 'types' (e.g. fact, preference, pattern) and pass 'as_of' to ask what was true at a past time. Only the pinned essentials (who the user is, your hard rules, the active goal) are always in front of you; everything else you fetch on demand.\n\n")
 	}
 	if a.tools != nil && a.tools.MemoryMutationEnabled() {
 		b.WriteString("Correcting memory:\n")
 		b.WriteString("- For a user-requested memory create, correction, replacement, or deletion, use memory_mutate. Use supersede for corrections so the replacement becomes current and the old value remains historical. Put multiple corrections in one items array.\n")
 		if a.cfg.InteractionPosture {
-			b.WriteString("- This tool changes only the user's learned Cortex memory. Never interpret a generic request to update a record, file, database row, document, benchmark, or workspace artifact as permission to mutate Cortex; use memory_mutate only when the user explicitly asks you to remember, forget, or correct something in your durable memory.\n")
+			b.WriteString("- This tool changes only the user's learned Neocortex memory. Never interpret a generic request to update a record, file, database row, document, benchmark, or workspace artifact as permission to mutate Neocortex; use memory_mutate only when the user explicitly asks you to remember, forget, or correct something in your durable memory.\n")
 		}
-		b.WriteString("- Never probe or mutate memory through shell, curl, localhost endpoints, or cortex-shell; the typed tool is the only mutation path. Its confirmation is user-facing and intentionally hides internal Cortex identifiers.\n\n")
+		b.WriteString("- Never probe or mutate memory through shell, curl, localhost endpoints, or a memory-store CLI; the typed tool is the only mutation path. Its confirmation is user-facing and intentionally hides internal Neocortex identifiers.\n\n")
 	}
 
 	if a.tools != nil && a.tools.TodoEnabled() {
@@ -226,7 +226,7 @@ func (a *Agent) systemPrompt() string {
 	b.WriteString("- Be honest about coverage: if everything asked for is done, say so; if something is still unresolved or you had to assume a default, state that plainly in your answer rather than implying it's complete. Never claim a task is fully done when it is not.\n")
 	b.WriteString("- Back your claims with what you actually did: if you ran tools, took an action, or stated real-world facts, make sure your answer reflects the real results (command output, file paths, URLs, transaction hashes). Don't assert something you didn't verify — if you're not actually done, keep working instead of wrapping up.\n\n")
 
-	b.WriteString("Grounding on your own memory (you have a durable cortex — USE it before you guess or conclude):\n")
+	b.WriteString("Grounding on your own memory (you have a durable Neocortex — USE it before you guess or conclude):\n")
 	b.WriteString("- You have done things before. Before you act on an external system whose exact identifier — its host, base URL, endpoint, credential, account id, contract address — is NOT written verbatim in the message you were just given, call memory_recall FIRST to pull the identifier you established last time. Never fill that gap by guessing a variant (\".app\" vs \".com\", \"www\" vs bare, a plausible path). A recurring task you have completed before is a memory lookup, not a fresh guess.\n")
 	b.WriteString("- A surprising or negative result from an identifier YOU generated is evidence the IDENTIFIER is wrong, not that the world changed. A parked/for-sale page, a redirect to a domain seller, a DNS failure, or a 404 on a host you guessed means \"I have the wrong address\" — recall or ask for the right one. It does NOT mean the service is gone. Never conclude a resource is defunct, shut down, or no longer exists from a single failed probe of a self-generated identifier.\n")
 	b.WriteString("- Never record a conclusion you have not verified as a durable fact, and never overwrite what you already know with a guess. Failing to reach something is not proof it does not exist. If a new conclusion contradicts what your memory already says, the contradiction itself is the signal to STOP and reconcile — recall the prior fact and trust the verified one over the fresh guess.\n\n")

@@ -11,10 +11,10 @@
 //
 // It is a pure SIDECAR, mirroring neo/internal/trace: an append-only JSONL
 // store on the machine volume that survives reload, suspend, redeploy, and
-// reopen-from-history. It never touches cortex, signs anything, or perturbs the
+// reopen-from-history. It never touches Neocortex, signs anything, or perturbs the
 // plan/walk. It obeys the consumer rule — it carries the RESULT, not the
 // protocol: only the opportunity summary, a result summary, the conversation
-// id, a created_at, and an unread flag. No Chronos/alarm/marker/cortex jargon,
+// id, a created_at, and an unread flag. No Chronos/alarm/marker/Neocortex jargon,
 // and NO secrets, tokens, or keys (req 6.5 / 8.5).
 //
 // Unlike the trace store (a hot-path broker tap that must never block), a
@@ -319,7 +319,7 @@ func (s *Store) readJSONL(path string) []Record {
 }
 
 // Dir resolves Neo's Automatrix completion-inbox directory. An explicit
-// override wins; else it is derived from the cortex root's parent (matching the
+// override wins; else it is derived from the Neocortex root's parent (matching the
 // conversation / task / trace stores, so the inbox shares /data with them and
 // survives suspend / redeploy). Returns "" when neither is available
 // (persistence disabled).

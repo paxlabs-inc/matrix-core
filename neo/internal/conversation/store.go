@@ -28,7 +28,7 @@
 // The rename-based atomic write (tmp+rename) is reserved for the archive
 // rollup/compaction step, never for the per-turn append.
 //
-// It is a pure side-channel: it never touches cortex, signs anything, or
+// It is a pure side-channel: it never touches Neocortex, signs anything, or
 // perturbs replay — conversation continuity and the audit/replay chain are
 // independent storage.
 package conversation
@@ -1027,7 +1027,7 @@ func truncateLabel(s string, n int) string {
 }
 
 // Dir resolves Neo's conversation directory. An explicit override wins; else it
-// is derived from the cortex root's parent (matching the daemon, so Neo and the
+// is derived from the Neocortex root's parent (matching the daemon, so Neo and the
 // daemon share /data/conversations and history is unified). Returns "" when
 // neither is available (persistence disabled).
 func Dir(override, cortexRoot string) string {

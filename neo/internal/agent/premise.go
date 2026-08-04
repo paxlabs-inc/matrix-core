@@ -4,7 +4,7 @@
 // premise.go — Mechanism 1 of the epistemic core (epistemic-core req.4): the
 // premise ledger. When a run's plan forms, its load-bearing factual premises
 // are extracted into run state, each carrying provenance — cited (self-model |
-// cortex | tool-evidence | user, with the citation) or assumption — so
+// Neocortex | tool-evidence | user, with the citation) or assumption — so
 // assumption is visible state instead of invisible confidence. The ledger
 // renders resident in the fixed tail slot (premiseTail) and transitions
 // (discharge to cited, refute) re-render the step they occur.
@@ -33,7 +33,7 @@ type Premise struct {
 	ID        int
 	Statement string
 	Status    premiseStatus
-	Source    string // self-model | cortex | tool-evidence | user (when cited)
+	Source    string // self-model | Neocortex | tool-evidence | user (when cited)
 	Citation  string // the citation backing a cited premise
 	SelfRef   bool   // a claim about the agent's own capabilities/surfaces
 	Revised   bool   // a refuted premise whose forced plan revision has run
@@ -45,7 +45,7 @@ type Premise struct {
 }
 
 // premiseLedger is the run-state ledger. It is plain agent-core state (no new
-// cortex memory types — design non-goal); durable learnings still flow through
+// Neocortex memory types — design non-goal); durable learnings still flow through
 // the existing writeback paths.
 type premiseLedger struct {
 	items  []*Premise
@@ -261,7 +261,7 @@ func (a *Agent) extractPremisesModel(ctx context.Context, planText string) []Pre
 		case "tool-evidence":
 			p.Status, p.Source = premiseCited, "tool-evidence"
 		case "memory":
-			p.Status, p.Source = premiseCited, "cortex"
+			p.Status, p.Source = premiseCited, "Neocortex"
 		case "self":
 			// A self-claim never rides the extractor's word: it starts as an
 			// assumption, and it is gate-checkable SelfRef only when the

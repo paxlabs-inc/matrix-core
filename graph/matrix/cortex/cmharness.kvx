@@ -1,9 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
+# GENERATED gen=codegraph do-not-edit merkle=b3:a3b50d31ca917abb4dd89a4fa84f1fd64199ee0406e964cf690738714ff1a189
 
 NODE id=matrix/cortex/cmharness kind=package
   digest=b3:fa5e883d0a0bdf864a2d35ff08a7868d62eee633f57c05f7018bb3e2ec5bafc4 file=cortex/cmharness range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/cmharness/harness.go
+  imports=matrix/cortex,matrix/cortex/replay,matrix/cortex/snapshot
   ^contains=mod:matrix/cortex
 
 NODE id=matrix/cortex/cmharness.AnchoredRoots kind=func
@@ -11,6 +12,10 @@ NODE id=matrix/cortex/cmharness.AnchoredRoots kind=func
   sig=func AnchoredRoots(c *cortex.Cortex) (map[string][32]byte, error)
   doc=AnchoredRoots returns the current SMT root for each anchored namespace\n(snapshot.AnchoredNamespaces = {"edges","memories"}), keyed by namespace.\nThese are the byte-strings that define the anchored world-state; a\nderived-lane write must leave every one of them unchanged.
 EDGES
+  calls=matrix/cortex.Cortex.Snap,matrix/cortex/snapshot.SMT.Root,matrix/cortex/snapshot.State.SMT
+  references=matrix/cortex.Cortex,matrix/cortex.Cortex.Snap,matrix/cortex/cmharness.c,matrix/cortex/cmharness.err,matrix/cortex/cmharness.ns,matrix/cortex/cmharness.out,matrix/cortex/cmharness.root,matrix/cortex/cmharness.smt,matrix/cortex/cmharness.snap,matrix/cortex/snapshot.AnchoredNamespaces,matrix/cortex/snapshot.SMT.Root,matrix/cortex/snapshot.State.SMT
+  ^calls=matrix/cortex/cmharness.AssertNoAnchoredDrift,matrix/cortex/cmharness.CompareAnchoredRoots
+  ^references=matrix/cortex/cmharness.AssertNoAnchoredDrift,matrix/cortex/cmharness.CompareAnchoredRoots
   ^defines=matrix/cortex/cmharness/harness.go
 
 NODE id=matrix/cortex/cmharness.AssertNoAnchoredDrift kind=func
@@ -18,6 +23,8 @@ NODE id=matrix/cortex/cmharness.AssertNoAnchoredDrift kind=func
   sig=func AssertNoAnchoredDrift(c *cortex.Cortex, mutate func() error) error
   doc=AssertNoAnchoredDrift captures the anchored roots, runs mutate, re-captures,\nand returns a non-nil error if any anchored root changed. This is the\nreusable req.11.1 assertion for ANY derived-lane write: pass an\nAppendMessage (now) or a rollup/enrichment/cache write (later) as mutate.\n\nmutate must not be nil. Any error mutate returns is propagated (wrapped)\nbefore the after-capture, so a failed derived write is surfaced honestly\nrather than masquerading as "no drift".
 EDGES
+  calls=matrix/cortex/cmharness.AnchoredRoots
+  references=matrix/cortex.Cortex,matrix/cortex/cmharness.AnchoredRoots,matrix/cortex/cmharness.after,matrix/cortex/cmharness.before,matrix/cortex/cmharness.c,matrix/cortex/cmharness.err,matrix/cortex/cmharness.mutate,matrix/cortex/cmharness.ns,matrix/cortex/snapshot.AnchoredNamespaces
   ^defines=matrix/cortex/cmharness/harness.go
 
 NODE id=matrix/cortex/cmharness.CompareAnchoredRoots kind=func
@@ -25,6 +32,8 @@ NODE id=matrix/cortex/cmharness.CompareAnchoredRoots kind=func
   sig=func CompareAnchoredRoots(a, b *cortex.Cortex) error
   doc=CompareAnchoredRoots returns a non-nil error unless both instances' anchored\nroots (memories AND edges) are byte-identical. This is the reusable\nactive-vs-inactive req.11.2 assertion: drive two cortex instances with the\nSAME anchored ops (identical deterministic clock + idGen so memory IDs\nmatch), have one of them additionally carry continuous-memory derived-lane\nwrites, then assert their anchored world-state is identical.
 EDGES
+  calls=matrix/cortex/cmharness.AnchoredRoots
+  references=matrix/cortex.Cortex,matrix/cortex/cmharness.AnchoredRoots,matrix/cortex/cmharness.a,matrix/cortex/cmharness.b,matrix/cortex/cmharness.err,matrix/cortex/cmharness.ns,matrix/cortex/cmharness.ra,matrix/cortex/cmharness.rb,matrix/cortex/snapshot.AnchoredNamespaces
   ^defines=matrix/cortex/cmharness/harness.go
 
 NODE id=matrix/cortex/cmharness.ReplayPreservesRoot kind=func
@@ -32,6 +41,8 @@ NODE id=matrix/cortex/cmharness.ReplayPreservesRoot kind=func
   sig=func ReplayPreservesRoot(c *cortex.Cortex, now func() time.Time) (*replay.Result, error)
   doc=ReplayPreservesRoot runs replay.Rebuild against the cortex's own store +\nsnapshot state and then replay.VerifyPreservesRoot on the result. It returns\nthe *replay.Result on success, or the wrapped root-mismatch error on\nfailure. This is the reusable D11 proof entrypoint: it proves the FULL\nOverallRoot (including the derived-lane journal-MMR leaves) rebuilds\nbyte-identically from canonical state after dropping the derived indexes.\n\nnow is the clock used for salience recomputation during rebuild (salience is\nNOT an OverallRoot input, so any clock preserves the root); nil falls back to\nthe wallclock inside replay.Rebuild.\n\nNOTE on lane discipline: this must live in cmharness (not in package replay)\nbecause it drives a *cortex.Cortex and replay cannot import cortex (cortex\nimports replay).
 EDGES
+  calls=matrix/cortex.Cortex.Snap,matrix/cortex.Cortex.Store,matrix/cortex/replay.Rebuild,matrix/cortex/replay.VerifyPreservesRoot
+  references=matrix/cortex.Cortex,matrix/cortex.Cortex.Snap,matrix/cortex.Cortex.Store,matrix/cortex/cmharness.c,matrix/cortex/cmharness.err,matrix/cortex/cmharness.now,matrix/cortex/cmharness.res,matrix/cortex/replay.Options,matrix/cortex/replay.Rebuild,matrix/cortex/replay.Result,matrix/cortex/replay.VerifyPreservesRoot
   ^defines=matrix/cortex/cmharness/harness.go
 
 NODE id=matrix/cortex/cmharness/harness.go kind=file
