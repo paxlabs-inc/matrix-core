@@ -1,10 +1,9 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/executor/cmd/mcl-e2e kind=package
   digest=b3:dd4f915997a8071cdaa82e369fd5b3a3cf44985d5e5b31cd6d3206d982af3f53 file=executor/cmd/mcl-e2e range=0:0 lang=go exported=true
 EDGES
   contains=matrix/executor/cmd/mcl-e2e/assert.go,matrix/executor/cmd/mcl-e2e/compile.go,matrix/executor/cmd/mcl-e2e/cortex_seed.go,matrix/executor/cmd/mcl-e2e/envelopes.go,matrix/executor/cmd/mcl-e2e/exec_helpers.go,matrix/executor/cmd/mcl-e2e/lifecycle.go,matrix/executor/cmd/mcl-e2e/main.go,matrix/executor/cmd/mcl-e2e/plan.go,matrix/executor/cmd/mcl-e2e/replay.go,matrix/executor/cmd/mcl-e2e/run.go,matrix/executor/cmd/mcl-e2e/setup.go,matrix/executor/cmd/mcl-e2e/transcript.go,matrix/executor/cmd/mcl-e2e/walk.go
-  imports=matrix/bridge,matrix/cortex,matrix/cortex/embed,matrix/cortex/memory,matrix/cortex/replay,matrix/cortex/store,matrix/executor/lifecycle,matrix/executor/mcp,matrix/executor/tool,matrix/mcl/envelope,matrix/mcl/ir,matrix/mcl/llm,matrix/mcl/mtx/canonical,matrix/mcl/mtx/interpreter,matrix/mcl/mtx/parser,matrix/mcl/mtx/validator
   ^contains=mod:matrix/executor
 
 NODE id=matrix/executor/cmd/mcl-e2e.ActorIdentity kind=type
@@ -13,7 +12,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.ActorIdentity kind=type
   doc=ActorIdentity bundles the test actor's keypair + DID URI used as the\nenvelope From field. ed25519 stdlib; KeyResolver in main wraps Public.
 EDGES
   contains=matrix/executor/cmd/mcl-e2e.ActorIdentity#AgentURI,matrix/executor/cmd/mcl-e2e.ActorIdentity#DID,matrix/executor/cmd/mcl-e2e.ActorIdentity#Private,matrix/executor/cmd/mcl-e2e.ActorIdentity#Public,matrix/executor/cmd/mcl-e2e.ActorIdentity#UserURI
-  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-e2e.NewActorIdentity,matrix/executor/cmd/mcl-e2e.NewEnvelopeStream
   ^defines=matrix/executor/cmd/mcl-e2e/setup.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.ActorIdentity#AgentURI kind=field
@@ -52,8 +50,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.AssertCtx kind=type
   doc=AssertCtx accumulates pass/fail across the run so a single failure\ndoesn't mask later ones; main() exits non-zero if Failed > 0.
 EDGES
   contains=matrix/executor/cmd/mcl-e2e.AssertCtx#Failed,matrix/executor/cmd/mcl-e2e.AssertCtx#Passed,matrix/executor/cmd/mcl-e2e.AssertCtx#t,matrix/executor/cmd/mcl-e2e.AssertCtx.Equal,matrix/executor/cmd/mcl-e2e.AssertCtx.ExitCode,matrix/executor/cmd/mcl-e2e.AssertCtx.NoError,matrix/executor/cmd/mcl-e2e.AssertCtx.Summary,matrix/executor/cmd/mcl-e2e.AssertCtx.True
-  references=matrix/executor/cmd/mcl-e2e.Transcript
-  ^references=matrix/executor/cmd/mcl-e2e.AssertCtx.Equal,matrix/executor/cmd/mcl-e2e.AssertCtx.ExitCode,matrix/executor/cmd/mcl-e2e.AssertCtx.NoError,matrix/executor/cmd/mcl-e2e.AssertCtx.Summary,matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.NewAssertCtx,matrix/executor/cmd/mcl-e2e.NewLifecycleDriver,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.VerifyReplayInvariant,matrix/executor/cmd/mcl-e2e.analyzeReports
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.AssertCtx#Failed kind=field
@@ -79,11 +75,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.AssertCtx.Equal kind=method
   sig=func (a *AssertCtx) Equal(label string, expected, got interface{})
   doc=Equal asserts a == b (byte-equal for []byte / string).
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.short
-  references=matrix/executor/cmd/mcl-e2e.AssertCtx,matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.a,matrix/executor/cmd/mcl-e2e.e,matrix/executor/cmd/mcl-e2e.expected,matrix/executor/cmd/mcl-e2e.g,matrix/executor/cmd/mcl-e2e.got,matrix/executor/cmd/mcl-e2e.isBytes,matrix/executor/cmd/mcl-e2e.isStr,matrix/executor/cmd/mcl-e2e.label,matrix/executor/cmd/mcl-e2e.ok,matrix/executor/cmd/mcl-e2e.short
   ^contains=matrix/executor/cmd/mcl-e2e.AssertCtx
-  ^calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.VerifyReplayInvariant,matrix/executor/cmd/mcl-e2e.analyzeReports
-  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.VerifyReplayInvariant,matrix/executor/cmd/mcl-e2e.analyzeReports
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.AssertCtx.ExitCode kind=method
@@ -91,10 +83,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.AssertCtx.ExitCode kind=method
   sig=func (a *AssertCtx) ExitCode() int
   doc=ExitCode returns non-zero iff any assertion failed.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.AssertCtx,matrix/executor/cmd/mcl-e2e.a
   ^contains=matrix/executor/cmd/mcl-e2e.AssertCtx
-  ^calls=matrix/executor/cmd/mcl-e2e.main
-  ^references=matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.AssertCtx.NoError kind=method
@@ -102,11 +91,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.AssertCtx.NoError kind=method
   sig=func (a *AssertCtx) NoError(label string, err error)
   doc=NoError asserts err is nil.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.AssertCtx.True
-  references=matrix/executor/cmd/mcl-e2e.AssertCtx,matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.a,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.label
   ^contains=matrix/executor/cmd/mcl-e2e.AssertCtx
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.AssertCtx.Summary kind=method
@@ -114,10 +99,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.AssertCtx.Summary kind=method
   sig=func (a *AssertCtx) Summary()
   doc=Summary prints the final pass/fail tally.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.AssertCtx,matrix/executor/cmd/mcl-e2e.a,matrix/executor/cmd/mcl-e2e.cBold,matrix/executor/cmd/mcl-e2e.cGreen,matrix/executor/cmd/mcl-e2e.cRed,matrix/executor/cmd/mcl-e2e.cReset
   ^contains=matrix/executor/cmd/mcl-e2e.AssertCtx
-  ^calls=matrix/executor/cmd/mcl-e2e.main
-  ^references=matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.AssertCtx.True kind=method
@@ -125,11 +107,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.AssertCtx.True kind=method
   sig=func (a *AssertCtx) True(label string, cond bool, detail string)
   doc=True asserts cond is true; logs label as PASS or FAIL.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.fmtDetail
-  references=matrix/executor/cmd/mcl-e2e.AssertCtx,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.a,matrix/executor/cmd/mcl-e2e.cGreen,matrix/executor/cmd/mcl-e2e.cRed,matrix/executor/cmd/mcl-e2e.cReset,matrix/executor/cmd/mcl-e2e.cond,matrix/executor/cmd/mcl-e2e.detail,matrix/executor/cmd/mcl-e2e.fmtDetail,matrix/executor/cmd/mcl-e2e.label
   ^contains=matrix/executor/cmd/mcl-e2e.AssertCtx
-  ^calls=matrix/executor/cmd/mcl-e2e.AssertCtx.Equal,matrix/executor/cmd/mcl-e2e.AssertCtx.NoError,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.VerifyReplayInvariant,matrix/executor/cmd/mcl-e2e.analyzeReports
-  ^references=matrix/executor/cmd/mcl-e2e.AssertCtx.Equal,matrix/executor/cmd/mcl-e2e.AssertCtx.NoError,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.VerifyReplayInvariant,matrix/executor/cmd/mcl-e2e.analyzeReports
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.BuildAgentManifest kind=func
@@ -137,10 +115,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.BuildAgentManifest kind=func
   sig=func BuildAgentManifest(agentDID, fsJail, gitRepoDir string) *tool.AgentManifest
   doc=BuildAgentManifest synthesizes a Q22-compliant tool.AgentManifest pinned\nat the e2e-installed packages with deterministic synthetic digests.\n\nReal production deployments compute PackageDigest as sha256(installed\ntarball); for the harness we synthesize a stable digest from a canonical\n"<provider>:<package>@<version>" string so manifest validation passes\nwhile still being audit-stable across runs.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.synthDigest,matrix/executor/cmd/mcl-e2e.uvxBin
-  references=matrix/executor/cmd/mcl-e2e.agentDID,matrix/executor/cmd/mcl-e2e.fsJail,matrix/executor/cmd/mcl-e2e.gitRepoDir,matrix/executor/cmd/mcl-e2e.synthDigest,matrix/executor/cmd/mcl-e2e.uvxBin,matrix/executor/tool.AgentManifest,matrix/executor/tool.ServerEntry,matrix/executor/tool.ToolEntry
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/setup.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.BuildPlan kind=func
@@ -148,10 +122,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.BuildPlan kind=func
   sig=func BuildPlan(intentID, agentURI, skillRef, fsJail, gitRepoDir string) (*ir.PlanTree, error)
   doc=BuildPlan constructs the hand-authored PlanTree the harness walks. It\nexercises all three real MCP servers (fs, fetch, git) plus a parallel\nbranch and a sub-dispatch placeholder so plan_validate covers the full\nnode-kind matrix.\n\nConcretely, the root is Sequential with 4 children:\n\n 1. Sequential (fs roundtrip): list_directory → write_file → read_text_file\n 2. Parallel (concurrent reads): get_file_info on README.md  (fs)\n    git_status (git)\n 3. ToolCall fetch_url (fetch)\n 4. Step in-skill prompt (no LLM call here; just validates the kind path)\n\nEvery ToolCall has an explicit SideEffectClass so the capability gate\nfires at Registry.Get time.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.sha256Hex,matrix/executor/cmd/mcl-e2e.synthIntentID,matrix/mcl/ir.HashPlan,matrix/mcl/ir.ValidatePlan
-  references=matrix/executor/cmd/mcl-e2e.agentURI,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.fsJail,matrix/executor/cmd/mcl-e2e.gitRepoDir,matrix/executor/cmd/mcl-e2e.hash,matrix/executor/cmd/mcl-e2e.intentID,matrix/executor/cmd/mcl-e2e.plan,matrix/executor/cmd/mcl-e2e.sha256Hex,matrix/executor/cmd/mcl-e2e.skillRef,matrix/executor/cmd/mcl-e2e.synthIntentID,matrix/mcl/ir.HashPlan,matrix/mcl/ir.NodeParallel,matrix/mcl/ir.NodeSequential,matrix/mcl/ir.NodeStep,matrix/mcl/ir.NodeToolCall,matrix/mcl/ir.PlanNode,matrix/mcl/ir.PlanTree,matrix/mcl/ir.StepPayload,matrix/mcl/ir.ToolCallPayload,matrix/mcl/ir.ValidatePlan
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/plan.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.CompileOpts kind=type
@@ -160,8 +130,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.CompileOpts kind=type
   doc=CompileOpts configure a single compile run.
 EDGES
   contains=matrix/executor/cmd/mcl-e2e.CompileOpts#Actor,matrix/executor/cmd/mcl-e2e.CompileOpts#Agent,matrix/executor/cmd/mcl-e2e.CompileOpts#Grammar,matrix/executor/cmd/mcl-e2e.CompileOpts#IntentID,matrix/executor/cmd/mcl-e2e.CompileOpts#Model,matrix/executor/cmd/mcl-e2e.CompileOpts#Prose,matrix/executor/cmd/mcl-e2e.CompileOpts#Provider,matrix/executor/cmd/mcl-e2e.CompileOpts#ProviderSet,matrix/executor/cmd/mcl-e2e.CompileOpts#Seed,matrix/executor/cmd/mcl-e2e.CompileOpts#SkillPath,matrix/executor/cmd/mcl-e2e.CompileOpts#Verb
-  references=matrix/mcl/llm.Provider
-  ^references=matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.buildIntentFromRun
   ^defines=matrix/executor/cmd/mcl-e2e/compile.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.CompileOpts#Actor kind=field
@@ -236,8 +204,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.CompileResult kind=type
   doc=CompileResult bundles everything produced by the MCL compile stage so\ndownstream phases (envelope sign, plan emission, attest) can pin them\nwithout re-running the LLM.
 EDGES
   contains=matrix/executor/cmd/mcl-e2e.CompileResult#ClarifyQuestions,matrix/executor/cmd/mcl-e2e.CompileResult#CompileLatencyMs,matrix/executor/cmd/mcl-e2e.CompileResult#CortexSnapshotHash,matrix/executor/cmd/mcl-e2e.CompileResult#FrameJSON,matrix/executor/cmd/mcl-e2e.CompileResult#Intent,matrix/executor/cmd/mcl-e2e.CompileResult#IntentHash,matrix/executor/cmd/mcl-e2e.CompileResult#IntentID,matrix/executor/cmd/mcl-e2e.CompileResult#IntentJSON,matrix/executor/cmd/mcl-e2e.CompileResult#MatchedCondition,matrix/executor/cmd/mcl-e2e.CompileResult#ModelDigest,matrix/executor/cmd/mcl-e2e.CompileResult#MtxDigest,matrix/executor/cmd/mcl-e2e.CompileResult#PromptMessages,matrix/executor/cmd/mcl-e2e.CompileResult#Slots,matrix/executor/cmd/mcl-e2e.CompileResult#Unknowns
-  references=matrix/mcl/ir.Intent,matrix/mcl/mtx/interpreter.ClarifyQuestion,matrix/mcl/mtx/interpreter.Message,matrix/mcl/mtx/interpreter.Slot,matrix/mcl/mtx/interpreter.Unknown
-  ^references=matrix/executor/cmd/mcl-e2e.RunCompile
   ^defines=matrix/executor/cmd/mcl-e2e/compile.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.CompileResult#ClarifyQuestions kind=field
@@ -331,8 +297,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.EnvelopeStream kind=type
 EDGES
   contains=matrix/executor/cmd/mcl-e2e.EnvelopeStream#actor,matrix/executor/cmd/mcl-e2e.EnvelopeStream#chain,matrix/executor/cmd/mcl-e2e.EnvelopeStream#dir,matrix/executor/cmd/mcl-e2e.EnvelopeStream#intentID,matrix/executor/cmd/mcl-e2e.EnvelopeStream#resolver,matrix/executor/cmd/mcl-e2e.EnvelopeStream#seq,matrix/executor/cmd/mcl-e2e.EnvelopeStream#t,matrix/executor/cmd/mcl-e2e.EnvelopeStream.Chain,matrix/executor/cmd/mcl-e2e.EnvelopeStream.Last,matrix/executor/cmd/mcl-e2e.EnvelopeStream.LastID,matrix/executor/cmd/mcl-e2e.EnvelopeStream.Resolver,matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist
   implements=matrix/executor/runtime.EnvelopeSink
-  references=matrix/executor/cmd/mcl-e2e.ActorIdentity,matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.staticKeyResolver,matrix/mcl/envelope.Envelope
-  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream.Chain,matrix/executor/cmd/mcl-e2e.EnvelopeStream.Last,matrix/executor/cmd/mcl-e2e.EnvelopeStream.LastID,matrix/executor/cmd/mcl-e2e.EnvelopeStream.Resolver,matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.NewEnvelopeStream,matrix/executor/cmd/mcl-e2e.NewLifecycleDriver
   ^defines=matrix/executor/cmd/mcl-e2e/envelopes.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.EnvelopeStream#actor kind=field
@@ -382,7 +346,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.EnvelopeStream.Chain kind=method
   sig=func (es *EnvelopeStream) Chain() []*envelope.Envelope
   doc=Chain returns all signed envelopes in arrival order.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-e2e.es,matrix/mcl/envelope.Envelope
   ^contains=matrix/executor/cmd/mcl-e2e.EnvelopeStream
   ^defines=matrix/executor/cmd/mcl-e2e/envelopes.go
 
@@ -391,10 +354,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.EnvelopeStream.Last kind=method
   sig=func (es *EnvelopeStream) Last() *envelope.Envelope
   doc=Last returns the most recently appended envelope (for CausationID chaining).
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-e2e.es,matrix/mcl/envelope.Envelope
   ^contains=matrix/executor/cmd/mcl-e2e.EnvelopeStream
-  ^calls=matrix/executor/cmd/mcl-e2e.EnvelopeStream.LastID
-  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream.LastID
   ^defines=matrix/executor/cmd/mcl-e2e/envelopes.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.EnvelopeStream.LastID kind=method
@@ -402,11 +362,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.EnvelopeStream.LastID kind=method
   sig=func (es *EnvelopeStream) LastID() string
   doc=LastID returns the most recent envelope's ID for CorrelationID/CausationID.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.EnvelopeStream.Last
-  references=matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-e2e.EnvelopeStream.Last,matrix/executor/cmd/mcl-e2e.e,matrix/executor/cmd/mcl-e2e.es
   ^contains=matrix/executor/cmd/mcl-e2e.EnvelopeStream
-  ^calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.signStep
-  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.signStep
   ^defines=matrix/executor/cmd/mcl-e2e/envelopes.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.EnvelopeStream.Resolver kind=method
@@ -414,7 +370,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.EnvelopeStream.Resolver kind=method
   sig=func (es *EnvelopeStream) Resolver() *staticKeyResolver
   doc=Resolver exposes the EnvelopeStream's KeyResolver so other components\n(verification harness, lifecycle replay) can use the same one.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-e2e.es,matrix/executor/cmd/mcl-e2e.staticKeyResolver
   ^contains=matrix/executor/cmd/mcl-e2e.EnvelopeStream
   ^defines=matrix/executor/cmd/mcl-e2e/envelopes.go
 
@@ -423,11 +378,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist kind=method
   sig=func (es *EnvelopeStream) SignAndPersist(kind string, body interface{}, correlation, causation string) (*envelope.Envelope, error)
   doc=SignAndPersist signs an envelope of (kind, body), stamps headers, and writes\nJSON to disk. Returns the populated envelope (Signature set).\n\n`correlation` and `causation` are optional — pass "" to leave unset.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.bytesIndent,matrix/executor/cmd/mcl-e2e.newULIDLike,matrix/executor/cmd/mcl-e2e.sanitiseKind,matrix/mcl/envelope.EnvelopeJSON,matrix/mcl/envelope.NewEnvelope,matrix/mcl/envelope.SelfHash,matrix/mcl/envelope.Sign,matrix/mcl/envelope.Verify
-  references=matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.body,matrix/executor/cmd/mcl-e2e.bytesIndent,matrix/executor/cmd/mcl-e2e.causation,matrix/executor/cmd/mcl-e2e.correlation,matrix/executor/cmd/mcl-e2e.env,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.es,matrix/executor/cmd/mcl-e2e.js,matrix/executor/cmd/mcl-e2e.kind,matrix/executor/cmd/mcl-e2e.newULIDLike,matrix/executor/cmd/mcl-e2e.path,matrix/executor/cmd/mcl-e2e.pretty,matrix/executor/cmd/mcl-e2e.sanitiseKind,matrix/executor/cmd/mcl-e2e.selfHash,matrix/mcl/envelope.Envelope,matrix/mcl/envelope.EnvelopeJSON,matrix/mcl/envelope.NewEnvelope,matrix/mcl/envelope.SelfHash,matrix/mcl/envelope.Sign,matrix/mcl/envelope.Verify
   ^contains=matrix/executor/cmd/mcl-e2e.EnvelopeStream
-  ^calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.signStep
-  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.signStep
   ^defines=matrix/executor/cmd/mcl-e2e/envelopes.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.FixedClock kind=func
@@ -435,9 +386,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.FixedClock kind=func
   sig=func FixedClock(ts time.Time) func() time.Time
   doc=FixedClock returns a closure that yields ts on every call. Used by\ncortex.WithClock so memory CreatedAt is byte-stable across runs.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.ts
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/cortex_seed.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver kind=type
@@ -446,8 +394,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver kind=type
   doc=LifecycleDriver wraps a lifecycle.Machine + EnvelopeStream so the harness\ncan sign + apply in one step and the assertion layer can ask "what state\nare we in?"
 EDGES
   contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver#assert,matrix/executor/cmd/mcl-e2e.LifecycleDriver#machine,matrix/executor/cmd/mcl-e2e.LifecycleDriver#stream,matrix/executor/cmd/mcl-e2e.LifecycleDriver#t,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed,matrix/executor/cmd/mcl-e2e.LifecycleDriver.History,matrix/executor/cmd/mcl-e2e.LifecycleDriver.State,matrix/executor/cmd/mcl-e2e.LifecycleDriver.Summary,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive
-  references=matrix/executor/cmd/mcl-e2e.AssertCtx,matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/lifecycle.Machine
-  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed,matrix/executor/cmd/mcl-e2e.LifecycleDriver.History,matrix/executor/cmd/mcl-e2e.LifecycleDriver.State,matrix/executor/cmd/mcl-e2e.LifecycleDriver.Summary,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.NewLifecycleDriver,matrix/executor/cmd/mcl-e2e.WalkPlan,matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-e2e.signStep,matrix/executor/cmd/mcl-e2e.walkNode
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver#assert kind=field
@@ -479,11 +425,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAccept kind=method
   sig=func (d *LifecycleDriver) DriveAccept(intentHash string, anchorRequested bool) (*envelope.Envelope, error)
   doc=DriveAccept transitions proposed → accepted.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive
-  references=matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.anchorRequested,matrix/executor/cmd/mcl-e2e.body,matrix/executor/cmd/mcl-e2e.d,matrix/executor/cmd/mcl-e2e.intentHash,matrix/executor/lifecycle.ApplyOpts,matrix/executor/lifecycle.StateAccepted,matrix/mcl/envelope.Envelope,matrix/mcl/envelope.IntentAcceptBody,matrix/mcl/envelope.KindIntentAccept
   ^contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer kind=method
@@ -491,11 +433,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer kind=method
   sig=func (d *LifecycleDriver) DriveAnswer(patches []byte, answerOf string) (*envelope.Envelope, error)
   doc=DriveAnswer transitions clarifying → proposed.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive
-  references=matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.answerOf,matrix/executor/cmd/mcl-e2e.body,matrix/executor/cmd/mcl-e2e.d,matrix/executor/cmd/mcl-e2e.patches,matrix/executor/lifecycle.ApplyOpts,matrix/executor/lifecycle.StateProposed,matrix/mcl/envelope.Envelope,matrix/mcl/envelope.IntentAnswerBody,matrix/mcl/envelope.KindIntentAnswer
   ^contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest kind=method
@@ -503,11 +441,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest kind=method
   sig=func (d *LifecycleDriver) DriveAttest(citedURIs []string, evidence []byte) (*envelope.Envelope, error)
   doc=DriveAttest transitions executing → completed.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive
-  references=matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.body,matrix/executor/cmd/mcl-e2e.citedURIs,matrix/executor/cmd/mcl-e2e.d,matrix/executor/cmd/mcl-e2e.evidence,matrix/executor/lifecycle.ApplyOpts,matrix/executor/lifecycle.StateCompleted,matrix/mcl/envelope.Envelope,matrix/mcl/envelope.IntentAttestBody,matrix/mcl/envelope.KindIntentAttest
   ^contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify kind=method
@@ -515,11 +449,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify kind=method
   sig=func (d *LifecycleDriver) DriveClarify(questions []envelope.ClarifyQuestion) (*envelope.Envelope, error)
   doc=DriveClarify transitions proposed → clarifying (Q2 full-surface).
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive
-  references=matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.body,matrix/executor/cmd/mcl-e2e.d,matrix/executor/cmd/mcl-e2e.questions,matrix/executor/lifecycle.ApplyOpts,matrix/executor/lifecycle.StateClarifying,matrix/mcl/envelope.ClarifyQuestion,matrix/mcl/envelope.Envelope,matrix/mcl/envelope.IntentClarifyBody,matrix/mcl/envelope.KindIntentClarify
   ^contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled kind=method
@@ -527,11 +457,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled kind=method
   sig=func (d *LifecycleDriver) DriveCompiled(intentJSON []byte, latencyMs int64) (*envelope.Envelope, error)
   doc=DriveDraft transitions drafting (initial) by emitting intent.compiled.\nLifecycle: drafting → proposed.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive
-  references=matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.body,matrix/executor/cmd/mcl-e2e.d,matrix/executor/cmd/mcl-e2e.intentJSON,matrix/executor/cmd/mcl-e2e.latencyMs,matrix/executor/lifecycle.ApplyOpts,matrix/executor/lifecycle.StateProposed,matrix/mcl/envelope.Envelope,matrix/mcl/envelope.IntentCompiledBody,matrix/mcl/envelope.KindIntentCompiled
   ^contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial kind=method
@@ -539,11 +465,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial kind=me
   sig=func (d *LifecycleDriver) DriveCorrectMaterial(reason string, patches []byte) (*envelope.Envelope, error)
   doc=DriveCorrectMaterial fires executing→accepted (re-sign loop).\nQ11 lock: material correction halts and rewinds to accept.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive
-  references=matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.body,matrix/executor/cmd/mcl-e2e.d,matrix/executor/cmd/mcl-e2e.patches,matrix/executor/cmd/mcl-e2e.reason,matrix/executor/lifecycle.ApplyOpts,matrix/executor/lifecycle.StateAccepted,matrix/mcl/envelope.Envelope,matrix/mcl/envelope.IntentCorrectBody,matrix/mcl/envelope.KindIntentCorrect
   ^contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial kind=method
@@ -551,11 +473,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial kind
   sig=func (d *LifecycleDriver) DriveCorrectNonMaterial(reason string, patches []byte) (*envelope.Envelope, error)
   doc=DriveCorrectNonMaterial fires an executing→executing self-transition.\nQ11 lock: non-material correction does NOT halt execution.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive
-  references=matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.body,matrix/executor/cmd/mcl-e2e.d,matrix/executor/cmd/mcl-e2e.patches,matrix/executor/cmd/mcl-e2e.reason,matrix/executor/lifecycle.ApplyOpts,matrix/executor/lifecycle.StateExecuting,matrix/mcl/envelope.Envelope,matrix/mcl/envelope.IntentCorrectBody,matrix/mcl/envelope.KindIntentCorrect
   ^contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed kind=method
@@ -563,11 +481,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed kind=metho
   sig=func (d *LifecycleDriver) DrivePlanProposed(planJSON []byte) (*envelope.Envelope, error)
   doc=DrivePlanProposed transitions accepted → executing.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive
-  references=matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.body,matrix/executor/cmd/mcl-e2e.d,matrix/executor/cmd/mcl-e2e.planJSON,matrix/executor/lifecycle.ApplyOpts,matrix/executor/lifecycle.StateExecuting,matrix/mcl/envelope.Envelope,matrix/mcl/envelope.KindPlanProposed,matrix/mcl/envelope.PlanProposedBody
   ^contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.History kind=method
@@ -575,8 +489,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.History kind=method
   sig=func (d *LifecycleDriver) History() []lifecycle.Event
   doc=History returns the recorded lifecycle events (audit dump).
 EDGES
-  calls=matrix/executor/lifecycle.Machine.History
-  references=matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.d,matrix/executor/lifecycle.Event,matrix/executor/lifecycle.Machine.History
   ^contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
@@ -585,8 +497,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.State kind=method
   sig=func (d *LifecycleDriver) State() lifecycle.State
   doc=State returns the current lifecycle state (test asserts read this).
 EDGES
-  calls=matrix/executor/lifecycle.Machine.State
-  references=matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.d,matrix/executor/lifecycle.Machine.State,matrix/executor/lifecycle.State
   ^contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
@@ -595,11 +505,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.Summary kind=method
   sig=func (d *LifecycleDriver) Summary() string
   doc=Summary prints a human-readable summary of the lifecycle path.
 EDGES
-  calls=matrix/executor/lifecycle.Machine.History
-  references=matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.d,matrix/executor/cmd/mcl-e2e.e,matrix/executor/cmd/mcl-e2e.hist,matrix/executor/cmd/mcl-e2e.i,matrix/executor/cmd/mcl-e2e.out,matrix/executor/lifecycle.Machine.History
   ^contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive kind=method
@@ -607,11 +513,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive kind=method
   sig=func (d *LifecycleDriver) drive(kind string, body interface{}, wantState lifecycle.State, opts lifecycle.ApplyOpts, correlation string) (*envelope.Envelope, error)
   doc=drive signs an envelope of kind+body, applies it to the lifecycle machine,\nand asserts the transition reached `wantState`. Used internally by all the\npublic Drive* helpers below for a single uniform error path.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.AssertCtx.Equal,matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.EnvelopeStream.LastID,matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/lifecycle.Machine.Apply,matrix/executor/lifecycle.Machine.State
-  references=matrix/executor/cmd/mcl-e2e.AssertCtx.Equal,matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.EnvelopeStream.LastID,matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.body,matrix/executor/cmd/mcl-e2e.causation,matrix/executor/cmd/mcl-e2e.correlation,matrix/executor/cmd/mcl-e2e.d,matrix/executor/cmd/mcl-e2e.env,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.evt,matrix/executor/cmd/mcl-e2e.kind,matrix/executor/cmd/mcl-e2e.opts,matrix/executor/cmd/mcl-e2e.prev,matrix/executor/cmd/mcl-e2e.state,matrix/executor/cmd/mcl-e2e.wantState,matrix/executor/lifecycle.ApplyOpts,matrix/executor/lifecycle.Machine.Apply,matrix/executor/lifecycle.Machine.State,matrix/executor/lifecycle.State,matrix/mcl/envelope.Envelope
   ^contains=matrix/executor/cmd/mcl-e2e.LifecycleDriver
-  ^calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed
-  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.MakeAndDrainEmbedder kind=func
@@ -619,10 +521,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.MakeAndDrainEmbedder kind=func
   sig=func MakeAndDrainEmbedder(c *cortex.Cortex) (embed.Embedder, error)
   doc=MakeAndDrainEmbedder constructs the real Fireworks APIEmbedder, attaches\nit to c, and blocks until the worker has caught up. The drain timeout is\ngenerous (60s) because the first call cold-starts an HTTP connection.
 EDGES
-  calls=matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.StartEmbedder,matrix/cortex/embed.NewAPIEmbedder
-  references=matrix/cortex.Cortex,matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.EmbedderOptions,matrix/cortex/embed.APIEmbedderConfig,matrix/cortex/embed.Embedder,matrix/cortex/embed.NewAPIEmbedder,matrix/executor/cmd/mcl-e2e.c,matrix/executor/cmd/mcl-e2e.cancel,matrix/executor/cmd/mcl-e2e.ctx,matrix/executor/cmd/mcl-e2e.emb,matrix/executor/cmd/mcl-e2e.err
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/cortex_seed.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.NewActorIdentity kind=func
@@ -630,18 +528,12 @@ NODE id=matrix/executor/cmd/mcl-e2e.NewActorIdentity kind=func
   sig=func NewActorIdentity(seedHex, didLabel string) (*ActorIdentity, error)
   doc=NewActorIdentity derives a deterministic ed25519 keypair from a fixed\n32-byte seed so cross-run hashes can match. seedHex must be 64 hex chars.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.ActorIdentity,matrix/executor/cmd/mcl-e2e.did,matrix/executor/cmd/mcl-e2e.didLabel,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.priv,matrix/executor/cmd/mcl-e2e.pub,matrix/executor/cmd/mcl-e2e.pubHex,matrix/executor/cmd/mcl-e2e.seed,matrix/executor/cmd/mcl-e2e.seedHex
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/setup.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.NewAssertCtx kind=func
   digest=b3:abeb8c78f0af5c0de04a701a67dd2178bebc43b0b00390fad426c2d567abe6d0 file=executor/cmd/mcl-e2e/assert.go range=20:20 lang=go exported=true byte_range=423:494
   sig=func NewAssertCtx(t *Transcript) *AssertCtx
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.AssertCtx,matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.t
-  ^calls=matrix/executor/cmd/mcl-e2e.main
-  ^references=matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.NewEnvelopeStream kind=func
@@ -649,19 +541,12 @@ NODE id=matrix/executor/cmd/mcl-e2e.NewEnvelopeStream kind=func
   sig=func NewEnvelopeStream(parent, intentID string, actor *ActorIdentity, t *Transcript) (*EnvelopeStream, error)
   doc=NewEnvelopeStream prepares a per-intent stream. dir is JournalDir/<intentID>/.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.ActorIdentity,matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.actor,matrix/executor/cmd/mcl-e2e.dir,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.intentID,matrix/executor/cmd/mcl-e2e.parent,matrix/executor/cmd/mcl-e2e.resolver,matrix/executor/cmd/mcl-e2e.staticKeyResolver,matrix/executor/cmd/mcl-e2e.t
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/envelopes.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.NewLifecycleDriver kind=func
   digest=b3:e35c61d7a51cb03b2bcb82b468e0dbacf0eacb7e649648ab21113fc9cdf66a4c file=executor/cmd/mcl-e2e/lifecycle.go range=24:30 lang=go exported=true byte_range=558:864
   sig=func NewLifecycleDriver(intentID string, stream *EnvelopeStream, assert *AssertCtx, t *Transcript) (*LifecycleDriver, error)
 EDGES
-  calls=matrix/executor/lifecycle.New
-  references=matrix/executor/cmd/mcl-e2e.AssertCtx,matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.assert,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.intentID,matrix/executor/cmd/mcl-e2e.m,matrix/executor/cmd/mcl-e2e.stream,matrix/executor/cmd/mcl-e2e.t,matrix/executor/lifecycle.New,matrix/executor/lifecycle.StateDrafting
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/lifecycle.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.NewTranscript kind=func
@@ -669,9 +554,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.NewTranscript kind=func
   sig=func NewTranscript(path, run string, mirrorStderr bool) (*Transcript, error)
   doc=NewTranscript opens path for writing; truncates any existing file.\nrun is a short tag (e.g. "A", "B", "C") embedded in every event so a\nmerged transcript can interleave runs without ambiguity.\nmirrorStderr controls whether each event is also printed as a one-line\nsummary to stderr.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.enc,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.f,matrix/executor/cmd/mcl-e2e.mirrorStderr,matrix/executor/cmd/mcl-e2e.path,matrix/executor/cmd/mcl-e2e.run
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.main
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/transcript.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.NewWorkspace kind=func
@@ -679,9 +561,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.NewWorkspace kind=func
   sig=func NewWorkspace(rootBase, run string) (*Workspace, error)
   doc=NewWorkspace creates the per-run directory tree. All paths absolute.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.Workspace,matrix/executor/cmd/mcl-e2e.d,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.root,matrix/executor/cmd/mcl-e2e.rootBase,matrix/executor/cmd/mcl-e2e.run,matrix/executor/cmd/mcl-e2e.w
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/setup.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.PersistManifest kind=func
@@ -689,9 +568,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.PersistManifest kind=func
   sig=func PersistManifest(m *tool.AgentManifest, path string) error
   doc=PersistManifest writes the manifest as JSON for audit.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.b,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.m,matrix/executor/cmd/mcl-e2e.path,matrix/executor/tool.AgentManifest
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/setup.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.RunCompile kind=func
@@ -699,10 +575,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.RunCompile kind=func
   sig=func RunCompile(ctx context.Context, c *cortex.Cortex, opts CompileOpts, t *Transcript) (*CompileResult, error)
   doc=RunCompile invokes the MCL compiler against a live cortex via bridge,\nusing a real LLM client. Mirrors bridge/cmd/mclc-cortex/main.go but\nreturns structured results instead of writing JSON to stdout.
 EDGES
-  calls=matrix/bridge.New,matrix/cortex.Cortex.OverallRoot,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-e2e.sha256Hex,matrix/executor/cmd/mcl-e2e.synthIntentID,matrix/mcl/ir.CanonicalJSON,matrix/mcl/ir.Hash,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.New,matrix/mcl/mtx/canonical.Hash,matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.New,matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/validator.ValidateSkill
-  references=matrix/bridge.New,matrix/cortex.Cortex,matrix/cortex.Cortex.OverallRoot,matrix/executor/cmd/mcl-e2e.CompileOpts,matrix/executor/cmd/mcl-e2e.CompileResult,matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.adapter,matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-e2e.c,matrix/executor/cmd/mcl-e2e.canon,matrix/executor/cmd/mcl-e2e.cfg,matrix/executor/cmd/mcl-e2e.cortexSnapHash,matrix/executor/cmd/mcl-e2e.ctx,matrix/executor/cmd/mcl-e2e.dur,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.file,matrix/executor/cmd/mcl-e2e.hash,matrix/executor/cmd/mcl-e2e.intent,matrix/executor/cmd/mcl-e2e.intentID,matrix/executor/cmd/mcl-e2e.interp,matrix/executor/cmd/mcl-e2e.llmClient,matrix/executor/cmd/mcl-e2e.mtxDigest,matrix/executor/cmd/mcl-e2e.opts,matrix/executor/cmd/mcl-e2e.perrs,matrix/executor/cmd/mcl-e2e.res,matrix/executor/cmd/mcl-e2e.rootBytes,matrix/executor/cmd/mcl-e2e.runRes,matrix/executor/cmd/mcl-e2e.sha256Hex,matrix/executor/cmd/mcl-e2e.src,matrix/executor/cmd/mcl-e2e.synthIntentID,matrix/executor/cmd/mcl-e2e.t,matrix/executor/cmd/mcl-e2e.t0,matrix/executor/cmd/mcl-e2e.verrs,matrix/mcl/ir.CanonicalJSON,matrix/mcl/ir.Hash,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.New,matrix/mcl/mtx/canonical.Hash,matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.New,matrix/mcl/mtx/interpreter.RunInput,matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/validator.ValidateSkill
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/compile.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.RunConfig kind=type
@@ -711,8 +583,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.RunConfig kind=type
   doc=RunConfig holds the per-run parameters for one end-to-end execution.
 EDGES
   contains=matrix/executor/cmd/mcl-e2e.RunConfig#ActorSeedHex,matrix/executor/cmd/mcl-e2e.RunConfig#IntentID,matrix/executor/cmd/mcl-e2e.RunConfig#Model,matrix/executor/cmd/mcl-e2e.RunConfig#Prose,matrix/executor/cmd/mcl-e2e.RunConfig#Provider,matrix/executor/cmd/mcl-e2e.RunConfig#ProviderSet,matrix/executor/cmd/mcl-e2e.RunConfig#RootDir,matrix/executor/cmd/mcl-e2e.RunConfig#Seed,matrix/executor/cmd/mcl-e2e.RunConfig#SkillPath,matrix/executor/cmd/mcl-e2e.RunConfig#Tag,matrix/executor/cmd/mcl-e2e.RunConfig#Verb
-  references=matrix/mcl/llm.Provider
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/run.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.RunConfig#ActorSeedHex kind=field
@@ -786,10 +656,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.RunOnce kind=func
   sig=func RunOnce(ctx context.Context, cfg RunConfig, assert *AssertCtx) (*RunReport, error)
   doc=RunOnce executes a complete e2e cycle for one run config. Returns a\nRunReport even on partial failure so cross-run analysis can continue.
 EDGES
-  calls=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Snapshot,matrix/cortex.New,matrix/cortex.WithClock,matrix/cortex.WithIDGen,matrix/cortex/store.Open,matrix/cortex/store.Store.Close,matrix/executor/cmd/mcl-e2e.AssertCtx.NoError,matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.BuildAgentManifest,matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-e2e.FixedClock,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed,matrix/executor/cmd/mcl-e2e.LifecycleDriver.Summary,matrix/executor/cmd/mcl-e2e.MakeAndDrainEmbedder,matrix/executor/cmd/mcl-e2e.NewActorIdentity,matrix/executor/cmd/mcl-e2e.NewEnvelopeStream,matrix/executor/cmd/mcl-e2e.NewLifecycleDriver,matrix/executor/cmd/mcl-e2e.NewTranscript,matrix/executor/cmd/mcl-e2e.NewWorkspace,matrix/executor/cmd/mcl-e2e.PersistManifest,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-e2e.Section,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.SeedGitRepo,matrix/executor/cmd/mcl-e2e.SeededIDGen,matrix/executor/cmd/mcl-e2e.Subsection,matrix/executor/cmd/mcl-e2e.Transcript.Close,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.VerifyReplayInvariant,matrix/executor/cmd/mcl-e2e.WalkPlan,matrix/executor/cmd/mcl-e2e.toolNames,matrix/executor/mcp.Manager.Close,matrix/executor/mcp.Manager.Spawn,matrix/executor/mcp.NewManager,matrix/executor/tool.AgentIdentityFromEnv,matrix/executor/tool.MCPEnvironment,matrix/executor/tool.NewRegistry,matrix/executor/tool.Registry.List,matrix/mcl/ir.CanonicalJSONPlan,matrix/mcl/ir.ValidVerb
-  references=matrix/cortex.AttestOpts,matrix/cortex.AttestOutcomeSuccess,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.StopEmbedder,matrix/cortex.New,matrix/cortex.WithClock,matrix/cortex.WithIDGen,matrix/cortex/memory.URI,matrix/cortex/store.Open,matrix/cortex/store.Store.Close,matrix/executor/cmd/mcl-e2e.AssertCtx,matrix/executor/cmd/mcl-e2e.AssertCtx.NoError,matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.BuildAgentManifest,matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-e2e.CompileOpts,matrix/executor/cmd/mcl-e2e.FixedClock,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed,matrix/executor/cmd/mcl-e2e.LifecycleDriver.Summary,matrix/executor/cmd/mcl-e2e.MakeAndDrainEmbedder,matrix/executor/cmd/mcl-e2e.NewActorIdentity,matrix/executor/cmd/mcl-e2e.NewEnvelopeStream,matrix/executor/cmd/mcl-e2e.NewLifecycleDriver,matrix/executor/cmd/mcl-e2e.NewTranscript,matrix/executor/cmd/mcl-e2e.NewWorkspace,matrix/executor/cmd/mcl-e2e.PersistManifest,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-e2e.RunConfig,matrix/executor/cmd/mcl-e2e.RunReport,matrix/executor/cmd/mcl-e2e.Section,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.SeedGitRepo,matrix/executor/cmd/mcl-e2e.SeededIDGen,matrix/executor/cmd/mcl-e2e.Subsection,matrix/executor/cmd/mcl-e2e.Transcript.Close,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.VerifyReplayInvariant,matrix/executor/cmd/mcl-e2e.WalkPlan,matrix/executor/cmd/mcl-e2e.actor,matrix/executor/cmd/mcl-e2e.answerPatch,matrix/executor/cmd/mcl-e2e.assert,matrix/executor/cmd/mcl-e2e.attErr,matrix/executor/cmd/mcl-e2e.attestRes,matrix/executor/cmd/mcl-e2e.c,matrix/executor/cmd/mcl-e2e.cancel,matrix/executor/cmd/mcl-e2e.cfg,matrix/executor/cmd/mcl-e2e.cited,matrix/executor/cmd/mcl-e2e.citedStrings,matrix/executor/cmd/mcl-e2e.clarifyEnv,matrix/executor/cmd/mcl-e2e.compileRes,matrix/executor/cmd/mcl-e2e.configured,matrix/executor/cmd/mcl-e2e.ctx,matrix/executor/cmd/mcl-e2e.drv,matrix/executor/cmd/mcl-e2e.envErr,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.errMsg,matrix/executor/cmd/mcl-e2e.fixed,matrix/executor/cmd/mcl-e2e.i,matrix/executor/cmd/mcl-e2e.identity,matrix/executor/cmd/mcl-e2e.identityErr,matrix/executor/cmd/mcl-e2e.manifest,matrix/executor/cmd/mcl-e2e.manifestPath,matrix/executor/cmd/mcl-e2e.mgr,matrix/executor/cmd/mcl-e2e.nodeID,matrix/executor/cmd/mcl-e2e.plan,matrix/executor/cmd/mcl-e2e.planJSON,matrix/executor/cmd/mcl-e2e.post,matrix/executor/cmd/mcl-e2e.pre,matrix/executor/cmd/mcl-e2e.privileged,matrix/executor/cmd/mcl-e2e.reg,matrix/executor/cmd/mcl-e2e.report,matrix/executor/cmd/mcl-e2e.root,matrix/executor/cmd/mcl-e2e.runAs,matrix/executor/cmd/mcl-e2e.s,matrix/executor/cmd/mcl-e2e.seedURIs,matrix/executor/cmd/mcl-e2e.snap,matrix/executor/cmd/mcl-e2e.spawnCtx,matrix/executor/cmd/mcl-e2e.spawnErr,matrix/executor/cmd/mcl-e2e.spec,matrix/executor/cmd/mcl-e2e.st,matrix/executor/cmd/mcl-e2e.stderrSink,matrix/executor/cmd/mcl-e2e.stream,matrix/executor/cmd/mcl-e2e.subEnv,matrix/executor/cmd/mcl-e2e.t,matrix/executor/cmd/mcl-e2e.toolNames,matrix/executor/cmd/mcl-e2e.u,matrix/executor/cmd/mcl-e2e.walkRes,matrix/executor/cmd/mcl-e2e.ws,matrix/executor/mcp.Manager.Close,matrix/executor/mcp.Manager.Spawn,matrix/executor/mcp.ManagerParams,matrix/executor/mcp.NewManager,matrix/executor/mcp.ProcessIdentity,matrix/executor/mcp.ServerSpec,matrix/executor/tool.AgentIdentityFromEnv,matrix/executor/tool.MCPEnvironment,matrix/executor/tool.NewRegistry,matrix/executor/tool.Registry.List,matrix/executor/tool.RegistryParams,matrix/mcl/envelope.ClarifyQuestion,matrix/mcl/ir.CanonicalJSONPlan,matrix/mcl/ir.ValidVerb
-  ^calls=matrix/executor/cmd/mcl-e2e.main
-  ^references=matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/run.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.RunReport kind=type
@@ -798,7 +664,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.RunReport kind=type
   doc=RunReport carries everything the cross-run determinism check needs.
 EDGES
   contains=matrix/executor/cmd/mcl-e2e.RunReport#AttestLearnSeq,matrix/executor/cmd/mcl-e2e.RunReport#AttestSeq,matrix/executor/cmd/mcl-e2e.RunReport#CompileLatencyMs,matrix/executor/cmd/mcl-e2e.RunReport#IntentHash,matrix/executor/cmd/mcl-e2e.RunReport#IntentJSON,matrix/executor/cmd/mcl-e2e.RunReport#Lifecycle,matrix/executor/cmd/mcl-e2e.RunReport#MtxDigest,matrix/executor/cmd/mcl-e2e.RunReport#PostReplayRoot,matrix/executor/cmd/mcl-e2e.RunReport#PreReplayRoot,matrix/executor/cmd/mcl-e2e.RunReport#SkipReason,matrix/executor/cmd/mcl-e2e.RunReport#Skipped,matrix/executor/cmd/mcl-e2e.RunReport#Tag,matrix/executor/cmd/mcl-e2e.RunReport#WalkErrors,matrix/executor/cmd/mcl-e2e.RunReport#WalkSucceeded,matrix/executor/cmd/mcl-e2e.RunReport#WeightsUpdated,matrix/executor/cmd/mcl-e2e.RunReport#WorkspaceRoot
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.analyzeReports,matrix/executor/cmd/mcl-e2e.findReport,matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/run.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.RunReport#AttestLearnSeq kind=field
@@ -902,9 +767,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.Section kind=func
   sig=func Section(title string)
   doc=Section prints a section banner for the run output.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.cBlue,matrix/executor/cmd/mcl-e2e.cBold,matrix/executor/cmd/mcl-e2e.cReset,matrix/executor/cmd/mcl-e2e.title
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.main
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.SeedCortex kind=func
@@ -912,10 +774,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.SeedCortex kind=func
   sig=func SeedCortex(c *cortex.Cortex, actorURI string, t *Transcript) ([]memory.URI, error)
   doc=SeedCortex writes the baseline knowledge-graph state every run starts\nwith. Same memories, same order, same content → byte-identical\nOverallRoot post-seed across all runs sharing the same FixedClock +\nSeededIDGen. The embedder is started AFTER seeding (and DrainEmbedder\nruns once) so vector writes are also captured into the deterministic\ninitial state.\n\nReturns the seed URIs (in write order) so attest can cite them by ref.
 EDGES
-  calls=matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Write,matrix/executor/cmd/mcl-e2e.Transcript.Event
-  references=matrix/cortex.Cortex,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Write,matrix/cortex.WriteMeta,matrix/cortex/memory.ConstraintData,matrix/cortex/memory.ConstraintSourceUserDeclared,matrix/cortex/memory.FactData,matrix/cortex/memory.GoalActive,matrix/cortex/memory.GoalData,matrix/cortex/memory.Head,matrix/cortex/memory.IdentityData,matrix/cortex/memory.PatternData,matrix/cortex/memory.PolarityAvoid,matrix/cortex/memory.Provenance,matrix/cortex/memory.SourceUserInput,matrix/cortex/memory.StrengthHard,matrix/cortex/memory.Tag,matrix/cortex/memory.TypedData,matrix/cortex/memory.URI,matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.actorURI,matrix/executor/cmd/mcl-e2e.c,matrix/executor/cmd/mcl-e2e.creator,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.i,matrix/executor/cmd/mcl-e2e.now,matrix/executor/cmd/mcl-e2e.root,matrix/executor/cmd/mcl-e2e.s,matrix/executor/cmd/mcl-e2e.seed,matrix/executor/cmd/mcl-e2e.seeds,matrix/executor/cmd/mcl-e2e.t,matrix/executor/cmd/mcl-e2e.uri,matrix/executor/cmd/mcl-e2e.uris
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/cortex_seed.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.SeedGitRepo kind=func
@@ -923,10 +781,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.SeedGitRepo kind=func
   sig=func SeedGitRepo(dir string) error
   doc=SeedGitRepo initializes the git-mcp jail with one commit so git_log/git_status\nhave something real to report.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.runCmdInDir
-  references=matrix/executor/cmd/mcl-e2e.c,matrix/executor/cmd/mcl-e2e.cmds,matrix/executor/cmd/mcl-e2e.dir,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.readme,matrix/executor/cmd/mcl-e2e.runCmdInDir
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/setup.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.SeededIDGen kind=func
@@ -934,9 +788,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.SeededIDGen kind=func
   sig=func SeededIDGen(initial uint64) func() memory.ID
   doc=SeededIDGen returns a memory.NewID-compatible generator backed by a\ndeterministic counter so cortex memory IDs are byte-stable across runs.\n\nmemory.ID is a 16-byte ULID; we synthesize one from a 6-byte big-endian\ntimestamp + 10-byte big-endian counter. Format-compatible with oklog/ulid\nat the byte level (which the cortex store treats as opaque bytes).
 EDGES
-  references=matrix/cortex/memory.ID,matrix/executor/cmd/mcl-e2e.counter,matrix/executor/cmd/mcl-e2e.ctr,matrix/executor/cmd/mcl-e2e.fixedTSMs,matrix/executor/cmd/mcl-e2e.i,matrix/executor/cmd/mcl-e2e.id,matrix/executor/cmd/mcl-e2e.initial,matrix/executor/cmd/mcl-e2e.tsBytes
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/cortex_seed.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.Subsection kind=func
@@ -944,9 +795,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.Subsection kind=func
   sig=func Subsection(title string)
   doc=Subsection prints a smaller phase header.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.cReset,matrix/executor/cmd/mcl-e2e.cYellow,matrix/executor/cmd/mcl-e2e.title
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.Transcript kind=type
@@ -956,7 +804,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.Transcript kind=type
 EDGES
   contains=matrix/executor/cmd/mcl-e2e.Transcript#enc,matrix/executor/cmd/mcl-e2e.Transcript#file,matrix/executor/cmd/mcl-e2e.Transcript#mirror,matrix/executor/cmd/mcl-e2e.Transcript#mu,matrix/executor/cmd/mcl-e2e.Transcript#run,matrix/executor/cmd/mcl-e2e.Transcript#seq,matrix/executor/cmd/mcl-e2e.Transcript.Close,matrix/executor/cmd/mcl-e2e.Transcript.Event
   implements=matrix/executor/runtime.EventSink
-  ^references=matrix/executor/cmd/mcl-e2e.AssertCtx,matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.NewAssertCtx,matrix/executor/cmd/mcl-e2e.NewEnvelopeStream,matrix/executor/cmd/mcl-e2e.NewLifecycleDriver,matrix/executor/cmd/mcl-e2e.NewTranscript,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.Transcript.Close,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.VerifyReplayInvariant,matrix/executor/cmd/mcl-e2e.WalkPlan,matrix/executor/cmd/mcl-e2e.analyzeReports,matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-e2e.walkNode
   ^defines=matrix/executor/cmd/mcl-e2e/transcript.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.Transcript#enc kind=field
@@ -1000,10 +847,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.Transcript.Close kind=method
   sig=func (t *Transcript) Close() error
   doc=Close flushes and closes the underlying file.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.t
   ^contains=matrix/executor/cmd/mcl-e2e.Transcript
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.main
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/transcript.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.Transcript.Event kind=method
@@ -1011,11 +855,7 @@ NODE id=matrix/executor/cmd/mcl-e2e.Transcript.Event kind=method
   sig=func (t *Transcript) Event(eventType, phase string, fields map[string]interface{})
   doc=Event writes a single typed event to the transcript.\nfields are merged into the envelope; "type", "seq", "at", "run" are\nreserved.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.summarize
-  references=matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.eventType,matrix/executor/cmd/mcl-e2e.fields,matrix/executor/cmd/mcl-e2e.k,matrix/executor/cmd/mcl-e2e.phase,matrix/executor/cmd/mcl-e2e.rec,matrix/executor/cmd/mcl-e2e.reserved,matrix/executor/cmd/mcl-e2e.summarize,matrix/executor/cmd/mcl-e2e.t,matrix/executor/cmd/mcl-e2e.v
   ^contains=matrix/executor/cmd/mcl-e2e.Transcript
-  ^calls=matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.VerifyReplayInvariant,matrix/executor/cmd/mcl-e2e.analyzeReports,matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-e2e.main,matrix/executor/cmd/mcl-e2e.walkNode
-  ^references=matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.SeedCortex,matrix/executor/cmd/mcl-e2e.VerifyReplayInvariant,matrix/executor/cmd/mcl-e2e.analyzeReports,matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-e2e.main,matrix/executor/cmd/mcl-e2e.walkNode
   ^defines=matrix/executor/cmd/mcl-e2e/transcript.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.VerifyReplayInvariant kind=func
@@ -1023,10 +863,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.VerifyReplayInvariant kind=func
   sig=func VerifyReplayInvariant(c *cortex.Cortex, t *Transcript, assert *AssertCtx) (preHex, postHex string, err error)
   doc=VerifyReplayInvariant exercises the §13.4 byte-identical replay path:\n 1. Stop the embedder (Phase 11 invariant: Rebuild requires no embedder).\n 2. Take a final snapshot for audit.\n 3. Capture pre-rebuild OverallRoot.\n 4. Run cortex.Rebuild — drops indexes/, walks j/, re-derives every\n    derived projection.\n 5. Verify Pre==Post via replay.VerifyPreservesRoot.\n\nReturns Pre/Post for the assertion layer to log + diff.
 EDGES
-  calls=matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Rebuild,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.StopEmbedder,matrix/cortex/replay.VerifyPreservesRoot,matrix/executor/cmd/mcl-e2e.AssertCtx.Equal,matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.Transcript.Event
-  references=matrix/cortex.Cortex,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Rebuild,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.StopEmbedder,matrix/cortex.RebuildOptions,matrix/cortex/replay.VerifyPreservesRoot,matrix/executor/cmd/mcl-e2e.AssertCtx,matrix/executor/cmd/mcl-e2e.AssertCtx.Equal,matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.assert,matrix/executor/cmd/mcl-e2e.c,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.post,matrix/executor/cmd/mcl-e2e.postHex,matrix/executor/cmd/mcl-e2e.pre,matrix/executor/cmd/mcl-e2e.preHex,matrix/executor/cmd/mcl-e2e.res,matrix/executor/cmd/mcl-e2e.snap,matrix/executor/cmd/mcl-e2e.t,matrix/executor/cmd/mcl-e2e.verr
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/replay.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.WalkPlan kind=func
@@ -1034,10 +870,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.WalkPlan kind=func
   sig=func WalkPlan(ctx context.Context, plan *ir.PlanTree, reg *tool.Registry, c *cortex.Cortex, drv *LifecycleDriver, actorURI string, t *Transcript) (*WalkResult, error)
   doc=WalkPlan walks the tree depth-first (with concurrent dispatch on parallel\nbranches), invokes every ToolCall via the registry, journals each result\ninto a cortex Event memory, and signs a plan.step envelope per node.\n\nSteps + Gates + SubDispatch nodes are skipped (the harness runs without a\nreal executor model + without sub-agents); they're recorded in the\ntranscript so the kind-coverage shows up in the post-run audit.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.walkNode
-  references=matrix/cortex.Cortex,matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.WalkResult,matrix/executor/cmd/mcl-e2e.actorURI,matrix/executor/cmd/mcl-e2e.c,matrix/executor/cmd/mcl-e2e.ctx,matrix/executor/cmd/mcl-e2e.drv,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.plan,matrix/executor/cmd/mcl-e2e.reg,matrix/executor/cmd/mcl-e2e.t,matrix/executor/cmd/mcl-e2e.walkNode,matrix/executor/cmd/mcl-e2e.wr,matrix/executor/tool.Registry,matrix/mcl/ir.PlanTree
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/walk.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.WalkResult kind=type
@@ -1046,8 +878,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.WalkResult kind=type
   doc=WalkResult collects the per-node outcomes of a manual plan walk so the\nattest stage can cite the resulting Event memories.
 EDGES
   contains=matrix/executor/cmd/mcl-e2e.WalkResult#Errors,matrix/executor/cmd/mcl-e2e.WalkResult#EventURIs,matrix/executor/cmd/mcl-e2e.WalkResult#IsErrors,matrix/executor/cmd/mcl-e2e.WalkResult#NodeIDs,matrix/executor/cmd/mcl-e2e.WalkResult#ToolDurations
-  references=matrix/cortex/memory.URI
-  ^references=matrix/executor/cmd/mcl-e2e.WalkPlan,matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-e2e.walkNode
   ^defines=matrix/executor/cmd/mcl-e2e/walk.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.WalkResult#Errors kind=field
@@ -1086,7 +916,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.Workspace kind=type
   doc=Workspace is the per-run directory layout. Every artifact lives under\nRoot so a single rm -rf wipes the run.
 EDGES
   contains=matrix/executor/cmd/mcl-e2e.Workspace#CortexRoot,matrix/executor/cmd/mcl-e2e.Workspace#GitRepoDir,matrix/executor/cmd/mcl-e2e.Workspace#JournalDir,matrix/executor/cmd/mcl-e2e.Workspace#Root,matrix/executor/cmd/mcl-e2e.Workspace#StderrLog,matrix/executor/cmd/mcl-e2e.Workspace#Transcript,matrix/executor/cmd/mcl-e2e.Workspace#WorkspaceFS
-  ^references=matrix/executor/cmd/mcl-e2e.NewWorkspace
   ^defines=matrix/executor/cmd/mcl-e2e/setup.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.Workspace#CortexRoot kind=field
@@ -1143,10 +972,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.analyzeReports kind=func
   sig=func analyzeReports(reports []*RunReport, assert *AssertCtx, t *Transcript)
   doc=analyzeReports prints + asserts cross-run invariants.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.AssertCtx.Equal,matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.dash,matrix/executor/cmd/mcl-e2e.findReport,matrix/executor/cmd/mcl-e2e.shortHash
-  references=matrix/executor/cmd/mcl-e2e.AssertCtx,matrix/executor/cmd/mcl-e2e.AssertCtx.Equal,matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.RunReport,matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.a,matrix/executor/cmd/mcl-e2e.assert,matrix/executor/cmd/mcl-e2e.b,matrix/executor/cmd/mcl-e2e.c,matrix/executor/cmd/mcl-e2e.dash,matrix/executor/cmd/mcl-e2e.findReport,matrix/executor/cmd/mcl-e2e.hashEqual,matrix/executor/cmd/mcl-e2e.ok,matrix/executor/cmd/mcl-e2e.r,matrix/executor/cmd/mcl-e2e.reports,matrix/executor/cmd/mcl-e2e.rootEqual,matrix/executor/cmd/mcl-e2e.shortHash,matrix/executor/cmd/mcl-e2e.t
-  ^calls=matrix/executor/cmd/mcl-e2e.main
-  ^references=matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/main.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.buildIntentFromRun kind=func
@@ -1154,10 +979,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.buildIntentFromRun kind=func
   sig=func buildIntentFromRun(intentID string, opts CompileOpts, run *interpreter.RunResult, mtxDigest, cortexSnap, model string, dur time.Duration) (*ir.Intent, error)
   doc=buildIntentFromRun converts the interpreter RunResult into a typed\nir.Intent. The LLM emits FrameJSON matching intent_frame@1 schema; we\nbest-effort decode it and merge with slot/unknown state from the\ninterpreter side.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.compilerSeed,matrix/executor/cmd/mcl-e2e.sha256Hex,matrix/executor/cmd/mcl-e2e.stringField,matrix/mcl/ir.ValidVerb
-  references=matrix/executor/cmd/mcl-e2e.CompileOpts,matrix/executor/cmd/mcl-e2e.compilerSeed,matrix/executor/cmd/mcl-e2e.cortexSnap,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.frame,matrix/executor/cmd/mcl-e2e.intent,matrix/executor/cmd/mcl-e2e.intentID,matrix/executor/cmd/mcl-e2e.k,matrix/executor/cmd/mcl-e2e.m,matrix/executor/cmd/mcl-e2e.model,matrix/executor/cmd/mcl-e2e.mtxDigest,matrix/executor/cmd/mcl-e2e.o,matrix/executor/cmd/mcl-e2e.objs,matrix/executor/cmd/mcl-e2e.ok,matrix/executor/cmd/mcl-e2e.opts,matrix/executor/cmd/mcl-e2e.run,matrix/executor/cmd/mcl-e2e.se,matrix/executor/cmd/mcl-e2e.sha256Hex,matrix/executor/cmd/mcl-e2e.slot,matrix/executor/cmd/mcl-e2e.stringField,matrix/executor/cmd/mcl-e2e.u,matrix/executor/cmd/mcl-e2e.v,matrix/executor/cmd/mcl-e2e.verb,matrix/mcl/ir.CompileMetadata,matrix/mcl/ir.Intent,matrix/mcl/ir.Reference,matrix/mcl/ir.SlotEntry,matrix/mcl/ir.StateDraft,matrix/mcl/ir.StateProposed,matrix/mcl/ir.Unknown,matrix/mcl/ir.ValidVerb,matrix/mcl/mtx/interpreter.RunResult,matrix/mcl/mtx/interpreter.SlotResolved
-  ^calls=matrix/executor/cmd/mcl-e2e.RunCompile
-  ^references=matrix/executor/cmd/mcl-e2e.RunCompile
   ^defines=matrix/executor/cmd/mcl-e2e/compile.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.bytesIndent kind=func
@@ -1165,51 +986,42 @@ NODE id=matrix/executor/cmd/mcl-e2e.bytesIndent kind=func
   sig=func bytesIndent(in []byte) []byte
   doc=bytesIndent re-indents already-marshaled JSON for human-readable\njournal logs (envelope.EnvelopeJSON returns compact bytes).
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.generic,matrix/executor/cmd/mcl-e2e.in,matrix/executor/cmd/mcl-e2e.out
-  ^calls=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist
-  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist
   ^defines=matrix/executor/cmd/mcl-e2e/envelopes.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.cBlue kind=const
   digest=b3:68e95c7d4bf14134a4ee4af3063d6d084175bf8d16a286f037cfaaeb30d47d49 file=executor/cmd/mcl-e2e/assert.go range=27:27 lang=go exported=false byte_range=592:612
   sig=untyped string
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.Section,matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.cBold kind=const
   digest=b3:0e98d9e8ae86cc34303034905c98992f87573261e1e29549244e98ba86d872c5 file=executor/cmd/mcl-e2e/assert.go range=28:28 lang=go exported=false byte_range=614:633
   sig=untyped string
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.AssertCtx.Summary,matrix/executor/cmd/mcl-e2e.Section,matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.cGreen kind=const
   digest=b3:23cbd55634b3f51298922e0124a33e74ac96cb2e1de9a7d8431e82540d10c492 file=executor/cmd/mcl-e2e/assert.go range=24:24 lang=go exported=false byte_range=526:546
   sig=untyped string
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.AssertCtx.Summary,matrix/executor/cmd/mcl-e2e.AssertCtx.True
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.cRed kind=const
   digest=b3:7decfed7ef7b87e4f5d2774e590f3390785a6cf6341ac6d45b0c3162d88023fb file=executor/cmd/mcl-e2e/assert.go range=25:25 lang=go exported=false byte_range=548:568
   sig=untyped string
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.AssertCtx.Summary,matrix/executor/cmd/mcl-e2e.AssertCtx.True
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.cReset kind=const
   digest=b3:da7a3b90d1e6aba3a52ed87909b0fb5b9d744f0c776fff4f4969ce495f2d0164 file=executor/cmd/mcl-e2e/assert.go range=23:23 lang=go exported=false byte_range=505:524
   sig=untyped string
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.AssertCtx.Summary,matrix/executor/cmd/mcl-e2e.AssertCtx.True,matrix/executor/cmd/mcl-e2e.Section,matrix/executor/cmd/mcl-e2e.Subsection,matrix/executor/cmd/mcl-e2e.fmtDetail,matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.cYellow kind=const
   digest=b3:96684636af9d2e817d32d40d10402ee9f77c64a576075f3af65ab7ca6487c7f5 file=executor/cmd/mcl-e2e/assert.go range=26:26 lang=go exported=false byte_range=570:590
   sig=untyped string
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.Subsection,matrix/executor/cmd/mcl-e2e.fmtDetail
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.coerceArg kind=func
@@ -1217,10 +1029,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.coerceArg kind=func
   sig=func coerceArg(v string) interface{}
   doc=coerceArg converts a string-typed PlanTree arg into its likely\nJSON-friendly type. The IR shape is map[string]string for canonical\nhashing simplicity; MCP servers expect ints/bools per their input\nschemas. The walker does best-effort coercion: pure-digit strings\nbecome int, "true"/"false" become bool, everything else stays string.\n\nA future plan-IR revision may add typed Args (oneof string/int/bool/\nnumber/array) at which point this becomes a no-op shim.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.hasFloatShape,matrix/executor/cmd/mcl-e2e.isAllDigitsOptSign
-  references=matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.f,matrix/executor/cmd/mcl-e2e.hasFloatShape,matrix/executor/cmd/mcl-e2e.isAllDigitsOptSign,matrix/executor/cmd/mcl-e2e.n,matrix/executor/cmd/mcl-e2e.v
-  ^calls=matrix/executor/cmd/mcl-e2e.execToolCall
-  ^references=matrix/executor/cmd/mcl-e2e.execToolCall
   ^defines=matrix/executor/cmd/mcl-e2e/walk.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.compilerSeed kind=func
@@ -1228,82 +1036,54 @@ NODE id=matrix/executor/cmd/mcl-e2e.compilerSeed kind=func
   sig=func compilerSeed(intentID, actor, snap, mtxDigest, model string) string
   doc=compilerSeed mirrors D11: hash(intent_id || actor || snapshot_hash || mtx_digest || model_digest).
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.sha256Hex
-  references=matrix/executor/cmd/mcl-e2e.actor,matrix/executor/cmd/mcl-e2e.h,matrix/executor/cmd/mcl-e2e.intentID,matrix/executor/cmd/mcl-e2e.model,matrix/executor/cmd/mcl-e2e.mtxDigest,matrix/executor/cmd/mcl-e2e.sha256Hex,matrix/executor/cmd/mcl-e2e.snap
-  ^calls=matrix/executor/cmd/mcl-e2e.buildIntentFromRun
-  ^references=matrix/executor/cmd/mcl-e2e.buildIntentFromRun
   ^defines=matrix/executor/cmd/mcl-e2e/compile.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.dash kind=func
   digest=b3:d90779389275a3cc57e5f256adcd0118a28b2785327c0c122147bf8a5a0fbca8 file=executor/cmd/mcl-e2e/main.go range=269:277 lang=go exported=false byte_range=11022:11139
   sig=func dash(s string) string
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.s
-  ^calls=matrix/executor/cmd/mcl-e2e.analyzeReports
-  ^references=matrix/executor/cmd/mcl-e2e.analyzeReports
   ^defines=matrix/executor/cmd/mcl-e2e/main.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.execToolCall kind=func
   digest=b3:18f244cc47d12fa788e0271d45c4adddf9abbd67688ff46f7983c39c4b9ad47b file=executor/cmd/mcl-e2e/walk.go range=109:195 lang=go exported=false byte_range=3314:6004
   sig=func execToolCall(ctx context.Context, n *ir.PlanNode, planID string, reg *tool.Registry, c *cortex.Cortex, drv *LifecycleDriver, actorURI string, t *Transcript, wr *WalkResult) error
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.coerceArg,matrix/executor/cmd/mcl-e2e.signStep,matrix/executor/cmd/mcl-e2e.truncate,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/tool.ExtractText,matrix/executor/tool.FailureError.Error,matrix/executor/tool.MCPTool.Call,matrix/executor/tool.NativeTool.Call,matrix/executor/tool.Registry.Get
-  references=matrix/cortex.Cortex,matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.WalkResult,matrix/executor/cmd/mcl-e2e.actorURI,matrix/executor/cmd/mcl-e2e.args,matrix/executor/cmd/mcl-e2e.c,matrix/executor/cmd/mcl-e2e.callCtx,matrix/executor/cmd/mcl-e2e.cancel,matrix/executor/cmd/mcl-e2e.coerceArg,matrix/executor/cmd/mcl-e2e.ctx,matrix/executor/cmd/mcl-e2e.drv,matrix/executor/cmd/mcl-e2e.dur,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.evtURI,matrix/executor/cmd/mcl-e2e.k,matrix/executor/cmd/mcl-e2e.n,matrix/executor/cmd/mcl-e2e.planID,matrix/executor/cmd/mcl-e2e.reg,matrix/executor/cmd/mcl-e2e.res,matrix/executor/cmd/mcl-e2e.resBytes,matrix/executor/cmd/mcl-e2e.resultText,matrix/executor/cmd/mcl-e2e.signStep,matrix/executor/cmd/mcl-e2e.status,matrix/executor/cmd/mcl-e2e.t,matrix/executor/cmd/mcl-e2e.t0,matrix/executor/cmd/mcl-e2e.tc,matrix/executor/cmd/mcl-e2e.timeoutMs,matrix/executor/cmd/mcl-e2e.tl,matrix/executor/cmd/mcl-e2e.truncate,matrix/executor/cmd/mcl-e2e.v,matrix/executor/cmd/mcl-e2e.werr,matrix/executor/cmd/mcl-e2e.wr,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/tool.ExtractText,matrix/executor/tool.Registry,matrix/executor/tool.Registry.Get,matrix/executor/tool.Tool.Call,matrix/mcl/ir.PlanNode
-  ^calls=matrix/executor/cmd/mcl-e2e.walkNode
-  ^references=matrix/executor/cmd/mcl-e2e.walkNode
   ^defines=matrix/executor/cmd/mcl-e2e/walk.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.findReport kind=func
   digest=b3:5b532c64da87b3eb1475e129b5b902b17d464378c5ad2f084c35bca39b4433b3 file=executor/cmd/mcl-e2e/main.go range=260:267 lang=go exported=false byte_range=10864:11020
   sig=func findReport(reports []*RunReport, tag string) *RunReport
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.RunReport,matrix/executor/cmd/mcl-e2e.r,matrix/executor/cmd/mcl-e2e.reports,matrix/executor/cmd/mcl-e2e.tag
-  ^calls=matrix/executor/cmd/mcl-e2e.analyzeReports
-  ^references=matrix/executor/cmd/mcl-e2e.analyzeReports
   ^defines=matrix/executor/cmd/mcl-e2e/main.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.fmtDetail kind=func
   digest=b3:bad716d2f04b4d26f03d71db05036547e4efb2cc01bf189c837dfd3b654f8d70 file=executor/cmd/mcl-e2e/assert.go range=112:117 lang=go exported=false byte_range=2837:2949
   sig=func fmtDetail(d string) string
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.cReset,matrix/executor/cmd/mcl-e2e.cYellow,matrix/executor/cmd/mcl-e2e.d
-  ^calls=matrix/executor/cmd/mcl-e2e.AssertCtx.True
-  ^references=matrix/executor/cmd/mcl-e2e.AssertCtx.True
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.hasFloatShape kind=func
   digest=b3:91d0f8f1ee57ff8087c5a9ffae956f51dae530683a4cd7e7c03b00085f3d8df5 file=executor/cmd/mcl-e2e/walk.go range=300:316 lang=go exported=false byte_range=8918:9208
   sig=func hasFloatShape(s string) bool
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.hasDot,matrix/executor/cmd/mcl-e2e.r,matrix/executor/cmd/mcl-e2e.s
-  ^calls=matrix/executor/cmd/mcl-e2e.coerceArg
-  ^references=matrix/executor/cmd/mcl-e2e.coerceArg
   ^defines=matrix/executor/cmd/mcl-e2e/walk.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.isAllDigitsOptSign kind=func
   digest=b3:78d96be1f6d15bb4127cc69e3b5d7fa8f74f4b5f06d26a090fd764e3487d683d file=executor/cmd/mcl-e2e/walk.go range=281:298 lang=go exported=false byte_range=8658:8916
   sig=func isAllDigitsOptSign(s string) bool
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.i,matrix/executor/cmd/mcl-e2e.s
-  ^calls=matrix/executor/cmd/mcl-e2e.coerceArg
-  ^references=matrix/executor/cmd/mcl-e2e.coerceArg
   ^defines=matrix/executor/cmd/mcl-e2e/walk.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.main kind=func
   digest=b3:222737f60f22000b82934281b2d723e109320150c6897ff9830e6df4eaf3cf6a file=executor/cmd/mcl-e2e/main.go range=53:192 lang=go exported=false byte_range=2150:7844
   sig=func main()
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.AssertCtx.ExitCode,matrix/executor/cmd/mcl-e2e.AssertCtx.Summary,matrix/executor/cmd/mcl-e2e.NewAssertCtx,matrix/executor/cmd/mcl-e2e.NewTranscript,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.Section,matrix/executor/cmd/mcl-e2e.Transcript.Close,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.analyzeReports,matrix/executor/cmd/mcl-e2e.maybeNot,matrix/executor/cmd/mcl-e2e.routerModeLabel,matrix/executor/cmd/mcl-e2e.synthIntentID
-  references=matrix/executor/cmd/mcl-e2e.AssertCtx.ExitCode,matrix/executor/cmd/mcl-e2e.AssertCtx.Summary,matrix/executor/cmd/mcl-e2e.NewAssertCtx,matrix/executor/cmd/mcl-e2e.NewTranscript,matrix/executor/cmd/mcl-e2e.RunConfig,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.RunReport,matrix/executor/cmd/mcl-e2e.Section,matrix/executor/cmd/mcl-e2e.Transcript.Close,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.analyzeReports,matrix/executor/cmd/mcl-e2e.assert,matrix/executor/cmd/mcl-e2e.cBlue,matrix/executor/cmd/mcl-e2e.cBold,matrix/executor/cmd/mcl-e2e.cReset,matrix/executor/cmd/mcl-e2e.cancel,matrix/executor/cmd/mcl-e2e.ctx,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.fireworksModel,matrix/executor/cmd/mcl-e2e.intentIDAB,matrix/executor/cmd/mcl-e2e.legacyRouter,matrix/executor/cmd/mcl-e2e.maybeNot,matrix/executor/cmd/mcl-e2e.prose,matrix/executor/cmd/mcl-e2e.reports,matrix/executor/cmd/mcl-e2e.rootBase,matrix/executor/cmd/mcl-e2e.rootDir,matrix/executor/cmd/mcl-e2e.routerModeLabel,matrix/executor/cmd/mcl-e2e.runA,matrix/executor/cmd/mcl-e2e.runB,matrix/executor/cmd/mcl-e2e.runC,matrix/executor/cmd/mcl-e2e.seed,matrix/executor/cmd/mcl-e2e.skillPath,matrix/executor/cmd/mcl-e2e.skipDeterminism,matrix/executor/cmd/mcl-e2e.skipTogether,matrix/executor/cmd/mcl-e2e.synthIntentID,matrix/executor/cmd/mcl-e2e.togetherModel,matrix/executor/cmd/mcl-e2e.topT,matrix/executor/cmd/mcl-e2e.ts,matrix/executor/cmd/mcl-e2e.verb,matrix/mcl/llm.ProviderFireworks,matrix/mcl/llm.ProviderTogether
   ^defines=matrix/executor/cmd/mcl-e2e/main.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.maybeNot kind=func
   digest=b3:368d7885eb63a3f59c6152c6d3099b7d1fbf355fb7acd87fc79758a83a1f1c8c file=executor/cmd/mcl-e2e/main.go range=286:291 lang=go exported=false byte_range=11234:11316
   sig=func maybeNot(skip bool) string
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.skip
-  ^calls=matrix/executor/cmd/mcl-e2e.main
-  ^references=matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/main.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.newSysCmd kind=func
@@ -1311,10 +1091,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.newSysCmd kind=func
   sig=func newSysCmd(dir, name string, args ...string) *exec.Cmd
   doc=newSysCmd is a thin wrapper isolated in its own file so test fakes\ncan stub it later without touching the rest of setup.
 EDGES
-  calls=matrix/executor/tool.AgentEnvironment,matrix/executor/tool.ConfigureAgentCommand
-  references=matrix/executor/cmd/mcl-e2e.args,matrix/executor/cmd/mcl-e2e.cmd,matrix/executor/cmd/mcl-e2e.dir,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.name,matrix/executor/tool.AgentEnvironment,matrix/executor/tool.ConfigureAgentCommand
-  ^calls=matrix/executor/cmd/mcl-e2e.runCmdInDir
-  ^references=matrix/executor/cmd/mcl-e2e.runCmdInDir
   ^defines=matrix/executor/cmd/mcl-e2e/exec_helpers.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.newULIDLike kind=func
@@ -1322,9 +1098,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.newULIDLike kind=func
   sig=func newULIDLike() string
   doc=newULIDLike emits a ULID-shaped 26-char Crockford-base32 string. Not a\nstrict ULID (no monotonic guarantee across the process) but cryptographically\nrandom and stable enough for envelope IDs. Mirrors the encoding used by\noklog/ulid.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.crockford,matrix/executor/cmd/mcl-e2e.i,matrix/executor/cmd/mcl-e2e.out,matrix/executor/cmd/mcl-e2e.raw,matrix/executor/cmd/mcl-e2e.ts
-  ^calls=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist
-  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist
   ^defines=matrix/executor/cmd/mcl-e2e/envelopes.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.routerModeLabel kind=func
@@ -1332,19 +1105,12 @@ NODE id=matrix/executor/cmd/mcl-e2e.routerModeLabel kind=func
   sig=func routerModeLabel(legacy bool) string
   doc=routerModeLabel renders the sess#31d P4 A/B mode for the banner.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.legacy
-  ^calls=matrix/executor/cmd/mcl-e2e.main
-  ^references=matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/main.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.runCmdInDir kind=func
   digest=b3:e66f7b2d6ba0accd9b9febe63f406609e0cc79d50d9b5052893f7c94ce50f68a file=executor/cmd/mcl-e2e/setup.go range=239:246 lang=go exported=false byte_range=9575:9834
   sig=func runCmdInDir(dir, name string, args ...string) error
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.newSysCmd
-  references=matrix/executor/cmd/mcl-e2e.args,matrix/executor/cmd/mcl-e2e.cmd,matrix/executor/cmd/mcl-e2e.dir,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.name,matrix/executor/cmd/mcl-e2e.newSysCmd,matrix/executor/cmd/mcl-e2e.out
-  ^calls=matrix/executor/cmd/mcl-e2e.SeedGitRepo
-  ^references=matrix/executor/cmd/mcl-e2e.SeedGitRepo
   ^defines=matrix/executor/cmd/mcl-e2e/setup.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.sanitiseKind kind=func
@@ -1352,9 +1118,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.sanitiseKind kind=func
   sig=func sanitiseKind(kind string) string
   doc=sanitiseKind replaces '.' with '-' so kind names (e.g. "intent.draft")\nrender as filesystem-safe filenames.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.i,matrix/executor/cmd/mcl-e2e.kind,matrix/executor/cmd/mcl-e2e.out
-  ^calls=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist
-  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist
   ^defines=matrix/executor/cmd/mcl-e2e/envelopes.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.sha256Hex kind=func
@@ -1362,27 +1125,18 @@ NODE id=matrix/executor/cmd/mcl-e2e.sha256Hex kind=func
   sig=func sha256Hex(s string) string
   doc=sha256Hex returns hex(sha256(s)).
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.s,matrix/executor/cmd/mcl-e2e.sum
-  ^calls=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-e2e.compilerSeed
-  ^references=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-e2e.compilerSeed
   ^defines=matrix/executor/cmd/mcl-e2e/compile.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.short kind=func
   digest=b3:e2ab8bdfcd1fda252fef94732d22004d0a5112c80d88647d2833e2271ecd57fe file=executor/cmd/mcl-e2e/assert.go range=104:110 lang=go exported=false byte_range=2722:2835
   sig=func short(v interface{}) string
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.s,matrix/executor/cmd/mcl-e2e.v
-  ^calls=matrix/executor/cmd/mcl-e2e.AssertCtx.Equal
-  ^references=matrix/executor/cmd/mcl-e2e.AssertCtx.Equal,matrix/executor/cmd/mcl-e2e.writeToolEventMemory
   ^defines=matrix/executor/cmd/mcl-e2e/assert.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.shortHash kind=func
   digest=b3:9a9540c9940e5808d516299a69135ac5cc81db27fc01c6807d395345750265b6 file=executor/cmd/mcl-e2e/main.go range=279:284 lang=go exported=false byte_range=11141:11232
   sig=func shortHash(s string) string
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.s
-  ^calls=matrix/executor/cmd/mcl-e2e.analyzeReports
-  ^references=matrix/executor/cmd/mcl-e2e.analyzeReports
   ^defines=matrix/executor/cmd/mcl-e2e/main.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.signStep kind=func
@@ -1390,10 +1144,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.signStep kind=func
   sig=func signStep(drv *LifecycleDriver, planID, nodeID, status string, result []byte, errMsg string, latencyMs int64) (*envelope.Envelope, error)
   doc=signStep emits a plan.step envelope. Keeps the signature short.
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.EnvelopeStream.LastID,matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist
-  references=matrix/executor/cmd/mcl-e2e.EnvelopeStream.LastID,matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.body,matrix/executor/cmd/mcl-e2e.drv,matrix/executor/cmd/mcl-e2e.errMsg,matrix/executor/cmd/mcl-e2e.latencyMs,matrix/executor/cmd/mcl-e2e.nodeID,matrix/executor/cmd/mcl-e2e.planID,matrix/executor/cmd/mcl-e2e.result,matrix/executor/cmd/mcl-e2e.status,matrix/mcl/envelope.Envelope,matrix/mcl/envelope.KindPlanStep,matrix/mcl/envelope.PlanStepBody
-  ^calls=matrix/executor/cmd/mcl-e2e.execToolCall
-  ^references=matrix/executor/cmd/mcl-e2e.execToolCall
   ^defines=matrix/executor/cmd/mcl-e2e/walk.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.staticKeyResolver kind=type
@@ -1402,7 +1152,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.staticKeyResolver kind=type
   doc=staticKeyResolver implements envelope.KeyResolver against a single principal.\nProduction resolves matrix://agent/<did> against tools/registry; for the\ne2e harness we know exactly one principal (the test actor) and short-circuit.
 EDGES
   contains=matrix/executor/cmd/mcl-e2e.staticKeyResolver#principals,matrix/executor/cmd/mcl-e2e.staticKeyResolver.ResolveKey
-  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-e2e.EnvelopeStream.Resolver,matrix/executor/cmd/mcl-e2e.NewEnvelopeStream,matrix/executor/cmd/mcl-e2e.staticKeyResolver.ResolveKey
   ^defines=matrix/executor/cmd/mcl-e2e/setup.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.staticKeyResolver#principals kind=field
@@ -1415,7 +1164,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.staticKeyResolver.ResolveKey kind=method
   digest=b3:e343270bdef0844065f60618c2ab1469a4deb882f69e9ce4b3fe0fec4beee3d8 file=executor/cmd/mcl-e2e/setup.go range=59:64 lang=go exported=true byte_range=1819:2032
   sig=func (r *staticKeyResolver) ResolveKey(principal string) (ed25519.PublicKey, error)
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.k,matrix/executor/cmd/mcl-e2e.ok,matrix/executor/cmd/mcl-e2e.principal,matrix/executor/cmd/mcl-e2e.r,matrix/executor/cmd/mcl-e2e.staticKeyResolver
   ^contains=matrix/executor/cmd/mcl-e2e.staticKeyResolver
   ^defines=matrix/executor/cmd/mcl-e2e/setup.go
 
@@ -1423,19 +1171,12 @@ NODE id=matrix/executor/cmd/mcl-e2e.stringField kind=func
   digest=b3:70b06596be0b231c365650b73e9bd563fd7744cd3e58d9a4dd64af316b413478 file=executor/cmd/mcl-e2e/compile.go range=311:318 lang=go exported=false byte_range=9512:9660
   sig=func stringField(m map[string]interface{}, k string) string
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.k,matrix/executor/cmd/mcl-e2e.m,matrix/executor/cmd/mcl-e2e.ok,matrix/executor/cmd/mcl-e2e.s,matrix/executor/cmd/mcl-e2e.v
-  ^calls=matrix/executor/cmd/mcl-e2e.buildIntentFromRun
-  ^references=matrix/executor/cmd/mcl-e2e.buildIntentFromRun
   ^defines=matrix/executor/cmd/mcl-e2e/compile.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.summarize kind=func
   digest=b3:d44b1abb9aa67ce301005355d6591866a4886b983caedab091d78e69e35fb3c9 file=executor/cmd/mcl-e2e/transcript.go range=82:94 lang=go exported=false byte_range=2132:2560
   sig=func summarize(fields map[string]interface{}) string
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.truncate
-  references=matrix/executor/cmd/mcl-e2e.fields,matrix/executor/cmd/mcl-e2e.k,matrix/executor/cmd/mcl-e2e.ok,matrix/executor/cmd/mcl-e2e.out,matrix/executor/cmd/mcl-e2e.truncate,matrix/executor/cmd/mcl-e2e.v
-  ^calls=matrix/executor/cmd/mcl-e2e.Transcript.Event
-  ^references=matrix/executor/cmd/mcl-e2e.Transcript.Event
   ^defines=matrix/executor/cmd/mcl-e2e/transcript.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.synthDigest kind=func
@@ -1443,9 +1184,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.synthDigest kind=func
   sig=func synthDigest(provider, pkg, version string) string
   doc=synthDigest builds a stable sha256:<64hex> digest from a canonical\n(provider, name, version) tuple. Used because npm/pypi don't expose\nsha256 of the unpacked package directly; for v1 the digest's role is\naudit recording (which version+provider was on the system at run time),\nnot chain-grade attestation.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.pkg,matrix/executor/cmd/mcl-e2e.provider,matrix/executor/cmd/mcl-e2e.src,matrix/executor/cmd/mcl-e2e.sum,matrix/executor/cmd/mcl-e2e.version
-  ^calls=matrix/executor/cmd/mcl-e2e.BuildAgentManifest
-  ^references=matrix/executor/cmd/mcl-e2e.BuildAgentManifest
   ^defines=matrix/executor/cmd/mcl-e2e/setup.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.synthIntentID kind=func
@@ -1453,46 +1191,30 @@ NODE id=matrix/executor/cmd/mcl-e2e.synthIntentID kind=func
   sig=func synthIntentID(prose, verb string) string
   doc=synthIntentID derives a deterministic 26-char ULID-shaped ID from a\ncanonical (prose, verb) tuple. NOT a real ULID — just stable across\nruns for cross-run hash equality.
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.crockford,matrix/executor/cmd/mcl-e2e.h,matrix/executor/cmd/mcl-e2e.i,matrix/executor/cmd/mcl-e2e.out,matrix/executor/cmd/mcl-e2e.prose,matrix/executor/cmd/mcl-e2e.verb
-  ^calls=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-e2e.main
-  ^references=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-e2e.main
   ^defines=matrix/executor/cmd/mcl-e2e/compile.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.toolNames kind=func
   digest=b3:7c863046be758eac3ba419d2a85a7212c2e35eb1f6d4474c95172d0e1484de41 file=executor/cmd/mcl-e2e/run.go range=436:442 lang=go exported=false byte_range=14991:15141
   sig=func toolNames(in []tool.ToolEntry) []string
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.in,matrix/executor/cmd/mcl-e2e.out,matrix/executor/cmd/mcl-e2e.t,matrix/executor/tool.ToolEntry
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce
   ^defines=matrix/executor/cmd/mcl-e2e/run.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.truncate kind=func
   digest=b3:dd63ec164635c0cd5a85f5b0379efd3e55d2bd14e0ad9d7fdf8230ed9fac31a4 file=executor/cmd/mcl-e2e/transcript.go range=96:101 lang=go exported=false byte_range=2562:2659
   sig=func truncate(s string, n int) string
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.n,matrix/executor/cmd/mcl-e2e.s
-  ^calls=matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-e2e.summarize,matrix/executor/cmd/mcl-e2e.writeToolEventMemory
-  ^references=matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-e2e.summarize,matrix/executor/cmd/mcl-e2e.writeToolEventMemory
   ^defines=matrix/executor/cmd/mcl-e2e/transcript.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.uvxBin kind=func
   digest=b3:65edec3da5d7a43dd0ffb1cf06af7774fb5dac468f23d32e18066ffde889e4e4 file=executor/cmd/mcl-e2e/setup.go range=227:237 lang=go exported=false byte_range=9360:9573
   sig=func uvxBin() string
 EDGES
-  references=matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.p,matrix/executor/cmd/mcl-e2e.v
-  ^calls=matrix/executor/cmd/mcl-e2e.BuildAgentManifest
-  ^references=matrix/executor/cmd/mcl-e2e.BuildAgentManifest
   ^defines=matrix/executor/cmd/mcl-e2e/setup.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.walkNode kind=func
   digest=b3:063c0c9d57396b07a5f920f1d9355d85d020a24df4e36da40eb2409a11ac2aca file=executor/cmd/mcl-e2e/walk.go range=50:107 lang=go exported=false byte_range=1542:3312
   sig=func walkNode(ctx context.Context, n *ir.PlanNode, planID string, reg *tool.Registry, c *cortex.Cortex, drv *LifecycleDriver, actorURI string, t *Transcript, wr *WalkResult) error
 EDGES
-  calls=matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.execToolCall
-  references=matrix/cortex.Cortex,matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-e2e.Transcript.Event,matrix/executor/cmd/mcl-e2e.WalkResult,matrix/executor/cmd/mcl-e2e.actorURI,matrix/executor/cmd/mcl-e2e.c,matrix/executor/cmd/mcl-e2e.child,matrix/executor/cmd/mcl-e2e.ctx,matrix/executor/cmd/mcl-e2e.drv,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.errCh,matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-e2e.i,matrix/executor/cmd/mcl-e2e.n,matrix/executor/cmd/mcl-e2e.planID,matrix/executor/cmd/mcl-e2e.reg,matrix/executor/cmd/mcl-e2e.t,matrix/executor/cmd/mcl-e2e.wg,matrix/executor/cmd/mcl-e2e.wr,matrix/executor/tool.Registry,matrix/mcl/ir.NodeGate,matrix/mcl/ir.NodeParallel,matrix/mcl/ir.NodeSequential,matrix/mcl/ir.NodeStep,matrix/mcl/ir.NodeSubDispatch,matrix/mcl/ir.NodeToolCall,matrix/mcl/ir.PlanNode
-  ^calls=matrix/executor/cmd/mcl-e2e.WalkPlan
-  ^references=matrix/executor/cmd/mcl-e2e.WalkPlan
   ^defines=matrix/executor/cmd/mcl-e2e/walk.go
 
 NODE id=matrix/executor/cmd/mcl-e2e.writeToolEventMemory kind=func
@@ -1500,10 +1222,6 @@ NODE id=matrix/executor/cmd/mcl-e2e.writeToolEventMemory kind=func
   sig=func writeToolEventMemory(c *cortex.Cortex, actorURI string, n *ir.PlanNode, toolRef, summary string, callErr error, isError bool) (memory.URI, error)
   doc=writeToolEventMemory persists a cortex Event capturing the tool outcome\nso subsequent attest can cite it. Spec: research/04 §4.2 EventKind=interaction.
 EDGES
-  calls=matrix/cortex.Cortex.Write,matrix/executor/cmd/mcl-e2e.truncate,matrix/executor/tool.FailureError.Error
-  references=matrix/cortex.Cortex,matrix/cortex.Cortex.Write,matrix/cortex.WriteMeta,matrix/cortex/memory.EventData,matrix/cortex/memory.EventInteraction,matrix/cortex/memory.Head,matrix/cortex/memory.OutcomeFailure,matrix/cortex/memory.OutcomeSuccess,matrix/cortex/memory.Provenance,matrix/cortex/memory.SourceObserved,matrix/cortex/memory.Tag,matrix/cortex/memory.URI,matrix/executor/cmd/mcl-e2e.actorURI,matrix/executor/cmd/mcl-e2e.c,matrix/executor/cmd/mcl-e2e.callErr,matrix/executor/cmd/mcl-e2e.err,matrix/executor/cmd/mcl-e2e.isError,matrix/executor/cmd/mcl-e2e.n,matrix/executor/cmd/mcl-e2e.outcome,matrix/executor/cmd/mcl-e2e.short,matrix/executor/cmd/mcl-e2e.summary,matrix/executor/cmd/mcl-e2e.toolRef,matrix/executor/cmd/mcl-e2e.truncate,matrix/executor/cmd/mcl-e2e.uri,matrix/mcl/ir.PlanNode
-  ^calls=matrix/executor/cmd/mcl-e2e.execToolCall
-  ^references=matrix/executor/cmd/mcl-e2e.execToolCall
   ^defines=matrix/executor/cmd/mcl-e2e/walk.go
 
 NODE id=matrix/executor/cmd/mcl-e2e/assert.go kind=file

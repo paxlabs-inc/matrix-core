@@ -19,6 +19,12 @@ import (
 // this local coding server. Durable Build tests cover the production path.
 func fsToolManifest(t *testing.T, root string) string {
 	t.Helper()
+	command := "npx"
+	args := []string{"-y", "@modelcontextprotocol/server-filesystem@2026.1.14", root}
+	if installed := os.Getenv("MATRIX_FS_MCP_COMMAND"); installed != "" {
+		command = installed
+		args = []string{root}
+	}
 	names := []string{
 		"read_file", "read_text_file", "read_media_file", "read_multiple_files",
 		"write_file", "edit_file", "create_directory", "list_directory",
@@ -38,8 +44,8 @@ func fsToolManifest(t *testing.T, root string) string {
 		SchemaVersion: 1,
 		Agent:         "matrix://agent/legacy-filesystem-test",
 		Servers: []executortool.ServerEntry{{
-			Alias: "fs", Transport: "stdio", Command: "npx",
-			Args:          []string{"-y", "@modelcontextprotocol/server-filesystem@2026.1.14", root},
+			Alias: "fs", Transport: "stdio", Command: command,
+			Args:          args,
 			PackageDigest: "sha256:" + strings.Repeat("a", 64),
 			Version:       "2026.1.14",
 			Tools:         entries,

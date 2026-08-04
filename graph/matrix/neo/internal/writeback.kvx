@@ -1,12 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/neo/internal/writeback kind=package
   digest=b3:469b2470e5c753aa40b3b2e28321860c8b7af44d63b044ed95882cba30bbd018 file=neo/internal/writeback range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/writeback/consolidator.go
-  imports=matrix/neo/internal/config,matrix/neo/internal/consolidation,matrix/neo/internal/llm,matrix/neo/internal/memory
   ^contains=mod:matrix/neo
-  ^imports=matrix/neo/cmd/neo
 
 NODE id=matrix/neo/internal/writeback.Consolidator kind=type
   digest=b3:a6917eb14aa6dc20d7942852c90a02feabcb0121beedce564792d9eed4f77133 file=neo/internal/writeback/consolidator.go range=29:56 lang=go exported=true byte_range=894:1857
@@ -15,8 +13,6 @@ NODE id=matrix/neo/internal/writeback.Consolidator kind=type
 EDGES
   contains=matrix/neo/internal/writeback.Consolidator#cfg,matrix/neo/internal/writeback.Consolidator#classify,matrix/neo/internal/writeback.Consolidator#closing,matrix/neo/internal/writeback.Consolidator#committed,matrix/neo/internal/writeback.Consolidator#done,matrix/neo/internal/writeback.Consolidator#extract,matrix/neo/internal/writeback.Consolidator#pager,matrix/neo/internal/writeback.Consolidator#pending,matrix/neo/internal/writeback.Consolidator#processMu,matrix/neo/internal/writeback.Consolidator#proposeMu,matrix/neo/internal/writeback.Consolidator#proposed,matrix/neo/internal/writeback.Consolidator#proposedSet,matrix/neo/internal/writeback.Consolidator#queueMu,matrix/neo/internal/writeback.Consolidator#reinforceCount,matrix/neo/internal/writeback.Consolidator#startOnce,matrix/neo/internal/writeback.Consolidator#stop,matrix/neo/internal/writeback.Consolidator#stopOnce,matrix/neo/internal/writeback.Consolidator#wake,matrix/neo/internal/writeback.Consolidator.Consolidate,matrix/neo/internal/writeback.Consolidator.ConsolidateSync,matrix/neo/internal/writeback.Consolidator.ProposedSkills,matrix/neo/internal/writeback.Consolidator.Start,matrix/neo/internal/writeback.Consolidator.Stop,matrix/neo/internal/writeback.Consolidator.allowed,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.drain,matrix/neo/internal/writeback.Consolidator.linkProvenance,matrix/neo/internal/writeback.Consolidator.loop,matrix/neo/internal/writeback.Consolidator.process,matrix/neo/internal/writeback.Consolidator.proposeIfReady
   implements=matrix/neo/internal/agent.Consolidator,matrix/neo/internal/runtime/loop.Consolidator
-  references=matrix/neo/internal/config.Config,matrix/neo/internal/consolidation.Job,matrix/neo/internal/llm.Client,matrix/neo/internal/memory.Pager
-  ^references=matrix/neo/cmd/neo.runServe,matrix/neo/internal/writeback.Consolidator.Consolidate,matrix/neo/internal/writeback.Consolidator.ConsolidateSync,matrix/neo/internal/writeback.Consolidator.ProposedSkills,matrix/neo/internal/writeback.Consolidator.Start,matrix/neo/internal/writeback.Consolidator.Stop,matrix/neo/internal/writeback.Consolidator.allowed,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.drain,matrix/neo/internal/writeback.Consolidator.linkProvenance,matrix/neo/internal/writeback.Consolidator.loop,matrix/neo/internal/writeback.Consolidator.process,matrix/neo/internal/writeback.Consolidator.proposeIfReady,matrix/neo/internal/writeback.New
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator#cfg kind=field
@@ -133,10 +129,7 @@ NODE id=matrix/neo/internal/writeback.Consolidator.Consolidate kind=method
   sig=func (c *Consolidator) Consolidate(job consolidation.Job)
   doc=Consolidate coalesces by stable intent identity and wakes the single commit\nworker. It never spawns detached writers and never blocks the agent.
 EDGES
-  calls=matrix/neo/internal/consolidation.Job.Empty,matrix/neo/internal/consolidation.Merge,matrix/neo/internal/writeback.Consolidator.allowed
-  references=matrix/neo/internal/consolidation.Job,matrix/neo/internal/consolidation.Job.Empty,matrix/neo/internal/consolidation.Merge,matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.Consolidator.allowed,matrix/neo/internal/writeback.alreadyCommitted,matrix/neo/internal/writeback.c,matrix/neo/internal/writeback.job,matrix/neo/internal/writeback.key,matrix/neo/internal/writeback.sum
   ^contains=matrix/neo/internal/writeback.Consolidator
-  ^calls=matrix/neo/internal/agent.Agent.consolidateWorking,matrix/neo/internal/runtime/loop.DeliveryChoke.consolidate
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.ConsolidateSync kind=method
@@ -144,8 +137,6 @@ NODE id=matrix/neo/internal/writeback.Consolidator.ConsolidateSync kind=method
   sig=func (c *Consolidator) ConsolidateSync(ctx context.Context, transcript, conv string, seqLo, seqHi uint64)
   doc=ConsolidateSync runs the SAME extraction logic as Consolidate, but\nSYNCHRONOUSLY on the caller's goroutine — not through the async jobs\nchannel. It is called from compact() before evicting older turns so that\ndurable facts/events/patterns in the about-to-be-evicted transcript reach\ncortex BEFORE the turns are lost from the working window. This closes the\ngap where an async sweep could lag behind compaction and lose the last\nturns. The call respects the context deadline and never panics on a nil\nreceiver. It does NOT touch the async queue (steady-state is unchanged).
 EDGES
-  calls=matrix/neo/internal/writeback.Consolidator.allowed,matrix/neo/internal/writeback.Consolidator.process
-  references=matrix/neo/internal/consolidation.Evidence,matrix/neo/internal/consolidation.EvidenceVerified,matrix/neo/internal/consolidation.Job,matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.Consolidator.allowed,matrix/neo/internal/writeback.Consolidator.process,matrix/neo/internal/writeback.c,matrix/neo/internal/writeback.cancel,matrix/neo/internal/writeback.conv,matrix/neo/internal/writeback.ctx,matrix/neo/internal/writeback.seqHi,matrix/neo/internal/writeback.seqLo,matrix/neo/internal/writeback.subCtx,matrix/neo/internal/writeback.sum,matrix/neo/internal/writeback.transcript
   ^contains=matrix/neo/internal/writeback.Consolidator
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
@@ -154,7 +145,6 @@ NODE id=matrix/neo/internal/writeback.Consolidator.ProposedSkills kind=method
   sig=func (c *Consolidator) ProposedSkills() []string
   doc=ProposedSkills returns the list of skill names that have been auto-proposed\nby the consolidator (patterns that crossed the MinPatternSuccesses guard).\nNil-safe: returns nil for a nil receiver.
 EDGES
-  references=matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.c,matrix/neo/internal/writeback.out
   ^contains=matrix/neo/internal/writeback.Consolidator
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
@@ -163,10 +153,7 @@ NODE id=matrix/neo/internal/writeback.Consolidator.Start kind=method
   sig=func (c *Consolidator) Start()
   doc=Start launches the worker. Safe to call once.
 EDGES
-  references=matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.Consolidator.loop,matrix/neo/internal/writeback.c
   ^contains=matrix/neo/internal/writeback.Consolidator
-  ^calls=matrix/neo/cmd/neo.runInteractive,matrix/neo/cmd/neo.runServe
-  ^references=matrix/neo/cmd/neo.runInteractive,matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.Stop kind=method
@@ -174,21 +161,14 @@ NODE id=matrix/neo/internal/writeback.Consolidator.Stop kind=method
   sig=func (c *Consolidator) Stop()
   doc=Stop drains and shuts down the worker.
 EDGES
-  references=matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.c
   ^contains=matrix/neo/internal/writeback.Consolidator
-  ^calls=matrix/neo/cmd/neo.runInteractive,matrix/neo/cmd/neo.runServe
-  ^references=matrix/neo/cmd/neo.runInteractive,matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.allowed kind=method
   digest=b3:09b4bf6b132358134d4d94421bcc4d20917845c4e9d1321c08b615370f5528b5 file=neo/internal/writeback/consolidator.go range=517:519 lang=go exported=false byte_range=20064:20174
   sig=func (c *Consolidator) allowed() bool
 EDGES
-  calls=matrix/neo/internal/memory.Pager.MemoryConsentEnabled
-  references=matrix/neo/internal/memory.Pager.MemoryConsentEnabled,matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.c
   ^contains=matrix/neo/internal/writeback.Consolidator
-  ^calls=matrix/neo/internal/writeback.Consolidator.Consolidate,matrix/neo/internal/writeback.Consolidator.ConsolidateSync,matrix/neo/internal/writeback.Consolidator.process
-  ^references=matrix/neo/internal/writeback.Consolidator.Consolidate,matrix/neo/internal/writeback.Consolidator.ConsolidateSync,matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.classifyRelation kind=method
@@ -196,8 +176,6 @@ NODE id=matrix/neo/internal/writeback.Consolidator.classifyRelation kind=method
   sig=func (c *Consolidator) classifyRelation(ctx context.Context, newText string, candidates []memory.Neighbor) (memory.Relation, string, string)
   doc=classifyRelation implements memory.RelationClassifier using the cheap\nconsolidation model. It is passed to the Remember*Related write paths and\ninvoked only when a similar neighbor exists. On any model/parse error it\nreturns RelationNew (no edge), so a flaky classifier degrades to the plain\nv1 write rather than mislinking memories.
 EDGES
-  calls=matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.SystemMessage,matrix/neo/internal/llm.UserMessage,matrix/neo/internal/memory.ParseRelation,matrix/neo/internal/writeback.parseLooseJSON
-  references=matrix/neo/internal/llm.ChatRequest,matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.Message,matrix/neo/internal/llm.SystemMessage,matrix/neo/internal/llm.UserMessage,matrix/neo/internal/memory.Neighbor,matrix/neo/internal/memory.ParseRelation,matrix/neo/internal/memory.Relation,matrix/neo/internal/memory.RelationNew,matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.b,matrix/neo/internal/writeback.c,matrix/neo/internal/writeback.cand,matrix/neo/internal/writeback.candidates,matrix/neo/internal/writeback.ctx,matrix/neo/internal/writeback.err,matrix/neo/internal/writeback.m,matrix/neo/internal/writeback.newText,matrix/neo/internal/writeback.out,matrix/neo/internal/writeback.parseLooseJSON,matrix/neo/internal/writeback.relationClassifyPrompt,matrix/neo/internal/writeback.relationJSON,matrix/neo/internal/writeback.res
   ^contains=matrix/neo/internal/writeback.Consolidator
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
@@ -205,11 +183,7 @@ NODE id=matrix/neo/internal/writeback.Consolidator.drain kind=method
   digest=b3:ff5cc590cca0c2a0f60c4b3e9a9ded02b96e1d79ebc439c3dc7b2c071a1b4c4e file=neo/internal/writeback/consolidator.go range=218:248 lang=go exported=false byte_range=6907:7583
   sig=func (c *Consolidator) drain(includeIncomplete bool)
 EDGES
-  calls=matrix/neo/internal/writeback.Consolidator.process
-  references=matrix/neo/internal/consolidation.Job,matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.Consolidator.process,matrix/neo/internal/writeback.c,matrix/neo/internal/writeback.includeIncomplete,matrix/neo/internal/writeback.job,matrix/neo/internal/writeback.jobs,matrix/neo/internal/writeback.key,matrix/neo/internal/writeback.keys
   ^contains=matrix/neo/internal/writeback.Consolidator
-  ^calls=matrix/neo/internal/writeback.Consolidator.loop
-  ^references=matrix/neo/internal/writeback.Consolidator.loop
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.linkProvenance kind=method
@@ -217,32 +191,21 @@ NODE id=matrix/neo/internal/writeback.Consolidator.linkProvenance kind=method
   sig=func (c *Consolidator) linkProvenance(uri string, job consolidation.Job)
   doc=linkProvenance adds a best-effort derived_from provenance edge from a\nfreshly written memory back to the session slice it was extracted from\n(DEJA-VU req 1.1/1.2). It runs AFTER the memory write has already committed,\nso a failed or impossible edge (empty URI from a deduped write, blank conv on\nthe CLI path, or an edge error) never fails the memory write.
 EDGES
-  calls=matrix/neo/internal/memory.Pager.LinkSessionProvenance
-  references=matrix/neo/internal/consolidation.Job,matrix/neo/internal/memory.Pager.LinkSessionProvenance,matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.c,matrix/neo/internal/writeback.job,matrix/neo/internal/writeback.uri
   ^contains=matrix/neo/internal/writeback.Consolidator
-  ^calls=matrix/neo/internal/writeback.Consolidator.process
-  ^references=matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.loop kind=method
   digest=b3:446f0b2f89ffed0def96699a3c8601a38ba69a151497d1330a0576910db08e25 file=neo/internal/writeback/consolidator.go range=205:216 lang=go exported=false byte_range=6747:6905
   sig=func (c *Consolidator) loop()
 EDGES
-  calls=matrix/neo/internal/writeback.Consolidator.drain
-  references=matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.Consolidator.drain,matrix/neo/internal/writeback.c
   ^contains=matrix/neo/internal/writeback.Consolidator
-  ^references=matrix/neo/internal/writeback.Consolidator.Start
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.process kind=method
   digest=b3:14da547433b097cd601ee4e15de1f136c7cf930266494044771af8764fd63de1 file=neo/internal/writeback/consolidator.go range=345:515 lang=go exported=false byte_range=15121:20062
   sig=func (c *Consolidator) process(ctx context.Context, job consolidation.Job)
 EDGES
-  calls=matrix/neo/internal/consolidation.Render,matrix/neo/internal/consolidation.ValidCitations,matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.SystemMessage,matrix/neo/internal/llm.UserMessage,matrix/neo/internal/memory.Pager.ReinforcePattern,matrix/neo/internal/memory.Pager.RememberOpportunity,matrix/neo/internal/memory.Pager.UpsertConstraint,matrix/neo/internal/memory.Pager.UpsertFact,matrix/neo/internal/memory.Pager.UpsertOutcome,matrix/neo/internal/memory.Pager.UpsertPreference,matrix/neo/internal/memory.Pager.UpsertUserFact,matrix/neo/internal/memory.PatternSpec.IsEmpty,matrix/neo/internal/writeback.Consolidator.allowed,matrix/neo/internal/writeback.Consolidator.linkProvenance,matrix/neo/internal/writeback.Consolidator.proposeIfReady,matrix/neo/internal/writeback.mapOutcome,matrix/neo/internal/writeback.parseLooseJSON
-  references=matrix/neo/internal/consolidation.Job,matrix/neo/internal/consolidation.Render,matrix/neo/internal/consolidation.ValidCitations,matrix/neo/internal/llm.ChatRequest,matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.Message,matrix/neo/internal/llm.SystemMessage,matrix/neo/internal/llm.UserMessage,matrix/neo/internal/memory.OpportunitySpec,matrix/neo/internal/memory.Pager.ReinforcePattern,matrix/neo/internal/memory.Pager.RememberOpportunity,matrix/neo/internal/memory.Pager.UpsertConstraint,matrix/neo/internal/memory.Pager.UpsertFact,matrix/neo/internal/memory.Pager.UpsertOutcome,matrix/neo/internal/memory.Pager.UpsertPreference,matrix/neo/internal/memory.Pager.UpsertUserFact,matrix/neo/internal/memory.PatternSpec,matrix/neo/internal/memory.PatternSpec.IsEmpty,matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.Consolidator.allowed,matrix/neo/internal/writeback.Consolidator.linkProvenance,matrix/neo/internal/writeback.Consolidator.proposeIfReady,matrix/neo/internal/writeback.c,matrix/neo/internal/writeback.cancel,matrix/neo/internal/writeback.consolidatePrompt,matrix/neo/internal/writeback.corr,matrix/neo/internal/writeback.coverage,matrix/neo/internal/writeback.ctx,matrix/neo/internal/writeback.err,matrix/neo/internal/writeback.extract,matrix/neo/internal/writeback.f,matrix/neo/internal/writeback.i,matrix/neo/internal/writeback.job,matrix/neo/internal/writeback.mapOutcome,matrix/neo/internal/writeback.oj,matrix/neo/internal/writeback.out,matrix/neo/internal/writeback.packet,matrix/neo/internal/writeback.parseLooseJSON,matrix/neo/internal/writeback.pj,matrix/neo/internal/writeback.rationale,matrix/neo/internal/writeback.res,matrix/neo/internal/writeback.s,matrix/neo/internal/writeback.spec,matrix/neo/internal/writeback.strength,matrix/neo/internal/writeback.summary,matrix/neo/internal/writeback.uri,matrix/neo/internal/writeback.validEvidence
   ^contains=matrix/neo/internal/writeback.Consolidator
-  ^calls=matrix/neo/internal/writeback.Consolidator.ConsolidateSync,matrix/neo/internal/writeback.Consolidator.drain
-  ^references=matrix/neo/internal/writeback.Consolidator.ConsolidateSync,matrix/neo/internal/writeback.Consolidator.drain
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.Consolidator.proposeIfReady kind=method
@@ -250,11 +213,7 @@ NODE id=matrix/neo/internal/writeback.Consolidator.proposeIfReady kind=method
   sig=func (c *Consolidator) proposeIfReady(spec memory.PatternSpec, coverage int)
   doc=proposeIfReady checks if a pattern has accumulated enough successes\n(coverage >= cfg.MinPatternSuccesses) to be PROPOSED as a candidate skill.\nThis is the auto-propose extension (P2-2): when a successful tool-sequence\nrepeats past the existing confidence/N-success guard, the consolidator\nrecords the pattern's name as a proposed skill. Deduped by name (the dedup\nkey). Below the guard, nothing happens (anti-overfit). Nil-safe.
 EDGES
-  calls=matrix/neo/internal/memory.PatternSpec.IsEmpty
-  references=matrix/neo/internal/memory.PatternSpec,matrix/neo/internal/memory.PatternSpec.IsEmpty,matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.c,matrix/neo/internal/writeback.coverage,matrix/neo/internal/writeback.exists,matrix/neo/internal/writeback.name,matrix/neo/internal/writeback.spec
   ^contains=matrix/neo/internal/writeback.Consolidator
-  ^calls=matrix/neo/internal/writeback.Consolidator.process
-  ^references=matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.New kind=func
@@ -262,9 +221,6 @@ NODE id=matrix/neo/internal/writeback.New kind=func
   sig=func New(extract, classify *llm.Client, pager *memory.Pager, cfg config.Config) *Consolidator
   doc=New builds a consolidator. extract drives the per-turn learning extraction\n(its quality directly sets memory quality); classify is the cheap model used\nonly on the rare similar-neighbor relation check. A nil classify falls back\nto extract.
 EDGES
-  references=matrix/neo/internal/config.Config,matrix/neo/internal/consolidation.Job,matrix/neo/internal/llm.Client,matrix/neo/internal/memory.Pager,matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.cfg,matrix/neo/internal/writeback.classify,matrix/neo/internal/writeback.extract,matrix/neo/internal/writeback.pager
-  ^calls=matrix/neo/cmd/neo.runInteractive,matrix/neo/cmd/neo.runServe
-  ^references=matrix/neo/cmd/neo.runInteractive,matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.citedTextJSON kind=type
@@ -272,7 +228,6 @@ NODE id=matrix/neo/internal/writeback.citedTextJSON kind=type
   sig=type citedTextJSON struct {\n	Statement	string	`json:"statement"`\n	Evidence	[]int	`json:"evidence"`\n}
 EDGES
   contains=matrix/neo/internal/writeback.citedTextJSON#Evidence,matrix/neo/internal/writeback.citedTextJSON#Statement
-  ^references=matrix/neo/internal/writeback.extract
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.citedTextJSON#Evidence kind=field
@@ -291,7 +246,6 @@ NODE id=matrix/neo/internal/writeback.consolidatePrompt kind=const
   digest=b3:69653bd9cc04b03356210da5822546e971b8b8d17fffb88f9d71e026f6ddf550 file=neo/internal/writeback/consolidator.go range=250:268 lang=go exported=false byte_range=7591:12435
   sig=untyped string
 EDGES
-  ^references=matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.extract kind=type
@@ -299,8 +253,6 @@ NODE id=matrix/neo/internal/writeback.extract kind=type
   sig=type extract struct {\n	Facts		[]factJSON		`json:"facts"`\n	UserFacts	[]userFactJSON		`json:"user_facts"`\n	Preferences	[]prefJSON		`json:"preferences"`\n	Corrections	[]citedTextJSON		`json:"corrections"`\n	Patterns	[]patternJSON		`json:"patterns"`\n	Opportunities	[]opportunityJSON	`json:"opportunities"`\n	Outcome		*struct {\n		Summary		string	`json:"summary"`\n		Status		string	`json:"status"`\n		Evidence	[]int	`json:"evidence"`\n	}	`json:"outcome"`\n}
 EDGES
   contains=matrix/neo/internal/writeback.extract#Corrections,matrix/neo/internal/writeback.extract#Facts,matrix/neo/internal/writeback.extract#Opportunities,matrix/neo/internal/writeback.extract#Outcome,matrix/neo/internal/writeback.extract#Patterns,matrix/neo/internal/writeback.extract#Preferences,matrix/neo/internal/writeback.extract#UserFacts
-  references=matrix/neo/internal/writeback.citedTextJSON,matrix/neo/internal/writeback.factJSON,matrix/neo/internal/writeback.opportunityJSON,matrix/neo/internal/writeback.patternJSON,matrix/neo/internal/writeback.prefJSON,matrix/neo/internal/writeback.userFactJSON
-  ^references=matrix/neo/internal/writeback.Consolidator.process,matrix/neo/internal/writeback.New
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.extract#Corrections kind=field
@@ -350,7 +302,6 @@ NODE id=matrix/neo/internal/writeback.factJSON kind=type
   sig=type factJSON struct {\n	Subject		string	`json:"subject"`\n	Predicate	string	`json:"predicate"`\n	Statement	string	`json:"statement"`\n	Evidence	[]int	`json:"evidence"`\n}
 EDGES
   contains=matrix/neo/internal/writeback.factJSON#Evidence,matrix/neo/internal/writeback.factJSON#Predicate,matrix/neo/internal/writeback.factJSON#Statement,matrix/neo/internal/writeback.factJSON#Subject
-  ^references=matrix/neo/internal/writeback.extract
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.factJSON#Evidence kind=field
@@ -381,9 +332,6 @@ NODE id=matrix/neo/internal/writeback.mapOutcome kind=func
   digest=b3:b7478114a40b589171bab8409fbf47e66f4d9a5bd600c7f05926e927e44e5183 file=neo/internal/writeback/consolidator.go range=584:593 lang=go exported=false byte_range=23154:23386
   sig=func mapOutcome(s string) memory.Outcome
 EDGES
-  references=matrix/neo/internal/memory.Outcome,matrix/neo/internal/memory.OutcomeFailure,matrix/neo/internal/memory.OutcomePartial,matrix/neo/internal/memory.OutcomeSuccess,matrix/neo/internal/writeback.s
-  ^calls=matrix/neo/internal/writeback.Consolidator.process
-  ^references=matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.opportunityJSON kind=type
@@ -392,7 +340,6 @@ NODE id=matrix/neo/internal/writeback.opportunityJSON kind=type
   doc=opportunityJSON is one captured Automatrix opportunity as emitted by the\nextraction model: a specific, actionable thing the user implied wanting (or\nwould benefit from) but did NOT explicitly ask for this turn. financial is\nthe model's first-pass classification; the deterministic fail-closed\nre-check that hardens it into eligible_autonomous lives on the gating path.
 EDGES
   contains=matrix/neo/internal/writeback.opportunityJSON#Confidence,matrix/neo/internal/writeback.opportunityJSON#Evidence,matrix/neo/internal/writeback.opportunityJSON#Financial,matrix/neo/internal/writeback.opportunityJSON#Rationale,matrix/neo/internal/writeback.opportunityJSON#Summary
-  ^references=matrix/neo/internal/writeback.extract
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.opportunityJSON#Confidence kind=field
@@ -430,9 +377,6 @@ NODE id=matrix/neo/internal/writeback.parseLooseJSON kind=func
   sig=func parseLooseJSON(s string, out interface{}) error
   doc=parseLooseJSON tolerates a model that wraps JSON in prose or code fences by\nextracting the outermost {...} object before unmarshaling.
 EDGES
-  references=matrix/neo/internal/writeback.i,matrix/neo/internal/writeback.j,matrix/neo/internal/writeback.out,matrix/neo/internal/writeback.s
-  ^calls=matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.process
-  ^references=matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.patternJSON kind=type
@@ -440,7 +384,6 @@ NODE id=matrix/neo/internal/writeback.patternJSON kind=type
   sig=type patternJSON struct {\n	Name		string		`json:"name"`\n	Trigger		string		`json:"trigger"`\n	Preconditions	[]string	`json:"preconditions"`\n	Steps		[]string	`json:"steps"`\n	Gotchas		[]string	`json:"gotchas"`\n	SuccessCriteria	[]string	`json:"success_criteria"`\n	Evidence	[]int		`json:"evidence"`\n}
 EDGES
   contains=matrix/neo/internal/writeback.patternJSON#Evidence,matrix/neo/internal/writeback.patternJSON#Gotchas,matrix/neo/internal/writeback.patternJSON#Name,matrix/neo/internal/writeback.patternJSON#Preconditions,matrix/neo/internal/writeback.patternJSON#Steps,matrix/neo/internal/writeback.patternJSON#SuccessCriteria,matrix/neo/internal/writeback.patternJSON#Trigger
-  ^references=matrix/neo/internal/writeback.extract
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.patternJSON#Evidence kind=field
@@ -490,7 +433,6 @@ NODE id=matrix/neo/internal/writeback.prefJSON kind=type
   sig=type prefJSON struct {\n	Topic		string	`json:"topic"`\n	Polarity	string	`json:"polarity"`\n	Strength	float32	`json:"strength"`\n	Rationale	string	`json:"rationale"`\n	Evidence	[]int	`json:"evidence"`\n}
 EDGES
   contains=matrix/neo/internal/writeback.prefJSON#Evidence,matrix/neo/internal/writeback.prefJSON#Polarity,matrix/neo/internal/writeback.prefJSON#Rationale,matrix/neo/internal/writeback.prefJSON#Strength,matrix/neo/internal/writeback.prefJSON#Topic
-  ^references=matrix/neo/internal/writeback.extract
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.prefJSON#Evidence kind=field
@@ -528,7 +470,6 @@ NODE id=matrix/neo/internal/writeback.relationClassifyPrompt kind=const
   sig=untyped string
   doc=relationClassifyPrompt drives the cheap-model relation classifier. It is\nasked ONLY when a new write has a topically-similar (but not identical)\nneighbor, so the model call is rare and cheap.
 EDGES
-  ^references=matrix/neo/internal/writeback.Consolidator.classifyRelation
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.relationJSON kind=type
@@ -536,7 +477,6 @@ NODE id=matrix/neo/internal/writeback.relationJSON kind=type
   sig=type relationJSON struct {\n	Relation	string	`json:"relation"`\n	TargetURI	string	`json:"target_uri"`\n	Reason		string	`json:"reason"`\n}
 EDGES
   contains=matrix/neo/internal/writeback.relationJSON#Reason,matrix/neo/internal/writeback.relationJSON#Relation,matrix/neo/internal/writeback.relationJSON#TargetURI
-  ^references=matrix/neo/internal/writeback.Consolidator.classifyRelation
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.relationJSON#Reason kind=field
@@ -562,7 +502,6 @@ NODE id=matrix/neo/internal/writeback.userFactJSON kind=type
   sig=type userFactJSON struct {\n	Predicate	string	`json:"predicate"`\n	Statement	string	`json:"statement"`\n	Evidence	[]int	`json:"evidence"`\n}
 EDGES
   contains=matrix/neo/internal/writeback.userFactJSON#Evidence,matrix/neo/internal/writeback.userFactJSON#Predicate,matrix/neo/internal/writeback.userFactJSON#Statement
-  ^references=matrix/neo/internal/writeback.extract
   ^defines=matrix/neo/internal/writeback/consolidator.go
 
 NODE id=matrix/neo/internal/writeback.userFactJSON#Evidence kind=field

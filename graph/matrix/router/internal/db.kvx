@@ -1,19 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/router/internal/db kind=package
   digest=b3:44642eb587c7c0269ddcdad4188f6f9efa360bf674af45437f442077510e9b17 file=router/internal/db range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/db/beta.go,matrix/router/internal/db/db.go,matrix/router/internal/db/exa.go,matrix/router/internal/db/shards.go
-  imports=matrix/router/internal/exa
   ^contains=mod:matrix/router
-  ^imports=matrix/router/cmd/matrix-router,matrix/router/internal/admin,matrix/router/internal/beta,matrix/router/internal/preview,matrix/router/internal/proxy,matrix/router/internal/shard
 
 NODE id=matrix/router/internal/db.Allocation kind=type
   digest=b3:4d6892bd5de18f976bd51fa77ed43b063d4ca35fe2cd97c09bd48ac88ab2e2fb file=router/internal/db/shards.go range=21:23 lang=go exported=true byte_range=341:412
   sig=type Allocation struct {\n	UserID, ShardID, State, OperationKey string\n}
 EDGES
   contains=matrix/router/internal/db.Allocation#OperationKey,matrix/router/internal/db.Allocation#ShardID,matrix/router/internal/db.Allocation#State,matrix/router/internal/db.Allocation#UserID
-  ^references=matrix/router/internal/db.DB.ReserveRailwayShard,matrix/router/internal/db.DB.reserveRailwayShard
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.Allocation#OperationKey kind=field
@@ -46,7 +43,6 @@ NODE id=matrix/router/internal/db.BugReport kind=type
   doc=BugReport mirrors the bug_reports table.
 EDGES
   contains=matrix/router/internal/db.BugReport#AttachmentRef,matrix/router/internal/db.BugReport#Context,matrix/router/internal/db.BugReport#CreatedAt,matrix/router/internal/db.BugReport#ID,matrix/router/internal/db.BugReport#Message,matrix/router/internal/db.BugReport#Status,matrix/router/internal/db.BugReport#UserID
-  ^references=matrix/router/internal/db.DB.GetBugReport,matrix/router/internal/db.DB.ListBugReports
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.BugReport#AttachmentRef kind=field
@@ -97,7 +93,6 @@ NODE id=matrix/router/internal/db.Consent kind=type
   doc=Consent mirrors the beta_consent table.
 EDGES
   contains=matrix/router/internal/db.Consent#DecidedAt,matrix/router/internal/db.Consent#PolicyVersion,matrix/router/internal/db.Consent#TrainingOptIn,matrix/router/internal/db.Consent#UserID
-  ^references=matrix/router/internal/db.DB.GetConsent
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.Consent#DecidedAt kind=field
@@ -131,7 +126,6 @@ NODE id=matrix/router/internal/db.DB kind=type
 EDGES
   contains=matrix/router/internal/db.DB#pool,matrix/router/internal/db.DB.ActiveRuns,matrix/router/internal/db.DB.AttachMachine,matrix/router/internal/db.DB.BeginRailwayOperation,matrix/router/internal/db.DB.ClaimIngressReplay,matrix/router/internal/db.DB.ClaimLaunchEntitlement,matrix/router/internal/db.DB.Close,matrix/router/internal/db.DB.CreateOrTouchUser,matrix/router/internal/db.DB.FinishProvisionJob,matrix/router/internal/db.DB.FinishRailwayOperation,matrix/router/internal/db.DB.GenerateInviteCode,matrix/router/internal/db.DB.GetBugReport,matrix/router/internal/db.DB.GetCache,matrix/router/internal/db.DB.GetConsent,matrix/router/internal/db.DB.GetLaunchEntitlement,matrix/router/internal/db.DB.GetRun,matrix/router/internal/db.DB.HasCompletedFirstRunApprovals,matrix/router/internal/db.DB.HasRedeemedInvite,matrix/router/internal/db.DB.InsertBugReport,matrix/router/internal/db.DB.InsertDisclosureAck,matrix/router/internal/db.DB.ListBugReports,matrix/router/internal/db.DB.ListInviteCodes,matrix/router/internal/db.DB.ListWorkforceReconcileUsers,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/db.DB.MarkRailwayOperationRunning,matrix/router/internal/db.DB.NonTerminalRailwayOperations,matrix/router/internal/db.DB.Ping,matrix/router/internal/db.DB.PutCache,matrix/router/internal/db.DB.PutRun,matrix/router/internal/db.DB.QueueProvisionJob,matrix/router/internal/db.DB.RailwayCapacity,matrix/router/internal/db.DB.RailwayShards,matrix/router/internal/db.DB.RecordRailwayService,matrix/router/internal/db.DB.RecordRailwayVolume,matrix/router/internal/db.DB.RedeemInviteCode,matrix/router/internal/db.DB.ReserveRailwayShard,matrix/router/internal/db.DB.ReserveSpend,matrix/router/internal/db.DB.SetAllocationState,matrix/router/internal/db.DB.SetShardState,matrix/router/internal/db.DB.SetUserState,matrix/router/internal/db.DB.Shard,matrix/router/internal/db.DB.UpsertConsent,matrix/router/internal/db.DB.ValidateRailwayOperation,matrix/router/internal/db.DB.recordRailwayResource,matrix/router/internal/db.DB.reserveRailwayShard
   implements=matrix/router/internal/exa.Store
-  ^references=matrix/router/internal/admin.Handler,matrix/router/internal/beta.Handler,matrix/router/internal/db.DB.ActiveRuns,matrix/router/internal/db.DB.AttachMachine,matrix/router/internal/db.DB.BeginRailwayOperation,matrix/router/internal/db.DB.ClaimIngressReplay,matrix/router/internal/db.DB.ClaimLaunchEntitlement,matrix/router/internal/db.DB.Close,matrix/router/internal/db.DB.CreateOrTouchUser,matrix/router/internal/db.DB.FinishProvisionJob,matrix/router/internal/db.DB.FinishRailwayOperation,matrix/router/internal/db.DB.GenerateInviteCode,matrix/router/internal/db.DB.GetBugReport,matrix/router/internal/db.DB.GetCache,matrix/router/internal/db.DB.GetConsent,matrix/router/internal/db.DB.GetLaunchEntitlement,matrix/router/internal/db.DB.GetRun,matrix/router/internal/db.DB.HasCompletedFirstRunApprovals,matrix/router/internal/db.DB.HasRedeemedInvite,matrix/router/internal/db.DB.InsertBugReport,matrix/router/internal/db.DB.InsertDisclosureAck,matrix/router/internal/db.DB.ListBugReports,matrix/router/internal/db.DB.ListInviteCodes,matrix/router/internal/db.DB.ListWorkforceReconcileUsers,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/db.DB.MarkRailwayOperationRunning,matrix/router/internal/db.DB.NonTerminalRailwayOperations,matrix/router/internal/db.DB.Ping,matrix/router/internal/db.DB.PutCache,matrix/router/internal/db.DB.PutRun,matrix/router/internal/db.DB.QueueProvisionJob,matrix/router/internal/db.DB.RailwayCapacity,matrix/router/internal/db.DB.RailwayShards,matrix/router/internal/db.DB.RecordRailwayService,matrix/router/internal/db.DB.RecordRailwayVolume,matrix/router/internal/db.DB.RedeemInviteCode,matrix/router/internal/db.DB.ReserveRailwayShard,matrix/router/internal/db.DB.ReserveSpend,matrix/router/internal/db.DB.SetAllocationState,matrix/router/internal/db.DB.SetShardState,matrix/router/internal/db.DB.SetUserState,matrix/router/internal/db.DB.Shard,matrix/router/internal/db.DB.UpsertConsent,matrix/router/internal/db.DB.ValidateRailwayOperation,matrix/router/internal/db.DB.recordRailwayResource,matrix/router/internal/db.DB.reserveRailwayShard,matrix/router/internal/db.Open,matrix/router/internal/preview.RegisterHandlerForShard,matrix/router/internal/proxy.CentralProxy,matrix/router/internal/proxy.Handler,matrix/router/internal/proxy.New,matrix/router/internal/proxy.ShardIngress,matrix/router/internal/shard.Registry.ValidateDB
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB#pool kind=field
@@ -144,9 +138,7 @@ NODE id=matrix/router/internal/db.DB.ActiveRuns kind=method
   digest=b3:ba85f34f39aabe6ff1ae2ca3ce888bc705e8e51973a8520d010654edeaa6e389 file=router/internal/db/exa.go range=49:56 lang=go exported=true byte_range=1777:2129
   sig=func (d *DB) ActiveRuns(ctx context.Context, user string) (int, error)
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.count,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.query,matrix/router/internal/db.user
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/exa.Service.acquire
   ^defines=matrix/router/internal/db/exa.go
 
 NODE id=matrix/router/internal/db.DB.AttachMachine kind=method
@@ -154,31 +146,21 @@ NODE id=matrix/router/internal/db.DB.AttachMachine kind=method
   sig=func (d *DB) AttachMachine(ctx context.Context, supabaseUserID, provider, envID, volumeID, region string) error
   doc=AttachMachine binds an environment + volume + region to a user and\ntransitions the user state to active. The environment id is stored\nprovider-neutrally (env_id / env_volume_id); the legacy fly_ columns\nare kept in sync for fly rows so pre-migration tooling keeps\nworking. Returns ErrUserNotFound if the user row vanished between\nprovision-create and attach.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ErrUserNotFound,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.envID,matrix/router/internal/db.err,matrix/router/internal/db.provider,matrix/router/internal/db.q,matrix/router/internal/db.region,matrix/router/internal/db.supabaseUserID,matrix/router/internal/db.tag,matrix/router/internal/db.volumeID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.EnsureMachine
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.BeginRailwayOperation kind=method
   digest=b3:c4f78e7fca65c580e26efa986e43845cb85cbfe15a34df6c216326c7927d4e67 file=router/internal/db/shards.go range=40:77 lang=go exported=true byte_range=860:2431
   sig=func (d *DB) BeginRailwayOperation(ctx context.Context, userID, kind string) (*RailwayOperation, error)
 EDGES
-  calls=matrix/router/internal/db.scanRailwayOperation
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.RailwayOperation,matrix/router/internal/db.allocationKey,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.environmentID,matrix/router/internal/db.err,matrix/router/internal/db.key,matrix/router/internal/db.kind,matrix/router/internal/db.op,matrix/router/internal/db.projectID,matrix/router/internal/db.railwayOperationSelect,matrix/router/internal/db.scanRailwayOperation,matrix/router/internal/db.shardID,matrix/router/internal/db.tx,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.deleteUser
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.deleteUser
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.ClaimIngressReplay kind=method
   digest=b3:ad5d811b1b5a8b8ff42a41c48089b74de53cbc25634a2d7bc6ddcf21553e6fb4 file=router/internal/db/shards.go range=296:303 lang=go exported=true byte_range=10516:11001
   sig=func (d *DB) ClaimIngressReplay(ctx context.Context, shardID, replayID string, expiresAt time.Time) (bool, error)
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.expiresAt,matrix/router/internal/db.replayID,matrix/router/internal/db.shardID,matrix/router/internal/db.tag
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/proxy.ShardIngress.ServeHTTP
-  ^references=matrix/router/internal/proxy.ShardIngress.ServeHTTP
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.ClaimLaunchEntitlement kind=method
@@ -186,10 +168,7 @@ NODE id=matrix/router/internal/db.DB.ClaimLaunchEntitlement kind=method
   sig=func (d *DB) ClaimLaunchEntitlement(ctx context.Context, userID string, duration time.Duration) (*LaunchEntitlement, error)
   doc=ClaimLaunchEntitlement atomically grants the launch promotion once per user.\nRepeated claims return the original timestamps and never extend the period.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.LaunchEntitlement,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.duration,matrix/router/internal/db.entitlement,matrix/router/internal/db.err,matrix/router/internal/db.interval,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/beta.Handler.handleSubscriptionClaim
-  ^references=matrix/router/internal/beta.Handler.handleSubscriptionClaim
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.Close kind=method
@@ -197,10 +176,7 @@ NODE id=matrix/router/internal/db.DB.Close kind=method
   sig=func (d *DB) Close()
   doc=Close releases all pool connections. Safe to call once.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.d
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/cmd/matrix-router.main
-  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.CreateOrTouchUser kind=method
@@ -208,10 +184,7 @@ NODE id=matrix/router/internal/db.DB.CreateOrTouchUser kind=method
   sig=func (d *DB) CreateOrTouchUser(ctx context.Context, supabaseUserID, email, handle string) (created bool, err error)
   doc=CreateOrTouchUser inserts a row in 'provisioning' state if absent;\notherwise updates email/handle. Returns whether a new row was made.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.created,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.email,matrix/router/internal/db.err,matrix/router/internal/db.handle,matrix/router/internal/db.q,matrix/router/internal/db.supabaseUserID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.EnsureMachine
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.FinishProvisionJob kind=method
@@ -219,20 +192,14 @@ NODE id=matrix/router/internal/db.DB.FinishProvisionJob kind=method
   sig=func (d *DB) FinishProvisionJob(ctx context.Context, jobID int64, state, errMsg string, response []byte) error
   doc=FinishProvisionJob updates a provision_jobs row to terminal state.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.errMsg,matrix/router/internal/db.jobID,matrix/router/internal/db.q,matrix/router/internal/db.response,matrix/router/internal/db.state
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.EnsureMachine
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.FinishRailwayOperation kind=method
   digest=b3:79c61d81180dd7afb47b3c19787eedee9106f9f625b1d1cfa683b63de1398c8c file=router/internal/db/shards.go range=120:129 lang=go exported=true byte_range=4333:4896
   sig=func (d *DB) FinishRailwayOperation(ctx context.Context, id int64, state, phase, lastError string) error
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.id,matrix/router/internal/db.lastError,matrix/router/internal/db.phase,matrix/router/internal/db.state,matrix/router/internal/db.tag
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.ensureRailway
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.ensureRailway
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.GenerateInviteCode kind=method
@@ -240,10 +207,7 @@ NODE id=matrix/router/internal/db.DB.GenerateInviteCode kind=method
   sig=func (d *DB) GenerateInviteCode(ctx context.Context, code string, maxRedemptions int, expiresAt *time.Time, createdBy string) error
   doc=GenerateInviteCode inserts a new invite code. The caller is responsible\nfor generating the crypto-strong code string.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.code,matrix/router/internal/db.createdBy,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.expiresAt,matrix/router/internal/db.maxRedemptions,matrix/router/internal/db.q
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.createInvite
-  ^references=matrix/router/internal/admin.Handler.createInvite
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.GetBugReport kind=method
@@ -251,19 +215,14 @@ NODE id=matrix/router/internal/db.DB.GetBugReport kind=method
   sig=func (d *DB) GetBugReport(ctx context.Context, id int64) (*BugReport, error)
   doc=GetBugReport returns a single bug report by id.
 EDGES
-  references=matrix/router/internal/db.BugReport,matrix/router/internal/db.DB,matrix/router/internal/db.br,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.id,matrix/router/internal/db.q
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.handleReportItem
-  ^references=matrix/router/internal/admin.Handler.handleReportItem
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.GetCache kind=method
   digest=b3:11557a45477406ddd29fd6cabf8440db6911a24df128c2677a48c197ded1c577 file=router/internal/db/exa.go range=70:81 lang=go exported=true byte_range=2703:3331
   sig=func (d *DB) GetCache(ctx context.Context, user, key string, now time.Time) (exa.CacheRecord, bool, error)
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.key,matrix/router/internal/db.now,matrix/router/internal/db.query,matrix/router/internal/db.record,matrix/router/internal/db.user,matrix/router/internal/exa.CacheRecord
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
   ^defines=matrix/router/internal/db/exa.go
 
 NODE id=matrix/router/internal/db.DB.GetConsent kind=method
@@ -271,10 +230,7 @@ NODE id=matrix/router/internal/db.DB.GetConsent kind=method
   sig=func (d *DB) GetConsent(ctx context.Context, userID string) (*Consent, error)
   doc=GetConsent reads the training consent for a user. Returns nil + nil\nerror when no row exists (user has not yet consented).
 EDGES
-  references=matrix/router/internal/db.Consent,matrix/router/internal/db.DB,matrix/router/internal/db.c,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/beta.Handler.getConsent
-  ^references=matrix/router/internal/beta.Handler.getConsent
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.GetLaunchEntitlement kind=method
@@ -282,19 +238,14 @@ NODE id=matrix/router/internal/db.DB.GetLaunchEntitlement kind=method
   sig=func (d *DB) GetLaunchEntitlement(ctx context.Context, userID string) (*LaunchEntitlement, error)
   doc=GetLaunchEntitlement returns nil when a user has not claimed the promotion.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.LaunchEntitlement,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.entitlement,matrix/router/internal/db.err,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/beta.Handler.handleSubscription
-  ^references=matrix/router/internal/beta.Handler.handleSubscription
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.GetRun kind=method
   digest=b3:959564581c30b32c68c0900a7a6c328255393f3a980e4c2c9d970e72ab0cb9f7 file=router/internal/db/exa.go range=36:47 lang=go exported=true byte_range=1113:1775
   sig=func (d *DB) GetRun(ctx context.Context, user, id string) (exa.RunRecord, bool, error)
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.id,matrix/router/internal/db.query,matrix/router/internal/db.record,matrix/router/internal/db.user,matrix/router/internal/exa.RunRecord
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.ContinueRun,matrix/router/internal/exa.Service.GetRun
   ^defines=matrix/router/internal/db/exa.go
 
 NODE id=matrix/router/internal/db.DB.HasCompletedFirstRunApprovals kind=method
@@ -302,10 +253,7 @@ NODE id=matrix/router/internal/db.DB.HasCompletedFirstRunApprovals kind=method
   sig=func (d *DB) HasCompletedFirstRunApprovals(ctx context.Context, userID, disclosureVersion string) (bool, error)
   doc=HasCompletedFirstRunApprovals returns true only after the user has made a\ntraining-data choice and acknowledged the current public-launch disclosure.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.approved,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.disclosureVersion,matrix/router/internal/db.err,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/beta.Handler.handleOnboardingStart,matrix/router/internal/beta.Handler.handleSubscriptionClaim,matrix/router/internal/proxy.Handler.ServeHTTP
-  ^references=matrix/router/internal/admin.Handler.StartProvision,matrix/router/internal/beta.Handler.handleOnboardingStart,matrix/router/internal/beta.Handler.handleSubscriptionClaim,matrix/router/internal/proxy.Handler.ServeHTTP
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.HasRedeemedInvite kind=method
@@ -313,7 +261,6 @@ NODE id=matrix/router/internal/db.DB.HasRedeemedInvite kind=method
   sig=func (d *DB) HasRedeemedInvite(ctx context.Context, userID string) (bool, error)
   doc=HasRedeemedInvite returns true if the user has redeemed any valid\n(non-expired-at-redemption-time) invite code. Checks all redemption\nrows for the user.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.dummy,matrix/router/internal/db.err,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
   ^defines=matrix/router/internal/db/beta.go
 
@@ -322,10 +269,7 @@ NODE id=matrix/router/internal/db.DB.InsertBugReport kind=method
   sig=func (d *DB) InsertBugReport(ctx context.Context, userID, message string, contextJSON []byte, attachmentRef string) (int64, error)
   doc=InsertBugReport creates a new bug/feedback report and returns its id.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.attachmentRef,matrix/router/internal/db.contextJSON,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.id,matrix/router/internal/db.message,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/beta.Handler.handleReports
-  ^references=matrix/router/internal/beta.Handler.handleReports
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.InsertDisclosureAck kind=method
@@ -333,10 +277,7 @@ NODE id=matrix/router/internal/db.DB.InsertDisclosureAck kind=method
   sig=func (d *DB) InsertDisclosureAck(ctx context.Context, userID, disclosureVersion string) error
   doc=InsertDisclosureAck records a beta disclosure acknowledgement. If the\nuser already acked this disclosure version, the row is unchanged\n(ON CONFLICT DO NOTHING).
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.disclosureVersion,matrix/router/internal/db.err,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/beta.Handler.handleDisclosureAck
-  ^references=matrix/router/internal/beta.Handler.handleDisclosureAck
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.ListBugReports kind=method
@@ -344,10 +285,7 @@ NODE id=matrix/router/internal/db.DB.ListBugReports kind=method
   sig=func (d *DB) ListBugReports(ctx context.Context) ([]BugReport, error)
   doc=ListBugReports returns all bug reports ordered by created_at desc.
 EDGES
-  references=matrix/router/internal/db.BugReport,matrix/router/internal/db.DB,matrix/router/internal/db.br,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.out,matrix/router/internal/db.q,matrix/router/internal/db.rows
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.handleReportsCollection
-  ^references=matrix/router/internal/admin.Handler.handleReportsCollection
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.ListInviteCodes kind=method
@@ -355,10 +293,7 @@ NODE id=matrix/router/internal/db.DB.ListInviteCodes kind=method
   sig=func (d *DB) ListInviteCodes(ctx context.Context) ([]InviteCode, error)
   doc=ListInviteCodes returns all invite codes ordered by created_at desc.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.InviteCode,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.ic,matrix/router/internal/db.out,matrix/router/internal/db.q,matrix/router/internal/db.rows
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.handleInviteItem,matrix/router/internal/admin.Handler.listInvites
-  ^references=matrix/router/internal/admin.Handler.handleInviteItem,matrix/router/internal/admin.Handler.listInvites
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.ListWorkforceReconcileUsers kind=method
@@ -366,10 +301,7 @@ NODE id=matrix/router/internal/db.DB.ListWorkforceReconcileUsers kind=method
   sig=func (d *DB) ListWorkforceReconcileUsers(ctx context.Context) ([]User, error)
   doc=ListWorkforceReconcileUsers returns attached Railway runtimes that are\neligible for an explicit operator-triggered Workforce environment rollout.\nSuspended, failed, and deleted users are excluded so a fleet reconciliation\nnever wakes or redeploys environments that are intentionally offline.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.User,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.q,matrix/router/internal/db.rows,matrix/router/internal/db.u,matrix/router/internal/db.users
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.handleWorkforceFleetReconcile
-  ^references=matrix/router/internal/admin.Handler.handleWorkforceFleetReconcile
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.LookupForRoute kind=method
@@ -377,31 +309,21 @@ NODE id=matrix/router/internal/db.DB.LookupForRoute kind=method
   sig=func (d *DB) LookupForRoute(ctx context.Context, supabaseUserID string) (*User, error)
   doc=LookupForRoute fetches the row needed to route a request: state,\nfly_machine_id, region. Bumps last_seen_at as a side effect (single\nrow update, single connection acquisition).\n\nReturns ErrUserNotFound on no row.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ErrUserNotFound,matrix/router/internal/db.User,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.q,matrix/router/internal/db.supabaseUserID,matrix/router/internal/db.u
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/admin.Handler.reconcileWorkforceEnvironment,matrix/router/internal/admin.Handler.setState,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/proxy.CentralProxy.ForwardUser,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.ShardIngress.ServeHTTP
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/admin.Handler.reconcileWorkforceEnvironment,matrix/router/internal/admin.Handler.setState,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/preview.RegisterHandlerForShard,matrix/router/internal/proxy.CentralProxy.ForwardUser,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler,matrix/router/internal/proxy.ShardIngress.ServeHTTP
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.MarkRailwayOperationRunning kind=method
   digest=b3:3f49ff6ef720bdbb85de1baa77dc55b2e065d293cc4d68960c44bc993acd75cd file=router/internal/db/shards.go range=93:101 lang=go exported=true byte_range=3056:3547
   sig=func (d *DB) MarkRailwayOperationRunning(ctx context.Context, id int64, phase string) error
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.id,matrix/router/internal/db.phase,matrix/router/internal/db.tag
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.ensureRailway
-  ^references=matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.ensureRailway
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.NonTerminalRailwayOperations kind=method
   digest=b3:3dd47eec3556cfcbd87bcf05a5774289edf47deba162dcec9cd9e31369ca1fec file=router/internal/db/shards.go range=131:147 lang=go exported=true byte_range=4898:5378
   sig=func (d *DB) NonTerminalRailwayOperations(ctx context.Context) ([]RailwayOperation, error)
 EDGES
-  calls=matrix/router/internal/db.scanRailwayOperation
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.RailwayOperation,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.op,matrix/router/internal/db.out,matrix/router/internal/db.railwayOperationSelect,matrix/router/internal/db.rows,matrix/router/internal/db.scanRailwayOperation
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.writeShardMetrics
-  ^references=matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.writeShardMetrics
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.Ping kind=method
@@ -409,27 +331,21 @@ NODE id=matrix/router/internal/db.DB.Ping kind=method
   sig=func (d *DB) Ping(ctx context.Context) error
   doc=Ping returns nil iff at least one DB connection is healthy.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d
   ^contains=matrix/router/internal/db.DB
-  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.PutCache kind=method
   digest=b3:a7ff89a79183f681d4902fb4eb0119664b9d7c06cfbb0fce5fa5b4c8cca6fcf6 file=router/internal/db/exa.go range=58:68 lang=go exported=true byte_range=2131:2701
   sig=func (d *DB) PutCache(ctx context.Context, record exa.CacheRecord) error
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.query,matrix/router/internal/db.record,matrix/router/internal/exa.CacheRecord
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.cached
   ^defines=matrix/router/internal/db/exa.go
 
 NODE id=matrix/router/internal/db.DB.PutRun kind=method
   digest=b3:1c45c871f075e8f362679b20e0caeda51a40ffa8508044957b4bbe31ee9ae5fb file=router/internal/db/exa.go range=17:34 lang=go exported=true byte_range=288:1111
   sig=func (d *DB) PutRun(ctx context.Context, record exa.RunRecord) error
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.query,matrix/router/internal/db.record,matrix/router/internal/exa.RunRecord
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/exa.Service.CancelRun,matrix/router/internal/exa.Service.GetRun,matrix/router/internal/exa.Service.StartRun
   ^defines=matrix/router/internal/db/exa.go
 
 NODE id=matrix/router/internal/db.DB.QueueProvisionJob kind=method
@@ -437,52 +353,35 @@ NODE id=matrix/router/internal/db.DB.QueueProvisionJob kind=method
   sig=func (d *DB) QueueProvisionJob(ctx context.Context, userID, op string) (int64, error)
   doc=QueueProvisionJob writes a row in provision_jobs with state=queued.\nReturns the new job id.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.id,matrix/router/internal/db.op,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.EnsureMachine
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.RailwayCapacity kind=method
   digest=b3:27900d58469db126bca202420cb16c4fe4ec2a799087c010004a6b08c145fa06 file=router/internal/db/shards.go range=277:294 lang=go exported=true byte_range=9917:10514
   sig=func (d *DB) RailwayCapacity(ctx context.Context) ([]ShardCapacity, error)
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ShardCapacity,matrix/router/internal/db.c,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.out,matrix/router/internal/db.rows
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.handleShards,matrix/router/internal/admin.Handler.writeShardMetrics
-  ^references=matrix/router/internal/admin.Handler.handleShards,matrix/router/internal/admin.Handler.writeShardMetrics
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.RailwayShards kind=method
   digest=b3:d607b43d32e8f2403c2f792cb5585da8c6fdcce19e321dc25c68bea709b62ba0 file=router/internal/db/shards.go range=237:252 lang=go exported=true byte_range=8633:9154
   sig=func (d *DB) RailwayShards(ctx context.Context) ([]Shard, error)
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.Shard,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.out,matrix/router/internal/db.rows,matrix/router/internal/db.s
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.handleShards,matrix/router/internal/shard.Registry.ValidateDB
-  ^references=matrix/router/internal/admin.Handler.handleShards,matrix/router/internal/shard.Registry.ValidateDB
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.RecordRailwayService kind=method
   digest=b3:fa23d8532e457f44cc9d412d0b91607d1181fc16ee7028c80c028c95a6cbe9b6 file=router/internal/db/shards.go range=103:105 lang=go exported=true byte_range=3549:3730
   sig=func (d *DB) RecordRailwayService(ctx context.Context, id int64, serviceID string) error
 EDGES
-  calls=matrix/router/internal/db.DB.recordRailwayResource
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.DB.recordRailwayResource,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.id,matrix/router/internal/db.serviceID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.ensureRailway
-  ^references=matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.ensureRailway
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.RecordRailwayVolume kind=method
   digest=b3:33484fc4354c160f0d8168d97c4172eed97746a343096c9404fe78a412621ba2 file=router/internal/db/shards.go range=107:109 lang=go exported=true byte_range=3732:3908
   sig=func (d *DB) RecordRailwayVolume(ctx context.Context, id int64, volumeID string) error
 EDGES
-  calls=matrix/router/internal/db.DB.recordRailwayResource
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.DB.recordRailwayResource,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.id,matrix/router/internal/db.volumeID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.ensureRailway
-  ^references=matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.ensureRailway
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.RedeemInviteCode kind=method
@@ -490,7 +389,6 @@ NODE id=matrix/router/internal/db.DB.RedeemInviteCode kind=method
   sig=func (d *DB) RedeemInviteCode(ctx context.Context, code, userID string) error
   doc=RedeemInviteCode atomically validates + consumes one redemption of the\ngiven code for the given user. It checks:\n  - the code exists\n  - the code has not expired\n  - redemptions remain (used < max)\n  - the user has not already redeemed this code\n\nOn success it increments redemptions_used and inserts an\ninvite_redemptions row in a single transaction. On any failure no\nredemption is consumed.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ErrAlreadyRedeemed,matrix/router/internal/db.ErrInviteExhausted,matrix/router/internal/db.ErrInviteExpired,matrix/router/internal/db.ErrInviteNotFound,matrix/router/internal/db.code,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.dummy,matrix/router/internal/db.dupQ,matrix/router/internal/db.err,matrix/router/internal/db.expires,matrix/router/internal/db.incrQ,matrix/router/internal/db.insQ,matrix/router/internal/db.maxR,matrix/router/internal/db.selQ,matrix/router/internal/db.tx,matrix/router/internal/db.used,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
   ^defines=matrix/router/internal/db/beta.go
 
@@ -498,40 +396,28 @@ NODE id=matrix/router/internal/db.DB.ReserveRailwayShard kind=method
   digest=b3:a24fa9905afe1b3df12d20dcf7b3c90e8c4e368f20ca58d1821841a519f7e2de file=router/internal/db/shards.go range=167:176 lang=go exported=true byte_range=6059:6441
   sig=func (d *DB) ReserveRailwayShard(ctx context.Context, userID string) (*Allocation, error)
 EDGES
-  calls=matrix/router/internal/db.DB.reserveRailwayShard
-  references=matrix/router/internal/db.Allocation,matrix/router/internal/db.DB,matrix/router/internal/db.DB.reserveRailwayShard,matrix/router/internal/db.allocation,matrix/router/internal/db.attempt,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.pgErr,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.EnsureMachine
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.ReserveSpend kind=method
   digest=b3:d8fd3506567b2d1f5366ee08957c0b862f3c4cc9f02b32eb2d28e37e42246fd1 file=router/internal/db/exa.go range=83:100 lang=go exported=true byte_range=3333:4078
   sig=func (d *DB) ReserveSpend(ctx context.Context, user string, day time.Time, amount, limit float64) (bool, error)
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.amount,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.day,matrix/router/internal/db.err,matrix/router/internal/db.limit,matrix/router/internal/db.query,matrix/router/internal/db.reserved,matrix/router/internal/db.user
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/exa.Service.StartRun,matrix/router/internal/exa.Service.cached
   ^defines=matrix/router/internal/db/exa.go
 
 NODE id=matrix/router/internal/db.DB.SetAllocationState kind=method
   digest=b3:f9e4afda7fade558889b16165f77b121e655de72cd56ee884c9ce7cbc80ee95d file=router/internal/db/shards.go range=254:264 lang=go exported=true byte_range=9156:9586
   sig=func (d *DB) SetAllocationState(ctx context.Context, userID, state string, released bool) error
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ErrUserNotFound,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.q,matrix/router/internal/db.released,matrix/router/internal/db.state,matrix/router/internal/db.tag,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.deleteUser
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.deleteUser
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.SetShardState kind=method
   digest=b3:aa2ce939189b3652ad66b9e1786ebf2317bba936f1c2919e53773a580dc76c55 file=router/internal/db/shards.go range=266:275 lang=go exported=true byte_range=9588:9915
   sig=func (d *DB) SetShardState(ctx context.Context, shardID, state string) error
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ErrUserNotFound,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.shardID,matrix/router/internal/db.state,matrix/router/internal/db.tag
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.handleShard
-  ^references=matrix/router/internal/admin.Handler.handleShard
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.SetUserState kind=method
@@ -539,20 +425,14 @@ NODE id=matrix/router/internal/db.DB.SetUserState kind=method
   sig=func (d *DB) SetUserState(ctx context.Context, supabaseUserID, newState string) error
   doc=SetUserState transitions an existing user to the given closed enum\nstate. Used by admin endpoints (suspend, restore, etc).
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ErrUserNotFound,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.newState,matrix/router/internal/db.q,matrix/router/internal/db.supabaseUserID,matrix/router/internal/db.tag
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.setState
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.setState
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.Shard kind=method
   digest=b3:ede7e3b97523140e0afde8ba7f3110c996e304034fe9762cf273bd946f69122f file=router/internal/db/shards.go range=224:235 lang=go exported=true byte_range=8179:8631
   sig=func (d *DB) Shard(ctx context.Context, id string) (*Shard, error)
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ErrUserNotFound,matrix/router/internal/db.Shard,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.id,matrix/router/internal/db.s
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.handleShard,matrix/router/internal/proxy.CentralProxy.ForwardUser
-  ^references=matrix/router/internal/admin.Handler.handleShard,matrix/router/internal/proxy.CentralProxy.ForwardUser
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.UpsertConsent kind=method
@@ -560,40 +440,28 @@ NODE id=matrix/router/internal/db.DB.UpsertConsent kind=method
   sig=func (d *DB) UpsertConsent(ctx context.Context, userID string, trainingOptIn bool, policyVersion string) error
   doc=UpsertConsent writes or updates the training consent for a user.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.policyVersion,matrix/router/internal/db.q,matrix/router/internal/db.trainingOptIn,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/beta.Handler.putConsent
-  ^references=matrix/router/internal/beta.Handler.putConsent
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.ValidateRailwayOperation kind=method
   digest=b3:e22f234326c71681c03cb0ece49b757135ab493427a9e89b0f8d72ef6ef6c4dd file=router/internal/db/shards.go range=149:165 lang=go exported=true byte_range=5380:6057
   sig=func (d *DB) ValidateRailwayOperation(ctx context.Context, id int64) error
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.id,matrix/router/internal/db.valid
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.ensureRailway
-  ^references=matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.ensureRailway
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.recordRailwayResource kind=method
   digest=b3:1bae58aca0c213eae35e2b166687ff1a4e56e4db5fce363a51aeebd34641f127 file=router/internal/db/shards.go range=111:118 lang=go exported=false byte_range=3910:4331
   sig=func (d *DB) recordRailwayResource(ctx context.Context, id int64, column, value, evidenceKey string) error
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.column,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.evidenceKey,matrix/router/internal/db.id,matrix/router/internal/db.q,matrix/router/internal/db.tag,matrix/router/internal/db.value
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/db.DB.RecordRailwayService,matrix/router/internal/db.DB.RecordRailwayVolume
-  ^references=matrix/router/internal/db.DB.RecordRailwayService,matrix/router/internal/db.DB.RecordRailwayVolume
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DB.reserveRailwayShard kind=method
   digest=b3:a81b91548b71767b8af2cd229308380a5b8d42a395352c3e21bbe12439cd89b2 file=router/internal/db/shards.go range=178:222 lang=go exported=false byte_range=6443:8177
   sig=func (d *DB) reserveRailwayShard(ctx context.Context, userID string) (*Allocation, error)
 EDGES
-  references=matrix/router/internal/db.Allocation,matrix/router/internal/db.DB,matrix/router/internal/db.ErrShardCapacityExhausted,matrix/router/internal/db.a,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.shardID,matrix/router/internal/db.tx,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
-  ^calls=matrix/router/internal/db.DB.ReserveRailwayShard
-  ^references=matrix/router/internal/db.DB.ReserveRailwayShard
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.DisclosureAck kind=type
@@ -627,7 +495,6 @@ NODE id=matrix/router/internal/db.ErrAlreadyRedeemed kind=var
   sig=error
   doc=ErrAlreadyRedeemed is returned when a user has already redeemed a given code.
 EDGES
-  ^references=matrix/router/internal/db.DB.RedeemInviteCode
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.ErrInviteExhausted kind=var
@@ -635,7 +502,6 @@ NODE id=matrix/router/internal/db.ErrInviteExhausted kind=var
   sig=error
   doc=ErrInviteExhausted is returned when an invite code has no redemptions remaining.
 EDGES
-  ^references=matrix/router/internal/db.DB.RedeemInviteCode
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.ErrInviteExpired kind=var
@@ -643,7 +509,6 @@ NODE id=matrix/router/internal/db.ErrInviteExpired kind=var
   sig=error
   doc=ErrInviteExpired is returned when an invite code has passed its expiry.
 EDGES
-  ^references=matrix/router/internal/db.DB.RedeemInviteCode
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.ErrInviteNotFound kind=var
@@ -651,14 +516,12 @@ NODE id=matrix/router/internal/db.ErrInviteNotFound kind=var
   sig=error
   doc=ErrInviteNotFound is returned when an invite code does not exist.
 EDGES
-  ^references=matrix/router/internal/db.DB.RedeemInviteCode
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.ErrShardCapacityExhausted kind=var
   digest=b3:fa706048934a04ef1358f3d1826bcaeab507ce768554ea9c2fed32d3f769a730 file=router/internal/db/shards.go range=14:14 lang=go exported=true byte_range=143:209
   sig=error
 EDGES
-  ^references=matrix/router/internal/db.DB.reserveRailwayShard
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.ErrUserNotFound kind=var
@@ -666,7 +529,6 @@ NODE id=matrix/router/internal/db.ErrUserNotFound kind=var
   sig=error
   doc=ErrUserNotFound surfaces from LookupForRoute when no row matches.
 EDGES
-  ^references=matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/admin.Handler.reconcileWorkforceEnvironment,matrix/router/internal/admin.Handler.setState,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/db.DB.AttachMachine,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/db.DB.SetAllocationState,matrix/router/internal/db.DB.SetShardState,matrix/router/internal/db.DB.SetUserState,matrix/router/internal/db.DB.Shard,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.InviteCode kind=type
@@ -675,7 +537,6 @@ NODE id=matrix/router/internal/db.InviteCode kind=type
   doc=InviteCode mirrors the invite_codes table.
 EDGES
   contains=matrix/router/internal/db.InviteCode#Code,matrix/router/internal/db.InviteCode#CreatedAt,matrix/router/internal/db.InviteCode#CreatedBy,matrix/router/internal/db.InviteCode#ExpiresAt,matrix/router/internal/db.InviteCode#MaxRedemptions,matrix/router/internal/db.InviteCode#RedemptionsUsed
-  ^references=matrix/router/internal/db.DB.ListInviteCodes
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.InviteCode#Code kind=field
@@ -746,7 +607,6 @@ NODE id=matrix/router/internal/db.LaunchEntitlement kind=type
   doc=LaunchEntitlement is the authoritative subscription access granted to a user.
 EDGES
   contains=matrix/router/internal/db.LaunchEntitlement#ClaimedAt,matrix/router/internal/db.LaunchEntitlement#EndsAt,matrix/router/internal/db.LaunchEntitlement#Plan,matrix/router/internal/db.LaunchEntitlement#Source,matrix/router/internal/db.LaunchEntitlement#StartsAt,matrix/router/internal/db.LaunchEntitlement#UserID
-  ^references=matrix/router/internal/beta.writeSubscription,matrix/router/internal/db.DB.ClaimLaunchEntitlement,matrix/router/internal/db.DB.GetLaunchEntitlement
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.LaunchEntitlement#ClaimedAt kind=field
@@ -790,9 +650,6 @@ NODE id=matrix/router/internal/db.Open kind=func
   sig=func Open(ctx context.Context, dsn string) (*DB, error)
   doc=Open parses dsn (DATABASE_URL form) and opens a pool. Fails fast on\nPing so misconfiguration surfaces at boot rather than first request.
 EDGES
-  references=matrix/router/internal/db.DB,matrix/router/internal/db.cancel,matrix/router/internal/db.cfg,matrix/router/internal/db.ctx,matrix/router/internal/db.dsn,matrix/router/internal/db.err,matrix/router/internal/db.pingCtx,matrix/router/internal/db.pool
-  ^calls=matrix/router/cmd/matrix-router.main
-  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.PublicLaunchDisclosureVersion kind=const
@@ -800,7 +657,6 @@ NODE id=matrix/router/internal/db.PublicLaunchDisclosureVersion kind=const
   sig=untyped string
   doc=PublicLaunchDisclosureVersion is the approval policy required before a\nself-service user may claim launch access or provision an environment.
 EDGES
-  ^references=matrix/router/internal/admin.Handler.StartProvision,matrix/router/internal/beta.Handler.handleOnboardingStart,matrix/router/internal/beta.Handler.handleSubscriptionClaim,matrix/router/internal/proxy.Handler.ServeHTTP
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.RailwayOperation kind=type
@@ -808,7 +664,6 @@ NODE id=matrix/router/internal/db.RailwayOperation kind=type
   sig=type RailwayOperation struct {\n	ID					int64\n	OperationKey, UserID, ShardID		string\n	ProjectID, EnvironmentID, Kind, State	string\n	ServiceID, VolumeID, LastError		string\n	Attempt					int\n	Evidence				json.RawMessage\n	UpdatedAt				time.Time\n}
 EDGES
   contains=matrix/router/internal/db.RailwayOperation#Attempt,matrix/router/internal/db.RailwayOperation#EnvironmentID,matrix/router/internal/db.RailwayOperation#Evidence,matrix/router/internal/db.RailwayOperation#ID,matrix/router/internal/db.RailwayOperation#Kind,matrix/router/internal/db.RailwayOperation#LastError,matrix/router/internal/db.RailwayOperation#OperationKey,matrix/router/internal/db.RailwayOperation#ProjectID,matrix/router/internal/db.RailwayOperation#ServiceID,matrix/router/internal/db.RailwayOperation#ShardID,matrix/router/internal/db.RailwayOperation#State,matrix/router/internal/db.RailwayOperation#UpdatedAt,matrix/router/internal/db.RailwayOperation#UserID,matrix/router/internal/db.RailwayOperation#VolumeID
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.ensureRailway,matrix/router/internal/db.DB.BeginRailwayOperation,matrix/router/internal/db.DB.NonTerminalRailwayOperations,matrix/router/internal/db.scanRailwayOperation
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.RailwayOperation#Attempt kind=field
@@ -900,7 +755,6 @@ NODE id=matrix/router/internal/db.Shard kind=type
   sig=type Shard struct {\n	ID, ProjectID, EnvironmentID, RouterURL, State	string\n	Capacity					int\n}
 EDGES
   contains=matrix/router/internal/db.Shard#Capacity,matrix/router/internal/db.Shard#EnvironmentID,matrix/router/internal/db.Shard#ID,matrix/router/internal/db.Shard#ProjectID,matrix/router/internal/db.Shard#RouterURL,matrix/router/internal/db.Shard#State
-  ^references=matrix/router/internal/db.DB.RailwayShards,matrix/router/internal/db.DB.Shard
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.Shard#Capacity kind=field
@@ -944,7 +798,6 @@ NODE id=matrix/router/internal/db.ShardCapacity kind=type
   sig=type ShardCapacity struct {\n	ShardID			string\n	Capacity, Occupied	int\n}
 EDGES
   contains=matrix/router/internal/db.ShardCapacity#Capacity,matrix/router/internal/db.ShardCapacity#Occupied,matrix/router/internal/db.ShardCapacity#ShardID
-  ^references=matrix/router/internal/db.DB.RailwayCapacity
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.ShardCapacity#Capacity kind=field
@@ -970,7 +823,6 @@ NODE id=matrix/router/internal/db.StateActive kind=const
   sig=untyped string
   doc=User states. Keep aligned with the closed enum in schema.sql line 18.
 EDGES
-  ^references=matrix/router/internal/admin.Handler.handleUserItem,matrix/router/internal/admin.Handler.setState,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.StateDeleted kind=const
@@ -978,7 +830,6 @@ NODE id=matrix/router/internal/db.StateDeleted kind=const
   sig=untyped string
   doc=User states. Keep aligned with the closed enum in schema.sql line 18.
 EDGES
-  ^references=matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.StateFailed kind=const
@@ -986,7 +837,6 @@ NODE id=matrix/router/internal/db.StateFailed kind=const
   sig=untyped string
   doc=User states. Keep aligned with the closed enum in schema.sql line 18.
 EDGES
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.StateProvisioning kind=const
@@ -994,7 +844,6 @@ NODE id=matrix/router/internal/db.StateProvisioning kind=const
   sig=untyped string
   doc=User states. Keep aligned with the closed enum in schema.sql line 18.
 EDGES
-  ^references=matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.StateSuspended kind=const
@@ -1002,7 +851,6 @@ NODE id=matrix/router/internal/db.StateSuspended kind=const
   sig=untyped string
   doc=User states. Keep aligned with the closed enum in schema.sql line 18.
 EDGES
-  ^references=matrix/router/internal/admin.Handler.handleUserItem,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.User kind=type
@@ -1011,7 +859,6 @@ NODE id=matrix/router/internal/db.User kind=type
   doc=User mirrors the columns of the public.users table that matrix-router\nreads at request time. State is one of the closed enum values\n{provisioning, active, suspended, deleted, failed}.
 EDGES
   contains=matrix/router/internal/db.User#CreatedAt,matrix/router/internal/db.User#DailyBudget,matrix/router/internal/db.User#Email,matrix/router/internal/db.User#EnvID,matrix/router/internal/db.User#ID,matrix/router/internal/db.User#LastSeenAt,matrix/router/internal/db.User#Provider,matrix/router/internal/db.User#RailwayShardID,matrix/router/internal/db.User#Region,matrix/router/internal/db.User#S3AccessKey,matrix/router/internal/db.User#State,matrix/router/internal/db.User#UpdatedAt,matrix/router/internal/db.User#VolumeID
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.handleWorkforceFleetReconcile,matrix/router/internal/admin.Handler.updateWorkforceEnvironment,matrix/router/internal/db.DB.ListWorkforceReconcileUsers,matrix/router/internal/db.DB.LookupForRoute
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.User#CreatedAt kind=field
@@ -1096,23 +943,18 @@ NODE id=matrix/router/internal/db.railwayOperationSelect kind=const
   digest=b3:a7748b772ce3d0e128feb15fbb796affc0b6017d37bc93284cd06dfbc333173a file=router/internal/db/shards.go range=79:81 lang=go exported=false byte_range=2439:2676
   sig=untyped string
 EDGES
-  ^references=matrix/router/internal/db.DB.BeginRailwayOperation,matrix/router/internal/db.DB.NonTerminalRailwayOperations
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.rowScanner kind=interface
   digest=b3:33af5e6f2fcb51ad1192f2cc9eeac4bb0c4a7873edf5a2c30fed4f25bd6554b0 file=router/internal/db/shards.go range=83:83 lang=go exported=false byte_range=2678:2725
   sig=type rowScanner interface{ Scan(...any) error }
 EDGES
-  ^references=matrix/router/internal/db.scanRailwayOperation
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db.scanRailwayOperation kind=func
   digest=b3:c212496322c54831bb4a816908aa8976f5d8aa28c09441d546551caa3651dc78 file=router/internal/db/shards.go range=85:91 lang=go exported=false byte_range=2727:3054
   sig=func scanRailwayOperation(row rowScanner) (*RailwayOperation, error)
 EDGES
-  references=matrix/router/internal/db.RailwayOperation,matrix/router/internal/db.err,matrix/router/internal/db.op,matrix/router/internal/db.row,matrix/router/internal/db.rowScanner,matrix/router/internal/db.rowScanner.Scan
-  ^calls=matrix/router/internal/db.DB.BeginRailwayOperation,matrix/router/internal/db.DB.NonTerminalRailwayOperations
-  ^references=matrix/router/internal/db.DB.BeginRailwayOperation,matrix/router/internal/db.DB.NonTerminalRailwayOperations
   ^defines=matrix/router/internal/db/shards.go
 
 NODE id=matrix/router/internal/db/beta.go kind=file

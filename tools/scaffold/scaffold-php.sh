@@ -3,14 +3,15 @@
 # Tooling: Composer (PSR-4) · PHPUnit · PHPStan (max) · Laravel Pint · Docker.
 set -Eeuo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=_common.sh
+# shellcheck source=tools/scaffold/_common.sh
+# Resolved through the script directory at runtime.
+# shellcheck disable=SC1091
 source "$HERE/_common.sh"
 
 common_parse_args "php" "$@"
 common_init_target
 step "PHP package → $PROJECT_SLUG"
 
-VENDOR="$(identify "$SCAFFOLD_VCS_ORG")"
 NS="$(pascalize "$PROJECT_SLUG")"
 
 mkdir -p src tests

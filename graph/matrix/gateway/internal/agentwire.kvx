@@ -1,37 +1,27 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/gateway/internal/agentwire kind=package
   digest=b3:4ce724d8150db6d6a1b5d2c4d90fb2e7e07a57ada0d6cf25135962cc4cabc03d file=gateway/internal/agentwire range=0:0 lang=go exported=true
 EDGES
   contains=matrix/gateway/internal/agentwire/mimo.go,matrix/gateway/internal/agentwire/stream.go
   ^contains=mod:matrix/gateway
-  ^imports=matrix/gateway/internal/proxy
 
 NODE id=matrix/gateway/internal/agentwire.NewStreamNormalizer kind=func
   digest=b3:595f51e5fa44929049debafdadc1cf8ca8f3a7e68ad649ee80dbf88bf2d7db9a file=gateway/internal/agentwire/stream.go range=34:36 lang=go exported=true byte_range=486:594
   sig=func NewStreamNormalizer() *StreamNormalizer
 EDGES
-  references=matrix/gateway/internal/agentwire.StreamNormalizer,matrix/gateway/internal/agentwire.streamChoice
-  ^calls=matrix/gateway/internal/proxy.Server.handleStreaming
-  ^references=matrix/gateway/internal/proxy.Server.handleStreaming
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.NormalizeChatCompletion kind=func
   digest=b3:1bd394643787e44756934adbf2781354b1fe3a4c781dd173bb221eb5562e0b66 file=gateway/internal/agentwire/mimo.go range=182:260 lang=go exported=true byte_range=5019:7863
   sig=func NormalizeChatCompletion(body []byte) ([]byte, error)
 EDGES
-  calls=matrix/gateway/internal/agentwire.normalizeNativeToolCalls,matrix/gateway/internal/agentwire.parseMiMoToolCalls,matrix/gateway/internal/agentwire.rawString,matrix/gateway/internal/agentwire.sameToolCalls,matrix/gateway/internal/agentwire.wireToolCalls
-  references=matrix/gateway/internal/agentwire.ToolCall,matrix/gateway/internal/agentwire.body,matrix/gateway/internal/agentwire.calls,matrix/gateway/internal/agentwire.choice,matrix/gateway/internal/agentwire.choices,matrix/gateway/internal/agentwire.cleaned,matrix/gateway/internal/agentwire.encoded,matrix/gateway/internal/agentwire.encodedChoices,matrix/gateway/internal/agentwire.encodedMessage,matrix/gateway/internal/agentwire.envelope,matrix/gateway/internal/agentwire.err,matrix/gateway/internal/agentwire.field,matrix/gateway/internal/agentwire.index,matrix/gateway/internal/agentwire.markup,matrix/gateway/internal/agentwire.message,matrix/gateway/internal/agentwire.native,matrix/gateway/internal/agentwire.normalizeNativeToolCalls,matrix/gateway/internal/agentwire.normalizedNative,matrix/gateway/internal/agentwire.ok,matrix/gateway/internal/agentwire.out,matrix/gateway/internal/agentwire.parseMiMoToolCalls,matrix/gateway/internal/agentwire.rawChoice,matrix/gateway/internal/agentwire.rawString,matrix/gateway/internal/agentwire.recovered,matrix/gateway/internal/agentwire.sameToolCalls,matrix/gateway/internal/agentwire.text,matrix/gateway/internal/agentwire.wireToolCalls
-  ^calls=matrix/gateway/internal/proxy.Server.handleBuffered
-  ^references=matrix/gateway/internal/proxy.Server.handleBuffered
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.ParseMiMoToolCalls kind=func
   digest=b3:a59b69ffdb5ce6fca7e15d4f8df6d1ec18f1b4738d52d7d1cf552ead6b374e8a file=gateway/internal/agentwire/mimo.go range=27:29 lang=go exported=true byte_range=420:580
   sig=func ParseMiMoToolCalls(text string) (cleanedText string, parsedCalls []ToolCall, found bool, parseErr error)
 EDGES
-  calls=matrix/gateway/internal/agentwire.parseMiMoToolCalls
-  references=matrix/gateway/internal/agentwire.ToolCall,matrix/gateway/internal/agentwire.parseMiMoToolCalls,matrix/gateway/internal/agentwire.text
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.StreamNormalizer kind=type
@@ -39,8 +29,6 @@ NODE id=matrix/gateway/internal/agentwire.StreamNormalizer kind=type
   sig=type StreamNormalizer struct {\n	choices		map[int]*streamChoice\n	template	map[string]json.RawMessage\n}
 EDGES
   contains=matrix/gateway/internal/agentwire.StreamNormalizer#choices,matrix/gateway/internal/agentwire.StreamNormalizer#template,matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.PushLine,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice,matrix/gateway/internal/agentwire.StreamNormalizer.rememberTemplate
-  references=matrix/gateway/internal/agentwire.streamChoice
-  ^references=matrix/gateway/internal/agentwire.NewStreamNormalizer,matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.PushLine,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice,matrix/gateway/internal/agentwire.StreamNormalizer.rememberTemplate,matrix/gateway/internal/proxy.Server.handleStreaming
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.StreamNormalizer#choices kind=field
@@ -59,44 +47,28 @@ NODE id=matrix/gateway/internal/agentwire.StreamNormalizer.Flush kind=method
   digest=b3:9648d2b0a875b43c497e10cef31b8d6543bd7de9784f4695248cfd8afec881b6 file=gateway/internal/agentwire/stream.go range=180:224 lang=go exported=true byte_range=4896:6333
   sig=func (normalizer *StreamNormalizer) Flush() ([][]byte, error)
 EDGES
-  calls=matrix/gateway/internal/agentwire.cloneEnvelope,matrix/gateway/internal/agentwire.encodeSSEEnvelope,matrix/gateway/internal/agentwire.sameToolCalls,matrix/gateway/internal/agentwire.streamChoice.finalize,matrix/gateway/internal/agentwire.streamChoice.nativeCalls,matrix/gateway/internal/agentwire.wireNativeStreamCalls,matrix/gateway/internal/agentwire.wireToolCalls
-  references=matrix/gateway/internal/agentwire.StreamNormalizer,matrix/gateway/internal/agentwire.choice,matrix/gateway/internal/agentwire.cloneEnvelope,matrix/gateway/internal/agentwire.delta,matrix/gateway/internal/agentwire.encodeSSEEnvelope,matrix/gateway/internal/agentwire.envelope,matrix/gateway/internal/agentwire.err,matrix/gateway/internal/agentwire.finish,matrix/gateway/internal/agentwire.index,matrix/gateway/internal/agentwire.indexes,matrix/gateway/internal/agentwire.native,matrix/gateway/internal/agentwire.normalizer,matrix/gateway/internal/agentwire.output,matrix/gateway/internal/agentwire.recovered,matrix/gateway/internal/agentwire.sameToolCalls,matrix/gateway/internal/agentwire.state,matrix/gateway/internal/agentwire.streamChoice.finalize,matrix/gateway/internal/agentwire.streamChoice.nativeCalls,matrix/gateway/internal/agentwire.wireNativeStreamCalls,matrix/gateway/internal/agentwire.wireToolCalls
   ^contains=matrix/gateway/internal/agentwire.StreamNormalizer
-  ^calls=matrix/gateway/internal/agentwire.StreamNormalizer.PushLine,matrix/gateway/internal/proxy.Server.handleStreaming
-  ^references=matrix/gateway/internal/agentwire.StreamNormalizer.PushLine,matrix/gateway/internal/proxy.Server.handleStreaming
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.StreamNormalizer.PushLine kind=method
   digest=b3:66639f700caa3f76a10145e635f2c1ace40d9ff129fd4c20e00172c2bbf26ae4 file=gateway/internal/agentwire/stream.go range=38:90 lang=go exported=true byte_range=596:2180
   sig=func (normalizer *StreamNormalizer) PushLine(line []byte) ([][]byte, error)
 EDGES
-  calls=matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice,matrix/gateway/internal/agentwire.StreamNormalizer.rememberTemplate,matrix/gateway/internal/agentwire.encodeSSEEnvelope
-  references=matrix/gateway/internal/agentwire.StreamNormalizer,matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice,matrix/gateway/internal/agentwire.StreamNormalizer.rememberTemplate,matrix/gateway/internal/agentwire.choice,matrix/gateway/internal/agentwire.choices,matrix/gateway/internal/agentwire.emit,matrix/gateway/internal/agentwire.encodeSSEEnvelope,matrix/gateway/internal/agentwire.encoded,matrix/gateway/internal/agentwire.envelope,matrix/gateway/internal/agentwire.err,matrix/gateway/internal/agentwire.flushed,matrix/gateway/internal/agentwire.line,matrix/gateway/internal/agentwire.normalizer,matrix/gateway/internal/agentwire.ok,matrix/gateway/internal/agentwire.outputChoices,matrix/gateway/internal/agentwire.payload,matrix/gateway/internal/agentwire.raw,matrix/gateway/internal/agentwire.rawChoice,matrix/gateway/internal/agentwire.trimmed
   ^contains=matrix/gateway/internal/agentwire.StreamNormalizer
-  ^calls=matrix/gateway/internal/proxy.Server.handleStreaming
-  ^references=matrix/gateway/internal/proxy.Server.handleStreaming
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice kind=method
   digest=b3:6a50388c180378c139fc196237e773e068726f67cc8f721078a575a6467b9422 file=gateway/internal/agentwire/stream.go range=92:178 lang=go exported=false byte_range=2182:4894
   sig=func (normalizer *StreamNormalizer) normalizeChoice(raw json.RawMessage) (json.RawMessage, bool, error)
 EDGES
-  calls=matrix/gateway/internal/agentwire.rawString,matrix/gateway/internal/agentwire.sameToolCalls,matrix/gateway/internal/agentwire.streamChannel.push,matrix/gateway/internal/agentwire.streamChoice.appendNative,matrix/gateway/internal/agentwire.streamChoice.finalize,matrix/gateway/internal/agentwire.streamChoice.nativeCalls,matrix/gateway/internal/agentwire.wireNativeStreamCalls,matrix/gateway/internal/agentwire.wireToolCalls
-  references=matrix/gateway/internal/agentwire.StreamNormalizer,matrix/gateway/internal/agentwire.channel,matrix/gateway/internal/agentwire.choice,matrix/gateway/internal/agentwire.current,matrix/gateway/internal/agentwire.delta,matrix/gateway/internal/agentwire.encoded,matrix/gateway/internal/agentwire.err,matrix/gateway/internal/agentwire.field,matrix/gateway/internal/agentwire.finish,matrix/gateway/internal/agentwire.hasFinish,matrix/gateway/internal/agentwire.index,matrix/gateway/internal/agentwire.native,matrix/gateway/internal/agentwire.nativeStreamCall,matrix/gateway/internal/agentwire.normalizer,matrix/gateway/internal/agentwire.ok,matrix/gateway/internal/agentwire.raw,matrix/gateway/internal/agentwire.rawCalls,matrix/gateway/internal/agentwire.rawDelta,matrix/gateway/internal/agentwire.rawString,matrix/gateway/internal/agentwire.recovered,matrix/gateway/internal/agentwire.safe,matrix/gateway/internal/agentwire.sameToolCalls,matrix/gateway/internal/agentwire.state,matrix/gateway/internal/agentwire.streamChannel,matrix/gateway/internal/agentwire.streamChannel.push,matrix/gateway/internal/agentwire.streamChoice,matrix/gateway/internal/agentwire.streamChoice.appendNative,matrix/gateway/internal/agentwire.streamChoice.finalize,matrix/gateway/internal/agentwire.streamChoice.nativeCalls,matrix/gateway/internal/agentwire.text,matrix/gateway/internal/agentwire.wireNativeStreamCalls,matrix/gateway/internal/agentwire.wireToolCalls
   ^contains=matrix/gateway/internal/agentwire.StreamNormalizer
-  ^calls=matrix/gateway/internal/agentwire.StreamNormalizer.PushLine
-  ^references=matrix/gateway/internal/agentwire.StreamNormalizer.PushLine
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.StreamNormalizer.rememberTemplate kind=method
   digest=b3:334a3a3f762c1b27e41772ca675b3c6a6154ba90b1bc745d4f03320f65e1c228 file=gateway/internal/agentwire/stream.go range=226:233 lang=go exported=false byte_range=6335:6581
   sig=func (normalizer *StreamNormalizer) rememberTemplate(envelope map[string]json.RawMessage)
 EDGES
-  calls=matrix/gateway/internal/agentwire.cloneEnvelope
-  references=matrix/gateway/internal/agentwire.StreamNormalizer,matrix/gateway/internal/agentwire.cloneEnvelope,matrix/gateway/internal/agentwire.envelope,matrix/gateway/internal/agentwire.normalizer,matrix/gateway/internal/agentwire.template
   ^contains=matrix/gateway/internal/agentwire.StreamNormalizer
-  ^calls=matrix/gateway/internal/agentwire.StreamNormalizer.PushLine
-  ^references=matrix/gateway/internal/agentwire.StreamNormalizer.PushLine
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.ToolCall kind=type
@@ -104,7 +76,6 @@ NODE id=matrix/gateway/internal/agentwire.ToolCall kind=type
   sig=type ToolCall struct {\n	ID		string\n	Name		string\n	Arguments	json.RawMessage\n}
 EDGES
   contains=matrix/gateway/internal/agentwire.ToolCall#Arguments,matrix/gateway/internal/agentwire.ToolCall#ID,matrix/gateway/internal/agentwire.ToolCall#Name
-  ^references=matrix/gateway/internal/agentwire.NormalizeChatCompletion,matrix/gateway/internal/agentwire.ParseMiMoToolCalls,matrix/gateway/internal/agentwire.normalizeNativeToolCalls,matrix/gateway/internal/agentwire.parseMiMoToolCalls,matrix/gateway/internal/agentwire.sameToolCalls,matrix/gateway/internal/agentwire.streamChannel.finish,matrix/gateway/internal/agentwire.streamChoice.finalize,matrix/gateway/internal/agentwire.streamChoice.nativeCalls,matrix/gateway/internal/agentwire.wireNativeStreamCalls,matrix/gateway/internal/agentwire.wireToolCalls
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.ToolCall#Arguments kind=field
@@ -129,87 +100,66 @@ NODE id=matrix/gateway/internal/agentwire.cloneEnvelope kind=func
   digest=b3:1e44caa1c1e617286bac1df4ffcc8dcdc1528ff338d592e7cce68c66596392a1 file=gateway/internal/agentwire/stream.go range=391:397 lang=go exported=false byte_range=10677:10922
   sig=func cloneEnvelope(source map[string]json.RawMessage) map[string]json.RawMessage
 EDGES
-  references=matrix/gateway/internal/agentwire.clone,matrix/gateway/internal/agentwire.key,matrix/gateway/internal/agentwire.source,matrix/gateway/internal/agentwire.value
-  ^calls=matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.rememberTemplate
-  ^references=matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.rememberTemplate
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.encodeSSEEnvelope kind=func
   digest=b3:d93b7c11a1f0797543d354ccc6d6c261ae320b5ce81da3cc4cb3d57d62aef6c2 file=gateway/internal/agentwire/stream.go range=399:402 lang=go exported=false byte_range=10924:11091
   sig=func encodeSSEEnvelope(envelope map[string]json.RawMessage) []byte
 EDGES
-  references=matrix/gateway/internal/agentwire.envelope,matrix/gateway/internal/agentwire.payload
-  ^calls=matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.PushLine
-  ^references=matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.PushLine
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.firstMarker kind=func
   digest=b3:391037e9dfec345316a5432e6fc20d58efc08945a581635e468eff7faee1b463 file=gateway/internal/agentwire/stream.go range=357:365 lang=go exported=false byte_range=9889:10117
   sig=func firstMarker(value string) int
 EDGES
-  references=matrix/gateway/internal/agentwire.at,matrix/gateway/internal/agentwire.best,matrix/gateway/internal/agentwire.marker,matrix/gateway/internal/agentwire.mimoFunctionOpen,matrix/gateway/internal/agentwire.mimoToolOpen,matrix/gateway/internal/agentwire.value
-  ^calls=matrix/gateway/internal/agentwire.streamChannel.push
-  ^references=matrix/gateway/internal/agentwire.streamChannel.push
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.mimoFunctionClose kind=const
   digest=b3:23d2cca9b3b9588ac50838d682c849c08a50e3526f30e731007213683ae43aa1 file=gateway/internal/agentwire/mimo.go range=16:16 lang=go exported=false byte_range=220:254
   sig=untyped string
 EDGES
-  ^references=matrix/gateway/internal/agentwire.parseMiMoParameters,matrix/gateway/internal/agentwire.parseMiMoToolCalls
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.mimoFunctionOpen kind=const
   digest=b3:be05a086e9909b98b0060116b79bf0717f70e522aa0075622a94bfd9ddd5f740 file=gateway/internal/agentwire/mimo.go range=15:15 lang=go exported=false byte_range=185:218
   sig=untyped string
 EDGES
-  ^references=matrix/gateway/internal/agentwire.firstMarker,matrix/gateway/internal/agentwire.parseMiMoToolCalls,matrix/gateway/internal/agentwire.partialMarkerSuffix
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.mimoParameterClose kind=const
   digest=b3:3eb23b810b9a2d46ac7cbaca7287479afacd564db35b6cb93a7e59751acb7751 file=gateway/internal/agentwire/mimo.go range=18:18 lang=go exported=false byte_range=292:327
   sig=untyped string
 EDGES
-  ^references=matrix/gateway/internal/agentwire.parseMiMoParameters
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.mimoParameterOpen kind=const
   digest=b3:10cb46e25b34d1b1bf4b862b8d71de91a6ec3e88e1ab60eca66f2fe4d266f59b file=gateway/internal/agentwire/mimo.go range=17:17 lang=go exported=false byte_range=256:290
   sig=untyped string
 EDGES
-  ^references=matrix/gateway/internal/agentwire.parseMiMoParameters
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.mimoParameterValue kind=func
   digest=b3:f93066f42c7db670b48cd7132de4b0fc5ab289fc68c904b04367ce3292e64733 file=gateway/internal/agentwire/mimo.go range=156:164 lang=go exported=false byte_range=4473:4663
   sig=func mimoParameterValue(raw string) any
 EDGES
-  references=matrix/gateway/internal/agentwire.isString,matrix/gateway/internal/agentwire.raw,matrix/gateway/internal/agentwire.value
-  ^calls=matrix/gateway/internal/agentwire.parseMiMoParameters
-  ^references=matrix/gateway/internal/agentwire.parseMiMoParameters
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.mimoToolClose kind=const
   digest=b3:3cb399829b3388c302b373096e02eab5ab6499b2f8a48b790b83808e2900e98f file=gateway/internal/agentwire/mimo.go range=14:14 lang=go exported=false byte_range=148:183
   sig=untyped string
 EDGES
-  ^references=matrix/gateway/internal/agentwire.parseMiMoParameters,matrix/gateway/internal/agentwire.parseMiMoToolCalls
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.mimoToolOpen kind=const
   digest=b3:7a7caa160cdc2850a457ebe88cf3ff1e35fdd6efa467b8c04eba4f6dc30ecc40 file=gateway/internal/agentwire/mimo.go range=13:13 lang=go exported=false byte_range=112:146
   sig=untyped string
 EDGES
-  ^references=matrix/gateway/internal/agentwire.firstMarker,matrix/gateway/internal/agentwire.parseMiMoToolCalls,matrix/gateway/internal/agentwire.partialMarkerSuffix
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.mintToolCallID kind=func
   digest=b3:a33d6be11a430f1c56623474f725032e82cea81a3ec48213cc021c5c6f657044 file=gateway/internal/agentwire/mimo.go range=316:325 lang=go exported=false byte_range=9384:9731
   sig=func mintToolCallID(context string, occurrence int, material []byte) string
 EDGES
-  references=matrix/gateway/internal/agentwire.context,matrix/gateway/internal/agentwire.digest,matrix/gateway/internal/agentwire.material,matrix/gateway/internal/agentwire.occurrence,matrix/gateway/internal/agentwire.sum
-  ^calls=matrix/gateway/internal/agentwire.normalizeNativeToolCalls,matrix/gateway/internal/agentwire.parseMiMoToolCalls,matrix/gateway/internal/agentwire.streamChoice.nativeCalls
-  ^references=matrix/gateway/internal/agentwire.normalizeNativeToolCalls,matrix/gateway/internal/agentwire.parseMiMoToolCalls,matrix/gateway/internal/agentwire.streamChoice.nativeCalls
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.nativeStreamCall kind=type
@@ -217,7 +167,6 @@ NODE id=matrix/gateway/internal/agentwire.nativeStreamCall kind=type
   sig=type nativeStreamCall struct {\n	ID		string\n	Name		string\n	Arguments	strings.Builder\n}
 EDGES
   contains=matrix/gateway/internal/agentwire.nativeStreamCall#Arguments,matrix/gateway/internal/agentwire.nativeStreamCall#ID,matrix/gateway/internal/agentwire.nativeStreamCall#Name
-  ^references=matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice,matrix/gateway/internal/agentwire.streamChoice,matrix/gateway/internal/agentwire.streamChoice.appendNative
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.nativeStreamCall#Arguments kind=field
@@ -242,76 +191,48 @@ NODE id=matrix/gateway/internal/agentwire.nativeToolCallMaterial kind=func
   digest=b3:3f78570726fd3877c1e164dce39347ea5d5015d140223ed62b98c05c32062e6f file=gateway/internal/agentwire/mimo.go range=327:339 lang=go exported=false byte_range=9733:10165
   sig=func nativeToolCallMaterial(name string, arguments json.RawMessage) []byte
 EDGES
-  references=matrix/gateway/internal/agentwire.arguments,matrix/gateway/internal/agentwire.canonical,matrix/gateway/internal/agentwire.encoded,matrix/gateway/internal/agentwire.err,matrix/gateway/internal/agentwire.material,matrix/gateway/internal/agentwire.name,matrix/gateway/internal/agentwire.value
-  ^calls=matrix/gateway/internal/agentwire.normalizeNativeToolCalls,matrix/gateway/internal/agentwire.streamChoice.nativeCalls
-  ^references=matrix/gateway/internal/agentwire.normalizeNativeToolCalls,matrix/gateway/internal/agentwire.streamChoice.nativeCalls
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.normalizeNativeToolCalls kind=func
   digest=b3:f586fb0b404482f4d0dfcd94179283918b3367711b0973c7b894be3fcd587ee7 file=gateway/internal/agentwire/mimo.go range=273:314 lang=go exported=false byte_range=8117:9382
   sig=func normalizeNativeToolCalls(raw json.RawMessage, context string) ([]ToolCall, json.RawMessage, error)
 EDGES
-  calls=matrix/gateway/internal/agentwire.mintToolCallID,matrix/gateway/internal/agentwire.nativeToolCallMaterial
-  references=matrix/gateway/internal/agentwire.ToolCall,matrix/gateway/internal/agentwire.arguments,matrix/gateway/internal/agentwire.calls,matrix/gateway/internal/agentwire.context,matrix/gateway/internal/agentwire.encoded,matrix/gateway/internal/agentwire.err,matrix/gateway/internal/agentwire.function,matrix/gateway/internal/agentwire.id,matrix/gateway/internal/agentwire.index,matrix/gateway/internal/agentwire.item,matrix/gateway/internal/agentwire.mintToolCallID,matrix/gateway/internal/agentwire.name,matrix/gateway/internal/agentwire.nativeToolCallMaterial,matrix/gateway/internal/agentwire.normalized,matrix/gateway/internal/agentwire.raw,matrix/gateway/internal/agentwire.wire
-  ^calls=matrix/gateway/internal/agentwire.NormalizeChatCompletion
-  ^references=matrix/gateway/internal/agentwire.NormalizeChatCompletion
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.parseMiMoParameters kind=func
   digest=b3:013d0367039cee93aa160a7fbca78ffc9523258254460748dd15ff3e635d62a5 file=gateway/internal/agentwire/mimo.go range=113:154 lang=go exported=false byte_range=3122:4471
   sig=func parseMiMoParameters(body string) (json.RawMessage, error)
 EDGES
-  calls=matrix/gateway/internal/agentwire.mimoParameterValue,matrix/gateway/internal/agentwire.validMiMoName
-  references=matrix/gateway/internal/agentwire.afterParameter,matrix/gateway/internal/agentwire.body,matrix/gateway/internal/agentwire.duplicate,matrix/gateway/internal/agentwire.encoded,matrix/gateway/internal/agentwire.err,matrix/gateway/internal/agentwire.headerEnd,matrix/gateway/internal/agentwire.marker,matrix/gateway/internal/agentwire.markerAt,matrix/gateway/internal/agentwire.mimoFunctionClose,matrix/gateway/internal/agentwire.mimoParameterClose,matrix/gateway/internal/agentwire.mimoParameterOpen,matrix/gateway/internal/agentwire.mimoParameterValue,matrix/gateway/internal/agentwire.mimoToolClose,matrix/gateway/internal/agentwire.name,matrix/gateway/internal/agentwire.parameterAt,matrix/gateway/internal/agentwire.parameters,matrix/gateway/internal/agentwire.remainder,matrix/gateway/internal/agentwire.validMiMoName,matrix/gateway/internal/agentwire.valueAndRest,matrix/gateway/internal/agentwire.valueEnd
-  ^calls=matrix/gateway/internal/agentwire.parseMiMoToolCalls
-  ^references=matrix/gateway/internal/agentwire.parseMiMoToolCalls
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.parseMiMoToolCalls kind=func
   digest=b3:ae2e8d3082b01ec16d2f9af8b7499670c7bf2a73deb92e7a3eb4cd554357c735 file=gateway/internal/agentwire/mimo.go range=31:111 lang=go exported=false byte_range=582:3120
   sig=func parseMiMoToolCalls(text, context string) (cleanedText string, parsedCalls []ToolCall, found bool, parseErr error)
 EDGES
-  calls=matrix/gateway/internal/agentwire.mintToolCallID,matrix/gateway/internal/agentwire.parseMiMoParameters,matrix/gateway/internal/agentwire.validMiMoName
-  references=matrix/gateway/internal/agentwire.ToolCall,matrix/gateway/internal/agentwire.afterFunction,matrix/gateway/internal/agentwire.arguments,matrix/gateway/internal/agentwire.body,matrix/gateway/internal/agentwire.bodyEnd,matrix/gateway/internal/agentwire.calls,matrix/gateway/internal/agentwire.cleaned,matrix/gateway/internal/agentwire.consumed,matrix/gateway/internal/agentwire.context,matrix/gateway/internal/agentwire.err,matrix/gateway/internal/agentwire.functionAt,matrix/gateway/internal/agentwire.functionEnd,matrix/gateway/internal/agentwire.hasMarkup,matrix/gateway/internal/agentwire.headerEnd,matrix/gateway/internal/agentwire.mimoFunctionClose,matrix/gateway/internal/agentwire.mimoFunctionOpen,matrix/gateway/internal/agentwire.mimoToolClose,matrix/gateway/internal/agentwire.mimoToolOpen,matrix/gateway/internal/agentwire.mintToolCallID,matrix/gateway/internal/agentwire.name,matrix/gateway/internal/agentwire.parseMiMoParameters,matrix/gateway/internal/agentwire.raw,matrix/gateway/internal/agentwire.rawEnd,matrix/gateway/internal/agentwire.remainder,matrix/gateway/internal/agentwire.start,matrix/gateway/internal/agentwire.text,matrix/gateway/internal/agentwire.toolAt,matrix/gateway/internal/agentwire.toolEnd,matrix/gateway/internal/agentwire.validMiMoName
-  ^calls=matrix/gateway/internal/agentwire.NormalizeChatCompletion,matrix/gateway/internal/agentwire.ParseMiMoToolCalls,matrix/gateway/internal/agentwire.streamChannel.finish
-  ^references=matrix/gateway/internal/agentwire.NormalizeChatCompletion,matrix/gateway/internal/agentwire.ParseMiMoToolCalls,matrix/gateway/internal/agentwire.streamChannel.finish
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.partialMarkerSuffix kind=func
   digest=b3:b0cf13e4074b8b8300ea6d6963b5321f47c697d04ce9a136e332480b998a666d file=gateway/internal/agentwire/stream.go range=367:381 lang=go exported=false byte_range=10119:10491
   sig=func partialMarkerSuffix(value string) int
 EDGES
-  references=matrix/gateway/internal/agentwire.length,matrix/gateway/internal/agentwire.limit,matrix/gateway/internal/agentwire.longest,matrix/gateway/internal/agentwire.marker,matrix/gateway/internal/agentwire.mimoFunctionOpen,matrix/gateway/internal/agentwire.mimoToolOpen,matrix/gateway/internal/agentwire.value
-  ^calls=matrix/gateway/internal/agentwire.streamChannel.finish,matrix/gateway/internal/agentwire.streamChannel.push
-  ^references=matrix/gateway/internal/agentwire.streamChannel.finish,matrix/gateway/internal/agentwire.streamChannel.push
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.rawString kind=func
   digest=b3:394e69e6b2914d266e2041ebd0ffc6e720b4bc699b7671afa01ca5d7fe39d055 file=gateway/internal/agentwire/mimo.go range=262:271 lang=go exported=false byte_range=7865:8115
   sig=func rawString(raw json.RawMessage) (string, bool)
 EDGES
-  references=matrix/gateway/internal/agentwire.raw,matrix/gateway/internal/agentwire.value
-  ^calls=matrix/gateway/internal/agentwire.NormalizeChatCompletion,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice,matrix/gateway/internal/agentwire.streamChoice.finalize
-  ^references=matrix/gateway/internal/agentwire.NormalizeChatCompletion,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice,matrix/gateway/internal/agentwire.streamChoice.finalize
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.sameJSONValue kind=func
   digest=b3:98d3be2fb0cdb56810b824b412e2a732369217681024e3529e8a4a65378dd763 file=gateway/internal/agentwire/mimo.go range=354:360 lang=go exported=false byte_range=10444:10689
   sig=func sameJSONValue(left, right json.RawMessage) bool
 EDGES
-  references=matrix/gateway/internal/agentwire.left,matrix/gateway/internal/agentwire.leftValue,matrix/gateway/internal/agentwire.right,matrix/gateway/internal/agentwire.rightValue
-  ^calls=matrix/gateway/internal/agentwire.sameToolCalls
-  ^references=matrix/gateway/internal/agentwire.sameToolCalls
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.sameToolCalls kind=func
   digest=b3:be7d48e3fc2b7adc4610dd3c9f4c5e3e0a30808a103ea328ce7147fcf80d4c79 file=gateway/internal/agentwire/mimo.go range=341:352 lang=go exported=false byte_range=10167:10442
   sig=func sameToolCalls(left, right []ToolCall) bool
 EDGES
-  calls=matrix/gateway/internal/agentwire.sameJSONValue
-  references=matrix/gateway/internal/agentwire.ToolCall,matrix/gateway/internal/agentwire.index,matrix/gateway/internal/agentwire.left,matrix/gateway/internal/agentwire.right,matrix/gateway/internal/agentwire.sameJSONValue
-  ^calls=matrix/gateway/internal/agentwire.NormalizeChatCompletion,matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice
-  ^references=matrix/gateway/internal/agentwire.NormalizeChatCompletion,matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.streamChannel kind=type
@@ -319,7 +240,6 @@ NODE id=matrix/gateway/internal/agentwire.streamChannel kind=type
   sig=type streamChannel struct {\n	pending	strings.Builder\n	capture	bool\n}
 EDGES
   contains=matrix/gateway/internal/agentwire.streamChannel#capture,matrix/gateway/internal/agentwire.streamChannel#pending,matrix/gateway/internal/agentwire.streamChannel.finish,matrix/gateway/internal/agentwire.streamChannel.push
-  ^references=matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice,matrix/gateway/internal/agentwire.streamChannel.finish,matrix/gateway/internal/agentwire.streamChannel.push,matrix/gateway/internal/agentwire.streamChoice,matrix/gateway/internal/agentwire.streamChoice.finalize
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.streamChannel#capture kind=field
@@ -338,22 +258,14 @@ NODE id=matrix/gateway/internal/agentwire.streamChannel.finish kind=method
   digest=b3:495af9213b132d065762c67009ad24c12432e143b5ae205a0bb05808384ad02e file=gateway/internal/agentwire/stream.go range=341:355 lang=go exported=false byte_range=9451:9887
   sig=func (channel *streamChannel) finish(context string) (string, []ToolCall, error)
 EDGES
-  calls=matrix/gateway/internal/agentwire.parseMiMoToolCalls,matrix/gateway/internal/agentwire.partialMarkerSuffix
-  references=matrix/gateway/internal/agentwire.ToolCall,matrix/gateway/internal/agentwire.calls,matrix/gateway/internal/agentwire.channel,matrix/gateway/internal/agentwire.cleaned,matrix/gateway/internal/agentwire.context,matrix/gateway/internal/agentwire.err,matrix/gateway/internal/agentwire.parseMiMoToolCalls,matrix/gateway/internal/agentwire.partialMarkerSuffix,matrix/gateway/internal/agentwire.streamChannel,matrix/gateway/internal/agentwire.value
   ^contains=matrix/gateway/internal/agentwire.streamChannel
-  ^calls=matrix/gateway/internal/agentwire.streamChoice.finalize
-  ^references=matrix/gateway/internal/agentwire.streamChoice.finalize
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.streamChannel.push kind=method
   digest=b3:4622a0528a9922e2409647c90717efcb9fc08ab766bd68d20dfd9907396b638f file=gateway/internal/agentwire/stream.go range=317:339 lang=go exported=false byte_range=8859:9449
   sig=func (channel *streamChannel) push(fragment string) string
 EDGES
-  calls=matrix/gateway/internal/agentwire.firstMarker,matrix/gateway/internal/agentwire.partialMarkerSuffix
-  references=matrix/gateway/internal/agentwire.captured,matrix/gateway/internal/agentwire.channel,matrix/gateway/internal/agentwire.firstMarker,matrix/gateway/internal/agentwire.fragment,matrix/gateway/internal/agentwire.hold,matrix/gateway/internal/agentwire.markerAt,matrix/gateway/internal/agentwire.partialMarkerSuffix,matrix/gateway/internal/agentwire.remaining,matrix/gateway/internal/agentwire.safe,matrix/gateway/internal/agentwire.safeEnd,matrix/gateway/internal/agentwire.streamChannel,matrix/gateway/internal/agentwire.value
   ^contains=matrix/gateway/internal/agentwire.streamChannel
-  ^calls=matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice
-  ^references=matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.streamChoice kind=type
@@ -361,8 +273,6 @@ NODE id=matrix/gateway/internal/agentwire.streamChoice kind=type
   sig=type streamChoice struct {\n	content		streamChannel\n	reasoning	streamChannel\n	native		map[int]*nativeStreamCall\n	finalized	bool\n}
 EDGES
   contains=matrix/gateway/internal/agentwire.streamChoice#content,matrix/gateway/internal/agentwire.streamChoice#finalized,matrix/gateway/internal/agentwire.streamChoice#native,matrix/gateway/internal/agentwire.streamChoice#reasoning,matrix/gateway/internal/agentwire.streamChoice.appendNative,matrix/gateway/internal/agentwire.streamChoice.finalize,matrix/gateway/internal/agentwire.streamChoice.nativeCalls
-  references=matrix/gateway/internal/agentwire.nativeStreamCall,matrix/gateway/internal/agentwire.streamChannel
-  ^references=matrix/gateway/internal/agentwire.NewStreamNormalizer,matrix/gateway/internal/agentwire.StreamNormalizer,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice,matrix/gateway/internal/agentwire.streamChoice.appendNative,matrix/gateway/internal/agentwire.streamChoice.finalize,matrix/gateway/internal/agentwire.streamChoice.nativeCalls
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.streamChoice#content kind=field
@@ -393,60 +303,39 @@ NODE id=matrix/gateway/internal/agentwire.streamChoice.appendNative kind=method
   digest=b3:7263a9f98903335ae2b552766627fb17f46dc41d4156677a2378358b85e65d3d file=gateway/internal/agentwire/stream.go range=235:260 lang=go exported=false byte_range=6583:7329
   sig=func (state *streamChoice) appendNative(raw json.RawMessage) error
 EDGES
-  references=matrix/gateway/internal/agentwire.call,matrix/gateway/internal/agentwire.err,matrix/gateway/internal/agentwire.fragment,matrix/gateway/internal/agentwire.fragments,matrix/gateway/internal/agentwire.nativeStreamCall,matrix/gateway/internal/agentwire.raw,matrix/gateway/internal/agentwire.state,matrix/gateway/internal/agentwire.streamChoice
   ^contains=matrix/gateway/internal/agentwire.streamChoice
-  ^calls=matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice
-  ^references=matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.streamChoice.finalize kind=method
   digest=b3:727228059cd67d4471fd4f58d64a428219119cf41ae9694a9fdb20af553336c2 file=gateway/internal/agentwire/stream.go range=292:315 lang=go exported=false byte_range=8114:8857
   sig=func (state *streamChoice) finalize(delta map[string]json.RawMessage, choiceIndex int) ([]ToolCall, error)
 EDGES
-  calls=matrix/gateway/internal/agentwire.rawString,matrix/gateway/internal/agentwire.streamChannel.finish
-  references=matrix/gateway/internal/agentwire.ToolCall,matrix/gateway/internal/agentwire.calls,matrix/gateway/internal/agentwire.channel,matrix/gateway/internal/agentwire.choiceIndex,matrix/gateway/internal/agentwire.cleaned,matrix/gateway/internal/agentwire.current,matrix/gateway/internal/agentwire.delta,matrix/gateway/internal/agentwire.err,matrix/gateway/internal/agentwire.existing,matrix/gateway/internal/agentwire.field,matrix/gateway/internal/agentwire.ok,matrix/gateway/internal/agentwire.rawString,matrix/gateway/internal/agentwire.recovered,matrix/gateway/internal/agentwire.state,matrix/gateway/internal/agentwire.streamChannel,matrix/gateway/internal/agentwire.streamChannel.finish,matrix/gateway/internal/agentwire.streamChoice
   ^contains=matrix/gateway/internal/agentwire.streamChoice
-  ^calls=matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice
-  ^references=matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.streamChoice.nativeCalls kind=method
   digest=b3:5ecbe9944683c0267924c0bdb6889e9cf69bb783495e274435932d3e6194645d file=gateway/internal/agentwire/stream.go range=262:290 lang=go exported=false byte_range=7331:8112
   sig=func (state *streamChoice) nativeCalls(choiceIndex int) []ToolCall
 EDGES
-  calls=matrix/gateway/internal/agentwire.mintToolCallID,matrix/gateway/internal/agentwire.nativeToolCallMaterial
-  references=matrix/gateway/internal/agentwire.ToolCall,matrix/gateway/internal/agentwire.arguments,matrix/gateway/internal/agentwire.call,matrix/gateway/internal/agentwire.calls,matrix/gateway/internal/agentwire.choiceIndex,matrix/gateway/internal/agentwire.id,matrix/gateway/internal/agentwire.index,matrix/gateway/internal/agentwire.indexes,matrix/gateway/internal/agentwire.mintToolCallID,matrix/gateway/internal/agentwire.nativeToolCallMaterial,matrix/gateway/internal/agentwire.state,matrix/gateway/internal/agentwire.streamChoice
   ^contains=matrix/gateway/internal/agentwire.streamChoice
-  ^calls=matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice
-  ^references=matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.validMiMoName kind=func
   digest=b3:f3703981c906a183d1f5815493e30117240f8cb6023c0bec7183214f75bccfda file=gateway/internal/agentwire/mimo.go range=166:180 lang=go exported=false byte_range=4665:5017
   sig=func validMiMoName(value string) bool
 EDGES
-  references=matrix/gateway/internal/agentwire.current,matrix/gateway/internal/agentwire.value
-  ^calls=matrix/gateway/internal/agentwire.parseMiMoParameters,matrix/gateway/internal/agentwire.parseMiMoToolCalls
-  ^references=matrix/gateway/internal/agentwire.parseMiMoParameters,matrix/gateway/internal/agentwire.parseMiMoToolCalls
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire.wireNativeStreamCalls kind=func
   digest=b3:f622bd3eef05c635093c1cbe8e98c489d0a4b9a63d0abe1c9b5c63191593bc96 file=gateway/internal/agentwire/stream.go range=383:389 lang=go exported=false byte_range=10493:10675
   sig=func wireNativeStreamCalls(calls []ToolCall) []map[string]any
 EDGES
-  calls=matrix/gateway/internal/agentwire.wireToolCalls
-  references=matrix/gateway/internal/agentwire.ToolCall,matrix/gateway/internal/agentwire.calls,matrix/gateway/internal/agentwire.index,matrix/gateway/internal/agentwire.wire,matrix/gateway/internal/agentwire.wireToolCalls
-  ^calls=matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice
-  ^references=matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice
   ^defines=matrix/gateway/internal/agentwire/stream.go
 
 NODE id=matrix/gateway/internal/agentwire.wireToolCalls kind=func
   digest=b3:2a620bfadaa5824118ec28ddf0807358573476df6c5f93993b7a586a1dacf0cc file=gateway/internal/agentwire/mimo.go range=362:379 lang=go exported=false byte_range=10691:11114
   sig=func wireToolCalls(calls []ToolCall, streaming bool) []map[string]any
 EDGES
-  references=matrix/gateway/internal/agentwire.ToolCall,matrix/gateway/internal/agentwire.call,matrix/gateway/internal/agentwire.calls,matrix/gateway/internal/agentwire.index,matrix/gateway/internal/agentwire.item,matrix/gateway/internal/agentwire.streaming,matrix/gateway/internal/agentwire.wire
-  ^calls=matrix/gateway/internal/agentwire.NormalizeChatCompletion,matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice,matrix/gateway/internal/agentwire.wireNativeStreamCalls
-  ^references=matrix/gateway/internal/agentwire.NormalizeChatCompletion,matrix/gateway/internal/agentwire.StreamNormalizer.Flush,matrix/gateway/internal/agentwire.StreamNormalizer.normalizeChoice,matrix/gateway/internal/agentwire.wireNativeStreamCalls
   ^defines=matrix/gateway/internal/agentwire/mimo.go
 
 NODE id=matrix/gateway/internal/agentwire/mimo.go kind=file

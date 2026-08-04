@@ -1,12 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/portfolio kind=package
   digest=b3:13fc2711b9d194836b270d36f48ba07842fd5fe2cb646771b6df403ea83c4c2b file=workforce/internal/portfolio range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/portfolio/controller.go,matrix/workforce/internal/portfolio/decision_verification.go,matrix/workforce/internal/portfolio/scoring.go,matrix/workforce/internal/portfolio/signing.go,matrix/workforce/internal/portfolio/store.go,matrix/workforce/internal/portfolio/types.go
-  imports=matrix/vault,matrix/workforce/internal/companystate,matrix/workforce/internal/contracts
   ^contains=mod:matrix/workforce
-  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/companyruntime,matrix/workforce/internal/initiative,matrix/workforce/internal/productexecution
 
 NODE id=matrix/workforce/internal/portfolio.Alternative kind=type
   digest=b3:f104ba2f55f0c25992227e808959c4748bc401923710b8e032da0ecb4bde37a4 file=workforce/internal/portfolio/types.go range=316:321 lang=go exported=true byte_range=13687:13938
@@ -14,8 +12,6 @@ NODE id=matrix/workforce/internal/portfolio.Alternative kind=type
   doc=Alternative records one evaluated option and its deterministic score.
 EDGES
   contains=matrix/workforce/internal/portfolio.Alternative#Disposition,matrix/workforce/internal/portfolio.Alternative#OpportunityID,matrix/workforce/internal/portfolio.Alternative#ScoreBPS
-  references=matrix/workforce/internal/portfolio.DecisionKind,matrix/workforce/internal/portfolio.OpportunityID
-  ^references=matrix/workforce/internal/companyruntime.FundingRequest,matrix/workforce/internal/portfolio.Controller.Decide,matrix/workforce/internal/portfolio.DecideRequest,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.Store.Decide
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.Alternative#Disposition kind=field
@@ -43,8 +39,6 @@ NODE id=matrix/workforce/internal/portfolio.Assessment kind=type
 EDGES
   contains=matrix/workforce/internal/portfolio.Assessment#AssessedAt,matrix/workforce/internal/portfolio.Assessment#Dissent,matrix/workforce/internal/portfolio.Assessment#Evidence,matrix/workforce/internal/portfolio.Assessment#RiskMicrounits,matrix/workforce/internal/portfolio.Assessment#Scores,matrix/workforce/internal/portfolio.Assessment#UnresolvedRisks,matrix/workforce/internal/portfolio.Assessment.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/portfolio.FactorScores
-  ^references=matrix/workforce/internal/companyruntime.FundingRequest,matrix/workforce/internal/portfolio.Assessment.Validate,matrix/workforce/internal/portfolio.Candidate,matrix/workforce/internal/portfolio.Controller.Decide,matrix/workforce/internal/portfolio.DecideRequest,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.Store.evaluationContext,matrix/workforce/internal/portfolio.selectDecision
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.Assessment#AssessedAt kind=field
@@ -88,11 +82,7 @@ NODE id=matrix/workforce/internal/portfolio.Assessment.Validate kind=method
   sig=func (value Assessment) Validate() error
   doc=Validate requires current, canonical, independently referential assessment evidence.
 EDGES
-  calls=matrix/workforce/internal/companystate.RecordReference.Validate,matrix/workforce/internal/portfolio.FactorScores.Validate,matrix/workforce/internal/portfolio.sortedUniqueText,matrix/workforce/internal/portfolio.validUTC
-  references=matrix/workforce/internal/companystate.RecordReference.Validate,matrix/workforce/internal/portfolio.Assessment,matrix/workforce/internal/portfolio.FactorScores.Validate,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.index,matrix/workforce/internal/portfolio.previous,matrix/workforce/internal/portfolio.sortedUniqueText,matrix/workforce/internal/portfolio.validUTC,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.Assessment
-  ^calls=matrix/workforce/internal/companyruntime.FundingRequest.Validate,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.RankCandidates
-  ^references=matrix/workforce/internal/companyruntime.FundingRequest.Validate,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.RankCandidates
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.Cadence kind=type
@@ -102,8 +92,6 @@ NODE id=matrix/workforce/internal/portfolio.Cadence kind=type
 EDGES
   contains=matrix/workforce/internal/portfolio.Cadence#EffectiveAt,matrix/workforce/internal/portfolio.Cadence#ExpiresAt,matrix/workforce/internal/portfolio.Cadence#FirstDueAt,matrix/workforce/internal/portfolio.Cadence#ID,matrix/workforce/internal/portfolio.Cadence#IntervalSeconds,matrix/workforce/internal/portfolio.Cadence#Kind,matrix/workforce/internal/portfolio.Cadence#OrganizationID,matrix/workforce/internal/portfolio.Cadence#SchemaVersion,matrix/workforce/internal/portfolio.Cadence#Signature,matrix/workforce/internal/portfolio.Cadence#Version,matrix/workforce/internal/portfolio.Cadence.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/portfolio.CadenceKind
-  ^references=matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.canonicalCadences,matrix/workforce/internal/portfolio.Cadence.Validate,matrix/workforce/internal/portfolio.SignCadence,matrix/workforce/internal/portfolio.Store.RegisterCadence,matrix/workforce/internal/portfolio.VerifyCadence,matrix/workforce/internal/portfolio.cadenceSigningBytes
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.Cadence#EffectiveAt kind=field
@@ -171,35 +159,25 @@ NODE id=matrix/workforce/internal/portfolio.Cadence.Validate kind=method
   sig=func (value Cadence) Validate() error
   doc=Validate enforces bounded recurrence and explicit authority lifetime.
 EDGES
-  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.validUTC
-  references=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/portfolio.Cadence,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.validUTC,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.Cadence
-  ^calls=matrix/workforce/internal/companyruntime.StartConfiguration.Validate,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.VerifyCadence
-  ^references=matrix/workforce/internal/companyruntime.StartConfiguration.Validate,matrix/workforce/internal/portfolio.VerifyCadence
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.CadenceCapital kind=const
   digest=b3:34ba48e3b392573410c1eef6b20534848432be2fe8012174cea1ceb0b24322c7 file=workforce/internal/portfolio/types.go range=410:410 lang=go exported=true byte_range=18523:18571
   sig=portfolio.CadenceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.CadenceKind
-  ^references=matrix/workforce/internal/companyruntime.DefaultStartDraft,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.cycleCoverage
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.CadenceCommercial kind=const
   digest=b3:36d7c262cb3c5addb1ab54ec41301fe6ea659c09d653707ebf32f29aea76f672 file=workforce/internal/portfolio/types.go range=412:412 lang=go exported=true byte_range=18623:18674
   sig=portfolio.CadenceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.CadenceKind
-  ^references=matrix/workforce/internal/companyruntime.DefaultStartDraft,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.cycleCoverage
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.CadenceDiscovery kind=const
   digest=b3:9bbf751e3afb5c3df3c968014a5bef2d75bb491e92c6e51349f6442a2a5bf0d0 file=workforce/internal/portfolio/types.go range=408:408 lang=go exported=true byte_range=18414:18469
   sig=portfolio.CadenceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.CadenceKind
-  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.companyCyclePlan,matrix/workforce/internal/companyruntime.DefaultStartDraft,matrix/workforce/internal/companyruntime.autonomousCycleCoverage,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.cycleCoverage
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.CadenceKind kind=type
@@ -208,7 +186,6 @@ NODE id=matrix/workforce/internal/portfolio.CadenceKind kind=type
   doc=CadenceKind is a recurring deterministic company-controller review cycle.
 EDGES
   contains=matrix/workforce/internal/portfolio.CadenceKind.Valid
-  ^references=matrix/workforce/internal/companyruntime.CadenceSchedule,matrix/workforce/internal/companyruntime.DefaultStartDraft,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/companyruntime.autonomousCycleCoverage,matrix/workforce/internal/portfolio.Cadence,matrix/workforce/internal/portfolio.CadenceCapital,matrix/workforce/internal/portfolio.CadenceCommercial,matrix/workforce/internal/portfolio.CadenceDiscovery,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.CadenceLearning,matrix/workforce/internal/portfolio.CadenceOperations,matrix/workforce/internal/portfolio.CadencePortfolio,matrix/workforce/internal/portfolio.CadenceProduct,matrix/workforce/internal/portfolio.CyclePlan,matrix/workforce/internal/portfolio.DueCadence,matrix/workforce/internal/portfolio.cycleCoverage
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.CadenceKind.Valid kind=method
@@ -216,42 +193,31 @@ NODE id=matrix/workforce/internal/portfolio.CadenceKind.Valid kind=method
   sig=func (value CadenceKind) Valid() bool
   doc=Valid reports whether the cadence has a closed controller meaning.
 EDGES
-  references=matrix/workforce/internal/portfolio.CadenceCapital,matrix/workforce/internal/portfolio.CadenceCommercial,matrix/workforce/internal/portfolio.CadenceDiscovery,matrix/workforce/internal/portfolio.CadenceKind,matrix/workforce/internal/portfolio.CadenceLearning,matrix/workforce/internal/portfolio.CadenceOperations,matrix/workforce/internal/portfolio.CadencePortfolio,matrix/workforce/internal/portfolio.CadenceProduct,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.CadenceKind
-  ^calls=matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/portfolio.Cadence.Validate,matrix/workforce/internal/portfolio.CyclePlan.Validate
-  ^references=matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/portfolio.Cadence.Validate,matrix/workforce/internal/portfolio.CyclePlan.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.CadenceLearning kind=const
   digest=b3:df7243501ad9beb275fb59c1cb3642fb82d4234942abb91afeaa2f03521b1342 file=workforce/internal/portfolio/types.go range=414:414 lang=go exported=true byte_range=18730:18782
   sig=portfolio.CadenceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.CadenceKind
-  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.companyCyclePlan,matrix/workforce/internal/companyruntime.DefaultStartDraft,matrix/workforce/internal/companyruntime.autonomousCycleCoverage,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.cycleCoverage
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.CadenceOperations kind=const
   digest=b3:71b8c85a46c166485ee6440b40f651bef88f0ce5efb8b8f78e42e98dbd431512 file=workforce/internal/portfolio/types.go range=413:413 lang=go exported=true byte_range=18676:18728
   sig=portfolio.CadenceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.CadenceKind
-  ^references=matrix/workforce/internal/companyruntime.DefaultStartDraft,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.cycleCoverage
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.CadencePortfolio kind=const
   digest=b3:f85123b80fcbc1ac4707d76e949715568ca4c3209194ac710069708b2cbd0342 file=workforce/internal/portfolio/types.go range=409:409 lang=go exported=true byte_range=18471:18521
   sig=portfolio.CadenceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.CadenceKind
-  ^references=matrix/workforce/internal/companyruntime.DefaultStartDraft,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.cycleCoverage
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.CadenceProduct kind=const
   digest=b3:018b0e4b106d63ead634046cf6ec04fc78a22521f56b26cba32cd80597326352 file=workforce/internal/portfolio/types.go range=411:411 lang=go exported=true byte_range=18573:18621
   sig=portfolio.CadenceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.CadenceKind
-  ^references=matrix/workforce/internal/companyruntime.DefaultStartDraft,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.cycleCoverage
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.Candidate kind=type
@@ -260,8 +226,6 @@ NODE id=matrix/workforce/internal/portfolio.Candidate kind=type
   doc=Candidate binds one opportunity to its current independent assessment.
 EDGES
   contains=matrix/workforce/internal/portfolio.Candidate#Assessment,matrix/workforce/internal/portfolio.Candidate#Opportunity
-  references=matrix/workforce/internal/portfolio.Assessment,matrix/workforce/internal/portfolio.Opportunity
-  ^references=matrix/workforce/internal/portfolio.RankCandidates
   ^defines=matrix/workforce/internal/portfolio/scoring.go
 
 NODE id=matrix/workforce/internal/portfolio.Candidate#Assessment kind=field
@@ -282,8 +246,6 @@ NODE id=matrix/workforce/internal/portfolio.Controller kind=type
   doc=Controller owns deterministic cadence planning and portfolio selection. It\nnever receives provider credentials or performs an external effect.
 EDGES
   contains=matrix/workforce/internal/portfolio.Controller#procedure,matrix/workforce/internal/portfolio.Controller#procedurePublicKey,matrix/workforce/internal/portfolio.Controller#store,matrix/workforce/internal/portfolio.Controller.ClaimCyclePlans,matrix/workforce/internal/portfolio.Controller.Decide
-  references=matrix/workforce/internal/portfolio.DecisionProcedure,matrix/workforce/internal/portfolio.Store
-  ^references=matrix/workforce/internal/companyruntime.Store.Controller,matrix/workforce/internal/portfolio.Controller.ClaimCyclePlans,matrix/workforce/internal/portfolio.Controller.Decide,matrix/workforce/internal/portfolio.NewController
   ^defines=matrix/workforce/internal/portfolio/controller.go
 
 NODE id=matrix/workforce/internal/portfolio.Controller#procedure kind=field
@@ -309,11 +271,7 @@ NODE id=matrix/workforce/internal/portfolio.Controller.ClaimCyclePlans kind=meth
   sig=func (controller *Controller) ClaimCyclePlans(ctx context.Context, limit uint16) ([]CyclePlan, error)
   doc=ClaimCyclePlans atomically coalesces due cadences into typed company work.
 EDGES
-  calls=matrix/workforce/internal/portfolio.CyclePlan.Validate,matrix/workforce/internal/portfolio.Store.ClaimDueCadences,matrix/workforce/internal/portfolio.cycleCoverage
-  references=matrix/workforce/internal/portfolio.Controller,matrix/workforce/internal/portfolio.CyclePlan,matrix/workforce/internal/portfolio.CyclePlan.Validate,matrix/workforce/internal/portfolio.Store.ClaimDueCadences,matrix/workforce/internal/portfolio.cadence,matrix/workforce/internal/portfolio.capabilities,matrix/workforce/internal/portfolio.controller,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.cycleCoverage,matrix/workforce/internal/portfolio.departments,matrix/workforce/internal/portfolio.due,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.limit,matrix/workforce/internal/portfolio.plan,matrix/workforce/internal/portfolio.plans
   ^contains=matrix/workforce/internal/portfolio.Controller
-  ^calls=matrix/workforce/internal/companyruntime.Coordinator.RunDue
-  ^references=matrix/workforce/internal/companyruntime.Coordinator.RunDue
   ^defines=matrix/workforce/internal/portfolio/controller.go
 
 NODE id=matrix/workforce/internal/portfolio.Controller.Decide kind=method
@@ -321,11 +279,7 @@ NODE id=matrix/workforce/internal/portfolio.Controller.Decide kind=method
   sig=func (controller *Controller) Decide(\n	ctx context.Context,\n	id DecisionID,\n	opportunityID OpportunityID,\n	assessment Assessment,\n	alternatives []Alternative,\n	idempotencyKey string,\n) (DecisionReceipt, bool, error)
   doc=Decide applies the current founder-signed procedure and commits its receipt.
 EDGES
-  calls=matrix/workforce/internal/portfolio.Store.Decide
-  references=matrix/workforce/internal/portfolio.Alternative,matrix/workforce/internal/portfolio.Assessment,matrix/workforce/internal/portfolio.Controller,matrix/workforce/internal/portfolio.DecideRequest,matrix/workforce/internal/portfolio.DecisionID,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.OpportunityID,matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.alternatives,matrix/workforce/internal/portfolio.assessment,matrix/workforce/internal/portfolio.controller,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.id,matrix/workforce/internal/portfolio.idempotencyKey,matrix/workforce/internal/portfolio.opportunityID
   ^contains=matrix/workforce/internal/portfolio.Controller
-  ^calls=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
-  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative
   ^defines=matrix/workforce/internal/portfolio/controller.go
 
 NODE id=matrix/workforce/internal/portfolio.CyclePlan kind=type
@@ -335,8 +289,6 @@ NODE id=matrix/workforce/internal/portfolio.CyclePlan kind=type
 EDGES
   contains=matrix/workforce/internal/portfolio.CyclePlan#Departments,matrix/workforce/internal/portfolio.CyclePlan#DueAt,matrix/workforce/internal/portfolio.CyclePlan#ID,matrix/workforce/internal/portfolio.CyclePlan#IndependentAudit,matrix/workforce/internal/portfolio.CyclePlan#Kind,matrix/workforce/internal/portfolio.CyclePlan#NextAt,matrix/workforce/internal/portfolio.CyclePlan#OrganizationID,matrix/workforce/internal/portfolio.CyclePlan#RequiredCapabilities,matrix/workforce/internal/portfolio.CyclePlan#SchemaVersion,matrix/workforce/internal/portfolio.CyclePlan.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/portfolio.CadenceKind
-  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.companyCyclePlan,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ensureCycleRun,matrix/workforce/internal/companyruntime.Coordinator.DispatchCycle,matrix/workforce/internal/companyruntime.Coordinator.RunDue,matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/companyruntime.CycleDispatcher.persist,matrix/workforce/internal/portfolio.Controller.ClaimCyclePlans,matrix/workforce/internal/portfolio.CyclePlan.Validate
   ^defines=matrix/workforce/internal/portfolio/controller.go
 
 NODE id=matrix/workforce/internal/portfolio.CyclePlan#Departments kind=field
@@ -398,11 +350,7 @@ NODE id=matrix/workforce/internal/portfolio.CyclePlan.Validate kind=method
   sig=func (value CyclePlan) Validate() error
   doc=Validate enforces canonical coverage and an independent review boundary.
 EDGES
-  calls=matrix/workforce/internal/contracts.DepartmentKind.Valid,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.sortedUniqueText,matrix/workforce/internal/portfolio.validUTC
-  references=matrix/workforce/internal/contracts.DepartmentKind.Valid,matrix/workforce/internal/portfolio.CadenceKind.Valid,matrix/workforce/internal/portfolio.CyclePlan,matrix/workforce/internal/portfolio.department,matrix/workforce/internal/portfolio.previousDepartment,matrix/workforce/internal/portfolio.sortedUniqueText,matrix/workforce/internal/portfolio.validUTC,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.CyclePlan
-  ^calls=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.companyCyclePlan,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ensureCycleRun,matrix/workforce/internal/companyruntime.Coordinator.RunDue,matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/portfolio.Controller.ClaimCyclePlans
-  ^references=matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.companyCyclePlan,matrix/workforce/internal/companyruntime.AutonomousNextCycleExecutor.ensureCycleRun,matrix/workforce/internal/companyruntime.Coordinator.RunDue,matrix/workforce/internal/companyruntime.CycleDispatcher.Dispatch,matrix/workforce/internal/portfolio.Controller.ClaimCyclePlans
   ^defines=matrix/workforce/internal/portfolio/controller.go
 
 NODE id=matrix/workforce/internal/portfolio.DecideRequest kind=type
@@ -411,8 +359,6 @@ NODE id=matrix/workforce/internal/portfolio.DecideRequest kind=type
   doc=DecideRequest binds current signed policy and independent evidence to one decision.
 EDGES
   contains=matrix/workforce/internal/portfolio.DecideRequest#Alternatives,matrix/workforce/internal/portfolio.DecideRequest#Assessment,matrix/workforce/internal/portfolio.DecideRequest#ID,matrix/workforce/internal/portfolio.DecideRequest#IdempotencyKey,matrix/workforce/internal/portfolio.DecideRequest#OpportunityID,matrix/workforce/internal/portfolio.DecideRequest#Procedure,matrix/workforce/internal/portfolio.DecideRequest#ProcedurePublicKey
-  references=matrix/workforce/internal/portfolio.Alternative,matrix/workforce/internal/portfolio.Assessment,matrix/workforce/internal/portfolio.DecisionID,matrix/workforce/internal/portfolio.DecisionProcedure,matrix/workforce/internal/portfolio.OpportunityID
-  ^references=matrix/workforce/internal/portfolio.Controller.Decide,matrix/workforce/internal/portfolio.Store.Decide
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.DecideRequest#Alternatives kind=field
@@ -461,24 +407,18 @@ NODE id=matrix/workforce/internal/portfolio.DecisionDefer kind=const
   digest=b3:a0c58eda2dc980ec643de45bbd5da14d7908bf5e7e1b533e58bc7fe60365eb31 file=workforce/internal/portfolio/types.go range=291:291 lang=go exported=true byte_range=12783:12824
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.selectDecision
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionEscalate kind=const
   digest=b3:37b275560a0e0715830cd327db5a484b6ed8d00867617432b4a84588d9e62330 file=workforce/internal/portfolio/types.go range=301:301 lang=go exported=true byte_range=13232:13276
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.nextReview,matrix/workforce/internal/portfolio.opportunityState,matrix/workforce/internal/portfolio.selectDecision
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionGO kind=const
   digest=b3:fc7a796da5db1d79ebb8673f53a8e9ccd01c3fb34a49a02b7108c4c0025a1a15 file=workforce/internal/portfolio/types.go range=288:288 lang=go exported=true byte_range=12654:12692
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/companyruntime.Coordinator.FundInitiative,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/initiative.validateCompileBindings,matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.RankCandidates,matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.opportunityState,matrix/workforce/internal/portfolio.selectDecision,matrix/workforce/internal/productexecution.StartRequest.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionID kind=type
@@ -486,7 +426,6 @@ NODE id=matrix/workforce/internal/portfolio.DecisionID kind=type
   sig=type DecisionID string
   doc=DecisionID identifies one immutable portfolio decision.
 EDGES
-  ^references=matrix/workforce/internal/companyruntime.FundingRequest,matrix/workforce/internal/initiative.Initiative,matrix/workforce/internal/portfolio.Controller.Decide,matrix/workforce/internal/portfolio.DecideRequest,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.Store.decisionAD,matrix/workforce/internal/portfolio.Store.findDecisionIdempotency,matrix/workforce/internal/portfolio.Store.loadDecisionTx
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionKind kind=type
@@ -495,7 +434,6 @@ NODE id=matrix/workforce/internal/portfolio.DecisionKind kind=type
   doc=DecisionKind is a closed company portfolio action.
 EDGES
   contains=matrix/workforce/internal/portfolio.DecisionKind.Valid
-  ^references=matrix/workforce/internal/portfolio.Alternative,matrix/workforce/internal/portfolio.DecisionDefer,matrix/workforce/internal/portfolio.DecisionEscalate,matrix/workforce/internal/portfolio.DecisionGO,matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.DecisionMaintain,matrix/workforce/internal/portfolio.DecisionNO_GO,matrix/workforce/internal/portfolio.DecisionPause,matrix/workforce/internal/portfolio.DecisionPivot,matrix/workforce/internal/portfolio.DecisionPrioritize,matrix/workforce/internal/portfolio.DecisionReallocate,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.DecisionReject,matrix/workforce/internal/portfolio.DecisionResume,matrix/workforce/internal/portfolio.DecisionScale,matrix/workforce/internal/portfolio.DecisionTerminate,matrix/workforce/internal/portfolio.DecisionValidate,matrix/workforce/internal/portfolio.RankedCandidate,matrix/workforce/internal/portfolio.nextReview,matrix/workforce/internal/portfolio.opportunityState,matrix/workforce/internal/portfolio.selectDecision
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionKind.Valid kind=method
@@ -503,50 +441,37 @@ NODE id=matrix/workforce/internal/portfolio.DecisionKind.Valid kind=method
   sig=func (value DecisionKind) Valid() bool
   doc=Valid reports whether the action has an executable meaning.
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionDefer,matrix/workforce/internal/portfolio.DecisionEscalate,matrix/workforce/internal/portfolio.DecisionGO,matrix/workforce/internal/portfolio.DecisionKind,matrix/workforce/internal/portfolio.DecisionMaintain,matrix/workforce/internal/portfolio.DecisionNO_GO,matrix/workforce/internal/portfolio.DecisionPause,matrix/workforce/internal/portfolio.DecisionPivot,matrix/workforce/internal/portfolio.DecisionPrioritize,matrix/workforce/internal/portfolio.DecisionReallocate,matrix/workforce/internal/portfolio.DecisionReject,matrix/workforce/internal/portfolio.DecisionResume,matrix/workforce/internal/portfolio.DecisionScale,matrix/workforce/internal/portfolio.DecisionTerminate,matrix/workforce/internal/portfolio.DecisionValidate,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.DecisionKind
-  ^calls=matrix/workforce/internal/portfolio.DecisionReceipt.Validate
-  ^references=matrix/workforce/internal/portfolio.DecisionReceipt.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionMaintain kind=const
   digest=b3:1d259a70aeda7a33e1f5356c56742a1241272995e32c29aa414b2accf04af85b file=workforce/internal/portfolio/types.go range=299:299 lang=go exported=true byte_range=13139:13183
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.DecisionReceipt.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionNO_GO kind=const
   digest=b3:3aaacbd7829a536210460f575f7139cbde68e06e8ef037a61081bcc23bae7382 file=workforce/internal/portfolio/types.go range=289:289 lang=go exported=true byte_range=12694:12735
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.nextReview,matrix/workforce/internal/portfolio.opportunityState,matrix/workforce/internal/portfolio.selectDecision
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionPause kind=const
   digest=b3:02a8a53bfb8cd2fe1e1a694ecf22efaaad71c8bc154e4ceaf049375b14e8500e file=workforce/internal/portfolio/types.go range=294:294 lang=go exported=true byte_range=12918:12959
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.nextReview,matrix/workforce/internal/portfolio.opportunityState,matrix/workforce/internal/portfolio.selectDecision
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionPivot kind=const
   digest=b3:3c72131a075baf4e43ce7996f162dc2c0c020a0a2b581aeee2ddcd6e30c870be file=workforce/internal/portfolio/types.go range=298:298 lang=go exported=true byte_range=13096:13137
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.DecisionReceipt.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionPrioritize kind=const
   digest=b3:6201089aa8f6fb3a73bed84fce3a0423663e7139042136cade300736dbef221a file=workforce/internal/portfolio/types.go range=293:293 lang=go exported=true byte_range=12870:12916
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.DecisionReceipt.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionProcedure kind=type
@@ -556,8 +481,6 @@ NODE id=matrix/workforce/internal/portfolio.DecisionProcedure kind=type
 EDGES
   contains=matrix/workforce/internal/portfolio.DecisionProcedure#AuthorityClauses,matrix/workforce/internal/portfolio.DecisionProcedure#EffectiveAt,matrix/workforce/internal/portfolio.DecisionProcedure#ExpiresAt,matrix/workforce/internal/portfolio.DecisionProcedure#GOThresholdBPS,matrix/workforce/internal/portfolio.DecisionProcedure#ID,matrix/workforce/internal/portfolio.DecisionProcedure#MaximumActiveInitiatives,matrix/workforce/internal/portfolio.DecisionProcedure#MaximumCapitalMicrounits,matrix/workforce/internal/portfolio.DecisionProcedure#MaximumNoEvidenceCycles,matrix/workforce/internal/portfolio.DecisionProcedure#MaximumRiskMicrounits,matrix/workforce/internal/portfolio.DecisionProcedure#MinimumLegalSafetyBPS,matrix/workforce/internal/portfolio.DecisionProcedure#MinimumSecuritySafetyBPS,matrix/workforce/internal/portfolio.DecisionProcedure#NO_GOThresholdBPS,matrix/workforce/internal/portfolio.DecisionProcedure#OrganizationID,matrix/workforce/internal/portfolio.DecisionProcedure#SchemaVersion,matrix/workforce/internal/portfolio.DecisionProcedure#Signature,matrix/workforce/internal/portfolio.DecisionProcedure#ValidateThresholdBPS,matrix/workforce/internal/portfolio.DecisionProcedure#Version,matrix/workforce/internal/portfolio.DecisionProcedure#Weights,matrix/workforce/internal/portfolio.DecisionProcedure.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/portfolio.FactorWeights
-  ^references=matrix/workforce/internal/companyruntime.StartConfiguration,matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/portfolio.Controller,matrix/workforce/internal/portfolio.DecideRequest,matrix/workforce/internal/portfolio.DecisionProcedure.Validate,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.NewController,matrix/workforce/internal/portfolio.RankCandidates,matrix/workforce/internal/portfolio.SignProcedure,matrix/workforce/internal/portfolio.VerifyProcedure,matrix/workforce/internal/portfolio.procedureSigningBytes,matrix/workforce/internal/portfolio.selectDecision
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionProcedure#AuthorityClauses kind=field
@@ -673,19 +596,13 @@ NODE id=matrix/workforce/internal/portfolio.DecisionProcedure.Validate kind=meth
   sig=func (value DecisionProcedure) Validate() error
   doc=Validate enforces monotonic thresholds, resource limits, and canonical clauses.
 EDGES
-  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/portfolio.FactorWeights.Validate,matrix/workforce/internal/portfolio.sortedUniqueText,matrix/workforce/internal/portfolio.validUTC
-  references=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/portfolio.DecisionProcedure,matrix/workforce/internal/portfolio.FactorWeights.Validate,matrix/workforce/internal/portfolio.ProcedureSchemaVersion,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.sortedUniqueText,matrix/workforce/internal/portfolio.validUTC,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.DecisionProcedure
-  ^calls=matrix/workforce/internal/companyruntime.StartConfiguration.Validate,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.VerifyProcedure
-  ^references=matrix/workforce/internal/companyruntime.StartConfiguration.Validate,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.VerifyProcedure
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionReallocate kind=const
   digest=b3:4f5f13c290a799727c7ec30118b0aac38654afa5b4f28b3ccb4f00d5cb8e9e3b file=workforce/internal/portfolio/types.go range=296:296 lang=go exported=true byte_range=13005:13051
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.DecisionReceipt.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionReceipt kind=type
@@ -695,8 +612,6 @@ NODE id=matrix/workforce/internal/portfolio.DecisionReceipt kind=type
 EDGES
   contains=matrix/workforce/internal/portfolio.DecisionReceipt#Alternatives,matrix/workforce/internal/portfolio.DecisionReceipt#AuthorityClauses,matrix/workforce/internal/portfolio.DecisionReceipt#CapitalImpactMicrounits,matrix/workforce/internal/portfolio.DecisionReceipt#CreatedAt,matrix/workforce/internal/portfolio.DecisionReceipt#Decision,matrix/workforce/internal/portfolio.DecisionReceipt#Dissent,matrix/workforce/internal/portfolio.DecisionReceipt#Evidence,matrix/workforce/internal/portfolio.DecisionReceipt#ID,matrix/workforce/internal/portfolio.DecisionReceipt#InitiativeID,matrix/workforce/internal/portfolio.DecisionReceipt#NextReviewAt,matrix/workforce/internal/portfolio.DecisionReceipt#OpportunityID,matrix/workforce/internal/portfolio.DecisionReceipt#OrganizationID,matrix/workforce/internal/portfolio.DecisionReceipt#ProcedureID,matrix/workforce/internal/portfolio.DecisionReceipt#ProcedureVersion,matrix/workforce/internal/portfolio.DecisionReceipt#Reason,matrix/workforce/internal/portfolio.DecisionReceipt#RiskImpactMicrounits,matrix/workforce/internal/portfolio.DecisionReceipt#SchemaVersion,matrix/workforce/internal/portfolio.DecisionReceipt#ScoreBPS,matrix/workforce/internal/portfolio.DecisionReceipt#Signature,matrix/workforce/internal/portfolio.DecisionReceipt#Thresholds,matrix/workforce/internal/portfolio.DecisionReceipt#UnresolvedRisks,matrix/workforce/internal/portfolio.DecisionReceipt.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/portfolio.Alternative,matrix/workforce/internal/portfolio.DecisionID,matrix/workforce/internal/portfolio.DecisionKind,matrix/workforce/internal/portfolio.InitiativeID,matrix/workforce/internal/portfolio.OpportunityID
-  ^references=matrix/workforce/internal/companyruntime.FundingResult,matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/initiative.CompileInput,matrix/workforce/internal/portfolio.Controller.Decide,matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.Store.findDecisionIdempotency,matrix/workforce/internal/portfolio.Store.loadDecisionTx,matrix/workforce/internal/portfolio.VerifyDecision,matrix/workforce/internal/portfolio.decisionIncidentKind,matrix/workforce/internal/portfolio.decisionSigningBytes,matrix/workforce/internal/portfolio.signDecision,matrix/workforce/internal/productexecution.StartRequest
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionReceipt#Alternatives kind=field
@@ -830,35 +745,25 @@ NODE id=matrix/workforce/internal/portfolio.DecisionReceipt.Validate kind=method
   sig=func (value DecisionReceipt) Validate() error
   doc=Validate rejects receipts without complete evidence, authority, alternatives, or review.
 EDGES
-  calls=matrix/workforce/internal/companystate.RecordReference.Validate,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.sortedUniqueText,matrix/workforce/internal/portfolio.validUTC,matrix/workforce/internal/portfolio.validateText
-  references=matrix/workforce/internal/companystate.RecordReference.Validate,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/portfolio.DecisionGO,matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.DecisionMaintain,matrix/workforce/internal/portfolio.DecisionPause,matrix/workforce/internal/portfolio.DecisionPivot,matrix/workforce/internal/portfolio.DecisionPrioritize,matrix/workforce/internal/portfolio.DecisionReallocate,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.DecisionResume,matrix/workforce/internal/portfolio.DecisionScale,matrix/workforce/internal/portfolio.DecisionSchemaVersion,matrix/workforce/internal/portfolio.DecisionTerminate,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.index,matrix/workforce/internal/portfolio.requiresInitiative,matrix/workforce/internal/portfolio.sortedUniqueText,matrix/workforce/internal/portfolio.validUTC,matrix/workforce/internal/portfolio.validateText,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.DecisionReceipt
-  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.VerifyDecision,matrix/workforce/internal/productexecution.StartRequest.Validate
-  ^references=matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.VerifyDecision,matrix/workforce/internal/productexecution.StartRequest.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionReject kind=const
   digest=b3:c4a18995ac960939167d20a6931257bbb595db5433e3fb5efc4df5894731324b file=workforce/internal/portfolio/types.go range=292:292 lang=go exported=true byte_range=12826:12868
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.nextReview,matrix/workforce/internal/portfolio.opportunityState,matrix/workforce/internal/portfolio.selectDecision
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionResume kind=const
   digest=b3:be05b5601e07391d3d5b0f655d78e6cd345949a77a1d4fd4d66d1884eaa6c2d4 file=workforce/internal/portfolio/types.go range=295:295 lang=go exported=true byte_range=12961:13003
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.DecisionReceipt.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionScale kind=const
   digest=b3:41e6c490a9098e1bdd41361e92cdf704ad6138f5afe8e32d7651df49011f35ef file=workforce/internal/portfolio/types.go range=297:297 lang=go exported=true byte_range=13053:13094
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.DecisionReceipt.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionSchemaVersion kind=const
@@ -866,23 +771,18 @@ NODE id=matrix/workforce/internal/portfolio.DecisionSchemaVersion kind=const
   sig=untyped string
   doc=DecisionSchemaVersion is the canonical portfolio decision wire schema.
 EDGES
-  ^references=matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.Store.decisionAD
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionTerminate kind=const
   digest=b3:f4e7c177a58433fad870d98e02b914383dd7b42ec34b07e850eebbb38e4ea9fc file=workforce/internal/portfolio/types.go range=300:300 lang=go exported=true byte_range=13185:13230
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.nextReview,matrix/workforce/internal/portfolio.opportunityState
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DecisionValidate kind=const
   digest=b3:d1e1b492d0c18cd1b86540ea59f47ef5299cf5480626617d7d7d5e869c976c3e file=workforce/internal/portfolio/types.go range=290:290 lang=go exported=true byte_range=12737:12781
   sig=portfolio.DecisionKind
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionKind
-  ^references=matrix/workforce/internal/portfolio.DecisionKind.Valid,matrix/workforce/internal/portfolio.opportunityState,matrix/workforce/internal/portfolio.selectDecision
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.DueCadence kind=type
@@ -891,8 +791,6 @@ NODE id=matrix/workforce/internal/portfolio.DueCadence kind=type
   doc=DueCadence is one atomically advanced recurring controller cycle.
 EDGES
   contains=matrix/workforce/internal/portfolio.DueCadence#DueAt,matrix/workforce/internal/portfolio.DueCadence#ID,matrix/workforce/internal/portfolio.DueCadence#Kind,matrix/workforce/internal/portfolio.DueCadence#NextAt
-  references=matrix/workforce/internal/portfolio.CadenceKind
-  ^references=matrix/workforce/internal/portfolio.Store.ClaimDueCadences
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.DueCadence#DueAt kind=field
@@ -924,7 +822,6 @@ NODE id=matrix/workforce/internal/portfolio.ErrConflict kind=var
   sig=error
   doc=ErrConflict reports reuse of an immutable identity with different content.
 EDGES
-  ^references=matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.Store.RegisterCadence,matrix/workforce/internal/portfolio.Store.Submit
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.ErrIntegrity kind=var
@@ -932,7 +829,6 @@ NODE id=matrix/workforce/internal/portfolio.ErrIntegrity kind=var
   sig=error
   doc=ErrIntegrity reports Vault authentication or canonical hash failure.
 EDGES
-  ^references=matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.Store.loadDecisionTx,matrix/workforce/internal/portfolio.Store.loadOpportunityTx
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.ErrNotFound kind=var
@@ -940,7 +836,6 @@ NODE id=matrix/workforce/internal/portfolio.ErrNotFound kind=var
   sig=error
   doc=ErrNotFound intentionally combines absent and out-of-scope portfolio state.
 EDGES
-  ^references=matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.Store.loadOpportunityTx
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.ErrUnauthorized kind=var
@@ -948,7 +843,6 @@ NODE id=matrix/workforce/internal/portfolio.ErrUnauthorized kind=var
   sig=error
   doc=ErrUnauthorized reports authority, policy, scope, or resource denial.
 EDGES
-  ^references=matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.Store.RegisterCadence,matrix/workforce/internal/portfolio.Store.Submit,matrix/workforce/internal/portfolio.Store.validateCurrentCompanyStateRefsTx
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Evaluate kind=func
@@ -956,10 +850,6 @@ NODE id=matrix/workforce/internal/portfolio.Evaluate kind=func
   sig=func Evaluate(\n	opportunity Opportunity,\n	assessment Assessment,\n	procedure DecisionProcedure,\n	context EvaluationContext,\n	now time.Time,\n) (DecisionReceipt, error)
   doc=Evaluate applies a versioned procedure to current evidence and resource state.\nIt has no model, storage, clock, or external-effect dependency.
 EDGES
-  calls=matrix/workforce/internal/portfolio.Assessment.Validate,matrix/workforce/internal/portfolio.DecisionProcedure.Validate,matrix/workforce/internal/portfolio.Opportunity.Validate,matrix/workforce/internal/portfolio.nextReview,matrix/workforce/internal/portfolio.selectDecision,matrix/workforce/internal/portfolio.validUTC,matrix/workforce/internal/portfolio.weightedScore
-  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/portfolio.Alternative,matrix/workforce/internal/portfolio.Assessment,matrix/workforce/internal/portfolio.Assessment.Validate,matrix/workforce/internal/portfolio.DecisionGO,matrix/workforce/internal/portfolio.DecisionProcedure,matrix/workforce/internal/portfolio.DecisionProcedure.Validate,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.DecisionSchemaVersion,matrix/workforce/internal/portfolio.EvaluationContext,matrix/workforce/internal/portfolio.InitiativeID,matrix/workforce/internal/portfolio.Opportunity,matrix/workforce/internal/portfolio.Opportunity.Validate,matrix/workforce/internal/portfolio.assessment,matrix/workforce/internal/portfolio.context,matrix/workforce/internal/portfolio.decision,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.initiativeID,matrix/workforce/internal/portfolio.nextReview,matrix/workforce/internal/portfolio.now,matrix/workforce/internal/portfolio.opportunity,matrix/workforce/internal/portfolio.procedure,matrix/workforce/internal/portfolio.reason,matrix/workforce/internal/portfolio.receipt,matrix/workforce/internal/portfolio.score,matrix/workforce/internal/portfolio.selectDecision,matrix/workforce/internal/portfolio.thresholds,matrix/workforce/internal/portfolio.validUTC,matrix/workforce/internal/portfolio.weightedScore
-  ^calls=matrix/workforce/internal/portfolio.RankCandidates,matrix/workforce/internal/portfolio.Store.Decide
-  ^references=matrix/workforce/internal/portfolio.RankCandidates,matrix/workforce/internal/portfolio.Store.Decide
   ^defines=matrix/workforce/internal/portfolio/scoring.go
 
 NODE id=matrix/workforce/internal/portfolio.EvaluationContext kind=type
@@ -968,7 +858,6 @@ NODE id=matrix/workforce/internal/portfolio.EvaluationContext kind=type
   doc=EvaluationContext is the current resource state used by deterministic selection.
 EDGES
   contains=matrix/workforce/internal/portfolio.EvaluationContext#ActiveInitiatives,matrix/workforce/internal/portfolio.EvaluationContext#AllocatedCapitalMicrounits,matrix/workforce/internal/portfolio.EvaluationContext#AllocatedRiskMicrounits,matrix/workforce/internal/portfolio.EvaluationContext#ConsecutiveNoEvidenceCycles,matrix/workforce/internal/portfolio.EvaluationContext#Contaminated
-  ^references=matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.RankCandidates,matrix/workforce/internal/portfolio.Store.evaluationContext,matrix/workforce/internal/portfolio.selectDecision
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.EvaluationContext#ActiveInitiatives kind=field
@@ -1008,7 +897,6 @@ NODE id=matrix/workforce/internal/portfolio.FactorScores kind=type
 EDGES
   contains=matrix/workforce/internal/portfolio.FactorScores#CapitalEfficiencyBPS,matrix/workforce/internal/portfolio.FactorScores#DemandStrengthBPS,matrix/workforce/internal/portfolio.FactorScores#ExpectedValueBPS,matrix/workforce/internal/portfolio.FactorScores#LegalSafetyBPS,matrix/workforce/internal/portfolio.FactorScores#MissionFitBPS,matrix/workforce/internal/portfolio.FactorScores#OperatingCapacityBPS,matrix/workforce/internal/portfolio.FactorScores#OpportunityCostBPS,matrix/workforce/internal/portfolio.FactorScores#SecuritySafetyBPS,matrix/workforce/internal/portfolio.FactorScores#TimeToEvidenceBPS,matrix/workforce/internal/portfolio.FactorScores#UncertaintyBPS,matrix/workforce/internal/portfolio.FactorScores#UnitEconomicsBPS,matrix/workforce/internal/portfolio.FactorScores.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  ^references=matrix/workforce/internal/portfolio.Assessment,matrix/workforce/internal/portfolio.FactorScores.Validate,matrix/workforce/internal/portfolio.weightedScore
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.FactorScores#CapitalEfficiencyBPS kind=field
@@ -1082,10 +970,7 @@ NODE id=matrix/workforce/internal/portfolio.FactorScores.Validate kind=method
   sig=func (value FactorScores) Validate() error
   doc=Validate enforces exact basis-point bounds.
 EDGES
-  references=matrix/workforce/internal/portfolio.FactorScores,matrix/workforce/internal/portfolio.item,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.FactorScores
-  ^calls=matrix/workforce/internal/portfolio.Assessment.Validate
-  ^references=matrix/workforce/internal/portfolio.Assessment.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.FactorWeights kind=type
@@ -1095,7 +980,6 @@ NODE id=matrix/workforce/internal/portfolio.FactorWeights kind=type
 EDGES
   contains=matrix/workforce/internal/portfolio.FactorWeights#CapitalEfficiency,matrix/workforce/internal/portfolio.FactorWeights#Certainty,matrix/workforce/internal/portfolio.FactorWeights#DemandStrength,matrix/workforce/internal/portfolio.FactorWeights#ExpectedValue,matrix/workforce/internal/portfolio.FactorWeights#LegalSafety,matrix/workforce/internal/portfolio.FactorWeights#MissionFit,matrix/workforce/internal/portfolio.FactorWeights#OperatingCapacity,matrix/workforce/internal/portfolio.FactorWeights#OpportunityCost,matrix/workforce/internal/portfolio.FactorWeights#SecuritySafety,matrix/workforce/internal/portfolio.FactorWeights#TimeToEvidence,matrix/workforce/internal/portfolio.FactorWeights#UnitEconomics,matrix/workforce/internal/portfolio.FactorWeights.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  ^references=matrix/workforce/internal/companyruntime.DefaultStartDraft,matrix/workforce/internal/companyruntime.StartDraft,matrix/workforce/internal/portfolio.DecisionProcedure,matrix/workforce/internal/portfolio.FactorWeights.Validate,matrix/workforce/internal/portfolio.weightedScore
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.FactorWeights#CapitalEfficiency kind=field
@@ -1169,10 +1053,7 @@ NODE id=matrix/workforce/internal/portfolio.FactorWeights.Validate kind=method
   sig=func (value FactorWeights) Validate() error
   doc=Validate requires weights to total exactly 10000 basis points.
 EDGES
-  references=matrix/workforce/internal/portfolio.FactorWeights,matrix/workforce/internal/portfolio.total,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.FactorWeights
-  ^calls=matrix/workforce/internal/portfolio.DecisionProcedure.Validate
-  ^references=matrix/workforce/internal/portfolio.DecisionProcedure.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.InitiativeID kind=type
@@ -1180,7 +1061,6 @@ NODE id=matrix/workforce/internal/portfolio.InitiativeID kind=type
   sig=type InitiativeID string
   doc=InitiativeID identifies the funded company initiative created by a GO decision.
 EDGES
-  ^references=matrix/workforce/internal/initiative.Blueprint,matrix/workforce/internal/initiative.Initiative,matrix/workforce/internal/initiative.Plan,matrix/workforce/internal/initiative.Store.LoadCurrent,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.Evaluate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.NewController kind=func
@@ -1188,10 +1068,6 @@ NODE id=matrix/workforce/internal/portfolio.NewController kind=func
   sig=func NewController(\n	store *Store,\n	procedure DecisionProcedure,\n	procedurePublicKey ed25519.PublicKey,\n) (*Controller, error)
   doc=NewController binds the controller to one current founder-signed procedure.
 EDGES
-  calls=matrix/workforce/internal/portfolio.VerifyProcedure
-  references=matrix/workforce/internal/portfolio.Controller,matrix/workforce/internal/portfolio.DecisionProcedure,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.VerifyProcedure,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.procedure,matrix/workforce/internal/portfolio.procedurePublicKey,matrix/workforce/internal/portfolio.store
-  ^calls=matrix/workforce/internal/companyruntime.Store.Controller
-  ^references=matrix/workforce/internal/companyruntime.Store.Controller
   ^defines=matrix/workforce/internal/portfolio/controller.go
 
 NODE id=matrix/workforce/internal/portfolio.NewStore kind=func
@@ -1199,10 +1075,6 @@ NODE id=matrix/workforce/internal/portfolio.NewStore kind=func
   sig=func NewStore(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	controllerKeyID string,\n	controllerPrivate ed25519.PrivateKey,\n	now func() time.Time,\n) (*Store, error)
   doc=NewStore constructs a Vault-separated portfolio store. The caller owns the pool.
 EDGES
-  calls=matrix/vault.UserVault.User
-  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.controllerKeyID,matrix/workforce/internal/portfolio.controllerPrivate,matrix/workforce/internal/portfolio.now,matrix/workforce/internal/portfolio.organizationID,matrix/workforce/internal/portfolio.pool,matrix/workforce/internal/portfolio.privateCopy,matrix/workforce/internal/portfolio.publicKey,matrix/workforce/internal/portfolio.tenantID,matrix/workforce/internal/portfolio.userVault
-  ^calls=matrix/workforce/cmd/workforced.runContext
-  ^references=matrix/workforce/cmd/workforced.runContext
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Opportunity kind=type
@@ -1212,8 +1084,6 @@ NODE id=matrix/workforce/internal/portfolio.Opportunity kind=type
 EDGES
   contains=matrix/workforce/internal/portfolio.Opportunity#AuthorSeatID,matrix/workforce/internal/portfolio.Opportunity#CanonicalIdentity,matrix/workforce/internal/portfolio.Opportunity#EstimatedCapitalMicrounits,matrix/workforce/internal/portfolio.Opportunity#Evidence,matrix/workforce/internal/portfolio.Opportunity#ExpiresAt,matrix/workforce/internal/portfolio.Opportunity#ID,matrix/workforce/internal/portfolio.Opportunity#OrganizationID,matrix/workforce/internal/portfolio.Opportunity#ProblemStatement,matrix/workforce/internal/portfolio.Opportunity#ProposedValue,matrix/workforce/internal/portfolio.Opportunity#SchemaVersion,matrix/workforce/internal/portfolio.Opportunity#Signature,matrix/workforce/internal/portfolio.Opportunity#SourceKind,matrix/workforce/internal/portfolio.Opportunity#SourceRecords,matrix/workforce/internal/portfolio.Opportunity#SubmittedAt,matrix/workforce/internal/portfolio.Opportunity#TargetCustomerRecordID,matrix/workforce/internal/portfolio.Opportunity#TimeToEvidenceDays,matrix/workforce/internal/portfolio.Opportunity#Version,matrix/workforce/internal/portfolio.Opportunity.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/portfolio.OpportunityID,matrix/workforce/internal/portfolio.SourceKind
-  ^references=matrix/workforce/internal/portfolio.Candidate,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.Opportunity.Validate,matrix/workforce/internal/portfolio.SignOpportunity,matrix/workforce/internal/portfolio.Store.Submit,matrix/workforce/internal/portfolio.Store.loadOpportunityTx,matrix/workforce/internal/portfolio.Store.prepareOpportunity,matrix/workforce/internal/portfolio.VerifyOpportunity,matrix/workforce/internal/portfolio.nextReview,matrix/workforce/internal/portfolio.opportunitySigningBytes,matrix/workforce/internal/portfolio.selectDecision
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.Opportunity#AuthorSeatID kind=field
@@ -1323,11 +1193,7 @@ NODE id=matrix/workforce/internal/portfolio.Opportunity.Validate kind=method
   sig=func (value Opportunity) Validate() error
   doc=Validate rejects unscoped, unbounded, unsupported, stale, or non-canonical intake.
 EDGES
-  calls=matrix/workforce/internal/companystate.RecordReference.Validate,matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/portfolio.SourceKind.Valid,matrix/workforce/internal/portfolio.validUTC,matrix/workforce/internal/portfolio.validateText,matrix/workforce/internal/portfolio.validateToken
-  references=matrix/workforce/internal/companystate.RecordReference.Validate,matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/portfolio.Opportunity,matrix/workforce/internal/portfolio.OpportunitySchemaVersion,matrix/workforce/internal/portfolio.SourceKind.Valid,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.index,matrix/workforce/internal/portfolio.key,matrix/workforce/internal/portfolio.previousEvidence,matrix/workforce/internal/portfolio.previousRecord,matrix/workforce/internal/portfolio.targetCustomerFound,matrix/workforce/internal/portfolio.validUTC,matrix/workforce/internal/portfolio.validateText,matrix/workforce/internal/portfolio.validateToken,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.Opportunity
-  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.RankCandidates,matrix/workforce/internal/portfolio.VerifyOpportunity
-  ^references=matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.RankCandidates,matrix/workforce/internal/portfolio.VerifyOpportunity
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.OpportunityID kind=type
@@ -1335,7 +1201,6 @@ NODE id=matrix/workforce/internal/portfolio.OpportunityID kind=type
   sig=type OpportunityID string
   doc=OpportunityID identifies one immutable versioned opportunity chain.
 EDGES
-  ^references=matrix/workforce/internal/companyruntime.FundingRequest,matrix/workforce/internal/portfolio.Alternative,matrix/workforce/internal/portfolio.Controller.Decide,matrix/workforce/internal/portfolio.DecideRequest,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.Opportunity,matrix/workforce/internal/portfolio.RankCandidates,matrix/workforce/internal/portfolio.RankedCandidate,matrix/workforce/internal/portfolio.Store.Submit,matrix/workforce/internal/portfolio.Store.loadOpportunityTx,matrix/workforce/internal/portfolio.Store.opportunityAD,matrix/workforce/internal/portfolio.SubmitResult
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.OpportunitySchemaVersion kind=const
@@ -1343,7 +1208,6 @@ NODE id=matrix/workforce/internal/portfolio.OpportunitySchemaVersion kind=const
   sig=untyped string
   doc=OpportunitySchemaVersion is the canonical opportunity wire schema.
 EDGES
-  ^references=matrix/workforce/internal/portfolio.Opportunity.Validate,matrix/workforce/internal/portfolio.Store.opportunityAD
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.ProcedureSchemaVersion kind=const
@@ -1351,7 +1215,6 @@ NODE id=matrix/workforce/internal/portfolio.ProcedureSchemaVersion kind=const
   sig=untyped string
   doc=ProcedureSchemaVersion is the canonical scoring procedure schema.
 EDGES
-  ^references=matrix/workforce/internal/companyruntime.Store.PreviewStart,matrix/workforce/internal/portfolio.DecisionProcedure.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.RankCandidates kind=func
@@ -1359,8 +1222,6 @@ NODE id=matrix/workforce/internal/portfolio.RankCandidates kind=func
   sig=func RankCandidates(\n	candidates []Candidate,\n	procedure DecisionProcedure,\n	context EvaluationContext,\n	now time.Time,\n) ([]RankedCandidate, error)
   doc=RankCandidates compares current opportunities, applies resource consumption\nin score order, and uses opportunity identity as the stable final tie-breaker.
 EDGES
-  calls=matrix/workforce/internal/portfolio.Assessment.Validate,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.Opportunity.Validate,matrix/workforce/internal/portfolio.weightedScore
-  references=matrix/workforce/internal/portfolio.Assessment.Validate,matrix/workforce/internal/portfolio.Candidate,matrix/workforce/internal/portfolio.DecisionGO,matrix/workforce/internal/portfolio.DecisionProcedure,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.EvaluationContext,matrix/workforce/internal/portfolio.Opportunity.Validate,matrix/workforce/internal/portfolio.OpportunityID,matrix/workforce/internal/portfolio.RankedCandidate,matrix/workforce/internal/portfolio.candidate,matrix/workforce/internal/portfolio.candidates,matrix/workforce/internal/portfolio.context,matrix/workforce/internal/portfolio.current,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.exists,matrix/workforce/internal/portfolio.left,matrix/workforce/internal/portfolio.now,matrix/workforce/internal/portfolio.procedure,matrix/workforce/internal/portfolio.receipt,matrix/workforce/internal/portfolio.result,matrix/workforce/internal/portfolio.right,matrix/workforce/internal/portfolio.scored,matrix/workforce/internal/portfolio.seen,matrix/workforce/internal/portfolio.value,matrix/workforce/internal/portfolio.values,matrix/workforce/internal/portfolio.weightedScore
   ^defines=matrix/workforce/internal/portfolio/scoring.go
 
 NODE id=matrix/workforce/internal/portfolio.RankedCandidate kind=type
@@ -1369,8 +1230,6 @@ NODE id=matrix/workforce/internal/portfolio.RankedCandidate kind=type
   doc=RankedCandidate is one deterministic portfolio comparison result.
 EDGES
   contains=matrix/workforce/internal/portfolio.RankedCandidate#Decision,matrix/workforce/internal/portfolio.RankedCandidate#OpportunityID,matrix/workforce/internal/portfolio.RankedCandidate#Reason,matrix/workforce/internal/portfolio.RankedCandidate#ScoreBPS
-  references=matrix/workforce/internal/portfolio.DecisionKind,matrix/workforce/internal/portfolio.OpportunityID
-  ^references=matrix/workforce/internal/portfolio.RankCandidates
   ^defines=matrix/workforce/internal/portfolio/scoring.go
 
 NODE id=matrix/workforce/internal/portfolio.RankedCandidate#Decision kind=field
@@ -1402,8 +1261,6 @@ NODE id=matrix/workforce/internal/portfolio.SignCadence kind=func
   sig=func SignCadence(value *Cadence, keyID string, privateKey ed25519.PrivateKey) error
   doc=SignCadence signs a recurring company cadence with founder authority.
 EDGES
-  calls=matrix/workforce/internal/portfolio.applySignature,matrix/workforce/internal/portfolio.cadenceSigningBytes
-  references=matrix/workforce/internal/portfolio.Cadence,matrix/workforce/internal/portfolio.applySignature,matrix/workforce/internal/portfolio.cadenceSigningBytes,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.payload,matrix/workforce/internal/portfolio.privateKey,matrix/workforce/internal/portfolio.value
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.SignOpportunity kind=func
@@ -1411,8 +1268,6 @@ NODE id=matrix/workforce/internal/portfolio.SignOpportunity kind=func
   sig=func SignOpportunity(value *Opportunity, keyID string, privateKey ed25519.PrivateKey) error
   doc=SignOpportunity signs the complete canonical opportunity with its author key.
 EDGES
-  calls=matrix/workforce/internal/portfolio.applySignature,matrix/workforce/internal/portfolio.opportunitySigningBytes
-  references=matrix/workforce/internal/portfolio.Opportunity,matrix/workforce/internal/portfolio.applySignature,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.opportunitySigningBytes,matrix/workforce/internal/portfolio.payload,matrix/workforce/internal/portfolio.privateKey,matrix/workforce/internal/portfolio.value
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.SignProcedure kind=func
@@ -1420,32 +1275,24 @@ NODE id=matrix/workforce/internal/portfolio.SignProcedure kind=func
   sig=func SignProcedure(value *DecisionProcedure, keyID string, privateKey ed25519.PrivateKey) error
   doc=SignProcedure signs the deterministic portfolio procedure with founder authority.
 EDGES
-  calls=matrix/workforce/internal/portfolio.applySignature,matrix/workforce/internal/portfolio.procedureSigningBytes
-  references=matrix/workforce/internal/portfolio.DecisionProcedure,matrix/workforce/internal/portfolio.applySignature,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.payload,matrix/workforce/internal/portfolio.privateKey,matrix/workforce/internal/portfolio.procedureSigningBytes,matrix/workforce/internal/portfolio.value
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.SourceCustomer kind=const
   digest=b3:36d0fe7b231dc3813f36bde6c9a41a4b5f4c789c80bda82aaa2c9ae211936ed6 file=workforce/internal/portfolio/types.go range=39:39 lang=go exported=true byte_range=1172:1210
   sig=portfolio.SourceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.SourceKind
-  ^references=matrix/workforce/internal/portfolio.SourceKind.Valid
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.SourceFinance kind=const
   digest=b3:0bd3355fd388bcda5fcadd1c8357bb3716b7bc13d1fffb5a46589bb65dd0524d file=workforce/internal/portfolio/types.go range=43:43 lang=go exported=true byte_range=1326:1365
   sig=portfolio.SourceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.SourceKind
-  ^references=matrix/workforce/internal/portfolio.SourceKind.Valid
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.SourceFounder kind=const
   digest=b3:ad227a8ec5c2ae9057dc379bd13249fb58ddc28f8b3199720268ab60bf318567 file=workforce/internal/portfolio/types.go range=37:37 lang=go exported=true byte_range=1093:1130
   sig=portfolio.SourceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.SourceKind
-  ^references=matrix/workforce/internal/portfolio.SourceKind.Valid
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.SourceKind kind=type
@@ -1454,7 +1301,6 @@ NODE id=matrix/workforce/internal/portfolio.SourceKind kind=type
   doc=SourceKind is the closed authority class that introduced an opportunity.
 EDGES
   contains=matrix/workforce/internal/portfolio.SourceKind.Valid
-  ^references=matrix/workforce/internal/portfolio.Opportunity,matrix/workforce/internal/portfolio.SourceCustomer,matrix/workforce/internal/portfolio.SourceFinance,matrix/workforce/internal/portfolio.SourceFounder,matrix/workforce/internal/portfolio.SourceKind.Valid,matrix/workforce/internal/portfolio.SourceLearning,matrix/workforce/internal/portfolio.SourceMarket,matrix/workforce/internal/portfolio.SourceProduct,matrix/workforce/internal/portfolio.SourceResearch,matrix/workforce/internal/portfolio.SourceSales
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.SourceKind.Valid kind=method
@@ -1462,50 +1308,37 @@ NODE id=matrix/workforce/internal/portfolio.SourceKind.Valid kind=method
   sig=func (value SourceKind) Valid() bool
   doc=Valid reports whether the source has a closed company meaning.
 EDGES
-  references=matrix/workforce/internal/portfolio.SourceCustomer,matrix/workforce/internal/portfolio.SourceFinance,matrix/workforce/internal/portfolio.SourceFounder,matrix/workforce/internal/portfolio.SourceKind,matrix/workforce/internal/portfolio.SourceLearning,matrix/workforce/internal/portfolio.SourceMarket,matrix/workforce/internal/portfolio.SourceProduct,matrix/workforce/internal/portfolio.SourceResearch,matrix/workforce/internal/portfolio.SourceSales,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.SourceKind
-  ^calls=matrix/workforce/internal/portfolio.Opportunity.Validate
-  ^references=matrix/workforce/internal/portfolio.Opportunity.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.SourceLearning kind=const
   digest=b3:fe7b6a48e9417bddb948ddb95813bc9e95180b0b2db41c940ba501f5a5dc4d05 file=workforce/internal/portfolio/types.go range=44:44 lang=go exported=true byte_range=1367:1405
   sig=portfolio.SourceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.SourceKind
-  ^references=matrix/workforce/internal/portfolio.SourceKind.Valid
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.SourceMarket kind=const
   digest=b3:b30d3e7e38993e20e232c1508e9c44e6c16634c53a128708025cbd197a8fd483 file=workforce/internal/portfolio/types.go range=40:40 lang=go exported=true byte_range=1212:1248
   sig=portfolio.SourceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.SourceKind
-  ^references=matrix/workforce/internal/portfolio.SourceKind.Valid
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.SourceProduct kind=const
   digest=b3:f56600e04c9e7ae035ab0489fc91e49aea6281b3d70336144f5eef564cc5db95 file=workforce/internal/portfolio/types.go range=41:41 lang=go exported=true byte_range=1250:1287
   sig=portfolio.SourceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.SourceKind
-  ^references=matrix/workforce/internal/portfolio.SourceKind.Valid
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.SourceResearch kind=const
   digest=b3:c139fbf416a5be91c16653d5e97a4346c3d1742715b279a99015e4578b114dcb file=workforce/internal/portfolio/types.go range=38:38 lang=go exported=true byte_range=1132:1170
   sig=portfolio.SourceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.SourceKind
-  ^references=matrix/workforce/internal/portfolio.SourceKind.Valid
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.SourceSales kind=const
   digest=b3:6a7ef740e8f2c26d743e7916610c54e79912b55807d18f173dd0635d70d5bd69 file=workforce/internal/portfolio/types.go range=42:42 lang=go exported=true byte_range=1289:1324
   sig=portfolio.SourceKind
 EDGES
-  references=matrix/workforce/internal/portfolio.SourceKind
-  ^references=matrix/workforce/internal/portfolio.SourceKind.Valid
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.Store kind=type
@@ -1514,8 +1347,6 @@ NODE id=matrix/workforce/internal/portfolio.Store kind=type
   doc=Store owns one tenant and organization's opportunity, portfolio, and cadence state.
 EDGES
   contains=matrix/workforce/internal/portfolio.Store#controllerKeyID,matrix/workforce/internal/portfolio.Store#controllerPrivate,matrix/workforce/internal/portfolio.Store#controllerPublic,matrix/workforce/internal/portfolio.Store#now,matrix/workforce/internal/portfolio.Store#organizationID,matrix/workforce/internal/portfolio.Store#pool,matrix/workforce/internal/portfolio.Store#tenantID,matrix/workforce/internal/portfolio.Store#vault,matrix/workforce/internal/portfolio.Store.ClaimDueCadences,matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.Store.DetectStarvation,matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.Store.RegisterCadence,matrix/workforce/internal/portfolio.Store.Submit,matrix/workforce/internal/portfolio.Store.cadenceAD,matrix/workforce/internal/portfolio.Store.currentTime,matrix/workforce/internal/portfolio.Store.decisionAD,matrix/workforce/internal/portfolio.Store.evaluationContext,matrix/workforce/internal/portfolio.Store.findDecisionIdempotency,matrix/workforce/internal/portfolio.Store.findOpportunityIdempotency,matrix/workforce/internal/portfolio.Store.loadDecisionTx,matrix/workforce/internal/portfolio.Store.loadOpportunityTx,matrix/workforce/internal/portfolio.Store.opportunityAD,matrix/workforce/internal/portfolio.Store.prepareOpportunity,matrix/workforce/internal/portfolio.Store.validateCurrentCompanyStateRefsTx
-  references=matrix/vault.UserVault,matrix/workforce/internal/contracts.OrganizationID
-  ^references=matrix/workforce/internal/companyruntime.Coordinator,matrix/workforce/internal/companyruntime.NewCoordinator,matrix/workforce/internal/companyruntime.NewCoordinatorWithDispatcher,matrix/workforce/internal/companyruntime.NewStore,matrix/workforce/internal/companyruntime.Store,matrix/workforce/internal/portfolio.Controller,matrix/workforce/internal/portfolio.NewController,matrix/workforce/internal/portfolio.NewStore,matrix/workforce/internal/portfolio.Store.ClaimDueCadences,matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.Store.DetectStarvation,matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.Store.RegisterCadence,matrix/workforce/internal/portfolio.Store.Submit,matrix/workforce/internal/portfolio.Store.cadenceAD,matrix/workforce/internal/portfolio.Store.currentTime,matrix/workforce/internal/portfolio.Store.decisionAD,matrix/workforce/internal/portfolio.Store.evaluationContext,matrix/workforce/internal/portfolio.Store.findDecisionIdempotency,matrix/workforce/internal/portfolio.Store.findOpportunityIdempotency,matrix/workforce/internal/portfolio.Store.loadDecisionTx,matrix/workforce/internal/portfolio.Store.loadOpportunityTx,matrix/workforce/internal/portfolio.Store.opportunityAD,matrix/workforce/internal/portfolio.Store.prepareOpportunity,matrix/workforce/internal/portfolio.Store.validateCurrentCompanyStateRefsTx
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store#controllerKeyID kind=field
@@ -1571,11 +1402,7 @@ NODE id=matrix/workforce/internal/portfolio.Store.ClaimDueCadences kind=method
   sig=func (store *Store) ClaimDueCadences(ctx context.Context, limit uint16) ([]DueCadence, error)
   doc=ClaimDueCadences advances and returns due work without accumulating backlog storms.
 EDGES
-  calls=matrix/workforce/internal/portfolio.Store.currentTime
-  references=matrix/workforce/internal/portfolio.DueCadence,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.Store.currentTime,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.interval,matrix/workforce/internal/portfolio.item,matrix/workforce/internal/portfolio.limit,matrix/workforce/internal/portfolio.now,matrix/workforce/internal/portfolio.result,matrix/workforce/internal/portfolio.rows,matrix/workforce/internal/portfolio.seconds,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.tx
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Controller.ClaimCyclePlans
-  ^references=matrix/workforce/internal/portfolio.Controller.ClaimCyclePlans
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.Decide kind=method
@@ -1583,11 +1410,7 @@ NODE id=matrix/workforce/internal/portfolio.Store.Decide kind=method
   sig=func (store *Store) Decide(ctx context.Context, request DecideRequest) (DecisionReceipt, bool, error)
   doc=Decide evaluates and atomically commits a signed portfolio decision and allocation.
 EDGES
-  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.Store.currentTime,matrix/workforce/internal/portfolio.Store.decisionAD,matrix/workforce/internal/portfolio.Store.evaluationContext,matrix/workforce/internal/portfolio.Store.findDecisionIdempotency,matrix/workforce/internal/portfolio.Store.loadOpportunityTx,matrix/workforce/internal/portfolio.Store.validateCurrentCompanyStateRefsTx,matrix/workforce/internal/portfolio.VerifyProcedure,matrix/workforce/internal/portfolio.decisionIncidentKind,matrix/workforce/internal/portfolio.opportunityState,matrix/workforce/internal/portfolio.signDecision
-  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.Alternative,matrix/workforce/internal/portfolio.DecideRequest,matrix/workforce/internal/portfolio.DecisionGO,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.ErrConflict,matrix/workforce/internal/portfolio.ErrUnauthorized,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.Store.currentTime,matrix/workforce/internal/portfolio.Store.decisionAD,matrix/workforce/internal/portfolio.Store.evaluationContext,matrix/workforce/internal/portfolio.Store.findDecisionIdempotency,matrix/workforce/internal/portfolio.Store.loadOpportunityTx,matrix/workforce/internal/portfolio.Store.validateCurrentCompanyStateRefsTx,matrix/workforce/internal/portfolio.VerifyProcedure,matrix/workforce/internal/portfolio.canonical,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.decisionIncidentKind,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.evaluationContext,matrix/workforce/internal/portfolio.existing,matrix/workforce/internal/portfolio.found,matrix/workforce/internal/portfolio.hash,matrix/workforce/internal/portfolio.index,matrix/workforce/internal/portfolio.kind,matrix/workforce/internal/portfolio.left,matrix/workforce/internal/portfolio.lockKey,matrix/workforce/internal/portfolio.now,matrix/workforce/internal/portfolio.opportunity,matrix/workforce/internal/portfolio.opportunityState,matrix/workforce/internal/portfolio.receipt,matrix/workforce/internal/portfolio.request,matrix/workforce/internal/portfolio.right,matrix/workforce/internal/portfolio.sealed,matrix/workforce/internal/portfolio.signDecision,matrix/workforce/internal/portfolio.state,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.sum,matrix/workforce/internal/portfolio.tx
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Controller.Decide
-  ^references=matrix/workforce/internal/portfolio.Controller.Decide
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.DetectStarvation kind=method
@@ -1595,11 +1418,7 @@ NODE id=matrix/workforce/internal/portfolio.Store.DetectStarvation kind=method
   sig=func (store *Store) DetectStarvation(ctx context.Context, maximumAge time.Duration) (int64, error)
   doc=DetectStarvation records founder-visible incidents for opportunities that\nhave remained unresolved beyond the signed operating review window.
 EDGES
-  calls=matrix/workforce/internal/portfolio.Store.currentTime
-  references=matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.Store.currentTime,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.maximumAge,matrix/workforce/internal/portfolio.now,matrix/workforce/internal/portfolio.result,matrix/workforce/internal/portfolio.store
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/companyruntime.Coordinator.RunDue
-  ^references=matrix/workforce/internal/companyruntime.Coordinator.RunDue
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.LoadDecision kind=method
@@ -1607,8 +1426,6 @@ NODE id=matrix/workforce/internal/portfolio.Store.LoadDecision kind=method
   sig=func (store *Store) LoadDecision(ctx context.Context, id DecisionID) (DecisionReceipt, error)
   doc=LoadDecision authenticates and returns one immutable controller-signed decision.
 EDGES
-  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/portfolio.Store.decisionAD,matrix/workforce/internal/portfolio.decisionSigningBytes,matrix/workforce/internal/portfolio.digest,matrix/workforce/internal/portfolio.verifySignature
-  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/portfolio.DecisionID,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.ErrIntegrity,matrix/workforce/internal/portfolio.ErrNotFound,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.Store.decisionAD,matrix/workforce/internal/portfolio.canonical,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.decisionSigningBytes,matrix/workforce/internal/portfolio.digest,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.hash,matrix/workforce/internal/portfolio.id,matrix/workforce/internal/portfolio.payload,matrix/workforce/internal/portfolio.payloadErr,matrix/workforce/internal/portfolio.sealed,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.value,matrix/workforce/internal/portfolio.verifySignature
   ^contains=matrix/workforce/internal/portfolio.Store
   ^defines=matrix/workforce/internal/portfolio/store.go
 
@@ -1617,11 +1434,7 @@ NODE id=matrix/workforce/internal/portfolio.Store.RegisterCadence kind=method
   sig=func (store *Store) RegisterCadence(\n	ctx context.Context,\n	value Cadence,\n	founderPublicKey ed25519.PublicKey,\n) error
   doc=RegisterCadence seals and installs a founder-signed recurring controller cadence.
 EDGES
-  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.Store.cadenceAD,matrix/workforce/internal/portfolio.Store.currentTime,matrix/workforce/internal/portfolio.VerifyCadence,matrix/workforce/internal/portfolio.digest
-  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.Cadence,matrix/workforce/internal/portfolio.ErrConflict,matrix/workforce/internal/portfolio.ErrUnauthorized,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.Store.cadenceAD,matrix/workforce/internal/portfolio.Store.currentTime,matrix/workforce/internal/portfolio.VerifyCadence,matrix/workforce/internal/portfolio.canonical,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.currentHash,matrix/workforce/internal/portfolio.currentVersion,matrix/workforce/internal/portfolio.digest,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.founderPublicKey,matrix/workforce/internal/portfolio.hash,matrix/workforce/internal/portfolio.lockKey,matrix/workforce/internal/portfolio.now,matrix/workforce/internal/portfolio.sealed,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.tx,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/companyruntime.Store.Activate
-  ^references=matrix/workforce/internal/companyruntime.Store.Activate
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.Submit kind=method
@@ -1629,8 +1442,6 @@ NODE id=matrix/workforce/internal/portfolio.Store.Submit kind=method
   sig=func (store *Store) Submit(\n	ctx context.Context,\n	value Opportunity,\n	authorPublicKey ed25519.PublicKey,\n	idempotencyKey string,\n) (SubmitResult, error)
   doc=Submit verifies, seals, deduplicates, versions, and persists an opportunity.
 EDGES
-  calls=matrix/workforce/internal/portfolio.Store.currentTime,matrix/workforce/internal/portfolio.Store.findOpportunityIdempotency,matrix/workforce/internal/portfolio.Store.prepareOpportunity,matrix/workforce/internal/portfolio.Store.validateCurrentCompanyStateRefsTx,matrix/workforce/internal/portfolio.VerifyOpportunity
-  references=matrix/workforce/internal/portfolio.ErrConflict,matrix/workforce/internal/portfolio.ErrUnauthorized,matrix/workforce/internal/portfolio.Opportunity,matrix/workforce/internal/portfolio.OpportunityID,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.Store.currentTime,matrix/workforce/internal/portfolio.Store.findOpportunityIdempotency,matrix/workforce/internal/portfolio.Store.prepareOpportunity,matrix/workforce/internal/portfolio.Store.validateCurrentCompanyStateRefsTx,matrix/workforce/internal/portfolio.SubmitResult,matrix/workforce/internal/portfolio.VerifyOpportunity,matrix/workforce/internal/portfolio.authorPublicKey,matrix/workforce/internal/portfolio.canonical,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.existingHash,matrix/workforce/internal/portfolio.existingID,matrix/workforce/internal/portfolio.existingVersion,matrix/workforce/internal/portfolio.found,matrix/workforce/internal/portfolio.hash,matrix/workforce/internal/portfolio.idempotencyKey,matrix/workforce/internal/portfolio.lockKey,matrix/workforce/internal/portfolio.now,matrix/workforce/internal/portfolio.result,matrix/workforce/internal/portfolio.sealed,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.targetKind,matrix/workforce/internal/portfolio.tx,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.Store
   ^defines=matrix/workforce/internal/portfolio/store.go
 
@@ -1638,116 +1449,77 @@ NODE id=matrix/workforce/internal/portfolio.Store.cadenceAD kind=method
   digest=b3:08b2894ea3c5bf4879f12b9e1b80357420a5900a8de0331966cbce8517406416 file=workforce/internal/portfolio/store.go range=769:773 lang=go exported=false byte_range=30635:30900
   sig=func (store *Store) cadenceAD(id string, version uint64) vault.AD
 EDGES
-  references=matrix/vault.AD,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.id,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.version
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Store.RegisterCadence
-  ^references=matrix/workforce/internal/portfolio.Store.RegisterCadence
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.currentTime kind=method
   digest=b3:c269515c6aac38a71cfc8e181e1595308b6ab2a5bec1a99ca2fe20d33fdd9cf2 file=workforce/internal/portfolio/store.go range=750:756 lang=go exported=false byte_range=29923:30115
   sig=func (store *Store) currentTime() (time.Time, error)
 EDGES
-  calls=matrix/workforce/internal/portfolio.validUTC
-  references=matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.now,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.validUTC
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Store.ClaimDueCadences,matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.Store.DetectStarvation,matrix/workforce/internal/portfolio.Store.RegisterCadence,matrix/workforce/internal/portfolio.Store.Submit
-  ^references=matrix/workforce/internal/portfolio.Store.ClaimDueCadences,matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.Store.DetectStarvation,matrix/workforce/internal/portfolio.Store.RegisterCadence,matrix/workforce/internal/portfolio.Store.Submit
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.decisionAD kind=method
   digest=b3:f50e40f18bdbf1a52512891e6bb3579228cfdfbfbd7540c1de3c0ec0f7e45f40 file=workforce/internal/portfolio/store.go range=764:767 lang=go exported=false byte_range=30407:30633
   sig=func (store *Store) decisionAD(id DecisionID) vault.AD
 EDGES
-  references=matrix/vault.AD,matrix/workforce/internal/portfolio.DecisionID,matrix/workforce/internal/portfolio.DecisionSchemaVersion,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.id,matrix/workforce/internal/portfolio.store
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.Store.loadDecisionTx
-  ^references=matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.Store.loadDecisionTx
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.evaluationContext kind=method
   digest=b3:01e3f37d03df582613c86d9b4cd7db18af99038f2a55369166b82321bf78f372 file=workforce/internal/portfolio/store.go range=530:601 lang=go exported=false byte_range=21573:24976
   sig=func (store *Store) evaluationContext(\n	ctx context.Context,\n	tx pgx.Tx,\n	assessment Assessment,\n	opportunityEvidence []companystate.RecordReference,\n) (EvaluationContext, error)
 EDGES
-  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/portfolio.Assessment,matrix/workforce/internal/portfolio.EvaluationContext,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.activeInitiatives,matrix/workforce/internal/portfolio.allocatedCapital,matrix/workforce/internal/portfolio.allocatedRisk,matrix/workforce/internal/portfolio.assessment,matrix/workforce/internal/portfolio.consecutiveNoEvidence,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.evidenceIDs,matrix/workforce/internal/portfolio.evidenceVersions,matrix/workforce/internal/portfolio.exists,matrix/workforce/internal/portfolio.item,matrix/workforce/internal/portfolio.key,matrix/workforce/internal/portfolio.opportunityEvidence,matrix/workforce/internal/portfolio.result,matrix/workforce/internal/portfolio.seenEvidence,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.tx
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Store.Decide
-  ^references=matrix/workforce/internal/portfolio.Store.Decide
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.findDecisionIdempotency kind=method
   digest=b3:0f4498c77d4c2ad5f69513ca193bf313d51a47decc97b8042a196e673027aac4 file=workforce/internal/portfolio/store.go range=693:711 lang=go exported=false byte_range=28077:28707
   sig=func (store *Store) findDecisionIdempotency(\n	ctx context.Context,\n	tx pgx.Tx,\n	key string,\n) (DecisionReceipt, bool, error)
 EDGES
-  calls=matrix/workforce/internal/portfolio.Store.loadDecisionTx
-  references=matrix/workforce/internal/portfolio.DecisionID,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.Store.loadDecisionTx,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.id,matrix/workforce/internal/portfolio.key,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.tx,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Store.Decide
-  ^references=matrix/workforce/internal/portfolio.Store.Decide
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.findOpportunityIdempotency kind=method
   digest=b3:05b2423ee559a5689a52165cd1ebf98445ce61bc077be6c08fa6704835f22a81 file=workforce/internal/portfolio/store.go range=671:691 lang=go exported=false byte_range=27389:28075
   sig=func (store *Store) findOpportunityIdempotency(\n	ctx context.Context,\n	tx pgx.Tx,\n	key string,\n) (SubmitResult, string, bool, error)
 EDGES
-  references=matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.SubmitResult,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.hash,matrix/workforce/internal/portfolio.key,matrix/workforce/internal/portfolio.result,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.tx
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Store.Submit
-  ^references=matrix/workforce/internal/portfolio.Store.Submit
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.loadDecisionTx kind=method
   digest=b3:34554b5a74f1fc4252d70eda22277c727234f7afa502078fbaa75c380e50f091 file=workforce/internal/portfolio/store.go range=713:735 lang=go exported=false byte_range=28709:29472
   sig=func (store *Store) loadDecisionTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	id DecisionID,\n) (DecisionReceipt, error)
 EDGES
-  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/portfolio.Store.decisionAD,matrix/workforce/internal/portfolio.digest
-  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/portfolio.DecisionID,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.ErrIntegrity,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.Store.decisionAD,matrix/workforce/internal/portfolio.canonical,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.digest,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.hash,matrix/workforce/internal/portfolio.id,matrix/workforce/internal/portfolio.sealed,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.tx,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Store.findDecisionIdempotency
-  ^references=matrix/workforce/internal/portfolio.Store.findDecisionIdempotency
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.loadOpportunityTx kind=method
   digest=b3:0d200919249c5800469489c525930c7c619502b79311389d5bce537d83168e9c file=workforce/internal/portfolio/store.go range=638:669 lang=go exported=false byte_range=26213:27387
   sig=func (store *Store) loadOpportunityTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	id OpportunityID,\n) (Opportunity, error)
 EDGES
-  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/portfolio.Store.opportunityAD,matrix/workforce/internal/portfolio.digest
-  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/portfolio.ErrIntegrity,matrix/workforce/internal/portfolio.ErrNotFound,matrix/workforce/internal/portfolio.Opportunity,matrix/workforce/internal/portfolio.OpportunityID,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.Store.opportunityAD,matrix/workforce/internal/portfolio.canonical,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.digest,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.hash,matrix/workforce/internal/portfolio.id,matrix/workforce/internal/portfolio.sealed,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.tx,matrix/workforce/internal/portfolio.value,matrix/workforce/internal/portfolio.version
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Store.Decide
-  ^references=matrix/workforce/internal/portfolio.Store.Decide
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.opportunityAD kind=method
   digest=b3:209c3d99b03ab76842bc7d7f677059d5b3f397200f38504b9c0a5e1b48ae2c33 file=workforce/internal/portfolio/store.go range=758:762 lang=go exported=false byte_range=30117:30405
   sig=func (store *Store) opportunityAD(id OpportunityID, version uint64) vault.AD
 EDGES
-  references=matrix/vault.AD,matrix/workforce/internal/portfolio.OpportunityID,matrix/workforce/internal/portfolio.OpportunitySchemaVersion,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.id,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.version
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Store.loadOpportunityTx,matrix/workforce/internal/portfolio.Store.prepareOpportunity
-  ^references=matrix/workforce/internal/portfolio.Store.loadOpportunityTx,matrix/workforce/internal/portfolio.Store.prepareOpportunity
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.prepareOpportunity kind=method
   digest=b3:c46bc6f65b8a43e6e6da414ee18ff1ea68f4367398afea699931716176352e3f file=workforce/internal/portfolio/store.go range=737:748 lang=go exported=false byte_range=29474:29921
   sig=func (store *Store) prepareOpportunity(value Opportunity) ([]byte, string, []byte, error)
 EDGES
-  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.Store.opportunityAD,matrix/workforce/internal/portfolio.digest
-  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.Opportunity,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.Store.opportunityAD,matrix/workforce/internal/portfolio.canonical,matrix/workforce/internal/portfolio.digest,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.hash,matrix/workforce/internal/portfolio.sealed,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.value
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Store.Submit
-  ^references=matrix/workforce/internal/portfolio.Store.Submit
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.Store.validateCurrentCompanyStateRefsTx kind=method
   digest=b3:c5774b9814c5b00eaf3b45e05fd076d4b35be679c64643e88f3971b897aabd7f file=workforce/internal/portfolio/store.go range=603:636 lang=go exported=false byte_range=24978:26211
   sig=func (store *Store) validateCurrentCompanyStateRefsTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	references []companystate.RecordReference,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/companystate.RecordReference.Validate
-  references=matrix/workforce/internal/companystate.RecordReference,matrix/workforce/internal/companystate.RecordReference.Validate,matrix/workforce/internal/portfolio.ErrUnauthorized,matrix/workforce/internal/portfolio.Store,matrix/workforce/internal/portfolio.ctx,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.expiresAt,matrix/workforce/internal/portfolio.index,matrix/workforce/internal/portfolio.now,matrix/workforce/internal/portfolio.references,matrix/workforce/internal/portfolio.state,matrix/workforce/internal/portfolio.store,matrix/workforce/internal/portfolio.truthStatus,matrix/workforce/internal/portfolio.tx
   ^contains=matrix/workforce/internal/portfolio.Store
-  ^calls=matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.Store.Submit
-  ^references=matrix/workforce/internal/portfolio.Store.Decide,matrix/workforce/internal/portfolio.Store.Submit
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.SubmitResult kind=type
@@ -1756,8 +1528,6 @@ NODE id=matrix/workforce/internal/portfolio.SubmitResult kind=type
   doc=SubmitResult describes immutable intake or canonical deduplication.
 EDGES
   contains=matrix/workforce/internal/portfolio.SubmitResult#Deduplicated,matrix/workforce/internal/portfolio.SubmitResult#OpportunityID,matrix/workforce/internal/portfolio.SubmitResult#Version
-  references=matrix/workforce/internal/portfolio.OpportunityID
-  ^references=matrix/workforce/internal/portfolio.Store.Submit,matrix/workforce/internal/portfolio.Store.findOpportunityIdempotency
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.SubmitResult#Deduplicated kind=field
@@ -1783,10 +1553,6 @@ NODE id=matrix/workforce/internal/portfolio.VerifyCadence kind=func
   sig=func VerifyCadence(value Cadence, keyID string, publicKey ed25519.PublicKey) error
   doc=VerifyCadence verifies every immutable recurrence and authority field.
 EDGES
-  calls=matrix/workforce/internal/portfolio.Cadence.Validate,matrix/workforce/internal/portfolio.cadenceSigningBytes,matrix/workforce/internal/portfolio.verifySignature
-  references=matrix/workforce/internal/portfolio.Cadence,matrix/workforce/internal/portfolio.Cadence.Validate,matrix/workforce/internal/portfolio.cadenceSigningBytes,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.payload,matrix/workforce/internal/portfolio.publicKey,matrix/workforce/internal/portfolio.value,matrix/workforce/internal/portfolio.verifySignature
-  ^calls=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/portfolio.Store.RegisterCadence
-  ^references=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/portfolio.Store.RegisterCadence
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.VerifyDecision kind=func
@@ -1794,10 +1560,6 @@ NODE id=matrix/workforce/internal/portfolio.VerifyDecision kind=func
   sig=func VerifyDecision(\n	value DecisionReceipt,\n	keyID string,\n	publicKey ed25519.PublicKey,\n) error
   doc=VerifyDecision verifies every portfolio-decision field against its exact\ndecision authority. A structurally valid receipt alone is not authority.
 EDGES
-  calls=matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.decisionSigningBytes,matrix/workforce/internal/portfolio.verifySignature
-  references=matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.decisionSigningBytes,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.payload,matrix/workforce/internal/portfolio.publicKey,matrix/workforce/internal/portfolio.value,matrix/workforce/internal/portfolio.verifySignature
-  ^calls=matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/initiative.Compiler.Compile
-  ^references=matrix/workforce/internal/companyruntime.Store.AuthorizeGate,matrix/workforce/internal/initiative.Compiler.Compile
   ^defines=matrix/workforce/internal/portfolio/decision_verification.go
 
 NODE id=matrix/workforce/internal/portfolio.VerifyOpportunity kind=func
@@ -1805,10 +1567,6 @@ NODE id=matrix/workforce/internal/portfolio.VerifyOpportunity kind=func
   sig=func VerifyOpportunity(value Opportunity, keyID string, publicKey ed25519.PublicKey) error
   doc=VerifyOpportunity verifies author identity and every canonical opportunity field.
 EDGES
-  calls=matrix/workforce/internal/portfolio.Opportunity.Validate,matrix/workforce/internal/portfolio.opportunitySigningBytes,matrix/workforce/internal/portfolio.verifySignature
-  references=matrix/workforce/internal/portfolio.Opportunity,matrix/workforce/internal/portfolio.Opportunity.Validate,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.opportunitySigningBytes,matrix/workforce/internal/portfolio.payload,matrix/workforce/internal/portfolio.publicKey,matrix/workforce/internal/portfolio.value,matrix/workforce/internal/portfolio.verifySignature
-  ^calls=matrix/workforce/internal/portfolio.Store.Submit
-  ^references=matrix/workforce/internal/portfolio.Store.Submit
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.VerifyProcedure kind=func
@@ -1816,186 +1574,120 @@ NODE id=matrix/workforce/internal/portfolio.VerifyProcedure kind=func
   sig=func VerifyProcedure(value DecisionProcedure, keyID string, publicKey ed25519.PublicKey) error
   doc=VerifyProcedure verifies the current founder-signed scoring and limit policy.
 EDGES
-  calls=matrix/workforce/internal/portfolio.DecisionProcedure.Validate,matrix/workforce/internal/portfolio.procedureSigningBytes,matrix/workforce/internal/portfolio.verifySignature
-  references=matrix/workforce/internal/portfolio.DecisionProcedure,matrix/workforce/internal/portfolio.DecisionProcedure.Validate,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.payload,matrix/workforce/internal/portfolio.procedureSigningBytes,matrix/workforce/internal/portfolio.publicKey,matrix/workforce/internal/portfolio.value,matrix/workforce/internal/portfolio.verifySignature
-  ^calls=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/portfolio.NewController,matrix/workforce/internal/portfolio.Store.Decide
-  ^references=matrix/workforce/internal/companyruntime.Store.Activate,matrix/workforce/internal/portfolio.NewController,matrix/workforce/internal/portfolio.Store.Decide
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.applySignature kind=func
   digest=b3:4d74c50c73cd4f9e3d136bdf0f1e7e9bbc520797220543b4123c4bdacadfdccf file=workforce/internal/portfolio/signing.go range=90:109 lang=go exported=false byte_range=3254:3760
   sig=func applySignature(\n	target *contracts.Signature,\n	keyID string,\n	privateKey ed25519.PrivateKey,\n	payload []byte,\n	payloadErr error,\n) error
 EDGES
-  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.payload,matrix/workforce/internal/portfolio.payloadErr,matrix/workforce/internal/portfolio.privateKey,matrix/workforce/internal/portfolio.target
-  ^calls=matrix/workforce/internal/portfolio.SignCadence,matrix/workforce/internal/portfolio.SignOpportunity,matrix/workforce/internal/portfolio.SignProcedure,matrix/workforce/internal/portfolio.signDecision
-  ^references=matrix/workforce/internal/portfolio.SignCadence,matrix/workforce/internal/portfolio.SignOpportunity,matrix/workforce/internal/portfolio.SignProcedure,matrix/workforce/internal/portfolio.signDecision
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.cadenceSigningBytes kind=func
   digest=b3:7a7a27a104ebf4c2d7dc3cf725c53c016376c149c3acdc06af6ba2f942f9e975 file=workforce/internal/portfolio/signing.go range=85:88 lang=go exported=false byte_range=3090:3252
   sig=func cadenceSigningBytes(value Cadence, keyID string) ([]byte, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.signaturePlaceholder
-  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.Cadence,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.signaturePlaceholder,matrix/workforce/internal/portfolio.value
-  ^calls=matrix/workforce/internal/portfolio.SignCadence,matrix/workforce/internal/portfolio.VerifyCadence
-  ^references=matrix/workforce/internal/portfolio.SignCadence,matrix/workforce/internal/portfolio.VerifyCadence
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.cycleCoverage kind=func
   digest=b3:719bd737f673d3bea33eb9e6753fd001176e9a7694056f9aabb3fd060813f7b1 file=workforce/internal/portfolio/controller.go range=115:146 lang=go exported=false byte_range=4220:5938
   sig=func cycleCoverage(kind CadenceKind) ([]contracts.DepartmentKind, []string)
 EDGES
-  references=matrix/workforce/internal/contracts.DepartmentAccounting,matrix/workforce/internal/contracts.DepartmentBackOffice,matrix/workforce/internal/contracts.DepartmentDeveloper,matrix/workforce/internal/contracts.DepartmentExecutive,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.DepartmentLegal,matrix/workforce/internal/contracts.DepartmentMarketing,matrix/workforce/internal/contracts.DepartmentResearch,matrix/workforce/internal/portfolio.CadenceCapital,matrix/workforce/internal/portfolio.CadenceCommercial,matrix/workforce/internal/portfolio.CadenceDiscovery,matrix/workforce/internal/portfolio.CadenceKind,matrix/workforce/internal/portfolio.CadenceLearning,matrix/workforce/internal/portfolio.CadenceOperations,matrix/workforce/internal/portfolio.CadencePortfolio,matrix/workforce/internal/portfolio.CadenceProduct,matrix/workforce/internal/portfolio.capabilities,matrix/workforce/internal/portfolio.departments,matrix/workforce/internal/portfolio.kind
-  ^calls=matrix/workforce/internal/portfolio.Controller.ClaimCyclePlans
-  ^references=matrix/workforce/internal/portfolio.Controller.ClaimCyclePlans
   ^defines=matrix/workforce/internal/portfolio/controller.go
 
 NODE id=matrix/workforce/internal/portfolio.decisionIncidentKind kind=func
   digest=b3:a711fa5aa7d7a8fdba37c0ffde01faee26c8f92e3099e989fe1e15075902758f file=workforce/internal/portfolio/store.go range=795:810 lang=go exported=false byte_range=31326:31836
   sig=func decisionIncidentKind(receipt DecisionReceipt) string
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.receipt
-  ^calls=matrix/workforce/internal/portfolio.Store.Decide
-  ^references=matrix/workforce/internal/portfolio.Store.Decide
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.decisionSigningBytes kind=func
   digest=b3:8bbfe6fe09bae62dae80194bc3d84810f0f152303043c5092efe385f2f9b868b file=workforce/internal/portfolio/signing.go range=80:83 lang=go exported=false byte_range=2917:3088
   sig=func decisionSigningBytes(value DecisionReceipt, keyID string) ([]byte, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.signaturePlaceholder
-  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.signaturePlaceholder,matrix/workforce/internal/portfolio.value
-  ^calls=matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.VerifyDecision,matrix/workforce/internal/portfolio.signDecision
-  ^references=matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.VerifyDecision,matrix/workforce/internal/portfolio.signDecision
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.digest kind=func
   digest=b3:0b01411abafde869f92dc289013457d25d6ab68c26d0b740b1729820609cbdef file=workforce/internal/portfolio/store.go range=775:778 lang=go exported=false byte_range=30902:31002
   sig=func digest(value []byte) string
 EDGES
-  references=matrix/workforce/internal/portfolio.sum,matrix/workforce/internal/portfolio.value
-  ^calls=matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.Store.RegisterCadence,matrix/workforce/internal/portfolio.Store.loadDecisionTx,matrix/workforce/internal/portfolio.Store.loadOpportunityTx,matrix/workforce/internal/portfolio.Store.prepareOpportunity
-  ^references=matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.Store.RegisterCadence,matrix/workforce/internal/portfolio.Store.loadDecisionTx,matrix/workforce/internal/portfolio.Store.loadOpportunityTx,matrix/workforce/internal/portfolio.Store.prepareOpportunity
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.nextReview kind=func
   digest=b3:14f6699760219b5154b8a34da93c2ea25e2ddcbc0301577d2df01fc78c4652e8 file=workforce/internal/portfolio/scoring.go range=202:214 lang=go exported=false byte_range=8082:8486
   sig=func nextReview(decision DecisionKind, opportunity Opportunity, now time.Time) time.Time
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionEscalate,matrix/workforce/internal/portfolio.DecisionKind,matrix/workforce/internal/portfolio.DecisionNO_GO,matrix/workforce/internal/portfolio.DecisionPause,matrix/workforce/internal/portfolio.DecisionReject,matrix/workforce/internal/portfolio.DecisionTerminate,matrix/workforce/internal/portfolio.Opportunity,matrix/workforce/internal/portfolio.days,matrix/workforce/internal/portfolio.decision,matrix/workforce/internal/portfolio.now,matrix/workforce/internal/portfolio.opportunity
-  ^calls=matrix/workforce/internal/portfolio.Evaluate
-  ^references=matrix/workforce/internal/portfolio.Evaluate
   ^defines=matrix/workforce/internal/portfolio/scoring.go
 
 NODE id=matrix/workforce/internal/portfolio.opportunitySigningBytes kind=func
   digest=b3:9e4901563197dd807388475875e5eea00433c2e8f6766e6bf0e3a90fb3a3b9f9 file=workforce/internal/portfolio/signing.go range=70:73 lang=go exported=false byte_range=2569:2739
   sig=func opportunitySigningBytes(value Opportunity, keyID string) ([]byte, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.signaturePlaceholder
-  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.Opportunity,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.signaturePlaceholder,matrix/workforce/internal/portfolio.value
-  ^calls=matrix/workforce/internal/portfolio.SignOpportunity,matrix/workforce/internal/portfolio.VerifyOpportunity
-  ^references=matrix/workforce/internal/portfolio.SignOpportunity,matrix/workforce/internal/portfolio.VerifyOpportunity
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.opportunityState kind=func
   digest=b3:7ce2386bb2c80397e8722eb9c68f741ecfdade26f78c147a6f969ba4a15a7eb2 file=workforce/internal/portfolio/store.go range=780:793 lang=go exported=false byte_range=31004:31324
   sig=func opportunityState(decision DecisionKind) string
 EDGES
-  references=matrix/workforce/internal/portfolio.DecisionEscalate,matrix/workforce/internal/portfolio.DecisionGO,matrix/workforce/internal/portfolio.DecisionKind,matrix/workforce/internal/portfolio.DecisionNO_GO,matrix/workforce/internal/portfolio.DecisionPause,matrix/workforce/internal/portfolio.DecisionReject,matrix/workforce/internal/portfolio.DecisionTerminate,matrix/workforce/internal/portfolio.DecisionValidate,matrix/workforce/internal/portfolio.decision
-  ^calls=matrix/workforce/internal/portfolio.Store.Decide
-  ^references=matrix/workforce/internal/portfolio.Store.Decide
   ^defines=matrix/workforce/internal/portfolio/store.go
 
 NODE id=matrix/workforce/internal/portfolio.procedureSigningBytes kind=func
   digest=b3:9500678312eecfad8f405461f7928edfb66f9a4e3c72f5d6e79952534b71b095 file=workforce/internal/portfolio/signing.go range=75:78 lang=go exported=false byte_range=2741:2915
   sig=func procedureSigningBytes(value DecisionProcedure, keyID string) ([]byte, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.signaturePlaceholder
-  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/portfolio.DecisionProcedure,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.signaturePlaceholder,matrix/workforce/internal/portfolio.value
-  ^calls=matrix/workforce/internal/portfolio.SignProcedure,matrix/workforce/internal/portfolio.VerifyProcedure
-  ^references=matrix/workforce/internal/portfolio.SignProcedure,matrix/workforce/internal/portfolio.VerifyProcedure
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.selectDecision kind=func
   digest=b3:79e0976634616214ccfadde261dc52ebf9de1ebb870a1f63bf7199088ff9ce46 file=workforce/internal/portfolio/scoring.go range=167:200 lang=go exported=false byte_range=6203:8080
   sig=func selectDecision(\n	opportunity Opportunity,\n	assessment Assessment,\n	procedure DecisionProcedure,\n	context EvaluationContext,\n	score uint16,\n) (DecisionKind, string)
 EDGES
-  references=matrix/workforce/internal/portfolio.Assessment,matrix/workforce/internal/portfolio.DecisionDefer,matrix/workforce/internal/portfolio.DecisionEscalate,matrix/workforce/internal/portfolio.DecisionGO,matrix/workforce/internal/portfolio.DecisionKind,matrix/workforce/internal/portfolio.DecisionNO_GO,matrix/workforce/internal/portfolio.DecisionPause,matrix/workforce/internal/portfolio.DecisionProcedure,matrix/workforce/internal/portfolio.DecisionReject,matrix/workforce/internal/portfolio.DecisionValidate,matrix/workforce/internal/portfolio.EvaluationContext,matrix/workforce/internal/portfolio.Opportunity,matrix/workforce/internal/portfolio.assessment,matrix/workforce/internal/portfolio.context,matrix/workforce/internal/portfolio.opportunity,matrix/workforce/internal/portfolio.procedure,matrix/workforce/internal/portfolio.score
-  ^calls=matrix/workforce/internal/portfolio.Evaluate
-  ^references=matrix/workforce/internal/portfolio.Evaluate
   ^defines=matrix/workforce/internal/portfolio/scoring.go
 
 NODE id=matrix/workforce/internal/portfolio.signDecision kind=func
   digest=b3:0be1b9ccf045e302e75a5a5ef9f36cee7e35cc34b11105167c619c627c41c8d8 file=workforce/internal/portfolio/signing.go range=65:68 lang=go exported=false byte_range=2344:2567
   sig=func signDecision(value *DecisionReceipt, keyID string, privateKey ed25519.PrivateKey) error
 EDGES
-  calls=matrix/workforce/internal/portfolio.applySignature,matrix/workforce/internal/portfolio.decisionSigningBytes
-  references=matrix/workforce/internal/portfolio.DecisionReceipt,matrix/workforce/internal/portfolio.applySignature,matrix/workforce/internal/portfolio.decisionSigningBytes,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.payload,matrix/workforce/internal/portfolio.privateKey,matrix/workforce/internal/portfolio.value
-  ^calls=matrix/workforce/internal/portfolio.Store.Decide
-  ^references=matrix/workforce/internal/portfolio.Store.Decide
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.signaturePlaceholder kind=func
   digest=b3:53f6ab62e1c4202a0ef6c778a92580130f7e9fd692effa355c22fc306675f993 file=workforce/internal/portfolio/signing.go range=132:138 lang=go exported=false byte_range=4350:4577
   sig=func signaturePlaceholder(keyID string) contracts.Signature
 EDGES
-  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/portfolio.keyID
-  ^calls=matrix/workforce/internal/portfolio.cadenceSigningBytes,matrix/workforce/internal/portfolio.decisionSigningBytes,matrix/workforce/internal/portfolio.opportunitySigningBytes,matrix/workforce/internal/portfolio.procedureSigningBytes
-  ^references=matrix/workforce/internal/portfolio.cadenceSigningBytes,matrix/workforce/internal/portfolio.decisionSigningBytes,matrix/workforce/internal/portfolio.opportunitySigningBytes,matrix/workforce/internal/portfolio.procedureSigningBytes
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.sortedUniqueText kind=func
   digest=b3:6602480bb6cd5fbd12d6da1e9c757e4ab7afdde32a0a5cb86ffe50ae357f80e5 file=workforce/internal/portfolio/types.go range=477:490 lang=go exported=false byte_range=21187:21495
   sig=func sortedUniqueText(values []string) bool
 EDGES
-  references=matrix/workforce/internal/portfolio.index,matrix/workforce/internal/portfolio.value,matrix/workforce/internal/portfolio.values
-  ^calls=matrix/workforce/internal/portfolio.Assessment.Validate,matrix/workforce/internal/portfolio.CyclePlan.Validate,matrix/workforce/internal/portfolio.DecisionProcedure.Validate,matrix/workforce/internal/portfolio.DecisionReceipt.Validate
-  ^references=matrix/workforce/internal/portfolio.Assessment.Validate,matrix/workforce/internal/portfolio.CyclePlan.Validate,matrix/workforce/internal/portfolio.DecisionProcedure.Validate,matrix/workforce/internal/portfolio.DecisionReceipt.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.validUTC kind=func
   digest=b3:a0beee5b6bbe8dd3ff5ef521bfd147e9b7a7c4ce79ae888de69822b6d3078f75 file=workforce/internal/portfolio/types.go range=492:494 lang=go exported=false byte_range=21497:21592
   sig=func validUTC(value time.Time) bool
 EDGES
-  references=matrix/workforce/internal/portfolio.value
-  ^calls=matrix/workforce/internal/portfolio.Assessment.Validate,matrix/workforce/internal/portfolio.Cadence.Validate,matrix/workforce/internal/portfolio.CyclePlan.Validate,matrix/workforce/internal/portfolio.DecisionProcedure.Validate,matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.Opportunity.Validate,matrix/workforce/internal/portfolio.Store.currentTime
-  ^references=matrix/workforce/internal/portfolio.Assessment.Validate,matrix/workforce/internal/portfolio.Cadence.Validate,matrix/workforce/internal/portfolio.CyclePlan.Validate,matrix/workforce/internal/portfolio.DecisionProcedure.Validate,matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.Opportunity.Validate,matrix/workforce/internal/portfolio.Store.currentTime
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.validateText kind=func
   digest=b3:ebc5c642fb8a52808af8f1e89ae5c7402919f6e3d324698a8bbc3e8ccbda64a6 file=workforce/internal/portfolio/types.go range=470:475 lang=go exported=false byte_range=20970:21185
   sig=func validateText(name, value string, maximum int) error
 EDGES
-  references=matrix/workforce/internal/portfolio.maximum,matrix/workforce/internal/portfolio.name,matrix/workforce/internal/portfolio.value
-  ^calls=matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.Opportunity.Validate
-  ^references=matrix/workforce/internal/portfolio.DecisionReceipt.Validate,matrix/workforce/internal/portfolio.Opportunity.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.validateToken kind=func
   digest=b3:902b29e32c9d9b8f26793eaccb5a50c747697fe30ebcab14023e0f526614d559 file=workforce/internal/portfolio/types.go range=455:468 lang=go exported=false byte_range=20465:20968
   sig=func validateToken(name, value string) error
 EDGES
-  references=matrix/workforce/internal/portfolio.character,matrix/workforce/internal/portfolio.name,matrix/workforce/internal/portfolio.value
-  ^calls=matrix/workforce/internal/portfolio.Opportunity.Validate
-  ^references=matrix/workforce/internal/portfolio.Opportunity.Validate
   ^defines=matrix/workforce/internal/portfolio/types.go
 
 NODE id=matrix/workforce/internal/portfolio.verifySignature kind=func
   digest=b3:82ec01b90c3a25c4d3d8166cc323060809c990ab2ff3ed9054c3666a37a21514 file=workforce/internal/portfolio/signing.go range=111:130 lang=go exported=false byte_range=3762:4348
   sig=func verifySignature(\n	signature contracts.Signature,\n	keyID string,\n	publicKey ed25519.PublicKey,\n	payload []byte,\n	payloadErr error,\n) error
 EDGES
-  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/portfolio.decoded,matrix/workforce/internal/portfolio.err,matrix/workforce/internal/portfolio.keyID,matrix/workforce/internal/portfolio.payload,matrix/workforce/internal/portfolio.payloadErr,matrix/workforce/internal/portfolio.publicKey,matrix/workforce/internal/portfolio.signature
-  ^calls=matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.VerifyCadence,matrix/workforce/internal/portfolio.VerifyDecision,matrix/workforce/internal/portfolio.VerifyOpportunity,matrix/workforce/internal/portfolio.VerifyProcedure
-  ^references=matrix/workforce/internal/portfolio.Store.LoadDecision,matrix/workforce/internal/portfolio.VerifyCadence,matrix/workforce/internal/portfolio.VerifyDecision,matrix/workforce/internal/portfolio.VerifyOpportunity,matrix/workforce/internal/portfolio.VerifyProcedure
   ^defines=matrix/workforce/internal/portfolio/signing.go
 
 NODE id=matrix/workforce/internal/portfolio.weightedScore kind=func
   digest=b3:fcda755bb06917d0e36c110f7ca7e01a9420d76817e27457028d5d1e7d0f5624 file=workforce/internal/portfolio/scoring.go range=151:165 lang=go exported=false byte_range=5308:6201
   sig=func weightedScore(scores FactorScores, weights FactorWeights) uint16
 EDGES
-  references=matrix/workforce/internal/portfolio.FactorScores,matrix/workforce/internal/portfolio.FactorWeights,matrix/workforce/internal/portfolio.certainty,matrix/workforce/internal/portfolio.scores,matrix/workforce/internal/portfolio.weighted,matrix/workforce/internal/portfolio.weights
-  ^calls=matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.RankCandidates
-  ^references=matrix/workforce/internal/portfolio.Evaluate,matrix/workforce/internal/portfolio.RankCandidates
   ^defines=matrix/workforce/internal/portfolio/scoring.go
 
 NODE id=matrix/workforce/internal/portfolio/controller.go kind=file

@@ -1,19 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/mcl/mtx/validator kind=package
   digest=b3:4459131b32adbea64ccf75e4151fd5f898084eeddb2be837a3ff4a9fc24eb0ce file=MCL/mtx/validator range=0:0 lang=go exported=true
 EDGES
   contains=matrix/mcl/mtx/validator/validator.go
-  imports=matrix/mcl/ir,matrix/mcl/mtx/ast,matrix/mcl/mtx/interpreter,matrix/mcl/mtx/token
   ^contains=mod:matrix/mcl
-  ^imports=matrix/bridge/cmd/mclc-cortex,matrix/executor/cmd/mcl-e2e,matrix/executor/runtime,matrix/mcl/cmd/mclc
 
 NODE id=matrix/mcl/mtx/validator.D7ClosedVerbs kind=var
   digest=b3:6f2b664a97b05e180e3cb95a37398262a00742f43e5a96402e36dd755502d5a0 file=MCL/mtx/validator/validator.go range=41:46 lang=go exported=true byte_range=1807:2078
   sig=map[string]bool
   doc=D7ClosedVerbs is the set of 10 closed verbs (D7 decision).
 EDGES
-  ^references=matrix/mcl/mtx/validator.validator.checkVerb
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.Error kind=type
@@ -22,8 +19,6 @@ NODE id=matrix/mcl/mtx/validator.Error kind=type
   doc=Error is a validation error at a specific source position.
 EDGES
   contains=matrix/mcl/mtx/validator.Error#Msg,matrix/mcl/mtx/validator.Error#Pos,matrix/mcl/mtx/validator.Error#Rule,matrix/mcl/mtx/validator.Error.Error
-  references=matrix/mcl/mtx/token.Pos
-  ^references=matrix/mcl/cmd/mclc.cmdValidate,matrix/mcl/mtx/validator.Error.Error,matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.errorf
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.Error#Msg kind=field
@@ -48,7 +43,6 @@ NODE id=matrix/mcl/mtx/validator.Error.Error kind=method
   digest=b3:da9126e70eb45e8992af35bbe95909fe1aaf70c17bb531688e7e1ea921333e43 file=MCL/mtx/validator/validator.go range=70:72 lang=go exported=true byte_range=2785:2877
   sig=func (e *Error) Error() string
 EDGES
-  references=matrix/mcl/mtx/validator.Error,matrix/mcl/mtx/validator.e
   ^contains=matrix/mcl/mtx/validator.Error
   ^defines=matrix/mcl/mtx/validator/validator.go
 
@@ -57,7 +51,6 @@ NODE id=matrix/mcl/mtx/validator.RequiredSkillSections kind=var
   sig=[]string
   doc=RequiredSkillSections is the set of sections a SKILL.mtx must contain.
 EDGES
-  ^references=matrix/mcl/mtx/validator.validator.rule1RequiredSections
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.ValidFailureReasons kind=var
@@ -65,7 +58,6 @@ NODE id=matrix/mcl/mtx/validator.ValidFailureReasons kind=var
   sig=map[string]bool
   doc=ValidFailureReasons is the set of known failure reasons (spec §9.2).
 EDGES
-  ^references=matrix/mcl/mtx/validator.validator.rule8FailureReasons
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.ValidateCore kind=func
@@ -73,10 +65,6 @@ NODE id=matrix/mcl/mtx/validator.ValidateCore kind=func
   sig=func ValidateCore(file *ast.File) []*Error
   doc=ValidateCore runs a subset of rules applicable to core .mtx files.
 EDGES
-  calls=matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames,matrix/mcl/mtx/validator.validator.rule7PromptRoles
-  references=matrix/mcl/mtx/ast.File,matrix/mcl/mtx/validator.Error,matrix/mcl/mtx/validator.file,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames,matrix/mcl/mtx/validator.validator.rule7PromptRoles
-  ^calls=matrix/mcl/cmd/mclc.cmdValidate
-  ^references=matrix/mcl/cmd/mclc.cmdValidate
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.ValidateSkill kind=func
@@ -84,10 +72,6 @@ NODE id=matrix/mcl/mtx/validator.ValidateSkill kind=func
   sig=func ValidateSkill(file *ast.File) []*Error
   doc=ValidateSkill runs all 12 validation rules on a SKILL.mtx AST.\nReturns nil if valid.
 EDGES
-  calls=matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.rule1RequiredSections,matrix/mcl/mtx/validator.validator.rule2VerbVocab,matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames,matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots,matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots,matrix/mcl/mtx/validator.validator.rule7PromptRoles,matrix/mcl/mtx/validator.validator.rule8FailureReasons,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs
-  references=matrix/mcl/mtx/ast.File,matrix/mcl/mtx/validator.Error,matrix/mcl/mtx/validator.file,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.rule1RequiredSections,matrix/mcl/mtx/validator.validator.rule2VerbVocab,matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames,matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots,matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots,matrix/mcl/mtx/validator.validator.rule7PromptRoles,matrix/mcl/mtx/validator.validator.rule8FailureReasons,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs
-  ^calls=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/runtime.SkillLoader.Load,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.cmdValidate
-  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/runtime.SkillLoader.Load,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.cmdValidate
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.isVersionPinned kind=func
@@ -95,9 +79,6 @@ NODE id=matrix/mcl/mtx/validator.isVersionPinned kind=func
   sig=func isVersionPinned(uri string) bool
   doc=isVersionPinned checks if a matrix:// URI contains @semver or @sha256:.
 EDGES
-  references=matrix/mcl/mtx/validator.atIdx,matrix/mcl/mtx/validator.uri,matrix/mcl/mtx/validator.version
-  ^calls=matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs
-  ^references=matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator kind=type
@@ -105,8 +86,6 @@ NODE id=matrix/mcl/mtx/validator.validator kind=type
   sig=type validator struct {\n	file	*ast.File\n	errors	[]*Error\n}
 EDGES
   contains=matrix/mcl/mtx/validator.validator#errors,matrix/mcl/mtx/validator.validator#file,matrix/mcl/mtx/validator.validator.checkVerb,matrix/mcl/mtx/validator.validator.collectInputSlots,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.findSection,matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.rule1RequiredSections,matrix/mcl/mtx/validator.validator.rule2VerbVocab,matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames,matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots,matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots,matrix/mcl/mtx/validator.validator.rule7PromptRoles,matrix/mcl/mtx/validator.validator.rule8FailureReasons,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs,matrix/mcl/mtx/validator.validator.walkEntries,matrix/mcl/mtx/validator.validator.walkEntry
-  references=matrix/mcl/mtx/ast.File,matrix/mcl/mtx/validator.Error
-  ^references=matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill,matrix/mcl/mtx/validator.validator.checkVerb,matrix/mcl/mtx/validator.validator.collectInputSlots,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.findSection,matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.rule1RequiredSections,matrix/mcl/mtx/validator.validator.rule2VerbVocab,matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames,matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots,matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots,matrix/mcl/mtx/validator.validator.rule7PromptRoles,matrix/mcl/mtx/validator.validator.rule8FailureReasons,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs,matrix/mcl/mtx/validator.validator.walkEntries,matrix/mcl/mtx/validator.validator.walkEntry
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator#errors kind=field
@@ -125,42 +104,28 @@ NODE id=matrix/mcl/mtx/validator.validator.checkVerb kind=method
   digest=b3:e11a0085eeaf3bf40900041057e1d20e2a301336455e7ab2924906b22e1d2c69 file=MCL/mtx/validator/validator.go range=166:174 lang=go exported=false byte_range=4951:5177
   sig=func (v *validator) checkVerb(verb string, pos token.Pos)
 EDGES
-  calls=matrix/mcl/mtx/validator.validator.errorf
-  references=matrix/mcl/mtx/token.Pos,matrix/mcl/mtx/validator.D7ClosedVerbs,matrix/mcl/mtx/validator.pos,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.verb
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.validator.rule2VerbVocab
-  ^references=matrix/mcl/mtx/validator.validator.rule2VerbVocab
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.collectInputSlots kind=method
   digest=b3:d7211ad7f712d469fecf232f7012e16504db655d109e3d52d03c56271b4a46fc file=MCL/mtx/validator/validator.go range=388:402 lang=go exported=false byte_range=11213:11515
   sig=func (v *validator) collectInputSlots() map[string]bool
 EDGES
-  calls=matrix/mcl/mtx/validator.validator.findSection
-  references=matrix/mcl/mtx/ast.SlotDecl,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.inputs,matrix/mcl/mtx/validator.ok,matrix/mcl/mtx/validator.sd,matrix/mcl/mtx/validator.slots,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.findSection
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots,matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots
-  ^references=matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots,matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.errorf kind=method
   digest=b3:cba110f29bb88b660fa84e7d8a77f6896d5a922eeac27ec30aa7b3cda5fcf2ed file=MCL/mtx/validator/validator.go range=107:113 lang=go exported=false byte_range=3692:3889
   sig=func (v *validator) errorf(pos token.Pos, rule int, format string, args ...interface{})
 EDGES
-  references=matrix/mcl/mtx/token.Pos,matrix/mcl/mtx/validator.Error,matrix/mcl/mtx/validator.args,matrix/mcl/mtx/validator.format,matrix/mcl/mtx/validator.pos,matrix/mcl/mtx/validator.rule,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.validator.checkVerb,matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule1RequiredSections,matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames,matrix/mcl/mtx/validator.validator.rule8FailureReasons,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs
-  ^references=matrix/mcl/mtx/validator.validator.checkVerb,matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.rule1RequiredSections,matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames,matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots,matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots,matrix/mcl/mtx/validator.validator.rule7PromptRoles,matrix/mcl/mtx/validator.validator.rule8FailureReasons,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.findSection kind=method
   digest=b3:86718d7c392fac1af84f5c6d9ca852fcf91b04c7ac5502dc79d538b7543e3702 file=MCL/mtx/validator/validator.go range=115:122 lang=go exported=false byte_range=3891:4048
   sig=func (v *validator) findSection(name string) *ast.Section
 EDGES
-  references=matrix/mcl/mtx/ast.Section,matrix/mcl/mtx/validator.name,matrix/mcl/mtx/validator.sec,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.validator.collectInputSlots,matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule2VerbVocab,matrix/mcl/mtx/validator.validator.rule8FailureReasons,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs
-  ^references=matrix/mcl/mtx/validator.validator.collectInputSlots,matrix/mcl/mtx/validator.validator.rule10ToolURIs,matrix/mcl/mtx/validator.validator.rule2VerbVocab,matrix/mcl/mtx/validator.validator.rule8FailureReasons,matrix/mcl/mtx/validator.validator.rule9SubSkillURIs
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.rule10ToolURIs kind=method
@@ -168,11 +133,7 @@ NODE id=matrix/mcl/mtx/validator.validator.rule10ToolURIs kind=method
   sig=func (v *validator) rule10ToolURIs()
   doc=rule10: §TOOLS URIs must be version-pinned.
 EDGES
-  calls=matrix/mcl/mtx/ast.RefEntry.Pos,matrix/mcl/mtx/validator.isVersionPinned,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.findSection
-  references=matrix/mcl/mtx/ast.RefEntry,matrix/mcl/mtx/ast.RefEntry.Pos,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.isVersionPinned,matrix/mcl/mtx/validator.ok,matrix/mcl/mtx/validator.re,matrix/mcl/mtx/validator.sec,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.findSection
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.ValidateSkill
-  ^references=matrix/mcl/mtx/validator.ValidateSkill
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind kind=method
@@ -180,11 +141,7 @@ NODE id=matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind kind=method
   sig=func (v *validator) rule11OnBlockStepKind()
   doc=rule11: on-block `kind = "<value>"` KVPair value must be in the\nclosed ir.ValidStepKinds enum. Empty/absent is allowed (defaults to\n"reason" at executor time). Session 31b model router · P2b.\n\nWhy this lives at validator-time:\n  - Wrong kind silently routes to KindReason (the registry's executor\n    fallback), which makes the bug invisible at run time. Loud failure\n    here means CI catches the typo before the skill ships.\n  - The enum is closed (ir.StepKindNames), so a misspelled "writing"\n    is unambiguously wrong; no judgment call needed.\n  - Value types other than string/identifier (int, bool, list, URI)\n    are unambiguously wrong too — the interpreter would silently\n    ignore them via ExtractKindValue's nil return.
 EDGES
-  calls=matrix/mcl/mtx/validator.validator.walkEntries
-  references=matrix/mcl/ir.StepKindNames,matrix/mcl/ir.ValidStepKinds,matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.KVPair,matrix/mcl/mtx/ast.KVPair.Pos,matrix/mcl/mtx/ast.OnBlock,matrix/mcl/mtx/interpreter.ExtractKindValue,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.kv,matrix/mcl/mtx/validator.ob,matrix/mcl/mtx/validator.ok,matrix/mcl/mtx/validator.sub,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.val,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.walkEntries
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill
-  ^references=matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality kind=method
@@ -192,11 +149,7 @@ NODE id=matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality kind=m
   sig=func (v *validator) rule12OnBlockOutputCardinality()
   doc=rule12: on-block `output_cardinality = <int>` KVPair value must be\na strictly positive integer literal. Empty/absent is allowed and\nleaves the planner free to choose a plan shape. Session 31c model\nrouter P3c.\n\nRationale (mirrors rule 11's posture):\n  - The hint is consumed by the planner system prompt; a malformed\n    value silently produces no hint, which makes the bug invisible\n    at run time. Loud failure here surfaces the typo at CI time.\n  - Zero / negative values are unambiguously wrong (a skill cannot\n    produce "-1 outputs"); we reject them rather than coerce.\n  - Non-integer types (string, ident, float, bool, list, URI) are\n    all unambiguously wrong; the interpreter's ExtractPositiveIntValue\n    ignores them silently, so we surface them as validator errors.
 EDGES
-  calls=matrix/mcl/mtx/validator.validator.walkEntries
-  references=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.IntValue,matrix/mcl/mtx/ast.KVPair,matrix/mcl/mtx/ast.KVPair.Pos,matrix/mcl/mtx/ast.OnBlock,matrix/mcl/mtx/interpreter.ExtractPositiveIntValue,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.iv,matrix/mcl/mtx/validator.kv,matrix/mcl/mtx/validator.ob,matrix/mcl/mtx/validator.ok,matrix/mcl/mtx/validator.sub,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.walkEntries
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill
-  ^references=matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.rule1RequiredSections kind=method
@@ -204,11 +157,7 @@ NODE id=matrix/mcl/mtx/validator.validator.rule1RequiredSections kind=method
   sig=func (v *validator) rule1RequiredSections()
   doc=rule1: §SKILL files must contain the 8 required sections.
 EDGES
-  calls=matrix/mcl/mtx/ast.File.Pos,matrix/mcl/mtx/validator.validator.errorf
-  references=matrix/mcl/mtx/ast.File.Pos,matrix/mcl/mtx/validator.RequiredSkillSections,matrix/mcl/mtx/validator.present,matrix/mcl/mtx/validator.req,matrix/mcl/mtx/validator.sec,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.errorf
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.ValidateSkill
-  ^references=matrix/mcl/mtx/validator.ValidateSkill
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.rule2VerbVocab kind=method
@@ -216,11 +165,7 @@ NODE id=matrix/mcl/mtx/validator.validator.rule2VerbVocab kind=method
   sig=func (v *validator) rule2VerbVocab()
   doc=rule2: mcl.verbs entries must be D7 closed set or x: prefixed.
 EDGES
-  calls=matrix/mcl/mtx/ast.KVPair.Pos,matrix/mcl/mtx/validator.validator.checkVerb,matrix/mcl/mtx/validator.validator.findSection
-  references=matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.KVPair,matrix/mcl/mtx/ast.KVPair.Pos,matrix/mcl/mtx/ast.SpaceListValue,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.key,matrix/mcl/mtx/validator.kv,matrix/mcl/mtx/validator.ok,matrix/mcl/mtx/validator.skill,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.val,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.checkVerb,matrix/mcl/mtx/validator.validator.findSection,matrix/mcl/mtx/validator.verb
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.ValidateSkill
-  ^references=matrix/mcl/mtx/validator.ValidateSkill
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames kind=method
@@ -228,11 +173,7 @@ NODE id=matrix/mcl/mtx/validator.validator.rule4UniqueSlotNames kind=method
   sig=func (v *validator) rule4UniqueSlotNames()
   doc=rule4: slot names unique within a section.
 EDGES
-  calls=matrix/mcl/mtx/ast.SlotDecl.Pos,matrix/mcl/mtx/validator.validator.errorf
-  references=matrix/mcl/mtx/ast.SlotDecl,matrix/mcl/mtx/ast.SlotDecl.Pos,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.ok,matrix/mcl/mtx/validator.sd,matrix/mcl/mtx/validator.sec,matrix/mcl/mtx/validator.seen,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.errorf
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill
-  ^references=matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots kind=method
@@ -240,11 +181,7 @@ NODE id=matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots kind=metho
   sig=func (v *validator) rule5ResolveRefsInputSlots()
   doc=rule5: every resolve statement names a slot declared in §INPUTS.
 EDGES
-  calls=matrix/mcl/mtx/validator.validator.collectInputSlots,matrix/mcl/mtx/validator.validator.walkEntries
-  references=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.ResolveStmt,matrix/mcl/mtx/ast.ResolveStmt.Pos,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.inputSlots,matrix/mcl/mtx/validator.ok,matrix/mcl/mtx/validator.rs,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.collectInputSlots,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.walkEntries
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.ValidateSkill
-  ^references=matrix/mcl/mtx/validator.ValidateSkill
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots kind=method
@@ -252,11 +189,7 @@ NODE id=matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots kind=metho
   sig=func (v *validator) rule6UnknownRefsInputSlots()
   doc=rule6: every unknown block names a slot declared in §INPUTS.
 EDGES
-  calls=matrix/mcl/mtx/validator.validator.collectInputSlots,matrix/mcl/mtx/validator.validator.walkEntries
-  references=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.UnknownBlock,matrix/mcl/mtx/ast.UnknownBlock.Pos,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.inputSlots,matrix/mcl/mtx/validator.ok,matrix/mcl/mtx/validator.ub,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.collectInputSlots,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.walkEntries
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.ValidateSkill
-  ^references=matrix/mcl/mtx/validator.ValidateSkill
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.rule7PromptRoles kind=method
@@ -264,11 +197,7 @@ NODE id=matrix/mcl/mtx/validator.validator.rule7PromptRoles kind=method
   sig=func (v *validator) rule7PromptRoles()
   doc=rule7: prompt blocks in on-blocks must have system= and user= roles.
 EDGES
-  calls=matrix/mcl/mtx/validator.validator.walkEntries
-  references=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.PromptBlock,matrix/mcl/mtx/ast.PromptBlock.Pos,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.hasSystem,matrix/mcl/mtx/validator.hasUser,matrix/mcl/mtx/validator.ok,matrix/mcl/mtx/validator.pb,matrix/mcl/mtx/validator.role,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.walkEntries
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill
-  ^references=matrix/mcl/mtx/validator.ValidateCore,matrix/mcl/mtx/validator.ValidateSkill
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.rule8FailureReasons kind=method
@@ -276,11 +205,7 @@ NODE id=matrix/mcl/mtx/validator.validator.rule8FailureReasons kind=method
   sig=func (v *validator) rule8FailureReasons()
   doc=rule8: §FAILURE_MODES reason= must use known FailureReason values.
 EDGES
-  calls=matrix/mcl/mtx/ast.FailModifier.Pos,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.findSection
-  references=matrix/mcl/mtx/ast.FailEntry,matrix/mcl/mtx/ast.FailModifier.Pos,matrix/mcl/mtx/validator.ValidFailureReasons,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.fe,matrix/mcl/mtx/validator.fm,matrix/mcl/mtx/validator.mod,matrix/mcl/mtx/validator.ok,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.findSection
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.ValidateSkill
-  ^references=matrix/mcl/mtx/validator.ValidateSkill
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.rule9SubSkillURIs kind=method
@@ -288,11 +213,7 @@ NODE id=matrix/mcl/mtx/validator.validator.rule9SubSkillURIs kind=method
   sig=func (v *validator) rule9SubSkillURIs()
   doc=rule9: §SUB_SKILLS URIs must be version-pinned.
 EDGES
-  calls=matrix/mcl/mtx/ast.RefEntry.Pos,matrix/mcl/mtx/validator.isVersionPinned,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.findSection
-  references=matrix/mcl/mtx/ast.RefEntry,matrix/mcl/mtx/ast.RefEntry.Pos,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.isVersionPinned,matrix/mcl/mtx/validator.ok,matrix/mcl/mtx/validator.re,matrix/mcl/mtx/validator.sec,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.errorf,matrix/mcl/mtx/validator.validator.findSection
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.ValidateSkill
-  ^references=matrix/mcl/mtx/validator.ValidateSkill
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.walkEntries kind=method
@@ -300,21 +221,14 @@ NODE id=matrix/mcl/mtx/validator.validator.walkEntries kind=method
   sig=func (v *validator) walkEntries(fn func(ast.Entry))
   doc=walkEntries walks all entries in all sections, including nested on-block entries.
 EDGES
-  calls=matrix/mcl/mtx/validator.validator.walkEntry
-  references=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.fn,matrix/mcl/mtx/validator.sec,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator,matrix/mcl/mtx/validator.validator.walkEntry
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots,matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots,matrix/mcl/mtx/validator.validator.rule7PromptRoles
-  ^references=matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind,matrix/mcl/mtx/validator.validator.rule12OnBlockOutputCardinality,matrix/mcl/mtx/validator.validator.rule5ResolveRefsInputSlots,matrix/mcl/mtx/validator.validator.rule6UnknownRefsInputSlots,matrix/mcl/mtx/validator.validator.rule7PromptRoles
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator.validator.walkEntry kind=method
   digest=b3:e98eb510ae164c777246b639e57d02e9ccfaee3061afddc88ba93b11b909ae4c file=MCL/mtx/validator/validator.go range=413:420 lang=go exported=false byte_range=11769:11957
   sig=func (v *validator) walkEntry(entry ast.Entry, fn func(ast.Entry))
 EDGES
-  references=matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.OnBlock,matrix/mcl/mtx/validator.entry,matrix/mcl/mtx/validator.fn,matrix/mcl/mtx/validator.ob,matrix/mcl/mtx/validator.ok,matrix/mcl/mtx/validator.sub,matrix/mcl/mtx/validator.v,matrix/mcl/mtx/validator.validator
   ^contains=matrix/mcl/mtx/validator.validator
-  ^calls=matrix/mcl/mtx/validator.validator.walkEntries
-  ^references=matrix/mcl/mtx/validator.validator.walkEntries
   ^defines=matrix/mcl/mtx/validator/validator.go
 
 NODE id=matrix/mcl/mtx/validator/validator.go kind=file

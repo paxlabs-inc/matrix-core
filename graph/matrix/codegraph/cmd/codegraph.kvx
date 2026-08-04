@@ -1,90 +1,57 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/codegraph/cmd/codegraph kind=package
   digest=b3:36460ff9b5d9118f7fc04ea7d341f0df753468776c944b1662c9a7876854f58c file=codegraph/cmd/codegraph range=0:0 lang=go exported=true
 EDGES
   contains=matrix/codegraph/cmd/codegraph/main.go
-  imports=matrix/codegraph/extract,matrix/codegraph/mcp,matrix/codegraph/model,matrix/codegraph/retrieve,matrix/codegraph/selfmodel,matrix/codegraph/store
   ^contains=mod:matrix/codegraph
 
 NODE id=matrix/codegraph/cmd/codegraph.buildIndex kind=func
   digest=b3:72763ac3d84227e66415f83e9756513e296a413ab6c4867bab83d4b3be183218 file=codegraph/cmd/codegraph/main.go range=275:285 lang=go exported=false byte_range=6755:6963
   sig=func buildIndex(c *common) (*model.Index, error)
 EDGES
-  calls=matrix/codegraph/cmd/codegraph.common.config,matrix/codegraph/extract.Build,matrix/codegraph/extract.Extractor.Index
-  references=matrix/codegraph/cmd/codegraph.c,matrix/codegraph/cmd/codegraph.cfg,matrix/codegraph/cmd/codegraph.common,matrix/codegraph/cmd/codegraph.common.config,matrix/codegraph/cmd/codegraph.e,matrix/codegraph/cmd/codegraph.err,matrix/codegraph/extract.Build,matrix/codegraph/extract.Extractor.Index,matrix/codegraph/model.Index
-  ^calls=matrix/codegraph/cmd/codegraph.cmdImpact,matrix/codegraph/cmd/codegraph.cmdLookup,matrix/codegraph/cmd/codegraph.cmdMCP,matrix/codegraph/cmd/codegraph.cmdNeighbors
-  ^references=matrix/codegraph/cmd/codegraph.cmdImpact,matrix/codegraph/cmd/codegraph.cmdLookup,matrix/codegraph/cmd/codegraph.cmdMCP,matrix/codegraph/cmd/codegraph.cmdNeighbors
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.cmdBuild kind=func
   digest=b3:94587e85fd2a25ee745911b5c0f43aee2dcb22cbf753e2b36063fd54b58aa517 file=codegraph/cmd/codegraph/main.go range=115:147 lang=go exported=false byte_range=2679:3565
   sig=func cmdBuild(args []string) error
 EDGES
-  calls=matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/cmd/codegraph.common.config,matrix/codegraph/cmd/codegraph.common.graphDir,matrix/codegraph/extract.Build,matrix/codegraph/extract.Extractor.Index,matrix/codegraph/extract.Extractor.WriteStore,matrix/codegraph/model.Index.Len,matrix/codegraph/selfmodel.Distill
-  references=matrix/codegraph/cmd/codegraph.args,matrix/codegraph/cmd/codegraph.artifact,matrix/codegraph/cmd/codegraph.c,matrix/codegraph/cmd/codegraph.cfg,matrix/codegraph/cmd/codegraph.common,matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/cmd/codegraph.common.config,matrix/codegraph/cmd/codegraph.common.graphDir,matrix/codegraph/cmd/codegraph.e,matrix/codegraph/cmd/codegraph.encoded,matrix/codegraph/cmd/codegraph.err,matrix/codegraph/cmd/codegraph.fs,matrix/codegraph/cmd/codegraph.marshalErr,matrix/codegraph/cmd/codegraph.merkle,matrix/codegraph/cmd/codegraph.out,matrix/codegraph/cmd/codegraph.writeErr,matrix/codegraph/extract.Build,matrix/codegraph/extract.Extractor.Index,matrix/codegraph/extract.Extractor.WriteStore,matrix/codegraph/extract.SelfModelRequiredPackages,matrix/codegraph/model.Index.Len,matrix/codegraph/selfmodel.Distill
-  ^calls=matrix/codegraph/cmd/codegraph.main
-  ^references=matrix/codegraph/cmd/codegraph.main
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.cmdCheck kind=func
   digest=b3:f48870e0dc74de95c0adbd57f97d4e51a3a7a3ace37a20b905fb993f866314dd file=codegraph/cmd/codegraph/main.go range=228:258 lang=go exported=false byte_range=5612:6387
   sig=func cmdCheck(args []string) error
 EDGES
-  calls=matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/cmd/codegraph.common.config,matrix/codegraph/cmd/codegraph.common.graphDir,matrix/codegraph/extract.CheckStale
-  references=matrix/codegraph/cmd/codegraph.args,matrix/codegraph/cmd/codegraph.c,matrix/codegraph/cmd/codegraph.cfg,matrix/codegraph/cmd/codegraph.changes,matrix/codegraph/cmd/codegraph.common,matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/cmd/codegraph.common.config,matrix/codegraph/cmd/codegraph.common.graphDir,matrix/codegraph/cmd/codegraph.err,matrix/codegraph/cmd/codegraph.fs,matrix/codegraph/cmd/codegraph.graphDir,matrix/codegraph/cmd/codegraph.p,matrix/codegraph/cmd/codegraph.stale,matrix/codegraph/extract.CheckStale
-  ^calls=matrix/codegraph/cmd/codegraph.main
-  ^references=matrix/codegraph/cmd/codegraph.main
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.cmdDiff kind=func
   digest=b3:31dde1c930f97bb236d36e021cf553383bb72ff7ce6b8de966c87234b3a294e2 file=codegraph/cmd/codegraph/main.go range=206:226 lang=go exported=false byte_range=5029:5610
   sig=func cmdDiff(args []string) error
 EDGES
-  calls=matrix/codegraph/retrieve.Diff,matrix/codegraph/store.Load
-  references=matrix/codegraph/cmd/codegraph.a,matrix/codegraph/cmd/codegraph.args,matrix/codegraph/cmd/codegraph.b,matrix/codegraph/cmd/codegraph.err,matrix/codegraph/cmd/codegraph.fs,matrix/codegraph/cmd/codegraph.ixA,matrix/codegraph/cmd/codegraph.ixB,matrix/codegraph/retrieve.Diff,matrix/codegraph/store.Load
-  ^calls=matrix/codegraph/cmd/codegraph.main
-  ^references=matrix/codegraph/cmd/codegraph.main
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.cmdImpact kind=func
   digest=b3:31c4fd5182226fbefc66fca897e2f7182c26e4c1f3750028d899ce42ff8f3a8b file=codegraph/cmd/codegraph/main.go range=189:204 lang=go exported=false byte_range=4591:5027
   sig=func cmdImpact(args []string) error
 EDGES
-  calls=matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/retrieve.API.Impact,matrix/codegraph/retrieve.New
-  references=matrix/codegraph/cmd/codegraph.args,matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.c,matrix/codegraph/cmd/codegraph.common,matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/cmd/codegraph.depth,matrix/codegraph/cmd/codegraph.err,matrix/codegraph/cmd/codegraph.fs,matrix/codegraph/cmd/codegraph.id,matrix/codegraph/cmd/codegraph.ix,matrix/codegraph/retrieve.API.Impact,matrix/codegraph/retrieve.New
-  ^calls=matrix/codegraph/cmd/codegraph.main
-  ^references=matrix/codegraph/cmd/codegraph.main
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.cmdLookup kind=func
   digest=b3:f5fae9f3df44ac1915792f1f0889f0a5a6e2879a04cfde4b08ebeea9e372ef9b file=codegraph/cmd/codegraph/main.go range=149:164 lang=go exported=false byte_range=3567:3995
   sig=func cmdLookup(args []string) error
 EDGES
-  calls=matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/retrieve.API.SymbolLookup,matrix/codegraph/retrieve.New
-  references=matrix/codegraph/cmd/codegraph.args,matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.c,matrix/codegraph/cmd/codegraph.common,matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/cmd/codegraph.err,matrix/codegraph/cmd/codegraph.fs,matrix/codegraph/cmd/codegraph.ix,matrix/codegraph/cmd/codegraph.kind,matrix/codegraph/cmd/codegraph.sym,matrix/codegraph/model.Kind,matrix/codegraph/retrieve.API.SymbolLookup,matrix/codegraph/retrieve.New
-  ^calls=matrix/codegraph/cmd/codegraph.main
-  ^references=matrix/codegraph/cmd/codegraph.main
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.cmdMCP kind=func
   digest=b3:4503f283f317d70ad60f31a3e9f6085d4ff5093fb0c077f622c636a183452a3d file=codegraph/cmd/codegraph/main.go range=260:273 lang=go exported=false byte_range=6389:6753
   sig=func cmdMCP(args []string) error
 EDGES
-  calls=matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/mcp.New,matrix/codegraph/mcp.Server.Serve,matrix/codegraph/model.Index.Len
-  references=matrix/codegraph/cmd/codegraph.args,matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.c,matrix/codegraph/cmd/codegraph.common,matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/cmd/codegraph.err,matrix/codegraph/cmd/codegraph.fs,matrix/codegraph/cmd/codegraph.ix,matrix/codegraph/mcp.New,matrix/codegraph/mcp.Server.Serve,matrix/codegraph/model.Index.Len
-  ^calls=matrix/codegraph/cmd/codegraph.main
-  ^references=matrix/codegraph/cmd/codegraph.main
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.cmdNeighbors kind=func
   digest=b3:ead65c4e61af02373ced4eaad7530b42f4668414755d1bbeca2e4efe52e32947 file=codegraph/cmd/codegraph/main.go range=166:187 lang=go exported=false byte_range=3997:4589
   sig=func cmdNeighbors(args []string) error
 EDGES
-  calls=matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/cmd/codegraph.parseDir,matrix/codegraph/retrieve.API.Neighbors,matrix/codegraph/retrieve.New
-  references=matrix/codegraph/cmd/codegraph.args,matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.c,matrix/codegraph/cmd/codegraph.common,matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/cmd/codegraph.depth,matrix/codegraph/cmd/codegraph.dir,matrix/codegraph/cmd/codegraph.edge,matrix/codegraph/cmd/codegraph.err,matrix/codegraph/cmd/codegraph.frag,matrix/codegraph/cmd/codegraph.fs,matrix/codegraph/cmd/codegraph.id,matrix/codegraph/cmd/codegraph.ix,matrix/codegraph/cmd/codegraph.parseDir,matrix/codegraph/model.EdgeType,matrix/codegraph/retrieve.API.Neighbors,matrix/codegraph/retrieve.New
-  ^calls=matrix/codegraph/cmd/codegraph.main
-  ^references=matrix/codegraph/cmd/codegraph.main
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.common kind=type
@@ -92,7 +59,6 @@ NODE id=matrix/codegraph/cmd/codegraph.common kind=type
   sig=type common struct {\n	root		string\n	name		string\n	out		string\n	modules		string\n	selfModel	bool\n}
 EDGES
   contains=matrix/codegraph/cmd/codegraph.common#modules,matrix/codegraph/cmd/codegraph.common#name,matrix/codegraph/cmd/codegraph.common#out,matrix/codegraph/cmd/codegraph.common#root,matrix/codegraph/cmd/codegraph.common#selfModel,matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/cmd/codegraph.common.config,matrix/codegraph/cmd/codegraph.common.graphDir
-  ^references=matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.cmdBuild,matrix/codegraph/cmd/codegraph.cmdCheck,matrix/codegraph/cmd/codegraph.cmdImpact,matrix/codegraph/cmd/codegraph.cmdLookup,matrix/codegraph/cmd/codegraph.cmdMCP,matrix/codegraph/cmd/codegraph.cmdNeighbors,matrix/codegraph/cmd/codegraph.common.bind,matrix/codegraph/cmd/codegraph.common.config,matrix/codegraph/cmd/codegraph.common.graphDir
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.common#modules kind=field
@@ -129,65 +95,45 @@ NODE id=matrix/codegraph/cmd/codegraph.common.bind kind=method
   digest=b3:df5370b5c193ac4798b4e28ac313a3fc98e0f6bfd4c64470ad2ba89f7f9dc1d0 file=codegraph/cmd/codegraph/main.go range=70:76 lang=go exported=false byte_range=1406:1842
   sig=func (c *common) bind(fs *flag.FlagSet)
 EDGES
-  references=matrix/codegraph/cmd/codegraph.c,matrix/codegraph/cmd/codegraph.common,matrix/codegraph/cmd/codegraph.fs
   ^contains=matrix/codegraph/cmd/codegraph.common
-  ^calls=matrix/codegraph/cmd/codegraph.cmdBuild,matrix/codegraph/cmd/codegraph.cmdCheck,matrix/codegraph/cmd/codegraph.cmdImpact,matrix/codegraph/cmd/codegraph.cmdLookup,matrix/codegraph/cmd/codegraph.cmdMCP,matrix/codegraph/cmd/codegraph.cmdNeighbors
-  ^references=matrix/codegraph/cmd/codegraph.cmdBuild,matrix/codegraph/cmd/codegraph.cmdCheck,matrix/codegraph/cmd/codegraph.cmdImpact,matrix/codegraph/cmd/codegraph.cmdLookup,matrix/codegraph/cmd/codegraph.cmdMCP,matrix/codegraph/cmd/codegraph.cmdNeighbors
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.common.config kind=method
   digest=b3:6e2bd8d6ed022ec6632f11531ed2b93504656e5ed41fb796d7f997b352d33fa7 file=codegraph/cmd/codegraph/main.go range=78:106 lang=go exported=false byte_range=1844:2538
   sig=func (c *common) config() (extract.Config, error)
 EDGES
-  calls=matrix/codegraph/cmd/codegraph.discoverModules,matrix/codegraph/extract.SelfModelConfig
-  references=matrix/codegraph/cmd/codegraph.c,matrix/codegraph/cmd/codegraph.cfg,matrix/codegraph/cmd/codegraph.common,matrix/codegraph/cmd/codegraph.discoverModules,matrix/codegraph/cmd/codegraph.err,matrix/codegraph/cmd/codegraph.m,matrix/codegraph/cmd/codegraph.mods,matrix/codegraph/cmd/codegraph.name,matrix/codegraph/cmd/codegraph.root,matrix/codegraph/cmd/codegraph.selfErr,matrix/codegraph/extract.Config,matrix/codegraph/extract.SelfModelConfig
   ^contains=matrix/codegraph/cmd/codegraph.common
-  ^calls=matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.cmdBuild,matrix/codegraph/cmd/codegraph.cmdCheck
-  ^references=matrix/codegraph/cmd/codegraph.buildIndex,matrix/codegraph/cmd/codegraph.cmdBuild,matrix/codegraph/cmd/codegraph.cmdCheck
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.common.graphDir kind=method
   digest=b3:d7786effb6b6ee44e71505aacaaa7cd23bd61686ab847bebc0c8e54ce355e649 file=codegraph/cmd/codegraph/main.go range=108:113 lang=go exported=false byte_range=2540:2677
   sig=func (c *common) graphDir(cfg extract.Config) string
 EDGES
-  references=matrix/codegraph/cmd/codegraph.c,matrix/codegraph/cmd/codegraph.cfg,matrix/codegraph/cmd/codegraph.common,matrix/codegraph/extract.Config
   ^contains=matrix/codegraph/cmd/codegraph.common
-  ^calls=matrix/codegraph/cmd/codegraph.cmdBuild,matrix/codegraph/cmd/codegraph.cmdCheck
-  ^references=matrix/codegraph/cmd/codegraph.cmdBuild,matrix/codegraph/cmd/codegraph.cmdCheck
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.discoverModules kind=func
   digest=b3:0fdfc4909c4c9893a229da7524ddf7ee455b5a412a2025c8bfe28fbf515c0f7d file=codegraph/cmd/codegraph/main.go range=298:318 lang=go exported=false byte_range=7117:7592
   sig=func discoverModules(root string) ([]string, error)
 EDGES
-  references=matrix/codegraph/cmd/codegraph.d,matrix/codegraph/cmd/codegraph.err,matrix/codegraph/cmd/codegraph.mods,matrix/codegraph/cmd/codegraph.path,matrix/codegraph/cmd/codegraph.root
-  ^calls=matrix/codegraph/cmd/codegraph.common.config
-  ^references=matrix/codegraph/cmd/codegraph.common.config
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.main kind=func
   digest=b3:ec8beefedddf44392328a87fa2ffb30fedbe51a993be8ea9bf68b1ce399252a6 file=codegraph/cmd/codegraph/main.go range=27:56 lang=go exported=false byte_range=639:1174
   sig=func main()
 EDGES
-  calls=matrix/codegraph/cmd/codegraph.cmdBuild,matrix/codegraph/cmd/codegraph.cmdCheck,matrix/codegraph/cmd/codegraph.cmdDiff,matrix/codegraph/cmd/codegraph.cmdImpact,matrix/codegraph/cmd/codegraph.cmdLookup,matrix/codegraph/cmd/codegraph.cmdMCP,matrix/codegraph/cmd/codegraph.cmdNeighbors,matrix/codegraph/cmd/codegraph.usage
-  references=matrix/codegraph/cmd/codegraph.cmdBuild,matrix/codegraph/cmd/codegraph.cmdCheck,matrix/codegraph/cmd/codegraph.cmdDiff,matrix/codegraph/cmd/codegraph.cmdImpact,matrix/codegraph/cmd/codegraph.cmdLookup,matrix/codegraph/cmd/codegraph.cmdMCP,matrix/codegraph/cmd/codegraph.cmdNeighbors,matrix/codegraph/cmd/codegraph.err,matrix/codegraph/cmd/codegraph.usage
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.parseDir kind=func
   digest=b3:9d9d21035533319bdf9eb0e674a0dc9a861db7b8754efb32a082376c745c6bca file=codegraph/cmd/codegraph/main.go range=287:296 lang=go exported=false byte_range=6965:7115
   sig=func parseDir(s string) model.Direction
 EDGES
-  references=matrix/codegraph/cmd/codegraph.s,matrix/codegraph/model.Both,matrix/codegraph/model.Direction,matrix/codegraph/model.In,matrix/codegraph/model.Out
-  ^calls=matrix/codegraph/cmd/codegraph.cmdNeighbors
-  ^references=matrix/codegraph/cmd/codegraph.cmdNeighbors
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph.usage kind=func
   digest=b3:db7cbec32ccaea3dad4f3899569b4c35ac290efe050865e643c33c37c68c5c25 file=codegraph/cmd/codegraph/main.go range=58:60 lang=go exported=false byte_range=1176:1292
   sig=func usage()
 EDGES
-  ^calls=matrix/codegraph/cmd/codegraph.main
-  ^references=matrix/codegraph/cmd/codegraph.main
   ^defines=matrix/codegraph/cmd/codegraph/main.go
 
 NODE id=matrix/codegraph/cmd/codegraph/main.go kind=file

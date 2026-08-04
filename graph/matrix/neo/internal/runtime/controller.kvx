@@ -1,20 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/neo/internal/runtime/controller kind=package
   digest=b3:ea5d2302c4740406790a842b0270cb0e9529d13dedaeb054e10edbf8be4f4e94 file=neo/internal/runtime/controller range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/runtime/controller/controller.go,matrix/neo/internal/runtime/controller/loop_adapter.go
-  imports=matrix/cortex,matrix/neo/internal/runtime/loop
   ^contains=mod:matrix/neo
-  ^imports=matrix/neo/internal/agent
 
 NODE id=matrix/neo/internal/runtime/controller.Auditor kind=interface
   digest=b3:3288e98058182cbcc151eafbeed98fb665a595660a332aa25a50df5e77a455ef file=neo/internal/runtime/controller/controller.go range=105:109 lang=go exported=true byte_range=3206:3389
   sig=type Auditor interface {\n	RecordDoubtEdit(Mod) error\n}
   doc=Auditor durably records every controller action. Optional: a nil auditor\nkeeps the controller a pure in-memory instrument.
 EDGES
-  references=matrix/neo/internal/runtime/controller.Mod
-  ^references=matrix/neo/internal/runtime/controller.Controller,matrix/neo/internal/runtime/controller.New
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.Cadence kind=type
@@ -23,7 +19,6 @@ NODE id=matrix/neo/internal/runtime/controller.Cadence kind=type
   doc=Cadence bounds the controller. A zero field resolves to its matrix default.
 EDGES
   contains=matrix/neo/internal/runtime/controller.Cadence#CooldownSteps,matrix/neo/internal/runtime/controller.Cadence#MaxModsPerTurn,matrix/neo/internal/runtime/controller.Cadence#MinStep,matrix/neo/internal/runtime/controller.Cadence.resolved
-  ^references=matrix/neo/internal/agent.Agent.chatResurrectionWithGuidance,matrix/neo/internal/runtime/controller.Cadence.resolved,matrix/neo/internal/runtime/controller.Controller,matrix/neo/internal/runtime/controller.Controller.Cadence,matrix/neo/internal/runtime/controller.New
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.Cadence#CooldownSteps kind=field
@@ -48,10 +43,7 @@ NODE id=matrix/neo/internal/runtime/controller.Cadence.resolved kind=method
   digest=b3:99279dc8e7749fe253dd3e1c007f2f3939b8a42b800a6baba2721c31d92b93de file=neo/internal/runtime/controller/controller.go range=69:80 lang=go exported=false byte_range=2007:2302
   sig=func (cadence Cadence) resolved() Cadence
 EDGES
-  references=matrix/neo/internal/runtime/controller.Cadence,matrix/neo/internal/runtime/controller.DefaultCooldownSteps,matrix/neo/internal/runtime/controller.DefaultMaxModsPerTurn,matrix/neo/internal/runtime/controller.DefaultMinStep,matrix/neo/internal/runtime/controller.cadence
   ^contains=matrix/neo/internal/runtime/controller.Cadence
-  ^calls=matrix/neo/internal/runtime/controller.New
-  ^references=matrix/neo/internal/runtime/controller.New
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.Clock kind=interface
@@ -59,7 +51,6 @@ NODE id=matrix/neo/internal/runtime/controller.Clock kind=interface
   sig=type Clock interface {\n	Now() time.Time\n}
 EDGES
   ^implements=matrix/neo/internal/runtime/controller.systemClock
-  ^references=matrix/neo/internal/runtime/controller.Controller,matrix/neo/internal/runtime/controller.New
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.Controller kind=type
@@ -68,8 +59,6 @@ NODE id=matrix/neo/internal/runtime/controller.Controller kind=type
 EDGES
   contains=matrix/neo/internal/runtime/controller.Controller#auditor,matrix/neo/internal/runtime/controller.Controller#cadence,matrix/neo/internal/runtime/controller.Controller#clock,matrix/neo/internal/runtime/controller.Controller#cooldown,matrix/neo/internal/runtime/controller.Controller#mods,matrix/neo/internal/runtime/controller.Controller#modsThisTurn,matrix/neo/internal/runtime/controller.Controller#mu,matrix/neo/internal/runtime/controller.Controller.Cadence,matrix/neo/internal/runtime/controller.Controller.Mods,matrix/neo/internal/runtime/controller.Controller.NewTurn,matrix/neo/internal/runtime/controller.Controller.Observe,matrix/neo/internal/runtime/controller.Controller.ObserveMismatch,matrix/neo/internal/runtime/controller.Controller.Undo
   implements=matrix/neo/internal/runtime/loop.DoubtController
-  references=matrix/neo/internal/runtime/controller.Auditor,matrix/neo/internal/runtime/controller.Cadence,matrix/neo/internal/runtime/controller.Clock,matrix/neo/internal/runtime/controller.Mod,matrix/neo/internal/runtime/controller.Trigger
-  ^references=matrix/neo/internal/runtime/controller.Controller.Cadence,matrix/neo/internal/runtime/controller.Controller.Mods,matrix/neo/internal/runtime/controller.Controller.NewTurn,matrix/neo/internal/runtime/controller.Controller.Observe,matrix/neo/internal/runtime/controller.Controller.ObserveMismatch,matrix/neo/internal/runtime/controller.Controller.Undo,matrix/neo/internal/runtime/controller.New
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.Controller#auditor kind=field
@@ -119,7 +108,6 @@ NODE id=matrix/neo/internal/runtime/controller.Controller.Cadence kind=method
   sig=func (controller *Controller) Cadence() Cadence
   doc=Cadence returns the resolved bounds this controller enforces.
 EDGES
-  references=matrix/neo/internal/runtime/controller.Cadence,matrix/neo/internal/runtime/controller.Controller,matrix/neo/internal/runtime/controller.controller
   ^contains=matrix/neo/internal/runtime/controller.Controller
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
@@ -128,7 +116,6 @@ NODE id=matrix/neo/internal/runtime/controller.Controller.Mods kind=method
   sig=func (controller *Controller) Mods() []Mod
   doc=Mods returns a defensive copy of the dual records.
 EDGES
-  references=matrix/neo/internal/runtime/controller.Controller,matrix/neo/internal/runtime/controller.Mod,matrix/neo/internal/runtime/controller.controller,matrix/neo/internal/runtime/controller.result
   ^contains=matrix/neo/internal/runtime/controller.Controller
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
@@ -137,7 +124,6 @@ NODE id=matrix/neo/internal/runtime/controller.Controller.NewTurn kind=method
   sig=func (controller *Controller) NewTurn()
   doc=NewTurn resets the per-turn mod budget and the cooldown ledger.
 EDGES
-  references=matrix/neo/internal/runtime/controller.Controller,matrix/neo/internal/runtime/controller.Trigger,matrix/neo/internal/runtime/controller.controller
   ^contains=matrix/neo/internal/runtime/controller.Controller
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
@@ -146,11 +132,7 @@ NODE id=matrix/neo/internal/runtime/controller.Controller.Observe kind=method
   sig=func (controller *Controller) Observe(signals Signals) (Mod, bool)
   doc=Observe classifies the step and, when a doubt edit is warranted and the\ncadence allows it, records the dual record and returns the line for the\nloop to fold into a request-time clone. Silence when healthy: no trigger,\nno mod, and the request is byte-identical to the controller absent.
 EDGES
-  calls=matrix/neo/internal/runtime/controller.classify,matrix/neo/internal/runtime/controller.modID,matrix/neo/internal/runtime/controller.systemClock.Now,matrix/neo/internal/runtime/controller.template
-  references=matrix/neo/internal/runtime/controller.Auditor.RecordDoubtEdit,matrix/neo/internal/runtime/controller.Clock.Now,matrix/neo/internal/runtime/controller.Controller,matrix/neo/internal/runtime/controller.EditActive,matrix/neo/internal/runtime/controller.Mod,matrix/neo/internal/runtime/controller.Signals,matrix/neo/internal/runtime/controller.classify,matrix/neo/internal/runtime/controller.controller,matrix/neo/internal/runtime/controller.err,matrix/neo/internal/runtime/controller.last,matrix/neo/internal/runtime/controller.line,matrix/neo/internal/runtime/controller.mod,matrix/neo/internal/runtime/controller.modID,matrix/neo/internal/runtime/controller.now,matrix/neo/internal/runtime/controller.ok,matrix/neo/internal/runtime/controller.side,matrix/neo/internal/runtime/controller.signals,matrix/neo/internal/runtime/controller.template,matrix/neo/internal/runtime/controller.trigger
   ^contains=matrix/neo/internal/runtime/controller.Controller
-  ^calls=matrix/neo/internal/runtime/controller.Controller.ObserveMismatch
-  ^references=matrix/neo/internal/runtime/controller.Controller.ObserveMismatch
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.Controller.ObserveMismatch kind=method
@@ -158,10 +140,7 @@ NODE id=matrix/neo/internal/runtime/controller.Controller.ObserveMismatch kind=m
   sig=func (controller *Controller) ObserveMismatch(\n	ctx context.Context,\n	step int,\n	execution loop.ToolExecution,\n) (string, bool)
   doc=ObserveMismatch implements loop.DoubtController. Only evidence that is\nactually anchored arms the voice: an execution with no verified citation is\nnot a mismatch the controller may act on, because the mismatch verdict\nitself would be uncited (req.7.3).
 EDGES
-  calls=matrix/neo/internal/runtime/controller.Controller.Observe
-  references=matrix/cortex.ToolMatchMismatched,matrix/neo/internal/runtime/controller.Controller,matrix/neo/internal/runtime/controller.Controller.Observe,matrix/neo/internal/runtime/controller.Signals,matrix/neo/internal/runtime/controller.armed,matrix/neo/internal/runtime/controller.controller,matrix/neo/internal/runtime/controller.ctx,matrix/neo/internal/runtime/controller.err,matrix/neo/internal/runtime/controller.execution,matrix/neo/internal/runtime/controller.mod,matrix/neo/internal/runtime/controller.signals,matrix/neo/internal/runtime/controller.step,matrix/neo/internal/runtime/loop.ToolExecution
   ^contains=matrix/neo/internal/runtime/controller.Controller
-  ^calls=matrix/neo/internal/runtime/loop.Loop.observeDoubt
   ^defines=matrix/neo/internal/runtime/controller/loop_adapter.go
 
 NODE id=matrix/neo/internal/runtime/controller.Controller.Undo kind=method
@@ -169,8 +148,6 @@ NODE id=matrix/neo/internal/runtime/controller.Controller.Undo kind=method
   sig=func (controller *Controller) Undo(id string) (Mod, error)
   doc=Undo marks a recorded edit undone inside the bounded window. The edit only\never rode a request-time clone, so undo is a provenance operation: the mod\nis marked and audited, and it can never be re-applied.
 EDGES
-  calls=matrix/neo/internal/runtime/controller.systemClock.Now
-  references=matrix/neo/internal/runtime/controller.Auditor.RecordDoubtEdit,matrix/neo/internal/runtime/controller.Clock.Now,matrix/neo/internal/runtime/controller.Controller,matrix/neo/internal/runtime/controller.EditActive,matrix/neo/internal/runtime/controller.EditUndone,matrix/neo/internal/runtime/controller.Mod,matrix/neo/internal/runtime/controller.UndoWindow,matrix/neo/internal/runtime/controller.controller,matrix/neo/internal/runtime/controller.err,matrix/neo/internal/runtime/controller.id,matrix/neo/internal/runtime/controller.index,matrix/neo/internal/runtime/controller.mod,matrix/neo/internal/runtime/controller.now,matrix/neo/internal/runtime/controller.undone
   ^contains=matrix/neo/internal/runtime/controller.Controller
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
@@ -178,14 +155,12 @@ NODE id=matrix/neo/internal/runtime/controller.DefaultCooldownSteps kind=const
   digest=b3:74918c6ff66a7829e5720b8966800528e4b7453c61b20402d4c5818f7ce12630 file=neo/internal/runtime/controller/controller.go range=32:32 lang=go exported=true byte_range=1171:1196
   sig=untyped int
 EDGES
-  ^references=matrix/neo/internal/runtime/controller.Cadence.resolved
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.DefaultMaxModsPerTurn kind=const
   digest=b3:4b02f81594cab591f7dec7a73c5a0f30f544bb11ac846b66c9b700d771e1caad file=neo/internal/runtime/controller/controller.go range=31:31 lang=go exported=true byte_range=1144:1169
   sig=untyped int
 EDGES
-  ^references=matrix/neo/internal/runtime/controller.Cadence.resolved
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.DefaultMinStep kind=const
@@ -193,30 +168,24 @@ NODE id=matrix/neo/internal/runtime/controller.DefaultMinStep kind=const
   sig=untyped int
   doc=DefaultMinStep, DefaultMaxModsPerTurn, and DefaultCooldownSteps are the\nmatrix Cassandra 2.0 cadence bounds, preserved verbatim from\nneo/internal/agent casMinStep / casMaxMods / casCooldownSteps.
 EDGES
-  ^references=matrix/neo/internal/runtime/controller.Cadence.resolved
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.EditActive kind=const
   digest=b3:3ded9e6d285125d9233200e6723426bc0a16727585ee95575ed7d08b2cc944ef file=neo/internal/runtime/controller/controller.go range=58:58 lang=go exported=true byte_range=1775:1806
   sig=controller.EditState
 EDGES
-  references=matrix/neo/internal/runtime/controller.EditState
-  ^references=matrix/neo/internal/runtime/controller.Controller.Observe,matrix/neo/internal/runtime/controller.Controller.Undo
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.EditState kind=type
   digest=b3:240a05e2f1c1927dc3242057943dd2e17e16228a0c863dec0426f9e7ddec3c70 file=neo/internal/runtime/controller/controller.go range=55:55 lang=go exported=true byte_range=1743:1764
   sig=type EditState string
 EDGES
-  ^references=matrix/neo/internal/runtime/controller.EditActive,matrix/neo/internal/runtime/controller.EditUndone,matrix/neo/internal/runtime/controller.Mod
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.EditUndone kind=const
   digest=b3:a8a0311fc98eb176e828426ad7a9790f1ff8adf888965b851a8a4b9d161806bf file=neo/internal/runtime/controller/controller.go range=59:59 lang=go exported=true byte_range=1808:1839
   sig=controller.EditState
 EDGES
-  references=matrix/neo/internal/runtime/controller.EditState
-  ^references=matrix/neo/internal/runtime/controller.Controller.Undo
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.FoldInto kind=func
@@ -224,7 +193,6 @@ NODE id=matrix/neo/internal/runtime/controller.FoldInto kind=func
   sig=func FoldInto(content string, line string) string
   doc=FoldInto returns a copy of content with the controller line layered after\nit as the agent's next thought. The original is always preserved, so the\nfold is additive and can never rewrite a fact the model stated.
 EDGES
-  references=matrix/neo/internal/runtime/controller.content,matrix/neo/internal/runtime/controller.line
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.Mod kind=type
@@ -233,8 +201,6 @@ NODE id=matrix/neo/internal/runtime/controller.Mod kind=type
   doc=Mod is the dual record for one silent modification: what the model actually\nsaid, what the controller folded in, and the evidence that armed it.
 EDGES
   contains=matrix/neo/internal/runtime/controller.Mod#At,matrix/neo/internal/runtime/controller.Mod#Citation,matrix/neo/internal/runtime/controller.Mod#ID,matrix/neo/internal/runtime/controller.Mod#Line,matrix/neo/internal/runtime/controller.Mod#Side,matrix/neo/internal/runtime/controller.Mod#State,matrix/neo/internal/runtime/controller.Mod#Step,matrix/neo/internal/runtime/controller.Mod#Trigger,matrix/neo/internal/runtime/controller.Mod#UndoneAt
-  references=matrix/cortex.ToolEventCitation,matrix/neo/internal/runtime/controller.EditState,matrix/neo/internal/runtime/controller.Side,matrix/neo/internal/runtime/controller.Trigger
-  ^references=matrix/neo/internal/runtime/controller.Auditor,matrix/neo/internal/runtime/controller.Controller,matrix/neo/internal/runtime/controller.Controller.Mods,matrix/neo/internal/runtime/controller.Controller.Observe,matrix/neo/internal/runtime/controller.Controller.Undo
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.Mod#At kind=field
@@ -295,32 +261,24 @@ NODE id=matrix/neo/internal/runtime/controller.New kind=func
   digest=b3:26989e49813161cc2f882ee2d133e5735c97d325a41dd262ebe43a130319e054 file=neo/internal/runtime/controller/controller.go range=129:139 lang=go exported=true byte_range=3710:3958
   sig=func New(cadence Cadence, auditor Auditor, clock Clock) *Controller
 EDGES
-  calls=matrix/neo/internal/runtime/controller.Cadence.resolved
-  references=matrix/neo/internal/runtime/controller.Auditor,matrix/neo/internal/runtime/controller.Cadence,matrix/neo/internal/runtime/controller.Cadence.resolved,matrix/neo/internal/runtime/controller.Clock,matrix/neo/internal/runtime/controller.Controller,matrix/neo/internal/runtime/controller.Trigger,matrix/neo/internal/runtime/controller.auditor,matrix/neo/internal/runtime/controller.cadence,matrix/neo/internal/runtime/controller.clock,matrix/neo/internal/runtime/controller.systemClock
-  ^calls=matrix/neo/internal/agent.Agent.chatResurrectionWithGuidance
-  ^references=matrix/neo/internal/agent.Agent.chatResurrectionWithGuidance
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.Side kind=type
   digest=b3:d7b7d1380c45ed40891a545cd95304452b01d2dd1f9c2e4ea88d37db9ed88c14 file=neo/internal/runtime/controller/controller.go range=48:48 lang=go exported=true byte_range=1650:1666
   sig=type Side string
 EDGES
-  ^references=matrix/neo/internal/runtime/controller.Mod,matrix/neo/internal/runtime/controller.SideAssurance,matrix/neo/internal/runtime/controller.SideDoubt,matrix/neo/internal/runtime/controller.classify
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.SideAssurance kind=const
   digest=b3:41aa0d38532d907ed308fa258eb68f4c77a6ab7b742e8f55b55804843e2be616 file=neo/internal/runtime/controller/controller.go range=52:52 lang=go exported=true byte_range=1707:1739
   sig=controller.Side
 EDGES
-  references=matrix/neo/internal/runtime/controller.Side
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.SideDoubt kind=const
   digest=b3:05caeb3fbc4c258499f578560041ed12f51e2972f239937d230f00a2c76d9b12 file=neo/internal/runtime/controller/controller.go range=51:51 lang=go exported=true byte_range=1677:1705
   sig=controller.Side
 EDGES
-  references=matrix/neo/internal/runtime/controller.Side
-  ^references=matrix/neo/internal/runtime/controller.classify
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.Signals kind=type
@@ -329,8 +287,6 @@ NODE id=matrix/neo/internal/runtime/controller.Signals kind=type
   doc=Signals is the per-step read the controller classifies. It holds only what\nthe loop already computed.
 EDGES
   contains=matrix/neo/internal/runtime/controller.Signals#Citation,matrix/neo/internal/runtime/controller.Signals#MismatchedEvidence,matrix/neo/internal/runtime/controller.Signals#RefutedPremises,matrix/neo/internal/runtime/controller.Signals#Step
-  references=matrix/cortex.ToolEventCitation
-  ^references=matrix/neo/internal/runtime/controller.Controller.Observe,matrix/neo/internal/runtime/controller.Controller.ObserveMismatch,matrix/neo/internal/runtime/controller.classify
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.Signals#Citation kind=field
@@ -361,7 +317,6 @@ NODE id=matrix/neo/internal/runtime/controller.Trigger kind=type
   digest=b3:c713e169ca9c748507ee17ca861611f63b1b2d554d3195241ce26f2f5af594eb file=neo/internal/runtime/controller/controller.go range=37:37 lang=go exported=true byte_range=1294:1313
   sig=type Trigger string
 EDGES
-  ^references=matrix/neo/internal/runtime/controller.Controller,matrix/neo/internal/runtime/controller.Controller.NewTurn,matrix/neo/internal/runtime/controller.Mod,matrix/neo/internal/runtime/controller.New,matrix/neo/internal/runtime/controller.TriggerPredictionMismatch,matrix/neo/internal/runtime/controller.TriggerRefutedPremise,matrix/neo/internal/runtime/controller.classify,matrix/neo/internal/runtime/controller.modID,matrix/neo/internal/runtime/controller.template
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.TriggerPredictionMismatch kind=const
@@ -369,8 +324,6 @@ NODE id=matrix/neo/internal/runtime/controller.TriggerPredictionMismatch kind=co
   sig=controller.Trigger
   doc=TriggerPredictionMismatch fires when a committed ToolEvent's prediction\ndid not match its result.
 EDGES
-  references=matrix/neo/internal/runtime/controller.Trigger
-  ^references=matrix/neo/internal/runtime/controller.classify,matrix/neo/internal/runtime/controller.template
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.TriggerRefutedPremise kind=const
@@ -378,8 +331,6 @@ NODE id=matrix/neo/internal/runtime/controller.TriggerRefutedPremise kind=const
   sig=controller.Trigger
   doc=TriggerRefutedPremise fires when the plan still rests on a premise a\nverified citation has refuted.
 EDGES
-  references=matrix/neo/internal/runtime/controller.Trigger
-  ^references=matrix/neo/internal/runtime/controller.classify,matrix/neo/internal/runtime/controller.template
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.UndoWindow kind=const
@@ -387,7 +338,6 @@ NODE id=matrix/neo/internal/runtime/controller.UndoWindow kind=const
   sig=time.Duration
   doc=UndoWindow is ion's bounded undo window for a recorded edit.
 EDGES
-  ^references=matrix/neo/internal/runtime/controller.Controller.Undo
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.classify kind=func
@@ -395,18 +345,12 @@ NODE id=matrix/neo/internal/runtime/controller.classify kind=func
   sig=func classify(signals Signals) (Trigger, Side)
   doc=classify maps the step's evidence to (trigger, side). A refuted premise\noutranks a bare mismatch: the plan is known wrong at a load-bearing point.
 EDGES
-  references=matrix/neo/internal/runtime/controller.Side,matrix/neo/internal/runtime/controller.SideDoubt,matrix/neo/internal/runtime/controller.Signals,matrix/neo/internal/runtime/controller.Trigger,matrix/neo/internal/runtime/controller.TriggerPredictionMismatch,matrix/neo/internal/runtime/controller.TriggerRefutedPremise,matrix/neo/internal/runtime/controller.signals
-  ^calls=matrix/neo/internal/runtime/controller.Controller.Observe
-  ^references=matrix/neo/internal/runtime/controller.Controller.Observe
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.modID kind=func
   digest=b3:ea37291769cd796646d4917f3a2a19b358c34ed0c61b380bcd30454237d74899 file=neo/internal/runtime/controller/controller.go range=272:276 lang=go exported=false byte_range=8385:8614
   sig=func modID(trigger Trigger, step int, line string, at time.Time) string
 EDGES
-  references=matrix/neo/internal/runtime/controller.Trigger,matrix/neo/internal/runtime/controller.at,matrix/neo/internal/runtime/controller.digest,matrix/neo/internal/runtime/controller.line,matrix/neo/internal/runtime/controller.step,matrix/neo/internal/runtime/controller.trigger
-  ^calls=matrix/neo/internal/runtime/controller.Controller.Observe
-  ^references=matrix/neo/internal/runtime/controller.Controller.Observe
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.systemClock kind=type
@@ -415,16 +359,13 @@ NODE id=matrix/neo/internal/runtime/controller.systemClock kind=type
 EDGES
   contains=matrix/neo/internal/runtime/controller.systemClock.Now
   implements=matrix/neo/internal/runtime/controller.Clock
-  ^references=matrix/neo/internal/runtime/controller.New,matrix/neo/internal/runtime/controller.systemClock.Now
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.systemClock.Now kind=method
   digest=b3:b4b6c3c5d36c19a44523996bcefb89e39ae6505b887f8e3c7db9cb2e055fa2a1 file=neo/internal/runtime/controller/controller.go range=117:117 lang=go exported=true byte_range=3461:3523
   sig=func (systemClock) Now() time.Time
 EDGES
-  references=matrix/neo/internal/runtime/controller.systemClock
   ^contains=matrix/neo/internal/runtime/controller.systemClock
-  ^calls=matrix/neo/internal/runtime/controller.Controller.Observe,matrix/neo/internal/runtime/controller.Controller.Undo
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller.template kind=func
@@ -432,9 +373,6 @@ NODE id=matrix/neo/internal/runtime/controller.template kind=func
   sig=func template(trigger Trigger) string
   doc=template composes the first-person line. Metacognition only: epistemic\nframing about the agent's own work, never a claim of fact and never a\nfabricated completion. The refuted-premise line is the matrix Cassandra 2.0\ntext, preserved verbatim.
 EDGES
-  references=matrix/neo/internal/runtime/controller.Trigger,matrix/neo/internal/runtime/controller.TriggerPredictionMismatch,matrix/neo/internal/runtime/controller.TriggerRefutedPremise,matrix/neo/internal/runtime/controller.trigger
-  ^calls=matrix/neo/internal/runtime/controller.Controller.Observe
-  ^references=matrix/neo/internal/runtime/controller.Controller.Observe
   ^defines=matrix/neo/internal/runtime/controller/controller.go
 
 NODE id=matrix/neo/internal/runtime/controller/controller.go kind=file

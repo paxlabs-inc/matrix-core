@@ -1,21 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/neo/internal/automatrixsettings kind=package
   digest=b3:af2fea29d7362bac3c60cff7e32c5d5c399a5d725ce1d846e26599f63e6ce594 file=neo/internal/automatrixsettings range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/automatrixsettings/automatrixsettings.go
-  imports=matrix/vault
   ^contains=mod:matrix/neo
-  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/automatrixsettings.Dir kind=func
   digest=b3:0bbfa6a5553a31f3eb062ab3b73ada3757602ee7ebf6639f27f12a445577a855 file=neo/internal/automatrixsettings/automatrixsettings.go range=275:287 lang=go exported=true byte_range=8906:9450
   sig=func Dir(override, cortexRoot string) string
   doc=Dir resolves Neo's Automatrix settings directory. An explicit override wins;\nelse it derives from the cortex root's parent (matching the conversation /\ntask / trace / automatrix stores, so it shares /data with them and survives\nsuspend / redeploy). Returns "" when neither is available (in-memory only).
 EDGES
-  references=matrix/neo/internal/automatrixsettings.c,matrix/neo/internal/automatrixsettings.cortexRoot,matrix/neo/internal/automatrixsettings.o,matrix/neo/internal/automatrixsettings.override
-  ^calls=matrix/neo/cmd/neo.runServe
-  ^references=matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.Open kind=func
@@ -23,10 +18,6 @@ NODE id=matrix/neo/internal/automatrixsettings.Open kind=func
   sig=func Open(dir string) *Store
   doc=Open builds a store rooted at dir. State is loaded lazily on the first\noperation (Load), so SetVault can be wired between Open and first use. An\nempty dir yields an in-memory-only store (a safe, durable-less fallback) so\ndev/CLI runs and tests still toggle the opt-in correctly.
 EDGES
-  calls=matrix/neo/internal/automatrixsettings.Store.path,matrix/vault.IsVault
-  references=matrix/neo/internal/automatrixsettings.State,matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.Store.path,matrix/neo/internal/automatrixsettings.b,matrix/neo/internal/automatrixsettings.dir,matrix/neo/internal/automatrixsettings.err,matrix/neo/internal/automatrixsettings.s,matrix/neo/internal/automatrixsettings.st,matrix/vault.IsVault
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.State kind=type
@@ -35,7 +26,6 @@ NODE id=matrix/neo/internal/automatrixsettings.State kind=type
   doc=State is the durable Automatrix opt-in state. Its shape is the whole\nno-secrets guarantee: these are the only fields that exist.
 EDGES
   contains=matrix/neo/internal/automatrixsettings.State#AlarmID,matrix/neo/internal/automatrixsettings.State#Enabled,matrix/neo/internal/automatrixsettings.State#TasksDay,matrix/neo/internal/automatrixsettings.State#TasksToday
-  ^references=matrix/neo/internal/automatrixsettings.Open,matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.Store.View,matrix/neo/internal/automatrixsettings.Store.loadLocked,matrix/neo/internal/server.automatrixControl,matrix/neo/internal/server.automatrixGovernor.SettingsView,matrix/neo/internal/server.viewToResponse
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.State#AlarmID kind=field
@@ -72,8 +62,6 @@ NODE id=matrix/neo/internal/automatrixsettings.Store kind=type
   doc=Store is the durable Automatrix opt-in store. State is held in memory for the\nwake's hot live read and mirrored to disk on every mutation; all access is\nserialised by mu.
 EDGES
   contains=matrix/neo/internal/automatrixsettings.Store#dir,matrix/neo/internal/automatrixsettings.Store#mu,matrix/neo/internal/automatrixsettings.Store#st,matrix/neo/internal/automatrixsettings.Store#user,matrix/neo/internal/automatrixsettings.Store#vault,matrix/neo/internal/automatrixsettings.Store.AlarmID,matrix/neo/internal/automatrixsettings.Store.Enabled,matrix/neo/internal/automatrixsettings.Store.Persistent,matrix/neo/internal/automatrixsettings.Store.RecordTaskStarted,matrix/neo/internal/automatrixsettings.Store.SetEnabled,matrix/neo/internal/automatrixsettings.Store.SetVault,matrix/neo/internal/automatrixsettings.Store.TasksToday,matrix/neo/internal/automatrixsettings.Store.View,matrix/neo/internal/automatrixsettings.Store.ad,matrix/neo/internal/automatrixsettings.Store.loadLocked,matrix/neo/internal/automatrixsettings.Store.path,matrix/neo/internal/automatrixsettings.Store.persistLocked
-  references=matrix/neo/internal/automatrixsettings.State,matrix/vault.Session
-  ^references=matrix/neo/internal/automatrixsettings.Open,matrix/neo/internal/automatrixsettings.Store.AlarmID,matrix/neo/internal/automatrixsettings.Store.Enabled,matrix/neo/internal/automatrixsettings.Store.Persistent,matrix/neo/internal/automatrixsettings.Store.RecordTaskStarted,matrix/neo/internal/automatrixsettings.Store.SetEnabled,matrix/neo/internal/automatrixsettings.Store.SetVault,matrix/neo/internal/automatrixsettings.Store.TasksToday,matrix/neo/internal/automatrixsettings.Store.View,matrix/neo/internal/automatrixsettings.Store.ad,matrix/neo/internal/automatrixsettings.Store.loadLocked,matrix/neo/internal/automatrixsettings.Store.path,matrix/neo/internal/automatrixsettings.Store.persistLocked,matrix/neo/internal/server.automatrixGovernor,matrix/neo/internal/server.newAutomatrixGovernor
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.Store#dir kind=field
@@ -112,10 +100,7 @@ NODE id=matrix/neo/internal/automatrixsettings.Store.AlarmID kind=method
   sig=func (s *Store) AlarmID() string
   doc=AlarmID returns the id of this agent's AUTOMATRIX alarm, or "" when none\nexists. Used by the cancel path so an agent only ever cancels its own alarm\n(req 8.1).
 EDGES
-  references=matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.s
   ^contains=matrix/neo/internal/automatrixsettings.Store
-  ^calls=matrix/neo/internal/server.automatrixGovernor.CancelAlarm,matrix/neo/internal/server.automatrixGovernor.SetEnabled
-  ^references=matrix/neo/internal/server.automatrixGovernor.CancelAlarm,matrix/neo/internal/server.automatrixGovernor.SetEnabled
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.Store.Enabled kind=method
@@ -123,10 +108,7 @@ NODE id=matrix/neo/internal/automatrixsettings.Store.Enabled kind=method
   sig=func (s *Store) Enabled() bool
   doc=Enabled reports the authoritative per-user opt-in, re-read live on every\nwake (req 7.1). Default false.
 EDGES
-  references=matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.s
   ^contains=matrix/neo/internal/automatrixsettings.Store
-  ^calls=matrix/neo/internal/server.automatrixGovernor.Enabled,matrix/neo/internal/server.automatrixGovernor.SetEnabled
-  ^references=matrix/neo/internal/server.automatrixGovernor.Enabled,matrix/neo/internal/server.automatrixGovernor.SetEnabled
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.Store.Persistent kind=method
@@ -134,7 +116,6 @@ NODE id=matrix/neo/internal/automatrixsettings.Store.Persistent kind=method
   sig=func (s *Store) Persistent() bool
   doc=Persistent reports whether state is mirrored to disk (a non-empty directory).
 EDGES
-  references=matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.s
   ^contains=matrix/neo/internal/automatrixsettings.Store
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
@@ -143,11 +124,7 @@ NODE id=matrix/neo/internal/automatrixsettings.Store.RecordTaskStarted kind=meth
   sig=func (s *Store) RecordTaskStarted() error
   doc=RecordTaskStarted increments the per-day proactive-task counter, rolling the\nwindow over at UTC midnight (a new date resets the count before incrementing).\nPersists immediately when durable.
 EDGES
-  calls=matrix/neo/internal/automatrixsettings.Store.persistLocked,matrix/neo/internal/automatrixsettings.today
-  references=matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.Store.persistLocked,matrix/neo/internal/automatrixsettings.d,matrix/neo/internal/automatrixsettings.s,matrix/neo/internal/automatrixsettings.today
   ^contains=matrix/neo/internal/automatrixsettings.Store
-  ^calls=matrix/neo/internal/server.automatrixGovernor.RecordTaskStarted
-  ^references=matrix/neo/internal/server.automatrixGovernor.RecordTaskStarted
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.Store.SetEnabled kind=method
@@ -155,11 +132,7 @@ NODE id=matrix/neo/internal/automatrixsettings.Store.SetEnabled kind=method
   sig=func (s *Store) SetEnabled(enabled bool, alarmID string) error
   doc=SetEnabled records the opt-in flag and the alarm id together (one atomic\nmutation), so the live setting and the alarm bookkeeping never diverge.\nDisabling clears the alarm id. Persists immediately when durable.
 EDGES
-  calls=matrix/neo/internal/automatrixsettings.Store.persistLocked
-  references=matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.Store.persistLocked,matrix/neo/internal/automatrixsettings.alarmID,matrix/neo/internal/automatrixsettings.enabled,matrix/neo/internal/automatrixsettings.s
   ^contains=matrix/neo/internal/automatrixsettings.Store
-  ^calls=matrix/neo/internal/server.automatrixGovernor.CancelAlarm,matrix/neo/internal/server.automatrixGovernor.SetEnabled
-  ^references=matrix/neo/internal/server.automatrixGovernor.CancelAlarm,matrix/neo/internal/server.automatrixGovernor.SetEnabled
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.Store.SetVault kind=method
@@ -167,11 +140,7 @@ NODE id=matrix/neo/internal/automatrixsettings.Store.SetVault kind=method
   sig=func (s *Store) SetVault(sess *vault.Session, user string)
   doc=SetVault wires the fail-closed data-at-rest session and owning user DID into\nthe store and (re)loads persisted state under it. Called once at engine\nassembly before any mutation; a nil session leaves the store on plaintext.
 EDGES
-  calls=matrix/neo/internal/automatrixsettings.Store.loadLocked
-  references=matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.Store.loadLocked,matrix/neo/internal/automatrixsettings.s,matrix/neo/internal/automatrixsettings.sess,matrix/neo/internal/automatrixsettings.user,matrix/vault.Session
   ^contains=matrix/neo/internal/automatrixsettings.Store
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.Store.TasksToday kind=method
@@ -179,11 +148,7 @@ NODE id=matrix/neo/internal/automatrixsettings.Store.TasksToday kind=method
   sig=func (s *Store) TasksToday() int
   doc=TasksToday returns the proactive-task count for the current UTC date,\ntreating a stale date as zero (the daily reset, req 4.7). Pure read — it does\nnot persist the reset; RecordTaskStarted writes the fresh date.
 EDGES
-  calls=matrix/neo/internal/automatrixsettings.today
-  references=matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.s,matrix/neo/internal/automatrixsettings.today
   ^contains=matrix/neo/internal/automatrixsettings.Store
-  ^calls=matrix/neo/internal/server.automatrixGovernor.TasksToday
-  ^references=matrix/neo/internal/server.automatrixGovernor.TasksToday
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.Store.View kind=method
@@ -191,10 +156,7 @@ NODE id=matrix/neo/internal/automatrixsettings.Store.View kind=method
   sig=func (s *Store) View() State
   doc=View returns a copy of the current state (safe to read without holding mu).
 EDGES
-  references=matrix/neo/internal/automatrixsettings.State,matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.s
   ^contains=matrix/neo/internal/automatrixsettings.Store
-  ^calls=matrix/neo/internal/server.automatrixGovernor.SettingsView
-  ^references=matrix/neo/internal/server.automatrixGovernor.SettingsView
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.Store.ad kind=method
@@ -202,10 +164,7 @@ NODE id=matrix/neo/internal/automatrixsettings.Store.ad kind=method
   sig=func (s *Store) ad() vault.AD
   doc=ad reconstructs the settings file's associated data (this user's single\nsettings file). Never stored, so a file moved between users fails auth.
 EDGES
-  references=matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.s,matrix/neo/internal/automatrixsettings.schemaSettings1,matrix/neo/internal/automatrixsettings.storeSettings,matrix/vault.AD
   ^contains=matrix/neo/internal/automatrixsettings.Store
-  ^calls=matrix/neo/internal/automatrixsettings.Store.loadLocked,matrix/neo/internal/automatrixsettings.Store.persistLocked
-  ^references=matrix/neo/internal/automatrixsettings.Store.loadLocked,matrix/neo/internal/automatrixsettings.Store.persistLocked
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.Store.loadLocked kind=method
@@ -213,21 +172,14 @@ NODE id=matrix/neo/internal/automatrixsettings.Store.loadLocked kind=method
   sig=func (s *Store) loadLocked()
   doc=loadLocked reads persisted state, decrypting a sealed file under the\nreconstructed AD (legacy plaintext parses as today). A wrong-key/tampered\nsealed file leaves the in-memory state at its zero value. Caller holds mu.
 EDGES
-  calls=matrix/neo/internal/automatrixsettings.Store.ad,matrix/neo/internal/automatrixsettings.Store.path,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
-  references=matrix/neo/internal/automatrixsettings.State,matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.Store.ad,matrix/neo/internal/automatrixsettings.Store.path,matrix/neo/internal/automatrixsettings.b,matrix/neo/internal/automatrixsettings.err,matrix/neo/internal/automatrixsettings.oerr,matrix/neo/internal/automatrixsettings.plain,matrix/neo/internal/automatrixsettings.s,matrix/neo/internal/automatrixsettings.st,matrix/neo/internal/automatrixsettings.uv,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
   ^contains=matrix/neo/internal/automatrixsettings.Store
-  ^calls=matrix/neo/internal/automatrixsettings.Store.SetVault
-  ^references=matrix/neo/internal/automatrixsettings.Store.SetVault
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.Store.path kind=method
   digest=b3:64bdce770cd7c67b5b6d700c3b25bd958bd66bb0986fd551e0eef131a9c2d67e file=neo/internal/automatrixsettings/automatrixsettings.go range=265:270 lang=go exported=false byte_range=8644:8753
   sig=func (s *Store) path() string
 EDGES
-  references=matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.s,matrix/neo/internal/automatrixsettings.settingsFile
   ^contains=matrix/neo/internal/automatrixsettings.Store
-  ^calls=matrix/neo/internal/automatrixsettings.Open,matrix/neo/internal/automatrixsettings.Store.loadLocked,matrix/neo/internal/automatrixsettings.Store.persistLocked
-  ^references=matrix/neo/internal/automatrixsettings.Open,matrix/neo/internal/automatrixsettings.Store.loadLocked,matrix/neo/internal/automatrixsettings.Store.persistLocked
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.Store.persistLocked kind=method
@@ -235,11 +187,7 @@ NODE id=matrix/neo/internal/automatrixsettings.Store.persistLocked kind=method
   sig=func (s *Store) persistLocked() error
   doc=persistLocked writes the current state to disk crash-atomically (tmp+rename).\nA no-op for an in-memory-only store. Caller holds mu.
 EDGES
-  calls=matrix/neo/internal/automatrixsettings.Store.ad,matrix/neo/internal/automatrixsettings.Store.path,matrix/vault.Session.MaybeSealFile
-  references=matrix/neo/internal/automatrixsettings.Store,matrix/neo/internal/automatrixsettings.Store.ad,matrix/neo/internal/automatrixsettings.Store.path,matrix/neo/internal/automatrixsettings.b,matrix/neo/internal/automatrixsettings.err,matrix/neo/internal/automatrixsettings.s,matrix/neo/internal/automatrixsettings.tmp,matrix/vault.Session.MaybeSealFile
   ^contains=matrix/neo/internal/automatrixsettings.Store
-  ^calls=matrix/neo/internal/automatrixsettings.Store.RecordTaskStarted,matrix/neo/internal/automatrixsettings.Store.SetEnabled
-  ^references=matrix/neo/internal/automatrixsettings.Store.RecordTaskStarted,matrix/neo/internal/automatrixsettings.Store.SetEnabled
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.schemaSettings1 kind=const
@@ -247,7 +195,6 @@ NODE id=matrix/neo/internal/automatrixsettings.schemaSettings1 kind=const
   sig=untyped string
   doc=Store type and schema bound into the settings file's associated data, so a\nsealed file cannot be read across users.
 EDGES
-  ^references=matrix/neo/internal/automatrixsettings.Store.ad
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.settingsFile kind=const
@@ -255,7 +202,6 @@ NODE id=matrix/neo/internal/automatrixsettings.settingsFile kind=const
   sig=untyped string
   doc=settingsFile is the single per-daemon settings file. The daemon is per-user,\nso one file holds that user/agent's Automatrix opt-in state.
 EDGES
-  ^references=matrix/neo/internal/automatrixsettings.Store.path
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.storeSettings kind=const
@@ -263,7 +209,6 @@ NODE id=matrix/neo/internal/automatrixsettings.storeSettings kind=const
   sig=untyped string
   doc=Store type and schema bound into the settings file's associated data, so a\nsealed file cannot be read across users.
 EDGES
-  ^references=matrix/neo/internal/automatrixsettings.Store.ad
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings.today kind=func
@@ -271,8 +216,6 @@ NODE id=matrix/neo/internal/automatrixsettings.today kind=func
   sig=func today() string
   doc=today is the current UTC date as YYYY-MM-DD (the per-day counter window key).
 EDGES
-  ^calls=matrix/neo/internal/automatrixsettings.Store.RecordTaskStarted,matrix/neo/internal/automatrixsettings.Store.TasksToday
-  ^references=matrix/neo/internal/automatrixsettings.Store.RecordTaskStarted,matrix/neo/internal/automatrixsettings.Store.TasksToday
   ^defines=matrix/neo/internal/automatrixsettings/automatrixsettings.go
 
 NODE id=matrix/neo/internal/automatrixsettings/automatrixsettings.go kind=file

@@ -1,20 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/execution kind=package
   digest=b3:56a83c08e9ef1160292e3a25c32bc22df59ad734ecd46b6832b7dc1c8a5941e9 file=workforce/internal/execution range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/execution/artifact.go,matrix/workforce/internal/execution/store.go,matrix/workforce/internal/execution/types.go
-  imports=matrix/vault,matrix/workforce/internal/contracts
   ^contains=mod:matrix/workforce
-  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/wakeruntime
 
 NODE id=matrix/workforce/internal/execution.AdvanceRequest kind=type
   digest=b3:032b940949f9f4f7d13e9923b79abe4820ec64b68a631bf94b8836120af0a89e file=workforce/internal/execution/types.go range=151:162 lang=go exported=true byte_range=5380:5721
   sig=type AdvanceRequest struct {\n	OrganizationID		contracts.OrganizationID\n	WakeID			contracts.WakeID\n	ExpectedVersion		uint64\n	Decision		Decision\n	IdempotencyKey		string\n	Usage			Usage\n	EffectID		string\n	ReceiptID		contracts.ReceiptID\n	FinalDisposition	contracts.WakeDisposition\n	ReasonCode		string\n}
 EDGES
   contains=matrix/workforce/internal/execution.AdvanceRequest#Decision,matrix/workforce/internal/execution.AdvanceRequest#EffectID,matrix/workforce/internal/execution.AdvanceRequest#ExpectedVersion,matrix/workforce/internal/execution.AdvanceRequest#FinalDisposition,matrix/workforce/internal/execution.AdvanceRequest#IdempotencyKey,matrix/workforce/internal/execution.AdvanceRequest#OrganizationID,matrix/workforce/internal/execution.AdvanceRequest#ReasonCode,matrix/workforce/internal/execution.AdvanceRequest#ReceiptID,matrix/workforce/internal/execution.AdvanceRequest#Usage,matrix/workforce/internal/execution.AdvanceRequest#WakeID
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.ReceiptID,matrix/workforce/internal/contracts.WakeDisposition,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/execution.Decision,matrix/workforce/internal/execution.Usage
-  ^references=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.Resume,matrix/workforce/internal/execution.hashRequest,matrix/workforce/internal/execution.transition,matrix/workforce/internal/execution.validateAdvanceRequest,matrix/workforce/internal/wakeruntime.advance
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.AdvanceRequest#Decision kind=field
@@ -82,160 +78,121 @@ NODE id=matrix/workforce/internal/execution.Decision kind=type
   sig=type Decision string
 EDGES
   contains=matrix/workforce/internal/execution.Decision.Valid
-  ^references=matrix/workforce/internal/execution.AdvanceRequest,matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.DecisionAdvance,matrix/workforce/internal/execution.DecisionBlock,matrix/workforce/internal/execution.DecisionCancel,matrix/workforce/internal/execution.DecisionComplete,matrix/workforce/internal/execution.DecisionDispatch,matrix/workforce/internal/execution.DecisionEffectAmbiguous,matrix/workforce/internal/execution.DecisionExhaustBudget,matrix/workforce/internal/execution.DecisionExpireLease,matrix/workforce/internal/execution.DecisionFail,matrix/workforce/internal/execution.DecisionObserved,matrix/workforce/internal/execution.DecisionReconcileCompleted,matrix/workforce/internal/execution.DecisionReconcileUnchanged,matrix/workforce/internal/execution.DecisionWaitApproval,matrix/workforce/internal/execution.DecisionWaitDependency,matrix/workforce/internal/execution.decisionDisposition,matrix/workforce/internal/wakeruntime.advance
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.Decision.Valid kind=method
   digest=b3:766d61ad0df0765a494b0305b864f12d5007de4789fcf443d169bffa94a28cd9 file=workforce/internal/execution/types.go range=63:75 lang=go exported=true byte_range=1687:2092
   sig=func (decision Decision) Valid() bool
 EDGES
-  references=matrix/workforce/internal/execution.Decision,matrix/workforce/internal/execution.DecisionAdvance,matrix/workforce/internal/execution.DecisionBlock,matrix/workforce/internal/execution.DecisionCancel,matrix/workforce/internal/execution.DecisionComplete,matrix/workforce/internal/execution.DecisionDispatch,matrix/workforce/internal/execution.DecisionEffectAmbiguous,matrix/workforce/internal/execution.DecisionExhaustBudget,matrix/workforce/internal/execution.DecisionExpireLease,matrix/workforce/internal/execution.DecisionFail,matrix/workforce/internal/execution.DecisionObserved,matrix/workforce/internal/execution.DecisionReconcileCompleted,matrix/workforce/internal/execution.DecisionReconcileUnchanged,matrix/workforce/internal/execution.DecisionWaitApproval,matrix/workforce/internal/execution.DecisionWaitDependency,matrix/workforce/internal/execution.decision
   ^contains=matrix/workforce/internal/execution.Decision
-  ^calls=matrix/workforce/internal/execution.validateAdvanceRequest
-  ^references=matrix/workforce/internal/execution.validateAdvanceRequest
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionAdvance kind=const
   digest=b3:fa9387b2b204ac6d5bd75e9496daadd7706d248b7d98f3e35f90bbf6dc67fd17 file=workforce/internal/execution/types.go range=47:47 lang=go exported=true byte_range=943:990
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.transition,matrix/workforce/internal/wakeruntime.Runner.compile,matrix/workforce/internal/wakeruntime.Runner.observeEffect,matrix/workforce/internal/wakeruntime.Runner.propose,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit,matrix/workforce/internal/wakeruntime.Runner.yield,matrix/workforce/internal/wakeruntime.advanceTo
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionBlock kind=const
   digest=b3:1b0583964983b83dd21ed050024f3b170debec52ec00c98e12ed043efe074dfc file=workforce/internal/execution/types.go range=55:55 lang=go exported=true byte_range=1384:1429
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.decisionDisposition,matrix/workforce/internal/wakeruntime.Runner.propose,matrix/workforce/internal/wakeruntime.Runner.waitForHumanVerification
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionCancel kind=const
   digest=b3:bd7c78dedc47a1be46030e12c5cfc6c6cef4b455be4879d4a14cec6782df3fd8 file=workforce/internal/execution/types.go range=59:59 lang=go exported=true byte_range=1591:1637
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.decisionDisposition
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionComplete kind=const
   digest=b3:130b5168e6eed0bb3f8df680f03bc152843961a8a0c714c8a062c1ee637f8713 file=workforce/internal/execution/types.go range=56:56 lang=go exported=true byte_range=1431:1479
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.decisionDisposition,matrix/workforce/internal/execution.transition
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionDispatch kind=const
   digest=b3:baac1416e336e89dd758e03cc6eea2cddaaf28a105b0395d28020f16985607bf file=workforce/internal/execution/types.go range=48:48 lang=go exported=true byte_range=992:1040
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.transition,matrix/workforce/internal/wakeruntime.Runner.executeEffect
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionEffectAmbiguous kind=const
   digest=b3:f9615d654b3d1718087277dd573fa23b443635c80de6bbb77443b06c05749398 file=workforce/internal/execution/types.go range=50:50 lang=go exported=true byte_range=1092:1148
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.Store.Resume,matrix/workforce/internal/execution.transition
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionExhaustBudget kind=const
   digest=b3:c92fe9efe7948a930db6129380ee9439a54ad3ba6c300e79f661af18e82370c6 file=workforce/internal/execution/types.go range=57:57 lang=go exported=true byte_range=1481:1535
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.decisionDisposition
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionExpireLease kind=const
   digest=b3:425110cf56919092039fdb36df4bf129a41fdc617859453b7418b626059d96d8 file=workforce/internal/execution/types.go range=58:58 lang=go exported=true byte_range=1537:1589
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.decisionDisposition
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionFail kind=const
   digest=b3:fe53f71d57c30826f37aa25aa4da894c924e4770becf8ee5487f29d5c4c9b35c file=workforce/internal/execution/types.go range=60:60 lang=go exported=true byte_range=1639:1683
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.decisionDisposition,matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionObserved kind=const
   digest=b3:bdc1c7a4f1d2d95da6ae43a3b7312bc92180dd5a90f4a4dbce7bf67f76d56a18 file=workforce/internal/execution/types.go range=49:49 lang=go exported=true byte_range=1042:1090
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.transition,matrix/workforce/internal/wakeruntime.Runner.executeEffect
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionReconcileCompleted kind=const
   digest=b3:c814abded9e475f7bf742cebc11172b1cb7d3defd86d4a3f8fc56e8fb1e50551 file=workforce/internal/execution/types.go range=52:52 lang=go exported=true byte_range=1211:1270
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.transition,matrix/workforce/internal/wakeruntime.Runner.reconcileEffect
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionReconcileUnchanged kind=const
   digest=b3:0eb825869ed672f116b8c840f74efc611987adc5989a91f4dd601f5b091f9ef7 file=workforce/internal/execution/types.go range=51:51 lang=go exported=true byte_range=1150:1209
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.transition
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionWaitApproval kind=const
   digest=b3:eab506e6a145eeaf21174c1c7a34d6bb51be904a330758ba73bf581e8b46e394 file=workforce/internal/execution/types.go range=54:54 lang=go exported=true byte_range=1329:1382
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.decisionDisposition
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.DecisionWaitDependency kind=const
   digest=b3:148fa749613e6cdfe6cec75b2505c4865e06baa73d569aff0ecfd607c6d26245 file=workforce/internal/execution/types.go range=53:53 lang=go exported=true byte_range=1272:1327
   sig=execution.Decision
 EDGES
-  references=matrix/workforce/internal/execution.Decision
-  ^references=matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.decisionDisposition
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.ErrConflict kind=var
   digest=b3:bf6854f580e88f20321434a707b99abd9590830b2c4ecd344b7fbfe18f1b821e file=workforce/internal/execution/store.go range=21:21 lang=go exported=true byte_range=248:315
   sig=error
 EDGES
-  ^references=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.Load,matrix/workforce/internal/execution.Store.OpenArtifact,matrix/workforce/internal/execution.Store.PutArtifact,matrix/workforce/internal/execution.Store.Start,matrix/workforce/internal/wakeruntime.Runner.openAuditorLease,matrix/workforce/internal/wakeruntime.Runner.openPacket,matrix/workforce/internal/wakeruntime.Runner.openSeatOutput,matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim,matrix/workforce/internal/wakeruntime.Runner.prepareClaim
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.ErrInvalidTransition kind=var
   digest=b3:e69ea06c9f0e4274b154d273c12d65945a15d7b5d1293a8e0effb552ac85c295 file=workforce/internal/execution/store.go range=23:23 lang=go exported=true byte_range=383:449
   sig=error
 EDGES
-  ^references=matrix/workforce/internal/execution.transition
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.ErrTerminal kind=var
   digest=b3:5465e6275c61e0dab1e561d197e2df89230c23bd892e5686ceb8efe062d14230 file=workforce/internal/execution/store.go range=22:22 lang=go exported=true byte_range=317:381
   sig=error
 EDGES
-  ^references=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.Start,matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.New kind=func
   digest=b3:6d20406b8ea4ead5af5d669b9dbc13ba988e1fdb33c62e4d82c89ad12b8986e3 file=workforce/internal/execution/store.go range=33:46 lang=go exported=true byte_range=571:1064
   sig=func New(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	tenantID string,\n	now func() time.Time,\n) (*Store, error)
 EDGES
-  calls=matrix/vault.UserVault.User
-  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/execution.Store,matrix/workforce/internal/execution.now,matrix/workforce/internal/execution.pool,matrix/workforce/internal/execution.tenantID,matrix/workforce/internal/execution.userVault
-  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
-  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.Stage kind=type
@@ -243,121 +200,91 @@ NODE id=matrix/workforce/internal/execution.Stage kind=type
   sig=type Stage string
 EDGES
   contains=matrix/workforce/internal/execution.Stage.Valid
-  ^references=matrix/workforce/internal/execution.Stage.Valid,matrix/workforce/internal/execution.StageCommit,matrix/workforce/internal/execution.StageCompile,matrix/workforce/internal/execution.StageExecute,matrix/workforce/internal/execution.StageLease,matrix/workforce/internal/execution.StageObserve,matrix/workforce/internal/execution.StageOrient,matrix/workforce/internal/execution.StagePreflight,matrix/workforce/internal/execution.StagePropose,matrix/workforce/internal/execution.StageReconcile,matrix/workforce/internal/execution.StageSelect,matrix/workforce/internal/execution.StageSleep,matrix/workforce/internal/execution.StageVerify,matrix/workforce/internal/execution.StageYield,matrix/workforce/internal/execution.State,matrix/workforce/internal/execution.nextStage,matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/wakeruntime.advanceTo,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.Stage.Valid kind=method
   digest=b3:9675ebe0f31f3fdaf8d45e322b441eda3363fd6da148f339308a91dc99154a3e file=workforce/internal/execution/types.go range=35:42 lang=go exported=true byte_range=774:910
   sig=func (stage Stage) Valid() bool
 EDGES
-  references=matrix/workforce/internal/execution.Stage,matrix/workforce/internal/execution.current,matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/execution.stage
   ^contains=matrix/workforce/internal/execution.Stage
-  ^calls=matrix/workforce/internal/execution.State.Validate
-  ^references=matrix/workforce/internal/execution.State.Validate
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StageCommit kind=const
   digest=b3:c0e8732af86d01ec91dc9afb97b827847ff5367259f02aa8049b786492b78a40 file=workforce/internal/execution/types.go range=24:24 lang=go exported=true byte_range=464:495
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/execution.transition,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StageCompile kind=const
   digest=b3:f024594ef4ce6d15fc0c015c6a9047ccfa82ca522e4056476353430d0440b056 file=workforce/internal/execution/types.go range=19:19 lang=go exported=true byte_range=293:325
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StageExecute kind=const
   digest=b3:82d0bc082bc04c42b7f82cfed986bfc053b509499524c7ea77eaa5432c3980e0 file=workforce/internal/execution/types.go range=21:21 lang=go exported=true byte_range=363:395
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.State.Validate,matrix/workforce/internal/execution.Store.Resume,matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/execution.transition,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StageLease kind=const
   digest=b3:7e4c1faf3679a3edb53d7145602c4d91722b356ff4eb4edb98c054bf44824d5f file=workforce/internal/execution/types.go range=14:14 lang=go exported=true byte_range=125:155
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.Store.Start,matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StageObserve kind=const
   digest=b3:b466f52e4a1a6841e7ae7ba55b836040c8d49b548b4ef423edc687c4a613b598 file=workforce/internal/execution/types.go range=22:22 lang=go exported=true byte_range=397:429
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/execution.transition,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StageOrient kind=const
   digest=b3:8c12621c2ffed14d8c85fab8a8275afd9b5ce2d58556a22eac9dbb61d0d0821e file=workforce/internal/execution/types.go range=16:16 lang=go exported=true byte_range=193:224
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StagePreflight kind=const
   digest=b3:ff86277b7ada6fc17f51304d044699e9b0d6d56644a5924223ff831f7b331b56 file=workforce/internal/execution/types.go range=20:20 lang=go exported=true byte_range=327:361
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StagePropose kind=const
   digest=b3:94603bd1309a2e9a89fb3fe3e481b2cafe8cc4f17beeada8913af9018988aadf file=workforce/internal/execution/types.go range=18:18 lang=go exported=true byte_range=259:291
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StageReconcile kind=const
   digest=b3:92fdc65a93ae69a4658b23400c945d71b53cd6de26bc2d278041026f2cda6bf0 file=workforce/internal/execution/types.go range=15:15 lang=go exported=true byte_range=157:191
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/execution.transition,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StageSelect kind=const
   digest=b3:14e2d3c93b4aff72d8b28003a84c4be6cba058ac31b2128e7dfe8a5c37e4acb4 file=workforce/internal/execution/types.go range=17:17 lang=go exported=true byte_range=226:257
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StageSleep kind=const
   digest=b3:5f9733a3d98d1d662c10e11a14c848bcef5024a3ce9083e88a9e7fade6e3c002 file=workforce/internal/execution/types.go range=26:26 lang=go exported=true byte_range=529:559
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.State.Validate,matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/execution.terminal,matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim,matrix/workforce/internal/wakeruntime.Runner.prepareClaim,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.Runner.waitForHumanVerification,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StageVerify kind=const
   digest=b3:7b2ad90117a4889cea4e862eb9cad564a728bbc81bd3ad012e2f7a226b1ffdd5 file=workforce/internal/execution/types.go range=23:23 lang=go exported=true byte_range=431:462
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/wakeruntime.Runner.prepareClaim,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.Runner.waitForHumanVerification,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.StageYield kind=const
   digest=b3:a5cc25e62f7e237f118fffb6ac7e477f7ad7dca187d8b2c4b533b3dddc45db10 file=workforce/internal/execution/types.go range=25:25 lang=go exported=true byte_range=497:527
   sig=execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage
-  ^references=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/execution.transition,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.stageBefore
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.State kind=type
@@ -366,8 +293,6 @@ NODE id=matrix/workforce/internal/execution.State kind=type
 EDGES
   contains=matrix/workforce/internal/execution.State#Budget,matrix/workforce/internal/execution.State#Disposition,matrix/workforce/internal/execution.State#IntentID,matrix/workforce/internal/execution.State#LeaseExpiresAt,matrix/workforce/internal/execution.State#LeaseID,matrix/workforce/internal/execution.State#OrganizationID,matrix/workforce/internal/execution.State#PacketDigest,matrix/workforce/internal/execution.State#PendingEffectID,matrix/workforce/internal/execution.State#ReasonCode,matrix/workforce/internal/execution.State#ReceiptID,matrix/workforce/internal/execution.State#ResumeStage,matrix/workforce/internal/execution.State#SchemaVersion,matrix/workforce/internal/execution.State#SeatID,matrix/workforce/internal/execution.State#Stage,matrix/workforce/internal/execution.State#StartedAt,matrix/workforce/internal/execution.State#Steps,matrix/workforce/internal/execution.State#UpdatedAt,matrix/workforce/internal/execution.State#Usage,matrix/workforce/internal/execution.State#Version,matrix/workforce/internal/execution.State#WakeID,matrix/workforce/internal/execution.State.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.ReceiptID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.WakeBudget,matrix/workforce/internal/contracts.WakeDisposition,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/execution.Stage,matrix/workforce/internal/execution.Usage
-  ^references=matrix/workforce/internal/execution.State.Validate,matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.Load,matrix/workforce/internal/execution.Store.Resume,matrix/workforce/internal/execution.Store.Start,matrix/workforce/internal/execution.Store.open,matrix/workforce/internal/execution.Store.seal,matrix/workforce/internal/execution.budgetExceeded,matrix/workforce/internal/execution.terminal,matrix/workforce/internal/execution.transition,matrix/workforce/internal/wakeruntime.advance,matrix/workforce/internal/wakeruntime.advanceTo,matrix/workforce/internal/wakeruntime.preparedClaim
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.State#Budget kind=field
@@ -494,11 +419,7 @@ NODE id=matrix/workforce/internal/execution.State.Validate kind=method
   digest=b3:6d6903184fe2ea7432dd85bbfed3b8b2ee0b88f5e3e384f46bfe07f3b3913479 file=workforce/internal/execution/types.go range=106:149 lang=go exported=true byte_range=3516:5378
   sig=func (state State) Validate() error
 EDGES
-  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.WakeBudget.Validate,matrix/workforce/internal/contracts.WakeDisposition.Valid,matrix/workforce/internal/execution.Stage.Valid
-  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WakeBudget.Validate,matrix/workforce/internal/contracts.WakeDisposition.Valid,matrix/workforce/internal/execution.Stage.Valid,matrix/workforce/internal/execution.StageExecute,matrix/workforce/internal/execution.StageSleep,matrix/workforce/internal/execution.State,matrix/workforce/internal/execution.err,matrix/workforce/internal/execution.state
   ^contains=matrix/workforce/internal/execution.State
-  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.open
-  ^references=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.open
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.Store kind=type
@@ -506,8 +427,6 @@ NODE id=matrix/workforce/internal/execution.Store kind=type
   sig=type Store struct {\n	pool		*pgxpool.Pool\n	vault		*vault.UserVault\n	tenantID	string\n	now		func() time.Time\n}
 EDGES
   contains=matrix/workforce/internal/execution.Store#now,matrix/workforce/internal/execution.Store#pool,matrix/workforce/internal/execution.Store#tenantID,matrix/workforce/internal/execution.Store#vault,matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.Load,matrix/workforce/internal/execution.Store.OpenArtifact,matrix/workforce/internal/execution.Store.PutArtifact,matrix/workforce/internal/execution.Store.Resume,matrix/workforce/internal/execution.Store.Start,matrix/workforce/internal/execution.Store.ad,matrix/workforce/internal/execution.Store.artifactAD,matrix/workforce/internal/execution.Store.currentTime,matrix/workforce/internal/execution.Store.open,matrix/workforce/internal/execution.Store.seal
-  references=matrix/vault.UserVault
-  ^references=matrix/workforce/internal/execution.New,matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.Load,matrix/workforce/internal/execution.Store.OpenArtifact,matrix/workforce/internal/execution.Store.PutArtifact,matrix/workforce/internal/execution.Store.Resume,matrix/workforce/internal/execution.Store.Start,matrix/workforce/internal/execution.Store.ad,matrix/workforce/internal/execution.Store.artifactAD,matrix/workforce/internal/execution.Store.currentTime,matrix/workforce/internal/execution.Store.open,matrix/workforce/internal/execution.Store.seal,matrix/workforce/internal/wakeruntime.Runner,matrix/workforce/internal/wakeruntime.advance,matrix/workforce/internal/wakeruntime.advanceTo
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.Store#now kind=field
@@ -538,22 +457,14 @@ NODE id=matrix/workforce/internal/execution.Store.Advance kind=method
   digest=b3:99c89535fa8d4773b051dded7fe7340d8571067d7c78a794c9284657489197d8 file=workforce/internal/execution/store.go range=143:281 lang=go exported=true byte_range=4133:8905
   sig=func (store *Store) Advance(ctx context.Context, request AdvanceRequest) (State, error)
 EDGES
-  calls=matrix/workforce/internal/execution.State.Validate,matrix/workforce/internal/execution.Store.currentTime,matrix/workforce/internal/execution.Store.open,matrix/workforce/internal/execution.Store.seal,matrix/workforce/internal/execution.budgetExceeded,matrix/workforce/internal/execution.hashRequest,matrix/workforce/internal/execution.terminal,matrix/workforce/internal/execution.transition,matrix/workforce/internal/execution.validateAdvanceRequest
-  references=matrix/workforce/internal/contracts.DispositionBudgetExhausted,matrix/workforce/internal/contracts.DispositionLeaseExpired,matrix/workforce/internal/execution.AdvanceRequest,matrix/workforce/internal/execution.ErrConflict,matrix/workforce/internal/execution.ErrTerminal,matrix/workforce/internal/execution.StageCommit,matrix/workforce/internal/execution.StageSleep,matrix/workforce/internal/execution.StageYield,matrix/workforce/internal/execution.State,matrix/workforce/internal/execution.State.Validate,matrix/workforce/internal/execution.Store,matrix/workforce/internal/execution.Store.currentTime,matrix/workforce/internal/execution.Store.open,matrix/workforce/internal/execution.Store.seal,matrix/workforce/internal/execution.budgetExceeded,matrix/workforce/internal/execution.command,matrix/workforce/internal/execution.ctx,matrix/workforce/internal/execution.effectID,matrix/workforce/internal/execution.err,matrix/workforce/internal/execution.existingHash,matrix/workforce/internal/execution.expectedHash,matrix/workforce/internal/execution.hashRequest,matrix/workforce/internal/execution.next,matrix/workforce/internal/execution.nextHash,matrix/workforce/internal/execution.nextSealed,matrix/workforce/internal/execution.now,matrix/workforce/internal/execution.receiptID,matrix/workforce/internal/execution.request,matrix/workforce/internal/execution.requestHash,matrix/workforce/internal/execution.sealed,matrix/workforce/internal/execution.state,matrix/workforce/internal/execution.store,matrix/workforce/internal/execution.terminal,matrix/workforce/internal/execution.transition,matrix/workforce/internal/execution.tx,matrix/workforce/internal/execution.validateAdvanceRequest
   ^contains=matrix/workforce/internal/execution.Store
-  ^calls=matrix/workforce/internal/execution.Store.Resume,matrix/workforce/internal/wakeruntime.advance
-  ^references=matrix/workforce/internal/execution.Store.Resume,matrix/workforce/internal/wakeruntime.advance
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.Store.Load kind=method
   digest=b3:f12d21a192559844a0cfdcf87f85b45d283f8ce15402ce74c4c129102ece8b1d file=workforce/internal/execution/store.go range=104:123 lang=go exported=true byte_range=2903:3539
   sig=func (store *Store) Load(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	wakeID contracts.WakeID,\n) (State, error)
 EDGES
-  calls=matrix/workforce/internal/execution.Store.open
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/execution.ErrConflict,matrix/workforce/internal/execution.State,matrix/workforce/internal/execution.Store,matrix/workforce/internal/execution.Store.open,matrix/workforce/internal/execution.ctx,matrix/workforce/internal/execution.err,matrix/workforce/internal/execution.expectedHash,matrix/workforce/internal/execution.organizationID,matrix/workforce/internal/execution.sealed,matrix/workforce/internal/execution.store,matrix/workforce/internal/execution.wakeID
   ^contains=matrix/workforce/internal/execution.Store
-  ^calls=matrix/workforce/internal/execution.Store.Resume,matrix/workforce/internal/execution.Store.Start,matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim,matrix/workforce/internal/wakeruntime.Runner.prepareClaim
-  ^references=matrix/workforce/internal/execution.Store.Resume,matrix/workforce/internal/execution.Store.Start,matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim,matrix/workforce/internal/wakeruntime.Runner.prepareClaim
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.Store.OpenArtifact kind=method
@@ -561,11 +472,7 @@ NODE id=matrix/workforce/internal/execution.Store.OpenArtifact kind=method
   sig=func (store *Store) OpenArtifact(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	wakeID contracts.WakeID,\n	kind string,\n) ([]byte, contracts.ContentHash, error)
   doc=OpenArtifact returns the exact Vault-opened content after checking its\ndurable content hash.
 EDGES
-  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/execution.Store.artifactAD,matrix/workforce/internal/execution.validArtifactKind
-  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/execution.ErrConflict,matrix/workforce/internal/execution.Store,matrix/workforce/internal/execution.Store.artifactAD,matrix/workforce/internal/execution.actualHash,matrix/workforce/internal/execution.ctx,matrix/workforce/internal/execution.err,matrix/workforce/internal/execution.expectedHash,matrix/workforce/internal/execution.kind,matrix/workforce/internal/execution.maxRuntimeArtifactBytes,matrix/workforce/internal/execution.opened,matrix/workforce/internal/execution.organizationID,matrix/workforce/internal/execution.sealed,matrix/workforce/internal/execution.store,matrix/workforce/internal/execution.sum,matrix/workforce/internal/execution.validArtifactKind,matrix/workforce/internal/execution.wakeID
   ^contains=matrix/workforce/internal/execution.Store
-  ^calls=matrix/workforce/internal/wakeruntime.Runner.openAuditorLease,matrix/workforce/internal/wakeruntime.Runner.openPacket,matrix/workforce/internal/wakeruntime.Runner.openSeatOutput
-  ^references=matrix/workforce/internal/wakeruntime.Runner.openAuditorLease,matrix/workforce/internal/wakeruntime.Runner.openPacket,matrix/workforce/internal/wakeruntime.Runner.openSeatOutput
   ^defines=matrix/workforce/internal/execution/artifact.go
 
 NODE id=matrix/workforce/internal/execution.Store.PutArtifact kind=method
@@ -573,85 +480,56 @@ NODE id=matrix/workforce/internal/execution.Store.PutArtifact kind=method
   sig=func (store *Store) PutArtifact(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	wakeID contracts.WakeID,\n	kind string,\n	content []byte,\n) (contracts.ContentHash, error)
   doc=PutArtifact durably seals an immutable kernel-owned wake artifact. It is\nidempotent only when the exact content already exists under the same kind.
 EDGES
-  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/execution.Store.artifactAD,matrix/workforce/internal/execution.Store.currentTime,matrix/workforce/internal/execution.validArtifactKind
-  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/execution.ErrConflict,matrix/workforce/internal/execution.Store,matrix/workforce/internal/execution.Store.artifactAD,matrix/workforce/internal/execution.Store.currentTime,matrix/workforce/internal/execution.command,matrix/workforce/internal/execution.content,matrix/workforce/internal/execution.ctx,matrix/workforce/internal/execution.err,matrix/workforce/internal/execution.existingHash,matrix/workforce/internal/execution.hash,matrix/workforce/internal/execution.kind,matrix/workforce/internal/execution.maxRuntimeArtifactBytes,matrix/workforce/internal/execution.now,matrix/workforce/internal/execution.organizationID,matrix/workforce/internal/execution.sealed,matrix/workforce/internal/execution.store,matrix/workforce/internal/execution.sum,matrix/workforce/internal/execution.validArtifactKind,matrix/workforce/internal/execution.wakeID
   ^contains=matrix/workforce/internal/execution.Store
-  ^calls=matrix/workforce/internal/wakeruntime.Runner.putCanonicalArtifact
-  ^references=matrix/workforce/internal/wakeruntime.Runner.putCanonicalArtifact
   ^defines=matrix/workforce/internal/execution/artifact.go
 
 NODE id=matrix/workforce/internal/execution.Store.Resume kind=method
   digest=b3:703cf15435e7a74b6a8e34c024e81bae82f08f905579de80821da272281fdcbb file=workforce/internal/execution/store.go range=125:141 lang=go exported=true byte_range=3541:4131
   sig=func (store *Store) Resume(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	wakeID contracts.WakeID,\n	idempotencyKey string,\n) (State, error)
 EDGES
-  calls=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.Load
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/execution.AdvanceRequest,matrix/workforce/internal/execution.DecisionEffectAmbiguous,matrix/workforce/internal/execution.StageExecute,matrix/workforce/internal/execution.State,matrix/workforce/internal/execution.Store,matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.Load,matrix/workforce/internal/execution.ctx,matrix/workforce/internal/execution.err,matrix/workforce/internal/execution.idempotencyKey,matrix/workforce/internal/execution.organizationID,matrix/workforce/internal/execution.state,matrix/workforce/internal/execution.store,matrix/workforce/internal/execution.wakeID
   ^contains=matrix/workforce/internal/execution.Store
-  ^calls=matrix/workforce/internal/wakeruntime.Runner.executeEffect
-  ^references=matrix/workforce/internal/wakeruntime.Runner.executeEffect
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.Store.Start kind=method
   digest=b3:5b874e8325d285521d46703e40ecc3a74fc4ed565e2568bc494ce896a2f5ee0b file=workforce/internal/execution/store.go range=48:102 lang=go exported=true byte_range=1066:2901
   sig=func (store *Store) Start(ctx context.Context, packet contracts.WorkPacket) (State, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/execution.Store.Load,matrix/workforce/internal/execution.Store.currentTime,matrix/workforce/internal/execution.Store.seal
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WorkPacket,matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/execution.ErrConflict,matrix/workforce/internal/execution.ErrTerminal,matrix/workforce/internal/execution.StageLease,matrix/workforce/internal/execution.State,matrix/workforce/internal/execution.Store,matrix/workforce/internal/execution.Store.Load,matrix/workforce/internal/execution.Store.currentTime,matrix/workforce/internal/execution.Store.seal,matrix/workforce/internal/execution.canonical,matrix/workforce/internal/execution.command,matrix/workforce/internal/execution.ctx,matrix/workforce/internal/execution.current,matrix/workforce/internal/execution.err,matrix/workforce/internal/execution.hash,matrix/workforce/internal/execution.loadErr,matrix/workforce/internal/execution.now,matrix/workforce/internal/execution.packet,matrix/workforce/internal/execution.sealed,matrix/workforce/internal/execution.state,matrix/workforce/internal/execution.store,matrix/workforce/internal/execution.sum
   ^contains=matrix/workforce/internal/execution.Store
-  ^calls=matrix/workforce/internal/wakeruntime.Runner.prepareClaim
-  ^references=matrix/workforce/internal/wakeruntime.Runner.prepareClaim
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.Store.ad kind=method
   digest=b3:8f54d3c13c51bb63271e5132bf6268e15660daa9e78d838b909f36c46e21d728 file=workforce/internal/execution/store.go range=475:484 lang=go exported=false byte_range=15590:15876
   sig=func (store *Store) ad(\n	organizationID contracts.OrganizationID,\n	wakeID contracts.WakeID,\n) vault.AD
 EDGES
-  references=matrix/vault.AD,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/execution.Store,matrix/workforce/internal/execution.organizationID,matrix/workforce/internal/execution.store,matrix/workforce/internal/execution.wakeID
   ^contains=matrix/workforce/internal/execution.Store
-  ^calls=matrix/workforce/internal/execution.Store.open,matrix/workforce/internal/execution.Store.seal
-  ^references=matrix/workforce/internal/execution.Store.open,matrix/workforce/internal/execution.Store.seal
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.Store.artifactAD kind=method
   digest=b3:bca4b747b1544533ec4b13147711e4f7ea01d60f360434f1f0ef4556d0f3ac4e file=workforce/internal/execution/artifact.go range=151:161 lang=go exported=false byte_range=4221:4540
   sig=func (store *Store) artifactAD(\n	organizationID contracts.OrganizationID,\n	wakeID contracts.WakeID,\n	kind string,\n) vault.AD
 EDGES
-  references=matrix/vault.AD,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/execution.Store,matrix/workforce/internal/execution.kind,matrix/workforce/internal/execution.organizationID,matrix/workforce/internal/execution.store,matrix/workforce/internal/execution.wakeID
   ^contains=matrix/workforce/internal/execution.Store
-  ^calls=matrix/workforce/internal/execution.Store.OpenArtifact,matrix/workforce/internal/execution.Store.PutArtifact
-  ^references=matrix/workforce/internal/execution.Store.OpenArtifact,matrix/workforce/internal/execution.Store.PutArtifact
   ^defines=matrix/workforce/internal/execution/artifact.go
 
 NODE id=matrix/workforce/internal/execution.Store.currentTime kind=method
   digest=b3:4881abada0f7e35bd650e35c87f2bdaad7688d7d4d19784550a5a5cb96d932cc file=workforce/internal/execution/store.go range=486:492 lang=go exported=false byte_range=15878:16098
   sig=func (store *Store) currentTime() (time.Time, error)
 EDGES
-  references=matrix/workforce/internal/execution.Store,matrix/workforce/internal/execution.now,matrix/workforce/internal/execution.store
   ^contains=matrix/workforce/internal/execution.Store
-  ^calls=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.PutArtifact,matrix/workforce/internal/execution.Store.Start
-  ^references=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.PutArtifact,matrix/workforce/internal/execution.Store.Start
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.Store.open kind=method
   digest=b3:86b9059e1e5be6b620b8fb6b4eb150f758be52b4d8d3ee312220edcf50113419 file=workforce/internal/execution/store.go range=453:473 lang=go exported=false byte_range=14842:15588
   sig=func (store *Store) open(\n	organizationID contracts.OrganizationID,\n	wakeID contracts.WakeID,\n	sealed []byte,\n	expectedHash string,\n) (State, error)
 EDGES
-  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/execution.State.Validate,matrix/workforce/internal/execution.Store.ad
-  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/execution.State,matrix/workforce/internal/execution.State.Validate,matrix/workforce/internal/execution.Store,matrix/workforce/internal/execution.Store.ad,matrix/workforce/internal/execution.canonical,matrix/workforce/internal/execution.err,matrix/workforce/internal/execution.expectedHash,matrix/workforce/internal/execution.organizationID,matrix/workforce/internal/execution.sealed,matrix/workforce/internal/execution.state,matrix/workforce/internal/execution.store,matrix/workforce/internal/execution.sum,matrix/workforce/internal/execution.wakeID
   ^contains=matrix/workforce/internal/execution.Store
-  ^calls=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.Load
-  ^references=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.Load
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.Store.seal kind=method
   digest=b3:c4423c83a6d7b57715abfbbfd66ac4bb09d815f0700561927fca0064ae21f6e7 file=workforce/internal/execution/store.go range=439:451 lang=go exported=false byte_range=14401:14840
   sig=func (store *Store) seal(state State) (string, []byte, error)
 EDGES
-  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/execution.Store.ad
-  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/execution.State,matrix/workforce/internal/execution.Store,matrix/workforce/internal/execution.Store.ad,matrix/workforce/internal/execution.canonical,matrix/workforce/internal/execution.err,matrix/workforce/internal/execution.hash,matrix/workforce/internal/execution.sealed,matrix/workforce/internal/execution.state,matrix/workforce/internal/execution.store,matrix/workforce/internal/execution.sum
   ^contains=matrix/workforce/internal/execution.Store
-  ^calls=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.Start
-  ^references=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.Store.Start
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.Usage kind=type
@@ -659,7 +537,6 @@ NODE id=matrix/workforce/internal/execution.Usage kind=type
   sig=type Usage struct {\n	ModelCalls	uint32	`json:"model_calls"`\n	ToolCalls	uint32	`json:"tool_calls"`\n	CostMinor	int64	`json:"cost_minor"`\n}
 EDGES
   contains=matrix/workforce/internal/execution.Usage#CostMinor,matrix/workforce/internal/execution.Usage#ModelCalls,matrix/workforce/internal/execution.Usage#ToolCalls
-  ^references=matrix/workforce/internal/execution.AdvanceRequest,matrix/workforce/internal/execution.State,matrix/workforce/internal/wakeruntime.Runner.compile,matrix/workforce/internal/wakeruntime.Runner.executeEffect,matrix/workforce/internal/wakeruntime.Runner.observeEffect,matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim,matrix/workforce/internal/wakeruntime.Runner.propose,matrix/workforce/internal/wakeruntime.Runner.reconcileEffect,matrix/workforce/internal/wakeruntime.Runner.resumePreparedClaim,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit,matrix/workforce/internal/wakeruntime.Runner.waitForHumanVerification,matrix/workforce/internal/wakeruntime.Runner.yield,matrix/workforce/internal/wakeruntime.advance,matrix/workforce/internal/wakeruntime.advanceTo
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.Usage#CostMinor kind=field
@@ -684,89 +561,60 @@ NODE id=matrix/workforce/internal/execution.budgetExceeded kind=func
   digest=b3:d81a2e4f12e4162c784bf6b52b796d67ef58aa960e22e8a6c3dfb916a9b0c127 file=workforce/internal/execution/store.go range=406:412 lang=go exported=false byte_range=13033:13395
   sig=func budgetExceeded(state State, now time.Time) bool
 EDGES
-  references=matrix/workforce/internal/execution.State,matrix/workforce/internal/execution.now,matrix/workforce/internal/execution.state
-  ^calls=matrix/workforce/internal/execution.Store.Advance
-  ^references=matrix/workforce/internal/execution.Store.Advance
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.decisionDisposition kind=func
   digest=b3:b19977c4a7aa38095998007c4bbbe1dd697a157703a377874417c4b2737d0014 file=workforce/internal/execution/store.go range=369:390 lang=go exported=false byte_range=12047:12770
   sig=func decisionDisposition(decision Decision) (contracts.WakeDisposition, bool)
 EDGES
-  references=matrix/workforce/internal/contracts.DispositionBlocked,matrix/workforce/internal/contracts.DispositionBudgetExhausted,matrix/workforce/internal/contracts.DispositionCancelled,matrix/workforce/internal/contracts.DispositionFailed,matrix/workforce/internal/contracts.DispositionGoalCompleted,matrix/workforce/internal/contracts.DispositionLeaseExpired,matrix/workforce/internal/contracts.DispositionWaitingApproval,matrix/workforce/internal/contracts.DispositionWaitingDependency,matrix/workforce/internal/contracts.WakeDisposition,matrix/workforce/internal/execution.Decision,matrix/workforce/internal/execution.DecisionBlock,matrix/workforce/internal/execution.DecisionCancel,matrix/workforce/internal/execution.DecisionComplete,matrix/workforce/internal/execution.DecisionExhaustBudget,matrix/workforce/internal/execution.DecisionExpireLease,matrix/workforce/internal/execution.DecisionFail,matrix/workforce/internal/execution.DecisionWaitApproval,matrix/workforce/internal/execution.DecisionWaitDependency,matrix/workforce/internal/execution.decision
-  ^calls=matrix/workforce/internal/execution.transition
-  ^references=matrix/workforce/internal/execution.transition
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.hashRequest kind=func
   digest=b3:3782d283c05605bce1b2838af02364bf852b9659fba91a6bc8f5cab7c05a2c89 file=workforce/internal/execution/store.go range=424:437 lang=go exported=false byte_range=13784:14399
   sig=func hashRequest(request AdvanceRequest) (string, error)
 EDGES
-  references=matrix/workforce/internal/execution.AdvanceRequest,matrix/workforce/internal/execution.request,matrix/workforce/internal/execution.sum,matrix/workforce/internal/execution.value
-  ^calls=matrix/workforce/internal/execution.Store.Advance
-  ^references=matrix/workforce/internal/execution.Store.Advance
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.maxRuntimeArtifactBytes kind=const
   digest=b3:9f962216c72b4dbafd227fcffb7a0f136f05e5d3c0e69acf322fd4a78b438530 file=workforce/internal/execution/artifact.go range=17:17 lang=go exported=false byte_range=193:226
   sig=untyped int
 EDGES
-  ^references=matrix/workforce/internal/execution.Store.OpenArtifact,matrix/workforce/internal/execution.Store.PutArtifact
   ^defines=matrix/workforce/internal/execution/artifact.go
 
 NODE id=matrix/workforce/internal/execution.nextStage kind=func
   digest=b3:0b85c6e24600e5851b61fb25be162197b71ad4a9bcc0a007344c0f7b5c4efc58 file=workforce/internal/execution/store.go range=360:367 lang=go exported=false byte_range=11831:12045
   sig=func nextStage(stage Stage) (Stage, bool)
 EDGES
-  references=matrix/workforce/internal/execution.Stage,matrix/workforce/internal/execution.index,matrix/workforce/internal/execution.orderedStages,matrix/workforce/internal/execution.stage
-  ^calls=matrix/workforce/internal/execution.transition
-  ^references=matrix/workforce/internal/execution.transition
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.orderedStages kind=var
   digest=b3:b3caf9cb770aeb6e63d0871a9eae51606959d6a0f005fcce92279a88ed18cd9e file=workforce/internal/execution/types.go range=29:33 lang=go exported=false byte_range=567:772
   sig=[]execution.Stage
 EDGES
-  references=matrix/workforce/internal/execution.Stage,matrix/workforce/internal/execution.StageCommit,matrix/workforce/internal/execution.StageCompile,matrix/workforce/internal/execution.StageExecute,matrix/workforce/internal/execution.StageLease,matrix/workforce/internal/execution.StageObserve,matrix/workforce/internal/execution.StageOrient,matrix/workforce/internal/execution.StagePreflight,matrix/workforce/internal/execution.StagePropose,matrix/workforce/internal/execution.StageReconcile,matrix/workforce/internal/execution.StageSelect,matrix/workforce/internal/execution.StageSleep,matrix/workforce/internal/execution.StageVerify,matrix/workforce/internal/execution.StageYield
-  ^references=matrix/workforce/internal/execution.Stage.Valid,matrix/workforce/internal/execution.nextStage
   ^defines=matrix/workforce/internal/execution/types.go
 
 NODE id=matrix/workforce/internal/execution.terminal kind=func
   digest=b3:59f03e3a019d8f780429ee7876777a4d09b5233e2b47607b44cd589a7511dab7 file=workforce/internal/execution/store.go range=392:404 lang=go exported=false byte_range=12772:13031
   sig=func terminal(\n	state State,\n	disposition contracts.WakeDisposition,\n	reason string,\n	now time.Time,\n) State
 EDGES
-  references=matrix/workforce/internal/contracts.WakeDisposition,matrix/workforce/internal/execution.StageSleep,matrix/workforce/internal/execution.State,matrix/workforce/internal/execution.disposition,matrix/workforce/internal/execution.now,matrix/workforce/internal/execution.reason,matrix/workforce/internal/execution.state
-  ^calls=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.transition
-  ^references=matrix/workforce/internal/execution.Store.Advance,matrix/workforce/internal/execution.transition
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.transition kind=func
   digest=b3:c94d8a11d0411d44acaa0667f5b49ce68f18cc20e80b15d7cfe3fc29dc98cef4 file=workforce/internal/execution/store.go range=283:358 lang=go exported=false byte_range=8907:11829
   sig=func transition(state State, request AdvanceRequest, now time.Time) (State, error)
 EDGES
-  calls=matrix/workforce/internal/execution.decisionDisposition,matrix/workforce/internal/execution.nextStage,matrix/workforce/internal/execution.terminal
-  references=matrix/workforce/internal/contracts.DispositionGoalCompleted,matrix/workforce/internal/contracts.DispositionProgressed,matrix/workforce/internal/execution.AdvanceRequest,matrix/workforce/internal/execution.DecisionAdvance,matrix/workforce/internal/execution.DecisionComplete,matrix/workforce/internal/execution.DecisionDispatch,matrix/workforce/internal/execution.DecisionEffectAmbiguous,matrix/workforce/internal/execution.DecisionObserved,matrix/workforce/internal/execution.DecisionReconcileCompleted,matrix/workforce/internal/execution.DecisionReconcileUnchanged,matrix/workforce/internal/execution.ErrInvalidTransition,matrix/workforce/internal/execution.StageCommit,matrix/workforce/internal/execution.StageExecute,matrix/workforce/internal/execution.StageObserve,matrix/workforce/internal/execution.StageReconcile,matrix/workforce/internal/execution.StageYield,matrix/workforce/internal/execution.State,matrix/workforce/internal/execution.decisionDisposition,matrix/workforce/internal/execution.disposition,matrix/workforce/internal/execution.next,matrix/workforce/internal/execution.nextStage,matrix/workforce/internal/execution.now,matrix/workforce/internal/execution.ok,matrix/workforce/internal/execution.request,matrix/workforce/internal/execution.state,matrix/workforce/internal/execution.terminal,matrix/workforce/internal/execution.terminalDecision
-  ^calls=matrix/workforce/internal/execution.Store.Advance
-  ^references=matrix/workforce/internal/execution.Store.Advance
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution.validArtifactKind kind=func
   digest=b3:5a6ea0398f7be41a755233d1da88da672b011e24955686b5c7b837f372a032e0 file=workforce/internal/execution/artifact.go range=136:149 lang=go exported=false byte_range=3856:4219
   sig=func validArtifactKind(kind string) bool
 EDGES
-  references=matrix/workforce/internal/execution.character,matrix/workforce/internal/execution.kind
-  ^calls=matrix/workforce/internal/execution.Store.OpenArtifact,matrix/workforce/internal/execution.Store.PutArtifact
-  ^references=matrix/workforce/internal/execution.Store.OpenArtifact,matrix/workforce/internal/execution.Store.PutArtifact
   ^defines=matrix/workforce/internal/execution/artifact.go
 
 NODE id=matrix/workforce/internal/execution.validateAdvanceRequest kind=func
   digest=b3:c769241984aff184f0e94cc1f692e2638fe47f6502234c512d39726a57524df6 file=workforce/internal/execution/store.go range=414:422 lang=go exported=false byte_range=13397:13782
   sig=func validateAdvanceRequest(request AdvanceRequest) error
 EDGES
-  calls=matrix/workforce/internal/execution.Decision.Valid
-  references=matrix/workforce/internal/execution.AdvanceRequest,matrix/workforce/internal/execution.Decision.Valid,matrix/workforce/internal/execution.request
-  ^calls=matrix/workforce/internal/execution.Store.Advance
-  ^references=matrix/workforce/internal/execution.Store.Advance
   ^defines=matrix/workforce/internal/execution/store.go
 
 NODE id=matrix/workforce/internal/execution/artifact.go kind=file

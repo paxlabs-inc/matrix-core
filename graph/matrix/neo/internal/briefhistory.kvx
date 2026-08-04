@@ -1,21 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/neo/internal/briefhistory kind=package
   digest=b3:3d94a2266c3d89dd94fd5420303c05eeed6b745ab5581e1d84a474ed99e68048 file=neo/internal/briefhistory range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/briefhistory/briefhistory.go
-  imports=matrix/vault
   ^contains=mod:matrix/neo
-  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/briefhistory.Dir kind=func
   digest=b3:13ce0f2ec8cd19022001faed4ab7c6d5af9fccb2d9c0329c56a0cccc9f948cfc file=neo/internal/briefhistory/briefhistory.go range=317:328 lang=go exported=true byte_range=8831:9289
   sig=func Dir(override, cortexRoot string) string
   doc=Dir resolves the brief-history directory: an explicit override wins; else it\nis derived from the cortex root's parent, sharing the briefsettings "brief"\ndir on /data so it survives suspend / redeploy. "" disables persistence.
 EDGES
-  references=matrix/neo/internal/briefhistory.c,matrix/neo/internal/briefhistory.cortexRoot,matrix/neo/internal/briefhistory.o,matrix/neo/internal/briefhistory.override
-  ^calls=matrix/neo/cmd/neo.runServe
-  ^references=matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.KindDelivery kind=const
@@ -23,7 +18,6 @@ NODE id=matrix/neo/internal/briefhistory.KindDelivery kind=const
   sig=untyped string
   doc=Record kinds.
 EDGES
-  ^references=matrix/neo/internal/briefhistory.Store.AppendDelivery,matrix/neo/internal/briefhistory.Store.RecentDelivered
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.KindFeedback kind=const
@@ -31,7 +25,6 @@ NODE id=matrix/neo/internal/briefhistory.KindFeedback kind=const
   sig=untyped string
   doc=Record kinds.
 EDGES
-  ^references=matrix/neo/internal/briefhistory.Store.AppendFeedback
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Open kind=func
@@ -39,9 +32,6 @@ NODE id=matrix/neo/internal/briefhistory.Open kind=func
   sig=func Open(dir string) *Store
   doc=Open builds a store rooted at dir. An empty dir yields a disabled store\n(every method is a safe no-op) so dev/CLI runs work unchanged.
 EDGES
-  references=matrix/neo/internal/briefhistory.Store,matrix/neo/internal/briefhistory.dir
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Record kind=type
@@ -50,7 +40,6 @@ NODE id=matrix/neo/internal/briefhistory.Record kind=type
   doc=Record is one durable history entry — a delivery or a feedback event.
 EDGES
   contains=matrix/neo/internal/briefhistory.Record#ConversationID,matrix/neo/internal/briefhistory.Record#CreatedAt,matrix/neo/internal/briefhistory.Record#Date,matrix/neo/internal/briefhistory.Record#ID,matrix/neo/internal/briefhistory.Record#Item,matrix/neo/internal/briefhistory.Record#Kind,matrix/neo/internal/briefhistory.Record#NewsURLs,matrix/neo/internal/briefhistory.Record#RecIDs,matrix/neo/internal/briefhistory.Record#Verdict
-  ^references=matrix/neo/internal/briefhistory.Store.AppendDelivery,matrix/neo/internal/briefhistory.Store.AppendFeedback,matrix/neo/internal/briefhistory.Store.Recent,matrix/neo/internal/briefhistory.Store.append,matrix/neo/internal/briefhistory.Store.appendJSONL,matrix/neo/internal/briefhistory.Store.readJSONL
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Record#ConversationID kind=field
@@ -113,8 +102,6 @@ NODE id=matrix/neo/internal/briefhistory.Store kind=type
   doc=Store is the durable brief history. All disk access is serialised by mu;\nevery write is crash-atomic.
 EDGES
   contains=matrix/neo/internal/briefhistory.Store#dir,matrix/neo/internal/briefhistory.Store#mu,matrix/neo/internal/briefhistory.Store#user,matrix/neo/internal/briefhistory.Store#vault,matrix/neo/internal/briefhistory.Store.AppendDelivery,matrix/neo/internal/briefhistory.Store.AppendFeedback,matrix/neo/internal/briefhistory.Store.Enabled,matrix/neo/internal/briefhistory.Store.Recent,matrix/neo/internal/briefhistory.Store.RecentDelivered,matrix/neo/internal/briefhistory.Store.SetVault,matrix/neo/internal/briefhistory.Store.ad,matrix/neo/internal/briefhistory.Store.append,matrix/neo/internal/briefhistory.Store.appendJSONL,matrix/neo/internal/briefhistory.Store.path,matrix/neo/internal/briefhistory.Store.readJSONL
-  references=matrix/vault.Session
-  ^references=matrix/neo/internal/briefhistory.Open,matrix/neo/internal/briefhistory.Store.AppendDelivery,matrix/neo/internal/briefhistory.Store.AppendFeedback,matrix/neo/internal/briefhistory.Store.Enabled,matrix/neo/internal/briefhistory.Store.Recent,matrix/neo/internal/briefhistory.Store.RecentDelivered,matrix/neo/internal/briefhistory.Store.SetVault,matrix/neo/internal/briefhistory.Store.ad,matrix/neo/internal/briefhistory.Store.append,matrix/neo/internal/briefhistory.Store.appendJSONL,matrix/neo/internal/briefhistory.Store.path,matrix/neo/internal/briefhistory.Store.readJSONL,matrix/neo/internal/server.Engine
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Store#dir kind=field
@@ -146,11 +133,7 @@ NODE id=matrix/neo/internal/briefhistory.Store.AppendDelivery kind=method
   sig=func (s *Store) AppendDelivery(localDate, convID string, recIDs, newsURLs []string) error
   doc=AppendDelivery records one delivered brief's recommendation ids + news URLs.
 EDGES
-  calls=matrix/neo/internal/briefhistory.Store.append,matrix/neo/internal/briefhistory.cleanList
-  references=matrix/neo/internal/briefhistory.KindDelivery,matrix/neo/internal/briefhistory.Record,matrix/neo/internal/briefhistory.Store,matrix/neo/internal/briefhistory.Store.append,matrix/neo/internal/briefhistory.cleanList,matrix/neo/internal/briefhistory.convID,matrix/neo/internal/briefhistory.localDate,matrix/neo/internal/briefhistory.newsURLs,matrix/neo/internal/briefhistory.recIDs,matrix/neo/internal/briefhistory.s
   ^contains=matrix/neo/internal/briefhistory.Store
-  ^calls=matrix/neo/internal/server.Engine.deliverBrief
-  ^references=matrix/neo/internal/server.Engine.deliverBrief
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Store.AppendFeedback kind=method
@@ -158,11 +141,7 @@ NODE id=matrix/neo/internal/briefhistory.Store.AppendFeedback kind=method
   sig=func (s *Store) AppendFeedback(item, verdict string) error
   doc=AppendFeedback records one explicit user reaction (req 17.2). Invalid\nverdicts are rejected.
 EDGES
-  calls=matrix/neo/internal/briefhistory.Store.append,matrix/neo/internal/briefhistory.ValidVerdict
-  references=matrix/neo/internal/briefhistory.KindFeedback,matrix/neo/internal/briefhistory.Record,matrix/neo/internal/briefhistory.Store,matrix/neo/internal/briefhistory.Store.append,matrix/neo/internal/briefhistory.ValidVerdict,matrix/neo/internal/briefhistory.item,matrix/neo/internal/briefhistory.s,matrix/neo/internal/briefhistory.verdict
   ^contains=matrix/neo/internal/briefhistory.Store
-  ^calls=matrix/neo/internal/server.Server.handleBriefFeedback
-  ^references=matrix/neo/internal/server.Server.handleBriefFeedback
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Store.Enabled kind=method
@@ -170,10 +149,7 @@ NODE id=matrix/neo/internal/briefhistory.Store.Enabled kind=method
   sig=func (s *Store) Enabled() bool
   doc=Enabled reports whether persistence is on (a non-empty directory).
 EDGES
-  references=matrix/neo/internal/briefhistory.Store,matrix/neo/internal/briefhistory.s
   ^contains=matrix/neo/internal/briefhistory.Store
-  ^calls=matrix/neo/internal/briefhistory.Store.Recent,matrix/neo/internal/briefhistory.Store.append,matrix/neo/internal/briefhistory.Store.path
-  ^references=matrix/neo/internal/briefhistory.Store.Recent,matrix/neo/internal/briefhistory.Store.append,matrix/neo/internal/briefhistory.Store.path
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Store.Recent kind=method
@@ -181,11 +157,7 @@ NODE id=matrix/neo/internal/briefhistory.Store.Recent kind=method
   sig=func (s *Store) Recent(n int) []Record
   doc=Recent returns the newest n records (most recent first); n <= 0 returns all.
 EDGES
-  calls=matrix/neo/internal/briefhistory.Store.Enabled,matrix/neo/internal/briefhistory.Store.path,matrix/neo/internal/briefhistory.Store.readJSONL
-  references=matrix/neo/internal/briefhistory.Record,matrix/neo/internal/briefhistory.Store,matrix/neo/internal/briefhistory.Store.Enabled,matrix/neo/internal/briefhistory.Store.path,matrix/neo/internal/briefhistory.Store.readJSONL,matrix/neo/internal/briefhistory.i,matrix/neo/internal/briefhistory.j,matrix/neo/internal/briefhistory.n,matrix/neo/internal/briefhistory.recs,matrix/neo/internal/briefhistory.s
   ^contains=matrix/neo/internal/briefhistory.Store
-  ^calls=matrix/neo/internal/briefhistory.Store.RecentDelivered
-  ^references=matrix/neo/internal/briefhistory.Store.RecentDelivered
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Store.RecentDelivered kind=method
@@ -193,11 +165,7 @@ NODE id=matrix/neo/internal/briefhistory.Store.RecentDelivered kind=method
   sig=func (s *Store) RecentDelivered(maxDeliveries int) (recIDs, newsURLs []string)
   doc=RecentDelivered returns the union of recommendation ids and news URLs across\nthe newest maxDeliveries delivery records — the composer's no-repeat set\n(req 17.1). maxDeliveries <= 0 scans all.
 EDGES
-  calls=matrix/neo/internal/briefhistory.Store.Recent
-  references=matrix/neo/internal/briefhistory.KindDelivery,matrix/neo/internal/briefhistory.Store,matrix/neo/internal/briefhistory.Store.Recent,matrix/neo/internal/briefhistory.deliveries,matrix/neo/internal/briefhistory.dup,matrix/neo/internal/briefhistory.id,matrix/neo/internal/briefhistory.maxDeliveries,matrix/neo/internal/briefhistory.newsURLs,matrix/neo/internal/briefhistory.r,matrix/neo/internal/briefhistory.recIDs,matrix/neo/internal/briefhistory.s,matrix/neo/internal/briefhistory.seenRec,matrix/neo/internal/briefhistory.seenURL,matrix/neo/internal/briefhistory.u
   ^contains=matrix/neo/internal/briefhistory.Store
-  ^calls=matrix/neo/internal/server.Engine.deliverBrief,matrix/neo/internal/server.Engine.dispatchBriefRun
-  ^references=matrix/neo/internal/server.Engine.deliverBrief,matrix/neo/internal/server.Engine.dispatchBriefRun
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Store.SetVault kind=method
@@ -205,31 +173,21 @@ NODE id=matrix/neo/internal/briefhistory.Store.SetVault kind=method
   sig=func (s *Store) SetVault(sess *vault.Session, user string)
   doc=SetVault wires the fail-closed data-at-rest session and owning user DID.\nCalled once at engine assembly before any write; nil = legacy plaintext.
 EDGES
-  references=matrix/neo/internal/briefhistory.Store,matrix/neo/internal/briefhistory.s,matrix/neo/internal/briefhistory.sess,matrix/neo/internal/briefhistory.user,matrix/vault.Session
   ^contains=matrix/neo/internal/briefhistory.Store
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Store.ad kind=method
   digest=b3:b0893c19facd0f28d46f89319b0ccd11db3461e31168124b310ebabbe9d87ba6 file=neo/internal/briefhistory/briefhistory.go range=105:107 lang=go exported=false byte_range=3488:3617
   sig=func (s *Store) ad(seq uint64) vault.AD
 EDGES
-  references=matrix/neo/internal/briefhistory.Store,matrix/neo/internal/briefhistory.s,matrix/neo/internal/briefhistory.schemaHistory1,matrix/neo/internal/briefhistory.seq,matrix/neo/internal/briefhistory.storeHistory,matrix/vault.AD
   ^contains=matrix/neo/internal/briefhistory.Store
-  ^calls=matrix/neo/internal/briefhistory.Store.appendJSONL,matrix/neo/internal/briefhistory.Store.readJSONL
-  ^references=matrix/neo/internal/briefhistory.Store.appendJSONL,matrix/neo/internal/briefhistory.Store.readJSONL
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Store.append kind=method
   digest=b3:1cd92f3e7ef4fc7af3ebe904c4b09ee82ac718dd49d430b97d93016473918087 file=neo/internal/briefhistory/briefhistory.go range=136:155 lang=go exported=false byte_range=4667:5161
   sig=func (s *Store) append(rec Record) error
 EDGES
-  calls=matrix/neo/internal/briefhistory.Store.Enabled,matrix/neo/internal/briefhistory.Store.appendJSONL,matrix/neo/internal/briefhistory.Store.path,matrix/neo/internal/briefhistory.newID
-  references=matrix/neo/internal/briefhistory.Record,matrix/neo/internal/briefhistory.Store,matrix/neo/internal/briefhistory.Store.Enabled,matrix/neo/internal/briefhistory.Store.appendJSONL,matrix/neo/internal/briefhistory.Store.path,matrix/neo/internal/briefhistory.err,matrix/neo/internal/briefhistory.newID,matrix/neo/internal/briefhistory.rec,matrix/neo/internal/briefhistory.s
   ^contains=matrix/neo/internal/briefhistory.Store
-  ^calls=matrix/neo/internal/briefhistory.Store.AppendDelivery,matrix/neo/internal/briefhistory.Store.AppendFeedback
-  ^references=matrix/neo/internal/briefhistory.Store.AppendDelivery,matrix/neo/internal/briefhistory.Store.AppendFeedback
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Store.appendJSONL kind=method
@@ -237,22 +195,14 @@ NODE id=matrix/neo/internal/briefhistory.Store.appendJSONL kind=method
   sig=func (s *Store) appendJSONL(path string, rec Record) error
   doc=appendJSONL appends one record as a single (sealed, when encrypting) JSON\nline — O_APPEND + one Write is atomically visible; a torn final line is\nskipped on read. The record binds to its on-disk position via the AD.
 EDGES
-  calls=matrix/neo/internal/briefhistory.Store.ad,matrix/neo/internal/briefhistory.countLines,matrix/vault.Session.EncodeLine
-  references=matrix/neo/internal/briefhistory.Record,matrix/neo/internal/briefhistory.Store,matrix/neo/internal/briefhistory.Store.ad,matrix/neo/internal/briefhistory.b,matrix/neo/internal/briefhistory.countLines,matrix/neo/internal/briefhistory.err,matrix/neo/internal/briefhistory.f,matrix/neo/internal/briefhistory.line,matrix/neo/internal/briefhistory.path,matrix/neo/internal/briefhistory.rec,matrix/neo/internal/briefhistory.s,matrix/vault.Session.EncodeLine
   ^contains=matrix/neo/internal/briefhistory.Store
-  ^calls=matrix/neo/internal/briefhistory.Store.append
-  ^references=matrix/neo/internal/briefhistory.Store.append
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Store.path kind=method
   digest=b3:fee534e641b19f27d1a056d25ccdc64239b2c3bf8eb901d7489b9f40241d4f0a file=neo/internal/briefhistory/briefhistory.go range=205:210 lang=go exported=false byte_range=6386:6494
   sig=func (s *Store) path() string
 EDGES
-  calls=matrix/neo/internal/briefhistory.Store.Enabled
-  references=matrix/neo/internal/briefhistory.Store,matrix/neo/internal/briefhistory.Store.Enabled,matrix/neo/internal/briefhistory.recordFile,matrix/neo/internal/briefhistory.s
   ^contains=matrix/neo/internal/briefhistory.Store
-  ^calls=matrix/neo/internal/briefhistory.Store.Recent,matrix/neo/internal/briefhistory.Store.append
-  ^references=matrix/neo/internal/briefhistory.Store.Recent,matrix/neo/internal/briefhistory.Store.append
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.Store.readJSONL kind=method
@@ -260,11 +210,7 @@ NODE id=matrix/neo/internal/briefhistory.Store.readJSONL kind=method
   sig=func (s *Store) readJSONL(path string) []Record
   doc=readJSONL parses the history oldest-first, decrypting sealed lines under the\nreconstructed AD (legacy plaintext passes through until migrated); a line\nthat fails to decrypt or unmarshal is skipped, position counter advancing.
 EDGES
-  calls=matrix/neo/internal/briefhistory.Store.ad,matrix/vault.Session.DecodeLine
-  references=matrix/neo/internal/briefhistory.Record,matrix/neo/internal/briefhistory.Store,matrix/neo/internal/briefhistory.Store.ad,matrix/neo/internal/briefhistory.derr,matrix/neo/internal/briefhistory.err,matrix/neo/internal/briefhistory.f,matrix/neo/internal/briefhistory.line,matrix/neo/internal/briefhistory.out,matrix/neo/internal/briefhistory.path,matrix/neo/internal/briefhistory.plain,matrix/neo/internal/briefhistory.rec,matrix/neo/internal/briefhistory.s,matrix/neo/internal/briefhistory.sc,matrix/neo/internal/briefhistory.seq,matrix/vault.Session.DecodeLine
   ^contains=matrix/neo/internal/briefhistory.Store
-  ^calls=matrix/neo/internal/briefhistory.Store.Recent
-  ^references=matrix/neo/internal/briefhistory.Store.Recent
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.ValidVerdict kind=func
@@ -272,9 +218,6 @@ NODE id=matrix/neo/internal/briefhistory.ValidVerdict kind=func
   sig=func ValidVerdict(v string) bool
   doc=ValidVerdict reports whether v is one of the closed feedback verdicts.
 EDGES
-  references=matrix/neo/internal/briefhistory.VerdictLessOfThis,matrix/neo/internal/briefhistory.VerdictLiked,matrix/neo/internal/briefhistory.VerdictNotInterested,matrix/neo/internal/briefhistory.v
-  ^calls=matrix/neo/internal/briefhistory.Store.AppendFeedback
-  ^references=matrix/neo/internal/briefhistory.Store.AppendFeedback
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.VerdictLessOfThis kind=const
@@ -282,7 +225,6 @@ NODE id=matrix/neo/internal/briefhistory.VerdictLessOfThis kind=const
   sig=untyped string
   doc=Feedback verdicts (req 17.2) — the closed explicit-reaction vocabulary.
 EDGES
-  ^references=matrix/neo/internal/briefhistory.ValidVerdict,matrix/neo/internal/server.Server.handleBriefFeedback
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.VerdictLiked kind=const
@@ -290,7 +232,6 @@ NODE id=matrix/neo/internal/briefhistory.VerdictLiked kind=const
   sig=untyped string
   doc=Feedback verdicts (req 17.2) — the closed explicit-reaction vocabulary.
 EDGES
-  ^references=matrix/neo/internal/briefhistory.ValidVerdict
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.VerdictNotInterested kind=const
@@ -298,34 +239,24 @@ NODE id=matrix/neo/internal/briefhistory.VerdictNotInterested kind=const
   sig=untyped string
   doc=Feedback verdicts (req 17.2) — the closed explicit-reaction vocabulary.
 EDGES
-  ^references=matrix/neo/internal/briefhistory.ValidVerdict,matrix/neo/internal/server.Server.handleBriefFeedback
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.cleanList kind=func
   digest=b3:46ee010c7b9a70ad22b540363b38408145f737f22478adda18ebebc5e8565bcc file=neo/internal/briefhistory/briefhistory.go range=220:238 lang=go exported=false byte_range=6678:7009
   sig=func cleanList(in []string) []string
 EDGES
-  references=matrix/neo/internal/briefhistory.dup,matrix/neo/internal/briefhistory.in,matrix/neo/internal/briefhistory.out,matrix/neo/internal/briefhistory.s,matrix/neo/internal/briefhistory.seen
-  ^calls=matrix/neo/internal/briefhistory.Store.AppendDelivery
-  ^references=matrix/neo/internal/briefhistory.Store.AppendDelivery
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.countLines kind=func
   digest=b3:c2f9b6a198e92d7c601c9dbc7bc3e477a5733821872f8e2316b09727604c951b file=neo/internal/briefhistory/briefhistory.go range=264:280 lang=go exported=false byte_range=7682:7982
   sig=func countLines(path string) uint64
 EDGES
-  references=matrix/neo/internal/briefhistory.err,matrix/neo/internal/briefhistory.f,matrix/neo/internal/briefhistory.n,matrix/neo/internal/briefhistory.path,matrix/neo/internal/briefhistory.sc
-  ^calls=matrix/neo/internal/briefhistory.Store.appendJSONL
-  ^references=matrix/neo/internal/briefhistory.Store.appendJSONL
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.newID kind=func
   digest=b3:fea9d6cd3532462f9748abeacc77a1e5157d35bb4268b73385975d61a66ba0a6 file=neo/internal/briefhistory/briefhistory.go range=212:218 lang=go exported=false byte_range=6496:6676
   sig=func newID() string
 EDGES
-  references=matrix/neo/internal/briefhistory.b,matrix/neo/internal/briefhistory.err
-  ^calls=matrix/neo/internal/briefhistory.Store.append
-  ^references=matrix/neo/internal/briefhistory.Store.append
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.recordFile kind=const
@@ -333,7 +264,6 @@ NODE id=matrix/neo/internal/briefhistory.recordFile kind=const
   sig=untyped string
   doc=recordFile is the single per-daemon history file (per-user daemon, so the\ndirectory scoping is the ownership boundary).
 EDGES
-  ^references=matrix/neo/internal/briefhistory.Store.path
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.schemaHistory1 kind=const
@@ -341,7 +271,6 @@ NODE id=matrix/neo/internal/briefhistory.schemaHistory1 kind=const
   sig=untyped string
   doc=Store type and schema bound into each record's associated data.
 EDGES
-  ^references=matrix/neo/internal/briefhistory.Store.ad
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory.storeHistory kind=const
@@ -349,7 +278,6 @@ NODE id=matrix/neo/internal/briefhistory.storeHistory kind=const
   sig=untyped string
   doc=Store type and schema bound into each record's associated data.
 EDGES
-  ^references=matrix/neo/internal/briefhistory.Store.ad
   ^defines=matrix/neo/internal/briefhistory/briefhistory.go
 
 NODE id=matrix/neo/internal/briefhistory/briefhistory.go kind=file

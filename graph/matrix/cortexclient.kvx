@@ -1,12 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/cortexclient kind=package
   digest=b3:55a4a0f92f29c33280f8614c311d1e12bbfc09b8c62434861a1d4091336b4a3d file=cortexclient range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortexclient/admin.go,matrix/cortexclient/client.go,matrix/cortexclient/loopseam.go
-  imports=matrix/cortex,matrix/cortexclient/internal/flatbuffers,matrix/cortexclient/wire/neocortex/protocol,matrix/cortexclient/wire/neocortex/schema
   ^contains=mod:matrix/cortexclient
-  ^imports=matrix/cortexclient/export,matrix/neo/internal/memory,matrix/neo/internal/runtime/loop
 
 NODE id=matrix/cortexclient.ActivationQuery kind=type
   digest=b3:1a489bc858d5c7f132cc77d013a2812fd1f04426e59d5a5ed141c0bd40d8f946 file=cortexclient/loopseam.go range=553:557 lang=go exported=true byte_range=17051:17176
@@ -14,7 +12,6 @@ NODE id=matrix/cortexclient.ActivationQuery kind=type
   doc=ActivationQuery mirrors the loop's activation request.
 EDGES
   contains=matrix/cortexclient.ActivationQuery#Premises,matrix/cortexclient.ActivationQuery#Query
-  ^references=matrix/cortexclient.LoopSeam.Activate,matrix/cortexclient.LoopSeam.ActivateBundle,matrix/neo/internal/runtime/loop.NeocortexAdapter.Activate
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.ActivationQuery#Premises kind=field
@@ -35,8 +32,6 @@ NODE id=matrix/cortexclient.ActorStats kind=type
   doc=ActorStats summarizes one actor store.
 EDGES
   contains=matrix/cortexclient.ActorStats#Actor,matrix/cortexclient.ActorStats#LogBytes,matrix/cortexclient.ActorStats#LogEvents,matrix/cortexclient.ActorStats#Projections
-  references=matrix/cortexclient.ProjectionStat
-  ^references=matrix/cortexclient.Client.AdminStats
   ^defines=matrix/cortexclient/admin.go
 
 NODE id=matrix/cortexclient.ActorStats#Actor kind=field
@@ -69,7 +64,6 @@ NODE id=matrix/cortexclient.AppendAck kind=type
   doc=AppendAck is the engine acknowledgement for one append batch, carrying the\nengine's tamper-evidence truth for the committed prefix.
 EDGES
   contains=matrix/cortexclient.AppendAck#ClientSeq,matrix/cortexclient.AppendAck#Duplicate,matrix/cortexclient.AppendAck#FirstLsn,matrix/cortexclient.AppendAck#LastLeafHash,matrix/cortexclient.AppendAck#LastLsn,matrix/cortexclient.AppendAck#LeafCount,matrix/cortexclient.AppendAck#Root
-  ^references=matrix/cortexclient.Client.Append,matrix/cortexclient.Client.QueueAppend,matrix/cortexclient.Client.appendOnceLocked,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.LoopSeam.Consolidate,matrix/cortexclient.LoopSeam.noteSpan
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.AppendAck#ClientSeq kind=field
@@ -120,8 +114,6 @@ NODE id=matrix/cortexclient.AppendEvent kind=type
   doc=AppendEvent is one typed event to append. Build emits the typed payload\nunion member into the batch envelope builder; the client wraps it with the\nbatch idempotency identity (connection id, client seq, index, count).
 EDGES
   contains=matrix/cortexclient.AppendEvent#Build,matrix/cortexclient.AppendEvent#Conversation,matrix/cortexclient.AppendEvent#Kind
-  references=matrix/cortexclient.EventKind,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.UOffsetT
-  ^references=matrix/cortexclient.AssertionEvent,matrix/cortexclient.Client.Append,matrix/cortexclient.Client.QueueAppend,matrix/cortexclient.Client.appendOnceLocked,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.ConsolidationEvent,matrix/cortexclient.DeliveredMsgEvent,matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/cortexclient.LoopSeam.Consolidate,matrix/cortexclient.LoopSeam.RecordAssistantWorking,matrix/cortexclient.LoopSeam.RecordDelivery,matrix/cortexclient.LoopSeam.RecordUser,matrix/cortexclient.ProviderFrameEvent,matrix/cortexclient.ReasoningEvent,matrix/cortexclient.ToolCallEvent,matrix/cortexclient.ToolResultEvent,matrix/cortexclient.UserMsgEvent,matrix/cortexclient.buildAppendRequest,matrix/cortexclient.textEvent,matrix/cortexclient.wrapEnvelope,matrix/cortexclient/export.retractEvent,matrix/cortexclient/export.run,matrix/cortexclient/export.run.append
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.AppendEvent#Build kind=field
@@ -148,7 +140,6 @@ NODE id=matrix/cortexclient.Assertion kind=type
   doc=Assertion is one extracted belief write for the consolidation sink.
 EDGES
   contains=matrix/cortexclient.Assertion#BeliefID,matrix/cortexclient.Assertion#CanonicalIdentity,matrix/cortexclient.Assertion#ConflictDomain,matrix/cortexclient.Assertion#NegativeExistence,matrix/cortexclient.Assertion#Provenance,matrix/cortexclient.Assertion#Type,matrix/cortexclient.Assertion#ValidFromNs,matrix/cortexclient.Assertion#ValidToNs,matrix/cortexclient.Assertion#Value
-  ^references=matrix/cortexclient.AssertionEvent,matrix/cortexclient.ConsolidationEvent,matrix/cortexclient.LoopSeam.Consolidate,matrix/cortexclient.buildAssertion,matrix/cortexclient/export.run.exportMemories,matrix/neo/internal/runtime/loop.NeocortexAdapter.Consolidate,matrix/neo/internal/runtime/loop.neocortexConsolidationAssertion
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.Assertion#BeliefID kind=field
@@ -210,9 +201,6 @@ NODE id=matrix/cortexclient.AssertionEvent kind=func
   sig=func AssertionEvent(conversation [16]byte, assertion Assertion) AppendEvent
   doc=AssertionEvent builds a single assertion event.
 EDGES
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.Assertion,matrix/cortexclient.KindAssertion,matrix/cortexclient.assertion,matrix/cortexclient.buildAssertion,matrix/cortexclient.builder,matrix/cortexclient.conversation,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/schema.EventPayloadAssertion
-  ^calls=matrix/cortexclient/export.run.exportMemories
-  ^references=matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.Bundle kind=type
@@ -221,8 +209,6 @@ NODE id=matrix/cortexclient.Bundle kind=type
   doc=Bundle mirrors the composer's canonical activation encoding (NCA1).
 EDGES
   contains=matrix/cortexclient.Bundle#BudgetTokens,matrix/cortexclient.Bundle#Sections,matrix/cortexclient.Bundle#SnapshotEpoch,matrix/cortexclient.Bundle#SpentTokens,matrix/cortexclient.Bundle#Trimmed
-  references=matrix/cortexclient.BundleSection,matrix/cortexclient.TrimmedItem
-  ^references=matrix/cortexclient.LoopSeam.ActivateBundle,matrix/cortexclient.ParseBundle,matrix/cortexclient.RenderBundle
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.Bundle#BudgetTokens kind=field
@@ -260,7 +246,6 @@ NODE id=matrix/cortexclient.BundleItem kind=type
   sig=type BundleItem struct {\n	Tier		uint8\n	Coarsened	bool\n	Tokens		uint64\n	URI		string\n	Provenance	[]uint64\n	Content		[]byte\n}
 EDGES
   contains=matrix/cortexclient.BundleItem#Coarsened,matrix/cortexclient.BundleItem#Content,matrix/cortexclient.BundleItem#Provenance,matrix/cortexclient.BundleItem#Tier,matrix/cortexclient.BundleItem#Tokens,matrix/cortexclient.BundleItem#URI
-  ^references=matrix/cortexclient.BundleSection,matrix/cortexclient.ParseBundle,matrix/cortexclient.renderItem
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.BundleItem#Coarsened kind=field
@@ -304,8 +289,6 @@ NODE id=matrix/cortexclient.BundleSection kind=type
   sig=type BundleSection struct {\n	Tier		uint8\n	Tokens		uint64\n	TrimmedItems	uint64\n	CoarsenedItems	uint64\n	Items		[]BundleItem\n}
 EDGES
   contains=matrix/cortexclient.BundleSection#CoarsenedItems,matrix/cortexclient.BundleSection#Items,matrix/cortexclient.BundleSection#Tier,matrix/cortexclient.BundleSection#Tokens,matrix/cortexclient.BundleSection#TrimmedItems
-  references=matrix/cortexclient.BundleItem
-  ^references=matrix/cortexclient.Bundle
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.BundleSection#CoarsenedItems kind=field
@@ -344,8 +327,6 @@ NODE id=matrix/cortexclient.Client kind=type
   doc=Client is a connection to cortexd. All operations serialize on one socket;\ncortexd processes a connection's requests in order.
 EDGES
   contains=matrix/cortexclient.Client#cfg,matrix/cortexclient.Client#clientSeq,matrix/cortexclient.Client#closed,matrix/cortexclient.Client#conn,matrix/cortexclient.Client#mu,matrix/cortexclient.Client#pending,matrix/cortexclient.Client#reader,matrix/cortexclient.Client#recovered,matrix/cortexclient.Client#requestID,matrix/cortexclient.Client#welcome,matrix/cortexclient.Client.AdminHealth,matrix/cortexclient.Client.AdminRebuildProjection,matrix/cortexclient.Client.AdminStats,matrix/cortexclient.Client.AdminVerifyStatus,matrix/cortexclient.Client.Append,matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.Close,matrix/cortexclient.Client.LatestCheckpoint,matrix/cortexclient.Client.NextClientSeq,matrix/cortexclient.Client.PendingLen,matrix/cortexclient.Client.QueueAppend,matrix/cortexclient.Client.Transcript,matrix/cortexclient.Client.Welcome,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.Client.advancePendingLocked,matrix/cortexclient.Client.appendOnceLocked,matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.consumeRecoveryLocked,matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.initializeSequenceLocked,matrix/cortexclient.Client.nextRequestIDLocked,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.Client.reconnectLocked,matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.Client.request,matrix/cortexclient.Client.retainPendingLocked,matrix/cortexclient.Client.roundTripLocked,matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.Client.sendPendingHeadLocked,matrix/cortexclient.Client.writeAdmittedLocked
-  references=matrix/cortexclient.Config,matrix/cortexclient.Welcome,matrix/cortexclient.frameReader,matrix/cortexclient.pendingWrite
-  ^references=matrix/cortexclient.Client.AdminHealth,matrix/cortexclient.Client.AdminRebuildProjection,matrix/cortexclient.Client.AdminStats,matrix/cortexclient.Client.AdminVerifyStatus,matrix/cortexclient.Client.Append,matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.Close,matrix/cortexclient.Client.LatestCheckpoint,matrix/cortexclient.Client.NextClientSeq,matrix/cortexclient.Client.PendingLen,matrix/cortexclient.Client.QueueAppend,matrix/cortexclient.Client.Transcript,matrix/cortexclient.Client.Welcome,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.Client.advancePendingLocked,matrix/cortexclient.Client.appendOnceLocked,matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.consumeRecoveryLocked,matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.initializeSequenceLocked,matrix/cortexclient.Client.nextRequestIDLocked,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.Client.reconnectLocked,matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.Client.request,matrix/cortexclient.Client.retainPendingLocked,matrix/cortexclient.Client.roundTripLocked,matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.Client.sendPendingHeadLocked,matrix/cortexclient.Client.writeAdmittedLocked,matrix/cortexclient.Dial,matrix/cortexclient.LoopSeam,matrix/cortexclient.NewLoopSeam,matrix/cortexclient/export.Options,matrix/cortexclient/export.run,matrix/neo/internal/memory.Pager,matrix/neo/internal/memory.Pager.NeocortexClient,matrix/neo/internal/memory.dialNeocortex
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client#cfg kind=field
@@ -413,8 +394,6 @@ NODE id=matrix/cortexclient.Client.AdminHealth kind=method
   sig=func (c *Client) AdminHealth(ctx context.Context) (Health, error)
   doc=AdminHealth reads engine health (admin capability).
 EDGES
-  calls=matrix/cortexclient.Client.request,matrix/cortexclient/wire/neocortex/protocol.HealthResult.ActiveConnections,matrix/cortexclient/wire/neocortex/protocol.HealthResult.ActorCount,matrix/cortexclient/wire/neocortex/protocol.HealthResult.Init,matrix/cortexclient/wire/neocortex/protocol.HealthResult.Ready
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.request,matrix/cortexclient.Health,matrix/cortexclient.builder,matrix/cortexclient.c,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.finishRequest,matrix/cortexclient.health,matrix/cortexclient.requestID,matrix/cortexclient.result,matrix/cortexclient.table,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/wire/neocortex/protocol.HealthEnd,matrix/cortexclient/wire/neocortex/protocol.HealthResult,matrix/cortexclient/wire/neocortex/protocol.HealthResult.ActiveConnections,matrix/cortexclient/wire/neocortex/protocol.HealthResult.ActorCount,matrix/cortexclient/wire/neocortex/protocol.HealthResult.Init,matrix/cortexclient/wire/neocortex/protocol.HealthResult.Ready,matrix/cortexclient/wire/neocortex/protocol.HealthStart,matrix/cortexclient/wire/neocortex/protocol.RequestPayloadHealth,matrix/cortexclient/wire/neocortex/protocol.ResponsePayloadHealthResult
   ^contains=matrix/cortexclient.Client
   ^defines=matrix/cortexclient/admin.go
 
@@ -423,8 +402,6 @@ NODE id=matrix/cortexclient.Client.AdminRebuildProjection kind=method
   sig=func (c *Client) AdminRebuildProjection(ctx context.Context, actor uint16, name string) (uint64, error)
   doc=AdminRebuildProjection drops and replays a projection ("all" rebuilds every\nprojection) and returns the applied LSN.
 EDGES
-  calls=matrix/cortexclient.Client.request,matrix/cortexclient/wire/neocortex/protocol.RebuildResult.AppliedLsn,matrix/cortexclient/wire/neocortex/protocol.RebuildResult.Init
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.request,matrix/cortexclient.actor,matrix/cortexclient.builder,matrix/cortexclient.c,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.finishRequest,matrix/cortexclient.name,matrix/cortexclient.nameOffset,matrix/cortexclient.rebuild,matrix/cortexclient.requestID,matrix/cortexclient.result,matrix/cortexclient.table,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.CreateString,matrix/cortexclient/wire/neocortex/protocol.RebuildProjectionAddActor,matrix/cortexclient/wire/neocortex/protocol.RebuildProjectionAddName,matrix/cortexclient/wire/neocortex/protocol.RebuildProjectionEnd,matrix/cortexclient/wire/neocortex/protocol.RebuildProjectionStart,matrix/cortexclient/wire/neocortex/protocol.RebuildResult,matrix/cortexclient/wire/neocortex/protocol.RebuildResult.AppliedLsn,matrix/cortexclient/wire/neocortex/protocol.RebuildResult.Init,matrix/cortexclient/wire/neocortex/protocol.RequestPayloadRebuildProjection,matrix/cortexclient/wire/neocortex/protocol.ResponsePayloadRebuildResult
   ^contains=matrix/cortexclient.Client
   ^defines=matrix/cortexclient/admin.go
 
@@ -433,8 +410,6 @@ NODE id=matrix/cortexclient.Client.AdminStats kind=method
   sig=func (c *Client) AdminStats(ctx context.Context, actor uint16) (ActorStats, error)
   doc=AdminStats reads one actor's log and projection statistics.
 EDGES
-  calls=matrix/cortexclient.Client.request,matrix/cortexclient/wire/neocortex/protocol.ProjectionStat.AppliedLsn,matrix/cortexclient/wire/neocortex/protocol.ProjectionStat.Name,matrix/cortexclient/wire/neocortex/protocol.StatsResult.Actor,matrix/cortexclient/wire/neocortex/protocol.StatsResult.Init,matrix/cortexclient/wire/neocortex/protocol.StatsResult.LogBytes,matrix/cortexclient/wire/neocortex/protocol.StatsResult.LogEvents,matrix/cortexclient/wire/neocortex/protocol.StatsResult.ProjectionStats,matrix/cortexclient/wire/neocortex/protocol.StatsResult.ProjectionStatsLength
-  references=matrix/cortexclient.ActorStats,matrix/cortexclient.Client,matrix/cortexclient.Client.request,matrix/cortexclient.ErrProtocol,matrix/cortexclient.ProjectionStat,matrix/cortexclient.actor,matrix/cortexclient.builder,matrix/cortexclient.c,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.finishRequest,matrix/cortexclient.index,matrix/cortexclient.requestID,matrix/cortexclient.result,matrix/cortexclient.stat,matrix/cortexclient.stats,matrix/cortexclient.table,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/wire/neocortex/protocol.ProjectionStat,matrix/cortexclient/wire/neocortex/protocol.ProjectionStat.AppliedLsn,matrix/cortexclient/wire/neocortex/protocol.ProjectionStat.Name,matrix/cortexclient/wire/neocortex/protocol.RequestPayloadStats,matrix/cortexclient/wire/neocortex/protocol.ResponsePayloadStatsResult,matrix/cortexclient/wire/neocortex/protocol.StatsAddActor,matrix/cortexclient/wire/neocortex/protocol.StatsEnd,matrix/cortexclient/wire/neocortex/protocol.StatsResult,matrix/cortexclient/wire/neocortex/protocol.StatsResult.Actor,matrix/cortexclient/wire/neocortex/protocol.StatsResult.Init,matrix/cortexclient/wire/neocortex/protocol.StatsResult.LogBytes,matrix/cortexclient/wire/neocortex/protocol.StatsResult.LogEvents,matrix/cortexclient/wire/neocortex/protocol.StatsResult.ProjectionStats,matrix/cortexclient/wire/neocortex/protocol.StatsResult.ProjectionStatsLength,matrix/cortexclient/wire/neocortex/protocol.StatsStart
   ^contains=matrix/cortexclient.Client
   ^defines=matrix/cortexclient/admin.go
 
@@ -443,8 +418,6 @@ NODE id=matrix/cortexclient.Client.AdminVerifyStatus kind=method
   sig=func (c *Client) AdminVerifyStatus(ctx context.Context, actor uint16) (VerifyStatus, error)
   doc=AdminVerifyStatus reads the MMR verification status for one actor.
 EDGES
-  calls=matrix/cortexclient.Client.request,matrix/cortexclient/wire/neocortex/protocol.VerifyResult.Actor,matrix/cortexclient/wire/neocortex/protocol.VerifyResult.Init,matrix/cortexclient/wire/neocortex/protocol.VerifyResult.LastCheckpointLsn,matrix/cortexclient/wire/neocortex/protocol.VerifyResult.LeafCount,matrix/cortexclient/wire/neocortex/protocol.VerifyResult.RootBytes,matrix/cortexclient/wire/neocortex/protocol.VerifyResult.Verified
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.request,matrix/cortexclient.VerifyStatus,matrix/cortexclient.actor,matrix/cortexclient.builder,matrix/cortexclient.c,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.finishRequest,matrix/cortexclient.requestID,matrix/cortexclient.result,matrix/cortexclient.status,matrix/cortexclient.table,matrix/cortexclient.verify,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/wire/neocortex/protocol.RequestPayloadVerifyStatus,matrix/cortexclient/wire/neocortex/protocol.ResponsePayloadVerifyResult,matrix/cortexclient/wire/neocortex/protocol.VerifyResult,matrix/cortexclient/wire/neocortex/protocol.VerifyResult.Actor,matrix/cortexclient/wire/neocortex/protocol.VerifyResult.Init,matrix/cortexclient/wire/neocortex/protocol.VerifyResult.LastCheckpointLsn,matrix/cortexclient/wire/neocortex/protocol.VerifyResult.LeafCount,matrix/cortexclient/wire/neocortex/protocol.VerifyResult.RootBytes,matrix/cortexclient/wire/neocortex/protocol.VerifyResult.Verified,matrix/cortexclient/wire/neocortex/protocol.VerifyStatusAddActor,matrix/cortexclient/wire/neocortex/protocol.VerifyStatusEnd,matrix/cortexclient/wire/neocortex/protocol.VerifyStatusStart
   ^contains=matrix/cortexclient.Client
   ^defines=matrix/cortexclient/admin.go
 
@@ -453,11 +426,7 @@ NODE id=matrix/cortexclient.Client.Append kind=method
   sig=func (c *Client) Append(ctx context.Context, events []AppendEvent) (AppendAck, error)
   doc=Append synchronously appends one batch. If the connection breaks after the\nsequence is admitted and reconnect cannot complete, Append returns a typed\nPendingWriteError: the caller knows the exact write is retained for\nsame-sequence resolution and MUST NOT retry it.
 EDGES
-  calls=matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.retainPendingLocked,matrix/cortexclient.Client.writeAdmittedLocked
-  references=matrix/cortexclient.AppendAck,matrix/cortexclient.AppendEvent,matrix/cortexclient.Client,matrix/cortexclient.Client.appendOnceLocked,matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.retainPendingLocked,matrix/cortexclient.Client.writeAdmittedLocked,matrix/cortexclient.ErrProtocol,matrix/cortexclient.ErrSequenceRecovery,matrix/cortexclient.ack,matrix/cortexclient.c,matrix/cortexclient.clientSeq,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.events,matrix/cortexclient.rejected,matrix/cortexclient.rejectedWriteError,matrix/cortexclient.result,matrix/cortexclient.send
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/cortexclient.LoopSeam.Consolidate,matrix/cortexclient/export.run.flush
-  ^references=matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/cortexclient.LoopSeam.Consolidate,matrix/cortexclient/export.run.flush
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.Attest kind=method
@@ -465,8 +434,6 @@ NODE id=matrix/cortexclient.Client.Attest kind=method
   sig=func (c *Client) Attest(ctx context.Context, used, ignored []uint64) (uint32, error)
   doc=Attest returns surfaced-memory attestations as events through the same\nidempotent sequence chain as Append.
 EDGES
-  calls=matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.retainPendingLocked,matrix/cortexclient.Client.writeAdmittedLocked
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.nextRequestIDLocked,matrix/cortexclient.Client.retainPendingLocked,matrix/cortexclient.Client.roundTripLocked,matrix/cortexclient.Client.writeAdmittedLocked,matrix/cortexclient.ErrProtocol,matrix/cortexclient.ErrSequenceRecovery,matrix/cortexclient.ack,matrix/cortexclient.attest,matrix/cortexclient.builder,matrix/cortexclient.c,matrix/cortexclient.clientSeq,matrix/cortexclient.count,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.finishRequest,matrix/cortexclient.finished,matrix/cortexclient.ignored,matrix/cortexclient.ignoredOffset,matrix/cortexclient.index,matrix/cortexclient.rejected,matrix/cortexclient.rejectedWriteError,matrix/cortexclient.requestID,matrix/cortexclient.response,matrix/cortexclient.responseTable,matrix/cortexclient.send,matrix/cortexclient.table,matrix/cortexclient.used,matrix/cortexclient.usedOffset,matrix/cortexclient/internal/flatbuffers.Builder.EndVector,matrix/cortexclient/internal/flatbuffers.Builder.PrependUint64,matrix/cortexclient/internal/flatbuffers.NewBuilder,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/protocol.AttestAck,matrix/cortexclient/wire/neocortex/protocol.AttestAck.Count,matrix/cortexclient/wire/neocortex/protocol.AttestAck.Init,matrix/cortexclient/wire/neocortex/protocol.AttestAddClientSeq,matrix/cortexclient/wire/neocortex/protocol.AttestAddIgnored,matrix/cortexclient/wire/neocortex/protocol.AttestAddUsed,matrix/cortexclient/wire/neocortex/protocol.AttestEnd,matrix/cortexclient/wire/neocortex/protocol.AttestStart,matrix/cortexclient/wire/neocortex/protocol.AttestStartIgnoredVector,matrix/cortexclient/wire/neocortex/protocol.AttestStartUsedVector,matrix/cortexclient/wire/neocortex/protocol.RequestPayloadAttest,matrix/cortexclient/wire/neocortex/protocol.ResponsePayloadAttestAck
   ^contains=matrix/cortexclient.Client
   ^defines=matrix/cortexclient/loopseam.go
 
@@ -475,10 +442,7 @@ NODE id=matrix/cortexclient.Client.Close kind=method
   sig=func (c *Client) Close() error
   doc=Close releases the connection. Pending queued appends are dropped; callers\nthat need durability must have observed acknowledgements.
 EDGES
-  references=matrix/cortexclient.Client,matrix/cortexclient.c,matrix/cortexclient.err
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/neo/internal/memory.Pager.Close
-  ^references=matrix/neo/internal/memory.Pager.Close
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.LatestCheckpoint kind=method
@@ -486,11 +450,7 @@ NODE id=matrix/cortexclient.Client.LatestCheckpoint kind=method
   sig=func (c *Client) LatestCheckpoint(ctx context.Context, turnID string) ([]byte, uint64, error)
   doc=LatestCheckpoint reads the newest checkpoint blob for a turn.
 EDGES
-  calls=matrix/cortexclient.Client.request,matrix/cortexclient/wire/neocortex/protocol.CheckpointResult.BlobBytes,matrix/cortexclient/wire/neocortex/protocol.CheckpointResult.Init,matrix/cortexclient/wire/neocortex/protocol.CheckpointResult.Lsn,matrix/cortexclient/wire/neocortex/protocol.CheckpointResult.Present
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.request,matrix/cortexclient.ErrAbsent,matrix/cortexclient.ErrProtocol,matrix/cortexclient.blob,matrix/cortexclient.builder,matrix/cortexclient.c,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.finishRequest,matrix/cortexclient.latest,matrix/cortexclient.requestID,matrix/cortexclient.result,matrix/cortexclient.table,matrix/cortexclient.turn,matrix/cortexclient.turnID,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/wire/neocortex/protocol.CheckpointResult,matrix/cortexclient/wire/neocortex/protocol.CheckpointResult.BlobBytes,matrix/cortexclient/wire/neocortex/protocol.CheckpointResult.Init,matrix/cortexclient/wire/neocortex/protocol.CheckpointResult.Lsn,matrix/cortexclient/wire/neocortex/protocol.CheckpointResult.Present,matrix/cortexclient/wire/neocortex/protocol.LatestCheckpointAddTurnId,matrix/cortexclient/wire/neocortex/protocol.LatestCheckpointEnd,matrix/cortexclient/wire/neocortex/protocol.LatestCheckpointStart,matrix/cortexclient/wire/neocortex/protocol.RequestPayloadLatestCheckpoint,matrix/cortexclient/wire/neocortex/protocol.ResponsePayloadCheckpointResult
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.LoopSeam.LatestTurnCheckpoint
-  ^references=matrix/cortexclient.LoopSeam.LatestTurnCheckpoint
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.Client.NextClientSeq kind=method
@@ -498,7 +458,6 @@ NODE id=matrix/cortexclient.Client.NextClientSeq kind=method
   sig=func (c *Client) NextClientSeq() uint64
   doc=NextClientSeq allocates the next append sequence number.
 EDGES
-  references=matrix/cortexclient.Client,matrix/cortexclient.c
   ^contains=matrix/cortexclient.Client
   ^defines=matrix/cortexclient/client.go
 
@@ -507,7 +466,6 @@ NODE id=matrix/cortexclient.Client.PendingLen kind=method
   sig=func (c *Client) PendingLen() int
   doc=PendingLen reports the number of queued unacknowledged append batches.
 EDGES
-  references=matrix/cortexclient.Client,matrix/cortexclient.c
   ^contains=matrix/cortexclient.Client
   ^defines=matrix/cortexclient/client.go
 
@@ -516,8 +474,6 @@ NODE id=matrix/cortexclient.Client.QueueAppend kind=method
   sig=func (c *Client) QueueAppend(ctx context.Context, events []AppendEvent) (AppendAck, bool, error)
   doc=QueueAppend appends with degraded-mode buffering: while cortexd is down the\nbatch enters the bounded pending queue and is flushed, in sequence order,\nby the next successful reconnect. A full queue is an honest typed failure\nbefore a sequence is allocated, never a silent drop.
 EDGES
-  calls=matrix/cortexclient.Client.queueAppend
-  references=matrix/cortexclient.AppendAck,matrix/cortexclient.AppendEvent,matrix/cortexclient.Client,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.c,matrix/cortexclient.ctx,matrix/cortexclient.events
   ^contains=matrix/cortexclient.Client
   ^defines=matrix/cortexclient/client.go
 
@@ -526,8 +482,6 @@ NODE id=matrix/cortexclient.Client.Transcript kind=method
   sig=func (c *Client) Transcript(ctx context.Context, conversation [16]byte,\n	sinceLsn uint64, limit uint32) ([]TranscriptRecord, bool, error)
   doc=Transcript reads conversation frames after sinceLsn.
 EDGES
-  calls=matrix/cortexclient.Client.request,matrix/cortexclient/wire/neocortex/protocol.FrameRecord.Kind,matrix/cortexclient/wire/neocortex/protocol.FrameRecord.Lsn,matrix/cortexclient/wire/neocortex/protocol.FrameRecord.PayloadBytes,matrix/cortexclient/wire/neocortex/protocol.FrameRecord.WallTimestampNs,matrix/cortexclient/wire/neocortex/protocol.TranscriptResult.Init,matrix/cortexclient/wire/neocortex/protocol.TranscriptResult.Records,matrix/cortexclient/wire/neocortex/protocol.TranscriptResult.RecordsLength,matrix/cortexclient/wire/neocortex/protocol.TranscriptResult.Truncated
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.request,matrix/cortexclient.ErrProtocol,matrix/cortexclient.EventKind,matrix/cortexclient.TranscriptRecord,matrix/cortexclient.builder,matrix/cortexclient.c,matrix/cortexclient.conversation,matrix/cortexclient.conversationOffset,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.finishRequest,matrix/cortexclient.index,matrix/cortexclient.limit,matrix/cortexclient.payload,matrix/cortexclient.record,matrix/cortexclient.records,matrix/cortexclient.requestID,matrix/cortexclient.result,matrix/cortexclient.sinceLsn,matrix/cortexclient.table,matrix/cortexclient.transcript,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/wire/neocortex/protocol.FrameRecord,matrix/cortexclient/wire/neocortex/protocol.FrameRecord.Kind,matrix/cortexclient/wire/neocortex/protocol.FrameRecord.Lsn,matrix/cortexclient/wire/neocortex/protocol.FrameRecord.PayloadBytes,matrix/cortexclient/wire/neocortex/protocol.FrameRecord.WallTimestampNs,matrix/cortexclient/wire/neocortex/protocol.RequestPayloadTranscript,matrix/cortexclient/wire/neocortex/protocol.ResponsePayloadTranscriptResult,matrix/cortexclient/wire/neocortex/protocol.TranscriptAddConversation,matrix/cortexclient/wire/neocortex/protocol.TranscriptAddLimit,matrix/cortexclient/wire/neocortex/protocol.TranscriptAddSinceLsn,matrix/cortexclient/wire/neocortex/protocol.TranscriptEnd,matrix/cortexclient/wire/neocortex/protocol.TranscriptResult,matrix/cortexclient/wire/neocortex/protocol.TranscriptResult.Init,matrix/cortexclient/wire/neocortex/protocol.TranscriptResult.Records,matrix/cortexclient/wire/neocortex/protocol.TranscriptResult.RecordsLength,matrix/cortexclient/wire/neocortex/protocol.TranscriptResult.Truncated,matrix/cortexclient/wire/neocortex/protocol.TranscriptStart
   ^contains=matrix/cortexclient.Client
   ^defines=matrix/cortexclient/loopseam.go
 
@@ -536,7 +490,6 @@ NODE id=matrix/cortexclient.Client.Welcome kind=method
   sig=func (c *Client) Welcome() Welcome
   doc=Welcome returns the handshake result of the current connection.
 EDGES
-  references=matrix/cortexclient.Client,matrix/cortexclient.Welcome,matrix/cortexclient.c
   ^contains=matrix/cortexclient.Client
   ^defines=matrix/cortexclient/client.go
 
@@ -545,106 +498,70 @@ NODE id=matrix/cortexclient.Client.WriteCheckpoint kind=method
   sig=func (c *Client) WriteCheckpoint(ctx context.Context, turnID string, blob []byte) (uint64, error)
   doc=WriteCheckpoint stores a turn checkpoint blob as a checkpoint event through\nthe same idempotent sequence chain as Append: a resend after a connection\nbreak acknowledges the committed lsn instead of double-applying.
 EDGES
-  calls=matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.retainPendingLocked,matrix/cortexclient.Client.writeAdmittedLocked
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.nextRequestIDLocked,matrix/cortexclient.Client.retainPendingLocked,matrix/cortexclient.Client.roundTripLocked,matrix/cortexclient.Client.writeAdmittedLocked,matrix/cortexclient.ErrProtocol,matrix/cortexclient.ErrSequenceRecovery,matrix/cortexclient.ack,matrix/cortexclient.blob,matrix/cortexclient.builder,matrix/cortexclient.c,matrix/cortexclient.checkpoint,matrix/cortexclient.clientSeq,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.finishRequest,matrix/cortexclient.finished,matrix/cortexclient.lsn,matrix/cortexclient.payload,matrix/cortexclient.rejected,matrix/cortexclient.rejectedWriteError,matrix/cortexclient.requestID,matrix/cortexclient.response,matrix/cortexclient.responseTable,matrix/cortexclient.send,matrix/cortexclient.table,matrix/cortexclient.turn,matrix/cortexclient.turnID,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.NewBuilder,matrix/cortexclient/wire/neocortex/protocol.CheckpointAck,matrix/cortexclient/wire/neocortex/protocol.CheckpointAck.Init,matrix/cortexclient/wire/neocortex/protocol.CheckpointAck.Lsn,matrix/cortexclient/wire/neocortex/protocol.CheckpointAddBlob,matrix/cortexclient/wire/neocortex/protocol.CheckpointAddClientSeq,matrix/cortexclient/wire/neocortex/protocol.CheckpointAddTurnId,matrix/cortexclient/wire/neocortex/protocol.CheckpointEnd,matrix/cortexclient/wire/neocortex/protocol.CheckpointStart,matrix/cortexclient/wire/neocortex/protocol.RequestPayloadCheckpoint,matrix/cortexclient/wire/neocortex/protocol.ResponsePayloadCheckpointAck
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.LoopSeam.SaveTurnCheckpoint
-  ^references=matrix/cortexclient.LoopSeam.SaveTurnCheckpoint
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.Client.advancePendingLocked kind=method
   digest=b3:5b341caadb8cca7e5c3c5f274537455cbfdc9e2b41376070030d83ea293b80f8 file=cortexclient/client.go range=379:388 lang=go exported=false byte_range=10944:11184
   sig=func (c *Client) advancePendingLocked(delta uint64) error
 EDGES
-  calls=matrix/cortexclient.Client.consumeRecoveryLocked
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.consumeRecoveryLocked,matrix/cortexclient.c,matrix/cortexclient.delta,matrix/cortexclient.err,matrix/cortexclient.index
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.sendPendingHeadLocked
-  ^references=matrix/cortexclient.Client.sendPendingHeadLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.appendOnceLocked kind=method
   digest=b3:2158ec3a15120a23301b1a3896e646c615471494d17ce8ea4b04c776e24eb1a4 file=cortexclient/client.go range=574:597 lang=go exported=false byte_range=16443:17260
   sig=func (c *Client) appendOnceLocked(clientSeq uint64, events []AppendEvent) (AppendAck, error)
 EDGES
-  calls=matrix/cortexclient.Client.nextRequestIDLocked,matrix/cortexclient.Client.roundTripLocked,matrix/cortexclient.buildAppendRequest,matrix/cortexclient.responseTable,matrix/cortexclient/wire/neocortex/protocol.AppendAck.ClientSeq,matrix/cortexclient/wire/neocortex/protocol.AppendAck.Duplicate,matrix/cortexclient/wire/neocortex/protocol.AppendAck.FirstLsn,matrix/cortexclient/wire/neocortex/protocol.AppendAck.Init,matrix/cortexclient/wire/neocortex/protocol.AppendAck.LastLeafHashBytes,matrix/cortexclient/wire/neocortex/protocol.AppendAck.LastLsn,matrix/cortexclient/wire/neocortex/protocol.AppendAck.LeafCount,matrix/cortexclient/wire/neocortex/protocol.AppendAck.MmrRootBytes
-  references=matrix/cortexclient.AppendAck,matrix/cortexclient.AppendEvent,matrix/cortexclient.Client,matrix/cortexclient.Client.nextRequestIDLocked,matrix/cortexclient.Client.roundTripLocked,matrix/cortexclient.ack,matrix/cortexclient.buildAppendRequest,matrix/cortexclient.c,matrix/cortexclient.clientSeq,matrix/cortexclient.err,matrix/cortexclient.events,matrix/cortexclient.finished,matrix/cortexclient.requestID,matrix/cortexclient.response,matrix/cortexclient.responseTable,matrix/cortexclient.table,matrix/cortexclient.wireAck,matrix/cortexclient/wire/neocortex/protocol.AppendAck,matrix/cortexclient/wire/neocortex/protocol.AppendAck.ClientSeq,matrix/cortexclient/wire/neocortex/protocol.AppendAck.Duplicate,matrix/cortexclient/wire/neocortex/protocol.AppendAck.FirstLsn,matrix/cortexclient/wire/neocortex/protocol.AppendAck.Init,matrix/cortexclient/wire/neocortex/protocol.AppendAck.LastLeafHashBytes,matrix/cortexclient/wire/neocortex/protocol.AppendAck.LastLsn,matrix/cortexclient/wire/neocortex/protocol.AppendAck.LeafCount,matrix/cortexclient/wire/neocortex/protocol.AppendAck.MmrRootBytes,matrix/cortexclient/wire/neocortex/protocol.ResponsePayloadAppendAck
   ^contains=matrix/cortexclient.Client
-  ^references=matrix/cortexclient.Client.Append,matrix/cortexclient.Client.queueAppend
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.connectLocked kind=method
   digest=b3:002d9ad6ddfbffee5ce29a0f0664072ed3224bdb37ab2887754c94cd94962d54 file=cortexclient/client.go range=243:315 lang=go exported=false byte_range=7000:9373
   sig=func (c *Client) connectLocked() error
 EDGES
-  calls=matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.envelopeResponse,matrix/cortexclient.finishEnvelope,matrix/cortexclient.frameReader.next,matrix/cortexclient.newFrameReader,matrix/cortexclient.responseError,matrix/cortexclient.writeFrame,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.Builder.FinishedBytes,matrix/cortexclient/internal/flatbuffers.NewBuilder,matrix/cortexclient/wire/neocortex/protocol.GetRootAsWireEnvelope,matrix/cortexclient/wire/neocortex/protocol.HelloAddCapabilityToken,matrix/cortexclient/wire/neocortex/protocol.HelloAddConnectionId,matrix/cortexclient/wire/neocortex/protocol.HelloAddProtoVersion,matrix/cortexclient/wire/neocortex/protocol.HelloEnd,matrix/cortexclient/wire/neocortex/protocol.HelloStart,matrix/cortexclient/wire/neocortex/protocol.Welcome.ActorNs,matrix/cortexclient/wire/neocortex/protocol.Welcome.Admin,matrix/cortexclient/wire/neocortex/protocol.Welcome.Init,matrix/cortexclient/wire/neocortex/protocol.Welcome.MaximumBatchEvents,matrix/cortexclient/wire/neocortex/protocol.Welcome.MaximumFrameBytes,matrix/cortexclient/wire/neocortex/protocol.Welcome.NextClientSeq,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope.Payload,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope.PayloadType,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope.ProtoVersion
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.ErrCapability,matrix/cortexclient.ErrClosed,matrix/cortexclient.ErrProtocol,matrix/cortexclient.ErrUnavailable,matrix/cortexclient.ProtocolVersion,matrix/cortexclient.Welcome,matrix/cortexclient.builder,matrix/cortexclient.c,matrix/cortexclient.conn,matrix/cortexclient.connectionID,matrix/cortexclient.deadline,matrix/cortexclient.engineErr,matrix/cortexclient.envelope,matrix/cortexclient.envelopeResponse,matrix/cortexclient.err,matrix/cortexclient.finishEnvelope,matrix/cortexclient.frameReader.next,matrix/cortexclient.hello,matrix/cortexclient.newFrameReader,matrix/cortexclient.ok,matrix/cortexclient.payload,matrix/cortexclient.reader,matrix/cortexclient.response,matrix/cortexclient.responseError,matrix/cortexclient.table,matrix/cortexclient.token,matrix/cortexclient.welcome,matrix/cortexclient.writeFrame,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.Builder.FinishedBytes,matrix/cortexclient/internal/flatbuffers.NewBuilder,matrix/cortexclient/internal/flatbuffers.Table,matrix/cortexclient/wire/neocortex/protocol.GetRootAsWireEnvelope,matrix/cortexclient/wire/neocortex/protocol.HelloAddCapabilityToken,matrix/cortexclient/wire/neocortex/protocol.HelloAddConnectionId,matrix/cortexclient/wire/neocortex/protocol.HelloAddProtoVersion,matrix/cortexclient/wire/neocortex/protocol.HelloEnd,matrix/cortexclient/wire/neocortex/protocol.HelloStart,matrix/cortexclient/wire/neocortex/protocol.Welcome,matrix/cortexclient/wire/neocortex/protocol.Welcome.ActorNs,matrix/cortexclient/wire/neocortex/protocol.Welcome.Admin,matrix/cortexclient/wire/neocortex/protocol.Welcome.Init,matrix/cortexclient/wire/neocortex/protocol.Welcome.MaximumBatchEvents,matrix/cortexclient/wire/neocortex/protocol.Welcome.MaximumFrameBytes,matrix/cortexclient/wire/neocortex/protocol.Welcome.NextClientSeq,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope.Payload,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope.PayloadType,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope.ProtoVersion,matrix/cortexclient/wire/neocortex/protocol.WirePayloadHello,matrix/cortexclient/wire/neocortex/protocol.WirePayloadWelcome
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.Dial
-  ^references=matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.Dial
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.consumeRecoveryLocked kind=method
   digest=b3:0916ce15507d9abe72862112030a7bf859f72613a6abd58a8650228d41382d0a file=cortexclient/client.go range=325:332 lang=go exported=false byte_range=9486:9774
   sig=func (c *Client) consumeRecoveryLocked(delta uint64) error
 EDGES
-  references=matrix/cortexclient.Client,matrix/cortexclient.ErrSequenceRecovery,matrix/cortexclient.c,matrix/cortexclient.delta
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.advancePendingLocked,matrix/cortexclient.Client.initializeSequenceLocked,matrix/cortexclient.Client.reconnectLocked,matrix/cortexclient.Client.writeAdmittedLocked
-  ^references=matrix/cortexclient.Client.advancePendingLocked,matrix/cortexclient.Client.initializeSequenceLocked,matrix/cortexclient.Client.reconnectLocked,matrix/cortexclient.Client.writeAdmittedLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.dropConnLocked kind=method
   digest=b3:dd11309ad873583a295fd805eefaca9831649635a3aebed78ea3c02ed52da858 file=cortexclient/client.go range=317:323 lang=go exported=false byte_range=9375:9484
   sig=func (c *Client) dropConnLocked()
 EDGES
-  references=matrix/cortexclient.Client,matrix/cortexclient.c
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.Client.reconnectLocked,matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.Client.retainPendingLocked,matrix/cortexclient.Client.roundTripLocked,matrix/cortexclient.Dial
-  ^references=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.Client.reconnectLocked,matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.Client.retainPendingLocked,matrix/cortexclient.Client.roundTripLocked,matrix/cortexclient.Dial
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.ensureLocked kind=method
   digest=b3:31e105f8e3bbea5f7f0717f83a61fbf88d309fa9c9dfc75e4de6c9d826a9401f file=cortexclient/client.go range=446:454 lang=go exported=false byte_range=12558:12700
   sig=func (c *Client) ensureLocked() error
 EDGES
-  calls=matrix/cortexclient.Client.reconnectLocked
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.reconnectLocked,matrix/cortexclient.ErrClosed,matrix/cortexclient.c
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.Append,matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.Client.request
-  ^references=matrix/cortexclient.Client.Append,matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.Client.request
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.initializeSequenceLocked kind=method
   digest=b3:3f9a132eb2ad65b39cd88c4a25bdb2433e560ccc1894174946cf76673c6661e4 file=cortexclient/client.go range=334:344 lang=go exported=false byte_range=9776:10007
   sig=func (c *Client) initializeSequenceLocked() error
 EDGES
-  calls=matrix/cortexclient.Client.consumeRecoveryLocked
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.consumeRecoveryLocked,matrix/cortexclient.c,matrix/cortexclient.err,matrix/cortexclient.tail
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Dial
-  ^references=matrix/cortexclient.Dial
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.nextRequestIDLocked kind=method
   digest=b3:64cf0766ff86a3654e2a0626ad2ced03f9a97134092b021abb93309d7c6c2f47 file=cortexclient/client.go range=532:535 lang=go exported=false byte_range=14948:15032
   sig=func (c *Client) nextRequestIDLocked() uint64
 EDGES
-  references=matrix/cortexclient.Client,matrix/cortexclient.c
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.appendOnceLocked
-  ^references=matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.Client.appendOnceLocked,matrix/cortexclient.Client.request
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.queueAppend kind=method
   digest=b3:073ef398b77969262c905aff74cc99a38fc35dec8050ffeaca811766110ee278 file=cortexclient/client.go range=761:824 lang=go exported=false byte_range=22270:24106
   sig=func (c *Client) queueAppend(ctx context.Context, events []AppendEvent,\n	onPendingResult func(AppendAck, error)) (AppendAck, bool, error)
 EDGES
-  calls=matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.Client.reconnectLocked,matrix/cortexclient.Client.writeAdmittedLocked
-  references=matrix/cortexclient.AppendAck,matrix/cortexclient.AppendEvent,matrix/cortexclient.Client,matrix/cortexclient.Client.appendOnceLocked,matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.Client.reconnectLocked,matrix/cortexclient.Client.writeAdmittedLocked,matrix/cortexclient.ErrClosed,matrix/cortexclient.ErrProtocol,matrix/cortexclient.ErrQueueFull,matrix/cortexclient.ErrSequenceRecovery,matrix/cortexclient.ErrUnavailable,matrix/cortexclient.ack,matrix/cortexclient.c,matrix/cortexclient.clientSeq,matrix/cortexclient.ctx,matrix/cortexclient.entry,matrix/cortexclient.err,matrix/cortexclient.events,matrix/cortexclient.onPendingResult,matrix/cortexclient.pendingWrite,matrix/cortexclient.reconnectErr,matrix/cortexclient.rejected,matrix/cortexclient.rejectedWriteError,matrix/cortexclient.result,matrix/cortexclient.send
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.QueueAppend,matrix/cortexclient.LoopSeam.RecordAssistantWorking,matrix/cortexclient.LoopSeam.RecordDelivery,matrix/cortexclient.LoopSeam.RecordUser
-  ^references=matrix/cortexclient.Client.QueueAppend,matrix/cortexclient.LoopSeam.RecordAssistantWorking,matrix/cortexclient.LoopSeam.RecordDelivery,matrix/cortexclient.LoopSeam.RecordUser
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.reconnectLocked kind=method
@@ -652,22 +569,14 @@ NODE id=matrix/cortexclient.Client.reconnectLocked kind=method
   sig=func (c *Client) reconnectLocked() error
   doc=reconnectLocked re-establishes the connection and resends every pending\nunacknowledged write in sequence order. Writes with an unknown outcome keep\ntheir exact sequence; writes known never to have reached cortexd may be\naligned to the server-reported free tail within the lifetime recovery bound.
 EDGES
-  calls=matrix/cortexclient.Client.consumeRecoveryLocked,matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.Client.sendPendingHeadLocked
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.consumeRecoveryLocked,matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.Client.sendPendingHeadLocked,matrix/cortexclient.c,matrix/cortexclient.delta,matrix/cortexclient.err,matrix/cortexclient.tail
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.Client.request
-  ^references=matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.Client.request
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.reconnectTransportLocked kind=method
   digest=b3:6fde864b22b6ad3a28b91a44379d94333bcb9ec58914405e49151b239a7fd0ea file=cortexclient/client.go range=346:349 lang=go exported=false byte_range=10009:10108
   sig=func (c *Client) reconnectTransportLocked() error
 EDGES
-  calls=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.dropConnLocked
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.c
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.reconnectLocked,matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.Client.sendPendingHeadLocked,matrix/cortexclient.Client.writeAdmittedLocked
-  ^references=matrix/cortexclient.Client.reconnectLocked,matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.Client.sendPendingHeadLocked,matrix/cortexclient.Client.writeAdmittedLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.request kind=method
@@ -675,22 +584,14 @@ NODE id=matrix/cortexclient.Client.request kind=method
   sig=func (c *Client) request(ctx context.Context, build func(builder *flatbuffers.Builder, requestID uint64) []byte,\n	want protocol.ResponsePayload) (flatbuffers.Table, []byte, error)
   doc=request performs one non-append request round trip with reconnect-once.
 EDGES
-  calls=matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.reconnectLocked
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.nextRequestIDLocked,matrix/cortexclient.Client.reconnectLocked,matrix/cortexclient.Client.roundTripLocked,matrix/cortexclient.ErrUnavailable,matrix/cortexclient.attempt,matrix/cortexclient.build,matrix/cortexclient.builder,matrix/cortexclient.c,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.finished,matrix/cortexclient.payload,matrix/cortexclient.reconnectErr,matrix/cortexclient.requestID,matrix/cortexclient.response,matrix/cortexclient.responseTable,matrix/cortexclient.table,matrix/cortexclient.want,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.NewBuilder,matrix/cortexclient/internal/flatbuffers.Table,matrix/cortexclient/wire/neocortex/protocol.ResponsePayload
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.AdminHealth,matrix/cortexclient.Client.AdminRebuildProjection,matrix/cortexclient.Client.AdminStats,matrix/cortexclient.Client.AdminVerifyStatus,matrix/cortexclient.Client.LatestCheckpoint,matrix/cortexclient.Client.Transcript,matrix/cortexclient.LoopSeam.ActivateBundle
-  ^references=matrix/cortexclient.Client.AdminHealth,matrix/cortexclient.Client.AdminRebuildProjection,matrix/cortexclient.Client.AdminStats,matrix/cortexclient.Client.AdminVerifyStatus,matrix/cortexclient.Client.LatestCheckpoint,matrix/cortexclient.Client.Transcript,matrix/cortexclient.LoopSeam.ActivateBundle
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.retainPendingLocked kind=method
   digest=b3:96cfb92b0697e3b59d6bf861f1e4622e155b53817f4c94addb7b500878f87827 file=cortexclient/client.go range=705:716 lang=go exported=false byte_range=20400:20782
   sig=func (c *Client) retainPendingLocked(send func(clientSeq uint64) error, cause error,\n	onSuccess func(), onFailure func(error)) error
 EDGES
-  calls=matrix/cortexclient.Client.dropConnLocked
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.PendingWriteError,matrix/cortexclient.c,matrix/cortexclient.cause,matrix/cortexclient.onFailure,matrix/cortexclient.onSuccess,matrix/cortexclient.pendingWrite,matrix/cortexclient.send
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.Append,matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.WriteCheckpoint
-  ^references=matrix/cortexclient.Client.Append,matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.WriteCheckpoint
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.roundTripLocked kind=method
@@ -698,11 +599,7 @@ NODE id=matrix/cortexclient.Client.roundTripLocked kind=method
   sig=func (c *Client) roundTripLocked(requestID uint64, finished []byte) (*protocol.Response, []byte, error)
   doc=roundTripLocked sends one finished request builder and returns the matching\nResponse table bytes. Event frames (subscription pushes) are skipped.
 EDGES
-  calls=matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.envelopeResponse,matrix/cortexclient.frameReader.next,matrix/cortexclient.writeFrame,matrix/cortexclient/wire/neocortex/protocol.GetRootAsWireEnvelope,matrix/cortexclient/wire/neocortex/protocol.Response.RequestId,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope.PayloadType
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.ErrProtocol,matrix/cortexclient.ErrUnavailable,matrix/cortexclient.c,matrix/cortexclient.envelope,matrix/cortexclient.envelopeResponse,matrix/cortexclient.err,matrix/cortexclient.finished,matrix/cortexclient.frameReader.next,matrix/cortexclient.ok,matrix/cortexclient.payload,matrix/cortexclient.requestID,matrix/cortexclient.response,matrix/cortexclient.writeFrame,matrix/cortexclient/wire/neocortex/protocol.GetRootAsWireEnvelope,matrix/cortexclient/wire/neocortex/protocol.Response,matrix/cortexclient/wire/neocortex/protocol.Response.RequestId,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope.PayloadType,matrix/cortexclient/wire/neocortex/protocol.WirePayloadEvent
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.appendOnceLocked
-  ^references=matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.Client.appendOnceLocked,matrix/cortexclient.Client.request
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.sendAdmittedLocked kind=method
@@ -710,22 +607,14 @@ NODE id=matrix/cortexclient.Client.sendAdmittedLocked kind=method
   sig=func (c *Client) sendAdmittedLocked(clientSeq uint64, send func(clientSeq uint64) error) error
   doc=sendAdmittedLocked delivers one admitted write at a fixed client sequence.\nAny post-send error is ambiguous until a new Welcome reports whether cortexd\nadvanced. An explicit engine rejection is released only when that handshake\nproves the sequence remains free; otherwise the exact sequence is replayed.
 EDGES
-  calls=matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.sequenceConflict
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.EngineError,matrix/cortexclient.ErrOutcomeUnknown,matrix/cortexclient.c,matrix/cortexclient.clientSeq,matrix/cortexclient.engineErr,matrix/cortexclient.engineRejected,matrix/cortexclient.err,matrix/cortexclient.next,matrix/cortexclient.reconnectErr,matrix/cortexclient.rejectedWriteError,matrix/cortexclient.resolution,matrix/cortexclient.send,matrix/cortexclient.sequenceConflict
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.sendPendingHeadLocked,matrix/cortexclient.Client.writeAdmittedLocked
-  ^references=matrix/cortexclient.Client.sendPendingHeadLocked,matrix/cortexclient.Client.writeAdmittedLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.sendPendingHeadLocked kind=method
   digest=b3:6234ef7ae78db21d27b1edefc6cf30129c5a18eb9bc2d5340131c5ccfb413fd0 file=cortexclient/client.go range=390:444 lang=go exported=false byte_range=11186:12556
   sig=func (c *Client) sendPendingHeadLocked() error
 EDGES
-  calls=matrix/cortexclient.Client.advancePendingLocked,matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.sequenceConflict
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.advancePendingLocked,matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.ErrOutcomeUnknown,matrix/cortexclient.c,matrix/cortexclient.entry,matrix/cortexclient.err,matrix/cortexclient.index,matrix/cortexclient.next,matrix/cortexclient.rejected,matrix/cortexclient.rejectedWriteError,matrix/cortexclient.sequenceConflict
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.reconnectLocked
-  ^references=matrix/cortexclient.Client.reconnectLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Client.writeAdmittedLocked kind=method
@@ -733,11 +622,7 @@ NODE id=matrix/cortexclient.Client.writeAdmittedLocked kind=method
   sig=func (c *Client) writeAdmittedLocked(send func(clientSeq uint64) error) error
   doc=writeAdmittedLocked runs the full self-healing sequence policy for one\nwrite that has been admitted at c.clientSeq:\n  - an engine rejection releases the sequence slot only after a reconnect\n    proves the server never recorded it, so the chain does not wedge;\n  - a sequence/idempotency conflict means the server durably holds a write\n    the client considered rejected (apply succeeded but the projection step\n    failed before acknowledgement); the slot is burned, so retry once at\n    the next sequence.
 EDGES
-  calls=matrix/cortexclient.Client.consumeRecoveryLocked,matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.sequenceConflict
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.consumeRecoveryLocked,matrix/cortexclient.Client.reconnectTransportLocked,matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.ErrSequenceRecovery,matrix/cortexclient.c,matrix/cortexclient.delta,matrix/cortexclient.err,matrix/cortexclient.next,matrix/cortexclient.reconnectErr,matrix/cortexclient.recoveryErr,matrix/cortexclient.rejected,matrix/cortexclient.rejectedWriteError,matrix/cortexclient.send,matrix/cortexclient.sequenceConflict
   ^contains=matrix/cortexclient.Client
-  ^calls=matrix/cortexclient.Client.Append,matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.Client.queueAppend
-  ^references=matrix/cortexclient.Client.Append,matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.Client.queueAppend
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.CodeCapabilityDenied kind=const
@@ -752,7 +637,6 @@ NODE id=matrix/cortexclient.CodeIdempotencyConflict kind=const
   sig=untyped int
   doc=Engine error codes the sequencing policy discriminates on. Values mirror\nneocortex/src/core/error.h.
 EDGES
-  ^references=matrix/cortexclient.sequenceConflict
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.CodeSequenceViolation kind=const
@@ -760,7 +644,6 @@ NODE id=matrix/cortexclient.CodeSequenceViolation kind=const
   sig=untyped int
   doc=Engine error codes the sequencing policy discriminates on. Values mirror\nneocortex/src/core/error.h.
 EDGES
-  ^references=matrix/cortexclient.sequenceConflict
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Config kind=type
@@ -769,7 +652,6 @@ NODE id=matrix/cortexclient.Config kind=type
   doc=Config describes one client connection identity. ConnectionID is the\nidempotency identity: it MUST stay stable across reconnects so cortexd can\ndeduplicate resent appends by (connection id, client sequence).
 EDGES
   contains=matrix/cortexclient.Config#CapabilityToken,matrix/cortexclient.Config#ConnectionID,matrix/cortexclient.Config#DialTimeout,matrix/cortexclient.Config#PendingLimit,matrix/cortexclient.Config#RequestTimeout,matrix/cortexclient.Config#SequenceRecoveryLimit,matrix/cortexclient.Config#SocketPath,matrix/cortexclient.Config.withDefaults
-  ^references=matrix/cortexclient.Client,matrix/cortexclient.Config.withDefaults,matrix/cortexclient.Dial,matrix/neo/internal/memory.dialNeocortex
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Config#CapabilityToken kind=field
@@ -819,10 +701,7 @@ NODE id=matrix/cortexclient.Config.withDefaults kind=method
   digest=b3:f54d13c4fb48810ec163670e6871453acae4dbb621d6055e2e85af413476ecf0 file=cortexclient/client.go range=124:139 lang=go exported=false byte_range=4085:4422
   sig=func (c *Config) withDefaults() Config
 EDGES
-  references=matrix/cortexclient.Config,matrix/cortexclient.c,matrix/cortexclient.out
   ^contains=matrix/cortexclient.Config
-  ^calls=matrix/cortexclient.Dial
-  ^references=matrix/cortexclient.Dial
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.ConsolidationEvent kind=func
@@ -830,9 +709,6 @@ NODE id=matrix/cortexclient.ConsolidationEvent kind=func
   sig=func ConsolidationEvent(conversation [16]byte, assertions []Assertion) AppendEvent
   doc=ConsolidationEvent builds one consolidation event carrying a batch of\nextracted assertions.
 EDGES
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.Assertion,matrix/cortexclient.KindConsolidation,matrix/cortexclient.assertions,matrix/cortexclient.buildAssertion,matrix/cortexclient.builder,matrix/cortexclient.conversation,matrix/cortexclient.index,matrix/cortexclient.offsets,matrix/cortexclient.vector,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.EndVector,matrix/cortexclient/internal/flatbuffers.Builder.PrependUOffsetT,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/schema.ConsolidationAddAssertions,matrix/cortexclient/wire/neocortex/schema.ConsolidationEnd,matrix/cortexclient/wire/neocortex/schema.ConsolidationStart,matrix/cortexclient/wire/neocortex/schema.ConsolidationStartAssertionsVector,matrix/cortexclient/wire/neocortex/schema.EventPayloadConsolidation
-  ^calls=matrix/cortexclient.LoopSeam.Consolidate
-  ^references=matrix/cortexclient.LoopSeam.Consolidate
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.ConversationBytes kind=func
@@ -840,9 +716,6 @@ NODE id=matrix/cortexclient.ConversationBytes kind=func
   sig=func ConversationBytes(conversationID string) [16]byte
   doc=ConversationBytes derives the stable 16-byte wire conversation id for a\nstring conversation identifier.
 EDGES
-  references=matrix/cortexclient.conversationID,matrix/cortexclient.digest,matrix/cortexclient.out
-  ^calls=matrix/cortexclient.NewLoopSeam,matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents
-  ^references=matrix/cortexclient.NewLoopSeam,matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.DefaultTokenWeights kind=func
@@ -850,9 +723,6 @@ NODE id=matrix/cortexclient.DefaultTokenWeights kind=func
   sig=func DefaultTokenWeights() []uint16
   doc=DefaultTokenWeights is the caller-supplied token model table shipped to the\nengine: fixed-point 1/256-token weights per byte value. The default charges\none token per four bytes, matching the runtime's planning estimator.
 EDGES
-  references=matrix/cortexclient.index,matrix/cortexclient.weights
-  ^calls=matrix/cortexclient.NewLoopSeam
-  ^references=matrix/cortexclient.NewLoopSeam
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.DeliveredMsgEvent kind=func
@@ -860,10 +730,6 @@ NODE id=matrix/cortexclient.DeliveredMsgEvent kind=func
   sig=func DeliveredMsgEvent(conversation [16]byte, content string) AppendEvent
   doc=DeliveredMsgEvent builds a delivered_msg event — the only representation of\nuser-visible assistant output.
 EDGES
-  calls=matrix/cortexclient.textEvent
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.KindDeliveredMsg,matrix/cortexclient.content,matrix/cortexclient.conversation,matrix/cortexclient.textEvent,matrix/cortexclient/wire/neocortex/schema.DeliveredMsgAddContent,matrix/cortexclient/wire/neocortex/schema.DeliveredMsgEnd,matrix/cortexclient/wire/neocortex/schema.DeliveredMsgStart,matrix/cortexclient/wire/neocortex/schema.EventPayloadDeliveredMsg
-  ^calls=matrix/cortexclient.LoopSeam.RecordDelivery,matrix/cortexclient/export.run.exportSessions
-  ^references=matrix/cortexclient.LoopSeam.RecordDelivery,matrix/cortexclient/export.run.exportSessions
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.Dial kind=func
@@ -871,10 +737,6 @@ NODE id=matrix/cortexclient.Dial kind=func
   sig=func Dial(cfg Config) (*Client, error)
   doc=Dial connects and performs the capability handshake.
 EDGES
-  calls=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.Client.initializeSequenceLocked,matrix/cortexclient.Config.withDefaults
-  references=matrix/cortexclient.Client,matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.dropConnLocked,matrix/cortexclient.Client.initializeSequenceLocked,matrix/cortexclient.Config,matrix/cortexclient.Config.withDefaults,matrix/cortexclient.cfg,matrix/cortexclient.client,matrix/cortexclient.err
-  ^calls=matrix/neo/internal/memory.dialNeocortex
-  ^references=matrix/neo/internal/memory.dialNeocortex
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.EngineError kind=type
@@ -883,7 +745,6 @@ NODE id=matrix/cortexclient.EngineError kind=type
   doc=EngineError is a typed error returned by cortexd.
 EDGES
   contains=matrix/cortexclient.EngineError#Code,matrix/cortexclient.EngineError#Lsn,matrix/cortexclient.EngineError#Offset,matrix/cortexclient.EngineError#SystemError,matrix/cortexclient.EngineError.Error
-  ^references=matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.EngineError.Error,matrix/cortexclient.responseError,matrix/cortexclient.sequenceConflict
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.EngineError#Code kind=field
@@ -914,72 +775,61 @@ NODE id=matrix/cortexclient.EngineError.Error kind=method
   digest=b3:6a712f1857662b25b6693a6ed080281c18580da729ad66b33cb98915231f8aaa file=cortexclient/client.go range=100:103 lang=go exported=true byte_range=3176:3330
   sig=func (e *EngineError) Error() string
 EDGES
-  references=matrix/cortexclient.EngineError,matrix/cortexclient.e
   ^contains=matrix/cortexclient.EngineError
-  ^calls=matrix/cortexclient.rejectedWriteError.Error
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.ErrAbsent kind=var
   digest=b3:22597757c6b09b6994c2282641f56e923a6a3fad6550ffed0fb297f31a2215e8 file=cortexclient/client.go range=69:69 lang=go exported=true byte_range=2245:2308
   sig=error
 EDGES
-  ^references=matrix/cortexclient.Client.LatestCheckpoint
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.ErrCapability kind=var
   digest=b3:2e7231411af001a97c700cdcd0d6f64bd9a6b2274d8db8b410674e477883cd63 file=cortexclient/client.go range=68:68 lang=go exported=true byte_range=2176:2243
   sig=error
 EDGES
-  ^references=matrix/cortexclient.Client.connectLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.ErrClosed kind=var
   digest=b3:9b0f75082b964014a1aac6fd685f4f37b59a2fa3c636b2a2d9e7f222d57865c8 file=cortexclient/client.go range=61:61 lang=go exported=true byte_range=1658:1721
   sig=error
 EDGES
-  ^references=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.ensureLocked,matrix/cortexclient.Client.queueAppend
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.ErrOutcomeUnknown kind=var
   digest=b3:fe58f32f68d8d249eea31e2185d429abd38ce121a535265524c276545ceb7e86 file=cortexclient/client.go range=65:65 lang=go exported=true byte_range=1939:2021
   sig=error
 EDGES
-  ^references=matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.Client.sendPendingHeadLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.ErrProtocol kind=var
   digest=b3:637a1c3b17ccfcfe730925d33684db3642baebd6bdf49f4e20f6de2279d7df05 file=cortexclient/client.go range=67:67 lang=go exported=true byte_range=2106:2174
   sig=error
 EDGES
-  ^references=matrix/cortexclient.Client.AdminStats,matrix/cortexclient.Client.Append,matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.LatestCheckpoint,matrix/cortexclient.Client.Transcript,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.Client.roundTripLocked,matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/cortexclient.LoopSeam.Consolidate,matrix/cortexclient.NewLoopSeam,matrix/cortexclient.ParseBundle,matrix/cortexclient.bundleCursor.blob,matrix/cortexclient.bundleCursor.u64,matrix/cortexclient.bundleCursor.u8,matrix/cortexclient.frameReader.next,matrix/cortexclient.responseError,matrix/cortexclient.responseTable,matrix/cortexclient.writeFrame
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.ErrQueueFull kind=var
   digest=b3:c3bb1004b471bae4cd4ebe864053abf4007aa07ef89581d11bb53d27a10cccb3 file=cortexclient/client.go range=63:63 lang=go exported=true byte_range=1794:1862
   sig=error
 EDGES
-  ^references=matrix/cortexclient.Client.queueAppend
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.ErrSequenceRecovery kind=var
   digest=b3:ff68c79a241e23056e326486ceaa014982297415a016d23cfb1299da1fdc7057 file=cortexclient/client.go range=66:66 lang=go exported=true byte_range=2023:2104
   sig=error
 EDGES
-  ^references=matrix/cortexclient.Client.Append,matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.Client.consumeRecoveryLocked,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.Client.writeAdmittedLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.ErrUnavailable kind=var
   digest=b3:fef0c3d9406edbb9b73d59d046c5261e2d9965b1938753779be3837bd897f94d file=cortexclient/client.go range=62:62 lang=go exported=true byte_range=1723:1792
   sig=error
 EDGES
-  ^references=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.Client.request,matrix/cortexclient.Client.roundTripLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.ErrWritePending kind=var
   digest=b3:86564ce146ff637e6f35c4362a679109cfe339c69bc70039cc978d94796993b4 file=cortexclient/client.go range=64:64 lang=go exported=true byte_range=1864:1937
   sig=error
 EDGES
-  ^references=matrix/cortexclient.PendingWriteError.Error,matrix/cortexclient.PendingWriteError.Is
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.EventKind kind=type
@@ -987,7 +837,6 @@ NODE id=matrix/cortexclient.EventKind kind=type
   sig=type EventKind uint8
   doc=EventKind mirrors the frozen engine taxonomy (schematics.md section 4).
 EDGES
-  ^references=matrix/cortexclient.AppendEvent,matrix/cortexclient.Client.Transcript,matrix/cortexclient.KindApproval,matrix/cortexclient.KindAssertion,matrix/cortexclient.KindAttestation,matrix/cortexclient.KindCheckpoint,matrix/cortexclient.KindConsolidation,matrix/cortexclient.KindDeliveredMsg,matrix/cortexclient.KindEffect,matrix/cortexclient.KindEmbedding,matrix/cortexclient.KindIntentSet,matrix/cortexclient.KindLoopClosed,matrix/cortexclient.KindLoopOpened,matrix/cortexclient.KindMediaRef,matrix/cortexclient.KindOutcome,matrix/cortexclient.KindProviderFrame,matrix/cortexclient.KindReasoning,matrix/cortexclient.KindRecovery,matrix/cortexclient.KindRetract,matrix/cortexclient.KindSupervisor,matrix/cortexclient.KindToolCall,matrix/cortexclient.KindToolResult,matrix/cortexclient.KindUserMsg,matrix/cortexclient.TranscriptRecord,matrix/cortexclient.eventText,matrix/cortexclient.renderItem,matrix/cortexclient.textEvent
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Health kind=type
@@ -996,7 +845,6 @@ NODE id=matrix/cortexclient.Health kind=type
   doc=Health is the admin health summary.
 EDGES
   contains=matrix/cortexclient.Health#ActiveConnections,matrix/cortexclient.Health#ActorCount,matrix/cortexclient.Health#Ready
-  ^references=matrix/cortexclient.Client.AdminHealth
   ^defines=matrix/cortexclient/admin.go
 
 NODE id=matrix/cortexclient.Health#ActiveConnections kind=field
@@ -1021,156 +869,126 @@ NODE id=matrix/cortexclient.KindApproval kind=const
   digest=b3:a82444e4dfe99a0b4ccdbff1a5a1e9e7daafe8c926a877d4c531d12dc9580bab file=cortexclient/client.go range=45:45 lang=go exported=true byte_range=1208:1239
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindAssertion kind=const
   digest=b3:911eb7334e69c94ad6c4be53d208c815db0bcb37d2e1aade5cbd5fdd532cdf01 file=cortexclient/client.go range=53:53 lang=go exported=true byte_range=1479:1511
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
-  ^references=matrix/cortexclient.AssertionEvent,matrix/cortexclient.eventText,matrix/cortexclient.renderItem
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindAttestation kind=const
   digest=b3:0a070aa1a464c156c81858d3ebac8f49ef2b0aef051ce9e7a045befb647036e4 file=cortexclient/client.go range=57:57 lang=go exported=true byte_range=1615:1647
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindCheckpoint kind=const
   digest=b3:fdfed1765a814dbe9674341f7c678fb54886b9fe621592d567db364b1d4848fb file=cortexclient/client.go range=47:47 lang=go exported=true byte_range=1275:1307
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindConsolidation kind=const
   digest=b3:b5fecdbd82e59caa735fb34fbd0753252207d7603d97bace6e059d2c1fd648d0 file=cortexclient/client.go range=54:54 lang=go exported=true byte_range=1513:1545
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
-  ^references=matrix/cortexclient.ConsolidationEvent
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindDeliveredMsg kind=const
   digest=b3:69f42348ba8d5e35059b1ce2fa170fe00871b03cfd312125d7be1edaaf6cc1a3 file=cortexclient/client.go range=38:38 lang=go exported=true byte_range=977:1008
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
-  ^references=matrix/cortexclient.DeliveredMsgEvent,matrix/cortexclient.eventText,matrix/cortexclient.renderItem
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindEffect kind=const
   digest=b3:2bef7da29838bbe3dbad9d79995f0102517666403ffc263488e6ab926b99d52b file=cortexclient/client.go range=44:44 lang=go exported=true byte_range=1175:1206
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindEmbedding kind=const
   digest=b3:406fa72a29f2ddccab9c274c5348cfcc680b1383691fce324568ffec6918f907 file=cortexclient/client.go range=55:55 lang=go exported=true byte_range=1547:1579
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindIntentSet kind=const
   digest=b3:f6871c8e936acc893c1a0a0085a66ed7ecc858edb746a34cd3d26e249575913a file=cortexclient/client.go range=50:50 lang=go exported=true byte_range=1377:1409
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindLoopClosed kind=const
   digest=b3:f134e568de73c80e37325d482d2f396e29c764f0db6bd2c3b68d78f599a91835 file=cortexclient/client.go range=52:52 lang=go exported=true byte_range=1445:1477
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindLoopOpened kind=const
   digest=b3:ec8a6e6932cb4fc7e2ec38156c329e4faee7f2116daa3740ef687c8314f3db9b file=cortexclient/client.go range=51:51 lang=go exported=true byte_range=1411:1443
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindMediaRef kind=const
   digest=b3:608ee676e9f357ac5dfd55537c28ed08da4195b819b511892f5c73f5542ad7db file=cortexclient/client.go range=43:43 lang=go exported=true byte_range=1142:1173
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindOutcome kind=const
   digest=b3:8f0effcda2711746e25dce7bdc222f5005a00f0cf9ea765a1ea75b6cb3c34bd5 file=cortexclient/client.go range=46:46 lang=go exported=true byte_range=1241:1273
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindProviderFrame kind=const
   digest=b3:690e84f611630488871672b975c009e270f3cd3548fed7bfa2c9fd2d7d596a38 file=cortexclient/client.go range=42:42 lang=go exported=true byte_range=1109:1140
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
-  ^references=matrix/cortexclient.ProviderFrameEvent
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindReasoning kind=const
   digest=b3:78eec1f938218bb9266e766981e4d82f3888580d2e79d9ffa60ffab0a426e7ce file=cortexclient/client.go range=41:41 lang=go exported=true byte_range=1076:1107
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
-  ^references=matrix/cortexclient.ReasoningEvent,matrix/cortexclient.eventText,matrix/cortexclient.renderItem
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindRecovery kind=const
   digest=b3:8426452806c79c658e02f37a2fc4fa1a86ec62bbfd1544ccca052bc0bbe774f9 file=cortexclient/client.go range=49:49 lang=go exported=true byte_range=1343:1375
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindRetract kind=const
   digest=b3:7553cadf3139ef92710ae24fe0cf2fdb98ae77a99bd1f4fcf456a4f2b4d2611b file=cortexclient/client.go range=56:56 lang=go exported=true byte_range=1581:1613
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
-  ^references=matrix/cortexclient/export.retractEvent
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindSupervisor kind=const
   digest=b3:5792b4103f091286d18408eb5f31aaf31bf6db3180a68526249f3732f7e65fdb file=cortexclient/client.go range=48:48 lang=go exported=true byte_range=1309:1341
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindToolCall kind=const
   digest=b3:95b452d94cba80887aa75d3ea65bb629266914951eaee54e8055356bae0a048b file=cortexclient/client.go range=39:39 lang=go exported=true byte_range=1010:1041
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
-  ^references=matrix/cortexclient.ToolCallEvent,matrix/cortexclient.eventText,matrix/cortexclient.renderItem
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindToolResult kind=const
   digest=b3:4b78906c3c37e713cd54ba6f10eb879aa7282c66c3c74ea1df48e12911a8167a file=cortexclient/client.go range=40:40 lang=go exported=true byte_range=1043:1074
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
-  ^references=matrix/cortexclient.ToolResultEvent,matrix/cortexclient.eventText,matrix/cortexclient.renderItem
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.KindUserMsg kind=const
   digest=b3:03e57d9046852a549bd94df64df2e7fffbeeb7a5c1bf0289566728e6120907cd file=cortexclient/client.go range=37:37 lang=go exported=true byte_range=944:975
   sig=cortexclient.EventKind
 EDGES
-  references=matrix/cortexclient.EventKind
-  ^references=matrix/cortexclient.UserMsgEvent,matrix/cortexclient.eventText,matrix/cortexclient.renderItem
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.LoopSeam kind=type
@@ -1179,8 +997,6 @@ NODE id=matrix/cortexclient.LoopSeam kind=type
   doc=LoopSeam implements the resurrection loop seam roles for ONE conversation\nover the cortexd protocol: activation source, turn recorder, evidence\njournal, consolidation sink, and turn-checkpoint store.
 EDGES
   contains=matrix/cortexclient.LoopSeam#budgetTokens,matrix/cortexclient.LoopSeam#client,matrix/cortexclient.LoopSeam#conversation,matrix/cortexclient.LoopSeam#conversationID,matrix/cortexclient.LoopSeam#firstLsn,matrix/cortexclient.LoopSeam#lastLsn,matrix/cortexclient.LoopSeam#mu,matrix/cortexclient.LoopSeam#recordError,matrix/cortexclient.LoopSeam#tokenOverhead,matrix/cortexclient.LoopSeam#tokenWeights,matrix/cortexclient.LoopSeam.Activate,matrix/cortexclient.LoopSeam.ActivateBundle,matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/cortexclient.LoopSeam.Consolidate,matrix/cortexclient.LoopSeam.Conversation,matrix/cortexclient.LoopSeam.LatestTurnCheckpoint,matrix/cortexclient.LoopSeam.ProvenanceRange,matrix/cortexclient.LoopSeam.RecordAssistantWorking,matrix/cortexclient.LoopSeam.RecordDelivery,matrix/cortexclient.LoopSeam.RecordError,matrix/cortexclient.LoopSeam.RecordUser,matrix/cortexclient.LoopSeam.SaveTurnCheckpoint,matrix/cortexclient.LoopSeam.noteSpan
-  references=matrix/cortexclient.Client
-  ^references=matrix/cortexclient.LoopSeam.Activate,matrix/cortexclient.LoopSeam.ActivateBundle,matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/cortexclient.LoopSeam.Consolidate,matrix/cortexclient.LoopSeam.Conversation,matrix/cortexclient.LoopSeam.LatestTurnCheckpoint,matrix/cortexclient.LoopSeam.ProvenanceRange,matrix/cortexclient.LoopSeam.RecordAssistantWorking,matrix/cortexclient.LoopSeam.RecordDelivery,matrix/cortexclient.LoopSeam.RecordError,matrix/cortexclient.LoopSeam.RecordUser,matrix/cortexclient.LoopSeam.SaveTurnCheckpoint,matrix/cortexclient.LoopSeam.noteSpan,matrix/cortexclient.NewLoopSeam,matrix/neo/internal/memory.Pager.NewNeocortexLoopSeam,matrix/neo/internal/runtime/loop.NeocortexAdapter,matrix/neo/internal/runtime/loop.NeocortexCheckpointStore,matrix/neo/internal/runtime/loop.NewNeocortexAdapter
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.LoopSeam#budgetTokens kind=field
@@ -1248,11 +1064,7 @@ NODE id=matrix/cortexclient.LoopSeam.Activate kind=method
   sig=func (s *LoopSeam) Activate(ctx context.Context, query ActivationQuery) (string, error)
   doc=Activate composes and renders the activation for this conversation.
 EDGES
-  calls=matrix/cortexclient.LoopSeam.ActivateBundle,matrix/cortexclient.RenderBundle
-  references=matrix/cortexclient.ActivationQuery,matrix/cortexclient.LoopSeam,matrix/cortexclient.LoopSeam.ActivateBundle,matrix/cortexclient.RenderBundle,matrix/cortexclient.bundle,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.query,matrix/cortexclient.s
   ^contains=matrix/cortexclient.LoopSeam
-  ^calls=matrix/neo/internal/runtime/loop.NeocortexAdapter.Activate
-  ^references=matrix/neo/internal/runtime/loop.NeocortexAdapter.Activate
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.LoopSeam.ActivateBundle kind=method
@@ -1260,11 +1072,7 @@ NODE id=matrix/cortexclient.LoopSeam.ActivateBundle kind=method
   sig=func (s *LoopSeam) ActivateBundle(ctx context.Context, query ActivationQuery) (*Bundle, error)
   doc=ActivateBundle returns the structured activation bundle.
 EDGES
-  calls=matrix/cortexclient.Client.request,matrix/cortexclient.ParseBundle,matrix/cortexclient/wire/neocortex/protocol.BytesResult.BytesBytes,matrix/cortexclient/wire/neocortex/protocol.BytesResult.Init
-  references=matrix/cortexclient.ActivationQuery,matrix/cortexclient.Bundle,matrix/cortexclient.Client.request,matrix/cortexclient.LoopSeam,matrix/cortexclient.ParseBundle,matrix/cortexclient.activate,matrix/cortexclient.builder,matrix/cortexclient.conversation,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.finishRequest,matrix/cortexclient.index,matrix/cortexclient.query,matrix/cortexclient.queryBytes,matrix/cortexclient.requestID,matrix/cortexclient.result,matrix/cortexclient.s,matrix/cortexclient.table,matrix/cortexclient.turnBytes,matrix/cortexclient.turnText,matrix/cortexclient.weights,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.Builder.EndVector,matrix/cortexclient/internal/flatbuffers.Builder.PrependUint16,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/protocol.ActivateAddBudgetTokens,matrix/cortexclient/wire/neocortex/protocol.ActivateAddConversation,matrix/cortexclient/wire/neocortex/protocol.ActivateAddQuery,matrix/cortexclient/wire/neocortex/protocol.ActivateAddTemporalFromNs,matrix/cortexclient/wire/neocortex/protocol.ActivateAddTemporalToNs,matrix/cortexclient/wire/neocortex/protocol.ActivateAddTokenItemOverhead,matrix/cortexclient/wire/neocortex/protocol.ActivateAddTokenWeights,matrix/cortexclient/wire/neocortex/protocol.ActivateAddTurnText,matrix/cortexclient/wire/neocortex/protocol.ActivateEnd,matrix/cortexclient/wire/neocortex/protocol.ActivateStart,matrix/cortexclient/wire/neocortex/protocol.ActivateStartTokenWeightsVector,matrix/cortexclient/wire/neocortex/protocol.BytesResult,matrix/cortexclient/wire/neocortex/protocol.BytesResult.BytesBytes,matrix/cortexclient/wire/neocortex/protocol.BytesResult.Init,matrix/cortexclient/wire/neocortex/protocol.RequestPayloadActivate,matrix/cortexclient/wire/neocortex/protocol.ResponsePayloadBytesResult
   ^contains=matrix/cortexclient.LoopSeam
-  ^calls=matrix/cortexclient.LoopSeam.Activate
-  ^references=matrix/cortexclient.LoopSeam.Activate
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.LoopSeam.CommitToolExecution kind=method
@@ -1272,11 +1080,7 @@ NODE id=matrix/cortexclient.LoopSeam.CommitToolExecution kind=method
   sig=func (s *LoopSeam) CommitToolExecution(ctx context.Context, execution ToolExecution) (cortex.ToolEventCitation, error)
   doc=CommitToolExecution appends the tool call and its result as typed evidence\nand returns a citation anchored in the engine's MMR.
 EDGES
-  calls=matrix/cortexclient.Client.Append,matrix/cortexclient.LoopSeam.noteSpan,matrix/cortexclient.ToolCallEvent,matrix/cortexclient.ToolResultEvent
-  references=matrix/cortex.ToolEventCitation,matrix/cortexclient.AppendEvent,matrix/cortexclient.Client.Append,matrix/cortexclient.ErrProtocol,matrix/cortexclient.LoopSeam,matrix/cortexclient.LoopSeam.noteSpan,matrix/cortexclient.ToolCallEvent,matrix/cortexclient.ToolExecution,matrix/cortexclient.ToolResultEvent,matrix/cortexclient.arguments,matrix/cortexclient.callAck,matrix/cortexclient.ctx,matrix/cortexclient.err,matrix/cortexclient.execution,matrix/cortexclient.ok,matrix/cortexclient.result,matrix/cortexclient.resultAck,matrix/cortexclient.s
   ^contains=matrix/cortexclient.LoopSeam
-  ^calls=matrix/neo/internal/runtime/loop.NeocortexAdapter.CommitToolExecution
-  ^references=matrix/neo/internal/runtime/loop.NeocortexAdapter.CommitToolExecution
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.LoopSeam.Consolidate kind=method
@@ -1284,11 +1088,7 @@ NODE id=matrix/cortexclient.LoopSeam.Consolidate kind=method
   sig=func (s *LoopSeam) Consolidate(ctx context.Context, assertions []Assertion) (AppendAck, error)
   doc=Consolidate appends one consolidation event carrying extracted assertions.\nThe extraction itself stays in Go policy code; this is the sink.
 EDGES
-  calls=matrix/cortexclient.Client.Append,matrix/cortexclient.ConsolidationEvent
-  references=matrix/cortexclient.AppendAck,matrix/cortexclient.AppendEvent,matrix/cortexclient.Assertion,matrix/cortexclient.Client.Append,matrix/cortexclient.ConsolidationEvent,matrix/cortexclient.ErrProtocol,matrix/cortexclient.LoopSeam,matrix/cortexclient.assertions,matrix/cortexclient.ctx,matrix/cortexclient.s
   ^contains=matrix/cortexclient.LoopSeam
-  ^calls=matrix/neo/internal/runtime/loop.NeocortexAdapter.Consolidate
-  ^references=matrix/neo/internal/runtime/loop.NeocortexAdapter.Consolidate
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.LoopSeam.Conversation kind=method
@@ -1296,7 +1096,6 @@ NODE id=matrix/cortexclient.LoopSeam.Conversation kind=method
   sig=func (s *LoopSeam) Conversation() [16]byte
   doc=Conversation returns the derived wire conversation id.
 EDGES
-  references=matrix/cortexclient.LoopSeam,matrix/cortexclient.s
   ^contains=matrix/cortexclient.LoopSeam
   ^defines=matrix/cortexclient/loopseam.go
 
@@ -1305,11 +1104,7 @@ NODE id=matrix/cortexclient.LoopSeam.LatestTurnCheckpoint kind=method
   sig=func (s *LoopSeam) LatestTurnCheckpoint(ctx context.Context, turnID string) ([]byte, uint64, error)
   doc=LatestTurnCheckpoint returns the newest checkpoint blob for a turn, or\nErrAbsent.
 EDGES
-  calls=matrix/cortexclient.Client.LatestCheckpoint
-  references=matrix/cortexclient.Client.LatestCheckpoint,matrix/cortexclient.LoopSeam,matrix/cortexclient.ctx,matrix/cortexclient.s,matrix/cortexclient.turnID
   ^contains=matrix/cortexclient.LoopSeam
-  ^calls=matrix/neo/internal/runtime/loop.NeocortexCheckpointStore.LoadTurnState
-  ^references=matrix/neo/internal/runtime/loop.NeocortexCheckpointStore.LoadTurnState
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.LoopSeam.ProvenanceRange kind=method
@@ -1317,10 +1112,7 @@ NODE id=matrix/cortexclient.LoopSeam.ProvenanceRange kind=method
   sig=func (s *LoopSeam) ProvenanceRange() (string, uint64, uint64)
   doc=ProvenanceRange reports the conversation and LSN span recorded this turn.
 EDGES
-  references=matrix/cortexclient.LoopSeam,matrix/cortexclient.s
   ^contains=matrix/cortexclient.LoopSeam
-  ^calls=matrix/neo/internal/runtime/loop.NeocortexAdapter.ProvenanceRange
-  ^references=matrix/neo/internal/runtime/loop.NeocortexAdapter.ProvenanceRange
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.LoopSeam.RecordAssistantWorking kind=method
@@ -1328,11 +1120,7 @@ NODE id=matrix/cortexclient.LoopSeam.RecordAssistantWorking kind=method
   sig=func (s *LoopSeam) RecordAssistantWorking(content string)
   doc=RecordAssistantWorking records undelivered assistant content as reasoning\nevidence; only RecordDelivery mints a delivered_msg.
 EDGES
-  calls=matrix/cortexclient.Client.queueAppend,matrix/cortexclient.LoopSeam.noteSpan,matrix/cortexclient.ReasoningEvent
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.LoopSeam,matrix/cortexclient.LoopSeam.noteSpan,matrix/cortexclient.ReasoningEvent,matrix/cortexclient.ack,matrix/cortexclient.content,matrix/cortexclient.err,matrix/cortexclient.queued,matrix/cortexclient.s
   ^contains=matrix/cortexclient.LoopSeam
-  ^calls=matrix/neo/internal/runtime/loop.NeocortexAdapter.RecordAssistant
-  ^references=matrix/neo/internal/runtime/loop.NeocortexAdapter.RecordAssistant
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.LoopSeam.RecordDelivery kind=method
@@ -1340,11 +1128,7 @@ NODE id=matrix/cortexclient.LoopSeam.RecordDelivery kind=method
   sig=func (s *LoopSeam) RecordDelivery(content string)
   doc=RecordDelivery records the delivered assistant answer.
 EDGES
-  calls=matrix/cortexclient.Client.queueAppend,matrix/cortexclient.DeliveredMsgEvent,matrix/cortexclient.LoopSeam.noteSpan
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.DeliveredMsgEvent,matrix/cortexclient.LoopSeam,matrix/cortexclient.LoopSeam.noteSpan,matrix/cortexclient.ack,matrix/cortexclient.content,matrix/cortexclient.err,matrix/cortexclient.queued,matrix/cortexclient.s
   ^contains=matrix/cortexclient.LoopSeam
-  ^calls=matrix/neo/internal/runtime/loop.NeocortexAdapter.RecordDelivery
-  ^references=matrix/neo/internal/runtime/loop.NeocortexAdapter.RecordDelivery
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.LoopSeam.RecordError kind=method
@@ -1352,10 +1136,7 @@ NODE id=matrix/cortexclient.LoopSeam.RecordError kind=method
   sig=func (s *LoopSeam) RecordError() error
   doc=RecordError surfaces the most recent degraded-mode recording failure, if\nany, so callers can report honestly.
 EDGES
-  references=matrix/cortexclient.LoopSeam,matrix/cortexclient.s
   ^contains=matrix/cortexclient.LoopSeam
-  ^calls=matrix/neo/internal/runtime/loop.NeocortexAdapter.RecordError
-  ^references=matrix/neo/internal/runtime/loop.NeocortexAdapter.RecordError
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.LoopSeam.RecordUser kind=method
@@ -1363,11 +1144,7 @@ NODE id=matrix/cortexclient.LoopSeam.RecordUser kind=method
   sig=func (s *LoopSeam) RecordUser(content string)
   doc=RecordUser records the inbound user message.
 EDGES
-  calls=matrix/cortexclient.Client.queueAppend,matrix/cortexclient.LoopSeam.noteSpan,matrix/cortexclient.UserMsgEvent
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.LoopSeam,matrix/cortexclient.LoopSeam.noteSpan,matrix/cortexclient.UserMsgEvent,matrix/cortexclient.ack,matrix/cortexclient.content,matrix/cortexclient.err,matrix/cortexclient.queued,matrix/cortexclient.s
   ^contains=matrix/cortexclient.LoopSeam
-  ^calls=matrix/neo/internal/runtime/loop.NeocortexAdapter.RecordUser
-  ^references=matrix/neo/internal/runtime/loop.NeocortexAdapter.RecordUser
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.LoopSeam.SaveTurnCheckpoint kind=method
@@ -1375,21 +1152,14 @@ NODE id=matrix/cortexclient.LoopSeam.SaveTurnCheckpoint kind=method
   sig=func (s *LoopSeam) SaveTurnCheckpoint(ctx context.Context, turnID string, blob []byte) (uint64, error)
   doc=SaveTurnCheckpoint durably stores the latest checkpoint blob for a turn.
 EDGES
-  calls=matrix/cortexclient.Client.WriteCheckpoint
-  references=matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.LoopSeam,matrix/cortexclient.blob,matrix/cortexclient.ctx,matrix/cortexclient.s,matrix/cortexclient.turnID
   ^contains=matrix/cortexclient.LoopSeam
-  ^calls=matrix/neo/internal/runtime/loop.NeocortexCheckpointStore.SaveTurnCheckpoint
-  ^references=matrix/neo/internal/runtime/loop.NeocortexCheckpointStore.SaveTurnCheckpoint
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.LoopSeam.noteSpan kind=method
   digest=b3:f4e781e73a8375b73f1f1134eb4a91beb6646938346646f4dd8dd0aa789b1710 file=cortexclient/loopseam.go range=661:674 lang=go exported=false byte_range=20641:20924
   sig=func (s *LoopSeam) noteSpan(ack AppendAck, err error)
 EDGES
-  references=matrix/cortexclient.AppendAck,matrix/cortexclient.LoopSeam,matrix/cortexclient.ack,matrix/cortexclient.err,matrix/cortexclient.s
   ^contains=matrix/cortexclient.LoopSeam
-  ^calls=matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/cortexclient.LoopSeam.RecordAssistantWorking,matrix/cortexclient.LoopSeam.RecordDelivery,matrix/cortexclient.LoopSeam.RecordUser
-  ^references=matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/cortexclient.LoopSeam.RecordAssistantWorking,matrix/cortexclient.LoopSeam.RecordDelivery,matrix/cortexclient.LoopSeam.RecordUser
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.NewLoopSeam kind=func
@@ -1397,10 +1167,6 @@ NODE id=matrix/cortexclient.NewLoopSeam kind=func
   sig=func NewLoopSeam(client *Client, cfg SeamConfig) (*LoopSeam, error)
   doc=NewLoopSeam binds a seam to a client and conversation.
 EDGES
-  calls=matrix/cortexclient.ConversationBytes,matrix/cortexclient.DefaultTokenWeights
-  references=matrix/cortexclient.Client,matrix/cortexclient.ConversationBytes,matrix/cortexclient.DefaultTokenWeights,matrix/cortexclient.ErrProtocol,matrix/cortexclient.LoopSeam,matrix/cortexclient.SeamConfig,matrix/cortexclient.cfg,matrix/cortexclient.client,matrix/cortexclient.overhead,matrix/cortexclient.weights
-  ^calls=matrix/neo/internal/memory.Pager.NewNeocortexLoopSeam
-  ^references=matrix/neo/internal/memory.Pager.NewNeocortexLoopSeam
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.ParseBundle kind=func
@@ -1408,10 +1174,6 @@ NODE id=matrix/cortexclient.ParseBundle kind=func
   sig=func ParseBundle(encoded []byte) (*Bundle, error)
   doc=ParseBundle decodes the canonical NCA1 activation bytes.
 EDGES
-  calls=matrix/cortexclient.bundleCursor.blob,matrix/cortexclient.bundleCursor.u64,matrix/cortexclient.bundleCursor.u8
-  references=matrix/cortexclient.Bundle,matrix/cortexclient.BundleItem,matrix/cortexclient.ErrProtocol,matrix/cortexclient.TrimmedItem,matrix/cortexclient.bundle,matrix/cortexclient.bundleCursor,matrix/cortexclient.bundleCursor.blob,matrix/cortexclient.bundleCursor.u64,matrix/cortexclient.bundleCursor.u8,matrix/cortexclient.coarsened,matrix/cortexclient.count,matrix/cortexclient.cursor,matrix/cortexclient.encoded,matrix/cortexclient.entry,matrix/cortexclient.err,matrix/cortexclient.index,matrix/cortexclient.item,matrix/cortexclient.lsn,matrix/cortexclient.p,matrix/cortexclient.provenanceCount,matrix/cortexclient.section,matrix/cortexclient.tier,matrix/cortexclient.trimmedCount,matrix/cortexclient.uri
-  ^calls=matrix/cortexclient.LoopSeam.ActivateBundle
-  ^references=matrix/cortexclient.LoopSeam.ActivateBundle
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.PendingWriteError kind=type
@@ -1420,7 +1182,6 @@ NODE id=matrix/cortexclient.PendingWriteError kind=type
   doc=PendingWriteError reports that a synchronous write has an unknown immediate\noutcome and is retained for same-sequence resolution on reconnect. The\ncaller MUST NOT retry the logical write. A later client operation drives the\nreconnect and either applies the write once or surfaces its permanent\nrejection.
 EDGES
   contains=matrix/cortexclient.PendingWriteError#Cause,matrix/cortexclient.PendingWriteError#ClientSeq,matrix/cortexclient.PendingWriteError.Error,matrix/cortexclient.PendingWriteError.Is,matrix/cortexclient.PendingWriteError.Unwrap
-  ^references=matrix/cortexclient.Client.retainPendingLocked,matrix/cortexclient.PendingWriteError.Error,matrix/cortexclient.PendingWriteError.Is,matrix/cortexclient.PendingWriteError.Unwrap
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.PendingWriteError#Cause kind=field
@@ -1439,7 +1200,6 @@ NODE id=matrix/cortexclient.PendingWriteError.Error kind=method
   digest=b3:586e93244348099569d64da69ecc6df9040837f68fae421764c33081c6707b14 file=cortexclient/client.go range=82:84 lang=go exported=true byte_range=2702:2832
   sig=func (e *PendingWriteError) Error() string
 EDGES
-  references=matrix/cortexclient.ErrWritePending,matrix/cortexclient.PendingWriteError,matrix/cortexclient.e
   ^contains=matrix/cortexclient.PendingWriteError
   ^defines=matrix/cortexclient/client.go
 
@@ -1447,7 +1207,6 @@ NODE id=matrix/cortexclient.PendingWriteError.Is kind=method
   digest=b3:294c62c161077633d2129a0e58791e986e63b420c171aea0e8edc9556d716fcc file=cortexclient/client.go range=88:90 lang=go exported=true byte_range=2897:3014
   sig=func (e *PendingWriteError) Is(target error) bool
 EDGES
-  references=matrix/cortexclient.ErrWritePending,matrix/cortexclient.PendingWriteError,matrix/cortexclient.e,matrix/cortexclient.target
   ^contains=matrix/cortexclient.PendingWriteError
   ^defines=matrix/cortexclient/client.go
 
@@ -1455,7 +1214,6 @@ NODE id=matrix/cortexclient.PendingWriteError.Unwrap kind=method
   digest=b3:232268a602981eef759de536f84e2740815d1d195ff4bcb23ffa996cb3b7dd9c file=cortexclient/client.go range=86:86 lang=go exported=true byte_range=2834:2895
   sig=func (e *PendingWriteError) Unwrap() error
 EDGES
-  references=matrix/cortexclient.PendingWriteError,matrix/cortexclient.e
   ^contains=matrix/cortexclient.PendingWriteError
   ^defines=matrix/cortexclient/client.go
 
@@ -1465,7 +1223,6 @@ NODE id=matrix/cortexclient.ProjectionStat kind=type
   doc=ProjectionStat is one projection's applied-LSN checkpoint.
 EDGES
   contains=matrix/cortexclient.ProjectionStat#AppliedLsn,matrix/cortexclient.ProjectionStat#Name
-  ^references=matrix/cortexclient.ActorStats,matrix/cortexclient.Client.AdminStats
   ^defines=matrix/cortexclient/admin.go
 
 NODE id=matrix/cortexclient.ProjectionStat#AppliedLsn kind=field
@@ -1484,7 +1241,6 @@ NODE id=matrix/cortexclient.ProtocolVersion kind=const
   digest=b3:5531317083aff95a6107649566d84e5825aae36b74450d30decbe6e8e95d223d file=cortexclient/client.go range=28:28 lang=go exported=true byte_range=752:773
   sig=untyped int
 EDGES
-  ^references=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.finishEnvelope
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.ProviderFrameEvent kind=func
@@ -1492,7 +1248,6 @@ NODE id=matrix/cortexclient.ProviderFrameEvent kind=func
   sig=func ProviderFrameEvent(conversation [16]byte, provider string, apiContent []byte) AppendEvent
   doc=ProviderFrameEvent builds a provider_frame event carrying exact provider bytes.
 EDGES
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.KindProviderFrame,matrix/cortexclient.apiContent,matrix/cortexclient.builder,matrix/cortexclient.content,matrix/cortexclient.conversation,matrix/cortexclient.name,matrix/cortexclient.provider,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.Builder.CreateString,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/schema.EventPayloadProviderFrame,matrix/cortexclient/wire/neocortex/schema.ProviderFrameAddApiContent,matrix/cortexclient/wire/neocortex/schema.ProviderFrameAddProvider,matrix/cortexclient/wire/neocortex/schema.ProviderFrameEnd,matrix/cortexclient/wire/neocortex/schema.ProviderFrameStart
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.ReasoningEvent kind=func
@@ -1500,10 +1255,6 @@ NODE id=matrix/cortexclient.ReasoningEvent kind=func
   sig=func ReasoningEvent(conversation [16]byte, content string) AppendEvent
   doc=ReasoningEvent builds a reasoning event for undelivered assistant content.
 EDGES
-  calls=matrix/cortexclient.textEvent
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.KindReasoning,matrix/cortexclient.content,matrix/cortexclient.conversation,matrix/cortexclient.textEvent,matrix/cortexclient/wire/neocortex/schema.EventPayloadReasoning,matrix/cortexclient/wire/neocortex/schema.ReasoningAddContent,matrix/cortexclient/wire/neocortex/schema.ReasoningEnd,matrix/cortexclient/wire/neocortex/schema.ReasoningStart
-  ^calls=matrix/cortexclient.LoopSeam.RecordAssistantWorking
-  ^references=matrix/cortexclient.LoopSeam.RecordAssistantWorking
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.RenderBundle kind=func
@@ -1511,10 +1262,6 @@ NODE id=matrix/cortexclient.RenderBundle kind=func
   sig=func RenderBundle(bundle *Bundle, premises []string) string
   doc=RenderBundle turns the structured bundle into the activation string the\nresurrection loop consumes. Rendering is the client's job by design.
 EDGES
-  calls=matrix/cortexclient.renderItem
-  references=matrix/cortexclient.Bundle,matrix/cortexclient.bundle,matrix/cortexclient.index,matrix/cortexclient.item,matrix/cortexclient.line,matrix/cortexclient.out,matrix/cortexclient.premise,matrix/cortexclient.premises,matrix/cortexclient.renderItem,matrix/cortexclient.section,matrix/cortexclient.tierNames
-  ^calls=matrix/cortexclient.LoopSeam.Activate
-  ^references=matrix/cortexclient.LoopSeam.Activate
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.SeamConfig kind=type
@@ -1523,7 +1270,6 @@ NODE id=matrix/cortexclient.SeamConfig kind=type
   doc=SeamConfig bounds one LoopSeam.
 EDGES
   contains=matrix/cortexclient.SeamConfig#BudgetTokens,matrix/cortexclient.SeamConfig#ConversationID,matrix/cortexclient.SeamConfig#TokenOverhead,matrix/cortexclient.SeamConfig#TokenWeights
-  ^references=matrix/cortexclient.NewLoopSeam,matrix/neo/internal/memory.Pager.NewNeocortexLoopSeam
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.SeamConfig#BudgetTokens kind=field
@@ -1556,7 +1302,6 @@ NODE id=matrix/cortexclient.Supervisor kind=type
   doc=Supervisor keeps one cortexd process alive: it spawns the daemon and\nrestarts it whenever it exits, until Stop. A cortexd crash therefore never\ntakes the agent down; the client reconnects through the same socket.
 EDGES
   contains=matrix/cortexclient.Supervisor#Binary,matrix/cortexclient.Supervisor#ConfigPath,matrix/cortexclient.Supervisor#RestartDelay,matrix/cortexclient.Supervisor#cmd,matrix/cortexclient.Supervisor#done,matrix/cortexclient.Supervisor#mu,matrix/cortexclient.Supervisor#stopped,matrix/cortexclient.Supervisor.Pid,matrix/cortexclient.Supervisor.Start,matrix/cortexclient.Supervisor.Stop,matrix/cortexclient.Supervisor.monitor,matrix/cortexclient.Supervisor.spawnLocked
-  ^references=matrix/cortexclient.Supervisor.Pid,matrix/cortexclient.Supervisor.Start,matrix/cortexclient.Supervisor.Stop,matrix/cortexclient.Supervisor.monitor,matrix/cortexclient.Supervisor.spawnLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Supervisor#Binary kind=field
@@ -1606,7 +1351,6 @@ NODE id=matrix/cortexclient.Supervisor.Pid kind=method
   sig=func (s *Supervisor) Pid() int
   doc=Pid reports the running daemon's pid, or 0.
 EDGES
-  references=matrix/cortexclient.Supervisor,matrix/cortexclient.s
   ^contains=matrix/cortexclient.Supervisor
   ^defines=matrix/cortexclient/client.go
 
@@ -1615,8 +1359,6 @@ NODE id=matrix/cortexclient.Supervisor.Start kind=method
   sig=func (s *Supervisor) Start() error
   doc=Start launches cortexd and the restart monitor.
 EDGES
-  calls=matrix/cortexclient.Supervisor.monitor,matrix/cortexclient.Supervisor.spawnLocked
-  references=matrix/cortexclient.Supervisor,matrix/cortexclient.Supervisor.monitor,matrix/cortexclient.Supervisor.spawnLocked,matrix/cortexclient.err,matrix/cortexclient.s
   ^contains=matrix/cortexclient.Supervisor
   ^defines=matrix/cortexclient/client.go
 
@@ -1625,7 +1367,6 @@ NODE id=matrix/cortexclient.Supervisor.Stop kind=method
   sig=func (s *Supervisor) Stop()
   doc=Stop terminates the daemon and the monitor.
 EDGES
-  references=matrix/cortexclient.Supervisor,matrix/cortexclient.cmd,matrix/cortexclient.done,matrix/cortexclient.s
   ^contains=matrix/cortexclient.Supervisor
   ^defines=matrix/cortexclient/client.go
 
@@ -1633,21 +1374,14 @@ NODE id=matrix/cortexclient.Supervisor.monitor kind=method
   digest=b3:4ec294c516e9ef1f791aa429b328fdc9aa8bbd7bedaa513e855c770fed17d0e7 file=cortexclient/client.go range=991:1025 lang=go exported=false byte_range=29067:29606
   sig=func (s *Supervisor) monitor()
 EDGES
-  calls=matrix/cortexclient.Supervisor.spawnLocked
-  references=matrix/cortexclient.Supervisor,matrix/cortexclient.Supervisor.spawnLocked,matrix/cortexclient.cmd,matrix/cortexclient.err,matrix/cortexclient.s,matrix/cortexclient.stopped,matrix/cortexclient.waitErr
   ^contains=matrix/cortexclient.Supervisor
-  ^calls=matrix/cortexclient.Supervisor.Start
-  ^references=matrix/cortexclient.Supervisor.Start
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Supervisor.spawnLocked kind=method
   digest=b3:bf5c8e2bec9952c669cbcdb5ac725c07a7ab1c81559d0605dfcbf9a9d99a80e6 file=cortexclient/client.go range=980:989 lang=go exported=false byte_range=28838:29065
   sig=func (s *Supervisor) spawnLocked() error
 EDGES
-  references=matrix/cortexclient.Supervisor,matrix/cortexclient.cmd,matrix/cortexclient.err,matrix/cortexclient.s
   ^contains=matrix/cortexclient.Supervisor
-  ^calls=matrix/cortexclient.Supervisor.Start,matrix/cortexclient.Supervisor.monitor
-  ^references=matrix/cortexclient.Supervisor.Start,matrix/cortexclient.Supervisor.monitor
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.ToolCallEvent kind=func
@@ -1655,9 +1389,6 @@ NODE id=matrix/cortexclient.ToolCallEvent kind=func
   sig=func ToolCallEvent(conversation [16]byte, callID, toolName string, arguments []byte) AppendEvent
   doc=ToolCallEvent builds a tool_call event.
 EDGES
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.KindToolCall,matrix/cortexclient.args,matrix/cortexclient.arguments,matrix/cortexclient.builder,matrix/cortexclient.callID,matrix/cortexclient.conversation,matrix/cortexclient.id,matrix/cortexclient.name,matrix/cortexclient.toolName,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.Builder.CreateString,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/schema.EventPayloadToolCall,matrix/cortexclient/wire/neocortex/schema.ToolCallAddArguments,matrix/cortexclient/wire/neocortex/schema.ToolCallAddCallId,matrix/cortexclient/wire/neocortex/schema.ToolCallAddToolName,matrix/cortexclient/wire/neocortex/schema.ToolCallEnd,matrix/cortexclient/wire/neocortex/schema.ToolCallStart
-  ^calls=matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents
-  ^references=matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.ToolExecution kind=type
@@ -1666,7 +1397,6 @@ NODE id=matrix/cortexclient.ToolExecution kind=type
   doc=ToolExecution mirrors the loop's committed tool execution evidence.
 EDGES
   contains=matrix/cortexclient.ToolExecution#Arguments,matrix/cortexclient.ToolExecution#CallID,matrix/cortexclient.ToolExecution#Error,matrix/cortexclient.ToolExecution#Expect,matrix/cortexclient.ToolExecution#IdempotencyKey,matrix/cortexclient.ToolExecution#MatchVerdict,matrix/cortexclient.ToolExecution#Result,matrix/cortexclient.ToolExecution#SubgoalID,matrix/cortexclient.ToolExecution#ToolName
-  ^references=matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/neo/internal/runtime/loop.NeocortexAdapter.CommitToolExecution
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.ToolExecution#Arguments kind=field
@@ -1728,9 +1458,6 @@ NODE id=matrix/cortexclient.ToolResultEvent kind=func
   sig=func ToolResultEvent(conversation [16]byte, callID string, toolCallLsn uint64,\n	ok bool, result []byte) AppendEvent
   doc=ToolResultEvent builds a tool_result event referencing the durable call.
 EDGES
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.KindToolResult,matrix/cortexclient.builder,matrix/cortexclient.callID,matrix/cortexclient.conversation,matrix/cortexclient.id,matrix/cortexclient.ok,matrix/cortexclient.result,matrix/cortexclient.resultBytes,matrix/cortexclient.toolCallLsn,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/schema.EventPayloadToolResult,matrix/cortexclient/wire/neocortex/schema.ResultStatuserror,matrix/cortexclient/wire/neocortex/schema.ResultStatusok,matrix/cortexclient/wire/neocortex/schema.ToolResultAddCallId,matrix/cortexclient/wire/neocortex/schema.ToolResultAddResult,matrix/cortexclient/wire/neocortex/schema.ToolResultAddStatus,matrix/cortexclient/wire/neocortex/schema.ToolResultAddToolCallLsn,matrix/cortexclient/wire/neocortex/schema.ToolResultEnd,matrix/cortexclient/wire/neocortex/schema.ToolResultStart
-  ^calls=matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents
-  ^references=matrix/cortexclient.LoopSeam.CommitToolExecution,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.TranscriptRecord kind=type
@@ -1739,8 +1466,6 @@ NODE id=matrix/cortexclient.TranscriptRecord kind=type
   doc=TranscriptRecord is one log frame served by the Transcript read.
 EDGES
   contains=matrix/cortexclient.TranscriptRecord#Kind,matrix/cortexclient.TranscriptRecord#Lsn,matrix/cortexclient.TranscriptRecord#Payload,matrix/cortexclient.TranscriptRecord#WallTimestampNs
-  references=matrix/cortexclient.EventKind
-  ^references=matrix/cortexclient.Client.Transcript
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.TranscriptRecord#Kind kind=field
@@ -1772,7 +1497,6 @@ NODE id=matrix/cortexclient.TrimmedItem kind=type
   sig=type TrimmedItem struct {\n	Tier	uint8\n	URI	string\n}
 EDGES
   contains=matrix/cortexclient.TrimmedItem#Tier,matrix/cortexclient.TrimmedItem#URI
-  ^references=matrix/cortexclient.Bundle,matrix/cortexclient.ParseBundle
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.TrimmedItem#Tier kind=field
@@ -1792,10 +1516,6 @@ NODE id=matrix/cortexclient.UserMsgEvent kind=func
   sig=func UserMsgEvent(conversation [16]byte, content string) AppendEvent
   doc=UserMsgEvent builds a user_msg event.
 EDGES
-  calls=matrix/cortexclient.textEvent
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.KindUserMsg,matrix/cortexclient.content,matrix/cortexclient.conversation,matrix/cortexclient.textEvent,matrix/cortexclient/wire/neocortex/schema.EventPayloadUserMsg,matrix/cortexclient/wire/neocortex/schema.UserMsgAddContent,matrix/cortexclient/wire/neocortex/schema.UserMsgEnd,matrix/cortexclient/wire/neocortex/schema.UserMsgStart
-  ^calls=matrix/cortexclient.LoopSeam.RecordUser,matrix/cortexclient/export.run.exportSessions
-  ^references=matrix/cortexclient.LoopSeam.RecordUser,matrix/cortexclient/export.run.exportSessions
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.VerifyStatus kind=type
@@ -1804,7 +1524,6 @@ NODE id=matrix/cortexclient.VerifyStatus kind=type
   doc=VerifyStatus is the engine's tamper-evidence status for one actor.
 EDGES
   contains=matrix/cortexclient.VerifyStatus#Actor,matrix/cortexclient.VerifyStatus#LastCheckpointLsn,matrix/cortexclient.VerifyStatus#LeafCount,matrix/cortexclient.VerifyStatus#Root,matrix/cortexclient.VerifyStatus#Verified
-  ^references=matrix/cortexclient.Client.AdminVerifyStatus
   ^defines=matrix/cortexclient/admin.go
 
 NODE id=matrix/cortexclient.VerifyStatus#Actor kind=field
@@ -1843,7 +1562,6 @@ NODE id=matrix/cortexclient.Welcome kind=type
   doc=Welcome carries the handshake result.
 EDGES
   contains=matrix/cortexclient.Welcome#ActorNamespace,matrix/cortexclient.Welcome#Admin,matrix/cortexclient.Welcome#MaxBatchEvents,matrix/cortexclient.Welcome#MaxFrameBytes,matrix/cortexclient.Welcome#NextClientSeq
-  ^references=matrix/cortexclient.Client,matrix/cortexclient.Client.Welcome,matrix/cortexclient.Client.connectLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.Welcome#ActorNamespace kind=field
@@ -1880,19 +1598,12 @@ NODE id=matrix/cortexclient.buildAppendRequest kind=func
   digest=b3:62134325aa10cd4c2f039bd42b69db8b51e87eb551eda59da7692859e15e5450 file=cortexclient/client.go range=545:572 lang=go exported=false byte_range=15208:16441
   sig=func buildAppendRequest(requestID, clientSeq uint64, connectionID [16]byte,\n	events []AppendEvent) []byte
 EDGES
-  calls=matrix/cortexclient.finishRequest,matrix/cortexclient.wrapEnvelope,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.Builder.EndVector,matrix/cortexclient/internal/flatbuffers.Builder.PrependUOffsetT,matrix/cortexclient/internal/flatbuffers.NewBuilder,matrix/cortexclient/wire/neocortex/protocol.AppendAddClientSeq,matrix/cortexclient/wire/neocortex/protocol.AppendAddEvents,matrix/cortexclient/wire/neocortex/protocol.AppendEnd,matrix/cortexclient/wire/neocortex/protocol.AppendEventAddConversation,matrix/cortexclient/wire/neocortex/protocol.AppendEventAddKind,matrix/cortexclient/wire/neocortex/protocol.AppendEventAddPayload,matrix/cortexclient/wire/neocortex/protocol.AppendEventEnd,matrix/cortexclient/wire/neocortex/protocol.AppendEventStart,matrix/cortexclient/wire/neocortex/protocol.AppendStart,matrix/cortexclient/wire/neocortex/protocol.AppendStartEventsVector
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.appendOffset,matrix/cortexclient.builder,matrix/cortexclient.clientSeq,matrix/cortexclient.connectionID,matrix/cortexclient.conversation,matrix/cortexclient.event,matrix/cortexclient.events,matrix/cortexclient.eventsVector,matrix/cortexclient.finishRequest,matrix/cortexclient.index,matrix/cortexclient.offsets,matrix/cortexclient.payload,matrix/cortexclient.payloadOffset,matrix/cortexclient.requestID,matrix/cortexclient.wrapEnvelope,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.Builder.EndVector,matrix/cortexclient/internal/flatbuffers.Builder.PrependUOffsetT,matrix/cortexclient/internal/flatbuffers.NewBuilder,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/protocol.AppendAddClientSeq,matrix/cortexclient/wire/neocortex/protocol.AppendAddEvents,matrix/cortexclient/wire/neocortex/protocol.AppendEnd,matrix/cortexclient/wire/neocortex/protocol.AppendEventAddConversation,matrix/cortexclient/wire/neocortex/protocol.AppendEventAddKind,matrix/cortexclient/wire/neocortex/protocol.AppendEventAddPayload,matrix/cortexclient/wire/neocortex/protocol.AppendEventEnd,matrix/cortexclient/wire/neocortex/protocol.AppendEventStart,matrix/cortexclient/wire/neocortex/protocol.AppendStart,matrix/cortexclient/wire/neocortex/protocol.AppendStartEventsVector,matrix/cortexclient/wire/neocortex/protocol.RequestPayloadAppend
-  ^calls=matrix/cortexclient.Client.appendOnceLocked
-  ^references=matrix/cortexclient.Client.appendOnceLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.buildAssertion kind=func
   digest=b3:4a1f78558c792e51924c4fce5d9e97ddcbaea61f253dc40e8230ace2104aa1d0 file=cortexclient/loopseam.go range=157:186 lang=go exported=false byte_range=5692:7065
   sig=func buildAssertion(builder *flatbuffers.Builder, assertion Assertion) flatbuffers.UOffsetT
 EDGES
-  calls=matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.Builder.CreateString,matrix/cortexclient/internal/flatbuffers.Builder.EndVector,matrix/cortexclient/wire/neocortex/schema.AssertionAddBeliefId,matrix/cortexclient/wire/neocortex/schema.AssertionAddBeliefType,matrix/cortexclient/wire/neocortex/schema.AssertionAddCanonicalIdentity,matrix/cortexclient/wire/neocortex/schema.AssertionAddClaim,matrix/cortexclient/wire/neocortex/schema.AssertionAddConflictDomain,matrix/cortexclient/wire/neocortex/schema.AssertionAddProvenance,matrix/cortexclient/wire/neocortex/schema.AssertionAddValidFromNs,matrix/cortexclient/wire/neocortex/schema.AssertionAddValidToNs,matrix/cortexclient/wire/neocortex/schema.AssertionAddValue,matrix/cortexclient/wire/neocortex/schema.AssertionEnd,matrix/cortexclient/wire/neocortex/schema.AssertionStart,matrix/cortexclient/wire/neocortex/schema.AssertionStartProvenanceVector,matrix/cortexclient/wire/neocortex/schema.CreateProvenanceRange
-  references=matrix/cortexclient.Assertion,matrix/cortexclient.assertion,matrix/cortexclient.builder,matrix/cortexclient.domain,matrix/cortexclient.id,matrix/cortexclient.identity,matrix/cortexclient.index,matrix/cortexclient.provenance,matrix/cortexclient.value,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.Builder.CreateString,matrix/cortexclient/internal/flatbuffers.Builder.EndVector,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/schema.AssertionAddBeliefId,matrix/cortexclient/wire/neocortex/schema.AssertionAddBeliefType,matrix/cortexclient/wire/neocortex/schema.AssertionAddCanonicalIdentity,matrix/cortexclient/wire/neocortex/schema.AssertionAddClaim,matrix/cortexclient/wire/neocortex/schema.AssertionAddConflictDomain,matrix/cortexclient/wire/neocortex/schema.AssertionAddProvenance,matrix/cortexclient/wire/neocortex/schema.AssertionAddValidFromNs,matrix/cortexclient/wire/neocortex/schema.AssertionAddValidToNs,matrix/cortexclient/wire/neocortex/schema.AssertionAddValue,matrix/cortexclient/wire/neocortex/schema.AssertionClaimnegative_existence,matrix/cortexclient/wire/neocortex/schema.AssertionEnd,matrix/cortexclient/wire/neocortex/schema.AssertionStart,matrix/cortexclient/wire/neocortex/schema.AssertionStartProvenanceVector,matrix/cortexclient/wire/neocortex/schema.BeliefType,matrix/cortexclient/wire/neocortex/schema.CreateProvenanceRange
-  ^references=matrix/cortexclient.AssertionEvent,matrix/cortexclient.ConsolidationEvent
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.bundleCursor kind=type
@@ -1900,7 +1611,6 @@ NODE id=matrix/cortexclient.bundleCursor kind=type
   sig=type bundleCursor struct {\n	bytes	[]byte\n	offset	int\n}
 EDGES
   contains=matrix/cortexclient.bundleCursor#bytes,matrix/cortexclient.bundleCursor#offset,matrix/cortexclient.bundleCursor.blob,matrix/cortexclient.bundleCursor.u64,matrix/cortexclient.bundleCursor.u8
-  ^references=matrix/cortexclient.ParseBundle,matrix/cortexclient.bundleCursor.blob,matrix/cortexclient.bundleCursor.u64,matrix/cortexclient.bundleCursor.u8,matrix/cortexclient.renderWork
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.bundleCursor#bytes kind=field
@@ -1919,48 +1629,33 @@ NODE id=matrix/cortexclient.bundleCursor.blob kind=method
   digest=b3:87fe13eebad60a701b5fc0819bdec80f331ba9872422b84c5acec136853545a1 file=cortexclient/loopseam.go range=291:303 lang=go exported=false byte_range=9881:10235
   sig=func (c *bundleCursor) blob() ([]byte, error)
 EDGES
-  calls=matrix/cortexclient.bundleCursor.u64
-  references=matrix/cortexclient.ErrProtocol,matrix/cortexclient.bundleCursor,matrix/cortexclient.bundleCursor.u64,matrix/cortexclient.c,matrix/cortexclient.err,matrix/cortexclient.length,matrix/cortexclient.value
   ^contains=matrix/cortexclient.bundleCursor
-  ^calls=matrix/cortexclient.ParseBundle,matrix/cortexclient.renderWork
-  ^references=matrix/cortexclient.ParseBundle,matrix/cortexclient.renderWork
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.bundleCursor.u64 kind=method
   digest=b3:dc178c0a553a7cd71e3ef59e5ebdffb297a392d385438118f1af6e5c1c2b612c file=cortexclient/loopseam.go range=279:289 lang=go exported=false byte_range=9585:9879
   sig=func (c *bundleCursor) u64() (uint64, error)
 EDGES
-  references=matrix/cortexclient.ErrProtocol,matrix/cortexclient.bundleCursor,matrix/cortexclient.c,matrix/cortexclient.index,matrix/cortexclient.value
   ^contains=matrix/cortexclient.bundleCursor
-  ^calls=matrix/cortexclient.ParseBundle,matrix/cortexclient.bundleCursor.blob,matrix/cortexclient.renderWork
-  ^references=matrix/cortexclient.ParseBundle,matrix/cortexclient.bundleCursor.blob,matrix/cortexclient.renderWork
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.bundleCursor.u8 kind=method
   digest=b3:9fc6873b592257c8981587608d6f78b4f3269374ccce4de0eadc7a3fc8c93ebc file=cortexclient/loopseam.go range=270:277 lang=go exported=false byte_range=9384:9583
   sig=func (c *bundleCursor) u8() (byte, error)
 EDGES
-  references=matrix/cortexclient.ErrProtocol,matrix/cortexclient.bundleCursor,matrix/cortexclient.c,matrix/cortexclient.value
   ^contains=matrix/cortexclient.bundleCursor
-  ^calls=matrix/cortexclient.ParseBundle,matrix/cortexclient.renderWork
-  ^references=matrix/cortexclient.ParseBundle,matrix/cortexclient.renderWork
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.crc32cTable kind=var
   digest=b3:3391657a8c62b728e02a2e781c189ba63cc847ae25e9bccd71a9ca269dab129e file=cortexclient/client.go range=105:105 lang=go exported=false byte_range=3336:3383
   sig=*crc32.Table
 EDGES
-  ^references=matrix/cortexclient.frameReader.next,matrix/cortexclient.writeFrame
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.envelopeResponse kind=func
   digest=b3:b3412e6c081601a8df0363ea1c19b9b19ea456095e38657c8d7d891f06ec04a0 file=cortexclient/client.go range=486:497 lang=go exported=false byte_range=13684:14033
   sig=func envelopeResponse(envelope *protocol.WireEnvelope) (*protocol.Response, bool)
 EDGES
-  calls=matrix/cortexclient/wire/neocortex/protocol.Response.Init,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope.Payload,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope.PayloadType
-  references=matrix/cortexclient.envelope,matrix/cortexclient.response,matrix/cortexclient.table,matrix/cortexclient/internal/flatbuffers.Table,matrix/cortexclient/wire/neocortex/protocol.Response,matrix/cortexclient/wire/neocortex/protocol.Response.Init,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope.Payload,matrix/cortexclient/wire/neocortex/protocol.WireEnvelope.PayloadType,matrix/cortexclient/wire/neocortex/protocol.WirePayloadResponse
-  ^calls=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.roundTripLocked
-  ^references=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.roundTripLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.eventText kind=func
@@ -1968,37 +1663,24 @@ NODE id=matrix/cortexclient.eventText kind=func
   sig=func eventText(kind EventKind, payload []byte) string
   doc=eventText extracts a readable line from a typed event envelope payload.
 EDGES
-  calls=matrix/cortexclient/wire/neocortex/schema.Assertion.CanonicalIdentity,matrix/cortexclient/wire/neocortex/schema.Assertion.Init,matrix/cortexclient/wire/neocortex/schema.Assertion.ValueBytes,matrix/cortexclient/wire/neocortex/schema.DeliveredMsg.ContentBytes,matrix/cortexclient/wire/neocortex/schema.DeliveredMsg.Init,matrix/cortexclient/wire/neocortex/schema.EventEnvelope.Payload,matrix/cortexclient/wire/neocortex/schema.EventEnvelope.PayloadType,matrix/cortexclient/wire/neocortex/schema.GetRootAsEventEnvelope,matrix/cortexclient/wire/neocortex/schema.Reasoning.ContentBytes,matrix/cortexclient/wire/neocortex/schema.Reasoning.Init,matrix/cortexclient/wire/neocortex/schema.ToolCall.ArgumentsBytes,matrix/cortexclient/wire/neocortex/schema.ToolCall.Init,matrix/cortexclient/wire/neocortex/schema.ToolCall.ToolName,matrix/cortexclient/wire/neocortex/schema.ToolResult.Init,matrix/cortexclient/wire/neocortex/schema.ToolResult.ResultBytes,matrix/cortexclient/wire/neocortex/schema.UserMsg.ContentBytes,matrix/cortexclient/wire/neocortex/schema.UserMsg.Init
-  references=matrix/cortexclient.EventKind,matrix/cortexclient.KindAssertion,matrix/cortexclient.KindDeliveredMsg,matrix/cortexclient.KindReasoning,matrix/cortexclient.KindToolCall,matrix/cortexclient.KindToolResult,matrix/cortexclient.KindUserMsg,matrix/cortexclient.envelope,matrix/cortexclient.kind,matrix/cortexclient.payload,matrix/cortexclient.table,matrix/cortexclient.value,matrix/cortexclient/internal/flatbuffers.Table,matrix/cortexclient/wire/neocortex/schema.Assertion,matrix/cortexclient/wire/neocortex/schema.Assertion.CanonicalIdentity,matrix/cortexclient/wire/neocortex/schema.Assertion.Init,matrix/cortexclient/wire/neocortex/schema.Assertion.ValueBytes,matrix/cortexclient/wire/neocortex/schema.DeliveredMsg,matrix/cortexclient/wire/neocortex/schema.DeliveredMsg.ContentBytes,matrix/cortexclient/wire/neocortex/schema.DeliveredMsg.Init,matrix/cortexclient/wire/neocortex/schema.EnumNamesEventPayload,matrix/cortexclient/wire/neocortex/schema.EventEnvelope.Payload,matrix/cortexclient/wire/neocortex/schema.EventEnvelope.PayloadType,matrix/cortexclient/wire/neocortex/schema.EventPayload,matrix/cortexclient/wire/neocortex/schema.GetRootAsEventEnvelope,matrix/cortexclient/wire/neocortex/schema.Reasoning,matrix/cortexclient/wire/neocortex/schema.Reasoning.ContentBytes,matrix/cortexclient/wire/neocortex/schema.Reasoning.Init,matrix/cortexclient/wire/neocortex/schema.ToolCall,matrix/cortexclient/wire/neocortex/schema.ToolCall.ArgumentsBytes,matrix/cortexclient/wire/neocortex/schema.ToolCall.Init,matrix/cortexclient/wire/neocortex/schema.ToolCall.ToolName,matrix/cortexclient/wire/neocortex/schema.ToolResult,matrix/cortexclient/wire/neocortex/schema.ToolResult.Init,matrix/cortexclient/wire/neocortex/schema.ToolResult.ResultBytes,matrix/cortexclient/wire/neocortex/schema.UserMsg,matrix/cortexclient/wire/neocortex/schema.UserMsg.ContentBytes,matrix/cortexclient/wire/neocortex/schema.UserMsg.Init
-  ^calls=matrix/cortexclient.renderItem
-  ^references=matrix/cortexclient.renderItem
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.finishEnvelope kind=func
   digest=b3:984b40be0664f367d2de308d79e0598cd7baf35ce0d9c010da9f4401def24895 file=cortexclient/client.go range=858:866 lang=go exported=false byte_range=25197:25633
   sig=func finishEnvelope(builder *flatbuffers.Builder, payloadType protocol.WirePayload,\n	payload flatbuffers.UOffsetT)
 EDGES
-  calls=matrix/cortexclient/internal/flatbuffers.Builder.FinishWithFileIdentifier,matrix/cortexclient/wire/neocortex/protocol.WireEnvelopeAddPayload,matrix/cortexclient/wire/neocortex/protocol.WireEnvelopeAddPayloadType,matrix/cortexclient/wire/neocortex/protocol.WireEnvelopeAddProtoVersion,matrix/cortexclient/wire/neocortex/protocol.WireEnvelopeEnd,matrix/cortexclient/wire/neocortex/protocol.WireEnvelopeStart
-  references=matrix/cortexclient.ProtocolVersion,matrix/cortexclient.builder,matrix/cortexclient.envelope,matrix/cortexclient.payload,matrix/cortexclient.payloadType,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.FinishWithFileIdentifier,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/protocol.WireEnvelopeAddPayload,matrix/cortexclient/wire/neocortex/protocol.WireEnvelopeAddPayloadType,matrix/cortexclient/wire/neocortex/protocol.WireEnvelopeAddProtoVersion,matrix/cortexclient/wire/neocortex/protocol.WireEnvelopeEnd,matrix/cortexclient/wire/neocortex/protocol.WireEnvelopeStart,matrix/cortexclient/wire/neocortex/protocol.WirePayload
-  ^calls=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.finishRequest
-  ^references=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.finishRequest
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.finishRequest kind=func
   digest=b3:44f71a83165981778764ceddaf8449bbba69516c58e03fa29a6d4131dea1e395 file=cortexclient/client.go range=868:877 lang=go exported=false byte_range=25635:26098
   sig=func finishRequest(builder *flatbuffers.Builder, requestID uint64,\n	payloadType protocol.RequestPayload, payload flatbuffers.UOffsetT) []byte
 EDGES
-  calls=matrix/cortexclient.finishEnvelope,matrix/cortexclient/internal/flatbuffers.Builder.FinishedBytes,matrix/cortexclient/wire/neocortex/protocol.RequestAddPayload,matrix/cortexclient/wire/neocortex/protocol.RequestAddPayloadType,matrix/cortexclient/wire/neocortex/protocol.RequestAddRequestId,matrix/cortexclient/wire/neocortex/protocol.RequestEnd,matrix/cortexclient/wire/neocortex/protocol.RequestStart
-  references=matrix/cortexclient.builder,matrix/cortexclient.finishEnvelope,matrix/cortexclient.payload,matrix/cortexclient.payloadType,matrix/cortexclient.request,matrix/cortexclient.requestID,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.FinishedBytes,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/protocol.RequestAddPayload,matrix/cortexclient/wire/neocortex/protocol.RequestAddPayloadType,matrix/cortexclient/wire/neocortex/protocol.RequestAddRequestId,matrix/cortexclient/wire/neocortex/protocol.RequestEnd,matrix/cortexclient/wire/neocortex/protocol.RequestPayload,matrix/cortexclient/wire/neocortex/protocol.RequestStart,matrix/cortexclient/wire/neocortex/protocol.WirePayloadRequest
-  ^calls=matrix/cortexclient.buildAppendRequest
-  ^references=matrix/cortexclient.Client.AdminHealth,matrix/cortexclient.Client.AdminRebuildProjection,matrix/cortexclient.Client.AdminStats,matrix/cortexclient.Client.AdminVerifyStatus,matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.LatestCheckpoint,matrix/cortexclient.Client.Transcript,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.LoopSeam.ActivateBundle,matrix/cortexclient.buildAppendRequest
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.frameHeaderBytes kind=const
   digest=b3:97707429f4e8eff17427bfba0fea57cb76a8dfdca0b28214eec5668a4d3d3206 file=cortexclient/client.go range=29:29 lang=go exported=false byte_range=775:796
   sig=untyped int
 EDGES
-  ^references=matrix/cortexclient.frameReader.next,matrix/cortexclient.writeFrame
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.frameReader kind=type
@@ -2006,7 +1688,6 @@ NODE id=matrix/cortexclient.frameReader kind=type
   sig=type frameReader struct {\n	conn	net.Conn\n	pending	[]byte\n}
 EDGES
   contains=matrix/cortexclient.frameReader#conn,matrix/cortexclient.frameReader#pending,matrix/cortexclient.frameReader.next
-  ^references=matrix/cortexclient.Client,matrix/cortexclient.frameReader.next,matrix/cortexclient.newFrameReader
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.frameReader#conn kind=field
@@ -2025,36 +1706,25 @@ NODE id=matrix/cortexclient.frameReader.next kind=method
   digest=b3:6689c01babf7a5a8abc136a9be77915459ac0e4efe1493fe255f404bc1fa5a56 file=cortexclient/client.go range=903:933 lang=go exported=false byte_range=26787:27746
   sig=func (r *frameReader) next(timeout time.Duration) ([]byte, error)
 EDGES
-  calls=matrix/cortexclient.getU32
-  references=matrix/cortexclient.ErrProtocol,matrix/cortexclient.buffer,matrix/cortexclient.checksum,matrix/cortexclient.count,matrix/cortexclient.crc32cTable,matrix/cortexclient.deadline,matrix/cortexclient.err,matrix/cortexclient.frameHeaderBytes,matrix/cortexclient.frameReader,matrix/cortexclient.getU32,matrix/cortexclient.length,matrix/cortexclient.maximumFrameBytes,matrix/cortexclient.payload,matrix/cortexclient.r,matrix/cortexclient.timeout,matrix/cortexclient.total
   ^contains=matrix/cortexclient.frameReader
-  ^calls=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.roundTripLocked
-  ^references=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.roundTripLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.getU32 kind=func
   digest=b3:10253114efa471f76a6e7295f825e7448ba7fed8621faa958347bc16e87404b2 file=cortexclient/client.go range=942:944 lang=go exported=false byte_range=27896:28010
   sig=func getU32(in []byte) uint32
 EDGES
-  references=matrix/cortexclient.in
-  ^calls=matrix/cortexclient.frameReader.next
-  ^references=matrix/cortexclient.frameReader.next
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.maximumFrameBytes kind=const
   digest=b3:b41b6f588c9cdc7b17399a22be3d6d240faec5d1aa4fa6b79c4efd144b75e3a0 file=cortexclient/client.go range=30:30 lang=go exported=false byte_range=798:834
   sig=untyped int
 EDGES
-  ^references=matrix/cortexclient.frameReader.next,matrix/cortexclient.writeFrame
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.newFrameReader kind=func
   digest=b3:72ad0cb857809128da224f0635381a5ba9957ea57c25672190483fd9b5c1d335 file=cortexclient/client.go range=899:901 lang=go exported=false byte_range=26701:26785
   sig=func newFrameReader(conn net.Conn) *frameReader
 EDGES
-  references=matrix/cortexclient.conn,matrix/cortexclient.frameReader
-  ^calls=matrix/cortexclient.Client.connectLocked
-  ^references=matrix/cortexclient.Client.connectLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.pendingWrite kind=type
@@ -2062,7 +1732,6 @@ NODE id=matrix/cortexclient.pendingWrite kind=type
   sig=type pendingWrite struct {\n	clientSeq	uint64\n	send		func(clientSeq uint64) error\n	unknown		bool\n	onSuccess	func()\n	onFailure	func(error)\n}
 EDGES
   contains=matrix/cortexclient.pendingWrite#clientSeq,matrix/cortexclient.pendingWrite#onFailure,matrix/cortexclient.pendingWrite#onSuccess,matrix/cortexclient.pendingWrite#send,matrix/cortexclient.pendingWrite#unknown
-  ^references=matrix/cortexclient.Client,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.Client.retainPendingLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.pendingWrite#clientSeq kind=field
@@ -2099,9 +1768,6 @@ NODE id=matrix/cortexclient.putU32 kind=func
   digest=b3:2bd79a7df11651efc0a236a315bdad041d745f7dfdce6a7cbf4470eb848eae5c file=cortexclient/client.go range=935:940 lang=go exported=false byte_range=27748:27894
   sig=func putU32(out []byte, value uint32)
 EDGES
-  references=matrix/cortexclient.out,matrix/cortexclient.value
-  ^calls=matrix/cortexclient.writeFrame
-  ^references=matrix/cortexclient.writeFrame
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.rejectedWriteError kind=type
@@ -2109,7 +1775,6 @@ NODE id=matrix/cortexclient.rejectedWriteError kind=type
   sig=type rejectedWriteError struct{ cause error }
 EDGES
   contains=matrix/cortexclient.rejectedWriteError#cause,matrix/cortexclient.rejectedWriteError.Error,matrix/cortexclient.rejectedWriteError.Unwrap
-  ^references=matrix/cortexclient.Client.Append,matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.Client.queueAppend,matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.Client.sendPendingHeadLocked,matrix/cortexclient.Client.writeAdmittedLocked,matrix/cortexclient.rejectedWriteError.Error,matrix/cortexclient.rejectedWriteError.Unwrap
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.rejectedWriteError#cause kind=field
@@ -2122,8 +1787,6 @@ NODE id=matrix/cortexclient.rejectedWriteError.Error kind=method
   digest=b3:e487b88359df126550acd21022882eea512c84420de8a6448ac5344725de7179 file=cortexclient/client.go range=181:181 lang=go exported=true byte_range=5489:5559
   sig=func (e *rejectedWriteError) Error() string
 EDGES
-  calls=matrix/cortexclient.EngineError.Error
-  references=matrix/cortexclient.e,matrix/cortexclient.rejectedWriteError
   ^contains=matrix/cortexclient.rejectedWriteError
   ^defines=matrix/cortexclient/client.go
 
@@ -2131,7 +1794,6 @@ NODE id=matrix/cortexclient.rejectedWriteError.Unwrap kind=method
   digest=b3:93cfa2db491a3b9bd9dbf58b0eff2fc30fff0a8f4a4dc3b88c92a07190e987ff file=cortexclient/client.go range=182:182 lang=go exported=true byte_range=5560:5622
   sig=func (e *rejectedWriteError) Unwrap() error
 EDGES
-  references=matrix/cortexclient.e,matrix/cortexclient.rejectedWriteError
   ^contains=matrix/cortexclient.rejectedWriteError
   ^defines=matrix/cortexclient/client.go
 
@@ -2139,85 +1801,54 @@ NODE id=matrix/cortexclient.renderItem kind=func
   digest=b3:51d27c76932b85a94391d09fda9e82f783e85cfc08c70b98fe06bfac240834b2 file=cortexclient/loopseam.go range=478:508 lang=go exported=false byte_range=15185:16002
   sig=func renderItem(sectionIndex int, item BundleItem) string
 EDGES
-  calls=matrix/cortexclient.eventText,matrix/cortexclient.renderWork
-  references=matrix/cortexclient.BundleItem,matrix/cortexclient.EventKind,matrix/cortexclient.KindAssertion,matrix/cortexclient.KindDeliveredMsg,matrix/cortexclient.KindReasoning,matrix/cortexclient.KindToolCall,matrix/cortexclient.KindToolResult,matrix/cortexclient.KindUserMsg,matrix/cortexclient.candidate,matrix/cortexclient.content,matrix/cortexclient.eventText,matrix/cortexclient.item,matrix/cortexclient.kind,matrix/cortexclient.renderWork,matrix/cortexclient.sectionIndex,matrix/cortexclient.text
-  ^calls=matrix/cortexclient.RenderBundle
-  ^references=matrix/cortexclient.RenderBundle
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.renderWork kind=func
   digest=b3:1c918ef1fd1100482abca1d764bfe14055fcb33f005f40bcb505fd86cbd613fe file=cortexclient/loopseam.go range=510:538 lang=go exported=false byte_range=16004:16722
   sig=func renderWork(content []byte) string
 EDGES
-  calls=matrix/cortexclient.bundleCursor.blob,matrix/cortexclient.bundleCursor.u64,matrix/cortexclient.bundleCursor.u8
-  references=matrix/cortexclient.bundleCursor,matrix/cortexclient.bundleCursor.blob,matrix/cortexclient.bundleCursor.u64,matrix/cortexclient.bundleCursor.u8,matrix/cortexclient.content,matrix/cortexclient.cursor,matrix/cortexclient.err,matrix/cortexclient.err1,matrix/cortexclient.err2,matrix/cortexclient.err3,matrix/cortexclient.err4,matrix/cortexclient.err5,matrix/cortexclient.kind,matrix/cortexclient.label,matrix/cortexclient.line,matrix/cortexclient.reconcile,matrix/cortexclient.state,matrix/cortexclient.states,matrix/cortexclient.toolName
-  ^calls=matrix/cortexclient.renderItem
-  ^references=matrix/cortexclient.renderItem
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.responseError kind=func
   digest=b3:180fd62318a9bbab45b73718f0a9c8e8a1af2d11c8bf0529d03f990afc77565b file=cortexclient/client.go range=499:516 lang=go exported=false byte_range=14035:14542
   sig=func responseError(response *protocol.Response) error
 EDGES
-  calls=matrix/cortexclient/wire/neocortex/protocol.ErrorDetail.Code,matrix/cortexclient/wire/neocortex/protocol.ErrorDetail.Init,matrix/cortexclient/wire/neocortex/protocol.ErrorDetail.Lsn,matrix/cortexclient/wire/neocortex/protocol.ErrorDetail.Offset,matrix/cortexclient/wire/neocortex/protocol.ErrorDetail.SystemError,matrix/cortexclient/wire/neocortex/protocol.Response.Payload,matrix/cortexclient/wire/neocortex/protocol.Response.PayloadType,matrix/cortexclient/wire/neocortex/protocol.Response.Status
-  references=matrix/cortexclient.EngineError,matrix/cortexclient.ErrProtocol,matrix/cortexclient.detail,matrix/cortexclient.response,matrix/cortexclient.table,matrix/cortexclient/internal/flatbuffers.Table,matrix/cortexclient/wire/neocortex/protocol.ErrorDetail,matrix/cortexclient/wire/neocortex/protocol.ErrorDetail.Code,matrix/cortexclient/wire/neocortex/protocol.ErrorDetail.Init,matrix/cortexclient/wire/neocortex/protocol.ErrorDetail.Lsn,matrix/cortexclient/wire/neocortex/protocol.ErrorDetail.Offset,matrix/cortexclient/wire/neocortex/protocol.ErrorDetail.SystemError,matrix/cortexclient/wire/neocortex/protocol.Response,matrix/cortexclient/wire/neocortex/protocol.Response.Payload,matrix/cortexclient/wire/neocortex/protocol.Response.PayloadType,matrix/cortexclient/wire/neocortex/protocol.Response.Status,matrix/cortexclient/wire/neocortex/protocol.ResponsePayloadErrorDetail,matrix/cortexclient/wire/neocortex/protocol.ResponseStatusok
-  ^calls=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.responseTable
-  ^references=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.responseTable
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.responseTable kind=func
   digest=b3:810b98c3628fda14cee98f9bd4c5cdb799da6cd6fc141a41dd79179c675dc9fd file=cortexclient/client.go range=518:530 lang=go exported=false byte_range=14544:14946
   sig=func responseTable(response *protocol.Response, want protocol.ResponsePayload) (flatbuffers.Table, error)
 EDGES
-  calls=matrix/cortexclient.responseError,matrix/cortexclient/wire/neocortex/protocol.Response.Payload,matrix/cortexclient/wire/neocortex/protocol.Response.PayloadType
-  references=matrix/cortexclient.ErrProtocol,matrix/cortexclient.err,matrix/cortexclient.response,matrix/cortexclient.responseError,matrix/cortexclient.table,matrix/cortexclient.want,matrix/cortexclient/internal/flatbuffers.Table,matrix/cortexclient/wire/neocortex/protocol.Response,matrix/cortexclient/wire/neocortex/protocol.Response.Payload,matrix/cortexclient/wire/neocortex/protocol.Response.PayloadType,matrix/cortexclient/wire/neocortex/protocol.ResponsePayload
-  ^calls=matrix/cortexclient.Client.appendOnceLocked
-  ^references=matrix/cortexclient.Client.Attest,matrix/cortexclient.Client.WriteCheckpoint,matrix/cortexclient.Client.appendOnceLocked,matrix/cortexclient.Client.request
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.sequenceConflict kind=func
   digest=b3:ea79bc04b7a2473fbed0201351e0ac3c0fbb1600f80257882cd93806d8a7436a file=cortexclient/client.go range=607:614 lang=go exported=false byte_range=17469:17685
   sig=func sequenceConflict(err error) bool
 EDGES
-  references=matrix/cortexclient.CodeIdempotencyConflict,matrix/cortexclient.CodeSequenceViolation,matrix/cortexclient.EngineError,matrix/cortexclient.engineErr,matrix/cortexclient.err
-  ^calls=matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.Client.sendPendingHeadLocked,matrix/cortexclient.Client.writeAdmittedLocked
-  ^references=matrix/cortexclient.Client.sendAdmittedLocked,matrix/cortexclient.Client.sendPendingHeadLocked,matrix/cortexclient.Client.writeAdmittedLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient.textEvent kind=func
   digest=b3:a9099bdc3cf0e256aa4c0f1e92bbc21ae54d281608f7d48d9e26a9d1a7aacfbd file=cortexclient/loopseam.go range=50:63 lang=go exported=false byte_range=1606:2160
   sig=func textEvent(kind EventKind, conversation [16]byte, payloadType schema.EventPayload,\n	content string, start func(*flatbuffers.Builder), add func(*flatbuffers.Builder, flatbuffers.UOffsetT),\n	end func(*flatbuffers.Builder) flatbuffers.UOffsetT) AppendEvent
 EDGES
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.EventKind,matrix/cortexclient.add,matrix/cortexclient.builder,matrix/cortexclient.bytes,matrix/cortexclient.content,matrix/cortexclient.conversation,matrix/cortexclient.end,matrix/cortexclient.kind,matrix/cortexclient.payloadType,matrix/cortexclient.start,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/schema.EventPayload
-  ^calls=matrix/cortexclient.DeliveredMsgEvent,matrix/cortexclient.ReasoningEvent,matrix/cortexclient.UserMsgEvent
-  ^references=matrix/cortexclient.DeliveredMsgEvent,matrix/cortexclient.ReasoningEvent,matrix/cortexclient.UserMsgEvent
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.tierNames kind=var
   digest=b3:14836e83fce4f8d88653ac8533509348b89c41109956a6abd564d0eb81e39a8f file=cortexclient/loopseam.go range=404:407 lang=go exported=false byte_range=12920:13044
   sig=[8]string
 EDGES
-  ^references=matrix/cortexclient.RenderBundle
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.wrapEnvelope kind=func
   digest=b3:5fa156192a4b55e17abf53ce5b12385e994c9fa35a12f4e83db7fbf5bea06428 file=cortexclient/loopseam.go range=32:48 lang=go exported=false byte_range=772:1604
   sig=func wrapEnvelope(event AppendEvent, connectionID [16]byte, clientSeq uint64,\n	index, count uint32) []byte
 EDGES
-  calls=matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.Builder.FinishWithFileIdentifier,matrix/cortexclient/internal/flatbuffers.Builder.FinishedBytes,matrix/cortexclient/internal/flatbuffers.NewBuilder,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddClientEventCount,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddClientEventIndex,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddClientSeq,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddConnectionId,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddPayload,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddPayloadType,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddSchemaVersion,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeEnd,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeStart
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.builder,matrix/cortexclient.clientSeq,matrix/cortexclient.connection,matrix/cortexclient.connectionID,matrix/cortexclient.count,matrix/cortexclient.envelope,matrix/cortexclient.event,matrix/cortexclient.index,matrix/cortexclient.payload,matrix/cortexclient.payloadType,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.Builder.FinishWithFileIdentifier,matrix/cortexclient/internal/flatbuffers.Builder.FinishedBytes,matrix/cortexclient/internal/flatbuffers.NewBuilder,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddClientEventCount,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddClientEventIndex,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddClientSeq,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddConnectionId,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddPayload,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddPayloadType,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeAddSchemaVersion,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeEnd,matrix/cortexclient/wire/neocortex/schema.EventEnvelopeStart,matrix/cortexclient/wire/neocortex/schema.EventPayload
-  ^calls=matrix/cortexclient.buildAppendRequest
-  ^references=matrix/cortexclient.buildAppendRequest
   ^defines=matrix/cortexclient/loopseam.go
 
 NODE id=matrix/cortexclient.writeFrame kind=func
   digest=b3:33529199595592e9e71099092b4d8a0f349683f8560ee29481d51ec4690903ff file=cortexclient/client.go range=879:892 lang=go exported=false byte_range=26100:26636
   sig=func writeFrame(conn net.Conn, payload []byte, timeout time.Duration) error
 EDGES
-  calls=matrix/cortexclient.putU32
-  references=matrix/cortexclient.ErrProtocol,matrix/cortexclient.conn,matrix/cortexclient.crc32cTable,matrix/cortexclient.err,matrix/cortexclient.frame,matrix/cortexclient.frameHeaderBytes,matrix/cortexclient.maximumFrameBytes,matrix/cortexclient.payload,matrix/cortexclient.putU32,matrix/cortexclient.timeout
-  ^calls=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.roundTripLocked
-  ^references=matrix/cortexclient.Client.connectLocked,matrix/cortexclient.Client.roundTripLocked
   ^defines=matrix/cortexclient/client.go
 
 NODE id=matrix/cortexclient/admin.go kind=file

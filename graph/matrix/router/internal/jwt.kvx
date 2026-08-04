@@ -1,11 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/router/internal/jwt kind=package
   digest=b3:88425fae749430f0439a9b6952b71e3305cc7aa24827138dda84ff711648b94d file=router/internal/jwt range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/jwt/jwks.go,matrix/router/internal/jwt/verifier.go
   ^contains=mod:matrix/router
-  ^imports=matrix/router/cmd/matrix-router,matrix/router/internal/mw
 
 NODE id=matrix/router/internal/jwt.Claims kind=type
   digest=b3:91eda6d2279188937fc810cac51923736cb5263857c2b895e0c3b6506848bd81 file=router/internal/jwt/verifier.go range=60:72 lang=go exported=true byte_range=2128:2663
@@ -13,7 +12,6 @@ NODE id=matrix/router/internal/jwt.Claims kind=type
   doc=Claims captures the subset of Supabase JWT claims matrix-router\nneeds. We accept extra fields (json.Unmarshal ignores them); rate\nlimits / role come from our own DB row, NOT the JWT.
 EDGES
   contains=matrix/router/internal/jwt.Claims#Audience,matrix/router/internal/jwt.Claims#Email,matrix/router/internal/jwt.Claims#Expiry,matrix/router/internal/jwt.Claims#IssuedAt,matrix/router/internal/jwt.Claims#Issuer,matrix/router/internal/jwt.Claims#NotBefore,matrix/router/internal/jwt.Claims#Role,matrix/router/internal/jwt.Claims#Subject
-  ^references=matrix/router/internal/jwt.SignHS256,matrix/router/internal/jwt.Verifier.Verify,matrix/router/internal/jwt.signWithHeader
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.Claims#Audience kind=field
@@ -69,7 +67,6 @@ NODE id=matrix/router/internal/jwt.ErrAlgorithmRejected kind=var
   sig=error
   doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
 EDGES
-  ^references=matrix/router/internal/jwt.Verifier.Verify,matrix/router/internal/jwt.verifyAsymmetric
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.ErrExpired kind=var
@@ -77,7 +74,6 @@ NODE id=matrix/router/internal/jwt.ErrExpired kind=var
   sig=error
   doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
 EDGES
-  ^references=matrix/router/internal/jwt.Verifier.Verify,matrix/router/internal/mw.JWT
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.ErrMalformed kind=var
@@ -85,7 +81,6 @@ NODE id=matrix/router/internal/jwt.ErrMalformed kind=var
   sig=error
   doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
 EDGES
-  ^references=matrix/router/internal/jwt.Verifier.Verify,matrix/router/internal/jwt.verifyAsymmetric
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.ErrMissingSubject kind=var
@@ -93,7 +88,6 @@ NODE id=matrix/router/internal/jwt.ErrMissingSubject kind=var
   sig=error
   doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
 EDGES
-  ^references=matrix/router/internal/jwt.Verifier.Verify
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.ErrNoBackend kind=var
@@ -101,7 +95,6 @@ NODE id=matrix/router/internal/jwt.ErrNoBackend kind=var
   sig=error
   doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
 EDGES
-  ^references=matrix/router/internal/jwt.Verifier.Verify
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.ErrNotYetValid kind=var
@@ -109,7 +102,6 @@ NODE id=matrix/router/internal/jwt.ErrNotYetValid kind=var
   sig=error
   doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
 EDGES
-  ^references=matrix/router/internal/jwt.Verifier.Verify,matrix/router/internal/mw.JWT
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.ErrSignatureMismatch kind=var
@@ -117,7 +109,6 @@ NODE id=matrix/router/internal/jwt.ErrSignatureMismatch kind=var
   sig=error
   doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
 EDGES
-  ^references=matrix/router/internal/jwt.Verifier.Verify,matrix/router/internal/jwt.verifyAsymmetric
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.ErrUnknownKey kind=var
@@ -125,7 +116,6 @@ NODE id=matrix/router/internal/jwt.ErrUnknownKey kind=var
   sig=error
   doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
 EDGES
-  ^references=matrix/router/internal/jwt.jwksCache.lookup
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.New kind=func
@@ -133,10 +123,6 @@ NODE id=matrix/router/internal/jwt.New kind=func
   sig=func New(opts Options) (*Verifier, error)
   doc=New constructs a Verifier. At least one of opts.LegacySecret or\nopts.SupabaseURL must be set, else error.
 EDGES
-  calls=matrix/router/internal/jwt.newJWKSCache
-  references=matrix/router/internal/jwt.Options,matrix/router/internal/jwt.Verifier,matrix/router/internal/jwt.base,matrix/router/internal/jwt.hc,matrix/router/internal/jwt.newJWKSCache,matrix/router/internal/jwt.opts,matrix/router/internal/jwt.v
-  ^calls=matrix/router/cmd/matrix-router.main
-  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.Options kind=type
@@ -145,7 +131,6 @@ NODE id=matrix/router/internal/jwt.Options kind=type
   doc=Options controls Verifier construction.
 EDGES
   contains=matrix/router/internal/jwt.Options#HTTPClient,matrix/router/internal/jwt.Options#LegacySecret,matrix/router/internal/jwt.Options#RefreshThrottle,matrix/router/internal/jwt.Options#SupabaseURL
-  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/jwt.New
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.Options#HTTPClient kind=field
@@ -181,8 +166,6 @@ NODE id=matrix/router/internal/jwt.SignHS256 kind=func
   sig=func SignHS256(c *Claims, secret []byte) (string, error)
   doc=SignHS256 produces a Supabase-shape HS256 JWT for testing. Only used\nin the test suite; never referenced by production code paths.
 EDGES
-  calls=matrix/router/internal/jwt.signWithHeader
-  references=matrix/router/internal/jwt.Claims,matrix/router/internal/jwt.c,matrix/router/internal/jwt.hdr,matrix/router/internal/jwt.header,matrix/router/internal/jwt.input,matrix/router/internal/jwt.mac,matrix/router/internal/jwt.secret,matrix/router/internal/jwt.signWithHeader
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.Verifier kind=type
@@ -191,8 +174,6 @@ NODE id=matrix/router/internal/jwt.Verifier kind=type
   doc=Verifier holds the configured verification backends. At least one of\nLegacySecret / JWKSURL must be non-empty for any token to verify.\n\nConcurrency: Verify is safe to call from many goroutines. The JWKS\ncache uses a sync.RWMutex internally (see jwks.go).
 EDGES
   contains=matrix/router/internal/jwt.Verifier#expectedIssuer,matrix/router/internal/jwt.Verifier#hc,matrix/router/internal/jwt.Verifier#jwks,matrix/router/internal/jwt.Verifier#legacySecret,matrix/router/internal/jwt.Verifier.PrimeJWKS,matrix/router/internal/jwt.Verifier.Verify
-  references=matrix/router/internal/jwt.jwksCache
-  ^references=matrix/router/internal/jwt.New,matrix/router/internal/jwt.Verifier.PrimeJWKS,matrix/router/internal/jwt.Verifier.Verify,matrix/router/internal/mw.JWT
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.Verifier#expectedIssuer kind=field
@@ -228,11 +209,7 @@ NODE id=matrix/router/internal/jwt.Verifier.PrimeJWKS kind=method
   sig=func (v *Verifier) PrimeJWKS(ctx context.Context) error
   doc=PrimeJWKS does an eager fetch so first-request latency doesn't pay\nthe network round-trip. Errors are returned but should be logged\nand ignored by callers — the Verifier will lazy-fetch on first\nasymmetric token hit if priming failed (e.g. transient DNS).
 EDGES
-  calls=matrix/router/internal/jwt.jwksCache.refresh
-  references=matrix/router/internal/jwt.Verifier,matrix/router/internal/jwt.ctx,matrix/router/internal/jwt.jwksCache.refresh,matrix/router/internal/jwt.v
   ^contains=matrix/router/internal/jwt.Verifier
-  ^calls=matrix/router/cmd/matrix-router.main
-  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.Verifier.Verify kind=method
@@ -240,10 +217,7 @@ NODE id=matrix/router/internal/jwt.Verifier.Verify kind=method
   sig=func (v *Verifier) Verify(ctx context.Context, raw string, now time.Time) (*Claims, error)
   doc=Verify parses raw, dispatches on the alg header, runs signature +\ntime checks, and returns the parsed Claims on success.\n\nIssuer enforcement: if the verifier was constructed with a non-empty\nSupabaseURL, the iss claim must match "<SupabaseURL>/auth/v1".\nTokens forwarded from a different Supabase project will be rejected\neven if the algorithm is supported.
 EDGES
-  calls=matrix/router/internal/jwt.jwksCache.lookup,matrix/router/internal/jwt.verifyAsymmetric
-  references=matrix/router/internal/jwt.Claims,matrix/router/internal/jwt.ErrAlgorithmRejected,matrix/router/internal/jwt.ErrExpired,matrix/router/internal/jwt.ErrMalformed,matrix/router/internal/jwt.ErrMissingSubject,matrix/router/internal/jwt.ErrNoBackend,matrix/router/internal/jwt.ErrNotYetValid,matrix/router/internal/jwt.ErrSignatureMismatch,matrix/router/internal/jwt.Verifier,matrix/router/internal/jwt.c,matrix/router/internal/jwt.ctx,matrix/router/internal/jwt.err,matrix/router/internal/jwt.hdr,matrix/router/internal/jwt.hdrBytes,matrix/router/internal/jwt.header,matrix/router/internal/jwt.jwksCache.lookup,matrix/router/internal/jwt.key,matrix/router/internal/jwt.mac,matrix/router/internal/jwt.now,matrix/router/internal/jwt.parts,matrix/router/internal/jwt.payloadBytes,matrix/router/internal/jwt.raw,matrix/router/internal/jwt.sig,matrix/router/internal/jwt.signingInput,matrix/router/internal/jwt.v,matrix/router/internal/jwt.verifyAsymmetric
   ^contains=matrix/router/internal/jwt.Verifier
-  ^references=matrix/router/internal/mw.JWT
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.decodeBigInt kind=func
@@ -251,9 +225,6 @@ NODE id=matrix/router/internal/jwt.decodeBigInt kind=func
   sig=func decodeBigInt(s string) (*big.Int, error)
   doc=decodeBigInt unpacks a base64url-encoded big-endian integer per\nRFC 7518 §6. Empty / leading-zero values are rejected to match\nSupabase's well-formed JWK output.
 EDGES
-  references=matrix/router/internal/jwt.b,matrix/router/internal/jwt.err,matrix/router/internal/jwt.s
-  ^calls=matrix/router/internal/jwt.parseEC,matrix/router/internal/jwt.parseRSA
-  ^references=matrix/router/internal/jwt.parseEC,matrix/router/internal/jwt.parseRSA
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.defaultRefreshThrottle kind=const
@@ -261,7 +232,6 @@ NODE id=matrix/router/internal/jwt.defaultRefreshThrottle kind=const
   sig=time.Duration
   doc=defaultRefreshThrottle is the floor between forced JWKS fetches in\nresponse to unknown-kid hits. Supabase caches the JWKS at the edge\nfor tens of seconds, so this is generous enough to avoid hammering\nupstream while still picking up a rotation within ~1 minute.
 EDGES
-  ^references=matrix/router/internal/jwt.newJWKSCache
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.header kind=type
@@ -270,7 +240,6 @@ NODE id=matrix/router/internal/jwt.header kind=type
   doc=header is the parsed JOSE header. We inspect alg + kid + typ.
 EDGES
   contains=matrix/router/internal/jwt.header#Alg,matrix/router/internal/jwt.header#Kid,matrix/router/internal/jwt.header#Typ
-  ^references=matrix/router/internal/jwt.SignHS256,matrix/router/internal/jwt.Verifier.Verify,matrix/router/internal/jwt.signWithHeader
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.header#Alg kind=field
@@ -297,7 +266,6 @@ NODE id=matrix/router/internal/jwt.jwk kind=type
   doc=jwk is the JSON Web Key wire format we accept (RFC 7517 §4 +\nRFC 7518 §6 for the parameter encodings).
 EDGES
   contains=matrix/router/internal/jwt.jwk#Alg,matrix/router/internal/jwt.jwk#Crv,matrix/router/internal/jwt.jwk#E,matrix/router/internal/jwt.jwk#Kid,matrix/router/internal/jwt.jwk#Kty,matrix/router/internal/jwt.jwk#N,matrix/router/internal/jwt.jwk#Use,matrix/router/internal/jwt.jwk#X,matrix/router/internal/jwt.jwk#Y
-  ^references=matrix/router/internal/jwt.jwkSet,matrix/router/internal/jwt.parseEC,matrix/router/internal/jwt.parseJWK,matrix/router/internal/jwt.parseOKP,matrix/router/internal/jwt.parseRSA
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.jwk#Alg kind=field
@@ -362,8 +330,6 @@ NODE id=matrix/router/internal/jwt.jwkSet kind=type
   doc=jwkSet is the JWKS document.
 EDGES
   contains=matrix/router/internal/jwt.jwkSet#Keys
-  references=matrix/router/internal/jwt.jwk
-  ^references=matrix/router/internal/jwt.jwksCache.refresh
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.jwkSet#Keys kind=field
@@ -378,7 +344,6 @@ NODE id=matrix/router/internal/jwt.jwksCache kind=type
   doc=jwksCache is the in-memory map kid → public key. Concurrency-safe.
 EDGES
   contains=matrix/router/internal/jwt.jwksCache#hc,matrix/router/internal/jwt.jwksCache#keys,matrix/router/internal/jwt.jwksCache#lastFetch,matrix/router/internal/jwt.jwksCache#mu,matrix/router/internal/jwt.jwksCache#throttle,matrix/router/internal/jwt.jwksCache#url,matrix/router/internal/jwt.jwksCache.lookup,matrix/router/internal/jwt.jwksCache.refresh,matrix/router/internal/jwt.jwksCache.refreshIfStale
-  ^references=matrix/router/internal/jwt.Verifier,matrix/router/internal/jwt.jwksCache.lookup,matrix/router/internal/jwt.jwksCache.refresh,matrix/router/internal/jwt.jwksCache.refreshIfStale,matrix/router/internal/jwt.newJWKSCache
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.jwksCache#hc kind=field
@@ -422,11 +387,7 @@ NODE id=matrix/router/internal/jwt.jwksCache.lookup kind=method
   sig=func (c *jwksCache) lookup(ctx context.Context, kid string) (any, error)
   doc=lookup returns the public key for kid. On miss, it triggers at most\none throttled refresh and retries once. Persistent misses return\nErrUnknownKey.
 EDGES
-  calls=matrix/router/internal/jwt.jwksCache.refreshIfStale
-  references=matrix/router/internal/jwt.ErrUnknownKey,matrix/router/internal/jwt.c,matrix/router/internal/jwt.ctx,matrix/router/internal/jwt.err,matrix/router/internal/jwt.jwksCache,matrix/router/internal/jwt.jwksCache.refreshIfStale,matrix/router/internal/jwt.k,matrix/router/internal/jwt.kid,matrix/router/internal/jwt.ok
   ^contains=matrix/router/internal/jwt.jwksCache
-  ^calls=matrix/router/internal/jwt.Verifier.Verify
-  ^references=matrix/router/internal/jwt.Verifier.Verify
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.jwksCache.refresh kind=method
@@ -434,11 +395,7 @@ NODE id=matrix/router/internal/jwt.jwksCache.refresh kind=method
   sig=func (c *jwksCache) refresh(ctx context.Context) error
   doc=refresh fetches the JWKS unconditionally and replaces the cache.\n\nOn error: cache is left unchanged so prior keys keep working. The\nlastFetch timestamp IS still updated to enforce the throttle even\nwhen fetches fail (avoids hammering upstream during outages).
 EDGES
-  calls=matrix/router/internal/jwt.parseJWK
-  references=matrix/router/internal/jwt.body,matrix/router/internal/jwt.c,matrix/router/internal/jwt.ctx,matrix/router/internal/jwt.err,matrix/router/internal/jwt.i,matrix/router/internal/jwt.jwkSet,matrix/router/internal/jwt.jwksCache,matrix/router/internal/jwt.k,matrix/router/internal/jwt.parseJWK,matrix/router/internal/jwt.parsed,matrix/router/internal/jwt.pub,matrix/router/internal/jwt.req,matrix/router/internal/jwt.resp,matrix/router/internal/jwt.set
   ^contains=matrix/router/internal/jwt.jwksCache
-  ^calls=matrix/router/internal/jwt.Verifier.PrimeJWKS,matrix/router/internal/jwt.jwksCache.refreshIfStale
-  ^references=matrix/router/internal/jwt.Verifier.PrimeJWKS,matrix/router/internal/jwt.jwksCache.refreshIfStale
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.jwksCache.refreshIfStale kind=method
@@ -446,11 +403,7 @@ NODE id=matrix/router/internal/jwt.jwksCache.refreshIfStale kind=method
   sig=func (c *jwksCache) refreshIfStale(ctx context.Context) error
   doc=refreshIfStale only fires a fetch if the last fetch was longer ago\nthan the throttle. Empty cache is always considered stale.
 EDGES
-  calls=matrix/router/internal/jwt.jwksCache.refresh
-  references=matrix/router/internal/jwt.c,matrix/router/internal/jwt.ctx,matrix/router/internal/jwt.jwksCache,matrix/router/internal/jwt.jwksCache.refresh,matrix/router/internal/jwt.stale
   ^contains=matrix/router/internal/jwt.jwksCache
-  ^calls=matrix/router/internal/jwt.jwksCache.lookup
-  ^references=matrix/router/internal/jwt.jwksCache.lookup
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.newJWKSCache kind=func
@@ -458,19 +411,12 @@ NODE id=matrix/router/internal/jwt.newJWKSCache kind=func
   sig=func newJWKSCache(url string, hc *http.Client, throttle time.Duration) *jwksCache
   doc=newJWKSCache constructs a cache. The first lookup triggers a refresh\nif keys is empty.
 EDGES
-  references=matrix/router/internal/jwt.defaultRefreshThrottle,matrix/router/internal/jwt.hc,matrix/router/internal/jwt.jwksCache,matrix/router/internal/jwt.throttle,matrix/router/internal/jwt.url
-  ^calls=matrix/router/internal/jwt.New
-  ^references=matrix/router/internal/jwt.New
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.parseEC kind=func
   digest=b3:a79ba4330dac3eb1103391f76f036892c57f70826ad1ac45214d78dd21378ac2 file=router/internal/jwt/jwks.go range=195:216 lang=go exported=false byte_range=5364:5907
   sig=func parseEC(k *jwk) (*ecdsa.PublicKey, error)
 EDGES
-  calls=matrix/router/internal/jwt.decodeBigInt
-  references=matrix/router/internal/jwt.curve,matrix/router/internal/jwt.decodeBigInt,matrix/router/internal/jwt.err,matrix/router/internal/jwt.jwk,matrix/router/internal/jwt.k,matrix/router/internal/jwt.x,matrix/router/internal/jwt.y
-  ^calls=matrix/router/internal/jwt.parseJWK
-  ^references=matrix/router/internal/jwt.parseJWK
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.parseJWK kind=func
@@ -478,29 +424,18 @@ NODE id=matrix/router/internal/jwt.parseJWK kind=func
   sig=func parseJWK(k *jwk) (any, error)
   doc=parseJWK converts a JWK dict to a Go crypto/* public key.
 EDGES
-  calls=matrix/router/internal/jwt.parseEC,matrix/router/internal/jwt.parseOKP,matrix/router/internal/jwt.parseRSA
-  references=matrix/router/internal/jwt.jwk,matrix/router/internal/jwt.k,matrix/router/internal/jwt.parseEC,matrix/router/internal/jwt.parseOKP,matrix/router/internal/jwt.parseRSA
-  ^calls=matrix/router/internal/jwt.jwksCache.refresh
-  ^references=matrix/router/internal/jwt.jwksCache.refresh
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.parseOKP kind=func
   digest=b3:af668eb02df048f41d4c61d942b1f8844c773c50b335fef7233e38653e388389 file=router/internal/jwt/jwks.go range=240:252 lang=go exported=false byte_range=6448:6876
   sig=func parseOKP(k *jwk) (ed25519.PublicKey, error)
 EDGES
-  references=matrix/router/internal/jwt.err,matrix/router/internal/jwt.jwk,matrix/router/internal/jwt.k,matrix/router/internal/jwt.x
-  ^calls=matrix/router/internal/jwt.parseJWK
-  ^references=matrix/router/internal/jwt.parseJWK
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.parseRSA kind=func
   digest=b3:1bfb1cbfd3d2a3cd7694e5e23bb812703051017969130a7253115bdb37854f70 file=router/internal/jwt/jwks.go range=218:238 lang=go exported=false byte_range=5909:6446
   sig=func parseRSA(k *jwk) (*rsa.PublicKey, error)
 EDGES
-  calls=matrix/router/internal/jwt.decodeBigInt
-  references=matrix/router/internal/jwt.b,matrix/router/internal/jwt.decodeBigInt,matrix/router/internal/jwt.e,matrix/router/internal/jwt.eBytes,matrix/router/internal/jwt.err,matrix/router/internal/jwt.jwk,matrix/router/internal/jwt.k,matrix/router/internal/jwt.n
-  ^calls=matrix/router/internal/jwt.parseJWK
-  ^references=matrix/router/internal/jwt.parseJWK
   ^defines=matrix/router/internal/jwt/jwks.go
 
 NODE id=matrix/router/internal/jwt.signWithHeader kind=func
@@ -508,9 +443,6 @@ NODE id=matrix/router/internal/jwt.signWithHeader kind=func
   sig=func signWithHeader(hdr *header, c *Claims, signFn func([]byte) ([]byte, error)) (string, error)
   doc=signWithHeader is the shared marshaling routine for the test\nhelpers. signFn closes over whatever key material is needed.
 EDGES
-  references=matrix/router/internal/jwt.Claims,matrix/router/internal/jwt.c,matrix/router/internal/jwt.err,matrix/router/internal/jwt.hdr,matrix/router/internal/jwt.hdrJSON,matrix/router/internal/jwt.header,matrix/router/internal/jwt.hp,matrix/router/internal/jwt.payJSON,matrix/router/internal/jwt.pp,matrix/router/internal/jwt.sig,matrix/router/internal/jwt.signFn,matrix/router/internal/jwt.signingInput,matrix/router/internal/jwt.sp
-  ^calls=matrix/router/internal/jwt.SignHS256
-  ^references=matrix/router/internal/jwt.SignHS256
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt.verifyAsymmetric kind=func
@@ -518,9 +450,6 @@ NODE id=matrix/router/internal/jwt.verifyAsymmetric kind=func
   sig=func verifyAsymmetric(alg string, key any, signingInput, sig []byte) error
   doc=verifyAsymmetric runs the algorithm-specific verify step. key is the\ncrypto/* PublicKey loaded from JWKS (kty=RSA → *rsa.PublicKey;\nkty=EC → *ecdsa.PublicKey; kty=OKP+crv=Ed25519 → ed25519.PublicKey).
 EDGES
-  references=matrix/router/internal/jwt.ErrAlgorithmRejected,matrix/router/internal/jwt.ErrMalformed,matrix/router/internal/jwt.ErrSignatureMismatch,matrix/router/internal/jwt.alg,matrix/router/internal/jwt.err,matrix/router/internal/jwt.h,matrix/router/internal/jwt.key,matrix/router/internal/jwt.ok,matrix/router/internal/jwt.pub,matrix/router/internal/jwt.r,matrix/router/internal/jwt.s,matrix/router/internal/jwt.sig,matrix/router/internal/jwt.signingInput
-  ^calls=matrix/router/internal/jwt.Verifier.Verify
-  ^references=matrix/router/internal/jwt.Verifier.Verify
   ^defines=matrix/router/internal/jwt/verifier.go
 
 NODE id=matrix/router/internal/jwt/jwks.go kind=file

@@ -1,19 +1,15 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/policy kind=package
   digest=b3:e44885baab75bec1838a869c1071a6b8e7b0cdaacd5d855f35960a5f38c4b326 file=workforce/internal/policy range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/policy/doc.go,matrix/workforce/internal/policy/seed.go,matrix/workforce/internal/policy/signing.go,matrix/workforce/internal/policy/store.go,matrix/workforce/internal/policy/types.go
-  imports=matrix/vault,matrix/workforce/internal/contracts
   ^contains=mod:matrix/workforce
-  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/actorstate,matrix/workforce/internal/controlapi,matrix/workforce/internal/effect,matrix/workforce/internal/executive,matrix/workforce/internal/organization,matrix/workforce/internal/testauthority,matrix/workforce/internal/wakeruntime,matrix/workforce/internal/workcompile
 
 NODE id=matrix/workforce/internal/policy.BuildSeed kind=func
   digest=b3:1255ca3ccf675642f427c0ab0932d08831ac4427ab5f5d15f5d685206bc4fc8d file=workforce/internal/policy/seed.go range=48:101 lang=go exported=true byte_range=1561:3321
   sig=func BuildSeed(\n	organizationID contracts.OrganizationID,\n	ownerID contracts.OwnerID,\n	name string,\n	effectiveAt time.Time,\n	keyID string,\n	privateKey ed25519.PrivateKey,\n) (Seed, error)
 EDGES
-  calls=matrix/workforce/internal/policy.BuildSeedDraft,matrix/workforce/internal/policy.Seed.Validate,matrix/workforce/internal/policy.SignMandate,matrix/workforce/internal/policy.SignOrganization,matrix/workforce/internal/policy.SignPolicy,matrix/workforce/internal/policy.SignRuntimeAuthority,matrix/workforce/internal/policy.SignSeat
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/policy.BuildSeedDraft,matrix/workforce/internal/policy.Seed,matrix/workforce/internal/policy.Seed.Validate,matrix/workforce/internal/policy.SignMandate,matrix/workforce/internal/policy.SignOrganization,matrix/workforce/internal/policy.SignPolicy,matrix/workforce/internal/policy.SignRuntimeAuthority,matrix/workforce/internal/policy.SignSeat,matrix/workforce/internal/policy.departmentIndex,matrix/workforce/internal/policy.effectiveAt,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.index,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.name,matrix/workforce/internal/policy.ok,matrix/workforce/internal/policy.organizationID,matrix/workforce/internal/policy.ownerID,matrix/workforce/internal/policy.privateKey,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.runtimePublicKey,matrix/workforce/internal/policy.seat,matrix/workforce/internal/policy.seatIndex,matrix/workforce/internal/policy.seed
   ^defines=matrix/workforce/internal/policy/seed.go
 
 NODE id=matrix/workforce/internal/policy.BuildSeedDraft kind=func
@@ -21,45 +17,36 @@ NODE id=matrix/workforce/internal/policy.BuildSeedDraft kind=func
   sig=func BuildSeedDraft(\n	organizationID contracts.OrganizationID,\n	ownerID contracts.OwnerID,\n	name string,\n	effectiveAt time.Time,\n	keyID string,\n	runtimeKeyID string,\n	runtimePublicKey ed25519.PublicKey,\n) (Seed, error)
   doc=BuildSeedDraft returns the canonical seven-department topology with\nnon-authorizing zero signatures. The owner signs every seat and mandate,\nthen the containing organization, before PublishSeed accepts the draft.
 EDGES
-  calls=matrix/workforce/internal/contracts.AllDepartmentKinds,matrix/workforce/internal/contracts.AllSeatRoles,matrix/workforce/internal/contracts.Mandate.Validate,matrix/workforce/internal/contracts.Organization.Validate,matrix/workforce/internal/policy.RuntimeAuthorityID,matrix/workforce/internal/policy.seedMandate
-  references=matrix/workforce/internal/contracts.AllDepartmentKinds,matrix/workforce/internal/contracts.AllSeatRoles,matrix/workforce/internal/contracts.Department,matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/contracts.Mandate.Validate,matrix/workforce/internal/contracts.MandateID,matrix/workforce/internal/contracts.Organization,matrix/workforce/internal/contracts.Organization.Validate,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/contracts.Policy,matrix/workforce/internal/contracts.PolicyID,matrix/workforce/internal/contracts.PolicyRule,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/contracts.SeatBindingID,matrix/workforce/internal/contracts.SeatDID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/policy.RuntimeAuthority,matrix/workforce/internal/policy.RuntimeAuthorityID,matrix/workforce/internal/policy.Seed,matrix/workforce/internal/policy.WakeLeaseSigningPurpose,matrix/workforce/internal/policy.baseline,matrix/workforce/internal/policy.department,matrix/workforce/internal/policy.departmentID,matrix/workforce/internal/policy.effectiveAt,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.index,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.kind,matrix/workforce/internal/policy.mandate,matrix/workforce/internal/policy.mandates,matrix/workforce/internal/policy.name,matrix/workforce/internal/policy.organization,matrix/workforce/internal/policy.organizationID,matrix/workforce/internal/policy.ownerID,matrix/workforce/internal/policy.placeholder,matrix/workforce/internal/policy.prefix,matrix/workforce/internal/policy.role,matrix/workforce/internal/policy.runtimeAuthority,matrix/workforce/internal/policy.runtimeKeyID,matrix/workforce/internal/policy.runtimePublicKey,matrix/workforce/internal/policy.seat,matrix/workforce/internal/policy.seedMandate
-  ^calls=matrix/workforce/internal/controlapi.Service.PreviewActivation,matrix/workforce/internal/policy.BuildSeed
-  ^references=matrix/workforce/internal/controlapi.Service.PreviewActivation,matrix/workforce/internal/policy.BuildSeed
   ^defines=matrix/workforce/internal/policy/seed.go
 
 NODE id=matrix/workforce/internal/policy.ErrIntegrity kind=var
   digest=b3:8f52c1eaa7d3d86a7002d91957be8a14cfa66a8fb8da62e39dfb226e603b28ab file=workforce/internal/policy/store.go range=25:25 lang=go exported=true byte_range=482:549
   sig=error
 EDGES
-  ^references=matrix/workforce/internal/policy.Store.LoadLease,matrix/workforce/internal/policy.Store.LoadMandate,matrix/workforce/internal/policy.Store.LoadPolicy,matrix/workforce/internal/policy.Store.LoadRuntimeAuthority,matrix/workforce/internal/policy.Store.LoadSeat,matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.ErrLeaseInvalid kind=var
   digest=b3:72bc9bfa27ac42ba3da868ff78006a145e96e9a9970eb1113df7ff90d4e20131 file=workforce/internal/policy/store.go range=24:24 lang=go exported=true byte_range=424:480
   sig=error
 EDGES
-  ^references=matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.AuthorizeWorkPacket,matrix/workforce/internal/policy.Store.LoadLease,matrix/workforce/internal/policy.Store.RegisterLease,matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.ErrRevoked kind=var
   digest=b3:3bdef22c15c61a0c404f7d8bfc0561efc6dd7c55fe1b924dc1c6ded75218d8b8 file=workforce/internal/policy/store.go range=23:23 lang=go exported=true byte_range=365:422
   sig=error
 EDGES
-  ^references=matrix/workforce/internal/policy.Store.LoadCurrentRuntimeAuthority,matrix/workforce/internal/policy.Store.LoadCurrentSeat,matrix/workforce/internal/policy.Store.loadAuthority
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.ErrStale kind=var
   digest=b3:268e1ac080e3f82aa090016249ffa2ab46806aec59586f42a2452f5d64ce02c3 file=workforce/internal/policy/store.go range=22:22 lang=go exported=true byte_range=300:363
   sig=error
 EDGES
-  ^references=matrix/workforce/internal/controlapi.Service.ActivateOrganization,matrix/workforce/internal/policy.Store.RegisterLease,matrix/workforce/internal/policy.Store.publishPrepared,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.Store.requireCurrent,matrix/workforce/internal/policy.Store.requirePolicyReference
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.ErrUnauthorized kind=var
   digest=b3:e0cafdc482abd047208e80fab328d1e54dca52f80e1b9df765fbe05d3a88a0d4 file=workforce/internal/policy/store.go range=21:21 lang=go exported=true byte_range=236:298
   sig=error
 EDGES
-  ^references=matrix/workforce/internal/policy.Store.LoadCurrentPolicyRefs,matrix/workforce/internal/policy.Store.PublishOrganization,matrix/workforce/internal/policy.Store.Revoke,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.Store.verifyGrant
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Kind kind=type
@@ -67,67 +54,49 @@ NODE id=matrix/workforce/internal/policy.Kind kind=type
   sig=type Kind string
 EDGES
   contains=matrix/workforce/internal/policy.Kind.Valid
-  ^references=matrix/workforce/internal/policy.Kind.Valid,matrix/workforce/internal/policy.KindMandate,matrix/workforce/internal/policy.KindOrganization,matrix/workforce/internal/policy.KindPolicy,matrix/workforce/internal/policy.KindRuntime,matrix/workforce/internal/policy.KindSeat,matrix/workforce/internal/policy.Revocation,matrix/workforce/internal/policy.Store.authorityAD,matrix/workforce/internal/policy.Store.invalidateLeases,matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.Store.requireCurrent,matrix/workforce/internal/policy.preparedAuthority,matrix/workforce/internal/policy.revocationPayload
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.Kind.Valid kind=method
   digest=b3:87d356bf80965ec92a084bd2373a951a40769450cfb98c64a30ef72a039df23b file=workforce/internal/policy/types.go range=28:35 lang=go exported=true byte_range=550:712
   sig=func (kind Kind) Valid() bool
 EDGES
-  references=matrix/workforce/internal/policy.Kind,matrix/workforce/internal/policy.KindMandate,matrix/workforce/internal/policy.KindOrganization,matrix/workforce/internal/policy.KindPolicy,matrix/workforce/internal/policy.KindRuntime,matrix/workforce/internal/policy.KindSeat,matrix/workforce/internal/policy.kind
   ^contains=matrix/workforce/internal/policy.Kind
-  ^calls=matrix/workforce/internal/policy.Revocation.Validate
-  ^references=matrix/workforce/internal/policy.Revocation.Validate
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.KindMandate kind=const
   digest=b3:9f2dd9f8e66d60a9ec1deb1022da58ce9e3a4e97b6ad4923274a477e4735cf87 file=workforce/internal/policy/types.go range=22:22 lang=go exported=true byte_range=402:435
   sig=policy.Kind
 EDGES
-  references=matrix/workforce/internal/policy.Kind
-  ^references=matrix/workforce/internal/policy.Kind.Valid,matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.LoadMandate,matrix/workforce/internal/policy.Store.PublishMandate,matrix/workforce/internal/policy.Store.RegisterLease,matrix/workforce/internal/policy.Store.invalidateLeases,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.KindOrganization kind=const
   digest=b3:dd62caa8548deae3a03292c9c6835e1cca755486a5630f21afd776decf725cf4 file=workforce/internal/policy/types.go range=21:21 lang=go exported=true byte_range=362:400
   sig=policy.Kind
 EDGES
-  references=matrix/workforce/internal/policy.Kind
-  ^references=matrix/workforce/internal/policy.Kind.Valid,matrix/workforce/internal/policy.Store.PublishOrganization,matrix/workforce/internal/policy.Store.invalidateLeases,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.KindPolicy kind=const
   digest=b3:ab507a6dd3d20c3cc20db726183de5789e8a3785d079c1309b3089b935803fae file=workforce/internal/policy/types.go range=24:24 lang=go exported=true byte_range=469:501
   sig=policy.Kind
 EDGES
-  references=matrix/workforce/internal/policy.Kind
-  ^references=matrix/workforce/internal/policy.Kind.Valid,matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.LoadPolicy,matrix/workforce/internal/policy.Store.PublishPolicy,matrix/workforce/internal/policy.Store.invalidateLeases,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.KindRuntime kind=const
   digest=b3:c80e7b5a1009b00a944c9c860785253374b1101d4504b470b32a9ec12f74b7a3 file=workforce/internal/policy/types.go range=25:25 lang=go exported=true byte_range=503:546
   sig=policy.Kind
 EDGES
-  references=matrix/workforce/internal/policy.Kind
-  ^references=matrix/workforce/internal/policy.Kind.Valid,matrix/workforce/internal/policy.Store.LoadCurrentRuntimeAuthority,matrix/workforce/internal/policy.Store.LoadRuntimeAuthority,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority,matrix/workforce/internal/policy.Store.invalidateLeases,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.KindSeat kind=const
   digest=b3:5c0be3768267c9a391f89aaa731efaf40fada228f04904d4216f97f35ebad259 file=workforce/internal/policy/types.go range=23:23 lang=go exported=true byte_range=437:467
   sig=policy.Kind
 EDGES
-  references=matrix/workforce/internal/policy.Kind
-  ^references=matrix/workforce/internal/policy.Kind.Valid,matrix/workforce/internal/policy.Store.LoadCurrentSeat,matrix/workforce/internal/policy.Store.LoadSeat,matrix/workforce/internal/policy.Store.PublishSeat,matrix/workforce/internal/policy.Store.invalidateLeases,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.New kind=func
   digest=b3:fee7b3c0f2b818f8df6fd9e2213133e820b5acbc2010580c47ad87c2d90ec9a9 file=workforce/internal/policy/types.go range=178:194 lang=go exported=true byte_range=6163:6674
   sig=func New(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	root OwnerRoot,\n	now func() time.Time,\n) (*Store, error)
 EDGES
-  calls=matrix/vault.UserVault.User,matrix/workforce/internal/policy.OwnerRoot.Validate
-  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/policy.OwnerRoot,matrix/workforce/internal/policy.OwnerRoot.Validate,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.pool,matrix/workforce/internal/policy.root,matrix/workforce/internal/policy.userVault
-  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/controlapi.Service.ActivateOrganization,matrix/workforce/internal/testauthority.New
-  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/controlapi.Service.ActivateOrganization,matrix/workforce/internal/testauthority.New
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.OwnerGrant kind=type
@@ -136,8 +105,6 @@ NODE id=matrix/workforce/internal/policy.OwnerGrant kind=type
 EDGES
   contains=matrix/workforce/internal/policy.OwnerGrant#ExpiresAt,matrix/workforce/internal/policy.OwnerGrant#IssuedAt,matrix/workforce/internal/policy.OwnerGrant#KeyID,matrix/workforce/internal/policy.OwnerGrant#OrganizationID,matrix/workforce/internal/policy.OwnerGrant#OwnerID,matrix/workforce/internal/policy.OwnerGrant#SchemaVersion,matrix/workforce/internal/policy.OwnerGrant#Scope,matrix/workforce/internal/policy.OwnerGrant#Signature,matrix/workforce/internal/policy.OwnerGrant#TenantID,matrix/workforce/internal/policy.OwnerGrant.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/contracts.Signature
-  ^references=matrix/workforce/internal/policy.OwnerGrant.Validate,matrix/workforce/internal/policy.SignOwnerGrant,matrix/workforce/internal/policy.Store.PublishMandate,matrix/workforce/internal/policy.Store.PublishOrganization,matrix/workforce/internal/policy.Store.PublishPolicy,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority,matrix/workforce/internal/policy.Store.PublishSeat,matrix/workforce/internal/policy.Store.Revoke,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.Store.verifyGrant,matrix/workforce/internal/policy.grantSigningBytes,matrix/workforce/internal/policy.verifyGrant,matrix/workforce/internal/testauthority.Fixture,matrix/workforce/internal/testauthority.New,matrix/workforce/internal/testauthority.PublishRuntimeAuthority
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.OwnerGrant#ExpiresAt kind=field
@@ -198,11 +165,7 @@ NODE id=matrix/workforce/internal/policy.OwnerGrant.Validate kind=method
   digest=b3:615caceae3aa5df48cb28e13b6765177a16f47d31002bc03b7728d69d653454e file=workforce/internal/policy/types.go range=122:137 lang=go exported=true byte_range=4072:4684
   sig=func (grant OwnerGrant) Validate() error
 EDGES
-  calls=matrix/workforce/internal/contracts.Signature.Validate
-  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.grant
   ^contains=matrix/workforce/internal/policy.OwnerGrant
-  ^calls=matrix/workforce/internal/policy.Store.verifyGrant
-  ^references=matrix/workforce/internal/policy.Store.verifyGrant
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.OwnerRoot kind=type
@@ -211,8 +174,6 @@ NODE id=matrix/workforce/internal/policy.OwnerRoot kind=type
 EDGES
   contains=matrix/workforce/internal/policy.OwnerRoot#KeyID,matrix/workforce/internal/policy.OwnerRoot#OrganizationID,matrix/workforce/internal/policy.OwnerRoot#OwnerID,matrix/workforce/internal/policy.OwnerRoot#PublicKey,matrix/workforce/internal/policy.OwnerRoot#TenantID,matrix/workforce/internal/policy.OwnerRoot.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID
-  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/controlapi.Service.ActivateOrganization,matrix/workforce/internal/controlapi.Service.RuntimeOwnerRoot,matrix/workforce/internal/policy.New,matrix/workforce/internal/policy.OwnerRoot.Validate,matrix/workforce/internal/policy.Store,matrix/workforce/internal/testauthority.Fixture,matrix/workforce/internal/testauthority.New
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.OwnerRoot#KeyID kind=field
@@ -249,10 +210,7 @@ NODE id=matrix/workforce/internal/policy.OwnerRoot.Validate kind=method
   digest=b3:f73ee507454ff121bdf849fdfe0f6a206533362b409c2edeaeed58fc57b9a9eb file=workforce/internal/policy/types.go range=97:108 lang=go exported=true byte_range=3108:3498
   sig=func (root OwnerRoot) Validate() error
 EDGES
-  references=matrix/workforce/internal/policy.OwnerRoot,matrix/workforce/internal/policy.root
   ^contains=matrix/workforce/internal/policy.OwnerRoot
-  ^calls=matrix/workforce/internal/controlapi.Service.RuntimeOwnerRoot,matrix/workforce/internal/policy.New
-  ^references=matrix/workforce/internal/controlapi.Service.RuntimeOwnerRoot,matrix/workforce/internal/policy.New
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.Revocation kind=type
@@ -261,8 +219,6 @@ NODE id=matrix/workforce/internal/policy.Revocation kind=type
 EDGES
   contains=matrix/workforce/internal/policy.Revocation#AuthorityID,matrix/workforce/internal/policy.Revocation#KeyID,matrix/workforce/internal/policy.Revocation#Kind,matrix/workforce/internal/policy.Revocation#OrganizationID,matrix/workforce/internal/policy.Revocation#OwnerID,matrix/workforce/internal/policy.Revocation#Reason,matrix/workforce/internal/policy.Revocation#RevokedAt,matrix/workforce/internal/policy.Revocation#SchemaVersion,matrix/workforce/internal/policy.Revocation#Signature,matrix/workforce/internal/policy.Revocation#TenantID,matrix/workforce/internal/policy.Revocation#Version,matrix/workforce/internal/policy.Revocation.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/policy.Kind
-  ^references=matrix/workforce/internal/policy.Revocation.Validate,matrix/workforce/internal/policy.SignRevocation,matrix/workforce/internal/policy.Store.Revoke,matrix/workforce/internal/policy.revocationSigningBytes,matrix/workforce/internal/policy.verifyRevocation
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.Revocation#AuthorityID kind=field
@@ -335,11 +291,7 @@ NODE id=matrix/workforce/internal/policy.Revocation.Validate kind=method
   digest=b3:20ed50d8d4bdf9eb1349d24e9c64e31e994f19a7f9fdc9e9f803f376de24e983 file=workforce/internal/policy/types.go range=153:169 lang=go exported=true byte_range=5375:6052
   sig=func (revocation Revocation) Validate() error
 EDGES
-  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/policy.Kind.Valid
-  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/policy.Kind.Valid,matrix/workforce/internal/policy.Revocation,matrix/workforce/internal/policy.revocation
   ^contains=matrix/workforce/internal/policy.Revocation
-  ^calls=matrix/workforce/internal/policy.Store.Revoke
-  ^references=matrix/workforce/internal/policy.Store.Revoke
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.RuntimeAuthority kind=type
@@ -349,8 +301,6 @@ NODE id=matrix/workforce/internal/policy.RuntimeAuthority kind=type
 EDGES
   contains=matrix/workforce/internal/policy.RuntimeAuthority#EffectiveAt,matrix/workforce/internal/policy.RuntimeAuthority#ExpiresAt,matrix/workforce/internal/policy.RuntimeAuthority#ID,matrix/workforce/internal/policy.RuntimeAuthority#KeyID,matrix/workforce/internal/policy.RuntimeAuthority#OrganizationID,matrix/workforce/internal/policy.RuntimeAuthority#PublicKey,matrix/workforce/internal/policy.RuntimeAuthority#Purposes,matrix/workforce/internal/policy.RuntimeAuthority#SchemaVersion,matrix/workforce/internal/policy.RuntimeAuthority#Signature,matrix/workforce/internal/policy.RuntimeAuthority#Version,matrix/workforce/internal/policy.RuntimeAuthority.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Signature
-  ^references=matrix/workforce/internal/policy.BuildSeedDraft,matrix/workforce/internal/policy.RuntimeAuthority.Validate,matrix/workforce/internal/policy.Seed,matrix/workforce/internal/policy.SignRuntimeAuthority,matrix/workforce/internal/policy.Store.LoadCurrentRuntimeAuthority,matrix/workforce/internal/policy.Store.LoadRuntimeAuthority,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority,matrix/workforce/internal/policy.runtimeAuthoritySigningBytes,matrix/workforce/internal/policy.verifyRuntimeAuthority,matrix/workforce/internal/testauthority.PublishRuntimeAuthority
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.RuntimeAuthority#EffectiveAt kind=field
@@ -417,20 +367,13 @@ NODE id=matrix/workforce/internal/policy.RuntimeAuthority.Validate kind=method
   digest=b3:431302ba0e55dc040c75cfb30b5168383c0b1bff25d6e96d8ad8e41826bebc39 file=workforce/internal/policy/types.go range=58:87 lang=go exported=true byte_range=1658:2924
   sig=func (authority RuntimeAuthority) Validate() error
 EDGES
-  calls=matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/policy.RuntimeAuthorityID
-  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.Signature.Validate,matrix/workforce/internal/policy.RuntimeAuthority,matrix/workforce/internal/policy.RuntimeAuthorityID,matrix/workforce/internal/policy.WakeLeaseSigningPurpose,matrix/workforce/internal/policy.authority,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.publicKey
   ^contains=matrix/workforce/internal/policy.RuntimeAuthority
-  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/policy.Seed.Validate,matrix/workforce/internal/policy.Store.LoadRuntimeAuthority,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority
-  ^references=matrix/workforce/internal/policy.Seed.Validate,matrix/workforce/internal/policy.Store.LoadRuntimeAuthority,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.RuntimeAuthorityID kind=func
   digest=b3:6c387d270837f8a874e2af648b0ad547a276259e7de167bede64ea647c452408 file=workforce/internal/policy/types.go range=39:41 lang=go exported=true byte_range=768:853
   sig=func RuntimeAuthorityID(keyID string) string
 EDGES
-  references=matrix/workforce/internal/policy.keyID
-  ^calls=matrix/workforce/internal/policy.BuildSeedDraft,matrix/workforce/internal/policy.RuntimeAuthority.Validate,matrix/workforce/internal/policy.Store.LoadCurrentRuntimeAuthority,matrix/workforce/internal/testauthority.PublishRuntimeAuthority
-  ^references=matrix/workforce/internal/policy.BuildSeedDraft,matrix/workforce/internal/policy.RuntimeAuthority.Validate,matrix/workforce/internal/policy.Store.LoadCurrentRuntimeAuthority,matrix/workforce/internal/testauthority.PublishRuntimeAuthority
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.Seed kind=type
@@ -439,8 +382,6 @@ NODE id=matrix/workforce/internal/policy.Seed kind=type
 EDGES
   contains=matrix/workforce/internal/policy.Seed#Mandates,matrix/workforce/internal/policy.Seed#Organization,matrix/workforce/internal/policy.Seed#Policies,matrix/workforce/internal/policy.Seed#RuntimeAuthority,matrix/workforce/internal/policy.Seed.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/contracts.Organization,matrix/workforce/internal/contracts.Policy,matrix/workforce/internal/policy.RuntimeAuthority
-  ^references=matrix/workforce/internal/controlapi.ActivationBundle,matrix/workforce/internal/controlapi.ActivationPreview,matrix/workforce/internal/policy.BuildSeed,matrix/workforce/internal/policy.BuildSeedDraft,matrix/workforce/internal/policy.Seed.Validate,matrix/workforce/internal/policy.Store.PublishSeed,matrix/workforce/internal/policy.Store.PublishSeedWithCommit,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.Seed#Mandates kind=field
@@ -472,11 +413,7 @@ NODE id=matrix/workforce/internal/policy.Seed.Validate kind=method
   sig=func (seed Seed) Validate() error
   doc=Validate enforces the exact canonical topology and one matching mandate for\nevery durable seat.
 EDGES
-  calls=matrix/workforce/internal/contracts.Mandate.Validate,matrix/workforce/internal/contracts.Organization.Validate,matrix/workforce/internal/contracts.Policy.Validate,matrix/workforce/internal/policy.RuntimeAuthority.Validate
-  references=matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/contracts.Mandate.Validate,matrix/workforce/internal/contracts.MandateID,matrix/workforce/internal/contracts.Organization.Validate,matrix/workforce/internal/contracts.Policy.Validate,matrix/workforce/internal/policy.RuntimeAuthority.Validate,matrix/workforce/internal/policy.Seed,matrix/workforce/internal/policy.department,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.exists,matrix/workforce/internal/policy.index,matrix/workforce/internal/policy.mandate,matrix/workforce/internal/policy.mandates,matrix/workforce/internal/policy.seat,matrix/workforce/internal/policy.seed
   ^contains=matrix/workforce/internal/policy.Seed
-  ^calls=matrix/workforce/internal/policy.BuildSeed,matrix/workforce/internal/policy.Store.publishSeed
-  ^references=matrix/workforce/internal/policy.BuildSeed,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.SeedPublishResult kind=type
@@ -485,7 +422,6 @@ NODE id=matrix/workforce/internal/policy.SeedPublishResult kind=type
   doc=SeedPublishResult reports whether activation committed new authority or\nmatched the already committed canonical seed.
 EDGES
   contains=matrix/workforce/internal/policy.SeedPublishResult#Deduplicated
-  ^references=matrix/workforce/internal/policy.Store.PublishSeed,matrix/workforce/internal/policy.Store.PublishSeedWithCommit,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.SeedPublishResult#Deduplicated kind=field
@@ -498,68 +434,42 @@ NODE id=matrix/workforce/internal/policy.SignMandate kind=func
   digest=b3:3e306bc8b6369bc7137647a4eba27839cef4bdd97adb9a0d7bc4c4981a70c541 file=workforce/internal/policy/signing.go range=140:143 lang=go exported=true byte_range=6491:6688
   sig=func SignMandate(value *contracts.Mandate, keyID string, key ed25519.PrivateKey) error
 EDGES
-  calls=matrix/workforce/internal/policy.mandateSigningBytes,matrix/workforce/internal/policy.signValue
-  references=matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.key,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.mandateSigningBytes,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.signValue,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/policy.BuildSeed,matrix/workforce/internal/testauthority.Fixture.Publish,matrix/workforce/internal/testauthority.Fixture.PublishExact
-  ^references=matrix/workforce/internal/policy.BuildSeed,matrix/workforce/internal/testauthority.Fixture.Publish,matrix/workforce/internal/testauthority.Fixture.PublishExact
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.SignOrganization kind=func
   digest=b3:57c0633925e37e757fdffc36063e47746a5df60367b6c3bc88892f9c83f6aec8 file=workforce/internal/policy/signing.go range=135:138 lang=go exported=true byte_range=6277:6489
   sig=func SignOrganization(value *contracts.Organization, keyID string, key ed25519.PrivateKey) error
 EDGES
-  calls=matrix/workforce/internal/policy.organizationSigningBytes,matrix/workforce/internal/policy.signValue
-  references=matrix/workforce/internal/contracts.Organization,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.key,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.organizationSigningBytes,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.signValue,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/policy.BuildSeed
-  ^references=matrix/workforce/internal/policy.BuildSeed
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.SignOwnerGrant kind=func
   digest=b3:bc18760f943bee4d7cf4b7c72a64aec9aa517c2f6078b499223d25f8e36f5cc1 file=workforce/internal/policy/signing.go range=167:171 lang=go exported=true byte_range=7381:7593
   sig=func SignOwnerGrant(value *OwnerGrant, keyID string, key ed25519.PrivateKey) error
 EDGES
-  calls=matrix/workforce/internal/policy.grantSigningBytes,matrix/workforce/internal/policy.signValue
-  references=matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.grantSigningBytes,matrix/workforce/internal/policy.key,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.signValue,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/testauthority.New
-  ^references=matrix/workforce/internal/testauthority.New
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.SignPolicy kind=func
   digest=b3:3b064ea007ee558a911e267c2ee8bfbeec99999754c5974bc9797f8f1fe61578 file=workforce/internal/policy/signing.go range=150:153 lang=go exported=true byte_range=6880:7074
   sig=func SignPolicy(value *contracts.Policy, keyID string, key ed25519.PrivateKey) error
 EDGES
-  calls=matrix/workforce/internal/policy.policySigningBytes,matrix/workforce/internal/policy.signValue
-  references=matrix/workforce/internal/contracts.Policy,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.key,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.policySigningBytes,matrix/workforce/internal/policy.signValue,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/policy.BuildSeed,matrix/workforce/internal/testauthority.Fixture.PublishExact
-  ^references=matrix/workforce/internal/policy.BuildSeed,matrix/workforce/internal/testauthority.Fixture.PublishExact
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.SignRevocation kind=func
   digest=b3:4af4e5ef468a20a512e427c98f7bb6c696e432ebe3502fa1ff8380d8ec722432 file=workforce/internal/policy/signing.go range=173:177 lang=go exported=true byte_range=7595:7812
   sig=func SignRevocation(value *Revocation, keyID string, key ed25519.PrivateKey) error
 EDGES
-  calls=matrix/workforce/internal/policy.revocationSigningBytes,matrix/workforce/internal/policy.signValue
-  references=matrix/workforce/internal/policy.Revocation,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.key,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.revocationSigningBytes,matrix/workforce/internal/policy.signValue,matrix/workforce/internal/policy.value
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.SignRuntimeAuthority kind=func
   digest=b3:871a848b1801955a10728987d2ec52b5d80afe29f169110508e63bbf4f8ed0d4 file=workforce/internal/policy/signing.go range=155:165 lang=go exported=true byte_range=7076:7379
   sig=func SignRuntimeAuthority(\n	value *RuntimeAuthority,\n	keyID string,\n	key ed25519.PrivateKey,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.runtimeAuthoritySigningBytes,matrix/workforce/internal/policy.signValue
-  references=matrix/workforce/internal/policy.RuntimeAuthority,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.key,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.runtimeAuthoritySigningBytes,matrix/workforce/internal/policy.signValue,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/policy.BuildSeed,matrix/workforce/internal/testauthority.PublishRuntimeAuthority
-  ^references=matrix/workforce/internal/policy.BuildSeed,matrix/workforce/internal/testauthority.PublishRuntimeAuthority
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.SignSeat kind=func
   digest=b3:b51f08ea9add286d8d2d730cee18f7e411c87513b2082d1e7b4cd15704d1f640 file=workforce/internal/policy/signing.go range=145:148 lang=go exported=true byte_range=6690:6878
   sig=func SignSeat(value *contracts.Seat, keyID string, key ed25519.PrivateKey) error
 EDGES
-  calls=matrix/workforce/internal/policy.seatSigningBytes,matrix/workforce/internal/policy.signValue
-  references=matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.key,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.seatSigningBytes,matrix/workforce/internal/policy.signValue,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/policy.BuildSeed,matrix/workforce/internal/testauthority.Fixture.PublishExact,matrix/workforce/internal/testauthority.Fixture.PublishSeat
-  ^references=matrix/workforce/internal/policy.BuildSeed,matrix/workforce/internal/testauthority.Fixture.PublishExact,matrix/workforce/internal/testauthority.Fixture.PublishSeat
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.SignWakeLease kind=func
@@ -567,10 +477,6 @@ NODE id=matrix/workforce/internal/policy.SignWakeLease kind=func
   sig=func SignWakeLease(value *contracts.WakeLease, keyID string, key ed25519.PrivateKey) error
   doc=SignWakeLease binds every executable wake-authority field to the trusted\norganizational authority key before the lease can be registered.
 EDGES
-  calls=matrix/workforce/internal/policy.signValue,matrix/workforce/internal/policy.wakeLeaseSigningBytes
-  references=matrix/workforce/internal/contracts.WakeLease,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.key,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.signValue,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.wakeLeaseSigningBytes
-  ^calls=matrix/workforce/internal/testauthority.Fixture.Register,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.auditorLease
-  ^references=matrix/workforce/internal/testauthority.Fixture.Register,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.auditorLease
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.Store kind=type
@@ -579,8 +485,6 @@ NODE id=matrix/workforce/internal/policy.Store kind=type
 EDGES
   contains=matrix/workforce/internal/policy.Store#now,matrix/workforce/internal/policy.Store#pool,matrix/workforce/internal/policy.Store#root,matrix/workforce/internal/policy.Store#vault,matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.AuthorizeWorkPacket,matrix/workforce/internal/policy.Store.LoadCurrentPolicyRefs,matrix/workforce/internal/policy.Store.LoadCurrentRuntimeAuthority,matrix/workforce/internal/policy.Store.LoadCurrentSeat,matrix/workforce/internal/policy.Store.LoadLease,matrix/workforce/internal/policy.Store.LoadMandate,matrix/workforce/internal/policy.Store.LoadPolicy,matrix/workforce/internal/policy.Store.LoadRuntimeAuthority,matrix/workforce/internal/policy.Store.LoadSeat,matrix/workforce/internal/policy.Store.PublishMandate,matrix/workforce/internal/policy.Store.PublishOrganization,matrix/workforce/internal/policy.Store.PublishPolicy,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority,matrix/workforce/internal/policy.Store.PublishSeat,matrix/workforce/internal/policy.Store.PublishSeed,matrix/workforce/internal/policy.Store.PublishSeedWithCommit,matrix/workforce/internal/policy.Store.RegisterLease,matrix/workforce/internal/policy.Store.Revoke,matrix/workforce/internal/policy.Store.authorityAD,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.Store.invalidateLeases,matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.Store.publishPrepared,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.Store.requireCurrent,matrix/workforce/internal/policy.Store.requirePolicyReference,matrix/workforce/internal/policy.Store.verifyGrant,matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority
   implements=matrix/workforce/internal/audit.SeatAuthority,matrix/workforce/internal/projectbrain.SeatAuthority
-  references=matrix/vault.UserVault,matrix/workforce/internal/policy.OwnerRoot
-  ^references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.NewAssembler,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/effect.New,matrix/workforce/internal/policy.New,matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.AuthorizeWorkPacket,matrix/workforce/internal/policy.Store.LoadCurrentPolicyRefs,matrix/workforce/internal/policy.Store.LoadCurrentRuntimeAuthority,matrix/workforce/internal/policy.Store.LoadCurrentSeat,matrix/workforce/internal/policy.Store.LoadLease,matrix/workforce/internal/policy.Store.LoadMandate,matrix/workforce/internal/policy.Store.LoadPolicy,matrix/workforce/internal/policy.Store.LoadRuntimeAuthority,matrix/workforce/internal/policy.Store.LoadSeat,matrix/workforce/internal/policy.Store.PublishMandate,matrix/workforce/internal/policy.Store.PublishOrganization,matrix/workforce/internal/policy.Store.PublishPolicy,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority,matrix/workforce/internal/policy.Store.PublishSeat,matrix/workforce/internal/policy.Store.PublishSeed,matrix/workforce/internal/policy.Store.PublishSeedWithCommit,matrix/workforce/internal/policy.Store.RegisterLease,matrix/workforce/internal/policy.Store.Revoke,matrix/workforce/internal/policy.Store.authorityAD,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.Store.invalidateLeases,matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.Store.publishPrepared,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.Store.requireCurrent,matrix/workforce/internal/policy.Store.requirePolicyReference,matrix/workforce/internal/policy.Store.verifyGrant,matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority,matrix/workforce/internal/testauthority.Fixture,matrix/workforce/internal/testauthority.Fixture.Store,matrix/workforce/internal/testauthority.PublishRuntimeAuthority,matrix/workforce/internal/wakeruntime.Runner,matrix/workforce/internal/workcompile.Compiler,matrix/workforce/internal/workcompile.New
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.Store#now kind=field
@@ -611,11 +515,7 @@ NODE id=matrix/workforce/internal/policy.Store.AuthorizeLease kind=method
   digest=b3:addbfb5ec586622cf6c81b479f2407403a58b5f1226e9e8adbd4a529a2a0868a file=workforce/internal/policy/store.go range=635:696 lang=go exported=true byte_range=20484:22384
   sig=func (store *Store) AuthorizeLease(\n	ctx context.Context,\n	leaseID contracts.LeaseID,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.Store.requireCurrent
-  references=matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/policy.ErrLeaseInvalid,matrix/workforce/internal/policy.KindMandate,matrix/workforce/internal/policy.KindPolicy,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.Store.requireCurrent,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.expiresAt,matrix/workforce/internal/policy.leaseID,matrix/workforce/internal/policy.mandateID,matrix/workforce/internal/policy.mandateVersion,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.policyID,matrix/workforce/internal/policy.rows,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/workcompile.Compiler.authorizePacket
-  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/workcompile.Compiler.authorizePacket
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.AuthorizeWorkPacket kind=method
@@ -623,118 +523,76 @@ NODE id=matrix/workforce/internal/policy.Store.AuthorizeWorkPacket kind=method
   sig=func (store *Store) AuthorizeWorkPacket(\n	ctx context.Context,\n	packet contracts.WorkPacket,\n) error
   doc=AuthorizeWorkPacket establishes that a caller-supplied packet carries real\norganizational authority. A WorkPacket is transported, so nothing in it is\ntrusted on arrival: the lease, seat, and mandate signatures are verified\nagainst the owner root, and each object must be the exact one the signed\nlease binds. Without this a caller holding one valid lease could attach a\nmandate of its own making and widen what it is allowed to do.\n\nThis proves authenticity, not liveness. Callers must still authorize the\nlive lease — through the runtime fence, AuthorizeLease, or both — because a\ncorrectly signed lease may since have expired or been revoked.
 EDGES
-  calls=matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority,matrix/workforce/internal/policy.verifyMandate,matrix/workforce/internal/policy.verifySeat
-  references=matrix/workforce/internal/contracts.WorkPacket,matrix/workforce/internal/policy.ErrLeaseInvalid,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.packet,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.verifyMandate,matrix/workforce/internal/policy.verifySeat
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/workcompile.Compiler.authorizePacket
-  ^references=matrix/workforce/internal/workcompile.Compiler.authorizePacket
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.LoadCurrentPolicyRefs kind=method
   digest=b3:f0d46c31875586f0f45b15e5019c5523d0677b65e93ad1e5a2f117e19e95bd46 file=workforce/internal/policy/store.go range=952:1003 lang=go exported=true byte_range=31024:32818
   sig=func (store *Store) LoadCurrentPolicyRefs(\n	ctx context.Context,\n) ([]contracts.PolicyRef, error)
 EDGES
-  calls=matrix/workforce/internal/policy.Store.currentTime
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.PolicyRef,matrix/workforce/internal/policy.ErrUnauthorized,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.reference,matrix/workforce/internal/policy.result,matrix/workforce/internal/policy.rows,matrix/workforce/internal/policy.store
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket
-  ^references=matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.LoadCurrentRuntimeAuthority kind=method
   digest=b3:038ee2682f7fe85c1edd38b2035ded2bd1ff2e6826cfcc196d2cbe1638a917dc file=workforce/internal/policy/store.go range=1026:1049 lang=go exported=true byte_range=33412:34104
   sig=func (store *Store) LoadCurrentRuntimeAuthority(\n	ctx context.Context,\n	keyID string,\n) (RuntimeAuthority, error)
 EDGES
-  calls=matrix/workforce/internal/policy.RuntimeAuthorityID,matrix/workforce/internal/policy.Store.LoadRuntimeAuthority
-  references=matrix/workforce/internal/policy.ErrRevoked,matrix/workforce/internal/policy.KindRuntime,matrix/workforce/internal/policy.RuntimeAuthority,matrix/workforce/internal/policy.RuntimeAuthorityID,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.LoadRuntimeAuthority,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority
-  ^references=matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.LoadCurrentSeat kind=method
   digest=b3:85ff157e29c6fcc9705040b9309e49c302c9a7b2530ef100c9e5cef04cf006e0 file=workforce/internal/policy/store.go range=1089:1107 lang=go exported=true byte_range=35212:35819
   sig=func (store *Store) LoadCurrentSeat(\n	ctx context.Context,\n	id contracts.SeatID,\n) (contracts.Seat, error)
 EDGES
-  calls=matrix/workforce/internal/policy.Store.LoadSeat
-  references=matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/policy.ErrRevoked,matrix/workforce/internal/policy.KindSeat,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.LoadSeat,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/audit.Store.CommitReaudit,matrix/workforce/internal/audit.Store.Sample,matrix/workforce/internal/policy.Store.RegisterLease,matrix/workforce/internal/projectbrain.Store.verifyGrant,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.nextEnvelope,matrix/workforce/internal/wakeruntime.Runner.selectIndependentAuditor,matrix/workforce/internal/workcompile.Compiler.authorizePacket
-  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/policy.Store.RegisterLease,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.nextEnvelope,matrix/workforce/internal/wakeruntime.Runner.selectIndependentAuditor,matrix/workforce/internal/workcompile.Compiler.authorizePacket
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.LoadLease kind=method
   digest=b3:4f664a5f18b17c2fdeb5204f0c3565a5f03bb188359e8c7c15837e885eb06244 file=workforce/internal/policy/store.go range=1109:1154 lang=go exported=true byte_range=35821:37406
   sig=func (store *Store) LoadLease(\n	ctx context.Context,\n	id contracts.LeaseID,\n) (contracts.WakeLease, error)
 EDGES
-  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.WakeLease.Validate,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority
-  references=matrix/vault.AD,matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WakeLease,matrix/workforce/internal/contracts.WakeLease.Validate,matrix/workforce/internal/policy.ErrIntegrity,matrix/workforce/internal/policy.ErrLeaseInvalid,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority,matrix/workforce/internal/policy.canonical,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.expectedHash,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.sealed,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.sum,matrix/workforce/internal/policy.value
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/audit.Store.Commit,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/workcompile.Compiler.authorizePacket
-  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/effect.Gateway.preflight,matrix/workforce/internal/workcompile.Compiler.authorizePacket
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.LoadMandate kind=method
   digest=b3:aad31d8cf2c285037ffb925e82e65535a8520d0c736c9836dd765090b81e4944 file=workforce/internal/policy/store.go range=1051:1068 lang=go exported=true byte_range=34106:34672
   sig=func (store *Store) LoadMandate(\n	ctx context.Context,\n	id contracts.MandateID,\n	version uint64,\n) (contracts.Mandate, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.verifyMandate
-  references=matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/contracts.MandateID,matrix/workforce/internal/policy.ErrIntegrity,matrix/workforce/internal/policy.KindMandate,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.canonical,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyMandate,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/workcompile.Compiler.authorizePacket
-  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/workcompile.Compiler.authorizePacket
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.LoadPolicy kind=method
   digest=b3:8471f0a0f22203a3458bc78bb803493593a7845ecf957bcdf554b5df95e5c54f file=workforce/internal/policy/store.go range=933:950 lang=go exported=true byte_range=30466:31022
   sig=func (store *Store) LoadPolicy(\n	ctx context.Context,\n	id contracts.PolicyID,\n	version uint64,\n) (contracts.Policy, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.verifyPolicy
-  references=matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.Policy,matrix/workforce/internal/contracts.PolicyID,matrix/workforce/internal/policy.ErrIntegrity,matrix/workforce/internal/policy.KindPolicy,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.canonical,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyPolicy,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/actorstate.Assembler.Assemble
-  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.LoadRuntimeAuthority kind=method
   digest=b3:0e1f69d94bc67ca1300dcbd26941f7576b9b45a617f2a357b533f7b5b880a246 file=workforce/internal/policy/store.go range=1005:1024 lang=go exported=true byte_range=32820:33410
   sig=func (store *Store) LoadRuntimeAuthority(\n	ctx context.Context,\n	id string,\n	version uint64,\n) (RuntimeAuthority, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/policy.RuntimeAuthority.Validate,matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.verifyRuntimeAuthority
-  references=matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/policy.ErrIntegrity,matrix/workforce/internal/policy.KindRuntime,matrix/workforce/internal/policy.RuntimeAuthority,matrix/workforce/internal/policy.RuntimeAuthority.Validate,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.canonical,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyRuntimeAuthority,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.LoadCurrentRuntimeAuthority
-  ^references=matrix/workforce/internal/policy.Store.LoadCurrentRuntimeAuthority
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.LoadSeat kind=method
   digest=b3:c6f1af2655a359c1c535cf1fe48bc349ef4f3a90a2e547bd11a90806420e4a4f file=workforce/internal/policy/store.go range=1070:1087 lang=go exported=true byte_range=34674:35210
   sig=func (store *Store) LoadSeat(\n	ctx context.Context,\n	id contracts.SeatID,\n	version uint64,\n) (contracts.Seat, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.verifySeat
-  references=matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/policy.ErrIntegrity,matrix/workforce/internal/policy.KindSeat,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.canonical,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifySeat,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.LoadCurrentSeat
-  ^references=matrix/workforce/internal/policy.Store.LoadCurrentSeat
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.PublishMandate kind=method
   digest=b3:e67c15cf6e19081259fc8292a24d131dff781f308791f71eb8b99acc778dc2ef file=workforce/internal/policy/store.go range=58:71 lang=go exported=true byte_range=1322:1750
   sig=func (store *Store) PublishMandate(\n	ctx context.Context,\n	value contracts.Mandate,\n	grant OwnerGrant,\n) error
 EDGES
-  calls=matrix/workforce/internal/contracts.Mandate.Validate,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.verifyMandate
-  references=matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/contracts.Mandate.Validate,matrix/workforce/internal/policy.KindMandate,matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.grant,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyMandate
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/testauthority.Fixture.PublishExact
-  ^references=matrix/workforce/internal/testauthority.Fixture.PublishExact
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.PublishOrganization kind=method
   digest=b3:8bfd1b43f4ae6310fa6342fc978d5af421320480391bb4c4006b168e063f47fa file=workforce/internal/policy/store.go range=40:56 lang=go exported=true byte_range=814:1320
   sig=func (store *Store) PublishOrganization(\n	ctx context.Context,\n	value contracts.Organization,\n	grant OwnerGrant,\n) error
 EDGES
-  calls=matrix/workforce/internal/contracts.Organization.Validate,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.verifyOrganization
-  references=matrix/workforce/internal/contracts.Organization,matrix/workforce/internal/contracts.Organization.Validate,matrix/workforce/internal/policy.ErrUnauthorized,matrix/workforce/internal/policy.KindOrganization,matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.grant,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyOrganization
   ^contains=matrix/workforce/internal/policy.Store
   ^defines=matrix/workforce/internal/policy/store.go
 
@@ -742,33 +600,21 @@ NODE id=matrix/workforce/internal/policy.Store.PublishPolicy kind=method
   digest=b3:699ad81f5f6faedcb310ae247d16bbaaf317426fd53f164521b999561ca7facc file=workforce/internal/policy/store.go range=88:101 lang=go exported=true byte_range=2170:2594
   sig=func (store *Store) PublishPolicy(\n	ctx context.Context,\n	value contracts.Policy,\n	grant OwnerGrant,\n) error
 EDGES
-  calls=matrix/workforce/internal/contracts.Policy.Validate,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.verifyPolicy
-  references=matrix/workforce/internal/contracts.Policy,matrix/workforce/internal/contracts.Policy.Validate,matrix/workforce/internal/policy.KindPolicy,matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.grant,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyPolicy
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/testauthority.Fixture.PublishExact
-  ^references=matrix/workforce/internal/testauthority.Fixture.PublishExact
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.PublishRuntimeAuthority kind=method
   digest=b3:79ef85e367ad6455be28f729993d4fd599374bbd1290854c40d9be3499393ae7 file=workforce/internal/policy/store.go range=103:121 lang=go exported=true byte_range=2596:3047
   sig=func (store *Store) PublishRuntimeAuthority(\n	ctx context.Context,\n	value RuntimeAuthority,\n	grant OwnerGrant,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.RuntimeAuthority.Validate,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.verifyRuntimeAuthority
-  references=matrix/workforce/internal/policy.KindRuntime,matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.RuntimeAuthority,matrix/workforce/internal/policy.RuntimeAuthority.Validate,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.grant,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyRuntimeAuthority
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/testauthority.PublishRuntimeAuthority
-  ^references=matrix/workforce/internal/testauthority.PublishRuntimeAuthority
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.PublishSeat kind=method
   digest=b3:419da3ac94dbce0374e59fbe2afbd2e31e749fe37e320fb4d6b195caad84fd6b file=workforce/internal/policy/store.go range=73:86 lang=go exported=true byte_range=1752:2168
   sig=func (store *Store) PublishSeat(\n	ctx context.Context,\n	value contracts.Seat,\n	grant OwnerGrant,\n) error
 EDGES
-  calls=matrix/workforce/internal/contracts.Seat.Validate,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.verifySeat
-  references=matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/contracts.Seat.Validate,matrix/workforce/internal/policy.KindSeat,matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.grant,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifySeat
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/testauthority.Fixture.PublishExact,matrix/workforce/internal/testauthority.Fixture.PublishSeat
-  ^references=matrix/workforce/internal/testauthority.Fixture.PublishExact,matrix/workforce/internal/testauthority.Fixture.PublishSeat
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.PublishSeed kind=method
@@ -776,8 +622,6 @@ NODE id=matrix/workforce/internal/policy.Store.PublishSeed kind=method
   sig=func (store *Store) PublishSeed(\n	ctx context.Context,\n	seed Seed,\n) (SeedPublishResult, error)
   doc=PublishSeed atomically installs the first canonical organization topology.\nThe caller-supplied records are untrusted: every record and topology binding\nis validated and every signature is verified against the owner root before\nany database mutation begins.
 EDGES
-  calls=matrix/workforce/internal/policy.Store.publishSeed
-  references=matrix/workforce/internal/policy.Seed,matrix/workforce/internal/policy.SeedPublishResult,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.seed,matrix/workforce/internal/policy.store
   ^contains=matrix/workforce/internal/policy.Store
   ^defines=matrix/workforce/internal/policy/store.go
 
@@ -786,30 +630,20 @@ NODE id=matrix/workforce/internal/policy.Store.PublishSeedWithCommit kind=method
   sig=func (store *Store) PublishSeedWithCommit(\n	ctx context.Context,\n	seed Seed,\n	commit func(context.Context, pgx.Tx, time.Time) error,\n) (SeedPublishResult, error)
   doc=PublishSeedWithCommit installs the seed and invokes commit inside the same\nserializable transaction after all authority and topology projections exist.
 EDGES
-  calls=matrix/workforce/internal/policy.Store.publishSeed
-  references=matrix/workforce/internal/policy.Seed,matrix/workforce/internal/policy.SeedPublishResult,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.commit,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.seed,matrix/workforce/internal/policy.store
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/controlapi.Service.ActivateOrganization
-  ^references=matrix/workforce/internal/controlapi.Service.ActivateOrganization
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.RegisterLease kind=method
   digest=b3:a7e9f8a4c2b20b04fae5407b82e0879dcf28554dfd004961821fc3e24df0e727 file=workforce/internal/policy/store.go range=487:583 lang=go exported=true byte_range=15542:18654
   sig=func (store *Store) RegisterLease(ctx context.Context, lease contracts.WakeLease) error
 EDGES
-  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.WakeLease.Validate,matrix/workforce/internal/policy.Store.LoadCurrentSeat,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.Store.requireCurrent,matrix/workforce/internal/policy.Store.requirePolicyReference,matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority
-  references=matrix/vault.AD,matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.WakeLease,matrix/workforce/internal/contracts.WakeLease.Validate,matrix/workforce/internal/policy.ErrLeaseInvalid,matrix/workforce/internal/policy.ErrStale,matrix/workforce/internal/policy.KindMandate,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.LoadCurrentSeat,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.Store.requireCurrent,matrix/workforce/internal/policy.Store.requirePolicyReference,matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority,matrix/workforce/internal/policy.ad,matrix/workforce/internal/policy.canonical,matrix/workforce/internal/policy.command,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.existing,matrix/workforce/internal/policy.hash,matrix/workforce/internal/policy.lease,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.policy,matrix/workforce/internal/policy.sealed,matrix/workforce/internal/policy.seat,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.sum,matrix/workforce/internal/policy.tx
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/testauthority.Fixture.Register,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.auditorLease
-  ^references=matrix/workforce/internal/testauthority.Fixture.Register,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.auditorLease
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.Revoke kind=method
   digest=b3:33d9aa32884992b2d2321344be0a088aa390e241ad9c529d4aec38874f1a5f58 file=workforce/internal/policy/store.go range=761:812 lang=go exported=true byte_range=24455:26115
   sig=func (store *Store) Revoke(\n	ctx context.Context,\n	revocation Revocation,\n	grant OwnerGrant,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.Revocation.Validate,matrix/workforce/internal/policy.Store.invalidateLeases,matrix/workforce/internal/policy.Store.verifyGrant,matrix/workforce/internal/policy.verifyRevocation
-  references=matrix/workforce/internal/policy.ErrUnauthorized,matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.Revocation,matrix/workforce/internal/policy.Revocation.Validate,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.invalidateLeases,matrix/workforce/internal/policy.Store.verifyGrant,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.grant,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.revocation,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.tx,matrix/workforce/internal/policy.verifyRevocation
   ^contains=matrix/workforce/internal/policy.Store
   ^defines=matrix/workforce/internal/policy/store.go
 
@@ -817,116 +651,77 @@ NODE id=matrix/workforce/internal/policy.Store.authorityAD kind=method
   digest=b3:6ed182b4c569b7cb7f7c56803e7bcb1c313a8773f805ef6de0a9acd3543f5cb4 file=workforce/internal/policy/store.go range=1236:1244 lang=go exported=false byte_range=39908:40225
   sig=func (store *Store) authorityAD(kind Kind, id string, version uint64) vault.AD
 EDGES
-  references=matrix/vault.AD,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/policy.Kind,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.kind,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.Store.publish
-  ^references=matrix/workforce/internal/policy.Store.loadAuthority,matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.currentTime kind=method
   digest=b3:2687c850b02c0d88bf2f9c96195f50ed092de795777ef936427a1c6b1ce25767 file=workforce/internal/policy/types.go range=196:202 lang=go exported=false byte_range=6676:6893
   sig=func (store *Store) currentTime() (time.Time, error)
 EDGES
-  references=matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.store
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.AuthorizeWorkPacket,matrix/workforce/internal/policy.Store.LoadCurrentPolicyRefs,matrix/workforce/internal/policy.Store.LoadLease,matrix/workforce/internal/policy.Store.RegisterLease,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.Store.verifyGrant
-  ^references=matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.AuthorizeWorkPacket,matrix/workforce/internal/policy.Store.LoadCurrentPolicyRefs,matrix/workforce/internal/policy.Store.LoadLease,matrix/workforce/internal/policy.Store.RegisterLease,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.Store.verifyGrant
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.Store.invalidateLeases kind=method
   digest=b3:714853a9635fda8f0f26a0cc650d1a1d7d79df97e562655f1aaae4050cb54051 file=workforce/internal/policy/store.go range=814:931 lang=go exported=false byte_range=26117:30464
   sig=func (store *Store) invalidateLeases(\n	ctx context.Context,\n	tx pgx.Tx,\n	kind Kind,\n	id string,\n	version uint64,\n	reason string,\n	now time.Time,\n) error
 EDGES
-  references=matrix/workforce/internal/policy.Kind,matrix/workforce/internal/policy.KindMandate,matrix/workforce/internal/policy.KindOrganization,matrix/workforce/internal/policy.KindPolicy,matrix/workforce/internal/policy.KindRuntime,matrix/workforce/internal/policy.KindSeat,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.condition,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.kind,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.reason,matrix/workforce/internal/policy.runtimeCondition,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.tx,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.Revoke,matrix/workforce/internal/policy.Store.publishPrepared
-  ^references=matrix/workforce/internal/policy.Store.Revoke,matrix/workforce/internal/policy.Store.publishPrepared
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.loadAuthority kind=method
   digest=b3:404db0b8c414d6df62cf5937675b1f94603d69d1f4d036a0b722b13fbdbea210 file=workforce/internal/policy/store.go range=1191:1234 lang=go exported=false byte_range=38595:39906
   sig=func (store *Store) loadAuthority(\n	ctx context.Context,\n	kind Kind,\n	id string,\n	version uint64,\n) ([]byte, error)
 EDGES
-  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/policy.Store.authorityAD
-  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/policy.ErrIntegrity,matrix/workforce/internal/policy.ErrRevoked,matrix/workforce/internal/policy.Kind,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.authorityAD,matrix/workforce/internal/policy.canonical,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.expectedHash,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.kind,matrix/workforce/internal/policy.sealed,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.sum,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.LoadMandate,matrix/workforce/internal/policy.Store.LoadPolicy,matrix/workforce/internal/policy.Store.LoadRuntimeAuthority,matrix/workforce/internal/policy.Store.LoadSeat
-  ^references=matrix/workforce/internal/policy.Store.LoadMandate,matrix/workforce/internal/policy.Store.LoadPolicy,matrix/workforce/internal/policy.Store.LoadRuntimeAuthority,matrix/workforce/internal/policy.Store.LoadSeat
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.publish kind=method
   digest=b3:14ab931d5ff13dec8e055c4cab50f0659b98069acffdce2c71021085a8a77cfd file=workforce/internal/policy/store.go range=369:404 lang=go exported=false byte_range=11472:12477
   sig=func (store *Store) publish(\n	ctx context.Context,\n	kind Kind,\n	id string,\n	version uint64,\n	organizationID contracts.OrganizationID,\n	effectiveAt time.Time,\n	keyID string,\n	value contracts.Validatable,\n	grant OwnerGrant,\n) error
 EDGES
-  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/policy.Store.authorityAD,matrix/workforce/internal/policy.Store.publishPrepared,matrix/workforce/internal/policy.Store.verifyGrant
-  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Validatable,matrix/workforce/internal/policy.ErrUnauthorized,matrix/workforce/internal/policy.Kind,matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.authorityAD,matrix/workforce/internal/policy.Store.publishPrepared,matrix/workforce/internal/policy.Store.verifyGrant,matrix/workforce/internal/policy.ad,matrix/workforce/internal/policy.canonical,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.effectiveAt,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.grant,matrix/workforce/internal/policy.hash,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.kind,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.organizationID,matrix/workforce/internal/policy.prepared,matrix/workforce/internal/policy.preparedAuthority,matrix/workforce/internal/policy.sealed,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.sum,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.PublishMandate,matrix/workforce/internal/policy.Store.PublishOrganization,matrix/workforce/internal/policy.Store.PublishPolicy,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority,matrix/workforce/internal/policy.Store.PublishSeat
-  ^references=matrix/workforce/internal/policy.Store.PublishMandate,matrix/workforce/internal/policy.Store.PublishOrganization,matrix/workforce/internal/policy.Store.PublishPolicy,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority,matrix/workforce/internal/policy.Store.PublishSeat
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.publishPrepared kind=method
   digest=b3:51dda4a630e4f5a73545879ff9b8fa1f37beb60a904ae67423b6b8e063eaac5c file=workforce/internal/policy/store.go range=406:485 lang=go exported=false byte_range=12479:15540
   sig=func (store *Store) publishPrepared(\n	ctx context.Context,\n	prepared preparedAuthority,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.Store.invalidateLeases
-  references=matrix/workforce/internal/policy.ErrStale,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.invalidateLeases,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.head,matrix/workforce/internal/policy.lock,matrix/workforce/internal/policy.material,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.prepared,matrix/workforce/internal/policy.preparedAuthority,matrix/workforce/internal/policy.previousEffective,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.tx
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.publish
-  ^references=matrix/workforce/internal/policy.Store.publish
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.publishSeed kind=method
   digest=b3:259756de2aee19c0a2e7bdee760e6d6478c3af6464e470471b6a905f3d1de7c8 file=workforce/internal/policy/store.go range=147:367 lang=go exported=false byte_range=3935:11470
   sig=func (store *Store) publishSeed(\n	ctx context.Context,\n	seed Seed,\n	commit func(context.Context, pgx.Tx, time.Time) error,\n) (SeedPublishResult, error)
 EDGES
-  calls=matrix/workforce/internal/policy.Seed.Validate,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.verifyMandate,matrix/workforce/internal/policy.verifyOrganization,matrix/workforce/internal/policy.verifyPolicy,matrix/workforce/internal/policy.verifyRuntimeAuthority,matrix/workforce/internal/policy.verifySeat
-  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Validatable,matrix/workforce/internal/policy.ErrIntegrity,matrix/workforce/internal/policy.ErrStale,matrix/workforce/internal/policy.ErrUnauthorized,matrix/workforce/internal/policy.Kind,matrix/workforce/internal/policy.KindMandate,matrix/workforce/internal/policy.KindOrganization,matrix/workforce/internal/policy.KindPolicy,matrix/workforce/internal/policy.KindRuntime,matrix/workforce/internal/policy.KindSeat,matrix/workforce/internal/policy.Seed,matrix/workforce/internal/policy.Seed.Validate,matrix/workforce/internal/policy.SeedPublishResult,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.authorityAD,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.canonical,matrix/workforce/internal/policy.commit,matrix/workforce/internal/policy.count,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.department,matrix/workforce/internal/policy.effectiveAt,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.existingHash,matrix/workforce/internal/policy.hash,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.index,matrix/workforce/internal/policy.item,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.kind,matrix/workforce/internal/policy.mandate,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.organizationHash,matrix/workforce/internal/policy.policyValue,matrix/workforce/internal/policy.prepare,matrix/workforce/internal/policy.prepared,matrix/workforce/internal/policy.preparedAuthority,matrix/workforce/internal/policy.sealed,matrix/workforce/internal/policy.seat,matrix/workforce/internal/policy.seatIndex,matrix/workforce/internal/policy.seed,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.sum,matrix/workforce/internal/policy.tx,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyMandate,matrix/workforce/internal/policy.verifyOrganization,matrix/workforce/internal/policy.verifyPolicy,matrix/workforce/internal/policy.verifyRuntimeAuthority,matrix/workforce/internal/policy.verifySeat,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.PublishSeed,matrix/workforce/internal/policy.Store.PublishSeedWithCommit
-  ^references=matrix/workforce/internal/policy.Store.PublishSeed,matrix/workforce/internal/policy.Store.PublishSeedWithCommit
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.requireCurrent kind=method
   digest=b3:5011f3c01c38d4f61541868f719b399f78c665115a9292fbc893bad7eb08375b file=workforce/internal/policy/store.go range=698:726 lang=go exported=false byte_range=22386:23340
   sig=func (store *Store) requireCurrent(\n	ctx context.Context,\n	kind Kind,\n	id string,\n	version uint64,\n	now time.Time,\n) error
 EDGES
-  references=matrix/workforce/internal/policy.ErrStale,matrix/workforce/internal/policy.Kind,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.active,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.kind,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.version
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.RegisterLease
-  ^references=matrix/workforce/internal/policy.Store.AuthorizeLease,matrix/workforce/internal/policy.Store.RegisterLease
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.requirePolicyReference kind=method
   digest=b3:d0677c5be697403fdd46f6cca72dc4b7503a61d11980e2a53f7284baf9edcbce file=workforce/internal/policy/store.go range=728:759 lang=go exported=false byte_range=23342:24453
   sig=func (store *Store) requirePolicyReference(\n	ctx context.Context,\n	reference contracts.PolicyRef,\n	now time.Time,\n) error
 EDGES
-  references=matrix/workforce/internal/contracts.PolicyRef,matrix/workforce/internal/policy.ErrStale,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.active,matrix/workforce/internal/policy.canonicalHash,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.reference,matrix/workforce/internal/policy.store
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.RegisterLease
-  ^references=matrix/workforce/internal/policy.Store.RegisterLease
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.verifyGrant kind=method
   digest=b3:fc012d8a2e3f7893a8a311a4c346475be4384ca6a7332cc82d1e9efff649be6a file=workforce/internal/policy/store.go range=1246:1270 lang=go exported=false byte_range=40227:40946
   sig=func (store *Store) verifyGrant(\n	grant OwnerGrant,\n	requiredScope string,\n) (time.Time, error)
 EDGES
-  calls=matrix/workforce/internal/policy.OwnerGrant.Validate,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.verifyGrant
-  references=matrix/workforce/internal/policy.ErrUnauthorized,matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.OwnerGrant.Validate,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.currentTime,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.grant,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.requiredScope,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.verifyGrant
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.Revoke,matrix/workforce/internal/policy.Store.publish
-  ^references=matrix/workforce/internal/policy.Store.Revoke,matrix/workforce/internal/policy.Store.publish
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority kind=method
   digest=b3:14501e712fb42f9f85243687c06e066643ab50ba709ed8ce36863d1d1421f909 file=workforce/internal/policy/store.go range=1156:1189 lang=go exported=false byte_range=37408:38593
   sig=func (store *Store) verifyRuntimeLeaseAuthority(\n	ctx context.Context,\n	lease contracts.WakeLease,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.Store.LoadCurrentRuntimeAuthority,matrix/workforce/internal/policy.verifyWakeLease
-  references=matrix/workforce/internal/contracts.WakeLease,matrix/workforce/internal/policy.ErrIntegrity,matrix/workforce/internal/policy.ErrLeaseInvalid,matrix/workforce/internal/policy.Store,matrix/workforce/internal/policy.Store.LoadCurrentRuntimeAuthority,matrix/workforce/internal/policy.authority,matrix/workforce/internal/policy.ctx,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.lease,matrix/workforce/internal/policy.now,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.store,matrix/workforce/internal/policy.verifyWakeLease
   ^contains=matrix/workforce/internal/policy.Store
-  ^calls=matrix/workforce/internal/policy.Store.AuthorizeWorkPacket,matrix/workforce/internal/policy.Store.LoadLease,matrix/workforce/internal/policy.Store.RegisterLease
-  ^references=matrix/workforce/internal/policy.Store.AuthorizeWorkPacket,matrix/workforce/internal/policy.Store.LoadLease,matrix/workforce/internal/policy.Store.RegisterLease
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.VerifyMandateAuthority kind=func
@@ -934,10 +729,6 @@ NODE id=matrix/workforce/internal/policy.VerifyMandateAuthority kind=func
   sig=func VerifyMandateAuthority(\n	value contracts.Mandate,\n	keyID string,\n	publicKey ed25519.PublicKey,\n) error
   doc=VerifyMandateAuthority verifies a mandate against the configured\norganizational authority.
 EDGES
-  calls=matrix/workforce/internal/policy.verifyMandate
-  references=matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyMandate
-  ^calls=matrix/workforce/internal/executive.verifyPolicySeats,matrix/workforce/internal/organization.ProjectLegacyTemplate,matrix/workforce/internal/organization.Store.loadLegacyMandateTx
-  ^references=matrix/workforce/internal/executive.verifyPolicySeats,matrix/workforce/internal/organization.ProjectLegacyTemplate,matrix/workforce/internal/organization.Store.loadLegacyMandateTx
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.VerifySeatAuthority kind=func
@@ -945,10 +736,6 @@ NODE id=matrix/workforce/internal/policy.VerifySeatAuthority kind=func
   sig=func VerifySeatAuthority(\n	value contracts.Seat,\n	keyID string,\n	publicKey ed25519.PublicKey,\n) error
   doc=VerifySeatAuthority verifies a seat against the configured organizational\nauthority without exposing signing payload details to other kernel packages.
 EDGES
-  calls=matrix/workforce/internal/policy.verifySeat
-  references=matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifySeat
-  ^calls=matrix/workforce/internal/executive.verifyPolicySeats,matrix/workforce/internal/organization.ProjectLegacyTemplate,matrix/workforce/internal/organization.Store.loadLegacySeatTx
-  ^references=matrix/workforce/internal/executive.verifyPolicySeats,matrix/workforce/internal/organization.ProjectLegacyTemplate,matrix/workforce/internal/organization.Store.loadLegacySeatTx
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.VerifyWakeLeaseAuthority kind=func
@@ -956,31 +743,24 @@ NODE id=matrix/workforce/internal/policy.VerifyWakeLeaseAuthority kind=func
   sig=func VerifyWakeLeaseAuthority(\n	value contracts.WakeLease,\n	keyID string,\n	publicKey ed25519.PublicKey,\n) error
   doc=VerifyWakeLeaseAuthority verifies a wake lease against the configured\norganizational authority.
 EDGES
-  calls=matrix/workforce/internal/policy.verifyWakeLease
-  references=matrix/workforce/internal/contracts.WakeLease,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyWakeLease
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.WakeLeaseSigningPurpose kind=const
   digest=b3:45569071e3a6a7491a7dbe0047ae2cf983035fa2cf6d8800827c2a054e252e4a file=workforce/internal/policy/types.go range=37:37 lang=go exported=true byte_range=720:766
   sig=untyped string
 EDGES
-  ^references=matrix/workforce/internal/policy.BuildSeedDraft,matrix/workforce/internal/policy.RuntimeAuthority.Validate,matrix/workforce/internal/testauthority.PublishRuntimeAuthority
   ^defines=matrix/workforce/internal/policy/types.go
 
 NODE id=matrix/workforce/internal/policy.departmentNames kind=var
   digest=b3:b5908a9a17f6e86d01a7c2fb1c6df524bb9c7ece7b12a1e3fe9cffe573f7a9de file=workforce/internal/policy/seed.go range=13:21 lang=go exported=false byte_range=135:538
   sig=map[contracts.DepartmentKind]string
 EDGES
-  references=matrix/workforce/internal/contracts.DepartmentAccounting,matrix/workforce/internal/contracts.DepartmentBackOffice,matrix/workforce/internal/contracts.DepartmentDeveloper,matrix/workforce/internal/contracts.DepartmentExecutive,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.DepartmentLegal,matrix/workforce/internal/contracts.DepartmentMarketing,matrix/workforce/internal/contracts.DepartmentResearch
-  ^references=matrix/workforce/internal/policy.seedMandate
   ^defines=matrix/workforce/internal/policy/seed.go
 
 NODE id=matrix/workforce/internal/policy.departmentSkills kind=var
   digest=b3:ec9aa235eb237fc162456a451e9167edef15b149b37cfcefb261b8433b4be444 file=workforce/internal/policy/seed.go range=23:46 lang=go exported=false byte_range=544:1559
   sig=map[contracts.DepartmentKind][]contracts.SkillID
 EDGES
-  references=matrix/workforce/internal/contracts.DepartmentAccounting,matrix/workforce/internal/contracts.DepartmentBackOffice,matrix/workforce/internal/contracts.DepartmentDeveloper,matrix/workforce/internal/contracts.DepartmentExecutive,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.DepartmentLegal,matrix/workforce/internal/contracts.DepartmentMarketing,matrix/workforce/internal/contracts.DepartmentResearch,matrix/workforce/internal/contracts.SkillID
-  ^references=matrix/workforce/internal/policy.seedMandate
   ^defines=matrix/workforce/internal/policy/seed.go
 
 NODE id=matrix/workforce/internal/policy.grantPayload kind=type
@@ -989,8 +769,6 @@ NODE id=matrix/workforce/internal/policy.grantPayload kind=type
 EDGES
   contains=matrix/workforce/internal/policy.grantPayload#ExpiresAt,matrix/workforce/internal/policy.grantPayload#IssuedAt,matrix/workforce/internal/policy.grantPayload#KeyID,matrix/workforce/internal/policy.grantPayload#OrganizationID,matrix/workforce/internal/policy.grantPayload#OwnerID,matrix/workforce/internal/policy.grantPayload#SchemaVersion,matrix/workforce/internal/policy.grantPayload#Scope,matrix/workforce/internal/policy.grantPayload#TenantID,matrix/workforce/internal/policy.grantPayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/policy.interfaceTime
-  ^references=matrix/workforce/internal/policy.grantPayload.Validate,matrix/workforce/internal/policy.grantSigningBytes
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.grantPayload#ExpiresAt kind=field
@@ -1045,7 +823,6 @@ NODE id=matrix/workforce/internal/policy.grantPayload.Validate kind=method
   digest=b3:d51a00031c6a34f6ff7f2ee2c85cd37a687ea38996fb5b2b655df1f99b23c96a file=workforce/internal/policy/signing.go range=131:131 lang=go exported=true byte_range=6105:6161
   sig=func (grantPayload) Validate() error
 EDGES
-  references=matrix/workforce/internal/policy.grantPayload
   ^contains=matrix/workforce/internal/policy.grantPayload
   ^defines=matrix/workforce/internal/policy/signing.go
 
@@ -1053,10 +830,6 @@ NODE id=matrix/workforce/internal/policy.grantSigningBytes kind=func
   digest=b3:edc540adc2edd4e84cb637bd4c1cad7d749a1bf59b80e20cc5996f98b537a2b0 file=workforce/internal/policy/signing.go range=412:419 lang=go exported=false byte_range=15047:15386
   sig=func grantSigningBytes(value OwnerGrant) ([]byte, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical
-  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.grantPayload,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/policy.SignOwnerGrant,matrix/workforce/internal/policy.verifyGrant
-  ^references=matrix/workforce/internal/policy.SignOwnerGrant,matrix/workforce/internal/policy.verifyGrant
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.interfaceTime kind=type
@@ -1064,7 +837,6 @@ NODE id=matrix/workforce/internal/policy.interfaceTime kind=type
   sig=type interfaceTime time.Time
   doc=interfaceTime aliases time.Time without introducing a custom JSON encoding.
 EDGES
-  ^references=matrix/workforce/internal/policy.grantPayload,matrix/workforce/internal/policy.mandatePayload,matrix/workforce/internal/policy.mandateSigningBytes,matrix/workforce/internal/policy.organizationPayload,matrix/workforce/internal/policy.policyPayload,matrix/workforce/internal/policy.policySigningBytes,matrix/workforce/internal/policy.revocationPayload,matrix/workforce/internal/policy.runtimeAuthorityPayload,matrix/workforce/internal/policy.runtimeAuthoritySigningBytes,matrix/workforce/internal/policy.seatPayload,matrix/workforce/internal/policy.wakeLeasePayload
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.mandatePayload kind=type
@@ -1073,8 +845,6 @@ NODE id=matrix/workforce/internal/policy.mandatePayload kind=type
 EDGES
   contains=matrix/workforce/internal/policy.mandatePayload#AllowedSkills,matrix/workforce/internal/policy.mandatePayload#DataScopes,matrix/workforce/internal/policy.mandatePayload#DepartmentKind,matrix/workforce/internal/policy.mandatePayload#EffectiveAt,matrix/workforce/internal/policy.mandatePayload#EscalationRules,matrix/workforce/internal/policy.mandatePayload#ExpiresAt,matrix/workforce/internal/policy.mandatePayload#ID,matrix/workforce/internal/policy.mandatePayload#OrganizationID,matrix/workforce/internal/policy.mandatePayload#Prohibitions,matrix/workforce/internal/policy.mandatePayload#SchemaVersion,matrix/workforce/internal/policy.mandatePayload#SeatRole,matrix/workforce/internal/policy.mandatePayload#Version,matrix/workforce/internal/policy.mandatePayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.DataScope,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.EscalationRule,matrix/workforce/internal/contracts.MandateID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Prohibition,matrix/workforce/internal/contracts.SeatRole,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/policy.interfaceTime
-  ^references=matrix/workforce/internal/policy.mandatePayload.Validate,matrix/workforce/internal/policy.mandateSigningBytes
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.mandatePayload#AllowedSkills kind=field
@@ -1153,7 +923,6 @@ NODE id=matrix/workforce/internal/policy.mandatePayload.Validate kind=method
   digest=b3:3e07fa32559838c8832f324e46c7f391b649d2d6a0cba3092c174022cac01236 file=workforce/internal/policy/signing.go range=125:125 lang=go exported=true byte_range=5864:5922
   sig=func (mandatePayload) Validate() error
 EDGES
-  references=matrix/workforce/internal/policy.mandatePayload
   ^contains=matrix/workforce/internal/policy.mandatePayload
   ^defines=matrix/workforce/internal/policy/signing.go
 
@@ -1161,10 +930,6 @@ NODE id=matrix/workforce/internal/policy.mandateSigningBytes kind=func
   digest=b3:86322fb67ad6810ad67e384ac08690f3c204383d51ce6b6758ba7c429c21fd03 file=workforce/internal/policy/signing.go range=342:356 lang=go exported=false byte_range=12140:12780
   sig=func mandateSigningBytes(value contracts.Mandate) ([]byte, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical
-  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/policy.converted,matrix/workforce/internal/policy.expiresAt,matrix/workforce/internal/policy.interfaceTime,matrix/workforce/internal/policy.mandatePayload,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/policy.SignMandate,matrix/workforce/internal/policy.verifyMandate
-  ^references=matrix/workforce/internal/policy.SignMandate,matrix/workforce/internal/policy.verifyMandate
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.organizationPayload kind=type
@@ -1173,8 +938,6 @@ NODE id=matrix/workforce/internal/policy.organizationPayload kind=type
 EDGES
   contains=matrix/workforce/internal/policy.organizationPayload#Departments,matrix/workforce/internal/policy.organizationPayload#EffectiveAt,matrix/workforce/internal/policy.organizationPayload#ID,matrix/workforce/internal/policy.organizationPayload#Name,matrix/workforce/internal/policy.organizationPayload#OwnerID,matrix/workforce/internal/policy.organizationPayload#SchemaVersion,matrix/workforce/internal/policy.organizationPayload#Version,matrix/workforce/internal/policy.organizationPayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.Department,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/policy.interfaceTime
-  ^references=matrix/workforce/internal/policy.organizationPayload.Validate,matrix/workforce/internal/policy.organizationSigningBytes
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.organizationPayload#Departments kind=field
@@ -1223,7 +986,6 @@ NODE id=matrix/workforce/internal/policy.organizationPayload.Validate kind=metho
   digest=b3:09f552993b04231727b8b377de8051eeb164db7a39767af7a67f32f1dfe87ec9 file=workforce/internal/policy/signing.go range=124:124 lang=go exported=true byte_range=5805:5863
   sig=func (organizationPayload) Validate() error
 EDGES
-  references=matrix/workforce/internal/policy.organizationPayload
   ^contains=matrix/workforce/internal/policy.organizationPayload
   ^defines=matrix/workforce/internal/policy/signing.go
 
@@ -1231,10 +993,6 @@ NODE id=matrix/workforce/internal/policy.organizationSigningBytes kind=func
   digest=b3:29b004396bde503a4540bb10cbf00ead88401915bb9f82a3cec58378c631b17a file=workforce/internal/policy/signing.go range=334:340 lang=go exported=false byte_range=11802:12138
   sig=func organizationSigningBytes(value contracts.Organization) ([]byte, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical
-  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Organization,matrix/workforce/internal/policy.organizationPayload,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/policy.SignOrganization,matrix/workforce/internal/policy.verifyOrganization
-  ^references=matrix/workforce/internal/policy.SignOrganization,matrix/workforce/internal/policy.verifyOrganization
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.policyPayload kind=type
@@ -1243,8 +1001,6 @@ NODE id=matrix/workforce/internal/policy.policyPayload kind=type
 EDGES
   contains=matrix/workforce/internal/policy.policyPayload#EffectiveAt,matrix/workforce/internal/policy.policyPayload#ExpiresAt,matrix/workforce/internal/policy.policyPayload#ID,matrix/workforce/internal/policy.policyPayload#Kind,matrix/workforce/internal/policy.policyPayload#OrganizationID,matrix/workforce/internal/policy.policyPayload#Rules,matrix/workforce/internal/policy.policyPayload#SchemaVersion,matrix/workforce/internal/policy.policyPayload#Version,matrix/workforce/internal/policy.policyPayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.PolicyID,matrix/workforce/internal/contracts.PolicyRule,matrix/workforce/internal/policy.interfaceTime
-  ^references=matrix/workforce/internal/policy.policyPayload.Validate,matrix/workforce/internal/policy.policySigningBytes
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.policyPayload#EffectiveAt kind=field
@@ -1299,7 +1055,6 @@ NODE id=matrix/workforce/internal/policy.policyPayload.Validate kind=method
   digest=b3:415f13d683a165eb4598db01cf479ea46d4e32c6038d438a73d182e6bcae0e43 file=workforce/internal/policy/signing.go range=127:127 lang=go exported=true byte_range=5982:6040
   sig=func (policyPayload) Validate() error
 EDGES
-  references=matrix/workforce/internal/policy.policyPayload
   ^contains=matrix/workforce/internal/policy.policyPayload
   ^defines=matrix/workforce/internal/policy/signing.go
 
@@ -1307,10 +1062,6 @@ NODE id=matrix/workforce/internal/policy.policySigningBytes kind=func
   digest=b3:3eb2ad4151377dc7c0b52a2d3735dd2acdd2c6f023e27dbccb90a5d7ea673821 file=workforce/internal/policy/signing.go range=383:394 lang=go exported=false byte_range=14002:14467
   sig=func policySigningBytes(value contracts.Policy) ([]byte, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical
-  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Policy,matrix/workforce/internal/policy.converted,matrix/workforce/internal/policy.expiresAt,matrix/workforce/internal/policy.interfaceTime,matrix/workforce/internal/policy.policyPayload,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/policy.SignPolicy,matrix/workforce/internal/policy.verifyPolicy
-  ^references=matrix/workforce/internal/policy.SignPolicy,matrix/workforce/internal/policy.verifyPolicy
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.preparedAuthority kind=type
@@ -1318,8 +1069,6 @@ NODE id=matrix/workforce/internal/policy.preparedAuthority kind=type
   sig=type preparedAuthority struct {\n	kind		Kind\n	id		string\n	version		uint64\n	organizationID	contracts.OrganizationID\n	effectiveAt	time.Time\n	keyID		string\n	canonical	[]byte\n	hash		string\n	sealed		[]byte\n}
 EDGES
   contains=matrix/workforce/internal/policy.preparedAuthority#canonical,matrix/workforce/internal/policy.preparedAuthority#effectiveAt,matrix/workforce/internal/policy.preparedAuthority#hash,matrix/workforce/internal/policy.preparedAuthority#id,matrix/workforce/internal/policy.preparedAuthority#keyID,matrix/workforce/internal/policy.preparedAuthority#kind,matrix/workforce/internal/policy.preparedAuthority#organizationID,matrix/workforce/internal/policy.preparedAuthority#sealed,matrix/workforce/internal/policy.preparedAuthority#version
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/policy.Kind
-  ^references=matrix/workforce/internal/policy.Store.publish,matrix/workforce/internal/policy.Store.publishPrepared,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/store.go
 
 NODE id=matrix/workforce/internal/policy.preparedAuthority#canonical kind=field
@@ -1382,8 +1131,6 @@ NODE id=matrix/workforce/internal/policy.revocationPayload kind=type
 EDGES
   contains=matrix/workforce/internal/policy.revocationPayload#AuthorityID,matrix/workforce/internal/policy.revocationPayload#KeyID,matrix/workforce/internal/policy.revocationPayload#Kind,matrix/workforce/internal/policy.revocationPayload#OrganizationID,matrix/workforce/internal/policy.revocationPayload#OwnerID,matrix/workforce/internal/policy.revocationPayload#Reason,matrix/workforce/internal/policy.revocationPayload#RevokedAt,matrix/workforce/internal/policy.revocationPayload#SchemaVersion,matrix/workforce/internal/policy.revocationPayload#TenantID,matrix/workforce/internal/policy.revocationPayload#Version,matrix/workforce/internal/policy.revocationPayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/policy.Kind,matrix/workforce/internal/policy.interfaceTime
-  ^references=matrix/workforce/internal/policy.revocationPayload.Validate,matrix/workforce/internal/policy.revocationSigningBytes
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.revocationPayload#AuthorityID kind=field
@@ -1450,7 +1197,6 @@ NODE id=matrix/workforce/internal/policy.revocationPayload.Validate kind=method
   digest=b3:096433513fa8fbf784717b17e9c72202a0fa142cd3022797c879194908db63aa file=workforce/internal/policy/signing.go range=132:132 lang=go exported=true byte_range=6162:6218
   sig=func (revocationPayload) Validate() error
 EDGES
-  references=matrix/workforce/internal/policy.revocationPayload
   ^contains=matrix/workforce/internal/policy.revocationPayload
   ^defines=matrix/workforce/internal/policy/signing.go
 
@@ -1458,10 +1204,6 @@ NODE id=matrix/workforce/internal/policy.revocationSigningBytes kind=func
   digest=b3:414cf7d1c5b6ec40976b1c93b454b8f93ad304a06e6a760513aa54857d6b7390 file=workforce/internal/policy/signing.go range=421:429 lang=go exported=false byte_range=15388:15789
   sig=func revocationSigningBytes(value Revocation) ([]byte, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical
-  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/policy.Revocation,matrix/workforce/internal/policy.revocationPayload,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/policy.SignRevocation,matrix/workforce/internal/policy.verifyRevocation
-  ^references=matrix/workforce/internal/policy.SignRevocation,matrix/workforce/internal/policy.verifyRevocation
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.runtimeAuthorityPayload kind=type
@@ -1470,8 +1212,6 @@ NODE id=matrix/workforce/internal/policy.runtimeAuthorityPayload kind=type
 EDGES
   contains=matrix/workforce/internal/policy.runtimeAuthorityPayload#EffectiveAt,matrix/workforce/internal/policy.runtimeAuthorityPayload#ExpiresAt,matrix/workforce/internal/policy.runtimeAuthorityPayload#ID,matrix/workforce/internal/policy.runtimeAuthorityPayload#KeyID,matrix/workforce/internal/policy.runtimeAuthorityPayload#OrganizationID,matrix/workforce/internal/policy.runtimeAuthorityPayload#PublicKey,matrix/workforce/internal/policy.runtimeAuthorityPayload#Purposes,matrix/workforce/internal/policy.runtimeAuthorityPayload#SchemaVersion,matrix/workforce/internal/policy.runtimeAuthorityPayload#Version,matrix/workforce/internal/policy.runtimeAuthorityPayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/policy.interfaceTime
-  ^references=matrix/workforce/internal/policy.runtimeAuthorityPayload.Validate,matrix/workforce/internal/policy.runtimeAuthoritySigningBytes
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.runtimeAuthorityPayload#EffectiveAt kind=field
@@ -1532,7 +1272,6 @@ NODE id=matrix/workforce/internal/policy.runtimeAuthorityPayload.Validate kind=m
   digest=b3:8c4bb94fb1fd7125cbd97079555dc2b33129f27a8b052e39489a28248ece54b8 file=workforce/internal/policy/signing.go range=128:130 lang=go exported=true byte_range=6041:6104
   sig=func (runtimeAuthorityPayload) Validate() error
 EDGES
-  references=matrix/workforce/internal/policy.runtimeAuthorityPayload
   ^contains=matrix/workforce/internal/policy.runtimeAuthorityPayload
   ^defines=matrix/workforce/internal/policy/signing.go
 
@@ -1540,10 +1279,6 @@ NODE id=matrix/workforce/internal/policy.runtimeAuthoritySigningBytes kind=func
   digest=b3:fda2e261deb1fdc08e1f9c2b7e5a18e2bc7df5915ff225d0e1436752e7acac48 file=workforce/internal/policy/signing.go range=396:410 lang=go exported=false byte_range=14469:15045
   sig=func runtimeAuthoritySigningBytes(value RuntimeAuthority) ([]byte, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical
-  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/policy.RuntimeAuthority,matrix/workforce/internal/policy.converted,matrix/workforce/internal/policy.expiresAt,matrix/workforce/internal/policy.interfaceTime,matrix/workforce/internal/policy.runtimeAuthorityPayload,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/policy.SignRuntimeAuthority,matrix/workforce/internal/policy.verifyRuntimeAuthority
-  ^references=matrix/workforce/internal/policy.SignRuntimeAuthority,matrix/workforce/internal/policy.verifyRuntimeAuthority
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.seatPayload kind=type
@@ -1552,8 +1287,6 @@ NODE id=matrix/workforce/internal/policy.seatPayload kind=type
 EDGES
   contains=matrix/workforce/internal/policy.seatPayload#BindingID,matrix/workforce/internal/policy.seatPayload#BindingVersion,matrix/workforce/internal/policy.seatPayload#DID,matrix/workforce/internal/policy.seatPayload#DepartmentID,matrix/workforce/internal/policy.seatPayload#EffectiveAt,matrix/workforce/internal/policy.seatPayload#ID,matrix/workforce/internal/policy.seatPayload#MandateID,matrix/workforce/internal/policy.seatPayload#MandateVersion,matrix/workforce/internal/policy.seatPayload#OrganizationID,matrix/workforce/internal/policy.seatPayload#Role,matrix/workforce/internal/policy.seatPayload#SchemaVersion,matrix/workforce/internal/policy.seatPayload#Version,matrix/workforce/internal/policy.seatPayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.MandateID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatBindingID,matrix/workforce/internal/contracts.SeatDID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.SeatRole,matrix/workforce/internal/policy.interfaceTime
-  ^references=matrix/workforce/internal/policy.seatPayload.Validate,matrix/workforce/internal/policy.seatSigningBytes
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.seatPayload#BindingID kind=field
@@ -1632,7 +1365,6 @@ NODE id=matrix/workforce/internal/policy.seatPayload.Validate kind=method
   digest=b3:2a4e7a46387d1f0ece31a166a2c3e3c80b436f7ff8f79e4ef302f9dfd92253e9 file=workforce/internal/policy/signing.go range=126:126 lang=go exported=true byte_range=5923:5981
   sig=func (seatPayload) Validate() error
 EDGES
-  references=matrix/workforce/internal/policy.seatPayload
   ^contains=matrix/workforce/internal/policy.seatPayload
   ^defines=matrix/workforce/internal/policy/signing.go
 
@@ -1640,117 +1372,72 @@ NODE id=matrix/workforce/internal/policy.seatSigningBytes kind=func
   digest=b3:973a2d27e4c822e32e6ccebfb54f50f6af4d376f035bc93a158e33bb7ddf67ef file=workforce/internal/policy/signing.go range=358:367 lang=go exported=false byte_range=12782:13253
   sig=func seatSigningBytes(value contracts.Seat) ([]byte, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical
-  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/policy.seatPayload,matrix/workforce/internal/policy.value
-  ^calls=matrix/workforce/internal/policy.SignSeat,matrix/workforce/internal/policy.verifySeat
-  ^references=matrix/workforce/internal/policy.SignSeat,matrix/workforce/internal/policy.verifySeat
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.seedMandate kind=func
   digest=b3:dc55777f4ef1925d8ca16600365286b46bd4f5d2302aabf892f1624581fcb9e9 file=workforce/internal/policy/seed.go range=221:254 lang=go exported=false byte_range=7434:8867
   sig=func seedMandate(\n	organizationID contracts.OrganizationID,\n	kind contracts.DepartmentKind,\n	role contracts.SeatRole,\n	id contracts.MandateID,\n	effectiveAt time.Time,\n) contracts.Mandate
 EDGES
-  references=matrix/workforce/internal/contracts.ClassificationDepartment,matrix/workforce/internal/contracts.DataScope,matrix/workforce/internal/contracts.DepartmentExecutive,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.EscalationRule,matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/contracts.MandateID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.Prohibition,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.SeatRole,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/policy.departmentNames,matrix/workforce/internal/policy.departmentSkills,matrix/workforce/internal/policy.description,matrix/workforce/internal/policy.effectiveAt,matrix/workforce/internal/policy.id,matrix/workforce/internal/policy.kind,matrix/workforce/internal/policy.organizationID,matrix/workforce/internal/policy.prohibition,matrix/workforce/internal/policy.purpose,matrix/workforce/internal/policy.role
-  ^calls=matrix/workforce/internal/policy.BuildSeedDraft
-  ^references=matrix/workforce/internal/policy.BuildSeedDraft
   ^defines=matrix/workforce/internal/policy/seed.go
 
 NODE id=matrix/workforce/internal/policy.signValue kind=func
   digest=b3:5f968b0afb656c09ee6eaf28a657af02cb7506c1fec0da28009e2d31c1ab9f97 file=workforce/internal/policy/signing.go range=189:210 lang=go exported=false byte_range=8239:8678
   sig=func signValue(\n	target *contracts.Signature,\n	keyID string,\n	key ed25519.PrivateKey,\n	payload []byte,\n	err error,\n) error
 EDGES
-  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.key,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.target
-  ^calls=matrix/workforce/internal/policy.SignMandate,matrix/workforce/internal/policy.SignOrganization,matrix/workforce/internal/policy.SignOwnerGrant,matrix/workforce/internal/policy.SignPolicy,matrix/workforce/internal/policy.SignRevocation,matrix/workforce/internal/policy.SignRuntimeAuthority,matrix/workforce/internal/policy.SignSeat,matrix/workforce/internal/policy.SignWakeLease
-  ^references=matrix/workforce/internal/policy.SignMandate,matrix/workforce/internal/policy.SignOrganization,matrix/workforce/internal/policy.SignOwnerGrant,matrix/workforce/internal/policy.SignPolicy,matrix/workforce/internal/policy.SignRevocation,matrix/workforce/internal/policy.SignRuntimeAuthority,matrix/workforce/internal/policy.SignSeat,matrix/workforce/internal/policy.SignWakeLease
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.verifyGrant kind=func
   digest=b3:3a693148e6c8134340fa0999551ec9608da92dde93c80c1ec69a12b643fe2b0c file=workforce/internal/policy/signing.go range=307:314 lang=go exported=false byte_range=11157:11361
   sig=func verifyGrant(\n	publicKey ed25519.PublicKey,\n	keyID string,\n	value OwnerGrant,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.grantSigningBytes,matrix/workforce/internal/policy.verifyValue
-  references=matrix/workforce/internal/policy.OwnerGrant,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.grantSigningBytes,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyValue
-  ^calls=matrix/workforce/internal/policy.Store.verifyGrant
-  ^references=matrix/workforce/internal/policy.Store.verifyGrant
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.verifyMandate kind=func
   digest=b3:9718d8e6f80fb98cebeb84180c589a13c25f24cdab2c7f02f4d50bb066a2c126 file=workforce/internal/policy/signing.go range=241:248 lang=go exported=false byte_range=9451:9666
   sig=func verifyMandate(\n	publicKey ed25519.PublicKey,\n	keyID string,\n	value contracts.Mandate,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.mandateSigningBytes,matrix/workforce/internal/policy.verifyValue
-  references=matrix/workforce/internal/contracts.Mandate,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.mandateSigningBytes,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyValue
-  ^calls=matrix/workforce/internal/policy.Store.AuthorizeWorkPacket,matrix/workforce/internal/policy.Store.LoadMandate,matrix/workforce/internal/policy.Store.PublishMandate,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.VerifyMandateAuthority
-  ^references=matrix/workforce/internal/policy.Store.AuthorizeWorkPacket,matrix/workforce/internal/policy.Store.LoadMandate,matrix/workforce/internal/policy.Store.PublishMandate,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.VerifyMandateAuthority
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.verifyOrganization kind=func
   digest=b3:fe232a478a1c32749d019886d2b7338d174ed763cb4250b3983f90001aabca2b file=workforce/internal/policy/signing.go range=232:239 lang=go exported=false byte_range=9219:9449
   sig=func verifyOrganization(\n	publicKey ed25519.PublicKey,\n	keyID string,\n	value contracts.Organization,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.organizationSigningBytes,matrix/workforce/internal/policy.verifyValue
-  references=matrix/workforce/internal/contracts.Organization,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.organizationSigningBytes,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyValue
-  ^calls=matrix/workforce/internal/policy.Store.PublishOrganization,matrix/workforce/internal/policy.Store.publishSeed
-  ^references=matrix/workforce/internal/policy.Store.PublishOrganization,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.verifyPolicy kind=func
   digest=b3:373110ea043005818976ee15e3b736a0cfc2202b0782e392ac0ba31cc34e9728 file=workforce/internal/policy/signing.go range=289:296 lang=go exported=false byte_range=10709:10921
   sig=func verifyPolicy(\n	publicKey ed25519.PublicKey,\n	keyID string,\n	value contracts.Policy,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.policySigningBytes,matrix/workforce/internal/policy.verifyValue
-  references=matrix/workforce/internal/contracts.Policy,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.policySigningBytes,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyValue
-  ^calls=matrix/workforce/internal/policy.Store.LoadPolicy,matrix/workforce/internal/policy.Store.PublishPolicy,matrix/workforce/internal/policy.Store.publishSeed
-  ^references=matrix/workforce/internal/policy.Store.LoadPolicy,matrix/workforce/internal/policy.Store.PublishPolicy,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.verifyRevocation kind=func
   digest=b3:4091d0e939e000b0a263e9caaa03ca5f018cb939179b0485f91ea13f2c12e788 file=workforce/internal/policy/signing.go range=316:323 lang=go exported=false byte_range=11363:11577
   sig=func verifyRevocation(\n	publicKey ed25519.PublicKey,\n	keyID string,\n	value Revocation,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.revocationSigningBytes,matrix/workforce/internal/policy.verifyValue
-  references=matrix/workforce/internal/policy.Revocation,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.revocationSigningBytes,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyValue
-  ^calls=matrix/workforce/internal/policy.Store.Revoke
-  ^references=matrix/workforce/internal/policy.Store.Revoke
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.verifyRuntimeAuthority kind=func
   digest=b3:84c57667772a4e12406132ac69f1a490464049f28dd41782729d9729dfca02e9 file=workforce/internal/policy/signing.go range=298:305 lang=go exported=false byte_range=10923:11155
   sig=func verifyRuntimeAuthority(\n	publicKey ed25519.PublicKey,\n	keyID string,\n	value RuntimeAuthority,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.runtimeAuthoritySigningBytes,matrix/workforce/internal/policy.verifyValue
-  references=matrix/workforce/internal/policy.RuntimeAuthority,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.runtimeAuthoritySigningBytes,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyValue
-  ^calls=matrix/workforce/internal/policy.Store.LoadRuntimeAuthority,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority,matrix/workforce/internal/policy.Store.publishSeed
-  ^references=matrix/workforce/internal/policy.Store.LoadRuntimeAuthority,matrix/workforce/internal/policy.Store.PublishRuntimeAuthority,matrix/workforce/internal/policy.Store.publishSeed
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.verifySeat kind=func
   digest=b3:4190b43312eb760c9683a148e246106f38d12414d2e5cbbe6a738d22d4dec328 file=workforce/internal/policy/signing.go range=250:257 lang=go exported=false byte_range=9668:9874
   sig=func verifySeat(\n	publicKey ed25519.PublicKey,\n	keyID string,\n	value contracts.Seat,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.seatSigningBytes,matrix/workforce/internal/policy.verifyValue
-  references=matrix/workforce/internal/contracts.Seat,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.seatSigningBytes,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyValue
-  ^calls=matrix/workforce/internal/policy.Store.AuthorizeWorkPacket,matrix/workforce/internal/policy.Store.LoadSeat,matrix/workforce/internal/policy.Store.PublishSeat,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.VerifySeatAuthority
-  ^references=matrix/workforce/internal/policy.Store.AuthorizeWorkPacket,matrix/workforce/internal/policy.Store.LoadSeat,matrix/workforce/internal/policy.Store.PublishSeat,matrix/workforce/internal/policy.Store.publishSeed,matrix/workforce/internal/policy.VerifySeatAuthority
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.verifyValue kind=func
   digest=b3:06c31803209233f4f06b4ef6c9d11af51de6c1087deaf89bd4a5263c2ea15868 file=workforce/internal/policy/signing.go range=212:230 lang=go exported=false byte_range=8680:9217
   sig=func verifyValue(\n	publicKey ed25519.PublicKey,\n	expectedKeyID string,\n	signature contracts.Signature,\n	payload []byte,\n	err error,\n) error
 EDGES
-  references=matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/policy.decoded,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.expectedKeyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.signature
-  ^calls=matrix/workforce/internal/policy.verifyGrant,matrix/workforce/internal/policy.verifyMandate,matrix/workforce/internal/policy.verifyOrganization,matrix/workforce/internal/policy.verifyPolicy,matrix/workforce/internal/policy.verifyRevocation,matrix/workforce/internal/policy.verifyRuntimeAuthority,matrix/workforce/internal/policy.verifySeat,matrix/workforce/internal/policy.verifyWakeLease
-  ^references=matrix/workforce/internal/policy.verifyGrant,matrix/workforce/internal/policy.verifyMandate,matrix/workforce/internal/policy.verifyOrganization,matrix/workforce/internal/policy.verifyPolicy,matrix/workforce/internal/policy.verifyRevocation,matrix/workforce/internal/policy.verifyRuntimeAuthority,matrix/workforce/internal/policy.verifySeat,matrix/workforce/internal/policy.verifyWakeLease
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.verifyWakeLease kind=func
   digest=b3:678bbd4cc09a1199d1d98a3f42060bf016d74ed941e9f5011c09a834177a6102 file=workforce/internal/policy/signing.go range=325:332 lang=go exported=false byte_range=11579:11800
   sig=func verifyWakeLease(\n	publicKey ed25519.PublicKey,\n	keyID string,\n	value contracts.WakeLease,\n) error
 EDGES
-  calls=matrix/workforce/internal/policy.verifyValue,matrix/workforce/internal/policy.wakeLeaseSigningBytes
-  references=matrix/workforce/internal/contracts.WakeLease,matrix/workforce/internal/policy.err,matrix/workforce/internal/policy.keyID,matrix/workforce/internal/policy.payload,matrix/workforce/internal/policy.publicKey,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.verifyValue,matrix/workforce/internal/policy.wakeLeaseSigningBytes
-  ^calls=matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority,matrix/workforce/internal/policy.VerifyWakeLeaseAuthority
-  ^references=matrix/workforce/internal/policy.Store.verifyRuntimeLeaseAuthority,matrix/workforce/internal/policy.VerifyWakeLeaseAuthority
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.wakeLeasePayload kind=type
@@ -1759,8 +1446,6 @@ NODE id=matrix/workforce/internal/policy.wakeLeasePayload kind=type
 EDGES
   contains=matrix/workforce/internal/policy.wakeLeasePayload#Budget,matrix/workforce/internal/policy.wakeLeasePayload#ExpiresAt,matrix/workforce/internal/policy.wakeLeasePayload#Fence,matrix/workforce/internal/policy.wakeLeasePayload#GraphScope,matrix/workforce/internal/policy.wakeLeasePayload#ID,matrix/workforce/internal/policy.wakeLeasePayload#IssuedAt,matrix/workforce/internal/policy.wakeLeasePayload#MGS,matrix/workforce/internal/policy.wakeLeasePayload#MandateID,matrix/workforce/internal/policy.wakeLeasePayload#MandateVersion,matrix/workforce/internal/policy.wakeLeasePayload#Model,matrix/workforce/internal/policy.wakeLeasePayload#OrganizationID,matrix/workforce/internal/policy.wakeLeasePayload#Policies,matrix/workforce/internal/policy.wakeLeasePayload#Reason,matrix/workforce/internal/policy.wakeLeasePayload#Runtime,matrix/workforce/internal/policy.wakeLeasePayload#SchemaVersion,matrix/workforce/internal/policy.wakeLeasePayload#SeatDID,matrix/workforce/internal/policy.wakeLeasePayload#SeatID,matrix/workforce/internal/policy.wakeLeasePayload#SkillCatalogDigest,matrix/workforce/internal/policy.wakeLeasePayload#WakeID,matrix/workforce/internal/policy.wakeLeasePayload.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.FenceToken,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.MGSGenomeRef,matrix/workforce/internal/contracts.MandateID,matrix/workforce/internal/contracts.ModelBinding,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.PolicyRef,matrix/workforce/internal/contracts.RuntimeBinding,matrix/workforce/internal/contracts.SeatDID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.WakeBudget,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/policy.interfaceTime
-  ^references=matrix/workforce/internal/policy.wakeLeasePayload.Validate,matrix/workforce/internal/policy.wakeLeaseSigningBytes
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy.wakeLeasePayload#Budget kind=field
@@ -1881,7 +1566,6 @@ NODE id=matrix/workforce/internal/policy.wakeLeasePayload.Validate kind=method
   digest=b3:709bf188e54e53fd2cd778f36c3d7b6d0dc22bb303ec5c4e55d78004db022218 file=workforce/internal/policy/signing.go range=133:133 lang=go exported=true byte_range=6219:6275
   sig=func (wakeLeasePayload) Validate() error
 EDGES
-  references=matrix/workforce/internal/policy.wakeLeasePayload
   ^contains=matrix/workforce/internal/policy.wakeLeasePayload
   ^defines=matrix/workforce/internal/policy/signing.go
 
@@ -1889,10 +1573,6 @@ NODE id=matrix/workforce/internal/policy.wakeLeaseSigningBytes kind=func
   digest=b3:946cb1bfdc7381fd6b9975a1146ede845135d3cb4e8a27608cf3773b231706a7 file=workforce/internal/policy/signing.go range=369:381 lang=go exported=false byte_range=13255:14000
   sig=func wakeLeaseSigningBytes(value contracts.WakeLease) ([]byte, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical
-  references=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.PolicyRef,matrix/workforce/internal/contracts.WakeLease,matrix/workforce/internal/policy.value,matrix/workforce/internal/policy.wakeLeasePayload
-  ^calls=matrix/workforce/internal/policy.SignWakeLease,matrix/workforce/internal/policy.verifyWakeLease
-  ^references=matrix/workforce/internal/policy.SignWakeLease,matrix/workforce/internal/policy.verifyWakeLease
   ^defines=matrix/workforce/internal/policy/signing.go
 
 NODE id=matrix/workforce/internal/policy/doc.go kind=file

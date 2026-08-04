@@ -1,11 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/mcl/ir kind=package
   digest=b3:bc427428e31cd4d4bda501888aef6dc42de2ad78a53b690d65281adb384db2fc file=MCL/ir range=0:0 lang=go exported=true
 EDGES
   contains=matrix/mcl/ir/encode.go,matrix/mcl/ir/intent.go,matrix/mcl/ir/plan.go,matrix/mcl/ir/plan_validate.go
   ^contains=mod:matrix/mcl
-  ^imports=matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/executor/materiality,matrix/executor/runtime,matrix/mcl/cmd/mclc,matrix/mcl/mtx/validator
 
 NODE id=matrix/mcl/ir.AssetAmount kind=type
   digest=b3:e8ab48fa5bf2d96b6b39e544ef39cbe06718dbaa1f44eaf20ebfe36081e52bdc file=MCL/ir/intent.go range=141:145 lang=go exported=true byte_range=6637:6795
@@ -13,7 +12,6 @@ NODE id=matrix/mcl/ir.AssetAmount kind=type
   doc=AssetAmount is a typed amount of an asset.
 EDGES
   contains=matrix/mcl/ir.AssetAmount#Amount,matrix/mcl/ir.AssetAmount#Asset
-  ^references=matrix/mcl/ir.Budget,matrix/mcl/ir.Constraint
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.AssetAmount#Amount kind=field
@@ -34,8 +32,6 @@ NODE id=matrix/mcl/ir.Budget kind=type
   doc=Budget is an optional cap on execution resources.
 EDGES
   contains=matrix/mcl/ir.Budget#MaxAgents,matrix/mcl/ir.Budget#MaxCalls,matrix/mcl/ir.Budget#MaxCost,matrix/mcl/ir.Budget#MaxTime
-  references=matrix/mcl/ir.AssetAmount
-  ^references=matrix/mcl/ir.Intent,matrix/mcl/ir.PlanTree
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.Budget#MaxAgents kind=field
@@ -67,10 +63,6 @@ NODE id=matrix/mcl/ir.CanonicalJSON kind=func
   sig=func CanonicalJSON(intent *Intent) ([]byte, error)
   doc=CanonicalJSON encodes an Intent to canonical JSON with deterministic key ordering.\nThis is the byte representation used for D11 hashing.\nKeys are sorted lexicographically at every nesting level.
 EDGES
-  calls=matrix/mcl/ir.canonicalAny
-  references=matrix/mcl/ir.Intent,matrix/mcl/ir.canonicalAny,matrix/mcl/ir.intent
-  ^calls=matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.buildDirectIntent,matrix/executor/cmd/mcl-execute.compile,matrix/mcl/ir.Hash
-  ^references=matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.buildDirectIntent,matrix/executor/cmd/mcl-execute.compile,matrix/mcl/ir.Hash
   ^defines=matrix/mcl/ir/encode.go
 
 NODE id=matrix/mcl/ir.CanonicalJSONPlan kind=func
@@ -78,10 +70,6 @@ NODE id=matrix/mcl/ir.CanonicalJSONPlan kind=func
   sig=func CanonicalJSONPlan(plan *PlanTree) ([]byte, error)
   doc=CanonicalJSONPlan encodes a PlanTree to canonical JSON with deterministic\nkey ordering. Mirrors CanonicalJSON for Intent.
 EDGES
-  calls=matrix/mcl/ir.canonicalAny
-  references=matrix/mcl/ir.PlanTree,matrix/mcl/ir.canonicalAny,matrix/mcl/ir.plan
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.synthesize,matrix/mcl/ir.HashPlan
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.synthesize,matrix/mcl/ir.HashPlan
   ^defines=matrix/mcl/ir/encode.go
 
 NODE id=matrix/mcl/ir.CompileMetadata kind=type
@@ -90,7 +78,6 @@ NODE id=matrix/mcl/ir.CompileMetadata kind=type
   doc=CompileMetadata records the compilation trace for D11 replay-verification.
 EDGES
   contains=matrix/mcl/ir.CompileMetadata#CortexSnapshotHash,matrix/mcl/ir.CompileMetadata#Grammar,matrix/mcl/ir.CompileMetadata#ModelDigest,matrix/mcl/ir.CompileMetadata#ModelVersion,matrix/mcl/ir.CompileMetadata#MtxDigest,matrix/mcl/ir.CompileMetadata#Seed,matrix/mcl/ir.CompileMetadata#SkillID,matrix/mcl/ir.CompileMetadata#SkillVersion,matrix/mcl/ir.CompileMetadata#Temperature
-  ^references=matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-execute.buildDirectIntent,matrix/executor/cmd/mcl-execute.buildIntent,matrix/mcl/ir.Intent
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.CompileMetadata#CortexSnapshotHash kind=field
@@ -153,8 +140,6 @@ NODE id=matrix/mcl/ir.Constraint kind=type
   doc=Constraint is a typed predicate that must hold throughout execution.\n§6.2: budget, deadline, jurisdiction, quality, rule, policy, x:custom.
 EDGES
   contains=matrix/mcl/ir.Constraint#Allow,matrix/mcl/ir.Constraint#By,matrix/mcl/ir.Constraint#Data,matrix/mcl/ir.Constraint#Deny,matrix/mcl/ir.Constraint#Hard,matrix/mcl/ir.Constraint#Max,matrix/mcl/ir.Constraint#Metric,matrix/mcl/ir.Constraint#Min,matrix/mcl/ir.Constraint#Policy,matrix/mcl/ir.Constraint#Rule,matrix/mcl/ir.Constraint#Schema,matrix/mcl/ir.Constraint#Type
-  references=matrix/mcl/ir.AssetAmount
-  ^references=matrix/executor/materiality.constraintsOf,matrix/executor/materiality.indexHardConstraints,matrix/executor/materiality.looser,matrix/mcl/ir.Frame
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.Constraint#Allow kind=field
@@ -235,8 +220,6 @@ NODE id=matrix/mcl/ir.D7ClosedVerbs kind=var
   sig=map[string]bool
   doc=D7ClosedVerbs is the canonical set of 10 verbs.
 EDGES
-  references=matrix/mcl/ir.VerbAcquire,matrix/mcl/ir.VerbAnalyze,matrix/mcl/ir.VerbBuild,matrix/mcl/ir.VerbDelegate,matrix/mcl/ir.VerbDeliver,matrix/mcl/ir.VerbFind,matrix/mcl/ir.VerbModify,matrix/mcl/ir.VerbMonitor,matrix/mcl/ir.VerbNegotiate,matrix/mcl/ir.VerbSchedule
-  ^references=matrix/mcl/ir.ValidVerb
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.ErrPlanBranchEmpty kind=var
@@ -244,7 +227,6 @@ NODE id=matrix/mcl/ir.ErrPlanBranchEmpty kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.validatePlanNode
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanGateNoQuestion kind=var
@@ -252,7 +234,6 @@ NODE id=matrix/mcl/ir.ErrPlanGateNoQuestion kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanMissingID kind=var
@@ -260,7 +241,6 @@ NODE id=matrix/mcl/ir.ErrPlanMissingID kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.ValidatePlan
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanMissingIntentID kind=var
@@ -268,7 +248,6 @@ NODE id=matrix/mcl/ir.ErrPlanMissingIntentID kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.ValidatePlan
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanMissingSkillRef kind=var
@@ -276,7 +255,6 @@ NODE id=matrix/mcl/ir.ErrPlanMissingSkillRef kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.ValidatePlan
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanNodeDuplicateID kind=var
@@ -284,7 +262,6 @@ NODE id=matrix/mcl/ir.ErrPlanNodeDuplicateID kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.validatePlanNode
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanNodeMissingID kind=var
@@ -292,7 +269,6 @@ NODE id=matrix/mcl/ir.ErrPlanNodeMissingID kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.validatePlanNode
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanPayloadMismatch kind=var
@@ -300,7 +276,6 @@ NODE id=matrix/mcl/ir.ErrPlanPayloadMismatch kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanSideEffectUnknown kind=var
@@ -308,7 +283,6 @@ NODE id=matrix/mcl/ir.ErrPlanSideEffectUnknown kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanStepKindUnknown kind=var
@@ -316,7 +290,6 @@ NODE id=matrix/mcl/ir.ErrPlanStepKindUnknown kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanStepNoPrompt kind=var
@@ -324,7 +297,6 @@ NODE id=matrix/mcl/ir.ErrPlanStepNoPrompt kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanSubSkillBareHead kind=var
@@ -332,7 +304,6 @@ NODE id=matrix/mcl/ir.ErrPlanSubSkillBareHead kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.ValidatePlan,matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanTerminalHasChild kind=var
@@ -340,7 +311,6 @@ NODE id=matrix/mcl/ir.ErrPlanTerminalHasChild kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.validatePlanNode
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanToolRefBareHead kind=var
@@ -348,7 +318,6 @@ NODE id=matrix/mcl/ir.ErrPlanToolRefBareHead kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.ErrPlanUnknownNodeKind kind=var
@@ -356,7 +325,6 @@ NODE id=matrix/mcl/ir.ErrPlanUnknownNodeKind kind=var
   sig=error
   doc=Plan validation errors.
 EDGES
-  ^references=matrix/mcl/ir.validateNodePayload,matrix/mcl/ir.validatePlanNode
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.Frame kind=type
@@ -365,8 +333,6 @@ NODE id=matrix/mcl/ir.Frame kind=type
   doc=Frame is the typed source of truth — what gets signed and executed.
 EDGES
   contains=matrix/mcl/ir.Frame#Constraints,matrix/mcl/ir.Frame#Objects,matrix/mcl/ir.Frame#Preferences,matrix/mcl/ir.Frame#SuccessCriteria,matrix/mcl/ir.Frame#Verb
-  references=matrix/mcl/ir.Constraint,matrix/mcl/ir.Predicate,matrix/mcl/ir.Preference,matrix/mcl/ir.SlotEntry
-  ^references=matrix/executor/cmd/mcl-execute.buildDirectIntent,matrix/executor/cmd/mcl-execute.buildSubIntent,matrix/mcl/ir.Intent,matrix/mcl/ir.SubDispatchPayload
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.Frame#Constraints kind=field
@@ -405,7 +371,6 @@ NODE id=matrix/mcl/ir.GatePayload kind=type
   doc=GatePayload carries the parameters for a human-in-loop policy gate.
 EDGES
   contains=matrix/mcl/ir.GatePayload#Options,matrix/mcl/ir.GatePayload#Question,matrix/mcl/ir.GatePayload#RuleRef,matrix/mcl/ir.GatePayload#TimeoutMs
-  ^references=matrix/executor/cmd/mcl-execute.daemonState.runGideonGate,matrix/executor/cmd/mcl-execute.daemonState.runPaxeerSpendGate,matrix/mcl/ir.PlanNode
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.GatePayload#Options kind=field
@@ -441,10 +406,6 @@ NODE id=matrix/mcl/ir.Hash kind=func
   sig=func Hash(intent *Intent) (string, error)
   doc=Hash computes the sha256 hash of the canonical JSON encoding.\nThis is the Intent.Hash field value.
 EDGES
-  calls=matrix/mcl/ir.CanonicalJSON
-  references=matrix/mcl/ir.CanonicalJSON,matrix/mcl/ir.Intent,matrix/mcl/ir.canonical,matrix/mcl/ir.err,matrix/mcl/ir.intent,matrix/mcl/ir.saved,matrix/mcl/ir.sum
-  ^calls=matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.buildDirectIntent,matrix/executor/cmd/mcl-execute.compile
-  ^references=matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.buildDirectIntent,matrix/executor/cmd/mcl-execute.compile
   ^defines=matrix/mcl/ir/encode.go
 
 NODE id=matrix/mcl/ir.HashPlan kind=func
@@ -452,10 +413,6 @@ NODE id=matrix/mcl/ir.HashPlan kind=func
   sig=func HashPlan(plan *PlanTree) (string, error)
   doc=HashPlan computes the sha256 hash of the plan's canonical JSON encoding\nwith the self-referential Hash field cleared.
 EDGES
-  calls=matrix/mcl/ir.CanonicalJSONPlan
-  references=matrix/mcl/ir.CanonicalJSONPlan,matrix/mcl/ir.PlanTree,matrix/mcl/ir.canonical,matrix/mcl/ir.err,matrix/mcl/ir.plan,matrix/mcl/ir.saved,matrix/mcl/ir.sum
-  ^calls=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-execute.synthesize
-  ^references=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-execute.synthesize
   ^defines=matrix/mcl/ir/encode.go
 
 NODE id=matrix/mcl/ir.Intent kind=type
@@ -464,8 +421,6 @@ NODE id=matrix/mcl/ir.Intent kind=type
   doc=Intent is the central type in Matrix. Every interaction produces one.
 EDGES
   contains=matrix/mcl/ir.Intent#Actor,matrix/mcl/ir.Intent#Agent,matrix/mcl/ir.Intent#Budget,matrix/mcl/ir.Intent#CompileMetadata,matrix/mcl/ir.Intent#Confidence,matrix/mcl/ir.Intent#CreatedAt,matrix/mcl/ir.Intent#Deadline,matrix/mcl/ir.Intent#ExpiresAt,matrix/mcl/ir.Intent#Frame,matrix/mcl/ir.Intent#GoalID,matrix/mcl/ir.Intent#Hash,matrix/mcl/ir.Intent#ID,matrix/mcl/ir.Intent#Parent,matrix/mcl/ir.Intent#Prose,matrix/mcl/ir.Intent#References,matrix/mcl/ir.Intent#SignedBy,matrix/mcl/ir.Intent#State,matrix/mcl/ir.Intent#Unknowns,matrix/mcl/ir.Intent#Version
-  references=matrix/mcl/ir.Budget,matrix/mcl/ir.CompileMetadata,matrix/mcl/ir.Frame,matrix/mcl/ir.Reference,matrix/mcl/ir.Unknown
-  ^references=matrix/executor/cmd/mcl-e2e.CompileResult,matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-execute.buildAttestEvidence,matrix/executor/cmd/mcl-execute.buildDirectIntent,matrix/executor/cmd/mcl-execute.buildIntent,matrix/executor/cmd/mcl-execute.buildSubIntent,matrix/executor/cmd/mcl-execute.buildUserPrompt,matrix/executor/cmd/mcl-execute.citedURIs,matrix/executor/cmd/mcl-execute.compile,matrix/executor/cmd/mcl-execute.compileResult,matrix/executor/cmd/mcl-execute.daemonState.handleClassify,matrix/executor/cmd/mcl-execute.loadIntent,matrix/executor/cmd/mcl-execute.safeIntentHash,matrix/executor/cmd/mcl-execute.safeIntentID,matrix/executor/cmd/mcl-execute.signTerminalAttest,matrix/executor/cmd/mcl-execute.signTerminalFail,matrix/executor/cmd/mcl-execute.synthesizeOpts,matrix/executor/materiality.Inputs,matrix/executor/materiality.budgetAmount,matrix/executor/materiality.constraintsOf,matrix/executor/materiality.deadlineOf,matrix/executor/materiality.predicatesOf,matrix/mcl/ir.CanonicalJSON,matrix/mcl/ir.Hash
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.Intent#Actor kind=field
@@ -595,7 +550,6 @@ NODE id=matrix/mcl/ir.NodeGate kind=const
   sig=untyped string
   doc=NodeGate is a human-in-loop policy gate. Populates Gate.
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.walkNode,matrix/executor/cmd/mcl-execute.buildExecutionDigest,matrix/executor/cmd/mcl-execute.daemonState.runGideonGate,matrix/executor/cmd/mcl-execute.daemonState.runPaxeerSpendGate,matrix/executor/runtime.Walker.walkNode,matrix/executor/runtime.Walker.walkNodeWithLock,matrix/mcl/ir.ValidNodeKinds,matrix/mcl/ir.isTerminalKind,matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.NodeParallel kind=const
@@ -603,7 +557,6 @@ NODE id=matrix/mcl/ir.NodeParallel kind=const
   sig=untyped string
   doc=NodeParallel runs Children concurrently; all children must succeed\nfor the parent to succeed. First failure cancels siblings.
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-e2e.walkNode,matrix/executor/runtime.Walker.walkNode,matrix/executor/runtime.Walker.walkNodeWithLock,matrix/mcl/ir.ValidNodeKinds,matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.NodeSequential kind=const
@@ -611,7 +564,6 @@ NODE id=matrix/mcl/ir.NodeSequential kind=const
   sig=untyped string
   doc=NodeSequential runs Children in order; any child failure halts the\nsequence and propagates failure to the parent (default semantics).
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-e2e.walkNode,matrix/executor/runtime.Walker.walkNode,matrix/executor/runtime.Walker.walkNodeWithLock,matrix/mcl/ir.ValidNodeKinds,matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.NodeStep kind=const
@@ -619,7 +571,6 @@ NODE id=matrix/mcl/ir.NodeStep kind=const
   sig=untyped string
   doc=NodeStep is an in-skill LLM prompt step. Populates Step.
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-e2e.walkNode,matrix/executor/cmd/mcl-execute.buildExecutionDigest,matrix/executor/runtime.Walker.walkNode,matrix/executor/runtime.Walker.walkNodeWithLock,matrix/mcl/ir.ValidNodeKinds,matrix/mcl/ir.isTerminalKind,matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.NodeSubDispatch kind=const
@@ -627,7 +578,6 @@ NODE id=matrix/mcl/ir.NodeSubDispatch kind=const
   sig=untyped string
   doc=NodeSubDispatch is a sub-skill or sub-agent dispatch. Populates SubDispatch.
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.walkNode,matrix/executor/cmd/mcl-execute.verifySkillAllowList,matrix/executor/materiality.collectAgentRefs,matrix/executor/materiality.collectAgentScope,matrix/executor/runtime.Walker.walkNode,matrix/executor/runtime.Walker.walkNodeWithLock,matrix/mcl/ir.ValidNodeKinds,matrix/mcl/ir.isTerminalKind,matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.NodeToolCall kind=const
@@ -635,7 +585,6 @@ NODE id=matrix/mcl/ir.NodeToolCall kind=const
   sig=untyped string
   doc=NodeToolCall is a single tool invocation. Populates ToolCall.
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-e2e.walkNode,matrix/executor/cmd/mcl-execute.buildExecutionDigest,matrix/executor/cmd/mcl-execute.collectToolCalls,matrix/executor/cmd/mcl-execute.verifySkillAllowList,matrix/executor/cmd/mcl-execute.verifyToolRefs,matrix/executor/materiality.collectToolNamespaces,matrix/executor/runtime.Walker.walkNode,matrix/executor/runtime.Walker.walkNodeWithLock,matrix/mcl/ir.ValidNodeKinds,matrix/mcl/ir.isTerminalKind,matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.PlanNode kind=type
@@ -644,8 +593,6 @@ NODE id=matrix/mcl/ir.PlanNode kind=type
   doc=PlanNode is a single node in the plan tree. Kind discriminates which\nof the typed payload fields are populated. Unpopulated fields are\nomitted from canonical encoding.
 EDGES
   contains=matrix/mcl/ir.PlanNode#Children,matrix/mcl/ir.PlanNode#Description,matrix/mcl/ir.PlanNode#Gate,matrix/mcl/ir.PlanNode#ID,matrix/mcl/ir.PlanNode#Kind,matrix/mcl/ir.PlanNode#ResultText,matrix/mcl/ir.PlanNode#Step,matrix/mcl/ir.PlanNode#SubDispatch,matrix/mcl/ir.PlanNode#ToolCall
-  references=matrix/mcl/ir.GatePayload,matrix/mcl/ir.StepPayload,matrix/mcl/ir.SubDispatchPayload,matrix/mcl/ir.ToolCallPayload
-  ^references=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-e2e.walkNode,matrix/executor/cmd/mcl-e2e.writeToolEventMemory,matrix/executor/cmd/mcl-execute.buildDaemonWalker,matrix/executor/cmd/mcl-execute.buildExecutionDigest,matrix/executor/cmd/mcl-execute.buildSubIntent,matrix/executor/cmd/mcl-execute.buildWalker,matrix/executor/cmd/mcl-execute.collectNodeOutputs,matrix/executor/cmd/mcl-execute.collectPlanAnswer,matrix/executor/cmd/mcl-execute.collectToolCalls,matrix/executor/cmd/mcl-execute.countPlanNodes,matrix/executor/cmd/mcl-execute.daemonState.enforceGideonGuardrails,matrix/executor/cmd/mcl-execute.daemonState.enforcePaxeerSpend,matrix/executor/cmd/mcl-execute.daemonState.runGideonGate,matrix/executor/cmd/mcl-execute.daemonState.runPaxeerSpendGate,matrix/executor/cmd/mcl-execute.httpGateHandler.HandleGate,matrix/executor/cmd/mcl-execute.inProcessSubDispatch,matrix/executor/cmd/mcl-execute.inProcessSubDispatch.HandleSubDispatch,matrix/executor/cmd/mcl-execute.llmStepHandler.HandleStep,matrix/executor/cmd/mcl-execute.llmStepHandler.buildUser,matrix/executor/cmd/mcl-execute.llmStepHandler.streamStep,matrix/executor/cmd/mcl-execute.planNodeID,matrix/executor/cmd/mcl-execute.stdinGateHandler.HandleGate,matrix/executor/cmd/mcl-execute.verifySkillAllowList,matrix/executor/cmd/mcl-execute.verifyToolRefs,matrix/executor/cmd/mcl-execute.walkPlanRec,matrix/executor/materiality.collectAgentRefs,matrix/executor/materiality.collectAgentScope,matrix/executor/materiality.collectToolNamespaces,matrix/executor/materiality.walkPlanNodes,matrix/executor/runtime.AllowAllGate.HandleGate,matrix/executor/runtime.GateHandler,matrix/executor/runtime.NoopStepHandler.HandleStep,matrix/executor/runtime.NotImplementedSubDispatch.HandleSubDispatch,matrix/executor/runtime.StepHandler,matrix/executor/runtime.SubDispatchHandler,matrix/executor/runtime.Walker.execGate,matrix/executor/runtime.Walker.execStep,matrix/executor/runtime.Walker.execSubDispatch,matrix/executor/runtime.Walker.execToolCall,matrix/executor/runtime.Walker.walkNode,matrix/executor/runtime.Walker.walkNodeWithLock,matrix/executor/runtime.Walker.writeEventMemory,matrix/executor/runtime.collectNodeOutputs,matrix/mcl/ir.PlanTree,matrix/mcl/ir.validateNodePayload,matrix/mcl/ir.validatePlanNode
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.PlanNode#Children kind=field
@@ -717,8 +664,6 @@ NODE id=matrix/mcl/ir.PlanTree kind=type
   doc=PlanTree is the typed plan structure attached to a plan.proposed\nenvelope body, OR carried inline in Intent.frame.objects as a\nPlanDraft slot value when a skill emits one at compile-time refinement.\n\nA PlanTree is a directed acyclic graph (in practice a tree with\noccasional shared leaves for citations) rooted at a single Root node.\nWalks are depth-first by default; parallel branches are explicit\n(PlanNode.Kind == NodeParallel).
 EDGES
   contains=matrix/mcl/ir.PlanTree#Budget,matrix/mcl/ir.PlanTree#CreatedAt,matrix/mcl/ir.PlanTree#CreatedBy,matrix/mcl/ir.PlanTree#Hash,matrix/mcl/ir.PlanTree#ID,matrix/mcl/ir.PlanTree#IntentID,matrix/mcl/ir.PlanTree#ModelDigest,matrix/mcl/ir.PlanTree#Root,matrix/mcl/ir.PlanTree#SkillRef,matrix/mcl/ir.PlanTree#Version
-  references=matrix/mcl/ir.Budget,matrix/mcl/ir.PlanNode
-  ^references=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-e2e.WalkPlan,matrix/executor/cmd/mcl-execute.buildAttestEvidence,matrix/executor/cmd/mcl-execute.buildDaemonWalker,matrix/executor/cmd/mcl-execute.buildExecutionDigest,matrix/executor/cmd/mcl-execute.buildSubIntent,matrix/executor/cmd/mcl-execute.buildWalker,matrix/executor/cmd/mcl-execute.collectNodeOutputs,matrix/executor/cmd/mcl-execute.collectPlanAnswer,matrix/executor/cmd/mcl-execute.countRounds,matrix/executor/cmd/mcl-execute.daemonState.enforceGideonGuardrails,matrix/executor/cmd/mcl-execute.daemonState.enforcePaxeerSpend,matrix/executor/cmd/mcl-execute.daemonState.handleClassify,matrix/executor/cmd/mcl-execute.inProcessSubDispatch,matrix/executor/cmd/mcl-execute.inProcessSubDispatch.HandleSubDispatch,matrix/executor/cmd/mcl-execute.llmStepHandler.HandleStep,matrix/executor/cmd/mcl-execute.llmStepHandler.buildUser,matrix/executor/cmd/mcl-execute.loadPlan,matrix/executor/cmd/mcl-execute.makeFailedResult,matrix/executor/cmd/mcl-execute.safePlanHash,matrix/executor/cmd/mcl-execute.safePlanID,matrix/executor/cmd/mcl-execute.signTerminalAttest,matrix/executor/cmd/mcl-execute.signTerminalFail,matrix/executor/cmd/mcl-execute.synthesize,matrix/executor/cmd/mcl-execute.synthesizeResult,matrix/executor/cmd/mcl-execute.verifySkillAllowList,matrix/executor/cmd/mcl-execute.verifyToolRefs,matrix/executor/materiality.Inputs,matrix/executor/materiality.budgetAmount,matrix/executor/materiality.collectAgentRefs,matrix/executor/materiality.collectAgentScope,matrix/executor/materiality.collectToolNamespaces,matrix/executor/runtime.NoopStepHandler.HandleStep,matrix/executor/runtime.NotImplementedSubDispatch.HandleSubDispatch,matrix/executor/runtime.StepHandler,matrix/executor/runtime.SubDispatchHandler,matrix/executor/runtime.Walker.Run,matrix/executor/runtime.Walker.execGate,matrix/executor/runtime.Walker.execStep,matrix/executor/runtime.Walker.execSubDispatch,matrix/executor/runtime.Walker.execToolCall,matrix/executor/runtime.Walker.walkNode,matrix/executor/runtime.Walker.walkNodeWithLock,matrix/executor/runtime.collectNodeOutputs,matrix/mcl/ir.CanonicalJSONPlan,matrix/mcl/ir.HashPlan,matrix/mcl/ir.ValidatePlan
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.PlanTree#Budget kind=field
@@ -797,7 +742,6 @@ NODE id=matrix/mcl/ir.Predicate kind=type
   doc=Predicate is a checkable criterion that determines completion (§6.3).
 EDGES
   contains=matrix/mcl/ir.Predicate#Artifact,matrix/mcl/ir.Predicate#By,matrix/mcl/ir.Predicate#Check,matrix/mcl/ir.Predicate#Data,matrix/mcl/ir.Predicate#Schema,matrix/mcl/ir.Predicate#Source,matrix/mcl/ir.Predicate#Topic,matrix/mcl/ir.Predicate#Type,matrix/mcl/ir.Predicate#URL
-  ^references=matrix/executor/materiality.indexPredicates,matrix/executor/materiality.predicateEqual,matrix/executor/materiality.predicateKey,matrix/executor/materiality.predicatesOf,matrix/mcl/ir.Frame
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.Predicate#Artifact kind=field
@@ -860,7 +804,6 @@ NODE id=matrix/mcl/ir.Preference kind=type
   doc=Preference is a soft tie-breaker that does not fail the intent if violated.
 EDGES
   contains=matrix/mcl/ir.Preference#Prefer,matrix/mcl/ir.Preference#Rank
-  ^references=matrix/mcl/ir.Frame
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.Preference#Prefer kind=field
@@ -881,7 +824,6 @@ NODE id=matrix/mcl/ir.Reference kind=type
   doc=Reference is a grounding matrix:// URI the agent must respect (D13).
 EDGES
   contains=matrix/mcl/ir.Reference#Role,matrix/mcl/ir.Reference#Summary,matrix/mcl/ir.Reference#Type,matrix/mcl/ir.Reference#URI
-  ^references=matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-execute.buildIntent,matrix/mcl/ir.Intent
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.Reference#Role kind=field
@@ -913,7 +855,6 @@ NODE id=matrix/mcl/ir.SeverityBlocking kind=const
   sig=untyped string
   doc=Severity constants for Unknown.
 EDGES
-  ^references=matrix/executor/cmd/mcl-execute.blockingUnknowns
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.SeverityOptional kind=const
@@ -936,7 +877,6 @@ NODE id=matrix/mcl/ir.SlotEntry kind=type
   doc=SlotEntry is a named typed referent in the Frame's objects list.
 EDGES
   contains=matrix/mcl/ir.SlotEntry#Name,matrix/mcl/ir.SlotEntry#Type,matrix/mcl/ir.SlotEntry#URI,matrix/mcl/ir.SlotEntry#Value
-  ^references=matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-execute.buildDirectIntent,matrix/executor/cmd/mcl-execute.buildIntent,matrix/mcl/ir.Frame
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.SlotEntry#Name kind=field
@@ -996,7 +936,6 @@ NODE id=matrix/mcl/ir.StateDraft kind=const
   sig=untyped string
   doc=IntentState constants matching the lifecycle state machine (§7).
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.buildIntentFromRun
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.StateExecuting kind=const
@@ -1004,7 +943,6 @@ NODE id=matrix/mcl/ir.StateExecuting kind=const
   sig=untyped string
   doc=IntentState constants matching the lifecycle state machine (§7).
 EDGES
-  ^references=matrix/executor/cmd/mcl-execute.buildSubIntent
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.StateFailed kind=const
@@ -1019,7 +957,6 @@ NODE id=matrix/mcl/ir.StateProposed kind=const
   sig=untyped string
   doc=IntentState constants matching the lifecycle state machine (§7).
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-execute.buildDirectIntent,matrix/executor/cmd/mcl-execute.buildIntent
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.StepKindNames kind=var
@@ -1027,7 +964,6 @@ NODE id=matrix/mcl/ir.StepKindNames kind=var
   sig=[]string
   doc=StepKindNames is the canonical ordered list of valid StepPayload.Kind\nvalues (Session 31b). Mirrors llm.AllStepKindNames; the executor's\nstep_handler_test guards against drift between the two definitions.\nIR owns the wire-form list because the kind ships in canonical JSON\n(replay invariant) before any llm-package code sees it.
 EDGES
-  ^references=matrix/mcl/ir.ValidStepKinds,matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.StepPayload kind=type
@@ -1036,7 +972,6 @@ NODE id=matrix/mcl/ir.StepPayload kind=type
   doc=StepPayload carries the parameters for an in-skill LLM prompt step.
 EDGES
   contains=matrix/mcl/ir.StepPayload#ExpectedOutputs,matrix/mcl/ir.StepPayload#Inputs,matrix/mcl/ir.StepPayload#Kind,matrix/mcl/ir.StepPayload#PromptName
-  ^references=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/mcl/ir.PlanNode
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.StepPayload#ExpectedOutputs kind=field
@@ -1073,8 +1008,6 @@ NODE id=matrix/mcl/ir.SubDispatchPayload kind=type
   doc=SubDispatchPayload carries the parameters for a sub-skill or sub-agent\ndispatch (research/02-protocol.md §11, research/05-skills-and-tools.md §5.1).
 EDGES
   contains=matrix/mcl/ir.SubDispatchPayload#AgentRef,matrix/mcl/ir.SubDispatchPayload#ScopeURI,matrix/mcl/ir.SubDispatchPayload#SkillRef,matrix/mcl/ir.SubDispatchPayload#SubIntent
-  references=matrix/mcl/ir.Frame
-  ^references=matrix/mcl/ir.PlanNode
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.SubDispatchPayload#AgentRef kind=field
@@ -1111,7 +1044,6 @@ NODE id=matrix/mcl/ir.ToolCallPayload kind=type
   doc=ToolCallPayload carries the parameters for a single tool invocation.
 EDGES
   contains=matrix/mcl/ir.ToolCallPayload#Args,matrix/mcl/ir.ToolCallPayload#SideEffectClass,matrix/mcl/ir.ToolCallPayload#TimeoutMs,matrix/mcl/ir.ToolCallPayload#ToolRef
-  ^references=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/mcl/ir.PlanNode
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.ToolCallPayload#Args kind=field
@@ -1148,7 +1080,6 @@ NODE id=matrix/mcl/ir.Unknown kind=type
   doc=Unknown is a typed gap blocking or delaying execution (§6.4).
 EDGES
   contains=matrix/mcl/ir.Unknown#Default,matrix/mcl/ir.Unknown#Field,matrix/mcl/ir.Unknown#ID,matrix/mcl/ir.Unknown#Options,matrix/mcl/ir.Unknown#Rationale,matrix/mcl/ir.Unknown#Severity,matrix/mcl/ir.Unknown#SourceHint,matrix/mcl/ir.Unknown#Type
-  ^references=matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-execute.buildIntent,matrix/mcl/ir.Intent
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.Unknown#Default kind=field
@@ -1204,8 +1135,6 @@ NODE id=matrix/mcl/ir.ValidNodeKinds kind=var
   sig=map[string]bool
   doc=ValidNodeKinds is the canonical closed set of node kinds.
 EDGES
-  references=matrix/mcl/ir.NodeGate,matrix/mcl/ir.NodeParallel,matrix/mcl/ir.NodeSequential,matrix/mcl/ir.NodeStep,matrix/mcl/ir.NodeSubDispatch,matrix/mcl/ir.NodeToolCall
-  ^references=matrix/mcl/ir.validatePlanNode
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.ValidSideEffectClasses kind=var
@@ -1213,7 +1142,6 @@ NODE id=matrix/mcl/ir.ValidSideEffectClasses kind=var
   sig=map[string]bool
   doc=ValidSideEffectClasses is the closed enum for ToolCallPayload.SideEffectClass.\nClosed set keeps the executor's capability gate exhaustive.
 EDGES
-  ^references=matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.ValidStepKinds kind=var
@@ -1221,8 +1149,6 @@ NODE id=matrix/mcl/ir.ValidStepKinds kind=var
   sig=map[string]bool
   doc=ValidStepKinds is the closed enum for StepPayload.Kind. Empty Kind\nis allowed (and treated as "reason" at routing time) — only an\nexplicit unknown value is rejected by ValidatePlan.
 EDGES
-  references=matrix/mcl/ir.StepKindNames,matrix/mcl/ir.k,matrix/mcl/ir.m
-  ^references=matrix/mcl/ir.validateNodePayload,matrix/mcl/mtx/validator.validator.rule11OnBlockStepKind
   ^defines=matrix/mcl/ir/plan.go
 
 NODE id=matrix/mcl/ir.ValidVerb kind=func
@@ -1230,9 +1156,6 @@ NODE id=matrix/mcl/ir.ValidVerb kind=func
   sig=func ValidVerb(v string) bool
   doc=ValidVerb returns true if v is a valid D7 verb or x: extension.
 EDGES
-  references=matrix/mcl/ir.D7ClosedVerbs,matrix/mcl/ir.v
-  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-execute.buildDirectIntent,matrix/executor/cmd/mcl-execute.buildIntent,matrix/executor/cmd/mcl-execute.compile,matrix/executor/cmd/mcl-execute.escalateReason
-  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-e2e.buildIntentFromRun,matrix/executor/cmd/mcl-execute.buildDirectIntent,matrix/executor/cmd/mcl-execute.buildIntent,matrix/executor/cmd/mcl-execute.compile,matrix/executor/cmd/mcl-execute.escalateReason
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.ValidatePlan kind=func
@@ -1240,10 +1163,6 @@ NODE id=matrix/mcl/ir.ValidatePlan kind=func
   sig=func ValidatePlan(plan *PlanTree) error
   doc=ValidatePlan checks structural invariants of a PlanTree per\nresearch/05-skills-and-tools.md §3.2 and the Session 21 locked design.\nReturns nil if the plan is well-formed.\n\nInvariants enforced:\n 1. PlanTree.ID, IntentID, SkillRef populated\n 2. Every PlanNode has a unique non-empty ID within the tree\n 3. Every PlanNode.Kind is in ValidNodeKinds\n 4. Branch kinds (Sequential, Parallel) have ≥1 child and no terminal payload\n 5. Terminal kinds (Step, ToolCall, SubDispatch, Gate) have no children\n    and exactly the matching typed payload populated\n 6. ToolCall.ToolRef + SubDispatch.SkillRef are version-pinned (S4 hard rule)\n 7. ToolCall.SideEffectClass (if set) is in ValidSideEffectClasses\n 8. Gate.Question is non-empty
 EDGES
-  calls=matrix/mcl/ir.isVersionPinned,matrix/mcl/ir.validatePlanNode
-  references=matrix/mcl/ir.ErrPlanMissingID,matrix/mcl/ir.ErrPlanMissingIntentID,matrix/mcl/ir.ErrPlanMissingSkillRef,matrix/mcl/ir.ErrPlanSubSkillBareHead,matrix/mcl/ir.PlanTree,matrix/mcl/ir.isVersionPinned,matrix/mcl/ir.plan,matrix/mcl/ir.seen,matrix/mcl/ir.validatePlanNode
-  ^calls=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-execute.synthesize
-  ^references=matrix/executor/cmd/mcl-e2e.BuildPlan,matrix/executor/cmd/mcl-execute.synthesize
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.VerbAcquire kind=const
@@ -1251,7 +1170,6 @@ NODE id=matrix/mcl/ir.VerbAcquire kind=const
   sig=untyped string
   doc=Verb constants (D7 closed vocab).
 EDGES
-  ^references=matrix/mcl/ir.D7ClosedVerbs
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.VerbAnalyze kind=const
@@ -1259,7 +1177,6 @@ NODE id=matrix/mcl/ir.VerbAnalyze kind=const
   sig=untyped string
   doc=Verb constants (D7 closed vocab).
 EDGES
-  ^references=matrix/executor/cmd/mcl-execute.buildSubIntent,matrix/mcl/ir.D7ClosedVerbs
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.VerbBuild kind=const
@@ -1267,7 +1184,6 @@ NODE id=matrix/mcl/ir.VerbBuild kind=const
   sig=untyped string
   doc=Verb constants (D7 closed vocab).
 EDGES
-  ^references=matrix/mcl/cmd/mclc._,matrix/mcl/ir.D7ClosedVerbs
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.VerbDelegate kind=const
@@ -1275,7 +1191,6 @@ NODE id=matrix/mcl/ir.VerbDelegate kind=const
   sig=untyped string
   doc=Verb constants (D7 closed vocab).
 EDGES
-  ^references=matrix/mcl/ir.D7ClosedVerbs
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.VerbDeliver kind=const
@@ -1283,7 +1198,6 @@ NODE id=matrix/mcl/ir.VerbDeliver kind=const
   sig=untyped string
   doc=Verb constants (D7 closed vocab).
 EDGES
-  ^references=matrix/mcl/ir.D7ClosedVerbs
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.VerbFind kind=const
@@ -1291,7 +1205,6 @@ NODE id=matrix/mcl/ir.VerbFind kind=const
   sig=untyped string
   doc=Verb constants (D7 closed vocab).
 EDGES
-  ^references=matrix/mcl/ir.D7ClosedVerbs
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.VerbModify kind=const
@@ -1299,7 +1212,6 @@ NODE id=matrix/mcl/ir.VerbModify kind=const
   sig=untyped string
   doc=Verb constants (D7 closed vocab).
 EDGES
-  ^references=matrix/mcl/ir.D7ClosedVerbs
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.VerbMonitor kind=const
@@ -1307,7 +1219,6 @@ NODE id=matrix/mcl/ir.VerbMonitor kind=const
   sig=untyped string
   doc=Verb constants (D7 closed vocab).
 EDGES
-  ^references=matrix/executor/cmd/mcl-execute.buildDirectIntent,matrix/mcl/ir.D7ClosedVerbs
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.VerbNegotiate kind=const
@@ -1315,7 +1226,6 @@ NODE id=matrix/mcl/ir.VerbNegotiate kind=const
   sig=untyped string
   doc=Verb constants (D7 closed vocab).
 EDGES
-  ^references=matrix/mcl/ir.D7ClosedVerbs
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.VerbSchedule kind=const
@@ -1323,7 +1233,6 @@ NODE id=matrix/mcl/ir.VerbSchedule kind=const
   sig=untyped string
   doc=Verb constants (D7 closed vocab).
 EDGES
-  ^references=matrix/mcl/ir.D7ClosedVerbs
   ^defines=matrix/mcl/ir/intent.go
 
 NODE id=matrix/mcl/ir.canonicalAny kind=func
@@ -1331,10 +1240,6 @@ NODE id=matrix/mcl/ir.canonicalAny kind=func
   sig=func canonicalAny(v interface{}) ([]byte, error)
   doc=canonicalAny is the shared entry point for any JSON-marshalable value.\nRoutes through encoding/json (to apply struct tags) then through the\ncanonicalMarshal walker (to sort keys + drop zero values).
 EDGES
-  calls=matrix/mcl/ir.canonicalMarshal
-  references=matrix/mcl/ir.canonicalMarshal,matrix/mcl/ir.err,matrix/mcl/ir.obj,matrix/mcl/ir.raw,matrix/mcl/ir.v
-  ^calls=matrix/mcl/ir.CanonicalJSON,matrix/mcl/ir.CanonicalJSONPlan
-  ^references=matrix/mcl/ir.CanonicalJSON,matrix/mcl/ir.CanonicalJSONPlan
   ^defines=matrix/mcl/ir/encode.go
 
 NODE id=matrix/mcl/ir.canonicalMarshal kind=func
@@ -1342,30 +1247,18 @@ NODE id=matrix/mcl/ir.canonicalMarshal kind=func
   sig=func canonicalMarshal(v interface{}) ([]byte, error)
   doc=canonicalMarshal recursively encodes a value to canonical JSON.\nMaps are emitted with keys in lexicographic order.
 EDGES
-  calls=matrix/mcl/ir.canonicalMarshalArray,matrix/mcl/ir.canonicalMarshalMap
-  references=matrix/mcl/ir.canonicalMarshalArray,matrix/mcl/ir.canonicalMarshalMap,matrix/mcl/ir.v,matrix/mcl/ir.val
-  ^calls=matrix/mcl/ir.canonicalAny,matrix/mcl/ir.canonicalMarshalArray,matrix/mcl/ir.canonicalMarshalMap
-  ^references=matrix/mcl/ir.canonicalAny,matrix/mcl/ir.canonicalMarshalArray,matrix/mcl/ir.canonicalMarshalMap
   ^defines=matrix/mcl/ir/encode.go
 
 NODE id=matrix/mcl/ir.canonicalMarshalArray kind=func
   digest=b3:94a518d9af987a1228883dcfc03e76403be9367e2ab2bfff2aefd202b858d291 file=MCL/ir/encode.go range=132:146 lang=go exported=false byte_range=3247:3551
   sig=func canonicalMarshalArray(arr []interface{}) ([]byte, error)
 EDGES
-  calls=matrix/mcl/ir.canonicalMarshal
-  references=matrix/mcl/ir.arr,matrix/mcl/ir.buf,matrix/mcl/ir.canonicalMarshal,matrix/mcl/ir.err,matrix/mcl/ir.i,matrix/mcl/ir.ib,matrix/mcl/ir.item
-  ^calls=matrix/mcl/ir.canonicalMarshal
-  ^references=matrix/mcl/ir.canonicalMarshal
   ^defines=matrix/mcl/ir/encode.go
 
 NODE id=matrix/mcl/ir.canonicalMarshalMap kind=func
   digest=b3:cf01a4c531635f39776e2e82ed267de4fbb40454b700057cf5673a4cd89fea7f file=MCL/ir/encode.go range=90:130 lang=go exported=false byte_range=2541:3245
   sig=func canonicalMarshalMap(m map[string]interface{}) ([]byte, error)
 EDGES
-  calls=matrix/mcl/ir.canonicalMarshal,matrix/mcl/ir.isZeroValue
-  references=matrix/mcl/ir.buf,matrix/mcl/ir.canonicalMarshal,matrix/mcl/ir.err,matrix/mcl/ir.first,matrix/mcl/ir.isZeroValue,matrix/mcl/ir.k,matrix/mcl/ir.kb,matrix/mcl/ir.keys,matrix/mcl/ir.m,matrix/mcl/ir.v,matrix/mcl/ir.vb
-  ^calls=matrix/mcl/ir.canonicalMarshal
-  ^references=matrix/mcl/ir.canonicalMarshal
   ^defines=matrix/mcl/ir/encode.go
 
 NODE id=matrix/mcl/ir.isTerminalKind kind=func
@@ -1373,9 +1266,6 @@ NODE id=matrix/mcl/ir.isTerminalKind kind=func
   sig=func isTerminalKind(kind string) bool
   doc=isTerminalKind reports whether a PlanNode of this kind has no children.
 EDGES
-  references=matrix/mcl/ir.NodeGate,matrix/mcl/ir.NodeStep,matrix/mcl/ir.NodeSubDispatch,matrix/mcl/ir.NodeToolCall,matrix/mcl/ir.kind
-  ^calls=matrix/mcl/ir.validatePlanNode
-  ^references=matrix/mcl/ir.validatePlanNode
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.isVersionPinned kind=func
@@ -1383,9 +1273,6 @@ NODE id=matrix/mcl/ir.isVersionPinned kind=func
   sig=func isVersionPinned(uri string) bool
   doc=isVersionPinned reports whether a matrix:// URI carries an explicit\n@version or @sha256:... suffix. Bare heads (e.g. matrix://skill/foo)\nare rejected per S4 hard rule (research/05-skills-and-tools.md §S4).
 EDGES
-  references=matrix/mcl/ir.i,matrix/mcl/ir.uri
-  ^calls=matrix/mcl/ir.ValidatePlan,matrix/mcl/ir.validateNodePayload
-  ^references=matrix/mcl/ir.ValidatePlan,matrix/mcl/ir.validateNodePayload
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.isZeroValue kind=func
@@ -1393,29 +1280,18 @@ NODE id=matrix/mcl/ir.isZeroValue kind=func
   sig=func isZeroValue(v interface{}) bool
   doc=isZeroValue returns true if the JSON value is a zero/empty that should be\nomitted from canonical encoding. This mirrors omitempty semantics.
 EDGES
-  references=matrix/mcl/ir.v,matrix/mcl/ir.val
-  ^calls=matrix/mcl/ir.canonicalMarshalMap
-  ^references=matrix/mcl/ir.canonicalMarshalMap
   ^defines=matrix/mcl/ir/encode.go
 
 NODE id=matrix/mcl/ir.validateNodePayload kind=func
   digest=b3:afb20fe9b0b382a54dd114665ad90fcf886b142e13679d59555ef73719622dbc file=MCL/ir/plan_validate.go range=100:184 lang=go exported=false byte_range=3560:6514
   sig=func validateNodePayload(n *PlanNode) error
 EDGES
-  calls=matrix/mcl/ir.isVersionPinned
-  references=matrix/mcl/ir.ErrPlanGateNoQuestion,matrix/mcl/ir.ErrPlanPayloadMismatch,matrix/mcl/ir.ErrPlanSideEffectUnknown,matrix/mcl/ir.ErrPlanStepKindUnknown,matrix/mcl/ir.ErrPlanStepNoPrompt,matrix/mcl/ir.ErrPlanSubSkillBareHead,matrix/mcl/ir.ErrPlanToolRefBareHead,matrix/mcl/ir.ErrPlanUnknownNodeKind,matrix/mcl/ir.NodeGate,matrix/mcl/ir.NodeParallel,matrix/mcl/ir.NodeSequential,matrix/mcl/ir.NodeStep,matrix/mcl/ir.NodeSubDispatch,matrix/mcl/ir.NodeToolCall,matrix/mcl/ir.PlanNode,matrix/mcl/ir.ValidSideEffectClasses,matrix/mcl/ir.ValidStepKinds,matrix/mcl/ir.isVersionPinned,matrix/mcl/ir.n,matrix/mcl/ir.populated
-  ^calls=matrix/mcl/ir.validatePlanNode
-  ^references=matrix/mcl/ir.validatePlanNode
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir.validatePlanNode kind=func
   digest=b3:3a59b6d920217cb52b8a7c9f5468690651547b2aed2b6c75e7f76c2fe36f18b8 file=MCL/ir/plan_validate.go range=66:98 lang=go exported=false byte_range=2693:3558
   sig=func validatePlanNode(n *PlanNode, seen map[string]bool) error
 EDGES
-  calls=matrix/mcl/ir.isTerminalKind,matrix/mcl/ir.validateNodePayload
-  references=matrix/mcl/ir.ErrPlanBranchEmpty,matrix/mcl/ir.ErrPlanNodeDuplicateID,matrix/mcl/ir.ErrPlanNodeMissingID,matrix/mcl/ir.ErrPlanTerminalHasChild,matrix/mcl/ir.ErrPlanUnknownNodeKind,matrix/mcl/ir.PlanNode,matrix/mcl/ir.ValidNodeKinds,matrix/mcl/ir.err,matrix/mcl/ir.i,matrix/mcl/ir.isTerminalKind,matrix/mcl/ir.n,matrix/mcl/ir.seen,matrix/mcl/ir.terminal,matrix/mcl/ir.validateNodePayload
-  ^calls=matrix/mcl/ir.ValidatePlan
-  ^references=matrix/mcl/ir.ValidatePlan
   ^defines=matrix/mcl/ir/plan_validate.go
 
 NODE id=matrix/mcl/ir/encode.go kind=file

@@ -1,10 +1,9 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/reconcile kind=package
   digest=b3:076ddedf4c0c0b6ca7a6d06d6ea18a6e122f0385e09643cf2831eec75c43f0fb file=workforce/internal/reconcile range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/reconcile/doc.go,matrix/workforce/internal/reconcile/service.go
-  imports=matrix/workforce/internal/circuit,matrix/workforce/internal/contracts,matrix/workforce/internal/dependency,matrix/workforce/internal/effect,matrix/workforce/internal/skills
   ^contains=mod:matrix/workforce
 
 NODE id=matrix/workforce/internal/reconcile.Event kind=type
@@ -13,8 +12,6 @@ NODE id=matrix/workforce/internal/reconcile.Event kind=type
   doc=Event is one durable authoritative reconciliation projection.
 EDGES
   contains=matrix/workforce/internal/reconcile.Event#EffectState,matrix/workforce/internal/reconcile.Event#EvidenceHash,matrix/workforce/internal/reconcile.Event#IntentID,matrix/workforce/internal/reconcile.Event#NodeID,matrix/workforce/internal/reconcile.Event#ObservedAt,matrix/workforce/internal/reconcile.Event#OrganizationID,matrix/workforce/internal/reconcile.Event#Outcome,matrix/workforce/internal/reconcile.Event#ProposalID,matrix/workforce/internal/reconcile.Event#SafeReason
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/effect.State,matrix/workforce/internal/skills.ProbeOutcome
-  ^references=matrix/workforce/internal/reconcile.Service.Sweep,matrix/workforce/internal/reconcile.Service.record,matrix/workforce/internal/reconcile.Summary
   ^defines=matrix/workforce/internal/reconcile/service.go
 
 NODE id=matrix/workforce/internal/reconcile.Event#EffectState kind=field
@@ -76,7 +73,6 @@ NODE id=matrix/workforce/internal/reconcile.New kind=func
   sig=func New(\n	pool *pgxpool.Pool,\n	gateway *effect.Gateway,\n	graph *dependency.Store,\n	tenantID string,\n	now func() time.Time,\n) (*Service, error)
   doc=New constructs one tenant-scoped reconciliation authority.
 EDGES
-  references=matrix/workforce/internal/dependency.Store,matrix/workforce/internal/effect.Gateway,matrix/workforce/internal/reconcile.Service,matrix/workforce/internal/reconcile.gateway,matrix/workforce/internal/reconcile.graph,matrix/workforce/internal/reconcile.now,matrix/workforce/internal/reconcile.pool,matrix/workforce/internal/reconcile.tenantID
   ^defines=matrix/workforce/internal/reconcile/service.go
 
 NODE id=matrix/workforce/internal/reconcile.Service kind=type
@@ -85,8 +81,6 @@ NODE id=matrix/workforce/internal/reconcile.Service kind=type
   doc=Service coordinates the concrete effect gateway and global graph store.
 EDGES
   contains=matrix/workforce/internal/reconcile.Service#gateway,matrix/workforce/internal/reconcile.Service#graph,matrix/workforce/internal/reconcile.Service#now,matrix/workforce/internal/reconcile.Service#pool,matrix/workforce/internal/reconcile.Service#tenantID,matrix/workforce/internal/reconcile.Service.Sweep,matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/reconcile.Service.record
-  references=matrix/workforce/internal/dependency.Store,matrix/workforce/internal/effect.Gateway
-  ^references=matrix/workforce/internal/reconcile.New,matrix/workforce/internal/reconcile.Service.Sweep,matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/reconcile.Service.record
   ^defines=matrix/workforce/internal/reconcile/service.go
 
 NODE id=matrix/workforce/internal/reconcile.Service#gateway kind=field
@@ -124,8 +118,6 @@ NODE id=matrix/workforce/internal/reconcile.Service.Sweep kind=method
   sig=func (service *Service) Sweep(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n) (Summary, error)
   doc=Sweep resolves every pending external effect before any new work may be selected.
 EDGES
-  calls=matrix/workforce/internal/effect.Gateway.Pending,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/reconcile.Service.record,matrix/workforce/internal/skills.ProbeOutcome.Valid
-  references=matrix/workforce/internal/circuit.ErrOpen,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/effect.ErrAmbiguous,matrix/workforce/internal/effect.Gateway.Pending,matrix/workforce/internal/effect.Gateway.Reconcile,matrix/workforce/internal/effect.Result,matrix/workforce/internal/effect.StateExternallyAmbiguous,matrix/workforce/internal/reconcile.Event,matrix/workforce/internal/reconcile.Service,matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/reconcile.Service.record,matrix/workforce/internal/reconcile.Summary,matrix/workforce/internal/reconcile.byNode,matrix/workforce/internal/reconcile.ctx,matrix/workforce/internal/reconcile.err,matrix/workforce/internal/reconcile.event,matrix/workforce/internal/reconcile.left,matrix/workforce/internal/reconcile.nodeID,matrix/workforce/internal/reconcile.nodeIDs,matrix/workforce/internal/reconcile.now,matrix/workforce/internal/reconcile.organizationID,matrix/workforce/internal/reconcile.outcome,matrix/workforce/internal/reconcile.pending,matrix/workforce/internal/reconcile.proposal,matrix/workforce/internal/reconcile.reconcileErr,matrix/workforce/internal/reconcile.result,matrix/workforce/internal/reconcile.right,matrix/workforce/internal/reconcile.service,matrix/workforce/internal/reconcile.summary,matrix/workforce/internal/skills.ProbeCompletedOutOfBand,matrix/workforce/internal/skills.ProbeOutcome,matrix/workforce/internal/skills.ProbeOutcome.Valid,matrix/workforce/internal/skills.ProbeUnchanged,matrix/workforce/internal/skills.ProbeUnknown
   ^contains=matrix/workforce/internal/reconcile.Service
   ^defines=matrix/workforce/internal/reconcile/service.go
 
@@ -133,21 +125,14 @@ NODE id=matrix/workforce/internal/reconcile.Service.applyIntent kind=method
   digest=b3:3812196ef522f9bb40685bbaa26db8d9f66f2b0ad022acc9458317317352e255 file=workforce/internal/reconcile/service.go range=169:199 lang=go exported=false byte_range=5452:6319
   sig=func (service *Service) applyIntent(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	nodeID dependency.NodeID,\n	outcomes []skills.ProbeOutcome,\n) error
 EDGES
-  calls=matrix/workforce/internal/dependency.Store.Snapshot,matrix/workforce/internal/dependency.Store.Transition,matrix/workforce/internal/reconcile.aggregate
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.StateCancelled,matrix/workforce/internal/dependency.StateCompleted,matrix/workforce/internal/dependency.StateContested,matrix/workforce/internal/dependency.StateFailed,matrix/workforce/internal/dependency.Store.Snapshot,matrix/workforce/internal/dependency.Store.Transition,matrix/workforce/internal/reconcile.Service,matrix/workforce/internal/reconcile.aggregate,matrix/workforce/internal/reconcile.candidate,matrix/workforce/internal/reconcile.ctx,matrix/workforce/internal/reconcile.err,matrix/workforce/internal/reconcile.found,matrix/workforce/internal/reconcile.node,matrix/workforce/internal/reconcile.nodeID,matrix/workforce/internal/reconcile.organizationID,matrix/workforce/internal/reconcile.outcomes,matrix/workforce/internal/reconcile.service,matrix/workforce/internal/reconcile.snapshot,matrix/workforce/internal/reconcile.target,matrix/workforce/internal/skills.ProbeOutcome
   ^contains=matrix/workforce/internal/reconcile.Service
-  ^calls=matrix/workforce/internal/reconcile.Service.Sweep
-  ^references=matrix/workforce/internal/reconcile.Service.Sweep
   ^defines=matrix/workforce/internal/reconcile/service.go
 
 NODE id=matrix/workforce/internal/reconcile.Service.record kind=method
   digest=b3:c3c9956eec35486d60a4ab0dbcbe6584d570d75ed016af508fb00456f3c0a628 file=workforce/internal/reconcile/service.go range=138:167 lang=go exported=false byte_range=4164:5450
   sig=func (service *Service) record(ctx context.Context, event Event) error
 EDGES
-  references=matrix/workforce/internal/reconcile.Event,matrix/workforce/internal/reconcile.Service,matrix/workforce/internal/reconcile.command,matrix/workforce/internal/reconcile.count,matrix/workforce/internal/reconcile.ctx,matrix/workforce/internal/reconcile.err,matrix/workforce/internal/reconcile.event,matrix/workforce/internal/reconcile.service
   ^contains=matrix/workforce/internal/reconcile.Service
-  ^calls=matrix/workforce/internal/reconcile.Service.Sweep
-  ^references=matrix/workforce/internal/reconcile.Service.Sweep
   ^defines=matrix/workforce/internal/reconcile/service.go
 
 NODE id=matrix/workforce/internal/reconcile.Summary kind=type
@@ -156,8 +141,6 @@ NODE id=matrix/workforce/internal/reconcile.Summary kind=type
   doc=Summary is the complete deterministic sweep performed before work selection.
 EDGES
   contains=matrix/workforce/internal/reconcile.Summary#Blocked,matrix/workforce/internal/reconcile.Summary#Completed,matrix/workforce/internal/reconcile.Summary#Events,matrix/workforce/internal/reconcile.Summary#OrganizationID,matrix/workforce/internal/reconcile.Summary#Unchanged
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/reconcile.Event
-  ^references=matrix/workforce/internal/reconcile.Service.Sweep
   ^defines=matrix/workforce/internal/reconcile/service.go
 
 NODE id=matrix/workforce/internal/reconcile.Summary#Blocked kind=field
@@ -194,9 +177,6 @@ NODE id=matrix/workforce/internal/reconcile.aggregate kind=func
   digest=b3:19ef60ed731e6b99f63ba953e5ae3ad2f354763df97b3f00389e33bb24fb3545 file=workforce/internal/reconcile/service.go range=201:217 lang=go exported=false byte_range=6321:6961
   sig=func aggregate(outcomes []skills.ProbeOutcome) dependency.NodeState
 EDGES
-  references=matrix/workforce/internal/dependency.NodeState,matrix/workforce/internal/dependency.StateContested,matrix/workforce/internal/dependency.StateWaiting,matrix/workforce/internal/reconcile.outcome,matrix/workforce/internal/reconcile.outcomes,matrix/workforce/internal/skills.ProbeCompletedOutOfBand,matrix/workforce/internal/skills.ProbeConflicted,matrix/workforce/internal/skills.ProbeDrifted,matrix/workforce/internal/skills.ProbeOutcome,matrix/workforce/internal/skills.ProbeReversed,matrix/workforce/internal/skills.ProbeUnchanged,matrix/workforce/internal/skills.ProbeUnknown
-  ^calls=matrix/workforce/internal/reconcile.Service.applyIntent
-  ^references=matrix/workforce/internal/reconcile.Service.applyIntent
   ^defines=matrix/workforce/internal/reconcile/service.go
 
 NODE id=matrix/workforce/internal/reconcile/doc.go kind=file

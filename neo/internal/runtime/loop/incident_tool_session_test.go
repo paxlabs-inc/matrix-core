@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -234,6 +235,20 @@ func incidentBrowserManifest(t *testing.T) string {
 	if browser == nil {
 		t.Fatal("browser server missing from Neo manifest")
 	}
+	_, sourceFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("resolve incident browser test source")
+	}
+	repositoryRoot := filepath.Clean(filepath.Join(
+		filepath.Dir(sourceFile), "..", "..", "..", "..",
+	))
+	browserArgs, err := json.Marshal([]string{
+		filepath.Join(repositoryRoot, "tools", "browser", "browser.mjs"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	browser["args"] = browserArgs
 	onlyBrowser, err := json.Marshal(
 		[]map[string]json.RawMessage{browser},
 	)

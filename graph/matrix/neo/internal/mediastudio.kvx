@@ -1,19 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/neo/internal/mediastudio kind=package
   digest=b3:eb89be1430255ba555dca9341344fda9d272c9e299d7368e09369b14b1af59a3 file=neo/internal/mediastudio range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/mediastudio/service.go
-  imports=matrix/neo/internal/tools,matrix/vault
   ^contains=mod:matrix/neo
-  ^imports=matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/mediastudio.Asset kind=type
   digest=b3:4a6bab4421664351da7b871ee840193f0236215e095d2cf417cd5d656f969e4a file=neo/internal/mediastudio/service.go range=62:69 lang=go exported=true byte_range=1527:1748
   sig=type Asset struct {\n	ID		string	`json:"id"`\n	MediaType	string	`json:"media_type"`\n	MIMEType	string	`json:"mime_type"`\n	Name		string	`json:"name"`\n	Size		int64	`json:"size"`\n	URL		string	`json:"url"`\n}
 EDGES
   contains=matrix/neo/internal/mediastudio.Asset#ID,matrix/neo/internal/mediastudio.Asset#MIMEType,matrix/neo/internal/mediastudio.Asset#MediaType,matrix/neo/internal/mediastudio.Asset#Name,matrix/neo/internal/mediastudio.Asset#Size,matrix/neo/internal/mediastudio.Asset#URL
-  ^references=matrix/neo/internal/mediastudio.Job,matrix/neo/internal/mediastudio.Service.Create,matrix/neo/internal/mediastudio.Service.run,matrix/neo/internal/mediastudio.cloneJob
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Asset#ID kind=field
@@ -57,8 +54,6 @@ NODE id=matrix/neo/internal/mediastudio.Config kind=type
   sig=type Config struct {\n	MediaDir	string\n	APIKey		string\n	Tools		*tools.Manager\n	Vault		*vault.Session\n	VaultUser	string\n}
 EDGES
   contains=matrix/neo/internal/mediastudio.Config#APIKey,matrix/neo/internal/mediastudio.Config#MediaDir,matrix/neo/internal/mediastudio.Config#Tools,matrix/neo/internal/mediastudio.Config#Vault,matrix/neo/internal/mediastudio.Config#VaultUser
-  references=matrix/neo/internal/tools.Manager,matrix/vault.Session
-  ^references=matrix/neo/internal/mediastudio.Open,matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Config#APIKey kind=field
@@ -96,9 +91,6 @@ NODE id=matrix/neo/internal/mediastudio.Job kind=type
   sig=type Job struct {\n	ID		string		`json:"id"`\n	Kind		Kind		`json:"kind"`\n	Status		Status		`json:"status"`\n	Provider	string		`json:"provider"`\n	Progress	int		`json:"progress"`\n	Error		string		`json:"error,omitempty"`\n	Request		Request		`json:"request"`\n	Assets		[]Asset		`json:"assets"`\n	CreatedAt	time.Time	`json:"created_at"`\n	UpdatedAt	time.Time	`json:"updated_at"`\n	CompletedAt	*time.Time	`json:"completed_at,omitempty"`\n	IdempotencyKey	string		`json:"-"`\n}
 EDGES
   contains=matrix/neo/internal/mediastudio.Job#Assets,matrix/neo/internal/mediastudio.Job#CompletedAt,matrix/neo/internal/mediastudio.Job#CreatedAt,matrix/neo/internal/mediastudio.Job#Error,matrix/neo/internal/mediastudio.Job#ID,matrix/neo/internal/mediastudio.Job#IdempotencyKey,matrix/neo/internal/mediastudio.Job#Kind,matrix/neo/internal/mediastudio.Job#Progress,matrix/neo/internal/mediastudio.Job#Provider,matrix/neo/internal/mediastudio.Job#Request,matrix/neo/internal/mediastudio.Job#Status,matrix/neo/internal/mediastudio.Job#UpdatedAt
-  references=matrix/neo/internal/mediastudio.Asset,matrix/neo/internal/mediastudio.Kind,matrix/neo/internal/mediastudio.Request,matrix/neo/internal/mediastudio.Status
-  ^embeds=matrix/neo/internal/mediastudio.persistedJob
-  ^references=matrix/neo/internal/mediastudio.Open,matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.Service.Create,matrix/neo/internal/mediastudio.Service.Get,matrix/neo/internal/mediastudio.Service.List,matrix/neo/internal/mediastudio.cloneJob,matrix/neo/internal/mediastudio.persistedJob
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Job#Assets kind=field
@@ -177,105 +169,78 @@ NODE id=matrix/neo/internal/mediastudio.Kind kind=type
   digest=b3:281f7a918830d5007c3ed551c522136130119b41fe0f026f72c15b960ab328a3 file=neo/internal/mediastudio/service.go range=22:22 lang=go exported=true byte_range=217:233
   sig=type Kind string
 EDGES
-  ^references=matrix/neo/internal/mediastudio.Job,matrix/neo/internal/mediastudio.KindCleanup,matrix/neo/internal/mediastudio.KindImageToImage,matrix/neo/internal/mediastudio.KindImageToVideo,matrix/neo/internal/mediastudio.KindInpainting,matrix/neo/internal/mediastudio.KindMergeFace,matrix/neo/internal/mediastudio.KindRemoveBackground,matrix/neo/internal/mediastudio.KindRemoveText,matrix/neo/internal/mediastudio.KindReplaceBackground,matrix/neo/internal/mediastudio.KindTextToImage,matrix/neo/internal/mediastudio.KindTextToVideo,matrix/neo/internal/mediastudio.KindUpscale,matrix/neo/internal/mediastudio.Request,matrix/neo/internal/mediastudio.Service.normalize,matrix/neo/internal/mediastudio.needsImage,matrix/neo/internal/mediastudio.needsPrompt,matrix/neo/internal/mediastudio.validAspect,matrix/neo/internal/mediastudio.validKind
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.KindCleanup kind=const
   digest=b3:add76b97994af59ebd0a763f6f3cbbb1b3c14b5ed4989668f680cb2800266c1a file=neo/internal/mediastudio/service.go range=30:30 lang=go exported=true byte_range=473:511
   sig=mediastudio.Kind
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind
-  ^references=matrix/neo/internal/mediastudio.Service.normalize,matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/mediastudio.validKind
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.KindImageToImage kind=const
   digest=b3:972b808cef96f8382b54cb281c54f913d52a331c1334383a886d658bcce2b141 file=neo/internal/mediastudio/service.go range=26:26 lang=go exported=true byte_range=290:335
   sig=mediastudio.Kind
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind
-  ^references=matrix/neo/internal/mediastudio.needsPrompt,matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/mediastudio.validKind
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.KindImageToVideo kind=const
   digest=b3:e0dba41ce86fad54b3f24047ba138fdea5808ab3de96c642d2cb52947176c5c2 file=neo/internal/mediastudio/service.go range=28:28 lang=go exported=true byte_range=383:428
   sig=mediastudio.Kind
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind
-  ^references=matrix/neo/internal/mediastudio.Service.normalize,matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/mediastudio.validAspect,matrix/neo/internal/mediastudio.validKind
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.KindInpainting kind=const
   digest=b3:bf5f8dd4514d154625685c5d1f0085e752f67781b1df084c727a129295d8122e file=neo/internal/mediastudio/service.go range=29:29 lang=go exported=true byte_range=430:471
   sig=mediastudio.Kind
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind
-  ^references=matrix/neo/internal/mediastudio.Service.normalize,matrix/neo/internal/mediastudio.needsPrompt,matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/mediastudio.validKind
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.KindMergeFace kind=const
   digest=b3:486c64ae690443e14e4d57885c3bc4c63ed23709b9239f64853024ef6f7b7770 file=neo/internal/mediastudio/service.go range=34:34 lang=go exported=true byte_range=658:699
   sig=mediastudio.Kind
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind
-  ^references=matrix/neo/internal/mediastudio.Service.normalize,matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/mediastudio.validKind
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.KindRemoveBackground kind=const
   digest=b3:91d8adf933411b1fa276ffbc2d36c4d4e0bdb834a6702f60c1a10faedf1a3a50 file=neo/internal/mediastudio/service.go range=31:31 lang=go exported=true byte_range=513:561
   sig=mediastudio.Kind
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind
-  ^references=matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/mediastudio.validKind
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.KindRemoveText kind=const
   digest=b3:1d49833d8dd83b910eeb653e3674dd826de89a98c58febc9de89e53b3c05cdcb file=neo/internal/mediastudio/service.go range=33:33 lang=go exported=true byte_range=614:656
   sig=mediastudio.Kind
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind
-  ^references=matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/mediastudio.validKind
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.KindReplaceBackground kind=const
   digest=b3:2bee77673da17f4959c1e006d4f9a8f1efc9b5b8780ecb9a92c23640deb5f67e file=neo/internal/mediastudio/service.go range=32:32 lang=go exported=true byte_range=563:612
   sig=mediastudio.Kind
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind
-  ^references=matrix/neo/internal/mediastudio.needsPrompt,matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/mediastudio.validKind
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.KindTextToImage kind=const
   digest=b3:05957f4a060f86d54f3fea213fb86ca80b6d9b554f91e1d8f174a1ad5537ca19 file=neo/internal/mediastudio/service.go range=25:25 lang=go exported=true byte_range=244:288
   sig=mediastudio.Kind
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind
-  ^references=matrix/neo/internal/mediastudio.needsImage,matrix/neo/internal/mediastudio.needsPrompt,matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/mediastudio.validKind
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.KindTextToVideo kind=const
   digest=b3:7256fefc91b39a0285935f142a9b152542a3ef0ecc68b0191a1ad1dc45c7508f file=neo/internal/mediastudio/service.go range=27:27 lang=go exported=true byte_range=337:381
   sig=mediastudio.Kind
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind
-  ^references=matrix/neo/internal/mediastudio.Service.normalize,matrix/neo/internal/mediastudio.needsImage,matrix/neo/internal/mediastudio.needsPrompt,matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/mediastudio.validAspect,matrix/neo/internal/mediastudio.validKind
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.KindUpscale kind=const
   digest=b3:6cb2f5895da50f09521051327a135118de56734037a69c93277352976ac05ee6 file=neo/internal/mediastudio/service.go range=35:35 lang=go exported=true byte_range=701:739
   sig=mediastudio.Kind
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind
-  ^references=matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/mediastudio.validKind
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Open kind=func
   digest=b3:3ccb30e96bd0b93bffcb60fcb2316322d4b3eb0f29a79101b10b29cd773b76af file=neo/internal/mediastudio/service.go range=131:176 lang=go exported=true byte_range=3175:4754
   sig=func Open(parent context.Context, config Config) (*Service, error)
 EDGES
-  calls=matrix/neo/internal/mediastudio.Service.load,matrix/neo/internal/mediastudio.Service.persistLocked
-  references=matrix/neo/internal/mediastudio.Config,matrix/neo/internal/mediastudio.Job,matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.Service.load,matrix/neo/internal/mediastudio.Service.persistLocked,matrix/neo/internal/mediastudio.StatusFailed,matrix/neo/internal/mediastudio.StatusQueued,matrix/neo/internal/mediastudio.StatusRunning,matrix/neo/internal/mediastudio.cancel,matrix/neo/internal/mediastudio.changed,matrix/neo/internal/mediastudio.config,matrix/neo/internal/mediastudio.ctx,matrix/neo/internal/mediastudio.err,matrix/neo/internal/mediastudio.id,matrix/neo/internal/mediastudio.job,matrix/neo/internal/mediastudio.mediaDir,matrix/neo/internal/mediastudio.now,matrix/neo/internal/mediastudio.parent,matrix/neo/internal/mediastudio.root,matrix/neo/internal/mediastudio.service
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Request kind=type
@@ -283,8 +248,6 @@ NODE id=matrix/neo/internal/mediastudio.Request kind=type
   sig=type Request struct {\n	Kind		Kind	`json:"kind"`\n	Prompt		string	`json:"prompt,omitempty"`\n	NegativePrompt	string	`json:"negative_prompt,omitempty"`\n	AspectRatio	string	`json:"aspect_ratio,omitempty"`\n	Seed		int64	`json:"seed"`\n	Strength	float64	`json:"strength,omitempty"`\n	Frames		int	`json:"frames,omitempty"`\n	FPS		int	`json:"fps,omitempty"`\n	Scale		float64	`json:"scale,omitempty"`\n	Image		string	`json:"image,omitempty"`\n	Mask		string	`json:"mask,omitempty"`\n	Face		string	`json:"face,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/mediastudio.Request#AspectRatio,matrix/neo/internal/mediastudio.Request#FPS,matrix/neo/internal/mediastudio.Request#Face,matrix/neo/internal/mediastudio.Request#Frames,matrix/neo/internal/mediastudio.Request#Image,matrix/neo/internal/mediastudio.Request#Kind,matrix/neo/internal/mediastudio.Request#Mask,matrix/neo/internal/mediastudio.Request#NegativePrompt,matrix/neo/internal/mediastudio.Request#Prompt,matrix/neo/internal/mediastudio.Request#Scale,matrix/neo/internal/mediastudio.Request#Seed,matrix/neo/internal/mediastudio.Request#Strength
-  references=matrix/neo/internal/mediastudio.Kind
-  ^references=matrix/neo/internal/mediastudio.Job,matrix/neo/internal/mediastudio.Service.Create,matrix/neo/internal/mediastudio.Service.normalize,matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/server.Server.handleMediaStudioJobs
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Request#AspectRatio kind=field
@@ -364,8 +327,6 @@ NODE id=matrix/neo/internal/mediastudio.Service kind=type
   sig=type Service struct {\n	mu		sync.RWMutex\n	jobs		map[string]Job\n	idempotent	map[string]string\n	mediaDir	string\n	root		string\n	statePath	string\n	configured	bool\n	tools		*tools.Manager\n	vault		*vault.Session\n	vaultUser	string\n	ctx		context.Context\n	cancel		context.CancelFunc\n	wg		sync.WaitGroup\n}
 EDGES
   contains=matrix/neo/internal/mediastudio.Service#cancel,matrix/neo/internal/mediastudio.Service#configured,matrix/neo/internal/mediastudio.Service#ctx,matrix/neo/internal/mediastudio.Service#idempotent,matrix/neo/internal/mediastudio.Service#jobs,matrix/neo/internal/mediastudio.Service#mediaDir,matrix/neo/internal/mediastudio.Service#mu,matrix/neo/internal/mediastudio.Service#root,matrix/neo/internal/mediastudio.Service#statePath,matrix/neo/internal/mediastudio.Service#tools,matrix/neo/internal/mediastudio.Service#vault,matrix/neo/internal/mediastudio.Service#vaultUser,matrix/neo/internal/mediastudio.Service#wg,matrix/neo/internal/mediastudio.Service.Close,matrix/neo/internal/mediastudio.Service.Create,matrix/neo/internal/mediastudio.Service.Delete,matrix/neo/internal/mediastudio.Service.Get,matrix/neo/internal/mediastudio.Service.List,matrix/neo/internal/mediastudio.Service.Status,matrix/neo/internal/mediastudio.Service.ad,matrix/neo/internal/mediastudio.Service.fail,matrix/neo/internal/mediastudio.Service.load,matrix/neo/internal/mediastudio.Service.normalize,matrix/neo/internal/mediastudio.Service.persistLocked,matrix/neo/internal/mediastudio.Service.run,matrix/neo/internal/mediastudio.Service.start,matrix/neo/internal/mediastudio.Service.validateReference
-  references=matrix/neo/internal/mediastudio.Job,matrix/neo/internal/tools.Manager,matrix/vault.Session
-  ^references=matrix/neo/internal/mediastudio.Open,matrix/neo/internal/mediastudio.Service.Close,matrix/neo/internal/mediastudio.Service.Create,matrix/neo/internal/mediastudio.Service.Delete,matrix/neo/internal/mediastudio.Service.Get,matrix/neo/internal/mediastudio.Service.List,matrix/neo/internal/mediastudio.Service.Status,matrix/neo/internal/mediastudio.Service.ad,matrix/neo/internal/mediastudio.Service.fail,matrix/neo/internal/mediastudio.Service.load,matrix/neo/internal/mediastudio.Service.normalize,matrix/neo/internal/mediastudio.Service.persistLocked,matrix/neo/internal/mediastudio.Service.run,matrix/neo/internal/mediastudio.Service.start,matrix/neo/internal/mediastudio.Service.validateReference,matrix/neo/internal/server.Engine,matrix/neo/internal/server.Server.handleMediaStudioJob,matrix/neo/internal/server.Server.handleMediaStudioJobs
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service#cancel kind=field
@@ -450,188 +411,128 @@ NODE id=matrix/neo/internal/mediastudio.Service.Close kind=method
   digest=b3:075514a76921be3ce6ed8bdd67e49f43c8f98e42a2bfbc01d944fb78a7cc06ee file=neo/internal/mediastudio/service.go range=292:298 lang=go exported=true byte_range=7940:8045
   sig=func (service *Service) Close()
 EDGES
-  references=matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.service
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/server.Engine.Close
-  ^references=matrix/neo/internal/server.Engine.Close
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.Create kind=method
   digest=b3:a2c61d8d0cf23c202afe8c33e5e3fe9c89cf38a84d84881b2cc37a8968f52659 file=neo/internal/mediastudio/service.go range=214:262 lang=go exported=true byte_range=5643:7198
   sig=func (service *Service) Create(idempotencyKey string, input Request) (Job, error)
 EDGES
-  calls=matrix/neo/internal/mediastudio.Service.normalize,matrix/neo/internal/mediastudio.Service.persistLocked,matrix/neo/internal/mediastudio.Service.start,matrix/neo/internal/mediastudio.cloneJob
-  references=matrix/neo/internal/mediastudio.Asset,matrix/neo/internal/mediastudio.Job,matrix/neo/internal/mediastudio.Request,matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.Service.normalize,matrix/neo/internal/mediastudio.Service.persistLocked,matrix/neo/internal/mediastudio.Service.start,matrix/neo/internal/mediastudio.StatusQueued,matrix/neo/internal/mediastudio.StatusRunning,matrix/neo/internal/mediastudio.active,matrix/neo/internal/mediastudio.cloneJob,matrix/neo/internal/mediastudio.err,matrix/neo/internal/mediastudio.exists,matrix/neo/internal/mediastudio.id,matrix/neo/internal/mediastudio.idempotencyKey,matrix/neo/internal/mediastudio.input,matrix/neo/internal/mediastudio.job,matrix/neo/internal/mediastudio.maxActiveJobs,matrix/neo/internal/mediastudio.now,matrix/neo/internal/mediastudio.ok,matrix/neo/internal/mediastudio.request,matrix/neo/internal/mediastudio.service
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/server.Server.handleMediaStudioJobs
-  ^references=matrix/neo/internal/server.Server.handleMediaStudioJobs
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.Delete kind=method
   digest=b3:3aba911fe4c6edb9a9627696d468a3c702da0780115e8b6a82e89cd63ff7615b file=neo/internal/mediastudio/service.go range=264:290 lang=go exported=true byte_range=7200:7938
   sig=func (service *Service) Delete(id string) error
 EDGES
-  calls=matrix/neo/internal/mediastudio.Service.persistLocked,matrix/neo/internal/mediastudio.mediaName
-  references=matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.Service.persistLocked,matrix/neo/internal/mediastudio.StatusQueued,matrix/neo/internal/mediastudio.StatusRunning,matrix/neo/internal/mediastudio.asset,matrix/neo/internal/mediastudio.err,matrix/neo/internal/mediastudio.id,matrix/neo/internal/mediastudio.job,matrix/neo/internal/mediastudio.mediaName,matrix/neo/internal/mediastudio.name,matrix/neo/internal/mediastudio.ok,matrix/neo/internal/mediastudio.service
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/server.Server.handleMediaStudioJob
-  ^references=matrix/neo/internal/server.Server.handleMediaStudioJob
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.Get kind=method
   digest=b3:8a39b85879801d34a01e71a5cb896bb06f0b6fdfd5a27f496fe53b1cc12dd65e file=neo/internal/mediastudio/service.go range=207:212 lang=go exported=true byte_range=5484:5641
   sig=func (service *Service) Get(id string) (Job, bool)
 EDGES
-  calls=matrix/neo/internal/mediastudio.cloneJob
-  references=matrix/neo/internal/mediastudio.Job,matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.cloneJob,matrix/neo/internal/mediastudio.id,matrix/neo/internal/mediastudio.job,matrix/neo/internal/mediastudio.ok,matrix/neo/internal/mediastudio.service
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/server.Server.handleMediaStudioJob
-  ^references=matrix/neo/internal/server.Server.handleMediaStudioJob
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.List kind=method
   digest=b3:4b7431d89c1716e7269aa79ba77750ff335183446b1a8978a3c13ebe9f2db49a file=neo/internal/mediastudio/service.go range=191:205 lang=go exported=true byte_range=5121:5482
   sig=func (service *Service) List() []Job
 EDGES
-  calls=matrix/neo/internal/mediastudio.cloneJob
-  references=matrix/neo/internal/mediastudio.Job,matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.cloneJob,matrix/neo/internal/mediastudio.i,matrix/neo/internal/mediastudio.j,matrix/neo/internal/mediastudio.job,matrix/neo/internal/mediastudio.jobs,matrix/neo/internal/mediastudio.service
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/server.Server.handleMediaStudioJobs
-  ^references=matrix/neo/internal/server.Server.handleMediaStudioJobs
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.Status kind=method
   digest=b3:6c140f82d54e5efc12ca260887b0e36767c321d65c08102f9c6d31b99b79fd75 file=neo/internal/mediastudio/service.go range=178:189 lang=go exported=true byte_range=4756:5119
   sig=func (service *Service) Status() StatusView
 EDGES
-  references=matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.StatusView,matrix/neo/internal/mediastudio.service
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/server.Server.handleMediaStudio
-  ^references=matrix/neo/internal/server.Server.handleMediaStudio
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.ad kind=method
   digest=b3:02fb063931037707633baac70767b208862a6319d65983d3da7370781c726869 file=neo/internal/mediastudio/service.go range=634:639 lang=go exported=false byte_range=17525:17670
   sig=func (service *Service) ad() vault.AD
 EDGES
-  references=matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.schemaName,matrix/neo/internal/mediastudio.service,matrix/neo/internal/mediastudio.storeName,matrix/vault.AD
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/mediastudio.Service.load,matrix/neo/internal/mediastudio.Service.persistLocked
-  ^references=matrix/neo/internal/mediastudio.Service.load,matrix/neo/internal/mediastudio.Service.persistLocked
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.fail kind=method
   digest=b3:e26fca8c0156829dfe733673245f3556ed456f97286eae62764641f5f0e980a4 file=neo/internal/mediastudio/service.go range=382:396 lang=go exported=false byte_range=10034:10372
   sig=func (service *Service) fail(id string, reason error)
 EDGES
-  calls=matrix/neo/internal/mediastudio.Service.persistLocked,matrix/neo/internal/mediastudio.boundedError
-  references=matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.Service.persistLocked,matrix/neo/internal/mediastudio.StatusFailed,matrix/neo/internal/mediastudio.boundedError,matrix/neo/internal/mediastudio.id,matrix/neo/internal/mediastudio.job,matrix/neo/internal/mediastudio.now,matrix/neo/internal/mediastudio.ok,matrix/neo/internal/mediastudio.reason,matrix/neo/internal/mediastudio.service
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/mediastudio.Service.run
-  ^references=matrix/neo/internal/mediastudio.Service.run
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.load kind=method
   digest=b3:851d2958f4d84602aa649f8b219f0e71289a9fe9519c7861a762a57694314e5e file=neo/internal/mediastudio/service.go range=641:672 lang=go exported=false byte_range=17672:18684
   sig=func (service *Service) load() error
 EDGES
-  calls=matrix/neo/internal/mediastudio.Service.ad,matrix/neo/internal/mediastudio.cloneJob,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
-  references=matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.Service.ad,matrix/neo/internal/mediastudio.cloneJob,matrix/neo/internal/mediastudio.data,matrix/neo/internal/mediastudio.err,matrix/neo/internal/mediastudio.job,matrix/neo/internal/mediastudio.persistedState,matrix/neo/internal/mediastudio.service,matrix/neo/internal/mediastudio.state,matrix/neo/internal/mediastudio.stored,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/mediastudio.Open
-  ^references=matrix/neo/internal/mediastudio.Open
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.normalize kind=method
   digest=b3:4984a1597fb2b4f5f58acdc229771cc1c6666203cb1e6aeadd82cd806decfd7e file=neo/internal/mediastudio/service.go range=398:467 lang=go exported=false byte_range=10374:12498
   sig=func (service *Service) normalize(input Request) (Request, error)
 EDGES
-  calls=matrix/neo/internal/mediastudio.Service.validateReference,matrix/neo/internal/mediastudio.needsImage,matrix/neo/internal/mediastudio.needsPrompt,matrix/neo/internal/mediastudio.validAspect,matrix/neo/internal/mediastudio.validKind
-  references=matrix/neo/internal/mediastudio.Kind,matrix/neo/internal/mediastudio.KindCleanup,matrix/neo/internal/mediastudio.KindImageToVideo,matrix/neo/internal/mediastudio.KindInpainting,matrix/neo/internal/mediastudio.KindMergeFace,matrix/neo/internal/mediastudio.KindTextToVideo,matrix/neo/internal/mediastudio.Request,matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.Service.validateReference,matrix/neo/internal/mediastudio.err,matrix/neo/internal/mediastudio.input,matrix/neo/internal/mediastudio.needsImage,matrix/neo/internal/mediastudio.needsPrompt,matrix/neo/internal/mediastudio.service,matrix/neo/internal/mediastudio.validAspect,matrix/neo/internal/mediastudio.validKind
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/mediastudio.Service.Create
-  ^references=matrix/neo/internal/mediastudio.Service.Create
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.persistLocked kind=method
   digest=b3:30f061c563450a7236afeba2f841da2ef5889f16eaaa7380d6ebebc88ceab06f file=neo/internal/mediastudio/service.go range=674:723 lang=go exported=false byte_range=18686:20185
   sig=func (service *Service) persistLocked() error
 EDGES
-  calls=matrix/neo/internal/mediastudio.Service.ad,matrix/vault.Session.MaybeSealFile
-  references=matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.Service.ad,matrix/neo/internal/mediastudio.data,matrix/neo/internal/mediastudio.err,matrix/neo/internal/mediastudio.i,matrix/neo/internal/mediastudio.j,matrix/neo/internal/mediastudio.job,matrix/neo/internal/mediastudio.persistedJob,matrix/neo/internal/mediastudio.persistedState,matrix/neo/internal/mediastudio.remove,matrix/neo/internal/mediastudio.service,matrix/neo/internal/mediastudio.state,matrix/neo/internal/mediastudio.temp,matrix/neo/internal/mediastudio.tempName,matrix/vault.Session.MaybeSealFile
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/mediastudio.Open,matrix/neo/internal/mediastudio.Service.Create,matrix/neo/internal/mediastudio.Service.Delete,matrix/neo/internal/mediastudio.Service.fail,matrix/neo/internal/mediastudio.Service.run
-  ^references=matrix/neo/internal/mediastudio.Open,matrix/neo/internal/mediastudio.Service.Create,matrix/neo/internal/mediastudio.Service.Delete,matrix/neo/internal/mediastudio.Service.fail,matrix/neo/internal/mediastudio.Service.run
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.run kind=method
   digest=b3:5033233e0a645ebceba202cf8e788db67b4ac57d7ce90b9b6795e5fee6862f42 file=neo/internal/mediastudio/service.go range=308:380 lang=go exported=false byte_range=8174:10032
   sig=func (service *Service) run(id string)
 EDGES
-  calls=matrix/neo/internal/mediastudio.Service.fail,matrix/neo/internal/mediastudio.Service.persistLocked,matrix/neo/internal/mediastudio.decodeMediaResult,matrix/neo/internal/mediastudio.mediaName,matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/tools.Manager.CallDirect
-  references=matrix/neo/internal/mediastudio.Asset,matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.Service.fail,matrix/neo/internal/mediastudio.Service.persistLocked,matrix/neo/internal/mediastudio.StatusRunning,matrix/neo/internal/mediastudio.StatusSucceeded,matrix/neo/internal/mediastudio.args,matrix/neo/internal/mediastudio.cancel,matrix/neo/internal/mediastudio.current,matrix/neo/internal/mediastudio.decodeErr,matrix/neo/internal/mediastudio.decodeMediaResult,matrix/neo/internal/mediastudio.err,matrix/neo/internal/mediastudio.exists,matrix/neo/internal/mediastudio.id,matrix/neo/internal/mediastudio.info,matrix/neo/internal/mediastudio.job,matrix/neo/internal/mediastudio.mediaName,matrix/neo/internal/mediastudio.mediaType,matrix/neo/internal/mediastudio.mimeType,matrix/neo/internal/mediastudio.name,matrix/neo/internal/mediastudio.now,matrix/neo/internal/mediastudio.ok,matrix/neo/internal/mediastudio.payload,matrix/neo/internal/mediastudio.result,matrix/neo/internal/mediastudio.runCtx,matrix/neo/internal/mediastudio.service,matrix/neo/internal/mediastudio.statErr,matrix/neo/internal/mediastudio.toolCall,matrix/neo/internal/mediastudio.toolName,matrix/neo/internal/mediastudio.valid,matrix/neo/internal/tools.Manager.CallDirect
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^references=matrix/neo/internal/mediastudio.Service.start
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.start kind=method
   digest=b3:fdba97a9e8458b3d57805b22b6bed81ccfe92c972facf7eb43c2595af562e35d file=neo/internal/mediastudio/service.go range=300:306 lang=go exported=false byte_range=8047:8172
   sig=func (service *Service) start(id string)
 EDGES
-  references=matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.Service.run,matrix/neo/internal/mediastudio.id,matrix/neo/internal/mediastudio.service
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/mediastudio.Service.Create
-  ^references=matrix/neo/internal/mediastudio.Service.Create
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Service.validateReference kind=method
   digest=b3:5526f4e5ca4090d9778e7b5dff81a0d62cd6286e986ae91334ab40ae04088c48 file=neo/internal/mediastudio/service.go range=469:479 lang=go exported=false byte_range=12500:12855
   sig=func (service *Service) validateReference(reference, label string) error
 EDGES
-  calls=matrix/neo/internal/mediastudio.mediaName
-  references=matrix/neo/internal/mediastudio.Service,matrix/neo/internal/mediastudio.err,matrix/neo/internal/mediastudio.info,matrix/neo/internal/mediastudio.label,matrix/neo/internal/mediastudio.mediaName,matrix/neo/internal/mediastudio.name,matrix/neo/internal/mediastudio.ok,matrix/neo/internal/mediastudio.reference,matrix/neo/internal/mediastudio.service
   ^contains=matrix/neo/internal/mediastudio.Service
-  ^calls=matrix/neo/internal/mediastudio.Service.normalize
-  ^references=matrix/neo/internal/mediastudio.Service.normalize
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.Status kind=type
   digest=b3:b601ba3d4abd875f9ceb19f7203cbf0fe9de957bb0bd98c2f9ec20f21462accb file=neo/internal/mediastudio/service.go range=38:38 lang=go exported=true byte_range=743:761
   sig=type Status string
 EDGES
-  ^references=matrix/neo/internal/mediastudio.Job,matrix/neo/internal/mediastudio.StatusFailed,matrix/neo/internal/mediastudio.StatusQueued,matrix/neo/internal/mediastudio.StatusRunning,matrix/neo/internal/mediastudio.StatusSucceeded
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.StatusFailed kind=const
   digest=b3:eb222901b5b2b91342e334db88469b4cfaee42a58fcb10e3e56e0039b99985a7 file=neo/internal/mediastudio/service.go range=44:44 lang=go exported=true byte_range=881:914
   sig=mediastudio.Status
 EDGES
-  references=matrix/neo/internal/mediastudio.Status
-  ^references=matrix/neo/internal/mediastudio.Open,matrix/neo/internal/mediastudio.Service.fail
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.StatusQueued kind=const
   digest=b3:148be71aa47f4d32758520aeeec8bca9ab898f36e36e83b37f48e2dd6690f88a file=neo/internal/mediastudio/service.go range=41:41 lang=go exported=true byte_range=772:805
   sig=mediastudio.Status
 EDGES
-  references=matrix/neo/internal/mediastudio.Status
-  ^references=matrix/neo/internal/mediastudio.Open,matrix/neo/internal/mediastudio.Service.Create,matrix/neo/internal/mediastudio.Service.Delete
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.StatusRunning kind=const
   digest=b3:5adede400829405c89a21233055987e5544e37b8bb8f4b35132d45efc44ae9ed file=neo/internal/mediastudio/service.go range=42:42 lang=go exported=true byte_range=807:841
   sig=mediastudio.Status
 EDGES
-  references=matrix/neo/internal/mediastudio.Status
-  ^references=matrix/neo/internal/mediastudio.Open,matrix/neo/internal/mediastudio.Service.Create,matrix/neo/internal/mediastudio.Service.Delete,matrix/neo/internal/mediastudio.Service.run
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.StatusSucceeded kind=const
   digest=b3:93cf98115ef8b3f401cb09d380b8f8a40be5579acf15514b26e3770868baf539 file=neo/internal/mediastudio/service.go range=43:43 lang=go exported=true byte_range=843:879
   sig=mediastudio.Status
 EDGES
-  references=matrix/neo/internal/mediastudio.Status
-  ^references=matrix/neo/internal/mediastudio.Service.run
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.StatusView kind=type
@@ -639,7 +540,6 @@ NODE id=matrix/neo/internal/mediastudio.StatusView kind=type
   sig=type StatusView struct {\n	Configured	bool	`json:"configured"`\n	Provider	string	`json:"provider"`\n	Message		string	`json:"message"`\n}
 EDGES
   contains=matrix/neo/internal/mediastudio.StatusView#Configured,matrix/neo/internal/mediastudio.StatusView#Message,matrix/neo/internal/mediastudio.StatusView#Provider
-  ^references=matrix/neo/internal/mediastudio.Service.Status
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.StatusView#Configured kind=field
@@ -664,43 +564,30 @@ NODE id=matrix/neo/internal/mediastudio.boundedError kind=func
   digest=b3:39f4d23d40d61d91d80f51809e06c212686cd562185dea710c5004d26c680168 file=neo/internal/mediastudio/service.go range=617:632 lang=go exported=false byte_range=17101:17523
   sig=func boundedError(err error) string
 EDGES
-  references=matrix/neo/internal/mediastudio.err,matrix/neo/internal/mediastudio.message
-  ^calls=matrix/neo/internal/mediastudio.Service.fail
-  ^references=matrix/neo/internal/mediastudio.Service.fail
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.cloneJob kind=func
   digest=b3:36c311de3c6bbf5919adb0247ab0230b317ec50cb552ef340f2bea859037def1 file=neo/internal/mediastudio/service.go range=608:615 lang=go exported=false byte_range=16944:17099
   sig=func cloneJob(job Job) Job
 EDGES
-  references=matrix/neo/internal/mediastudio.Asset,matrix/neo/internal/mediastudio.Job,matrix/neo/internal/mediastudio.job
-  ^calls=matrix/neo/internal/mediastudio.Service.Create,matrix/neo/internal/mediastudio.Service.Get,matrix/neo/internal/mediastudio.Service.List,matrix/neo/internal/mediastudio.Service.load
-  ^references=matrix/neo/internal/mediastudio.Service.Create,matrix/neo/internal/mediastudio.Service.Get,matrix/neo/internal/mediastudio.Service.List,matrix/neo/internal/mediastudio.Service.load
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.decodeMediaResult kind=func
   digest=b3:6f6b979d48397fdecf4e634c98e534a26e2f3c66f9fa357d8b953c558f011a64 file=neo/internal/mediastudio/service.go range=490:514 lang=go exported=false byte_range=13053:13833
   sig=func decodeMediaResult(result tools.DirectResult) (mediaResult, error)
 EDGES
-  references=matrix/neo/internal/mediastudio.decodeErr,matrix/neo/internal/mediastudio.mediaResult,matrix/neo/internal/mediastudio.message,matrix/neo/internal/mediastudio.payload,matrix/neo/internal/mediastudio.result,matrix/neo/internal/tools.DirectResult
-  ^calls=matrix/neo/internal/mediastudio.Service.run
-  ^references=matrix/neo/internal/mediastudio.Service.run
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.maxActiveJobs kind=const
   digest=b3:2311164446aed2fab221ffa9a0e264765d7cca9569ca6e9f7da614abf3a2eb53 file=neo/internal/mediastudio/service.go range=126:126 lang=go exported=false byte_range=3083:3100
   sig=untyped int
 EDGES
-  ^references=matrix/neo/internal/mediastudio.Service.Create
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.mediaName kind=func
   digest=b3:94832d46607601325f5bba90ce600bf89037c2873a401baad52ce6b0e5fc9eba file=neo/internal/mediastudio/service.go range=598:606 lang=go exported=false byte_range=16606:16942
   sig=func mediaName(reference string) (string, bool)
 EDGES
-  references=matrix/neo/internal/mediastudio.name,matrix/neo/internal/mediastudio.prefix,matrix/neo/internal/mediastudio.reference
-  ^calls=matrix/neo/internal/mediastudio.Service.Delete,matrix/neo/internal/mediastudio.Service.run,matrix/neo/internal/mediastudio.Service.validateReference
-  ^references=matrix/neo/internal/mediastudio.Service.Delete,matrix/neo/internal/mediastudio.Service.run,matrix/neo/internal/mediastudio.Service.validateReference
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.mediaResult kind=type
@@ -708,7 +595,6 @@ NODE id=matrix/neo/internal/mediastudio.mediaResult kind=type
   sig=type mediaResult struct {\n	OK	bool	`json:"ok"`\n	Error	string	`json:"error"`\n	Kind	string	`json:"kind"`\n	URL	string	`json:"url"`\n	MIME	string	`json:"mime"`\n	Bytes	int64	`json:"bytes"`\n}
 EDGES
   contains=matrix/neo/internal/mediastudio.mediaResult#Bytes,matrix/neo/internal/mediastudio.mediaResult#Error,matrix/neo/internal/mediastudio.mediaResult#Kind,matrix/neo/internal/mediastudio.mediaResult#MIME,matrix/neo/internal/mediastudio.mediaResult#OK,matrix/neo/internal/mediastudio.mediaResult#URL
-  ^references=matrix/neo/internal/mediastudio.decodeMediaResult
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.mediaResult#Bytes kind=field
@@ -751,18 +637,12 @@ NODE id=matrix/neo/internal/mediastudio.needsImage kind=func
   digest=b3:67eccf4e8e66871806acf7ee970d30ebcbfccfefe65bc6d091586a4a1369a4d0 file=neo/internal/mediastudio/service.go range=586:588 lang=go exported=false byte_range=16236:16330
   sig=func needsImage(kind Kind) bool
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind,matrix/neo/internal/mediastudio.KindTextToImage,matrix/neo/internal/mediastudio.KindTextToVideo,matrix/neo/internal/mediastudio.kind
-  ^calls=matrix/neo/internal/mediastudio.Service.normalize
-  ^references=matrix/neo/internal/mediastudio.Service.normalize
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.needsPrompt kind=func
   digest=b3:98fa1bb3d262b438150ff07f486c91cefe131c24a7b02b053e850ef3153b907a file=neo/internal/mediastudio/service.go range=576:584 lang=go exported=false byte_range=16042:16234
   sig=func needsPrompt(kind Kind) bool
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind,matrix/neo/internal/mediastudio.KindImageToImage,matrix/neo/internal/mediastudio.KindInpainting,matrix/neo/internal/mediastudio.KindReplaceBackground,matrix/neo/internal/mediastudio.KindTextToImage,matrix/neo/internal/mediastudio.KindTextToVideo,matrix/neo/internal/mediastudio.kind
-  ^calls=matrix/neo/internal/mediastudio.Service.normalize
-  ^references=matrix/neo/internal/mediastudio.Service.normalize
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.persistedJob kind=type
@@ -770,9 +650,6 @@ NODE id=matrix/neo/internal/mediastudio.persistedJob kind=type
   sig=type persistedJob struct {\n	Job\n	IdempotencyKey	string	`json:"idempotency_key"`\n}
 EDGES
   contains=matrix/neo/internal/mediastudio.persistedJob#IdempotencyKey
-  embeds=matrix/neo/internal/mediastudio.Job
-  references=matrix/neo/internal/mediastudio.Job
-  ^references=matrix/neo/internal/mediastudio.Service.persistLocked,matrix/neo/internal/mediastudio.persistedState
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.persistedJob#IdempotencyKey kind=field
@@ -786,8 +663,6 @@ NODE id=matrix/neo/internal/mediastudio.persistedState kind=type
   sig=type persistedState struct {\n	Jobs []persistedJob `json:"jobs"`\n}
 EDGES
   contains=matrix/neo/internal/mediastudio.persistedState#Jobs
-  references=matrix/neo/internal/mediastudio.persistedJob
-  ^references=matrix/neo/internal/mediastudio.Service.load,matrix/neo/internal/mediastudio.Service.persistLocked
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.persistedState#Jobs kind=field
@@ -800,42 +675,30 @@ NODE id=matrix/neo/internal/mediastudio.schemaName kind=const
   digest=b3:b8707e322e572a249c235ff35db854b7404e4b8a60a839d3e6082db27516fc90 file=neo/internal/mediastudio/service.go range=128:128 lang=go exported=false byte_range=3138:3171
   sig=untyped string
 EDGES
-  ^references=matrix/neo/internal/mediastudio.Service.ad
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.storeName kind=const
   digest=b3:d34bc02d2d1b082b3c0acc024534961c15701574c1ee69271149be5efe888d42 file=neo/internal/mediastudio/service.go range=127:127 lang=go exported=false byte_range=3102:3136
   sig=untyped string
 EDGES
-  ^references=matrix/neo/internal/mediastudio.Service.ad
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.toolCall kind=func
   digest=b3:122fbaf52aab2c6b8810264e0151bd80eccb2fc57ae01dbef678ea03864ed698 file=neo/internal/mediastudio/service.go range=516:563 lang=go exported=false byte_range=13835:15749
   sig=func toolCall(request Request) (string, map[string]interface{})
 EDGES
-  calls=matrix/neo/internal/tools.FunctionName
-  references=matrix/neo/internal/mediastudio.KindCleanup,matrix/neo/internal/mediastudio.KindImageToImage,matrix/neo/internal/mediastudio.KindImageToVideo,matrix/neo/internal/mediastudio.KindInpainting,matrix/neo/internal/mediastudio.KindMergeFace,matrix/neo/internal/mediastudio.KindRemoveBackground,matrix/neo/internal/mediastudio.KindRemoveText,matrix/neo/internal/mediastudio.KindReplaceBackground,matrix/neo/internal/mediastudio.KindTextToImage,matrix/neo/internal/mediastudio.KindTextToVideo,matrix/neo/internal/mediastudio.KindUpscale,matrix/neo/internal/mediastudio.Request,matrix/neo/internal/mediastudio.args,matrix/neo/internal/mediastudio.request,matrix/neo/internal/tools.FunctionName
-  ^calls=matrix/neo/internal/mediastudio.Service.run
-  ^references=matrix/neo/internal/mediastudio.Service.run
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.validAspect kind=func
   digest=b3:d9471e96693226217cb357de061f6dc25395549cd2e0ffd97cbaf2f434b9bf8b file=neo/internal/mediastudio/service.go range=590:596 lang=go exported=false byte_range=16332:16604
   sig=func validAspect(kind Kind, value string) bool
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind,matrix/neo/internal/mediastudio.KindImageToVideo,matrix/neo/internal/mediastudio.KindTextToVideo,matrix/neo/internal/mediastudio.kind,matrix/neo/internal/mediastudio.value
-  ^calls=matrix/neo/internal/mediastudio.Service.normalize
-  ^references=matrix/neo/internal/mediastudio.Service.normalize
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio.validKind kind=func
   digest=b3:4c3b991b16b565dbea7378fc94d4230bc54ce8a293c5cb6f1e4c42bf24891ece file=neo/internal/mediastudio/service.go range=565:574 lang=go exported=false byte_range=15751:16040
   sig=func validKind(kind Kind) bool
 EDGES
-  references=matrix/neo/internal/mediastudio.Kind,matrix/neo/internal/mediastudio.KindCleanup,matrix/neo/internal/mediastudio.KindImageToImage,matrix/neo/internal/mediastudio.KindImageToVideo,matrix/neo/internal/mediastudio.KindInpainting,matrix/neo/internal/mediastudio.KindMergeFace,matrix/neo/internal/mediastudio.KindRemoveBackground,matrix/neo/internal/mediastudio.KindRemoveText,matrix/neo/internal/mediastudio.KindReplaceBackground,matrix/neo/internal/mediastudio.KindTextToImage,matrix/neo/internal/mediastudio.KindTextToVideo,matrix/neo/internal/mediastudio.KindUpscale,matrix/neo/internal/mediastudio.kind
-  ^calls=matrix/neo/internal/mediastudio.Service.normalize
-  ^references=matrix/neo/internal/mediastudio.Service.normalize
   ^defines=matrix/neo/internal/mediastudio/service.go
 
 NODE id=matrix/neo/internal/mediastudio/service.go kind=file

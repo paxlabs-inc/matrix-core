@@ -1,20 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/knowledgework kind=package
   digest=b3:b00b0c9622855c21cc8a9d62525e49796d683b0ffc71f889cb6993441d4314c9 file=workforce/internal/knowledgework range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/knowledgework/service.go
-  imports=matrix/workforce/internal/contracts,matrix/workforce/internal/skills
   ^contains=mod:matrix/workforce
-  ^imports=matrix/workforce/internal/departmentadapter
 
 NODE id=matrix/workforce/internal/knowledgework.Draft kind=type
   digest=b3:3a7407e7c642f1c6ac2011956960063b544f12cda31ca4f253211e266e9fc72b file=workforce/internal/knowledgework/service.go range=46:54 lang=go exported=true byte_range=1417:1830
   sig=type Draft struct {\n	Summary		string			`json:"summary"`\n	Findings	[]Finding		`json:"findings"`\n	Recommendations	[]Recommendation	`json:"recommendations"`\n	Experiment	*ExperimentDesign	`json:"experiment"`\n	Handoff		*HandoffDraft		`json:"handoff"`\n	UnresolvedRisks	[]string		`json:"unresolved_risks"`\n	RequiresHuman	bool			`json:"requires_human"`\n}
 EDGES
   contains=matrix/workforce/internal/knowledgework.Draft#Experiment,matrix/workforce/internal/knowledgework.Draft#Findings,matrix/workforce/internal/knowledgework.Draft#Handoff,matrix/workforce/internal/knowledgework.Draft#Recommendations,matrix/workforce/internal/knowledgework.Draft#RequiresHuman,matrix/workforce/internal/knowledgework.Draft#Summary,matrix/workforce/internal/knowledgework.Draft#UnresolvedRisks,matrix/workforce/internal/knowledgework.Draft.validate
-  references=matrix/workforce/internal/knowledgework.ExperimentDesign,matrix/workforce/internal/knowledgework.Finding,matrix/workforce/internal/knowledgework.HandoffDraft,matrix/workforce/internal/knowledgework.Recommendation
-  ^references=matrix/workforce/internal/knowledgework.Draft.validate,matrix/workforce/internal/knowledgework.Input
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.Draft#Experiment kind=field
@@ -63,11 +59,7 @@ NODE id=matrix/workforce/internal/knowledgework.Draft.validate kind=method
   digest=b3:934f5abfb5efd806e2136cd7e5393cf016a2f85c3d077db65e8c18768523e1be file=workforce/internal/knowledgework/service.go range=194:254 lang=go exported=false byte_range=6807:8842
   sig=func (draft Draft) validate(\n	skillID contracts.SkillID,\n	evidence map[contracts.EvidenceID]bool,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/knowledgework.ExperimentDesign.validate,matrix/workforce/internal/knowledgework.HandoffDraft.validate,matrix/workforce/internal/knowledgework.validateEvidenceIDs,matrix/workforce/internal/knowledgework.validateEvidenceStatement
-  references=matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/knowledgework.Draft,matrix/workforce/internal/knowledgework.ExperimentDesign.validate,matrix/workforce/internal/knowledgework.HandoffDraft.validate,matrix/workforce/internal/knowledgework.draft,matrix/workforce/internal/knowledgework.err,matrix/workforce/internal/knowledgework.evidence,matrix/workforce/internal/knowledgework.finding,matrix/workforce/internal/knowledgework.now,matrix/workforce/internal/knowledgework.recommendation,matrix/workforce/internal/knowledgework.risk,matrix/workforce/internal/knowledgework.skillID,matrix/workforce/internal/knowledgework.validateEvidenceIDs,matrix/workforce/internal/knowledgework.validateEvidenceStatement,matrix/workforce/internal/skills.ExperimentDesignSkill,matrix/workforce/internal/skills.TypedHandoffSkill
   ^contains=matrix/workforce/internal/knowledgework.Draft
-  ^calls=matrix/workforce/internal/knowledgework.Input.validateAt
-  ^references=matrix/workforce/internal/knowledgework.Input.validateAt
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.ExperimentDesign kind=type
@@ -75,7 +67,6 @@ NODE id=matrix/workforce/internal/knowledgework.ExperimentDesign kind=type
   sig=type ExperimentDesign struct {\n	Hypothesis		string		`json:"hypothesis"`\n	Method			string		`json:"method"`\n	SuccessMetrics		[]string	`json:"success_metrics"`\n	StopConditions		[]string	`json:"stop_conditions"`\n	MaximumDuration		string		`json:"maximum_duration"`\n	RequiresHumanRun	bool		`json:"requires_human_run"`\n}
 EDGES
   contains=matrix/workforce/internal/knowledgework.ExperimentDesign#Hypothesis,matrix/workforce/internal/knowledgework.ExperimentDesign#MaximumDuration,matrix/workforce/internal/knowledgework.ExperimentDesign#Method,matrix/workforce/internal/knowledgework.ExperimentDesign#RequiresHumanRun,matrix/workforce/internal/knowledgework.ExperimentDesign#StopConditions,matrix/workforce/internal/knowledgework.ExperimentDesign#SuccessMetrics,matrix/workforce/internal/knowledgework.ExperimentDesign.validate
-  ^references=matrix/workforce/internal/knowledgework.Draft,matrix/workforce/internal/knowledgework.ExperimentDesign.validate
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.ExperimentDesign#Hypothesis kind=field
@@ -118,10 +109,7 @@ NODE id=matrix/workforce/internal/knowledgework.ExperimentDesign.validate kind=m
   digest=b3:f19baf47eab842a9ac2e3f54bbd042ff69da46ad830c29eb1b51f5c4f09b67d3 file=workforce/internal/knowledgework/service.go range=256:277 lang=go exported=false byte_range=8844:9593
   sig=func (experiment ExperimentDesign) validate() error
 EDGES
-  references=matrix/workforce/internal/knowledgework.ExperimentDesign,matrix/workforce/internal/knowledgework.experiment,matrix/workforce/internal/knowledgework.value,matrix/workforce/internal/knowledgework.values
   ^contains=matrix/workforce/internal/knowledgework.ExperimentDesign
-  ^calls=matrix/workforce/internal/knowledgework.Draft.validate
-  ^references=matrix/workforce/internal/knowledgework.Draft.validate
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.Finding kind=type
@@ -129,8 +117,6 @@ NODE id=matrix/workforce/internal/knowledgework.Finding kind=type
   sig=type Finding struct {\n	Statement	string			`json:"statement"`\n	EvidenceIDs	[]contracts.EvidenceID	`json:"evidence_ids"`\n}
 EDGES
   contains=matrix/workforce/internal/knowledgework.Finding#EvidenceIDs,matrix/workforce/internal/knowledgework.Finding#Statement
-  references=matrix/workforce/internal/contracts.EvidenceID
-  ^references=matrix/workforce/internal/knowledgework.Draft
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.Finding#EvidenceIDs kind=field
@@ -150,8 +136,6 @@ NODE id=matrix/workforce/internal/knowledgework.HandoffDraft kind=type
   sig=type HandoffDraft struct {\n	RecipientDepartment	contracts.DepartmentKind	`json:"recipient_department"`\n	RecipientSeatID		contracts.SeatID		`json:"recipient_seat_id"`\n	Subject			string				`json:"subject"`\n	RequiredAction		string				`json:"required_action"`\n	TimeoutAction		contracts.TimeoutAction		`json:"timeout_action"`\n	ExpiresAt		time.Time			`json:"expires_at"`\n}
 EDGES
   contains=matrix/workforce/internal/knowledgework.HandoffDraft#ExpiresAt,matrix/workforce/internal/knowledgework.HandoffDraft#RecipientDepartment,matrix/workforce/internal/knowledgework.HandoffDraft#RecipientSeatID,matrix/workforce/internal/knowledgework.HandoffDraft#RequiredAction,matrix/workforce/internal/knowledgework.HandoffDraft#Subject,matrix/workforce/internal/knowledgework.HandoffDraft#TimeoutAction,matrix/workforce/internal/knowledgework.HandoffDraft.validate
-  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.TimeoutAction
-  ^references=matrix/workforce/internal/knowledgework.Draft,matrix/workforce/internal/knowledgework.HandoffDraft.validate,matrix/workforce/internal/knowledgework.Result
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.HandoffDraft#ExpiresAt kind=field
@@ -194,11 +178,7 @@ NODE id=matrix/workforce/internal/knowledgework.HandoffDraft.validate kind=metho
   digest=b3:ab7ae285835d8bd44c0586087be366b52baa223ac3ae35681efa704215570360 file=workforce/internal/knowledgework/service.go range=279:289 lang=go exported=false byte_range=9595:10067
   sig=func (handoff HandoffDraft) validate(now time.Time) error
 EDGES
-  calls=matrix/workforce/internal/contracts.DepartmentKind.Valid,matrix/workforce/internal/contracts.TimeoutAction.Valid
-  references=matrix/workforce/internal/contracts.DepartmentKind.Valid,matrix/workforce/internal/contracts.TimeoutAction.Valid,matrix/workforce/internal/knowledgework.HandoffDraft,matrix/workforce/internal/knowledgework.handoff,matrix/workforce/internal/knowledgework.now
   ^contains=matrix/workforce/internal/knowledgework.HandoffDraft
-  ^calls=matrix/workforce/internal/knowledgework.Draft.validate
-  ^references=matrix/workforce/internal/knowledgework.Draft.validate
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.Input kind=type
@@ -207,8 +187,6 @@ NODE id=matrix/workforce/internal/knowledgework.Input kind=type
 EDGES
   contains=matrix/workforce/internal/knowledgework.Input#Constraints,matrix/workforce/internal/knowledgework.Input#CorrectionOf,matrix/workforce/internal/knowledgework.Input#Department,matrix/workforce/internal/knowledgework.Input#Draft,matrix/workforce/internal/knowledgework.Input#Evidence,matrix/workforce/internal/knowledgework.Input#IntentID,matrix/workforce/internal/knowledgework.Input#Objective,matrix/workforce/internal/knowledgework.Input#OrganizationID,matrix/workforce/internal/knowledgework.Input#SchemaVersion,matrix/workforce/internal/knowledgework.Input#SeatID,matrix/workforce/internal/knowledgework.Input#SkillID,matrix/workforce/internal/knowledgework.Input#SourceDigest,matrix/workforce/internal/knowledgework.Input.Validate,matrix/workforce/internal/knowledgework.Input.validateAt
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/knowledgework.Draft
-  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/knowledgework.Input.Validate,matrix/workforce/internal/knowledgework.Input.validateAt,matrix/workforce/internal/knowledgework.Service.Execute
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.Input#Constraints kind=field
@@ -288,30 +266,20 @@ NODE id=matrix/workforce/internal/knowledgework.Input.Validate kind=method
   sig=func (input Input) Validate() error
   doc=Validate enforces the time-independent canonical contract. Execute applies\nthe additional current-time expiry check before accepting the work.
 EDGES
-  calls=matrix/workforce/internal/knowledgework.Input.validateAt
-  references=matrix/workforce/internal/knowledgework.Input,matrix/workforce/internal/knowledgework.Input.validateAt,matrix/workforce/internal/knowledgework.input
   ^contains=matrix/workforce/internal/knowledgework.Input
-  ^calls=matrix/workforce/internal/contracts.EncodeCanonical
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.Input.validateAt kind=method
   digest=b3:cf24a78cf3af95f0ad71127cb94d9aa3846349ac365c1f162213f5fa50ab3c23 file=workforce/internal/knowledgework/service.go range=148:192 lang=go exported=false byte_range=5091:6805
   sig=func (input Input) validateAt(now time.Time) error
 EDGES
-  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/knowledgework.Draft.validate,matrix/workforce/internal/knowledgework.skillAllowed
-  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.DepartmentExecutive,matrix/workforce/internal/contracts.DepartmentResearch,matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/knowledgework.Draft.validate,matrix/workforce/internal/knowledgework.Input,matrix/workforce/internal/knowledgework.constraint,matrix/workforce/internal/knowledgework.err,matrix/workforce/internal/knowledgework.evidence,matrix/workforce/internal/knowledgework.input,matrix/workforce/internal/knowledgework.item,matrix/workforce/internal/knowledgework.now,matrix/workforce/internal/knowledgework.skillAllowed
   ^contains=matrix/workforce/internal/knowledgework.Input
-  ^calls=matrix/workforce/internal/knowledgework.Input.Validate,matrix/workforce/internal/knowledgework.Service.Execute
-  ^references=matrix/workforce/internal/knowledgework.Input.Validate,matrix/workforce/internal/knowledgework.Service.Execute
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.New kind=func
   digest=b3:a13a37be3369f50d5ee3388355ac4305057d9a8034a9820d9fcff7cfd186fb08 file=workforce/internal/knowledgework/service.go range=88:93 lang=go exported=true byte_range=3263:3438
   sig=func New(now func() time.Time) (*Service, error)
 EDGES
-  references=matrix/workforce/internal/knowledgework.Service,matrix/workforce/internal/knowledgework.now
-  ^calls=matrix/workforce/internal/departmentadapter.New
-  ^references=matrix/workforce/internal/departmentadapter.New
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.Recommendation kind=type
@@ -319,8 +287,6 @@ NODE id=matrix/workforce/internal/knowledgework.Recommendation kind=type
   sig=type Recommendation struct {\n	Action		string			`json:"action"`\n	Rationale	string			`json:"rationale"`\n	EvidenceIDs	[]contracts.EvidenceID	`json:"evidence_ids"`\n}
 EDGES
   contains=matrix/workforce/internal/knowledgework.Recommendation#Action,matrix/workforce/internal/knowledgework.Recommendation#EvidenceIDs,matrix/workforce/internal/knowledgework.Recommendation#Rationale
-  references=matrix/workforce/internal/contracts.EvidenceID
-  ^references=matrix/workforce/internal/knowledgework.Draft
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.Recommendation#Action kind=field
@@ -346,8 +312,6 @@ NODE id=matrix/workforce/internal/knowledgework.Result kind=type
   sig=type Result struct {\n	SchemaVersion	string			`json:"schema_version"`\n	Outcome		string			`json:"outcome"`\n	Artifact	contracts.ArtifactRef	`json:"artifact"`\n	Evidence	[]contracts.EvidenceRef	`json:"evidence"`\n	Handoff		*HandoffDraft		`json:"handoff"`\n	RequiresHuman	bool			`json:"requires_human"`\n	Payload		[]byte			`json:"-"`\n}
 EDGES
   contains=matrix/workforce/internal/knowledgework.Result#Artifact,matrix/workforce/internal/knowledgework.Result#Evidence,matrix/workforce/internal/knowledgework.Result#Handoff,matrix/workforce/internal/knowledgework.Result#Outcome,matrix/workforce/internal/knowledgework.Result#Payload,matrix/workforce/internal/knowledgework.Result#RequiresHuman,matrix/workforce/internal/knowledgework.Result#SchemaVersion
-  references=matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/knowledgework.HandoffDraft
-  ^references=matrix/workforce/internal/knowledgework.Service.Execute
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.Result#Artifact kind=field
@@ -398,7 +362,6 @@ NODE id=matrix/workforce/internal/knowledgework.Service kind=type
   doc=Service validates model-authored knowledge work into content-addressed typed\nproposals. It deliberately has no effect gateway, approval store, policy\nsigner, or credential-bearing dependency.
 EDGES
   contains=matrix/workforce/internal/knowledgework.Service#now,matrix/workforce/internal/knowledgework.Service.Execute
-  ^references=matrix/workforce/internal/departmentadapter.Adapter,matrix/workforce/internal/knowledgework.New,matrix/workforce/internal/knowledgework.Service.Execute
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.Service#now kind=field
@@ -411,47 +374,31 @@ NODE id=matrix/workforce/internal/knowledgework.Service.Execute kind=method
   digest=b3:84eb255f9cc5eb30103911c21390658b64c52ca8892c2d781821c3738dfdad2c file=workforce/internal/knowledgework/service.go range=95:140 lang=go exported=true byte_range=3440:4861
   sig=func (service *Service) Execute(ctx context.Context, input Input) (Result, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/knowledgework.Input.validateAt
-  references=matrix/workforce/internal/contracts.ArtifactID,matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/knowledgework.Input,matrix/workforce/internal/knowledgework.Input.validateAt,matrix/workforce/internal/knowledgework.Result,matrix/workforce/internal/knowledgework.Service,matrix/workforce/internal/knowledgework.ctx,matrix/workforce/internal/knowledgework.digest,matrix/workforce/internal/knowledgework.err,matrix/workforce/internal/knowledgework.input,matrix/workforce/internal/knowledgework.maxKnowledgePayloadBytes,matrix/workforce/internal/knowledgework.now,matrix/workforce/internal/knowledgework.payload,matrix/workforce/internal/knowledgework.result,matrix/workforce/internal/knowledgework.service
   ^contains=matrix/workforce/internal/knowledgework.Service
-  ^calls=matrix/workforce/internal/departmentadapter.Adapter.Dispatch
-  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.maxKnowledgePayloadBytes kind=const
   digest=b3:1782201eba9d89b280c9a2e53cf009ab0434adf29cb5a2b4e369c6e2dc9d5017 file=workforce/internal/knowledgework/service.go range=15:15 lang=go exported=false byte_range=261:295
   sig=untyped int
 EDGES
-  ^references=matrix/workforce/internal/knowledgework.Service.Execute
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.skillAllowed kind=func
   digest=b3:cd57e27672d8c8e40ecc865ed76cc88ec5d4726092842ba5b078829c537f6e3b file=workforce/internal/knowledgework/service.go range=291:307 lang=go exported=false byte_range=10069:10438
   sig=func skillAllowed(\n	department contracts.DepartmentKind,\n	skillID contracts.SkillID,\n) bool
 EDGES
-  calls=matrix/workforce/internal/skills.ExecutiveSkillIDs,matrix/workforce/internal/skills.ResearchSkillIDs
-  references=matrix/workforce/internal/contracts.DepartmentExecutive,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/knowledgework.allowed,matrix/workforce/internal/knowledgework.candidate,matrix/workforce/internal/knowledgework.department,matrix/workforce/internal/knowledgework.skillID,matrix/workforce/internal/skills.ExecutiveSkillIDs,matrix/workforce/internal/skills.ResearchSkillIDs
-  ^calls=matrix/workforce/internal/knowledgework.Input.validateAt
-  ^references=matrix/workforce/internal/knowledgework.Input.validateAt
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.validateEvidenceIDs kind=func
   digest=b3:3cc645e7ddcccb9205efab1ef6dda804fd68156f3c9456a3943ca70de708485c file=workforce/internal/knowledgework/service.go range=320:335 lang=go exported=false byte_range=10753:11211
   sig=func validateEvidenceIDs(\n	ids []contracts.EvidenceID,\n	evidence map[contracts.EvidenceID]bool,\n) error
 EDGES
-  references=matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/knowledgework.evidence,matrix/workforce/internal/knowledgework.id,matrix/workforce/internal/knowledgework.ids,matrix/workforce/internal/knowledgework.seen
-  ^calls=matrix/workforce/internal/knowledgework.Draft.validate,matrix/workforce/internal/knowledgework.validateEvidenceStatement
-  ^references=matrix/workforce/internal/knowledgework.Draft.validate,matrix/workforce/internal/knowledgework.validateEvidenceStatement
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework.validateEvidenceStatement kind=func
   digest=b3:675a15f15389b431a388797e6ce1f74e608781a7949cb8c5cc4a42833517d5b5 file=workforce/internal/knowledgework/service.go range=309:318 lang=go exported=false byte_range=10440:10751
   sig=func validateEvidenceStatement(\n	statement string,\n	ids []contracts.EvidenceID,\n	evidence map[contracts.EvidenceID]bool,\n) error
 EDGES
-  calls=matrix/workforce/internal/knowledgework.validateEvidenceIDs
-  references=matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/knowledgework.evidence,matrix/workforce/internal/knowledgework.ids,matrix/workforce/internal/knowledgework.statement,matrix/workforce/internal/knowledgework.validateEvidenceIDs
-  ^calls=matrix/workforce/internal/knowledgework.Draft.validate
-  ^references=matrix/workforce/internal/knowledgework.Draft.validate
   ^defines=matrix/workforce/internal/knowledgework/service.go
 
 NODE id=matrix/workforce/internal/knowledgework/service.go kind=file

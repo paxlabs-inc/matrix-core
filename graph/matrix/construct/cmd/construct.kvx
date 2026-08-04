@@ -1,18 +1,15 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/construct/cmd/construct kind=package
   digest=b3:fe16d34f211832304209a7b0f860d57e1899481a8603e424f4e4102a04a48ef4 file=construct/cmd/construct range=0:0 lang=go exported=true
 EDGES
   contains=matrix/construct/cmd/construct/main.go
-  imports=matrix/construct/internal/codegen,matrix/construct/schema
   ^contains=mod:matrix/construct
 
 NODE id=matrix/construct/cmd/construct.main kind=func
   digest=b3:8a723b6ac1ccf0a3e9af14acf328bb17e2475bb9f9e6e808ec6ac8ed38651643 file=construct/cmd/construct/main.go range=31:50 lang=go exported=false byte_range=979:1366
   sig=func main()
 EDGES
-  calls=matrix/construct/cmd/construct.runCodegen,matrix/construct/cmd/construct.runValidate,matrix/construct/cmd/construct.usage
-  references=matrix/construct/cmd/construct.runCodegen,matrix/construct/cmd/construct.runValidate,matrix/construct/cmd/construct.schemaVersion,matrix/construct/cmd/construct.usage
   ^defines=matrix/construct/cmd/construct/main.go
 
 NODE id=matrix/construct/cmd/construct.runCodegen kind=func
@@ -20,10 +17,6 @@ NODE id=matrix/construct/cmd/construct.runCodegen kind=func
   sig=func runCodegen(args []string) int
   doc=runCodegen emits or drift-checks the generated TypeScript.
 EDGES
-  calls=matrix/construct/internal/codegen.Generate
-  references=matrix/construct/cmd/construct.args,matrix/construct/cmd/construct.check,matrix/construct/cmd/construct.err,matrix/construct/cmd/construct.gen,matrix/construct/cmd/construct.have,matrix/construct/cmd/construct.i,matrix/construct/cmd/construct.out,matrix/construct/internal/codegen.DefaultOutPath,matrix/construct/internal/codegen.Generate
-  ^calls=matrix/construct/cmd/construct.main
-  ^references=matrix/construct/cmd/construct.main
   ^defines=matrix/construct/cmd/construct/main.go
 
 NODE id=matrix/construct/cmd/construct.runValidate kind=func
@@ -31,10 +24,6 @@ NODE id=matrix/construct/cmd/construct.runValidate kind=func
   sig=func runValidate(args []string) int
   doc=runValidate validates a surface JSON read from --file or stdin.
 EDGES
-  calls=matrix/construct/schema.ParseValid
-  references=matrix/construct/cmd/construct.args,matrix/construct/cmd/construct.data,matrix/construct/cmd/construct.err,matrix/construct/cmd/construct.file,matrix/construct/cmd/construct.i,matrix/construct/cmd/construct.s,matrix/construct/schema.ParseValid
-  ^calls=matrix/construct/cmd/construct.main
-  ^references=matrix/construct/cmd/construct.main
   ^defines=matrix/construct/cmd/construct/main.go
 
 NODE id=matrix/construct/cmd/construct.schemaVersion kind=const
@@ -42,15 +31,12 @@ NODE id=matrix/construct/cmd/construct.schemaVersion kind=const
   sig=untyped string
   doc=schemaVersion mirrors construct.frozen.kvx [meta].version.
 EDGES
-  ^references=matrix/construct/cmd/construct.main
   ^defines=matrix/construct/cmd/construct/main.go
 
 NODE id=matrix/construct/cmd/construct.usage kind=func
   digest=b3:ac71c2477dddd8170724d22df0c5b931d7ce22ddbd3366a7af62b6c20cc9adea file=construct/cmd/construct/main.go range=52:60 lang=go exported=false byte_range=1368:1703
   sig=func usage()
 EDGES
-  ^calls=matrix/construct/cmd/construct.main
-  ^references=matrix/construct/cmd/construct.main
   ^defines=matrix/construct/cmd/construct/main.go
 
 NODE id=matrix/construct/cmd/construct/main.go kind=file

@@ -1,21 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/neo/internal/task kind=package
   digest=b3:345acf2239a0129e19545ecbf62695c21f3ccb1631d69fff3ca603041260fe30 file=neo/internal/task range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/task/store.go
-  imports=matrix/vault
   ^contains=mod:matrix/neo
-  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/runtime/loop,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/task.Dir kind=func
   digest=b3:19dbc6c090c0b95e42c4dd1f631cb6ff3189c494ad07af249db66d0a8244797e file=neo/internal/task/store.go range=335:347 lang=go exported=true byte_range=11594:12115
   sig=func Dir(override, cortexRoot string) string
   doc=Dir resolves Neo's task directory. An explicit override wins; else it is\nderived from the cortex root's parent (matching the conversation store, so\ntasks live beside history under /data in prod and survive suspend/redeploy).\nReturns "" when neither is available (persistence disabled).
 EDGES
-  references=matrix/neo/internal/task.c,matrix/neo/internal/task.cortexRoot,matrix/neo/internal/task.o,matrix/neo/internal/task.override
-  ^calls=matrix/neo/cmd/neo.runServe
-  ^references=matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.KindBrief kind=const
@@ -23,7 +18,6 @@ NODE id=matrix/neo/internal/task.KindBrief kind=const
   sig=untyped string
   doc=KindBrief marks a task whose objective is an autonomous MORNING_BRIEF run\n(ORACLE task 5.4). The normal boot reaper (Running) EXCLUDES these — a\nbrief must never resume on the full interactive/money surface — and the\ndedicated brief-resume path (RunningKind) picks them up on the restricted\nbrief surface instead. An empty Kind is an ordinary interactive task.
 EDGES
-  ^references=matrix/neo/internal/server.Engine.ResumeInProgressBriefs,matrix/neo/internal/server.Engine.dispatchBriefRun
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Open kind=func
@@ -31,9 +25,6 @@ NODE id=matrix/neo/internal/task.Open kind=func
   sig=func Open(dir string) *Store
   doc=Open builds a store rooted at dir. An empty dir yields a disabled store\n(every method is a safe no-op) so dev/CLI runs work unchanged.
 EDGES
-  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.dir
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Status kind=type
@@ -41,7 +32,6 @@ NODE id=matrix/neo/internal/task.Status kind=type
   sig=type Status string
   doc=Status is a task's lifecycle state.
 EDGES
-  ^references=matrix/neo/internal/server.Engine.settleApprovedOpportunity,matrix/neo/internal/server.Engine.settleAutomatrixOpportunity,matrix/neo/internal/server.Server.handleAutomatrixApprove,matrix/neo/internal/server.run,matrix/neo/internal/server.session.deliverCeiling,matrix/neo/internal/server.session.deliverDeterministicStop,matrix/neo/internal/server.session.dispatchLocked,matrix/neo/internal/server.session.dispatchLockedAs,matrix/neo/internal/server.session.submitIdempotent,matrix/neo/internal/server.session.submitWith,matrix/neo/internal/server.session.superviseAutomatrixTask,matrix/neo/internal/server.session.superviseBriefTask,matrix/neo/internal/server.session.superviseTask,matrix/neo/internal/task.StatusCeiling,matrix/neo/internal/task.StatusDone,matrix/neo/internal/task.StatusInterrupted,matrix/neo/internal/task.StatusRunning,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Task
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.StatusCeiling kind=const
@@ -49,8 +39,6 @@ NODE id=matrix/neo/internal/task.StatusCeiling kind=const
   sig=task.Status
   doc=StatusCeiling marks a task that hit the supervisor's hard ceiling\n(wall-clock or max respawns) and was delivered as an honest partial.
 EDGES
-  references=matrix/neo/internal/task.Status
-  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/server.session.deliverCeiling,matrix/neo/internal/server.session.deliverDeterministicStop,matrix/neo/internal/server.session.drive,matrix/neo/internal/server.session.superviseAutomatrixTask,matrix/neo/internal/server.session.superviseBriefTask
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.StatusDone kind=const
@@ -58,8 +46,6 @@ NODE id=matrix/neo/internal/task.StatusDone kind=const
   sig=task.Status
   doc=StatusDone marks a task the completion gate accepted.
 EDGES
-  references=matrix/neo/internal/task.Status
-  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/server.Engine.dispatchBriefRun,matrix/neo/internal/server.Engine.settleApprovedOpportunity,matrix/neo/internal/server.Engine.settleAutomatrixOpportunity,matrix/neo/internal/server.session.superviseAutomatrixTask,matrix/neo/internal/server.session.superviseBriefTask,matrix/neo/internal/server.session.superviseTask
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.StatusInterrupted kind=const
@@ -67,8 +53,6 @@ NODE id=matrix/neo/internal/task.StatusInterrupted kind=const
   sig=task.Status
   doc=StatusInterrupted marks a task the user explicitly stopped or superseded\nwith a new message. The reaper must NOT resume these.
 EDGES
-  references=matrix/neo/internal/task.Status
-  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/server.Engine.settleApprovedOpportunity,matrix/neo/internal/server.session.drive,matrix/neo/internal/server.session.superviseTask
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.StatusRunning kind=const
@@ -76,8 +60,6 @@ NODE id=matrix/neo/internal/task.StatusRunning kind=const
   sig=task.Status
   doc=StatusRunning marks a task that has been dispatched and is not yet\nfinished. The reaper resumes exactly these after a restart.
 EDGES
-  references=matrix/neo/internal/task.Status
-  ^references=matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.running
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store kind=type
@@ -86,8 +68,6 @@ NODE id=matrix/neo/internal/task.Store kind=type
   doc=Store is Neo's durable task ledger. One mutex guards all access; a per-user\ndaemon has at most a handful of conversations, so this is plenty fast.
 EDGES
   contains=matrix/neo/internal/task.Store#dir,matrix/neo/internal/task.Store#mu,matrix/neo/internal/task.Store#user,matrix/neo/internal/task.Store#vault,matrix/neo/internal/task.Store.Begin,matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.Running,matrix/neo/internal/task.Store.RunningKind,matrix/neo/internal/task.Store.SetVault,matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Store.running,matrix/neo/internal/task.Store.writeLocked
-  references=matrix/vault.Session
-  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler,matrix/neo/internal/server.Engine,matrix/neo/internal/task.Open,matrix/neo/internal/task.Store.Begin,matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.Running,matrix/neo/internal/task.Store.RunningKind,matrix/neo/internal/task.Store.SetVault,matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Store.running,matrix/neo/internal/task.Store.writeLocked
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store#dir kind=field
@@ -120,11 +100,7 @@ NODE id=matrix/neo/internal/task.Store.Begin kind=method
   sig=func (s *Store) Begin(convID, runID, objective string)
   doc=Begin records (or replaces) a conversation's task as running, owned by runID.\nA new dispatch for a conversation supersedes any previous task — the new\nrunID becomes the CAS token, so a superseded older run's later Finish is a\nno-op. Created is preserved across a same-conversation supersession only if\nthe objective is unchanged (a genuine resume); otherwise it resets.
 EDGES
-  calls=matrix/neo/internal/task.Store.BeginKind
-  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.convID,matrix/neo/internal/task.objective,matrix/neo/internal/task.runID,matrix/neo/internal/task.s
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/server.session.drive
-  ^references=matrix/neo/internal/server.session.drive
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.BeginKind kind=method
@@ -132,11 +108,7 @@ NODE id=matrix/neo/internal/task.Store.BeginKind kind=method
   sig=func (s *Store) BeginKind(convID, runID, objective, kind string)
   doc=BeginKind is Begin with an explicit task kind ("" = interactive; KindBrief =\nautonomous morning brief). The kind steers the boot reaper: an interactive\ntask resumes on the full surface (Running), a brief on the restricted brief\nsurface (RunningKind) — a brief must never resume on the money surface.
 EDGES
-  calls=matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
-  references=matrix/neo/internal/task.StatusRunning,matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked,matrix/neo/internal/task.Task,matrix/neo/internal/task.convID,matrix/neo/internal/task.created,matrix/neo/internal/task.kind,matrix/neo/internal/task.now,matrix/neo/internal/task.objective,matrix/neo/internal/task.ok,matrix/neo/internal/task.prev,matrix/neo/internal/task.runID,matrix/neo/internal/task.s
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/server.Engine.dispatchBriefRun,matrix/neo/internal/task.Store.Begin
-  ^references=matrix/neo/internal/server.Engine.dispatchBriefRun,matrix/neo/internal/task.Store.Begin
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.Checkpoint kind=method
@@ -144,11 +116,7 @@ NODE id=matrix/neo/internal/task.Store.Checkpoint kind=method
   sig=func (s *Store) Checkpoint(convID, runID string, attempt int, note string)
   doc=Checkpoint records progress for runID's task (the attempt counter + a short\nnote). Compare-and-set on runID: a superseded run's checkpoint is ignored.
 EDGES
-  calls=matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
-  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked,matrix/neo/internal/task.attempt,matrix/neo/internal/task.convID,matrix/neo/internal/task.note,matrix/neo/internal/task.ok,matrix/neo/internal/task.runID,matrix/neo/internal/task.s,matrix/neo/internal/task.t
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.session.superviseTask
-  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.session.superviseTask
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.Enabled kind=method
@@ -156,10 +124,7 @@ NODE id=matrix/neo/internal/task.Store.Enabled kind=method
   sig=func (s *Store) Enabled() bool
   doc=Enabled reports whether persistence is on (a non-empty directory).
 EDGES
-  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.s
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeInProgressBriefs,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Store.running
-  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeInProgressBriefs,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Store.running
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.Finish kind=method
@@ -167,11 +132,7 @@ NODE id=matrix/neo/internal/task.Store.Finish kind=method
   sig=func (s *Store) Finish(convID, runID string, status Status)
   doc=Finish marks runID's task terminal. Compare-and-set on runID: a superseded\nolder run can never clobber the record of the run that replaced it.
 EDGES
-  calls=matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
-  references=matrix/neo/internal/task.Status,matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked,matrix/neo/internal/task.convID,matrix/neo/internal/task.ok,matrix/neo/internal/task.runID,matrix/neo/internal/task.s,matrix/neo/internal/task.status,matrix/neo/internal/task.t
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/server.session.drive
-  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/server.Engine.dispatchBriefRun,matrix/neo/internal/server.session.drive
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.Get kind=method
@@ -179,8 +140,6 @@ NODE id=matrix/neo/internal/task.Store.Get kind=method
   sig=func (s *Store) Get(convID string) (Task, bool)
   doc=Get returns a conversation's task record, if any.
 EDGES
-  calls=matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked
-  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Task,matrix/neo/internal/task.convID,matrix/neo/internal/task.s
   ^contains=matrix/neo/internal/task.Store
   ^defines=matrix/neo/internal/task/store.go
 
@@ -189,11 +148,7 @@ NODE id=matrix/neo/internal/task.Store.Running kind=method
   sig=func (s *Store) Running() []Task
   doc=Running returns every INTERACTIVE conversation whose task is still running —\nthe set the normal boot reaper must resume on the full surface. Brief tasks\n(KindBrief) are deliberately EXCLUDED: they must resume only on the\nrestricted brief surface via RunningKind, never on the money surface.\nBest-effort: unreadable files are skipped.
 EDGES
-  calls=matrix/neo/internal/task.Store.running
-  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.running,matrix/neo/internal/task.Task,matrix/neo/internal/task.s,matrix/neo/internal/task.t
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks
-  ^references=matrix/neo/internal/runtime/loop.TaskLedgerReconciler.Reconcile,matrix/neo/internal/server.Engine.ResumeOrphanedTasks
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.RunningKind kind=method
@@ -201,11 +156,7 @@ NODE id=matrix/neo/internal/task.Store.RunningKind kind=method
   sig=func (s *Store) RunningKind(kind string) []Task
   doc=RunningKind returns every still-running task of the given kind — the dedicated\nresume set for a specialized surface (e.g. KindBrief for the restricted\nmorning-brief runner). Best-effort: unreadable files are skipped.
 EDGES
-  calls=matrix/neo/internal/task.Store.running
-  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.running,matrix/neo/internal/task.Task,matrix/neo/internal/task.kind,matrix/neo/internal/task.s,matrix/neo/internal/task.t
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/server.Engine.ResumeInProgressBriefs
-  ^references=matrix/neo/internal/server.Engine.ResumeInProgressBriefs
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.SetVault kind=method
@@ -213,10 +164,7 @@ NODE id=matrix/neo/internal/task.Store.SetVault kind=method
   sig=func (s *Store) SetVault(sess *vault.Session, user string)
   doc=SetVault wires the fail-closed data-at-rest session and owning user DID into\nthe store. Called once at engine assembly before any write; a nil session\nleaves the store writing legacy plaintext (dev/CLI).
 EDGES
-  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.s,matrix/neo/internal/task.sess,matrix/neo/internal/task.user,matrix/vault.Session
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.ad kind=method
@@ -224,11 +172,7 @@ NODE id=matrix/neo/internal/task.Store.ad kind=method
   sig=func (s *Store) ad(convID string) vault.AD
   doc=ad reconstructs the associated data for a task file from where it lives (this\nuser, this conversation) — never stored, so a file moved between users or\nconversations fails authentication.
 EDGES
-  calls=matrix/neo/internal/task.sanitize
-  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.convID,matrix/neo/internal/task.s,matrix/neo/internal/task.sanitize,matrix/neo/internal/task.schemaTask1,matrix/neo/internal/task.storeTask,matrix/vault.AD
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
-  ^references=matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.loadLocked kind=method
@@ -236,22 +180,14 @@ NODE id=matrix/neo/internal/task.Store.loadLocked kind=method
   sig=func (s *Store) loadLocked(convID string) (Task, bool)
   doc=loadLocked reads a record; a missing/corrupt file yields (zero, false).\nCaller MUST hold s.mu.
 EDGES
-  calls=matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.pathLocked,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
-  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Task,matrix/neo/internal/task.convID,matrix/neo/internal/task.data,matrix/neo/internal/task.err,matrix/neo/internal/task.oerr,matrix/neo/internal/task.path,matrix/neo/internal/task.plain,matrix/neo/internal/task.s,matrix/neo/internal/task.t,matrix/neo/internal/task.uv,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.running
-  ^references=matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Finish,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.running
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.pathLocked kind=method
   digest=b3:c203e894258ab639ea08023d37fdb831c8a507db66f41f168eff3958bb8b579a file=neo/internal/task/store.go range=130:135 lang=go exported=false byte_range=5257:5414
   sig=func (s *Store) pathLocked(convID string) string
 EDGES
-  calls=matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.sanitize
-  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.convID,matrix/neo/internal/task.s,matrix/neo/internal/task.sanitize
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
-  ^references=matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.writeLocked
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.running kind=method
@@ -259,11 +195,7 @@ NODE id=matrix/neo/internal/task.Store.running kind=method
   sig=func (s *Store) running(keep func(Task) bool) []Task
   doc=running collects every still-running task whose record satisfies keep.
 EDGES
-  calls=matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked
-  references=matrix/neo/internal/task.StatusRunning,matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.Enabled,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Task,matrix/neo/internal/task.convID,matrix/neo/internal/task.e,matrix/neo/internal/task.entries,matrix/neo/internal/task.err,matrix/neo/internal/task.keep,matrix/neo/internal/task.name,matrix/neo/internal/task.ok,matrix/neo/internal/task.out,matrix/neo/internal/task.s,matrix/neo/internal/task.t
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/task.Store.Running,matrix/neo/internal/task.Store.RunningKind
-  ^references=matrix/neo/internal/task.Store.Running,matrix/neo/internal/task.Store.RunningKind
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Store.writeLocked kind=method
@@ -271,11 +203,7 @@ NODE id=matrix/neo/internal/task.Store.writeLocked kind=method
   sig=func (s *Store) writeLocked(t Task)
   doc=writeLocked persists t atomically (tmp + rename). Caller MUST hold s.mu.
 EDGES
-  calls=matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.pathLocked,matrix/vault.Session.MaybeSealFile
-  references=matrix/neo/internal/task.Store,matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.pathLocked,matrix/neo/internal/task.Task,matrix/neo/internal/task.data,matrix/neo/internal/task.err,matrix/neo/internal/task.path,matrix/neo/internal/task.s,matrix/neo/internal/task.t,matrix/neo/internal/task.tmp,matrix/vault.Session.MaybeSealFile
   ^contains=matrix/neo/internal/task.Store
-  ^calls=matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Finish
-  ^references=matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Checkpoint,matrix/neo/internal/task.Store.Finish
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Task kind=type
@@ -284,8 +212,6 @@ NODE id=matrix/neo/internal/task.Task kind=type
   doc=Task is the persisted supervision record for one conversation's active (or\nlast) task.
 EDGES
   contains=matrix/neo/internal/task.Task#Attempt,matrix/neo/internal/task.Task#ConvID,matrix/neo/internal/task.Task#Created,matrix/neo/internal/task.Task#Kind,matrix/neo/internal/task.Task#Note,matrix/neo/internal/task.Task#Objective,matrix/neo/internal/task.Task#RunID,matrix/neo/internal/task.Task#Status,matrix/neo/internal/task.Task#Updated
-  references=matrix/neo/internal/task.Status
-  ^references=matrix/neo/internal/task.Store.BeginKind,matrix/neo/internal/task.Store.Get,matrix/neo/internal/task.Store.Running,matrix/neo/internal/task.Store.RunningKind,matrix/neo/internal/task.Store.loadLocked,matrix/neo/internal/task.Store.running,matrix/neo/internal/task.Store.writeLocked
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.Task#Attempt kind=field
@@ -347,9 +273,6 @@ NODE id=matrix/neo/internal/task.sanitize kind=func
   sig=func sanitize(id string) string
   doc=sanitize keeps a conversation id safe as a filename (it is server-minted as\nconv_<hex>, but guard against path separators regardless).
 EDGES
-  references=matrix/neo/internal/task.id
-  ^calls=matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.pathLocked
-  ^references=matrix/neo/internal/task.Store.ad,matrix/neo/internal/task.Store.pathLocked
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.schemaTask1 kind=const
@@ -357,7 +280,6 @@ NODE id=matrix/neo/internal/task.schemaTask1 kind=const
   sig=untyped string
   doc=Store type and schema bound into each task file's associated data, so a\nsealed record cannot be read across users or conversations.
 EDGES
-  ^references=matrix/neo/internal/task.Store.ad
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task.storeTask kind=const
@@ -365,7 +287,6 @@ NODE id=matrix/neo/internal/task.storeTask kind=const
   sig=untyped string
   doc=Store type and schema bound into each task file's associated data, so a\nsealed record cannot be read across users or conversations.
 EDGES
-  ^references=matrix/neo/internal/task.Store.ad
   ^defines=matrix/neo/internal/task/store.go
 
 NODE id=matrix/neo/internal/task/store.go kind=file

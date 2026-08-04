@@ -1,21 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/gateway/internal/rates kind=package
   digest=b3:aaaab8deffd95530530f0e810f2ea4afb553b7395d38c77f41a7c64a8797889e file=gateway/internal/rates range=0:0 lang=go exported=true
 EDGES
   contains=matrix/gateway/internal/rates/rates.go
   ^contains=mod:matrix/gateway
-  ^imports=matrix/gateway/internal/ledger,matrix/gateway/internal/proxy,matrix/gateway/internal/routing
 
 NODE id=matrix/gateway/internal/rates.AddPax kind=func
   digest=b3:e0d472d4fff6bb19412a5c121e031333ea8791c5254f64efd0f6c78340a4653a file=gateway/internal/rates/rates.go range=414:435 lang=go exported=true byte_range=21481:22206
   sig=func AddPax(a, b string) (string, error)
   doc=AddPax sums two PAX-denominated decimal strings. Returns "" + an\nerror when either input fails to parse. Used by the ledger to\nroll up the daily-spend trailer header without re-querying Postgres.
 EDGES
-  calls=matrix/gateway/internal/rates.formatPax
-  references=matrix/gateway/internal/rates.a,matrix/gateway/internal/rates.af,matrix/gateway/internal/rates.b,matrix/gateway/internal/rates.bf,matrix/gateway/internal/rates.err,matrix/gateway/internal/rates.formatPax,matrix/gateway/internal/rates.prec,matrix/gateway/internal/rates.sum
-  ^calls=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/ledger.Memory.DailySpend,matrix/gateway/internal/proxy.Server.stampCostHeaders
-  ^references=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/ledger.Memory.DailySpend,matrix/gateway/internal/proxy.Server.stampCostHeaders
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.All kind=func
@@ -23,7 +18,6 @@ NODE id=matrix/gateway/internal/rates.All kind=func
   sig=func All() []Rate
   doc=All returns a snapshot of the rate table. The returned slice is\nsafe to mutate; callers receive a copy.
 EDGES
-  references=matrix/gateway/internal/rates.Rate,matrix/gateway/internal/rates.out,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.CmpPax kind=func
@@ -31,9 +25,6 @@ NODE id=matrix/gateway/internal/rates.CmpPax kind=func
   sig=func CmpPax(a, b string) (int, error)
   doc=CmpPax compares two PAX-denominated decimal strings. Returns -1, 0,\nor 1 (a < b, a == b, a > b). Errors propagate parse failures.
 EDGES
-  references=matrix/gateway/internal/rates.a,matrix/gateway/internal/rates.af,matrix/gateway/internal/rates.b,matrix/gateway/internal/rates.bf,matrix/gateway/internal/rates.err,matrix/gateway/internal/rates.prec
-  ^calls=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/rates.ExceedsDailyLimit
-  ^references=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/rates.ExceedsDailyLimit
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.Cost kind=func
@@ -41,10 +32,6 @@ NODE id=matrix/gateway/internal/rates.Cost kind=func
   sig=func Cost(model string, promptTokens, completionTokens int) (string, error)
   doc=Cost computes the PAX cost for a (model, prompt, completion) tuple.\nReturns a base-PAX decimal string ("0.000123") suitable for the\nX-Matrix-Cost-Pax response header AND the credit_ledger.cost_pax\nNUMERIC(20,12) column. Errors when the model is not on the rate card.\n\nThe math uses big.Float internally so the divide-by-1e6 step\npreserves precision at NUMERIC(20,12) granularity. Output is\ntruncated (NOT rounded) at 12 decimals to match the schema; we never\nround UP because that would over-bill.
 EDGES
-  calls=matrix/gateway/internal/rates.Lookup,matrix/gateway/internal/rates.formatPax
-  references=matrix/gateway/internal/rates.Lookup,matrix/gateway/internal/rates.RateTableVersion,matrix/gateway/internal/rates.completionTokens,matrix/gateway/internal/rates.cost,matrix/gateway/internal/rates.formatPax,matrix/gateway/internal/rates.in,matrix/gateway/internal/rates.million,matrix/gateway/internal/rates.model,matrix/gateway/internal/rates.num,matrix/gateway/internal/rates.ok,matrix/gateway/internal/rates.out,matrix/gateway/internal/rates.prec,matrix/gateway/internal/rates.promptTokens,matrix/gateway/internal/rates.r,matrix/gateway/internal/rates.rin,matrix/gateway/internal/rates.rout
-  ^calls=matrix/gateway/internal/proxy.Server.maybeDebit
-  ^references=matrix/gateway/internal/proxy.Server.maybeDebit
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.DailyFreeTierLimitPax kind=const
@@ -52,7 +39,6 @@ NODE id=matrix/gateway/internal/rates.DailyFreeTierLimitPax kind=const
   sig=untyped string
   doc=DailyFreeTierLimitPax is the per-account free-tier spend cap, in PAX,\nenforced by internal/routing against the running daily total. It is a\ndecimal string so it composes directly with AddPax/SubPax/CmpPax and\nthe ledger's PAX representation. Callers that reach it must flip\nX-Matrix-BYO-API-Key to continue.\n\n10 PAX/day = $114.30/day at the v3 reference (1 PAX = $11.43). Note\nthis is a large headroom relative to per-call costs (e.g. ~127M\ndeepseek-v4-flash output tokens/day); tighten here if the intent is a\nstricter free lane.
 EDGES
-  ^references=matrix/gateway/internal/rates.DailyRemainingPax,matrix/gateway/internal/rates.ExceedsDailyLimit
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.DailyRemainingPax kind=func
@@ -60,8 +46,6 @@ NODE id=matrix/gateway/internal/rates.DailyRemainingPax kind=func
   sig=func DailyRemainingPax(spentPax string) (string, error)
   doc=DailyRemainingPax returns max(DailyFreeTierLimitPax - spentPax, 0) as\na PAX decimal string — the value internal/routing stamps into the\nX-Matrix-Daily-Remaining-Pax header. Thin wrapper over SubPax so the\ncap lives in exactly one place (DailyFreeTierLimitPax).
 EDGES
-  calls=matrix/gateway/internal/rates.SubPax
-  references=matrix/gateway/internal/rates.DailyFreeTierLimitPax,matrix/gateway/internal/rates.SubPax,matrix/gateway/internal/rates.spentPax
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ExceedsDailyLimit kind=func
@@ -69,8 +53,6 @@ NODE id=matrix/gateway/internal/rates.ExceedsDailyLimit kind=func
   sig=func ExceedsDailyLimit(spentPax string) (bool, error)
   doc=ExceedsDailyLimit reports whether spentPax has reached or passed the\nfree-tier cap (spentPax >= DailyFreeTierLimitPax). True means the\ncaller must flip X-Matrix-BYO-API-Key to continue. Errors propagate\nparse failures from CmpPax.
 EDGES
-  calls=matrix/gateway/internal/rates.CmpPax
-  references=matrix/gateway/internal/rates.CmpPax,matrix/gateway/internal/rates.DailyFreeTierLimitPax,matrix/gateway/internal/rates.cmp,matrix/gateway/internal/rates.err,matrix/gateway/internal/rates.spentPax
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.FreeTierWhitelist kind=func
@@ -78,9 +60,6 @@ NODE id=matrix/gateway/internal/rates.FreeTierWhitelist kind=func
   sig=func FreeTierWhitelist() map[string][]string
   doc=FreeTierWhitelist returns the slot -> model whitelist enforced by\ninternal/routing. Exported for tests + introspection.
 EDGES
-  references=matrix/gateway/internal/rates.ModelCompilerFreeTier,matrix/gateway/internal/rates.ModelDeepSeekV4Flash,matrix/gateway/internal/rates.ModelDeepSeekV4Pro,matrix/gateway/internal/rates.ModelExecutorFreeTier,matrix/gateway/internal/rates.ModelGrok420NR,matrix/gateway/internal/rates.ModelGrok43,matrix/gateway/internal/rates.ModelGrokBuild,matrix/gateway/internal/rates.ModelKimiK26,matrix/gateway/internal/rates.ModelMimoV25Pro,matrix/gateway/internal/rates.ModelNomicEmbed
-  ^calls=matrix/gateway/internal/routing.enforceFreeTier
-  ^references=matrix/gateway/internal/routing.enforceFreeTier
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.GroupClassify kind=const
@@ -88,7 +67,6 @@ NODE id=matrix/gateway/internal/rates.GroupClassify kind=const
   sig=untyped string
   doc=freeTierGroup partitions models into the lanes the gateway routes\non. Each lane has its own free-tier whitelist (see internal/routing).\n\nGroup strings echo verbatim into the Prometheus labels for cost\ntelemetry, so they MUST stay stable across versions.
 EDGES
-  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.GroupCode kind=const
@@ -96,7 +74,6 @@ NODE id=matrix/gateway/internal/rates.GroupCode kind=const
   sig=untyped string
   doc=freeTierGroup partitions models into the lanes the gateway routes\non. Each lane has its own free-tier whitelist (see internal/routing).\n\nGroup strings echo verbatim into the Prometheus labels for cost\ntelemetry, so they MUST stay stable across versions.
 EDGES
-  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.GroupOther kind=const
@@ -104,7 +81,6 @@ NODE id=matrix/gateway/internal/rates.GroupOther kind=const
   sig=untyped string
   doc=freeTierGroup partitions models into the lanes the gateway routes\non. Each lane has its own free-tier whitelist (see internal/routing).\n\nGroup strings echo verbatim into the Prometheus labels for cost\ntelemetry, so they MUST stay stable across versions.
 EDGES
-  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.GroupReason kind=const
@@ -112,7 +88,6 @@ NODE id=matrix/gateway/internal/rates.GroupReason kind=const
   sig=untyped string
   doc=freeTierGroup partitions models into the lanes the gateway routes\non. Each lane has its own free-tier whitelist (see internal/routing).\n\nGroup strings echo verbatim into the Prometheus labels for cost\ntelemetry, so they MUST stay stable across versions.
 EDGES
-  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.GroupSummarize kind=const
@@ -120,7 +95,6 @@ NODE id=matrix/gateway/internal/rates.GroupSummarize kind=const
   sig=untyped string
   doc=freeTierGroup partitions models into the lanes the gateway routes\non. Each lane has its own free-tier whitelist (see internal/routing).\n\nGroup strings echo verbatim into the Prometheus labels for cost\ntelemetry, so they MUST stay stable across versions.
 EDGES
-  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.Lookup kind=func
@@ -128,9 +102,6 @@ NODE id=matrix/gateway/internal/rates.Lookup kind=func
   sig=func Lookup(model string) (Rate, bool)
   doc=Lookup returns the Rate for a model id, or (Rate{}, false) when the\nmodel is not on the rate card. Callers MUST treat false as "do not\ndebit" — pricing an unknown model would either over-bill or\nunder-bill, both of which are incorrect.
 EDGES
-  references=matrix/gateway/internal/rates.Rate,matrix/gateway/internal/rates.model,matrix/gateway/internal/rates.ok,matrix/gateway/internal/rates.r,matrix/gateway/internal/rates.rateIndex
-  ^calls=matrix/gateway/internal/rates.Cost
-  ^references=matrix/gateway/internal/rates.Cost
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelCompilerFreeTier kind=const
@@ -138,7 +109,6 @@ NODE id=matrix/gateway/internal/rates.ModelCompilerFreeTier kind=const
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
-  ^references=matrix/gateway/internal/rates.FreeTierWhitelist
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelDeepSeekV4Flash kind=const
@@ -146,7 +116,6 @@ NODE id=matrix/gateway/internal/rates.ModelDeepSeekV4Flash kind=const
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
-  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelDeepSeekV4Pro kind=const
@@ -154,7 +123,6 @@ NODE id=matrix/gateway/internal/rates.ModelDeepSeekV4Pro kind=const
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
-  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelExecutorFreeTier kind=const
@@ -162,7 +130,6 @@ NODE id=matrix/gateway/internal/rates.ModelExecutorFreeTier kind=const
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
-  ^references=matrix/gateway/internal/rates.FreeTierWhitelist
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelGLM5p1Fast kind=const
@@ -170,7 +137,6 @@ NODE id=matrix/gateway/internal/rates.ModelGLM5p1Fast kind=const
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
-  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelGPTOSS120B kind=const
@@ -178,7 +144,6 @@ NODE id=matrix/gateway/internal/rates.ModelGPTOSS120B kind=const
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
-  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelGPTOSS20B kind=const
@@ -186,7 +151,6 @@ NODE id=matrix/gateway/internal/rates.ModelGPTOSS20B kind=const
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
-  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelGrok420NR kind=const
@@ -194,7 +158,6 @@ NODE id=matrix/gateway/internal/rates.ModelGrok420NR kind=const
   sig=untyped string
   doc=ModelGrok420NR is grok-4.20-0309-non-reasoning, the cheap non-reasoning\nmodel for Cassandra, Neo's cheap/consolidation background agents, and the\nliaison narrator.
 EDGES
-  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelGrok43 kind=const
@@ -202,7 +165,6 @@ NODE id=matrix/gateway/internal/rates.ModelGrok43 kind=const
   sig=untyped string
   doc=xAI Grok fleet ids — the v9 migration off Z.ai GLM. All are bare ids that\nroute to xAI (api.x.ai) via the "grok-*" prefix in internal/routing.\nModelGrok43 is xiaomimimo/mimo-v2.5-pro, the primary reasoning model pinned on Neo's main\nloop and the MCL triage/registry slots.
 EDGES
-  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelGrokBuild kind=const
@@ -210,7 +172,6 @@ NODE id=matrix/gateway/internal/rates.ModelGrokBuild kind=const
   sig=untyped string
   doc=ModelGrokBuild is grok-build-0.1, the Cody coding-agent model (all Cody\nroles).
 EDGES
-  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelKimiK26 kind=const
@@ -218,7 +179,6 @@ NODE id=matrix/gateway/internal/rates.ModelKimiK26 kind=const
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
-  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelLlama405B kind=const
@@ -226,7 +186,6 @@ NODE id=matrix/gateway/internal/rates.ModelLlama405B kind=const
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
-  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelMimoV25Pro kind=const
@@ -234,7 +193,6 @@ NODE id=matrix/gateway/internal/rates.ModelMimoV25Pro kind=const
   sig=untyped string
   doc=ModelMimoV25Pro is Xiaomi MiMo v2.5 Pro's native direct-provider id — the\nprimary chat model for every agentic slot (Neo, Cody, MCL).
 EDGES
-  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelNeoMain kind=const
@@ -242,7 +200,6 @@ NODE id=matrix/gateway/internal/rates.ModelNeoMain kind=const
   sig=untyped string
   doc=ModelNeoMain is Neo's main conversational loop model: the Together-served\nDeepSeek-V4-Pro (NOT the Fireworks deepseek-v4-pro — different provider\nroute + string). Pinned on the `neo` slot via neo config.MainModel.
 EDGES
-  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelNomicEmbed kind=const
@@ -250,7 +207,6 @@ NODE id=matrix/gateway/internal/rates.ModelNomicEmbed kind=const
   sig=untyped string
   doc=ModelNomicEmbed is the Fireworks-hosted embedding model behind the\ngateway's /v1/embeddings route (768-dim; matches cortex DefaultDim).
 EDGES
-  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelQwenCoder kind=const
@@ -258,7 +214,6 @@ NODE id=matrix/gateway/internal/rates.ModelQwenCoder kind=const
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
-  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.PaxUsdReference kind=const
@@ -274,7 +229,6 @@ NODE id=matrix/gateway/internal/rates.Rate kind=type
   doc=Rate is the per-Mtoken price in PAX for a single model. Both prompt\n(input) and completion (output) sides are tracked because providers\ngenerally price the two asymmetrically.
 EDGES
   contains=matrix/gateway/internal/rates.Rate#Group,matrix/gateway/internal/rates.Rate#InputPaxPerMTokens,matrix/gateway/internal/rates.Rate#Model,matrix/gateway/internal/rates.Rate#Notes,matrix/gateway/internal/rates.Rate#OutputPaxPerMTokens
-  ^references=matrix/gateway/internal/rates.All,matrix/gateway/internal/rates.Lookup,matrix/gateway/internal/rates.rateIndex,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.Rate#Group kind=field
@@ -312,7 +266,6 @@ NODE id=matrix/gateway/internal/rates.RateTableVersion kind=const
   sig=untyped int
   doc=RateTableVersion identifies the immutable rate-card snapshot used to\nprice LLM calls. Bump on every schedule change. Ledger rows record\nthis so historical cost computations remain reproducible after a\nlater rate update.\n\nv2 (2026-06-01, v1 launch): added deepseek-v4-pro (planner upgrade +\ncompiler low-confidence escalation target) and kimi-k2.6 (executor\nupgrade). See FreeTierWhitelist + rateTable below.\n\nv3 (2026-06-04, PAX reference reprice): re-denominated the entire\nrate card from the placeholder 1 PAX = $0.01 anchor to the actual\nlaunch price 1 PAX = $11.43. No models added/removed and no USD\ntargets changed — every PAX-per-Mtoken value was recomputed as\nusd_per_mtoken / 11.43 (a uniform /1143 vs v2). Also introduced the\nDailyFreeTierLimitPax cap (10 PAX/day). Ledger rows priced under v2\nkeep their v2 figures; only v3+ rows use the new amounts.\n\nv4 (2026-06-08) adds glm-5p1-fast to the rate card for the new `neo`\nslot (Neo's cheap background model: write-back / compaction / summary\nvalidation). NOTE: the glm rate below is a PLACEHOLDER mirrored from the\ndeepseek-v4-flash tier — Andrew to replace with the real provider price.\n\nv5 (2026-06-10, Andrew approved) adds nomic-embed-text-v1.5 for the `neo`\nslot: Neo's cortex pager now does real semantic page-faulting through the\ngateway /v1/embeddings route. Embeddings are input-only (no completion\nside), so the output rate is 0. USD target $0.008/Mtoken (Fireworks list).\n\nv6 (2026-06-22, Andrew approved) adds deepseek-ai/DeepSeek-V4-Pro (Together)\nas Neo's main conversational loop model, replacing Qwen/Qwen3.7-Max on the\n`neo` slot whitelist. NOTE: the rate is a PLACEHOLDER mirrored from the\nFireworks v4-pro tier ($1/$2 per Mtoken) — replace with the real Together\nprovider price. The Qwen row stays on the card (still used by other slots).\n\nv7 (2026-07-01) ADDS the Baseten-served zai-org/GLM-5.2 (ModelGLM52) as the\nprimary chat model for every slot (Neo config + MCL DefaultRegistry now pin\nit; bare "<vendor>/<model>" now routes to Baseten in internal/routing). This\nis a purely ADDITIVE change: one new rateTable row + whitelisting GLM-5.2 on\nevery slot. All historical Fireworks/Together rows stay on the card so pre-v7\nledger rows remain replayable. GLM-5.2's PAX rate is a PLACEHOLDER pending the\nreal Baseten Model APIs price.\n\nv8 (2026-07-02, Andrew directed) REPLACES zai-org/GLM-5.2 with the\nBaseten-served zai-org/GLM-5.2 (ModelNemotron3Ultra)\nas the primary chat model on every slot (Neo config, Cody mode policy, MCL\nDefaultRegistry, deploy pins). One new rateTable row + the whitelist swap on\nevery lane. The GLM-5.2 row stays on the card so pre-v8 ledger rows remain\nreplayable. Nemotron's PAX rate is a PLACEHOLDER pending the real Baseten\nModel APIs price.\n\nv9 (2026-07-05, Andrew directed) MIGRATES the fleet off Z.ai GLM onto xAI\nGrok, REMOVING the zai-org/GLM-5.2 rows and ADDING three grok rows:\nxiaomimimo/mimo-v2.5-pro (ModelGrok43 — Neo main + MCL triage/registry), grok-build-0.1\n(ModelGrokBuild — Cody), grok-4.20-0309-non-reasoning (ModelGrok420NR —\nCassandra + Neo cheap/consolidation + liaison). The Z.ai provider + upstream\npath are removed entirely; pre-v9 ledger rows that reference zai-org/GLM-5.2\nare NOT replayable against this card (accepted at migration). All three grok\nPAX rates are PLACEHOLDERS pending the real xAI prices.\n\nv10 (2026-07-07, Andrew directed) makes the Xiaomi-served\nmimo-v2.5-pro (ModelMimoV25Pro) the primary chat model for every\nagentic slot (Neo, Cody, MCL compiler/planner/executor, liaison). Purely\nADDITIVE: one new rateTable row + whitelisting MiMo on those slots. The grok\nrows stay on the card (still used by the Cassandra slot + as fallbacks) so\npre-v10 ledger rows remain replayable. MiMo's PAX rate is a PLACEHOLDER\npending the real Xiaomi provider price.
 EDGES
-  ^references=matrix/gateway/internal/ledger.Memory.Record,matrix/gateway/internal/ledger.Postgres.Record,matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/proxy.Server.stampCostHeaders,matrix/gateway/internal/rates.Cost
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.SubPax kind=func
@@ -320,10 +273,6 @@ NODE id=matrix/gateway/internal/rates.SubPax kind=func
   sig=func SubPax(a, b string) (string, error)
   doc=SubPax returns max(a-b, 0) in PAX-denominated decimal-string form.\nUsed to compute X-Matrix-Daily-Remaining-Pax without re-querying.
 EDGES
-  calls=matrix/gateway/internal/rates.formatPax
-  references=matrix/gateway/internal/rates.a,matrix/gateway/internal/rates.af,matrix/gateway/internal/rates.b,matrix/gateway/internal/rates.bf,matrix/gateway/internal/rates.diff,matrix/gateway/internal/rates.err,matrix/gateway/internal/rates.formatPax,matrix/gateway/internal/rates.prec
-  ^calls=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/proxy.Server.stampCostHeaders,matrix/gateway/internal/rates.DailyRemainingPax
-  ^references=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/proxy.Server.stampCostHeaders,matrix/gateway/internal/rates.DailyRemainingPax
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.formatPax kind=func
@@ -331,9 +280,6 @@ NODE id=matrix/gateway/internal/rates.formatPax kind=func
   sig=func formatPax(f *big.Float) string
   doc=formatPax stringifies a big.Float as a fixed-point decimal at 12\ndecimals (matching NUMERIC(20,12)). Trailing zeros are NOT trimmed\nso the wire format is stable across rows.
 EDGES
-  references=matrix/gateway/internal/rates.f
-  ^calls=matrix/gateway/internal/rates.AddPax,matrix/gateway/internal/rates.Cost,matrix/gateway/internal/rates.SubPax
-  ^references=matrix/gateway/internal/rates.AddPax,matrix/gateway/internal/rates.Cost,matrix/gateway/internal/rates.SubPax
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.rateIndex kind=var
@@ -341,8 +287,6 @@ NODE id=matrix/gateway/internal/rates.rateIndex kind=var
   sig=map[string]rates.Rate
   doc=rateIndex maps model id -> Rate. Initialized once at package load.
 EDGES
-  references=matrix/gateway/internal/rates.Rate,matrix/gateway/internal/rates.m,matrix/gateway/internal/rates.r,matrix/gateway/internal/rates.rateTable
-  ^references=matrix/gateway/internal/rates.Lookup
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.rateTable kind=var
@@ -350,8 +294,6 @@ NODE id=matrix/gateway/internal/rates.rateTable kind=var
   sig=[]rates.Rate
   doc=rateTable is the immutable v3 rate card. Adding a model OR repricing\nREQUIRES bumping RateTableVersion to keep historical ledger rows\nreplayable. Order is documentation only; the lookup is a map (see init).\n\nPAX values = USD target / 11.43 (1 PAX = $11.43, v3 reference). The\n`≈ $X` USD targets are the invariant; bake in real provider rates\nbefore GA and re-derive.
 EDGES
-  references=matrix/gateway/internal/rates.GroupClassify,matrix/gateway/internal/rates.GroupCode,matrix/gateway/internal/rates.GroupOther,matrix/gateway/internal/rates.GroupReason,matrix/gateway/internal/rates.GroupSummarize,matrix/gateway/internal/rates.ModelDeepSeekV4Flash,matrix/gateway/internal/rates.ModelDeepSeekV4Pro,matrix/gateway/internal/rates.ModelGLM5p1Fast,matrix/gateway/internal/rates.ModelGPTOSS120B,matrix/gateway/internal/rates.ModelGPTOSS20B,matrix/gateway/internal/rates.ModelGrok420NR,matrix/gateway/internal/rates.ModelGrok43,matrix/gateway/internal/rates.ModelGrokBuild,matrix/gateway/internal/rates.ModelKimiK26,matrix/gateway/internal/rates.ModelLlama405B,matrix/gateway/internal/rates.ModelMimoV25Pro,matrix/gateway/internal/rates.ModelNeoMain,matrix/gateway/internal/rates.ModelNomicEmbed,matrix/gateway/internal/rates.ModelQwenCoder,matrix/gateway/internal/rates.Rate
-  ^references=matrix/gateway/internal/rates.All,matrix/gateway/internal/rates.rateIndex
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates/rates.go kind=file

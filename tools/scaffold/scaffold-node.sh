@@ -3,7 +3,9 @@
 # Tooling: fastify · pino · tsx · tsup · vitest · eslint/prettier · Docker.
 set -Eeuo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=_common.sh
+# shellcheck source=tools/scaffold/_common.sh
+# Resolved through the script directory at runtime.
+# shellcheck disable=SC1091
 source "$HERE/_common.sh"
 
 common_parse_args "node" "$@"

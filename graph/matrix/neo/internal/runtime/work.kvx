@@ -1,10 +1,9 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/neo/internal/runtime/work kind=package
   digest=b3:551a2a0971f0ab8eeb2a633c1d5402f33791ca87b9c03259724e50731acc2a67 file=neo/internal/runtime/work range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/runtime/work/executor.go,matrix/neo/internal/runtime/work/scope.go,matrix/neo/internal/runtime/work/service.go,matrix/neo/internal/runtime/work/swarm.go,matrix/neo/internal/runtime/work/types.go
-  imports=matrix/cortex,matrix/cortex/journal,matrix/neo/internal/runtime/loop,matrix/neo/internal/runtime/protocol,matrix/neo/internal/runtime/turnstate,matrix/neo/internal/tools
   ^contains=mod:matrix/neo
 
 NODE id=matrix/neo/internal/runtime/work.Attempt kind=type
@@ -12,8 +11,6 @@ NODE id=matrix/neo/internal/runtime/work.Attempt kind=type
   sig=type Attempt struct {\n	ID			uuid.UUID		`json:"id"`\n	Number			int			`json:"number"`\n	Status			TaskStatus		`json:"status"`\n	StartedAt		time.Time		`json:"started_at"`\n	FinishedAt		*time.Time		`json:"finished_at,omitempty"`\n	WorkerID		string			`json:"worker_id,omitempty"`\n	Summary			string			`json:"summary,omitempty"`\n	Error			string			`json:"error,omitempty"`\n	Usage			BudgetUsage		`json:"usage"`\n	Evidence		[]EvidenceRef		`json:"evidence,omitempty"`\n	Findings		[]Finding		`json:"findings,omitempty"`\n	ExternalEffects		[]ExternalEffect	`json:"external_effects,omitempty"`\n	ResumeCheckpoint	bool			`json:"resume_checkpoint,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.Attempt#Error,matrix/neo/internal/runtime/work.Attempt#Evidence,matrix/neo/internal/runtime/work.Attempt#ExternalEffects,matrix/neo/internal/runtime/work.Attempt#Findings,matrix/neo/internal/runtime/work.Attempt#FinishedAt,matrix/neo/internal/runtime/work.Attempt#ID,matrix/neo/internal/runtime/work.Attempt#Number,matrix/neo/internal/runtime/work.Attempt#ResumeCheckpoint,matrix/neo/internal/runtime/work.Attempt#StartedAt,matrix/neo/internal/runtime/work.Attempt#Status,matrix/neo/internal/runtime/work.Attempt#Summary,matrix/neo/internal/runtime/work.Attempt#Usage,matrix/neo/internal/runtime/work.Attempt#WorkerID
-  references=matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.EvidenceRef,matrix/neo/internal/runtime/work.ExternalEffect,matrix/neo/internal/runtime/work.Finding,matrix/neo/internal/runtime/work.TaskStatus
-  ^references=matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.SpecialistTask
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.Attempt#Error kind=field
@@ -99,7 +96,6 @@ NODE id=matrix/neo/internal/runtime/work.AuthorityScope kind=type
   sig=type AuthorityScope struct {\n	ReadFiles	[]string	`json:"read_files,omitempty"`\n	WriteFiles	[]string	`json:"write_files,omitempty"`\n	Services	[]string	`json:"services,omitempty"`\n	EnvironmentKeys	[]string	`json:"environment_keys,omitempty"`\n	NetworkHosts	[]string	`json:"network_hosts,omitempty"`\n	ExternalEffects	bool		`json:"external_effects"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.AuthorityScope#EnvironmentKeys,matrix/neo/internal/runtime/work.AuthorityScope#ExternalEffects,matrix/neo/internal/runtime/work.AuthorityScope#NetworkHosts,matrix/neo/internal/runtime/work.AuthorityScope#ReadFiles,matrix/neo/internal/runtime/work.AuthorityScope#Services,matrix/neo/internal/runtime/work.AuthorityScope#WriteFiles
-  ^references=matrix/neo/internal/runtime/work.ParentPlan,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.TaskSpec,matrix/neo/internal/runtime/work.authorizeClass,matrix/neo/internal/runtime/work.normalizeScope,matrix/neo/internal/runtime/work.scopeSubset
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.AuthorityScope#EnvironmentKeys kind=field
@@ -143,7 +139,6 @@ NODE id=matrix/neo/internal/runtime/work.BudgetUsage kind=type
   sig=type BudgetUsage struct {\n	Tokens			int64	`json:"tokens"`\n	ModelMicrocents		int64	`json:"model_microcents"`\n	ModelCostKnown		bool	`json:"model_cost_known"`\n	ProviderMicrocents	int64	`json:"provider_microcents"`\n	ProviderSpendKnown	bool	`json:"provider_spend_known"`\n	ToolCalls		int	`json:"tool_calls"`\n	WallSeconds		int	`json:"wall_seconds"`\n	Processes		int	`json:"processes"`\n	StorageBytes		int64	`json:"storage_bytes"`\n	NetworkBytes		int64	`json:"network_bytes"`\n	Retries			int	`json:"retries"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.BudgetUsage#ModelCostKnown,matrix/neo/internal/runtime/work.BudgetUsage#ModelMicrocents,matrix/neo/internal/runtime/work.BudgetUsage#NetworkBytes,matrix/neo/internal/runtime/work.BudgetUsage#Processes,matrix/neo/internal/runtime/work.BudgetUsage#ProviderMicrocents,matrix/neo/internal/runtime/work.BudgetUsage#ProviderSpendKnown,matrix/neo/internal/runtime/work.BudgetUsage#Retries,matrix/neo/internal/runtime/work.BudgetUsage#StorageBytes,matrix/neo/internal/runtime/work.BudgetUsage#Tokens,matrix/neo/internal/runtime/work.BudgetUsage#ToolCalls,matrix/neo/internal/runtime/work.BudgetUsage#WallSeconds
-  ^references=matrix/neo/internal/runtime/work.Attempt,matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.TaskSpec,matrix/neo/internal/runtime/work.WorkerResult,matrix/neo/internal/runtime/work.accumulatedTaskUsage,matrix/neo/internal/runtime/work.addUsage,matrix/neo/internal/runtime/work.budgetExceeded,matrix/neo/internal/runtime/work.specialistBudgetExceeded,matrix/neo/internal/runtime/work.usageFromBudget,matrix/neo/internal/runtime/work.usageObserved
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.BudgetUsage#ModelCostKnown kind=field
@@ -216,39 +211,32 @@ NODE id=matrix/neo/internal/runtime/work.CitationVerifier kind=interface
   digest=b3:f2699c806953884e35c6527e6659276a8bfb39a51450419c008db13d4b02a6ad file=neo/internal/runtime/work/types.go range=269:273 lang=go exported=true byte_range=9477:9603
   sig=type CitationVerifier interface {\n	VerifyToolEventCitation(\n		cortex.ToolEventCitation,\n	) (journal.ToolEventPayload, error)\n}
 EDGES
-  references=matrix/cortex.ToolEventCitation,matrix/cortex/journal.ToolEventPayload
   ^implements=matrix/neo/internal/runtime/loop.NeocortexAdapter
-  ^references=matrix/neo/internal/runtime/work.NewService,matrix/neo/internal/runtime/work.Service
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.EffectReconciler kind=interface
   digest=b3:8fe3ff57dc85154cd51b660b7b8b5f587b4665e1ae8db589ebb97184308f232a file=neo/internal/runtime/work/types.go range=279:281 lang=go exported=true byte_range=9678:9785
   sig=type EffectReconciler interface {\n	ReconcileEffect(context.Context, string) (loop.ReconcileResult, error)\n}
 EDGES
-  references=matrix/neo/internal/runtime/loop.ReconcileResult
   ^implements=matrix/neo/internal/runtime/loop.DurableEffectJournal
-  ^references=matrix/neo/internal/runtime/work.NewService,matrix/neo/internal/runtime/work.Service
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.ErrAuthorityDenied kind=var
   digest=b3:83efde839eb1248cfdc0fd0fe8a862db4b9156d6b3f0ca1c27fb79c3c21fab71 file=neo/internal/runtime/work/types.go range=31:31 lang=go exported=true byte_range=615:681
   sig=error
 EDGES
-  ^references=matrix/neo/internal/runtime/work.ScopedToolManager.Execute,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.loadRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.ErrBudgetProjection kind=var
   digest=b3:7b5d27c43b6aff18184e949bd3fe51d0cd5024391f571f57b0780dabb5a92a67 file=neo/internal/runtime/work/types.go range=32:32 lang=go exported=true byte_range=683:764
   sig=error
 EDGES
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.ErrEvidenceRequired kind=var
   digest=b3:56d0fe45db36c4f17304f5246dfd2ed0d94cbfd63f71876f5d6d21b115bc7808 file=neo/internal/runtime/work/types.go range=33:33 lang=go exported=true byte_range=766:842
   sig=error
 EDGES
-  ^references=matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.hasVerifiedEvidence
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.EvidenceRef kind=type
@@ -256,8 +244,6 @@ NODE id=matrix/neo/internal/runtime/work.EvidenceRef kind=type
   sig=type EvidenceRef struct {\n	Criterion	string				`json:"criterion"`\n	Citation	cortex.ToolEventCitation	`json:"citation"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.EvidenceRef#Citation,matrix/neo/internal/runtime/work.EvidenceRef#Criterion
-  references=matrix/cortex.ToolEventCitation
-  ^references=matrix/neo/internal/runtime/work.Attempt,matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.WorkerResult
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.EvidenceRef#Citation kind=field
@@ -276,9 +262,7 @@ NODE id=matrix/neo/internal/runtime/work.Executor kind=interface
   digest=b3:927ccf04f0db0ed3870195855a806faa95626b5f10cc1635b69d8c9575ea684d file=neo/internal/runtime/work/types.go range=259:267 lang=go exported=true byte_range=9290:9475
   sig=type Executor interface {\n	Surface(context.Context) []protocol.ToolDefinition\n	Execute(\n		context.Context,\n		TaskPacket,\n		uuid.UUID,\n		<-chan SteeringRecord,\n	) (WorkerResult, error)\n}
 EDGES
-  references=matrix/neo/internal/runtime/protocol.ToolDefinition,matrix/neo/internal/runtime/work.SteeringRecord,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.WorkerResult
   ^implements=matrix/neo/internal/runtime/work.LoopExecutor
-  ^references=matrix/neo/internal/runtime/work.NewService,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work._
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.ExternalEffect kind=type
@@ -286,7 +270,6 @@ NODE id=matrix/neo/internal/runtime/work.ExternalEffect kind=type
   sig=type ExternalEffect struct {\n	ToolName	string	`json:"tool_name"`\n	Target		string	`json:"target,omitempty"`\n	IdempotencyKey	string	`json:"idempotency_key"`\n	State		string	`json:"state"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.ExternalEffect#IdempotencyKey,matrix/neo/internal/runtime/work.ExternalEffect#State,matrix/neo/internal/runtime/work.ExternalEffect#Target,matrix/neo/internal/runtime/work.ExternalEffect#ToolName
-  ^references=matrix/neo/internal/runtime/work.Attempt,matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.reconcileEffects,matrix/neo/internal/runtime/work.WorkerResult
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.ExternalEffect#IdempotencyKey kind=field
@@ -318,7 +301,6 @@ NODE id=matrix/neo/internal/runtime/work.Finding kind=type
   sig=type Finding struct {\n	Kind		string		`json:"kind"`\n	Summary		string		`json:"summary"`\n	Evidence	[]string	`json:"evidence,omitempty"`\n	Confidence	string		`json:"confidence,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.Finding#Confidence,matrix/neo/internal/runtime/work.Finding#Evidence,matrix/neo/internal/runtime/work.Finding#Kind,matrix/neo/internal/runtime/work.Finding#Summary
-  ^references=matrix/neo/internal/runtime/work.Attempt,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.WorkerResult,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.Finding#Confidence kind=field
@@ -351,8 +333,6 @@ NODE id=matrix/neo/internal/runtime/work.LoopExecutor kind=type
 EDGES
   contains=matrix/neo/internal/runtime/work.LoopExecutor#Metadata,matrix/neo/internal/runtime/work.LoopExecutor#NewLoop,matrix/neo/internal/runtime/work.LoopExecutor#Parent,matrix/neo/internal/runtime/work.LoopExecutor#Store,matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.LoopExecutor.Surface
   implements=matrix/neo/internal/runtime/work.Executor
-  references=matrix/neo/internal/runtime/work.LoopFactory,matrix/neo/internal/runtime/work.ToolManager,matrix/neo/internal/runtime/work.ToolMetadata,matrix/neo/internal/runtime/work.TurnRuntimeStore
-  ^references=matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.LoopExecutor.Surface,matrix/neo/internal/runtime/work._
   ^defines=matrix/neo/internal/runtime/work/executor.go
 
 NODE id=matrix/neo/internal/runtime/work.LoopExecutor#Metadata kind=field
@@ -383,8 +363,6 @@ NODE id=matrix/neo/internal/runtime/work.LoopExecutor.Execute kind=method
   digest=b3:be3622334af7400a6a03819ca8a3df7851c1e0fbc8dcb1e7e57c422381d2716e file=neo/internal/runtime/work/executor.go range=50:186 lang=go exported=true byte_range=1035:4953
   sig=func (executor *LoopExecutor) Execute(\n	ctx context.Context,\n	packet TaskPacket,\n	attemptID uuid.UUID,\n	steering <-chan SteeringRecord,\n) (WorkerResult, error)
 EDGES
-  calls=matrix/neo/internal/runtime/loop.Loop.Resume,matrix/neo/internal/runtime/loop.Loop.Turn,matrix/neo/internal/runtime/work.NewScopedToolManager,matrix/neo/internal/runtime/work.boundedText,matrix/neo/internal/runtime/work.progressFromResponse,matrix/neo/internal/runtime/work.specialistPrompt
-  references=matrix/neo/internal/runtime/loop.Incomplete,matrix/neo/internal/runtime/loop.Loop.Resume,matrix/neo/internal/runtime/loop.Loop.Turn,matrix/neo/internal/runtime/loop.Response,matrix/neo/internal/runtime/turnstate.StatusRunning,matrix/neo/internal/runtime/turnstate.TurnState,matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.EvidenceRef,matrix/neo/internal/runtime/work.ExternalEffect,matrix/neo/internal/runtime/work.LoopExecutor,matrix/neo/internal/runtime/work.NewScopedToolManager,matrix/neo/internal/runtime/work.SteeringRecord,matrix/neo/internal/runtime/work.TaskCompleted,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.TaskRetrying,matrix/neo/internal/runtime/work.TurnRuntimeStore.CreateTurnState,matrix/neo/internal/runtime/work.TurnRuntimeStore.LoadTurnState,matrix/neo/internal/runtime/work.WorkerResult,matrix/neo/internal/runtime/work.attemptID,matrix/neo/internal/runtime/work.boundedText,matrix/neo/internal/runtime/work.class,matrix/neo/internal/runtime/work.criteria,matrix/neo/internal/runtime/work.criterion,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.durable,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.event,matrix/neo/internal/runtime/work.executor,matrix/neo/internal/runtime/work.incomplete,matrix/neo/internal/runtime/work.loadErr,matrix/neo/internal/runtime/work.ok,matrix/neo/internal/runtime/work.packet,matrix/neo/internal/runtime/work.pending,matrix/neo/internal/runtime/work.progressFromResponse,matrix/neo/internal/runtime/work.response,matrix/neo/internal/runtime/work.result,matrix/neo/internal/runtime/work.resume,matrix/neo/internal/runtime/work.runtimeLoop,matrix/neo/internal/runtime/work.scoped,matrix/neo/internal/runtime/work.specialistPrompt,matrix/neo/internal/runtime/work.started,matrix/neo/internal/runtime/work.state,matrix/neo/internal/runtime/work.steering,matrix/neo/internal/runtime/work.steeringGuidance,matrix/neo/internal/runtime/work.turnErr,matrix/neo/internal/runtime/work.userContent
   ^contains=matrix/neo/internal/runtime/work.LoopExecutor
   ^defines=matrix/neo/internal/runtime/work/executor.go
 
@@ -392,7 +370,6 @@ NODE id=matrix/neo/internal/runtime/work.LoopExecutor.Surface kind=method
   digest=b3:42fe129c8c28dddaf436840efa57e8827fe6b8111ee709b189f5c09c3a661878 file=neo/internal/runtime/work/executor.go range=41:48 lang=go exported=true byte_range=840:1033
   sig=func (executor *LoopExecutor) Surface(\n	ctx context.Context,\n) []protocol.ToolDefinition
 EDGES
-  references=matrix/neo/internal/runtime/protocol.ToolDefinition,matrix/neo/internal/runtime/work.LoopExecutor,matrix/neo/internal/runtime/work.ToolManager.Surface,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.executor
   ^contains=matrix/neo/internal/runtime/work.LoopExecutor
   ^defines=matrix/neo/internal/runtime/work/executor.go
 
@@ -400,8 +377,6 @@ NODE id=matrix/neo/internal/runtime/work.LoopFactory kind=type
   digest=b3:03c283845482240bb82f02d74c37e1b135cda3c7c8ec4f2c042835079fc83349 file=neo/internal/runtime/work/executor.go range=20:26 lang=go exported=true byte_range=402:525
   sig=type LoopFactory func(\n	context.Context,\n	TaskPacket,\n	uuid.UUID,\n	ToolManager,\n	loop.GuidanceSource,\n) (*loop.Loop, error)
 EDGES
-  references=matrix/neo/internal/runtime/loop.GuidanceSource,matrix/neo/internal/runtime/loop.Loop,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.ToolManager
-  ^references=matrix/neo/internal/runtime/work.LoopExecutor
   ^defines=matrix/neo/internal/runtime/work/executor.go
 
 NODE id=matrix/neo/internal/runtime/work.ManifestToolMetadata kind=type
@@ -410,8 +385,6 @@ NODE id=matrix/neo/internal/runtime/work.ManifestToolMetadata kind=type
 EDGES
   contains=matrix/neo/internal/runtime/work.ManifestToolMetadata#Manager,matrix/neo/internal/runtime/work.ManifestToolMetadata.SideEffectClass
   implements=matrix/neo/internal/runtime/work.ToolMetadata
-  references=matrix/neo/internal/tools.Manager
-  ^references=matrix/neo/internal/runtime/work.ManifestToolMetadata.SideEffectClass
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
 NODE id=matrix/neo/internal/runtime/work.ManifestToolMetadata#Manager kind=field
@@ -424,8 +397,6 @@ NODE id=matrix/neo/internal/runtime/work.ManifestToolMetadata.SideEffectClass ki
   digest=b3:764826de5289186e3ca9bbd2cbcaa1d6846dcce0de4edf840de384735888e573 file=neo/internal/runtime/work/scope.go range=22:29 lang=go exported=true byte_range=417:608
   sig=func (metadata ManifestToolMetadata) SideEffectClass(\n	name string,\n) (string, bool)
 EDGES
-  calls=matrix/neo/internal/tools.Manager.ToolSideEffectClass
-  references=matrix/neo/internal/runtime/work.ManifestToolMetadata,matrix/neo/internal/runtime/work.metadata,matrix/neo/internal/runtime/work.name,matrix/neo/internal/tools.Manager.ToolSideEffectClass
   ^contains=matrix/neo/internal/runtime/work.ManifestToolMetadata
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
@@ -433,25 +404,18 @@ NODE id=matrix/neo/internal/runtime/work.MaxParallelSpecialists kind=const
   digest=b3:053cb8bbb0e2e9471af5d29bcbfb5033d696af48539e0a5878eba6c7a8ba5677 file=neo/internal/runtime/work/types.go range=23:23 lang=go exported=true byte_range=454:481
   sig=untyped int
 EDGES
-  ^references=matrix/neo/internal/runtime/work.normalizeSupervisorBudget
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.NewScopedToolManager kind=func
   digest=b3:ff7ab052fcf4e4641d0243fa42c08cdc0a147aedc93d7edc0c858fd255cc16e3 file=neo/internal/runtime/work/scope.go range=38:62 lang=go exported=true byte_range=741:1422
   sig=func NewScopedToolManager(\n	parent ToolManager,\n	packet TaskPacket,\n	metadata ToolMetadata,\n) (*ScopedToolManager, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.verifyPacketDigest
-  references=matrix/neo/internal/runtime/work.ScopedToolManager,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.ToolManager,matrix/neo/internal/runtime/work.ToolMetadata,matrix/neo/internal/runtime/work.allowed,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.metadata,matrix/neo/internal/runtime/work.name,matrix/neo/internal/runtime/work.packet,matrix/neo/internal/runtime/work.parent,matrix/neo/internal/runtime/work.verifyPacketDigest
-  ^calls=matrix/neo/internal/runtime/work.LoopExecutor.Execute
-  ^references=matrix/neo/internal/runtime/work.LoopExecutor.Execute
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
 NODE id=matrix/neo/internal/runtime/work.NewService kind=func
   digest=b3:36d6727fbbe6d45fc17c326ed60088aeada355045d6980c38926c518f0ee5a3e file=neo/internal/runtime/work/service.go range=38:59 lang=go exported=true byte_range=737:1402
   sig=func NewService(\n	store RunStore,\n	verifier CitationVerifier,\n	metadata ToolMetadata,\n	executor Executor,\n	reconciler EffectReconciler,\n) (*Service, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.Service.ReconcileRestart
-  references=matrix/neo/internal/runtime/work.CitationVerifier,matrix/neo/internal/runtime/work.EffectReconciler,matrix/neo/internal/runtime/work.Executor,matrix/neo/internal/runtime/work.RunStore,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.ToolMetadata,matrix/neo/internal/runtime/work.attemptControl,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.executor,matrix/neo/internal/runtime/work.metadata,matrix/neo/internal/runtime/work.reconciler,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.store,matrix/neo/internal/runtime/work.verifier
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.ParentPlan kind=type
@@ -459,8 +423,6 @@ NODE id=matrix/neo/internal/runtime/work.ParentPlan kind=type
   sig=type ParentPlan struct {\n	ID		string			`json:"id"`\n	Accepted	bool			`json:"accepted"`\n	Scope		AuthorityScope		`json:"scope"`\n	Tools		[]string		`json:"tools"`\n	Budget		SupervisorBudget	`json:"budget"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.ParentPlan#Accepted,matrix/neo/internal/runtime/work.ParentPlan#Budget,matrix/neo/internal/runtime/work.ParentPlan#ID,matrix/neo/internal/runtime/work.ParentPlan#Scope,matrix/neo/internal/runtime/work.ParentPlan#Tools
-  references=matrix/neo/internal/runtime/work.AuthorityScope,matrix/neo/internal/runtime/work.SupervisorBudget
-  ^references=matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.StartInput
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.ParentPlan#Accepted kind=field
@@ -498,7 +460,6 @@ NODE id=matrix/neo/internal/runtime/work.Reconciliation kind=type
   sig=type Reconciliation struct {\n	At		time.Time	`json:"at"`\n	RecoveredTasks	int		`json:"recovered_tasks"`\n	UncertainTasks	int		`json:"uncertain_tasks"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.Reconciliation#At,matrix/neo/internal/runtime/work.Reconciliation#RecoveredTasks,matrix/neo/internal/runtime/work.Reconciliation#UncertainTasks
-  ^references=matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.SupervisorRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.Reconciliation#At kind=field
@@ -523,48 +484,36 @@ NODE id=matrix/neo/internal/runtime/work.RunBlocked kind=const
   digest=b3:d4e0274290c54d19ac9590755d41596043ce4b0e6f08064d4cd7f2f6efd729e4 file=neo/internal/runtime/work/types.go range=57:57 lang=go exported=true byte_range=1540:1579
   sig=work.RunStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.RunStatus
-  ^references=matrix/neo/internal/runtime/work.RunStatus.valid,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.RunCancelled kind=const
   digest=b3:a2c229e65ec19c2ea1f0e7128cbde7358eef501e0c26788ee06ce8f5dbd2b110 file=neo/internal/runtime/work/types.go range=59:59 lang=go exported=true byte_range=1621:1662
   sig=work.RunStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.RunStatus
-  ^references=matrix/neo/internal/runtime/work.RunStatus.valid,matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.terminalRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.RunCompleted kind=const
   digest=b3:b8351c46a3506eac2603c229aac64db6cf77d4171286dfdd4b1bc8e3cc87e3ad file=neo/internal/runtime/work/types.go range=60:60 lang=go exported=true byte_range=1664:1705
   sig=work.RunStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.RunStatus
-  ^references=matrix/neo/internal/runtime/work.RunStatus.valid,matrix/neo/internal/runtime/work.finalizeRun,matrix/neo/internal/runtime/work.terminalRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.RunOutcomeUnknown kind=const
   digest=b3:392c56192d5b789c676950e6d99364413de1444607ec0b2373c2226f47e40011 file=neo/internal/runtime/work/types.go range=61:61 lang=go exported=true byte_range=1707:1754
   sig=work.RunStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.RunStatus
-  ^references=matrix/neo/internal/runtime/work.RunStatus.valid,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.RunPaused kind=const
   digest=b3:db26694b5c1f40894ea328de003604af24c9c3ff299aeeb24919565435d32376 file=neo/internal/runtime/work/types.go range=58:58 lang=go exported=true byte_range=1581:1619
   sig=work.RunStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.RunStatus
-  ^references=matrix/neo/internal/runtime/work.RunStatus.valid,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.RunQueued kind=const
   digest=b3:873b60e876c294f6ebdd0dbfd99ea084fc374d640ba9995b9ed34851362690ea file=neo/internal/runtime/work/types.go range=54:54 lang=go exported=true byte_range=1418:1456
   sig=work.RunStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.RunStatus
-  ^references=matrix/neo/internal/runtime/work.RunStatus.valid,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.Service.scheduleLocked
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.RunStatus kind=type
@@ -572,42 +521,32 @@ NODE id=matrix/neo/internal/runtime/work.RunStatus kind=type
   sig=type RunStatus string
 EDGES
   contains=matrix/neo/internal/runtime/work.RunStatus.valid
-  ^references=matrix/neo/internal/runtime/work.RunBlocked,matrix/neo/internal/runtime/work.RunCancelled,matrix/neo/internal/runtime/work.RunCompleted,matrix/neo/internal/runtime/work.RunOutcomeUnknown,matrix/neo/internal/runtime/work.RunPaused,matrix/neo/internal/runtime/work.RunQueued,matrix/neo/internal/runtime/work.RunStatus.valid,matrix/neo/internal/runtime/work.RunWaiting,matrix/neo/internal/runtime/work.RunWorking,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.terminalRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.RunStatus.valid kind=method
   digest=b3:611764e17cedfb951b2c15e4fa6dc407ba58ebaf9ff9ef01fe7ffd838644d0b2 file=neo/internal/runtime/work/types.go range=335:343 lang=go exported=false byte_range=11287:11499
   sig=func (status RunStatus) valid() bool
 EDGES
-  references=matrix/neo/internal/runtime/work.RunBlocked,matrix/neo/internal/runtime/work.RunCancelled,matrix/neo/internal/runtime/work.RunCompleted,matrix/neo/internal/runtime/work.RunOutcomeUnknown,matrix/neo/internal/runtime/work.RunPaused,matrix/neo/internal/runtime/work.RunQueued,matrix/neo/internal/runtime/work.RunStatus,matrix/neo/internal/runtime/work.RunWaiting,matrix/neo/internal/runtime/work.RunWorking,matrix/neo/internal/runtime/work.status
   ^contains=matrix/neo/internal/runtime/work.RunStatus
-  ^calls=matrix/neo/internal/runtime/work.validateRun
-  ^references=matrix/neo/internal/runtime/work.validateRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.RunStore kind=interface
   digest=b3:7ff2432500041c4f1e734fbd2a1dd73e66234e3488930525e10f077e746c2c85 file=neo/internal/runtime/work/types.go range=283:288 lang=go exported=true byte_range=9787:10125
   sig=type RunStore interface {\n	SaveSupervisorRun(context.Context, turnstate.SupervisorRecord) error\n	LoadSupervisorRun(context.Context, string) (turnstate.SupervisorRecord, error)\n	ListSupervisorRuns(context.Context, string) ([]turnstate.SupervisorRecord, error)\n	ListAllSupervisorRuns(context.Context) ([]turnstate.SupervisorRecord, error)\n}
 EDGES
-  references=matrix/neo/internal/runtime/turnstate.SupervisorRecord
   ^implements=matrix/neo/internal/runtime/turnstate.Store
-  ^references=matrix/neo/internal/runtime/work.NewService,matrix/neo/internal/runtime/work.Service
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.RunWaiting kind=const
   digest=b3:7d91e71eba640cbd063e23feb07e105a2c499a065cecab2b7c18d0ab73e8731f file=neo/internal/runtime/work/types.go range=56:56 lang=go exported=true byte_range=1499:1538
   sig=work.RunStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.RunStatus
-  ^references=matrix/neo/internal/runtime/work.RunStatus.valid,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.RunWorking kind=const
   digest=b3:f456880c7100ab7f7bb56d2f86a986cea0356b191243b4453d7e3562e1b9abbf file=neo/internal/runtime/work/types.go range=55:55 lang=go exported=true byte_range=1458:1497
   sig=work.RunStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.RunStatus
-  ^references=matrix/neo/internal/runtime/work.RunStatus.valid,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.ScopeLease kind=type
@@ -615,7 +554,6 @@ NODE id=matrix/neo/internal/runtime/work.ScopeLease kind=type
   sig=type ScopeLease struct {\n	ID		uuid.UUID	`json:"id"`\n	TaskID		string		`json:"task_id"`\n	Resource	string		`json:"resource"`\n	Mode		string		`json:"mode"`\n	ExpiresAt	time.Time	`json:"expires_at"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.ScopeLease#ExpiresAt,matrix/neo/internal/runtime/work.ScopeLease#ID,matrix/neo/internal/runtime/work.ScopeLease#Mode,matrix/neo/internal/runtime/work.ScopeLease#Resource,matrix/neo/internal/runtime/work.ScopeLease#TaskID
-  ^references=matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.acquireTaskLeases,matrix/neo/internal/runtime/work.releaseTaskLeases
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.ScopeLease#ExpiresAt kind=field
@@ -654,8 +592,6 @@ NODE id=matrix/neo/internal/runtime/work.ScopedToolManager kind=type
 EDGES
   contains=matrix/neo/internal/runtime/work.ScopedToolManager#allowed,matrix/neo/internal/runtime/work.ScopedToolManager#metadata,matrix/neo/internal/runtime/work.ScopedToolManager#packet,matrix/neo/internal/runtime/work.ScopedToolManager#parent,matrix/neo/internal/runtime/work.ScopedToolManager.Execute,matrix/neo/internal/runtime/work.ScopedToolManager.Reconcile,matrix/neo/internal/runtime/work.ScopedToolManager.Surface
   implements=matrix/neo/internal/runtime/loop.ToolManager,matrix/neo/internal/runtime/work.ToolManager
-  references=matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.ToolManager,matrix/neo/internal/runtime/work.ToolMetadata
-  ^references=matrix/neo/internal/runtime/work.NewScopedToolManager,matrix/neo/internal/runtime/work.ScopedToolManager.Execute,matrix/neo/internal/runtime/work.ScopedToolManager.Reconcile,matrix/neo/internal/runtime/work.ScopedToolManager.Surface
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
 NODE id=matrix/neo/internal/runtime/work.ScopedToolManager#allowed kind=field
@@ -686,8 +622,6 @@ NODE id=matrix/neo/internal/runtime/work.ScopedToolManager.Execute kind=method
   digest=b3:62ba926398301c2cad14897b9848066325a50e44b1d944405c3e491c862072e9 file=neo/internal/runtime/work/scope.go range=77:101 lang=go exported=true byte_range=1771:2585
   sig=func (manager *ScopedToolManager) Execute(\n	ctx context.Context,\n	call protocol.NormalizedToolCall,\n	idempotencyKey string,\n) (loop.ToolResult, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.authorizeClass
-  references=matrix/neo/internal/runtime/loop.ToolResult,matrix/neo/internal/runtime/protocol.NormalizedToolCall,matrix/neo/internal/runtime/work.ErrAuthorityDenied,matrix/neo/internal/runtime/work.ScopedToolManager,matrix/neo/internal/runtime/work.ToolManager.Execute,matrix/neo/internal/runtime/work.ToolMetadata.SideEffectClass,matrix/neo/internal/runtime/work.authorizeClass,matrix/neo/internal/runtime/work.call,matrix/neo/internal/runtime/work.class,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.found,matrix/neo/internal/runtime/work.idempotencyKey,matrix/neo/internal/runtime/work.manager,matrix/neo/internal/runtime/work.ok
   ^contains=matrix/neo/internal/runtime/work.ScopedToolManager
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
@@ -695,7 +629,6 @@ NODE id=matrix/neo/internal/runtime/work.ScopedToolManager.Reconcile kind=method
   digest=b3:67bcf5489bc20747d27d2085f4944246cebbf77c30a63c0e1c5d58c57df3bf0c file=neo/internal/runtime/work/scope.go range=103:108 lang=go exported=true byte_range=2587:2767
   sig=func (manager *ScopedToolManager) Reconcile(\n	ctx context.Context,\n	idempotencyKey string,\n) (loop.ReconcileResult, error)
 EDGES
-  references=matrix/neo/internal/runtime/loop.ReconcileResult,matrix/neo/internal/runtime/work.ScopedToolManager,matrix/neo/internal/runtime/work.ToolManager.Reconcile,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.idempotencyKey,matrix/neo/internal/runtime/work.manager
   ^contains=matrix/neo/internal/runtime/work.ScopedToolManager
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
@@ -703,7 +636,6 @@ NODE id=matrix/neo/internal/runtime/work.ScopedToolManager.Surface kind=method
   digest=b3:a008014da11321754e2a1bcf0411e9771061b60f8cf07b0cbab98a79a895fe83 file=neo/internal/runtime/work/scope.go range=64:75 lang=go exported=true byte_range=1424:1769
   sig=func (manager *ScopedToolManager) Surface(\n	ctx context.Context,\n) []protocol.ToolDefinition
 EDGES
-  references=matrix/neo/internal/runtime/protocol.ToolDefinition,matrix/neo/internal/runtime/work.ScopedToolManager,matrix/neo/internal/runtime/work.ToolManager.Surface,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.definition,matrix/neo/internal/runtime/work.manager,matrix/neo/internal/runtime/work.ok,matrix/neo/internal/runtime/work.result,matrix/neo/internal/runtime/work.source
   ^contains=matrix/neo/internal/runtime/work.ScopedToolManager
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
@@ -712,8 +644,6 @@ NODE id=matrix/neo/internal/runtime/work.Service kind=type
   sig=type Service struct {\n	mu		sync.Mutex\n	store		RunStore\n	verifier	CitationVerifier\n	metadata	ToolMetadata\n	executor	Executor\n	reconciler	EffectReconciler\n	now		func() time.Time\n	running		map[uuid.UUID]attemptControl\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.Service#executor,matrix/neo/internal/runtime/work.Service#metadata,matrix/neo/internal/runtime/work.Service#mu,matrix/neo/internal/runtime/work.Service#now,matrix/neo/internal/runtime/work.Service#reconciler,matrix/neo/internal/runtime/work.Service#running,matrix/neo/internal/runtime/work.Service#store,matrix/neo/internal/runtime/work.Service#verifier,matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.Get,matrix/neo/internal/runtime/work.Service.List,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.hasVerifiedEvidence,matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.Service.reconcileEffects,matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.Service.scheduleLocked
-  references=matrix/neo/internal/runtime/work.CitationVerifier,matrix/neo/internal/runtime/work.EffectReconciler,matrix/neo/internal/runtime/work.Executor,matrix/neo/internal/runtime/work.RunStore,matrix/neo/internal/runtime/work.ToolMetadata,matrix/neo/internal/runtime/work.attemptControl
-  ^references=matrix/neo/internal/runtime/work.NewService,matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.Get,matrix/neo/internal/runtime/work.Service.List,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.hasVerifiedEvidence,matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.Service.reconcileEffects,matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.Service.scheduleLocked
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.Service#executor kind=field
@@ -768,8 +698,6 @@ NODE id=matrix/neo/internal/runtime/work.Service.Cancel kind=method
   digest=b3:6c46757590f8a311e4db19ff7098bb829ca2399cbfc131e6b6ea1e931b7dcd64 file=neo/internal/runtime/work/service.go range=267:316 lang=go exported=true byte_range=6903:8253
   sig=func (service *Service) Cancel(\n	ctx context.Context,\n	actorID string,\n	runID uuid.UUID,\n) (SupervisorRun, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.cloneRun,matrix/neo/internal/runtime/work.terminalRun
-  references=matrix/neo/internal/runtime/work.RunCancelled,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.TaskCancelled,matrix/neo/internal/runtime/work.TaskCompleted,matrix/neo/internal/runtime/work.TaskRunning,matrix/neo/internal/runtime/work.actorID,matrix/neo/internal/runtime/work.attempt,matrix/neo/internal/runtime/work.cancel,matrix/neo/internal/runtime/work.cancellations,matrix/neo/internal/runtime/work.cloneRun,matrix/neo/internal/runtime/work.control,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.index,matrix/neo/internal/runtime/work.now,matrix/neo/internal/runtime/work.ok,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.runID,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.task,matrix/neo/internal/runtime/work.terminalRun
   ^contains=matrix/neo/internal/runtime/work.Service
   ^defines=matrix/neo/internal/runtime/work/service.go
 
@@ -777,8 +705,6 @@ NODE id=matrix/neo/internal/runtime/work.Service.Get kind=method
   digest=b3:c2984091356cc269c684726097d1a331d4f786016de87217d711bb3741e6a8f3 file=neo/internal/runtime/work/service.go range=165:177 lang=go exported=true byte_range=4423:4710
   sig=func (service *Service) Get(\n	ctx context.Context,\n	actorID string,\n	runID uuid.UUID,\n) (SupervisorRun, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.cloneRun
-  references=matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.actorID,matrix/neo/internal/runtime/work.cloneRun,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.runID,matrix/neo/internal/runtime/work.service
   ^contains=matrix/neo/internal/runtime/work.Service
   ^defines=matrix/neo/internal/runtime/work/service.go
 
@@ -786,8 +712,6 @@ NODE id=matrix/neo/internal/runtime/work.Service.List kind=method
   digest=b3:ac93074a43c288942c8e548848e4e5c394d979cd02ae36e1e6ea49f1ddaeff85 file=neo/internal/runtime/work/service.go range=179:208 lang=go exported=true byte_range=4712:5483
   sig=func (service *Service) List(\n	ctx context.Context,\n	actorID string,\n) ([]SupervisorRun, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.cloneRun,matrix/neo/internal/runtime/work.validateRun
-  references=matrix/neo/internal/runtime/work.RunStore.ListSupervisorRuns,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.actorID,matrix/neo/internal/runtime/work.cloneRun,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.left,matrix/neo/internal/runtime/work.record,matrix/neo/internal/runtime/work.records,matrix/neo/internal/runtime/work.right,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.runs,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.validateRun
   ^contains=matrix/neo/internal/runtime/work.Service
   ^defines=matrix/neo/internal/runtime/work/service.go
 
@@ -795,30 +719,20 @@ NODE id=matrix/neo/internal/runtime/work.Service.ReconcileRestart kind=method
   digest=b3:6eaa8dd1429a78842306ae95c166f441b4f8d4b622dca7188f5141ff939569ca file=neo/internal/runtime/work/service.go range=318:362 lang=go exported=true byte_range=8255:9335
   sig=func (service *Service) ReconcileRestart(\n	ctx context.Context,\n) ([]SupervisorRun, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.cloneRun,matrix/neo/internal/runtime/work.terminalRun,matrix/neo/internal/runtime/work.validateRun
-  references=matrix/neo/internal/runtime/work.RunOutcomeUnknown,matrix/neo/internal/runtime/work.RunPaused,matrix/neo/internal/runtime/work.RunStore.ListAllSupervisorRuns,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.changed,matrix/neo/internal/runtime/work.cloneRun,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.record,matrix/neo/internal/runtime/work.records,matrix/neo/internal/runtime/work.recovered,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.terminalRun,matrix/neo/internal/runtime/work.validateRun
   ^contains=matrix/neo/internal/runtime/work.Service
-  ^calls=matrix/neo/internal/runtime/work.NewService
-  ^references=matrix/neo/internal/runtime/work.NewService
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.Service.Start kind=method
   digest=b3:c55f862cae5d171c97186b8600eebb841c9bbaeff5ab27df05e31151dba56e92 file=neo/internal/runtime/work/service.go range=61:163 lang=go exported=true byte_range=1404:4421
   sig=func (service *Service) Start(\n	ctx context.Context,\n	actorID string,\n	input StartInput,\n) (SupervisorRun, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.cloneRun,matrix/neo/internal/runtime/work.normalizeSupervisorBudget,matrix/neo/internal/runtime/work.terminalRun,matrix/neo/internal/runtime/work.trimUnique
-  references=matrix/neo/internal/runtime/work.ErrAuthorityDenied,matrix/neo/internal/runtime/work.Executor.Surface,matrix/neo/internal/runtime/work.RunQueued,matrix/neo/internal/runtime/work.RunStore.ListSupervisorRuns,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.SpecialistTask,matrix/neo/internal/runtime/work.StartInput,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.TaskPending,matrix/neo/internal/runtime/work.TaskReady,matrix/neo/internal/runtime/work.actorID,matrix/neo/internal/runtime/work.available,matrix/neo/internal/runtime/work.budget,matrix/neo/internal/runtime/work.cloneRun,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.definition,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.existing,matrix/neo/internal/runtime/work.input,matrix/neo/internal/runtime/work.left,matrix/neo/internal/runtime/work.maxTasks,matrix/neo/internal/runtime/work.name,matrix/neo/internal/runtime/work.normalizeSupervisorBudget,matrix/neo/internal/runtime/work.now,matrix/neo/internal/runtime/work.ok,matrix/neo/internal/runtime/work.packet,matrix/neo/internal/runtime/work.packets,matrix/neo/internal/runtime/work.planTools,matrix/neo/internal/runtime/work.projection,matrix/neo/internal/runtime/work.record,matrix/neo/internal/runtime/work.records,matrix/neo/internal/runtime/work.right,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.status,matrix/neo/internal/runtime/work.terminalRun,matrix/neo/internal/runtime/work.trimUnique
   ^contains=matrix/neo/internal/runtime/work.Service
-  ^calls=matrix/neo/internal/runtime/work.Service.StartSubagents
-  ^references=matrix/neo/internal/runtime/work.Service.StartSubagents
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.Service.StartSubagents kind=method
   digest=b3:2f147a2ee2648a89b6f4a4a22e193967940a70775cd9e3572392c345e365b1d8 file=neo/internal/runtime/work/swarm.go range=14:69 lang=go exported=true byte_range=263:1923
   sig=func (service *Service) StartSubagents(\n	ctx context.Context,\n	actorID string,\n	conversationID string,\n	plan ParentPlan,\n	specs []neotools.SubagentSpec,\n) (SupervisorRun, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.authorizeClass,matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.normalizeScope,matrix/neo/internal/runtime/work.slug,matrix/neo/internal/runtime/work.specialistUsesClass,matrix/neo/internal/runtime/work.trimUnique
-  references=matrix/neo/internal/runtime/work.ErrAuthorityDenied,matrix/neo/internal/runtime/work.ParentPlan,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.StartInput,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.TaskSpec,matrix/neo/internal/runtime/work.ToolMetadata.SideEffectClass,matrix/neo/internal/runtime/work.actorID,matrix/neo/internal/runtime/work.authorizeClass,matrix/neo/internal/runtime/work.candidate,matrix/neo/internal/runtime/work.class,matrix/neo/internal/runtime/work.conversationID,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.id,matrix/neo/internal/runtime/work.index,matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.instruction,matrix/neo/internal/runtime/work.maxTasks,matrix/neo/internal/runtime/work.name,matrix/neo/internal/runtime/work.normalizeScope,matrix/neo/internal/runtime/work.ok,matrix/neo/internal/runtime/work.persona,matrix/neo/internal/runtime/work.plan,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.slug,matrix/neo/internal/runtime/work.spec,matrix/neo/internal/runtime/work.specialistUsesClass,matrix/neo/internal/runtime/work.specs,matrix/neo/internal/runtime/work.tasks,matrix/neo/internal/runtime/work.toolName,matrix/neo/internal/runtime/work.trimUnique,matrix/neo/internal/tools.SubagentSpec
   ^contains=matrix/neo/internal/runtime/work.Service
   ^defines=matrix/neo/internal/runtime/work/swarm.go
 
@@ -826,8 +740,6 @@ NODE id=matrix/neo/internal/runtime/work.Service.Steer kind=method
   digest=b3:df10f5c85dd1d2140f38569e3c191d74a6258a3f64f3e19c5ffa5fb64baf1522 file=neo/internal/runtime/work/service.go range=210:265 lang=go exported=true byte_range=5485:6901
   sig=func (service *Service) Steer(\n	ctx context.Context,\n	actorID string,\n	runID uuid.UUID,\n	instruction string,\n) (SupervisorRun, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.boundedText,matrix/neo/internal/runtime/work.cloneRun,matrix/neo/internal/runtime/work.terminalRun
-  references=matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.SteeringRecord,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.TaskRunning,matrix/neo/internal/runtime/work.actorID,matrix/neo/internal/runtime/work.attemptID,matrix/neo/internal/runtime/work.boundedText,matrix/neo/internal/runtime/work.cloneRun,matrix/neo/internal/runtime/work.control,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.instruction,matrix/neo/internal/runtime/work.maxSteeringRecords,matrix/neo/internal/runtime/work.ok,matrix/neo/internal/runtime/work.record,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.runID,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.task,matrix/neo/internal/runtime/work.terminalRun
   ^contains=matrix/neo/internal/runtime/work.Service
   ^defines=matrix/neo/internal/runtime/work/service.go
 
@@ -835,92 +747,62 @@ NODE id=matrix/neo/internal/runtime/work.Service.compilePackets kind=method
   digest=b3:5805e1da40faddc9a8958e2b8c403e9d54640a7f0631c0b3af762416a6857415 file=neo/internal/runtime/work/service.go range=423:573 lang=go exported=false byte_range=10912:15536
   sig=func (service *Service) compilePackets(\n	run SupervisorRun,\n	plan ParentPlan,\n	specs []TaskSpec,\n	available map[string]struct{},\n) ([]TaskPacket, BudgetUsage, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.addUsage,matrix/neo/internal/runtime/work.authorizeClass,matrix/neo/internal/runtime/work.boundedText,matrix/neo/internal/runtime/work.budgetExceeded,matrix/neo/internal/runtime/work.digestPacket,matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.invalidText,matrix/neo/internal/runtime/work.normalizeScope,matrix/neo/internal/runtime/work.overlaySpecialistBudget,matrix/neo/internal/runtime/work.scopeSubset,matrix/neo/internal/runtime/work.specialistBudgetExceeded,matrix/neo/internal/runtime/work.specialistBudgetFromParent,matrix/neo/internal/runtime/work.trimUnique,matrix/neo/internal/runtime/work.usageFromBudget,matrix/neo/internal/runtime/work.usageObserved,matrix/neo/internal/runtime/work.validSpecialist,matrix/neo/internal/runtime/work.validateDependencyGraph
-  references=matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.ErrAuthorityDenied,matrix/neo/internal/runtime/work.ErrBudgetProjection,matrix/neo/internal/runtime/work.ParentPlan,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.TaskSpec,matrix/neo/internal/runtime/work.ToolMetadata.SideEffectClass,matrix/neo/internal/runtime/work.addUsage,matrix/neo/internal/runtime/work.authorizeClass,matrix/neo/internal/runtime/work.available,matrix/neo/internal/runtime/work.base,matrix/neo/internal/runtime/work.boundedText,matrix/neo/internal/runtime/work.budget,matrix/neo/internal/runtime/work.budgetExceeded,matrix/neo/internal/runtime/work.class,matrix/neo/internal/runtime/work.classes,matrix/neo/internal/runtime/work.dependency,matrix/neo/internal/runtime/work.digestPacket,matrix/neo/internal/runtime/work.duplicate,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.estimate,matrix/neo/internal/runtime/work.id,matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.invalidText,matrix/neo/internal/runtime/work.known,matrix/neo/internal/runtime/work.maxCriteria,matrix/neo/internal/runtime/work.name,matrix/neo/internal/runtime/work.normalizeScope,matrix/neo/internal/runtime/work.ok,matrix/neo/internal/runtime/work.overlaySpecialistBudget,matrix/neo/internal/runtime/work.packet,matrix/neo/internal/runtime/work.packets,matrix/neo/internal/runtime/work.plan,matrix/neo/internal/runtime/work.planToolSet,matrix/neo/internal/runtime/work.projection,matrix/neo/internal/runtime/work.raw,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.scope,matrix/neo/internal/runtime/work.scopeSubset,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.spec,matrix/neo/internal/runtime/work.specialistBudgetExceeded,matrix/neo/internal/runtime/work.specialistBudgetFromParent,matrix/neo/internal/runtime/work.specs,matrix/neo/internal/runtime/work.taskTools,matrix/neo/internal/runtime/work.trimUnique,matrix/neo/internal/runtime/work.usageFromBudget,matrix/neo/internal/runtime/work.usageObserved,matrix/neo/internal/runtime/work.validSpecialist,matrix/neo/internal/runtime/work.validateDependencyGraph
   ^contains=matrix/neo/internal/runtime/work.Service
-  ^calls=matrix/neo/internal/runtime/work.Service.Start
-  ^references=matrix/neo/internal/runtime/work.Service.Start
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.Service.finishAttempt kind=method
   digest=b3:6309de989e84650cde68ccd762725b4c7781c841bd2bd7fc042737e0a86f7de4 file=neo/internal/runtime/work/service.go range=701:825 lang=go exported=false byte_range=18838:22934
   sig=func (service *Service) finishAttempt(\n	actorID string,\n	runID uuid.UUID,\n	taskID string,\n	attemptID uuid.UUID,\n	result WorkerResult,\n	executeErr error,\n)
 EDGES
-  calls=matrix/neo/internal/runtime/loop.Incomplete.Error,matrix/neo/internal/runtime/work.Service.hasVerifiedEvidence,matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.Service.reconcileEffects,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.accumulatedTaskUsage,matrix/neo/internal/runtime/work.addUsage,matrix/neo/internal/runtime/work.boundedText,matrix/neo/internal/runtime/work.budgetExceeded,matrix/neo/internal/runtime/work.clampProgress,matrix/neo/internal/runtime/work.finalizeRun,matrix/neo/internal/runtime/work.findTask,matrix/neo/internal/runtime/work.refreshReady,matrix/neo/internal/runtime/work.releaseTaskLeases,matrix/neo/internal/runtime/work.specialistBudgetExceeded,matrix/neo/internal/runtime/work.terminalRun
-  references=matrix/neo/internal/runtime/work.ErrEvidenceRequired,matrix/neo/internal/runtime/work.EvidenceRef,matrix/neo/internal/runtime/work.ExternalEffect,matrix/neo/internal/runtime/work.Finding,matrix/neo/internal/runtime/work.RunOutcomeUnknown,matrix/neo/internal/runtime/work.RunPaused,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.Service.hasVerifiedEvidence,matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.Service.reconcileEffects,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.TaskBlocked,matrix/neo/internal/runtime/work.TaskCompleted,matrix/neo/internal/runtime/work.TaskOutcomeUnknown,matrix/neo/internal/runtime/work.TaskReady,matrix/neo/internal/runtime/work.TaskRetrying,matrix/neo/internal/runtime/work.TaskRunning,matrix/neo/internal/runtime/work.TaskWaitingEvidence,matrix/neo/internal/runtime/work.WorkerResult,matrix/neo/internal/runtime/work.accountingMissing,matrix/neo/internal/runtime/work.accumulatedTaskUsage,matrix/neo/internal/runtime/work.actorID,matrix/neo/internal/runtime/work.addUsage,matrix/neo/internal/runtime/work.attempt,matrix/neo/internal/runtime/work.attemptID,matrix/neo/internal/runtime/work.boundedText,matrix/neo/internal/runtime/work.budgetExceeded,matrix/neo/internal/runtime/work.clampProgress,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.executeErr,matrix/neo/internal/runtime/work.finalizeRun,matrix/neo/internal/runtime/work.findTask,matrix/neo/internal/runtime/work.now,matrix/neo/internal/runtime/work.reconcileErr,matrix/neo/internal/runtime/work.refreshReady,matrix/neo/internal/runtime/work.releaseTaskLeases,matrix/neo/internal/runtime/work.result,matrix/neo/internal/runtime/work.retrySafe,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.runID,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.specialistBudgetExceeded,matrix/neo/internal/runtime/work.task,matrix/neo/internal/runtime/work.taskBudgetExceeded,matrix/neo/internal/runtime/work.taskID,matrix/neo/internal/runtime/work.terminalRun,matrix/neo/internal/runtime/work.uncertain,matrix/neo/internal/runtime/work.verified
   ^contains=matrix/neo/internal/runtime/work.Service
-  ^references=matrix/neo/internal/runtime/work.Service.scheduleLocked
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.Service.hasVerifiedEvidence kind=method
   digest=b3:be397a8803d96d209e478c09e58548816c4ec486d40edc93bcf8133496652785 file=neo/internal/runtime/work/service.go range=827:864 lang=go exported=false byte_range=22936:23944
   sig=func (service *Service) hasVerifiedEvidence(\n	packet TaskPacket,\n	result WorkerResult,\n) (bool, error)
 EDGES
-  references=matrix/cortex.ToolMatchMatched,matrix/neo/internal/runtime/work.CitationVerifier.VerifyToolEventCitation,matrix/neo/internal/runtime/work.ErrEvidenceRequired,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.WorkerResult,matrix/neo/internal/runtime/work.allowed,matrix/neo/internal/runtime/work.covered,matrix/neo/internal/runtime/work.criterion,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.ok,matrix/neo/internal/runtime/work.packet,matrix/neo/internal/runtime/work.payload,matrix/neo/internal/runtime/work.reference,matrix/neo/internal/runtime/work.result,matrix/neo/internal/runtime/work.service
   ^contains=matrix/neo/internal/runtime/work.Service
-  ^calls=matrix/neo/internal/runtime/work.Service.finishAttempt
-  ^references=matrix/neo/internal/runtime/work.Service.finishAttempt
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.Service.loadRun kind=method
   digest=b3:115b1ba33fff05b91a281ae8868bbe27374f7625d85d2f8d994ad32e54b63164 file=neo/internal/runtime/work/service.go range=922:951 lang=go exported=false byte_range=25227:26006
   sig=func (service *Service) loadRun(\n	ctx context.Context,\n	actorID string,\n	runID uuid.UUID,\n) (SupervisorRun, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.validateRun
-  references=matrix/neo/internal/runtime/work.ErrAuthorityDenied,matrix/neo/internal/runtime/work.RunStore.LoadSupervisorRun,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.actorID,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.record,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.runID,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.validateRun
   ^contains=matrix/neo/internal/runtime/work.Service
-  ^calls=matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.Get,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.finishAttempt
-  ^references=matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.Get,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.finishAttempt
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.Service.reconcileEffects kind=method
   digest=b3:5f4652ba80613ca9c43cb22d317bb2bdfc87ca5fee6e801336ae48f6b447cf4a file=neo/internal/runtime/work/service.go range=866:900 lang=go exported=false byte_range=23946:24780
   sig=func (service *Service) reconcileEffects(\n	ctx context.Context,\n	effects []ExternalEffect,\n) (uncertain bool, retrySafe bool, err error)
 EDGES
-  references=matrix/neo/internal/runtime/loop.ReconcileCompleted,matrix/neo/internal/runtime/loop.ReconcileRetrySafe,matrix/neo/internal/runtime/work.EffectReconciler.ReconcileEffect,matrix/neo/internal/runtime/work.ExternalEffect,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.effect,matrix/neo/internal/runtime/work.effects,matrix/neo/internal/runtime/work.index,matrix/neo/internal/runtime/work.reconcileErr,matrix/neo/internal/runtime/work.reconciled,matrix/neo/internal/runtime/work.retrySafe,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.uncertain
   ^contains=matrix/neo/internal/runtime/work.Service
-  ^calls=matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.reconcileRunRestart
-  ^references=matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.reconcileRunRestart
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.Service.reconcileRunRestart kind=method
   digest=b3:feae847bd161fa8d491d06c22a9e7d402e6c0e65e6a48a11dcea4e4f7dfee590 file=neo/internal/runtime/work/service.go range=364:421 lang=go exported=false byte_range=9337:10910
   sig=func (service *Service) reconcileRunRestart(\n	ctx context.Context,\n	run *SupervisorRun,\n) (bool, error)
 EDGES
-  calls=matrix/neo/internal/runtime/work.Service.reconcileEffects,matrix/neo/internal/runtime/work.releaseTaskLeases
-  references=matrix/neo/internal/runtime/work.Reconciliation,matrix/neo/internal/runtime/work.RunOutcomeUnknown,matrix/neo/internal/runtime/work.RunQueued,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.Service.reconcileEffects,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.TaskOutcomeUnknown,matrix/neo/internal/runtime/work.TaskReady,matrix/neo/internal/runtime/work.TaskRetrying,matrix/neo/internal/runtime/work.TaskRunning,matrix/neo/internal/runtime/work.attempt,matrix/neo/internal/runtime/work.changed,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.index,matrix/neo/internal/runtime/work.local,matrix/neo/internal/runtime/work.now,matrix/neo/internal/runtime/work.reconciliation,matrix/neo/internal/runtime/work.releaseTaskLeases,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.task,matrix/neo/internal/runtime/work.uncertain
   ^contains=matrix/neo/internal/runtime/work.Service
-  ^calls=matrix/neo/internal/runtime/work.Service.ReconcileRestart
-  ^references=matrix/neo/internal/runtime/work.Service.ReconcileRestart
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.Service.saveRun kind=method
   digest=b3:8d0fc2045e58d688afdacac28a4d34578624825a2e78b42b01a6eaf790d20a84 file=neo/internal/runtime/work/service.go range=902:920 lang=go exported=false byte_range=24782:25225
   sig=func (service *Service) saveRun(\n	ctx context.Context,\n	run *SupervisorRun,\n) error
 EDGES
-  calls=matrix/neo/internal/runtime/work.validateRun
-  references=matrix/neo/internal/runtime/turnstate.SupervisorRecord,matrix/neo/internal/runtime/work.RunStore.SaveSupervisorRun,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.raw,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.validateRun
   ^contains=matrix/neo/internal/runtime/work.Service
-  ^calls=matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.scheduleLocked
-  ^references=matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.scheduleLocked
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.Service.scheduleLocked kind=method
   digest=b3:33c67885d096456f5bdcc4c5887691f12adafb2ce03ce51f013e7bf77e963ee9 file=neo/internal/runtime/work/service.go range=575:699 lang=go exported=false byte_range=15538:18836
   sig=func (service *Service) scheduleLocked(\n	ctx context.Context,\n	run *SupervisorRun,\n) error
 EDGES
-  calls=matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.acquireTaskLeases,matrix/neo/internal/runtime/work.addUsage,matrix/neo/internal/runtime/work.budgetExceeded,matrix/neo/internal/runtime/work.dependenciesComplete,matrix/neo/internal/runtime/work.findTask,matrix/neo/internal/runtime/work.releaseTaskLeases,matrix/neo/internal/runtime/work.terminalRun
-  references=matrix/neo/internal/runtime/work.Attempt,matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.Executor.Execute,matrix/neo/internal/runtime/work.RunOutcomeUnknown,matrix/neo/internal/runtime/work.RunPaused,matrix/neo/internal/runtime/work.RunQueued,matrix/neo/internal/runtime/work.RunWaiting,matrix/neo/internal/runtime/work.RunWorking,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.SteeringRecord,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.TaskBlocked,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.TaskReady,matrix/neo/internal/runtime/work.TaskRetrying,matrix/neo/internal/runtime/work.TaskRunning,matrix/neo/internal/runtime/work.acquireTaskLeases,matrix/neo/internal/runtime/work.active,matrix/neo/internal/runtime/work.addUsage,matrix/neo/internal/runtime/work.attemptControl,matrix/neo/internal/runtime/work.attemptID,matrix/neo/internal/runtime/work.budgetExceeded,matrix/neo/internal/runtime/work.cancel,matrix/neo/internal/runtime/work.ctx,matrix/neo/internal/runtime/work.dependenciesComplete,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.executeErr,matrix/neo/internal/runtime/work.findTask,matrix/neo/internal/runtime/work.guidance,matrix/neo/internal/runtime/work.index,matrix/neo/internal/runtime/work.item,matrix/neo/internal/runtime/work.last,matrix/neo/internal/runtime/work.launch,matrix/neo/internal/runtime/work.launches,matrix/neo/internal/runtime/work.leases,matrix/neo/internal/runtime/work.maxSteeringRecords,matrix/neo/internal/runtime/work.now,matrix/neo/internal/runtime/work.ok,matrix/neo/internal/runtime/work.packet,matrix/neo/internal/runtime/work.projected,matrix/neo/internal/runtime/work.record,matrix/neo/internal/runtime/work.releaseTaskLeases,matrix/neo/internal/runtime/work.reserved,matrix/neo/internal/runtime/work.result,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.service,matrix/neo/internal/runtime/work.steering,matrix/neo/internal/runtime/work.task,matrix/neo/internal/runtime/work.terminalRun,matrix/neo/internal/runtime/work.workerCtx
   ^contains=matrix/neo/internal/runtime/work.Service
-  ^calls=matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.finishAttempt
-  ^references=matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.finishAttempt
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.Specialist kind=type
   digest=b3:ea2860a273badfe5f5d839f49c20a49ffe0a03c9252c513c935b07bb79b6729a file=neo/internal/runtime/work/types.go range=36:36 lang=go exported=true byte_range=846:868
   sig=type Specialist string
 EDGES
-  ^references=matrix/neo/internal/runtime/work.SpecialistData,matrix/neo/internal/runtime/work.SpecialistDiscovery,matrix/neo/internal/runtime/work.SpecialistExploration,matrix/neo/internal/runtime/work.SpecialistFrontend,matrix/neo/internal/runtime/work.SpecialistImplementation,matrix/neo/internal/runtime/work.SpecialistOperations,matrix/neo/internal/runtime/work.SpecialistPerformance,matrix/neo/internal/runtime/work.SpecialistReview,matrix/neo/internal/runtime/work.SpecialistSecurity,matrix/neo/internal/runtime/work.SpecialistTest,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.TaskSpec,matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.specialistUsesClass,matrix/neo/internal/runtime/work.validSpecialist
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SpecialistBudget kind=type
@@ -928,8 +810,6 @@ NODE id=matrix/neo/internal/runtime/work.SpecialistBudget kind=type
   sig=type SpecialistBudget struct {\n	MaxTokens		int64	`json:"max_tokens"`\n	MaxModelMicrocents	int64	`json:"max_model_microcents"`\n	MaxProviderMicrocents	int64	`json:"max_provider_microcents"`\n	MaxToolCalls		int	`json:"max_tool_calls"`\n	MaxWallSeconds		int	`json:"max_wall_seconds"`\n	MaxProcesses		int	`json:"max_processes"`\n	MaxStorageBytes		int64	`json:"max_storage_bytes"`\n	MaxNetworkBytes		int64	`json:"max_network_bytes"`\n	MaxRetries		int	`json:"max_retries"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.SpecialistBudget#MaxModelMicrocents,matrix/neo/internal/runtime/work.SpecialistBudget#MaxNetworkBytes,matrix/neo/internal/runtime/work.SpecialistBudget#MaxProcesses,matrix/neo/internal/runtime/work.SpecialistBudget#MaxProviderMicrocents,matrix/neo/internal/runtime/work.SpecialistBudget#MaxRetries,matrix/neo/internal/runtime/work.SpecialistBudget#MaxStorageBytes,matrix/neo/internal/runtime/work.SpecialistBudget#MaxTokens,matrix/neo/internal/runtime/work.SpecialistBudget#MaxToolCalls,matrix/neo/internal/runtime/work.SpecialistBudget#MaxWallSeconds
-  ^embeds=matrix/neo/internal/runtime/work.SupervisorBudget
-  ^references=matrix/neo/internal/runtime/work.SupervisorBudget,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.TaskSpec,matrix/neo/internal/runtime/work.overlaySpecialistBudget,matrix/neo/internal/runtime/work.specialistBudgetExceeded,matrix/neo/internal/runtime/work.specialistBudgetFromParent,matrix/neo/internal/runtime/work.usageFromBudget
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SpecialistBudget#MaxModelMicrocents kind=field
@@ -990,72 +870,54 @@ NODE id=matrix/neo/internal/runtime/work.SpecialistData kind=const
   digest=b3:63d4c0db3f14bcf99a77b34196f3d2d5987a40727462b2625b4808ac4bf61e24 file=neo/internal/runtime/work/types.go range=44:44 lang=go exported=true byte_range=1135:1179
   sig=work.Specialist
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist
-  ^references=matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.specialistUsesClass,matrix/neo/internal/runtime/work.validSpecialist
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SpecialistDiscovery kind=const
   digest=b3:f8f0569bb4b8bbbfff13f008898b610214f32841f98cf1f4dbdd367ca8de58a4 file=neo/internal/runtime/work/types.go range=39:39 lang=go exported=true byte_range=879:928
   sig=work.Specialist
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist
-  ^references=matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.specialistUsesClass,matrix/neo/internal/runtime/work.validSpecialist
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SpecialistExploration kind=const
   digest=b3:f3f1310f271fab954fd7ce5bd910136da1d8934ee7d5afd08f6128982a7f105d file=neo/internal/runtime/work/types.go range=40:40 lang=go exported=true byte_range=930:981
   sig=work.Specialist
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist
-  ^references=matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.specialistUsesClass,matrix/neo/internal/runtime/work.validSpecialist
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SpecialistFrontend kind=const
   digest=b3:02a95c9e05cfbc9a332b2a34099644016a9d497f6ccb82198073d758d1b2186e file=neo/internal/runtime/work/types.go range=45:45 lang=go exported=true byte_range=1181:1229
   sig=work.Specialist
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist
-  ^references=matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.specialistUsesClass,matrix/neo/internal/runtime/work.validSpecialist
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SpecialistImplementation kind=const
   digest=b3:762ddebfe53f12c62a677cca75f63efd87ffd80815ee1c83507784b9b1183620 file=neo/internal/runtime/work/types.go range=41:41 lang=go exported=true byte_range=983:1037
   sig=work.Specialist
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist
-  ^references=matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.specialistUsesClass,matrix/neo/internal/runtime/work.validSpecialist
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SpecialistOperations kind=const
   digest=b3:81fe4bf65eee67ce77b7d97fe33208cff80a3e706473ee6487382daa3dd83b3b file=neo/internal/runtime/work/types.go range=47:47 lang=go exported=true byte_range=1284:1334
   sig=work.Specialist
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist
-  ^references=matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.specialistUsesClass,matrix/neo/internal/runtime/work.validSpecialist
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SpecialistPerformance kind=const
   digest=b3:742b95387176ab12dc010a34826213e6a3aeb7e1749eeb3e6025bccf6f5383bf file=neo/internal/runtime/work/types.go range=46:46 lang=go exported=true byte_range=1231:1282
   sig=work.Specialist
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist
-  ^references=matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.specialistUsesClass,matrix/neo/internal/runtime/work.validSpecialist
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SpecialistReview kind=const
   digest=b3:a1bd43752dde146655becc67c04e4d9584638beeeb3451fc65e9840d751e409a file=neo/internal/runtime/work/types.go range=48:48 lang=go exported=true byte_range=1336:1382
   sig=work.Specialist
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist
-  ^references=matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.validSpecialist
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SpecialistSecurity kind=const
   digest=b3:f65d131a5320a484e698e2032b650f1374febf7bbffaa9437f225761d11b6b3f file=neo/internal/runtime/work/types.go range=43:43 lang=go exported=true byte_range=1085:1133
   sig=work.Specialist
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist
-  ^references=matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.specialistUsesClass,matrix/neo/internal/runtime/work.validSpecialist
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SpecialistTask kind=type
@@ -1063,8 +925,6 @@ NODE id=matrix/neo/internal/runtime/work.SpecialistTask kind=type
   sig=type SpecialistTask struct {\n	Packet		TaskPacket	`json:"packet"`\n	Status		TaskStatus	`json:"status"`\n	Progress	int		`json:"progress"`\n	Attempts	[]Attempt	`json:"attempts,omitempty"`\n	BlockingReason	string		`json:"blocking_reason,omitempty"`\n	UpdatedAt	time.Time	`json:"updated_at"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.SpecialistTask#Attempts,matrix/neo/internal/runtime/work.SpecialistTask#BlockingReason,matrix/neo/internal/runtime/work.SpecialistTask#Packet,matrix/neo/internal/runtime/work.SpecialistTask#Progress,matrix/neo/internal/runtime/work.SpecialistTask#Status,matrix/neo/internal/runtime/work.SpecialistTask#UpdatedAt
-  references=matrix/neo/internal/runtime/work.Attempt,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.TaskStatus
-  ^references=matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.accumulatedTaskUsage,matrix/neo/internal/runtime/work.dependenciesComplete,matrix/neo/internal/runtime/work.findTask
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SpecialistTask#Attempts kind=field
@@ -1107,8 +967,6 @@ NODE id=matrix/neo/internal/runtime/work.SpecialistTest kind=const
   digest=b3:d761a08c454a996d11dc9a62bdc6fe752f4f725b2439e2877060caa9056cb597 file=neo/internal/runtime/work/types.go range=42:42 lang=go exported=true byte_range=1039:1083
   sig=work.Specialist
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist
-  ^references=matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.specialistUsesClass,matrix/neo/internal/runtime/work.validSpecialist
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.StartInput kind=type
@@ -1116,8 +974,6 @@ NODE id=matrix/neo/internal/runtime/work.StartInput kind=type
   sig=type StartInput struct {\n	ConversationID	string		`json:"conversation_id"`\n	Plan		ParentPlan	`json:"plan"`\n	Tasks		[]TaskSpec	`json:"tasks"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.StartInput#ConversationID,matrix/neo/internal/runtime/work.StartInput#Plan,matrix/neo/internal/runtime/work.StartInput#Tasks
-  references=matrix/neo/internal/runtime/work.ParentPlan,matrix/neo/internal/runtime/work.TaskSpec
-  ^references=matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.StartSubagents
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.StartInput#ConversationID kind=field
@@ -1143,7 +999,6 @@ NODE id=matrix/neo/internal/runtime/work.SteeringRecord kind=type
   sig=type SteeringRecord struct {\n	At		time.Time	`json:"at"`\n	Instruction	string		`json:"instruction"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.SteeringRecord#At,matrix/neo/internal/runtime/work.SteeringRecord#Instruction
-  ^references=matrix/neo/internal/runtime/work.Executor,matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.attemptControl,matrix/neo/internal/runtime/work.steeringGuidance
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SteeringRecord#At kind=field
@@ -1163,9 +1018,6 @@ NODE id=matrix/neo/internal/runtime/work.SupervisorBudget kind=type
   sig=type SupervisorBudget struct {\n	SpecialistBudget\n	MaxParallel	int	`json:"max_parallel"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.SupervisorBudget#MaxParallel
-  embeds=matrix/neo/internal/runtime/work.SpecialistBudget
-  references=matrix/neo/internal/runtime/work.SpecialistBudget
-  ^references=matrix/neo/internal/runtime/work.ParentPlan,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.budgetExceeded,matrix/neo/internal/runtime/work.normalizeSupervisorBudget,matrix/neo/internal/runtime/work.specialistBudgetFromParent
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SupervisorBudget#MaxParallel kind=field
@@ -1179,8 +1031,6 @@ NODE id=matrix/neo/internal/runtime/work.SupervisorRun kind=type
   sig=type SupervisorRun struct {\n	ID		uuid.UUID		`json:"id"`\n	ActorID		string			`json:"actor_id"`\n	ConversationID	string			`json:"conversation_id"`\n	ParentPlanID	string			`json:"parent_plan_id"`\n	Status		RunStatus		`json:"status"`\n	Revision	uint64			`json:"revision"`\n	Tasks		[]SpecialistTask	`json:"tasks"`\n	Leases		[]ScopeLease		`json:"leases,omitempty"`\n	Budget		SupervisorBudget	`json:"budget"`\n	Usage		BudgetUsage		`json:"usage"`\n	Projection	BudgetUsage		`json:"projected_usage"`\n	Steering	[]SteeringRecord	`json:"steering,omitempty"`\n	Reconciliations	[]Reconciliation	`json:"reconciliations,omitempty"`\n	Synthesis	[]Finding		`json:"synthesis,omitempty"`\n	CreatedAt	time.Time		`json:"created_at"`\n	UpdatedAt	time.Time		`json:"updated_at"`\n	FinishedAt	*time.Time		`json:"finished_at,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.SupervisorRun#ActorID,matrix/neo/internal/runtime/work.SupervisorRun#Budget,matrix/neo/internal/runtime/work.SupervisorRun#ConversationID,matrix/neo/internal/runtime/work.SupervisorRun#CreatedAt,matrix/neo/internal/runtime/work.SupervisorRun#FinishedAt,matrix/neo/internal/runtime/work.SupervisorRun#ID,matrix/neo/internal/runtime/work.SupervisorRun#Leases,matrix/neo/internal/runtime/work.SupervisorRun#ParentPlanID,matrix/neo/internal/runtime/work.SupervisorRun#Projection,matrix/neo/internal/runtime/work.SupervisorRun#Reconciliations,matrix/neo/internal/runtime/work.SupervisorRun#Revision,matrix/neo/internal/runtime/work.SupervisorRun#Status,matrix/neo/internal/runtime/work.SupervisorRun#Steering,matrix/neo/internal/runtime/work.SupervisorRun#Synthesis,matrix/neo/internal/runtime/work.SupervisorRun#Tasks,matrix/neo/internal/runtime/work.SupervisorRun#UpdatedAt,matrix/neo/internal/runtime/work.SupervisorRun#Usage
-  references=matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.Finding,matrix/neo/internal/runtime/work.Reconciliation,matrix/neo/internal/runtime/work.RunStatus,matrix/neo/internal/runtime/work.ScopeLease,matrix/neo/internal/runtime/work.SpecialistTask,matrix/neo/internal/runtime/work.SteeringRecord,matrix/neo/internal/runtime/work.SupervisorBudget
-  ^references=matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.Get,matrix/neo/internal/runtime/work.Service.List,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.Service.saveRun,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.cloneRun,matrix/neo/internal/runtime/work.finalizeRun,matrix/neo/internal/runtime/work.findTask,matrix/neo/internal/runtime/work.refreshReady,matrix/neo/internal/runtime/work.validateRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.SupervisorRun#ActorID kind=field
@@ -1289,32 +1139,24 @@ NODE id=matrix/neo/internal/runtime/work.TaskBlocked kind=const
   digest=b3:e0ddd791a27c7923df7bdcf9dee1ee2bbb4498e1916c223a417a957333441c1a file=neo/internal/runtime/work/types.go range=72:72 lang=go exported=true byte_range=2019:2061
   sig=work.TaskStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.TaskStatus
-  ^references=matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.TaskCancelled kind=const
   digest=b3:a3594b53b3feb94ee30af19dd90226676069f09c63f996524cc328567f68d458 file=neo/internal/runtime/work/types.go range=73:73 lang=go exported=true byte_range=2063:2107
   sig=work.TaskStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.TaskStatus
-  ^references=matrix/neo/internal/runtime/work.Service.Cancel
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.TaskCompleted kind=const
   digest=b3:eb859d305ffe69babf700d1dcf98eb67c11bd368864a88c01a22c0e400335c0a file=neo/internal/runtime/work/types.go range=74:74 lang=go exported=true byte_range=2109:2153
   sig=work.TaskStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.TaskStatus
-  ^references=matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.dependenciesComplete,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.TaskOutcomeUnknown kind=const
   digest=b3:8748ae103eb8dfb008c836bf34ea930d151f0a2dda2418a25d43abd6e73ff2b5 file=neo/internal/runtime/work/types.go range=75:75 lang=go exported=true byte_range=2155:2205
   sig=work.TaskStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.TaskStatus
-  ^references=matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.TaskPacket kind=type
@@ -1322,8 +1164,6 @@ NODE id=matrix/neo/internal/runtime/work.TaskPacket kind=type
   sig=type TaskPacket struct {\n	ID		string			`json:"id"`\n	Digest		[32]byte		`json:"digest"`\n	SupervisorID	uuid.UUID		`json:"supervisor_id"`\n	ActorID		string			`json:"actor_id"`\n	ConversationID	string			`json:"conversation_id"`\n	ParentPlanID	string			`json:"parent_plan_id"`\n	Title		string			`json:"title"`\n	Prompt		string			`json:"prompt"`\n	Criteria	[]string		`json:"criteria"`\n	DependsOn	[]string		`json:"depends_on,omitempty"`\n	Specialist	Specialist		`json:"specialist"`\n	Scope		AuthorityScope		`json:"scope"`\n	Tools		[]string		`json:"tools"`\n	ToolClasses	map[string]string	`json:"tool_classes"`\n	Budget		SpecialistBudget	`json:"budget"`\n	ProjectedUsage	BudgetUsage		`json:"projected_usage"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.TaskPacket#ActorID,matrix/neo/internal/runtime/work.TaskPacket#Budget,matrix/neo/internal/runtime/work.TaskPacket#ConversationID,matrix/neo/internal/runtime/work.TaskPacket#Criteria,matrix/neo/internal/runtime/work.TaskPacket#DependsOn,matrix/neo/internal/runtime/work.TaskPacket#Digest,matrix/neo/internal/runtime/work.TaskPacket#ID,matrix/neo/internal/runtime/work.TaskPacket#ParentPlanID,matrix/neo/internal/runtime/work.TaskPacket#ProjectedUsage,matrix/neo/internal/runtime/work.TaskPacket#Prompt,matrix/neo/internal/runtime/work.TaskPacket#Scope,matrix/neo/internal/runtime/work.TaskPacket#Specialist,matrix/neo/internal/runtime/work.TaskPacket#SupervisorID,matrix/neo/internal/runtime/work.TaskPacket#Title,matrix/neo/internal/runtime/work.TaskPacket#ToolClasses,matrix/neo/internal/runtime/work.TaskPacket#Tools
-  references=matrix/neo/internal/runtime/work.AuthorityScope,matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.Specialist,matrix/neo/internal/runtime/work.SpecialistBudget
-  ^references=matrix/neo/internal/runtime/work.Executor,matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.LoopFactory,matrix/neo/internal/runtime/work.NewScopedToolManager,matrix/neo/internal/runtime/work.ScopedToolManager,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.hasVerifiedEvidence,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.SpecialistTask,matrix/neo/internal/runtime/work.acquireTaskLeases,matrix/neo/internal/runtime/work.dependenciesComplete,matrix/neo/internal/runtime/work.specialistPrompt,matrix/neo/internal/runtime/work.verifyPacketDigest
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.TaskPacket#ActorID kind=field
@@ -1426,32 +1266,24 @@ NODE id=matrix/neo/internal/runtime/work.TaskPending kind=const
   digest=b3:9297bccaea9fd0997339353287a6c4c109878cfb18c217be767274cede8051b6 file=neo/internal/runtime/work/types.go range=67:67 lang=go exported=true byte_range=1791:1833
   sig=work.TaskStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.TaskStatus
-  ^references=matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.finalizeRun,matrix/neo/internal/runtime/work.refreshReady
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.TaskReady kind=const
   digest=b3:fdd2459d07accbbf6c9882d7137e348cbd2ae2bc12608c1c1ffc501b89c2f4e1 file=neo/internal/runtime/work/types.go range=68:68 lang=go exported=true byte_range=1835:1875
   sig=work.TaskStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.TaskStatus
-  ^references=matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.finalizeRun,matrix/neo/internal/runtime/work.refreshReady
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.TaskRetrying kind=const
   digest=b3:83624a12484ccf8202e42d668b9c7b2d72a58d96f56633ed4cbd374f3f5d9ff1 file=neo/internal/runtime/work/types.go range=71:71 lang=go exported=true byte_range=1974:2017
   sig=work.TaskStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.TaskStatus
-  ^references=matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.TaskRunning kind=const
   digest=b3:9796b2eacdcd8fc3fcfd3a5fff909e822da545c041cd713b6baf61f50f3a5c62 file=neo/internal/runtime/work/types.go range=69:69 lang=go exported=true byte_range=1877:1919
   sig=work.TaskStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.TaskStatus
-  ^references=matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.TaskSpec kind=type
@@ -1459,8 +1291,6 @@ NODE id=matrix/neo/internal/runtime/work.TaskSpec kind=type
   sig=type TaskSpec struct {\n	ID		string			`json:"id"`\n	Title		string			`json:"title"`\n	Prompt		string			`json:"prompt"`\n	Criteria	[]string		`json:"criteria"`\n	DependsOn	[]string		`json:"depends_on,omitempty"`\n	Specialist	Specialist		`json:"specialist,omitempty"`\n	Scope		AuthorityScope		`json:"scope"`\n	Tools		[]string		`json:"tools"`\n	Budget		SpecialistBudget	`json:"budget"`\n	ProjectedUsage	BudgetUsage		`json:"projected_usage"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.TaskSpec#Budget,matrix/neo/internal/runtime/work.TaskSpec#Criteria,matrix/neo/internal/runtime/work.TaskSpec#DependsOn,matrix/neo/internal/runtime/work.TaskSpec#ID,matrix/neo/internal/runtime/work.TaskSpec#ProjectedUsage,matrix/neo/internal/runtime/work.TaskSpec#Prompt,matrix/neo/internal/runtime/work.TaskSpec#Scope,matrix/neo/internal/runtime/work.TaskSpec#Specialist,matrix/neo/internal/runtime/work.TaskSpec#Title,matrix/neo/internal/runtime/work.TaskSpec#Tools
-  references=matrix/neo/internal/runtime/work.AuthorityScope,matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.Specialist,matrix/neo/internal/runtime/work.SpecialistBudget
-  ^references=matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.StartInput,matrix/neo/internal/runtime/work.inferSpecialist,matrix/neo/internal/runtime/work.validateDependencyGraph
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.TaskSpec#Budget kind=field
@@ -1527,24 +1357,19 @@ NODE id=matrix/neo/internal/runtime/work.TaskStatus kind=type
   digest=b3:4a71cbf57e524b7fd4329cf0869e1d5899108194243ad22410e0a92621616fec file=neo/internal/runtime/work/types.go range=64:64 lang=go exported=true byte_range=1758:1780
   sig=type TaskStatus string
 EDGES
-  ^references=matrix/neo/internal/runtime/work.Attempt,matrix/neo/internal/runtime/work.SpecialistTask,matrix/neo/internal/runtime/work.TaskBlocked,matrix/neo/internal/runtime/work.TaskCancelled,matrix/neo/internal/runtime/work.TaskCompleted,matrix/neo/internal/runtime/work.TaskOutcomeUnknown,matrix/neo/internal/runtime/work.TaskPending,matrix/neo/internal/runtime/work.TaskReady,matrix/neo/internal/runtime/work.TaskRetrying,matrix/neo/internal/runtime/work.TaskRunning,matrix/neo/internal/runtime/work.TaskWaitingEvidence,matrix/neo/internal/runtime/work.WorkerResult
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.TaskWaitingEvidence kind=const
   digest=b3:404db96c91ef5d5f0b30e5c66405a4ca9819a81799d26b62c77c3a2e77e40bd7 file=neo/internal/runtime/work/types.go range=70:70 lang=go exported=true byte_range=1921:1972
   sig=work.TaskStatus
 EDGES
-  references=matrix/neo/internal/runtime/work.TaskStatus
-  ^references=matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.ToolManager kind=interface
   digest=b3:44c51ab218a8c5a8ca62970d37501e04431d796ac7be1a81375af9ea54a3710d file=neo/internal/runtime/work/types.go range=290:298 lang=go exported=true byte_range=10127:10373
   sig=type ToolManager interface {\n	Surface(context.Context) []protocol.ToolDefinition\n	Execute(\n		context.Context,\n		protocol.NormalizedToolCall,\n		string,\n	) (loop.ToolResult, error)\n	Reconcile(context.Context, string) (loop.ReconcileResult, error)\n}
 EDGES
-  references=matrix/neo/internal/runtime/loop.ReconcileResult,matrix/neo/internal/runtime/loop.ToolResult,matrix/neo/internal/runtime/protocol.NormalizedToolCall,matrix/neo/internal/runtime/protocol.ToolDefinition
   ^implements=matrix/neo/internal/agent.resurrectionToolSurface,matrix/neo/internal/runtime/loop.ToolManagerAdapter,matrix/neo/internal/runtime/work.ScopedToolManager
-  ^references=matrix/neo/internal/runtime/work.LoopExecutor,matrix/neo/internal/runtime/work.LoopFactory,matrix/neo/internal/runtime/work.NewScopedToolManager,matrix/neo/internal/runtime/work.ScopedToolManager
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.ToolMetadata kind=interface
@@ -1552,17 +1377,13 @@ NODE id=matrix/neo/internal/runtime/work.ToolMetadata kind=interface
   sig=type ToolMetadata interface {\n	SideEffectClass(string) (string, bool)\n}
 EDGES
   ^implements=matrix/neo/internal/runtime/work.ManifestToolMetadata
-  ^references=matrix/neo/internal/runtime/work.LoopExecutor,matrix/neo/internal/runtime/work.NewScopedToolManager,matrix/neo/internal/runtime/work.NewService,matrix/neo/internal/runtime/work.ScopedToolManager,matrix/neo/internal/runtime/work.Service
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.TurnRuntimeStore kind=interface
   digest=b3:b080719f78694985a0fd3c9a27147286a9e7c457a2589975eb6310dea4a9c0a1 file=neo/internal/runtime/work/executor.go range=35:39 lang=go exported=true byte_range=651:838
   sig=type TurnRuntimeStore interface {\n	loop.CheckpointStore\n	CreateTurnState(context.Context, turnstate.TurnState) error\n	LoadTurnState(context.Context, string) (turnstate.TurnState, error)\n}
 EDGES
-  embeds=matrix/neo/internal/runtime/loop.CheckpointStore
-  references=matrix/neo/internal/runtime/loop.CheckpointStore,matrix/neo/internal/runtime/turnstate.TurnState
   ^implements=matrix/neo/internal/runtime/turnstate.Store
-  ^references=matrix/neo/internal/runtime/work.LoopExecutor
   ^defines=matrix/neo/internal/runtime/work/executor.go
 
 NODE id=matrix/neo/internal/runtime/work.WorkerResult kind=type
@@ -1570,8 +1391,6 @@ NODE id=matrix/neo/internal/runtime/work.WorkerResult kind=type
   sig=type WorkerResult struct {\n	AttemptID	uuid.UUID		`json:"attempt_id"`\n	WorkerID	string			`json:"worker_id,omitempty"`\n	Status		TaskStatus		`json:"status"`\n	Progress	int			`json:"progress"`\n	Summary		string			`json:"summary"`\n	Usage		BudgetUsage		`json:"usage"`\n	Evidence	[]EvidenceRef		`json:"evidence,omitempty"`\n	Findings	[]Finding		`json:"findings,omitempty"`\n	ExternalEffects	[]ExternalEffect	`json:"external_effects,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.WorkerResult#AttemptID,matrix/neo/internal/runtime/work.WorkerResult#Evidence,matrix/neo/internal/runtime/work.WorkerResult#ExternalEffects,matrix/neo/internal/runtime/work.WorkerResult#Findings,matrix/neo/internal/runtime/work.WorkerResult#Progress,matrix/neo/internal/runtime/work.WorkerResult#Status,matrix/neo/internal/runtime/work.WorkerResult#Summary,matrix/neo/internal/runtime/work.WorkerResult#Usage,matrix/neo/internal/runtime/work.WorkerResult#WorkerID
-  references=matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.EvidenceRef,matrix/neo/internal/runtime/work.ExternalEffect,matrix/neo/internal/runtime/work.Finding,matrix/neo/internal/runtime/work.TaskStatus
-  ^references=matrix/neo/internal/runtime/work.Executor,matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.hasVerifiedEvidence
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.WorkerResult#AttemptID kind=field
@@ -1632,37 +1451,24 @@ NODE id=matrix/neo/internal/runtime/work._ kind=var
   digest=b3:cd111acb9c4c02e65e001e2683104ed3da2036767a26b4d438e28ee8c3deacff file=neo/internal/runtime/work/executor.go range=227:227 lang=go exported=false byte_range=6008:6041
   sig=work.Executor
 EDGES
-  references=matrix/neo/internal/runtime/work.Executor,matrix/neo/internal/runtime/work.LoopExecutor
   ^defines=matrix/neo/internal/runtime/work/executor.go
 
 NODE id=matrix/neo/internal/runtime/work.accumulatedTaskUsage kind=func
   digest=b3:babc03da2c78ee9454c6de2e224d7a73dabd2b296d54579650dc5d4149b6c8b3 file=neo/internal/runtime/work/service.go range=1101:1108 lang=go exported=false byte_range=30873:31103
   sig=func accumulatedTaskUsage(task SpecialistTask) BudgetUsage
 EDGES
-  calls=matrix/neo/internal/runtime/work.addUsage
-  references=matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.SpecialistTask,matrix/neo/internal/runtime/work.addUsage,matrix/neo/internal/runtime/work.attempt,matrix/neo/internal/runtime/work.task,matrix/neo/internal/runtime/work.usage
-  ^calls=matrix/neo/internal/runtime/work.Service.finishAttempt
-  ^references=matrix/neo/internal/runtime/work.Service.finishAttempt
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.acquireTaskLeases kind=func
   digest=b3:bedcef79881a22f8abca061d19319f8f3f46f2c7a0dce9bd1439a43f885dda54 file=neo/internal/runtime/work/service.go range=1263:1301 lang=go exported=false byte_range=35091:36181
   sig=func acquireTaskLeases(\n	current []ScopeLease,\n	packet TaskPacket,\n	now time.Time,\n) ([]ScopeLease, bool)
 EDGES
-  calls=matrix/neo/internal/runtime/work.leaseResourcesConflict
-  references=matrix/neo/internal/runtime/work.ScopeLease,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.add,matrix/neo/internal/runtime/work.current,matrix/neo/internal/runtime/work.held,matrix/neo/internal/runtime/work.leaseResourcesConflict,matrix/neo/internal/runtime/work.mode,matrix/neo/internal/runtime/work.now,matrix/neo/internal/runtime/work.packet,matrix/neo/internal/runtime/work.requested,matrix/neo/internal/runtime/work.resource,matrix/neo/internal/runtime/work.wanted
-  ^calls=matrix/neo/internal/runtime/work.Service.scheduleLocked
-  ^references=matrix/neo/internal/runtime/work.Service.scheduleLocked
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.addUsage kind=func
   digest=b3:a54b5beaea3bed3311450e53a54e7bbf3c8531fab0731c49096859a71aa0b80a file=neo/internal/runtime/work/service.go range=1048:1075 lang=go exported=false byte_range=28958:30007
   sig=func addUsage(left BudgetUsage, right BudgetUsage) BudgetUsage
 EDGES
-  calls=matrix/neo/internal/runtime/work.usageObserved
-  references=matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.left,matrix/neo/internal/runtime/work.result,matrix/neo/internal/runtime/work.right,matrix/neo/internal/runtime/work.usageObserved
-  ^calls=matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.accumulatedTaskUsage
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.accumulatedTaskUsage
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.attemptControl kind=type
@@ -1670,8 +1476,6 @@ NODE id=matrix/neo/internal/runtime/work.attemptControl kind=type
   sig=type attemptControl struct {\n	cancel		context.CancelFunc\n	steering	chan SteeringRecord\n}
 EDGES
   contains=matrix/neo/internal/runtime/work.attemptControl#cancel,matrix/neo/internal/runtime/work.attemptControl#steering
-  references=matrix/neo/internal/runtime/work.SteeringRecord
-  ^references=matrix/neo/internal/runtime/work.NewService,matrix/neo/internal/runtime/work.Service,matrix/neo/internal/runtime/work.Service.scheduleLocked
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.attemptControl#cancel kind=field
@@ -1690,249 +1494,168 @@ NODE id=matrix/neo/internal/runtime/work.authorizeClass kind=func
   digest=b3:fdb7ca3840fd77e80772c8fbb226267bc736bfa9f707c83a6170a9413192c521 file=neo/internal/runtime/work/scope.go range=110:136 lang=go exported=false byte_range=2769:3587
   sig=func authorizeClass(scope AuthorityScope, class string) error
 EDGES
-  references=matrix/neo/internal/runtime/work.AuthorityScope,matrix/neo/internal/runtime/work.class,matrix/neo/internal/runtime/work.scope
-  ^calls=matrix/neo/internal/runtime/work.ScopedToolManager.Execute,matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.compilePackets
-  ^references=matrix/neo/internal/runtime/work.ScopedToolManager.Execute,matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.compilePackets
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
 NODE id=matrix/neo/internal/runtime/work.boundedText kind=func
   digest=b3:0cee737faa1fc6454850b004935ec29b1a6d446a06702a39321f414c69ceffa8 file=neo/internal/runtime/work/types.go range=304:310 lang=go exported=false byte_range=10477:10631
   sig=func boundedText(value string) string
 EDGES
-  references=matrix/neo/internal/runtime/work.maxTextBytes,matrix/neo/internal/runtime/work.value
-  ^calls=matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.finishAttempt
-  ^references=matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.finishAttempt
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.budgetExceeded kind=func
   digest=b3:ebb76a13fdd07130ae38367fbe1a79114ac3d8e94081090054cfa618f3d3ab37 file=neo/internal/runtime/work/service.go range=1110:1115 lang=go exported=false byte_range=31105:31247
   sig=func budgetExceeded(\n	usage BudgetUsage,\n	budget SupervisorBudget,\n) bool
 EDGES
-  calls=matrix/neo/internal/runtime/work.specialistBudgetExceeded
-  references=matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.SupervisorBudget,matrix/neo/internal/runtime/work.budget,matrix/neo/internal/runtime/work.specialistBudgetExceeded,matrix/neo/internal/runtime/work.usage
-  ^calls=matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.finalizeRun
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.finalizeRun
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.clampProgress kind=func
   digest=b3:3ac61392b078b16dc85eab70a4fa3b0819b073aa99fab4a240b27755074f3498 file=neo/internal/runtime/work/service.go range=1339:1347 lang=go exported=false byte_range=37005:37120
   sig=func clampProgress(value int) int
 EDGES
-  references=matrix/neo/internal/runtime/work.value
-  ^calls=matrix/neo/internal/runtime/work.Service.finishAttempt
-  ^references=matrix/neo/internal/runtime/work.Service.finishAttempt
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.cloneRun kind=func
   digest=b3:6f45d771c9ec022e76ed613c5c02009b1bcc16fdc301bdfe99ffc858d9083b5f file=neo/internal/runtime/work/types.go range=312:317 lang=go exported=false byte_range=10633:10787
   sig=func cloneRun(run SupervisorRun) SupervisorRun
 EDGES
-  references=matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.raw,matrix/neo/internal/runtime/work.result,matrix/neo/internal/runtime/work.run
-  ^calls=matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.Get,matrix/neo/internal/runtime/work.Service.List,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.Steer
-  ^references=matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.Get,matrix/neo/internal/runtime/work.Service.List,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.Steer
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.dependenciesComplete kind=func
   digest=b3:042ef4e850582a9c40aae6e126af16b3b26533dada5f367bd09ebf16e7059b9a file=neo/internal/runtime/work/service.go range=1192:1210 lang=go exported=false byte_range=33416:33764
   sig=func dependenciesComplete(\n	tasks []SpecialistTask,\n	packet TaskPacket,\n) bool
 EDGES
-  references=matrix/neo/internal/runtime/work.SpecialistTask,matrix/neo/internal/runtime/work.TaskCompleted,matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.completed,matrix/neo/internal/runtime/work.dependency,matrix/neo/internal/runtime/work.packet,matrix/neo/internal/runtime/work.task,matrix/neo/internal/runtime/work.tasks
-  ^calls=matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.refreshReady
-  ^references=matrix/neo/internal/runtime/work.Service.scheduleLocked,matrix/neo/internal/runtime/work.refreshReady
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.digestPacket kind=func
   digest=b3:ce41ad0546402f7caf2caca40c0a1adfdb0ea217c97783cf875c8e0da556bbaf file=neo/internal/runtime/work/service.go range=1354:1356 lang=go exported=false byte_range=37246:37315
   sig=func digestPacket(raw []byte) [32]byte
 EDGES
-  references=matrix/neo/internal/runtime/work.raw
-  ^calls=matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.verifyPacketDigest
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.verifyPacketDigest
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.finalizeRun kind=func
   digest=b3:12c04958a5061687e9bc68fcbd44474c1d8856168193eaf6e696cb0089d7242f file=neo/internal/runtime/work/service.go range=1222:1261 lang=go exported=false byte_range=33988:35089
   sig=func finalizeRun(run *SupervisorRun, now time.Time)
 EDGES
-  calls=matrix/neo/internal/runtime/work.budgetExceeded
-  references=matrix/neo/internal/runtime/work.Finding,matrix/neo/internal/runtime/work.RunBlocked,matrix/neo/internal/runtime/work.RunCompleted,matrix/neo/internal/runtime/work.RunOutcomeUnknown,matrix/neo/internal/runtime/work.RunPaused,matrix/neo/internal/runtime/work.RunWaiting,matrix/neo/internal/runtime/work.RunWorking,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.TaskBlocked,matrix/neo/internal/runtime/work.TaskCompleted,matrix/neo/internal/runtime/work.TaskOutcomeUnknown,matrix/neo/internal/runtime/work.TaskPending,matrix/neo/internal/runtime/work.TaskReady,matrix/neo/internal/runtime/work.TaskRetrying,matrix/neo/internal/runtime/work.TaskRunning,matrix/neo/internal/runtime/work.TaskWaitingEvidence,matrix/neo/internal/runtime/work.active,matrix/neo/internal/runtime/work.attempt,matrix/neo/internal/runtime/work.blocked,matrix/neo/internal/runtime/work.budgetExceeded,matrix/neo/internal/runtime/work.completed,matrix/neo/internal/runtime/work.findings,matrix/neo/internal/runtime/work.left,matrix/neo/internal/runtime/work.now,matrix/neo/internal/runtime/work.right,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.task,matrix/neo/internal/runtime/work.uncertain
-  ^calls=matrix/neo/internal/runtime/work.Service.finishAttempt
-  ^references=matrix/neo/internal/runtime/work.Service.finishAttempt
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.findTask kind=func
   digest=b3:5a47f7f52ce325b4366f91a0e69fa7748b92af9270e2945eb497862f6b5c33f8 file=neo/internal/runtime/work/service.go range=1330:1337 lang=go exported=false byte_range=36812:37003
   sig=func findTask(run *SupervisorRun, taskID string) *SpecialistTask
 EDGES
-  references=matrix/neo/internal/runtime/work.SpecialistTask,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.index,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.taskID
-  ^calls=matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.scheduleLocked
-  ^references=matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.scheduleLocked
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.inferSpecialist kind=func
   digest=b3:45b2aa7c3db7328e282455962489fb609e49aa4a631d911237af42fc47a6c5b9 file=neo/internal/runtime/work/service.go range=1117:1144 lang=go exported=false byte_range=31249:32287
   sig=func inferSpecialist(spec TaskSpec) Specialist
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist,matrix/neo/internal/runtime/work.SpecialistData,matrix/neo/internal/runtime/work.SpecialistDiscovery,matrix/neo/internal/runtime/work.SpecialistExploration,matrix/neo/internal/runtime/work.SpecialistFrontend,matrix/neo/internal/runtime/work.SpecialistImplementation,matrix/neo/internal/runtime/work.SpecialistOperations,matrix/neo/internal/runtime/work.SpecialistPerformance,matrix/neo/internal/runtime/work.SpecialistReview,matrix/neo/internal/runtime/work.SpecialistSecurity,matrix/neo/internal/runtime/work.SpecialistTest,matrix/neo/internal/runtime/work.TaskSpec,matrix/neo/internal/runtime/work.candidate,matrix/neo/internal/runtime/work.candidates,matrix/neo/internal/runtime/work.needle,matrix/neo/internal/runtime/work.spec,matrix/neo/internal/runtime/work.value
-  ^calls=matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.compilePackets
-  ^references=matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.compilePackets
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.invalidText kind=func
   digest=b3:1e9be23a39e3c34274c925c32d13a32b536c88e8d9453d74e504f27ef3c66643 file=neo/internal/runtime/work/service.go range=1349:1352 lang=go exported=false byte_range=37122:37244
   sig=func invalidText(value string) bool
 EDGES
-  references=matrix/neo/internal/runtime/work.maxTextBytes,matrix/neo/internal/runtime/work.value
-  ^calls=matrix/neo/internal/runtime/work.Service.compilePackets
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.leaseResourcesConflict kind=func
   digest=b3:909ba1022f43f76c9123fc3453ef07e047fbfa5a337bd236ef8b67a1ab079f70 file=neo/internal/runtime/work/service.go range=1303:1315 lang=go exported=false byte_range=36183:36588
   sig=func leaseResourcesConflict(left string, right string) bool
 EDGES
-  references=matrix/neo/internal/runtime/work.left,matrix/neo/internal/runtime/work.right
-  ^calls=matrix/neo/internal/runtime/work.acquireTaskLeases
-  ^references=matrix/neo/internal/runtime/work.acquireTaskLeases
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.maxCriteria kind=const
   digest=b3:36c7b43104e53685674af89257ae620a21fcfb0025a1a010ee0d5412e06809b0 file=neo/internal/runtime/work/types.go range=25:25 lang=go exported=false byte_range=513:540
   sig=untyped int
 EDGES
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.maxSteeringRecords kind=const
   digest=b3:5139c1e46984dde22b9912be80124ec5ece70d18aeb259a91159e56196aefc12 file=neo/internal/runtime/work/types.go range=26:26 lang=go exported=false byte_range=542:569
   sig=untyped int
 EDGES
-  ^references=matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.scheduleLocked
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.maxTasks kind=const
   digest=b3:91e6bc1f0fda7db6df9be099d84163df7570eddb07497a07a44099d9aad4d0ae file=neo/internal/runtime/work/types.go range=24:24 lang=go exported=false byte_range=483:511
   sig=untyped int
 EDGES
-  ^references=matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.StartSubagents
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.maxTextBytes kind=const
   digest=b3:8fcee84e13d65e4765ca1db25094a398a8474281047fd473d5640d93a94a55b9 file=neo/internal/runtime/work/types.go range=27:27 lang=go exported=false byte_range=571:604
   sig=untyped int
 EDGES
-  ^references=matrix/neo/internal/runtime/work.boundedText,matrix/neo/internal/runtime/work.invalidText
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.normalizeScope kind=func
   digest=b3:419f4fcf805326731c0572977e74e0d5f0daa9bc5b3e3731801b789afd2fd0e1 file=neo/internal/runtime/work/scope.go range=138:145 lang=go exported=false byte_range=3589:3916
   sig=func normalizeScope(scope AuthorityScope) AuthorityScope
 EDGES
-  calls=matrix/neo/internal/runtime/work.trimUnique
-  references=matrix/neo/internal/runtime/work.AuthorityScope,matrix/neo/internal/runtime/work.scope,matrix/neo/internal/runtime/work.trimUnique
-  ^calls=matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.scopeSubset
-  ^references=matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.scopeSubset
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
 NODE id=matrix/neo/internal/runtime/work.normalizeSupervisorBudget kind=func
   digest=b3:c9c4debb56c4b750cbb1888f1a92b159e24389d0adbd4fd22bafeb1b2a79e8f2 file=neo/internal/runtime/work/service.go range=953:969 lang=go exported=false byte_range=26008:26584
   sig=func normalizeSupervisorBudget(\n	input SupervisorBudget,\n) (SupervisorBudget, error)
 EDGES
-  references=matrix/neo/internal/runtime/work.MaxParallelSpecialists,matrix/neo/internal/runtime/work.SupervisorBudget,matrix/neo/internal/runtime/work.input
-  ^calls=matrix/neo/internal/runtime/work.Service.Start
-  ^references=matrix/neo/internal/runtime/work.Service.Start
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.overlaySpecialistBudget kind=func
   digest=b3:51e5f324a74ee261d7c281c5347b7fdb5210596537836cd115d5b2505fbc2694 file=neo/internal/runtime/work/service.go range=989:1031 lang=go exported=false byte_range=27293:28449
   sig=func overlaySpecialistBudget(\n	base SpecialistBudget,\n	override SpecialistBudget,\n) SpecialistBudget
 EDGES
-  references=matrix/neo/internal/runtime/work.SpecialistBudget,matrix/neo/internal/runtime/work.base,matrix/neo/internal/runtime/work.override
-  ^calls=matrix/neo/internal/runtime/work.Service.compilePackets
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.progressFromResponse kind=func
   digest=b3:751735ebcda469a6e67f860c83dc1ca2c88240cc34a07e1254b5ae7a369e206e file=neo/internal/runtime/work/executor.go range=220:225 lang=go exported=false byte_range=5847:6002
   sig=func progressFromResponse(response loop.Response) int
 EDGES
-  references=matrix/neo/internal/runtime/loop.Response,matrix/neo/internal/runtime/work.response
-  ^calls=matrix/neo/internal/runtime/work.LoopExecutor.Execute
-  ^references=matrix/neo/internal/runtime/work.LoopExecutor.Execute
   ^defines=matrix/neo/internal/runtime/work/executor.go
 
 NODE id=matrix/neo/internal/runtime/work.refreshReady kind=func
   digest=b3:6adc6b7f7ccee927071395b85586fb0587bcc96761bbf982d076fe2151c43965 file=neo/internal/runtime/work/service.go range=1212:1220 lang=go exported=false byte_range=33766:33986
   sig=func refreshReady(run *SupervisorRun)
 EDGES
-  calls=matrix/neo/internal/runtime/work.dependenciesComplete
-  references=matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.TaskPending,matrix/neo/internal/runtime/work.TaskReady,matrix/neo/internal/runtime/work.dependenciesComplete,matrix/neo/internal/runtime/work.index,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.task
-  ^calls=matrix/neo/internal/runtime/work.Service.finishAttempt
-  ^references=matrix/neo/internal/runtime/work.Service.finishAttempt
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.releaseTaskLeases kind=func
   digest=b3:cebaa2f5aac77f648ae73a2a03b47faadb80b3456092d37a9af657d40cbebf5e file=neo/internal/runtime/work/service.go range=1317:1328 lang=go exported=false byte_range=36590:36810
   sig=func releaseTaskLeases(\n	leases []ScopeLease,\n	taskID string,\n) []ScopeLease
 EDGES
-  references=matrix/neo/internal/runtime/work.ScopeLease,matrix/neo/internal/runtime/work.lease,matrix/neo/internal/runtime/work.leases,matrix/neo/internal/runtime/work.result,matrix/neo/internal/runtime/work.taskID
-  ^calls=matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.Service.scheduleLocked
-  ^references=matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.reconcileRunRestart,matrix/neo/internal/runtime/work.Service.scheduleLocked
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.scopeSubset kind=func
   digest=b3:1821f0bff43e17aae2d8428ace53530ec84a37432510434f26f3467576e0c16e file=neo/internal/runtime/work/scope.go range=147:157 lang=go exported=false byte_range=3918:4442
   sig=func scopeSubset(child AuthorityScope, parent AuthorityScope) bool
 EDGES
-  calls=matrix/neo/internal/runtime/work.normalizeScope,matrix/neo/internal/runtime/work.valuesSubset
-  references=matrix/neo/internal/runtime/work.AuthorityScope,matrix/neo/internal/runtime/work.child,matrix/neo/internal/runtime/work.normalizeScope,matrix/neo/internal/runtime/work.parent,matrix/neo/internal/runtime/work.valuesSubset
-  ^calls=matrix/neo/internal/runtime/work.Service.compilePackets
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
 NODE id=matrix/neo/internal/runtime/work.slug kind=func
   digest=b3:126c0577fbe4c9f2a251233db15114f470b1b295bc6ed48617bce0983feaa320 file=neo/internal/runtime/work/swarm.go range=95:116 lang=go exported=false byte_range=2658:3160
   sig=func slug(value string) string
 EDGES
-  references=matrix/neo/internal/runtime/work.builder,matrix/neo/internal/runtime/work.current,matrix/neo/internal/runtime/work.result,matrix/neo/internal/runtime/work.text,matrix/neo/internal/runtime/work.value
-  ^calls=matrix/neo/internal/runtime/work.Service.StartSubagents
-  ^references=matrix/neo/internal/runtime/work.Service.StartSubagents
   ^defines=matrix/neo/internal/runtime/work/swarm.go
 
 NODE id=matrix/neo/internal/runtime/work.specialistBudgetExceeded kind=func
   digest=b3:23c9b386f4f46f51723d7d0fb4179de2050dbbf449e8c206df2fa73f38d48f84 file=neo/internal/runtime/work/service.go range=1086:1099 lang=go exported=false byte_range=30358:30871
   sig=func specialistBudgetExceeded(\n	usage BudgetUsage,\n	budget SpecialistBudget,\n) bool
 EDGES
-  references=matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.SpecialistBudget,matrix/neo/internal/runtime/work.budget,matrix/neo/internal/runtime/work.usage
-  ^calls=matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.budgetExceeded
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.budgetExceeded
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.specialistBudgetFromParent kind=func
   digest=b3:b86e1778b192ceed339e37648f4ce080a66f4cae90430b63799e9d26d947aabe file=neo/internal/runtime/work/service.go range=971:987 lang=go exported=false byte_range=26586:27291
   sig=func specialistBudgetFromParent(\n	parent SupervisorBudget,\n	taskCount int,\n) SpecialistBudget
 EDGES
-  references=matrix/neo/internal/runtime/work.SpecialistBudget,matrix/neo/internal/runtime/work.SupervisorBudget,matrix/neo/internal/runtime/work.divisor,matrix/neo/internal/runtime/work.parent,matrix/neo/internal/runtime/work.taskCount
-  ^calls=matrix/neo/internal/runtime/work.Service.compilePackets
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.specialistPrompt kind=func
   digest=b3:d878e01f52a5112aaf6fc4784716a355847648a2aa162ecb96211f466a21ec8a file=neo/internal/runtime/work/executor.go range=209:218 lang=go exported=false byte_range=5365:5845
   sig=func specialistPrompt(packet TaskPacket) string
 EDGES
-  references=matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.builder,matrix/neo/internal/runtime/work.packet
-  ^calls=matrix/neo/internal/runtime/work.LoopExecutor.Execute
-  ^references=matrix/neo/internal/runtime/work.LoopExecutor.Execute
   ^defines=matrix/neo/internal/runtime/work/executor.go
 
 NODE id=matrix/neo/internal/runtime/work.specialistUsesClass kind=func
   digest=b3:003435ea3eba8f92e4f8895e4a7b9a81983f831d084e8ddee257d52a0e513745 file=neo/internal/runtime/work/swarm.go range=71:93 lang=go exported=false byte_range=1925:2656
   sig=func specialistUsesClass(specialist Specialist, class string) bool
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist,matrix/neo/internal/runtime/work.SpecialistData,matrix/neo/internal/runtime/work.SpecialistDiscovery,matrix/neo/internal/runtime/work.SpecialistExploration,matrix/neo/internal/runtime/work.SpecialistFrontend,matrix/neo/internal/runtime/work.SpecialistImplementation,matrix/neo/internal/runtime/work.SpecialistOperations,matrix/neo/internal/runtime/work.SpecialistPerformance,matrix/neo/internal/runtime/work.SpecialistSecurity,matrix/neo/internal/runtime/work.SpecialistTest,matrix/neo/internal/runtime/work.class,matrix/neo/internal/runtime/work.specialist
-  ^calls=matrix/neo/internal/runtime/work.Service.StartSubagents
-  ^references=matrix/neo/internal/runtime/work.Service.StartSubagents
   ^defines=matrix/neo/internal/runtime/work/swarm.go
 
 NODE id=matrix/neo/internal/runtime/work.steeringGuidance kind=type
@@ -1941,8 +1664,6 @@ NODE id=matrix/neo/internal/runtime/work.steeringGuidance kind=type
 EDGES
   contains=matrix/neo/internal/runtime/work.steeringGuidance#records,matrix/neo/internal/runtime/work.steeringGuidance.DrainGuidance
   implements=matrix/neo/internal/runtime/loop.GuidanceSource
-  references=matrix/neo/internal/runtime/work.SteeringRecord
-  ^references=matrix/neo/internal/runtime/work.LoopExecutor.Execute,matrix/neo/internal/runtime/work.steeringGuidance.DrainGuidance
   ^defines=matrix/neo/internal/runtime/work/executor.go
 
 NODE id=matrix/neo/internal/runtime/work.steeringGuidance#records kind=field
@@ -1955,7 +1676,6 @@ NODE id=matrix/neo/internal/runtime/work.steeringGuidance.DrainGuidance kind=met
   digest=b3:fbb08300ed7d5224fe7535d488c923ccc211767ac93cc9f53dbe4aba95b400f0 file=neo/internal/runtime/work/executor.go range=192:207 lang=go exported=true byte_range=5020:5363
   sig=func (source steeringGuidance) DrainGuidance() []string
 EDGES
-  references=matrix/neo/internal/runtime/work.guidance,matrix/neo/internal/runtime/work.instruction,matrix/neo/internal/runtime/work.ok,matrix/neo/internal/runtime/work.record,matrix/neo/internal/runtime/work.source,matrix/neo/internal/runtime/work.steeringGuidance
   ^contains=matrix/neo/internal/runtime/work.steeringGuidance
   ^defines=matrix/neo/internal/runtime/work/executor.go
 
@@ -1963,84 +1683,54 @@ NODE id=matrix/neo/internal/runtime/work.terminalRun kind=func
   digest=b3:908a51181fa2419b8f11b117bb7e70312a4d4f900615b550b740b49b28634f75 file=neo/internal/runtime/work/types.go range=300:302 lang=go exported=false byte_range=10375:10475
   sig=func terminalRun(status RunStatus) bool
 EDGES
-  references=matrix/neo/internal/runtime/work.RunCancelled,matrix/neo/internal/runtime/work.RunCompleted,matrix/neo/internal/runtime/work.RunStatus,matrix/neo/internal/runtime/work.status
-  ^calls=matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.scheduleLocked
-  ^references=matrix/neo/internal/runtime/work.Service.Cancel,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.Steer,matrix/neo/internal/runtime/work.Service.finishAttempt,matrix/neo/internal/runtime/work.Service.scheduleLocked
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.trimUnique kind=func
   digest=b3:46269d2b44137684f81c401d6b867a05b09ab6e7d4a12984ca8eb9be42ff81ba file=neo/internal/runtime/work/scope.go range=175:191 lang=go exported=false byte_range=4795:5180
   sig=func trimUnique(values []string) []string
 EDGES
-  references=matrix/neo/internal/runtime/work.ok,matrix/neo/internal/runtime/work.result,matrix/neo/internal/runtime/work.seen,matrix/neo/internal/runtime/work.value,matrix/neo/internal/runtime/work.values
-  ^calls=matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.normalizeScope,matrix/neo/internal/runtime/work.validateDependencyGraph
-  ^references=matrix/neo/internal/runtime/work.Service.Start,matrix/neo/internal/runtime/work.Service.StartSubagents,matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.normalizeScope,matrix/neo/internal/runtime/work.validateDependencyGraph
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
 NODE id=matrix/neo/internal/runtime/work.usageFromBudget kind=func
   digest=b3:46e322c6e670cceb0f892b76ffb0913f8293acbd6722e3635445a79225f789aa file=neo/internal/runtime/work/service.go range=1033:1046 lang=go exported=false byte_range=28451:28956
   sig=func usageFromBudget(budget SpecialistBudget) BudgetUsage
 EDGES
-  references=matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.SpecialistBudget,matrix/neo/internal/runtime/work.budget
-  ^calls=matrix/neo/internal/runtime/work.Service.compilePackets
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.usageObserved kind=func
   digest=b3:2d800d2c073e24c0816e36c308ea89c54fe277219ee9431b377d6090998d74b3 file=neo/internal/runtime/work/service.go range=1077:1084 lang=go exported=false byte_range=30009:30356
   sig=func usageObserved(usage BudgetUsage) bool
 EDGES
-  references=matrix/neo/internal/runtime/work.BudgetUsage,matrix/neo/internal/runtime/work.usage
-  ^calls=matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.addUsage
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets,matrix/neo/internal/runtime/work.addUsage
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.validSpecialist kind=func
   digest=b3:084d71495a17427311b5f24658e9e13da8f9621b4b1b9464a1dbd311065fe10e file=neo/internal/runtime/work/service.go range=1146:1156 lang=go exported=false byte_range=32289:32611
   sig=func validSpecialist(value Specialist) bool
 EDGES
-  references=matrix/neo/internal/runtime/work.Specialist,matrix/neo/internal/runtime/work.SpecialistData,matrix/neo/internal/runtime/work.SpecialistDiscovery,matrix/neo/internal/runtime/work.SpecialistExploration,matrix/neo/internal/runtime/work.SpecialistFrontend,matrix/neo/internal/runtime/work.SpecialistImplementation,matrix/neo/internal/runtime/work.SpecialistOperations,matrix/neo/internal/runtime/work.SpecialistPerformance,matrix/neo/internal/runtime/work.SpecialistReview,matrix/neo/internal/runtime/work.SpecialistSecurity,matrix/neo/internal/runtime/work.SpecialistTest,matrix/neo/internal/runtime/work.value
-  ^calls=matrix/neo/internal/runtime/work.Service.compilePackets
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.validateDependencyGraph kind=func
   digest=b3:520595004ddb739a3f5012bcfba7990c4d8f083d232dd99d9ca2d59a453ad39c file=neo/internal/runtime/work/service.go range=1158:1190 lang=go exported=false byte_range=32613:33414
   sig=func validateDependencyGraph(specs []TaskSpec) error
 EDGES
-  calls=matrix/neo/internal/runtime/work.trimUnique
-  references=matrix/neo/internal/runtime/work.TaskSpec,matrix/neo/internal/runtime/work.dependencies,matrix/neo/internal/runtime/work.dependency,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.id,matrix/neo/internal/runtime/work.spec,matrix/neo/internal/runtime/work.specs,matrix/neo/internal/runtime/work.trimUnique,matrix/neo/internal/runtime/work.visit,matrix/neo/internal/runtime/work.visited,matrix/neo/internal/runtime/work.visiting
-  ^calls=matrix/neo/internal/runtime/work.Service.compilePackets
-  ^references=matrix/neo/internal/runtime/work.Service.compilePackets
   ^defines=matrix/neo/internal/runtime/work/service.go
 
 NODE id=matrix/neo/internal/runtime/work.validateRun kind=func
   digest=b3:12683f8f4b5bd22c79d330f5abcde77e1c360d80dd79085a34c32217cf01d97c file=neo/internal/runtime/work/types.go range=319:333 lang=go exported=false byte_range=10789:11285
   sig=func validateRun(run SupervisorRun) error
 EDGES
-  calls=matrix/neo/internal/runtime/work.RunStatus.valid,matrix/neo/internal/runtime/work.verifyPacketDigest
-  references=matrix/neo/internal/runtime/work.RunStatus.valid,matrix/neo/internal/runtime/work.SupervisorRun,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.run,matrix/neo/internal/runtime/work.task,matrix/neo/internal/runtime/work.verifyPacketDigest
-  ^calls=matrix/neo/internal/runtime/work.Service.List,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.Service.saveRun
-  ^references=matrix/neo/internal/runtime/work.Service.List,matrix/neo/internal/runtime/work.Service.ReconcileRestart,matrix/neo/internal/runtime/work.Service.loadRun,matrix/neo/internal/runtime/work.Service.saveRun
   ^defines=matrix/neo/internal/runtime/work/types.go
 
 NODE id=matrix/neo/internal/runtime/work.valuesSubset kind=func
   digest=b3:e96abc8c65deb2a161cce4b0b85845e51da99a5cdcc10ca58105294aa15cfe6f file=neo/internal/runtime/work/scope.go range=159:173 lang=go exported=false byte_range=4444:4793
   sig=func valuesSubset(child []string, parent []string, wildcard string) bool
 EDGES
-  references=matrix/neo/internal/runtime/work.allowed,matrix/neo/internal/runtime/work.child,matrix/neo/internal/runtime/work.ok,matrix/neo/internal/runtime/work.parent,matrix/neo/internal/runtime/work.value,matrix/neo/internal/runtime/work.wildcard
-  ^calls=matrix/neo/internal/runtime/work.scopeSubset
-  ^references=matrix/neo/internal/runtime/work.scopeSubset
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
 NODE id=matrix/neo/internal/runtime/work.verifyPacketDigest kind=func
   digest=b3:963beea93fc994d764bb5bf2f6d112d6cb4854dcb40536feb6f6aa25e94a3fdc file=neo/internal/runtime/work/scope.go range=193:204 lang=go exported=false byte_range=5182:5474
   sig=func verifyPacketDigest(packet TaskPacket) error
 EDGES
-  calls=matrix/neo/internal/runtime/work.digestPacket
-  references=matrix/neo/internal/runtime/work.TaskPacket,matrix/neo/internal/runtime/work.digestPacket,matrix/neo/internal/runtime/work.err,matrix/neo/internal/runtime/work.expected,matrix/neo/internal/runtime/work.packet,matrix/neo/internal/runtime/work.raw
-  ^calls=matrix/neo/internal/runtime/work.NewScopedToolManager,matrix/neo/internal/runtime/work.validateRun
-  ^references=matrix/neo/internal/runtime/work.NewScopedToolManager,matrix/neo/internal/runtime/work.validateRun
   ^defines=matrix/neo/internal/runtime/work/scope.go
 
 NODE id=matrix/neo/internal/runtime/work/executor.go kind=file

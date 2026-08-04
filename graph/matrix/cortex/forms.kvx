@@ -1,19 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/cortex/forms kind=package
   digest=b3:91d9c9b17573a31d58b1f770cb887abd9a02f3ad022dcc701e67b2b303a2d39f file=cortex/forms range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/forms/forms.go,matrix/cortex/forms/truncate.go
-  imports=matrix/cortex/memory
   ^contains=mod:matrix/cortex
-  ^imports=matrix/cortex,matrix/cortex/query,matrix/neo/internal/memory
 
 NODE id=matrix/cortex/forms.Ellipsis kind=const
   digest=b3:1216a4ad64b2d2f4e2166f10e65aedd1560765da1c1765e0211db7477178f73d file=cortex/forms/truncate.go range=21:27 lang=go exported=true byte_range=713:1159
   sig=untyped string
   doc=Ellipsis is the suffix appended when truncation occurs. One byte ("…" is\n3 bytes in UTF-8 = 1 token under bytes/4) was avoided so that very tight\nbudgets still leave room for content. Using "..." would consume 3 bytes\n= 1 token which is a smaller fraction of medium's 200-token budget; we\npick "…" anyway because it reads cleaner in CLI output and the cost is\n1 token either way under bytes/4 ceiling.
 EDGES
-  ^references=matrix/cortex/forms.TruncateToTokens
   ^defines=matrix/cortex/forms/truncate.go
 
 NODE id=matrix/cortex/forms.Render kind=func
@@ -21,10 +18,6 @@ NODE id=matrix/cortex/forms.Render kind=func
   sig=func Render(h *memory.Head, data memory.TypedData) memory.Forms
   doc=Render returns auto-generated Short and Medium for the (head, data) pair.\nFull is computed separately via RenderFull because it is never persisted\nin the Forms struct and is only materialized on demand (e.g. when a Find\ncaller selects FormFull).\n\nReturned Forms always satisfy memory.CountTokens(short) ≤ MaxShortTokens\nand likewise for medium — by construction, via truncate.
 EDGES
-  calls=matrix/cortex/forms.TruncateToTokens,matrix/cortex/forms.renderForType
-  references=matrix/cortex/forms.TruncateToTokens,matrix/cortex/forms.data,matrix/cortex/forms.h,matrix/cortex/forms.medium,matrix/cortex/forms.renderForType,matrix/cortex/forms.short,matrix/cortex/memory.Forms,matrix/cortex/memory.Head,matrix/cortex/memory.MaxMediumTokens,matrix/cortex/memory.MaxShortTokens,matrix/cortex/memory.TypedData
-  ^calls=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement
-  ^references=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.prepareSupersedeReplacement
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.RenderFull kind=func
@@ -32,10 +25,6 @@ NODE id=matrix/cortex/forms.RenderFull kind=func
   sig=func RenderFull(h *memory.Head, data memory.TypedData) string
   doc=RenderFull returns the canonical full-form rendering of typed data.\nUnbounded by design (§9: "full = canonical render of typed Data"), so no\ntruncation. Mostly a debug/audit surface — production paths usually walk\nthe typed Data struct directly rather than parsing this string.
 EDGES
-  calls=matrix/cortex/forms.renderFullForType
-  references=matrix/cortex/forms.data,matrix/cortex/forms.h,matrix/cortex/forms.renderFullForType,matrix/cortex/memory.Head,matrix/cortex/memory.TypedData
-  ^calls=matrix/cortex.embedderState.processWriteEntry,matrix/cortex.renderForBundle,matrix/cortex/query.renderMemory,matrix/neo/internal/memory.Pager.writeWithRelations
-  ^references=matrix/cortex.embedderState.processWriteEntry,matrix/cortex.renderForBundle,matrix/cortex/query.renderMemory,matrix/neo/internal/memory.Pager.writeWithRelations
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.TruncateToTokens kind=func
@@ -43,55 +32,36 @@ NODE id=matrix/cortex/forms.TruncateToTokens kind=func
   sig=func TruncateToTokens(s string, maxTokens int) string
   doc=TruncateToTokens trims s so that memory.CountTokens(out) ≤ maxTokens. If\ntruncation occurs, an Ellipsis is appended and the trim point is moved\ninward to make room for it without exceeding the budget. UTF-8 boundaries\nare respected — a multi-byte rune is never split mid-codepoint.\n\nmaxTokens ≤ 0 returns the empty string.
 EDGES
-  calls=matrix/cortex/forms.safePrefix,matrix/cortex/memory.CountTokens
-  references=matrix/cortex/forms.Ellipsis,matrix/cortex/forms.ellBytes,matrix/cortex/forms.maxBytes,matrix/cortex/forms.maxTokens,matrix/cortex/forms.prefix,matrix/cortex/forms.s,matrix/cortex/forms.safePrefix,matrix/cortex/memory.BytesPerToken,matrix/cortex/memory.CountTokens
-  ^calls=matrix/cortex/forms.Render
-  ^references=matrix/cortex/forms.Render
   ^defines=matrix/cortex/forms/truncate.go
 
 NODE id=matrix/cortex/forms.renderBelief kind=func
   digest=b3:a7b9442c0d338b131a53bfd96a3ae091de2d5ec6deddbf04083f9643dd966842 file=cortex/forms/forms.go range=153:157 lang=go exported=false byte_range=5495:5738
   sig=func renderBelief(d memory.BeliefData) (short, medium string)
 EDGES
-  references=matrix/cortex/forms.d,matrix/cortex/forms.medium,matrix/cortex/forms.short,matrix/cortex/memory.BeliefData
-  ^calls=matrix/cortex/forms.renderForType
-  ^references=matrix/cortex/forms.renderForType
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.renderCapability kind=func
   digest=b3:4a6a28603e78e56dc030ad236787931fcb529e13c41b4aad2857f935564ce7cd file=cortex/forms/forms.go range=216:224 lang=go exported=false byte_range=7382:7720
   sig=func renderCapability(d memory.CapabilityData) (short, medium string)
 EDGES
-  references=matrix/cortex/forms.d,matrix/cortex/forms.medium,matrix/cortex/forms.short,matrix/cortex/forms.verified,matrix/cortex/memory.CapabilityData
-  ^calls=matrix/cortex/forms.renderForType
-  ^references=matrix/cortex/forms.renderForType
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.renderConstraint kind=func
   digest=b3:9735dd29cf9e0cf7eb05e1ee764edc8c4b484310b2a1fcbb62bcaeb8923f6c76 file=cortex/forms/forms.go range=206:214 lang=go exported=false byte_range=7036:7380
   sig=func renderConstraint(d memory.ConstraintData) (short, medium string)
 EDGES
-  references=matrix/cortex/forms.d,matrix/cortex/forms.medium,matrix/cortex/forms.parts,matrix/cortex/forms.short,matrix/cortex/memory.ConstraintData
-  ^calls=matrix/cortex/forms.renderForType
-  ^references=matrix/cortex/forms.renderForType
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.renderEvent kind=func
   digest=b3:02d4a2cd74b30c61b4fc9725e84c324c37557f3e619e39219ecd04d527851495 file=cortex/forms/forms.go range=159:185 lang=go exported=false byte_range=5740:6468
   sig=func renderEvent(d memory.EventData) (short, medium string)
 EDGES
-  references=matrix/cortex/forms.d,matrix/cortex/forms.medium,matrix/cortex/forms.parts,matrix/cortex/forms.short,matrix/cortex/memory.EventData
-  ^calls=matrix/cortex/forms.renderForType
-  ^references=matrix/cortex/forms.renderForType
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.renderFact kind=func
   digest=b3:0c802dbb4718207358cf079ed46ee7f86bc49216f2e8e87e6c32fb43f5d2b7b1 file=cortex/forms/forms.go range=126:142 lang=go exported=false byte_range=4679:5221
   sig=func renderFact(d memory.FactData) (short, medium string)
 EDGES
-  references=matrix/cortex/forms.d,matrix/cortex/forms.medium,matrix/cortex/forms.parts,matrix/cortex/forms.short,matrix/cortex/memory.FactData
-  ^calls=matrix/cortex/forms.renderForType
-  ^references=matrix/cortex/forms.renderForType
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.renderForType kind=func
@@ -99,56 +69,36 @@ NODE id=matrix/cortex/forms.renderForType kind=func
   sig=func renderForType(h *memory.Head, data memory.TypedData) (short, medium string)
   doc=renderForType returns (short, medium) before truncation. Templates are\nper-type and field-presence aware: optional fields collapse cleanly when\nempty so the renders stay legible at the budgeted size.
 EDGES
-  calls=matrix/cortex/forms.renderBelief,matrix/cortex/forms.renderCapability,matrix/cortex/forms.renderConstraint,matrix/cortex/forms.renderEvent,matrix/cortex/forms.renderFact,matrix/cortex/forms.renderGoal,matrix/cortex/forms.renderIdentity,matrix/cortex/forms.renderPattern,matrix/cortex/forms.renderPreference
-  references=matrix/cortex/forms.d,matrix/cortex/forms.data,matrix/cortex/forms.renderBelief,matrix/cortex/forms.renderCapability,matrix/cortex/forms.renderConstraint,matrix/cortex/forms.renderEvent,matrix/cortex/forms.renderFact,matrix/cortex/forms.renderGoal,matrix/cortex/forms.renderIdentity,matrix/cortex/forms.renderPattern,matrix/cortex/forms.renderPreference,matrix/cortex/memory.BeliefData,matrix/cortex/memory.CapabilityData,matrix/cortex/memory.ConstraintData,matrix/cortex/memory.EventData,matrix/cortex/memory.FactData,matrix/cortex/memory.GoalData,matrix/cortex/memory.Head,matrix/cortex/memory.IdentityData,matrix/cortex/memory.PatternData,matrix/cortex/memory.PreferenceData,matrix/cortex/memory.TypedData
-  ^calls=matrix/cortex/forms.Render,matrix/cortex/forms.renderFullForType
-  ^references=matrix/cortex/forms.Render,matrix/cortex/forms.renderFullForType
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.renderFullForType kind=func
   digest=b3:d33b89e79163dda9038f2f64895f0b47c370488820a94e010bcd66be2b0f9f87 file=cortex/forms/forms.go range=92:100 lang=go exported=false byte_range=3523:4008
   sig=func renderFullForType(h *memory.Head, data memory.TypedData) string
 EDGES
-  calls=matrix/cortex/forms.renderForType
-  references=matrix/cortex/forms.data,matrix/cortex/forms.h,matrix/cortex/forms.medium,matrix/cortex/forms.renderForType,matrix/cortex/memory.Head,matrix/cortex/memory.TypedData
-  ^calls=matrix/cortex/forms.RenderFull
-  ^references=matrix/cortex/forms.RenderFull
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.renderGoal kind=func
   digest=b3:a3c301f96d0376d9bd050550cec3763cf3e5587d7746acd372e27215a7e4190c file=cortex/forms/forms.go range=187:204 lang=go exported=false byte_range=6470:7034
   sig=func renderGoal(d memory.GoalData) (short, medium string)
 EDGES
-  references=matrix/cortex/forms.d,matrix/cortex/forms.medium,matrix/cortex/forms.parts,matrix/cortex/forms.short,matrix/cortex/memory.GoalData
-  ^calls=matrix/cortex/forms.renderForType
-  ^references=matrix/cortex/forms.renderForType
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.renderIdentity kind=func
   digest=b3:35e8a601e7dae3fd8e6619b1788168297d446e79fd0921262847553877d80294 file=cortex/forms/forms.go range=104:124 lang=go exported=false byte_range=4089:4677
   sig=func renderIdentity(d memory.IdentityData) (short, medium string)
 EDGES
-  references=matrix/cortex/forms.d,matrix/cortex/forms.medium,matrix/cortex/forms.parts,matrix/cortex/forms.short,matrix/cortex/memory.IdentityData
-  ^calls=matrix/cortex/forms.renderForType
-  ^references=matrix/cortex/forms.renderForType
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.renderPattern kind=func
   digest=b3:b9d479257f200fa3fe67e221e7b034466c30a35bb8b088bb33da501821b6a120 file=cortex/forms/forms.go range=226:233 lang=go exported=false byte_range=7722:8028
   sig=func renderPattern(d memory.PatternData) (short, medium string)
 EDGES
-  references=matrix/cortex/forms.d,matrix/cortex/forms.medium,matrix/cortex/forms.short,matrix/cortex/memory.PatternData
-  ^calls=matrix/cortex/forms.renderForType
-  ^references=matrix/cortex/forms.renderForType
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.renderPreference kind=func
   digest=b3:e4231b964fee4af8a5376fa9815787566479fc6bc72e8542d4e7a1a392db78aa file=cortex/forms/forms.go range=144:151 lang=go exported=false byte_range=5223:5493
   sig=func renderPreference(d memory.PreferenceData) (short, medium string)
 EDGES
-  references=matrix/cortex/forms.d,matrix/cortex/forms.medium,matrix/cortex/forms.short,matrix/cortex/memory.PreferenceData
-  ^calls=matrix/cortex/forms.renderForType
-  ^references=matrix/cortex/forms.renderForType
   ^defines=matrix/cortex/forms/forms.go
 
 NODE id=matrix/cortex/forms.safePrefix kind=func
@@ -156,9 +106,6 @@ NODE id=matrix/cortex/forms.safePrefix kind=func
   sig=func safePrefix(s string, maxBytes int) string
   doc=safePrefix returns the longest UTF-8 prefix of s with length ≤ maxBytes.\nWalks runes from the start so a multi-byte codepoint that would straddle\nthe cap is dropped entirely.
 EDGES
-  references=matrix/cortex/forms.end,matrix/cortex/forms.maxBytes,matrix/cortex/forms.s,matrix/cortex/forms.size
-  ^calls=matrix/cortex/forms.TruncateToTokens
-  ^references=matrix/cortex/forms.TruncateToTokens
   ^defines=matrix/cortex/forms/truncate.go
 
 NODE id=matrix/cortex/forms/forms.go kind=file

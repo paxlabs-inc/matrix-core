@@ -1,12 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/gateway/internal/routing kind=package
   digest=b3:7776e460219fea59afb9939eedeea337d1daf53befe5d62b3bb2c7da5d52b149 file=gateway/internal/routing range=0:0 lang=go exported=true
 EDGES
   contains=matrix/gateway/internal/routing/routing.go
-  imports=matrix/gateway/internal/rates,matrix/gateway/internal/types
   ^contains=mod:matrix/gateway
-  ^imports=matrix/gateway/cmd/matrix-gateway,matrix/gateway/internal/proxy
 
 NODE id=matrix/gateway/internal/routing.Decider kind=type
   digest=b3:061f9c2906db2080e0cfcb4817c9a22200cbfd1915ce2534ebed70d64de805bb file=gateway/internal/routing/routing.go range=122:131 lang=go exported=true byte_range=3931:4256
@@ -14,8 +12,6 @@ NODE id=matrix/gateway/internal/routing.Decider kind=type
   doc=Decider is the routing brain. Construct via New; safe for concurrent\nuse after construction.
 EDGES
   contains=matrix/gateway/internal/routing.Decider#chatURL,matrix/gateway/internal/routing.Decider#embeddingURL,matrix/gateway/internal/routing.Decider#freeTierOnly,matrix/gateway/internal/routing.Decider.Decide
-  references=matrix/gateway/internal/routing.Provider
-  ^references=matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.Server,matrix/gateway/internal/routing.Decider.Decide,matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Decider#chatURL kind=field
@@ -42,11 +38,7 @@ NODE id=matrix/gateway/internal/routing.Decider.Decide kind=method
   sig=func (d *Decider) Decide(r *http.Request, model string, ep Endpoint) (*Decision, error)
   doc=Decide computes the routing outcome for a request. Returns a typed\nerror on rejection so callers can map specific failure modes to\ndistinct HTTP status codes (free-tier rejections are 403,\nmissing-key bypasses are 400, unknown providers are 502).
 EDGES
-  calls=matrix/gateway/internal/routing.detectProvider,matrix/gateway/internal/routing.enforceFreeTier,matrix/gateway/internal/routing.readBYO,matrix/gateway/internal/routing.validSlot
-  references=matrix/gateway/internal/routing.Decider,matrix/gateway/internal/routing.Decision,matrix/gateway/internal/routing.Endpoint,matrix/gateway/internal/routing.EndpointEmbedding,matrix/gateway/internal/routing.ErrBYOMissingKey,matrix/gateway/internal/routing.ErrInvalidSlot,matrix/gateway/internal/routing.ErrUnknownProvider,matrix/gateway/internal/routing.byo,matrix/gateway/internal/routing.byoKey,matrix/gateway/internal/routing.d,matrix/gateway/internal/routing.detectProvider,matrix/gateway/internal/routing.enforceFreeTier,matrix/gateway/internal/routing.ep,matrix/gateway/internal/routing.err,matrix/gateway/internal/routing.kind,matrix/gateway/internal/routing.model,matrix/gateway/internal/routing.ok,matrix/gateway/internal/routing.provider,matrix/gateway/internal/routing.r,matrix/gateway/internal/routing.readBYO,matrix/gateway/internal/routing.slot,matrix/gateway/internal/routing.upstream,matrix/gateway/internal/routing.urlMap,matrix/gateway/internal/routing.validSlot,matrix/gateway/internal/types.HeaderKindRoute,matrix/gateway/internal/types.HeaderSlot
   ^contains=matrix/gateway/internal/routing.Decider
-  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
-  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Decision kind=type
@@ -55,8 +47,6 @@ NODE id=matrix/gateway/internal/routing.Decision kind=type
   doc=Decision captures the routing outcome for one request.
 EDGES
   contains=matrix/gateway/internal/routing.Decision#FreeTier,matrix/gateway/internal/routing.Decision#KindRoute,matrix/gateway/internal/routing.Decision#Model,matrix/gateway/internal/routing.Decision#Provider,matrix/gateway/internal/routing.Decision#Slot,matrix/gateway/internal/routing.Decision#UpstreamURL,matrix/gateway/internal/routing.Decision#UserAPIKey
-  references=matrix/gateway/internal/routing.Provider
-  ^references=matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleStreaming,matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/routing.Decider.Decide
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Decision#FreeTier kind=field
@@ -113,7 +103,6 @@ NODE id=matrix/gateway/internal/routing.DefaultBasetenChat kind=const
   sig=untyped string
   doc=Default upstream endpoints. Overridable in tests via Decider opts.
 EDGES
-  ^references=matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.DefaultBasetenEmbeddings kind=const
@@ -121,7 +110,6 @@ NODE id=matrix/gateway/internal/routing.DefaultBasetenEmbeddings kind=const
   sig=untyped string
   doc=Default upstream endpoints. Overridable in tests via Decider opts.
 EDGES
-  ^references=matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.DefaultFireworksChat kind=const
@@ -129,7 +117,6 @@ NODE id=matrix/gateway/internal/routing.DefaultFireworksChat kind=const
   sig=untyped string
   doc=Default upstream endpoints. Overridable in tests via Decider opts.
 EDGES
-  ^references=matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.DefaultFireworksEmbeddings kind=const
@@ -137,7 +124,6 @@ NODE id=matrix/gateway/internal/routing.DefaultFireworksEmbeddings kind=const
   sig=untyped string
   doc=Default upstream endpoints. Overridable in tests via Decider opts.
 EDGES
-  ^references=matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.DefaultTogetherChat kind=const
@@ -145,7 +131,6 @@ NODE id=matrix/gateway/internal/routing.DefaultTogetherChat kind=const
   sig=untyped string
   doc=Default upstream endpoints. Overridable in tests via Decider opts.
 EDGES
-  ^references=matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.DefaultTogetherEmbeddings kind=const
@@ -153,7 +138,6 @@ NODE id=matrix/gateway/internal/routing.DefaultTogetherEmbeddings kind=const
   sig=untyped string
   doc=Default upstream endpoints. Overridable in tests via Decider opts.
 EDGES
-  ^references=matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.DefaultXaiChat kind=const
@@ -161,7 +145,6 @@ NODE id=matrix/gateway/internal/routing.DefaultXaiChat kind=const
   sig=untyped string
   doc=xAI (Grok) serves grok-* directly on an OpenAI-compatible /v1 surface.
 EDGES
-  ^references=matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.DefaultXaiEmbeddings kind=const
@@ -169,7 +152,6 @@ NODE id=matrix/gateway/internal/routing.DefaultXaiEmbeddings kind=const
   sig=untyped string
   doc=Default upstream endpoints. Overridable in tests via Decider opts.
 EDGES
-  ^references=matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.DefaultXiaomiChat kind=const
@@ -177,7 +159,6 @@ NODE id=matrix/gateway/internal/routing.DefaultXiaomiChat kind=const
   sig=untyped string
   doc=Xiaomi serves MiMo directly on an OpenAI-compatible surface.
 EDGES
-  ^references=matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Endpoint kind=type
@@ -185,23 +166,18 @@ NODE id=matrix/gateway/internal/routing.Endpoint kind=type
   sig=type Endpoint string
   doc=Endpoint identifies which upstream URL to forward to.
 EDGES
-  ^references=matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/proxy.Server.makeHandler,matrix/gateway/internal/routing.Decider.Decide,matrix/gateway/internal/routing.EndpointChat,matrix/gateway/internal/routing.EndpointEmbedding
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.EndpointChat kind=const
   digest=b3:7394f193cb303ee5149b40ef0084c19c5a8a73bb36286c69d7c56ebccc80be86 file=gateway/internal/routing/routing.go range=80:80 lang=go exported=true byte_range=2423:2458
   sig=routing.Endpoint
 EDGES
-  references=matrix/gateway/internal/routing.Endpoint
-  ^references=matrix/gateway/internal/proxy.Server.Mux
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.EndpointEmbedding kind=const
   digest=b3:f23d9dccb6810eab8d9f8aed93c5e1516c04de844656029b51dacebe5e5c69bf file=gateway/internal/routing/routing.go range=81:81 lang=go exported=true byte_range=2460:2500
   sig=routing.Endpoint
 EDGES
-  references=matrix/gateway/internal/routing.Endpoint
-  ^references=matrix/gateway/internal/proxy.Server.Mux,matrix/gateway/internal/routing.Decider.Decide
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ErrBYOMissingKey kind=var
@@ -209,7 +185,6 @@ NODE id=matrix/gateway/internal/routing.ErrBYOMissingKey kind=var
   sig=error
   doc=Errors surfaced by Decide. Callers map to HTTP status codes.
 EDGES
-  ^references=matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/routing.Decider.Decide
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ErrFreeTierNotWhitelisted kind=var
@@ -217,7 +192,6 @@ NODE id=matrix/gateway/internal/routing.ErrFreeTierNotWhitelisted kind=var
   sig=error
   doc=Errors surfaced by Decide. Callers map to HTTP status codes.
 EDGES
-  ^references=matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/routing.enforceFreeTier
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ErrInvalidSlot kind=var
@@ -225,7 +199,6 @@ NODE id=matrix/gateway/internal/routing.ErrInvalidSlot kind=var
   sig=error
   doc=Errors surfaced by Decide. Callers map to HTTP status codes.
 EDGES
-  ^references=matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/routing.Decider.Decide
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ErrUnknownProvider kind=var
@@ -233,7 +206,6 @@ NODE id=matrix/gateway/internal/routing.ErrUnknownProvider kind=var
   sig=error
   doc=Errors surfaced by Decide. Callers map to HTTP status codes.
 EDGES
-  ^references=matrix/gateway/internal/routing.Decider.Decide,matrix/gateway/internal/routing.detectProvider
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.New kind=func
@@ -241,9 +213,6 @@ NODE id=matrix/gateway/internal/routing.New kind=func
   sig=func New(opts Options) *Decider
   doc=New constructs a Decider with the supplied options.
 EDGES
-  references=matrix/gateway/internal/routing.Decider,matrix/gateway/internal/routing.DefaultBasetenChat,matrix/gateway/internal/routing.DefaultBasetenEmbeddings,matrix/gateway/internal/routing.DefaultFireworksChat,matrix/gateway/internal/routing.DefaultFireworksEmbeddings,matrix/gateway/internal/routing.DefaultTogetherChat,matrix/gateway/internal/routing.DefaultTogetherEmbeddings,matrix/gateway/internal/routing.DefaultXaiChat,matrix/gateway/internal/routing.DefaultXaiEmbeddings,matrix/gateway/internal/routing.DefaultXiaomiChat,matrix/gateway/internal/routing.Options,matrix/gateway/internal/routing.Provider,matrix/gateway/internal/routing.ProviderBaseten,matrix/gateway/internal/routing.ProviderFireworks,matrix/gateway/internal/routing.ProviderTogether,matrix/gateway/internal/routing.ProviderXai,matrix/gateway/internal/routing.ProviderXiaomi,matrix/gateway/internal/routing.fallback,matrix/gateway/internal/routing.opts,matrix/gateway/internal/routing.pick,matrix/gateway/internal/routing.s
-  ^calls=matrix/gateway/cmd/matrix-gateway.run
-  ^references=matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Options kind=type
@@ -252,7 +221,6 @@ NODE id=matrix/gateway/internal/routing.Options kind=type
   doc=Options controls Decider behavior.
 EDGES
   contains=matrix/gateway/internal/routing.Options#BasetenChatURL,matrix/gateway/internal/routing.Options#BasetenEmbeddingsURL,matrix/gateway/internal/routing.Options#FireworksChatURL,matrix/gateway/internal/routing.Options#FireworksEmbeddingsURL,matrix/gateway/internal/routing.Options#FreeTierOnly,matrix/gateway/internal/routing.Options#TogetherChatURL,matrix/gateway/internal/routing.Options#TogetherEmbeddingsURL,matrix/gateway/internal/routing.Options#XaiChatURL,matrix/gateway/internal/routing.Options#XaiEmbeddingsURL,matrix/gateway/internal/routing.Options#XiaomiChatURL
-  ^references=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/internal/routing.New
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Options#BasetenChatURL kind=field
@@ -323,60 +291,49 @@ NODE id=matrix/gateway/internal/routing.Provider kind=type
   doc=Provider identifies the upstream API we forward to.
 EDGES
   contains=matrix/gateway/internal/routing.Provider.String
-  ^references=matrix/gateway/internal/routing.Decider,matrix/gateway/internal/routing.Decision,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Provider.String,matrix/gateway/internal/routing.ProviderUnknown,matrix/gateway/internal/routing.detectProvider
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.Provider.String kind=method
   digest=b3:fd66de7ddc9d62f10494de7aa0695a1c2bde5bf07a0e64453c55b471a1ae7052 file=gateway/internal/routing/routing.go range=45:59 lang=go exported=true byte_range=1174:1450
   sig=func (p Provider) String() string
 EDGES
-  references=matrix/gateway/internal/routing.Provider,matrix/gateway/internal/routing.ProviderBaseten,matrix/gateway/internal/routing.ProviderFireworks,matrix/gateway/internal/routing.ProviderTogether,matrix/gateway/internal/routing.ProviderXai,matrix/gateway/internal/routing.ProviderXiaomi,matrix/gateway/internal/routing.p
   ^contains=matrix/gateway/internal/routing.Provider
-  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
-  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ProviderBaseten kind=const
   digest=b3:ccf74237c422e66ff5097a35c2f71aedac7c3767004e770cc7fbf578472325e0 file=gateway/internal/routing/routing.go range=40:40 lang=go exported=true byte_range=1126:1141
   sig=routing.Provider
 EDGES
-  ^references=matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Provider.String,matrix/gateway/internal/routing.detectProvider
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ProviderFireworks kind=const
   digest=b3:906d42b70b0109e12f9dabe4706424283267d48e9366a8ecfdf9690d9fa38e42 file=gateway/internal/routing/routing.go range=38:38 lang=go exported=true byte_range=1089:1106
   sig=routing.Provider
 EDGES
-  ^references=matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Provider.String,matrix/gateway/internal/routing.detectProvider
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ProviderTogether kind=const
   digest=b3:f6a41749fb694dbad307d5118f41b9714152372b281b07eaa8bbd3fcef7d0581 file=gateway/internal/routing/routing.go range=39:39 lang=go exported=true byte_range=1108:1124
   sig=routing.Provider
 EDGES
-  ^references=matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Provider.String
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ProviderUnknown kind=const
   digest=b3:fbd750299e806d1bad7ce183ee50f05243511df29c734b1c742200202f15e2d4 file=gateway/internal/routing/routing.go range=37:37 lang=go exported=true byte_range=1056:1087
   sig=routing.Provider
 EDGES
-  references=matrix/gateway/internal/routing.Provider
-  ^references=matrix/gateway/internal/routing.detectProvider
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ProviderXai kind=const
   digest=b3:4c56b0c3c914085b41c262ccc14bdfb3f62cd88ee5bb21c8bf0de879dbde2af9 file=gateway/internal/routing/routing.go range=41:41 lang=go exported=true byte_range=1143:1154
   sig=routing.Provider
 EDGES
-  ^references=matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Provider.String,matrix/gateway/internal/routing.detectProvider
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.ProviderXiaomi kind=const
   digest=b3:e506c87ab99a9070b7e170770dedcfb67ca0b784d6c256151103eba57661cfb8 file=gateway/internal/routing/routing.go range=42:42 lang=go exported=true byte_range=1156:1170
   sig=routing.Provider
 EDGES
-  ^references=matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleStreaming,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Provider.String,matrix/gateway/internal/routing.detectProvider
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.detectProvider kind=func
@@ -384,9 +341,6 @@ NODE id=matrix/gateway/internal/routing.detectProvider kind=func
   sig=func detectProvider(model string) (Provider, error)
   doc=detectProvider mirrors MCL/llm.DetectProvider. Fireworks gets the\n"accounts/fireworks/" prefix; Grok ("grok-*", e.g. "grok-4.3") routes to xAI\n— the primary chat provider — on its OpenAI-compatible /v1 surface, with the\nbare fleet id passed through unchanged (no native-id rewrite); the remaining\ngeneric "<vendor>/<model>" shape routes to Baseten. Bare non-grok model ids\n(no slash) are an error.
 EDGES
-  references=matrix/gateway/internal/routing.ErrUnknownProvider,matrix/gateway/internal/routing.Provider,matrix/gateway/internal/routing.ProviderBaseten,matrix/gateway/internal/routing.ProviderFireworks,matrix/gateway/internal/routing.ProviderUnknown,matrix/gateway/internal/routing.ProviderXai,matrix/gateway/internal/routing.ProviderXiaomi,matrix/gateway/internal/routing.model
-  ^calls=matrix/gateway/internal/routing.Decider.Decide
-  ^references=matrix/gateway/internal/routing.Decider.Decide
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.enforceFreeTier kind=func
@@ -394,10 +348,6 @@ NODE id=matrix/gateway/internal/routing.enforceFreeTier kind=func
   sig=func enforceFreeTier(slot, model string) error
   doc=enforceFreeTier rejects models outside the per-slot whitelist.
 EDGES
-  calls=matrix/gateway/internal/rates.FreeTierWhitelist
-  references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/routing.ErrFreeTierNotWhitelisted,matrix/gateway/internal/routing.allowed,matrix/gateway/internal/routing.m,matrix/gateway/internal/routing.model,matrix/gateway/internal/routing.ok,matrix/gateway/internal/routing.slot,matrix/gateway/internal/routing.whitelist
-  ^calls=matrix/gateway/internal/routing.Decider.Decide
-  ^references=matrix/gateway/internal/routing.Decider.Decide
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.readBYO kind=func
@@ -405,9 +355,6 @@ NODE id=matrix/gateway/internal/routing.readBYO kind=func
   sig=func readBYO(r *http.Request) (byoFlag bool, userKey string)
   doc=readBYO returns (byoFlag, userKey). Both empty/absent → metered.
 EDGES
-  references=matrix/gateway/internal/routing.flag,matrix/gateway/internal/routing.r,matrix/gateway/internal/types.HeaderBYOAPIKey,matrix/gateway/internal/types.HeaderUserAPIKey
-  ^calls=matrix/gateway/internal/routing.Decider.Decide
-  ^references=matrix/gateway/internal/routing.Decider.Decide
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing.validSlot kind=func
@@ -415,9 +362,6 @@ NODE id=matrix/gateway/internal/routing.validSlot kind=func
   sig=func validSlot(s string) bool
   doc=validSlot reports whether s is one of the known ModelSlot strings.\nEmpty is invalid — every gateway request MUST declare a slot so\nthe metering audit has provenance.
 EDGES
-  references=matrix/gateway/internal/routing.s,matrix/gateway/internal/types.SlotCassandra,matrix/gateway/internal/types.SlotCody,matrix/gateway/internal/types.SlotCompiler,matrix/gateway/internal/types.SlotExecutor,matrix/gateway/internal/types.SlotLiaison,matrix/gateway/internal/types.SlotNeo,matrix/gateway/internal/types.SlotPlanner
-  ^calls=matrix/gateway/internal/routing.Decider.Decide
-  ^references=matrix/gateway/internal/routing.Decider.Decide
   ^defines=matrix/gateway/internal/routing/routing.go
 
 NODE id=matrix/gateway/internal/routing/routing.go kind=file

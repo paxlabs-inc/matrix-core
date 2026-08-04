@@ -1,12 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/ledger kind=package
   digest=b3:9d4a3f7b888013d784e515915883f78318e0593a3f556b3ee17cd30c733a29dd file=workforce/internal/ledger range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/ledger/access.go,matrix/workforce/internal/ledger/append.go,matrix/workforce/internal/ledger/correction.go,matrix/workforce/internal/ledger/crypto.go,matrix/workforce/internal/ledger/doc.go,matrix/workforce/internal/ledger/migrate.go,matrix/workforce/internal/ledger/types.go
-  imports=matrix/vault,matrix/workforce/internal/contracts
   ^contains=mod:matrix/workforce
-  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/actorstate,matrix/workforce/scheduler
 
 NODE id=matrix/workforce/internal/ledger.AccessAction kind=type
   digest=b3:f99b764d189e03bb8d62a983670f1d84c9aaab47c772a215a19adecb338baf94 file=workforce/internal/ledger/types.go range=76:77 lang=go exported=true byte_range=2363:2465
@@ -14,7 +12,6 @@ NODE id=matrix/workforce/internal/ledger.AccessAction kind=type
   doc=AccessAction is an immutable provenance-producing read or delivery action.
 EDGES
   contains=matrix/workforce/internal/ledger.AccessAction.Valid
-  ^references=matrix/workforce/internal/ledger.AccessAction.Valid,matrix/workforce/internal/ledger.AccessCitation,matrix/workforce/internal/ledger.AccessDelivery,matrix/workforce/internal/ledger.AccessDerivation,matrix/workforce/internal/ledger.AccessOpen,matrix/workforce/internal/ledger.AccessRequest,matrix/workforce/internal/ledger.insertAccessEdge
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.AccessAction.Valid kind=method
@@ -22,10 +19,7 @@ NODE id=matrix/workforce/internal/ledger.AccessAction.Valid kind=method
   sig=func (a AccessAction) Valid() bool
   doc=Valid reports whether the access action is executable by this release.
 EDGES
-  references=matrix/workforce/internal/ledger.AccessAction,matrix/workforce/internal/ledger.AccessCitation,matrix/workforce/internal/ledger.AccessDelivery,matrix/workforce/internal/ledger.AccessDerivation,matrix/workforce/internal/ledger.AccessOpen,matrix/workforce/internal/ledger.a
   ^contains=matrix/workforce/internal/ledger.AccessAction
-  ^calls=matrix/workforce/internal/ledger.Store.RecordAccess
-  ^references=matrix/workforce/internal/ledger.Store.RecordAccess
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.AccessCitation kind=const
@@ -33,8 +27,6 @@ NODE id=matrix/workforce/internal/ledger.AccessCitation kind=const
   sig=ledger.AccessAction
   doc=AccessCitation records evidence citation by a derived consumer.
 EDGES
-  references=matrix/workforce/internal/ledger.AccessAction
-  ^references=matrix/workforce/internal/ledger.AccessAction.Valid,matrix/workforce/internal/ledger.Store.recordAccessTx
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.AccessDelivery kind=const
@@ -42,8 +34,6 @@ NODE id=matrix/workforce/internal/ledger.AccessDelivery kind=const
   sig=ledger.AccessAction
   doc=AccessDelivery records durable delivery to a consumer.
 EDGES
-  references=matrix/workforce/internal/ledger.AccessAction
-  ^references=matrix/workforce/internal/ledger.AccessAction.Valid
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.AccessDerivation kind=const
@@ -51,8 +41,6 @@ NODE id=matrix/workforce/internal/ledger.AccessDerivation kind=const
   sig=ledger.AccessAction
   doc=AccessDerivation records creation of a record derived from a source.
 EDGES
-  references=matrix/workforce/internal/ledger.AccessAction
-  ^references=matrix/workforce/internal/ledger.AccessAction.Valid,matrix/workforce/internal/ledger.Store.recordAccessTx
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.AccessGrant kind=type
@@ -61,8 +49,6 @@ NODE id=matrix/workforce/internal/ledger.AccessGrant kind=type
   doc=AccessGrant is a caller-verified, expiring organizational read projection.\nThe ledger still enforces its scope before opening sealed bytes.
 EDGES
   contains=matrix/workforce/internal/ledger.AccessGrant#Classifications,matrix/workforce/internal/ledger.AccessGrant#DepartmentID,matrix/workforce/internal/ledger.AccessGrant#ExpiresAt,matrix/workforce/internal/ledger.AccessGrant#OrganizationID,matrix/workforce/internal/ledger.AccessGrant#ProjectID,matrix/workforce/internal/ledger.AccessGrant#Purpose,matrix/workforce/internal/ledger.AccessGrant#Restricted,matrix/workforce/internal/ledger.AccessGrant#SeatID
-  references=matrix/workforce/internal/contracts.Classification,matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.SeatID
-  ^references=matrix/workforce/internal/actorstate.Assembler.openRecords,matrix/workforce/internal/ledger.AccessRequest,matrix/workforce/internal/ledger.OpenRequest,matrix/workforce/internal/ledger.authorize
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.AccessGrant#Classifications kind=field
@@ -118,8 +104,6 @@ NODE id=matrix/workforce/internal/ledger.AccessOpen kind=const
   sig=ledger.AccessAction
   doc=AccessOpen records opening canonical record content.
 EDGES
-  references=matrix/workforce/internal/ledger.AccessAction
-  ^references=matrix/workforce/internal/ledger.AccessAction.Valid,matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.RecordAccess
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.AccessRequest kind=type
@@ -128,8 +112,6 @@ NODE id=matrix/workforce/internal/ledger.AccessRequest kind=type
   doc=AccessRequest records delivery, citation, or derivation without opening bytes.
 EDGES
   contains=matrix/workforce/internal/ledger.AccessRequest#Action,matrix/workforce/internal/ledger.AccessRequest#ConsumerRecordID,matrix/workforce/internal/ledger.AccessRequest#Grant,matrix/workforce/internal/ledger.AccessRequest#IdempotencyKey,matrix/workforce/internal/ledger.AccessRequest#OrganizationID,matrix/workforce/internal/ledger.AccessRequest#SourceRecordID
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/ledger.AccessAction,matrix/workforce/internal/ledger.AccessGrant
-  ^references=matrix/workforce/internal/ledger.Store.RecordAccess,matrix/workforce/internal/ledger.Store.recordAccessTx
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.AccessRequest#Action kind=field
@@ -174,8 +156,6 @@ NODE id=matrix/workforce/internal/ledger.AppendRequest kind=type
   doc=AppendRequest atomically stores one immutable typed record and its declared\nderivation edges. IdempotencyKey is scoped to tenant and organization.
 EDGES
   contains=matrix/workforce/internal/ledger.AppendRequest#IdempotencyKey,matrix/workforce/internal/ledger.AppendRequest#Record
-  references=matrix/workforce/internal/contracts.Record
-  ^references=matrix/workforce/internal/ledger.Store.AppendRecord
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.AppendRequest#IdempotencyKey kind=field
@@ -196,8 +176,6 @@ NODE id=matrix/workforce/internal/ledger.AppendResult kind=type
   doc=AppendResult describes whether the immutable append created or reused truth.
 EDGES
   contains=matrix/workforce/internal/ledger.AppendResult#CanonicalHash,matrix/workforce/internal/ledger.AppendResult#Deduplicated,matrix/workforce/internal/ledger.AppendResult#RecordID
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.RecordID
-  ^references=matrix/workforce/internal/ledger.Store.AppendRecord,matrix/workforce/internal/ledger.Store.appendInTransaction,matrix/workforce/internal/ledger.Store.appendPreparedTx,matrix/workforce/internal/ledger.findAppendKey
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.AppendResult#CanonicalHash kind=field
@@ -223,10 +201,6 @@ NODE id=matrix/workforce/internal/ledger.ApplyMigrations kind=func
   sig=func ApplyMigrations(ctx context.Context, pool *pgxpool.Pool, now time.Time) error
   doc=ApplyMigrations applies each embedded PostgreSQL migration exactly once and\nrejects any checksum drift in a previously applied version.
 EDGES
-  calls=matrix/workforce/internal/ledger.applyMigration,matrix/workforce/internal/ledger.loadMigrations
-  references=matrix/workforce/internal/ledger.applyMigration,matrix/workforce/internal/ledger.available,matrix/workforce/internal/ledger.connection,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.item,matrix/workforce/internal/ledger.loadMigrations,matrix/workforce/internal/ledger.migrationLockID,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.pool
-  ^calls=matrix/workforce/cmd/workforced.runContext,matrix/workforce/scheduler.ApplyMigrations
-  ^references=matrix/workforce/cmd/workforced.runContext,matrix/workforce/scheduler.ApplyMigrations
   ^defines=matrix/workforce/internal/ledger/migrate.go
 
 NODE id=matrix/workforce/internal/ledger.CorrectionRequest kind=type
@@ -235,8 +209,6 @@ NODE id=matrix/workforce/internal/ledger.CorrectionRequest kind=type
   doc=CorrectionRequest atomically appends a typed Correction record, computes all\ntransitive consumers, creates mandatory notices, and pauses unsafe targets.
 EDGES
   contains=matrix/workforce/internal/ledger.CorrectionRequest#CorrectionRecord,matrix/workforce/internal/ledger.CorrectionRequest#ID,matrix/workforce/internal/ledger.CorrectionRequest#IdempotencyKey,matrix/workforce/internal/ledger.CorrectionRequest#MateriallyUnsafe,matrix/workforce/internal/ledger.CorrectionRequest#SourceRecordID
-  references=matrix/workforce/internal/contracts.CorrectionID,matrix/workforce/internal/contracts.Record,matrix/workforce/internal/contracts.RecordID
-  ^references=matrix/workforce/internal/ledger.Store.CreateCorrection,matrix/workforce/internal/ledger.Store.createCorrectionInTransaction,matrix/workforce/internal/ledger.Store.findCorrection,matrix/workforce/internal/ledger.Store.insertCorrection,matrix/workforce/internal/ledger.Store.insertCorrectionTargets,matrix/workforce/internal/ledger.Store.persistCorrectionTargets,matrix/workforce/internal/ledger.lockCorrection,matrix/workforce/internal/ledger.validateCorrectionRequest
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.CorrectionRequest#CorrectionRecord kind=field
@@ -275,8 +247,6 @@ NODE id=matrix/workforce/internal/ledger.CorrectionStatus kind=type
   doc=CorrectionStatus is the durable correction closure projection.
 EDGES
   contains=matrix/workforce/internal/ledger.CorrectionStatus#Applied,matrix/workforce/internal/ledger.CorrectionStatus#Escalated,matrix/workforce/internal/ledger.CorrectionStatus#ID,matrix/workforce/internal/ledger.CorrectionStatus#Paused,matrix/workforce/internal/ledger.CorrectionStatus#Pending,matrix/workforce/internal/ledger.CorrectionStatus#Rejected,matrix/workforce/internal/ledger.CorrectionStatus#Status
-  references=matrix/workforce/internal/contracts.CorrectionID
-  ^references=matrix/workforce/internal/ledger.Store.CorrectionStatus,matrix/workforce/internal/ledger.Store.CreateCorrection,matrix/workforce/internal/ledger.Store.ReconcileCorrection,matrix/workforce/internal/ledger.Store.correctionStatusTx,matrix/workforce/internal/ledger.Store.createCorrectionInTransaction,matrix/workforce/internal/ledger.Store.reconcileInTransaction
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.CorrectionStatus#Applied kind=field
@@ -326,7 +296,6 @@ NODE id=matrix/workforce/internal/ledger.ErrConflict kind=var
   sig=error
   doc=ErrConflict means an immutable identity or idempotency key was reused with\ndifferent canonical content.
 EDGES
-  ^references=matrix/workforce/internal/ledger.Store.appendPreparedTx,matrix/workforce/internal/ledger.Store.findCorrection,matrix/workforce/internal/ledger.Store.findRecordIdentity,matrix/workforce/internal/ledger.insertAccessEdge
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.ErrCorrectionClosed kind=var
@@ -334,7 +303,6 @@ NODE id=matrix/workforce/internal/ledger.ErrCorrectionClosed kind=var
   sig=error
   doc=ErrCorrectionClosed means a reconciliation tried to mutate a terminal correction.
 EDGES
-  ^references=matrix/workforce/internal/ledger.Store.verifyExistingResolution
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.ErrIntegrity kind=var
@@ -342,7 +310,6 @@ NODE id=matrix/workforce/internal/ledger.ErrIntegrity kind=var
   sig=error
   doc=ErrIntegrity means sealed or canonical record bytes failed authentication.
 EDGES
-  ^references=matrix/workforce/internal/ledger.Store.decryptMetadata,matrix/workforce/internal/ledger.Store.insertProvenance,matrix/workforce/internal/ledger.Store.openRecord
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.ErrNotFound kind=var
@@ -350,7 +317,6 @@ NODE id=matrix/workforce/internal/ledger.ErrNotFound kind=var
   sig=error
   doc=ErrNotFound intentionally combines missing and unauthorized reads so the\ncaller cannot use the ledger as a record-existence oracle.
 EDGES
-  ^references=matrix/workforce/internal/actorstate.Assembler.openRecords,matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.RecordAccess,matrix/workforce/internal/ledger.Store.commitDenial,matrix/workforce/internal/ledger.Store.correctionStatusTx,matrix/workforce/internal/ledger.Store.findMetadata,matrix/workforce/internal/ledger.Store.insertCorrectionTargets,matrix/workforce/internal/ledger.Store.insertProvenance,matrix/workforce/internal/ledger.Store.verifyExistingResolution,matrix/workforce/internal/ledger.authorize
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.New kind=func
@@ -358,10 +324,6 @@ NODE id=matrix/workforce/internal/ledger.New kind=func
   sig=func New(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	tenantID string,\n	now func() time.Time,\n) (*Store, error)
   doc=New constructs a tenant-scoped ledger. It fails closed unless Vault is\nencrypting for the same tenant identity used in PostgreSQL keys and AAD.
 EDGES
-  calls=matrix/vault.UserVault.User
-  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.pool,matrix/workforce/internal/ledger.tenantID,matrix/workforce/internal/ledger.userVault
-  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
-  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.OpenRequest kind=type
@@ -370,8 +332,6 @@ NODE id=matrix/workforce/internal/ledger.OpenRequest kind=type
   doc=OpenRequest identifies one authorized read and its idempotent access record.
 EDGES
   contains=matrix/workforce/internal/ledger.OpenRequest#Grant,matrix/workforce/internal/ledger.OpenRequest#IdempotencyKey,matrix/workforce/internal/ledger.OpenRequest#OrganizationID,matrix/workforce/internal/ledger.OpenRequest#RecordID
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/ledger.AccessGrant
-  ^references=matrix/workforce/internal/actorstate.Assembler.openRecords,matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.RecordAccess,matrix/workforce/internal/ledger.Store.commitDenial,matrix/workforce/internal/ledger.Store.insertDenial
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.OpenRequest#Grant kind=field
@@ -404,8 +364,6 @@ NODE id=matrix/workforce/internal/ledger.ReconcileRequest kind=type
   doc=ReconcileRequest resolves one affected record's mandatory correction target.
 EDGES
   contains=matrix/workforce/internal/ledger.ReconcileRequest#AffectedRecordID,matrix/workforce/internal/ledger.ReconcileRequest#CorrectionID,matrix/workforce/internal/ledger.ReconcileRequest#EvidenceRecordID,matrix/workforce/internal/ledger.ReconcileRequest#IdempotencyKey,matrix/workforce/internal/ledger.ReconcileRequest#OrganizationID,matrix/workforce/internal/ledger.ReconcileRequest#State
-  references=matrix/workforce/internal/contracts.CorrectionID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/ledger.ReconciliationState
-  ^references=matrix/workforce/internal/ledger.Store.ReconcileCorrection,matrix/workforce/internal/ledger.Store.applyResolution,matrix/workforce/internal/ledger.Store.closeResolvedCorrection,matrix/workforce/internal/ledger.Store.reconcileInTransaction,matrix/workforce/internal/ledger.Store.verifyExistingResolution,matrix/workforce/internal/ledger.validateReconcileRequest
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.ReconcileRequest#AffectedRecordID kind=field
@@ -449,8 +407,6 @@ NODE id=matrix/workforce/internal/ledger.ReconciliationApplied kind=const
   sig=ledger.ReconciliationState
   doc=ReconciliationApplied accepts and applies the corrected truth.
 EDGES
-  references=matrix/workforce/internal/ledger.ReconciliationState
-  ^references=matrix/workforce/internal/ledger.ReconciliationState.Valid,matrix/workforce/internal/ledger.validateReconcileRequest
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.ReconciliationEscalated kind=const
@@ -458,8 +414,6 @@ NODE id=matrix/workforce/internal/ledger.ReconciliationEscalated kind=const
   sig=ledger.ReconciliationState
   doc=ReconciliationEscalated transfers unresolved correction authority to a human.
 EDGES
-  references=matrix/workforce/internal/ledger.ReconciliationState
-  ^references=matrix/workforce/internal/ledger.ReconciliationState.Valid
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.ReconciliationRejected kind=const
@@ -467,8 +421,6 @@ NODE id=matrix/workforce/internal/ledger.ReconciliationRejected kind=const
   sig=ledger.ReconciliationState
   doc=ReconciliationRejected rejects a correction with authoritative evidence.
 EDGES
-  references=matrix/workforce/internal/ledger.ReconciliationState
-  ^references=matrix/workforce/internal/ledger.ReconciliationState.Valid
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.ReconciliationState kind=type
@@ -477,7 +429,6 @@ NODE id=matrix/workforce/internal/ledger.ReconciliationState kind=type
   doc=ReconciliationState is a consumer's closed response to a correction.
 EDGES
   contains=matrix/workforce/internal/ledger.ReconciliationState.Valid
-  ^references=matrix/workforce/internal/ledger.ReconcileRequest,matrix/workforce/internal/ledger.ReconciliationApplied,matrix/workforce/internal/ledger.ReconciliationEscalated,matrix/workforce/internal/ledger.ReconciliationRejected,matrix/workforce/internal/ledger.ReconciliationState.Valid
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.ReconciliationState.Valid kind=method
@@ -485,10 +436,7 @@ NODE id=matrix/workforce/internal/ledger.ReconciliationState.Valid kind=method
   sig=func (s ReconciliationState) Valid() bool
   doc=Valid reports whether the correction response is closed and executable.
 EDGES
-  references=matrix/workforce/internal/ledger.ReconciliationApplied,matrix/workforce/internal/ledger.ReconciliationEscalated,matrix/workforce/internal/ledger.ReconciliationRejected,matrix/workforce/internal/ledger.ReconciliationState,matrix/workforce/internal/ledger.s
   ^contains=matrix/workforce/internal/ledger.ReconciliationState
-  ^calls=matrix/workforce/internal/ledger.validateReconcileRequest
-  ^references=matrix/workforce/internal/ledger.validateReconcileRequest
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.Store kind=type
@@ -497,8 +445,6 @@ NODE id=matrix/workforce/internal/ledger.Store kind=type
   doc=Store owns PostgreSQL transactions for one tenant and requires an encrypting\nUserVault. The caller owns and closes the supplied pool.
 EDGES
   contains=matrix/workforce/internal/ledger.Store#now,matrix/workforce/internal/ledger.Store#pool,matrix/workforce/internal/ledger.Store#tenantID,matrix/workforce/internal/ledger.Store#vault,matrix/workforce/internal/ledger.Store.AppendRecord,matrix/workforce/internal/ledger.Store.CorrectionStatus,matrix/workforce/internal/ledger.Store.CreateCorrection,matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.ReconcileCorrection,matrix/workforce/internal/ledger.Store.RecordAccess,matrix/workforce/internal/ledger.Store.appendInTransaction,matrix/workforce/internal/ledger.Store.appendPreparedTx,matrix/workforce/internal/ledger.Store.applyResolution,matrix/workforce/internal/ledger.Store.closeResolvedCorrection,matrix/workforce/internal/ledger.Store.commitDenial,matrix/workforce/internal/ledger.Store.correctionStatusTx,matrix/workforce/internal/ledger.Store.createCorrectionInTransaction,matrix/workforce/internal/ledger.Store.currentTime,matrix/workforce/internal/ledger.Store.decryptMetadata,matrix/workforce/internal/ledger.Store.findCorrection,matrix/workforce/internal/ledger.Store.findMetadata,matrix/workforce/internal/ledger.Store.findRecordIdentity,matrix/workforce/internal/ledger.Store.insertCorrection,matrix/workforce/internal/ledger.Store.insertCorrectionTargets,matrix/workforce/internal/ledger.Store.insertDenial,matrix/workforce/internal/ledger.Store.insertProvenance,matrix/workforce/internal/ledger.Store.insertRecord,matrix/workforce/internal/ledger.Store.openRecord,matrix/workforce/internal/ledger.Store.persistCorrectionTargets,matrix/workforce/internal/ledger.Store.prepareRecord,matrix/workforce/internal/ledger.Store.reconcileInTransaction,matrix/workforce/internal/ledger.Store.recordAD,matrix/workforce/internal/ledger.Store.recordADFor,matrix/workforce/internal/ledger.Store.recordAccessTx,matrix/workforce/internal/ledger.Store.verifyExistingResolution
-  references=matrix/vault.UserVault
-  ^references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.NewAssembler,matrix/workforce/internal/ledger.New,matrix/workforce/internal/ledger.Store.AppendRecord,matrix/workforce/internal/ledger.Store.CorrectionStatus,matrix/workforce/internal/ledger.Store.CreateCorrection,matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.ReconcileCorrection,matrix/workforce/internal/ledger.Store.RecordAccess,matrix/workforce/internal/ledger.Store.appendInTransaction,matrix/workforce/internal/ledger.Store.appendPreparedTx,matrix/workforce/internal/ledger.Store.applyResolution,matrix/workforce/internal/ledger.Store.closeResolvedCorrection,matrix/workforce/internal/ledger.Store.commitDenial,matrix/workforce/internal/ledger.Store.correctionStatusTx,matrix/workforce/internal/ledger.Store.createCorrectionInTransaction,matrix/workforce/internal/ledger.Store.currentTime,matrix/workforce/internal/ledger.Store.decryptMetadata,matrix/workforce/internal/ledger.Store.findCorrection,matrix/workforce/internal/ledger.Store.findMetadata,matrix/workforce/internal/ledger.Store.findRecordIdentity,matrix/workforce/internal/ledger.Store.insertCorrection,matrix/workforce/internal/ledger.Store.insertCorrectionTargets,matrix/workforce/internal/ledger.Store.insertDenial,matrix/workforce/internal/ledger.Store.insertProvenance,matrix/workforce/internal/ledger.Store.insertRecord,matrix/workforce/internal/ledger.Store.openRecord,matrix/workforce/internal/ledger.Store.persistCorrectionTargets,matrix/workforce/internal/ledger.Store.prepareRecord,matrix/workforce/internal/ledger.Store.reconcileInTransaction,matrix/workforce/internal/ledger.Store.recordAD,matrix/workforce/internal/ledger.Store.recordADFor,matrix/workforce/internal/ledger.Store.recordAccessTx,matrix/workforce/internal/ledger.Store.verifyExistingResolution
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.Store#now kind=field
@@ -530,8 +476,6 @@ NODE id=matrix/workforce/internal/ledger.Store.AppendRecord kind=method
   sig=func (s *Store) AppendRecord(ctx context.Context, request AppendRequest) (AppendResult, error)
   doc=AppendRecord seals and atomically appends an immutable record, its\nidempotency identity, and every declared derivation edge.
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.appendInTransaction,matrix/workforce/internal/ledger.Store.currentTime,matrix/workforce/internal/ledger.Store.prepareRecord,matrix/workforce/internal/ledger.retryableTransaction,matrix/workforce/internal/ledger.validateToken
-  references=matrix/workforce/internal/ledger.AppendRequest,matrix/workforce/internal/ledger.AppendResult,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.appendInTransaction,matrix/workforce/internal/ledger.Store.currentTime,matrix/workforce/internal/ledger.Store.prepareRecord,matrix/workforce/internal/ledger.attempt,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.prepared,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.result,matrix/workforce/internal/ledger.retryableTransaction,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.transactionAttempts,matrix/workforce/internal/ledger.validateToken
   ^contains=matrix/workforce/internal/ledger.Store
   ^defines=matrix/workforce/internal/ledger/append.go
 
@@ -540,8 +484,6 @@ NODE id=matrix/workforce/internal/ledger.Store.CorrectionStatus kind=method
   sig=func (s *Store) CorrectionStatus(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	correctionID contracts.CorrectionID,\n) (CorrectionStatus, error)
   doc=CorrectionStatus returns the durable reconciliation and pause projection.
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.correctionStatusTx
-  references=matrix/workforce/internal/contracts.CorrectionID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/ledger.CorrectionStatus,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.correctionStatusTx,matrix/workforce/internal/ledger.correctionID,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.organizationID,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.status,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
   ^defines=matrix/workforce/internal/ledger/correction.go
 
@@ -550,8 +492,6 @@ NODE id=matrix/workforce/internal/ledger.Store.CreateCorrection kind=method
   sig=func (s *Store) CreateCorrection(\n	ctx context.Context,\n	request CorrectionRequest,\n) (CorrectionStatus, error)
   doc=CreateCorrection atomically appends correction truth, walks transitive\nprovenance, creates mandatory notices, and pauses every unsafe target.
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.createCorrectionInTransaction,matrix/workforce/internal/ledger.Store.currentTime,matrix/workforce/internal/ledger.Store.prepareRecord,matrix/workforce/internal/ledger.retryableTransaction,matrix/workforce/internal/ledger.validateCorrectionRequest
-  references=matrix/workforce/internal/ledger.CorrectionRequest,matrix/workforce/internal/ledger.CorrectionStatus,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.createCorrectionInTransaction,matrix/workforce/internal/ledger.Store.currentTime,matrix/workforce/internal/ledger.Store.prepareRecord,matrix/workforce/internal/ledger.attempt,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.prepared,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.retryableTransaction,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.status,matrix/workforce/internal/ledger.transactionAttempts,matrix/workforce/internal/ledger.validateCorrectionRequest
   ^contains=matrix/workforce/internal/ledger.Store
   ^defines=matrix/workforce/internal/ledger/correction.go
 
@@ -560,11 +500,7 @@ NODE id=matrix/workforce/internal/ledger.Store.OpenRecord kind=method
   sig=func (s *Store) OpenRecord(ctx context.Context, request OpenRequest) (contracts.Record, error)
   doc=OpenRecord enforces an expiring access grant, authenticates Vault and the\ncanonical hash, records the open transactionally, and returns immutable truth.
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.commitDenial,matrix/workforce/internal/ledger.Store.currentTime,matrix/workforce/internal/ledger.Store.decryptMetadata,matrix/workforce/internal/ledger.Store.findMetadata,matrix/workforce/internal/ledger.authorize,matrix/workforce/internal/ledger.insertAccessEdge,matrix/workforce/internal/ledger.validateToken
-  references=matrix/workforce/internal/contracts.Record,matrix/workforce/internal/ledger.AccessOpen,matrix/workforce/internal/ledger.ErrNotFound,matrix/workforce/internal/ledger.OpenRequest,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.commitDenial,matrix/workforce/internal/ledger.Store.currentTime,matrix/workforce/internal/ledger.Store.decryptMetadata,matrix/workforce/internal/ledger.Store.findMetadata,matrix/workforce/internal/ledger.authorize,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.insertAccessEdge,matrix/workforce/internal/ledger.metadata,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.record,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.tx,matrix/workforce/internal/ledger.validateToken
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/actorstate.Assembler.openRecords
-  ^references=matrix/workforce/internal/actorstate.Assembler.openRecords
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.Store.ReconcileCorrection kind=method
@@ -572,8 +508,6 @@ NODE id=matrix/workforce/internal/ledger.Store.ReconcileCorrection kind=method
   sig=func (s *Store) ReconcileCorrection(\n	ctx context.Context,\n	request ReconcileRequest,\n) (CorrectionStatus, error)
   doc=ReconcileCorrection records one consumer's apply, evidence-backed rejection,\nor escalation and closes the correction only after every target responds.
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.currentTime,matrix/workforce/internal/ledger.Store.reconcileInTransaction,matrix/workforce/internal/ledger.retryableTransaction,matrix/workforce/internal/ledger.validateReconcileRequest
-  references=matrix/workforce/internal/ledger.CorrectionStatus,matrix/workforce/internal/ledger.ReconcileRequest,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.currentTime,matrix/workforce/internal/ledger.Store.reconcileInTransaction,matrix/workforce/internal/ledger.attempt,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.retryableTransaction,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.status,matrix/workforce/internal/ledger.transactionAttempts,matrix/workforce/internal/ledger.validateReconcileRequest
   ^contains=matrix/workforce/internal/ledger.Store
   ^defines=matrix/workforce/internal/ledger/correction.go
 
@@ -582,8 +516,6 @@ NODE id=matrix/workforce/internal/ledger.Store.RecordAccess kind=method
   sig=func (s *Store) RecordAccess(ctx context.Context, request AccessRequest) error
   doc=RecordAccess transactionally records delivery, citation, or derivation and\nadds the corresponding provenance edge when a consumer record is supplied.
 EDGES
-  calls=matrix/workforce/internal/ledger.AccessAction.Valid,matrix/workforce/internal/ledger.Store.commitDenial,matrix/workforce/internal/ledger.Store.currentTime,matrix/workforce/internal/ledger.Store.findMetadata,matrix/workforce/internal/ledger.Store.recordAccessTx,matrix/workforce/internal/ledger.authorize,matrix/workforce/internal/ledger.validateToken
-  references=matrix/workforce/internal/ledger.AccessAction.Valid,matrix/workforce/internal/ledger.AccessOpen,matrix/workforce/internal/ledger.AccessRequest,matrix/workforce/internal/ledger.ErrNotFound,matrix/workforce/internal/ledger.OpenRequest,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.commitDenial,matrix/workforce/internal/ledger.Store.currentTime,matrix/workforce/internal/ledger.Store.findMetadata,matrix/workforce/internal/ledger.Store.recordAccessTx,matrix/workforce/internal/ledger.authorize,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.openRequest,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.source,matrix/workforce/internal/ledger.tx,matrix/workforce/internal/ledger.validateToken
   ^contains=matrix/workforce/internal/ledger.Store
   ^defines=matrix/workforce/internal/ledger/access.go
 
@@ -591,303 +523,199 @@ NODE id=matrix/workforce/internal/ledger.Store.appendInTransaction kind=method
   digest=b3:673e59494e4464c9704bcf311bfed1a72ec1a574e980a60c7902034e3a639591 file=workforce/internal/ledger/append.go range=40:59 lang=go exported=false byte_range=1030:1668
   sig=func (s *Store) appendInTransaction(\n	ctx context.Context,\n	prepared preparedRecord,\n	idempotencyKey string,\n	now time.Time,\n) (AppendResult, error)
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.appendPreparedTx
-  references=matrix/workforce/internal/ledger.AppendResult,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.appendPreparedTx,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.idempotencyKey,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.prepared,matrix/workforce/internal/ledger.preparedRecord,matrix/workforce/internal/ledger.result,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.AppendRecord
-  ^references=matrix/workforce/internal/ledger.Store.AppendRecord
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.Store.appendPreparedTx kind=method
   digest=b3:2a6ea04435641f9cc7212a15653a2e4135d18e45caed226d201d786f18caf1a3 file=workforce/internal/ledger/append.go range=61:103 lang=go exported=false byte_range=1670:2941
   sig=func (s *Store) appendPreparedTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	prepared preparedRecord,\n	idempotencyKey string,\n	now time.Time,\n) (AppendResult, error)
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.findRecordIdentity,matrix/workforce/internal/ledger.Store.insertProvenance,matrix/workforce/internal/ledger.Store.insertRecord,matrix/workforce/internal/ledger.findAppendKey,matrix/workforce/internal/ledger.insertAppendKey,matrix/workforce/internal/ledger.lockAppendIdentities
-  references=matrix/workforce/internal/ledger.AppendResult,matrix/workforce/internal/ledger.ErrConflict,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.findRecordIdentity,matrix/workforce/internal/ledger.Store.insertProvenance,matrix/workforce/internal/ledger.Store.insertRecord,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.findAppendKey,matrix/workforce/internal/ledger.found,matrix/workforce/internal/ledger.idempotencyKey,matrix/workforce/internal/ledger.insertAppendKey,matrix/workforce/internal/ledger.lockAppendIdentities,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.prepared,matrix/workforce/internal/ledger.preparedRecord,matrix/workforce/internal/ledger.record,matrix/workforce/internal/ledger.result,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.appendInTransaction,matrix/workforce/internal/ledger.Store.createCorrectionInTransaction
-  ^references=matrix/workforce/internal/ledger.Store.appendInTransaction,matrix/workforce/internal/ledger.Store.createCorrectionInTransaction
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.Store.applyResolution kind=method
   digest=b3:5b171a69fb4bdebd68bcd41faccc47d589ee9ac586ba09aaa43d54e2dd8d6d15 file=workforce/internal/ledger/correction.go range=334:357 lang=go exported=false byte_range=10628:11432
   sig=func (s *Store) applyResolution(\n	ctx context.Context,\n	tx pgx.Tx,\n	request ReconcileRequest,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.verifyExistingResolution,matrix/workforce/internal/ledger.optionalRecordID
-  references=matrix/workforce/internal/ledger.ReconcileRequest,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.verifyExistingResolution,matrix/workforce/internal/ledger.command,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.optionalRecordID,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.reconcileInTransaction
-  ^references=matrix/workforce/internal/ledger.Store.reconcileInTransaction
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.Store.closeResolvedCorrection kind=method
   digest=b3:fec22ca6a89301d2574111c53dc5fead659825c9782140a829904767c805ac70 file=workforce/internal/ledger/correction.go range=388:423 lang=go exported=false byte_range=12371:13416
   sig=func (s *Store) closeResolvedCorrection(\n	ctx context.Context,\n	tx pgx.Tx,\n	request ReconcileRequest,\n	now time.Time,\n) error
 EDGES
-  references=matrix/workforce/internal/ledger.ReconcileRequest,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.escalated,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.pending,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.status,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.reconcileInTransaction
-  ^references=matrix/workforce/internal/ledger.Store.reconcileInTransaction
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.Store.commitDenial kind=method
   digest=b3:1cb4b7930069768919c5df7dade388c89203d8a4e12ed92f53c482edd68854d1 file=workforce/internal/ledger/access.go range=127:140 lang=go exported=false byte_range=3976:4292
   sig=func (s *Store) commitDenial(\n	ctx context.Context,\n	tx pgx.Tx,\n	request OpenRequest,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.insertDenial
-  references=matrix/workforce/internal/ledger.ErrNotFound,matrix/workforce/internal/ledger.OpenRequest,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.insertDenial,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.RecordAccess
-  ^references=matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.RecordAccess
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.Store.correctionStatusTx kind=method
   digest=b3:b768cfb3487d48fef2c33be88a06deed4f805ed00534cf1b50c758764759471b file=workforce/internal/ledger/correction.go range=446:480 lang=go exported=false byte_range=14182:15471
   sig=func (s *Store) correctionStatusTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	organizationID contracts.OrganizationID,\n	correctionID contracts.CorrectionID,\n) (CorrectionStatus, error)
 EDGES
-  references=matrix/workforce/internal/contracts.CorrectionID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/ledger.CorrectionStatus,matrix/workforce/internal/ledger.ErrNotFound,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.correctionID,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.organizationID,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.status,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.CorrectionStatus,matrix/workforce/internal/ledger.Store.createCorrectionInTransaction,matrix/workforce/internal/ledger.Store.reconcileInTransaction
-  ^references=matrix/workforce/internal/ledger.Store.CorrectionStatus,matrix/workforce/internal/ledger.Store.createCorrectionInTransaction,matrix/workforce/internal/ledger.Store.reconcileInTransaction
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.Store.createCorrectionInTransaction kind=method
   digest=b3:3683f75a23252785735960c188e1c9582fc5f76139e99099d11fbcdf7a0b2004 file=workforce/internal/ledger/correction.go range=69:106 lang=go exported=false byte_range=1858:3132
   sig=func (s *Store) createCorrectionInTransaction(\n	ctx context.Context,\n	request CorrectionRequest,\n	prepared preparedRecord,\n	now time.Time,\n) (CorrectionStatus, error)
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.appendPreparedTx,matrix/workforce/internal/ledger.Store.correctionStatusTx,matrix/workforce/internal/ledger.Store.findCorrection,matrix/workforce/internal/ledger.Store.insertCorrection,matrix/workforce/internal/ledger.Store.insertCorrectionTargets,matrix/workforce/internal/ledger.lockCorrection
-  references=matrix/workforce/internal/ledger.CorrectionRequest,matrix/workforce/internal/ledger.CorrectionStatus,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.appendPreparedTx,matrix/workforce/internal/ledger.Store.correctionStatusTx,matrix/workforce/internal/ledger.Store.findCorrection,matrix/workforce/internal/ledger.Store.insertCorrection,matrix/workforce/internal/ledger.Store.insertCorrectionTargets,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.found,matrix/workforce/internal/ledger.lockCorrection,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.prepared,matrix/workforce/internal/ledger.preparedRecord,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.status,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.CreateCorrection
-  ^references=matrix/workforce/internal/ledger.Store.CreateCorrection
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.Store.currentTime kind=method
   digest=b3:39ee49ddc26b9d377beeb2447a34aec9f751a50fdcb0961b336c52459fa4ebdf file=workforce/internal/ledger/types.go range=199:205 lang=go exported=false byte_range=6258:6480
   sig=func (s *Store) currentTime() (time.Time, error)
 EDGES
-  references=matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.s
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.AppendRecord,matrix/workforce/internal/ledger.Store.CreateCorrection,matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.ReconcileCorrection,matrix/workforce/internal/ledger.Store.RecordAccess
-  ^references=matrix/workforce/internal/ledger.Store.AppendRecord,matrix/workforce/internal/ledger.Store.CreateCorrection,matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.ReconcileCorrection,matrix/workforce/internal/ledger.Store.RecordAccess
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger.Store.decryptMetadata kind=method
   digest=b3:d50e484771ed95415de5c6dc3bac8ce92ddf9123e90ce76b0b76e1276fe59530 file=workforce/internal/ledger/access.go range=259:279 lang=go exported=false byte_range=7960:8596
   sig=func (s *Store) decryptMetadata(metadata recordMetadata) (contracts.Record, error)
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.openRecord,matrix/workforce/internal/ledger.Store.recordADFor
-  references=matrix/workforce/internal/contracts.Record,matrix/workforce/internal/ledger.ErrIntegrity,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.openRecord,matrix/workforce/internal/ledger.Store.recordADFor,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.metadata,matrix/workforce/internal/ledger.record,matrix/workforce/internal/ledger.recordMetadata,matrix/workforce/internal/ledger.s
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.OpenRecord
-  ^references=matrix/workforce/internal/ledger.Store.OpenRecord
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.Store.findCorrection kind=method
   digest=b3:0de57f6b25b1da2fbf9132c7ef1bb258aae5f32ef5add180e3c737a4d82fc08c file=workforce/internal/ledger/correction.go range=122:149 lang=go exported=false byte_range=3544:4490
   sig=func (s *Store) findCorrection(\n	ctx context.Context,\n	tx pgx.Tx,\n	request CorrectionRequest,\n) (bool, error)
 EDGES
-  references=matrix/workforce/internal/ledger.CorrectionRequest,matrix/workforce/internal/ledger.ErrConflict,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.correctionRecordID,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.materiallyUnsafe,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.sourceRecordID,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.createCorrectionInTransaction
-  ^references=matrix/workforce/internal/ledger.Store.createCorrectionInTransaction
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.Store.findMetadata kind=method
   digest=b3:c4e901399bf65a736c3b8b26712faa0fb80f5db34a7e968d6076b8d50feea411 file=workforce/internal/ledger/access.go range=181:213 lang=go exported=false byte_range=5504:6719
   sig=func (s *Store) findMetadata(\n	ctx context.Context,\n	tx pgx.Tx,\n	organizationID contracts.OrganizationID,\n	recordID contracts.RecordID,\n) (recordMetadata, error)
 EDGES
-  calls=matrix/workforce/internal/ledger.departmentPointer,matrix/workforce/internal/ledger.projectPointer,matrix/workforce/internal/ledger.seatPointer
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/ledger.ErrNotFound,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.accessSeat,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.department,matrix/workforce/internal/ledger.departmentPointer,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.metadata,matrix/workforce/internal/ledger.organizationID,matrix/workforce/internal/ledger.project,matrix/workforce/internal/ledger.projectPointer,matrix/workforce/internal/ledger.recordID,matrix/workforce/internal/ledger.recordMetadata,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.seatPointer,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.RecordAccess,matrix/workforce/internal/ledger.Store.reconcileInTransaction,matrix/workforce/internal/ledger.Store.recordAccessTx
-  ^references=matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.RecordAccess,matrix/workforce/internal/ledger.Store.reconcileInTransaction,matrix/workforce/internal/ledger.Store.recordAccessTx
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.Store.findRecordIdentity kind=method
   digest=b3:26511b1a07942b7e28a7be77435175304557bb52de8764afc6479df4031a5a3a file=workforce/internal/ledger/append.go range=149:171 lang=go exported=false byte_range=4463:5146
   sig=func (s *Store) findRecordIdentity(\n	ctx context.Context,\n	tx pgx.Tx,\n	prepared preparedRecord,\n) (bool, error)
 EDGES
-  references=matrix/workforce/internal/ledger.ErrConflict,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.canonicalHash,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.prepared,matrix/workforce/internal/ledger.preparedRecord,matrix/workforce/internal/ledger.record,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.appendPreparedTx
-  ^references=matrix/workforce/internal/ledger.Store.appendPreparedTx
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.Store.insertCorrection kind=method
   digest=b3:36a44bd3e477c845c6a67e3c59ce048a147ad32be80ff191a1b2ddce2fdb602b file=workforce/internal/ledger/correction.go range=151:169 lang=go exported=false byte_range=4492:5101
   sig=func (s *Store) insertCorrection(\n	ctx context.Context,\n	tx pgx.Tx,\n	request CorrectionRequest,\n	now time.Time,\n) error
 EDGES
-  references=matrix/workforce/internal/ledger.CorrectionRequest,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.createCorrectionInTransaction
-  ^references=matrix/workforce/internal/ledger.Store.createCorrectionInTransaction
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.Store.insertCorrectionTargets kind=method
   digest=b3:5a976cc861ed644b5d20be328d519107904d2b9c6fba8684129e838c0da00612 file=workforce/internal/ledger/correction.go range=171:219 lang=go exported=false byte_range=5103:6740
   sig=func (s *Store) insertCorrectionTargets(\n	ctx context.Context,\n	tx pgx.Tx,\n	request CorrectionRequest,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.persistCorrectionTargets
-  references=matrix/workforce/internal/ledger.CorrectionRequest,matrix/workforce/internal/ledger.ErrNotFound,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.persistCorrectionTargets,matrix/workforce/internal/ledger.correctionTarget,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.rows,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.target,matrix/workforce/internal/ledger.targets,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.createCorrectionInTransaction
-  ^references=matrix/workforce/internal/ledger.Store.createCorrectionInTransaction
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.Store.insertDenial kind=method
   digest=b3:b8edf07cebf9c16342b30cfb9a2a8490ec7b58e4ec90a1a8a601bc48352c80b1 file=workforce/internal/ledger/access.go range=281:307 lang=go exported=false byte_range=8598:9346
   sig=func (s *Store) insertDenial(\n	ctx context.Context,\n	tx pgx.Tx,\n	request OpenRequest,\n	now time.Time,\n) error
 EDGES
-  references=matrix/workforce/internal/ledger.OpenRequest,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.purpose,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.requester,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.sum,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.commitDenial
-  ^references=matrix/workforce/internal/ledger.Store.commitDenial
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.Store.insertProvenance kind=method
   digest=b3:64ae813e4bf9453f8b38d5f4832cbf7aab2dc89ad2da953f423f0fb05cfdd8fd file=workforce/internal/ledger/append.go range=200:234 lang=go exported=false byte_range=6359:7575
   sig=func (s *Store) insertProvenance(\n	ctx context.Context,\n	tx pgx.Tx,\n	record contracts.Record,\n	now time.Time,\n) error
 EDGES
-  references=matrix/workforce/internal/contracts.Record,matrix/workforce/internal/ledger.ErrIntegrity,matrix/workforce/internal/ledger.ErrNotFound,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.algorithm,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.digest,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.record,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.source,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.appendPreparedTx
-  ^references=matrix/workforce/internal/ledger.Store.appendPreparedTx
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.Store.insertRecord kind=method
   digest=b3:86a4063562d24759637e2b83ec77e0b7f8145d33ea45d0dd1f74c98bd97ae9fb file=workforce/internal/ledger/append.go range=173:198 lang=go exported=false byte_range=5148:6357
   sig=func (s *Store) insertRecord(ctx context.Context, tx pgx.Tx, prepared preparedRecord) error
 EDGES
-  calls=matrix/workforce/internal/ledger.optionalDepartmentID,matrix/workforce/internal/ledger.optionalProjectID,matrix/workforce/internal/ledger.optionalSeatID
-  references=matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.accessSeatID,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.departmentID,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.optionalDepartmentID,matrix/workforce/internal/ledger.optionalProjectID,matrix/workforce/internal/ledger.optionalSeatID,matrix/workforce/internal/ledger.prepared,matrix/workforce/internal/ledger.preparedRecord,matrix/workforce/internal/ledger.projectID,matrix/workforce/internal/ledger.record,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.appendPreparedTx
-  ^references=matrix/workforce/internal/ledger.Store.appendPreparedTx
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.Store.openRecord kind=method
   digest=b3:33d08b0fbc3d32dd90d530b7f82881ab15e4230b9f2fa668b566ebf404d93e7d file=workforce/internal/ledger/crypto.go range=37:55 lang=go exported=false byte_range=884:1537
   sig=func (s *Store) openRecord(\n	recordAD vault.AD,\n	sealed []byte,\n	expectedHash string,\n) (contracts.Record, error)
 EDGES
-  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical
-  references=matrix/vault.AD,matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.DecodeCanonical,matrix/workforce/internal/contracts.Record,matrix/workforce/internal/ledger.ErrIntegrity,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.canonical,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.expectedHash,matrix/workforce/internal/ledger.record,matrix/workforce/internal/ledger.recordAD,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.sealed,matrix/workforce/internal/ledger.sum
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.decryptMetadata
-  ^references=matrix/workforce/internal/ledger.Store.decryptMetadata
   ^defines=matrix/workforce/internal/ledger/crypto.go
 
 NODE id=matrix/workforce/internal/ledger.Store.persistCorrectionTargets kind=method
   digest=b3:b555bb61a72aeec66ea59f105e2afe6032fcacafe9c45025b2e56286877d567d file=workforce/internal/ledger/correction.go range=226:257 lang=go exported=false byte_range=6832:8032
   sig=func (s *Store) persistCorrectionTargets(\n	ctx context.Context,\n	tx pgx.Tx,\n	request CorrectionRequest,\n	targets []correctionTarget,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/ledger.correctionNoticeID
-  references=matrix/workforce/internal/ledger.CorrectionRequest,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.correctionNoticeID,matrix/workforce/internal/ledger.correctionTarget,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.noticeID,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.target,matrix/workforce/internal/ledger.targets,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.insertCorrectionTargets
-  ^references=matrix/workforce/internal/ledger.Store.insertCorrectionTargets
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.Store.prepareRecord kind=method
   digest=b3:75230de17b4dbb09538f27c93942167003a6b2a995ef1c2d41fe487fa5417596 file=workforce/internal/ledger/crypto.go range=20:35 lang=go exported=false byte_range=259:882
   sig=func (s *Store) prepareRecord(record contracts.Record) (preparedRecord, error)
 EDGES
-  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/ledger.Store.recordAD
-  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.Record,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.recordAD,matrix/workforce/internal/ledger.canonical,matrix/workforce/internal/ledger.canonicalHash,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.preparedRecord,matrix/workforce/internal/ledger.record,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.sealed,matrix/workforce/internal/ledger.sum
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.AppendRecord,matrix/workforce/internal/ledger.Store.CreateCorrection
-  ^references=matrix/workforce/internal/ledger.Store.AppendRecord,matrix/workforce/internal/ledger.Store.CreateCorrection
   ^defines=matrix/workforce/internal/ledger/crypto.go
 
 NODE id=matrix/workforce/internal/ledger.Store.reconcileInTransaction kind=method
   digest=b3:b67b6ff534d0fde522e8ad15a6ccb59d69886d24280146abcdad108a248cd86f file=workforce/internal/ledger/correction.go range=303:332 lang=go exported=false byte_range=9565:10626
   sig=func (s *Store) reconcileInTransaction(\n	ctx context.Context,\n	request ReconcileRequest,\n	now time.Time,\n) (CorrectionStatus, error)
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.applyResolution,matrix/workforce/internal/ledger.Store.closeResolvedCorrection,matrix/workforce/internal/ledger.Store.correctionStatusTx,matrix/workforce/internal/ledger.Store.findMetadata
-  references=matrix/workforce/internal/ledger.CorrectionStatus,matrix/workforce/internal/ledger.ReconcileRequest,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.applyResolution,matrix/workforce/internal/ledger.Store.closeResolvedCorrection,matrix/workforce/internal/ledger.Store.correctionStatusTx,matrix/workforce/internal/ledger.Store.findMetadata,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.status,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.ReconcileCorrection
-  ^references=matrix/workforce/internal/ledger.Store.ReconcileCorrection
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.Store.recordAD kind=method
   digest=b3:e6ee1c94c1d9c47f7aef9c5f0dc9119575f2c1e860e99c9d856b5ce6bb2fcc1e file=workforce/internal/ledger/crypto.go range=57:65 lang=go exported=false byte_range=1539:1724
   sig=func (s *Store) recordAD(record contracts.Record) vault.AD
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.recordADFor
-  references=matrix/vault.AD,matrix/workforce/internal/contracts.Record,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.recordADFor,matrix/workforce/internal/ledger.record,matrix/workforce/internal/ledger.s
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.prepareRecord
-  ^references=matrix/workforce/internal/ledger.Store.prepareRecord
   ^defines=matrix/workforce/internal/ledger/crypto.go
 
 NODE id=matrix/workforce/internal/ledger.Store.recordADFor kind=method
   digest=b3:a113cd1b7b5ed1ec2b3464d830d6c8590790793b18b078a65d85eb86c28a252a file=workforce/internal/ledger/crypto.go range=67:84 lang=go exported=false byte_range=1726:2202
   sig=func (s *Store) recordADFor(\n	organizationID contracts.OrganizationID,\n	recordID contracts.RecordID,\n	kind contracts.RecordKind,\n	projectID *contracts.ProjectID,\n	schemaVersion string,\n) vault.AD
 EDGES
-  references=matrix/vault.AD,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/contracts.RecordKind,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.kind,matrix/workforce/internal/ledger.organizationID,matrix/workforce/internal/ledger.project,matrix/workforce/internal/ledger.projectID,matrix/workforce/internal/ledger.recordID,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.schemaVersion
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.decryptMetadata,matrix/workforce/internal/ledger.Store.recordAD
-  ^references=matrix/workforce/internal/ledger.Store.decryptMetadata,matrix/workforce/internal/ledger.Store.recordAD
   ^defines=matrix/workforce/internal/ledger/crypto.go
 
 NODE id=matrix/workforce/internal/ledger.Store.recordAccessTx kind=method
   digest=b3:02c2d2b00ca3928d7b240f0c03b927cdde2a3514ce6a5002e77e73cdb276bcac file=workforce/internal/ledger/access.go range=142:179 lang=go exported=false byte_range=4294:5502
   sig=func (s *Store) recordAccessTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	source recordMetadata,\n	request AccessRequest,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/ledger.Store.findMetadata,matrix/workforce/internal/ledger.insertAccessEdge
-  references=matrix/workforce/internal/ledger.AccessCitation,matrix/workforce/internal/ledger.AccessDerivation,matrix/workforce/internal/ledger.AccessRequest,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.Store.findMetadata,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.insertAccessEdge,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.recordMetadata,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.source,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.RecordAccess
-  ^references=matrix/workforce/internal/ledger.Store.RecordAccess
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.Store.verifyExistingResolution kind=method
   digest=b3:f2777cda1df18ba88ebd941548e01bafaec28ac2390adaac855a056567a68808 file=workforce/internal/ledger/correction.go range=359:386 lang=go exported=false byte_range=11434:12369
   sig=func (s *Store) verifyExistingResolution(\n	ctx context.Context,\n	tx pgx.Tx,\n	request ReconcileRequest,\n) error
 EDGES
-  calls=matrix/workforce/internal/ledger.optionalRecordID,matrix/workforce/internal/ledger.optionalTextEqual
-  references=matrix/workforce/internal/ledger.ErrCorrectionClosed,matrix/workforce/internal/ledger.ErrNotFound,matrix/workforce/internal/ledger.ReconcileRequest,matrix/workforce/internal/ledger.Store,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.evidence,matrix/workforce/internal/ledger.idempotencyKey,matrix/workforce/internal/ledger.optionalRecordID,matrix/workforce/internal/ledger.optionalTextEqual,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.s,matrix/workforce/internal/ledger.state,matrix/workforce/internal/ledger.tx
   ^contains=matrix/workforce/internal/ledger.Store
-  ^calls=matrix/workforce/internal/ledger.Store.applyResolution
-  ^references=matrix/workforce/internal/ledger.Store.applyResolution
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.allowsClassification kind=func
   digest=b3:2feb2ee58d105d63ecb7b4afe4730eba98c1f9b10a5458296b65faeabdbf9f15 file=workforce/internal/ledger/access.go range=247:257 lang=go exported=false byte_range=7736:7958
   sig=func allowsClassification(\n	allowed []contracts.Classification,\n	required contracts.Classification,\n) bool
 EDGES
-  references=matrix/workforce/internal/contracts.Classification,matrix/workforce/internal/ledger.allowed,matrix/workforce/internal/ledger.classification,matrix/workforce/internal/ledger.required
-  ^calls=matrix/workforce/internal/ledger.authorize
-  ^references=matrix/workforce/internal/ledger.authorize
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.applyMigration kind=func
   digest=b3:d485b41136c70c67a6f342d5038ad29cb419f2be91f2faf24f1d5088d2136d2e file=workforce/internal/ledger/migrate.go range=73:117 lang=go exported=false byte_range=1841:3240
   sig=func applyMigration(\n	ctx context.Context,\n	connection *pgxpool.Conn,\n	item migration,\n	now time.Time,\n) error
 EDGES
-  references=matrix/workforce/internal/ledger.connection,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.existingChecksum,matrix/workforce/internal/ledger.item,matrix/workforce/internal/ledger.migration,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.tx
-  ^calls=matrix/workforce/internal/ledger.ApplyMigrations
-  ^references=matrix/workforce/internal/ledger.ApplyMigrations
   ^defines=matrix/workforce/internal/ledger/migrate.go
 
 NODE id=matrix/workforce/internal/ledger.authorize kind=func
   digest=b3:39ebbd6c293a59939bde891c94a965e05beb380c6e30645c9a4736a0884185da file=workforce/internal/ledger/access.go range=215:245 lang=go exported=false byte_range=6721:7734
   sig=func authorize(metadata recordMetadata, grant AccessGrant, now time.Time) error
 EDGES
-  calls=matrix/workforce/internal/ledger.allowsClassification
-  references=matrix/workforce/internal/contracts.ClassificationDepartment,matrix/workforce/internal/contracts.ClassificationProject,matrix/workforce/internal/contracts.ClassificationRestricted,matrix/workforce/internal/contracts.ClassificationSeat,matrix/workforce/internal/ledger.AccessGrant,matrix/workforce/internal/ledger.ErrNotFound,matrix/workforce/internal/ledger.allowsClassification,matrix/workforce/internal/ledger.grant,matrix/workforce/internal/ledger.metadata,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.recordMetadata
-  ^calls=matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.RecordAccess
-  ^references=matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.RecordAccess
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.correctionNoticeID kind=func
   digest=b3:cbbf4f3a9daedf39959f0c0a6e3e4064c033a5f3128a89d22c7f4e17d43b97c5 file=workforce/internal/ledger/correction.go range=482:489 lang=go exported=false byte_range=15473:15739
   sig=func correctionNoticeID(\n	tenantID string,\n	correctionID contracts.CorrectionID,\n	recordID contracts.RecordID,\n) string
 EDGES
-  references=matrix/workforce/internal/contracts.CorrectionID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/ledger.correctionID,matrix/workforce/internal/ledger.recordID,matrix/workforce/internal/ledger.sum,matrix/workforce/internal/ledger.tenantID
-  ^calls=matrix/workforce/internal/ledger.Store.persistCorrectionTargets
-  ^references=matrix/workforce/internal/ledger.Store.persistCorrectionTargets
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.correctionTarget kind=type
@@ -895,8 +723,6 @@ NODE id=matrix/workforce/internal/ledger.correctionTarget kind=type
   sig=type correctionTarget struct {\n	recordID	contracts.RecordID\n	seatID		contracts.SeatID\n}
 EDGES
   contains=matrix/workforce/internal/ledger.correctionTarget#recordID,matrix/workforce/internal/ledger.correctionTarget#seatID
-  references=matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/contracts.SeatID
-  ^references=matrix/workforce/internal/ledger.Store.insertCorrectionTargets,matrix/workforce/internal/ledger.Store.persistCorrectionTargets
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.correctionTarget#recordID kind=field
@@ -915,74 +741,48 @@ NODE id=matrix/workforce/internal/ledger.departmentPointer kind=func
   digest=b3:07f860e9adaa1c5dbaf007f6947e6de0b3bedfba467b539420c05a5746b374aa file=workforce/internal/ledger/access.go range=361:367 lang=go exported=false byte_range=11132:11306
   sig=func departmentPointer(value pgtype.Text) *contracts.DepartmentID
 EDGES
-  references=matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/ledger.converted,matrix/workforce/internal/ledger.value
-  ^calls=matrix/workforce/internal/ledger.Store.findMetadata
-  ^references=matrix/workforce/internal/ledger.Store.findMetadata
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.findAppendKey kind=func
   digest=b3:af591545ccf484e9c385ec0d3681edd42f15fe2905354b8998ddf6579b86bcb6 file=workforce/internal/ledger/append.go range=123:147 lang=go exported=false byte_range=3645:4461
   sig=func findAppendKey(\n	ctx context.Context,\n	tx pgx.Tx,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	idempotencyKey string,\n) (AppendResult, bool, error)
 EDGES
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/ledger.AppendResult,matrix/workforce/internal/ledger.canonicalHash,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.idempotencyKey,matrix/workforce/internal/ledger.organizationID,matrix/workforce/internal/ledger.recordID,matrix/workforce/internal/ledger.tenantID,matrix/workforce/internal/ledger.tx
-  ^calls=matrix/workforce/internal/ledger.Store.appendPreparedTx
-  ^references=matrix/workforce/internal/ledger.Store.appendPreparedTx
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.insertAccessEdge kind=func
   digest=b3:65669d96780b89ee2688322ae968186778b3c59ae7db37217416080ecf6595ca file=workforce/internal/ledger/access.go range=309:359 lang=go exported=false byte_range=9348:11130
   sig=func insertAccessEdge(\n	ctx context.Context,\n	tx pgx.Tx,\n	tenantID string,\n	source recordMetadata,\n	consumerRecordID *contracts.RecordID,\n	action AccessAction,\n	consumerSeatID contracts.SeatID,\n	purpose string,\n	idempotencyKey string,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/ledger.optionalRecordID,matrix/workforce/internal/ledger.optionalTextEqual
-  references=matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/ledger.AccessAction,matrix/workforce/internal/ledger.ErrConflict,matrix/workforce/internal/ledger.action,matrix/workforce/internal/ledger.command,matrix/workforce/internal/ledger.consumer,matrix/workforce/internal/ledger.consumerRecordID,matrix/workforce/internal/ledger.consumerSeatID,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.existingAction,matrix/workforce/internal/ledger.existingConsumer,matrix/workforce/internal/ledger.existingPurpose,matrix/workforce/internal/ledger.existingSeat,matrix/workforce/internal/ledger.existingSource,matrix/workforce/internal/ledger.idempotencyKey,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.optionalRecordID,matrix/workforce/internal/ledger.optionalTextEqual,matrix/workforce/internal/ledger.purpose,matrix/workforce/internal/ledger.recordMetadata,matrix/workforce/internal/ledger.source,matrix/workforce/internal/ledger.tenantID,matrix/workforce/internal/ledger.tx
-  ^calls=matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.recordAccessTx
-  ^references=matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.recordAccessTx
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.insertAppendKey kind=func
   digest=b3:e232f073b519d106385e836fb956b9af7dcf914f697e391880f5681139a97ee4 file=workforce/internal/ledger/append.go range=236:256 lang=go exported=false byte_range=7577:8147
   sig=func insertAppendKey(\n	ctx context.Context,\n	tx pgx.Tx,\n	tenantID string,\n	record contracts.Record,\n	prepared preparedRecord,\n	idempotencyKey string,\n	now time.Time,\n) error
 EDGES
-  references=matrix/workforce/internal/contracts.Record,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.idempotencyKey,matrix/workforce/internal/ledger.now,matrix/workforce/internal/ledger.prepared,matrix/workforce/internal/ledger.preparedRecord,matrix/workforce/internal/ledger.record,matrix/workforce/internal/ledger.tenantID,matrix/workforce/internal/ledger.tx
-  ^calls=matrix/workforce/internal/ledger.Store.appendPreparedTx
-  ^references=matrix/workforce/internal/ledger.Store.appendPreparedTx
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.loadMigrations kind=func
   digest=b3:dbed5ce1e7fc3a24528b20a70e5c79a4cb32a8dec13c9bfd6c9116fd8b5e7bbe file=workforce/internal/ledger/migrate.go range=119:121 lang=go exported=false byte_range=3242:3345
   sig=func loadMigrations() ([]migration, error)
 EDGES
-  calls=matrix/workforce/internal/ledger.loadMigrationsFrom
-  references=matrix/workforce/internal/ledger.loadMigrationsFrom,matrix/workforce/internal/ledger.migration,matrix/workforce/internal/ledger.migrationFiles
-  ^calls=matrix/workforce/internal/ledger.ApplyMigrations
-  ^references=matrix/workforce/internal/ledger.ApplyMigrations
   ^defines=matrix/workforce/internal/ledger/migrate.go
 
 NODE id=matrix/workforce/internal/ledger.loadMigrationsFrom kind=func
   digest=b3:9782a4ebed23d0d1e1c11a1fe17c0b929aba142731d305d4b63791403fd78bc6 file=workforce/internal/ledger/migrate.go range=123:164 lang=go exported=false byte_range=3347:4767
   sig=func loadMigrationsFrom(files fs.FS, directory string) ([]migration, error)
 EDGES
-  references=matrix/workforce/internal/ledger.available,matrix/workforce/internal/ledger.content,matrix/workforce/internal/ledger.directory,matrix/workforce/internal/ledger.duplicate,matrix/workforce/internal/ledger.entries,matrix/workforce/internal/ledger.entry,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.files,matrix/workforce/internal/ledger.found,matrix/workforce/internal/ledger.left,matrix/workforce/internal/ledger.migration,matrix/workforce/internal/ledger.parseErr,matrix/workforce/internal/ledger.prefix,matrix/workforce/internal/ledger.previous,matrix/workforce/internal/ledger.right,matrix/workforce/internal/ledger.seenVersions,matrix/workforce/internal/ledger.sum,matrix/workforce/internal/ledger.version
-  ^calls=matrix/workforce/internal/ledger.loadMigrations
-  ^references=matrix/workforce/internal/ledger.loadMigrations
   ^defines=matrix/workforce/internal/ledger/migrate.go
 
 NODE id=matrix/workforce/internal/ledger.lockAppendIdentities kind=func
   digest=b3:2a1d9f35fd8190722e6e715409b1bb0e2a01ec38b267afea16289000cc6fc8dd file=workforce/internal/ledger/append.go range=105:121 lang=go exported=false byte_range=2943:3643
   sig=func lockAppendIdentities(\n	ctx context.Context,\n	tx pgx.Tx,\n	tenantID string,\n	record contracts.Record,\n	idempotencyKey string,\n) error
 EDGES
-  references=matrix/workforce/internal/contracts.Record,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.idempotencyKey,matrix/workforce/internal/ledger.keyLock,matrix/workforce/internal/ledger.record,matrix/workforce/internal/ledger.recordLock,matrix/workforce/internal/ledger.tenantID,matrix/workforce/internal/ledger.tx
-  ^calls=matrix/workforce/internal/ledger.Store.appendPreparedTx
-  ^references=matrix/workforce/internal/ledger.Store.appendPreparedTx
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.lockCorrection kind=func
   digest=b3:477270fb372c344e25064c22c946df7cfe1ce113fcc22db8305188db563fe05a file=workforce/internal/ledger/correction.go range=108:120 lang=go exported=false byte_range=3134:3542
   sig=func lockCorrection(\n	ctx context.Context,\n	tx pgx.Tx,\n	tenantID string,\n	request CorrectionRequest,\n) error
 EDGES
-  references=matrix/workforce/internal/ledger.CorrectionRequest,matrix/workforce/internal/ledger.ctx,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.key,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.tenantID,matrix/workforce/internal/ledger.tx
-  ^calls=matrix/workforce/internal/ledger.Store.createCorrectionInTransaction
-  ^references=matrix/workforce/internal/ledger.Store.createCorrectionInTransaction
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.migration kind=type
@@ -990,7 +790,6 @@ NODE id=matrix/workforce/internal/ledger.migration kind=type
   sig=type migration struct {\n	version		int\n	name		string\n	checksum	string\n	sql		string\n}
 EDGES
   contains=matrix/workforce/internal/ledger.migration#checksum,matrix/workforce/internal/ledger.migration#name,matrix/workforce/internal/ledger.migration#sql,matrix/workforce/internal/ledger.migration#version
-  ^references=matrix/workforce/internal/ledger.applyMigration,matrix/workforce/internal/ledger.loadMigrations,matrix/workforce/internal/ledger.loadMigrationsFrom
   ^defines=matrix/workforce/internal/ledger/migrate.go
 
 NODE id=matrix/workforce/internal/ledger.migration#checksum kind=field
@@ -1021,59 +820,42 @@ NODE id=matrix/workforce/internal/ledger.migrationFiles kind=var
   digest=b3:6e280ccd7bc4c706c4a76d7af59fe0bb7bda90224e1608252eeedae359c16df1 file=workforce/internal/ledger/migrate.go range=22:23 lang=go exported=false byte_range=272:327
   sig=embed.FS
 EDGES
-  ^references=matrix/workforce/internal/ledger.loadMigrations
   ^defines=matrix/workforce/internal/ledger/migrate.go
 
 NODE id=matrix/workforce/internal/ledger.migrationLockID kind=const
   digest=b3:6e6a6f9bacdd8eb077b199d2b29fe351f53658075f7ee0df9d209d4be936bd98 file=workforce/internal/ledger/migrate.go range=20:20 lang=go exported=false byte_range=221:270
   sig=int64
 EDGES
-  ^references=matrix/workforce/internal/ledger.ApplyMigrations
   ^defines=matrix/workforce/internal/ledger/migrate.go
 
 NODE id=matrix/workforce/internal/ledger.optionalDepartmentID kind=func
   digest=b3:1b9f16c957ae3c306320592d773a17aa26275ba9d4ce0df04579d87ae992b5c3 file=workforce/internal/ledger/append.go range=266:272 lang=go exported=false byte_range=8358:8509
   sig=func optionalDepartmentID(value *contracts.DepartmentID) *string
 EDGES
-  references=matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/ledger.converted,matrix/workforce/internal/ledger.value
-  ^calls=matrix/workforce/internal/ledger.Store.insertRecord
-  ^references=matrix/workforce/internal/ledger.Store.insertRecord
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.optionalProjectID kind=func
   digest=b3:3b68ff52f4d6b6407caa780b51fa89c69b587a403bf04a612f6a10c50372e6ac file=workforce/internal/ledger/append.go range=282:288 lang=go exported=false byte_range=8652:8797
   sig=func optionalProjectID(value *contracts.ProjectID) *string
 EDGES
-  references=matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/ledger.converted,matrix/workforce/internal/ledger.value
-  ^calls=matrix/workforce/internal/ledger.Store.insertRecord
-  ^references=matrix/workforce/internal/ledger.Store.insertRecord
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.optionalRecordID kind=func
   digest=b3:f624254daccfa23a096c541fc3e0ffad6bc20e432329f3d86ba1b59660d04c28 file=workforce/internal/ledger/access.go range=385:391 lang=go exported=false byte_range=11633:11776
   sig=func optionalRecordID(value *contracts.RecordID) *string
 EDGES
-  references=matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/ledger.converted,matrix/workforce/internal/ledger.value
-  ^calls=matrix/workforce/internal/ledger.Store.applyResolution,matrix/workforce/internal/ledger.Store.verifyExistingResolution,matrix/workforce/internal/ledger.insertAccessEdge
-  ^references=matrix/workforce/internal/ledger.Store.applyResolution,matrix/workforce/internal/ledger.Store.verifyExistingResolution,matrix/workforce/internal/ledger.insertAccessEdge
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.optionalSeatID kind=func
   digest=b3:40f9334d8391aeb98c3590d85ed288d0f36767de85f8e91a2c5a31c3a5214dae file=workforce/internal/ledger/append.go range=274:280 lang=go exported=false byte_range=8511:8650
   sig=func optionalSeatID(value *contracts.SeatID) *string
 EDGES
-  references=matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/ledger.converted,matrix/workforce/internal/ledger.value
-  ^calls=matrix/workforce/internal/ledger.Store.insertRecord
-  ^references=matrix/workforce/internal/ledger.Store.insertRecord
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.optionalTextEqual kind=func
   digest=b3:6b6eccc653b85b0040c7bb5d6835d5d26fb31975529c084791fc268020537d4d file=workforce/internal/ledger/access.go range=393:398 lang=go exported=false byte_range=11778:11954
   sig=func optionalTextEqual(existing pgtype.Text, expected *string) bool
 EDGES
-  references=matrix/workforce/internal/ledger.existing,matrix/workforce/internal/ledger.expected
-  ^calls=matrix/workforce/internal/ledger.Store.verifyExistingResolution,matrix/workforce/internal/ledger.insertAccessEdge
-  ^references=matrix/workforce/internal/ledger.Store.verifyExistingResolution,matrix/workforce/internal/ledger.insertAccessEdge
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.preparedRecord kind=type
@@ -1081,8 +863,6 @@ NODE id=matrix/workforce/internal/ledger.preparedRecord kind=type
   sig=type preparedRecord struct {\n	record		contracts.Record\n	canonicalHash	contracts.ContentHash\n	sealed		[]byte\n}
 EDGES
   contains=matrix/workforce/internal/ledger.preparedRecord#canonicalHash,matrix/workforce/internal/ledger.preparedRecord#record,matrix/workforce/internal/ledger.preparedRecord#sealed
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.Record
-  ^references=matrix/workforce/internal/ledger.Store.appendInTransaction,matrix/workforce/internal/ledger.Store.appendPreparedTx,matrix/workforce/internal/ledger.Store.createCorrectionInTransaction,matrix/workforce/internal/ledger.Store.findRecordIdentity,matrix/workforce/internal/ledger.Store.insertRecord,matrix/workforce/internal/ledger.Store.prepareRecord,matrix/workforce/internal/ledger.insertAppendKey
   ^defines=matrix/workforce/internal/ledger/crypto.go
 
 NODE id=matrix/workforce/internal/ledger.preparedRecord#canonicalHash kind=field
@@ -1107,9 +887,6 @@ NODE id=matrix/workforce/internal/ledger.projectPointer kind=func
   digest=b3:07779857f8a80edf5534b4a87b19d59a68204c841a48592039dbb82c9edb3c6d file=workforce/internal/ledger/access.go range=377:383 lang=go exported=false byte_range=11466:11631
   sig=func projectPointer(value pgtype.Text) *contracts.ProjectID
 EDGES
-  references=matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/ledger.converted,matrix/workforce/internal/ledger.value
-  ^calls=matrix/workforce/internal/ledger.Store.findMetadata
-  ^references=matrix/workforce/internal/ledger.Store.findMetadata
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.recordMetadata kind=type
@@ -1117,8 +894,6 @@ NODE id=matrix/workforce/internal/ledger.recordMetadata kind=type
   sig=type recordMetadata struct {\n	organizationID	contracts.OrganizationID\n	recordID	contracts.RecordID\n	kind		contracts.RecordKind\n	authorSeatID	contracts.SeatID\n	departmentID	*contracts.DepartmentID\n	accessSeatID	*contracts.SeatID\n	projectID	*contracts.ProjectID\n	purpose		string\n	classification	contracts.Classification\n	schemaVersion	string\n	canonicalHash	string\n	sealed		[]byte\n}
 EDGES
   contains=matrix/workforce/internal/ledger.recordMetadata#accessSeatID,matrix/workforce/internal/ledger.recordMetadata#authorSeatID,matrix/workforce/internal/ledger.recordMetadata#canonicalHash,matrix/workforce/internal/ledger.recordMetadata#classification,matrix/workforce/internal/ledger.recordMetadata#departmentID,matrix/workforce/internal/ledger.recordMetadata#kind,matrix/workforce/internal/ledger.recordMetadata#organizationID,matrix/workforce/internal/ledger.recordMetadata#projectID,matrix/workforce/internal/ledger.recordMetadata#purpose,matrix/workforce/internal/ledger.recordMetadata#recordID,matrix/workforce/internal/ledger.recordMetadata#schemaVersion,matrix/workforce/internal/ledger.recordMetadata#sealed
-  references=matrix/workforce/internal/contracts.Classification,matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.ProjectID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/contracts.RecordKind,matrix/workforce/internal/contracts.SeatID
-  ^references=matrix/workforce/internal/ledger.Store.decryptMetadata,matrix/workforce/internal/ledger.Store.findMetadata,matrix/workforce/internal/ledger.Store.recordAccessTx,matrix/workforce/internal/ledger.authorize,matrix/workforce/internal/ledger.insertAccessEdge
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.recordMetadata#accessSeatID kind=field
@@ -1197,54 +972,36 @@ NODE id=matrix/workforce/internal/ledger.retryableTransaction kind=func
   digest=b3:f59c0ce1f181f2b9529bc0e90d4f2cdc37760f9d94f6277dd949642184fc42d6 file=workforce/internal/ledger/append.go range=258:264 lang=go exported=false byte_range=8149:8356
   sig=func retryableTransaction(err error) bool
 EDGES
-  references=matrix/workforce/internal/ledger.databaseError,matrix/workforce/internal/ledger.err
-  ^calls=matrix/workforce/internal/ledger.Store.AppendRecord,matrix/workforce/internal/ledger.Store.CreateCorrection,matrix/workforce/internal/ledger.Store.ReconcileCorrection
-  ^references=matrix/workforce/internal/ledger.Store.AppendRecord,matrix/workforce/internal/ledger.Store.CreateCorrection,matrix/workforce/internal/ledger.Store.ReconcileCorrection
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.seatPointer kind=func
   digest=b3:c7c9d3872957b8c5bbd2ac43a7acae0dd031ac4fa3670a35fb3bf3d5a23108de file=workforce/internal/ledger/access.go range=369:375 lang=go exported=false byte_range=11308:11464
   sig=func seatPointer(value pgtype.Text) *contracts.SeatID
 EDGES
-  references=matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/ledger.converted,matrix/workforce/internal/ledger.value
-  ^calls=matrix/workforce/internal/ledger.Store.findMetadata
-  ^references=matrix/workforce/internal/ledger.Store.findMetadata
   ^defines=matrix/workforce/internal/ledger/access.go
 
 NODE id=matrix/workforce/internal/ledger.transactionAttempts kind=const
   digest=b3:492110566b230785b16303a031494b20fc563fa37ffecc8ffbbca98afd390d0b file=workforce/internal/ledger/append.go range=15:15 lang=go exported=false byte_range=172:195
   sig=untyped int
 EDGES
-  ^references=matrix/workforce/internal/ledger.Store.AppendRecord,matrix/workforce/internal/ledger.Store.CreateCorrection,matrix/workforce/internal/ledger.Store.ReconcileCorrection
   ^defines=matrix/workforce/internal/ledger/append.go
 
 NODE id=matrix/workforce/internal/ledger.validateCorrectionRequest kind=func
   digest=b3:a230f75992fee1b806d90c41611697078446c45f9ebd2ac3ccfe9cb3c1377371 file=workforce/internal/ledger/correction.go range=43:67 lang=go exported=false byte_range=1069:1856
   sig=func validateCorrectionRequest(request CorrectionRequest) error
 EDGES
-  calls=matrix/workforce/internal/ledger.validateToken
-  references=matrix/workforce/internal/contracts.RecordCorrection,matrix/workforce/internal/ledger.CorrectionRequest,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.foundSource,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.source,matrix/workforce/internal/ledger.validateToken
-  ^calls=matrix/workforce/internal/ledger.Store.CreateCorrection
-  ^references=matrix/workforce/internal/ledger.Store.CreateCorrection
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.validateReconcileRequest kind=func
   digest=b3:7e7caa5a9ce484a7a810e7b1a27c4a19b49006c45beb17e0abd16ad83760e753 file=workforce/internal/ledger/correction.go range=281:301 lang=go exported=false byte_range=8788:9563
   sig=func validateReconcileRequest(request ReconcileRequest) error
 EDGES
-  calls=matrix/workforce/internal/ledger.ReconciliationState.Valid,matrix/workforce/internal/ledger.validateToken
-  references=matrix/workforce/internal/ledger.ReconcileRequest,matrix/workforce/internal/ledger.ReconciliationApplied,matrix/workforce/internal/ledger.ReconciliationState.Valid,matrix/workforce/internal/ledger.err,matrix/workforce/internal/ledger.request,matrix/workforce/internal/ledger.validateToken
-  ^calls=matrix/workforce/internal/ledger.Store.ReconcileCorrection
-  ^references=matrix/workforce/internal/ledger.Store.ReconcileCorrection
   ^defines=matrix/workforce/internal/ledger/correction.go
 
 NODE id=matrix/workforce/internal/ledger.validateToken kind=func
   digest=b3:dcbc1d23f569dd88f929a6723180cbf757555544763576ee6d772f62df31a911 file=workforce/internal/ledger/types.go range=184:197 lang=go exported=false byte_range=5820:6256
   sig=func validateToken(name, value string) error
 EDGES
-  references=matrix/workforce/internal/ledger.name,matrix/workforce/internal/ledger.r,matrix/workforce/internal/ledger.value
-  ^calls=matrix/workforce/internal/ledger.Store.AppendRecord,matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.RecordAccess,matrix/workforce/internal/ledger.validateCorrectionRequest,matrix/workforce/internal/ledger.validateReconcileRequest
-  ^references=matrix/workforce/internal/ledger.Store.AppendRecord,matrix/workforce/internal/ledger.Store.OpenRecord,matrix/workforce/internal/ledger.Store.RecordAccess,matrix/workforce/internal/ledger.validateCorrectionRequest,matrix/workforce/internal/ledger.validateReconcileRequest
   ^defines=matrix/workforce/internal/ledger/types.go
 
 NODE id=matrix/workforce/internal/ledger/access.go kind=file

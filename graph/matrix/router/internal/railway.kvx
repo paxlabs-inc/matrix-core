@@ -1,12 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/router/internal/railway kind=package
   digest=b3:6acfd034cc8a97c120cd80a4b2628b214f75d78cd2e718e60a3c899fe1ac900d file=router/internal/railway range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/railway/provisioner.go,matrix/router/internal/railway/railway.go
-  imports=matrix/router/internal/provision
   ^contains=mod:matrix/router
-  ^imports=matrix/router/cmd/matrix-router,matrix/router/internal/shard
 
 NODE id=matrix/router/internal/railway.Client kind=type
   digest=b3:136e4c5f6594aa4ceec3eb31822f6d64039d2e2a0e5502127f106083d4f19de5 file=router/internal/railway/railway.go range=53:61 lang=go exported=true byte_range=1999:2241
@@ -14,7 +12,6 @@ NODE id=matrix/router/internal/railway.Client kind=type
   doc=Client makes authenticated calls to the Railway GraphQL API, scoped\nto one project + environment.
 EDGES
   contains=matrix/router/internal/railway.Client#endpoint,matrix/router/internal/railway.Client#environmentID,matrix/router/internal/railway.Client#hc,matrix/router/internal/railway.Client#projectID,matrix/router/internal/railway.Client#token,matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.Client.Volume,matrix/router/internal/railway.Client.WithEndpoint,matrix/router/internal/railway.Client.do
-  ^references=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.Client.Volume,matrix/router/internal/railway.Client.WithEndpoint,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.New,matrix/router/internal/railway.Provisioner
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client#endpoint kind=field
@@ -52,11 +49,7 @@ NODE id=matrix/router/internal/railway.Client.CreateService kind=method
   sig=func (c *Client) CreateService(ctx context.Context, name, image string, env map[string]string) (*Service, error)
   doc=CreateService provisions a new service in the client's\nproject/environment from an image source, with the given\nenvironment variables baked in at create time (one deployment, not\na create-then-redeploy pair).
 EDGES
-  calls=matrix/router/internal/railway.Client.do
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.Service,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.env,matrix/router/internal/railway.err,matrix/router/internal/railway.image,matrix/router/internal/railway.name,matrix/router/internal/railway.out,matrix/router/internal/railway.q,matrix/router/internal/railway.vars
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure
-  ^references=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.CreateVolume kind=method
@@ -64,11 +57,7 @@ NODE id=matrix/router/internal/railway.Client.CreateVolume kind=method
   sig=func (c *Client) CreateVolume(ctx context.Context, serviceID, mountPath string) (*Volume, error)
   doc=CreateVolume attaches a fresh persistent volume to the service at\nmountPath. Railway allows exactly ONE volume mount per service.
 EDGES
-  calls=matrix/router/internal/railway.Client.do
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.Volume,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mountPath,matrix/router/internal/railway.out,matrix/router/internal/railway.q,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.vars
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.Ensure
-  ^references=matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.Ensure
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.DeleteService kind=method
@@ -76,11 +65,7 @@ NODE id=matrix/router/internal/railway.Client.DeleteService kind=method
   sig=func (c *Client) DeleteService(ctx context.Context, serviceID string) error
   doc=DeleteService tears the service down.
 EDGES
-  calls=matrix/router/internal/railway.Client.do
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.q,matrix/router/internal/railway.serviceID
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.Destroy
-  ^references=matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.Destroy
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.DeleteVolume kind=method
@@ -88,11 +73,7 @@ NODE id=matrix/router/internal/railway.Client.DeleteVolume kind=method
   sig=func (c *Client) DeleteVolume(ctx context.Context, volumeID string) error
   doc=DeleteVolume tears the volume down.
 EDGES
-  calls=matrix/router/internal/railway.Client.do
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.q,matrix/router/internal/railway.volumeID
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy
-  ^references=matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.FindService kind=method
@@ -100,11 +81,7 @@ NODE id=matrix/router/internal/railway.Client.FindService kind=method
   sig=func (c *Client) FindService(ctx context.Context, name string) (*Service, error)
   doc=FindService returns the uniquely named service in this client's project.
 EDGES
-  calls=matrix/router/internal/railway.Client.do
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.ErrUpstream,matrix/router/internal/railway.Service,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.edge,matrix/router/internal/railway.err,matrix/router/internal/railway.found,matrix/router/internal/railway.name,matrix/router/internal/railway.out,matrix/router/internal/railway.q,matrix/router/internal/railway.svc
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.FindService
-  ^references=matrix/router/internal/railway.Provisioner.FindService
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.FindVolume kind=method
@@ -112,11 +89,7 @@ NODE id=matrix/router/internal/railway.Client.FindVolume kind=method
   sig=func (c *Client) FindVolume(ctx context.Context, serviceID, mountPath string) (*Volume, error)
   doc=FindVolume returns the one volume attached to serviceID at mountPath in\nthis client's environment.
 EDGES
-  calls=matrix/router/internal/railway.Client.do
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.ErrUpstream,matrix/router/internal/railway.Volume,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.found,matrix/router/internal/railway.instance,matrix/router/internal/railway.instanceEdge,matrix/router/internal/railway.mountPath,matrix/router/internal/railway.out,matrix/router/internal/railway.q,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.volume,matrix/router/internal/railway.volumeEdge
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.FindVolume
-  ^references=matrix/router/internal/railway.Provisioner.FindVolume
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.LatestDeployment kind=method
@@ -124,22 +97,14 @@ NODE id=matrix/router/internal/railway.Client.LatestDeployment kind=method
   sig=func (c *Client) LatestDeployment(ctx context.Context, serviceID string) (*Deployment, error)
   doc=LatestDeployment returns the service's most recent deployment, or\nErrNotFound when the service has none yet.
 EDGES
-  calls=matrix/router/internal/railway.Client.do
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.Deployment,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.out,matrix/router/internal/railway.q,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.vars
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.waitDeployed
-  ^references=matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.waitDeployed
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.Service kind=method
   digest=b3:e8b8484101a1cc65a26fdace0918c3db488caa86d92a93943d87bfdb233820e6 file=router/internal/railway/railway.go range=187:196 lang=go exported=true byte_range=5952:6277
   sig=func (c *Client) Service(ctx context.Context, id string) (*Service, error)
 EDGES
-  calls=matrix/router/internal/railway.Client.do
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.Service,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.id,matrix/router/internal/railway.out,matrix/router/internal/railway.q
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.ServiceAbsent
-  ^references=matrix/router/internal/railway.Provisioner.ServiceAbsent
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.UpsertVariables kind=method
@@ -147,22 +112,14 @@ NODE id=matrix/router/internal/railway.Client.UpsertVariables kind=method
   sig=func (c *Client) UpsertVariables(ctx context.Context, serviceID string, env map[string]string) error
   doc=UpsertVariables merges variables into an existing service instance. Railway\ndeploys the resulting staged change by default; replace is deliberately\nomitted so unrelated user-service configuration is preserved.
 EDGES
-  calls=matrix/router/internal/railway.Client.do
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.env,matrix/router/internal/railway.q,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.vars
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.UpdateVariables
-  ^references=matrix/router/internal/railway.Provisioner.UpdateVariables
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.Volume kind=method
   digest=b3:6a7f2fbd3d63401deb0a5f2b76401a1cf02bffc4e785ea2cb81155fdeca62078 file=router/internal/railway/railway.go range=198:221 lang=go exported=true byte_range=6279:6922
   sig=func (c *Client) Volume(ctx context.Context, id string) (*Volume, error)
 EDGES
-  calls=matrix/router/internal/railway.Client.do
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.Volume,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.edge,matrix/router/internal/railway.err,matrix/router/internal/railway.id,matrix/router/internal/railway.out,matrix/router/internal/railway.q,matrix/router/internal/railway.v
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Provisioner.VolumeAbsent
-  ^references=matrix/router/internal/railway.Provisioner.VolumeAbsent
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Client.WithEndpoint kind=method
@@ -170,7 +127,6 @@ NODE id=matrix/router/internal/railway.Client.WithEndpoint kind=method
   sig=func (c *Client) WithEndpoint(ep string) *Client
   doc=WithEndpoint overrides the API base URL — used by tests with mock\nservers. Returns *Client for chaining.
 EDGES
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.c,matrix/router/internal/railway.ep
   ^contains=matrix/router/internal/railway.Client
   ^defines=matrix/router/internal/railway/railway.go
 
@@ -179,11 +135,7 @@ NODE id=matrix/router/internal/railway.Client.do kind=method
   sig=func (c *Client) do(ctx context.Context, query string, variables map[string]any, out any) error
   doc=do executes a GraphQL request, decoding response.data into out (nil\nto discard). Maps HTTP 401/403 and "not authorized"/"not found"\nGraphQL errors to sentinel errors for clean callsite branching —\nRailway returns most application errors as 200s with an errors\narray.
 EDGES
-  calls=matrix/router/internal/railway.truncate
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.ErrUnauthorized,matrix/router/internal/railway.ErrUncertain,matrix/router/internal/railway.ErrUpstream,matrix/router/internal/railway.buf,matrix/router/internal/railway.c,matrix/router/internal/railway.ctx,matrix/router/internal/railway.envelope,matrix/router/internal/railway.err,matrix/router/internal/railway.gqlError,matrix/router/internal/railway.gqlRequest,matrix/router/internal/railway.lower,matrix/router/internal/railway.msg,matrix/router/internal/railway.out,matrix/router/internal/railway.query,matrix/router/internal/railway.req,matrix/router/internal/railway.resp,matrix/router/internal/railway.respBody,matrix/router/internal/railway.truncate,matrix/router/internal/railway.variables
   ^contains=matrix/router/internal/railway.Client
-  ^calls=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.Client.Volume
-  ^references=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.Client.Volume
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.DefaultEndpoint kind=const
@@ -191,7 +143,6 @@ NODE id=matrix/router/internal/railway.DefaultEndpoint kind=const
   sig=untyped string
   doc=DefaultEndpoint is the public GraphQL API base. Override via\nWithEndpoint for local mock servers.
 EDGES
-  ^references=matrix/router/internal/railway.New
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.DeployStatusCrashed kind=const
@@ -199,7 +150,6 @@ NODE id=matrix/router/internal/railway.DeployStatusCrashed kind=const
   sig=untyped string
   doc=Deployment statuses Railway reports (subset the router dispatches on).
 EDGES
-  ^references=matrix/router/internal/railway.Provisioner.waitDeployed
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.DeployStatusFailed kind=const
@@ -207,7 +157,6 @@ NODE id=matrix/router/internal/railway.DeployStatusFailed kind=const
   sig=untyped string
   doc=Deployment statuses Railway reports (subset the router dispatches on).
 EDGES
-  ^references=matrix/router/internal/railway.Provisioner.waitDeployed
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.DeployStatusSleeping kind=const
@@ -215,7 +164,6 @@ NODE id=matrix/router/internal/railway.DeployStatusSleeping kind=const
   sig=untyped string
   doc=Deployment statuses Railway reports (subset the router dispatches on).
 EDGES
-  ^references=matrix/router/internal/railway.Deployment.Live
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.DeployStatusSuccess kind=const
@@ -223,7 +171,6 @@ NODE id=matrix/router/internal/railway.DeployStatusSuccess kind=const
   sig=untyped string
   doc=Deployment statuses Railway reports (subset the router dispatches on).
 EDGES
-  ^references=matrix/router/internal/railway.Deployment.Live
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Deployment kind=type
@@ -232,7 +179,6 @@ NODE id=matrix/router/internal/railway.Deployment kind=type
   doc=Deployment is the subset of Railway's deployment object the router\ncares about.
 EDGES
   contains=matrix/router/internal/railway.Deployment#ID,matrix/router/internal/railway.Deployment#Status,matrix/router/internal/railway.Deployment.Live
-  ^references=matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Deployment.Live
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Deployment#ID kind=field
@@ -252,10 +198,7 @@ NODE id=matrix/router/internal/railway.Deployment.Live kind=method
   sig=func (d *Deployment) Live() bool
   doc=Live reports whether the deployment serves (or will serve on wake)\ntraffic: SUCCESS is running; SLEEPING is a Serverless-slept service\nthat revives on the first inbound packet.
 EDGES
-  references=matrix/router/internal/railway.DeployStatusSleeping,matrix/router/internal/railway.DeployStatusSuccess,matrix/router/internal/railway.Deployment,matrix/router/internal/railway.d
   ^contains=matrix/router/internal/railway.Deployment
-  ^calls=matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.waitDeployed
-  ^references=matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.waitDeployed
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.ErrNotFound kind=var
@@ -263,7 +206,6 @@ NODE id=matrix/router/internal/railway.ErrNotFound kind=var
   sig=error
   doc=Sentinel errors. Callers errors.Is to dispatch on these; the\nProvisioner maps them onto the provision package's neutral ones.
 EDGES
-  ^references=matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Client.Volume,matrix/router/internal/railway.Client.do,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.ServiceAbsent,matrix/router/internal/railway.Provisioner.VolumeAbsent,matrix/router/internal/railway.Provisioner.waitDeployed,matrix/router/internal/railway.mapErr
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.ErrUnauthorized kind=var
@@ -271,7 +213,6 @@ NODE id=matrix/router/internal/railway.ErrUnauthorized kind=var
   sig=error
   doc=Sentinel errors. Callers errors.Is to dispatch on these; the\nProvisioner maps them onto the provision package's neutral ones.
 EDGES
-  ^references=matrix/router/internal/railway.Client.do,matrix/router/internal/railway.mapErr
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.ErrUncertain kind=var
@@ -279,7 +220,6 @@ NODE id=matrix/router/internal/railway.ErrUncertain kind=var
   sig=error
   doc=Sentinel errors. Callers errors.Is to dispatch on these; the\nProvisioner maps them onto the provision package's neutral ones.
 EDGES
-  ^references=matrix/router/internal/railway.Client.do,matrix/router/internal/railway.mapErr
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.ErrUpstream kind=var
@@ -287,7 +227,6 @@ NODE id=matrix/router/internal/railway.ErrUpstream kind=var
   sig=error
   doc=Sentinel errors. Callers errors.Is to dispatch on these; the\nProvisioner maps them onto the provision package's neutral ones.
 EDGES
-  ^references=matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.do
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.New kind=func
@@ -295,9 +234,6 @@ NODE id=matrix/router/internal/railway.New kind=func
   sig=func New(token, projectID, environmentID string) *Client
   doc=New constructs a Client. token is the RAILWAY_API_TOKEN; projectID +\nenvironmentID scope every operation (RAILWAY_PROJECT_ID /\nRAILWAY_ENVIRONMENT_ID). Uses an internal http.Client with 30s\ndefault timeout; long waits (deployment readiness) poll with their\nown context.
 EDGES
-  references=matrix/router/internal/railway.Client,matrix/router/internal/railway.DefaultEndpoint,matrix/router/internal/railway.environmentID,matrix/router/internal/railway.projectID,matrix/router/internal/railway.token
-  ^calls=matrix/router/cmd/matrix-router.main,matrix/router/internal/shard.Load
-  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/shard.Load
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Provisioner kind=type
@@ -307,8 +243,6 @@ NODE id=matrix/router/internal/railway.Provisioner kind=type
 EDGES
   contains=matrix/router/internal/railway.Provisioner#Client,matrix/router/internal/railway.Provisioner#Image,matrix/router/internal/railway.Provisioner#ProbeInterval,matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.FindVolume,matrix/router/internal/railway.Provisioner.ServiceAbsent,matrix/router/internal/railway.Provisioner.ServiceName,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.UpdateVariables,matrix/router/internal/railway.Provisioner.VolumeAbsent,matrix/router/internal/railway.Provisioner.WaitReady,matrix/router/internal/railway.Provisioner.Wake,matrix/router/internal/railway.Provisioner.WakeOnRequest,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.Provisioner.waitDeployed
   implements=matrix/router/internal/provision.Provisioner,matrix/router/internal/provision.Recoverable,matrix/router/internal/provision.VariableUpdater
-  references=matrix/router/internal/railway.Client
-  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.FindVolume,matrix/router/internal/railway.Provisioner.ServiceAbsent,matrix/router/internal/railway.Provisioner.ServiceName,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.UpdateVariables,matrix/router/internal/railway.Provisioner.VolumeAbsent,matrix/router/internal/railway.Provisioner.WaitReady,matrix/router/internal/railway.Provisioner.Wake,matrix/router/internal/railway.Provisioner.WakeOnRequest,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.Provisioner.waitDeployed,matrix/router/internal/railway._,matrix/router/internal/shard.Load
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner#Client kind=field
@@ -335,40 +269,28 @@ NODE id=matrix/router/internal/railway.Provisioner.CreateService kind=method
   digest=b3:179ee6ca527d3156679ccc77499871c24ba67f9a9e780040de146fdf8fbd5298 file=router/internal/railway/provisioner.go range=101:110 lang=go exported=true byte_range=3489:3898
   sig=func (p *Provisioner) CreateService(ctx context.Context, req provision.CreateRequest) (*provision.Env, error)
 EDGES
-  calls=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/provision.CreateRequest,matrix/router/internal/provision.Env,matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.req,matrix/router/internal/railway.svc
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.ensureRailway
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.CreateVolume kind=method
   digest=b3:70229b07add3ab3ac27f1ca3009b434cf7b195cf449dcee2d07ada0e02780368 file=router/internal/railway/provisioner.go range=112:118 lang=go exported=true byte_range=3900:4131
   sig=func (p *Provisioner) CreateVolume(ctx context.Context, serviceID, mountPath string) (string, error)
 EDGES
-  calls=matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.mountPath,matrix/router/internal/railway.p,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.vol
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.ensureRailway
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.DeleteService kind=method
   digest=b3:fba05e16b4eb40434aab7aed52f1374cfdf9343756891caaff6220a87da35077 file=router/internal/railway/provisioner.go range=147:149 lang=go exported=true byte_range=4954:5093
   sig=func (p *Provisioner) DeleteService(ctx context.Context, serviceID string) error
 EDGES
-  calls=matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.serviceID
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.destroyRailway
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.DeleteVolume kind=method
   digest=b3:391db3fac740c7b430810817cfed67c6374fe48a875e0119a9922749b8b87e3f file=router/internal/railway/provisioner.go range=151:153 lang=go exported=true byte_range=5095:5230
   sig=func (p *Provisioner) DeleteVolume(ctx context.Context, volumeID string) error
 EDGES
-  calls=matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.volumeID
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.destroyRailway
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.Destroy kind=method
@@ -376,10 +298,7 @@ NODE id=matrix/router/internal/railway.Provisioner.Destroy kind=method
   sig=func (p *Provisioner) Destroy(ctx context.Context, ref provision.Ref) error
   doc=Destroy deletes the service, then best-effort deletes the volume\n(Railway does not cascade volume deletion with the service).
 EDGES
-  calls=matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/provision.Ref,matrix/router/internal/railway.Client.DeleteService,matrix/router/internal/railway.Client.DeleteVolume,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.ref
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.deleteUser
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.Ensure kind=method
@@ -387,50 +306,35 @@ NODE id=matrix/router/internal/railway.Provisioner.Ensure kind=method
   sig=func (p *Provisioner) Ensure(ctx context.Context, req provision.CreateRequest) (*provision.Env, error)
   doc=Ensure provisions the per-user service + volume and blocks until the\nfirst deployment is live (or ctx expires). The caller's provision\nbudget (admin.ProvisionTimeout) bounds the wait.
 EDGES
-  calls=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.Provisioner.waitDeployed,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/provision.CreateRequest,matrix/router/internal/provision.Env,matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.Provisioner.waitDeployed,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway.ctx,matrix/router/internal/railway.env,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.name,matrix/router/internal/railway.p,matrix/router/internal/railway.req,matrix/router/internal/railway.svc,matrix/router/internal/railway.vol
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.FindService kind=method
   digest=b3:2b8fb73369f937f78e16a17c98c171f4728c8857ddbba60413bd499480b6adda file=router/internal/railway/provisioner.go range=85:91 lang=go exported=true byte_range=3031:3258
   sig=func (p *Provisioner) FindService(ctx context.Context, name string) (*provision.Env, error)
 EDGES
-  calls=matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/provision.Env,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.name,matrix/router/internal/railway.p,matrix/router/internal/railway.svc
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.ensureRailway
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.FindVolume kind=method
   digest=b3:d0ef32adfcb0632884e86f42b3f7cb715ca0887eb871fcddce14df2dbb0fdcff file=router/internal/railway/provisioner.go range=93:99 lang=go exported=true byte_range=3260:3487
   sig=func (p *Provisioner) FindVolume(ctx context.Context, serviceID, mountPath string) (string, error)
 EDGES
-  calls=matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.mountPath,matrix/router/internal/railway.p,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.vol
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.ensureRailway
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.ServiceAbsent kind=method
   digest=b3:5612ffc7bacc28ab652665e62edee9d71023ebb886060dd282640e6e057dcee7 file=router/internal/railway/provisioner.go range=131:137 lang=go exported=true byte_range=4516:4735
   sig=func (p *Provisioner) ServiceAbsent(ctx context.Context, serviceID string) (bool, error)
 EDGES
-  calls=matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/railway.Client.Service,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.serviceID
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.destroyRailway
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.ServiceName kind=method
   digest=b3:3df5667bf64bcaa8e019f6ae9fdf0e153d93048399c5c734fcb1d7ea8fbd1f3c file=router/internal/railway/provisioner.go range=47:47 lang=go exported=true byte_range=1641:1727
   sig=func (p *Provisioner) ServiceName(userID string) string
 EDGES
-  calls=matrix/router/internal/railway.ServiceName
-  references=matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway.userID
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.ensureRailway
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.Status kind=method
@@ -438,8 +342,6 @@ NODE id=matrix/router/internal/railway.Provisioner.Status kind=method
   sig=func (p *Provisioner) Status(ctx context.Context, ref provision.Ref) (*provision.Env, error)
   doc=Status reports the latest deployment state; Live (SUCCESS or\nSLEEPING) counts as ready — a slept service revives on the first\ninbound packet.
 EDGES
-  calls=matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Deployment.Live,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/provision.Env,matrix/router/internal/provision.Ref,matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Deployment.Live,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway.ctx,matrix/router/internal/railway.d,matrix/router/internal/railway.env,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.ref
   ^contains=matrix/router/internal/railway.Provisioner
   ^defines=matrix/router/internal/railway/provisioner.go
 
@@ -447,30 +349,21 @@ NODE id=matrix/router/internal/railway.Provisioner.UpdateVariables kind=method
   digest=b3:cc53bf4ac829b3c2722d1fb309ce68a3d70d23e456223e05edc9bf587accd292 file=router/internal/railway/provisioner.go range=120:125 lang=go exported=true byte_range=4133:4393
   sig=func (p *Provisioner) UpdateVariables(ctx context.Context, ref provision.Ref, env map[string]string) error
 EDGES
-  calls=matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/provision.Ref,matrix/router/internal/railway.Client.UpsertVariables,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.env,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.ref
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.updateWorkforceEnvironment
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.VolumeAbsent kind=method
   digest=b3:1d0ffb3e4c5d134a8286fd8afd387a5c2ceea8d7a56cf319841f5a0f55ec0ad2 file=router/internal/railway/provisioner.go range=139:145 lang=go exported=true byte_range=4737:4952
   sig=func (p *Provisioner) VolumeAbsent(ctx context.Context, volumeID string) (bool, error)
 EDGES
-  calls=matrix/router/internal/railway.Client.Volume,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/railway.Client.Volume,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.err,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.volumeID
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.destroyRailway
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.WaitReady kind=method
   digest=b3:6c9576f109ec31cade431769e32822f732468595e37bbb715492d39d236a34d4 file=router/internal/railway/provisioner.go range=127:129 lang=go exported=true byte_range=4395:4514
   sig=func (p *Provisioner) WaitReady(ctx context.Context, serviceID string) error
 EDGES
-  calls=matrix/router/internal/railway.Provisioner.waitDeployed
-  references=matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.Provisioner.waitDeployed,matrix/router/internal/railway.ctx,matrix/router/internal/railway.p,matrix/router/internal/railway.serviceID
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.ensureRailway
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.Wake kind=method
@@ -478,10 +371,7 @@ NODE id=matrix/router/internal/railway.Provisioner.Wake kind=method
   sig=func (p *Provisioner) Wake(ctx context.Context, ref provision.Ref) (*provision.Env, error)
   doc=Wake is a NO-OP by design: Railway Serverless wakes the service on\nthe first inbound private-network packet, so the forwarded request\nitself is the wake signal. No API call — the request hot path stays\nfree of provider round-trips; waitDaemonReady absorbs the cold boot.
 EDGES
-  calls=matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.ServiceName
-  references=matrix/router/internal/provision.Env,matrix/router/internal/provision.Ref,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.Provisioner.env,matrix/router/internal/railway.ServiceName,matrix/router/internal/railway.env,matrix/router/internal/railway.p,matrix/router/internal/railway.ref
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/proxy.Handler.forwardWith
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.WakeOnRequest kind=method
@@ -489,9 +379,7 @@ NODE id=matrix/router/internal/railway.Provisioner.WakeOnRequest kind=method
   sig=func (p *Provisioner) WakeOnRequest() bool
   doc=WakeOnRequest is true: waking is platform-managed by inbound\ntraffic, and the readiness probe must absorb the whole cold boot\n(including the documented possible first-request 502 from the\nprivate-network edge while the service revives).
 EDGES
-  references=matrix/router/internal/railway.Provisioner
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/proxy.Handler.waitDaemonReadyWith
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.env kind=method
@@ -499,10 +387,7 @@ NODE id=matrix/router/internal/railway.Provisioner.env kind=method
   sig=func (p *Provisioner) env(id, name, region string) *provision.Env
   doc=env builds the neutral view. The endpoint is the service's private\nhostname; the port is left empty so the router's configured daemon\nport applies (the daemon binds the same port on every provider).
 EDGES
-  references=matrix/router/internal/provision.Endpoint,matrix/router/internal/provision.Env,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.id,matrix/router/internal/railway.name,matrix/router/internal/railway.region
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
-  ^references=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Provisioner.waitDeployed kind=method
@@ -510,11 +395,7 @@ NODE id=matrix/router/internal/railway.Provisioner.waitDeployed kind=method
   sig=func (p *Provisioner) waitDeployed(ctx context.Context, serviceID string) error
   doc=waitDeployed polls the service's latest deployment until Live, a\nterminal failure, or ctx expiry. A service created moments ago may\nbriefly report no deployments — treated as not-ready, not an error.
 EDGES
-  calls=matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.Deployment.Live,matrix/router/internal/railway.mapErr
-  references=matrix/router/internal/railway.Client.LatestDeployment,matrix/router/internal/railway.DeployStatusCrashed,matrix/router/internal/railway.DeployStatusFailed,matrix/router/internal/railway.Deployment.Live,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.Provisioner,matrix/router/internal/railway.ctx,matrix/router/internal/railway.d,matrix/router/internal/railway.err,matrix/router/internal/railway.interval,matrix/router/internal/railway.mapErr,matrix/router/internal/railway.p,matrix/router/internal/railway.serviceID,matrix/router/internal/railway.t
   ^contains=matrix/router/internal/railway.Provisioner
-  ^calls=matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.WaitReady
-  ^references=matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.WaitReady
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Service kind=type
@@ -523,7 +404,6 @@ NODE id=matrix/router/internal/railway.Service kind=type
   doc=Service is the subset of Railway's service object the router cares\nabout. Name matters: the private-network hostname is\n<name>.railway.internal.
 EDGES
   contains=matrix/router/internal/railway.Service#ID,matrix/router/internal/railway.Service#Name
-  ^references=matrix/router/internal/railway.Client.CreateService,matrix/router/internal/railway.Client.FindService,matrix/router/internal/railway.Client.Service
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Service#ID kind=field
@@ -543,10 +423,6 @@ NODE id=matrix/router/internal/railway.ServiceName kind=func
   sig=func ServiceName(userID string) string
   doc=ServiceName derives the deterministic per-user service name — and\ntherefore the <name>.railway.internal private hostname — from the\nuser id, mirroring the fly machine-name convention\n("matrix-" + DNS-safe user id prefix).
 EDGES
-  calls=matrix/router/internal/railway.safeName
-  references=matrix/router/internal/railway.safeName,matrix/router/internal/railway.userID
-  ^calls=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.ServiceName,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
-  ^references=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.ServiceName,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.Volume kind=type
@@ -555,7 +431,6 @@ NODE id=matrix/router/internal/railway.Volume kind=type
   doc=Volume is the subset of Railway's volume object the router cares about.
 EDGES
   contains=matrix/router/internal/railway.Volume#ID,matrix/router/internal/railway.Volume#Name
-  ^references=matrix/router/internal/railway.Client.CreateVolume,matrix/router/internal/railway.Client.FindVolume,matrix/router/internal/railway.Client.Volume
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.Volume#ID kind=field
@@ -574,7 +449,6 @@ NODE id=matrix/router/internal/railway._ kind=var
   digest=b3:26985b56982da316f4ee979cb949112d8716164043f2ab6621f48adf450bb03d file=router/internal/railway/provisioner.go range=45:45 lang=go exported=false byte_range=1590:1639
   sig=provision.VariableUpdater
 EDGES
-  references=matrix/router/internal/provision.Provisioner,matrix/router/internal/provision.Recoverable,matrix/router/internal/provision.VariableUpdater,matrix/router/internal/railway.Provisioner
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.gqlError kind=type
@@ -583,7 +457,6 @@ NODE id=matrix/router/internal/railway.gqlError kind=type
   doc=gqlError is one entry of the GraphQL "errors" array.
 EDGES
   contains=matrix/router/internal/railway.gqlError#Message
-  ^references=matrix/router/internal/railway.Client.do
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.gqlError#Message kind=field
@@ -598,7 +471,6 @@ NODE id=matrix/router/internal/railway.gqlRequest kind=type
   doc=gqlRequest is the GraphQL-over-HTTP request body.
 EDGES
   contains=matrix/router/internal/railway.gqlRequest#Query,matrix/router/internal/railway.gqlRequest#Variables
-  ^references=matrix/router/internal/railway.Client.do
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway.gqlRequest#Query kind=field
@@ -618,9 +490,6 @@ NODE id=matrix/router/internal/railway.mapErr kind=func
   sig=func mapErr(err error) error
   doc=mapErr translates the client's sentinel errors onto the neutral ones\nso interface consumers dispatch without importing railway.\nEverything else (including context.DeadlineExceeded) passes through\nunchanged.
 EDGES
-  references=matrix/router/internal/provision.ErrNotFound,matrix/router/internal/provision.ErrUnauthorized,matrix/router/internal/provision.ErrUncertain,matrix/router/internal/railway.ErrNotFound,matrix/router/internal/railway.ErrUnauthorized,matrix/router/internal/railway.ErrUncertain,matrix/router/internal/railway.err
-  ^calls=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.FindVolume,matrix/router/internal/railway.Provisioner.ServiceAbsent,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.UpdateVariables,matrix/router/internal/railway.Provisioner.VolumeAbsent,matrix/router/internal/railway.Provisioner.waitDeployed
-  ^references=matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.CreateVolume,matrix/router/internal/railway.Provisioner.DeleteService,matrix/router/internal/railway.Provisioner.DeleteVolume,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.FindVolume,matrix/router/internal/railway.Provisioner.ServiceAbsent,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.UpdateVariables,matrix/router/internal/railway.Provisioner.VolumeAbsent,matrix/router/internal/railway.Provisioner.waitDeployed
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.safeName kind=func
@@ -628,9 +497,6 @@ NODE id=matrix/router/internal/railway.safeName kind=func
   sig=func safeName(s string, n int) string
   doc=safeName returns a DNS-safe lowercase prefix of s, max length n —\nthe same sanitization the fly provisioner applies to machine names,\nso a user keeps the same environment name across providers.
 EDGES
-  references=matrix/router/internal/railway.c,matrix/router/internal/railway.i,matrix/router/internal/railway.n,matrix/router/internal/railway.out,matrix/router/internal/railway.s
-  ^calls=matrix/router/internal/railway.ServiceName
-  ^references=matrix/router/internal/railway.ServiceName
   ^defines=matrix/router/internal/railway/provisioner.go
 
 NODE id=matrix/router/internal/railway.truncate kind=func
@@ -638,9 +504,6 @@ NODE id=matrix/router/internal/railway.truncate kind=func
   sig=func truncate(b []byte, n int) string
   doc=truncate trims b for error-message inclusion so we don't dump the\nupstream payload into application logs.
 EDGES
-  references=matrix/router/internal/railway.b,matrix/router/internal/railway.n
-  ^calls=matrix/router/internal/railway.Client.do
-  ^references=matrix/router/internal/railway.Client.do
   ^defines=matrix/router/internal/railway/railway.go
 
 NODE id=matrix/router/internal/railway/provisioner.go kind=file

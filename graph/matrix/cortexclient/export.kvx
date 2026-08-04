@@ -1,10 +1,9 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/cortexclient/export kind=package
   digest=b3:808fe84a42b88b6b94ea60e5c3ab155b0b28b174aa2a1e254e34c25052ba5f6f file=cortexclient/export range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortexclient/export/export.go
-  imports=matrix/cortex,matrix/cortex/journal,matrix/cortex/keys,matrix/cortex/memory,matrix/cortex/store,matrix/cortexclient,matrix/cortexclient/internal/flatbuffers,matrix/cortexclient/wire/neocortex/schema,matrix/vault
   ^contains=mod:matrix/cortexclient
 
 NODE id=matrix/cortexclient/export.LaneReport kind=type
@@ -13,7 +12,6 @@ NODE id=matrix/cortexclient/export.LaneReport kind=type
   doc=LaneReport accounts one source namespace. Source must equal\nImported + Transformed + the sum of Skipped counts.
 EDGES
   contains=matrix/cortexclient/export.LaneReport#Imported,matrix/cortexclient/export.LaneReport#Skipped,matrix/cortexclient/export.LaneReport#Source,matrix/cortexclient/export.LaneReport#Transformed,matrix/cortexclient/export.LaneReport.SkippedTotal,matrix/cortexclient/export.LaneReport.Unaccounted,matrix/cortexclient/export.LaneReport.skip
-  ^references=matrix/cortexclient/export.LaneReport.SkippedTotal,matrix/cortexclient/export.LaneReport.Unaccounted,matrix/cortexclient/export.LaneReport.skip,matrix/cortexclient/export.Report,matrix/cortexclient/export.Report.lanes
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.LaneReport#Imported kind=field
@@ -45,10 +43,7 @@ NODE id=matrix/cortexclient/export.LaneReport.SkippedTotal kind=method
   sig=func (l *LaneReport) SkippedTotal() uint64
   doc=SkippedTotal sums every skip reason.
 EDGES
-  references=matrix/cortexclient/export.LaneReport,matrix/cortexclient/export.count,matrix/cortexclient/export.l,matrix/cortexclient/export.total
   ^contains=matrix/cortexclient/export.LaneReport
-  ^calls=matrix/cortexclient/export.LaneReport.Unaccounted
-  ^references=matrix/cortexclient/export.LaneReport.Unaccounted
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.LaneReport.Unaccounted kind=method
@@ -56,21 +51,14 @@ NODE id=matrix/cortexclient/export.LaneReport.Unaccounted kind=method
   sig=func (l *LaneReport) Unaccounted() uint64
   doc=Unaccounted returns how many source records this lane failed to account.
 EDGES
-  calls=matrix/cortexclient/export.LaneReport.SkippedTotal
-  references=matrix/cortexclient/export.LaneReport,matrix/cortexclient/export.LaneReport.SkippedTotal,matrix/cortexclient/export.accounted,matrix/cortexclient/export.l
   ^contains=matrix/cortexclient/export.LaneReport
-  ^calls=matrix/cortexclient/export.Report.Complete
-  ^references=matrix/cortexclient/export.Report.Complete
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.LaneReport.skip kind=method
   digest=b3:6796b018d933f024e78ca1d603a0fba26a00a01de6d7b1683a0c198bb075ef1b file=cortexclient/export/export.go range=64:69 lang=go exported=false byte_range=1863:1992
   sig=func (l *LaneReport) skip(reason string)
 EDGES
-  references=matrix/cortexclient/export.LaneReport,matrix/cortexclient/export.l,matrix/cortexclient/export.reason
   ^contains=matrix/cortexclient/export.LaneReport
-  ^calls=matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.run.exportSessions
-  ^references=matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.Options kind=type
@@ -79,8 +67,6 @@ NODE id=matrix/cortexclient/export.Options kind=type
   doc=Options configures one export run.
 EDGES
   contains=matrix/cortexclient/export.Options#Actor,matrix/cortexclient/export.Options#BatchLimit,matrix/cortexclient/export.Options#Client,matrix/cortexclient/export.Options#Root,matrix/cortexclient/export.Options#Vault,matrix/cortexclient/export.Options#VaultUser
-  references=matrix/cortexclient.Client,matrix/vault.Session
-  ^references=matrix/cortexclient/export.Run
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.Options#Actor kind=field
@@ -125,8 +111,6 @@ NODE id=matrix/cortexclient/export.Report kind=type
   doc=Report is the export fidelity report.
 EDGES
   contains=matrix/cortexclient/export.Report#Edges,matrix/cortexclient/export.Report#EventsAppended,matrix/cortexclient/export.Report#Journal,matrix/cortexclient/export.Report#LastLsn,matrix/cortexclient/export.Report#LeafCount,matrix/cortexclient/export.Report#Memories,matrix/cortexclient/export.Report#Root,matrix/cortexclient/export.Report#SessionBlobs,matrix/cortexclient/export.Report#Sessions,matrix/cortexclient/export.Report#ToolEvents,matrix/cortexclient/export.Report.Complete,matrix/cortexclient/export.Report.lanes
-  references=matrix/cortexclient/export.LaneReport
-  ^references=matrix/cortexclient/export.Report.Complete,matrix/cortexclient/export.Report.lanes,matrix/cortexclient/export.Run,matrix/cortexclient/export.run
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.Report#Edges kind=field
@@ -194,21 +178,14 @@ NODE id=matrix/cortexclient/export.Report.Complete kind=method
   sig=func (r *Report) Complete() error
   doc=Complete enforces the fidelity gate: zero unaccounted source records.
 EDGES
-  calls=matrix/cortexclient/export.LaneReport.Unaccounted,matrix/cortexclient/export.Report.lanes
-  references=matrix/cortexclient/export.LaneReport.Unaccounted,matrix/cortexclient/export.Report,matrix/cortexclient/export.Report.lanes,matrix/cortexclient/export.failures,matrix/cortexclient/export.lane,matrix/cortexclient/export.missing,matrix/cortexclient/export.name,matrix/cortexclient/export.r
   ^contains=matrix/cortexclient/export.Report
-  ^calls=matrix/cortexclient/export.Run
-  ^references=matrix/cortexclient/export.Run
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.Report.lanes kind=method
   digest=b3:0754541d34d56b16384c04cbf10ab956770af5160922e80cb0e5dce67e7e60d5 file=cortexclient/export/export.go range=104:113 lang=go exported=false byte_range=2733:3013
   sig=func (r *Report) lanes() map[string]*LaneReport
 EDGES
-  references=matrix/cortexclient/export.LaneReport,matrix/cortexclient/export.Report,matrix/cortexclient/export.r
   ^contains=matrix/cortexclient/export.Report
-  ^calls=matrix/cortexclient/export.Report.Complete
-  ^references=matrix/cortexclient/export.Report.Complete
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.Run kind=func
@@ -216,35 +193,24 @@ NODE id=matrix/cortexclient/export.Run kind=func
   sig=func Run(ctx context.Context, opts Options) (*Report, error)
   doc=Run exports the store and returns the fidelity report. The report is\nreturned alongside any error so a partial run stays inspectable.
 EDGES
-  calls=matrix/cortex/store.Open,matrix/cortex/store.Store.Close,matrix/cortex/store.Store.SetVault,matrix/cortexclient/export.Report.Complete,matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents,matrix/cortexclient/export.run.flush
-  references=matrix/cortex/store.Open,matrix/cortex/store.Store.Close,matrix/cortex/store.Store.SetVault,matrix/cortexclient/export.Options,matrix/cortexclient/export.Report,matrix/cortexclient/export.Report.Complete,matrix/cortexclient/export.batchLimit,matrix/cortexclient/export.ctx,matrix/cortexclient/export.err,matrix/cortexclient/export.exporter,matrix/cortexclient/export.opts,matrix/cortexclient/export.report,matrix/cortexclient/export.run,matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents,matrix/cortexclient/export.run.flush,matrix/cortexclient/export.source
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.assertionValue kind=func
   digest=b3:c8b6557b8400e4abe9fed472a18e6d9c660d25c93948d41310e663196fcec8b0 file=cortexclient/export/export.go range=428:436 lang=go exported=false byte_range=11161:11426
   sig=func assertionValue(version memory.Version) []byte
 EDGES
-  references=matrix/cortex/memory.Version,matrix/cortexclient/export.medium,matrix/cortexclient/export.short,matrix/cortexclient/export.version
-  ^calls=matrix/cortexclient/export.run.exportMemories
-  ^references=matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.beliefType kind=func
   digest=b3:55be894444effb228e53047eaf312909b813de114792903ec8ce14a51bd2fd91 file=cortexclient/export/export.go range=410:426 lang=go exported=false byte_range=10619:11159
   sig=func beliefType(t memory.Type) (uint8, bool)
 EDGES
-  references=matrix/cortex/memory.Type,matrix/cortex/memory.TypeBelief,matrix/cortex/memory.TypeCapability,matrix/cortex/memory.TypeConstraint,matrix/cortex/memory.TypeEvent,matrix/cortex/memory.TypeFact,matrix/cortex/memory.TypeGoal,matrix/cortex/memory.TypeIdentity,matrix/cortex/memory.TypePattern,matrix/cortex/memory.TypePreference,matrix/cortexclient/export.t,matrix/cortexclient/wire/neocortex/schema.BeliefTypeconstraint,matrix/cortexclient/wire/neocortex/schema.BeliefTypefact,matrix/cortexclient/wire/neocortex/schema.BeliefTypegoal,matrix/cortexclient/wire/neocortex/schema.BeliefTypeidentity,matrix/cortexclient/wire/neocortex/schema.BeliefTypepreference
-  ^calls=matrix/cortexclient/export.run.exportMemories
-  ^references=matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.clampNanos kind=func
   digest=b3:7ebcf5a3684a2d6192833894ac5d5a3e45d95c824f842a6a7f7711b8317b5dc8 file=cortexclient/export/export.go range=644:650 lang=go exported=false byte_range=17555:17660
   sig=func clampNanos(t time.Time) int64
 EDGES
-  references=matrix/cortexclient/export.nanos,matrix/cortexclient/export.t
-  ^calls=matrix/cortexclient/export.run.exportMemories
-  ^references=matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.maximumIdentifierBytes kind=const
@@ -252,14 +218,12 @@ NODE id=matrix/cortexclient/export.maximumIdentifierBytes kind=const
   sig=untyped int
   doc=kMaximumIdentifierBytes mirrors the engine's schema bound on call ids,\nbelief ids, and canonical identities. Oversized source identifiers are\nskipped with a reason, never truncated or silently dropped.
 EDGES
-  ^references=matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.memoriesConversation kind=const
   digest=b3:e7f5c145e9c927db0ae6b3bd59609ddec55efe426a4f9b601a21f378f1901c55 file=cortexclient/export/export.go range=41:41 lang=go exported=false byte_range=1337:1379
   sig=untyped string
 EDGES
-  ^references=matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.memoryGroup kind=type
@@ -267,8 +231,6 @@ NODE id=matrix/cortexclient/export.memoryGroup kind=type
   sig=type memoryGroup struct {\n	root		keys.ULID\n	identity	string\n	versions	[]memoryVersion\n	retracts	[]memory.ID\n	conflictBy	string\n}
 EDGES
   contains=matrix/cortexclient/export.memoryGroup#conflictBy,matrix/cortexclient/export.memoryGroup#identity,matrix/cortexclient/export.memoryGroup#retracts,matrix/cortexclient/export.memoryGroup#root,matrix/cortexclient/export.memoryGroup#versions
-  references=matrix/cortex/keys.ULID,matrix/cortex/memory.ID,matrix/cortexclient/export.memoryVersion
-  ^references=matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.memoryGroup#conflictBy kind=field
@@ -306,8 +268,6 @@ NODE id=matrix/cortexclient/export.memoryVersion kind=type
   sig=type memoryVersion struct {\n	id	memory.ID\n	version	memory.Version\n}
 EDGES
   contains=matrix/cortexclient/export.memoryVersion#id,matrix/cortexclient/export.memoryVersion#version
-  references=matrix/cortex/memory.ID,matrix/cortex/memory.Version
-  ^references=matrix/cortexclient/export.memoryGroup,matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.memoryVersion#id kind=field
@@ -326,9 +286,6 @@ NODE id=matrix/cortexclient/export.retractEvent kind=func
   digest=b3:4c42624499179d03e217084338a7dc1e62aad3167defa91e099712e3b5f24348 file=cortexclient/export/export.go range=711:733 lang=go exported=false byte_range=19501:20311
   sig=func retractEvent(\n	conversation [16]byte,\n	beliefID []byte,\n	provenance [][2]uint64,\n) cortexclient.AppendEvent
 EDGES
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient.KindRetract,matrix/cortexclient/export.beliefID,matrix/cortexclient/export.builder,matrix/cortexclient/export.conversation,matrix/cortexclient/export.id,matrix/cortexclient/export.index,matrix/cortexclient/export.provenance,matrix/cortexclient/export.ranges,matrix/cortexclient/internal/flatbuffers.Builder,matrix/cortexclient/internal/flatbuffers.Builder.CreateByteVector,matrix/cortexclient/internal/flatbuffers.Builder.EndVector,matrix/cortexclient/internal/flatbuffers.UOffsetT,matrix/cortexclient/wire/neocortex/schema.CreateProvenanceRange,matrix/cortexclient/wire/neocortex/schema.EventPayloadRetract,matrix/cortexclient/wire/neocortex/schema.RetractAddBeliefId,matrix/cortexclient/wire/neocortex/schema.RetractAddProvenance,matrix/cortexclient/wire/neocortex/schema.RetractEnd,matrix/cortexclient/wire/neocortex/schema.RetractStart,matrix/cortexclient/wire/neocortex/schema.RetractStartProvenanceVector
-  ^calls=matrix/cortexclient/export.run.exportMemories
-  ^references=matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.run kind=type
@@ -336,8 +293,6 @@ NODE id=matrix/cortexclient/export.run kind=type
   sig=type run struct {\n	ctx		context.Context\n	source		*store.Store\n	client		*cortexclient.Client\n	report		*Report\n	batchLimit	int\n\n	batch	[]cortexclient.AppendEvent\n	lastLsn	uint64\n}
 EDGES
   contains=matrix/cortexclient/export.run#batch,matrix/cortexclient/export.run#batchLimit,matrix/cortexclient/export.run#client,matrix/cortexclient/export.run#ctx,matrix/cortexclient/export.run#lastLsn,matrix/cortexclient/export.run#report,matrix/cortexclient/export.run#source,matrix/cortexclient/export.run.append,matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents,matrix/cortexclient/export.run.flush,matrix/cortexclient/export.run.provenance
-  references=matrix/cortex/store.Store,matrix/cortexclient.AppendEvent,matrix/cortexclient.Client,matrix/cortexclient/export.Report
-  ^references=matrix/cortexclient/export.Run,matrix/cortexclient/export.run.append,matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents,matrix/cortexclient/export.run.flush,matrix/cortexclient/export.run.provenance
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.run#batch kind=field
@@ -386,55 +341,35 @@ NODE id=matrix/cortexclient/export.run.append kind=method
   digest=b3:db3e9d5e8b62fb006e869523b23e6a4377b8d97ba4253d0b7f039adff6468ba6 file=cortexclient/export/export.go range=230:236 lang=go exported=false byte_range=5643:5808
   sig=func (r *run) append(event cortexclient.AppendEvent) error
 EDGES
-  calls=matrix/cortexclient/export.run.flush
-  references=matrix/cortexclient.AppendEvent,matrix/cortexclient/export.event,matrix/cortexclient/export.r,matrix/cortexclient/export.run,matrix/cortexclient/export.run.flush
   ^contains=matrix/cortexclient/export.run
-  ^calls=matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents
-  ^references=matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.run.exportMemories kind=method
   digest=b3:c5f3c94dbd927c54321a3c3f2fa97282535bdf3594c11ca3b65af310ef2b64a0 file=cortexclient/export/export.go range=438:642 lang=go exported=false byte_range=11428:17553
   sig=func (r *run) exportMemories() error
 EDGES
-  calls=matrix/cortex/store.Store.PrefixIter,matrix/cortexclient.AssertionEvent,matrix/cortexclient.ConversationBytes,matrix/cortexclient/export.LaneReport.skip,matrix/cortexclient/export.assertionValue,matrix/cortexclient/export.beliefType,matrix/cortexclient/export.clampNanos,matrix/cortexclient/export.retractEvent,matrix/cortexclient/export.run.append,matrix/cortexclient/export.run.flush,matrix/cortexclient/export.run.provenance
-  references=matrix/cortex/keys.ParseEdgeFromKey,matrix/cortex/keys.PrefixEdgeFrom,matrix/cortex/keys.PrefixMemoryHead,matrix/cortex/keys.PrefixMemoryVersion,matrix/cortex/keys.ULID,matrix/cortex/keys.ULIDSize,matrix/cortex/memory.DecodeEdge,matrix/cortex/memory.DecodeHead,matrix/cortex/memory.DecodeVersion,matrix/cortex/memory.EdgeContradicts,matrix/cortex/memory.EdgeRecord,matrix/cortex/memory.EdgeSupersedes,matrix/cortex/memory.EdgeType,matrix/cortex/memory.Head,matrix/cortex/memory.Version,matrix/cortex/store.Store.PrefixIter,matrix/cortexclient.Assertion,matrix/cortexclient.AssertionEvent,matrix/cortexclient.ConversationBytes,matrix/cortexclient/export.LaneReport.skip,matrix/cortexclient/export.assertion,matrix/cortexclient/export.assertionValue,matrix/cortexclient/export.beliefID,matrix/cortexclient/export.beliefType,matrix/cortexclient/export.clampNanos,matrix/cortexclient/export.compared,matrix/cortexclient/export.conflict,matrix/cortexclient/export.conflictEdge,matrix/cortexclient/export.conflicts,matrix/cortexclient/export.conversation,matrix/cortexclient/export.domain,matrix/cortexclient/export.dst,matrix/cortexclient/export.dstGroup,matrix/cortexclient/export.edgeType,matrix/cortexclient/export.edges,matrix/cortexclient/export.entry,matrix/cortexclient/export.err,matrix/cortexclient/export.group,matrix/cortexclient/export.groupFor,matrix/cortexclient/export.groups,matrix/cortexclient/export.head,matrix/cortexclient/export.heads,matrix/cortexclient/export.hi,matrix/cortexclient/export.i,matrix/cortexclient/export.id,matrix/cortexclient/export.j,matrix/cortexclient/export.key,matrix/cortexclient/export.left,matrix/cortexclient/export.lo,matrix/cortexclient/export.mapped,matrix/cortexclient/export.memoriesConversation,matrix/cortexclient/export.memoryGroup,matrix/cortexclient/export.memoryVersion,matrix/cortexclient/export.ok,matrix/cortexclient/export.r,matrix/cortexclient/export.record,matrix/cortexclient/export.retractEvent,matrix/cortexclient/export.right,matrix/cortexclient/export.root,matrix/cortexclient/export.roots,matrix/cortexclient/export.run,matrix/cortexclient/export.run.append,matrix/cortexclient/export.run.flush,matrix/cortexclient/export.run.provenance,matrix/cortexclient/export.src,matrix/cortexclient/export.srcGroup,matrix/cortexclient/export.unionFind,matrix/cortexclient/export.unionFind.find,matrix/cortexclient/export.unionFind.union,matrix/cortexclient/export.validFrom,matrix/cortexclient/export.validTo,matrix/cortexclient/export.value,matrix/cortexclient/export.version,matrix/cortexclient/export.versionsSeen
   ^contains=matrix/cortexclient/export.run
-  ^calls=matrix/cortexclient/export.Run
-  ^references=matrix/cortexclient/export.Run
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.run.exportSessions kind=method
   digest=b3:8a98ba3f36adabafad0a60c4e36c6b6231353b756b3bee1e23f7935dae00593a file=cortexclient/export/export.go range=267:408 lang=go exported=false byte_range=6548:10617
   sig=func (r *run) exportSessions() error
 EDGES
-  calls=matrix/cortex/keys.SessionBlobKey,matrix/cortex/store.Store.PrefixIter,matrix/cortexclient.ConversationBytes,matrix/cortexclient.DeliveredMsgEvent,matrix/cortexclient.ToolCallEvent,matrix/cortexclient.ToolResultEvent,matrix/cortexclient.UserMsgEvent,matrix/cortexclient/export.LaneReport.skip,matrix/cortexclient/export.run.append,matrix/cortexclient/export.run.flush
-  references=matrix/cortex.DecodeSessionRecord,matrix/cortex.Role,matrix/cortex.RoleAssistant,matrix/cortex.RoleSystem,matrix/cortex.RoleToolCall,matrix/cortex.RoleToolResult,matrix/cortex.RoleUser,matrix/cortex.SessionRecord,matrix/cortex/keys.ParseSessionKey,matrix/cortex/keys.PrefixSession,matrix/cortex/keys.PrefixSessionBlob,matrix/cortex/keys.SessionBlobKey,matrix/cortex/store.Store.PrefixIter,matrix/cortexclient.ConversationBytes,matrix/cortexclient.DeliveredMsgEvent,matrix/cortexclient.ToolCallEvent,matrix/cortexclient.ToolResultEvent,matrix/cortexclient.UserMsgEvent,matrix/cortexclient/export.LaneReport.skip,matrix/cortexclient/export.arguments,matrix/cortexclient/export.blob,matrix/cortexclient/export.blobKey,matrix/cortexclient/export.blobUsed,matrix/cortexclient/export.blobs,matrix/cortexclient/export.callID,matrix/cortexclient/export.callLsn,matrix/cortexclient/export.content,matrix/cortexclient/export.conv,matrix/cortexclient/export.conversation,matrix/cortexclient/export.entry,matrix/cortexclient/export.err,matrix/cortexclient/export.i,matrix/cortexclient/export.id,matrix/cortexclient/export.j,matrix/cortexclient/export.key,matrix/cortexclient/export.maximumIdentifierBytes,matrix/cortexclient/export.ok,matrix/cortexclient/export.r,matrix/cortexclient/export.record,matrix/cortexclient/export.records,matrix/cortexclient/export.resolvedSpill,matrix/cortexclient/export.run,matrix/cortexclient/export.run.append,matrix/cortexclient/export.run.flush,matrix/cortexclient/export.seq,matrix/cortexclient/export.sessionRecord,matrix/cortexclient/export.value
   ^contains=matrix/cortexclient/export.run
-  ^calls=matrix/cortexclient/export.Run
-  ^references=matrix/cortexclient/export.Run
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.run.exportToolEvents kind=method
   digest=b3:40cabd1686611450f4c689de4ea29ecf2600b0be7e7efa538b019faf6332a4b3 file=cortexclient/export/export.go range=652:709 lang=go exported=false byte_range=17662:19499
   sig=func (r *run) exportToolEvents() error
 EDGES
-  calls=matrix/cortex/store.Store.IterJournal,matrix/cortexclient.ConversationBytes,matrix/cortexclient.ToolCallEvent,matrix/cortexclient.ToolResultEvent,matrix/cortexclient/export.run.append,matrix/cortexclient/export.run.flush
-  references=matrix/cortex/journal.DecodeToolEventPayload,matrix/cortex/journal.Entry,matrix/cortex/journal.KindToolEvent,matrix/cortex/journal.ToolEventPayload,matrix/cortex/store.Store.IterJournal,matrix/cortexclient.ConversationBytes,matrix/cortexclient.ToolCallEvent,matrix/cortexclient.ToolResultEvent,matrix/cortexclient/export.LaneReport.skip,matrix/cortexclient/export.arguments,matrix/cortexclient/export.calls,matrix/cortexclient/export.conversation,matrix/cortexclient/export.entry,matrix/cortexclient/export.err,matrix/cortexclient/export.maximumIdentifierBytes,matrix/cortexclient/export.payload,matrix/cortexclient/export.pending,matrix/cortexclient/export.r,matrix/cortexclient/export.result,matrix/cortexclient/export.run,matrix/cortexclient/export.run.append,matrix/cortexclient/export.run.flush,matrix/cortexclient/export.toolEventsConversation
   ^contains=matrix/cortexclient/export.run
-  ^calls=matrix/cortexclient/export.Run
-  ^references=matrix/cortexclient/export.Run
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.run.flush kind=method
   digest=b3:ab54a6dc5768bd7366acdc54531b6ad67bd363efb97c967f7e32a51c846e9709 file=cortexclient/export/export.go range=238:254 lang=go exported=false byte_range=5810:6225
   sig=func (r *run) flush() error
 EDGES
-  calls=matrix/cortexclient.Client.Append
-  references=matrix/cortexclient.Client.Append,matrix/cortexclient/export.ack,matrix/cortexclient/export.err,matrix/cortexclient/export.events,matrix/cortexclient/export.r,matrix/cortexclient/export.run
   ^contains=matrix/cortexclient/export.run
-  ^calls=matrix/cortexclient/export.Run,matrix/cortexclient/export.run.append,matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents
-  ^references=matrix/cortexclient/export.Run,matrix/cortexclient/export.run.append,matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.run.exportSessions,matrix/cortexclient/export.run.exportToolEvents
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.run.provenance kind=method
@@ -442,10 +377,7 @@ NODE id=matrix/cortexclient/export.run.provenance kind=method
   sig=func (r *run) provenance() [][2]uint64
   doc=provenance synthesizes the [1, lastLsn] range required by the belief\nschema. Import order (sessions before memories) makes the range cover the\nconversation evidence the memory was distilled from.
 EDGES
-  references=matrix/cortexclient/export.hi,matrix/cortexclient/export.r,matrix/cortexclient/export.run
   ^contains=matrix/cortexclient/export.run
-  ^calls=matrix/cortexclient/export.run.exportMemories
-  ^references=matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.sessionRecord kind=type
@@ -453,8 +385,6 @@ NODE id=matrix/cortexclient/export.sessionRecord kind=type
   sig=type sessionRecord struct {\n	conv	string\n	seq	uint64\n	record	cortex.SessionRecord\n}
 EDGES
   contains=matrix/cortexclient/export.sessionRecord#conv,matrix/cortexclient/export.sessionRecord#record,matrix/cortexclient/export.sessionRecord#seq
-  references=matrix/cortex.SessionRecord
-  ^references=matrix/cortexclient/export.run.exportSessions
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.sessionRecord#conv kind=field
@@ -479,7 +409,6 @@ NODE id=matrix/cortexclient/export.toolEventsConversation kind=const
   digest=b3:fdc0e0575907ade83e4db370e1c89d5505a1675d9c11228b61a6dd13b3bf095f file=cortexclient/export/export.go range=42:42 lang=go exported=false byte_range=1381:1426
   sig=untyped string
 EDGES
-  ^references=matrix/cortexclient/export.run.exportToolEvents
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.unionFind kind=type
@@ -487,8 +416,6 @@ NODE id=matrix/cortexclient/export.unionFind kind=type
   sig=type unionFind struct {\n	parent map[keys.ULID]keys.ULID\n}
 EDGES
   contains=matrix/cortexclient/export.unionFind#parent,matrix/cortexclient/export.unionFind.find,matrix/cortexclient/export.unionFind.union
-  references=matrix/cortex/keys.ULID
-  ^references=matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.unionFind.find,matrix/cortexclient/export.unionFind.union
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.unionFind#parent kind=field
@@ -501,20 +428,14 @@ NODE id=matrix/cortexclient/export.unionFind.find kind=method
   digest=b3:f744df1f97a83b5e56096108ed34bc8eb0349d3694f512d53c8a8bac172e9bef file=cortexclient/export/export.go range=155:163 lang=go exported=false byte_range=3846:4025
   sig=func (u *unionFind) find(id keys.ULID) keys.ULID
 EDGES
-  references=matrix/cortex/keys.ULID,matrix/cortexclient/export.id,matrix/cortexclient/export.ok,matrix/cortexclient/export.parent,matrix/cortexclient/export.root,matrix/cortexclient/export.u,matrix/cortexclient/export.unionFind
   ^contains=matrix/cortexclient/export.unionFind
-  ^calls=matrix/cortexclient/export.unionFind.union
-  ^references=matrix/cortexclient/export.run.exportMemories,matrix/cortexclient/export.unionFind.union
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export.unionFind.union kind=method
   digest=b3:f4101e965506f764bf1394ab1f811d52793fe3362c237009cf62aba437c05a72 file=cortexclient/export/export.go range=165:177 lang=go exported=false byte_range=4027:4355
   sig=func (u *unionFind) union(a, b keys.ULID)
 EDGES
-  calls=matrix/cortexclient/export.unionFind.find
-  references=matrix/cortex/keys.ULID,matrix/cortexclient/export.a,matrix/cortexclient/export.b,matrix/cortexclient/export.rootA,matrix/cortexclient/export.rootB,matrix/cortexclient/export.u,matrix/cortexclient/export.unionFind,matrix/cortexclient/export.unionFind.find
   ^contains=matrix/cortexclient/export.unionFind
-  ^references=matrix/cortexclient/export.run.exportMemories
   ^defines=matrix/cortexclient/export/export.go
 
 NODE id=matrix/cortexclient/export/export.go kind=file

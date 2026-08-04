@@ -169,7 +169,7 @@ func TestIntegration_ControlAPIAuthorizationReplayPaginationAndStaleMutation(t *
 		SchemaVersion: controlapi.SchemaVersion, ID: "command:control-a:first",
 		OrganizationID: principalA.OrganizationID, OwnerID: principalA.OwnerID,
 		Action: "set_policy", ResourceKind: "policy", ResourceID: "policy:autonomy",
-		ExpectedVersion: 0, Change: json.RawMessage(`{"autonomy":"bounded"}`),
+		ExpectedVersion: 0, Change: json.RawMessage(`{"value":{"autonomy":"bounded"}}`),
 		EffectiveAt: developer.ControlAPITestNow(),
 	}
 	if err := controlapi.SignCommand(&command, "key:browser-a", browserPrivate); err != nil {

@@ -1,19 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/neo/internal/trace kind=package
   digest=b3:69b8fc860f0f66775c32ecfe6a572c80c8c5edd9e98fc045ca2891557c597d60 file=neo/internal/trace range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/trace/trace.go
-  imports=matrix/vault
   ^contains=mod:matrix/neo
-  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/trace.DefaultRetainedEvents kind=const
   digest=b3:2e7371374092fe4313a98d7a530d7e4d5efcffef76ba0834920da73320f742f7 file=neo/internal/trace/trace.go range=55:59 lang=go exported=true byte_range=2286:2587
   sig=untyped int
   doc=DefaultRetainedEvents caps how many workspace events are retained per run on\ndisk. Larger than the broker's 512-event live buffer because this is the\ndurable record a reopen rebuilds from; still bounded so a runaway run can't\ngrow the file without limit.
 EDGES
-  ^references=matrix/neo/internal/trace.openWithCap
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Dir kind=func
@@ -21,9 +18,6 @@ NODE id=matrix/neo/internal/trace.Dir kind=func
   sig=func Dir(override, cortexRoot string) string
   doc=Dir resolves Neo's trace directory. An explicit override wins; else it is\nderived from the cortex root's parent (matching the conversation + task\nstores, so the workspace trace shares /data with them and survives suspend /\nredeploy). Returns "" when neither is available (persistence disabled).
 EDGES
-  references=matrix/neo/internal/trace.c,matrix/neo/internal/trace.cortexRoot,matrix/neo/internal/trace.o,matrix/neo/internal/trace.override
-  ^calls=matrix/neo/cmd/neo.runServe
-  ^references=matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Event kind=type
@@ -32,7 +26,6 @@ NODE id=matrix/neo/internal/trace.Event kind=type
   doc=Event is one persisted workspace frame. Its shape mirrors the server's SSE\nEvent ({seq,ts,phase,type,fields}) so the persisted trace replays through the\nclient's existing reducer byte-for-byte.
 EDGES
   contains=matrix/neo/internal/trace.Event#Fields,matrix/neo/internal/trace.Event#Phase,matrix/neo/internal/trace.Event#Seq,matrix/neo/internal/trace.Event#Ts,matrix/neo/internal/trace.Event#Type
-  ^references=matrix/neo/internal/server.Engine.recordTrace,matrix/neo/internal/server.Server.handleTrace,matrix/neo/internal/server.conversationTrace,matrix/neo/internal/trace.Store.Load,matrix/neo/internal/trace.Store.Record,matrix/neo/internal/trace.Store.appendEvent,matrix/neo/internal/trace.Store.readEvents,matrix/neo/internal/trace.record
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Event#Fields kind=field
@@ -70,10 +63,6 @@ NODE id=matrix/neo/internal/trace.Open kind=func
   sig=func Open(dir string) *Store
   doc=Open builds a store rooted at dir and starts its background writer. An empty\ndir yields a disabled store (every method is a safe no-op) so dev/CLI runs\nwork unchanged. The retained-event cap defaults to DefaultRetainedEvents and\ncan be overridden via NEO_TRACE_RETAIN (read once at Open).
 EDGES
-  calls=matrix/neo/internal/trace.openWithCap,matrix/neo/internal/trace.retainFromEnv
-  references=matrix/neo/internal/trace.Store,matrix/neo/internal/trace.dir,matrix/neo/internal/trace.openWithCap,matrix/neo/internal/trace.retainFromEnv
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store kind=type
@@ -82,8 +71,6 @@ NODE id=matrix/neo/internal/trace.Store kind=type
   doc=Store is Neo's durable per-run workspace timeline. A single background writer\ngoroutine owns all disk writes (and the per-run event counts), so the only\nshared state is the enqueue channel; reads (Load) go straight to the\nfilesystem and are safe against the writer because every write is atomic (an\nO_APPEND single-line write, or a tmp+rename rollup).
 EDGES
   contains=matrix/neo/internal/trace.Store#ch,matrix/neo/internal/trace.Store#closed,matrix/neo/internal/trace.Store#dir,matrix/neo/internal/trace.Store#once,matrix/neo/internal/trace.Store#retain,matrix/neo/internal/trace.Store#stop,matrix/neo/internal/trace.Store#user,matrix/neo/internal/trace.Store#vault,matrix/neo/internal/trace.Store.Close,matrix/neo/internal/trace.Store.Enabled,matrix/neo/internal/trace.Store.Flush,matrix/neo/internal/trace.Store.Load,matrix/neo/internal/trace.Store.Record,matrix/neo/internal/trace.Store.Remove,matrix/neo/internal/trace.Store.SetVault,matrix/neo/internal/trace.Store.ad,matrix/neo/internal/trace.Store.appendEvent,matrix/neo/internal/trace.Store.handle,matrix/neo/internal/trace.Store.readEvents,matrix/neo/internal/trace.Store.rollLocked,matrix/neo/internal/trace.Store.tracePath,matrix/neo/internal/trace.Store.writer
-  references=matrix/neo/internal/trace.record,matrix/vault.Session
-  ^references=matrix/neo/internal/server.Engine,matrix/neo/internal/trace.Open,matrix/neo/internal/trace.Store.Close,matrix/neo/internal/trace.Store.Enabled,matrix/neo/internal/trace.Store.Flush,matrix/neo/internal/trace.Store.Load,matrix/neo/internal/trace.Store.Record,matrix/neo/internal/trace.Store.Remove,matrix/neo/internal/trace.Store.SetVault,matrix/neo/internal/trace.Store.ad,matrix/neo/internal/trace.Store.appendEvent,matrix/neo/internal/trace.Store.handle,matrix/neo/internal/trace.Store.readEvents,matrix/neo/internal/trace.Store.rollLocked,matrix/neo/internal/trace.Store.tracePath,matrix/neo/internal/trace.Store.writer,matrix/neo/internal/trace.openWithCap
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store#ch kind=field
@@ -140,11 +127,7 @@ NODE id=matrix/neo/internal/trace.Store.Close kind=method
   sig=func (s *Store) Close()
   doc=Close stops the background writer after draining the queue. Idempotent.
 EDGES
-  calls=matrix/neo/internal/trace.Store.Enabled
-  references=matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.Enabled,matrix/neo/internal/trace.s
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/server.Engine.Close
-  ^references=matrix/neo/internal/server.Engine.Close
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.Enabled kind=method
@@ -152,10 +135,7 @@ NODE id=matrix/neo/internal/trace.Store.Enabled kind=method
   sig=func (s *Store) Enabled() bool
   doc=Enabled reports whether persistence is on (a non-empty directory).
 EDGES
-  references=matrix/neo/internal/trace.Store,matrix/neo/internal/trace.s
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/server.Engine.recordTrace,matrix/neo/internal/server.NewEngine,matrix/neo/internal/trace.Store.Close,matrix/neo/internal/trace.Store.Flush,matrix/neo/internal/trace.Store.Load,matrix/neo/internal/trace.Store.Record,matrix/neo/internal/trace.Store.Remove,matrix/neo/internal/trace.Store.tracePath
-  ^references=matrix/neo/internal/server.Engine.recordTrace,matrix/neo/internal/server.NewEngine,matrix/neo/internal/trace.Store.Close,matrix/neo/internal/trace.Store.Flush,matrix/neo/internal/trace.Store.Load,matrix/neo/internal/trace.Store.Record,matrix/neo/internal/trace.Store.Remove,matrix/neo/internal/trace.Store.tracePath
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.Flush kind=method
@@ -163,8 +143,6 @@ NODE id=matrix/neo/internal/trace.Store.Flush kind=method
   sig=func (s *Store) Flush()
   doc=Flush blocks until the writer has drained every record enqueued before this\ncall. Used by tests (to make the async write deterministic) and by graceful\nshutdown; it uses a blocking send, so it must NOT be called on the publish\nhot path. A disabled/closed store returns immediately.
 EDGES
-  calls=matrix/neo/internal/trace.Store.Enabled
-  references=matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.Enabled,matrix/neo/internal/trace.done,matrix/neo/internal/trace.record,matrix/neo/internal/trace.s
   ^contains=matrix/neo/internal/trace.Store
   ^defines=matrix/neo/internal/trace/trace.go
 
@@ -173,11 +151,7 @@ NODE id=matrix/neo/internal/trace.Store.Load kind=method
   sig=func (s *Store) Load(runID string) []Event
   doc=Load returns the persisted workspace events for one run, oldest-first, or nil\nwhen there are none / persistence is disabled. Safe to call concurrently with\nthe writer: every write is atomic, so a read sees a consistent file.
 EDGES
-  calls=matrix/neo/internal/trace.Store.Enabled,matrix/neo/internal/trace.Store.readEvents,matrix/neo/internal/trace.Store.tracePath
-  references=matrix/neo/internal/trace.Event,matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.Enabled,matrix/neo/internal/trace.Store.readEvents,matrix/neo/internal/trace.Store.tracePath,matrix/neo/internal/trace.events,matrix/neo/internal/trace.runID,matrix/neo/internal/trace.s
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/server.Server.handleTrace
-  ^references=matrix/neo/internal/server.Server.handleTrace
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.Record kind=method
@@ -185,11 +159,7 @@ NODE id=matrix/neo/internal/trace.Store.Record kind=method
   sig=func (s *Store) Record(runID string, ev Event)
   doc=Record enqueues one workspace event for asynchronous persistence. It NEVER\nblocks (the broker publish path calls it): if the writer queue is saturated,\nthe event is dropped, exactly like the broker drops events to slow\nsubscribers. A blank run id or a disabled store is ignored.
 EDGES
-  calls=matrix/neo/internal/trace.Store.Enabled
-  references=matrix/neo/internal/trace.Event,matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.Enabled,matrix/neo/internal/trace.ev,matrix/neo/internal/trace.record,matrix/neo/internal/trace.runID,matrix/neo/internal/trace.s
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/server.Engine.recordTrace
-  ^references=matrix/neo/internal/server.Engine.recordTrace
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.Remove kind=method
@@ -197,11 +167,7 @@ NODE id=matrix/neo/internal/trace.Store.Remove kind=method
   sig=func (s *Store) Remove(runID string) bool
   doc=Remove deletes one run's durable trace (CHAT-01 conversation delete cleanup).\nThe removal runs on the writer goroutine so it cannot race an in-flight\nappend. It waits for the filesystem result so cleanup is never reported from\na merely queued request. A blank run id or disabled store returns false.
 EDGES
-  calls=matrix/neo/internal/trace.Store.Enabled
-  references=matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.Enabled,matrix/neo/internal/trace.done,matrix/neo/internal/trace.err,matrix/neo/internal/trace.record,matrix/neo/internal/trace.runID,matrix/neo/internal/trace.s
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/server.Server.handleConversationDelete
-  ^references=matrix/neo/internal/server.Server.handleConversationDelete
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.SetVault kind=method
@@ -209,10 +175,7 @@ NODE id=matrix/neo/internal/trace.Store.SetVault kind=method
   sig=func (s *Store) SetVault(sess *vault.Session, user string)
   doc=SetVault wires the fail-closed data-at-rest session and owning user DID into\nthe store. Called once at engine assembly before any event is recorded; a nil\nsession leaves the store writing legacy plaintext (dev/CLI).
 EDGES
-  references=matrix/neo/internal/trace.Store,matrix/neo/internal/trace.s,matrix/neo/internal/trace.sess,matrix/neo/internal/trace.user,matrix/vault.Session
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.ad kind=method
@@ -220,10 +183,7 @@ NODE id=matrix/neo/internal/trace.Store.ad kind=method
   sig=func (s *Store) ad(runID string, seq uint64) vault.AD
   doc=ad reconstructs the associated data for an event from where it lives — never\nstored, so an event moved between users, runs, or positions fails auth.
 EDGES
-  references=matrix/neo/internal/trace.Store,matrix/neo/internal/trace.runID,matrix/neo/internal/trace.s,matrix/neo/internal/trace.schemaEventV1,matrix/neo/internal/trace.seq,matrix/neo/internal/trace.storeTrace,matrix/vault.AD
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/trace.Store.appendEvent,matrix/neo/internal/trace.Store.readEvents,matrix/neo/internal/trace.Store.rollLocked
-  ^references=matrix/neo/internal/trace.Store.appendEvent,matrix/neo/internal/trace.Store.readEvents,matrix/neo/internal/trace.Store.rollLocked
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.appendEvent kind=method
@@ -231,11 +191,7 @@ NODE id=matrix/neo/internal/trace.Store.appendEvent kind=method
   sig=func (s *Store) appendEvent(runID string, seq uint64, path string, ev Event) error
   doc=appendEvent appends one event as a single (sealed, when encrypting) JSONL\nline. O_APPEND + a single Write makes the line atomically visible (POSIX); a\ntorn write yields an unparseable final line that readEvents skips\n(crash-atomic). seq binds the event to its position in the run.
 EDGES
-  calls=matrix/neo/internal/trace.Store.ad,matrix/vault.Session.EncodeLine
-  references=matrix/neo/internal/trace.Event,matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.ad,matrix/neo/internal/trace.b,matrix/neo/internal/trace.err,matrix/neo/internal/trace.ev,matrix/neo/internal/trace.f,matrix/neo/internal/trace.line,matrix/neo/internal/trace.path,matrix/neo/internal/trace.runID,matrix/neo/internal/trace.s,matrix/neo/internal/trace.seq,matrix/vault.Session.EncodeLine
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/trace.Store.handle
-  ^references=matrix/neo/internal/trace.Store.handle
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.handle kind=method
@@ -243,11 +199,7 @@ NODE id=matrix/neo/internal/trace.Store.handle kind=method
   sig=func (s *Store) handle(rec record, counts map[string]int)
   doc=handle persists one queued record (or resolves a flush sentinel). Runs only\non the writer goroutine, so `counts` needs no lock.
 EDGES
-  calls=matrix/neo/internal/trace.Store.appendEvent,matrix/neo/internal/trace.Store.rollLocked,matrix/neo/internal/trace.Store.tracePath,matrix/neo/internal/trace.countLines
-  references=matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.appendEvent,matrix/neo/internal/trace.Store.rollLocked,matrix/neo/internal/trace.Store.tracePath,matrix/neo/internal/trace.countLines,matrix/neo/internal/trace.counts,matrix/neo/internal/trace.err,matrix/neo/internal/trace.kept,matrix/neo/internal/trace.ok,matrix/neo/internal/trace.path,matrix/neo/internal/trace.rec,matrix/neo/internal/trace.record,matrix/neo/internal/trace.s
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/trace.Store.writer
-  ^references=matrix/neo/internal/trace.Store.writer
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.readEvents kind=method
@@ -255,11 +207,7 @@ NODE id=matrix/neo/internal/trace.Store.readEvents kind=method
   sig=func (s *Store) readEvents(runID, path string) []Event
   doc=readEvents parses a newline-delimited event file, decrypting each record under\nthe reconstructed associated data (legacy plaintext lines pass through until\nmigrated). A line that fails to decrypt or unmarshal — including a wrong-key,\ntampered, or crash-truncated final line — is skipped; the record sequence\nstill advances so surviving events stay bound to their positions.
 EDGES
-  calls=matrix/neo/internal/trace.Store.ad,matrix/vault.Session.DecodeLine
-  references=matrix/neo/internal/trace.Event,matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.ad,matrix/neo/internal/trace.derr,matrix/neo/internal/trace.err,matrix/neo/internal/trace.ev,matrix/neo/internal/trace.f,matrix/neo/internal/trace.line,matrix/neo/internal/trace.out,matrix/neo/internal/trace.path,matrix/neo/internal/trace.plain,matrix/neo/internal/trace.runID,matrix/neo/internal/trace.s,matrix/neo/internal/trace.sc,matrix/neo/internal/trace.seq,matrix/vault.Session.DecodeLine
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/trace.Store.Load,matrix/neo/internal/trace.Store.rollLocked
-  ^references=matrix/neo/internal/trace.Store.Load,matrix/neo/internal/trace.Store.rollLocked
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.rollLocked kind=method
@@ -267,22 +215,14 @@ NODE id=matrix/neo/internal/trace.Store.rollLocked kind=method
   sig=func (s *Store) rollLocked(runID, path string) int
   doc=rollLocked trims the run's JSONL to the newest `retain` events via an atomic\ntmp+rename rewrite. Returns the number of events kept, or -1 on error.
 EDGES
-  calls=matrix/neo/internal/trace.Store.ad,matrix/neo/internal/trace.Store.readEvents,matrix/vault.Session.EncodeLine
-  references=matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.ad,matrix/neo/internal/trace.Store.readEvents,matrix/neo/internal/trace.b,matrix/neo/internal/trace.buf,matrix/neo/internal/trace.err,matrix/neo/internal/trace.ev,matrix/neo/internal/trace.events,matrix/neo/internal/trace.i,matrix/neo/internal/trace.keep,matrix/neo/internal/trace.line,matrix/neo/internal/trace.path,matrix/neo/internal/trace.runID,matrix/neo/internal/trace.s,matrix/neo/internal/trace.tmp,matrix/vault.Session.EncodeLine
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/trace.Store.handle
-  ^references=matrix/neo/internal/trace.Store.handle
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.tracePath kind=method
   digest=b3:3f8094bfea47a0234bff2496b60f014ab28f9065d3066e3041a3021b3ac37178 file=neo/internal/trace/trace.go range=333:338 lang=go exported=false byte_range=11586:11773
   sig=func (s *Store) tracePath(runID string) string
 EDGES
-  calls=matrix/neo/internal/trace.Store.Enabled
-  references=matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.Enabled,matrix/neo/internal/trace.runID,matrix/neo/internal/trace.s
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/trace.Store.Load,matrix/neo/internal/trace.Store.handle
-  ^references=matrix/neo/internal/trace.Store.Load,matrix/neo/internal/trace.Store.handle
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.Store.writer kind=method
@@ -290,11 +230,7 @@ NODE id=matrix/neo/internal/trace.Store.writer kind=method
   sig=func (s *Store) writer()
   doc=writer is the single goroutine that owns all disk writes and the per-run\nevent counts. It drains the queue until Close, persisting each event and\nenforcing the retained-event cap.
 EDGES
-  calls=matrix/neo/internal/trace.Store.handle
-  references=matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.handle,matrix/neo/internal/trace.counts,matrix/neo/internal/trace.rec,matrix/neo/internal/trace.s
   ^contains=matrix/neo/internal/trace.Store
-  ^calls=matrix/neo/internal/trace.openWithCap
-  ^references=matrix/neo/internal/trace.openWithCap
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.countLines kind=func
@@ -302,9 +238,6 @@ NODE id=matrix/neo/internal/trace.countLines kind=func
   sig=func countLines(path string) int
   doc=countLines returns the number of non-empty JSONL lines in a file (0 if\nmissing). Used to seed the writer's per-run next-sequence for a pre-existing\nfile; it counts raw lines (no decryption) so it stays cheap and matches how\nreadEvents advances the sequence per line.
 EDGES
-  references=matrix/neo/internal/trace.err,matrix/neo/internal/trace.f,matrix/neo/internal/trace.n,matrix/neo/internal/trace.path,matrix/neo/internal/trace.sc
-  ^calls=matrix/neo/internal/trace.Store.handle
-  ^references=matrix/neo/internal/trace.Store.handle
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.openWithCap kind=func
@@ -312,10 +245,6 @@ NODE id=matrix/neo/internal/trace.openWithCap kind=func
   sig=func openWithCap(dir string, cap int) *Store
   doc=openWithCap is the test seam that sets an explicit retained-event cap.
 EDGES
-  calls=matrix/neo/internal/trace.Store.writer
-  references=matrix/neo/internal/trace.DefaultRetainedEvents,matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.writer,matrix/neo/internal/trace.cap,matrix/neo/internal/trace.dir,matrix/neo/internal/trace.queueDepth,matrix/neo/internal/trace.record,matrix/neo/internal/trace.s
-  ^calls=matrix/neo/internal/trace.Open
-  ^references=matrix/neo/internal/trace.Open
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.queueDepth kind=const
@@ -323,7 +252,6 @@ NODE id=matrix/neo/internal/trace.queueDepth kind=const
   sig=untyped int
   doc=queueDepth is how many pending events the async writer buffers before Record\nstarts dropping. Generous: a single user's single daemon emits tens-to-low-\nhundreds of workspace events per run, so this is never reached in practice;\nit exists only so a pathological burst can't block broker.publish.
 EDGES
-  ^references=matrix/neo/internal/trace.openWithCap
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.record kind=type
@@ -332,8 +260,6 @@ NODE id=matrix/neo/internal/trace.record kind=type
   doc=record is one queued write. A non-nil flush channel marks a flush sentinel\n(no event payload); the writer closes it once it has drained every record\nenqueued before it.
 EDGES
   contains=matrix/neo/internal/trace.record#ev,matrix/neo/internal/trace.record#flush,matrix/neo/internal/trace.record#remove,matrix/neo/internal/trace.record#runID
-  references=matrix/neo/internal/trace.Event
-  ^references=matrix/neo/internal/trace.Store,matrix/neo/internal/trace.Store.Flush,matrix/neo/internal/trace.Store.Record,matrix/neo/internal/trace.Store.Remove,matrix/neo/internal/trace.Store.handle,matrix/neo/internal/trace.openWithCap
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.record#ev kind=field
@@ -366,9 +292,6 @@ NODE id=matrix/neo/internal/trace.retainFromEnv kind=func
   sig=func retainFromEnv() int
   doc=retainFromEnv reads NEO_TRACE_RETAIN; an absent/invalid value yields 0 (Open\nthen applies the default).
 EDGES
-  references=matrix/neo/internal/trace.err,matrix/neo/internal/trace.n,matrix/neo/internal/trace.v
-  ^calls=matrix/neo/internal/trace.Open
-  ^references=matrix/neo/internal/trace.Open
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.schemaEventV1 kind=const
@@ -376,7 +299,6 @@ NODE id=matrix/neo/internal/trace.schemaEventV1 kind=const
   sig=untyped string
   doc=Store type and schema bound into each event's associated data, so a sealed\ntrace line cannot be replayed across users, runs, or positions.
 EDGES
-  ^references=matrix/neo/internal/trace.Store.ad
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace.storeTrace kind=const
@@ -384,7 +306,6 @@ NODE id=matrix/neo/internal/trace.storeTrace kind=const
   sig=untyped string
   doc=Store type and schema bound into each event's associated data, so a sealed\ntrace line cannot be replayed across users, runs, or positions.
 EDGES
-  ^references=matrix/neo/internal/trace.Store.ad
   ^defines=matrix/neo/internal/trace/trace.go
 
 NODE id=matrix/neo/internal/trace/trace.go kind=file

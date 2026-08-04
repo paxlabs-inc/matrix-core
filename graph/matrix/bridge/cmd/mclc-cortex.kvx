@@ -1,10 +1,9 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/bridge/cmd/mclc-cortex kind=package
   digest=b3:8522e4decd7af85af3dd9eb4209dead5ad342dd388938df086d554b28b6d722b file=bridge/cmd/mclc-cortex range=0:0 lang=go exported=true
 EDGES
   contains=matrix/bridge/cmd/mclc-cortex/main.go
-  imports=matrix/bridge,matrix/cortex,matrix/cortex/embed,matrix/cortex/store,matrix/mcl/llm,matrix/mcl/mtx/canonical,matrix/mcl/mtx/interpreter,matrix/mcl/mtx/parser,matrix/mcl/mtx/validator
   ^contains=mod:matrix/bridge
 
 NODE id=matrix/bridge/cmd/mclc-cortex.clarifyOut kind=type
@@ -12,7 +11,6 @@ NODE id=matrix/bridge/cmd/mclc-cortex.clarifyOut kind=type
   sig=type clarifyOut struct {\n	SlotName	string	`json:"slot_name"`\n	Prompt		string	`json:"prompt"`\n	Type		string	`json:"type"`\n	Required	bool	`json:"required"`\n}
 EDGES
   contains=matrix/bridge/cmd/mclc-cortex.clarifyOut#Prompt,matrix/bridge/cmd/mclc-cortex.clarifyOut#Required,matrix/bridge/cmd/mclc-cortex.clarifyOut#SlotName,matrix/bridge/cmd/mclc-cortex.clarifyOut#Type
-  ^references=matrix/bridge/cmd/mclc-cortex.compileOutput,matrix/bridge/cmd/mclc-cortex.run
   ^defines=matrix/bridge/cmd/mclc-cortex/main.go
 
 NODE id=matrix/bridge/cmd/mclc-cortex.clarifyOut#Prompt kind=field
@@ -44,8 +42,6 @@ NODE id=matrix/bridge/cmd/mclc-cortex.compileOutput kind=type
   sig=type compileOutput struct {\n	MtxDigest		string		`json:"mtx_digest"`\n	MatchedCondition	string		`json:"matched_condition"`\n	Executed		bool		`json:"executed"`\n	OverallRoot		string		`json:"cortex_overall_root"`\n	FrameJSON		string		`json:"frame_json,omitempty"`\n	PromptMessages		[]promptMsg	`json:"prompt_messages,omitempty"`\n	Slots			[]slotOut	`json:"slots,omitempty"`\n	Unknowns		[]unknownOut	`json:"unknowns,omitempty"`\n	ClarifyQuestions	[]clarifyOut	`json:"clarify_questions,omitempty"`\n}
 EDGES
   contains=matrix/bridge/cmd/mclc-cortex.compileOutput#ClarifyQuestions,matrix/bridge/cmd/mclc-cortex.compileOutput#Executed,matrix/bridge/cmd/mclc-cortex.compileOutput#FrameJSON,matrix/bridge/cmd/mclc-cortex.compileOutput#MatchedCondition,matrix/bridge/cmd/mclc-cortex.compileOutput#MtxDigest,matrix/bridge/cmd/mclc-cortex.compileOutput#OverallRoot,matrix/bridge/cmd/mclc-cortex.compileOutput#PromptMessages,matrix/bridge/cmd/mclc-cortex.compileOutput#Slots,matrix/bridge/cmd/mclc-cortex.compileOutput#Unknowns
-  references=matrix/bridge/cmd/mclc-cortex.clarifyOut,matrix/bridge/cmd/mclc-cortex.promptMsg,matrix/bridge/cmd/mclc-cortex.slotOut,matrix/bridge/cmd/mclc-cortex.unknownOut
-  ^references=matrix/bridge/cmd/mclc-cortex.run
   ^defines=matrix/bridge/cmd/mclc-cortex/main.go
 
 NODE id=matrix/bridge/cmd/mclc-cortex.compileOutput#ClarifyQuestions kind=field
@@ -107,7 +103,6 @@ NODE id=matrix/bridge/cmd/mclc-cortex.flags kind=type
   sig=type flags struct {\n	skillPath		string\n	prose			string\n	verb			string\n	grammar			string\n	confidence		float64\n	model			string\n	seed			int64\n	dryRun			bool\n	cortexRoot		string\n	actor			string\n	withEmbedder		bool\n	withFireworksEmbedder	bool\n	slotValues		map[string]string\n}
 EDGES
   contains=matrix/bridge/cmd/mclc-cortex.flags#actor,matrix/bridge/cmd/mclc-cortex.flags#confidence,matrix/bridge/cmd/mclc-cortex.flags#cortexRoot,matrix/bridge/cmd/mclc-cortex.flags#dryRun,matrix/bridge/cmd/mclc-cortex.flags#grammar,matrix/bridge/cmd/mclc-cortex.flags#model,matrix/bridge/cmd/mclc-cortex.flags#prose,matrix/bridge/cmd/mclc-cortex.flags#seed,matrix/bridge/cmd/mclc-cortex.flags#skillPath,matrix/bridge/cmd/mclc-cortex.flags#slotValues,matrix/bridge/cmd/mclc-cortex.flags#verb,matrix/bridge/cmd/mclc-cortex.flags#withEmbedder,matrix/bridge/cmd/mclc-cortex.flags#withFireworksEmbedder
-  ^references=matrix/bridge/cmd/mclc-cortex.run
   ^defines=matrix/bridge/cmd/mclc-cortex/main.go
 
 NODE id=matrix/bridge/cmd/mclc-cortex.flags#actor kind=field
@@ -192,8 +187,6 @@ NODE id=matrix/bridge/cmd/mclc-cortex.main kind=func
   digest=b3:8853aac8ddf8221b5aa569e62a5aac4cb7e2e5aa8d0f12b0145b9a05951c1551 file=bridge/cmd/mclc-cortex/main.go range=60:65 lang=go exported=false byte_range=2168:2288
   sig=func main()
 EDGES
-  calls=matrix/bridge/cmd/mclc-cortex.run
-  references=matrix/bridge/cmd/mclc-cortex.err,matrix/bridge/cmd/mclc-cortex.run
   ^defines=matrix/bridge/cmd/mclc-cortex/main.go
 
 NODE id=matrix/bridge/cmd/mclc-cortex.promptMsg kind=type
@@ -201,7 +194,6 @@ NODE id=matrix/bridge/cmd/mclc-cortex.promptMsg kind=type
   sig=type promptMsg struct {\n	Role	string	`json:"role"`\n	Content	string	`json:"content"`\n}
 EDGES
   contains=matrix/bridge/cmd/mclc-cortex.promptMsg#Content,matrix/bridge/cmd/mclc-cortex.promptMsg#Role
-  ^references=matrix/bridge/cmd/mclc-cortex.compileOutput,matrix/bridge/cmd/mclc-cortex.run
   ^defines=matrix/bridge/cmd/mclc-cortex/main.go
 
 NODE id=matrix/bridge/cmd/mclc-cortex.promptMsg#Content kind=field
@@ -220,10 +212,6 @@ NODE id=matrix/bridge/cmd/mclc-cortex.run kind=func
   digest=b3:ea9c5d97c0b3c02780ec79755f4df3aa551656524ed7c721d2108dc7c9bad2ec file=bridge/cmd/mclc-cortex/main.go range=83:296 lang=go exported=false byte_range=2708:7730
   sig=func run(args []string) error
 EDGES
-  calls=matrix/bridge.New,matrix/bridge/cmd/mclc-cortex.startEmbedder,matrix/bridge/cmd/mclc-cortex.statusName,matrix/bridge/cmd/mclc-cortex.usage,matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.OverallRoot,matrix/cortex.New,matrix/cortex/store.Open,matrix/cortex/store.Store.Close,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.New,matrix/mcl/mtx/canonical.Hash,matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.New,matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/validator.ValidateSkill
-  references=matrix/bridge.New,matrix/bridge/cmd/mclc-cortex.args,matrix/bridge/cmd/mclc-cortex.c,matrix/bridge/cmd/mclc-cortex.cancel,matrix/bridge/cmd/mclc-cortex.cfg,matrix/bridge/cmd/mclc-cortex.clarifyOut,matrix/bridge/cmd/mclc-cortex.client,matrix/bridge/cmd/mclc-cortex.compileOutput,matrix/bridge/cmd/mclc-cortex.cortexAdapter,matrix/bridge/cmd/mclc-cortex.ctx,matrix/bridge/cmd/mclc-cortex.digest,matrix/bridge/cmd/mclc-cortex.e,matrix/bridge/cmd/mclc-cortex.enc,matrix/bridge/cmd/mclc-cortex.err,matrix/bridge/cmd/mclc-cortex.f,matrix/bridge/cmd/mclc-cortex.file,matrix/bridge/cmd/mclc-cortex.flags,matrix/bridge/cmd/mclc-cortex.i,matrix/bridge/cmd/mclc-cortex.interp,matrix/bridge/cmd/mclc-cortex.llmClient,matrix/bridge/cmd/mclc-cortex.m,matrix/bridge/cmd/mclc-cortex.name,matrix/bridge/cmd/mclc-cortex.out,matrix/bridge/cmd/mclc-cortex.parts,matrix/bridge/cmd/mclc-cortex.perrs,matrix/bridge/cmd/mclc-cortex.promptMsg,matrix/bridge/cmd/mclc-cortex.q,matrix/bridge/cmd/mclc-cortex.result,matrix/bridge/cmd/mclc-cortex.rootBytes,matrix/bridge/cmd/mclc-cortex.rootErr,matrix/bridge/cmd/mclc-cortex.rootHex,matrix/bridge/cmd/mclc-cortex.s,matrix/bridge/cmd/mclc-cortex.slot,matrix/bridge/cmd/mclc-cortex.slotOut,matrix/bridge/cmd/mclc-cortex.src,matrix/bridge/cmd/mclc-cortex.startEmbedder,matrix/bridge/cmd/mclc-cortex.statusName,matrix/bridge/cmd/mclc-cortex.u,matrix/bridge/cmd/mclc-cortex.unknownOut,matrix/bridge/cmd/mclc-cortex.usage,matrix/bridge/cmd/mclc-cortex.verrs,matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.StopEmbedder,matrix/cortex.New,matrix/cortex/store.Open,matrix/cortex/store.Store.Close,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.New,matrix/mcl/mtx/canonical.Hash,matrix/mcl/mtx/interpreter.Interpreter.Run,matrix/mcl/mtx/interpreter.LLM,matrix/mcl/mtx/interpreter.New,matrix/mcl/mtx/interpreter.RunInput,matrix/mcl/mtx/parser.New,matrix/mcl/mtx/parser.Parser.Parse,matrix/mcl/mtx/validator.ValidateSkill
-  ^calls=matrix/bridge/cmd/mclc-cortex.main
-  ^references=matrix/bridge/cmd/mclc-cortex.main
   ^defines=matrix/bridge/cmd/mclc-cortex/main.go
 
 NODE id=matrix/bridge/cmd/mclc-cortex.slotOut kind=type
@@ -231,7 +219,6 @@ NODE id=matrix/bridge/cmd/mclc-cortex.slotOut kind=type
   sig=type slotOut struct {\n	Name	string	`json:"name"`\n	Value	string	`json:"value"`\n	Status	string	`json:"status"`\n	Type	string	`json:"type"`\n}
 EDGES
   contains=matrix/bridge/cmd/mclc-cortex.slotOut#Name,matrix/bridge/cmd/mclc-cortex.slotOut#Status,matrix/bridge/cmd/mclc-cortex.slotOut#Type,matrix/bridge/cmd/mclc-cortex.slotOut#Value
-  ^references=matrix/bridge/cmd/mclc-cortex.compileOutput,matrix/bridge/cmd/mclc-cortex.run
   ^defines=matrix/bridge/cmd/mclc-cortex/main.go
 
 NODE id=matrix/bridge/cmd/mclc-cortex.slotOut#Name kind=field
@@ -262,19 +249,12 @@ NODE id=matrix/bridge/cmd/mclc-cortex.startEmbedder kind=func
   digest=b3:2194112dc248b14d4ca2bec578326b3b6f4b164bbf25603ec41b103ebe90664d file=bridge/cmd/mclc-cortex/main.go range=298:312 lang=go exported=false byte_range=7732:8194
   sig=func startEmbedder(c *cortex.Cortex, useFireworks bool) error
 EDGES
-  calls=matrix/cortex.Cortex.StartEmbedder,matrix/cortex/embed.NewAPIEmbedder,matrix/cortex/embed.NewHashEmbedder
-  references=matrix/bridge/cmd/mclc-cortex.c,matrix/bridge/cmd/mclc-cortex.client,matrix/bridge/cmd/mclc-cortex.emb,matrix/bridge/cmd/mclc-cortex.err,matrix/bridge/cmd/mclc-cortex.useFireworks,matrix/cortex.Cortex,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.EmbedderOptions,matrix/cortex/embed.APIEmbedderConfig,matrix/cortex/embed.Embedder,matrix/cortex/embed.NewAPIEmbedder,matrix/cortex/embed.NewHashEmbedder
-  ^calls=matrix/bridge/cmd/mclc-cortex.run
-  ^references=matrix/bridge/cmd/mclc-cortex.run
   ^defines=matrix/bridge/cmd/mclc-cortex/main.go
 
 NODE id=matrix/bridge/cmd/mclc-cortex.statusName kind=func
   digest=b3:ce3d0e74ae15481629f6dd0064dbeec5ea0bbe0a156a87cfa1671afb65dcf50c file=bridge/cmd/mclc-cortex/main.go range=353:366 lang=go exported=false byte_range=9363:9649
   sig=func statusName(s interpreter.SlotStatus) string
 EDGES
-  references=matrix/bridge/cmd/mclc-cortex.s,matrix/mcl/mtx/interpreter.SlotDefault,matrix/mcl/mtx/interpreter.SlotEmpty,matrix/mcl/mtx/interpreter.SlotRaw,matrix/mcl/mtx/interpreter.SlotResolved,matrix/mcl/mtx/interpreter.SlotStatus
-  ^calls=matrix/bridge/cmd/mclc-cortex.run
-  ^references=matrix/bridge/cmd/mclc-cortex.run
   ^defines=matrix/bridge/cmd/mclc-cortex/main.go
 
 NODE id=matrix/bridge/cmd/mclc-cortex.unknownOut kind=type
@@ -282,7 +262,6 @@ NODE id=matrix/bridge/cmd/mclc-cortex.unknownOut kind=type
   sig=type unknownOut struct {\n	SlotName	string	`json:"slot_name"`\n	Severity	string	`json:"severity"`\n	Reason		string	`json:"reason"`\n}
 EDGES
   contains=matrix/bridge/cmd/mclc-cortex.unknownOut#Reason,matrix/bridge/cmd/mclc-cortex.unknownOut#Severity,matrix/bridge/cmd/mclc-cortex.unknownOut#SlotName
-  ^references=matrix/bridge/cmd/mclc-cortex.compileOutput,matrix/bridge/cmd/mclc-cortex.run
   ^defines=matrix/bridge/cmd/mclc-cortex/main.go
 
 NODE id=matrix/bridge/cmd/mclc-cortex.unknownOut#Reason kind=field
@@ -307,8 +286,6 @@ NODE id=matrix/bridge/cmd/mclc-cortex.usage kind=func
   digest=b3:575e93515dfc86f32118276b8c9bc68fa09fc35a34517252c8579391c17a23d1 file=bridge/cmd/mclc-cortex/main.go range=368:393 lang=go exported=false byte_range=9651:10830
   sig=func usage()
 EDGES
-  ^calls=matrix/bridge/cmd/mclc-cortex.run
-  ^references=matrix/bridge/cmd/mclc-cortex.run
   ^defines=matrix/bridge/cmd/mclc-cortex/main.go
 
 NODE id=matrix/bridge/cmd/mclc-cortex/main.go kind=file

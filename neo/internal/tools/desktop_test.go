@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"testing"
 	"time"
@@ -169,6 +170,13 @@ func desktopOnlyManifest(t *testing.T) string {
 	if desktop == nil {
 		t.Fatal("no desktop server in neo.json")
 	}
+	desktopArgs, err := json.Marshal([]string{
+		filepath.Join(desktopRepositoryRoot(t), "tools", "desktop", "desktop.mjs"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	desktop["args"] = desktopArgs
 	onlyDesktop, _ := json.Marshal([]map[string]json.RawMessage{desktop})
 	doc["servers"] = onlyDesktop
 	out, _ := json.Marshal(doc)
@@ -181,7 +189,9 @@ func desktopOnlyManifest(t *testing.T) string {
 
 func desktopToolNames(t *testing.T) []string {
 	t.Helper()
-	raw, err := os.ReadFile("/root/matrix/tools/desktop/desktop-tools.json")
+	raw, err := os.ReadFile(filepath.Join(
+		desktopRepositoryRoot(t), "tools", "desktop", "desktop-tools.json",
+	))
 	if err != nil {
 		t.Fatalf("read desktop-tools.json: %v", err)
 	}
@@ -197,4 +207,15 @@ func desktopToolNames(t *testing.T) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+func desktopRepositoryRoot(t *testing.T) string {
+	t.Helper()
+	_, sourceFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("resolve desktop test source")
+	}
+	return filepath.Clean(filepath.Join(
+		filepath.Dir(sourceFile), "..", "..", "..",
+	))
 }

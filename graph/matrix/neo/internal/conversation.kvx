@@ -1,19 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/neo/internal/conversation kind=package
   digest=b3:b41df6bef447a1a5ec8cc9bf4a11905c1f3690390f0be4c6f6438e4c39a9d42a file=neo/internal/conversation range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/conversation/store.go
-  imports=matrix/vault
   ^contains=mod:matrix/neo
-  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/recall,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/conversation.DefaultRecallTurns kind=const
   digest=b3:00b986e578edfebe42dfd77a9845af76667baca9afcc26578c14aa75c849da4d file=neo/internal/conversation/store.go range=63:65 lang=go exported=true byte_range=2509:2658
   sig=untyped int
   doc=DefaultRecallTurns is how many recent turns are seeded back into a\nresumed conversation's working context by default.
 EDGES
-  ^references=matrix/neo/internal/server.Engine.lastAssistantText,matrix/neo/internal/server.session.rebuildAgent,matrix/neo/internal/server.session.superviseTask
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.DefaultRetainedTurns kind=const
@@ -21,7 +18,6 @@ NODE id=matrix/neo/internal/conversation.DefaultRetainedTurns kind=const
   sig=untyped int
   doc=DefaultRetainedTurns is the cap on how many turns stay in the hot\n.jsonl before older ones roll to the archive. Bounded so the live file\n(and thus per-append fsync cost) stays small; full history is never lost.
 EDGES
-  ^references=matrix/neo/internal/conversation.Store.rollIfOverCapLocked,matrix/neo/internal/conversation.openWithCap
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Dir kind=func
@@ -29,9 +25,6 @@ NODE id=matrix/neo/internal/conversation.Dir kind=func
   sig=func Dir(override, cortexRoot string) string
   doc=Dir resolves Neo's conversation directory. An explicit override wins; else it\nis derived from the cortex root's parent (matching the daemon, so Neo and the\ndaemon share /data/conversations and history is unified). Returns "" when\nneither is available (persistence disabled).
 EDGES
-  references=matrix/neo/internal/conversation.c,matrix/neo/internal/conversation.cortexRoot,matrix/neo/internal/conversation.o,matrix/neo/internal/conversation.override
-  ^calls=matrix/neo/cmd/neo.runServe
-  ^references=matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Meta kind=type
@@ -40,7 +33,6 @@ NODE id=matrix/neo/internal/conversation.Meta kind=type
   doc=Meta is the CHAT-01 read view of a conversation's durable, non-turn state:\nits explicit title, archived flag, and fork provenance. Zero value when the\nconversation has no sidecar / persistence is disabled.
 EDGES
   contains=matrix/neo/internal/conversation.Meta#Archived,matrix/neo/internal/conversation.Meta#ForkedAtTurn,matrix/neo/internal/conversation.Meta#ForkedFrom,matrix/neo/internal/conversation.Meta#Title
-  ^references=matrix/neo/internal/conversation.Store.Meta
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Meta#Archived kind=field
@@ -72,10 +64,6 @@ NODE id=matrix/neo/internal/conversation.Open kind=func
   sig=func Open(dir string) *Store
   doc=Open builds a store rooted at dir. An empty dir yields a disabled store\n(every method is a safe no-op) so dev/CLI runs work unchanged. The\nretained-turn cap defaults to DefaultRetainedTurns and can be overridden via\nthe NEO_CONVERSATION_RETAINED_TURNS env var (read once at Open).
 EDGES
-  calls=matrix/neo/internal/conversation.openWithCap,matrix/neo/internal/conversation.retainedTurnsFromEnv
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.dir,matrix/neo/internal/conversation.openWithCap,matrix/neo/internal/conversation.retainedTurnsFromEnv
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Record kind=type
@@ -84,9 +72,6 @@ NODE id=matrix/neo/internal/conversation.Record kind=type
   doc=Record is the persisted shape: a bounded, append-only turn list for one\nconversation_id.
 EDGES
   contains=matrix/neo/internal/conversation.Record#ConversationID,matrix/neo/internal/conversation.Record#Title,matrix/neo/internal/conversation.Record#Turns,matrix/neo/internal/conversation.Record#Updated
-  references=matrix/neo/internal/conversation.Turn
-  ^embeds=matrix/neo/internal/server.conversationDetail
-  ^references=matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.preview,matrix/neo/internal/conversation.title,matrix/neo/internal/server.conversationDetail,matrix/neo/internal/server.conversationDetailEnvelope
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Record#ConversationID kind=field
@@ -119,8 +104,6 @@ NODE id=matrix/neo/internal/conversation.Store kind=type
   doc=Store is Neo's durable conversation memory. One mutex guards all access;\nconversations are small and Neo serves one user, so this is plenty fast.
 EDGES
   contains=matrix/neo/internal/conversation.Store#dir,matrix/neo/internal/conversation.Store#mu,matrix/neo/internal/conversation.Store#retainedTurns,matrix/neo/internal/conversation.Store#seqs,matrix/neo/internal/conversation.Store#user,matrix/neo/internal/conversation.Store#vault,matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.AppendAssistant,matrix/neo/internal/conversation.Store.AppendUser,matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.Exists,matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.History,matrix/neo/internal/conversation.Store.IsInterview,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.Meta,matrix/neo/internal/conversation.Store.Project,matrix/neo/internal/conversation.Store.Recent,matrix/neo/internal/conversation.Store.RecoveryHandoff,matrix/neo/internal/conversation.Store.Rename,matrix/neo/internal/conversation.Store.SetArchived,matrix/neo/internal/conversation.Store.SetInterview,matrix/neo/internal/conversation.Store.SetProject,matrix/neo/internal/conversation.Store.SetRecoveryHandoff,matrix/neo/internal/conversation.Store.SetVault,matrix/neo/internal/conversation.Store.UpdateMeta,matrix/neo/internal/conversation.Store.ad,matrix/neo/internal/conversation.Store.appendTurn,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.buildJSONL,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.legacyPathLocked,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.metaAD,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.Store.nextSeqLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.readTurns,matrix/neo/internal/conversation.Store.rollIfOverCapLocked,matrix/neo/internal/conversation.Store.saveMetaLocked
-  references=matrix/vault.Session
-  ^references=matrix/neo/internal/conversation.Open,matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.AppendAssistant,matrix/neo/internal/conversation.Store.AppendUser,matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.Exists,matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.History,matrix/neo/internal/conversation.Store.IsInterview,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.Meta,matrix/neo/internal/conversation.Store.Project,matrix/neo/internal/conversation.Store.Recent,matrix/neo/internal/conversation.Store.RecoveryHandoff,matrix/neo/internal/conversation.Store.Rename,matrix/neo/internal/conversation.Store.SetArchived,matrix/neo/internal/conversation.Store.SetInterview,matrix/neo/internal/conversation.Store.SetProject,matrix/neo/internal/conversation.Store.SetRecoveryHandoff,matrix/neo/internal/conversation.Store.SetVault,matrix/neo/internal/conversation.Store.UpdateMeta,matrix/neo/internal/conversation.Store.ad,matrix/neo/internal/conversation.Store.appendTurn,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.buildJSONL,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.legacyPathLocked,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.metaAD,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.Store.nextSeqLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.readTurns,matrix/neo/internal/conversation.Store.rollIfOverCapLocked,matrix/neo/internal/conversation.Store.saveMetaLocked,matrix/neo/internal/conversation.openWithCap,matrix/neo/internal/recall.New,matrix/neo/internal/recall.Recaller,matrix/neo/internal/server.Engine
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store#dir kind=field
@@ -166,22 +149,14 @@ NODE id=matrix/neo/internal/conversation.Store.Append kind=method
   sig=func (s *Store) Append(convID string, turn Turn)
   doc=Append records one turn and persists it as a single JSONL line append (O(1) in\nthe turn size — no full-file rewrite). Best-effort: IO errors are logged,\nnever fatal. A blank conversation id or text is ignored. When the hot set\nexceeds the retained-turn cap, the overflow rolls to the durable archive\n(rename-based atomic write) — turns are NOT dropped. Crash-atomic: each turn\nis one atomic line append; a torn final line is skipped on load.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.appendTurn,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.appendTurn,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.rollIfOverCapLocked,matrix/neo/internal/conversation.Turn,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.path,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.storeConvHot,matrix/neo/internal/conversation.turn
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.AppendAssistant,matrix/neo/internal/conversation.Store.AppendUser
-  ^references=matrix/neo/internal/conversation.Store.AppendAssistant,matrix/neo/internal/conversation.Store.AppendUser
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.AppendAssistant kind=method
   digest=b3:c27998f519347c6e0c75ec5af956baf8348ecab2dc8f0847df8ec0ad1d2a91be file=neo/internal/conversation/store.go range=655:657 lang=go exported=true byte_range=22382:22523
   sig=func (s *Store) AppendAssistant(convID, intentID, text string)
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Append
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Turn,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.intentID,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.text
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.Engine.deliverBrief,matrix/neo/internal/server.session.finishRun,matrix/neo/internal/server.sseReporter.Delta
-  ^references=matrix/neo/internal/server.Engine.deliverBrief,matrix/neo/internal/server.session.finishRun,matrix/neo/internal/server.sseReporter.Delta
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.AppendUser kind=method
@@ -189,11 +164,7 @@ NODE id=matrix/neo/internal/conversation.Store.AppendUser kind=method
   sig=func (s *Store) AppendUser(convID, intentID, text string)
   doc=AppendUser / AppendAssistant are thin helpers for the two turn kinds.\n\nintentID is the owning run id minted at dispatch time. Persisting it on the\nuser turn is the durable anchor a reload/relogin uses to reattach the live\nstream — the client (and the GET /conversations/{id} live_run signal) reads\nit back to decide whether the run is still in flight. An empty intent_id is\nfine (omitempty preserves the pre-F1 wire shape exactly for direct replies\nand tests that don't model a run).
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Append
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Turn,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.intentID,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.text
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.Server.handleAutomatrixApprove,matrix/neo/internal/server.Server.handleChat,matrix/neo/internal/server.session.submitAudio,matrix/neo/internal/server.telegramBridge.submitMessage
-  ^references=matrix/neo/internal/server.Server.handleAutomatrixApprove,matrix/neo/internal/server.Server.handleChat,matrix/neo/internal/server.session.dispatchLockedAs,matrix/neo/internal/server.session.submitAudio,matrix/neo/internal/server.telegramBridge.submitMessage
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Archived kind=method
@@ -201,8 +172,6 @@ NODE id=matrix/neo/internal/conversation.Store.Archived kind=method
   sig=func (s *Store) Archived(convID string) []Turn
   doc=Archived returns the rolled (durable) turns for one conversation — the\noverflow that scrolled past the retained cap. Oldest-first, or nil when\nthere are none / persistence is disabled.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.readTurns
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.readTurns,matrix/neo/internal/conversation.Turn,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.storeConvArchive,matrix/neo/internal/conversation.turns
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
@@ -211,11 +180,7 @@ NODE id=matrix/neo/internal/conversation.Store.Delete kind=method
   sig=func (s *Store) Delete(convID string) bool
   doc=Delete permanently removes a conversation's turn logs and metadata sidecar\n(hot, archive, legacy single-JSON, and meta). Returns false when the\nconversation did not exist. Best-effort per-file; a missing file is not an\nerror. The trace timeline is a sibling store the handler cleans up\nseparately (this store owns only the chat-thread files).
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.legacyPathLocked,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.Store.pathLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.legacyPathLocked,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.f,matrix/neo/internal/conversation.i,matrix/neo/internal/conversation.moved,matrix/neo/internal/conversation.movedFile,matrix/neo/internal/conversation.p,matrix/neo/internal/conversation.paths,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.tomb
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.Server.handleConversationDelete
-  ^references=matrix/neo/internal/server.Server.handleConversationDelete
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Enabled kind=method
@@ -223,10 +188,7 @@ NODE id=matrix/neo/internal/conversation.Store.Enabled kind=method
   sig=func (s *Store) Enabled() bool
   doc=Enabled reports whether persistence is on (a non-empty directory).
 EDGES
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.Exists,matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.History,matrix/neo/internal/conversation.Store.IsInterview,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.Meta,matrix/neo/internal/conversation.Store.Project,matrix/neo/internal/conversation.Store.Recent,matrix/neo/internal/conversation.Store.RecoveryHandoff,matrix/neo/internal/conversation.Store.SetInterview,matrix/neo/internal/conversation.Store.SetProject,matrix/neo/internal/conversation.Store.SetRecoveryHandoff,matrix/neo/internal/conversation.Store.UpdateMeta,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.legacyPathLocked,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/recall.Recaller.enabled,matrix/neo/internal/server.Engine.lastAssistantText,matrix/neo/internal/server.Server.handleConversationFork,matrix/neo/internal/server.Server.handleConversations,matrix/neo/internal/server.Server.handleInterviewStart,matrix/neo/internal/server.Server.handleRecenter,matrix/neo/internal/server.session.rebuildAgent,matrix/neo/internal/server.session.superviseTask
-  ^references=matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.Exists,matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.History,matrix/neo/internal/conversation.Store.IsInterview,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.Meta,matrix/neo/internal/conversation.Store.Project,matrix/neo/internal/conversation.Store.Recent,matrix/neo/internal/conversation.Store.RecoveryHandoff,matrix/neo/internal/conversation.Store.SetInterview,matrix/neo/internal/conversation.Store.SetProject,matrix/neo/internal/conversation.Store.SetRecoveryHandoff,matrix/neo/internal/conversation.Store.UpdateMeta,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.legacyPathLocked,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/recall.Recaller.enabled,matrix/neo/internal/server.Engine.lastAssistantText,matrix/neo/internal/server.Server.handleConversationFork,matrix/neo/internal/server.Server.handleConversations,matrix/neo/internal/server.Server.handleInterviewStart,matrix/neo/internal/server.Server.handleRecenter,matrix/neo/internal/server.session.rebuildAgent,matrix/neo/internal/server.session.superviseTask
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Exists kind=method
@@ -234,11 +196,7 @@ NODE id=matrix/neo/internal/conversation.Store.Exists kind=method
   sig=func (s *Store) Exists(convID string) bool
   doc=Exists reports whether a conversation has any persisted turn (hot, archived,\nor legacy). Used by the CHAT-01 handlers to reject rename/archive/fork of a\nmissing/deleted thread with an explicit error rather than silently creating.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.historyLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.Server.handleConversationDelete,matrix/neo/internal/server.Server.handleConversationPatch,matrix/neo/internal/server.Server.handleRecenter
-  ^references=matrix/neo/internal/server.Server.handleConversationDelete,matrix/neo/internal/server.Server.handleConversationPatch,matrix/neo/internal/server.Server.handleRecenter
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Fork kind=method
@@ -246,11 +204,7 @@ NODE id=matrix/neo/internal/conversation.Store.Fork kind=method
   sig=func (s *Store) Fork(srcID, newID string, upToTurn int) bool
   doc=Fork creates a new conversation (newID) containing exactly the chronological\nprefix of srcID's full history through upToTurn (inclusive), with parent/turn\nprovenance recorded in the fork's meta sidecar. The fork has an independent\nfuture: later turns on either thread do not affect the other. Returns false\nwhen the source is missing, newID is blank/taken, or upToTurn is out of the\n1..len(history) range.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.buildJSONL,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.saveMetaLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.buildJSONL,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.saveMetaLocked,matrix/neo/internal/conversation.convMeta,matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.hist,matrix/neo/internal/conversation.jsonl,matrix/neo/internal/conversation.m,matrix/neo/internal/conversation.newID,matrix/neo/internal/conversation.path,matrix/neo/internal/conversation.prefix,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.srcID,matrix/neo/internal/conversation.storeConvHot,matrix/neo/internal/conversation.tmp,matrix/neo/internal/conversation.upToTurn
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.Server.handleConversationFork
-  ^references=matrix/neo/internal/server.Server.handleConversationFork
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Get kind=method
@@ -258,11 +212,7 @@ NODE id=matrix/neo/internal/conversation.Store.Get kind=method
   sig=func (s *Store) Get(convID string) *Record
   doc=Get returns the hot (bounded) turn log for one conversation, or nil when\nthere are none / persistence is disabled. For the full history including\narchived turns use History.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.loadMetaLocked
-  references=matrix/neo/internal/conversation.Record,matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.mt,matrix/neo/internal/conversation.rec,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/recall.Recaller.refreshLocked,matrix/neo/internal/server.Engine.latestRunForConv,matrix/neo/internal/server.Server.handleConversations
-  ^references=matrix/neo/internal/recall.Recaller.refreshLocked,matrix/neo/internal/server.Engine.latestRunForConv,matrix/neo/internal/server.Server.handleConversations
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.History kind=method
@@ -270,11 +220,7 @@ NODE id=matrix/neo/internal/conversation.Store.History kind=method
   sig=func (s *Store) History(convID string) []Turn
   doc=History returns the FULL turn log (archive + hot), oldest-first, so no turn\nis ever unreachable. Returns nil when there are none / persistence disabled.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.historyLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Turn,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.Engine.buildRecoveryHandoff,matrix/neo/internal/server.Server.handleConversationDelete,matrix/neo/internal/server.Server.handleConversationFork
-  ^references=matrix/neo/internal/server.Engine.buildRecoveryHandoff,matrix/neo/internal/server.Server.handleConversationDelete,matrix/neo/internal/server.Server.handleConversationFork
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.IsInterview kind=method
@@ -282,11 +228,7 @@ NODE id=matrix/neo/internal/conversation.Store.IsInterview kind=method
   sig=func (s *Store) IsInterview(convID string) bool
   doc=IsInterview reports whether a conversation is a personalization interview.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadMetaLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.session.rebuildAgent
-  ^references=matrix/neo/internal/server.session.rebuildAgent
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.List kind=method
@@ -294,11 +236,7 @@ NODE id=matrix/neo/internal/conversation.Store.List kind=method
   sig=func (s *Store) List() []Summary
   doc=List returns a summary of every persisted conversation, newest-first.\nBest-effort: unreadable files are skipped. Counts cover the FULL history\n(archive + hot) so turn_count reflects every retained turn.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.preview,matrix/neo/internal/conversation.title
-  references=matrix/neo/internal/conversation.Record,matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Summary,matrix/neo/internal/conversation.all,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.e,matrix/neo/internal/conversation.entries,matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.hot,matrix/neo/internal/conversation.i,matrix/neo/internal/conversation.j,matrix/neo/internal/conversation.meta,matrix/neo/internal/conversation.name,matrix/neo/internal/conversation.out,matrix/neo/internal/conversation.preview,matrix/neo/internal/conversation.rec,matrix/neo/internal/conversation.recTitle,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.title
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.Server.conversationSummary,matrix/neo/internal/server.Server.handleConversations,matrix/neo/internal/server.Server.handleRecenter
-  ^references=matrix/neo/internal/server.Server.conversationSummary,matrix/neo/internal/server.Server.handleConversations,matrix/neo/internal/server.Server.handleRecenter
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Meta kind=method
@@ -306,8 +244,6 @@ NODE id=matrix/neo/internal/conversation.Store.Meta kind=method
   sig=func (s *Store) Meta(convID string) Meta
   doc=Meta returns a conversation's durable metadata (title/archived/provenance).
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadMetaLocked
-  references=matrix/neo/internal/conversation.Meta,matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.m,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
@@ -316,11 +252,7 @@ NODE id=matrix/neo/internal/conversation.Store.Project kind=method
   sig=func (s *Store) Project(convID string) string
   doc=Project returns a conversation's workbench project tag ("" untagged).
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadMetaLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.Engine.agentBuild,matrix/neo/internal/server.Engine.agentPreview,matrix/neo/internal/server.Engine.projectHasLiveRun,matrix/neo/internal/server.session.rebuildAgent
-  ^references=matrix/neo/internal/server.Engine.agentBuild,matrix/neo/internal/server.Engine.agentPreview,matrix/neo/internal/server.Engine.projectHasLiveRun,matrix/neo/internal/server.session.rebuildAgent
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Recent kind=method
@@ -328,11 +260,7 @@ NODE id=matrix/neo/internal/conversation.Store.Recent kind=method
   sig=func (s *Store) Recent(convID string, n int) []Turn
   doc=Recent returns the last n turns (oldest-first) from the full history, or nil\nwhen there are none / persistence is disabled. n spans the hot set AND the\narchive so no turn is unreachable.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.historyLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Turn,matrix/neo/internal/conversation.all,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.n,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.Engine.lastAssistantText,matrix/neo/internal/server.session.rebuildAgent,matrix/neo/internal/server.session.superviseTask
-  ^references=matrix/neo/internal/server.Engine.lastAssistantText,matrix/neo/internal/server.session.rebuildAgent,matrix/neo/internal/server.session.superviseTask
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.RecoveryHandoff kind=method
@@ -340,11 +268,7 @@ NODE id=matrix/neo/internal/conversation.Store.RecoveryHandoff kind=method
   sig=func (s *Store) RecoveryHandoff(convID string) (sourceID, handoff string)
   doc=RecoveryHandoff returns the prior-thread context attached to a recentered\nconversation. It is model-facing session context, not a visible chat turn.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadMetaLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.meta,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.session.rebuildAgent
-  ^references=matrix/neo/internal/server.session.rebuildAgent
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Rename kind=method
@@ -352,8 +276,6 @@ NODE id=matrix/neo/internal/conversation.Store.Rename kind=method
   sig=func (s *Store) Rename(convID, newTitle string) bool
   doc=Rename sets an explicit durable title for a conversation (CHAT-01). An empty\ntitle clears the override, restoring the derived first-user-turn label.\nReturns false when persistence is disabled or the conversation does not\nexist (so the caller can answer an explicit not-found).
 EDGES
-  calls=matrix/neo/internal/conversation.Store.UpdateMeta
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.UpdateMeta,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.newTitle,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
@@ -362,8 +284,6 @@ NODE id=matrix/neo/internal/conversation.Store.SetArchived kind=method
   sig=func (s *Store) SetArchived(convID string, archived bool) bool
   doc=SetArchived hides (or restores) a conversation from the default sidebar\nwithout deleting it (CHAT-01). Returns false when the conversation does not\nexist / persistence is disabled.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.UpdateMeta
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.UpdateMeta,matrix/neo/internal/conversation.archived,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
@@ -372,11 +292,7 @@ NODE id=matrix/neo/internal/conversation.Store.SetInterview kind=method
   sig=func (s *Store) SetInterview(convID string)
   doc=SetInterview marks a conversation as a personalization interview (ORACLE\ntask 5.3). Idempotent; atomic sidecar write.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.m,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.Server.handleInterviewStart
-  ^references=matrix/neo/internal/server.Server.handleInterviewStart
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.SetProject kind=method
@@ -384,11 +300,7 @@ NODE id=matrix/neo/internal/conversation.Store.SetProject kind=method
   sig=func (s *Store) SetProject(convID, projectID string)
   doc=SetProject tags a conversation with a workbench project id (idempotent;\natomic tmp+rename sidecar write). Best-effort like Append: IO errors are\nlogged, never fatal.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.m,matrix/neo/internal/conversation.projectID,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.Engine.agentBuild,matrix/neo/internal/server.Server.handleChat
-  ^references=matrix/neo/internal/server.Engine.agentBuild,matrix/neo/internal/server.Server.handleChat
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.SetRecoveryHandoff kind=method
@@ -396,11 +308,7 @@ NODE id=matrix/neo/internal/conversation.Store.SetRecoveryHandoff kind=method
   sig=func (s *Store) SetRecoveryHandoff(convID, sourceID, handoff string) bool
   doc=SetRecoveryHandoff creates the metadata for a fresh recentered conversation.\nThe new conversation intentionally has no visible turns until the user sends\nits first message; rebuildAgent reads this sealed sidecar before that send.\nThe source project tag is carried forward so coding work stays in the same\nworkspace. Existing conversations are never overwritten.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.convMeta,matrix/neo/internal/conversation.existing,matrix/neo/internal/conversation.handoff,matrix/neo/internal/conversation.meta,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.sourceID
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.Server.handleRecenter
-  ^references=matrix/neo/internal/server.Server.handleRecenter
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.SetVault kind=method
@@ -408,10 +316,7 @@ NODE id=matrix/neo/internal/conversation.Store.SetVault kind=method
   sig=func (s *Store) SetVault(sess *vault.Session, user string)
   doc=SetVault wires the fail-closed data-at-rest session and the owning user DID\ninto the store. Called once at engine assembly; a nil session leaves the\nstore writing legacy plaintext (dev/CLI).
 EDGES
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.sess,matrix/neo/internal/conversation.user,matrix/vault.Session
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.UpdateMeta kind=method
@@ -419,11 +324,7 @@ NODE id=matrix/neo/internal/conversation.Store.UpdateMeta kind=method
   sig=func (s *Store) UpdateMeta(convID string, title *string, archived *bool) bool
   doc=UpdateMeta applies a rename and/or archive change with one atomic sidecar\nreplacement, so a combined PATCH cannot leave only half its fields updated.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked,matrix/neo/internal/conversation.archived,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.m,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.title
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Rename,matrix/neo/internal/conversation.Store.SetArchived,matrix/neo/internal/server.Server.handleConversationPatch
-  ^references=matrix/neo/internal/conversation.Store.Rename,matrix/neo/internal/conversation.Store.SetArchived,matrix/neo/internal/server.Server.handleConversationPatch
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.ad kind=method
@@ -431,10 +332,7 @@ NODE id=matrix/neo/internal/conversation.Store.ad kind=method
   sig=func (s *Store) ad(storeType, stream string, seq uint64) vault.AD
   doc=ad reconstructs the associated data for a record from where it lives — never\nstored, so a record moved between users, stores, conversations, or positions\nfails authentication.
 EDGES
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.schemaTurnV1,matrix/neo/internal/conversation.seq,matrix/neo/internal/conversation.storeType,matrix/neo/internal/conversation.stream,matrix/vault.AD
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.appendTurn,matrix/neo/internal/conversation.Store.buildJSONL,matrix/neo/internal/conversation.Store.readTurns
-  ^references=matrix/neo/internal/conversation.Store.appendTurn,matrix/neo/internal/conversation.Store.buildJSONL,matrix/neo/internal/conversation.Store.readTurns
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.appendTurn kind=method
@@ -442,22 +340,14 @@ NODE id=matrix/neo/internal/conversation.Store.appendTurn kind=method
   sig=func (s *Store) appendTurn(storeType, stream, path string, turn Turn) error
   doc=appendTurn appends one turn as a single (sealed, when encrypting) JSONL line.\nO_APPEND + a single Write makes the line atomically visible (POSIX) — no\nreader sees a half-written line. Crash-atomic: a torn write yields an\nunparseable final line that readTurns skips. Caller MUST hold s.mu.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.ad,matrix/neo/internal/conversation.Store.nextSeqLocked,matrix/vault.Session.EncodeLine
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.ad,matrix/neo/internal/conversation.Store.nextSeqLocked,matrix/neo/internal/conversation.Turn,matrix/neo/internal/conversation.b,matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.f,matrix/neo/internal/conversation.line,matrix/neo/internal/conversation.path,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.seq,matrix/neo/internal/conversation.storeType,matrix/neo/internal/conversation.stream,matrix/neo/internal/conversation.turn,matrix/vault.Session.EncodeLine
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
-  ^references=matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.archivePathLocked kind=method
   digest=b3:5da2810e849105b4a626fc9eeb6054e636d84dd5853bb32e232f0bfb053b9499 file=neo/internal/conversation/store.go range=224:229 lang=go exported=false byte_range=7951:8114
   sig=func (s *Store) archivePathLocked(convID string) string
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
-  ^references=matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.buildJSONL kind=method
@@ -465,11 +355,7 @@ NODE id=matrix/neo/internal/conversation.Store.buildJSONL kind=method
   sig=func (s *Store) buildJSONL(storeType, stream string, turns []Turn) ([]byte, error)
   doc=buildJSONL serializes a turn slice as newline-delimited (sealed, when\nencrypting) JSON, binding each record to its position starting at seq 0.\nCaller MUST hold s.mu.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.ad,matrix/vault.Session.EncodeLine
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.ad,matrix/neo/internal/conversation.Turn,matrix/neo/internal/conversation.b,matrix/neo/internal/conversation.buf,matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.i,matrix/neo/internal/conversation.line,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.storeType,matrix/neo/internal/conversation.stream,matrix/neo/internal/conversation.t,matrix/neo/internal/conversation.turns,matrix/vault.Session.EncodeLine
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
-  ^references=matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.historyLocked kind=method
@@ -477,11 +363,7 @@ NODE id=matrix/neo/internal/conversation.Store.historyLocked kind=method
   sig=func (s *Store) historyLocked(convID string) []Turn
   doc=historyLocked is the full-history read (archive + hot), oldest-first. Caller\nMUST hold s.mu.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.readTurns
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.readTurns,matrix/neo/internal/conversation.Turn,matrix/neo/internal/conversation.archived,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.hot,matrix/neo/internal/conversation.out,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.storeConvArchive
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.Exists,matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.History,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.Recent,matrix/neo/internal/conversation.Store.SetRecoveryHandoff,matrix/neo/internal/conversation.Store.UpdateMeta
-  ^references=matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.Exists,matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.History,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.Recent,matrix/neo/internal/conversation.Store.SetRecoveryHandoff,matrix/neo/internal/conversation.Store.UpdateMeta
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.legacyPathLocked kind=method
@@ -489,11 +371,7 @@ NODE id=matrix/neo/internal/conversation.Store.legacyPathLocked kind=method
   sig=func (s *Store) legacyPathLocked(convID string) string
   doc=legacyPathLocked returns the old single-JSON path (daemon-shaped). Only used\nfor backward-compatible reads of pre-JSONL files.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.loadLocked
-  ^references=matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.loadLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.loadLocked kind=method
@@ -501,22 +379,14 @@ NODE id=matrix/neo/internal/conversation.Store.loadLocked kind=method
   sig=func (s *Store) loadLocked(convID string) *Record
   doc=loadLocked reads a record's HOT turns (the retained set); a missing/corrupt\nfile yields an empty record (never an error to the caller). It reads the\nJSONL hot file, falling back to the legacy single-JSON .json shape written\nby the daemon / pre-ring-buffer Neo. A partial (crash-truncated) final JSONL\nline is silently skipped — crash-atomic. Caller MUST hold s.mu.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.legacyPathLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.readTurns
-  references=matrix/neo/internal/conversation.Record,matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.legacyPathLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.readTurns,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.data,matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.jerr,matrix/neo/internal/conversation.legacy,matrix/neo/internal/conversation.path,matrix/neo/internal/conversation.rec,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.storeConvHot,matrix/neo/internal/conversation.turns,matrix/neo/internal/conversation.updated
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.historyLocked
-  ^references=matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.historyLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.loadMetaLocked kind=method
   digest=b3:153d583a88b17bb27e84ca542fbcc83e9e3c7d49c6845aaca571213f4f6c01e4 file=neo/internal/conversation/store.go range=485:511 lang=go exported=false byte_range=16856:17500
   sig=func (s *Store) loadMetaLocked(convID string) convMeta
 EDGES
-  calls=matrix/neo/internal/conversation.Store.metaAD,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.metaAD,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.convMeta,matrix/neo/internal/conversation.data,matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.m,matrix/neo/internal/conversation.oerr,matrix/neo/internal/conversation.path,matrix/neo/internal/conversation.plain,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.uv,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.IsInterview,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.Meta,matrix/neo/internal/conversation.Store.Project,matrix/neo/internal/conversation.Store.RecoveryHandoff,matrix/neo/internal/conversation.Store.SetInterview,matrix/neo/internal/conversation.Store.SetProject,matrix/neo/internal/conversation.Store.SetRecoveryHandoff,matrix/neo/internal/conversation.Store.UpdateMeta
-  ^references=matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.IsInterview,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.Meta,matrix/neo/internal/conversation.Store.Project,matrix/neo/internal/conversation.Store.RecoveryHandoff,matrix/neo/internal/conversation.Store.SetInterview,matrix/neo/internal/conversation.Store.SetProject,matrix/neo/internal/conversation.Store.SetRecoveryHandoff,matrix/neo/internal/conversation.Store.UpdateMeta
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.metaAD kind=method
@@ -524,21 +394,14 @@ NODE id=matrix/neo/internal/conversation.Store.metaAD kind=method
   sig=func (s *Store) metaAD(convID string) vault.AD
   doc=metaAD reconstructs the associated data for a conversation's meta sidecar —\nnever stored, so a sidecar moved between users or conversations fails auth.
 EDGES
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.schemaMetaV1,matrix/neo/internal/conversation.storeConvMeta,matrix/vault.AD
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked
-  ^references=matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.metaPathLocked kind=method
   digest=b3:a843eb27c539f989e5990aa8dbd39b938a5f7f4bcb8e63bc14753bb48f48cbc4 file=neo/internal/conversation/store.go range=478:483 lang=go exported=false byte_range=16698:16854
   sig=func (s *Store) metaPathLocked(convID string) string
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked
-  ^references=matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.nextSeqLocked kind=method
@@ -546,22 +409,14 @@ NODE id=matrix/neo/internal/conversation.Store.nextSeqLocked kind=method
   sig=func (s *Store) nextSeqLocked(path string) uint64
   doc=nextSeqLocked returns the next record sequence for a file, seeding the cache\nonce by counting existing lines so the seq binds each record to its position\nwhile keeping appends O(1). Caller MUST hold s.mu.
 EDGES
-  calls=matrix/neo/internal/conversation.countLines
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.countLines,matrix/neo/internal/conversation.n,matrix/neo/internal/conversation.ok,matrix/neo/internal/conversation.path,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.appendTurn
-  ^references=matrix/neo/internal/conversation.Store.appendTurn
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.pathLocked kind=method
   digest=b3:71066515dbd9b7cd600e7f151202f5515e528e1ca99e6d82b342dcf5d1ce6f73 file=neo/internal/conversation/store.go range=217:222 lang=go exported=false byte_range=7801:7949
   sig=func (s *Store) pathLocked(convID string) string
 EDGES
-  calls=matrix/neo/internal/conversation.Store.Enabled
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.s
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
-  ^references=matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.Delete,matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.readTurns kind=method
@@ -569,11 +424,7 @@ NODE id=matrix/neo/internal/conversation.Store.readTurns kind=method
   sig=func (s *Store) readTurns(storeType, stream, path string) ([]Turn, time.Time)
   doc=readTurns parses a newline-delimited turn file, decrypting each record under\nthe reconstructed associated data (legacy plaintext lines pass through until\nmigrated). A line that fails to decrypt or unmarshal — including a wrong-key,\ntampered, or crash-truncated final line — is skipped; the record sequence\nstill advances so surviving records stay bound to their positions. Returns\n(turns, latestUpdated).
 EDGES
-  calls=matrix/neo/internal/conversation.Store.ad,matrix/vault.Session.DecodeLine
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.ad,matrix/neo/internal/conversation.Turn,matrix/neo/internal/conversation.derr,matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.f,matrix/neo/internal/conversation.jerr,matrix/neo/internal/conversation.latest,matrix/neo/internal/conversation.line,matrix/neo/internal/conversation.path,matrix/neo/internal/conversation.plain,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.sc,matrix/neo/internal/conversation.seq,matrix/neo/internal/conversation.storeType,matrix/neo/internal/conversation.stream,matrix/neo/internal/conversation.t,matrix/neo/internal/conversation.turns,matrix/vault.Session.DecodeLine
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
-  ^references=matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.rollIfOverCapLocked kind=method
@@ -581,11 +432,7 @@ NODE id=matrix/neo/internal/conversation.Store.rollIfOverCapLocked kind=method
   sig=func (s *Store) rollIfOverCapLocked(convID string)
   doc=rollIfOverCapLocked moves the oldest overflow turns from the hot .jsonl to\nthe archive when the hot set exceeds the retained cap. The archive rollup\nuses the rename-based atomic write (tmp+rename) — the ONLY place that path\nis used now. Caller MUST hold s.mu.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.appendTurn,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.buildJSONL,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.readTurns
-  references=matrix/neo/internal/conversation.DefaultRetainedTurns,matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.appendTurn,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.buildJSONL,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.readTurns,matrix/neo/internal/conversation.archivePath,matrix/neo/internal/conversation.cap,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.keep,matrix/neo/internal/conversation.keepJSONL,matrix/neo/internal/conversation.overflow,matrix/neo/internal/conversation.roll,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.storeConvArchive,matrix/neo/internal/conversation.storeConvHot,matrix/neo/internal/conversation.t,matrix/neo/internal/conversation.tmp,matrix/neo/internal/conversation.turns
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Append
-  ^references=matrix/neo/internal/conversation.Store.Append
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.saveMetaLocked kind=method
@@ -593,11 +440,7 @@ NODE id=matrix/neo/internal/conversation.Store.saveMetaLocked kind=method
   sig=func (s *Store) saveMetaLocked(convID string, m convMeta) error
   doc=saveMetaLocked persists a conversation's meta sidecar (atomic tmp+rename,\nsealed at rest when the vault is wired). Caller MUST hold s.mu.
 EDGES
-  calls=matrix/neo/internal/conversation.Store.metaAD,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/vault.Session.MaybeSealFile
-  references=matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.metaAD,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.convID,matrix/neo/internal/conversation.convMeta,matrix/neo/internal/conversation.data,matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.m,matrix/neo/internal/conversation.path,matrix/neo/internal/conversation.s,matrix/neo/internal/conversation.tmp,matrix/vault.Session.MaybeSealFile
   ^contains=matrix/neo/internal/conversation.Store
-  ^calls=matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.SetInterview,matrix/neo/internal/conversation.Store.SetProject,matrix/neo/internal/conversation.Store.SetRecoveryHandoff,matrix/neo/internal/conversation.Store.UpdateMeta
-  ^references=matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.SetInterview,matrix/neo/internal/conversation.Store.SetProject,matrix/neo/internal/conversation.Store.SetRecoveryHandoff,matrix/neo/internal/conversation.Store.UpdateMeta
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Summary kind=type
@@ -606,7 +449,6 @@ NODE id=matrix/neo/internal/conversation.Summary kind=type
   doc=Summary is the compact list shape for GET /conversations. Project is the\nworkbench project tag ("" for untagged dashboard threads) — additive\nomitempty, so the pre-workbench wire shape is unchanged for untagged\nconversations.
 EDGES
   contains=matrix/neo/internal/conversation.Summary#Archived,matrix/neo/internal/conversation.Summary#ConversationID,matrix/neo/internal/conversation.Summary#ForkedFrom,matrix/neo/internal/conversation.Summary#Preview,matrix/neo/internal/conversation.Summary#Project,matrix/neo/internal/conversation.Summary#Title,matrix/neo/internal/conversation.Summary#TurnCount,matrix/neo/internal/conversation.Summary#Updated
-  ^references=matrix/neo/internal/conversation.Store.List,matrix/neo/internal/server.Server.conversationSummary,matrix/neo/internal/server.Server.handleConversations
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Summary#Archived kind=field
@@ -665,7 +507,6 @@ NODE id=matrix/neo/internal/conversation.Turn kind=type
   doc=Turn is one durable line of a conversation. JSON tags match the daemon store\nand the web client's ConversationTurn.
 EDGES
   contains=matrix/neo/internal/conversation.Turn#IntentID,matrix/neo/internal/conversation.Turn#Role,matrix/neo/internal/conversation.Turn#TS,matrix/neo/internal/conversation.Turn#Text
-  ^references=matrix/neo/internal/conversation.Record,matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.AppendAssistant,matrix/neo/internal/conversation.Store.AppendUser,matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.History,matrix/neo/internal/conversation.Store.Recent,matrix/neo/internal/conversation.Store.appendTurn,matrix/neo/internal/conversation.Store.buildJSONL,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.readTurns,matrix/neo/internal/server.Engine.buildRecoveryHandoff,matrix/neo/internal/server.dropCurrentRun,matrix/neo/internal/server.dropRunNarration,matrix/neo/internal/server.firstUserText,matrix/neo/internal/server.latestRecoveryTurn,matrix/neo/internal/server.seedMessages
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Turn#IntentID kind=field
@@ -698,7 +539,6 @@ NODE id=matrix/neo/internal/conversation.convMeta kind=type
   doc=convMeta is the per-conversation sidecar (<convID>.meta.json): durable\nmetadata that is not a turn — the workbench project tag and the\npersonalization-interview flag (ORACLE task 5.3).
 EDGES
   contains=matrix/neo/internal/conversation.convMeta#Archived,matrix/neo/internal/conversation.convMeta#ForkedAtTurn,matrix/neo/internal/conversation.convMeta#ForkedFrom,matrix/neo/internal/conversation.convMeta#Interview,matrix/neo/internal/conversation.convMeta#Project,matrix/neo/internal/conversation.convMeta#RecoveryHandoff,matrix/neo/internal/conversation.convMeta#RecoverySource,matrix/neo/internal/conversation.convMeta#Title
-  ^references=matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.SetRecoveryHandoff,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.saveMetaLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.convMeta#Archived kind=field
@@ -759,9 +599,6 @@ NODE id=matrix/neo/internal/conversation.countLines kind=func
   sig=func countLines(path string) uint64
   doc=countLines counts non-empty lines in a JSONL file (0 when absent).
 EDGES
-  references=matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.f,matrix/neo/internal/conversation.n,matrix/neo/internal/conversation.path,matrix/neo/internal/conversation.sc
-  ^calls=matrix/neo/internal/conversation.Store.nextSeqLocked
-  ^references=matrix/neo/internal/conversation.Store.nextSeqLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.openWithCap kind=func
@@ -769,9 +606,6 @@ NODE id=matrix/neo/internal/conversation.openWithCap kind=func
   sig=func openWithCap(dir string, cap int) *Store
   doc=openWithCap is the test seam that sets an explicit retained-turn cap. It is\nunexported (test-only); production callers use Open.
 EDGES
-  references=matrix/neo/internal/conversation.DefaultRetainedTurns,matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.cap,matrix/neo/internal/conversation.dir,matrix/neo/internal/conversation.s
-  ^calls=matrix/neo/internal/conversation.Open
-  ^references=matrix/neo/internal/conversation.Open
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.preview kind=func
@@ -779,10 +613,6 @@ NODE id=matrix/neo/internal/conversation.preview kind=func
   sig=func preview(rec *Record) string
   doc=preview returns the most recent turn's text, trimmed, for the sidebar.
 EDGES
-  calls=matrix/neo/internal/conversation.truncateLabel
-  references=matrix/neo/internal/conversation.Record,matrix/neo/internal/conversation.last,matrix/neo/internal/conversation.rec,matrix/neo/internal/conversation.truncateLabel
-  ^calls=matrix/neo/internal/conversation.Store.List
-  ^references=matrix/neo/internal/conversation.Store.List
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.retainedTurnsFromEnv kind=func
@@ -790,9 +620,6 @@ NODE id=matrix/neo/internal/conversation.retainedTurnsFromEnv kind=func
   sig=func retainedTurnsFromEnv() int
   doc=retainedTurnsFromEnv reads the NEO_CONVERSATION_RETAINED_TURNS env var; an\nabsent/invalid value yields 0 (Open then applies the default).
 EDGES
-  references=matrix/neo/internal/conversation.err,matrix/neo/internal/conversation.n,matrix/neo/internal/conversation.v
-  ^calls=matrix/neo/internal/conversation.Open
-  ^references=matrix/neo/internal/conversation.Open
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.schemaMetaV1 kind=const
@@ -800,7 +627,6 @@ NODE id=matrix/neo/internal/conversation.schemaMetaV1 kind=const
   sig=untyped string
   doc=Store types and schema bound into each record's associated data, so a sealed\nline cannot be replayed across users, stores, conversations, or positions.
 EDGES
-  ^references=matrix/neo/internal/conversation.Store.metaAD
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.schemaTurnV1 kind=const
@@ -808,7 +634,6 @@ NODE id=matrix/neo/internal/conversation.schemaTurnV1 kind=const
   sig=untyped string
   doc=Store types and schema bound into each record's associated data, so a sealed\nline cannot be replayed across users, stores, conversations, or positions.
 EDGES
-  ^references=matrix/neo/internal/conversation.Store.ad
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.storeConvArchive kind=const
@@ -816,7 +641,6 @@ NODE id=matrix/neo/internal/conversation.storeConvArchive kind=const
   sig=untyped string
   doc=Store types and schema bound into each record's associated data, so a sealed\nline cannot be replayed across users, stores, conversations, or positions.
 EDGES
-  ^references=matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.storeConvHot kind=const
@@ -824,7 +648,6 @@ NODE id=matrix/neo/internal/conversation.storeConvHot kind=const
   sig=untyped string
   doc=Store types and schema bound into each record's associated data, so a sealed\nline cannot be replayed across users, stores, conversations, or positions.
 EDGES
-  ^references=matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.Fork,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.storeConvMeta kind=const
@@ -832,7 +655,6 @@ NODE id=matrix/neo/internal/conversation.storeConvMeta kind=const
   sig=untyped string
   doc=Store types and schema bound into each record's associated data, so a sealed\nline cannot be replayed across users, stores, conversations, or positions.
 EDGES
-  ^references=matrix/neo/internal/conversation.Store.metaAD
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.title kind=func
@@ -840,10 +662,6 @@ NODE id=matrix/neo/internal/conversation.title kind=func
   sig=func title(rec *Record) string
   doc=title derives a short human label: the explicit Title, else the first user\nturn trimmed, else a generic fallback.
 EDGES
-  calls=matrix/neo/internal/conversation.truncateLabel
-  references=matrix/neo/internal/conversation.Record,matrix/neo/internal/conversation.rec,matrix/neo/internal/conversation.t,matrix/neo/internal/conversation.truncateLabel
-  ^calls=matrix/neo/internal/conversation.Store.List
-  ^references=matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.UpdateMeta
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.truncateLabel kind=func
@@ -851,9 +669,6 @@ NODE id=matrix/neo/internal/conversation.truncateLabel kind=func
   sig=func truncateLabel(s string, n int) string
   doc=truncateLabel collapses whitespace and clamps to n runes with an ellipsis.
 EDGES
-  references=matrix/neo/internal/conversation.n,matrix/neo/internal/conversation.r,matrix/neo/internal/conversation.s
-  ^calls=matrix/neo/internal/conversation.preview,matrix/neo/internal/conversation.title
-  ^references=matrix/neo/internal/conversation.preview,matrix/neo/internal/conversation.title
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation/store.go kind=file

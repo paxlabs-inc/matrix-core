@@ -1,12 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/founderprojection kind=package
   digest=b3:3ed24ae8cdea56b288d65354bfad83ade0f837d8ec926425f35ca318d68d3da7 file=workforce/internal/founderprojection range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/founderprojection/doc.go,matrix/workforce/internal/founderprojection/signing.go,matrix/workforce/internal/founderprojection/store.go,matrix/workforce/internal/founderprojection/types.go
-  imports=matrix/workforce/internal/contracts
   ^contains=mod:matrix/workforce
-  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/controlapi
 
 NODE id=matrix/workforce/internal/founderprojection.CaptureDraft kind=type
   digest=b3:5d65ebc0e64cf5c36322f457960eb00c2d86dbf83ebb5ed74e5bf8647a1cb655 file=workforce/internal/founderprojection/types.go range=94:102 lang=go exported=true byte_range=2995:3398
@@ -14,8 +12,6 @@ NODE id=matrix/workforce/internal/founderprojection.CaptureDraft kind=type
 EDGES
   contains=matrix/workforce/internal/founderprojection.CaptureDraft#Authoritative,matrix/workforce/internal/founderprojection.CaptureDraft#Evidence,matrix/workforce/internal/founderprojection.CaptureDraft#ExpiresAt,matrix/workforce/internal/founderprojection.CaptureDraft#InitiativeID,matrix/workforce/internal/founderprojection.CaptureDraft#Process,matrix/workforce/internal/founderprojection.CaptureDraft#Rendered,matrix/workforce/internal/founderprojection.CaptureDraft#RenderedAt,matrix/workforce/internal/founderprojection.CaptureDraft.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/founderprojection.ProcessIdentity,matrix/workforce/internal/founderprojection.RenderEvidence,matrix/workforce/internal/founderprojection.Snapshot
-  ^references=matrix/workforce/internal/controlapi.Service.CaptureFounderProjection,matrix/workforce/internal/controlapi.Service.handleFounderProjectionCapture,matrix/workforce/internal/founderprojection.CaptureDraft.Validate,matrix/workforce/internal/founderprojection.Store.Capture
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.CaptureDraft#Authoritative kind=field
@@ -64,11 +60,7 @@ NODE id=matrix/workforce/internal/founderprojection.CaptureDraft.Validate kind=m
   digest=b3:9fd4d47e3957f46907a6264ffb204957d3474591332d066e758aa4ce36611690 file=workforce/internal/founderprojection/types.go range=104:116 lang=go exported=true byte_range=3400:4024
   sig=func (value CaptureDraft) Validate() error
 EDGES
-  calls=matrix/workforce/internal/founderprojection.ProcessIdentity.Validate,matrix/workforce/internal/founderprojection.RenderEvidence.Validate,matrix/workforce/internal/founderprojection.Snapshot.Equal,matrix/workforce/internal/founderprojection.Snapshot.Validate,matrix/workforce/internal/founderprojection.token,matrix/workforce/internal/founderprojection.utc
-  references=matrix/workforce/internal/founderprojection.CaptureDraft,matrix/workforce/internal/founderprojection.ProcessIdentity.Validate,matrix/workforce/internal/founderprojection.RenderEvidence.Validate,matrix/workforce/internal/founderprojection.Snapshot.Equal,matrix/workforce/internal/founderprojection.Snapshot.Validate,matrix/workforce/internal/founderprojection.token,matrix/workforce/internal/founderprojection.utc,matrix/workforce/internal/founderprojection.value
   ^contains=matrix/workforce/internal/founderprojection.CaptureDraft
-  ^calls=matrix/workforce/internal/founderprojection.Store.Capture
-  ^references=matrix/workforce/internal/founderprojection.Store.Capture
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.CurrentReceipt kind=type
@@ -76,8 +68,6 @@ NODE id=matrix/workforce/internal/founderprojection.CurrentReceipt kind=type
   sig=type CurrentReceipt struct {\n	SchemaVersion		string				`json:"schema_version"`\n	ReceiptID		string				`json:"receipt_id"`\n	RecordID		string				`json:"record_id"`\n	Version			uint64				`json:"version"`\n	RecordVersion		uint64				`json:"record_version"`\n	OrganizationID		contracts.OrganizationID	`json:"organization_id"`\n	InitiativeID		string				`json:"initiative_id"`\n	SnapshotHash		contracts.ContentHash		`json:"snapshot_hash"`\n	SnapshotCursor		string				`json:"snapshot_cursor"`\n	ResourceCounts		map[string]uint64		`json:"resource_counts"`\n	ResourceVersions	map[string]uint64		`json:"resource_versions"`\n	Process			ProcessIdentity			`json:"process"`\n	RenderEvidence		RenderEvidence			`json:"render_evidence"`\n	RecordHash		contracts.ContentHash		`json:"record_hash"`\n	SourceState		string				`json:"source_state"`\n	ObservedAt		time.Time			`json:"observed_at"`\n	FreshUntil		time.Time			`json:"fresh_until"`\n	RenderedAt		time.Time			`json:"rendered_at"`\n	ExpiresAt		time.Time			`json:"expires_at"`\n	CreatedAt		time.Time			`json:"created_at"`\n}
 EDGES
   contains=matrix/workforce/internal/founderprojection.CurrentReceipt#CreatedAt,matrix/workforce/internal/founderprojection.CurrentReceipt#ExpiresAt,matrix/workforce/internal/founderprojection.CurrentReceipt#FreshUntil,matrix/workforce/internal/founderprojection.CurrentReceipt#InitiativeID,matrix/workforce/internal/founderprojection.CurrentReceipt#ObservedAt,matrix/workforce/internal/founderprojection.CurrentReceipt#OrganizationID,matrix/workforce/internal/founderprojection.CurrentReceipt#Process,matrix/workforce/internal/founderprojection.CurrentReceipt#ReceiptID,matrix/workforce/internal/founderprojection.CurrentReceipt#RecordHash,matrix/workforce/internal/founderprojection.CurrentReceipt#RecordID,matrix/workforce/internal/founderprojection.CurrentReceipt#RecordVersion,matrix/workforce/internal/founderprojection.CurrentReceipt#RenderEvidence,matrix/workforce/internal/founderprojection.CurrentReceipt#RenderedAt,matrix/workforce/internal/founderprojection.CurrentReceipt#ResourceCounts,matrix/workforce/internal/founderprojection.CurrentReceipt#ResourceVersions,matrix/workforce/internal/founderprojection.CurrentReceipt#SchemaVersion,matrix/workforce/internal/founderprojection.CurrentReceipt#SnapshotCursor,matrix/workforce/internal/founderprojection.CurrentReceipt#SnapshotHash,matrix/workforce/internal/founderprojection.CurrentReceipt#SourceState,matrix/workforce/internal/founderprojection.CurrentReceipt#Version
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/founderprojection.ProcessIdentity,matrix/workforce/internal/founderprojection.RenderEvidence
-  ^references=matrix/workforce/internal/controlapi.Service.CaptureFounderProjection,matrix/workforce/internal/founderprojection.Receipt.Current,matrix/workforce/internal/founderprojection.Store.Capture,matrix/workforce/internal/founderprojection.Store.Current
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.CurrentReceipt#CreatedAt kind=field
@@ -204,31 +194,24 @@ NODE id=matrix/workforce/internal/founderprojection.ErrConflict kind=var
   digest=b3:371d29d7ec5b6b0d4fdc36f7e3da9ade52c9c825c1c786817f12681dcd9ba7ec file=workforce/internal/founderprojection/types.go range=16:16 lang=go exported=true byte_range=226:297
   sig=error
 EDGES
-  ^references=matrix/workforce/internal/controlapi.Service.handleFounderProjectionCapture
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.ErrNotFound kind=var
   digest=b3:1e9a42d21af5c7c6cd2eda9f56196163810b531a929c835fe78ee5aaf8cac311 file=workforce/internal/founderprojection/types.go range=17:17 lang=go exported=true byte_range=299:368
   sig=error
 EDGES
-  ^references=matrix/workforce/internal/controlapi.Service.handleFounderProjectionCapture,matrix/workforce/internal/founderprojection.Store.Current,matrix/workforce/internal/founderprojection.Store.loadCurrent
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.ErrUnauthorized kind=var
   digest=b3:4398d64c1d7b516bd148d8840e88b5e46269cf0f134ee920767fb68bcb00768d file=workforce/internal/founderprojection/types.go range=18:18 lang=go exported=true byte_range=370:434
   sig=error
 EDGES
-  ^references=matrix/workforce/internal/controlapi.Service.handleFounderProjectionCapture,matrix/workforce/internal/founderprojection.Store.Capture
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.NewStore kind=func
   digest=b3:ee01672a410091e9de14ab68d188d11e1720d5dcf55d3c5df4c97723e151cb1c file=workforce/internal/founderprojection/store.go range=29:50 lang=go exported=true byte_range=500:1317
   sig=func NewStore(\n	pool *pgxpool.Pool,\n	tenantID string,\n	organizationID contracts.OrganizationID,\n	ownerID contracts.OwnerID,\n	keyID string,\n	privateKey ed25519.PrivateKey,\n	now func() time.Time,\n) (*Store, error)
 EDGES
-  calls=matrix/workforce/internal/founderprojection.token
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID,matrix/workforce/internal/founderprojection.Store,matrix/workforce/internal/founderprojection.keyID,matrix/workforce/internal/founderprojection.now,matrix/workforce/internal/founderprojection.organizationID,matrix/workforce/internal/founderprojection.ownerID,matrix/workforce/internal/founderprojection.pool,matrix/workforce/internal/founderprojection.privateKey,matrix/workforce/internal/founderprojection.publicKey,matrix/workforce/internal/founderprojection.tenantID,matrix/workforce/internal/founderprojection.token
-  ^calls=matrix/workforce/cmd/workforced.runContext
-  ^references=matrix/workforce/cmd/workforced.runContext
   ^defines=matrix/workforce/internal/founderprojection/store.go
 
 NODE id=matrix/workforce/internal/founderprojection.ProcessIdentity kind=type
@@ -237,8 +220,6 @@ NODE id=matrix/workforce/internal/founderprojection.ProcessIdentity kind=type
 EDGES
   contains=matrix/workforce/internal/founderprojection.ProcessIdentity#FreshProcess,matrix/workforce/internal/founderprojection.ProcessIdentity#OwnerID,matrix/workforce/internal/founderprojection.ProcessIdentity#ProcessID,matrix/workforce/internal/founderprojection.ProcessIdentity#Role,matrix/workforce/internal/founderprojection.ProcessIdentity#Runtime,matrix/workforce/internal/founderprojection.ProcessIdentity#WakeID,matrix/workforce/internal/founderprojection.ProcessIdentity.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.OwnerID
-  ^references=matrix/workforce/internal/founderprojection.CaptureDraft,matrix/workforce/internal/founderprojection.CurrentReceipt,matrix/workforce/internal/founderprojection.ProcessIdentity.Validate,matrix/workforce/internal/founderprojection.Receipt,matrix/workforce/internal/founderprojection.receiptSigningPayload
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.ProcessIdentity#FreshProcess kind=field
@@ -281,11 +262,7 @@ NODE id=matrix/workforce/internal/founderprojection.ProcessIdentity.Validate kin
   digest=b3:66e1e0ed56355ed548b8b6a59234e7b7349ac0ee85400c6522e0f74601bbe67c file=workforce/internal/founderprojection/types.go range=69:76 lang=go exported=true byte_range=2100:2442
   sig=func (value ProcessIdentity) Validate() error
 EDGES
-  calls=matrix/workforce/internal/founderprojection.token
-  references=matrix/workforce/internal/founderprojection.ProcessIdentity,matrix/workforce/internal/founderprojection.token,matrix/workforce/internal/founderprojection.value
   ^contains=matrix/workforce/internal/founderprojection.ProcessIdentity
-  ^calls=matrix/workforce/internal/founderprojection.CaptureDraft.Validate
-  ^references=matrix/workforce/internal/founderprojection.CaptureDraft.Validate
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.Receipt kind=type
@@ -293,8 +270,6 @@ NODE id=matrix/workforce/internal/founderprojection.Receipt kind=type
   sig=type Receipt struct {\n	SchemaVersion	string\n	ID		string\n	Version		uint64\n	OrganizationID	contracts.OrganizationID\n	InitiativeID	string\n	Authoritative	Snapshot\n	Rendered	Snapshot\n	Process		ProcessIdentity\n	Evidence	RenderEvidence\n	RenderedAt	time.Time\n	ExpiresAt	time.Time\n	CreatedAt	time.Time\n	CanonicalHash	contracts.ContentHash\n	SignerKeyID	string\n	Signature	[]byte\n}
 EDGES
   contains=matrix/workforce/internal/founderprojection.Receipt#Authoritative,matrix/workforce/internal/founderprojection.Receipt#CanonicalHash,matrix/workforce/internal/founderprojection.Receipt#CreatedAt,matrix/workforce/internal/founderprojection.Receipt#Evidence,matrix/workforce/internal/founderprojection.Receipt#ExpiresAt,matrix/workforce/internal/founderprojection.Receipt#ID,matrix/workforce/internal/founderprojection.Receipt#InitiativeID,matrix/workforce/internal/founderprojection.Receipt#OrganizationID,matrix/workforce/internal/founderprojection.Receipt#Process,matrix/workforce/internal/founderprojection.Receipt#Rendered,matrix/workforce/internal/founderprojection.Receipt#RenderedAt,matrix/workforce/internal/founderprojection.Receipt#SchemaVersion,matrix/workforce/internal/founderprojection.Receipt#Signature,matrix/workforce/internal/founderprojection.Receipt#SignerKeyID,matrix/workforce/internal/founderprojection.Receipt#Version,matrix/workforce/internal/founderprojection.Receipt.Current
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/founderprojection.ProcessIdentity,matrix/workforce/internal/founderprojection.RenderEvidence,matrix/workforce/internal/founderprojection.Snapshot
-  ^references=matrix/workforce/internal/founderprojection.Receipt.Current,matrix/workforce/internal/founderprojection.Store.Capture,matrix/workforce/internal/founderprojection.Store.loadCurrent,matrix/workforce/internal/founderprojection.receiptSigningBytes,matrix/workforce/internal/founderprojection.signReceipt,matrix/workforce/internal/founderprojection.verifyReceipt
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.Receipt#Authoritative kind=field
@@ -391,11 +366,7 @@ NODE id=matrix/workforce/internal/founderprojection.Receipt.Current kind=method
   digest=b3:b6d220d31f333cbda72b630d7636437ad5f2b8245cda2e878a0191c1befe396b file=workforce/internal/founderprojection/types.go range=159:172 lang=go exported=true byte_range=5791:6565
   sig=func (value Receipt) Current() CurrentReceipt
 EDGES
-  calls=matrix/workforce/internal/founderprojection.cloneMap
-  references=matrix/workforce/internal/founderprojection.CurrentReceipt,matrix/workforce/internal/founderprojection.Receipt,matrix/workforce/internal/founderprojection.SchemaVersion,matrix/workforce/internal/founderprojection.cloneMap,matrix/workforce/internal/founderprojection.value
   ^contains=matrix/workforce/internal/founderprojection.Receipt
-  ^calls=matrix/workforce/internal/founderprojection.Store.Capture,matrix/workforce/internal/founderprojection.Store.Current
-  ^references=matrix/workforce/internal/founderprojection.Store.Capture,matrix/workforce/internal/founderprojection.Store.Current
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.RenderEvidence kind=type
@@ -404,8 +375,6 @@ NODE id=matrix/workforce/internal/founderprojection.RenderEvidence kind=type
 EDGES
   contains=matrix/workforce/internal/founderprojection.RenderEvidence#FreshUntil,matrix/workforce/internal/founderprojection.RenderEvidence#Hash,matrix/workforce/internal/founderprojection.RenderEvidence#ID,matrix/workforce/internal/founderprojection.RenderEvidence#ObservedAt,matrix/workforce/internal/founderprojection.RenderEvidence.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.ContentHash
-  ^references=matrix/workforce/internal/founderprojection.CaptureDraft,matrix/workforce/internal/founderprojection.CurrentReceipt,matrix/workforce/internal/founderprojection.Receipt,matrix/workforce/internal/founderprojection.RenderEvidence.Validate,matrix/workforce/internal/founderprojection.receiptSigningPayload
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.RenderEvidence#FreshUntil kind=field
@@ -436,18 +405,13 @@ NODE id=matrix/workforce/internal/founderprojection.RenderEvidence.Validate kind
   digest=b3:112adc31887aab818d4a4237faf8e00864ce1d7a001a18ca44c6bced1799fefe file=workforce/internal/founderprojection/types.go range=85:92 lang=go exported=true byte_range=2698:2993
   sig=func (value RenderEvidence) Validate() error
 EDGES
-  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/founderprojection.token,matrix/workforce/internal/founderprojection.utc
-  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/founderprojection.RenderEvidence,matrix/workforce/internal/founderprojection.token,matrix/workforce/internal/founderprojection.utc,matrix/workforce/internal/founderprojection.value
   ^contains=matrix/workforce/internal/founderprojection.RenderEvidence
-  ^calls=matrix/workforce/internal/founderprojection.CaptureDraft.Validate
-  ^references=matrix/workforce/internal/founderprojection.CaptureDraft.Validate
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.SchemaVersion kind=const
   digest=b3:bfabf25955a7c60e5de252868f72682285dce1f40d75557cff698c2951eb8950 file=workforce/internal/founderprojection/types.go range=12:12 lang=go exported=true byte_range=121:181
   sig=untyped string
 EDGES
-  ^references=matrix/workforce/internal/founderprojection.Receipt.Current,matrix/workforce/internal/founderprojection.Store.Capture,matrix/workforce/internal/founderprojection.Store.loadCurrent
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.Snapshot kind=type
@@ -456,8 +420,6 @@ NODE id=matrix/workforce/internal/founderprojection.Snapshot kind=type
 EDGES
   contains=matrix/workforce/internal/founderprojection.Snapshot#Cursor,matrix/workforce/internal/founderprojection.Snapshot#Hash,matrix/workforce/internal/founderprojection.Snapshot#ResourceCounts,matrix/workforce/internal/founderprojection.Snapshot#ResourceVersions,matrix/workforce/internal/founderprojection.Snapshot.Equal,matrix/workforce/internal/founderprojection.Snapshot.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.ContentHash
-  ^references=matrix/workforce/internal/founderprojection.CaptureDraft,matrix/workforce/internal/founderprojection.Receipt,matrix/workforce/internal/founderprojection.Snapshot.Equal,matrix/workforce/internal/founderprojection.Snapshot.Validate,matrix/workforce/internal/founderprojection.receiptSigningPayload
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.Snapshot#Cursor kind=field
@@ -488,21 +450,14 @@ NODE id=matrix/workforce/internal/founderprojection.Snapshot.Equal kind=method
   digest=b3:41d02110fd4be9ddf58efd24dc125972755f4711636532afd963dc2b580e5af8 file=workforce/internal/founderprojection/types.go range=45:58 lang=go exported=true byte_range=1296:1764
   sig=func (value Snapshot) Equal(other Snapshot) bool
 EDGES
-  references=matrix/workforce/internal/founderprojection.Snapshot,matrix/workforce/internal/founderprojection.count,matrix/workforce/internal/founderprojection.other,matrix/workforce/internal/founderprojection.resource,matrix/workforce/internal/founderprojection.value
   ^contains=matrix/workforce/internal/founderprojection.Snapshot
-  ^calls=matrix/workforce/internal/founderprojection.CaptureDraft.Validate
-  ^references=matrix/workforce/internal/founderprojection.CaptureDraft.Validate
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.Snapshot.Validate kind=method
   digest=b3:8461e871045761d973a758410117e78f9e4e339e85f325050cb45927e7f22356 file=workforce/internal/founderprojection/types.go range=28:43 lang=go exported=true byte_range=706:1294
   sig=func (value Snapshot) Validate() error
 EDGES
-  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/founderprojection.digest,matrix/workforce/internal/founderprojection.token
-  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/founderprojection.Snapshot,matrix/workforce/internal/founderprojection.digest,matrix/workforce/internal/founderprojection.exists,matrix/workforce/internal/founderprojection.resource,matrix/workforce/internal/founderprojection.token,matrix/workforce/internal/founderprojection.value
   ^contains=matrix/workforce/internal/founderprojection.Snapshot
-  ^calls=matrix/workforce/internal/founderprojection.CaptureDraft.Validate
-  ^references=matrix/workforce/internal/founderprojection.CaptureDraft.Validate
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.Store kind=type
@@ -510,8 +465,6 @@ NODE id=matrix/workforce/internal/founderprojection.Store kind=type
   sig=type Store struct {\n	pool		*pgxpool.Pool\n	tenantID	string\n	organizationID	contracts.OrganizationID\n	ownerID		contracts.OwnerID\n	keyID		string\n	privateKey	ed25519.PrivateKey\n	publicKey	ed25519.PublicKey\n	now		func() time.Time\n}
 EDGES
   contains=matrix/workforce/internal/founderprojection.Store#keyID,matrix/workforce/internal/founderprojection.Store#now,matrix/workforce/internal/founderprojection.Store#organizationID,matrix/workforce/internal/founderprojection.Store#ownerID,matrix/workforce/internal/founderprojection.Store#pool,matrix/workforce/internal/founderprojection.Store#privateKey,matrix/workforce/internal/founderprojection.Store#publicKey,matrix/workforce/internal/founderprojection.Store#tenantID,matrix/workforce/internal/founderprojection.Store.Capture,matrix/workforce/internal/founderprojection.Store.Current,matrix/workforce/internal/founderprojection.Store.loadCurrent
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.OwnerID
-  ^references=matrix/workforce/internal/controlapi.Service,matrix/workforce/internal/controlapi.Service.AttachFounderProjection,matrix/workforce/internal/founderprojection.NewStore,matrix/workforce/internal/founderprojection.Store.Capture,matrix/workforce/internal/founderprojection.Store.Current,matrix/workforce/internal/founderprojection.Store.loadCurrent
   ^defines=matrix/workforce/internal/founderprojection/store.go
 
 NODE id=matrix/workforce/internal/founderprojection.Store#keyID kind=field
@@ -566,19 +519,13 @@ NODE id=matrix/workforce/internal/founderprojection.Store.Capture kind=method
   digest=b3:035cd29a1f253557885e3724a98a91e281b0f49c72cc43eb816b5a57eccef80d file=workforce/internal/founderprojection/store.go range=52:144 lang=go exported=true byte_range=1319:5366
   sig=func (store *Store) Capture(ctx context.Context, draft CaptureDraft) (CurrentReceipt, error)
 EDGES
-  calls=matrix/workforce/internal/founderprojection.CaptureDraft.Validate,matrix/workforce/internal/founderprojection.Receipt.Current,matrix/workforce/internal/founderprojection.signReceipt,matrix/workforce/internal/founderprojection.utc
-  references=matrix/workforce/internal/founderprojection.CaptureDraft,matrix/workforce/internal/founderprojection.CaptureDraft.Validate,matrix/workforce/internal/founderprojection.CurrentReceipt,matrix/workforce/internal/founderprojection.ErrUnauthorized,matrix/workforce/internal/founderprojection.Receipt,matrix/workforce/internal/founderprojection.Receipt.Current,matrix/workforce/internal/founderprojection.SchemaVersion,matrix/workforce/internal/founderprojection.Store,matrix/workforce/internal/founderprojection.counts,matrix/workforce/internal/founderprojection.ctx,matrix/workforce/internal/founderprojection.currentVersion,matrix/workforce/internal/founderprojection.draft,matrix/workforce/internal/founderprojection.err,matrix/workforce/internal/founderprojection.now,matrix/workforce/internal/founderprojection.receipt,matrix/workforce/internal/founderprojection.receiptID,matrix/workforce/internal/founderprojection.signReceipt,matrix/workforce/internal/founderprojection.store,matrix/workforce/internal/founderprojection.tx,matrix/workforce/internal/founderprojection.utc,matrix/workforce/internal/founderprojection.version,matrix/workforce/internal/founderprojection.versions
   ^contains=matrix/workforce/internal/founderprojection.Store
-  ^calls=matrix/workforce/internal/controlapi.Service.CaptureFounderProjection
-  ^references=matrix/workforce/internal/controlapi.Service.CaptureFounderProjection
   ^defines=matrix/workforce/internal/founderprojection/store.go
 
 NODE id=matrix/workforce/internal/founderprojection.Store.Current kind=method
   digest=b3:1cb601e891aa907efb56615f6c348b71a088a7368b9303e75073ec40a8ca7ebd file=workforce/internal/founderprojection/store.go range=146:162 lang=go exported=true byte_range=5368:5835
   sig=func (store *Store) Current(\n	ctx context.Context,\n	initiativeID string,\n	at time.Time,\n) (CurrentReceipt, error)
 EDGES
-  calls=matrix/workforce/internal/founderprojection.Receipt.Current,matrix/workforce/internal/founderprojection.Store.loadCurrent,matrix/workforce/internal/founderprojection.token,matrix/workforce/internal/founderprojection.utc,matrix/workforce/internal/founderprojection.verifyReceipt
-  references=matrix/workforce/internal/founderprojection.CurrentReceipt,matrix/workforce/internal/founderprojection.ErrNotFound,matrix/workforce/internal/founderprojection.Receipt.Current,matrix/workforce/internal/founderprojection.Store,matrix/workforce/internal/founderprojection.Store.loadCurrent,matrix/workforce/internal/founderprojection.at,matrix/workforce/internal/founderprojection.ctx,matrix/workforce/internal/founderprojection.err,matrix/workforce/internal/founderprojection.initiativeID,matrix/workforce/internal/founderprojection.receipt,matrix/workforce/internal/founderprojection.store,matrix/workforce/internal/founderprojection.token,matrix/workforce/internal/founderprojection.utc,matrix/workforce/internal/founderprojection.verifyReceipt
   ^contains=matrix/workforce/internal/founderprojection.Store
   ^defines=matrix/workforce/internal/founderprojection/store.go
 
@@ -586,39 +533,25 @@ NODE id=matrix/workforce/internal/founderprojection.Store.loadCurrent kind=metho
   digest=b3:d66a71050277000b94d500adbca028b32ab134e48cd2de9ba3d1fb5ffc99fa8f file=workforce/internal/founderprojection/store.go range=164:217 lang=go exported=false byte_range=5837:8641
   sig=func (store *Store) loadCurrent(ctx context.Context, initiativeID string) (Receipt, error)
 EDGES
-  calls=matrix/workforce/internal/founderprojection.cloneMap
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/founderprojection.ErrNotFound,matrix/workforce/internal/founderprojection.Receipt,matrix/workforce/internal/founderprojection.SchemaVersion,matrix/workforce/internal/founderprojection.Store,matrix/workforce/internal/founderprojection.cloneMap,matrix/workforce/internal/founderprojection.countsJSON,matrix/workforce/internal/founderprojection.ctx,matrix/workforce/internal/founderprojection.cursor,matrix/workforce/internal/founderprojection.err,matrix/workforce/internal/founderprojection.initiativeID,matrix/workforce/internal/founderprojection.renderedCursor,matrix/workforce/internal/founderprojection.renderedHash,matrix/workforce/internal/founderprojection.serverHash,matrix/workforce/internal/founderprojection.store,matrix/workforce/internal/founderprojection.value,matrix/workforce/internal/founderprojection.versionsJSON
   ^contains=matrix/workforce/internal/founderprojection.Store
-  ^calls=matrix/workforce/internal/founderprojection.Store.Current
-  ^references=matrix/workforce/internal/founderprojection.Store.Current
   ^defines=matrix/workforce/internal/founderprojection/store.go
 
 NODE id=matrix/workforce/internal/founderprojection.cloneMap kind=func
   digest=b3:cf4761672069ba4acbf45dbdf465bfb2f03cfceb43e9122920ac867a56cbbed1 file=workforce/internal/founderprojection/types.go range=174:180 lang=go exported=false byte_range=6567:6745
   sig=func cloneMap(value map[string]uint64) map[string]uint64
 EDGES
-  references=matrix/workforce/internal/founderprojection.item,matrix/workforce/internal/founderprojection.key,matrix/workforce/internal/founderprojection.result,matrix/workforce/internal/founderprojection.value
-  ^calls=matrix/workforce/internal/founderprojection.Receipt.Current,matrix/workforce/internal/founderprojection.Store.loadCurrent
-  ^references=matrix/workforce/internal/founderprojection.Receipt.Current,matrix/workforce/internal/founderprojection.Store.loadCurrent
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.digest kind=func
   digest=b3:891360c11889d273b5e62513f6b5f6d0c49822ba51a8e49073644c2d2f853c4e file=workforce/internal/founderprojection/types.go range=194:196 lang=go exported=false byte_range=7035:7147
   sig=func digest(value string) error
 EDGES
-  calls=matrix/workforce/internal/contracts.ContentHash.Validate
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/founderprojection.value
-  ^calls=matrix/workforce/internal/founderprojection.Snapshot.Validate
-  ^references=matrix/workforce/internal/founderprojection.Snapshot.Validate
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.receiptSigningBytes kind=func
   digest=b3:60ef39ea4a6e50d3e71296075ea8110e6828d66b2bb5ac4cde1ec74c126c3536 file=workforce/internal/founderprojection/signing.go range=26:36 lang=go exported=false byte_range=801:1340
   sig=func receiptSigningBytes(value Receipt) ([]byte, error)
 EDGES
-  references=matrix/workforce/internal/founderprojection.Receipt,matrix/workforce/internal/founderprojection.receiptSigningPayload,matrix/workforce/internal/founderprojection.timeFormat,matrix/workforce/internal/founderprojection.value
-  ^calls=matrix/workforce/internal/founderprojection.signReceipt,matrix/workforce/internal/founderprojection.verifyReceipt
-  ^references=matrix/workforce/internal/founderprojection.signReceipt,matrix/workforce/internal/founderprojection.verifyReceipt
   ^defines=matrix/workforce/internal/founderprojection/signing.go
 
 NODE id=matrix/workforce/internal/founderprojection.receiptSigningPayload kind=type
@@ -626,8 +559,6 @@ NODE id=matrix/workforce/internal/founderprojection.receiptSigningPayload kind=t
   sig=type receiptSigningPayload struct {\n	SchemaVersion	string		`json:"schema_version"`\n	ReceiptID	string		`json:"receipt_id"`\n	Version		uint64		`json:"version"`\n	OrganizationID	string		`json:"organization_id"`\n	InitiativeID	string		`json:"initiative_id"`\n	Authoritative	Snapshot	`json:"authoritative_snapshot"`\n	Rendered	Snapshot	`json:"rendered_snapshot"`\n	Process		ProcessIdentity	`json:"process"`\n	Evidence	RenderEvidence	`json:"evidence"`\n	RenderedAt	string		`json:"rendered_at"`\n	ExpiresAt	string		`json:"expires_at"`\n	CreatedAt	string		`json:"created_at"`\n}
 EDGES
   contains=matrix/workforce/internal/founderprojection.receiptSigningPayload#Authoritative,matrix/workforce/internal/founderprojection.receiptSigningPayload#CreatedAt,matrix/workforce/internal/founderprojection.receiptSigningPayload#Evidence,matrix/workforce/internal/founderprojection.receiptSigningPayload#ExpiresAt,matrix/workforce/internal/founderprojection.receiptSigningPayload#InitiativeID,matrix/workforce/internal/founderprojection.receiptSigningPayload#OrganizationID,matrix/workforce/internal/founderprojection.receiptSigningPayload#Process,matrix/workforce/internal/founderprojection.receiptSigningPayload#ReceiptID,matrix/workforce/internal/founderprojection.receiptSigningPayload#Rendered,matrix/workforce/internal/founderprojection.receiptSigningPayload#RenderedAt,matrix/workforce/internal/founderprojection.receiptSigningPayload#SchemaVersion,matrix/workforce/internal/founderprojection.receiptSigningPayload#Version
-  references=matrix/workforce/internal/founderprojection.ProcessIdentity,matrix/workforce/internal/founderprojection.RenderEvidence,matrix/workforce/internal/founderprojection.Snapshot
-  ^references=matrix/workforce/internal/founderprojection.receiptSigningBytes
   ^defines=matrix/workforce/internal/founderprojection/signing.go
 
 NODE id=matrix/workforce/internal/founderprojection.receiptSigningPayload#Authoritative kind=field
@@ -706,45 +637,30 @@ NODE id=matrix/workforce/internal/founderprojection.signReceipt kind=func
   digest=b3:77022fa988e31ddcb500a91b7126b40d31036703a83e238dfe29b4517ea3c123 file=workforce/internal/founderprojection/signing.go range=38:52 lang=go exported=false byte_range=1342:1891
   sig=func signReceipt(value *Receipt, keyID string, privateKey ed25519.PrivateKey) error
 EDGES
-  calls=matrix/workforce/internal/founderprojection.receiptSigningBytes,matrix/workforce/internal/founderprojection.token
-  references=matrix/workforce/internal/founderprojection.Receipt,matrix/workforce/internal/founderprojection.err,matrix/workforce/internal/founderprojection.keyID,matrix/workforce/internal/founderprojection.payload,matrix/workforce/internal/founderprojection.privateKey,matrix/workforce/internal/founderprojection.receiptSigningBytes,matrix/workforce/internal/founderprojection.sum,matrix/workforce/internal/founderprojection.token,matrix/workforce/internal/founderprojection.value
-  ^calls=matrix/workforce/internal/founderprojection.Store.Capture
-  ^references=matrix/workforce/internal/founderprojection.Store.Capture
   ^defines=matrix/workforce/internal/founderprojection/signing.go
 
 NODE id=matrix/workforce/internal/founderprojection.timeFormat kind=const
   digest=b3:417e4954474f5ace52bd96afe85f3810ca6a0992d509cc2e1c475bd926b13433 file=workforce/internal/founderprojection/types.go range=13:13 lang=go exported=false byte_range=188:217
   sig=untyped string
 EDGES
-  ^references=matrix/workforce/internal/founderprojection.receiptSigningBytes
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.token kind=func
   digest=b3:7d82564ce0a4f4c3cee6dad3cea828e0cac804492a98bbfbfda858a9960a6173 file=workforce/internal/founderprojection/types.go range=182:192 lang=go exported=false byte_range=6747:7033
   sig=func token(value string) error
 EDGES
-  references=matrix/workforce/internal/founderprojection.character,matrix/workforce/internal/founderprojection.value
-  ^calls=matrix/workforce/internal/founderprojection.CaptureDraft.Validate,matrix/workforce/internal/founderprojection.NewStore,matrix/workforce/internal/founderprojection.ProcessIdentity.Validate,matrix/workforce/internal/founderprojection.RenderEvidence.Validate,matrix/workforce/internal/founderprojection.Snapshot.Validate,matrix/workforce/internal/founderprojection.Store.Current,matrix/workforce/internal/founderprojection.signReceipt
-  ^references=matrix/workforce/internal/founderprojection.CaptureDraft.Validate,matrix/workforce/internal/founderprojection.NewStore,matrix/workforce/internal/founderprojection.ProcessIdentity.Validate,matrix/workforce/internal/founderprojection.RenderEvidence.Validate,matrix/workforce/internal/founderprojection.Snapshot.Validate,matrix/workforce/internal/founderprojection.Store.Current,matrix/workforce/internal/founderprojection.signReceipt
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.utc kind=func
   digest=b3:45dab0d82b4b00c3c4e301bcb38b7ec03bb20614baabc4f4fca1cbf2cdb8a5c8 file=workforce/internal/founderprojection/types.go range=198:200 lang=go exported=false byte_range=7149:7239
   sig=func utc(value time.Time) bool
 EDGES
-  references=matrix/workforce/internal/founderprojection.value
-  ^calls=matrix/workforce/internal/founderprojection.CaptureDraft.Validate,matrix/workforce/internal/founderprojection.RenderEvidence.Validate,matrix/workforce/internal/founderprojection.Store.Capture,matrix/workforce/internal/founderprojection.Store.Current
-  ^references=matrix/workforce/internal/founderprojection.CaptureDraft.Validate,matrix/workforce/internal/founderprojection.RenderEvidence.Validate,matrix/workforce/internal/founderprojection.Store.Capture,matrix/workforce/internal/founderprojection.Store.Current
   ^defines=matrix/workforce/internal/founderprojection/types.go
 
 NODE id=matrix/workforce/internal/founderprojection.verifyReceipt kind=func
   digest=b3:28f2ef018cd968463f42294655b5220e6e60ecba01785c33276f77479bebe4cd file=workforce/internal/founderprojection/signing.go range=54:67 lang=go exported=false byte_range=1893:2486
   sig=func verifyReceipt(value Receipt, publicKey ed25519.PublicKey) error
 EDGES
-  calls=matrix/workforce/internal/founderprojection.receiptSigningBytes
-  references=matrix/workforce/internal/founderprojection.Receipt,matrix/workforce/internal/founderprojection.err,matrix/workforce/internal/founderprojection.payload,matrix/workforce/internal/founderprojection.publicKey,matrix/workforce/internal/founderprojection.receiptSigningBytes,matrix/workforce/internal/founderprojection.sum,matrix/workforce/internal/founderprojection.value
-  ^calls=matrix/workforce/internal/founderprojection.Store.Current
-  ^references=matrix/workforce/internal/founderprojection.Store.Current
   ^defines=matrix/workforce/internal/founderprojection/signing.go
 
 NODE id=matrix/workforce/internal/founderprojection/doc.go kind=file

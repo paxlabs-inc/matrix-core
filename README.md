@@ -22,12 +22,12 @@ parent:
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Go-38.7%25-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go" />
-  <img src="https://img.shields.io/badge/Solidity-26.3%25-363636?style=flat-square&logo=solidity&logoColor=white" alt="Solidity" />
-  <img src="https://img.shields.io/badge/JavaScript-16.9%25-F7DF1E?style=flat-square&logo=javascript&logoColor=black" alt="JavaScript" />
-  <img src="https://img.shields.io/badge/TypeScript-11.1%25-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/HTML-5.5%25-E34F26?style=flat-square&logo=html5&logoColor=white" alt="HTML" />
-  <img src="https://img.shields.io/badge/Python-0.5%25-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
+  <a href="https://github.com/paxlabs-inc/matrix-core/search?l=go"><img src="https://img.shields.io/badge/Go-64.4%25-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go" /></a>
+  <a href="https://github.com/paxlabs-inc/matrix-core/search?l=typescript"><img src="https://img.shields.io/badge/TypeScript-13.5%25-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://github.com/paxlabs-inc/matrix-core/search?l=html"><img src="https://img.shields.io/badge/HTML-11.6%25-E34F26?style=flat-square&logo=html5&logoColor=white" alt="HTML" /></a>
+  <a href="https://github.com/paxlabs-inc/matrix-core/search?l=c%2B%2B"><img src="https://img.shields.io/badge/C%2B%2B-4.8%25-00599C?style=flat-square&logo=cplusplus&logoColor=white" alt="C++" /></a>
+  <a href="https://github.com/paxlabs-inc/matrix-core/search?l=javascript"><img src="https://img.shields.io/badge/JavaScript-2.9%25-F7DF1E?style=flat-square&logo=javascript&logoColor=black" alt="JavaScript" /></a>
+  <a href="https://github.com/paxlabs-inc/matrix-core/search?l=python"><img src="https://img.shields.io/badge/Python-1.5%25-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" /></a>
 </p>
 
 ---

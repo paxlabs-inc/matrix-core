@@ -1,10 +1,9 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/provider/developer kind=package
   digest=b3:bf9a52ebf1505e2497e36cf4a8eac02a76534ddcd4d208698d9852fbcb19a691 file=workforce/internal/provider/developer range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/provider/developer/adapter.go
-  imports=matrix/workforce/internal/effect,matrix/workforce/internal/lease,matrix/workforce/internal/skills
   ^contains=mod:matrix/workforce
 
 NODE id=matrix/workforce/internal/provider/developer.Adapter kind=type
@@ -13,7 +12,6 @@ NODE id=matrix/workforce/internal/provider/developer.Adapter kind=type
 EDGES
   contains=matrix/workforce/internal/provider/developer.Adapter#cg,matrix/workforce/internal/provider/developer.Adapter#now,matrix/workforce/internal/provider/developer.Adapter#repository,matrix/workforce/internal/provider/developer.Adapter.Dispatch,matrix/workforce/internal/provider/developer.Adapter.Name,matrix/workforce/internal/provider/developer.Adapter.Probe,matrix/workforce/internal/provider/developer.Adapter.authorize
   implements=matrix/workforce/internal/effect.Adapter
-  ^references=matrix/workforce/internal/provider/developer.Adapter.Dispatch,matrix/workforce/internal/provider/developer.Adapter.Name,matrix/workforce/internal/provider/developer.Adapter.Probe,matrix/workforce/internal/provider/developer.Adapter.authorize,matrix/workforce/internal/provider/developer.New
   ^defines=matrix/workforce/internal/provider/developer/adapter.go
 
 NODE id=matrix/workforce/internal/provider/developer.Adapter#cg kind=field
@@ -38,18 +36,13 @@ NODE id=matrix/workforce/internal/provider/developer.Adapter.Dispatch kind=metho
   digest=b3:3622b1793440793c93fbf16fb79fd2161818083980b4f0173511c8cb6ac95d60 file=workforce/internal/provider/developer/adapter.go range=52:103 lang=go exported=true byte_range=1427:2966
   sig=func (adapter *Adapter) Dispatch(\n	ctx context.Context,\n	operation effect.Operation,\n) (effect.DispatchResult, error)
 EDGES
-  calls=matrix/workforce/internal/provider/developer.Adapter.authorize
-  references=matrix/workforce/internal/effect.DispatchResult,matrix/workforce/internal/effect.Operation,matrix/workforce/internal/provider/developer.Adapter,matrix/workforce/internal/provider/developer.Adapter.authorize,matrix/workforce/internal/provider/developer.adapter,matrix/workforce/internal/provider/developer.args,matrix/workforce/internal/provider/developer.command,matrix/workforce/internal/provider/developer.ctx,matrix/workforce/internal/provider/developer.encoded,matrix/workforce/internal/provider/developer.err,matrix/workforce/internal/provider/developer.input,matrix/workforce/internal/provider/developer.now,matrix/workforce/internal/provider/developer.observation,matrix/workforce/internal/provider/developer.operation,matrix/workforce/internal/provider/developer.output
   ^contains=matrix/workforce/internal/provider/developer.Adapter
-  ^calls=matrix/workforce/internal/provider/developer.Adapter.Probe
-  ^references=matrix/workforce/internal/provider/developer.Adapter.Probe
   ^defines=matrix/workforce/internal/provider/developer/adapter.go
 
 NODE id=matrix/workforce/internal/provider/developer.Adapter.Name kind=method
   digest=b3:6da18b0d63d73eb8b00e33a2049522a33f99f699bdcc78e0cd5a19b805c5e28d file=workforce/internal/provider/developer/adapter.go range=50:50 lang=go exported=true byte_range=1373:1425
   sig=func (*Adapter) Name() string
 EDGES
-  references=matrix/workforce/internal/provider/developer.Adapter
   ^contains=matrix/workforce/internal/provider/developer.Adapter
   ^defines=matrix/workforce/internal/provider/developer/adapter.go
 
@@ -57,8 +50,6 @@ NODE id=matrix/workforce/internal/provider/developer.Adapter.Probe kind=method
   digest=b3:ef758b4eceef9b430bb8b95fb1f8c5c3ac63d77906d15500d3dd4014a24d0ced file=workforce/internal/provider/developer/adapter.go range=105:121 lang=go exported=true byte_range=2968:3425
   sig=func (adapter *Adapter) Probe(\n	ctx context.Context,\n	operation effect.Operation,\n) (effect.ProbeResult, error)
 EDGES
-  calls=matrix/workforce/internal/provider/developer.Adapter.Dispatch
-  references=matrix/workforce/internal/effect.Operation,matrix/workforce/internal/effect.ProbeResult,matrix/workforce/internal/provider/developer.Adapter,matrix/workforce/internal/provider/developer.Adapter.Dispatch,matrix/workforce/internal/provider/developer.adapter,matrix/workforce/internal/provider/developer.ctx,matrix/workforce/internal/provider/developer.err,matrix/workforce/internal/provider/developer.operation,matrix/workforce/internal/provider/developer.result,matrix/workforce/internal/skills.ProbeCompletedOutOfBand,matrix/workforce/internal/skills.ProbeUnknown
   ^contains=matrix/workforce/internal/provider/developer.Adapter
   ^defines=matrix/workforce/internal/provider/developer/adapter.go
 
@@ -66,17 +57,13 @@ NODE id=matrix/workforce/internal/provider/developer.Adapter.authorize kind=meth
   digest=b3:4c060661575bcd39bce5c5e81a32cd5c024682e8f00487e39f144a0f51ed827f file=workforce/internal/provider/developer/adapter.go range=123:143 lang=go exported=false byte_range=3427:4111
   sig=func (adapter *Adapter) authorize(\n	operation effect.Operation,\n) (inputEnvelope, error)
 EDGES
-  references=matrix/workforce/internal/effect.Operation,matrix/workforce/internal/lease.StateActive,matrix/workforce/internal/provider/developer.Adapter,matrix/workforce/internal/provider/developer.err,matrix/workforce/internal/provider/developer.input,matrix/workforce/internal/provider/developer.inputEnvelope,matrix/workforce/internal/provider/developer.operation
   ^contains=matrix/workforce/internal/provider/developer.Adapter
-  ^calls=matrix/workforce/internal/provider/developer.Adapter.Dispatch
-  ^references=matrix/workforce/internal/provider/developer.Adapter.Dispatch
   ^defines=matrix/workforce/internal/provider/developer/adapter.go
 
 NODE id=matrix/workforce/internal/provider/developer.New kind=func
   digest=b3:e339d1784fdab5320739142e3c3843c85425837b896c72fff40bfa9bb9fc6791 file=workforce/internal/provider/developer/adapter.go range=40:48 lang=go exported=true byte_range=961:1371
   sig=func New(repository, codegraph string, now func() time.Time) (*Adapter, error)
 EDGES
-  references=matrix/workforce/internal/provider/developer.Adapter,matrix/workforce/internal/provider/developer.codegraph,matrix/workforce/internal/provider/developer.err,matrix/workforce/internal/provider/developer.now,matrix/workforce/internal/provider/developer.repository,matrix/workforce/internal/provider/developer.root
   ^defines=matrix/workforce/internal/provider/developer/adapter.go
 
 NODE id=matrix/workforce/internal/provider/developer.inputEnvelope kind=type
@@ -84,8 +71,6 @@ NODE id=matrix/workforce/internal/provider/developer.inputEnvelope kind=type
   sig=type inputEnvelope struct {\n	SchemaVersion	string		`json:"schema_version"`\n	Grant		lease.Grant	`json:"grant"`\n	Query		string		`json:"query"`\n}
 EDGES
   contains=matrix/workforce/internal/provider/developer.inputEnvelope#Grant,matrix/workforce/internal/provider/developer.inputEnvelope#Query,matrix/workforce/internal/provider/developer.inputEnvelope#SchemaVersion
-  references=matrix/workforce/internal/lease.Grant
-  ^references=matrix/workforce/internal/provider/developer.Adapter.authorize
   ^defines=matrix/workforce/internal/provider/developer/adapter.go
 
 NODE id=matrix/workforce/internal/provider/developer.inputEnvelope#Grant kind=field
@@ -111,7 +96,6 @@ NODE id=matrix/workforce/internal/provider/developer.observation kind=type
   sig=type observation struct {\n	SchemaVersion	string		`json:"schema_version"`\n	Operation	string		`json:"operation"`\n	Repository	string		`json:"repository"`\n	Output		string		`json:"output"`\n	ObservedAt	time.Time	`json:"observed_at"`\n}
 EDGES
   contains=matrix/workforce/internal/provider/developer.observation#ObservedAt,matrix/workforce/internal/provider/developer.observation#Operation,matrix/workforce/internal/provider/developer.observation#Output,matrix/workforce/internal/provider/developer.observation#Repository,matrix/workforce/internal/provider/developer.observation#SchemaVersion
-  ^references=matrix/workforce/internal/provider/developer.Adapter.Dispatch
   ^defines=matrix/workforce/internal/provider/developer/adapter.go
 
 NODE id=matrix/workforce/internal/provider/developer.observation#ObservedAt kind=field

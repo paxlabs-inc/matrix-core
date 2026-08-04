@@ -1,12 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/construct/schema kind=package
   digest=b3:47805239b64066a6ac2dbb42bca9adb5cb39dadb430b5548ee128d0009fdec32 file=construct/schema range=0:0 lang=go exported=true
 EDGES
   contains=matrix/construct/schema/attributes.go,matrix/construct/schema/builders.go,matrix/construct/schema/kind.go,matrix/construct/schema/state.go,matrix/construct/schema/surface.go
-  imports=matrix/construct/schema/primitives
   ^contains=mod:matrix/construct
-  ^imports=matrix/construct/backchannel,matrix/construct/cmd/construct,matrix/construct/internal/codegen,matrix/construct/projection,matrix/construct/surfacestore,matrix/construct/transport,matrix/executor/cmd/mcl-execute,matrix/neo/internal/server,matrix/neo/internal/tools
 
 NODE id=matrix/construct/schema.Attributes kind=type
   digest=b3:0aa3aa20b65ca457d275eb14bf1bf16923834fbda4153102519d01fe5d52503e file=construct/schema/attributes.go range=67:81 lang=go exported=true byte_range=2235:2952
@@ -14,8 +12,6 @@ NODE id=matrix/construct/schema.Attributes kind=type
   doc=Attributes is the decoration block attached to any surface. All fields are\noptional; an absent block means an undecorated surface.
 EDGES
   contains=matrix/construct/schema.Attributes#Confidence,matrix/construct/schema.Attributes#Cost,matrix/construct/schema.Attributes#Stakes,matrix/construct/schema.Attributes#Temporality,matrix/construct/schema.Attributes.Valid
-  references=matrix/construct/schema.Cost,matrix/construct/schema.Stakes,matrix/construct/schema.Temporality
-  ^references=matrix/construct/internal/codegen.structs,matrix/construct/projection.parseAttributes,matrix/construct/schema.Attributes.Valid,matrix/construct/schema.Surface,matrix/construct/schema.Surface.WithAttributes
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.Attributes#Confidence kind=field
@@ -51,11 +47,7 @@ NODE id=matrix/construct/schema.Attributes.Valid kind=method
   sig=func (a *Attributes) Valid() bool
   doc=Valid reports whether the attribute enums are within their frozen sets and\nconfidence (when set) is in [0,1].
 EDGES
-  calls=matrix/construct/schema.ValidStakes,matrix/construct/schema.ValidTemporality
-  references=matrix/construct/schema.Attributes,matrix/construct/schema.ValidStakes,matrix/construct/schema.ValidTemporality,matrix/construct/schema.a
   ^contains=matrix/construct/schema.Attributes
-  ^calls=matrix/construct/schema.Surface.Validate
-  ^references=matrix/construct/schema.Surface.Validate
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.Cost kind=type
@@ -64,7 +56,6 @@ NODE id=matrix/construct/schema.Cost kind=type
   doc=Cost is the metered cost/authority a surface or its affordance carries\n(gateway PAX spend, spend cap). Drives the auto-confirm affordance when\npaired with Stakes=irreversible (frozen [attributes].example).
 EDGES
   contains=matrix/construct/schema.Cost#Amount,matrix/construct/schema.Cost#Cap,matrix/construct/schema.Cost#Unit
-  ^references=matrix/construct/internal/codegen.structs,matrix/construct/schema.Attributes
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.Cost#Amount kind=field
@@ -91,7 +82,6 @@ NODE id=matrix/construct/schema.Frame kind=type
   doc=Frame is one persisted Construct surface event — the durable unit the\nsurfacestore tees and the rehydration read path returns. Its shape mirrors\nthe daemon SSE Event ({seq,ts,phase,type,fields}) — and neo/internal/trace's\nEvent — so a reopen replays the persisted stream through the client's\nexisting reducer (transport.ApplyPatch mirror) byte-for-byte.\n\nIt lives here in construct/schema (not in surfacestore) because it is a wire\ncontract that reaches the client: the codegen mirrors it into the client's\ntypes.gen.ts, and surfacestore aliases this canonical type so the persisted\nshape can never drift from the generated client type.\n\nPhase is always the Construct transport phase ("construct"); Type is one of\nthe Construct surface event types ("construct.surface" |\n"construct.surface.patch").
 EDGES
   contains=matrix/construct/schema.Frame#Fields,matrix/construct/schema.Frame#Phase,matrix/construct/schema.Frame#Seq,matrix/construct/schema.Frame#Ts,matrix/construct/schema.Frame#Type
-  ^references=matrix/construct/internal/codegen.structs,matrix/construct/schema.StateResponse,matrix/construct/surfacestore.Frame,matrix/executor/cmd/mcl-execute.daemonState.recordSurfaceFrame,matrix/executor/cmd/mcl-execute.serveConstructState
   ^defines=matrix/construct/schema/state.go
 
 NODE id=matrix/construct/schema.Frame#Fields kind=field
@@ -134,7 +124,6 @@ NODE id=matrix/construct/schema.Kind kind=type
   sig=type Kind string
   doc=Kind is the surface discriminator: which one of the 8 frozen primitives a\nsurface projects onto. Pinned as stable STRING constants (not enum ints) so\nthe wire and cross-language consumers are forward-stable.
 EDGES
-  ^references=matrix/construct/internal/codegen.kindStrings,matrix/construct/projection.ParseRender,matrix/construct/projection.autoID,matrix/construct/projection.buildSurface,matrix/construct/projection.renderVariant,matrix/construct/schema.KindAsk,matrix/construct/schema.KindCanvas,matrix/construct/schema.KindEntity,matrix/construct/schema.KindMetric,matrix/construct/schema.KindNarration,matrix/construct/schema.KindStream,matrix/construct/schema.KindStructure,matrix/construct/schema.KindTimeline,matrix/construct/schema.Kinds,matrix/construct/schema.Surface,matrix/construct/schema.ValidKind
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindAsk kind=const
@@ -142,8 +131,6 @@ NODE id=matrix/construct/schema.KindAsk kind=const
   sig=schema.Kind
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
-  references=matrix/construct/schema.Kind
-  ^references=matrix/construct/backchannel.Answered,matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewAsk,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind,matrix/neo/internal/tools.Manager.dispatchConstructRender
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindCanvas kind=const
@@ -151,8 +138,6 @@ NODE id=matrix/construct/schema.KindCanvas kind=const
   sig=schema.Kind
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
-  references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewCanvas,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindEntity kind=const
@@ -160,8 +145,6 @@ NODE id=matrix/construct/schema.KindEntity kind=const
   sig=schema.Kind
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
-  references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewEntity,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.ValidKind
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindMetric kind=const
@@ -169,8 +152,6 @@ NODE id=matrix/construct/schema.KindMetric kind=const
   sig=schema.Kind
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
-  references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewMetric,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindNarration kind=const
@@ -178,8 +159,6 @@ NODE id=matrix/construct/schema.KindNarration kind=const
   sig=schema.Kind
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
-  references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewNarration,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.ValidKind
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindStream kind=const
@@ -187,8 +166,6 @@ NODE id=matrix/construct/schema.KindStream kind=const
   sig=schema.Kind
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
-  references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewStream,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.ValidKind,matrix/construct/transport.ApplyPatch
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindStructure kind=const
@@ -196,8 +173,6 @@ NODE id=matrix/construct/schema.KindStructure kind=const
   sig=schema.Kind
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
-  references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewStructure,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.KindTimeline kind=const
@@ -205,8 +180,6 @@ NODE id=matrix/construct/schema.KindTimeline kind=const
   sig=schema.Kind
   doc=The 8 frozen primitive kinds (construct.frozen.kvx [vocabulary].primitives).
 EDGES
-  references=matrix/construct/schema.Kind
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.renderToolParams,matrix/construct/schema.Kinds,matrix/construct/schema.NewTimeline,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind,matrix/construct/transport.ApplyPatch
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.Kinds kind=var
@@ -214,8 +187,6 @@ NODE id=matrix/construct/schema.Kinds kind=var
   sig=[]schema.Kind
   doc=Kinds is the frozen, ordered set of all 8 primitive kinds. The order is the\nvocabulary order in the frozen spec and is the deterministic emit order for\ncodegen. Do NOT reorder; appending is a version-bump event (invariant i3).
 EDGES
-  references=matrix/construct/schema.Kind,matrix/construct/schema.KindAsk,matrix/construct/schema.KindCanvas,matrix/construct/schema.KindEntity,matrix/construct/schema.KindMetric,matrix/construct/schema.KindNarration,matrix/construct/schema.KindStream,matrix/construct/schema.KindStructure,matrix/construct/schema.KindTimeline
-  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.NewAsk kind=func
@@ -223,9 +194,6 @@ NODE id=matrix/construct/schema.NewAsk kind=func
   sig=func NewAsk(id string, a *primitives.Ask) *Surface
   doc=NewAsk builds an ask surface.
 EDGES
-  references=matrix/construct/schema.KindAsk,matrix/construct/schema.Surface,matrix/construct/schema.a,matrix/construct/schema.id,matrix/construct/schema/primitives.Ask
-  ^calls=matrix/construct/projection.buildSurface
-  ^references=matrix/construct/projection.buildSurface
   ^defines=matrix/construct/schema/builders.go
 
 NODE id=matrix/construct/schema.NewCanvas kind=func
@@ -233,9 +201,6 @@ NODE id=matrix/construct/schema.NewCanvas kind=func
   sig=func NewCanvas(id string, c *primitives.Canvas) *Surface
   doc=NewCanvas builds a canvas surface.
 EDGES
-  references=matrix/construct/schema.KindCanvas,matrix/construct/schema.Surface,matrix/construct/schema.c,matrix/construct/schema.id,matrix/construct/schema/primitives.Canvas
-  ^calls=matrix/construct/projection.buildSurface
-  ^references=matrix/construct/projection.buildSurface
   ^defines=matrix/construct/schema/builders.go
 
 NODE id=matrix/construct/schema.NewEntity kind=func
@@ -243,9 +208,6 @@ NODE id=matrix/construct/schema.NewEntity kind=func
   sig=func NewEntity(id string, e *primitives.Entity) *Surface
   doc=NewEntity builds an entity surface.
 EDGES
-  references=matrix/construct/schema.KindEntity,matrix/construct/schema.Surface,matrix/construct/schema.e,matrix/construct/schema.id,matrix/construct/schema/primitives.Entity
-  ^calls=matrix/construct/projection.buildSurface,matrix/construct/projection.entityFromObject,matrix/construct/projection.projectToolResult
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.entityFromObject,matrix/construct/projection.projectToolResult
   ^defines=matrix/construct/schema/builders.go
 
 NODE id=matrix/construct/schema.NewMetric kind=func
@@ -253,9 +215,6 @@ NODE id=matrix/construct/schema.NewMetric kind=func
   sig=func NewMetric(id string, m *primitives.Metric) *Surface
   doc=NewMetric builds a metric surface.
 EDGES
-  references=matrix/construct/schema.KindMetric,matrix/construct/schema.Surface,matrix/construct/schema.id,matrix/construct/schema.m,matrix/construct/schema/primitives.Metric
-  ^calls=matrix/construct/projection.buildSurface,matrix/construct/projection.projectToolResult
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.projectToolResult
   ^defines=matrix/construct/schema/builders.go
 
 NODE id=matrix/construct/schema.NewNarration kind=func
@@ -263,9 +222,6 @@ NODE id=matrix/construct/schema.NewNarration kind=func
   sig=func NewNarration(id string, n *primitives.Narration) *Surface
   doc=NewNarration builds a narration surface.
 EDGES
-  references=matrix/construct/schema.KindNarration,matrix/construct/schema.Surface,matrix/construct/schema.id,matrix/construct/schema.n,matrix/construct/schema/primitives.Narration
-  ^calls=matrix/construct/projection.buildSurface,matrix/construct/projection.projectStepText
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.projectStepText
   ^defines=matrix/construct/schema/builders.go
 
 NODE id=matrix/construct/schema.NewStream kind=func
@@ -273,9 +229,6 @@ NODE id=matrix/construct/schema.NewStream kind=func
   sig=func NewStream(id string, s *primitives.Stream) *Surface
   doc=NewStream builds a stream surface.
 EDGES
-  references=matrix/construct/schema.KindStream,matrix/construct/schema.Surface,matrix/construct/schema.id,matrix/construct/schema.s,matrix/construct/schema/primitives.Stream
-  ^calls=matrix/construct/projection.buildSurface
-  ^references=matrix/construct/projection.buildSurface
   ^defines=matrix/construct/schema/builders.go
 
 NODE id=matrix/construct/schema.NewStructure kind=func
@@ -283,9 +236,6 @@ NODE id=matrix/construct/schema.NewStructure kind=func
   sig=func NewStructure(id string, st *primitives.Structure) *Surface
   doc=NewStructure builds a structure surface.
 EDGES
-  references=matrix/construct/schema.KindStructure,matrix/construct/schema.Surface,matrix/construct/schema.id,matrix/construct/schema.st,matrix/construct/schema/primitives.Structure
-  ^calls=matrix/construct/projection.buildSurface,matrix/construct/projection.structureFromArray
-  ^references=matrix/construct/projection.buildSurface,matrix/construct/projection.structureFromArray
   ^defines=matrix/construct/schema/builders.go
 
 NODE id=matrix/construct/schema.NewTimeline kind=func
@@ -293,9 +243,6 @@ NODE id=matrix/construct/schema.NewTimeline kind=func
   sig=func NewTimeline(id string, tl *primitives.Timeline) *Surface
   doc=NewTimeline builds a timeline surface.
 EDGES
-  references=matrix/construct/schema.KindTimeline,matrix/construct/schema.Surface,matrix/construct/schema.id,matrix/construct/schema.tl,matrix/construct/schema/primitives.Timeline
-  ^calls=matrix/construct/projection.buildSurface
-  ^references=matrix/construct/projection.buildSurface
   ^defines=matrix/construct/schema/builders.go
 
 NODE id=matrix/construct/schema.ParseValid kind=func
@@ -303,10 +250,6 @@ NODE id=matrix/construct/schema.ParseValid kind=func
   sig=func ParseValid(b []byte) (*Surface, error)
   doc=ParseValid parses and validates a surface in one step (the transport-layer\nentry point).
 EDGES
-  calls=matrix/construct/schema.Surface.Validate,matrix/construct/schema.Unmarshal
-  references=matrix/construct/schema.Surface,matrix/construct/schema.Surface.Validate,matrix/construct/schema.Unmarshal,matrix/construct/schema.b,matrix/construct/schema.err,matrix/construct/schema.s
-  ^calls=matrix/construct/cmd/construct.runValidate
-  ^references=matrix/construct/cmd/construct.runValidate
   ^defines=matrix/construct/schema/surface.go
 
 NODE id=matrix/construct/schema.Stakes kind=type
@@ -314,39 +257,30 @@ NODE id=matrix/construct/schema.Stakes kind=type
   sig=type Stakes string
   doc=Stakes is the consequence axis of a surface.
 EDGES
-  ^references=matrix/construct/internal/codegen.stakesStrings,matrix/construct/schema.Attributes,matrix/construct/schema.StakesDecision,matrix/construct/schema.StakesFact,matrix/construct/schema.StakesHypothesis,matrix/construct/schema.StakesIrreversible,matrix/construct/schema.StakesValues,matrix/construct/schema.ValidStakes
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.StakesDecision kind=const
   digest=b3:2cb22aa679b9134a85bd9369bb94d7ebcd37892874b23ea38ca1828a24c9e0ba file=construct/schema/attributes.go range=17:17 lang=go exported=true byte_range=624:662
   sig=schema.Stakes
 EDGES
-  references=matrix/construct/schema.Stakes
-  ^references=matrix/construct/schema.StakesValues,matrix/construct/schema.ValidStakes
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.StakesFact kind=const
   digest=b3:1a803b7be327f038c3091e750a9b373d6c33ea64aadc5c36a45c2b24b352d213 file=construct/schema/attributes.go range=15:15 lang=go exported=true byte_range=546:580
   sig=schema.Stakes
 EDGES
-  references=matrix/construct/schema.Stakes
-  ^references=matrix/construct/schema.StakesValues,matrix/construct/schema.ValidStakes
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.StakesHypothesis kind=const
   digest=b3:ec1be7585cc81c3e7d648f509a1d81887e98b2e8f4ffb07f0d8bb4cb3dc614e1 file=construct/schema/attributes.go range=16:16 lang=go exported=true byte_range=582:622
   sig=schema.Stakes
 EDGES
-  references=matrix/construct/schema.Stakes
-  ^references=matrix/construct/schema.StakesValues,matrix/construct/schema.ValidStakes
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.StakesIrreversible kind=const
   digest=b3:71d7d3ba1d38db5ddb960ca0d98f8a724843a1419007efd5943a048e99980cdc file=construct/schema/attributes.go range=18:18 lang=go exported=true byte_range=664:706
   sig=schema.Stakes
 EDGES
-  references=matrix/construct/schema.Stakes
-  ^references=matrix/construct/schema.StakesValues,matrix/construct/schema.ValidStakes
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.StakesValues kind=var
@@ -354,8 +288,6 @@ NODE id=matrix/construct/schema.StakesValues kind=var
   sig=[]schema.Stakes
   doc=StakesValues is the frozen, ordered set of stakes values.
 EDGES
-  references=matrix/construct/schema.Stakes,matrix/construct/schema.StakesDecision,matrix/construct/schema.StakesFact,matrix/construct/schema.StakesHypothesis,matrix/construct/schema.StakesIrreversible
-  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.StateResponse kind=type
@@ -364,8 +296,6 @@ NODE id=matrix/construct/schema.StateResponse kind=type
   doc=StateResponse is the body of the rehydration read path\n(GET /construct/state?conversation_id=&since_seq=). It carries a\nconversation's durable surface frames, oldest-first, so a cold-opening shell\nreplays them through the same reducer the live feed uses, plus the newest seq\nfor the SSE catch-up cursor.
 EDGES
   contains=matrix/construct/schema.StateResponse#ConversationID,matrix/construct/schema.StateResponse#Frames,matrix/construct/schema.StateResponse#LastSeq
-  references=matrix/construct/schema.Frame
-  ^references=matrix/construct/internal/codegen.structs,matrix/executor/cmd/mcl-execute.serveConstructState
   ^defines=matrix/construct/schema/state.go
 
 NODE id=matrix/construct/schema.StateResponse#ConversationID kind=field
@@ -395,8 +325,6 @@ NODE id=matrix/construct/schema.Surface kind=type
   doc=Surface is the on-the-wire envelope every projected surface rides in. It is\na discriminated union over Kind: exactly one of the 8 payload pointers is\nset, matching Kind. The common envelope fields (id, ref, seq, parent,\nattributes) decorate any kind without duplication (invariant i4).\n\nThe optional-payload-pointer shape (rather than a flattened union) keeps\nstdlib JSON round-trip trivial and the TS codegen a 1:1 struct->interface\nmapping; the renderer dispatches on Kind and reads the matching payload.
 EDGES
   contains=matrix/construct/schema.Surface#Ask,matrix/construct/schema.Surface#Attributes,matrix/construct/schema.Surface#Canvas,matrix/construct/schema.Surface#Entity,matrix/construct/schema.Surface#ID,matrix/construct/schema.Surface#Kind,matrix/construct/schema.Surface#Metric,matrix/construct/schema.Surface#Narration,matrix/construct/schema.Surface#Parent,matrix/construct/schema.Surface#Ref,matrix/construct/schema.Surface#Seq,matrix/construct/schema.Surface#Stream,matrix/construct/schema.Surface#Structure,matrix/construct/schema.Surface#Timeline,matrix/construct/schema.Surface.Marshal,matrix/construct/schema.Surface.Validate,matrix/construct/schema.Surface.WithAttributes,matrix/construct/schema.Surface.WithParent,matrix/construct/schema.Surface.WithRef,matrix/construct/schema.Surface.WithSeq,matrix/construct/schema.Surface.payloadCount,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload
-  references=matrix/construct/schema.Attributes,matrix/construct/schema.Kind,matrix/construct/schema/primitives.Ask,matrix/construct/schema/primitives.Canvas,matrix/construct/schema/primitives.Entity,matrix/construct/schema/primitives.Metric,matrix/construct/schema/primitives.Narration,matrix/construct/schema/primitives.Stream,matrix/construct/schema/primitives.Structure,matrix/construct/schema/primitives.Timeline
-  ^references=matrix/construct/backchannel.Answered,matrix/construct/internal/codegen.structs,matrix/construct/projection.ParseRender,matrix/construct/projection.ProjectEvent,matrix/construct/projection.buildSurface,matrix/construct/projection.entityFromObject,matrix/construct/projection.projectStepText,matrix/construct/projection.projectToolResult,matrix/construct/projection.structureFromArray,matrix/construct/schema.NewAsk,matrix/construct/schema.NewCanvas,matrix/construct/schema.NewEntity,matrix/construct/schema.NewMetric,matrix/construct/schema.NewNarration,matrix/construct/schema.NewStream,matrix/construct/schema.NewStructure,matrix/construct/schema.NewTimeline,matrix/construct/schema.ParseValid,matrix/construct/schema.Surface.Marshal,matrix/construct/schema.Surface.Validate,matrix/construct/schema.Surface.WithAttributes,matrix/construct/schema.Surface.WithParent,matrix/construct/schema.Surface.WithRef,matrix/construct/schema.Surface.WithSeq,matrix/construct/schema.Surface.payloadCount,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.Unmarshal,matrix/construct/transport.ApplyPatch,matrix/construct/transport.EmitSurface,matrix/construct/transport.PatchSurface,matrix/construct/transport.SurfaceFromEvent,matrix/construct/transport.clone,matrix/construct/transport.surfaceFields,matrix/neo/internal/server.Engine.emitConstructSurface,matrix/neo/internal/server.Engine.respondAsk,matrix/neo/internal/tools.AskFunc,matrix/neo/internal/tools.Manager.dispatchAsk,matrix/neo/internal/tools.SurfaceFunc
   ^defines=matrix/construct/schema/surface.go
 
 NODE id=matrix/construct/schema.Surface#Ask kind=field
@@ -495,10 +423,7 @@ NODE id=matrix/construct/schema.Surface.Marshal kind=method
   sig=func (s *Surface) Marshal() ([]byte, error)
   doc=Marshal serialises the surface to canonical JSON bytes.
 EDGES
-  references=matrix/construct/schema.Surface,matrix/construct/schema.s
   ^contains=matrix/construct/schema.Surface
-  ^calls=matrix/construct/backchannel.Answered
-  ^references=matrix/construct/backchannel.Answered
   ^defines=matrix/construct/schema/surface.go
 
 NODE id=matrix/construct/schema.Surface.Validate kind=method
@@ -506,11 +431,7 @@ NODE id=matrix/construct/schema.Surface.Validate kind=method
   sig=func (s *Surface) Validate() error
   doc=Validate checks the structural contract: a known kind, a non-empty id,\nexactly one payload matching the kind, and in-range attributes. It does NOT\nvalidate the deep semantics of each payload beyond the enum/required checks\nthe payload kinds expose, keeping the envelope cheap to gate at the\ntransport boundary.
 EDGES
-  calls=matrix/construct/schema.Attributes.Valid,matrix/construct/schema.Surface.payloadCount,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind
-  references=matrix/construct/schema.Attributes.Valid,matrix/construct/schema.Surface,matrix/construct/schema.Surface.payloadCount,matrix/construct/schema.Surface.payloadMatchesKind,matrix/construct/schema.Surface.validatePayload,matrix/construct/schema.ValidKind,matrix/construct/schema.err,matrix/construct/schema.n,matrix/construct/schema.s
   ^contains=matrix/construct/schema.Surface
-  ^calls=matrix/construct/projection.ParseRender,matrix/construct/schema.ParseValid,matrix/construct/transport.EmitSurface,matrix/construct/transport.PatchSurface
-  ^references=matrix/construct/projection.ParseRender,matrix/construct/schema.ParseValid,matrix/construct/transport.EmitSurface,matrix/construct/transport.PatchSurface
   ^defines=matrix/construct/schema/surface.go
 
 NODE id=matrix/construct/schema.Surface.WithAttributes kind=method
@@ -518,10 +439,7 @@ NODE id=matrix/construct/schema.Surface.WithAttributes kind=method
   sig=func (s *Surface) WithAttributes(a *Attributes) *Surface
   doc=WithAttributes sets the decoration block and returns the surface for\nchaining.
 EDGES
-  references=matrix/construct/schema.Attributes,matrix/construct/schema.Surface,matrix/construct/schema.a,matrix/construct/schema.s
   ^contains=matrix/construct/schema.Surface
-  ^calls=matrix/construct/projection.ParseRender
-  ^references=matrix/construct/projection.ParseRender
   ^defines=matrix/construct/schema/builders.go
 
 NODE id=matrix/construct/schema.Surface.WithParent kind=method
@@ -529,7 +447,6 @@ NODE id=matrix/construct/schema.Surface.WithParent kind=method
   sig=func (s *Surface) WithParent(parent string) *Surface
   doc=WithParent sets the composition parent and returns the surface for chaining.
 EDGES
-  references=matrix/construct/schema.Surface,matrix/construct/schema.parent,matrix/construct/schema.s
   ^contains=matrix/construct/schema.Surface
   ^defines=matrix/construct/schema/builders.go
 
@@ -538,10 +455,7 @@ NODE id=matrix/construct/schema.Surface.WithRef kind=method
   sig=func (s *Surface) WithRef(ref string) *Surface
   doc=WithRef sets the linking ref and returns the surface for chaining.
 EDGES
-  references=matrix/construct/schema.Surface,matrix/construct/schema.ref,matrix/construct/schema.s
   ^contains=matrix/construct/schema.Surface
-  ^calls=matrix/construct/projection.ParseRender
-  ^references=matrix/construct/projection.ParseRender
   ^defines=matrix/construct/schema/builders.go
 
 NODE id=matrix/construct/schema.Surface.WithSeq kind=method
@@ -549,10 +463,7 @@ NODE id=matrix/construct/schema.Surface.WithSeq kind=method
   sig=func (s *Surface) WithSeq(seq uint64) *Surface
   doc=WithSeq sets the ordering seq and returns the surface for chaining.
 EDGES
-  references=matrix/construct/schema.Surface,matrix/construct/schema.s,matrix/construct/schema.seq
   ^contains=matrix/construct/schema.Surface
-  ^calls=matrix/construct/projection.projectStepText,matrix/construct/projection.projectToolResult
-  ^references=matrix/construct/projection.projectStepText,matrix/construct/projection.projectToolResult
   ^defines=matrix/construct/schema/builders.go
 
 NODE id=matrix/construct/schema.Surface.payloadCount kind=method
@@ -560,10 +471,7 @@ NODE id=matrix/construct/schema.Surface.payloadCount kind=method
   sig=func (s *Surface) payloadCount() int
   doc=payloadCount reports how many payload pointers are non-nil. A valid surface\nhas exactly one.
 EDGES
-  references=matrix/construct/schema.Surface,matrix/construct/schema.n,matrix/construct/schema.s
   ^contains=matrix/construct/schema.Surface
-  ^calls=matrix/construct/schema.Surface.Validate
-  ^references=matrix/construct/schema.Surface.Validate
   ^defines=matrix/construct/schema/surface.go
 
 NODE id=matrix/construct/schema.Surface.payloadMatchesKind kind=method
@@ -571,10 +479,7 @@ NODE id=matrix/construct/schema.Surface.payloadMatchesKind kind=method
   sig=func (s *Surface) payloadMatchesKind() bool
   doc=payloadMatchesKind reports whether the single non-nil payload is the one\nselected by Kind.
 EDGES
-  references=matrix/construct/schema.KindAsk,matrix/construct/schema.KindCanvas,matrix/construct/schema.KindEntity,matrix/construct/schema.KindMetric,matrix/construct/schema.KindNarration,matrix/construct/schema.KindStream,matrix/construct/schema.KindStructure,matrix/construct/schema.KindTimeline,matrix/construct/schema.Surface,matrix/construct/schema.s
   ^contains=matrix/construct/schema.Surface
-  ^calls=matrix/construct/schema.Surface.Validate
-  ^references=matrix/construct/schema.Surface.Validate
   ^defines=matrix/construct/schema/surface.go
 
 NODE id=matrix/construct/schema.Surface.validatePayload kind=method
@@ -582,11 +487,7 @@ NODE id=matrix/construct/schema.Surface.validatePayload kind=method
   sig=func (s *Surface) validatePayload() error
   doc=validatePayload runs the per-primitive enum/required checks for the active\npayload.
 EDGES
-  calls=matrix/construct/schema/primitives.ValidAskKind,matrix/construct/schema/primitives.ValidChartKind,matrix/construct/schema/primitives.ValidMetricDisplay,matrix/construct/schema/primitives.ValidShape,matrix/construct/schema/primitives.ValidStepStatus
-  references=matrix/construct/schema.KindAsk,matrix/construct/schema.KindCanvas,matrix/construct/schema.KindMetric,matrix/construct/schema.KindStructure,matrix/construct/schema.KindTimeline,matrix/construct/schema.Surface,matrix/construct/schema.s,matrix/construct/schema.st,matrix/construct/schema/primitives.ValidAskKind,matrix/construct/schema/primitives.ValidChartKind,matrix/construct/schema/primitives.ValidMetricDisplay,matrix/construct/schema/primitives.ValidShape,matrix/construct/schema/primitives.ValidStepStatus
   ^contains=matrix/construct/schema.Surface
-  ^calls=matrix/construct/schema.Surface.Validate
-  ^references=matrix/construct/schema.Surface.Validate
   ^defines=matrix/construct/schema/surface.go
 
 NODE id=matrix/construct/schema.Temporality kind=type
@@ -594,31 +495,24 @@ NODE id=matrix/construct/schema.Temporality kind=type
   sig=type Temporality string
   doc=Temporality is the time axis of a surface.
 EDGES
-  ^references=matrix/construct/internal/codegen.temporalityStrings,matrix/construct/schema.Attributes,matrix/construct/schema.TemporalityPersistent,matrix/construct/schema.TemporalityPoint,matrix/construct/schema.TemporalityStream,matrix/construct/schema.TemporalityValues,matrix/construct/schema.ValidTemporality
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.TemporalityPersistent kind=const
   digest=b3:0cd7ed175324700aab85211d2fdf60db23fba7f5a3c20ae6c304dd76d405722e file=construct/schema/attributes.go range=41:41 lang=go exported=true byte_range=1359:1407
   sig=schema.Temporality
 EDGES
-  references=matrix/construct/schema.Temporality
-  ^references=matrix/construct/schema.TemporalityValues,matrix/construct/schema.ValidTemporality
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.TemporalityPoint kind=const
   digest=b3:3f30d1496d74283ef6fb78446d5eab5981023def12bd6c299030974a574c3f32 file=construct/schema/attributes.go range=39:39 lang=go exported=true byte_range=1268:1311
   sig=schema.Temporality
 EDGES
-  references=matrix/construct/schema.Temporality
-  ^references=matrix/construct/schema.TemporalityValues,matrix/construct/schema.ValidTemporality
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.TemporalityStream kind=const
   digest=b3:62912f7f91c605747e2dfcff12c4f2e3e5bb7ea8b33d1e4f9d33bd769fa64ea3 file=construct/schema/attributes.go range=40:40 lang=go exported=true byte_range=1313:1357
   sig=schema.Temporality
 EDGES
-  references=matrix/construct/schema.Temporality
-  ^references=matrix/construct/schema.TemporalityValues,matrix/construct/schema.ValidTemporality
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.TemporalityValues kind=var
@@ -626,8 +520,6 @@ NODE id=matrix/construct/schema.TemporalityValues kind=var
   sig=[]schema.Temporality
   doc=TemporalityValues is the frozen, ordered set of temporality values.
 EDGES
-  references=matrix/construct/schema.Temporality,matrix/construct/schema.TemporalityPersistent,matrix/construct/schema.TemporalityPoint,matrix/construct/schema.TemporalityStream
-  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.Unmarshal kind=func
@@ -635,9 +527,6 @@ NODE id=matrix/construct/schema.Unmarshal kind=func
   sig=func Unmarshal(b []byte) (*Surface, error)
   doc=Unmarshal parses a surface from JSON bytes. It does not validate; call\nValidate separately at trust boundaries.
 EDGES
-  references=matrix/construct/schema.Surface,matrix/construct/schema.b,matrix/construct/schema.err,matrix/construct/schema.s
-  ^calls=matrix/construct/backchannel.Answered,matrix/construct/schema.ParseValid,matrix/construct/transport.SurfaceFromEvent,matrix/construct/transport.clone
-  ^references=matrix/construct/backchannel.Answered,matrix/construct/schema.ParseValid,matrix/construct/transport.SurfaceFromEvent,matrix/construct/transport.clone
   ^defines=matrix/construct/schema/surface.go
 
 NODE id=matrix/construct/schema.ValidKind kind=func
@@ -645,9 +534,6 @@ NODE id=matrix/construct/schema.ValidKind kind=func
   sig=func ValidKind(k Kind) bool
   doc=ValidKind reports whether k is one of the 8 frozen primitive kinds.
 EDGES
-  references=matrix/construct/schema.Kind,matrix/construct/schema.KindAsk,matrix/construct/schema.KindCanvas,matrix/construct/schema.KindEntity,matrix/construct/schema.KindMetric,matrix/construct/schema.KindNarration,matrix/construct/schema.KindStream,matrix/construct/schema.KindStructure,matrix/construct/schema.KindTimeline,matrix/construct/schema.k
-  ^calls=matrix/construct/projection.ParseRender,matrix/construct/schema.Surface.Validate
-  ^references=matrix/construct/projection.ParseRender,matrix/construct/schema.Surface.Validate
   ^defines=matrix/construct/schema/kind.go
 
 NODE id=matrix/construct/schema.ValidStakes kind=func
@@ -655,9 +541,6 @@ NODE id=matrix/construct/schema.ValidStakes kind=func
   sig=func ValidStakes(s Stakes) bool
   doc=ValidStakes reports whether s is a known stakes value (empty is allowed: it\nmeans unstated, i.e. a plain fact-like surface with no special framing).
 EDGES
-  references=matrix/construct/schema.Stakes,matrix/construct/schema.StakesDecision,matrix/construct/schema.StakesFact,matrix/construct/schema.StakesHypothesis,matrix/construct/schema.StakesIrreversible,matrix/construct/schema.s
-  ^calls=matrix/construct/schema.Attributes.Valid
-  ^references=matrix/construct/schema.Attributes.Valid
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema.ValidTemporality kind=func
@@ -665,9 +548,6 @@ NODE id=matrix/construct/schema.ValidTemporality kind=func
   sig=func ValidTemporality(tmp Temporality) bool
   doc=ValidTemporality reports whether tmp is a known temporality value (empty is\nallowed: unstated defaults to a discrete point).
 EDGES
-  references=matrix/construct/schema.Temporality,matrix/construct/schema.TemporalityPersistent,matrix/construct/schema.TemporalityPoint,matrix/construct/schema.TemporalityStream,matrix/construct/schema.tmp
-  ^calls=matrix/construct/schema.Attributes.Valid
-  ^references=matrix/construct/schema.Attributes.Valid
   ^defines=matrix/construct/schema/attributes.go
 
 NODE id=matrix/construct/schema/attributes.go kind=file

@@ -1,19 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/router/internal/voice kind=package
   digest=b3:32b7fade7bb744e3fa1e27a02b23bd8dc8d958e1014c8db44117f2aa7ec18cff file=router/internal/voice range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/voice/token.go
-  imports=matrix/router/internal/proxy
   ^contains=mod:matrix/router
-  ^imports=matrix/router/cmd/matrix-router
 
 NODE id=matrix/router/internal/voice.Handler kind=type
   digest=b3:f0db461277164b1338a317b9f3634252d8aa9c4aaa3d98a0618881c8549da7f6 file=router/internal/voice/token.go range=21:28 lang=go exported=true byte_range=369:523
   sig=type Handler struct {\n	Proxy		http.Handler\n	ServerURL	string\n	APIKey		string\n	Secret		string\n	TTL		time.Duration\n	Now		func() time.Time\n}
 EDGES
   contains=matrix/router/internal/voice.Handler#APIKey,matrix/router/internal/voice.Handler#Now,matrix/router/internal/voice.Handler#Proxy,matrix/router/internal/voice.Handler#Secret,matrix/router/internal/voice.Handler#ServerURL,matrix/router/internal/voice.Handler#TTL,matrix/router/internal/voice.Handler.ServeHTTP
-  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/voice.Handler.ServeHTTP
   ^defines=matrix/router/internal/voice/token.go
 
 NODE id=matrix/router/internal/voice.Handler#APIKey kind=field
@@ -56,8 +53,6 @@ NODE id=matrix/router/internal/voice.Handler.ServeHTTP kind=method
   digest=b3:efcf4381867484ac07a78cbe311fb8b402e9dc004a8159d6a85a54f4c0f6a6df file=router/internal/voice/token.go range=30:87 lang=go exported=true byte_range=525:2797
   sig=func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 EDGES
-  calls=matrix/router/internal/proxy.CentralProxy.ServeHTTP,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Subject,matrix/router/internal/voice.sign,matrix/router/internal/voice.validConversationID,matrix/router/internal/voice.validVoiceSettings
-  references=matrix/router/internal/proxy.Subject,matrix/router/internal/voice.Handler,matrix/router/internal/voice.conversationID,matrix/router/internal/voice.err,matrix/router/internal/voice.h,matrix/router/internal/voice.now,matrix/router/internal/voice.probe,matrix/router/internal/voice.r,matrix/router/internal/voice.recorder,matrix/router/internal/voice.room,matrix/router/internal/voice.sign,matrix/router/internal/voice.start,matrix/router/internal/voice.startBody,matrix/router/internal/voice.style,matrix/router/internal/voice.token,matrix/router/internal/voice.ttl,matrix/router/internal/voice.userID,matrix/router/internal/voice.validConversationID,matrix/router/internal/voice.validVoiceSettings,matrix/router/internal/voice.voice,matrix/router/internal/voice.w
   ^contains=matrix/router/internal/voice.Handler
   ^defines=matrix/router/internal/voice/token.go
 
@@ -65,34 +60,24 @@ NODE id=matrix/router/internal/voice.VerifyForTest kind=func
   digest=b3:4e15d9cc639a6734ea28624d81eb3f18e6d8aa342ba01db22524201f79998b54 file=router/internal/voice/token.go range=143:162 lang=go exported=true byte_range=4258:4867
   sig=func VerifyForTest(token, secret string) (map[string]any, bool)
 EDGES
-  references=matrix/router/internal/voice.claims,matrix/router/internal/voice.dec,matrix/router/internal/voice.err,matrix/router/internal/voice.mac,matrix/router/internal/voice.parts,matrix/router/internal/voice.raw,matrix/router/internal/voice.secret,matrix/router/internal/voice.sig,matrix/router/internal/voice.token
   ^defines=matrix/router/internal/voice/token.go
 
 NODE id=matrix/router/internal/voice.sign kind=func
   digest=b3:532831365ab52a34b941f3bc4f86e2237483beef00506e4f0a3934ea24cb3930 file=router/internal/voice/token.go range=114:141 lang=go exported=false byte_range=3339:4256
   sig=func sign(apiKey, secret, identity, room string, now time.Time, ttl time.Duration) (string, error)
 EDGES
-  references=matrix/router/internal/voice.apiKey,matrix/router/internal/voice.encoded,matrix/router/internal/voice.err,matrix/router/internal/voice.header,matrix/router/internal/voice.identity,matrix/router/internal/voice.mac,matrix/router/internal/voice.now,matrix/router/internal/voice.payload,matrix/router/internal/voice.room,matrix/router/internal/voice.secret,matrix/router/internal/voice.ttl
-  ^calls=matrix/router/internal/voice.Handler.ServeHTTP
-  ^references=matrix/router/internal/voice.Handler.ServeHTTP
   ^defines=matrix/router/internal/voice/token.go
 
 NODE id=matrix/router/internal/voice.validConversationID kind=func
   digest=b3:4c2974cf834d56da37ea6d4642ecf07caf22cf72a6e0993299f8ed8e08267364 file=router/internal/voice/token.go range=101:112 lang=go exported=false byte_range=3051:3337
   sig=func validConversationID(value string) bool
 EDGES
-  references=matrix/router/internal/voice.r,matrix/router/internal/voice.value
-  ^calls=matrix/router/internal/voice.Handler.ServeHTTP
-  ^references=matrix/router/internal/voice.Handler.ServeHTTP
   ^defines=matrix/router/internal/voice/token.go
 
 NODE id=matrix/router/internal/voice.validVoiceSettings kind=func
   digest=b3:df20d693958f59a47cbe651490b54175277f0fa503f3be06d5f8cf862c9b0ef0 file=router/internal/voice/token.go range=89:99 lang=go exported=false byte_range=2799:3049
   sig=func validVoiceSettings(voice, style string) bool
 EDGES
-  references=matrix/router/internal/voice.style,matrix/router/internal/voice.voice
-  ^calls=matrix/router/internal/voice.Handler.ServeHTTP
-  ^references=matrix/router/internal/voice.Handler.ServeHTTP
   ^defines=matrix/router/internal/voice/token.go
 
 NODE id=matrix/router/internal/voice/token.go kind=file

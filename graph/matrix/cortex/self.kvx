@@ -1,19 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/cortex/self kind=package
   digest=b3:6f39276fcc397f59d79dc505906f2ae7534d1fa0b25ad9f9170f196bac199a47 file=cortex/self range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/self/self.go
-  imports=matrix/cortex,matrix/cortex/memory,matrix/cortex/query
   ^contains=mod:matrix/cortex
-  ^imports=matrix/executor/cmd/mcl-execute,matrix/neo/internal/memory,matrix/neo/internal/server
 
 NODE id=matrix/cortex/self.DefaultName kind=const
   digest=b3:abd5f6b8d7818001e4231b8f8b557fb789575d0ab5df9cf9eff8c1abc72b5f3d file=cortex/self/self.go range=47:51 lang=go exported=true byte_range=2135:2399
   sig=untyped string
   doc=DefaultName is the agent's internal identity name, used to anchor the\nidentity canary (scrubIdentity) across faculties when no configured\nAgentName is supplied. The user-facing brand (see Persona) is Matrix;\nthe codename is Neo.
 EDGES
-  ^references=matrix/cortex/self.Resolve,matrix/executor/cmd/mcl-execute.liaisonIdentity
   ^defines=matrix/cortex/self/self.go
 
 NODE id=matrix/cortex/self.FailurePattern kind=type
@@ -22,7 +19,6 @@ NODE id=matrix/cortex/self.FailurePattern kind=type
   doc=FailurePattern is one self-authored "how I tend to fail" belief.
 EDGES
   contains=matrix/cortex/self.FailurePattern#DerivedFrom,matrix/cortex/self.FailurePattern#Statement,matrix/cortex/self.FailurePattern#URI
-  ^references=matrix/cortex/self.Resolve,matrix/cortex/self.SelfModel,matrix/neo/internal/memory.FailurePattern
   ^defines=matrix/cortex/self/self.go
 
 NODE id=matrix/cortex/self.FailurePattern#DerivedFrom kind=field
@@ -48,8 +44,6 @@ NODE id=matrix/cortex/self.Persona kind=func
   sig=func Persona(m SelfModel) string
   doc=Persona renders the canonical first-person identity charter — the identity\nfacet of the shared self-model. It is the SINGLE source of the agent's\nuser-facing self-description, so every faculty that speaks as the agent\nderives its persona from here rather than a hand-written duplicate that\ndrifts from reality (req.7.1).\n\nThe persona is intentionally a function of the model's IDENTITY facet only,\nnever the structural one: the user talks to a product (Matrix), not to a\npackage graph, so the prose stays machinery-free and leaks no internal\nstructure (req.7.2). The internal codename (m.Identity, default Neo) is what\nthe identity canary anchors on; the user-facing brand below is Matrix.
 EDGES
-  references=matrix/cortex/self.SelfModel,matrix/cortex/self.m,matrix/cortex/self.personaCharter
-  ^references=matrix/executor/cmd/mcl-execute.liaisonIdentity
   ^defines=matrix/cortex/self/self.go
 
 NODE id=matrix/cortex/self.Resolve kind=func
@@ -57,10 +51,6 @@ NODE id=matrix/cortex/self.Resolve kind=func
   sig=func Resolve(cx *cortex.Cortex, agentName string) (SelfModel, error)
   doc=Resolve reads the shared self-model from a cortex store. agentName seeds the\nidentity name (falling back to DefaultName); the structural summary and the\nfailure patterns are collected from the durable memories under Subject. This\nis the ONE resolver every faculty calls, so two faculties reading the same\nstore observe byte-identical self-knowledge (req.6.4).
 EDGES
-  calls=matrix/cortex.BuildURI,matrix/cortex.Cortex.Find,matrix/cortex/memory.DecodeData
-  references=matrix/cortex.BuildURI,matrix/cortex.Cortex,matrix/cortex.Cortex.Find,matrix/cortex/memory.BeliefData,matrix/cortex/memory.CapabilityData,matrix/cortex/memory.DecodeData,matrix/cortex/memory.Type,matrix/cortex/memory.TypeBelief,matrix/cortex/memory.TypeCapability,matrix/cortex/query.Query,matrix/cortex/self.DefaultName,matrix/cortex/self.FailurePattern,matrix/cortex/self.SelfModel,matrix/cortex/self.StructuralCapability,matrix/cortex/self.Subject,matrix/cortex/self.agentName,matrix/cortex/self.cx,matrix/cortex/self.data,matrix/cortex/self.decodeErr,matrix/cortex/self.decoded,matrix/cortex/self.err,matrix/cortex/self.item,matrix/cortex/self.model,matrix/cortex/self.res,matrix/cortex/self.uri
-  ^calls=matrix/neo/internal/memory.Pager.SelfModel
-  ^references=matrix/neo/internal/memory.Pager.SelfModel
   ^defines=matrix/cortex/self/self.go
 
 NODE id=matrix/cortex/self.SelfModel kind=type
@@ -69,8 +59,6 @@ NODE id=matrix/cortex/self.SelfModel kind=type
   doc=SelfModel is the whole resolved artifact: the identity name, the structural\nsummary, and the experiential failure patterns.
 EDGES
   contains=matrix/cortex/self.SelfModel#FailurePatterns,matrix/cortex/self.SelfModel#Identity,matrix/cortex/self.SelfModel#Structural,matrix/cortex/self.SelfModel#StructuralURI
-  references=matrix/cortex/self.FailurePattern,matrix/cortex/self.StructuralSelf
-  ^references=matrix/cortex/self.Persona,matrix/cortex/self.Resolve,matrix/executor/cmd/mcl-execute.liaisonIdentity,matrix/neo/internal/memory.SelfModel
   ^defines=matrix/cortex/self/self.go
 
 NODE id=matrix/cortex/self.SelfModel#FailurePatterns kind=field
@@ -102,7 +90,6 @@ NODE id=matrix/cortex/self.StructuralCapability kind=const
   sig=untyped string
   doc=StructuralCapability is the capability marker under which the derived\nstructural summary ("how I am built") is stored as a Capability.
 EDGES
-  ^references=matrix/cortex/self.Resolve,matrix/neo/internal/memory.structuralSelfCapability
   ^defines=matrix/cortex/self/self.go
 
 NODE id=matrix/cortex/self.StructuralSelf kind=type
@@ -111,8 +98,6 @@ NODE id=matrix/cortex/self.StructuralSelf kind=type
   doc=StructuralSelf is the derived "how I am built" facet. Its JSON shape is the\non-disk/on-cortex contract for the Capability parameters, so the tags must\nstay byte-stable across faculties.
 EDGES
   contains=matrix/cortex/self.StructuralSelf#ContextLimit,matrix/cortex/self.StructuralSelf#GraphURI,matrix/cortex/self.StructuralSelf#Scope,matrix/cortex/self.StructuralSelf#Summary,matrix/cortex/self.StructuralSelf#Surface,matrix/cortex/self.StructuralSelf#TokenBudget
-  references=matrix/cortex/self.SurfaceFacts
-  ^references=matrix/cortex/self.SelfModel,matrix/neo/internal/memory.StructuralSelf
   ^defines=matrix/cortex/self/self.go
 
 NODE id=matrix/cortex/self.StructuralSelf#ContextLimit kind=field
@@ -156,7 +141,6 @@ NODE id=matrix/cortex/self.Subject kind=const
   sig=untyped string
   doc=Subject is the single cortex subject every self-model facet is keyed\non, so one Find over Capability+Belief collects the whole model.
 EDGES
-  ^references=matrix/cortex/self.Resolve,matrix/neo/internal/memory.selfModelSubject
   ^defines=matrix/cortex/self/self.go
 
 NODE id=matrix/cortex/self.SurfaceFacts kind=type
@@ -165,7 +149,6 @@ NODE id=matrix/cortex/self.SurfaceFacts kind=type
   doc=SurfaceFacts is the derived capability-surface facet of the structural self:\nthe agent's TRUE external API surface (routes/protocols) and its\narchitectural is / is-not facts. It is written from the live serving surface\n(never hand-authored prose in the prompt) so the resident capability section\nthe agent carries cannot drift from what the process actually serves\n(epistemic-core req.2.1/2.2).
 EDGES
   contains=matrix/cortex/self.SurfaceFacts#API,matrix/cortex/self.SurfaceFacts#Is,matrix/cortex/self.SurfaceFacts#IsNot
-  ^references=matrix/cortex/self.StructuralSelf,matrix/neo/internal/memory.Pager.WriteSurfaceFacts,matrix/neo/internal/server.Server.SurfaceFacts
   ^defines=matrix/cortex/self/self.go
 
 NODE id=matrix/cortex/self.SurfaceFacts#API kind=field
@@ -190,7 +173,6 @@ NODE id=matrix/cortex/self.personaCharter kind=const
   digest=b3:1c816123d273c1646b1adc8511aad372a8ceac8e44a71f7865ebbd426881adb8 file=cortex/self/self.go range=159:167 lang=go exported=false byte_range=6525:7851
   sig=untyped string
 EDGES
-  ^references=matrix/cortex/self.Persona
   ^defines=matrix/cortex/self/self.go
 
 NODE id=matrix/cortex/self/self.go kind=file

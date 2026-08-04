@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	commandOutputLimit       = 16 << 20
+	commandOutputLimit       = 32 << 20
 	codeGraphBoundaryTimeout = 30 * time.Second
 	maxSourceFileBytes       = 1 << 30
 )
@@ -318,14 +318,12 @@ func (graph *CodeGraph) TestsAffected(
 		}
 	}
 	affectedSet := make(map[string]struct{})
-	affectedDirectories := make(map[string]struct{})
 	affectedSourceStems := make(map[string]map[string]struct{})
 	addAffectedSource := func(path string) {
 		if validateRelativePath(path) != nil || isTestPath(path) {
 			return
 		}
 		directory := filepath.ToSlash(filepath.Dir(path))
-		affectedDirectories[directory] = struct{}{}
 		if affectedSourceStems[directory] == nil {
 			affectedSourceStems[directory] = make(map[string]struct{})
 		}
@@ -340,39 +338,33 @@ func (graph *CodeGraph) TestsAffected(
 	for changed := range requestedSet {
 		addAffectedSource(changed)
 	}
-	if err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() {
-			if path != root && skipSourceDirectory(entry.Name()) {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if entry.Type()&os.ModeSymlink != 0 {
-			return fmt.Errorf("project brain test source symlink is forbidden")
-		}
-		relative, err := filepath.Rel(root, path)
+	directories := make([]string, 0, len(affectedSourceStems))
+	for directory := range affectedSourceStems {
+		directories = append(directories, directory)
+	}
+	sort.Strings(directories)
+	for _, directory := range directories {
+		entries, err := os.ReadDir(filepath.Join(root, filepath.FromSlash(directory)))
 		if err != nil {
-			return err
+			return AffectedTests{}, err
 		}
-		relative = filepath.ToSlash(relative)
-		if !isTestPath(relative) {
-			return nil
-		}
-		directory := filepath.ToSlash(filepath.Dir(relative))
-		stems, selected := affectedSourceStems[directory]
-		if _, directorySelected := affectedDirectories[directory]; directorySelected &&
-			selected && testMatchesSourceStem(relative, stems) {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			if entry.Type()&os.ModeSymlink != 0 {
+				return AffectedTests{}, fmt.Errorf("project brain test source symlink is forbidden")
+			}
+			relative := filepath.ToSlash(filepath.Join(directory, entry.Name()))
+			if !isTestPath(relative) ||
+				!testMatchesSourceStem(relative, affectedSourceStems[directory]) {
+				continue
+			}
 			affectedSet[relative] = struct{}{}
 			if len(affectedSet) > 10000 {
-				return fmt.Errorf("project brain affected test bound exceeded")
+				return AffectedTests{}, fmt.Errorf("project brain affected test bound exceeded")
 			}
 		}
-		return nil
-	}); err != nil {
-		return AffectedTests{}, err
 	}
 	affected := make([]string, 0, len(affectedSet))
 	for path := range affectedSet {

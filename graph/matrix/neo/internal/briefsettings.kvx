@@ -1,21 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/neo/internal/briefsettings kind=package
   digest=b3:7831f91490c29c300d8633f004eb05909907ef1b1114cb11dbb6f210e9268725 file=neo/internal/briefsettings range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/briefsettings/briefsettings.go
-  imports=matrix/vault
   ^contains=mod:matrix/neo
-  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/briefsettings.Dir kind=func
   digest=b3:4fcf79a38a90dfce3ef3da4dc66b3ec5733f0501e62d4296d8ce75d8159ff0df file=neo/internal/briefsettings/briefsettings.go range=321:333 lang=go exported=true byte_range=9099:9628
   sig=func Dir(override, cortexRoot string) string
   doc=Dir resolves Neo's brief-settings directory. An explicit override wins; else\nit derives from the cortex root's parent (matching the automatrix/conversation\n/task/trace stores, so it shares /data with them and survives suspend /\nredeploy). Returns "" when neither is available (in-memory only).
 EDGES
-  references=matrix/neo/internal/briefsettings.c,matrix/neo/internal/briefsettings.cortexRoot,matrix/neo/internal/briefsettings.o,matrix/neo/internal/briefsettings.override
-  ^calls=matrix/neo/cmd/neo.runServe
-  ^references=matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Open kind=func
@@ -23,10 +18,6 @@ NODE id=matrix/neo/internal/briefsettings.Open kind=func
   sig=func Open(dir string) *Store
   doc=Open builds a store rooted at dir. State is loaded lazily on first use so\nSetVault can be wired between Open and first use. An empty dir yields an\nin-memory-only store.
 EDGES
-  calls=matrix/neo/internal/briefsettings.Store.path,matrix/vault.IsVault
-  references=matrix/neo/internal/briefsettings.State,matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.Store.path,matrix/neo/internal/briefsettings.b,matrix/neo/internal/briefsettings.dir,matrix/neo/internal/briefsettings.err,matrix/neo/internal/briefsettings.s,matrix/neo/internal/briefsettings.st,matrix/vault.IsVault
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Schedule kind=type
@@ -35,7 +26,6 @@ NODE id=matrix/neo/internal/briefsettings.Schedule kind=type
   doc=Schedule is the mutable schedule shape the control surface writes.
 EDGES
   contains=matrix/neo/internal/briefsettings.Schedule#ConversationID,matrix/neo/internal/briefsettings.Schedule#Days,matrix/neo/internal/briefsettings.Schedule#DeliveryTime,matrix/neo/internal/briefsettings.Schedule#Length,matrix/neo/internal/briefsettings.Schedule#Sections,matrix/neo/internal/briefsettings.Schedule#Timezone
-  ^references=matrix/neo/internal/briefsettings.Store.SetSchedule,matrix/neo/internal/server.Server.handleBriefSettings,matrix/neo/internal/server.briefControl,matrix/neo/internal/server.briefGovernor.UpdateSchedule,matrix/neo/internal/server.validateBriefSchedule
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Schedule#ConversationID kind=field
@@ -80,7 +70,6 @@ NODE id=matrix/neo/internal/briefsettings.State kind=type
   doc=State is the durable morning-brief schedule state (req 14.1). Default zero\nvalue is the OFF state (Enabled=false), so an absent file means the brief is\noff — the default (req 11.1).
 EDGES
   contains=matrix/neo/internal/briefsettings.State#AlarmID,matrix/neo/internal/briefsettings.State#ConversationID,matrix/neo/internal/briefsettings.State#Days,matrix/neo/internal/briefsettings.State#DeliveryTime,matrix/neo/internal/briefsettings.State#Enabled,matrix/neo/internal/briefsettings.State#LastDeliveredDate,matrix/neo/internal/briefsettings.State#Length,matrix/neo/internal/briefsettings.State#Paused,matrix/neo/internal/briefsettings.State#Sections,matrix/neo/internal/briefsettings.State#Timezone,matrix/neo/internal/briefsettings.State.clone
-  ^references=matrix/neo/internal/briefsettings.Open,matrix/neo/internal/briefsettings.State.clone,matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.Store.View,matrix/neo/internal/briefsettings.Store.loadLocked,matrix/neo/internal/server.briefControl,matrix/neo/internal/server.briefGovernor.SettingsView,matrix/neo/internal/server.briefStateForConv,matrix/neo/internal/server.briefViewToResponse
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.State#AlarmID kind=field
@@ -157,10 +146,7 @@ NODE id=matrix/neo/internal/briefsettings.State.clone kind=method
   digest=b3:26a551c2dc7e2ebbc854b768d7fba58c6b86f4bd9dc1495cb1e970c16524eb22 file=neo/internal/briefsettings/briefsettings.go range=311:316 lang=go exported=false byte_range=8826:8979
   sig=func (st State) clone() State
 EDGES
-  references=matrix/neo/internal/briefsettings.State,matrix/neo/internal/briefsettings.out,matrix/neo/internal/briefsettings.st
   ^contains=matrix/neo/internal/briefsettings.State
-  ^calls=matrix/neo/internal/briefsettings.Store.View
-  ^references=matrix/neo/internal/briefsettings.Store.View
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store kind=type
@@ -169,8 +155,6 @@ NODE id=matrix/neo/internal/briefsettings.Store kind=type
   doc=Store is the durable brief-settings store. State is held in memory for the\nwake's hot live read and mirrored to disk on every mutation; access is\nserialised by mu.
 EDGES
   contains=matrix/neo/internal/briefsettings.Store#dir,matrix/neo/internal/briefsettings.Store#mu,matrix/neo/internal/briefsettings.Store#st,matrix/neo/internal/briefsettings.Store#user,matrix/neo/internal/briefsettings.Store#vault,matrix/neo/internal/briefsettings.Store.AlarmID,matrix/neo/internal/briefsettings.Store.AlreadyDelivered,matrix/neo/internal/briefsettings.Store.Enabled,matrix/neo/internal/briefsettings.Store.MarkDelivered,matrix/neo/internal/briefsettings.Store.Paused,matrix/neo/internal/briefsettings.Store.Persistent,matrix/neo/internal/briefsettings.Store.SetAlarmID,matrix/neo/internal/briefsettings.Store.SetEnabled,matrix/neo/internal/briefsettings.Store.SetPaused,matrix/neo/internal/briefsettings.Store.SetSchedule,matrix/neo/internal/briefsettings.Store.SetVault,matrix/neo/internal/briefsettings.Store.View,matrix/neo/internal/briefsettings.Store.ad,matrix/neo/internal/briefsettings.Store.loadLocked,matrix/neo/internal/briefsettings.Store.path,matrix/neo/internal/briefsettings.Store.persistLocked
-  references=matrix/neo/internal/briefsettings.State,matrix/vault.Session
-  ^references=matrix/neo/internal/briefsettings.Open,matrix/neo/internal/briefsettings.Store.AlarmID,matrix/neo/internal/briefsettings.Store.AlreadyDelivered,matrix/neo/internal/briefsettings.Store.Enabled,matrix/neo/internal/briefsettings.Store.MarkDelivered,matrix/neo/internal/briefsettings.Store.Paused,matrix/neo/internal/briefsettings.Store.Persistent,matrix/neo/internal/briefsettings.Store.SetAlarmID,matrix/neo/internal/briefsettings.Store.SetEnabled,matrix/neo/internal/briefsettings.Store.SetPaused,matrix/neo/internal/briefsettings.Store.SetSchedule,matrix/neo/internal/briefsettings.Store.SetVault,matrix/neo/internal/briefsettings.Store.View,matrix/neo/internal/briefsettings.Store.ad,matrix/neo/internal/briefsettings.Store.loadLocked,matrix/neo/internal/briefsettings.Store.path,matrix/neo/internal/briefsettings.Store.persistLocked,matrix/neo/internal/server.briefGovernor,matrix/neo/internal/server.briefGovernor.Settings,matrix/neo/internal/server.newBriefGovernor
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store#dir kind=field
@@ -208,10 +192,7 @@ NODE id=matrix/neo/internal/briefsettings.Store.AlarmID kind=method
   sig=func (s *Store) AlarmID() string
   doc=AlarmID returns the id of this agent's MORNING_BRIEF alarm, or "".
 EDGES
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.s
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/server.briefGovernor.SetEnabled,matrix/neo/internal/server.briefGovernor.reschedule
-  ^references=matrix/neo/internal/server.briefGovernor.SetEnabled,matrix/neo/internal/server.briefGovernor.reschedule
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.AlreadyDelivered kind=method
@@ -219,10 +200,7 @@ NODE id=matrix/neo/internal/briefsettings.Store.AlreadyDelivered kind=method
   sig=func (s *Store) AlreadyDelivered(localDate string) bool
   doc=AlreadyDelivered reports whether a brief was already delivered for localDate.
 EDGES
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.localDate,matrix/neo/internal/briefsettings.s
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/server.Engine.decideMorningBriefWake
-  ^references=matrix/neo/internal/server.Engine.decideMorningBriefWake
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.Enabled kind=method
@@ -230,10 +208,7 @@ NODE id=matrix/neo/internal/briefsettings.Store.Enabled kind=method
   sig=func (s *Store) Enabled() bool
   doc=Enabled reports the authoritative per-user opt-in, re-read live (req 14.3).
 EDGES
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.s
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/server.briefGovernor.Active,matrix/neo/internal/server.briefGovernor.Enabled,matrix/neo/internal/server.briefGovernor.SetEnabled,matrix/neo/internal/server.briefGovernor.UpdateSchedule
-  ^references=matrix/neo/internal/server.briefGovernor.Active,matrix/neo/internal/server.briefGovernor.Enabled,matrix/neo/internal/server.briefGovernor.SetEnabled,matrix/neo/internal/server.briefGovernor.UpdateSchedule
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.MarkDelivered kind=method
@@ -241,11 +216,7 @@ NODE id=matrix/neo/internal/briefsettings.Store.MarkDelivered kind=method
   sig=func (s *Store) MarkDelivered(localDate string) error
   doc=MarkDelivered records the local date a brief was delivered, so the handler\nnever delivers twice for one local date (req 14.3).
 EDGES
-  calls=matrix/neo/internal/briefsettings.Store.persistLocked
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.Store.persistLocked,matrix/neo/internal/briefsettings.localDate,matrix/neo/internal/briefsettings.s
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/server.Engine.deliverBrief
-  ^references=matrix/neo/internal/server.Engine.deliverBrief
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.Paused kind=method
@@ -253,10 +224,7 @@ NODE id=matrix/neo/internal/briefsettings.Store.Paused kind=method
   sig=func (s *Store) Paused() bool
   doc=Paused reports whether delivery is currently paused.
 EDGES
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.s
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/server.Engine.decideMorningBriefWake,matrix/neo/internal/server.briefGovernor.Active,matrix/neo/internal/server.briefGovernor.UpdateSchedule
-  ^references=matrix/neo/internal/server.Engine.decideMorningBriefWake,matrix/neo/internal/server.briefGovernor.Active,matrix/neo/internal/server.briefGovernor.UpdateSchedule
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.Persistent kind=method
@@ -264,7 +232,6 @@ NODE id=matrix/neo/internal/briefsettings.Store.Persistent kind=method
   sig=func (s *Store) Persistent() bool
   doc=Persistent reports whether state is mirrored to disk.
 EDGES
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.s
   ^contains=matrix/neo/internal/briefsettings.Store
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
@@ -273,11 +240,7 @@ NODE id=matrix/neo/internal/briefsettings.Store.SetAlarmID kind=method
   sig=func (s *Store) SetAlarmID(alarmID string) error
   doc=SetAlarmID records the alarm id (used when a reschedule recreates the alarm).
 EDGES
-  calls=matrix/neo/internal/briefsettings.Store.persistLocked
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.Store.persistLocked,matrix/neo/internal/briefsettings.alarmID,matrix/neo/internal/briefsettings.s
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/server.briefGovernor.reschedule
-  ^references=matrix/neo/internal/server.briefGovernor.reschedule
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.SetEnabled kind=method
@@ -285,11 +248,7 @@ NODE id=matrix/neo/internal/briefsettings.Store.SetEnabled kind=method
   sig=func (s *Store) SetEnabled(enabled bool, alarmID string) error
   doc=SetEnabled records the opt-in flag and the alarm id together (one atomic\nmutation). Disabling clears the alarm id. Persists immediately when durable.
 EDGES
-  calls=matrix/neo/internal/briefsettings.Store.persistLocked
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.Store.persistLocked,matrix/neo/internal/briefsettings.alarmID,matrix/neo/internal/briefsettings.enabled,matrix/neo/internal/briefsettings.s
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/server.briefGovernor.SetEnabled,matrix/neo/internal/server.briefGovernor.reschedule
-  ^references=matrix/neo/internal/server.briefGovernor.SetEnabled,matrix/neo/internal/server.briefGovernor.reschedule
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.SetPaused kind=method
@@ -297,11 +256,7 @@ NODE id=matrix/neo/internal/briefsettings.Store.SetPaused kind=method
   sig=func (s *Store) SetPaused(paused bool) error
   doc=SetPaused records the paused flag (the alarm is retained; the wake handler\nskips while paused, req 14.2).
 EDGES
-  calls=matrix/neo/internal/briefsettings.Store.persistLocked
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.Store.persistLocked,matrix/neo/internal/briefsettings.paused,matrix/neo/internal/briefsettings.s
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/server.briefGovernor.SetPaused
-  ^references=matrix/neo/internal/server.briefGovernor.SetPaused
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.SetSchedule kind=method
@@ -309,11 +264,7 @@ NODE id=matrix/neo/internal/briefsettings.Store.SetSchedule kind=method
   sig=func (s *Store) SetSchedule(sc Schedule) error
   doc=SetSchedule persists the schedule fields (tz/time/days/length/sections/\ndestination) without touching Enabled/Paused/AlarmID/LastDelivered.
 EDGES
-  calls=matrix/neo/internal/briefsettings.Store.persistLocked
-  references=matrix/neo/internal/briefsettings.Schedule,matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.Store.persistLocked,matrix/neo/internal/briefsettings.s,matrix/neo/internal/briefsettings.sc
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/server.briefGovernor.UpdateSchedule
-  ^references=matrix/neo/internal/server.briefGovernor.UpdateSchedule
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.SetVault kind=method
@@ -321,11 +272,7 @@ NODE id=matrix/neo/internal/briefsettings.Store.SetVault kind=method
   sig=func (s *Store) SetVault(sess *vault.Session, user string)
   doc=SetVault wires the fail-closed data-at-rest session and owning user DID into\nthe store and (re)loads persisted state under it. A nil session leaves the\nstore on plaintext.
 EDGES
-  calls=matrix/neo/internal/briefsettings.Store.loadLocked
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.Store.loadLocked,matrix/neo/internal/briefsettings.s,matrix/neo/internal/briefsettings.sess,matrix/neo/internal/briefsettings.user,matrix/vault.Session
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.View kind=method
@@ -333,11 +280,7 @@ NODE id=matrix/neo/internal/briefsettings.Store.View kind=method
   sig=func (s *Store) View() State
   doc=View returns a copy of the current state.
 EDGES
-  calls=matrix/neo/internal/briefsettings.State.clone
-  references=matrix/neo/internal/briefsettings.State,matrix/neo/internal/briefsettings.State.clone,matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.s
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/server.briefGovernor.SettingsView,matrix/neo/internal/server.briefGovernor.createAlarm
-  ^references=matrix/neo/internal/server.briefGovernor.SettingsView,matrix/neo/internal/server.briefGovernor.createAlarm
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.ad kind=method
@@ -345,63 +288,46 @@ NODE id=matrix/neo/internal/briefsettings.Store.ad kind=method
   sig=func (s *Store) ad() vault.AD
   doc=ad reconstructs the settings file's associated data (this user's single\nsettings file). Never stored, so a file moved between users fails auth.
 EDGES
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.s,matrix/neo/internal/briefsettings.schemaSettings1,matrix/neo/internal/briefsettings.storeSettings,matrix/vault.AD
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/briefsettings.Store.loadLocked,matrix/neo/internal/briefsettings.Store.persistLocked
-  ^references=matrix/neo/internal/briefsettings.Store.loadLocked,matrix/neo/internal/briefsettings.Store.persistLocked
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.loadLocked kind=method
   digest=b3:4f2e674b9caff2cb517b4884607c863563bf46165d15d20f8657a7c2c9f00224 file=neo/internal/briefsettings/briefsettings.go range=119:142 lang=go exported=false byte_range=4338:4697
   sig=func (s *Store) loadLocked()
 EDGES
-  calls=matrix/neo/internal/briefsettings.Store.ad,matrix/neo/internal/briefsettings.Store.path,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
-  references=matrix/neo/internal/briefsettings.State,matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.Store.ad,matrix/neo/internal/briefsettings.Store.path,matrix/neo/internal/briefsettings.b,matrix/neo/internal/briefsettings.err,matrix/neo/internal/briefsettings.oerr,matrix/neo/internal/briefsettings.plain,matrix/neo/internal/briefsettings.s,matrix/neo/internal/briefsettings.st,matrix/neo/internal/briefsettings.uv,matrix/vault.IsVault,matrix/vault.Session.UserVault,matrix/vault.UserVault.OpenFile
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/briefsettings.Store.SetVault
-  ^references=matrix/neo/internal/briefsettings.Store.SetVault
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.path kind=method
   digest=b3:64bdce770cd7c67b5b6d700c3b25bd958bd66bb0986fd551e0eef131a9c2d67e file=neo/internal/briefsettings/briefsettings.go range=304:309 lang=go exported=false byte_range=8715:8824
   sig=func (s *Store) path() string
 EDGES
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.s,matrix/neo/internal/briefsettings.settingsFile
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/briefsettings.Open,matrix/neo/internal/briefsettings.Store.loadLocked,matrix/neo/internal/briefsettings.Store.persistLocked
-  ^references=matrix/neo/internal/briefsettings.Open,matrix/neo/internal/briefsettings.Store.loadLocked,matrix/neo/internal/briefsettings.Store.persistLocked
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.Store.persistLocked kind=method
   digest=b3:dcaca45ab67646d9520c89b7c691c38708f83ed6bd2be9a1b843c8c4959bbb6b file=neo/internal/briefsettings/briefsettings.go range=278:302 lang=go exported=false byte_range=8005:8713
   sig=func (s *Store) persistLocked() error
 EDGES
-  calls=matrix/neo/internal/briefsettings.Store.ad,matrix/neo/internal/briefsettings.Store.path,matrix/vault.Session.MaybeSealFile
-  references=matrix/neo/internal/briefsettings.Store,matrix/neo/internal/briefsettings.Store.ad,matrix/neo/internal/briefsettings.Store.path,matrix/neo/internal/briefsettings.b,matrix/neo/internal/briefsettings.err,matrix/neo/internal/briefsettings.s,matrix/neo/internal/briefsettings.tmp,matrix/vault.Session.MaybeSealFile
   ^contains=matrix/neo/internal/briefsettings.Store
-  ^calls=matrix/neo/internal/briefsettings.Store.MarkDelivered,matrix/neo/internal/briefsettings.Store.SetAlarmID,matrix/neo/internal/briefsettings.Store.SetEnabled,matrix/neo/internal/briefsettings.Store.SetPaused,matrix/neo/internal/briefsettings.Store.SetSchedule
-  ^references=matrix/neo/internal/briefsettings.Store.MarkDelivered,matrix/neo/internal/briefsettings.Store.SetAlarmID,matrix/neo/internal/briefsettings.Store.SetEnabled,matrix/neo/internal/briefsettings.Store.SetPaused,matrix/neo/internal/briefsettings.Store.SetSchedule
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.schemaSettings1 kind=const
   digest=b3:103f3986f69c83f83c1a546d94b58d29548542c95c9400e258ab2a107bbb6142 file=neo/internal/briefsettings/briefsettings.go range=35:35 lang=go exported=false byte_range=1341:1378
   sig=untyped string
 EDGES
-  ^references=matrix/neo/internal/briefsettings.Store.ad
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.settingsFile kind=const
   digest=b3:ae958340de55a60ac96c381399ce18240ebbc3a73824f9c3d62109147b1ad87b file=neo/internal/briefsettings/briefsettings.go range=31:31 lang=go exported=false byte_range=1254:1290
   sig=untyped string
 EDGES
-  ^references=matrix/neo/internal/briefsettings.Store.path
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.storeSettings kind=const
   digest=b3:399f054da861e84f18cdd638ca8038cf46260f31a993ed76887625b4e03183e9 file=neo/internal/briefsettings/briefsettings.go range=34:34 lang=go exported=false byte_range=1301:1339
   sig=untyped string
 EDGES
-  ^references=matrix/neo/internal/briefsettings.Store.ad
   ^defines=matrix/neo/internal/briefsettings/briefsettings.go
 
 NODE id=matrix/neo/internal/briefsettings.today kind=func

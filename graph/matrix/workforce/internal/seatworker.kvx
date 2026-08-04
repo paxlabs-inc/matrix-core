@@ -1,21 +1,15 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/seatworker kind=package
   digest=b3:0ae22b3bdb73dcdaaa06e8ace15616c56e99ab979a118a72ca0e75414ebade61 file=workforce/internal/seatworker range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/seatworker/worker.go
-  imports=matrix/workforce/internal/contracts
   ^contains=mod:matrix/workforce
-  ^imports=matrix/workforce/cmd/workforce-seat,matrix/workforce/internal/actorstate
 
 NODE id=matrix/workforce/internal/seatworker.ApplyModel kind=func
   digest=b3:1127fcf0d0cba941c7577f72660bcc124914dd7fba483de91bdc0f3ed7e45860 file=workforce/internal/seatworker/worker.go range=178:225 lang=go exported=true byte_range=5783:7457
   sig=func ApplyModel(packet contracts.WorkPacket, response []byte) (SeatOutput, error)
 EDGES
-  calls=matrix/workforce/internal/seatworker.Orient,matrix/workforce/internal/seatworker.SeatOutput.Validate
-  references=matrix/workforce/internal/contracts.DispositionBlocked,matrix/workforce/internal/contracts.DispositionProgressed,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WorkPacket,matrix/workforce/internal/seatworker.ModelDecision,matrix/workforce/internal/seatworker.Orient,matrix/workforce/internal/seatworker.SeatOutput,matrix/workforce/internal/seatworker.SeatOutput.Validate,matrix/workforce/internal/seatworker.allowed,matrix/workforce/internal/seatworker.decision,matrix/workforce/internal/seatworker.decoder,matrix/workforce/internal/seatworker.err,matrix/workforce/internal/seatworker.output,matrix/workforce/internal/seatworker.packet,matrix/workforce/internal/seatworker.response,matrix/workforce/internal/seatworker.skill
-  ^calls=matrix/workforce/cmd/workforce-seat.run,matrix/workforce/internal/actorstate.Runner.run
-  ^references=matrix/workforce/cmd/workforce-seat.run,matrix/workforce/internal/actorstate.Runner.run
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker.InputCounts kind=type
@@ -23,7 +17,6 @@ NODE id=matrix/workforce/internal/seatworker.InputCounts kind=type
   sig=type InputCounts struct {\n	VerifiedRecords	uint32	`json:"verified_records"`\n	Dependencies	uint32	`json:"dependencies"`\n	Artifacts	uint32	`json:"artifacts"`\n	Evidence	uint32	`json:"evidence"`\n	Inbox		uint32	`json:"inbox"`\n	Tools		uint32	`json:"tools"`\n	Skills		uint32	`json:"skills"`\n}
 EDGES
   contains=matrix/workforce/internal/seatworker.InputCounts#Artifacts,matrix/workforce/internal/seatworker.InputCounts#Dependencies,matrix/workforce/internal/seatworker.InputCounts#Evidence,matrix/workforce/internal/seatworker.InputCounts#Inbox,matrix/workforce/internal/seatworker.InputCounts#Skills,matrix/workforce/internal/seatworker.InputCounts#Tools,matrix/workforce/internal/seatworker.InputCounts#VerifiedRecords
-  ^references=matrix/workforce/internal/actorstate.InputCounts,matrix/workforce/internal/seatworker.Orient,matrix/workforce/internal/seatworker.SeatOutput
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker.InputCounts#Artifacts kind=field
@@ -72,14 +65,12 @@ NODE id=matrix/workforce/internal/seatworker.MaxOutputBytes kind=const
   digest=b3:e139adc219996f222c78ddbf53d1226d9ec8005d712aa689187a1b71d0fe2d0c file=workforce/internal/seatworker/worker.go range=20:20 lang=go exported=true byte_range=354:378
   sig=untyped int
 EDGES
-  ^references=matrix/workforce/internal/actorstate.MaxOutputBytes,matrix/workforce/internal/seatworker.SessionInput.Validate
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker.MaxPacketBytes kind=const
   digest=b3:f033959434a51cb49724ca3c4a0ce361c44e639c14e0ddba29be3ed5b61ae879 file=workforce/internal/seatworker/worker.go range=19:19 lang=go exported=true byte_range=328:352
   sig=untyped int
 EDGES
-  ^references=matrix/workforce/cmd/workforce-seat.run,matrix/workforce/internal/actorstate.MaxPacketBytes
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker.ModelDecision kind=type
@@ -87,8 +78,6 @@ NODE id=matrix/workforce/internal/seatworker.ModelDecision kind=type
   sig=type ModelDecision struct {\n	SchemaVersion	string				`json:"schema_version"`\n	Disposition	contracts.WakeDisposition	`json:"disposition"`\n	Proposal	*Proposal			`json:"proposal"`\n	ReasonCode	string				`json:"reason_code"`\n}
 EDGES
   contains=matrix/workforce/internal/seatworker.ModelDecision#Disposition,matrix/workforce/internal/seatworker.ModelDecision#Proposal,matrix/workforce/internal/seatworker.ModelDecision#ReasonCode,matrix/workforce/internal/seatworker.ModelDecision#SchemaVersion
-  references=matrix/workforce/internal/contracts.WakeDisposition,matrix/workforce/internal/seatworker.Proposal
-  ^references=matrix/workforce/internal/seatworker.ApplyModel
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker.ModelDecision#Disposition kind=field
@@ -119,10 +108,6 @@ NODE id=matrix/workforce/internal/seatworker.Orient kind=func
   digest=b3:6594d128ea19dfe1c8841255f9ed6ece4fde50543213ed33b29bc4526d175e6b file=workforce/internal/seatworker/worker.go range=145:176 lang=go exported=true byte_range=4641:5781
   sig=func Orient(packet contracts.WorkPacket) (SeatOutput, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/seatworker.SeatOutput.Validate
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.DispositionProgressed,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.RequiredOutput,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WorkPacket,matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/seatworker.InputCounts,matrix/workforce/internal/seatworker.SeatOutput,matrix/workforce/internal/seatworker.SeatOutput.Validate,matrix/workforce/internal/seatworker.canonical,matrix/workforce/internal/seatworker.err,matrix/workforce/internal/seatworker.output,matrix/workforce/internal/seatworker.packet,matrix/workforce/internal/seatworker.sum
-  ^calls=matrix/workforce/cmd/workforce-seat.run,matrix/workforce/internal/actorstate.Orient,matrix/workforce/internal/seatworker.ApplyModel
-  ^references=matrix/workforce/cmd/workforce-seat.run,matrix/workforce/internal/actorstate.Orient,matrix/workforce/internal/seatworker.ApplyModel
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker.Proposal kind=type
@@ -131,8 +116,6 @@ NODE id=matrix/workforce/internal/seatworker.Proposal kind=type
 EDGES
   contains=matrix/workforce/internal/seatworker.Proposal#Input,matrix/workforce/internal/seatworker.Proposal#Operation,matrix/workforce/internal/seatworker.Proposal#Provider,matrix/workforce/internal/seatworker.Proposal#SkillID,matrix/workforce/internal/seatworker.Proposal.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.SkillID
-  ^references=matrix/workforce/internal/seatworker.ModelDecision,matrix/workforce/internal/seatworker.Proposal.Validate,matrix/workforce/internal/seatworker.SeatOutput
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker.Proposal#Input kind=field
@@ -163,10 +146,7 @@ NODE id=matrix/workforce/internal/seatworker.Proposal.Validate kind=method
   digest=b3:159481055ddd6ffe933ce769c08e7af40c36c9d9ccc02f3613e763fdf8109c6d file=workforce/internal/seatworker/worker.go range=44:57 lang=go exported=true byte_range=1321:1881
   sig=func (proposal Proposal) Validate() error
 EDGES
-  references=matrix/workforce/internal/seatworker.Proposal,matrix/workforce/internal/seatworker.err,matrix/workforce/internal/seatworker.object,matrix/workforce/internal/seatworker.proposal
   ^contains=matrix/workforce/internal/seatworker.Proposal
-  ^calls=matrix/workforce/internal/seatworker.SeatOutput.Validate
-  ^references=matrix/workforce/internal/seatworker.SeatOutput.Validate
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker.SeatOutput kind=type
@@ -175,8 +155,6 @@ NODE id=matrix/workforce/internal/seatworker.SeatOutput kind=type
 EDGES
   contains=matrix/workforce/internal/seatworker.SeatOutput#Disposition,matrix/workforce/internal/seatworker.SeatOutput#InputCounts,matrix/workforce/internal/seatworker.SeatOutput#IntentID,matrix/workforce/internal/seatworker.SeatOutput#LeaseID,matrix/workforce/internal/seatworker.SeatOutput#PacketDigest,matrix/workforce/internal/seatworker.SeatOutput#Proposal,matrix/workforce/internal/seatworker.SeatOutput#ReasonCode,matrix/workforce/internal/seatworker.SeatOutput#RequiredOutput,matrix/workforce/internal/seatworker.SeatOutput#SchemaVersion,matrix/workforce/internal/seatworker.SeatOutput#SeatID,matrix/workforce/internal/seatworker.SeatOutput#WakeID,matrix/workforce/internal/seatworker.SeatOutput.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.LeaseID,matrix/workforce/internal/contracts.RequiredOutput,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.WakeDisposition,matrix/workforce/internal/contracts.WakeID,matrix/workforce/internal/seatworker.InputCounts,matrix/workforce/internal/seatworker.Proposal
-  ^references=matrix/workforce/cmd/workforce-seat.run,matrix/workforce/internal/actorstate.SeatOutput,matrix/workforce/internal/seatworker.ApplyModel,matrix/workforce/internal/seatworker.Orient,matrix/workforce/internal/seatworker.SeatOutput.Validate
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker.SeatOutput#Disposition kind=field
@@ -249,11 +227,7 @@ NODE id=matrix/workforce/internal/seatworker.SeatOutput.Validate kind=method
   digest=b3:adf14c761b8325c5c780d1b5f40a98b6893986b57771848a3b114c13307ee2ba file=workforce/internal/seatworker/worker.go range=101:143 lang=go exported=true byte_range=3290:4639
   sig=func (output SeatOutput) Validate() error
 EDGES
-  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.RequiredOutput.Validate,matrix/workforce/internal/contracts.WakeDisposition.Valid,matrix/workforce/internal/seatworker.Proposal.Validate
-  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.DispositionBlocked,matrix/workforce/internal/contracts.DispositionProgressed,matrix/workforce/internal/contracts.RequiredOutput.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WakeDisposition.Valid,matrix/workforce/internal/seatworker.Proposal.Validate,matrix/workforce/internal/seatworker.SeatOutput,matrix/workforce/internal/seatworker.err,matrix/workforce/internal/seatworker.output,matrix/workforce/internal/seatworker.required
   ^contains=matrix/workforce/internal/seatworker.SeatOutput
-  ^calls=matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/seatworker.ApplyModel,matrix/workforce/internal/seatworker.Orient
-  ^references=matrix/workforce/internal/seatworker.ApplyModel,matrix/workforce/internal/seatworker.Orient
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker.SessionInput kind=type
@@ -262,8 +236,6 @@ NODE id=matrix/workforce/internal/seatworker.SessionInput kind=type
 EDGES
   contains=matrix/workforce/internal/seatworker.SessionInput#ModelResponse,matrix/workforce/internal/seatworker.SessionInput#Packet,matrix/workforce/internal/seatworker.SessionInput#SchemaVersion,matrix/workforce/internal/seatworker.SessionInput.HasModelResponse,matrix/workforce/internal/seatworker.SessionInput.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.WorkPacket
-  ^references=matrix/workforce/cmd/workforce-seat.run,matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/seatworker.SessionInput.HasModelResponse,matrix/workforce/internal/seatworker.SessionInput.Validate
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker.SessionInput#ModelResponse kind=field
@@ -288,21 +260,14 @@ NODE id=matrix/workforce/internal/seatworker.SessionInput.HasModelResponse kind=
   digest=b3:bb3053b93fabf2d39948d635499391222952a8abdad813db3f6d329024e8bef5 file=workforce/internal/seatworker/worker.go range=86:89 lang=go exported=true byte_range=2798:2960
   sig=func (input SessionInput) HasModelResponse() bool
 EDGES
-  references=matrix/workforce/internal/seatworker.SessionInput,matrix/workforce/internal/seatworker.input,matrix/workforce/internal/seatworker.value
   ^contains=matrix/workforce/internal/seatworker.SessionInput
-  ^calls=matrix/workforce/cmd/workforce-seat.run
-  ^references=matrix/workforce/cmd/workforce-seat.run
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker.SessionInput.Validate kind=method
   digest=b3:66c8461c59a429e6a7a2a55afae53a7995c0bb192bdfed2f6ff9d2324f9ec635 file=workforce/internal/seatworker/worker.go range=72:84 lang=go exported=true byte_range=2364:2796
   sig=func (input SessionInput) Validate() error
 EDGES
-  calls=matrix/workforce/internal/contracts.WorkPacket.Validate
-  references=matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/contracts.WorkPacket.Validate,matrix/workforce/internal/seatworker.MaxOutputBytes,matrix/workforce/internal/seatworker.SessionInput,matrix/workforce/internal/seatworker.err,matrix/workforce/internal/seatworker.input
   ^contains=matrix/workforce/internal/seatworker.SessionInput
-  ^calls=matrix/workforce/internal/actorstate.Runner.run,matrix/workforce/internal/contracts.EncodeCanonical
-  ^references=matrix/workforce/internal/actorstate.Runner.run
   ^defines=matrix/workforce/internal/seatworker/worker.go
 
 NODE id=matrix/workforce/internal/seatworker/worker.go kind=file

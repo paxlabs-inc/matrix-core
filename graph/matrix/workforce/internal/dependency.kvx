@@ -1,19 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/dependency kind=package
   digest=b3:ebaee0182453f10c3ad9e81990154a111e0c69b7c34e427c7d09f71f63ce1205 file=workforce/internal/dependency range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/dependency/doc.go,matrix/workforce/internal/dependency/resolver.go,matrix/workforce/internal/dependency/store.go,matrix/workforce/internal/dependency/types.go
-  imports=matrix/workforce/internal/contracts
   ^contains=mod:matrix/workforce
-  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/actorstate,matrix/workforce/internal/developer,matrix/workforce/internal/effect,matrix/workforce/internal/lease,matrix/workforce/internal/mail,matrix/workforce/internal/productexecution,matrix/workforce/internal/reconcile,matrix/workforce/internal/wakeruntime,matrix/workforce/internal/workcompile,matrix/workforce/internal/workorder
 
 NODE id=matrix/workforce/internal/dependency.AuthorizedSlice kind=func
   digest=b3:43ab52fd6bf4d935614cd72e0ce0a3b1a1323e3b1dc18d6f338974bd9acc5ca0 file=workforce/internal/dependency/resolver.go range=143:179 lang=go exported=true byte_range=4342:5474
   sig=func AuthorizedSlice(\n	projection Projection,\n	seatID contracts.SeatID,\n	departmentID contracts.DepartmentID,\n) Projection
   doc=AuthorizedSlice filters a projection without leaking unauthorized graph nodes.
 EDGES
-  references=matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.Projection,matrix/workforce/internal/dependency.allowed,matrix/workforce/internal/dependency.departmentID,matrix/workforce/internal/dependency.edge,matrix/workforce/internal/dependency.filtered,matrix/workforce/internal/dependency.id,matrix/workforce/internal/dependency.incident,matrix/workforce/internal/dependency.include,matrix/workforce/internal/dependency.node,matrix/workforce/internal/dependency.projection,matrix/workforce/internal/dependency.seatID
   ^defines=matrix/workforce/internal/dependency/resolver.go
 
 NODE id=matrix/workforce/internal/dependency.Edge kind=type
@@ -23,8 +20,6 @@ NODE id=matrix/workforce/internal/dependency.Edge kind=type
 EDGES
   contains=matrix/workforce/internal/dependency.Edge#CreatedAt,matrix/workforce/internal/dependency.Edge#Dependent,matrix/workforce/internal/dependency.Edge#ExpiresAt,matrix/workforce/internal/dependency.Edge#Kind,matrix/workforce/internal/dependency.Edge#OrganizationID,matrix/workforce/internal/dependency.Edge#Prerequisite,matrix/workforce/internal/dependency.Edge#RequiredResponseSchema,matrix/workforce/internal/dependency.Edge#SLAAt,matrix/workforce/internal/dependency.Edge#TimeoutAction,matrix/workforce/internal/dependency.Edge.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.TimeoutAction,matrix/workforce/internal/dependency.EdgeKind,matrix/workforce/internal/dependency.NodeID
-  ^references=matrix/workforce/internal/dependency.Edge.Validate,matrix/workforce/internal/dependency.Projection,matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Snapshot,matrix/workforce/internal/dependency.Store.AddEdge,matrix/workforce/internal/dependency.Store.addEdgeOnce,matrix/workforce/internal/dependency.Store.loadTx,matrix/workforce/internal/dependency.WouldCycle,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/dependency.findCycle,matrix/workforce/internal/dependency.normalizeEdgeTimes,matrix/workforce/internal/dependency.reverseTopological,matrix/workforce/internal/mail.DelegationBinding,matrix/workforce/internal/wakeruntime.goalScope
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.Edge#CreatedAt kind=field
@@ -86,11 +81,7 @@ NODE id=matrix/workforce/internal/dependency.Edge.Validate kind=method
   sig=func (edge Edge) Validate() error
   doc=Validate enforces a bounded edge and complete delegation contract.
 EDGES
-  calls=matrix/workforce/internal/contracts.TimeoutAction.Valid,matrix/workforce/internal/dependency.EdgeKind.Valid,matrix/workforce/internal/dependency.validUTC,matrix/workforce/internal/dependency.validateToken
-  references=matrix/workforce/internal/contracts.TimeoutAction.Valid,matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.EdgeDelegation,matrix/workforce/internal/dependency.EdgeKind.Valid,matrix/workforce/internal/dependency.edge,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.validUTC,matrix/workforce/internal/dependency.validateToken
   ^contains=matrix/workforce/internal/dependency.Edge
-  ^calls=matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.AddEdge,matrix/workforce/internal/mail.validateDelegation
-  ^references=matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.AddEdge,matrix/workforce/internal/mail.validateDelegation
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.EdgeApproval kind=const
@@ -98,8 +89,6 @@ NODE id=matrix/workforce/internal/dependency.EdgeApproval kind=const
   sig=dependency.EdgeKind
   doc=EdgeApproval requires an approval result.
 EDGES
-  references=matrix/workforce/internal/dependency.EdgeKind
-  ^references=matrix/workforce/internal/dependency.EdgeKind.Valid
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.EdgeArtifact kind=const
@@ -107,8 +96,6 @@ NODE id=matrix/workforce/internal/dependency.EdgeArtifact kind=const
   sig=dependency.EdgeKind
   doc=EdgeArtifact requires an immutable artifact.
 EDGES
-  references=matrix/workforce/internal/dependency.EdgeKind
-  ^references=matrix/workforce/internal/dependency.EdgeKind.Valid
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.EdgeCorrection kind=const
@@ -116,8 +103,6 @@ NODE id=matrix/workforce/internal/dependency.EdgeCorrection kind=const
   sig=dependency.EdgeKind
   doc=EdgeCorrection blocks on correction reconciliation.
 EDGES
-  references=matrix/workforce/internal/dependency.EdgeKind
-  ^references=matrix/workforce/internal/dependency.EdgeKind.Valid
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.EdgeDelegation kind=const
@@ -125,8 +110,6 @@ NODE id=matrix/workforce/internal/dependency.EdgeDelegation kind=const
   sig=dependency.EdgeKind
   doc=EdgeDelegation is a bounded cross-seat dependency.
 EDGES
-  references=matrix/workforce/internal/dependency.EdgeKind
-  ^references=matrix/workforce/internal/dependency.Edge.Validate,matrix/workforce/internal/dependency.EdgeKind.Valid,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/mail.validateDelegation
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.EdgeDependency kind=const
@@ -134,8 +117,6 @@ NODE id=matrix/workforce/internal/dependency.EdgeDependency kind=const
   sig=dependency.EdgeKind
   doc=EdgeDependency is a general prerequisite.
 EDGES
-  references=matrix/workforce/internal/dependency.EdgeKind
-  ^references=matrix/workforce/internal/dependency.EdgeKind.Valid
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.EdgeHandoff kind=const
@@ -143,8 +124,6 @@ NODE id=matrix/workforce/internal/dependency.EdgeHandoff kind=const
   sig=dependency.EdgeKind
   doc=EdgeHandoff requires a typed handoff.
 EDGES
-  references=matrix/workforce/internal/dependency.EdgeKind
-  ^references=matrix/workforce/internal/dependency.EdgeKind.Valid
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.EdgeKind kind=type
@@ -153,7 +132,6 @@ NODE id=matrix/workforce/internal/dependency.EdgeKind kind=type
   doc=EdgeKind is a closed dependency relationship.
 EDGES
   contains=matrix/workforce/internal/dependency.EdgeKind.Valid
-  ^references=matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.EdgeApproval,matrix/workforce/internal/dependency.EdgeArtifact,matrix/workforce/internal/dependency.EdgeCorrection,matrix/workforce/internal/dependency.EdgeDelegation,matrix/workforce/internal/dependency.EdgeDependency,matrix/workforce/internal/dependency.EdgeHandoff,matrix/workforce/internal/dependency.EdgeKind.Valid
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.EdgeKind.Valid kind=method
@@ -161,10 +139,7 @@ NODE id=matrix/workforce/internal/dependency.EdgeKind.Valid kind=method
   sig=func (kind EdgeKind) Valid() bool
   doc=Valid reports whether the edge kind is recognized.
 EDGES
-  references=matrix/workforce/internal/dependency.EdgeApproval,matrix/workforce/internal/dependency.EdgeArtifact,matrix/workforce/internal/dependency.EdgeCorrection,matrix/workforce/internal/dependency.EdgeDelegation,matrix/workforce/internal/dependency.EdgeDependency,matrix/workforce/internal/dependency.EdgeHandoff,matrix/workforce/internal/dependency.EdgeKind,matrix/workforce/internal/dependency.kind
   ^contains=matrix/workforce/internal/dependency.EdgeKind
-  ^calls=matrix/workforce/internal/dependency.Edge.Validate
-  ^references=matrix/workforce/internal/dependency.Edge.Validate
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.ErrConflict kind=var
@@ -172,7 +147,6 @@ NODE id=matrix/workforce/internal/dependency.ErrConflict kind=var
   sig=error
   doc=ErrConflict reports optimistic-concurrency or immutable graph conflicts.
 EDGES
-  ^references=matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.Store.FinishWithReceipt,matrix/workforce/internal/dependency.Store.PutNode,matrix/workforce/internal/dependency.Store.Transition,matrix/workforce/internal/dependency.Store.addEdgeOnce
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.ErrCycle kind=var
@@ -180,7 +154,6 @@ NODE id=matrix/workforce/internal/dependency.ErrCycle kind=var
   sig=error
   doc=ErrCycle reports an edge that would make the dependency graph cyclic.
 EDGES
-  ^references=matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.addEdgeOnce
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.ErrNotFound kind=var
@@ -188,7 +161,6 @@ NODE id=matrix/workforce/internal/dependency.ErrNotFound kind=var
   sig=error
   doc=ErrNotFound reports a missing graph object without exposing another tenant.
 EDGES
-  ^references=matrix/workforce/internal/actorstate.Assembler.graphSlice,matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.WouldCycle,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit,matrix/workforce/internal/wakeruntime.Runner.waitForHumanVerification
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.Incident kind=type
@@ -197,8 +169,6 @@ NODE id=matrix/workforce/internal/dependency.Incident kind=type
   doc=Incident is a deterministic dashboard-facing explanation.
 EDGES
   contains=matrix/workforce/internal/dependency.Incident#CreatedAt,matrix/workforce/internal/dependency.Incident#Explanation,matrix/workforce/internal/dependency.Incident#ID,matrix/workforce/internal/dependency.Incident#Kind,matrix/workforce/internal/dependency.Incident#NodeIDs,matrix/workforce/internal/dependency.Incident#OrganizationID
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.IncidentKind,matrix/workforce/internal/dependency.NodeID
-  ^references=matrix/workforce/internal/dependency.Projection,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/dependency.incident
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.Incident#CreatedAt kind=field
@@ -242,8 +212,6 @@ NODE id=matrix/workforce/internal/dependency.IncidentDeadlock kind=const
   sig=dependency.IncidentKind
   doc=IncidentDeadlock reports pending nodes with no external unblock path.
 EDGES
-  references=matrix/workforce/internal/dependency.IncidentKind
-  ^references=matrix/workforce/internal/dependency.detectIncidents
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.IncidentDelegationExpired kind=const
@@ -251,8 +219,6 @@ NODE id=matrix/workforce/internal/dependency.IncidentDelegationExpired kind=cons
   sig=dependency.IncidentKind
   doc=IncidentDelegationExpired reports an unresolved expired delegation.
 EDGES
-  references=matrix/workforce/internal/dependency.IncidentKind
-  ^references=matrix/workforce/internal/dependency.detectIncidents
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.IncidentKind kind=type
@@ -260,7 +226,6 @@ NODE id=matrix/workforce/internal/dependency.IncidentKind kind=type
   sig=type IncidentKind string
   doc=IncidentKind is an owner-visible graph failure.
 EDGES
-  ^references=matrix/workforce/internal/dependency.Incident,matrix/workforce/internal/dependency.IncidentDeadlock,matrix/workforce/internal/dependency.IncidentDelegationExpired,matrix/workforce/internal/dependency.IncidentOrphan,matrix/workforce/internal/dependency.IncidentSLABreach,matrix/workforce/internal/dependency.incident
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.IncidentOrphan kind=const
@@ -268,8 +233,6 @@ NODE id=matrix/workforce/internal/dependency.IncidentOrphan kind=const
   sig=dependency.IncidentKind
   doc=IncidentOrphan reports non-root work with no predecessor or parent path.
 EDGES
-  references=matrix/workforce/internal/dependency.IncidentKind
-  ^references=matrix/workforce/internal/dependency.detectIncidents
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.IncidentSLABreach kind=const
@@ -277,8 +240,6 @@ NODE id=matrix/workforce/internal/dependency.IncidentSLABreach kind=const
   sig=dependency.IncidentKind
   doc=IncidentSLABreach reports an unresolved delegation beyond its SLA.
 EDGES
-  references=matrix/workforce/internal/dependency.IncidentKind
-  ^references=matrix/workforce/internal/dependency.detectIncidents
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.New kind=func
@@ -286,9 +247,6 @@ NODE id=matrix/workforce/internal/dependency.New kind=func
   sig=func New(pool *pgxpool.Pool, tenantID string, now func() time.Time) (*Store, error)
   doc=New constructs a tenant-scoped graph store.
 EDGES
-  references=matrix/workforce/internal/dependency.Store,matrix/workforce/internal/dependency.now,matrix/workforce/internal/dependency.pool,matrix/workforce/internal/dependency.tenantID
-  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
-  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.Node kind=type
@@ -298,8 +256,6 @@ NODE id=matrix/workforce/internal/dependency.Node kind=type
 EDGES
   contains=matrix/workforce/internal/dependency.Node#BasePriority,matrix/workforce/internal/dependency.Node#CancellationReason,matrix/workforce/internal/dependency.Node#Contested,matrix/workforce/internal/dependency.Node#CreatedAt,matrix/workforce/internal/dependency.Node#Deadline,matrix/workforce/internal/dependency.Node#ID,matrix/workforce/internal/dependency.Node#Kind,matrix/workforce/internal/dependency.Node#OrganizationID,matrix/workforce/internal/dependency.Node#OwnerDepartmentID,matrix/workforce/internal/dependency.Node#OwnerSeatID,matrix/workforce/internal/dependency.Node#State,matrix/workforce/internal/dependency.Node#TerminalRecordID,matrix/workforce/internal/dependency.Node#Title,matrix/workforce/internal/dependency.Node#UpdatedAt,matrix/workforce/internal/dependency.Node#Version,matrix/workforce/internal/dependency.Node.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.NodeKind,matrix/workforce/internal/dependency.NodeState
-  ^references=matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.Projection,matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Snapshot,matrix/workforce/internal/dependency.Store.PutNode,matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.Store.loadTx,matrix/workforce/internal/dependency.WouldCycle,matrix/workforce/internal/dependency.agedPriority,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/dependency.findCycle,matrix/workforce/internal/dependency.normalizeNodeTimes,matrix/workforce/internal/dependency.reverseTopological,matrix/workforce/internal/dependency.sameNode,matrix/workforce/internal/dependency.sortNodes,matrix/workforce/internal/mail.DelegationBinding,matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/wakeruntime.Runner.nextEnvelope,matrix/workforce/internal/wakeruntime.Runner.predecessorReceipts,matrix/workforce/internal/wakeruntime.eligibleGoal,matrix/workforce/internal/wakeruntime.eligibleIntent,matrix/workforce/internal/wakeruntime.goalScope,matrix/workforce/internal/wakeruntime.snapshotNode,matrix/workforce/internal/workorder.Context,matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.Node#BasePriority kind=field
@@ -397,11 +353,7 @@ NODE id=matrix/workforce/internal/dependency.Node.Validate kind=method
   sig=func (node Node) Validate() error
   doc=Validate rejects incomplete, ambiguous, or out-of-bounds graph nodes.
 EDGES
-  calls=matrix/workforce/internal/dependency.NodeKind.Valid,matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.validUTC,matrix/workforce/internal/dependency.validateToken
-  references=matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.NodeKind.Valid,matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.StateCancelled,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.node,matrix/workforce/internal/dependency.validUTC,matrix/workforce/internal/dependency.validateToken
   ^contains=matrix/workforce/internal/dependency.Node
-  ^calls=matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.PutNode,matrix/workforce/internal/mail.validateDelegation,matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
-  ^references=matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.PutNode,matrix/workforce/internal/mail.validateDelegation,matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeApproval kind=const
@@ -409,8 +361,6 @@ NODE id=matrix/workforce/internal/dependency.NodeApproval kind=const
   sig=dependency.NodeKind
   doc=NodeApproval is an approval predicate.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeKind
-  ^references=matrix/workforce/internal/dependency.NodeKind.Valid
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeArtifact kind=const
@@ -418,8 +368,6 @@ NODE id=matrix/workforce/internal/dependency.NodeArtifact kind=const
   sig=dependency.NodeKind
   doc=NodeArtifact is an immutable required artifact.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeKind
-  ^references=matrix/workforce/internal/dependency.NodeKind.Valid
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeDelegation kind=const
@@ -427,8 +375,6 @@ NODE id=matrix/workforce/internal/dependency.NodeDelegation kind=const
   sig=dependency.NodeKind
   doc=NodeDelegation is a typed cross-seat obligation.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeKind
-  ^references=matrix/workforce/internal/dependency.NodeKind.Valid,matrix/workforce/internal/mail.validateDelegation
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeGoal kind=const
@@ -436,8 +382,6 @@ NODE id=matrix/workforce/internal/dependency.NodeGoal kind=const
   sig=dependency.NodeKind
   doc=NodeGoal is a durable desired outcome.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeKind
-  ^references=matrix/workforce/internal/dependency.NodeKind.Valid,matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/wakeruntime.completedGoalExists,matrix/workforce/internal/wakeruntime.eligibleGoal
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeHandoff kind=const
@@ -445,8 +389,6 @@ NODE id=matrix/workforce/internal/dependency.NodeHandoff kind=const
   sig=dependency.NodeKind
   doc=NodeHandoff is a typed transfer of work state.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeKind
-  ^references=matrix/workforce/internal/dependency.NodeKind.Valid
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeID kind=type
@@ -454,7 +396,6 @@ NODE id=matrix/workforce/internal/dependency.NodeID kind=type
   sig=type NodeID string
   doc=NodeID identifies one typed object in the global work graph.
 EDGES
-  ^references=matrix/workforce/internal/actorstate.Assembler.Assemble,matrix/workforce/internal/actorstate.Assembler.graphSlice,matrix/workforce/internal/dependency.AuthorizedSlice,matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.Incident,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.Store.FinishWithReceipt,matrix/workforce/internal/dependency.Store.Transition,matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.WouldCycle,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/dependency.findCycle,matrix/workforce/internal/dependency.incident,matrix/workforce/internal/dependency.nodeStrings,matrix/workforce/internal/dependency.reverseTopological,matrix/workforce/internal/dependency.sortNodes,matrix/workforce/internal/developer.Authority.requireTaskReady,matrix/workforce/internal/developer.Authority.resolveCoordination,matrix/workforce/internal/developer.CoordinationPlan,matrix/workforce/internal/developer.ResolvedScope,matrix/workforce/internal/developer.ScopeRequest,matrix/workforce/internal/developer.containsNode,matrix/workforce/internal/developer.requireTaskReadyTx,matrix/workforce/internal/developer.uniqueNodeIDs,matrix/workforce/internal/effect.Proposal,matrix/workforce/internal/lease.Request,matrix/workforce/internal/lease.Store.Recover,matrix/workforce/internal/productexecution.Store.prepareDeployment,matrix/workforce/internal/reconcile.Event,matrix/workforce/internal/reconcile.Service.Sweep,matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/wakeruntime.Runner.assembleInitialPacket,matrix/workforce/internal/wakeruntime.Runner.auditorLease,matrix/workforce/internal/wakeruntime.Runner.finalIntent,matrix/workforce/internal/wakeruntime.Runner.predecessorReceipts,matrix/workforce/internal/wakeruntime.Runner.prepareClaim,matrix/workforce/internal/wakeruntime.Runner.runIndependentAudit,matrix/workforce/internal/wakeruntime.completedGoalExists,matrix/workforce/internal/wakeruntime.eligibleGoal,matrix/workforce/internal/wakeruntime.eligibleIntent,matrix/workforce/internal/wakeruntime.goalScope,matrix/workforce/internal/wakeruntime.snapshotNode,matrix/workforce/internal/workcompile.Compiler.Compile,matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeIntent kind=const
@@ -462,8 +403,6 @@ NODE id=matrix/workforce/internal/dependency.NodeIntent kind=const
   sig=dependency.NodeKind
   doc=NodeIntent is a bounded executable unit of work.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeKind
-  ^references=matrix/workforce/internal/dependency.NodeKind.Valid,matrix/workforce/internal/wakeruntime.Runner.finalIntent,matrix/workforce/internal/wakeruntime.Runner.predecessorReceipts,matrix/workforce/internal/wakeruntime.eligibleIntent,matrix/workforce/internal/workorder.Store.LoadContext,matrix/workforce/internal/workorder.Store.loadCompanyContext,matrix/workforce/internal/workorder.Store.loadCompanyCycleContext
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeKind kind=type
@@ -472,7 +411,6 @@ NODE id=matrix/workforce/internal/dependency.NodeKind kind=type
   doc=NodeKind is a closed graph object family.
 EDGES
   contains=matrix/workforce/internal/dependency.NodeKind.Valid
-  ^references=matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.NodeApproval,matrix/workforce/internal/dependency.NodeArtifact,matrix/workforce/internal/dependency.NodeDelegation,matrix/workforce/internal/dependency.NodeGoal,matrix/workforce/internal/dependency.NodeHandoff,matrix/workforce/internal/dependency.NodeIntent,matrix/workforce/internal/dependency.NodeKind.Valid,matrix/workforce/internal/dependency.NodeTerminalOutcome,matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeKind.Valid kind=method
@@ -480,10 +418,7 @@ NODE id=matrix/workforce/internal/dependency.NodeKind.Valid kind=method
   sig=func (kind NodeKind) Valid() bool
   doc=Valid reports whether the node kind is executable by this release.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeApproval,matrix/workforce/internal/dependency.NodeArtifact,matrix/workforce/internal/dependency.NodeDelegation,matrix/workforce/internal/dependency.NodeGoal,matrix/workforce/internal/dependency.NodeHandoff,matrix/workforce/internal/dependency.NodeIntent,matrix/workforce/internal/dependency.NodeKind,matrix/workforce/internal/dependency.NodeTerminalOutcome,matrix/workforce/internal/dependency.kind
   ^contains=matrix/workforce/internal/dependency.NodeKind
-  ^calls=matrix/workforce/internal/dependency.Node.Validate
-  ^references=matrix/workforce/internal/dependency.Node.Validate
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeState kind=type
@@ -492,7 +427,6 @@ NODE id=matrix/workforce/internal/dependency.NodeState kind=type
   doc=NodeState is the closed lifecycle of a graph node.
 EDGES
   contains=matrix/workforce/internal/dependency.NodeState.Terminal,matrix/workforce/internal/dependency.NodeState.Valid
-  ^references=matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.NodeState.Terminal,matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.StateCancelled,matrix/workforce/internal/dependency.StateCompleted,matrix/workforce/internal/dependency.StateContested,matrix/workforce/internal/dependency.StateEligible,matrix/workforce/internal/dependency.StateFailed,matrix/workforce/internal/dependency.StateLeased,matrix/workforce/internal/dependency.StatePending,matrix/workforce/internal/dependency.StateWaiting,matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.Store.FinishWithReceipt,matrix/workforce/internal/dependency.Store.Transition,matrix/workforce/internal/reconcile.aggregate
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeState.Terminal kind=method
@@ -500,10 +434,7 @@ NODE id=matrix/workforce/internal/dependency.NodeState.Terminal kind=method
   sig=func (state NodeState) Terminal() bool
   doc=Terminal reports whether the node can no longer become eligible.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeState,matrix/workforce/internal/dependency.StateCancelled,matrix/workforce/internal/dependency.StateCompleted,matrix/workforce/internal/dependency.StateFailed,matrix/workforce/internal/dependency.state
   ^contains=matrix/workforce/internal/dependency.NodeState
-  ^calls=matrix/workforce/internal/dependency.detectIncidents
-  ^references=matrix/workforce/internal/dependency.detectIncidents
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeState.Valid kind=method
@@ -511,10 +442,7 @@ NODE id=matrix/workforce/internal/dependency.NodeState.Valid kind=method
   sig=func (state NodeState) Valid() bool
   doc=Valid reports whether the node state is recognized.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeState,matrix/workforce/internal/dependency.StateCancelled,matrix/workforce/internal/dependency.StateCompleted,matrix/workforce/internal/dependency.StateContested,matrix/workforce/internal/dependency.StateEligible,matrix/workforce/internal/dependency.StateFailed,matrix/workforce/internal/dependency.StateLeased,matrix/workforce/internal/dependency.StatePending,matrix/workforce/internal/dependency.StateWaiting,matrix/workforce/internal/dependency.state
   ^contains=matrix/workforce/internal/dependency.NodeState
-  ^calls=matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.Store.Transition
-  ^references=matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.Store.Transition
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.NodeTerminalOutcome kind=const
@@ -522,8 +450,6 @@ NODE id=matrix/workforce/internal/dependency.NodeTerminalOutcome kind=const
   sig=dependency.NodeKind
   doc=NodeTerminalOutcome is receipt-backed terminal truth.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeKind
-  ^references=matrix/workforce/internal/dependency.NodeKind.Valid
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.Projection kind=type
@@ -532,8 +458,6 @@ NODE id=matrix/workforce/internal/dependency.Projection kind=type
   doc=Projection is the authorized deterministic slice exposed to one seat.
 EDGES
   contains=matrix/workforce/internal/dependency.Projection#Edges,matrix/workforce/internal/dependency.Projection#Eligible,matrix/workforce/internal/dependency.Projection#Incidents,matrix/workforce/internal/dependency.Projection#Nodes
-  references=matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.Incident,matrix/workforce/internal/dependency.Node
-  ^references=matrix/workforce/internal/dependency.AuthorizedSlice,matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.Resolve,matrix/workforce/internal/wakeruntime.eligibleGoal,matrix/workforce/internal/wakeruntime.eligibleIntent
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.Projection#Edges kind=field
@@ -565,10 +489,6 @@ NODE id=matrix/workforce/internal/dependency.Resolve kind=func
   sig=func Resolve(snapshot Snapshot, now time.Time) (Projection, error)
   doc=Resolve computes readiness, inherited priority, timeout actions, and incidents\nwithout mutating the supplied snapshot.
 EDGES
-  calls=matrix/workforce/internal/dependency.Edge.Validate,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.agedPriority,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/dependency.findCycle,matrix/workforce/internal/dependency.reverseTopological,matrix/workforce/internal/dependency.sortNodes,matrix/workforce/internal/dependency.validUTC
-  references=matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.Edge.Validate,matrix/workforce/internal/dependency.ErrConflict,matrix/workforce/internal/dependency.ErrCycle,matrix/workforce/internal/dependency.ErrNotFound,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.Projection,matrix/workforce/internal/dependency.Snapshot,matrix/workforce/internal/dependency.StateCompleted,matrix/workforce/internal/dependency.StateEligible,matrix/workforce/internal/dependency.StatePending,matrix/workforce/internal/dependency.agedPriority,matrix/workforce/internal/dependency.cycle,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/dependency.edge,matrix/workforce/internal/dependency.edges,matrix/workforce/internal/dependency.effectivePriority,matrix/workforce/internal/dependency.eligible,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.exists,matrix/workforce/internal/dependency.findCycle,matrix/workforce/internal/dependency.i,matrix/workforce/internal/dependency.id,matrix/workforce/internal/dependency.incidents,matrix/workforce/internal/dependency.incoming,matrix/workforce/internal/dependency.j,matrix/workforce/internal/dependency.node,matrix/workforce/internal/dependency.nodes,matrix/workforce/internal/dependency.now,matrix/workforce/internal/dependency.order,matrix/workforce/internal/dependency.outgoing,matrix/workforce/internal/dependency.ready,matrix/workforce/internal/dependency.resolved,matrix/workforce/internal/dependency.reverseTopological,matrix/workforce/internal/dependency.snapshot,matrix/workforce/internal/dependency.sortNodes,matrix/workforce/internal/dependency.validUTC
-  ^calls=matrix/workforce/internal/dependency.Store.Resolve
-  ^references=matrix/workforce/internal/dependency.Store.Resolve
   ^defines=matrix/workforce/internal/dependency/resolver.go
 
 NODE id=matrix/workforce/internal/dependency.Snapshot kind=type
@@ -577,8 +497,6 @@ NODE id=matrix/workforce/internal/dependency.Snapshot kind=type
   doc=Snapshot is a complete organization graph at one durable boundary.
 EDGES
   contains=matrix/workforce/internal/dependency.Snapshot#Edges,matrix/workforce/internal/dependency.Snapshot#Nodes
-  references=matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.Node
-  ^references=matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.Snapshot,matrix/workforce/internal/dependency.Store.loadTx,matrix/workforce/internal/dependency.WouldCycle,matrix/workforce/internal/wakeruntime.completedGoalExists,matrix/workforce/internal/wakeruntime.snapshotNode
   ^defines=matrix/workforce/internal/dependency/resolver.go
 
 NODE id=matrix/workforce/internal/dependency.Snapshot#Edges kind=field
@@ -598,8 +516,6 @@ NODE id=matrix/workforce/internal/dependency.StateCancelled kind=const
   sig=dependency.NodeState
   doc=StateCancelled is terminal by deterministic propagation or owner action.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeState
-  ^references=matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.NodeState.Terminal,matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.Store.Transition,matrix/workforce/internal/reconcile.Service.applyIntent
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.StateCompleted kind=const
@@ -607,8 +523,6 @@ NODE id=matrix/workforce/internal/dependency.StateCompleted kind=const
   sig=dependency.NodeState
   doc=StateCompleted is backed by committed verified truth.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeState
-  ^references=matrix/workforce/internal/dependency.NodeState.Terminal,matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.Store.FinishWithReceipt,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/wakeruntime.Runner.finalIntent,matrix/workforce/internal/wakeruntime.Runner.predecessorReceipts,matrix/workforce/internal/wakeruntime.Runner.prepareClaim,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit,matrix/workforce/internal/wakeruntime.completedGoalExists
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.StateContested kind=const
@@ -616,8 +530,6 @@ NODE id=matrix/workforce/internal/dependency.StateContested kind=const
   sig=dependency.NodeState
   doc=StateContested is paused by a correction.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeState
-  ^references=matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.Store.Transition,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/reconcile.aggregate
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.StateEligible kind=const
@@ -625,8 +537,6 @@ NODE id=matrix/workforce/internal/dependency.StateEligible kind=const
   sig=dependency.NodeState
   doc=StateEligible is resolver-ready.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeState
-  ^references=matrix/workforce/internal/actorstate.Assembler.graphSlice,matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.Store.Resolve,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim,matrix/workforce/internal/wakeruntime.Runner.prepareClaim
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.StateFailed kind=const
@@ -634,8 +544,6 @@ NODE id=matrix/workforce/internal/dependency.StateFailed kind=const
   sig=dependency.NodeState
   doc=StateFailed is a receipt-backed terminal failure.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeState
-  ^references=matrix/workforce/internal/dependency.NodeState.Terminal,matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.Store.FinishWithReceipt,matrix/workforce/internal/reconcile.Service.applyIntent
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.StateLeased kind=const
@@ -643,8 +551,6 @@ NODE id=matrix/workforce/internal/dependency.StateLeased kind=const
   sig=dependency.NodeState
   doc=StateLeased has one active holder.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeState
-  ^references=matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim,matrix/workforce/internal/wakeruntime.Runner.prepareClaim,matrix/workforce/internal/wakeruntime.Runner.waitForHumanVerification
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.StatePending kind=const
@@ -652,8 +558,6 @@ NODE id=matrix/workforce/internal/dependency.StatePending kind=const
   sig=dependency.NodeState
   doc=StatePending has unresolved prerequisites.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeState
-  ^references=matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/mail.validateDelegation
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.StateWaiting kind=const
@@ -661,8 +565,6 @@ NODE id=matrix/workforce/internal/dependency.StateWaiting kind=const
   sig=dependency.NodeState
   doc=StateWaiting is explicitly waiting for a non-graph condition.
 EDGES
-  references=matrix/workforce/internal/dependency.NodeState
-  ^references=matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.detectIncidents,matrix/workforce/internal/reconcile.aggregate,matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim,matrix/workforce/internal/wakeruntime.Runner.prepareClaim,matrix/workforce/internal/wakeruntime.Runner.propose,matrix/workforce/internal/wakeruntime.Runner.waitForHumanVerification
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.Store kind=type
@@ -671,7 +573,6 @@ NODE id=matrix/workforce/internal/dependency.Store kind=type
   doc=Store owns serializable global-work-graph transactions for one tenant.
 EDGES
   contains=matrix/workforce/internal/dependency.Store#now,matrix/workforce/internal/dependency.Store#pool,matrix/workforce/internal/dependency.Store#tenantID,matrix/workforce/internal/dependency.Store.AddEdge,matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.Store.FinishWithReceipt,matrix/workforce/internal/dependency.Store.PutNode,matrix/workforce/internal/dependency.Store.Resolve,matrix/workforce/internal/dependency.Store.Snapshot,matrix/workforce/internal/dependency.Store.Transition,matrix/workforce/internal/dependency.Store.addEdgeOnce,matrix/workforce/internal/dependency.Store.currentTime,matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.Store.loadTx
-  ^references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.NewAssembler,matrix/workforce/internal/dependency.New,matrix/workforce/internal/dependency.Store.AddEdge,matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.Store.FinishWithReceipt,matrix/workforce/internal/dependency.Store.PutNode,matrix/workforce/internal/dependency.Store.Resolve,matrix/workforce/internal/dependency.Store.Snapshot,matrix/workforce/internal/dependency.Store.Transition,matrix/workforce/internal/dependency.Store.addEdgeOnce,matrix/workforce/internal/dependency.Store.currentTime,matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.Store.loadTx,matrix/workforce/internal/mail.New,matrix/workforce/internal/mail.Store,matrix/workforce/internal/reconcile.New,matrix/workforce/internal/reconcile.Service,matrix/workforce/internal/wakeruntime.Runner
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.Store#now kind=field
@@ -697,11 +598,7 @@ NODE id=matrix/workforce/internal/dependency.Store.AddEdge kind=method
   sig=func (store *Store) AddEdge(ctx context.Context, edge Edge) error
   doc=AddEdge atomically rejects cycles and inserts a dependency.
 EDGES
-  calls=matrix/workforce/internal/dependency.Edge.Validate,matrix/workforce/internal/dependency.Store.addEdgeOnce,matrix/workforce/internal/dependency.retryableTransaction
-  references=matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.Edge.Validate,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/dependency.Store.addEdgeOnce,matrix/workforce/internal/dependency.attempt,matrix/workforce/internal/dependency.ctx,matrix/workforce/internal/dependency.edge,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.retryableTransaction,matrix/workforce/internal/dependency.store
   ^contains=matrix/workforce/internal/dependency.Store
-  ^calls=matrix/workforce/internal/mail.Store.ResolveBindings
-  ^references=matrix/workforce/internal/mail.Store.ResolveBindings
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts kind=method
@@ -709,11 +606,7 @@ NODE id=matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts kind=m
   sig=func (store *Store) FinishGoalFromReceipts(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	goalID NodeID,\n	expectedVersion uint64,\n) (contracts.ReceiptID, error)
   doc=FinishGoalFromReceipts closes an eligible root goal only after every direct\nprerequisite is completed and carries a terminal receipt. The goal points at\nthe lexicographically last prerequisite receipt as its terminal anchor; the\ngraph edges retain the complete aggregate proof set.
 EDGES
-  calls=matrix/workforce/internal/dependency.Store.currentTime,matrix/workforce/internal/dependency.validateToken
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.ReceiptID,matrix/workforce/internal/dependency.ErrConflict,matrix/workforce/internal/dependency.ErrNotFound,matrix/workforce/internal/dependency.NodeGoal,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.NodeKind,matrix/workforce/internal/dependency.NodeState,matrix/workforce/internal/dependency.StateCompleted,matrix/workforce/internal/dependency.StateEligible,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/dependency.Store.currentTime,matrix/workforce/internal/dependency.anchor,matrix/workforce/internal/dependency.command,matrix/workforce/internal/dependency.ctx,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.expectedVersion,matrix/workforce/internal/dependency.goalID,matrix/workforce/internal/dependency.kind,matrix/workforce/internal/dependency.now,matrix/workforce/internal/dependency.organizationID,matrix/workforce/internal/dependency.prerequisiteState,matrix/workforce/internal/dependency.receipt,matrix/workforce/internal/dependency.receipts,matrix/workforce/internal/dependency.rows,matrix/workforce/internal/dependency.state,matrix/workforce/internal/dependency.store,matrix/workforce/internal/dependency.tx,matrix/workforce/internal/dependency.validateToken,matrix/workforce/internal/dependency.version
   ^contains=matrix/workforce/internal/dependency.Store
-  ^calls=matrix/workforce/internal/wakeruntime.Runner.yield
-  ^references=matrix/workforce/internal/wakeruntime.Runner.yield
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.Store.FinishWithReceipt kind=method
@@ -721,11 +614,7 @@ NODE id=matrix/workforce/internal/dependency.Store.FinishWithReceipt kind=method
   sig=func (store *Store) FinishWithReceipt(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	nodeID NodeID,\n	expectedVersion uint64,\n	state NodeState,\n	receiptID contracts.ReceiptID,\n) error
   doc=FinishWithReceipt closes one graph node only when the exact lineage receipt\nis already durable for that node. This is the sole completion/failure path;\na bare lifecycle update cannot manufacture terminal truth.
 EDGES
-  calls=matrix/workforce/internal/dependency.Store.currentTime,matrix/workforce/internal/dependency.validateToken
-  references=matrix/workforce/internal/contracts.DispositionFailed,matrix/workforce/internal/contracts.DispositionGoalCompleted,matrix/workforce/internal/contracts.DispositionProgressed,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.ReceiptID,matrix/workforce/internal/contracts.WakeDisposition,matrix/workforce/internal/dependency.ErrConflict,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.NodeState,matrix/workforce/internal/dependency.StateCompleted,matrix/workforce/internal/dependency.StateFailed,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/dependency.Store.currentTime,matrix/workforce/internal/dependency.command,matrix/workforce/internal/dependency.ctx,matrix/workforce/internal/dependency.disposition,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.expectedVersion,matrix/workforce/internal/dependency.nodeID,matrix/workforce/internal/dependency.now,matrix/workforce/internal/dependency.organizationID,matrix/workforce/internal/dependency.receiptID,matrix/workforce/internal/dependency.state,matrix/workforce/internal/dependency.store,matrix/workforce/internal/dependency.tx,matrix/workforce/internal/dependency.validateToken
   ^contains=matrix/workforce/internal/dependency.Store
-  ^calls=matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
-  ^references=matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.Store.PutNode kind=method
@@ -733,11 +622,7 @@ NODE id=matrix/workforce/internal/dependency.Store.PutNode kind=method
   sig=func (store *Store) PutNode(ctx context.Context, node Node) error
   doc=PutNode creates a node or idempotently returns an identical current version.
 EDGES
-  calls=matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.Store.currentTime,matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.optionalDepartment,matrix/workforce/internal/dependency.optionalRecord,matrix/workforce/internal/dependency.optionalSeat,matrix/workforce/internal/dependency.sameNode
-  references=matrix/workforce/internal/dependency.ErrConflict,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/dependency.Store.currentTime,matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.command,matrix/workforce/internal/dependency.ctx,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.existing,matrix/workforce/internal/dependency.node,matrix/workforce/internal/dependency.optionalDepartment,matrix/workforce/internal/dependency.optionalRecord,matrix/workforce/internal/dependency.optionalSeat,matrix/workforce/internal/dependency.sameNode,matrix/workforce/internal/dependency.store
   ^contains=matrix/workforce/internal/dependency.Store
-  ^calls=matrix/workforce/internal/mail.Store.ResolveBindings
-  ^references=matrix/workforce/internal/mail.Store.ResolveBindings
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.Store.Resolve kind=method
@@ -745,11 +630,7 @@ NODE id=matrix/workforce/internal/dependency.Store.Resolve kind=method
   sig=func (store *Store) Resolve(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n) (Projection, error)
   doc=Resolve loads the durable graph, computes deterministic readiness and\nincidents, and persists the new projections atomically.
 EDGES
-  calls=matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.currentTime,matrix/workforce/internal/dependency.Store.loadTx,matrix/workforce/internal/dependency.nodeStrings
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.Projection,matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.StateEligible,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/dependency.Store.currentTime,matrix/workforce/internal/dependency.Store.loadTx,matrix/workforce/internal/dependency.ctx,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.incident,matrix/workforce/internal/dependency.node,matrix/workforce/internal/dependency.nodeStrings,matrix/workforce/internal/dependency.now,matrix/workforce/internal/dependency.organizationID,matrix/workforce/internal/dependency.projection,matrix/workforce/internal/dependency.snapshot,matrix/workforce/internal/dependency.store,matrix/workforce/internal/dependency.tx
   ^contains=matrix/workforce/internal/dependency.Store
-  ^calls=matrix/workforce/internal/wakeruntime.Runner.finishScheduledWake,matrix/workforce/internal/wakeruntime.Runner.yield
-  ^references=matrix/workforce/internal/wakeruntime.Runner.finishScheduledWake,matrix/workforce/internal/wakeruntime.Runner.yield
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.Store.Snapshot kind=method
@@ -757,11 +638,7 @@ NODE id=matrix/workforce/internal/dependency.Store.Snapshot kind=method
   sig=func (store *Store) Snapshot(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n) (Snapshot, error)
   doc=Snapshot returns the durable organization graph without hidden writes.
 EDGES
-  calls=matrix/workforce/internal/dependency.Store.loadTx
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.Snapshot,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/dependency.Store.loadTx,matrix/workforce/internal/dependency.ctx,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.organizationID,matrix/workforce/internal/dependency.snapshot,matrix/workforce/internal/dependency.store,matrix/workforce/internal/dependency.tx
   ^contains=matrix/workforce/internal/dependency.Store
-  ^calls=matrix/workforce/internal/actorstate.Assembler.graphSlice,matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/wakeruntime.Runner.finalIntent,matrix/workforce/internal/wakeruntime.Runner.predecessorReceipts,matrix/workforce/internal/wakeruntime.Runner.sourceState,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit,matrix/workforce/internal/wakeruntime.Runner.waitForHumanVerification,matrix/workforce/internal/wakeruntime.Runner.yield
-  ^references=matrix/workforce/internal/actorstate.Assembler.graphSlice,matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/wakeruntime.Runner.finalIntent,matrix/workforce/internal/wakeruntime.Runner.predecessorReceipts,matrix/workforce/internal/wakeruntime.Runner.sourceState,matrix/workforce/internal/wakeruntime.Runner.verifyAndCommit,matrix/workforce/internal/wakeruntime.Runner.waitForHumanVerification,matrix/workforce/internal/wakeruntime.Runner.yield
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.Store.Transition kind=method
@@ -769,55 +646,35 @@ NODE id=matrix/workforce/internal/dependency.Store.Transition kind=method
   sig=func (store *Store) Transition(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	nodeID NodeID,\n	expectedVersion uint64,\n	state NodeState,\n	reason string,\n) error
   doc=Transition applies one optimistic lifecycle transition and propagates\ncancellation or correction contamination to transitive dependents.
 EDGES
-  calls=matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.Store.currentTime,matrix/workforce/internal/dependency.validateToken
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.ErrConflict,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.NodeState,matrix/workforce/internal/dependency.NodeState.Valid,matrix/workforce/internal/dependency.StateCancelled,matrix/workforce/internal/dependency.StateContested,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/dependency.Store.currentTime,matrix/workforce/internal/dependency.command,matrix/workforce/internal/dependency.ctx,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.expectedVersion,matrix/workforce/internal/dependency.nodeID,matrix/workforce/internal/dependency.now,matrix/workforce/internal/dependency.organizationID,matrix/workforce/internal/dependency.reason,matrix/workforce/internal/dependency.state,matrix/workforce/internal/dependency.store,matrix/workforce/internal/dependency.targetReason,matrix/workforce/internal/dependency.targetState,matrix/workforce/internal/dependency.tx,matrix/workforce/internal/dependency.validateToken
   ^contains=matrix/workforce/internal/dependency.Store
-  ^calls=matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim,matrix/workforce/internal/wakeruntime.Runner.prepareClaim,matrix/workforce/internal/wakeruntime.Runner.propose,matrix/workforce/internal/wakeruntime.Runner.waitForHumanVerification
-  ^references=matrix/workforce/internal/reconcile.Service.applyIntent,matrix/workforce/internal/wakeruntime.Runner.parkFailedClaim,matrix/workforce/internal/wakeruntime.Runner.prepareClaim,matrix/workforce/internal/wakeruntime.Runner.propose,matrix/workforce/internal/wakeruntime.Runner.waitForHumanVerification
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.Store.addEdgeOnce kind=method
   digest=b3:bf52d3d4e088a8f3fccb683ea4636c69e51b520192987531e64d762702400dab file=workforce/internal/dependency/store.go range=95:155 lang=go exported=false byte_range=2714:5044
   sig=func (store *Store) addEdgeOnce(ctx context.Context, edge Edge) error
 EDGES
-  calls=matrix/workforce/internal/dependency.Store.loadTx,matrix/workforce/internal/dependency.WouldCycle
-  references=matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.ErrConflict,matrix/workforce/internal/dependency.ErrCycle,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/dependency.Store.loadTx,matrix/workforce/internal/dependency.WouldCycle,matrix/workforce/internal/dependency.command,matrix/workforce/internal/dependency.count,matrix/workforce/internal/dependency.ctx,matrix/workforce/internal/dependency.cycle,matrix/workforce/internal/dependency.edge,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.snapshot,matrix/workforce/internal/dependency.store,matrix/workforce/internal/dependency.tx
   ^contains=matrix/workforce/internal/dependency.Store
-  ^calls=matrix/workforce/internal/dependency.Store.AddEdge
-  ^references=matrix/workforce/internal/dependency.Store.AddEdge
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.Store.currentTime kind=method
   digest=b3:28fa2c953870b8f67e849e9b15ee776e92ac5b465a4c49d1d60139f23a61a71f file=workforce/internal/dependency/store.go range=601:607 lang=go exported=false byte_range=20765:20969
   sig=func (store *Store) currentTime() (time.Time, error)
 EDGES
-  calls=matrix/workforce/internal/dependency.validUTC
-  references=matrix/workforce/internal/dependency.Store,matrix/workforce/internal/dependency.now,matrix/workforce/internal/dependency.store,matrix/workforce/internal/dependency.validUTC
   ^contains=matrix/workforce/internal/dependency.Store
-  ^calls=matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.Store.FinishWithReceipt,matrix/workforce/internal/dependency.Store.PutNode,matrix/workforce/internal/dependency.Store.Resolve,matrix/workforce/internal/dependency.Store.Transition
-  ^references=matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.Store.FinishWithReceipt,matrix/workforce/internal/dependency.Store.PutNode,matrix/workforce/internal/dependency.Store.Resolve,matrix/workforce/internal/dependency.Store.Transition
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.Store.getNode kind=method
   digest=b3:04ff5f7bbc531c5dc33109e050bb066ddbbb304f02bb1cda2a3a8c45ea4a486c file=workforce/internal/dependency/store.go range=569:599 lang=go exported=false byte_range=19579:20763
   sig=func (store *Store) getNode(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	nodeID NodeID,\n) (Node, error)
 EDGES
-  calls=matrix/workforce/internal/dependency.departmentPointer,matrix/workforce/internal/dependency.normalizeNodeTimes,matrix/workforce/internal/dependency.recordPointer,matrix/workforce/internal/dependency.seatPointer
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.ErrNotFound,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/dependency.ctx,matrix/workforce/internal/dependency.departmentPointer,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.node,matrix/workforce/internal/dependency.nodeID,matrix/workforce/internal/dependency.normalizeNodeTimes,matrix/workforce/internal/dependency.organizationID,matrix/workforce/internal/dependency.ownerDepartment,matrix/workforce/internal/dependency.ownerSeat,matrix/workforce/internal/dependency.recordPointer,matrix/workforce/internal/dependency.seatPointer,matrix/workforce/internal/dependency.store,matrix/workforce/internal/dependency.terminalRecord
   ^contains=matrix/workforce/internal/dependency.Store
-  ^calls=matrix/workforce/internal/dependency.Store.PutNode
-  ^references=matrix/workforce/internal/dependency.Store.PutNode
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.Store.loadTx kind=method
   digest=b3:79b6da326e8e7f80d2c1d934a1b361b087c26a9cf3ab5f62a493c4eecf3871ac file=workforce/internal/dependency/store.go range=502:567 lang=go exported=false byte_range=17093:19577
   sig=func (store *Store) loadTx(\n	ctx context.Context,\n	tx pgx.Tx,\n	organizationID contracts.OrganizationID,\n) (Snapshot, error)
 EDGES
-  calls=matrix/workforce/internal/dependency.departmentPointer,matrix/workforce/internal/dependency.normalizeEdgeTimes,matrix/workforce/internal/dependency.normalizeNodeTimes,matrix/workforce/internal/dependency.recordPointer,matrix/workforce/internal/dependency.seatPointer
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.Snapshot,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/dependency.ctx,matrix/workforce/internal/dependency.departmentPointer,matrix/workforce/internal/dependency.edge,matrix/workforce/internal/dependency.edgeRows,matrix/workforce/internal/dependency.edges,matrix/workforce/internal/dependency.err,matrix/workforce/internal/dependency.node,matrix/workforce/internal/dependency.nodes,matrix/workforce/internal/dependency.normalizeEdgeTimes,matrix/workforce/internal/dependency.normalizeNodeTimes,matrix/workforce/internal/dependency.organizationID,matrix/workforce/internal/dependency.ownerDepartment,matrix/workforce/internal/dependency.ownerSeat,matrix/workforce/internal/dependency.recordPointer,matrix/workforce/internal/dependency.rows,matrix/workforce/internal/dependency.seatPointer,matrix/workforce/internal/dependency.store,matrix/workforce/internal/dependency.terminalRecord,matrix/workforce/internal/dependency.tx
   ^contains=matrix/workforce/internal/dependency.Store
-  ^calls=matrix/workforce/internal/dependency.Store.Resolve,matrix/workforce/internal/dependency.Store.Snapshot,matrix/workforce/internal/dependency.Store.addEdgeOnce
-  ^references=matrix/workforce/internal/dependency.Store.Resolve,matrix/workforce/internal/dependency.Store.Snapshot,matrix/workforce/internal/dependency.Store.addEdgeOnce
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.WouldCycle kind=func
@@ -825,208 +682,138 @@ NODE id=matrix/workforce/internal/dependency.WouldCycle kind=func
   sig=func WouldCycle(snapshot Snapshot, prerequisite, dependent NodeID) (bool, error)
   doc=WouldCycle reports whether adding prerequisite -> dependent creates a cycle.
 EDGES
-  references=matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.ErrNotFound,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.Snapshot,matrix/workforce/internal/dependency.current,matrix/workforce/internal/dependency.dependent,matrix/workforce/internal/dependency.edge,matrix/workforce/internal/dependency.last,matrix/workforce/internal/dependency.node,matrix/workforce/internal/dependency.nodes,matrix/workforce/internal/dependency.ok,matrix/workforce/internal/dependency.outgoing,matrix/workforce/internal/dependency.prerequisite,matrix/workforce/internal/dependency.seen,matrix/workforce/internal/dependency.snapshot,matrix/workforce/internal/dependency.stack
-  ^calls=matrix/workforce/internal/dependency.Store.addEdgeOnce
-  ^references=matrix/workforce/internal/dependency.Store.addEdgeOnce
   ^defines=matrix/workforce/internal/dependency/resolver.go
 
 NODE id=matrix/workforce/internal/dependency.agedPriority kind=func
   digest=b3:afef50d2802f82f473dde525f3185f4f6abcc3dba25ad2bfdd10bbc81709da24 file=workforce/internal/dependency/resolver.go range=181:188 lang=go exported=false byte_range=5476:5698
   sig=func agedPriority(node Node, now time.Time) int64
 EDGES
-  references=matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.age,matrix/workforce/internal/dependency.agingInterval,matrix/workforce/internal/dependency.node,matrix/workforce/internal/dependency.now
-  ^calls=matrix/workforce/internal/dependency.Resolve
-  ^references=matrix/workforce/internal/dependency.Resolve
   ^defines=matrix/workforce/internal/dependency/resolver.go
 
 NODE id=matrix/workforce/internal/dependency.deadlineBefore kind=func
   digest=b3:84d86724cb33b1f383b59d537a55485ca576f9a83f25890f54631a7a787715e4 file=workforce/internal/dependency/resolver.go range=209:217 lang=go exported=false byte_range=6229:6381
   sig=func deadlineBefore(left, right *time.Time) bool
 EDGES
-  references=matrix/workforce/internal/dependency.left,matrix/workforce/internal/dependency.right
-  ^references=matrix/workforce/internal/dependency.sortNodes
   ^defines=matrix/workforce/internal/dependency/resolver.go
 
 NODE id=matrix/workforce/internal/dependency.departmentPointer kind=func
   digest=b3:c0b403711e0accb0dea4bcb45958423a8d0b64a90f85af3306642f92e50067c9 file=workforce/internal/dependency/store.go range=662:668 lang=go exported=false byte_range=22543:22707
   sig=func departmentPointer(value *string) *contracts.DepartmentID
 EDGES
-  references=matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/dependency.converted,matrix/workforce/internal/dependency.value
-  ^calls=matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.Store.loadTx
-  ^references=matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.Store.loadTx
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.detectIncidents kind=func
   digest=b3:0d0dbda4fbad7240adbc5fa1e041a24c731701f61864794d0d8e07bed47c54a1 file=workforce/internal/dependency/resolver.go range=292:354 lang=go exported=false byte_range=8237:10366
   sig=func detectIncidents(\n	nodes map[NodeID]Node,\n	incoming map[NodeID][]Edge,\n	outgoing map[NodeID][]Edge,\n	edges []Edge,\n	now time.Time,\n) []Incident
 EDGES
-  calls=matrix/workforce/internal/dependency.NodeState.Terminal,matrix/workforce/internal/dependency.incident
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.EdgeDelegation,matrix/workforce/internal/dependency.Incident,matrix/workforce/internal/dependency.IncidentDeadlock,matrix/workforce/internal/dependency.IncidentDelegationExpired,matrix/workforce/internal/dependency.IncidentOrphan,matrix/workforce/internal/dependency.IncidentSLABreach,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.NodeGoal,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.NodeState.Terminal,matrix/workforce/internal/dependency.StateCompleted,matrix/workforce/internal/dependency.StateContested,matrix/workforce/internal/dependency.StateEligible,matrix/workforce/internal/dependency.StateLeased,matrix/workforce/internal/dependency.StatePending,matrix/workforce/internal/dependency.StateWaiting,matrix/workforce/internal/dependency.edge,matrix/workforce/internal/dependency.edges,matrix/workforce/internal/dependency.externalUnblock,matrix/workforce/internal/dependency.i,matrix/workforce/internal/dependency.id,matrix/workforce/internal/dependency.incident,matrix/workforce/internal/dependency.incidents,matrix/workforce/internal/dependency.incoming,matrix/workforce/internal/dependency.j,matrix/workforce/internal/dependency.node,matrix/workforce/internal/dependency.nodes,matrix/workforce/internal/dependency.now,matrix/workforce/internal/dependency.organizationID,matrix/workforce/internal/dependency.outgoing,matrix/workforce/internal/dependency.pending
-  ^calls=matrix/workforce/internal/dependency.Resolve
-  ^references=matrix/workforce/internal/dependency.Resolve
   ^defines=matrix/workforce/internal/dependency/resolver.go
 
 NODE id=matrix/workforce/internal/dependency.findCycle kind=func
   digest=b3:77edc10f49b8f053efb0ff1dece0b37724b9c797afba690dcc2ca24518aa00e7 file=workforce/internal/dependency/resolver.go range=219:257 lang=go exported=false byte_range=6383:7334
   sig=func findCycle(nodes map[NodeID]Node, outgoing map[NodeID][]Edge) []NodeID
 EDGES
-  references=matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.color,matrix/workforce/internal/dependency.cycle,matrix/workforce/internal/dependency.edge,matrix/workforce/internal/dependency.i,matrix/workforce/internal/dependency.id,matrix/workforce/internal/dependency.ids,matrix/workforce/internal/dependency.j,matrix/workforce/internal/dependency.nodes,matrix/workforce/internal/dependency.outgoing,matrix/workforce/internal/dependency.path,matrix/workforce/internal/dependency.start,matrix/workforce/internal/dependency.visit
-  ^calls=matrix/workforce/internal/dependency.Resolve
-  ^references=matrix/workforce/internal/dependency.Resolve
   ^defines=matrix/workforce/internal/dependency/resolver.go
 
 NODE id=matrix/workforce/internal/dependency.incident kind=func
   digest=b3:ca2279aa0433df6257f2dbdb83d1c40359296eb3fce927a5f44e9b3c7c76a375 file=workforce/internal/dependency/resolver.go range=356:378 lang=go exported=false byte_range=10368:11006
   sig=func incident(\n	organizationID contracts.OrganizationID,\n	kind IncidentKind,\n	nodeIDs []NodeID,\n	explanation string,\n	now time.Time,\n) Incident
 EDGES
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.Incident,matrix/workforce/internal/dependency.IncidentKind,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.explanation,matrix/workforce/internal/dependency.i,matrix/workforce/internal/dependency.id,matrix/workforce/internal/dependency.input,matrix/workforce/internal/dependency.j,matrix/workforce/internal/dependency.kind,matrix/workforce/internal/dependency.nodeIDs,matrix/workforce/internal/dependency.now,matrix/workforce/internal/dependency.organizationID,matrix/workforce/internal/dependency.sorted,matrix/workforce/internal/dependency.sum
-  ^calls=matrix/workforce/internal/dependency.detectIncidents
-  ^references=matrix/workforce/internal/dependency.AuthorizedSlice,matrix/workforce/internal/dependency.Store.Resolve,matrix/workforce/internal/dependency.detectIncidents
   ^defines=matrix/workforce/internal/dependency/resolver.go
 
 NODE id=matrix/workforce/internal/dependency.nodeStrings kind=func
   digest=b3:980d4d0b9b80bae26de71e33d82bcef4b2d24ce9a0b9cec900fce41a4687d117 file=workforce/internal/dependency/store.go range=678:684 lang=go exported=false byte_range=22863:23019
   sig=func nodeStrings(ids []NodeID) []string
 EDGES
-  references=matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.id,matrix/workforce/internal/dependency.ids,matrix/workforce/internal/dependency.index,matrix/workforce/internal/dependency.result
-  ^calls=matrix/workforce/internal/dependency.Store.Resolve
-  ^references=matrix/workforce/internal/dependency.Store.Resolve
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.normalizeEdgeTimes kind=func
   digest=b3:793d6ca2c68ac1e747e22ef415b7711e38527358cf0284ed95966c0c1ecfd688 file=workforce/internal/dependency/store.go range=703:713 lang=go exported=false byte_range=23445:23709
   sig=func normalizeEdgeTimes(edge *Edge)
 EDGES
-  references=matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.edge,matrix/workforce/internal/dependency.normalized
-  ^calls=matrix/workforce/internal/dependency.Store.loadTx
-  ^references=matrix/workforce/internal/dependency.Store.loadTx
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.normalizeNodeTimes kind=func
   digest=b3:bdf6f515f739ede8bcd2842f7a102c7a8aff1aa782231a0a70adfc95ecf3cbe4 file=workforce/internal/dependency/store.go range=694:701 lang=go exported=false byte_range=23230:23443
   sig=func normalizeNodeTimes(node *Node)
 EDGES
-  references=matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.node,matrix/workforce/internal/dependency.normalized
-  ^calls=matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.Store.loadTx
-  ^references=matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.Store.loadTx
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.optionalDepartment kind=func
   digest=b3:82fe093bc1cf73a9d9a5963ab900673d3a2ab42a47e5be1b46a6303c0de063f1 file=workforce/internal/dependency/store.go range=638:644 lang=go exported=false byte_range=22101:22250
   sig=func optionalDepartment(value *contracts.DepartmentID) *string
 EDGES
-  references=matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/dependency.converted,matrix/workforce/internal/dependency.value
-  ^calls=matrix/workforce/internal/dependency.Store.PutNode
-  ^references=matrix/workforce/internal/dependency.Store.PutNode
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.optionalRecord kind=func
   digest=b3:14bc30985963bf0ee14e4d905706b4a7a5217619132dc5739a4d07bb33802f88 file=workforce/internal/dependency/store.go range=646:652 lang=go exported=false byte_range=22252:22393
   sig=func optionalRecord(value *contracts.RecordID) *string
 EDGES
-  references=matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/dependency.converted,matrix/workforce/internal/dependency.value
-  ^calls=matrix/workforce/internal/dependency.Store.PutNode
-  ^references=matrix/workforce/internal/dependency.Store.PutNode
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.optionalSeat kind=func
   digest=b3:4ccff8fcdaf4f7b67577cbd46fde9996e0ca297742842ce29993f6c5a6f3378b file=workforce/internal/dependency/store.go range=630:636 lang=go exported=false byte_range=21962:22099
   sig=func optionalSeat(value *contracts.SeatID) *string
 EDGES
-  references=matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/dependency.converted,matrix/workforce/internal/dependency.value
-  ^calls=matrix/workforce/internal/dependency.Store.PutNode
-  ^references=matrix/workforce/internal/dependency.Store.PutNode
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.pointerEqual kind=func
   digest=b3:4f178663c8a71754ec72baa36abbcba119b043c34b78c4873fb005a7705183ef file=workforce/internal/dependency/store.go range=622:624 lang=go exported=false byte_range=21673:21815
   sig=func pointerEqual[T comparable](left, right *T) bool
 EDGES
-  references=matrix/workforce/internal/dependency.T,matrix/workforce/internal/dependency.left,matrix/workforce/internal/dependency.right
-  ^calls=matrix/workforce/internal/dependency.sameNode
-  ^references=matrix/workforce/internal/dependency.sameNode
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.recordPointer kind=func
   digest=b3:530bb74cf8183f7cae819ca03ea4a17da162d8acf6dffe471a7764db2f7f2c7f file=workforce/internal/dependency/store.go range=670:676 lang=go exported=false byte_range=22709:22861
   sig=func recordPointer(value *string) *contracts.RecordID
 EDGES
-  references=matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/dependency.converted,matrix/workforce/internal/dependency.value
-  ^calls=matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.Store.loadTx
-  ^references=matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.Store.loadTx
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.retryableTransaction kind=func
   digest=b3:f59c0ce1f181f2b9529bc0e90d4f2cdc37760f9d94f6277dd949642184fc42d6 file=workforce/internal/dependency/store.go range=686:692 lang=go exported=false byte_range=23021:23228
   sig=func retryableTransaction(err error) bool
 EDGES
-  references=matrix/workforce/internal/dependency.databaseError,matrix/workforce/internal/dependency.err
-  ^calls=matrix/workforce/internal/dependency.Store.AddEdge
-  ^references=matrix/workforce/internal/dependency.Store.AddEdge
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.reverseTopological kind=func
   digest=b3:6849ec3041392c2df1b7d528d2f76bcc4ef18d49ede9bc44f0c9b525831448d2 file=workforce/internal/dependency/resolver.go range=259:290 lang=go exported=false byte_range=7336:8235
   sig=func reverseTopological(\n	nodes map[NodeID]Node,\n	outgoing map[NodeID][]Edge,\n	incoming map[NodeID][]Edge,\n) []NodeID
 EDGES
-  references=matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.degrees,matrix/workforce/internal/dependency.edge,matrix/workforce/internal/dependency.i,matrix/workforce/internal/dependency.id,matrix/workforce/internal/dependency.incoming,matrix/workforce/internal/dependency.j,matrix/workforce/internal/dependency.left,matrix/workforce/internal/dependency.nodes,matrix/workforce/internal/dependency.order,matrix/workforce/internal/dependency.outgoing,matrix/workforce/internal/dependency.queue,matrix/workforce/internal/dependency.right
-  ^calls=matrix/workforce/internal/dependency.Resolve
-  ^references=matrix/workforce/internal/dependency.Resolve
   ^defines=matrix/workforce/internal/dependency/resolver.go
 
 NODE id=matrix/workforce/internal/dependency.sameNode kind=func
   digest=b3:4df8fa3e41c15bc83d107ee4b2e163f1e5d35d2d21f92e7a48923196e893755b file=workforce/internal/dependency/store.go range=609:620 lang=go exported=false byte_range=20971:21671
   sig=func sameNode(left, right Node) bool
 EDGES
-  calls=matrix/workforce/internal/dependency.pointerEqual,matrix/workforce/internal/dependency.timePointerEqual
-  references=matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.left,matrix/workforce/internal/dependency.pointerEqual,matrix/workforce/internal/dependency.right,matrix/workforce/internal/dependency.timePointerEqual
-  ^calls=matrix/workforce/internal/dependency.Store.PutNode
-  ^references=matrix/workforce/internal/dependency.Store.PutNode
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.seatPointer kind=func
   digest=b3:98fd06128da6e1f9ac6772d823392c64ab5f3d51ff8a1c6a4015afa3b1a5aaa1 file=workforce/internal/dependency/store.go range=654:660 lang=go exported=false byte_range=22395:22541
   sig=func seatPointer(value *string) *contracts.SeatID
 EDGES
-  references=matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/dependency.converted,matrix/workforce/internal/dependency.value
-  ^calls=matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.Store.loadTx
-  ^references=matrix/workforce/internal/dependency.Store.getNode,matrix/workforce/internal/dependency.Store.loadTx
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.sortNodes kind=func
   digest=b3:7eba897058f602b4cb62265bc9fc75d9b7b6281ccaa093d4247284dd6bcf6625 file=workforce/internal/dependency/resolver.go range=190:207 lang=go exported=false byte_range=5700:6227
   sig=func sortNodes(nodes []Node, priorities map[NodeID]int64)
 EDGES
-  references=matrix/workforce/internal/dependency.Node,matrix/workforce/internal/dependency.NodeID,matrix/workforce/internal/dependency.deadlineBefore,matrix/workforce/internal/dependency.i,matrix/workforce/internal/dependency.j,matrix/workforce/internal/dependency.left,matrix/workforce/internal/dependency.nodes,matrix/workforce/internal/dependency.priorities,matrix/workforce/internal/dependency.right
-  ^calls=matrix/workforce/internal/dependency.Resolve
-  ^references=matrix/workforce/internal/dependency.Resolve
   ^defines=matrix/workforce/internal/dependency/resolver.go
 
 NODE id=matrix/workforce/internal/dependency.timePointerEqual kind=func
   digest=b3:47343a255d8c67cfd7b632ee819db7325490b16b99f30bd537bacf4755270686 file=workforce/internal/dependency/store.go range=626:628 lang=go exported=false byte_range=21817:21960
   sig=func timePointerEqual(left, right *time.Time) bool
 EDGES
-  references=matrix/workforce/internal/dependency.left,matrix/workforce/internal/dependency.right
-  ^calls=matrix/workforce/internal/dependency.sameNode
-  ^references=matrix/workforce/internal/dependency.sameNode
   ^defines=matrix/workforce/internal/dependency/store.go
 
 NODE id=matrix/workforce/internal/dependency.validUTC kind=func
   digest=b3:a0beee5b6bbe8dd3ff5ef521bfd147e9b7a7c4ce79ae888de69822b6d3078f75 file=workforce/internal/dependency/types.go range=279:281 lang=go exported=false byte_range=9027:9122
   sig=func validUTC(value time.Time) bool
 EDGES
-  references=matrix/workforce/internal/dependency.value
-  ^calls=matrix/workforce/internal/dependency.Edge.Validate,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.currentTime
-  ^references=matrix/workforce/internal/dependency.Edge.Validate,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.Resolve,matrix/workforce/internal/dependency.Store.currentTime
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency.validateToken kind=func
   digest=b3:dcbc1d23f569dd88f929a6723180cbf757555544763576ee6d772f62df31a911 file=workforce/internal/dependency/types.go range=264:277 lang=go exported=false byte_range=8589:9025
   sig=func validateToken(name, value string) error
 EDGES
-  references=matrix/workforce/internal/dependency.name,matrix/workforce/internal/dependency.r,matrix/workforce/internal/dependency.value
-  ^calls=matrix/workforce/internal/dependency.Edge.Validate,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.Store.FinishWithReceipt,matrix/workforce/internal/dependency.Store.Transition
-  ^references=matrix/workforce/internal/dependency.Edge.Validate,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.Store.FinishGoalFromReceipts,matrix/workforce/internal/dependency.Store.FinishWithReceipt,matrix/workforce/internal/dependency.Store.Transition
   ^defines=matrix/workforce/internal/dependency/types.go
 
 NODE id=matrix/workforce/internal/dependency/doc.go kind=file

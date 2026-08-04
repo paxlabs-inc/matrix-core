@@ -1,11 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/router/internal/provision kind=package
   digest=b3:73e967c46c8c6e7ae20985163655ddbdf35d761ca4047b67fdb82d624f908f93 file=router/internal/provision range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/provision/provision.go
   ^contains=mod:matrix/router
-  ^imports=matrix/router/cmd/matrix-router,matrix/router/internal/admin,matrix/router/internal/fly,matrix/router/internal/proxy,matrix/router/internal/railway,matrix/router/internal/shard
 
 NODE id=matrix/router/internal/provision.CreateRequest kind=type
   digest=b3:48ad6e15f7ca06f234f197e3288d99c3e6645d8b95842d3ffa7b4506b677f3c2 file=router/internal/provision/provision.go range=64:73 lang=go exported=true byte_range=2512:2892
@@ -13,7 +12,6 @@ NODE id=matrix/router/internal/provision.CreateRequest kind=type
   doc=CreateRequest carries everything Ensure needs to provision a fresh\nenvironment + volume. Env is the complete environment-variable set\nfor the instance (identity + control-plane URLs), built by the\nadmin layer; provider-specific config (image, sizing) lives on the\nimplementation.
 EDGES
   contains=matrix/router/internal/provision.CreateRequest#Env,matrix/router/internal/provision.CreateRequest#Region,matrix/router/internal/provision.CreateRequest#UserID
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.ensureRailway,matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/provision.Provisioner,matrix/router/internal/provision.Recoverable,matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.CreateRequest#Env kind=field
@@ -40,7 +38,6 @@ NODE id=matrix/router/internal/provision.Endpoint kind=type
   doc=Endpoint is where the environment's daemon HTTP server is reachable\non the private network. Host is unbracketed — a 6PN IPv6 address on\nFly, a <service>.railway.internal hostname on Railway; callers\nbracket IPv6 literals when composing URLs. Port, when empty, falls\nback to the router's configured daemon port.
 EDGES
   contains=matrix/router/internal/provision.Endpoint#Host,matrix/router/internal/provision.Endpoint#Port
-  ^references=matrix/router/internal/fly.Provisioner.env,matrix/router/internal/provision.Env,matrix/router/internal/proxy.buildUpstreamURL,matrix/router/internal/railway.Provisioner.env
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.Endpoint#Host kind=field
@@ -61,8 +58,6 @@ NODE id=matrix/router/internal/provision.Env kind=type
   doc=Env is the provider-neutral view of a per-user environment.
 EDGES
   contains=matrix/router/internal/provision.Env#Endpoint,matrix/router/internal/provision.Env#ID,matrix/router/internal/provision.Env#Ready,matrix/router/internal/provision.Env#Region,matrix/router/internal/provision.Env#State,matrix/router/internal/provision.Env#VolumeID
-  references=matrix/router/internal/provision.Endpoint
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.discoverService,matrix/router/internal/admin.Handler.ensureRailway,matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/fly.Provisioner.Status,matrix/router/internal/fly.Provisioner.Wake,matrix/router/internal/fly.Provisioner.env,matrix/router/internal/provision.Provisioner,matrix/router/internal/provision.Recoverable,matrix/router/internal/proxy.Handler.deliverChat,matrix/router/internal/proxy.Handler.waitDaemonReady,matrix/router/internal/proxy.Handler.waitDaemonReadyWith,matrix/router/internal/proxy.Handler.waitWorkforceReady,matrix/router/internal/proxy.chatURL,matrix/router/internal/proxy.healthzURL,matrix/router/internal/railway.Provisioner.CreateService,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.FindService,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake,matrix/router/internal/railway.Provisioner.env
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.Env#Endpoint kind=field
@@ -106,7 +101,6 @@ NODE id=matrix/router/internal/provision.ErrNotFound kind=var
   sig=error
   doc=ErrNotFound: the environment (or its app/project scope) no\nlonger exists at the provider.
 EDGES
-  ^references=matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.ensureRailway,matrix/router/internal/admin.boundedReconcile,matrix/router/internal/fly.mapErr,matrix/router/internal/proxy.Handler.WakeHandler,matrix/router/internal/proxy.Handler.forwardWith,matrix/router/internal/railway.mapErr
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.ErrUnauthorized kind=var
@@ -114,7 +108,6 @@ NODE id=matrix/router/internal/provision.ErrUnauthorized kind=var
   sig=error
   doc=ErrUnauthorized: the provider rejected the router's credential.
 EDGES
-  ^references=matrix/router/internal/fly.mapErr,matrix/router/internal/proxy.Handler.forwardWith,matrix/router/internal/railway.mapErr
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.ErrUncertain kind=var
@@ -122,7 +115,6 @@ NODE id=matrix/router/internal/provision.ErrUncertain kind=var
   sig=error
   doc=ErrUncertain means a mutation may have reached the provider but\nits response was not observed. Callers must reconcile before retry.
 EDGES
-  ^references=matrix/router/internal/admin.Handler.ensureRailway,matrix/router/internal/admin.boundedReconcile,matrix/router/internal/railway.mapErr
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.Provisioner kind=interface
@@ -130,10 +122,7 @@ NODE id=matrix/router/internal/provision.Provisioner kind=interface
   sig=type Provisioner interface {\n	// Ensure provisions a fresh environment + volume for the user and\n	// returns it ready enough for the router to attach and route to.\n	// Idempotence at the user level is the caller's job (the admin\n	// layer checks the users row before calling).\n	Ensure(ctx context.Context, req CreateRequest) (*Env, error)\n\n	// Status reports the environment's current state. Ready mirrors\n	// the provider's own readiness signal (machine started / latest\n	// deployment succeeded) and feeds the provision-status gate.\n	Status(ctx context.Context, ref Ref) (*Env, error)\n\n	// Wake makes sure the environment can take traffic and returns\n	// its endpoint. Providers with an explicit start API block until\n	// the instance runs; wake-on-request providers return immediately\n	// (the forwarded request itself is the wake signal).\n	Wake(ctx context.Context, ref Ref) (*Env, error)\n\n	// Destroy tears the environment down (volume follows the\n	// provider's lifecycle rules). Destroying a vanished environment\n	// returns ErrNotFound.\n	Destroy(ctx context.Context, ref Ref) error\n\n	// WakeOnRequest reports whether waking is platform-managed by\n	// inbound traffic (Wake is a no-op and the readiness probe must\n	// absorb the whole cold boot, including gateway 502/503s emitted\n	// while the platform revives the instance).\n	WakeOnRequest() bool\n}
   doc=Provisioner is the per-user environment lifecycle: ensure/create,\nstatus, wake, destroy — environment plus its persistent volume.
 EDGES
-  references=matrix/router/internal/provision.CreateRequest,matrix/router/internal/provision.Env,matrix/router/internal/provision.Ref
   ^implements=matrix/router/internal/fly.Provisioner,matrix/router/internal/railway.Provisioner
-  ^embeds=matrix/router/internal/provision.Recoverable
-  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/admin.Handler,matrix/router/internal/fly._,matrix/router/internal/provision.Recoverable,matrix/router/internal/proxy.Handler,matrix/router/internal/proxy.Handler.forwardWith,matrix/router/internal/proxy.Handler.waitDaemonReadyWith,matrix/router/internal/proxy.New,matrix/router/internal/railway._,matrix/router/internal/shard.Load,matrix/router/internal/shard.Registry,matrix/router/internal/shard.Registry.Provider,matrix/router/internal/shard.Registry.Provisioner
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.Recoverable kind=interface
@@ -141,10 +130,7 @@ NODE id=matrix/router/internal/provision.Recoverable kind=interface
   sig=type Recoverable interface {\n	Provisioner\n	ServiceName(userID string) string\n	FindService(ctx context.Context, name string) (*Env, error)\n	FindVolume(ctx context.Context, serviceID, mountPath string) (string, error)\n	CreateService(ctx context.Context, req CreateRequest) (*Env, error)\n	CreateVolume(ctx context.Context, serviceID, mountPath string) (string, error)\n	WaitReady(ctx context.Context, serviceID string) error\n	ServiceAbsent(ctx context.Context, serviceID string) (bool, error)\n	VolumeAbsent(ctx context.Context, volumeID string) (bool, error)\n	DeleteService(ctx context.Context, serviceID string) error\n	DeleteVolume(ctx context.Context, volumeID string) error\n}
   doc=Recoverable is implemented by providers that can discover and mutate\ncompute and storage independently. It is the durable-operation seam used\nby the Railway reconciler; discovery must be safe and side-effect free.
 EDGES
-  embeds=matrix/router/internal/provision.Provisioner
-  references=matrix/router/internal/provision.CreateRequest,matrix/router/internal/provision.Env,matrix/router/internal/provision.Provisioner
   ^implements=matrix/router/internal/railway.Provisioner
-  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.discoverService,matrix/router/internal/admin.Handler.discoverVolume,matrix/router/internal/admin.Handler.ensureRailway,matrix/router/internal/railway._
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.Ref kind=type
@@ -153,7 +139,6 @@ NODE id=matrix/router/internal/provision.Ref kind=type
   doc=Ref identifies an existing environment for status/wake/destroy. The\nids come from the router's users row; UserID rides along so\nproviders with deterministic per-user naming (Railway service\nhostnames) can derive the endpoint without an API round-trip.
 EDGES
   contains=matrix/router/internal/provision.Ref#EnvID,matrix/router/internal/provision.Ref#UserID,matrix/router/internal/provision.Ref#VolumeID
-  ^references=matrix/router/internal/admin.Handler.ResumeRailwayOperations,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.destroyRailway,matrix/router/internal/admin.Handler.updateWorkforceEnvironment,matrix/router/internal/fly.Provisioner.Destroy,matrix/router/internal/fly.Provisioner.Status,matrix/router/internal/fly.Provisioner.Wake,matrix/router/internal/provision.Provisioner,matrix/router/internal/provision.VariableUpdater,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler,matrix/router/internal/proxy.Handler.forward,matrix/router/internal/proxy.Handler.forwardWith,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.UpdateVariables,matrix/router/internal/railway.Provisioner.Wake
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.Ref#EnvID kind=field
@@ -179,9 +164,7 @@ NODE id=matrix/router/internal/provision.VariableUpdater kind=interface
   sig=type VariableUpdater interface {\n	UpdateVariables(ctx context.Context, ref Ref, env map[string]string) error\n}
   doc=VariableUpdater is the explicit operator-controlled seam for reconciling\nenvironment variables on an already-provisioned service. Implementations\nmust merge the supplied values and preserve unrelated variables.
 EDGES
-  references=matrix/router/internal/provision.Ref
   ^implements=matrix/router/internal/railway.Provisioner
-  ^references=matrix/router/internal/admin.Handler.updateWorkforceEnvironment,matrix/router/internal/railway._
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision/provision.go kind=file

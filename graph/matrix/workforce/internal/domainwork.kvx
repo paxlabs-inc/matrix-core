@@ -1,19 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/domainwork kind=package
   digest=b3:b8da128efcf59bd440ef8271c6c305e44208182d8254508b2dd9a86e1bbad80f file=workforce/internal/domainwork range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/domainwork/service.go
-  imports=matrix/workforce/internal/approval,matrix/workforce/internal/contracts,matrix/workforce/internal/skills
   ^contains=mod:matrix/workforce
-  ^imports=matrix/workforce/internal/departmentadapter
 
 NODE id=matrix/workforce/internal/domainwork.CampaignDraft kind=type
   digest=b3:52a49ca0cbea2ee0f008143b1aee5eac1ee30e15ba6ab979f14c7e1ef2debf81 file=workforce/internal/domainwork/service.go range=24:29 lang=go exported=true byte_range=562:789
   sig=type CampaignDraft struct {\n	Audience		string		`json:"audience"`\n	Channels		[]string	`json:"channels"`\n	Content			string		`json:"content"`\n	PerformanceMetrics	[]string	`json:"performance_metrics"`\n}
 EDGES
   contains=matrix/workforce/internal/domainwork.CampaignDraft#Audience,matrix/workforce/internal/domainwork.CampaignDraft#Channels,matrix/workforce/internal/domainwork.CampaignDraft#Content,matrix/workforce/internal/domainwork.CampaignDraft#PerformanceMetrics,matrix/workforce/internal/domainwork.CampaignDraft.validate
-  ^references=matrix/workforce/internal/domainwork.CampaignDraft.validate,matrix/workforce/internal/domainwork.Draft
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.CampaignDraft#Audience kind=field
@@ -44,10 +41,7 @@ NODE id=matrix/workforce/internal/domainwork.CampaignDraft.validate kind=method
   digest=b3:926a5484c24591425a1a8c1baae73096885ab7c5a5f3c84033b7df656d9920d6 file=workforce/internal/domainwork/service.go range=229:247 lang=go exported=false byte_range=7883:8583
   sig=func (campaign CampaignDraft) validate() error
 EDGES
-  references=matrix/workforce/internal/domainwork.CampaignDraft,matrix/workforce/internal/domainwork.campaign,matrix/workforce/internal/domainwork.value,matrix/workforce/internal/domainwork.values
   ^contains=matrix/workforce/internal/domainwork.CampaignDraft
-  ^calls=matrix/workforce/internal/domainwork.Draft.validate
-  ^references=matrix/workforce/internal/domainwork.Draft.validate
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.Draft kind=type
@@ -55,8 +49,6 @@ NODE id=matrix/workforce/internal/domainwork.Draft kind=type
   sig=type Draft struct {\n	Summary			string				`json:"summary"`\n	Campaign		*CampaignDraft			`json:"campaign"`\n	Publication		*PublicationAuthorization	`json:"publication"`\n	Legal			*LegalDraft			`json:"legal"`\n	UnresolvedRisks		[]string			`json:"unresolved_risks"`\n	PerformanceReceiptID	string				`json:"performance_receipt_id"`\n}
 EDGES
   contains=matrix/workforce/internal/domainwork.Draft#Campaign,matrix/workforce/internal/domainwork.Draft#Legal,matrix/workforce/internal/domainwork.Draft#PerformanceReceiptID,matrix/workforce/internal/domainwork.Draft#Publication,matrix/workforce/internal/domainwork.Draft#Summary,matrix/workforce/internal/domainwork.Draft#UnresolvedRisks,matrix/workforce/internal/domainwork.Draft.validate
-  references=matrix/workforce/internal/domainwork.CampaignDraft,matrix/workforce/internal/domainwork.LegalDraft,matrix/workforce/internal/domainwork.PublicationAuthorization
-  ^references=matrix/workforce/internal/domainwork.Draft.validate,matrix/workforce/internal/domainwork.Input
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.Draft#Campaign kind=field
@@ -99,11 +91,7 @@ NODE id=matrix/workforce/internal/domainwork.Draft.validate kind=method
   digest=b3:ce8069b6dce61c4a35c4e740a1861d18d34eb32b508024ae20e9d4aff6635a36 file=workforce/internal/domainwork/service.go range=192:227 lang=go exported=false byte_range=6543:7881
   sig=func (draft Draft) validate(\n	department contracts.DepartmentKind,\n	skillID contracts.SkillID,\n) error
 EDGES
-  calls=matrix/workforce/internal/domainwork.CampaignDraft.validate,matrix/workforce/internal/domainwork.LegalDraft.validate
-  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.DepartmentMarketing,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/domainwork.CampaignDraft.validate,matrix/workforce/internal/domainwork.Draft,matrix/workforce/internal/domainwork.LegalDraft.validate,matrix/workforce/internal/domainwork.department,matrix/workforce/internal/domainwork.draft,matrix/workforce/internal/domainwork.err,matrix/workforce/internal/domainwork.risk,matrix/workforce/internal/domainwork.skillID,matrix/workforce/internal/skills.PublicationGatesSkill
   ^contains=matrix/workforce/internal/domainwork.Draft
-  ^calls=matrix/workforce/internal/domainwork.Input.validateAt
-  ^references=matrix/workforce/internal/domainwork.Input.validateAt
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.ExpiringEvidence kind=type
@@ -111,8 +99,6 @@ NODE id=matrix/workforce/internal/domainwork.ExpiringEvidence kind=type
   sig=type ExpiringEvidence struct {\n	Reference	contracts.EvidenceRef	`json:"reference"`\n	ExpiresAt	time.Time		`json:"expires_at"`\n}
 EDGES
   contains=matrix/workforce/internal/domainwork.ExpiringEvidence#ExpiresAt,matrix/workforce/internal/domainwork.ExpiringEvidence#Reference
-  references=matrix/workforce/internal/contracts.EvidenceRef
-  ^references=matrix/workforce/internal/domainwork.Input
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.ExpiringEvidence#ExpiresAt kind=field
@@ -133,8 +119,6 @@ NODE id=matrix/workforce/internal/domainwork.Input kind=type
 EDGES
   contains=matrix/workforce/internal/domainwork.Input#CorrectionOf,matrix/workforce/internal/domainwork.Input#Department,matrix/workforce/internal/domainwork.Input#Draft,matrix/workforce/internal/domainwork.Input#Evidence,matrix/workforce/internal/domainwork.Input#IntentID,matrix/workforce/internal/domainwork.Input#Objective,matrix/workforce/internal/domainwork.Input#OrganizationID,matrix/workforce/internal/domainwork.Input#SchemaVersion,matrix/workforce/internal/domainwork.Input#SeatID,matrix/workforce/internal/domainwork.Input#SkillID,matrix/workforce/internal/domainwork.Input#SourceDigest,matrix/workforce/internal/domainwork.Input.Validate,matrix/workforce/internal/domainwork.Input.validateAt
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/domainwork.Draft,matrix/workforce/internal/domainwork.ExpiringEvidence
-  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/domainwork.Input.Validate,matrix/workforce/internal/domainwork.Input.validateAt,matrix/workforce/internal/domainwork.Service.Execute
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.Input#CorrectionOf kind=field
@@ -207,21 +191,14 @@ NODE id=matrix/workforce/internal/domainwork.Input.Validate kind=method
   digest=b3:e3352bc344a50caead0446a9edbd51d16d575772bd264246084229ec547b0587 file=workforce/internal/domainwork/service.go range=147:149 lang=go exported=true byte_range=4936:5013
   sig=func (input Input) Validate() error
 EDGES
-  calls=matrix/workforce/internal/domainwork.Input.validateAt
-  references=matrix/workforce/internal/domainwork.Input,matrix/workforce/internal/domainwork.Input.validateAt,matrix/workforce/internal/domainwork.input
   ^contains=matrix/workforce/internal/domainwork.Input
-  ^calls=matrix/workforce/internal/contracts.EncodeCanonical
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.Input.validateAt kind=method
   digest=b3:6569ef4f71442a184354a7449f2219d08c190a5f30271f4449aadfe1eb05b8cb file=workforce/internal/domainwork/service.go range=151:190 lang=go exported=false byte_range=5015:6541
   sig=func (input Input) validateAt(now time.Time) error
 EDGES
-  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/domainwork.Draft.validate,matrix/workforce/internal/domainwork.domainSkillAllowed
-  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/domainwork.Draft.validate,matrix/workforce/internal/domainwork.Input,matrix/workforce/internal/domainwork.domainSkillAllowed,matrix/workforce/internal/domainwork.err,matrix/workforce/internal/domainwork.input,matrix/workforce/internal/domainwork.item,matrix/workforce/internal/domainwork.now,matrix/workforce/internal/domainwork.seen
   ^contains=matrix/workforce/internal/domainwork.Input
-  ^calls=matrix/workforce/internal/domainwork.Input.Validate,matrix/workforce/internal/domainwork.Service.Execute
-  ^references=matrix/workforce/internal/domainwork.Input.Validate,matrix/workforce/internal/domainwork.Service.Execute
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.LegalDraft kind=type
@@ -229,7 +206,6 @@ NODE id=matrix/workforce/internal/domainwork.LegalDraft kind=type
   sig=type LegalDraft struct {\n	Jurisdictions	[]string	`json:"jurisdictions"`\n	Issues		[]string	`json:"issues"`\n	Analysis	string		`json:"analysis"`\n	Disclaimer	string		`json:"disclaimer"`\n	HumanSignoff	bool		`json:"human_signoff"`\n}
 EDGES
   contains=matrix/workforce/internal/domainwork.LegalDraft#Analysis,matrix/workforce/internal/domainwork.LegalDraft#Disclaimer,matrix/workforce/internal/domainwork.LegalDraft#HumanSignoff,matrix/workforce/internal/domainwork.LegalDraft#Issues,matrix/workforce/internal/domainwork.LegalDraft#Jurisdictions,matrix/workforce/internal/domainwork.LegalDraft.validate
-  ^references=matrix/workforce/internal/domainwork.Draft,matrix/workforce/internal/domainwork.LegalDraft.validate
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.LegalDraft#Analysis kind=field
@@ -266,19 +242,13 @@ NODE id=matrix/workforce/internal/domainwork.LegalDraft.validate kind=method
   digest=b3:43e9c847bc2cd0d73fcb1766bd95d084845c1bf40525f726d4e8a33946cf3acd file=workforce/internal/domainwork/service.go range=249:266 lang=go exported=false byte_range=8585:9283
   sig=func (legal LegalDraft) validate() error
 EDGES
-  references=matrix/workforce/internal/domainwork.LegalDraft,matrix/workforce/internal/domainwork.legal,matrix/workforce/internal/domainwork.value,matrix/workforce/internal/domainwork.values
   ^contains=matrix/workforce/internal/domainwork.LegalDraft
-  ^calls=matrix/workforce/internal/domainwork.Draft.validate
-  ^references=matrix/workforce/internal/domainwork.Draft.validate
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.New kind=func
   digest=b3:e5310ddbd6d20b1212476382623b0c53587141b6d84da094b8937beceeb47abb file=workforce/internal/domainwork/service.go range=82:87 lang=go exported=true byte_range=2845:3106
   sig=func New(now func() time.Time, approvals *approval.Store) (*Service, error)
 EDGES
-  references=matrix/workforce/internal/approval.Store,matrix/workforce/internal/domainwork.Service,matrix/workforce/internal/domainwork.approvals,matrix/workforce/internal/domainwork.now
-  ^calls=matrix/workforce/internal/departmentadapter.New
-  ^references=matrix/workforce/internal/departmentadapter.New
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.PublicationAuthorization kind=type
@@ -286,8 +256,6 @@ NODE id=matrix/workforce/internal/domainwork.PublicationAuthorization kind=type
   sig=type PublicationAuthorization struct {\n	BatchID		contracts.ApprovalID	`json:"batch_id"`\n	CostMicrounits	uint64			`json:"cost_microunits"`\n	IdempotencyKey	string			`json:"idempotency_key"`\n}
 EDGES
   contains=matrix/workforce/internal/domainwork.PublicationAuthorization#BatchID,matrix/workforce/internal/domainwork.PublicationAuthorization#CostMicrounits,matrix/workforce/internal/domainwork.PublicationAuthorization#IdempotencyKey
-  references=matrix/workforce/internal/contracts.ApprovalID
-  ^references=matrix/workforce/internal/domainwork.Draft
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.PublicationAuthorization#BatchID kind=field
@@ -313,8 +281,6 @@ NODE id=matrix/workforce/internal/domainwork.Result kind=type
   sig=type Result struct {\n	SchemaVersion	string			`json:"schema_version"`\n	Outcome		string			`json:"outcome"`\n	Artifact	contracts.ArtifactRef	`json:"artifact"`\n	Evidence	[]contracts.EvidenceRef	`json:"evidence"`\n	RequiresHuman	bool			`json:"requires_human"`\n	Payload		[]byte			`json:"-"`\n}
 EDGES
   contains=matrix/workforce/internal/domainwork.Result#Artifact,matrix/workforce/internal/domainwork.Result#Evidence,matrix/workforce/internal/domainwork.Result#Outcome,matrix/workforce/internal/domainwork.Result#Payload,matrix/workforce/internal/domainwork.Result#RequiresHuman,matrix/workforce/internal/domainwork.Result#SchemaVersion
-  references=matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.EvidenceRef
-  ^references=matrix/workforce/internal/domainwork.Service.Execute
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.Result#Artifact kind=field
@@ -358,8 +324,6 @@ NODE id=matrix/workforce/internal/domainwork.Service kind=type
   sig=type Service struct {\n	now		func() time.Time\n	approvals	*approval.Store\n}
 EDGES
   contains=matrix/workforce/internal/domainwork.Service#approvals,matrix/workforce/internal/domainwork.Service#now,matrix/workforce/internal/domainwork.Service.Execute
-  references=matrix/workforce/internal/approval.Store
-  ^references=matrix/workforce/internal/departmentadapter.Adapter,matrix/workforce/internal/domainwork.New,matrix/workforce/internal/domainwork.Service.Execute
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.Service#approvals kind=field
@@ -378,28 +342,19 @@ NODE id=matrix/workforce/internal/domainwork.Service.Execute kind=method
   digest=b3:c80aa5ff35190b0d7388fb2c275f8956fdbc8845227182569e409773d9cbf41c file=workforce/internal/domainwork/service.go range=89:145 lang=go exported=true byte_range=3108:4934
   sig=func (service *Service) Execute(ctx context.Context, input Input) (Result, error)
 EDGES
-  calls=matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/domainwork.Input.validateAt
-  references=matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/contracts.ArtifactID,matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.DepartmentLegal,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/domainwork.Input,matrix/workforce/internal/domainwork.Input.validateAt,matrix/workforce/internal/domainwork.Result,matrix/workforce/internal/domainwork.Service,matrix/workforce/internal/domainwork.authorization,matrix/workforce/internal/domainwork.ctx,matrix/workforce/internal/domainwork.digest,matrix/workforce/internal/domainwork.err,matrix/workforce/internal/domainwork.evidence,matrix/workforce/internal/domainwork.index,matrix/workforce/internal/domainwork.input,matrix/workforce/internal/domainwork.maxDomainPayloadBytes,matrix/workforce/internal/domainwork.now,matrix/workforce/internal/domainwork.outcome,matrix/workforce/internal/domainwork.payload,matrix/workforce/internal/domainwork.requiresHuman,matrix/workforce/internal/domainwork.service,matrix/workforce/internal/skills.PublicationGatesSkill
   ^contains=matrix/workforce/internal/domainwork.Service
-  ^calls=matrix/workforce/internal/departmentadapter.Adapter.Dispatch
-  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.domainSkillAllowed kind=func
   digest=b3:602c80a76540d4dbfd1fb144eaf01bb023b72662e35d8ba44d4e6fac80d5ee43 file=workforce/internal/domainwork/service.go range=268:287 lang=go exported=false byte_range=9285:9713
   sig=func domainSkillAllowed(\n	department contracts.DepartmentKind,\n	skillID contracts.SkillID,\n) bool
 EDGES
-  calls=matrix/workforce/internal/skills.LegalSkillIDs,matrix/workforce/internal/skills.MarketingSkillIDs
-  references=matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.DepartmentLegal,matrix/workforce/internal/contracts.DepartmentMarketing,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/domainwork.allowed,matrix/workforce/internal/domainwork.candidate,matrix/workforce/internal/domainwork.department,matrix/workforce/internal/domainwork.skillID,matrix/workforce/internal/skills.LegalSkillIDs,matrix/workforce/internal/skills.MarketingSkillIDs
-  ^calls=matrix/workforce/internal/domainwork.Input.validateAt
-  ^references=matrix/workforce/internal/domainwork.Input.validateAt
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork.maxDomainPayloadBytes kind=const
   digest=b3:f2434f79b4bd79da80a31d2c73622cc6cdb385fe0a2cbdd3f0575e710add8b61 file=workforce/internal/domainwork/service.go range=17:17 lang=go exported=false byte_range=390:421
   sig=untyped int
 EDGES
-  ^references=matrix/workforce/internal/domainwork.Service.Execute
   ^defines=matrix/workforce/internal/domainwork/service.go
 
 NODE id=matrix/workforce/internal/domainwork/service.go kind=file

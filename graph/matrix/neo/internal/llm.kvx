@@ -1,21 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/neo/internal/llm kind=package
   digest=b3:76b43af6fd7c2cd5610ca94b509cd46d57f76c0209ae2aba3c8d74e5fa952bbd file=neo/internal/llm range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/llm/client.go,matrix/neo/internal/llm/message.go,matrix/neo/internal/llm/mimo.go,matrix/neo/internal/llm/stream_idle.go
-  imports=matrix/mcl/llm,matrix/neo/internal/runtime/provider
   ^contains=mod:matrix/neo
-  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/agent,matrix/neo/internal/o1,matrix/neo/internal/server,matrix/neo/internal/tools,matrix/neo/internal/writeback
 
 NODE id=matrix/neo/internal/llm.AssistantMessage kind=func
   digest=b3:4f579758241570e8c1c08ed3a84a84623e74b4a6ed4eebff78a512e35404ba17 file=neo/internal/llm/message.go range=157:161 lang=go exported=true byte_range=6160:6413
   sig=func AssistantMessage(content string) Message
   doc=AssistantMessage builds an assistant-role text message (no tool calls). Used\nto seed a resumed conversation's transcript from durable history.
 EDGES
-  references=matrix/neo/internal/llm.Message,matrix/neo/internal/llm.RoleAssistant,matrix/neo/internal/llm.content
-  ^calls=matrix/neo/internal/server.seedMessages
-  ^references=matrix/neo/internal/server.seedMessages
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.ChatRequest kind=type
@@ -24,8 +19,6 @@ NODE id=matrix/neo/internal/llm.ChatRequest kind=type
   doc=ChatRequest is one round-trip to the model.
 EDGES
   contains=matrix/neo/internal/llm.ChatRequest#MaxTokens,matrix/neo/internal/llm.ChatRequest#Messages,matrix/neo/internal/llm.ChatRequest#OnDelta,matrix/neo/internal/llm.ChatRequest#OnRequest,matrix/neo/internal/llm.ChatRequest#ToolChoice,matrix/neo/internal/llm.ChatRequest#Tools
-  references=matrix/neo/internal/llm.Delta,matrix/neo/internal/llm.Message,matrix/neo/internal/llm.Tool
-  ^references=matrix/neo/internal/agent.Agent.chatWithRetry,matrix/neo/internal/agent.Agent.compareExpectationModel,matrix/neo/internal/agent.Agent.extractEpisodicAt,matrix/neo/internal/agent.Agent.extractPremisesModel,matrix/neo/internal/agent.Agent.providerRequest,matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/server.Engine.desktopLook,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.ChatRequest#MaxTokens kind=field
@@ -73,8 +66,6 @@ NODE id=matrix/neo/internal/llm.ChatResult kind=type
   doc=ChatResult is the model's single assistant turn plus metadata.
 EDGES
   contains=matrix/neo/internal/llm.ChatResult#FinishReason,matrix/neo/internal/llm.ChatResult#Message,matrix/neo/internal/llm.ChatResult#Usage,matrix/neo/internal/llm.ChatResult.HasToolCalls
-  references=matrix/neo/internal/llm.Message,matrix/neo/internal/llm.Usage
-  ^references=matrix/neo/internal/agent.Agent.act,matrix/neo/internal/agent.Agent.chatWithRetry,matrix/neo/internal/agent.Agent.closeTurn,matrix/neo/internal/agent.Agent.deliberate,matrix/neo/internal/agent.Agent.generate,matrix/neo/internal/agent.Agent.normalizeProviderResult,matrix/neo/internal/agent.closeContext,matrix/neo/internal/llm.ChatResult.HasToolCalls,matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/o1.ConformChatResult
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.ChatResult#FinishReason kind=field
@@ -100,10 +91,7 @@ NODE id=matrix/neo/internal/llm.ChatResult.HasToolCalls kind=method
   sig=func (r ChatResult) HasToolCalls() bool
   doc=HasToolCalls reports whether the assistant asked to call any tools.
 EDGES
-  references=matrix/neo/internal/llm.ChatResult,matrix/neo/internal/llm.r
   ^contains=matrix/neo/internal/llm.ChatResult
-  ^calls=matrix/neo/internal/agent.Agent.chat,matrix/neo/internal/agent.Agent.deliberate,matrix/neo/internal/agent.Agent.generate
-  ^references=matrix/neo/internal/agent.Agent.chat,matrix/neo/internal/agent.Agent.deliberate,matrix/neo/internal/agent.Agent.generate
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.Client kind=type
@@ -112,8 +100,6 @@ NODE id=matrix/neo/internal/llm.Client kind=type
   doc=Client is an OpenAI-compatible chat-completions client that speaks native\nfunction calling (tools + tool_calls + tool-role results).\n\nIt is constructed from a matrix/mcl/llm.Config so it inherits provider\ndetection, the model registry, and — when Config.GatewayURL is set — the\nMatrixGateway metering path (X-Matrix-* headers, bearer from\nMATRIX_GATEWAY_TOKEN). When GatewayURL is empty it talks directly to the\nprovider with the provider's API key.
 EDGES
   contains=matrix/neo/internal/llm.Client#actorDID,matrix/neo/internal/llm.Client#apiKey,matrix/neo/internal/llm.Client#enableThinking,matrix/neo/internal/llm.Client#endpoint,matrix/neo/internal/llm.Client#gatewayTokenEnv,matrix/neo/internal/llm.Client#gatewayURL,matrix/neo/internal/llm.Client#httpClient,matrix/neo/internal/llm.Client#intentID,matrix/neo/internal/llm.Client#maxTokens,matrix/neo/internal/llm.Client#model,matrix/neo/internal/llm.Client#provider,matrix/neo/internal/llm.Client#seed,matrix/neo/internal/llm.Client#slotLabel,matrix/neo/internal/llm.Client#streamIdle,matrix/neo/internal/llm.Client#temperature,matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.Client.Model,matrix/neo/internal/llm.Client.Provider,matrix/neo/internal/llm.Client.newHTTPRequest
-  references=matrix/mcl/llm.Provider
-  ^references=matrix/neo/cmd/neo.newClient,matrix/neo/cmd/neo.newOmniClient,matrix/neo/cmd/neo.newSlotClient,matrix/neo/internal/agent.Agent,matrix/neo/internal/agent.Options,matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.Client.Model,matrix/neo/internal/llm.Client.Provider,matrix/neo/internal/llm.Client.newHTTPRequest,matrix/neo/internal/llm.New,matrix/neo/internal/server.Engine,matrix/neo/internal/server.EngineOptions,matrix/neo/internal/writeback.Consolidator,matrix/neo/internal/writeback.New
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.Client#actorDID kind=field
@@ -212,11 +198,7 @@ NODE id=matrix/neo/internal/llm.Client.Chat kind=method
   sig=func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
   doc=Chat performs one round-trip: sends the message list (+ optional tool\nschemas) and returns the model's single assistant turn, which may contain\ntool_calls the caller must execute and feed back as tool-role messages.
 EDGES
-  calls=matrix/mcl/llm.IsXaiModel,matrix/mcl/llm.IsXiaomiModel,matrix/mcl/llm.XiaomiModelID,matrix/neo/internal/llm.Client.newHTTPRequest,matrix/neo/internal/llm.aggregateStreamReader,matrix/neo/internal/llm.enableThinkingArgs,matrix/neo/internal/llm.fromWireRespMessage,matrix/neo/internal/llm.idleTimeoutReader.stop,matrix/neo/internal/llm.isMimoFamily,matrix/neo/internal/llm.newIdleTimeoutReader,matrix/neo/internal/llm.reasoningEffort,matrix/neo/internal/llm.supportsReasoningEffort,matrix/neo/internal/llm.toWireMessages,matrix/neo/internal/llm.truncate,matrix/neo/internal/llm.xiaomiThinkingType
-  references=matrix/mcl/llm.IsXaiModel,matrix/mcl/llm.IsXiaomiModel,matrix/mcl/llm.XiaomiModelID,matrix/neo/internal/llm.ChatRequest,matrix/neo/internal/llm.ChatResult,matrix/neo/internal/llm.Client,matrix/neo/internal/llm.Client.newHTTPRequest,matrix/neo/internal/llm.ErrProviderRejected,matrix/neo/internal/llm.ErrProviderUnavailable,matrix/neo/internal/llm.ErrRateLimited,matrix/neo/internal/llm.ErrRequestTooLarge,matrix/neo/internal/llm.aggregateStreamReader,matrix/neo/internal/llm.args,matrix/neo/internal/llm.body,matrix/neo/internal/llm.c,matrix/neo/internal/llm.cancelStream,matrix/neo/internal/llm.chatRequestWire,matrix/neo/internal/llm.chatResponseWire,matrix/neo/internal/llm.ctx,matrix/neo/internal/llm.detail,matrix/neo/internal/llm.enableThinkingArgs,matrix/neo/internal/llm.err,matrix/neo/internal/llm.errMsg,matrix/neo/internal/llm.errType,matrix/neo/internal/llm.finish,matrix/neo/internal/llm.fromWireRespMessage,matrix/neo/internal/llm.httpReq,matrix/neo/internal/llm.idleTimeoutReader.stop,matrix/neo/internal/llm.isMimoFamily,matrix/neo/internal/llm.maxTok,matrix/neo/internal/llm.msg,matrix/neo/internal/llm.newIdleTimeoutReader,matrix/neo/internal/llm.parsed,matrix/neo/internal/llm.reasoningEffort,matrix/neo/internal/llm.req,matrix/neo/internal/llm.res,matrix/neo/internal/llm.resp,matrix/neo/internal/llm.respBody,matrix/neo/internal/llm.s,matrix/neo/internal/llm.stream,matrix/neo/internal/llm.streamCtx,matrix/neo/internal/llm.streamOptions,matrix/neo/internal/llm.supportsReasoningEffort,matrix/neo/internal/llm.thinkingConfig,matrix/neo/internal/llm.toWireMessages,matrix/neo/internal/llm.truncate,matrix/neo/internal/llm.usage,matrix/neo/internal/llm.wire,matrix/neo/internal/llm.xiaomiThinkingType
   ^contains=matrix/neo/internal/llm.Client
-  ^calls=matrix/neo/internal/agent.Agent.chatWithRetry,matrix/neo/internal/agent.Agent.compareExpectationModel,matrix/neo/internal/agent.Agent.extractEpisodicAt,matrix/neo/internal/agent.Agent.extractPremisesModel,matrix/neo/internal/server.Engine.desktopLook,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.process
-  ^references=matrix/neo/internal/agent.Agent.chatWithRetry,matrix/neo/internal/agent.Agent.compareExpectationModel,matrix/neo/internal/agent.Agent.extractEpisodicAt,matrix/neo/internal/agent.Agent.extractPremisesModel,matrix/neo/internal/server.Engine.desktopLook,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.Client.Model kind=method
@@ -224,9 +206,7 @@ NODE id=matrix/neo/internal/llm.Client.Model kind=method
   sig=func (c *Client) Model() string
   doc=Model returns the configured model id.
 EDGES
-  references=matrix/neo/internal/llm.Client,matrix/neo/internal/llm.c
   ^contains=matrix/neo/internal/llm.Client
-  ^references=matrix/neo/internal/agent.Agent.providerRequest
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.Client.Provider kind=method
@@ -234,11 +214,7 @@ NODE id=matrix/neo/internal/llm.Client.Provider kind=method
   sig=func (c *Client) Provider() string
   doc=Provider returns the configured wire provider identity for protocol\nconformance. It intentionally exposes no endpoint or credential material.
 EDGES
-  calls=matrix/mcl/llm.Provider.String
-  references=matrix/mcl/llm.Provider.String,matrix/neo/internal/llm.Client,matrix/neo/internal/llm.c
   ^contains=matrix/neo/internal/llm.Client
-  ^calls=matrix/neo/internal/agent.Agent.chatWithRetry
-  ^references=matrix/neo/internal/agent.Agent.chatWithRetry,matrix/neo/internal/agent.Agent.providerRequest
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.Client.newHTTPRequest kind=method
@@ -246,19 +222,13 @@ NODE id=matrix/neo/internal/llm.Client.newHTTPRequest kind=method
   sig=func (c *Client) newHTTPRequest(ctx context.Context, body []byte) (*http.Request, error)
   doc=newHTTPRequest builds the POST. Mirrors matrix/mcl/llm's gateway posture:\nwhen gatewayURL is set the call is rewritten to\n${gatewayURL}/v1/chat/completions with a gateway bearer + X-Matrix-*\nmetadata; otherwise it goes direct to the provider with Bearer <apiKey>.
 EDGES
-  references=matrix/neo/internal/llm.Client,matrix/neo/internal/llm.body,matrix/neo/internal/llm.c,matrix/neo/internal/llm.ctx,matrix/neo/internal/llm.err,matrix/neo/internal/llm.req,matrix/neo/internal/llm.tok,matrix/neo/internal/llm.tokenEnv,matrix/neo/internal/llm.url
   ^contains=matrix/neo/internal/llm.Client
-  ^calls=matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.ContextMessage kind=func
   digest=b3:3d42d01cf3fe5f198056e3e75026f47316aa3aff0c051a552685829f0eed4ae8 file=neo/internal/llm/message.go range=256:262 lang=go exported=true byte_range=10784:11028
   sig=func ContextMessage(content string) Message
 EDGES
-  references=matrix/neo/internal/llm.Message,matrix/neo/internal/llm.RoleSystem,matrix/neo/internal/llm.content
-  ^calls=matrix/neo/internal/agent.assembleWindowContextSidecar
-  ^references=matrix/neo/internal/agent.assembleWindowContextSidecar
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.Delta kind=type
@@ -267,8 +237,6 @@ NODE id=matrix/neo/internal/llm.Delta kind=type
   doc=Delta is one coalesced streaming fragment of an in-flight assistant turn.\nAt most one of the channels is non-empty per call.
 EDGES
   contains=matrix/neo/internal/llm.Delta#Content,matrix/neo/internal/llm.Delta#Reasoning,matrix/neo/internal/llm.Delta#Tool
-  references=matrix/neo/internal/llm.ToolCallDelta
-  ^references=matrix/neo/internal/agent.Agent.forcedRevisionStep,matrix/neo/internal/agent.Agent.generate,matrix/neo/internal/agent.Agent.providerRequest,matrix/neo/internal/llm.ChatRequest,matrix/neo/internal/llm.aggregateStreamReader
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.Delta#Content kind=field
@@ -297,7 +265,6 @@ NODE id=matrix/neo/internal/llm.ErrProviderRejected kind=var
   sig=error
   doc=ErrProviderRejected marks a deterministic 4xx validation reject (e.g. a 400\n"InvalidParameter" on the function/tool fields). It is NOT recoverable by\nretrying the identical body — the request shape itself is bad — so callers\nmust stop the retry ladder when they see it instead of burning calls (and,\non a metered gateway, real spend) re-sending the same rejected request.\nDetect with errors.Is(err, llm.ErrProviderRejected).
 EDGES
-  ^references=matrix/neo/internal/agent.Agent.chatWithRetry,matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/server.subagentEffectiveMax
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.ErrProviderUnavailable kind=var
@@ -305,7 +272,6 @@ NODE id=matrix/neo/internal/llm.ErrProviderUnavailable kind=var
   sig=error
   doc=ErrProviderUnavailable marks a TRANSPORT-level failure reaching the provider\nor gateway at all: the HTTP request never got a response (connection refused,\nDNS failure, TLS error, dropped connection, or a dial timeout — e.g. the\nmetered gateway being down). It IS retryable, but — exactly like ErrRateLimited\n— a fresh-agent respawn cannot help while the upstream is unreachable, so\nretrying it fast across many daemons is a self-amplifying connection storm.\nThe task supervisor reads this to back off HARD and to avoid spamming the user\na fresh "still working" bubble on every futile respawn. Detect with\nerrors.Is(err, llm.ErrProviderUnavailable).
 EDGES
-  ^references=matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/server.observableErrorClass,matrix/neo/internal/server.session.superviseAutomatrixTask,matrix/neo/internal/server.session.superviseBriefTask,matrix/neo/internal/server.session.superviseTask,matrix/neo/internal/server.subagentFailureTransient
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.ErrRateLimited kind=var
@@ -313,7 +279,6 @@ NODE id=matrix/neo/internal/llm.ErrRateLimited kind=var
   sig=error
   doc=ErrRateLimited marks an upstream 429 (the provider/gateway is rate-limiting\nor overloaded). It IS retryable, but callers should back off HARD rather than\nrespawn immediately: a persistent 429 that is retried aggressively across many\ndaemons becomes a self-amplifying request storm (the exact failure mode that\nturned "Baseten is slow" into "20 runaway Neos"). The task supervisor reads\nthis to lengthen its respawn backoff. Detect with errors.Is(err, llm.ErrRateLimited).
 EDGES
-  ^references=matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/server.observableErrorClass,matrix/neo/internal/server.session.superviseAutomatrixTask,matrix/neo/internal/server.session.superviseBriefTask,matrix/neo/internal/server.session.superviseTask,matrix/neo/internal/server.subagentFailureTransient
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.ErrRequestTooLarge kind=var
@@ -321,7 +286,6 @@ NODE id=matrix/neo/internal/llm.ErrRequestTooLarge kind=var
   sig=error
   doc=ErrRequestTooLarge marks a provider reject where the request body exceeded\nthe provider's hard byte cap (e.g. Fireworks HTTP 413 "body_too_large",\n1,048,576 bytes). It is recoverable: the caller can compact the window and\nretry. Detect with errors.Is(err, llm.ErrRequestTooLarge).
 EDGES
-  ^references=matrix/neo/internal/agent.Agent.generate,matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.FunctionCall kind=type
@@ -330,7 +294,6 @@ NODE id=matrix/neo/internal/llm.FunctionCall kind=type
   doc=FunctionCall is the name + JSON-encoded arguments of a requested call.\nArguments is a STRING per the OpenAI contract (the model emits a JSON\ndocument as text); use ParseArgs to decode it.
 EDGES
   contains=matrix/neo/internal/llm.FunctionCall#Arguments,matrix/neo/internal/llm.FunctionCall#Name
-  ^references=matrix/neo/internal/agent.protocolMessage,matrix/neo/internal/llm.ToolCall,matrix/neo/internal/llm.aggregateStreamReader,matrix/neo/internal/llm.extractXMLToolCalls,matrix/neo/internal/llm.parseMimoToolCalls,matrix/neo/internal/llm.parseTokenSection
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.FunctionCall#Arguments kind=field
@@ -351,7 +314,6 @@ NODE id=matrix/neo/internal/llm.FunctionDef kind=type
   doc=FunctionDef describes a callable function. Parameters is a JSON Schema\nobject (the same shape MCP tools publish as their inputSchema).
 EDGES
   contains=matrix/neo/internal/llm.FunctionDef#Description,matrix/neo/internal/llm.FunctionDef#Name,matrix/neo/internal/llm.FunctionDef#Parameters
-  ^references=matrix/neo/internal/llm.NewFunctionTool,matrix/neo/internal/llm.Tool
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.FunctionDef#Description kind=field
@@ -377,7 +339,6 @@ NODE id=matrix/neo/internal/llm.GuidanceClose kind=const
   sig=untyped string
   doc=Guidance-channel envelope tags. System steering injected through the guidance\nchannel is wrapped in these so the model can recognize it as a non-answerable\nhint (the Cascade <system_guidance> contract), and so the harness can detect\nand strip guidance turns from every user-facing surface.
 EDGES
-  ^references=matrix/neo/internal/llm.GuidanceMessage,matrix/neo/internal/llm.StripGuidance
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.GuidanceMessage kind=func
@@ -385,9 +346,6 @@ NODE id=matrix/neo/internal/llm.GuidanceMessage kind=func
   sig=func GuidanceMessage(content string) Message
   doc=GuidanceMessage builds a guidance-channel turn: system steering the model is\ninstructed to act on but never acknowledge or echo (the Cascade\n<system_guidance> contract). It rides as a SYSTEM-role turn — the steering\ncomes from the system, not the user, and every OpenAI-compatible provider\naccepts a system message mid-conversation — with the content wrapped in the\nguidance envelope and the Guidance flag set so the harness keeps it off every\nuser-facing surface (reasoning/thinking deltas and the durable transcript).\n\nThe system role matters for correctness, not just labeling: the transcript's\ncompaction/tail logic (safeTail, splitForCompaction) anchors the retained\nwindow on the last USER message. A guidance nudge delivered as a user turn\nbecomes that anchor, so once the window compacts the real task transcript is\ntrimmed away and the model — now seeing only the system prompt plus a bare\nnudge — greets as if a fresh conversation and never completes, the nudge\nspiral. Keeping guidance on the system role leaves the true user task as the\nanchor. Blank content yields a zero Message (no empty guidance turn emitted).
 EDGES
-  references=matrix/neo/internal/llm.GuidanceClose,matrix/neo/internal/llm.GuidanceOpen,matrix/neo/internal/llm.Message,matrix/neo/internal/llm.RoleSystem,matrix/neo/internal/llm.content
-  ^calls=matrix/neo/internal/agent.Agent.pushGuidance
-  ^references=matrix/neo/internal/agent.Agent.pushGuidance
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.GuidanceOpen kind=const
@@ -395,7 +353,6 @@ NODE id=matrix/neo/internal/llm.GuidanceOpen kind=const
   sig=untyped string
   doc=Guidance-channel envelope tags. System steering injected through the guidance\nchannel is wrapped in these so the model can recognize it as a non-answerable\nhint (the Cascade <system_guidance> contract), and so the harness can detect\nand strip guidance turns from every user-facing surface.
 EDGES
-  ^references=matrix/neo/internal/llm.GuidanceMessage,matrix/neo/internal/llm.StripGuidance
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.Message kind=type
@@ -404,8 +361,6 @@ NODE id=matrix/neo/internal/llm.Message kind=type
   doc=Message is one turn in the conversation. It is both the on-wire shape and\nthe in-transcript shape (Neo's state). An assistant turn may carry\nToolCalls; a tool-result turn sets Role=tool + ToolCallID.
 EDGES
   contains=matrix/neo/internal/llm.Message#AudioData,matrix/neo/internal/llm.Message#Content,matrix/neo/internal/llm.Message#Guidance,matrix/neo/internal/llm.Message#ImageData,matrix/neo/internal/llm.Message#Name,matrix/neo/internal/llm.Message#Reasoning,matrix/neo/internal/llm.Message#Role,matrix/neo/internal/llm.Message#ToolCallID,matrix/neo/internal/llm.Message#ToolCalls,matrix/neo/internal/llm.Message.IsGuidance
-  references=matrix/neo/internal/llm.ToolCall
-  ^references=matrix/neo/internal/agent.Agent,matrix/neo/internal/agent.Agent.ProtocolHistory,matrix/neo/internal/agent.Agent.Seed,matrix/neo/internal/agent.Agent.SeedReplay,matrix/neo/internal/agent.Agent.SetRecentConversationHistory,matrix/neo/internal/agent.Agent.buildCassandraSignals,matrix/neo/internal/agent.Agent.cmRecordAssistant,matrix/neo/internal/agent.Agent.compareExpectationModel,matrix/neo/internal/agent.Agent.computeStepSignals,matrix/neo/internal/agent.Agent.extractEpisodicAt,matrix/neo/internal/agent.Agent.extractPremisesModel,matrix/neo/internal/agent.Agent.forcedRevisionStep,matrix/neo/internal/agent.Agent.generate,matrix/neo/internal/agent.Agent.journalAssistant,matrix/neo/internal/agent.Agent.journalUser,matrix/neo/internal/agent.Agent.noteBatch,matrix/neo/internal/agent.Agent.prepareTurn,matrix/neo/internal/agent.Agent.prepareWindow,matrix/neo/internal/agent.Agent.providerRequest,matrix/neo/internal/agent.Agent.pushGuidance,matrix/neo/internal/agent.Agent.repairWorkingProtocol,matrix/neo/internal/agent.assembleWindowContextSidecar,matrix/neo/internal/agent.assembleWindowUserTail,matrix/neo/internal/agent.classifyEpisodicMessage,matrix/neo/internal/agent.estimateMessagesTokens,matrix/neo/internal/agent.lastAssistantText,matrix/neo/internal/agent.protectedProtocolTail,matrix/neo/internal/agent.protocolMessage,matrix/neo/internal/agent.renderTranscript,matrix/neo/internal/agent.repairProtocolTail,matrix/neo/internal/agent.resurrectionProtocolHistory,matrix/neo/internal/agent.safeTail,matrix/neo/internal/agent.splitForCompaction,matrix/neo/internal/agent.stripImagesIn,matrix/neo/internal/agent.workingCoversCortexTranscript,matrix/neo/internal/llm.AssistantMessage,matrix/neo/internal/llm.ChatRequest,matrix/neo/internal/llm.ChatResult,matrix/neo/internal/llm.ContextMessage,matrix/neo/internal/llm.GuidanceMessage,matrix/neo/internal/llm.Message.IsGuidance,matrix/neo/internal/llm.SystemMessage,matrix/neo/internal/llm.ToolResult,matrix/neo/internal/llm.UserAudioMessage,matrix/neo/internal/llm.UserImageMessage,matrix/neo/internal/llm.UserMessage,matrix/neo/internal/llm.fromWireRespMessage,matrix/neo/internal/llm.toWireMessages,matrix/neo/internal/o1.ValidateConversationTruth,matrix/neo/internal/server.Engine.desktopLook,matrix/neo/internal/server.seedMessages,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.Message#AudioData kind=field
@@ -470,10 +425,7 @@ NODE id=matrix/neo/internal/llm.Message.IsGuidance kind=method
   sig=func (m Message) IsGuidance() bool
   doc=IsGuidance reports whether m is a guidance-channel turn (set by\nGuidanceMessage). The harness uses it to exclude internal steering from every\nuser-facing surface and from the persisted transcript.
 EDGES
-  references=matrix/neo/internal/llm.Message,matrix/neo/internal/llm.m
   ^contains=matrix/neo/internal/llm.Message
-  ^calls=matrix/neo/internal/agent.Agent.cmRecordAssistant,matrix/neo/internal/agent.Agent.journalAssistant,matrix/neo/internal/agent.classifyEpisodicMessage,matrix/neo/internal/agent.protectedProtocolTail,matrix/neo/internal/o1.ValidateConversationTruth
-  ^references=matrix/neo/internal/agent.Agent.cmRecordAssistant,matrix/neo/internal/agent.Agent.journalAssistant,matrix/neo/internal/agent.classifyEpisodicMessage,matrix/neo/internal/agent.protectedProtocolTail,matrix/neo/internal/o1.ValidateConversationTruth
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.New kind=func
@@ -481,10 +433,6 @@ NODE id=matrix/neo/internal/llm.New kind=func
   sig=func New(cfg mcllm.Config) (*Client, error)
   doc=New builds a function-calling client from an mcl/llm.Config.\n\nv1 supports the chat-completions API shape only (Baseten / Together /\nFireworks / opencode-chat). Models that route to the Anthropic Messages or\nOpenAI Responses shapes use different tool schemas and are rejected with a\nclear error; the default model registry pins Baseten chat-completions.
 EDGES
-  calls=matrix/mcl/llm.DetectAPIShape,matrix/mcl/llm.DetectProvider,matrix/neo/internal/llm.defaultChatEndpoint,matrix/neo/internal/llm.envKey
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.DetectAPIShape,matrix/mcl/llm.DetectProvider,matrix/mcl/llm.ShapeChatCompletions,matrix/neo/internal/llm.Client,matrix/neo/internal/llm.apiKey,matrix/neo/internal/llm.cfg,matrix/neo/internal/llm.defaultChatEndpoint,matrix/neo/internal/llm.endpoint,matrix/neo/internal/llm.envKey,matrix/neo/internal/llm.err,matrix/neo/internal/llm.idle,matrix/neo/internal/llm.k,matrix/neo/internal/llm.maxTok,matrix/neo/internal/llm.p,matrix/neo/internal/llm.provider,matrix/neo/internal/llm.shape,matrix/neo/internal/llm.transport
-  ^calls=matrix/neo/cmd/neo.newOmniClient,matrix/neo/cmd/neo.newSlotClient
-  ^references=matrix/neo/cmd/neo.newOmniClient,matrix/neo/cmd/neo.newSlotClient
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.NewFunctionTool kind=func
@@ -492,9 +440,6 @@ NODE id=matrix/neo/internal/llm.NewFunctionTool kind=func
   sig=func NewFunctionTool(name, description string, parameters map[string]interface{}) Tool
   doc=NewFunctionTool builds a function Tool from a name, description and a JSON\nSchema parameters object.
 EDGES
-  references=matrix/neo/internal/llm.FunctionDef,matrix/neo/internal/llm.Tool,matrix/neo/internal/llm.description,matrix/neo/internal/llm.name,matrix/neo/internal/llm.parameters
-  ^calls=matrix/neo/internal/agent.readOverflowSchema,matrix/neo/internal/tools.Manager.BriefSchemas,matrix/neo/internal/tools.Manager.Schemas,matrix/neo/internal/tools.Manager.SubagentSchemas,matrix/neo/internal/tools.PersonalizationSchema,matrix/neo/internal/tools.buildProjectSchema,matrix/neo/internal/tools.constructRenderSchema,matrix/neo/internal/tools.coreExecuteSchema,matrix/neo/internal/tools.desktopA11ySchema,matrix/neo/internal/tools.desktopLookSchema,matrix/neo/internal/tools.memoryMutateSchema,matrix/neo/internal/tools.memoryRecallSchema,matrix/neo/internal/tools.nativeSchemas,matrix/neo/internal/tools.previewSchema,matrix/neo/internal/tools.spawnSubagentsSchema,matrix/neo/internal/tools.todoSchema,matrix/neo/internal/tools.writeSkillSchema
-  ^references=matrix/neo/internal/agent.readOverflowSchema,matrix/neo/internal/tools.Manager.BriefSchemas,matrix/neo/internal/tools.Manager.Schemas,matrix/neo/internal/tools.Manager.SubagentSchemas,matrix/neo/internal/tools.PersonalizationSchema,matrix/neo/internal/tools.buildProjectSchema,matrix/neo/internal/tools.constructRenderSchema,matrix/neo/internal/tools.coreExecuteSchema,matrix/neo/internal/tools.desktopA11ySchema,matrix/neo/internal/tools.desktopLookSchema,matrix/neo/internal/tools.memoryMutateSchema,matrix/neo/internal/tools.memoryRecallSchema,matrix/neo/internal/tools.nativeSchemas,matrix/neo/internal/tools.previewSchema,matrix/neo/internal/tools.spawnSubagentsSchema,matrix/neo/internal/tools.todoSchema,matrix/neo/internal/tools.writeSkillSchema
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.RoleAssistant kind=const
@@ -502,7 +447,6 @@ NODE id=matrix/neo/internal/llm.RoleAssistant kind=const
   sig=untyped string
   doc=Role values for a conversation message.
 EDGES
-  ^references=matrix/neo/internal/agent.Agent.SetRecentConversationHistory,matrix/neo/internal/agent.Agent.cassandraEdit,matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/agent.Agent.forcedRevisionStep,matrix/neo/internal/agent.Agent.normalizeProviderResult,matrix/neo/internal/agent.Agent.repairWorkingProtocol,matrix/neo/internal/agent.lastAssistantText,matrix/neo/internal/agent.renderTranscript,matrix/neo/internal/agent.repairProtocolTail,matrix/neo/internal/agent.resurrectionProtocolHistory,matrix/neo/internal/agent.workingCoversCortexTranscript,matrix/neo/internal/llm.AssistantMessage,matrix/neo/internal/llm.aggregateStreamReader,matrix/neo/internal/llm.fromWireRespMessage,matrix/neo/internal/llm.mimoReasoningContent,matrix/neo/internal/o1.ValidateConversationTruth
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.RoleSystem kind=const
@@ -510,7 +454,6 @@ NODE id=matrix/neo/internal/llm.RoleSystem kind=const
   sig=untyped string
   doc=Role values for a conversation message.
 EDGES
-  ^references=matrix/neo/internal/llm.ContextMessage,matrix/neo/internal/llm.GuidanceMessage,matrix/neo/internal/llm.SystemMessage
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.RoleTool kind=const
@@ -518,7 +461,6 @@ NODE id=matrix/neo/internal/llm.RoleTool kind=const
   sig=untyped string
   doc=Role values for a conversation message.
 EDGES
-  ^references=matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/agent.Agent.lastToolSummary,matrix/neo/internal/agent.Agent.repairWorkingProtocol,matrix/neo/internal/agent.renderTranscript,matrix/neo/internal/agent.repairProtocolTail,matrix/neo/internal/agent.workingCoversCortexTranscript,matrix/neo/internal/llm.ToolResult,matrix/neo/internal/o1.ValidateConversationTruth
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.RoleUser kind=const
@@ -526,7 +468,6 @@ NODE id=matrix/neo/internal/llm.RoleUser kind=const
   sig=untyped string
   doc=Role values for a conversation message.
 EDGES
-  ^references=matrix/neo/internal/agent.Agent.SetRecentConversationHistory,matrix/neo/internal/agent.Agent.checkpointEvents,matrix/neo/internal/agent.classifyEpisodicMessage,matrix/neo/internal/agent.protectedProtocolTail,matrix/neo/internal/agent.renderTranscript,matrix/neo/internal/agent.resurrectionProtocolHistory,matrix/neo/internal/agent.safeTail,matrix/neo/internal/agent.splitForCompaction,matrix/neo/internal/agent.workingCoversCortexTranscript,matrix/neo/internal/llm.UserAudioMessage,matrix/neo/internal/llm.UserImageMessage,matrix/neo/internal/llm.UserMessage,matrix/neo/internal/llm.toWireMessages,matrix/neo/internal/o1.ValidateConversationTruth
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.StripGuidance kind=func
@@ -534,9 +475,6 @@ NODE id=matrix/neo/internal/llm.StripGuidance kind=func
   sig=func StripGuidance(s string) string
   doc=StripGuidance removes any guidance-channel envelope (and stray lone tags) from\na string before it reaches a user-facing surface (reasoning/thinking deltas,\nthe assistant transcript). It is a defense-in-depth backstop for req.1.3: the\nmodel is instructed never to echo <system_guidance>, but if it does, internal\nsteering must not stream to the user. Complete <system_guidance>…</system_guidance>\nblocks are dropped; an unterminated open tag drops everything from the tag\nonward; bare tags are removed. The surrounding (legitimate) text is otherwise\npreserved verbatim — no trimming — so streamed fragments keep their spacing.
 EDGES
-  references=matrix/neo/internal/llm.GuidanceClose,matrix/neo/internal/llm.GuidanceOpen,matrix/neo/internal/llm.i,matrix/neo/internal/llm.j,matrix/neo/internal/llm.rest,matrix/neo/internal/llm.s
-  ^calls=matrix/neo/internal/server.automatrixReporter.Say,matrix/neo/internal/server.session.finishRun,matrix/neo/internal/server.sseReporter.Delta,matrix/neo/internal/server.sseReporter.Progress,matrix/neo/internal/server.sseReporter.Say,matrix/neo/internal/server.sseReporter.SayHonestPartial,matrix/neo/internal/server.sseReporter.Think
-  ^references=matrix/neo/internal/server.automatrixReporter.Say,matrix/neo/internal/server.session.finishRun,matrix/neo/internal/server.sseReporter.Delta,matrix/neo/internal/server.sseReporter.Progress,matrix/neo/internal/server.sseReporter.Say,matrix/neo/internal/server.sseReporter.SayHonestPartial,matrix/neo/internal/server.sseReporter.Think
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.SystemMessage kind=func
@@ -544,9 +482,6 @@ NODE id=matrix/neo/internal/llm.SystemMessage kind=func
   sig=func SystemMessage(content string) Message
   doc=SystemMessage builds a system-role message.
 EDGES
-  references=matrix/neo/internal/llm.Message,matrix/neo/internal/llm.RoleSystem,matrix/neo/internal/llm.content
-  ^calls=matrix/neo/internal/agent.Agent.compareExpectationModel,matrix/neo/internal/agent.Agent.extractEpisodicAt,matrix/neo/internal/agent.Agent.extractPremisesModel,matrix/neo/internal/agent.assembleWindowContextSidecar,matrix/neo/internal/agent.assembleWindowUserTail,matrix/neo/internal/server.Engine.desktopLook,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.process
-  ^references=matrix/neo/internal/agent.Agent.compareExpectationModel,matrix/neo/internal/agent.Agent.extractEpisodicAt,matrix/neo/internal/agent.Agent.extractPremisesModel,matrix/neo/internal/agent.assembleWindowContextSidecar,matrix/neo/internal/agent.assembleWindowUserTail,matrix/neo/internal/server.Engine.desktopLook,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.TokenDetails kind=type
@@ -555,7 +490,6 @@ NODE id=matrix/neo/internal/llm.TokenDetails kind=type
   doc=TokenDetails carries provider accounting for non-text prompt modalities.
 EDGES
   contains=matrix/neo/internal/llm.TokenDetails#AudioTokens
-  ^references=matrix/neo/internal/llm.Usage
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.TokenDetails#AudioTokens kind=field
@@ -570,8 +504,6 @@ NODE id=matrix/neo/internal/llm.Tool kind=type
   doc=Tool is a function schema advertised to the model.
 EDGES
   contains=matrix/neo/internal/llm.Tool#Function,matrix/neo/internal/llm.Tool#Type
-  references=matrix/neo/internal/llm.FunctionDef
-  ^references=matrix/neo/internal/agent.Agent,matrix/neo/internal/agent.Agent.AdvertisedTools,matrix/neo/internal/agent.Agent.installPostureSchemas,matrix/neo/internal/agent.Agent.providerRequest,matrix/neo/internal/agent.New,matrix/neo/internal/agent.estimateToolBytes,matrix/neo/internal/agent.estimateToolTokens,matrix/neo/internal/agent.injectExpectParam,matrix/neo/internal/agent.readOverflowSchema,matrix/neo/internal/llm.ChatRequest,matrix/neo/internal/llm.NewFunctionTool,matrix/neo/internal/llm.chatRequestWire,matrix/neo/internal/o1.CompileAllCapabilities,matrix/neo/internal/o1.CompileRuntimeCapabilities,matrix/neo/internal/o1.RuntimeCapabilities,matrix/neo/internal/o1.manifestFromTool,matrix/neo/internal/o1.validateToolSchema,matrix/neo/internal/tools.AssertBriefSurface,matrix/neo/internal/tools.AssertNoValueTransferTools,matrix/neo/internal/tools.Manager.AutomatrixSchemas,matrix/neo/internal/tools.Manager.BriefSchemas,matrix/neo/internal/tools.Manager.Schemas,matrix/neo/internal/tools.Manager.SubagentSchemas,matrix/neo/internal/tools.PersonalizationSchema,matrix/neo/internal/tools.buildProjectSchema,matrix/neo/internal/tools.constructRenderSchema,matrix/neo/internal/tools.coreExecuteSchema,matrix/neo/internal/tools.desktopA11ySchema,matrix/neo/internal/tools.desktopLookSchema,matrix/neo/internal/tools.memoryMutateSchema,matrix/neo/internal/tools.memoryRecallSchema,matrix/neo/internal/tools.nativeSchemas,matrix/neo/internal/tools.previewSchema,matrix/neo/internal/tools.spawnSubagentsSchema,matrix/neo/internal/tools.todoSchema,matrix/neo/internal/tools.writeSkillSchema
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.Tool#Function kind=field
@@ -592,8 +524,6 @@ NODE id=matrix/neo/internal/llm.ToolCall kind=type
   doc=ToolCall is a single function invocation requested by the model.
 EDGES
   contains=matrix/neo/internal/llm.ToolCall#Function,matrix/neo/internal/llm.ToolCall#ID,matrix/neo/internal/llm.ToolCall#Type,matrix/neo/internal/llm.ToolCall.ParseArgs
-  references=matrix/neo/internal/llm.FunctionCall
-  ^references=matrix/neo/internal/agent.Agent.ProtocolHistory,matrix/neo/internal/agent.Agent.buildCassandraSignals,matrix/neo/internal/agent.Agent.checkBeforeAct,matrix/neo/internal/agent.Agent.governFailsafes,matrix/neo/internal/agent.Agent.journalCallID,matrix/neo/internal/agent.Agent.journalToolCallPayload,matrix/neo/internal/agent.Agent.journalToolCalls,matrix/neo/internal/agent.Agent.journalToolResult,matrix/neo/internal/agent.Agent.journalUncertainEffect,matrix/neo/internal/agent.Agent.malformedArgumentsObservation,matrix/neo/internal/agent.Agent.noteBatch,matrix/neo/internal/agent.Agent.readStepSignals,matrix/neo/internal/agent.Agent.repairWorkingProtocol,matrix/neo/internal/agent.Agent.runToolCalls,matrix/neo/internal/agent.Agent.runToolCallsSerial,matrix/neo/internal/agent.Agent.semanticRepeat,matrix/neo/internal/agent.Agent.snapshotLoop,matrix/neo/internal/agent.batchKind,matrix/neo/internal/agent.batchSignature,matrix/neo/internal/agent.callsRequireExecution,matrix/neo/internal/agent.casOpLabel,matrix/neo/internal/agent.cassandraSignals,matrix/neo/internal/agent.dedupStateTouching,matrix/neo/internal/agent.deterministicMilestoneClass,matrix/neo/internal/agent.lastToolName,matrix/neo/internal/agent.narrateBatch,matrix/neo/internal/agent.narratePhrase,matrix/neo/internal/agent.opProfile,matrix/neo/internal/agent.protocolMessage,matrix/neo/internal/agent.stateTouchDedupKey,matrix/neo/internal/agent.stepSignals,matrix/neo/internal/agent.turn,matrix/neo/internal/llm.Message,matrix/neo/internal/llm.ToolCall.ParseArgs,matrix/neo/internal/llm.aggregateStreamReader,matrix/neo/internal/llm.extractTokenToolCalls,matrix/neo/internal/llm.extractXMLToolCalls,matrix/neo/internal/llm.parseMimoToolCalls,matrix/neo/internal/llm.parseTokenSection,matrix/neo/internal/llm.sanitizeToolCalls,matrix/neo/internal/llm.wireMessage,matrix/neo/internal/llm.wireRespMessage
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.ToolCall#Function kind=field
@@ -619,10 +549,7 @@ NODE id=matrix/neo/internal/llm.ToolCall.ParseArgs kind=method
   sig=func (tc ToolCall) ParseArgs() (map[string]interface{}, error)
   doc=ParseArgs decodes the tool call's JSON-encoded arguments. Empty/blank\narguments decode to an empty map (a no-arg call).
 EDGES
-  references=matrix/neo/internal/llm.ToolCall,matrix/neo/internal/llm.args,matrix/neo/internal/llm.err,matrix/neo/internal/llm.s,matrix/neo/internal/llm.tc
   ^contains=matrix/neo/internal/llm.ToolCall
-  ^calls=matrix/neo/internal/agent.Agent.runToolCalls,matrix/neo/internal/agent.Agent.runToolCallsSerial,matrix/neo/internal/agent.deterministicMilestoneClass,matrix/neo/internal/agent.narratePhrase,matrix/neo/internal/agent.opProfile,matrix/neo/internal/agent.stateTouchDedupKey
-  ^references=matrix/neo/internal/agent.Agent.runToolCalls,matrix/neo/internal/agent.Agent.runToolCallsSerial,matrix/neo/internal/agent.deterministicMilestoneClass,matrix/neo/internal/agent.narratePhrase,matrix/neo/internal/agent.opProfile,matrix/neo/internal/agent.stateTouchDedupKey
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.ToolCallDelta kind=type
@@ -631,7 +558,6 @@ NODE id=matrix/neo/internal/llm.ToolCallDelta kind=type
   doc=ToolCallDelta is one incremental fragment of an in-flight tool call.
 EDGES
   contains=matrix/neo/internal/llm.ToolCallDelta#Args,matrix/neo/internal/llm.ToolCallDelta#ID,matrix/neo/internal/llm.ToolCallDelta#Index,matrix/neo/internal/llm.ToolCallDelta#Name
-  ^references=matrix/neo/internal/agent.liveTyper.feed,matrix/neo/internal/llm.Delta,matrix/neo/internal/llm.aggregateStreamReader
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.ToolCallDelta#Args kind=field
@@ -666,9 +592,6 @@ NODE id=matrix/neo/internal/llm.ToolResult kind=func
   sig=func ToolResult(callID, name, content string) Message
   doc=ToolResult builds a tool-role message answering a specific tool call.
 EDGES
-  references=matrix/neo/internal/llm.Message,matrix/neo/internal/llm.RoleTool,matrix/neo/internal/llm.callID,matrix/neo/internal/llm.content,matrix/neo/internal/llm.name
-  ^calls=matrix/neo/internal/agent.Agent.checkBeforeAct,matrix/neo/internal/agent.Agent.journalToolResult,matrix/neo/internal/agent.Agent.runToolCalls,matrix/neo/internal/agent.Agent.runToolCallsSerial
-  ^references=matrix/neo/internal/agent.Agent.checkBeforeAct,matrix/neo/internal/agent.Agent.journalToolResult,matrix/neo/internal/agent.Agent.repairWorkingProtocol,matrix/neo/internal/agent.Agent.runToolCalls,matrix/neo/internal/agent.Agent.runToolCallsSerial
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.Usage kind=type
@@ -677,8 +600,6 @@ NODE id=matrix/neo/internal/llm.Usage kind=type
   doc=Usage is the provider's token accounting for a call.
 EDGES
   contains=matrix/neo/internal/llm.Usage#CompletionTokens,matrix/neo/internal/llm.Usage#PromptTokens,matrix/neo/internal/llm.Usage#PromptTokensDetails,matrix/neo/internal/llm.Usage#TotalTokens
-  references=matrix/neo/internal/llm.TokenDetails
-  ^references=matrix/neo/internal/llm.ChatResult,matrix/neo/internal/llm.aggregateStream,matrix/neo/internal/llm.aggregateStreamReader,matrix/neo/internal/llm.chatResponseWire,matrix/neo/internal/llm.chatStreamChunk
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.Usage#CompletionTokens kind=field
@@ -710,9 +631,6 @@ NODE id=matrix/neo/internal/llm.UserAudioMessage kind=func
   sig=func UserAudioMessage(content, dataURL string) Message
   doc=UserAudioMessage builds one user turn whose on-wire content contains the\nvisible transcript/marker and one MiMo input_audio part. AudioData is\nprocess-only: durable transcript and cortex records store Content plus the\nsealed media reference, never raw audio bytes.
 EDGES
-  references=matrix/neo/internal/llm.Message,matrix/neo/internal/llm.RoleUser,matrix/neo/internal/llm.content,matrix/neo/internal/llm.dataURL
-  ^calls=matrix/neo/internal/agent.Agent.prepareTurn
-  ^references=matrix/neo/internal/agent.Agent.prepareTurn
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.UserImageMessage kind=func
@@ -720,9 +638,6 @@ NODE id=matrix/neo/internal/llm.UserImageMessage kind=func
   sig=func UserImageMessage(content, dataURL string) Message
   doc=UserImageMessage builds one user turn whose on-wire content contains the\ninstruction text and one MiMo image_url part. ImageData is a data: URI and is\nprocess-only: it is the stateless grounding input for desktop_look, never\nstored in the durable transcript.
 EDGES
-  references=matrix/neo/internal/llm.Message,matrix/neo/internal/llm.RoleUser,matrix/neo/internal/llm.content,matrix/neo/internal/llm.dataURL
-  ^calls=matrix/neo/internal/server.Engine.desktopLook
-  ^references=matrix/neo/internal/server.Engine.desktopLook
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.UserMessage kind=func
@@ -730,9 +645,6 @@ NODE id=matrix/neo/internal/llm.UserMessage kind=func
   sig=func UserMessage(content string) Message
   doc=UserMessage builds a user-role message.
 EDGES
-  references=matrix/neo/internal/llm.Message,matrix/neo/internal/llm.RoleUser,matrix/neo/internal/llm.content
-  ^calls=matrix/neo/internal/agent.Agent.compareExpectationModel,matrix/neo/internal/agent.Agent.drainInbox,matrix/neo/internal/agent.Agent.extractEpisodicAt,matrix/neo/internal/agent.Agent.extractPremisesModel,matrix/neo/internal/agent.Agent.generate,matrix/neo/internal/agent.Agent.prepareTurn,matrix/neo/internal/agent.assembleWindowUserTail,matrix/neo/internal/server.seedMessages,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.process
-  ^references=matrix/neo/internal/agent.Agent.compareExpectationModel,matrix/neo/internal/agent.Agent.drainInbox,matrix/neo/internal/agent.Agent.extractEpisodicAt,matrix/neo/internal/agent.Agent.extractPremisesModel,matrix/neo/internal/agent.Agent.generate,matrix/neo/internal/agent.Agent.prepareTurn,matrix/neo/internal/agent.assembleWindowUserTail,matrix/neo/internal/server.seedMessages,matrix/neo/internal/writeback.Consolidator.classifyRelation,matrix/neo/internal/writeback.Consolidator.process
   ^defines=matrix/neo/internal/llm/message.go
 
 NODE id=matrix/neo/internal/llm.aggregateStream kind=func
@@ -740,8 +652,6 @@ NODE id=matrix/neo/internal/llm.aggregateStream kind=func
   sig=func aggregateStream(body []byte) (wireRespMessage, string, *Usage, error)
   doc=aggregateStream reconstructs a single assistant turn from a fully-buffered\nOpenAI-style SSE chat-completions stream. It is a thin wrapper over\naggregateStreamReader with no incremental delivery — kept for callers/tests\nthat hold the whole body in memory.
 EDGES
-  calls=matrix/neo/internal/llm.aggregateStreamReader
-  references=matrix/neo/internal/llm.Usage,matrix/neo/internal/llm.aggregateStreamReader,matrix/neo/internal/llm.body,matrix/neo/internal/llm.wireRespMessage
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.aggregateStreamReader kind=func
@@ -749,9 +659,6 @@ NODE id=matrix/neo/internal/llm.aggregateStreamReader kind=func
   sig=func aggregateStreamReader(r io.Reader, onDelta func(Delta)) (wireRespMessage, string, *Usage, error)
   doc=aggregateStreamReader reconstructs a single assistant turn from an\nOpenAI-style SSE chat-completions stream read incrementally off r (the\nresponse shape Together requires for some models; Fireworks + the gateway\nemit the same shape). It concatenates content + reasoning_content deltas,\nmerges tool_call argument fragments by index, and captures the terminal\nfinish_reason + usage.\n\nWhen onDelta is non-nil it ALSO delivers coalesced, pre-cleaned incremental\nfragments as the bytes arrive — true token-by-token streaming. Visible\ncontent fragments are run through the same normalization the folded turn\ngets (leading <think> blocks and the Kimi tool-call token grammar are\nwithheld) plus a partial-marker holdback, so a consumer can render them\nverbatim without leaking internal monologue or control tokens. The folded\nmessage is still handed to fromWireRespMessage for the authoritative final\ncleaning.
 EDGES
-  references=matrix/neo/internal/llm.Delta,matrix/neo/internal/llm.FunctionCall,matrix/neo/internal/llm.RoleAssistant,matrix/neo/internal/llm.ToolCall,matrix/neo/internal/llm.ToolCallDelta,matrix/neo/internal/llm.Usage,matrix/neo/internal/llm.ac,matrix/neo/internal/llm.aggCall,matrix/neo/internal/llm.cFrag,matrix/neo/internal/llm.calls,matrix/neo/internal/llm.cand,matrix/neo/internal/llm.ch,matrix/neo/internal/llm.chatStreamChunk,matrix/neo/internal/llm.chunk,matrix/neo/internal/llm.content,matrix/neo/internal/llm.contentEmitted,matrix/neo/internal/llm.deltaFlushChars,matrix/neo/internal/llm.err,matrix/neo/internal/llm.finish,matrix/neo/internal/llm.flush,matrix/neo/internal/llm.force,matrix/neo/internal/llm.holdbackPartial,matrix/neo/internal/llm.id,matrix/neo/internal/llm.idx,matrix/neo/internal/llm.line,matrix/neo/internal/llm.msg,matrix/neo/internal/llm.onDelta,matrix/neo/internal/llm.order,matrix/neo/internal/llm.payload,matrix/neo/internal/llm.pending,matrix/neo/internal/llm.previewVisible,matrix/neo/internal/llm.r,matrix/neo/internal/llm.rFrag,matrix/neo/internal/llm.raw,matrix/neo/internal/llm.reasoning,matrix/neo/internal/llm.reasoningEmitted,matrix/neo/internal/llm.rs,matrix/neo/internal/llm.sawData,matrix/neo/internal/llm.sc,matrix/neo/internal/llm.tc,matrix/neo/internal/llm.toolDeltaFlushChars,matrix/neo/internal/llm.typ,matrix/neo/internal/llm.usage,matrix/neo/internal/llm.vis,matrix/neo/internal/llm.wireRespMessage
-  ^calls=matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.aggregateStream
-  ^references=matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.aggregateStream
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.chatErrorBody kind=type
@@ -759,7 +666,6 @@ NODE id=matrix/neo/internal/llm.chatErrorBody kind=type
   sig=type chatErrorBody struct {\n	Message	string	`json:"message"`\n	Type	string	`json:"type"`\n	Code	string	`json:"code"`\n}
 EDGES
   contains=matrix/neo/internal/llm.chatErrorBody#Code,matrix/neo/internal/llm.chatErrorBody#Message,matrix/neo/internal/llm.chatErrorBody#Type
-  ^references=matrix/neo/internal/llm.chatResponseWire,matrix/neo/internal/llm.chatStreamChunk
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.chatErrorBody#Code kind=field
@@ -785,8 +691,6 @@ NODE id=matrix/neo/internal/llm.chatRequestWire kind=type
   sig=type chatRequestWire struct {\n	Model		string		`json:"model"`\n	Messages	[]wireMessage	`json:"messages"`\n	Temperature	float64		`json:"temperature"`\n	MaxTokens	int		`json:"max_tokens,omitempty"`\n	// MaxCompletionTokens is xAI/grok's replacement for the deprecated\n	// max_tokens; it bounds only visible output (not reasoning/tool tokens).\n	MaxCompletionTokens	int		`json:"max_completion_tokens,omitempty"`\n	Seed			*int64		`json:"seed,omitempty"`\n	Tools			[]Tool		`json:"tools,omitempty"`\n	ToolChoice		interface{}	`json:"tool_choice,omitempty"`\n	Stream			bool		`json:"stream,omitempty"`\n	StreamOptions		*streamOptions	`json:"stream_options,omitempty"`\n	ChatTemplateArgs	map[string]any	`json:"chat_template_args,omitempty"`\n	// ReasoningEffort is xAI's reasoning-depth control ("none"|"low"|"medium"|\n	// "high"); set ONLY for grok-4.3 (omitempty keeps every other model's wire\n	// shape unchanged).\n	ReasoningEffort	string		`json:"reasoning_effort,omitempty"`\n	Thinking	*thinkingConfig	`json:"thinking,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/llm.chatRequestWire#ChatTemplateArgs,matrix/neo/internal/llm.chatRequestWire#MaxCompletionTokens,matrix/neo/internal/llm.chatRequestWire#MaxTokens,matrix/neo/internal/llm.chatRequestWire#Messages,matrix/neo/internal/llm.chatRequestWire#Model,matrix/neo/internal/llm.chatRequestWire#ReasoningEffort,matrix/neo/internal/llm.chatRequestWire#Seed,matrix/neo/internal/llm.chatRequestWire#Stream,matrix/neo/internal/llm.chatRequestWire#StreamOptions,matrix/neo/internal/llm.chatRequestWire#Temperature,matrix/neo/internal/llm.chatRequestWire#Thinking,matrix/neo/internal/llm.chatRequestWire#ToolChoice,matrix/neo/internal/llm.chatRequestWire#Tools
-  references=matrix/neo/internal/llm.Tool,matrix/neo/internal/llm.streamOptions,matrix/neo/internal/llm.thinkingConfig,matrix/neo/internal/llm.wireMessage
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.chatRequestWire#ChatTemplateArgs kind=field
@@ -874,8 +778,6 @@ NODE id=matrix/neo/internal/llm.chatResponseWire kind=type
   sig=type chatResponseWire struct {\n	Choices	[]struct {\n		Index		int		`json:"index"`\n		Message		wireRespMessage	`json:"message"`\n		FinishReason	string		`json:"finish_reason"`\n	}	`json:"choices"`\n	Usage	*Usage		`json:"usage,omitempty"`\n	Error	*chatErrorBody	`json:"error,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/llm.chatResponseWire#Choices,matrix/neo/internal/llm.chatResponseWire#Error,matrix/neo/internal/llm.chatResponseWire#Usage
-  references=matrix/neo/internal/llm.Usage,matrix/neo/internal/llm.chatErrorBody,matrix/neo/internal/llm.wireRespMessage
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.chatResponseWire#Choices kind=field
@@ -902,8 +804,6 @@ NODE id=matrix/neo/internal/llm.chatStreamChunk kind=type
   doc=chatStreamChunk is one SSE `data:` frame of a streaming chat-completion. The\ndelta carries incremental content/reasoning and tool_call fragments (id +\nname arrive once, arguments stream across frames keyed by index).
 EDGES
   contains=matrix/neo/internal/llm.chatStreamChunk#Choices,matrix/neo/internal/llm.chatStreamChunk#Error,matrix/neo/internal/llm.chatStreamChunk#Usage
-  references=matrix/neo/internal/llm.Usage,matrix/neo/internal/llm.chatErrorBody,matrix/neo/internal/llm.streamDelta
-  ^references=matrix/neo/internal/llm.aggregateStreamReader
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.chatStreamChunk#Choices kind=field
@@ -928,9 +828,6 @@ NODE id=matrix/neo/internal/llm.defaultChatEndpoint kind=func
   digest=b3:545c1ad77dc64764fc0500632a926877dafcb9f2140d72304d0d0d049d6b0d8e file=neo/internal/llm/client.go range=597:613 lang=go exported=false byte_range=22134:22669
   sig=func defaultChatEndpoint(p mcllm.Provider) string
 EDGES
-  references=matrix/mcl/llm.OpencodeChatEndpoint,matrix/mcl/llm.Provider,matrix/mcl/llm.ProviderBaseten,matrix/mcl/llm.ProviderFireworks,matrix/mcl/llm.ProviderOpencode,matrix/mcl/llm.ProviderTogether,matrix/mcl/llm.ProviderXai,matrix/mcl/llm.ProviderXiaomi,matrix/mcl/llm.XaiChatEndpoint,matrix/mcl/llm.XiaomiChatEndpoint,matrix/neo/internal/llm.p
-  ^calls=matrix/neo/internal/llm.New
-  ^references=matrix/neo/internal/llm.New
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.deltaFlushChars kind=const
@@ -938,7 +835,6 @@ NODE id=matrix/neo/internal/llm.deltaFlushChars kind=const
   sig=untyped int
   doc=deltaFlushChars is the coalescing threshold for live streaming: incremental\nfragments are buffered until at least this many new visible/reasoning chars\nhave accumulated, then flushed via onDelta. Small enough for a smooth\n"typing" cadence, large enough to keep the SSE event volume sane (one event\nper ~handful of tokens rather than one per token).
 EDGES
-  ^references=matrix/neo/internal/llm.aggregateStreamReader
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.enableThinkingArgs kind=func
@@ -946,18 +842,12 @@ NODE id=matrix/neo/internal/llm.enableThinkingArgs kind=func
   sig=func enableThinkingArgs(model string) map[string]any
   doc=enableThinkingArgs returns the chat_template_args that turn reasoning ON for\nBaseten-served models where it is OPT-IN: Kimi (moonshotai/*) emits its\nchain-of-thought as visible `content` unless enable_thinking makes the\nserver split it into the separate reasoning_content channel. Returns nil for\nmodels that reason by default or use a different provider param (never sent).
 EDGES
-  references=matrix/neo/internal/llm.model
-  ^calls=matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.envKey kind=func
   digest=b3:c13f22f220c521dfff90425fb30ed9b711876d9532a00bf4cb645e3786f71291 file=neo/internal/llm/client.go range=615:638 lang=go exported=false byte_range=22671:23263
   sig=func envKey(p mcllm.Provider) (string, error)
 EDGES
-  references=matrix/mcl/llm.Provider,matrix/mcl/llm.ProviderBaseten,matrix/mcl/llm.ProviderFireworks,matrix/mcl/llm.ProviderOpencode,matrix/mcl/llm.ProviderTogether,matrix/mcl/llm.ProviderXai,matrix/mcl/llm.ProviderXiaomi,matrix/neo/internal/llm.name,matrix/neo/internal/llm.p,matrix/neo/internal/llm.v
-  ^calls=matrix/neo/internal/llm.New
-  ^references=matrix/neo/internal/llm.New
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.extractTokenToolCalls kind=func
@@ -965,10 +855,6 @@ NODE id=matrix/neo/internal/llm.extractTokenToolCalls kind=func
   sig=func extractTokenToolCalls(content string) (string, []ToolCall)
   doc=extractTokenToolCalls pulls any token-grammar tool calls out of content and\nreturns the content with those spans removed plus the structured calls. It\ntolerates a missing section wrapper and an unterminated section (truncated\ngeneration): everything from the first marker onward is consumed so nothing\nleaks. Returns (content, nil) when there is nothing to extract.
 EDGES
-  calls=matrix/neo/internal/llm.parseTokenSection
-  references=matrix/neo/internal/llm.ToolCall,matrix/neo/internal/llm.after,matrix/neo/internal/llm.b,matrix/neo/internal/llm.calls,matrix/neo/internal/llm.content,matrix/neo/internal/llm.end,matrix/neo/internal/llm.hasCall,matrix/neo/internal/llm.hasSection,matrix/neo/internal/llm.idx,matrix/neo/internal/llm.kimiCallBegin,matrix/neo/internal/llm.kimiSectionBegin,matrix/neo/internal/llm.kimiSectionEnd,matrix/neo/internal/llm.parseTokenSection,matrix/neo/internal/llm.rest,matrix/neo/internal/llm.start
-  ^calls=matrix/neo/internal/llm.fromWireRespMessage,matrix/neo/internal/llm.previewVisible
-  ^references=matrix/neo/internal/llm.fromWireRespMessage,matrix/neo/internal/llm.previewVisible
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.extractXMLToolCalls kind=func
@@ -976,20 +862,12 @@ NODE id=matrix/neo/internal/llm.extractXMLToolCalls kind=func
   sig=func extractXMLToolCalls(content string) (string, []ToolCall)
   doc=extractXMLToolCalls pulls any `<function_call name="NAME">ARGS</function_call>`\nspans out of content and returns the content with those spans removed plus the\nstructured calls. ARGS is normalized to a JSON object (the first {...} span, or\n"{}" when absent/unparseable) so downstream dispatch always receives valid\narguments. It tolerates a missing/truncated close tag (everything from the\nopen tag onward is consumed so nothing leaks). Returns (content, nil) when\nthere is nothing to extract.
 EDGES
-  calls=matrix/neo/internal/llm.jsonArgs,matrix/neo/internal/llm.xmlAttr
-  references=matrix/neo/internal/llm.FunctionCall,matrix/neo/internal/llm.ToolCall,matrix/neo/internal/llm.after,matrix/neo/internal/llm.args,matrix/neo/internal/llm.b,matrix/neo/internal/llm.body,matrix/neo/internal/llm.calls,matrix/neo/internal/llm.content,matrix/neo/internal/llm.end,matrix/neo/internal/llm.gt,matrix/neo/internal/llm.i,matrix/neo/internal/llm.jsonArgs,matrix/neo/internal/llm.name,matrix/neo/internal/llm.rest,matrix/neo/internal/llm.truncated,matrix/neo/internal/llm.xmlAttr,matrix/neo/internal/llm.xmlToolCallClose,matrix/neo/internal/llm.xmlToolCallOpen
-  ^calls=matrix/neo/internal/llm.fromWireRespMessage
-  ^references=matrix/neo/internal/llm.fromWireRespMessage
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.fromWireRespMessage kind=func
   digest=b3:d5db16a04e1095efb63d60a943e889315dbbfafd1d37eb7aec6463556594bb3a file=neo/internal/llm/client.go range=877:935 lang=go exported=false byte_range=32494:34993
   sig=func fromWireRespMessage(m wireRespMessage) Message
 EDGES
-  calls=matrix/neo/internal/llm.extractTokenToolCalls,matrix/neo/internal/llm.extractXMLToolCalls,matrix/neo/internal/llm.parseMimoToolCalls,matrix/neo/internal/llm.splitInlineThink
-  references=matrix/neo/internal/llm.Message,matrix/neo/internal/llm.RoleAssistant,matrix/neo/internal/llm.content,matrix/neo/internal/llm.extractTokenToolCalls,matrix/neo/internal/llm.extractXMLToolCalls,matrix/neo/internal/llm.extracted,matrix/neo/internal/llm.inlineReasoning,matrix/neo/internal/llm.m,matrix/neo/internal/llm.parseMimoToolCalls,matrix/neo/internal/llm.reasoning,matrix/neo/internal/llm.role,matrix/neo/internal/llm.splitInlineThink,matrix/neo/internal/llm.stripped,matrix/neo/internal/llm.toolCalls,matrix/neo/internal/llm.wireRespMessage
-  ^calls=matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.holdbackPartial kind=func
@@ -997,8 +875,6 @@ NODE id=matrix/neo/internal/llm.holdbackPartial kind=func
   sig=func holdbackPartial(s string) string
   doc=holdbackPartial withholds a trailing fragment that could be the start of a\ncontrol marker (<think>, <thinking>, or the Kimi tool-call section/call\ntokens) so a half-arrived marker is never streamed as visible text. A normal\n'<' in prose (e.g. "a < b") is left intact — only a tail that is a genuine\nprefix of a known marker is held back, to be resolved once more bytes arrive.
 EDGES
-  references=matrix/neo/internal/llm.i,matrix/neo/internal/llm.kimiCallBegin,matrix/neo/internal/llm.kimiSectionBegin,matrix/neo/internal/llm.m,matrix/neo/internal/llm.s,matrix/neo/internal/llm.tail
-  ^references=matrix/neo/internal/llm.aggregateStreamReader
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.idleTimeoutReader kind=type
@@ -1007,7 +883,6 @@ NODE id=matrix/neo/internal/llm.idleTimeoutReader kind=type
   doc=idleTimeoutReader wraps a streaming response body and fires onIdle if a\nsingle Read makes no progress within idle. It is the stream-aware\nreplacement for a blunt http.Client.Timeout: a long but healthy generation\nstreams tokens continuously and never trips, while a provider that stalls\nmid-stream (or never produces a first token) is cancelled promptly. onIdle is\nexpected to cancel the request context, which unblocks the in-flight Read.
 EDGES
   contains=matrix/neo/internal/llm.idleTimeoutReader#idle,matrix/neo/internal/llm.idleTimeoutReader#r,matrix/neo/internal/llm.idleTimeoutReader#timer,matrix/neo/internal/llm.idleTimeoutReader.Read,matrix/neo/internal/llm.idleTimeoutReader.stop
-  ^references=matrix/neo/internal/llm.idleTimeoutReader.Read,matrix/neo/internal/llm.idleTimeoutReader.stop,matrix/neo/internal/llm.newIdleTimeoutReader
   ^defines=matrix/neo/internal/llm/stream_idle.go
 
 NODE id=matrix/neo/internal/llm.idleTimeoutReader#idle kind=field
@@ -1033,7 +908,6 @@ NODE id=matrix/neo/internal/llm.idleTimeoutReader.Read kind=method
   sig=func (ir *idleTimeoutReader) Read(p []byte) (int, error)
   doc=Read arms the watchdog for the duration of the underlying Read and disarms it\nas soon as the Read returns (data or error), so the deadline governs silence\non the wire, never the caller's processing time between reads.
 EDGES
-  references=matrix/neo/internal/llm.err,matrix/neo/internal/llm.idleTimeoutReader,matrix/neo/internal/llm.ir,matrix/neo/internal/llm.n,matrix/neo/internal/llm.p
   ^contains=matrix/neo/internal/llm.idleTimeoutReader
   ^defines=matrix/neo/internal/llm/stream_idle.go
 
@@ -1042,10 +916,7 @@ NODE id=matrix/neo/internal/llm.idleTimeoutReader.stop kind=method
   sig=func (ir *idleTimeoutReader) stop()
   doc=stop disarms the watchdog; call it once the stream is fully consumed.
 EDGES
-  references=matrix/neo/internal/llm.idleTimeoutReader,matrix/neo/internal/llm.ir
   ^contains=matrix/neo/internal/llm.idleTimeoutReader
-  ^calls=matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/stream_idle.go
 
 NODE id=matrix/neo/internal/llm.isMimoFamily kind=func
@@ -1053,10 +924,6 @@ NODE id=matrix/neo/internal/llm.isMimoFamily kind=func
   sig=func isMimoFamily(model string) bool
   doc=isMimoFamily reports whether the model is any MiMo v2.5 variant — the text\nplanner (mimo-v2.5-pro, matched by mcllm.IsXiaomiModel) OR the omni vision id\n(mimo-v2.5, used only for DOJO desktop_look grounding). Both take Xiaomi's\nthinking control and the max_completion_tokens field, so the omni grounder's\nvisible JSON is never starved by a reasoning burst (wave-1 empty-content\ngotcha). It deliberately does NOT feed XiaomiModelID (which would rewrite the\nomni id to the planner id) or the multi-turn reasoning_content replay flag\n(omni is a stateless single-turn call).
 EDGES
-  calls=matrix/mcl/llm.IsXiaomiModel
-  references=matrix/mcl/llm.IsXiaomiModel,matrix/neo/internal/llm.m,matrix/neo/internal/llm.model
-  ^calls=matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/mimo.go
 
 NODE id=matrix/neo/internal/llm.jsonArgs kind=func
@@ -1064,9 +931,6 @@ NODE id=matrix/neo/internal/llm.jsonArgs kind=func
   sig=func jsonArgs(s string) string
   doc=jsonArgs normalizes an improvised tool-call argument blob to a JSON object\nstring: it returns the first balanced {...} span if present, else "{}". This\nkeeps dispatch robust when a model emits prose or partial JSON around the args.
 EDGES
-  references=matrix/neo/internal/llm.candidate,matrix/neo/internal/llm.depth,matrix/neo/internal/llm.i,matrix/neo/internal/llm.s,matrix/neo/internal/llm.start
-  ^calls=matrix/neo/internal/llm.extractXMLToolCalls
-  ^references=matrix/neo/internal/llm.extractXMLToolCalls
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.kimiArgBegin kind=const
@@ -1074,7 +938,6 @@ NODE id=matrix/neo/internal/llm.kimiArgBegin kind=const
   sig=untyped string
   doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
 EDGES
-  ^references=matrix/neo/internal/llm.parseTokenSection
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.kimiCallBegin kind=const
@@ -1082,7 +945,6 @@ NODE id=matrix/neo/internal/llm.kimiCallBegin kind=const
   sig=untyped string
   doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
 EDGES
-  ^references=matrix/neo/internal/llm.extractTokenToolCalls,matrix/neo/internal/llm.holdbackPartial,matrix/neo/internal/llm.parseTokenSection
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.kimiCallEnd kind=const
@@ -1090,7 +952,6 @@ NODE id=matrix/neo/internal/llm.kimiCallEnd kind=const
   sig=untyped string
   doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
 EDGES
-  ^references=matrix/neo/internal/llm.parseTokenSection
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.kimiSectionBegin kind=const
@@ -1098,7 +959,6 @@ NODE id=matrix/neo/internal/llm.kimiSectionBegin kind=const
   sig=untyped string
   doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
 EDGES
-  ^references=matrix/neo/internal/llm.extractTokenToolCalls,matrix/neo/internal/llm.holdbackPartial
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.kimiSectionEnd kind=const
@@ -1106,7 +966,6 @@ NODE id=matrix/neo/internal/llm.kimiSectionEnd kind=const
   sig=untyped string
   doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
 EDGES
-  ^references=matrix/neo/internal/llm.extractTokenToolCalls
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.mimoReasoningContent kind=func
@@ -1114,9 +973,6 @@ NODE id=matrix/neo/internal/llm.mimoReasoningContent kind=func
   sig=func mimoReasoningContent(role, reasoning string) *string
   doc=mimoReasoningContent is the request-side half of the MiMo reasoning adapter\n(the `--reasoning-parser mimo` counterpart). MiMo uses DeepSeek-compatible\nthinking: prior assistant reasoning_content must be replayed through a\nmulti-turn tool conversation, and on an assistant turn that is part of a\ntool-call chain the field must be present VERBATIM — including the empty\nstring "" — or a strict deserializer 400s ("reasoning_content" required) and\nthe model loses the thread it was mid-thought on.\n\nSo for a MiMo request every assistant message carries reasoning_content\n(a non-nil pointer, possibly to ""); user / tool / system messages never do.\nThe pointer lets an explicit "" ride the wire that `omitempty` would drop.\nA resumed conversation whose durable seed lost the reasoning (it is never\npersisted) degrades gracefully: the assistant turn ships reasoning_content:""\nwhich MiMo accepts, rather than an absent field it may reject.
 EDGES
-  references=matrix/neo/internal/llm.RoleAssistant,matrix/neo/internal/llm.reasoning,matrix/neo/internal/llm.role
-  ^calls=matrix/neo/internal/llm.toWireMessages
-  ^references=matrix/neo/internal/llm.toWireMessages
   ^defines=matrix/neo/internal/llm/mimo.go
 
 NODE id=matrix/neo/internal/llm.newIdleTimeoutReader kind=func
@@ -1124,19 +980,12 @@ NODE id=matrix/neo/internal/llm.newIdleTimeoutReader kind=func
   sig=func newIdleTimeoutReader(r io.Reader, idle time.Duration, onIdle func()) *idleTimeoutReader
   doc=newIdleTimeoutReader arms a watchdog around r. onIdle runs (once per stall)\nif any Read blocks longer than idle without returning.
 EDGES
-  references=matrix/neo/internal/llm.idle,matrix/neo/internal/llm.idleTimeoutReader,matrix/neo/internal/llm.onIdle,matrix/neo/internal/llm.r,matrix/neo/internal/llm.t
-  ^calls=matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/stream_idle.go
 
 NODE id=matrix/neo/internal/llm.parseMimoToolCalls kind=func
   digest=b3:d13ac965c67e61a119f069a4d9d5d0ecac8ff640e3c154a6b82ad2d47cbba6f5 file=neo/internal/llm/mimo.go range=45:68 lang=go exported=false byte_range=2046:2687
   sig=func parseMimoToolCalls(content string) (string, []ToolCall)
 EDGES
-  calls=matrix/neo/internal/runtime/provider.ParseMiMoToolCalls
-  references=matrix/neo/internal/llm.FunctionCall,matrix/neo/internal/llm.ToolCall,matrix/neo/internal/llm.call,matrix/neo/internal/llm.calls,matrix/neo/internal/llm.cleaned,matrix/neo/internal/llm.content,matrix/neo/internal/llm.err,matrix/neo/internal/llm.marker,matrix/neo/internal/llm.normalized,matrix/neo/internal/runtime/provider.ParseMiMoToolCalls
-  ^calls=matrix/neo/internal/llm.fromWireRespMessage
-  ^references=matrix/neo/internal/llm.fromWireRespMessage
   ^defines=matrix/neo/internal/llm/mimo.go
 
 NODE id=matrix/neo/internal/llm.parseTokenSection kind=func
@@ -1144,10 +993,6 @@ NODE id=matrix/neo/internal/llm.parseTokenSection kind=func
   sig=func parseTokenSection(section string, base int) []ToolCall
   doc=parseTokenSection decodes the calls inside one token-grammar section. base is\nthe running call count, used to synthesize stable call IDs.
 EDGES
-  calls=matrix/neo/internal/llm.tokenFuncName
-  references=matrix/neo/internal/llm.FunctionCall,matrix/neo/internal/llm.ToolCall,matrix/neo/internal/llm.args,matrix/neo/internal/llm.base,matrix/neo/internal/llm.calls,matrix/neo/internal/llm.header,matrix/neo/internal/llm.i,matrix/neo/internal/llm.j,matrix/neo/internal/llm.kimiArgBegin,matrix/neo/internal/llm.kimiCallBegin,matrix/neo/internal/llm.kimiCallEnd,matrix/neo/internal/llm.name,matrix/neo/internal/llm.part,matrix/neo/internal/llm.section,matrix/neo/internal/llm.tokenFuncName
-  ^calls=matrix/neo/internal/llm.extractTokenToolCalls
-  ^references=matrix/neo/internal/llm.extractTokenToolCalls
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.previewVisible kind=func
@@ -1155,9 +1000,6 @@ NODE id=matrix/neo/internal/llm.previewVisible kind=func
   sig=func previewVisible(content string) string
   doc=previewVisible returns the portion of an in-progress content buffer that is\nsafe to show as the visible answer so far: a leading <think>/<thinking>\nblock is moved out (held back until it closes) and any Kimi tool-call token\ngrammar is stripped. It reuses the exact helpers the final fold uses, so the\nstreamed prefix never diverges from the authoritative cleaned content.
 EDGES
-  calls=matrix/neo/internal/llm.extractTokenToolCalls,matrix/neo/internal/llm.splitInlineThink
-  references=matrix/neo/internal/llm.content,matrix/neo/internal/llm.extractTokenToolCalls,matrix/neo/internal/llm.extracted,matrix/neo/internal/llm.splitInlineThink,matrix/neo/internal/llm.stripped,matrix/neo/internal/llm.v
-  ^references=matrix/neo/internal/llm.aggregateStreamReader
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.reasoningEffort kind=func
@@ -1165,9 +1007,6 @@ NODE id=matrix/neo/internal/llm.reasoningEffort kind=func
   sig=func reasoningEffort(enabled bool) string
   doc=reasoningEffort maps the per-role EnableThinking flag onto xAI's\nreasoning_effort enum: reasoning ON → "medium" (balanced reasoning that keeps\ngrok-4.3 answering in the visible content channel instead of spending the\nwhole turn on chain-of-thought and emitting only a stub), OFF → "none"\n(disables reasoning entirely for token-tight mechanical roles).
 EDGES
-  references=matrix/neo/internal/llm.enabled
-  ^calls=matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.sanitizeToolCalls kind=func
@@ -1175,9 +1014,6 @@ NODE id=matrix/neo/internal/llm.sanitizeToolCalls kind=func
   sig=func sanitizeToolCalls(calls []ToolCall) []ToolCall
   doc=sanitizeToolCalls guarantees every REPLAYED assistant tool_call carries a\nwell-formed function before it goes back on the wire. A truncated or\nmalformed generation can leave function.arguments empty or non-JSON; the\ntranscript is re-sent verbatim every turn, so replaying such a call makes a\nstrict provider (e.g. Together's DeepSeek-V4-Pro) reject the WHOLE request\nwith a 400 on the function field — which permanently wedges the conversation\n(every later turn carries the same poison). Coercing empty/invalid arguments\nto "{}" keeps the call structurally valid AND preserves the assistant↔\ntool_call_id pairing (so the matching tool-result is never orphaned). The\nagent already recorded the real parse error as that tool's result, so the\nmodel still gets the feedback it needs to re-issue the call correctly.
 EDGES
-  references=matrix/neo/internal/llm.ToolCall,matrix/neo/internal/llm.args,matrix/neo/internal/llm.calls,matrix/neo/internal/llm.i,matrix/neo/internal/llm.out,matrix/neo/internal/llm.tc
-  ^calls=matrix/neo/internal/llm.toWireMessages
-  ^references=matrix/neo/internal/llm.toWireMessages
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.splitInlineThink kind=func
@@ -1185,9 +1021,6 @@ NODE id=matrix/neo/internal/llm.splitInlineThink kind=func
   sig=func splitInlineThink(content string) (visible, reasoning string)
   doc=splitInlineThink moves a provider-inlined chain-of-thought block out of the\nvisible content and into the reasoning channel. Some providers/models emit\n`<think>…</think>` (or `<thinking>…</thinking>`) inside `content` instead of\nthe separate `reasoning_content` field; leaving it in place leaks internal\nmonologue into the chat. An unterminated opening tag (truncated generation)\nmeans the WHOLE remainder is reasoning.
 EDGES
-  references=matrix/neo/internal/llm.close,matrix/neo/internal/llm.content,matrix/neo/internal/llm.i,matrix/neo/internal/llm.open,matrix/neo/internal/llm.rest,matrix/neo/internal/llm.tag,matrix/neo/internal/llm.trimmed
-  ^calls=matrix/neo/internal/llm.fromWireRespMessage,matrix/neo/internal/llm.previewVisible
-  ^references=matrix/neo/internal/llm.fromWireRespMessage,matrix/neo/internal/llm.previewVisible
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.streamDelta kind=type
@@ -1195,8 +1028,6 @@ NODE id=matrix/neo/internal/llm.streamDelta kind=type
   sig=type streamDelta struct {\n	Role			string			`json:"role"`\n	Content			string			`json:"content"`\n	ReasoningContent	string			`json:"reasoning_content"`\n	ToolCalls		[]streamToolDelta	`json:"tool_calls"`\n}
 EDGES
   contains=matrix/neo/internal/llm.streamDelta#Content,matrix/neo/internal/llm.streamDelta#ReasoningContent,matrix/neo/internal/llm.streamDelta#Role,matrix/neo/internal/llm.streamDelta#ToolCalls
-  references=matrix/neo/internal/llm.streamToolDelta
-  ^references=matrix/neo/internal/llm.chatStreamChunk
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.streamDelta#Content kind=field
@@ -1229,7 +1060,6 @@ NODE id=matrix/neo/internal/llm.streamOptions kind=type
   doc=streamOptions asks the provider to emit a final usage chunk on the SSE\nstream (OpenAI `stream_options.include_usage`). Used on the direct path; the\ngateway injects its own on the metered path.
 EDGES
   contains=matrix/neo/internal/llm.streamOptions#IncludeUsage
-  ^references=matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.chatRequestWire
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.streamOptions#IncludeUsage kind=field
@@ -1243,7 +1073,6 @@ NODE id=matrix/neo/internal/llm.streamToolDelta kind=type
   sig=type streamToolDelta struct {\n	Index		int	`json:"index"`\n	ID		string	`json:"id"`\n	Type		string	`json:"type"`\n	Function	struct {\n		Name		string	`json:"name"`\n		Arguments	string	`json:"arguments"`\n	}	`json:"function"`\n}
 EDGES
   contains=matrix/neo/internal/llm.streamToolDelta#Function,matrix/neo/internal/llm.streamToolDelta#ID,matrix/neo/internal/llm.streamToolDelta#Index,matrix/neo/internal/llm.streamToolDelta#Type
-  ^references=matrix/neo/internal/llm.streamDelta
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.streamToolDelta#Function kind=field
@@ -1275,9 +1104,6 @@ NODE id=matrix/neo/internal/llm.supportsReasoningEffort kind=func
   sig=func supportsReasoningEffort(model string) bool
   doc=supportsReasoningEffort reports whether an xAI model accepts the\n`reasoning_effort` request field. Per xAI docs it is currently only honored\nby grok-4.3; other Grok models (grok-build-*, grok-4.20-*-non-reasoning)\nignore or reject it, so the field is omitted for them.
 EDGES
-  references=matrix/neo/internal/llm.model
-  ^calls=matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.thinkingConfig kind=type
@@ -1285,7 +1111,6 @@ NODE id=matrix/neo/internal/llm.thinkingConfig kind=type
   sig=type thinkingConfig struct {\n	Type string `json:"type"`\n}
 EDGES
   contains=matrix/neo/internal/llm.thinkingConfig#Type
-  ^references=matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.chatRequestWire
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.thinkingConfig#Type kind=field
@@ -1299,10 +1124,6 @@ NODE id=matrix/neo/internal/llm.toWireMessages kind=func
   sig=func toWireMessages(msgs []Message, mimo bool) []wireMessage
   doc=toWireMessages converts the transcript to the request-side shape. When mimo\nis set (the model is a MiMo variant) every assistant turn carries\nreasoning_content verbatim — including "" — per the DeepSeek-compatible\nthinking protocol MiMo uses (see mimoReasoningContent). Otherwise\nreasoning_content rides only when a message actually carries reasoning, and\nis omitted (nil) elsewhere so a non-MiMo provider never sees an empty field.
 EDGES
-  calls=matrix/neo/internal/llm.mimoReasoningContent,matrix/neo/internal/llm.sanitizeToolCalls
-  references=matrix/neo/internal/llm.Message,matrix/neo/internal/llm.RoleUser,matrix/neo/internal/llm.content,matrix/neo/internal/llm.i,matrix/neo/internal/llm.m,matrix/neo/internal/llm.mimo,matrix/neo/internal/llm.mimoReasoningContent,matrix/neo/internal/llm.msgs,matrix/neo/internal/llm.out,matrix/neo/internal/llm.parts,matrix/neo/internal/llm.r,matrix/neo/internal/llm.reasoning,matrix/neo/internal/llm.sanitizeToolCalls,matrix/neo/internal/llm.wireContentPart,matrix/neo/internal/llm.wireImageURL,matrix/neo/internal/llm.wireInputAudio,matrix/neo/internal/llm.wireMessage
-  ^calls=matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.tokenFuncName kind=func
@@ -1310,9 +1131,6 @@ NODE id=matrix/neo/internal/llm.tokenFuncName kind=func
   sig=func tokenFuncName(header string) string
   doc=tokenFuncName turns a `functions.<name>:<index>` header into the bare tool\nname. The `functions.` prefix and a trailing `:<int>` index are both\noptional in observed emissions.
 EDGES
-  references=matrix/neo/internal/llm.err,matrix/neo/internal/llm.h,matrix/neo/internal/llm.header,matrix/neo/internal/llm.i
-  ^calls=matrix/neo/internal/llm.parseTokenSection
-  ^references=matrix/neo/internal/llm.parseTokenSection
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.toolDeltaFlushChars kind=const
@@ -1320,16 +1138,12 @@ NODE id=matrix/neo/internal/llm.toolDeltaFlushChars kind=const
   sig=untyped int
   doc=toolDeltaFlushChars is the coalescing threshold for streaming tool-call\nargument fragments (the live file-typing channel): chunkier than the chat\ncadence so a large file write stays a bounded event stream rather than one\nevent per token.
 EDGES
-  ^references=matrix/neo/internal/llm.aggregateStreamReader
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.truncate kind=func
   digest=b3:aef98bcecd1bec2c20323e380dc201ab827146b8fc985f7331fc6ba9717f76ae file=neo/internal/llm/client.go range=640:645 lang=go exported=false byte_range=23265:23360
   sig=func truncate(s string, n int) string
 EDGES
-  references=matrix/neo/internal/llm.n,matrix/neo/internal/llm.s
-  ^calls=matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.wireContentPart kind=type
@@ -1337,8 +1151,6 @@ NODE id=matrix/neo/internal/llm.wireContentPart kind=type
   sig=type wireContentPart struct {\n	Type		string		`json:"type"`\n	Text		string		`json:"text,omitempty"`\n	InputAudio	*wireInputAudio	`json:"input_audio,omitempty"`\n	ImageURL	*wireImageURL	`json:"image_url,omitempty"`\n}
 EDGES
   contains=matrix/neo/internal/llm.wireContentPart#ImageURL,matrix/neo/internal/llm.wireContentPart#InputAudio,matrix/neo/internal/llm.wireContentPart#Text,matrix/neo/internal/llm.wireContentPart#Type
-  references=matrix/neo/internal/llm.wireImageURL,matrix/neo/internal/llm.wireInputAudio
-  ^references=matrix/neo/internal/llm.toWireMessages
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.wireContentPart#ImageURL kind=field
@@ -1370,7 +1182,6 @@ NODE id=matrix/neo/internal/llm.wireImageURL kind=type
   sig=type wireImageURL struct {\n	URL string `json:"url"`\n}
 EDGES
   contains=matrix/neo/internal/llm.wireImageURL#URL
-  ^references=matrix/neo/internal/llm.toWireMessages,matrix/neo/internal/llm.wireContentPart
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.wireImageURL#URL kind=field
@@ -1384,7 +1195,6 @@ NODE id=matrix/neo/internal/llm.wireInputAudio kind=type
   sig=type wireInputAudio struct {\n	Data string `json:"data"`\n}
 EDGES
   contains=matrix/neo/internal/llm.wireInputAudio#Data
-  ^references=matrix/neo/internal/llm.toWireMessages,matrix/neo/internal/llm.wireContentPart
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.wireInputAudio#Data kind=field
@@ -1399,8 +1209,6 @@ NODE id=matrix/neo/internal/llm.wireMessage kind=type
   doc=wireMessage is the request-side message shape. Xiaomi requires prior\nassistant reasoning_content to be replayed during multi-turn tool calls.\nContent is NEVER omitempty: an assistant turn that carries only tool calls\nand a tool result whose output is empty both have Content == "", and a\nstrict provider deserializer (xAI) rejects the WHOLE request with a\nnon-retryable 422 ("missing field `content`") when the key is absent.\nAn explicit "content":"" is accepted by every OpenAI-compatible provider.
 EDGES
   contains=matrix/neo/internal/llm.wireMessage#Content,matrix/neo/internal/llm.wireMessage#Name,matrix/neo/internal/llm.wireMessage#ReasoningContent,matrix/neo/internal/llm.wireMessage#Role,matrix/neo/internal/llm.wireMessage#ToolCallID,matrix/neo/internal/llm.wireMessage#ToolCalls
-  references=matrix/neo/internal/llm.ToolCall
-  ^references=matrix/neo/internal/llm.chatRequestWire,matrix/neo/internal/llm.toWireMessages
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.wireMessage#Content kind=field
@@ -1446,8 +1254,6 @@ NODE id=matrix/neo/internal/llm.wireRespMessage kind=type
   doc=wireRespMessage is the response-side assistant message; content may be JSON\nnull when the model only emitted tool_calls (Go leaves Content "").
 EDGES
   contains=matrix/neo/internal/llm.wireRespMessage#Content,matrix/neo/internal/llm.wireRespMessage#ReasoningContent,matrix/neo/internal/llm.wireRespMessage#Role,matrix/neo/internal/llm.wireRespMessage#ToolCalls
-  references=matrix/neo/internal/llm.ToolCall
-  ^references=matrix/neo/internal/llm.aggregateStream,matrix/neo/internal/llm.aggregateStreamReader,matrix/neo/internal/llm.chatResponseWire,matrix/neo/internal/llm.fromWireRespMessage
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.wireRespMessage#Content kind=field
@@ -1478,9 +1284,6 @@ NODE id=matrix/neo/internal/llm.xiaomiThinkingType kind=func
   digest=b3:82bd515282fe44e6fb2758221fa5d662ff7ad88dd35a0a64b5f67e1537c61253 file=neo/internal/llm/client.go range=667:672 lang=go exported=false byte_range=24226:24329
   sig=func xiaomiThinkingType(enabled bool) string
 EDGES
-  references=matrix/neo/internal/llm.enabled
-  ^calls=matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.xmlAttr kind=func
@@ -1488,9 +1291,6 @@ NODE id=matrix/neo/internal/llm.xmlAttr kind=func
   sig=func xmlAttr(attrs, key string) string
   doc=xmlAttr extracts a double- or single-quoted attribute value from an XML-ish\nattribute string (e.g. ` name="foo"` → "foo").
 EDGES
-  references=matrix/neo/internal/llm.attrs,matrix/neo/internal/llm.i,matrix/neo/internal/llm.j,matrix/neo/internal/llm.key,matrix/neo/internal/llm.q,matrix/neo/internal/llm.v
-  ^calls=matrix/neo/internal/llm.extractXMLToolCalls
-  ^references=matrix/neo/internal/llm.extractXMLToolCalls
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.xmlToolCallClose kind=const
@@ -1498,7 +1298,6 @@ NODE id=matrix/neo/internal/llm.xmlToolCallClose kind=const
   sig=untyped string
   doc=xmlToolCallOpen / xmlToolCallClose bound the inline XML-ish tool-call form\nthat grok/xAI reasoning models improvise inside `content` instead of the\nstructured tool_calls array.
 EDGES
-  ^references=matrix/neo/internal/llm.extractXMLToolCalls
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.xmlToolCallOpen kind=const
@@ -1506,7 +1305,6 @@ NODE id=matrix/neo/internal/llm.xmlToolCallOpen kind=const
   sig=untyped string
   doc=xmlToolCallOpen / xmlToolCallClose bound the inline XML-ish tool-call form\nthat grok/xAI reasoning models improvise inside `content` instead of the\nstructured tool_calls array.
 EDGES
-  ^references=matrix/neo/internal/llm.extractXMLToolCalls
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm/client.go kind=file

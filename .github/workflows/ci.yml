@@ -245,9 +245,24 @@ jobs:
         with:
           version: "0.11.6"
 
-      - name: install Neo fetch runtime
+      - uses: actions/setup-node@v4
         if: matrix.module == 'neo'
-        run: uv tool install --with "mcp==1.29.0" mcp-server-fetch==2025.4.7
+        with:
+          node-version: "22"
+
+      - name: install Neo MCP runtimes
+        if: matrix.module == 'neo'
+        run: |
+          uv tool install --with "mcp==1.29.0" mcp-server-fetch==2025.4.7
+          npm install --global @modelcontextprotocol/server-filesystem@2026.1.14
+
+      - name: build Neocortex seam runtime
+        if: matrix.module == 'neo'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 llvm-18 lld-18 libc++-18-dev libc++abi-18-dev cmake ninja-build
+          cmake --fresh --preset debug -S neocortex
+          cmake --build neocortex/build/debug --target cortexd
 
       - name: go mod download
         working-directory: ${{ matrix.module }}
@@ -266,11 +281,15 @@ jobs:
       # packages could not have landed green.
       - name: go test
         working-directory: ${{ matrix.module }}
+        env:
+          MATRIX_FS_MCP_COMMAND: mcp-server-filesystem
         run: go test -count=1 -race -timeout=10m ./...
 
   workforce:
     name: build / workforce
     runs-on: ubuntu-latest
+    env:
+      DOCKER_API_VERSION: "1.44"
     steps:
       - uses: actions/checkout@v4
         with:

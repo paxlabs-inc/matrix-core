@@ -1,21 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/executor/compilecache kind=package
   digest=b3:df6512c16c7db3d875d820382662248030a1e101e2333552e99ecbe3f6934557 file=executor/compilecache range=0:0 lang=go exported=true
 EDGES
   contains=matrix/executor/compilecache/cache.go
-  imports=matrix/cortex/keys,matrix/cortex/store
   ^contains=mod:matrix/executor
-  ^imports=matrix/executor/cmd/mcl-execute
 
 NODE id=matrix/executor/compilecache.Decode kind=func
   digest=b3:774354128b388bcc149d33c7b79bfb7730e5a33f9c3762a942cea0119c132e85 file=executor/compilecache/cache.go range=131:134 lang=go exported=true byte_range=5013:5137
   sig=func Decode(b []byte, out *Entry) error
   doc=Decode parses canonical CBOR into out.
 EDGES
-  references=matrix/executor/compilecache.Entry,matrix/executor/compilecache.b,matrix/executor/compilecache.canonicalDec,matrix/executor/compilecache.out
-  ^calls=matrix/executor/compilecache.Lookup
-  ^references=matrix/executor/compilecache.Lookup
   ^defines=matrix/executor/compilecache/cache.go
 
 NODE id=matrix/executor/compilecache.Encode kind=func
@@ -23,9 +18,6 @@ NODE id=matrix/executor/compilecache.Encode kind=func
   sig=func Encode(e *Entry) ([]byte, error)
   doc=Encode returns canonical CBOR for e.
 EDGES
-  references=matrix/executor/compilecache.Entry,matrix/executor/compilecache.canonicalEnc,matrix/executor/compilecache.e
-  ^calls=matrix/executor/compilecache.Store
-  ^references=matrix/executor/compilecache.Store
   ^defines=matrix/executor/compilecache/cache.go
 
 NODE id=matrix/executor/compilecache.Entry kind=type
@@ -34,7 +26,6 @@ NODE id=matrix/executor/compilecache.Entry kind=type
   doc=Entry is one cached compile result. IntentJSON is the canonical-JSON\nbytes of *ir.Intent at hash time. IntentHash is the hash of those\nbytes (also computed independently by the caller for paranoia).
 EDGES
   contains=matrix/executor/compilecache.Entry#CachedAt,matrix/executor/compilecache.Entry#IntentHash,matrix/executor/compilecache.Entry#IntentJSON,matrix/executor/compilecache.Entry#ModelDigest,matrix/executor/compilecache.Entry#SchemaVersion,matrix/executor/compilecache.Entry#SkillDigest,matrix/executor/compilecache.Entry#SnapHash,matrix/executor/compilecache.Entry#Verb
-  ^references=matrix/executor/cmd/mcl-execute.compile,matrix/executor/compilecache.Decode,matrix/executor/compilecache.Encode,matrix/executor/compilecache.Lookup,matrix/executor/compilecache.Store
   ^defines=matrix/executor/compilecache/cache.go
 
 NODE id=matrix/executor/compilecache.Entry#CachedAt kind=field
@@ -90,9 +81,6 @@ NODE id=matrix/executor/compilecache.Key kind=func
   sig=func Key(skillDigest, prose, snapHash, verb, modelDigest string) string
   doc=Key derives the lowercase hex sha256 cache key from the five\ncomponents. Components may be empty (e.g. cold cortex with\nsnap_hash = 64 zeros) — the separator ensures the empty case\nhashes distinctly from a populated case with leading null.\n\n	sha256(skill_digest || US || prose || US || snap_hash\n	   || US || verb || US || model_digest)\n\nResult is 64 lowercase hex chars.
 EDGES
-  references=matrix/executor/compilecache.US,matrix/executor/compilecache.h,matrix/executor/compilecache.modelDigest,matrix/executor/compilecache.prose,matrix/executor/compilecache.skillDigest,matrix/executor/compilecache.snapHash,matrix/executor/compilecache.verb
-  ^calls=matrix/executor/cmd/mcl-execute.compile
-  ^references=matrix/executor/cmd/mcl-execute.compile
   ^defines=matrix/executor/compilecache/cache.go
 
 NODE id=matrix/executor/compilecache.Lookup kind=func
@@ -100,10 +88,6 @@ NODE id=matrix/executor/compilecache.Lookup kind=func
   sig=func Lookup(s *store.Store, hexKey string) (*Entry, bool, error)
   doc=Lookup fetches the cached Entry for hexKey. Returns (nil, false, nil)\nwhen:\n  - the key is absent (cold cache)\n  - the stored SchemaVersion mismatches the current one (forward-\n    incompatible upgrade; treat as cold so we never deserialize\n    into the wrong shape)\n\nErrors are returned only for store-level I/O failures or CBOR decode\nerrors against a current-version blob (the latter implies actual\ncorruption).
 EDGES
-  calls=matrix/cortex/keys.MetaCompileCacheKey,matrix/cortex/store.Store.Get,matrix/executor/compilecache.Decode
-  references=matrix/cortex/keys.MetaCompileCacheKey,matrix/cortex/store.Store,matrix/cortex/store.Store.Get,matrix/executor/compilecache.Decode,matrix/executor/compilecache.Entry,matrix/executor/compilecache.SchemaVersion,matrix/executor/compilecache.e,matrix/executor/compilecache.err,matrix/executor/compilecache.hexKey,matrix/executor/compilecache.ok,matrix/executor/compilecache.raw,matrix/executor/compilecache.s
-  ^calls=matrix/executor/cmd/mcl-execute.compile
-  ^references=matrix/executor/cmd/mcl-execute.compile
   ^defines=matrix/executor/compilecache/cache.go
 
 NODE id=matrix/executor/compilecache.SchemaVersion kind=const
@@ -111,7 +95,6 @@ NODE id=matrix/executor/compilecache.SchemaVersion kind=const
   sig=uint8
   doc=SchemaVersion is bumped on any incompatible Entry-encoding change.\nCold-load mismatch ⇒ Lookup returns (nil, false, nil) so the cache\nbehaves like a cold start instead of poisoning Intent IRs.
 EDGES
-  ^references=matrix/executor/cmd/mcl-execute.compile,matrix/executor/compilecache.Lookup,matrix/executor/compilecache.Store
   ^defines=matrix/executor/compilecache/cache.go
 
 NODE id=matrix/executor/compilecache.Store kind=func
@@ -119,10 +102,6 @@ NODE id=matrix/executor/compilecache.Store kind=func
   sig=func Store(s *store.Store, hexKey string, e *Entry) error
   doc=Store writes e at meta/compile_cache/<hexKey>. Overwrites silently\nwhen the key already exists (compile is deterministic for the same\ninputs, so a re-write of the same Entry is by construction a\nbyte-identical update; an over-write across model changes is the\nintended replacement semantic).\n\nThe caller MUST set Entry.SchemaVersion to SchemaVersion (Store\nvalidates and rejects otherwise so a forward-incompat write can't\npoison the cache before the schema bump is wired through the rest\nof the stack).
 EDGES
-  calls=matrix/cortex/keys.MetaCompileCacheKey,matrix/cortex/store.Store.SetMeta,matrix/executor/compilecache.Encode
-  references=matrix/cortex/keys.MetaCompileCacheKey,matrix/cortex/store.Store,matrix/cortex/store.Store.SetMeta,matrix/executor/compilecache.Encode,matrix/executor/compilecache.Entry,matrix/executor/compilecache.SchemaVersion,matrix/executor/compilecache.e,matrix/executor/compilecache.enc,matrix/executor/compilecache.err,matrix/executor/compilecache.hexKey,matrix/executor/compilecache.s
-  ^calls=matrix/executor/cmd/mcl-execute.compile
-  ^references=matrix/executor/cmd/mcl-execute.compile
   ^defines=matrix/executor/compilecache/cache.go
 
 NODE id=matrix/executor/compilecache.US kind=const
@@ -130,7 +109,6 @@ NODE id=matrix/executor/compilecache.US kind=const
   sig=byte
   doc=US is the 0x1f Unit Separator byte used to delimit the cache-key\ncomponents. Same separator the compiler seed derivation uses\n(executor/cmd/mcl-execute/compile.go:compilerSeed) so the two key\nderivations are stylistically consistent.
 EDGES
-  ^references=matrix/executor/compilecache.Key
   ^defines=matrix/executor/compilecache/cache.go
 
 NODE id=matrix/executor/compilecache.canonicalDec kind=var
@@ -138,7 +116,6 @@ NODE id=matrix/executor/compilecache.canonicalDec kind=var
   sig=cbor.DecMode
   doc=canonicalEnc + canonicalDec enforce deterministic CBOR for Entry so\nrepeated cache writes of the same Entry produce byte-identical\nvalues (matters for store-level dedup + future blob hashing).
 EDGES
-  ^references=matrix/executor/compilecache.Decode,matrix/executor/compilecache.init
   ^defines=matrix/executor/compilecache/cache.go
 
 NODE id=matrix/executor/compilecache.canonicalEnc kind=var
@@ -146,14 +123,12 @@ NODE id=matrix/executor/compilecache.canonicalEnc kind=var
   sig=cbor.EncMode
   doc=canonicalEnc + canonicalDec enforce deterministic CBOR for Entry so\nrepeated cache writes of the same Entry produce byte-identical\nvalues (matters for store-level dedup + future blob hashing).
 EDGES
-  ^references=matrix/executor/compilecache.Encode,matrix/executor/compilecache.init
   ^defines=matrix/executor/compilecache/cache.go
 
 NODE id=matrix/executor/compilecache.init kind=func
   digest=b3:5aa6c62427dfe8ab1382180569c9be6e3856dbac1e2e3d79c0d5057fd8e534b3 file=executor/compilecache/cache.go range=81:92 lang=go exported=false byte_range=3508:3808
   sig=func init()
 EDGES
-  references=matrix/executor/compilecache.canonicalDec,matrix/executor/compilecache.canonicalEnc,matrix/executor/compilecache.dm,matrix/executor/compilecache.em,matrix/executor/compilecache.err
   ^defines=matrix/executor/compilecache/cache.go
 
 NODE id=matrix/executor/compilecache/cache.go kind=file

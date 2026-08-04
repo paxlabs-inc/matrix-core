@@ -1,12 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/neo/internal/notify kind=package
   digest=b3:dffd3f01d279802d1309f7619879ebed3ec089010e89b3adc920f3297a5921e8 file=neo/internal/notify range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/notify/notify.go
-  imports=matrix/executor/tool
   ^contains=mod:matrix/neo
-  ^imports=matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/notify.Config kind=type
   digest=b3:5f23226c4b5ea20d7d043c50723e36549890ea2158af86d18d33779ccbeac977 file=neo/internal/notify/notify.go range=62:80 lang=go exported=true byte_range=2457:3290
@@ -14,7 +12,6 @@ NODE id=matrix/neo/internal/notify.Config kind=type
   doc=Config selects and wires the external backend(s). All fields are optional;\nan empty Config yields a noop Notifier.
 EDGES
   contains=matrix/neo/internal/notify.Config#AgentDID,matrix/neo/internal/notify.Config#AppriseURL,matrix/neo/internal/notify.Config#HTTPClient,matrix/neo/internal/notify.Config#NtfyServer,matrix/neo/internal/notify.Config#NtfyTopic
-  ^references=matrix/neo/internal/notify.New,matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.Config#AgentDID kind=field
@@ -55,7 +52,6 @@ NODE id=matrix/neo/internal/notify.DefaultNtfyServer kind=const
   sig=untyped string
   doc=DefaultNtfyServer is the public ntfy server used when none is configured.
 EDGES
-  ^references=matrix/neo/internal/notify.New
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.Deliver kind=func
@@ -63,9 +59,6 @@ NODE id=matrix/neo/internal/notify.Deliver kind=func
   sig=func Deliver(n Notifier, note Notification)
   doc=Deliver sends the notification BEST-EFFORT on a background goroutine. It never\nblocks the caller and never returns an error: a failed external send is logged\nhonestly and dropped (the durable in-app record remains the canonical\nsurface). A nil notifier is a safe no-op.
 EDGES
-  references=matrix/neo/internal/notify.Notification,matrix/neo/internal/notify.Notifier,matrix/neo/internal/notify.Notifier.Notify,matrix/neo/internal/notify.cancel,matrix/neo/internal/notify.ctx,matrix/neo/internal/notify.deliverTimeout,matrix/neo/internal/notify.err,matrix/neo/internal/notify.n,matrix/neo/internal/notify.note
-  ^calls=matrix/neo/internal/server.Engine.announceAutomatrixCompletion,matrix/neo/internal/server.Engine.deliverBrief
-  ^references=matrix/neo/internal/server.Engine.announceAutomatrixCompletion,matrix/neo/internal/server.Engine.deliverBrief
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.DeriveTopic kind=func
@@ -73,9 +66,6 @@ NODE id=matrix/neo/internal/notify.DeriveTopic kind=func
   sig=func DeriveTopic(did string) string
   doc=DeriveTopic derives a deterministic, per-user, unguessable ntfy topic from\nthe agent DID. Returns "" for a blank DID (ntfy then has no topic and is\nskipped). The DID itself is never exposed: only an opaque hash prefix.
 EDGES
-  references=matrix/neo/internal/notify.did,matrix/neo/internal/notify.sum
-  ^calls=matrix/neo/internal/notify.New
-  ^references=matrix/neo/internal/notify.New
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.New kind=func
@@ -83,10 +73,6 @@ NODE id=matrix/neo/internal/notify.New kind=func
   sig=func New(cfg Config) Notifier
   doc=New builds a Notifier from cfg. ntfy (default) is added whenever a topic can\nbe determined; Apprise (optional) is added when AppriseURL is set. With both,\nthe returned Notifier fans out to each. With neither, it is a noop.
 EDGES
-  calls=matrix/neo/internal/notify.DeriveTopic
-  references=matrix/neo/internal/notify.Config,matrix/neo/internal/notify.DefaultNtfyServer,matrix/neo/internal/notify.DeriveTopic,matrix/neo/internal/notify.Notifier,matrix/neo/internal/notify.appriseBackend,matrix/neo/internal/notify.backends,matrix/neo/internal/notify.cfg,matrix/neo/internal/notify.client,matrix/neo/internal/notify.deliverTimeout,matrix/neo/internal/notify.multiBackend,matrix/neo/internal/notify.noopBackend,matrix/neo/internal/notify.ntfyBackend,matrix/neo/internal/notify.server,matrix/neo/internal/notify.target,matrix/neo/internal/notify.topic
-  ^calls=matrix/neo/internal/server.NewEngine
-  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.Notification kind=type
@@ -95,7 +81,6 @@ NODE id=matrix/neo/internal/notify.Notification kind=type
   doc=Notification is a single outbound ping. It carries the RESULT, not the\nprotocol — no Chronos/alarm/marker/cortex jargon (the consumer-product rule).
 EDGES
   contains=matrix/neo/internal/notify.Notification#Body,matrix/neo/internal/notify.Notification#Title,matrix/neo/internal/notify.Notification#URL
-  ^references=matrix/neo/internal/notify.Deliver,matrix/neo/internal/notify.Notifier,matrix/neo/internal/notify.appriseBackend.Notify,matrix/neo/internal/notify.appriseBackend.notifyCLI,matrix/neo/internal/notify.appriseBackend.notifyHTTP,matrix/neo/internal/notify.multiBackend.Notify,matrix/neo/internal/notify.noopBackend.Notify,matrix/neo/internal/notify.ntfyBackend.Notify,matrix/neo/internal/server.Engine.announceAutomatrixCompletion,matrix/neo/internal/server.Engine.deliverBrief
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.Notification#Body kind=field
@@ -121,9 +106,7 @@ NODE id=matrix/neo/internal/notify.Notifier kind=interface
   sig=type Notifier interface {\n	Notify(ctx context.Context, n Notification) error\n}
   doc=Notifier delivers a Notification to an external channel. A backend returns an\nerror on a failed send; callers that must not block (the agent loop) should\nroute through Deliver rather than calling Notify directly.
 EDGES
-  references=matrix/neo/internal/notify.Notification
   ^implements=matrix/neo/internal/notify.appriseBackend,matrix/neo/internal/notify.multiBackend,matrix/neo/internal/notify.noopBackend,matrix/neo/internal/notify.ntfyBackend
-  ^references=matrix/neo/internal/notify.Deliver,matrix/neo/internal/notify.New,matrix/neo/internal/notify.multiBackend,matrix/neo/internal/server.Engine,matrix/neo/internal/server.Engine.SetAutomatrixNotifier
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.appriseBackend kind=type
@@ -133,7 +116,6 @@ NODE id=matrix/neo/internal/notify.appriseBackend kind=type
 EDGES
   contains=matrix/neo/internal/notify.appriseBackend#client,matrix/neo/internal/notify.appriseBackend#target,matrix/neo/internal/notify.appriseBackend.Notify,matrix/neo/internal/notify.appriseBackend.notifyCLI,matrix/neo/internal/notify.appriseBackend.notifyHTTP
   implements=matrix/neo/internal/notify.Notifier
-  ^references=matrix/neo/internal/notify.New,matrix/neo/internal/notify.appriseBackend.Notify,matrix/neo/internal/notify.appriseBackend.notifyCLI,matrix/neo/internal/notify.appriseBackend.notifyHTTP
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.appriseBackend#client kind=field
@@ -152,10 +134,7 @@ NODE id=matrix/neo/internal/notify.appriseBackend.Notify kind=method
   digest=b3:6c205f593de401b4429c370e7d64ccc6152faf5230d1618e552a38ab0fc7605b file=neo/internal/notify/notify.go range=206:211 lang=go exported=true byte_range=6814:6979
   sig=func (b *appriseBackend) Notify(ctx context.Context, n Notification) error
 EDGES
-  calls=matrix/neo/internal/notify.appriseBackend.notifyCLI,matrix/neo/internal/notify.appriseBackend.notifyHTTP,matrix/neo/internal/notify.isHTTPURL
-  references=matrix/neo/internal/notify.Notification,matrix/neo/internal/notify.appriseBackend,matrix/neo/internal/notify.appriseBackend.notifyCLI,matrix/neo/internal/notify.appriseBackend.notifyHTTP,matrix/neo/internal/notify.b,matrix/neo/internal/notify.ctx,matrix/neo/internal/notify.isHTTPURL,matrix/neo/internal/notify.n
   ^contains=matrix/neo/internal/notify.appriseBackend
-  ^calls=matrix/neo/internal/notify.multiBackend.Notify
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.appriseBackend.notifyCLI kind=method
@@ -163,11 +142,7 @@ NODE id=matrix/neo/internal/notify.appriseBackend.notifyCLI kind=method
   sig=func (b *appriseBackend) notifyCLI(ctx context.Context, n Notification) error
   doc=notifyCLI fans out through the local `apprise` binary. The target may be a\ncomma-separated list of apprise service URLs. When the binary is absent the\nsend fails honestly (logged by Deliver, never reported as delivered).
 EDGES
-  calls=matrix/executor/tool.AgentEnvironment
-  references=matrix/executor/tool.AgentEnvironment,matrix/neo/internal/notify.Notification,matrix/neo/internal/notify.appriseBackend,matrix/neo/internal/notify.args,matrix/neo/internal/notify.b,matrix/neo/internal/notify.cmd,matrix/neo/internal/notify.ctx,matrix/neo/internal/notify.err,matrix/neo/internal/notify.n,matrix/neo/internal/notify.out,matrix/neo/internal/notify.u
   ^contains=matrix/neo/internal/notify.appriseBackend
-  ^calls=matrix/neo/internal/notify.appriseBackend.Notify
-  ^references=matrix/neo/internal/notify.appriseBackend.Notify
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.appriseBackend.notifyHTTP kind=method
@@ -175,10 +150,7 @@ NODE id=matrix/neo/internal/notify.appriseBackend.notifyHTTP kind=method
   sig=func (b *appriseBackend) notifyHTTP(ctx context.Context, n Notification) error
   doc=notifyHTTP posts {title, body} JSON to an Apprise API server endpoint. The\nservice URLs themselves live server-side (a stored config key), so no secret\nis sent or logged from here.
 EDGES
-  references=matrix/neo/internal/notify.Notification,matrix/neo/internal/notify.appriseBackend,matrix/neo/internal/notify.b,matrix/neo/internal/notify.ctx,matrix/neo/internal/notify.err,matrix/neo/internal/notify.n,matrix/neo/internal/notify.payload,matrix/neo/internal/notify.req,matrix/neo/internal/notify.resp
   ^contains=matrix/neo/internal/notify.appriseBackend
-  ^calls=matrix/neo/internal/notify.appriseBackend.Notify
-  ^references=matrix/neo/internal/notify.appriseBackend.Notify
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.deliverTimeout kind=const
@@ -186,7 +158,6 @@ NODE id=matrix/neo/internal/notify.deliverTimeout kind=const
   sig=time.Duration
   doc=deliverTimeout bounds a single best-effort external send.
 EDGES
-  ^references=matrix/neo/internal/notify.Deliver,matrix/neo/internal/notify.New
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.isHTTPURL kind=func
@@ -194,9 +165,6 @@ NODE id=matrix/neo/internal/notify.isHTTPURL kind=func
   sig=func isHTTPURL(target string) bool
   doc=isHTTPURL reports whether target is an http(s) URL (the Apprise API server\npath) rather than an apprise service URL handled by the CLI.
 EDGES
-  references=matrix/neo/internal/notify.t,matrix/neo/internal/notify.target
-  ^calls=matrix/neo/internal/notify.appriseBackend.Notify
-  ^references=matrix/neo/internal/notify.appriseBackend.Notify
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.multiBackend kind=type
@@ -206,16 +174,12 @@ NODE id=matrix/neo/internal/notify.multiBackend kind=type
 EDGES
   contains=matrix/neo/internal/notify.multiBackend.Notify
   implements=matrix/neo/internal/notify.Notifier
-  references=matrix/neo/internal/notify.Notifier
-  ^references=matrix/neo/internal/notify.New,matrix/neo/internal/notify.multiBackend.Notify
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.multiBackend.Notify kind=method
   digest=b3:230bd53ec3774110ce6e8eb41fea285916fc629bc2de36cabb881f17c803afbb file=neo/internal/notify/notify.go range=263:271 lang=go exported=true byte_range=8772:8995
   sig=func (m multiBackend) Notify(ctx context.Context, n Notification) error
 EDGES
-  calls=matrix/neo/internal/notify.appriseBackend.Notify,matrix/neo/internal/notify.ntfyBackend.Notify
-  references=matrix/neo/internal/notify.Notification,matrix/neo/internal/notify.Notifier.Notify,matrix/neo/internal/notify.b,matrix/neo/internal/notify.ctx,matrix/neo/internal/notify.err,matrix/neo/internal/notify.errs,matrix/neo/internal/notify.m,matrix/neo/internal/notify.multiBackend,matrix/neo/internal/notify.n
   ^contains=matrix/neo/internal/notify.multiBackend
   ^defines=matrix/neo/internal/notify/notify.go
 
@@ -226,14 +190,12 @@ NODE id=matrix/neo/internal/notify.noopBackend kind=type
 EDGES
   contains=matrix/neo/internal/notify.noopBackend.Notify
   implements=matrix/neo/internal/notify.Notifier
-  ^references=matrix/neo/internal/notify.New,matrix/neo/internal/notify.noopBackend.Notify
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.noopBackend.Notify kind=method
   digest=b3:60fd65aedd6acc0ff40b6a4fe5ab249433efcde11a7bbfb0c6f52d44aaabcebd file=neo/internal/notify/notify.go range=165:165 lang=go exported=true byte_range=5738:5815
   sig=func (noopBackend) Notify(context.Context, Notification) error
 EDGES
-  references=matrix/neo/internal/notify.Notification,matrix/neo/internal/notify.noopBackend
   ^contains=matrix/neo/internal/notify.noopBackend
   ^defines=matrix/neo/internal/notify/notify.go
 
@@ -244,7 +206,6 @@ NODE id=matrix/neo/internal/notify.ntfyBackend kind=type
 EDGES
   contains=matrix/neo/internal/notify.ntfyBackend#client,matrix/neo/internal/notify.ntfyBackend#server,matrix/neo/internal/notify.ntfyBackend#topic,matrix/neo/internal/notify.ntfyBackend.Notify
   implements=matrix/neo/internal/notify.Notifier
-  ^references=matrix/neo/internal/notify.New,matrix/neo/internal/notify.ntfyBackend.Notify
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify.ntfyBackend#client kind=field
@@ -269,9 +230,7 @@ NODE id=matrix/neo/internal/notify.ntfyBackend.Notify kind=method
   digest=b3:078c66b6e531527d5d96353156a7f708d31e6365fb58c0ff2f8a1efc03066f9c file=neo/internal/notify/notify.go range=175:197 lang=go exported=true byte_range=6010:6598
   sig=func (b *ntfyBackend) Notify(ctx context.Context, n Notification) error
 EDGES
-  references=matrix/neo/internal/notify.Notification,matrix/neo/internal/notify.b,matrix/neo/internal/notify.ctx,matrix/neo/internal/notify.err,matrix/neo/internal/notify.n,matrix/neo/internal/notify.ntfyBackend,matrix/neo/internal/notify.req,matrix/neo/internal/notify.resp,matrix/neo/internal/notify.url
   ^contains=matrix/neo/internal/notify.ntfyBackend
-  ^calls=matrix/neo/internal/notify.multiBackend.Notify
   ^defines=matrix/neo/internal/notify/notify.go
 
 NODE id=matrix/neo/internal/notify/notify.go kind=file

@@ -21,7 +21,6 @@
 >
 > **No Commercial License is required** until you cross a Commercial Trigger:
 > - **Charged Fees** exceed **US $100,000** in any rolling 12‑month period (or any single calendar month), **or**
-> - **Liquidity Under Control** exceeds **US $10,000,000**.
 >
 > *This summary is for convenience only.*
 
@@ -54,11 +53,9 @@
 
 **1.2 "Charged Fees"** means all monetary or in‑kind value (fiat, crypto, tokens, credits, rebates, or other consideration) that You or Your Affiliates directly or indirectly receive or accrue in connection with operating, offering, or providing access to any product or service that is powered by, routed through, or materially enabled by the Licensed Work, including without limitation:
 
-- **(a)** swap/trade/execution fees, positive‑slippage capture, spreads, mark‑ups, retained priority/tips;
-- **(b)** maker/taker rebates, order‑flow payments, routing/referral/affiliate fees, MEV/builder/bundle payments and other extractable‑value shares;
-- **(c)** subscription, seat, usage, API, or platform fees attributable to the Licensed Work;
-- **(d)** performance/incentive/carried‑interest fees, revenue shares, or similar participation; and
-- **(e)** token grants, rewards, airdrops, distributions, or rebates received by or for You or Your Affiliates in consideration of or tied to such operations.
+- **(a)** subscription, seat, usage, API, or platform fees attributable to the Licensed Work;
+- **(b)** performance/incentive/carried‑interest fees, revenue shares, or similar participation; and
+- **(c)** token grants, rewards, airdrops, distributions, or rebates received by or for You or Your Affiliates in consideration of or tied to such operations.
 
 Charged Fees are measured on a gross‑receipts basis at fair‑market value in USD when received or accrued, include amounts received by agents/designees or wallets You control, and must be reasonably allocated for bundles.
 
@@ -70,15 +67,13 @@ Charged Fees are measured on a gross‑receipts basis at fair‑market value in 
 
 **1.5 "Rolling Year"** means any period of twelve (12) consecutive months measured on a rolling basis.
 
-**1.6 "Liquidity Under Control (LUC)"** means the aggregate fair‑market USD value of real, non‑synthetic, non‑levered, withdrawable assets that Your (or Your Affiliates'/agents') products, services, or code can instruct or cause to be moved or committed via the Licensed Work — *e.g.*, wallet balances under automated control, committed liquidity, or programmatic authorization — at the time assessed.
-
-**1.7 "Modify"** (and **"Modified Work"**) means to change, fork, translate, extend, or create a derivative work of the Licensed Work, including:
+**1.6 "Modify"** (and **"Modified Work"**) means to change, fork, translate, extend, or create a derivative work of the Licensed Work, including:
 
 - **(a)** altering source or bytecode;
 - **(b)** creating plug‑ins/modules/instruction programs that run in the same program/runtime or EVM address space (e.g., static/dynamic linking, delegatecall/proxy patterns); or
 - **(c)** bundling the Licensed Work and additions as a single product.
 
-**1.8 "You"** (and **"Your"**) means the individual or legal entity exercising rights under this license, and its Affiliates. **"Affiliates"** are entities controlling, controlled by, or under common control with a party, directly or indirectly.
+**1.7 "You"** (and **"Your"**) means the individual or legal entity exercising rights under this license, and its Affiliates. **"Affiliates"** are entities controlling, controlled by, or under common control with a party, directly or indirectly.
 
 ---
 

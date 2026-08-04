@@ -968,10 +968,10 @@ func (a *Agent) prepareWindow(cmTail string) (window []llm.Message, tail string,
 	pct = a.budgetPct(baseSystem)
 	if a.cfg.SessionExactProjection {
 		if !a.turn.projectionFrozen {
-			a.turn.projection = cmTail + checkpointTail
+			a.turn.projection = cmTail + checkpointTail + a.epistemicTail() + a.budgetTail(pct)
 			a.turn.projectionFrozen = true
 		}
-		tail = a.turn.projection + a.epistemicTail() + a.budgetTail(pct)
+		tail = a.turn.projection
 		window = assembleWindowContextSidecar(a.stableSystem(), a.working, tail)
 	} else {
 		tail = cmTail + checkpointTail + a.epistemicTail() + a.budgetTail(pct)

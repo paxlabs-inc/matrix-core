@@ -1,20 +1,16 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/operationswork kind=package
   digest=b3:8014d04985ce318a7d8d4589644271ea50c89b7bee323006b6537c98b30f08cf file=workforce/internal/operationswork range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/operationswork/service.go
-  imports=matrix/workforce/internal/approval,matrix/workforce/internal/contracts,matrix/workforce/internal/skills
   ^contains=mod:matrix/workforce
-  ^imports=matrix/workforce/internal/departmentadapter
 
 NODE id=matrix/workforce/internal/operationswork.AccountingDraft kind=type
   digest=b3:06e4a6c986f7c5d29d9686e8b5446af620011e317cb53de3581b8213a46303a3 file=workforce/internal/operationswork/service.go range=50:57 lang=go exported=true byte_range=1471:1879
   sig=type AccountingDraft struct {\n	Entries		[]LedgerEntry			`json:"entries"`\n	Reconciliation	*ReconciliationObservation	`json:"reconciliation"`\n	Report		string				`json:"report"`\n	ClosePeriod	string				`json:"close_period"`\n	Payment		*PaymentProposal		`json:"payment"`\n	Authorization	*PaymentAuthorization		`json:"authorization"`\n}
 EDGES
   contains=matrix/workforce/internal/operationswork.AccountingDraft#Authorization,matrix/workforce/internal/operationswork.AccountingDraft#ClosePeriod,matrix/workforce/internal/operationswork.AccountingDraft#Entries,matrix/workforce/internal/operationswork.AccountingDraft#Payment,matrix/workforce/internal/operationswork.AccountingDraft#Reconciliation,matrix/workforce/internal/operationswork.AccountingDraft#Report,matrix/workforce/internal/operationswork.AccountingDraft.validate
-  references=matrix/workforce/internal/operationswork.LedgerEntry,matrix/workforce/internal/operationswork.PaymentAuthorization,matrix/workforce/internal/operationswork.PaymentProposal,matrix/workforce/internal/operationswork.ReconciliationObservation
-  ^references=matrix/workforce/internal/operationswork.AccountingDraft.validate,matrix/workforce/internal/operationswork.Draft
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.AccountingDraft#Authorization kind=field
@@ -57,10 +53,7 @@ NODE id=matrix/workforce/internal/operationswork.AccountingDraft.validate kind=m
   digest=b3:38bcaae7861059a78b1a4dc5237ee03778804e2066820164ecfe3c2b0d5b145a file=workforce/internal/operationswork/service.go range=241:281 lang=go exported=false byte_range=8412:10299
   sig=func (draft AccountingDraft) validate(skillID contracts.SkillID) error
 EDGES
-  references=matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/operationswork.AccountingDraft,matrix/workforce/internal/operationswork.draft,matrix/workforce/internal/operationswork.entry,matrix/workforce/internal/operationswork.skillID,matrix/workforce/internal/skills.PaymentProposalSkill,matrix/workforce/internal/skills.ReconciliationSkill
   ^contains=matrix/workforce/internal/operationswork.AccountingDraft
-  ^calls=matrix/workforce/internal/operationswork.Draft.validate
-  ^references=matrix/workforce/internal/operationswork.Draft.validate
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.AdministrativeHandoff kind=type
@@ -68,8 +61,6 @@ NODE id=matrix/workforce/internal/operationswork.AdministrativeHandoff kind=type
   sig=type AdministrativeHandoff struct {\n	RecipientSeatID	contracts.SeatID	`json:"recipient_seat_id"`\n	RequiredAction	string			`json:"required_action"`\n	ExpiresAt	time.Time		`json:"expires_at"`\n}
 EDGES
   contains=matrix/workforce/internal/operationswork.AdministrativeHandoff#ExpiresAt,matrix/workforce/internal/operationswork.AdministrativeHandoff#RecipientSeatID,matrix/workforce/internal/operationswork.AdministrativeHandoff#RequiredAction
-  references=matrix/workforce/internal/contracts.SeatID
-  ^references=matrix/workforce/internal/operationswork.BackOfficeDraft
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.AdministrativeHandoff#ExpiresAt kind=field
@@ -95,8 +86,6 @@ NODE id=matrix/workforce/internal/operationswork.BackOfficeDraft kind=type
   sig=type BackOfficeDraft struct {\n	Records		[]string		`json:"records"`\n	ScheduledFor	*time.Time		`json:"scheduled_for"`\n	Vendor		string			`json:"vendor"`\n	Process		string			`json:"process"`\n	SLAAt		*time.Time		`json:"sla_at"`\n	Handoff		*AdministrativeHandoff	`json:"handoff"`\n}
 EDGES
   contains=matrix/workforce/internal/operationswork.BackOfficeDraft#Handoff,matrix/workforce/internal/operationswork.BackOfficeDraft#Process,matrix/workforce/internal/operationswork.BackOfficeDraft#Records,matrix/workforce/internal/operationswork.BackOfficeDraft#SLAAt,matrix/workforce/internal/operationswork.BackOfficeDraft#ScheduledFor,matrix/workforce/internal/operationswork.BackOfficeDraft#Vendor,matrix/workforce/internal/operationswork.BackOfficeDraft.validate
-  references=matrix/workforce/internal/operationswork.AdministrativeHandoff
-  ^references=matrix/workforce/internal/operationswork.BackOfficeDraft.validate,matrix/workforce/internal/operationswork.Draft
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.BackOfficeDraft#Handoff kind=field
@@ -139,10 +128,7 @@ NODE id=matrix/workforce/internal/operationswork.BackOfficeDraft.validate kind=m
   digest=b3:10bc35ecb63b7dfeadb0b6af04aa5918e3dd9d9269dc73bb414a32f5b0f524f5 file=workforce/internal/operationswork/service.go range=283:312 lang=go exported=false byte_range=10301:11493
   sig=func (draft BackOfficeDraft) validate(now time.Time) error
 EDGES
-  references=matrix/workforce/internal/operationswork.BackOfficeDraft,matrix/workforce/internal/operationswork.draft,matrix/workforce/internal/operationswork.now,matrix/workforce/internal/operationswork.record,matrix/workforce/internal/operationswork.timestamp
   ^contains=matrix/workforce/internal/operationswork.BackOfficeDraft
-  ^calls=matrix/workforce/internal/operationswork.Draft.validate
-  ^references=matrix/workforce/internal/operationswork.Draft.validate
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.Draft kind=type
@@ -150,8 +136,6 @@ NODE id=matrix/workforce/internal/operationswork.Draft kind=type
   sig=type Draft struct {\n	Summary			string			`json:"summary"`\n	Accounting		*AccountingDraft	`json:"accounting"`\n	BackOffice		*BackOfficeDraft	`json:"back_office"`\n	CompletionChecks	[]string		`json:"completion_checks"`\n	UnresolvedRisks		[]string		`json:"unresolved_risks"`\n}
 EDGES
   contains=matrix/workforce/internal/operationswork.Draft#Accounting,matrix/workforce/internal/operationswork.Draft#BackOffice,matrix/workforce/internal/operationswork.Draft#CompletionChecks,matrix/workforce/internal/operationswork.Draft#Summary,matrix/workforce/internal/operationswork.Draft#UnresolvedRisks,matrix/workforce/internal/operationswork.Draft.validate
-  references=matrix/workforce/internal/operationswork.AccountingDraft,matrix/workforce/internal/operationswork.BackOfficeDraft
-  ^references=matrix/workforce/internal/operationswork.Draft.validate,matrix/workforce/internal/operationswork.Input
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.Draft#Accounting kind=field
@@ -188,11 +172,7 @@ NODE id=matrix/workforce/internal/operationswork.Draft.validate kind=method
   digest=b3:773b8b00ef55c8cdc61c26b0370644b2a9c976f275ac7eb627484c3c9920e816 file=workforce/internal/operationswork/service.go range=212:239 lang=go exported=false byte_range=7350:8410
   sig=func (draft Draft) validate(\n	department contracts.DepartmentKind,\n	skillID contracts.SkillID,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/operationswork.AccountingDraft.validate,matrix/workforce/internal/operationswork.BackOfficeDraft.validate
-  references=matrix/workforce/internal/contracts.DepartmentAccounting,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/operationswork.AccountingDraft.validate,matrix/workforce/internal/operationswork.BackOfficeDraft.validate,matrix/workforce/internal/operationswork.Draft,matrix/workforce/internal/operationswork.department,matrix/workforce/internal/operationswork.draft,matrix/workforce/internal/operationswork.now,matrix/workforce/internal/operationswork.skillID,matrix/workforce/internal/operationswork.value,matrix/workforce/internal/operationswork.values
   ^contains=matrix/workforce/internal/operationswork.Draft
-  ^calls=matrix/workforce/internal/operationswork.Input.validateAt
-  ^references=matrix/workforce/internal/operationswork.Input.validateAt
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.ExpiringEvidence kind=type
@@ -200,8 +180,6 @@ NODE id=matrix/workforce/internal/operationswork.ExpiringEvidence kind=type
   sig=type ExpiringEvidence struct {\n	Reference	contracts.EvidenceRef	`json:"reference"`\n	ExpiresAt	time.Time		`json:"expires_at"`\n}
 EDGES
   contains=matrix/workforce/internal/operationswork.ExpiringEvidence#ExpiresAt,matrix/workforce/internal/operationswork.ExpiringEvidence#Reference
-  references=matrix/workforce/internal/contracts.EvidenceRef
-  ^references=matrix/workforce/internal/operationswork.Input
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.ExpiringEvidence#ExpiresAt kind=field
@@ -222,8 +200,6 @@ NODE id=matrix/workforce/internal/operationswork.Input kind=type
 EDGES
   contains=matrix/workforce/internal/operationswork.Input#CorrectionOf,matrix/workforce/internal/operationswork.Input#Department,matrix/workforce/internal/operationswork.Input#Draft,matrix/workforce/internal/operationswork.Input#Evidence,matrix/workforce/internal/operationswork.Input#IntentID,matrix/workforce/internal/operationswork.Input#Objective,matrix/workforce/internal/operationswork.Input#OrganizationID,matrix/workforce/internal/operationswork.Input#SchemaVersion,matrix/workforce/internal/operationswork.Input#SeatID,matrix/workforce/internal/operationswork.Input#SkillID,matrix/workforce/internal/operationswork.Input#SourceDigest,matrix/workforce/internal/operationswork.Input.Validate,matrix/workforce/internal/operationswork.Input.validateAt
   implements=matrix/workforce/internal/contracts.Validatable
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/operationswork.Draft,matrix/workforce/internal/operationswork.ExpiringEvidence
-  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch,matrix/workforce/internal/operationswork.Input.Validate,matrix/workforce/internal/operationswork.Input.validateAt,matrix/workforce/internal/operationswork.Service.Execute
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.Input#CorrectionOf kind=field
@@ -296,21 +272,14 @@ NODE id=matrix/workforce/internal/operationswork.Input.Validate kind=method
   digest=b3:e3352bc344a50caead0446a9edbd51d16d575772bd264246084229ec547b0587 file=workforce/internal/operationswork/service.go range=174:176 lang=go exported=true byte_range=5924:6001
   sig=func (input Input) Validate() error
 EDGES
-  calls=matrix/workforce/internal/operationswork.Input.validateAt
-  references=matrix/workforce/internal/operationswork.Input,matrix/workforce/internal/operationswork.Input.validateAt,matrix/workforce/internal/operationswork.input
   ^contains=matrix/workforce/internal/operationswork.Input
-  ^calls=matrix/workforce/internal/contracts.EncodeCanonical
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.Input.validateAt kind=method
   digest=b3:ae06858ab30c97608310d4ddf50681b11dbb02553f956184459e87bd28e78664 file=workforce/internal/operationswork/service.go range=178:210 lang=go exported=false byte_range=6003:7348
   sig=func (input Input) validateAt(now time.Time) error
 EDGES
-  calls=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/operationswork.Draft.validate,matrix/workforce/internal/operationswork.operationsSkillAllowed
-  references=matrix/workforce/internal/contracts.ContentHash.Validate,matrix/workforce/internal/contracts.EvidenceID,matrix/workforce/internal/contracts.EvidenceRef.Validate,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/operationswork.Draft.validate,matrix/workforce/internal/operationswork.Input,matrix/workforce/internal/operationswork.err,matrix/workforce/internal/operationswork.input,matrix/workforce/internal/operationswork.item,matrix/workforce/internal/operationswork.now,matrix/workforce/internal/operationswork.operationsSkillAllowed,matrix/workforce/internal/operationswork.seen
   ^contains=matrix/workforce/internal/operationswork.Input
-  ^calls=matrix/workforce/internal/operationswork.Input.Validate,matrix/workforce/internal/operationswork.Service.Execute
-  ^references=matrix/workforce/internal/operationswork.Input.Validate,matrix/workforce/internal/operationswork.Service.Execute
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.LedgerEntry kind=type
@@ -318,7 +287,6 @@ NODE id=matrix/workforce/internal/operationswork.LedgerEntry kind=type
   sig=type LedgerEntry struct {\n	Account		string	`json:"account"`\n	Counterpart	string	`json:"counterpart"`\n	AmountMinor	int64	`json:"amount_minor"`\n	Currency	string	`json:"currency"`\n}
 EDGES
   contains=matrix/workforce/internal/operationswork.LedgerEntry#Account,matrix/workforce/internal/operationswork.LedgerEntry#AmountMinor,matrix/workforce/internal/operationswork.LedgerEntry#Counterpart,matrix/workforce/internal/operationswork.LedgerEntry#Currency
-  ^references=matrix/workforce/internal/operationswork.AccountingDraft
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.LedgerEntry#Account kind=field
@@ -349,9 +317,6 @@ NODE id=matrix/workforce/internal/operationswork.New kind=func
   digest=b3:1ca4cbd2bfef8d335d0f4ef9d9e0d614b2fbfd98bec2e5791b08d7a00017424f file=workforce/internal/operationswork/service.go range=110:115 lang=go exported=true byte_range=3909:4174
   sig=func New(now func() time.Time, approvals *approval.Store) (*Service, error)
 EDGES
-  references=matrix/workforce/internal/approval.Store,matrix/workforce/internal/operationswork.Service,matrix/workforce/internal/operationswork.approvals,matrix/workforce/internal/operationswork.now
-  ^calls=matrix/workforce/internal/departmentadapter.New
-  ^references=matrix/workforce/internal/departmentadapter.New
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.PaymentAuthorization kind=type
@@ -359,8 +324,6 @@ NODE id=matrix/workforce/internal/operationswork.PaymentAuthorization kind=type
   sig=type PaymentAuthorization struct {\n	BatchID		contracts.ApprovalID	`json:"batch_id"`\n	CostMicrounits	uint64			`json:"cost_microunits"`\n	IdempotencyKey	string			`json:"idempotency_key"`\n}
 EDGES
   contains=matrix/workforce/internal/operationswork.PaymentAuthorization#BatchID,matrix/workforce/internal/operationswork.PaymentAuthorization#CostMicrounits,matrix/workforce/internal/operationswork.PaymentAuthorization#IdempotencyKey
-  references=matrix/workforce/internal/contracts.ApprovalID
-  ^references=matrix/workforce/internal/operationswork.AccountingDraft
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.PaymentAuthorization#BatchID kind=field
@@ -386,7 +349,6 @@ NODE id=matrix/workforce/internal/operationswork.PaymentProposal kind=type
   sig=type PaymentProposal struct {\n	Counterparty	string	`json:"counterparty"`\n	AmountMinor	uint64	`json:"amount_minor"`\n	Currency	string	`json:"currency"`\n	Purpose		string	`json:"purpose"`\n}
 EDGES
   contains=matrix/workforce/internal/operationswork.PaymentProposal#AmountMinor,matrix/workforce/internal/operationswork.PaymentProposal#Counterparty,matrix/workforce/internal/operationswork.PaymentProposal#Currency,matrix/workforce/internal/operationswork.PaymentProposal#Purpose
-  ^references=matrix/workforce/internal/operationswork.AccountingDraft
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.PaymentProposal#AmountMinor kind=field
@@ -418,7 +380,6 @@ NODE id=matrix/workforce/internal/operationswork.ReconciliationObservation kind=
   sig=type ReconciliationObservation struct {\n	ExternalObservationID	string	`json:"external_observation_id"`\n	ExpectedMinor		int64	`json:"expected_minor"`\n	ObservedMinor		int64	`json:"observed_minor"`\n	Currency		string	`json:"currency"`\n	Disposition		string	`json:"disposition"`\n}
 EDGES
   contains=matrix/workforce/internal/operationswork.ReconciliationObservation#Currency,matrix/workforce/internal/operationswork.ReconciliationObservation#Disposition,matrix/workforce/internal/operationswork.ReconciliationObservation#ExpectedMinor,matrix/workforce/internal/operationswork.ReconciliationObservation#ExternalObservationID,matrix/workforce/internal/operationswork.ReconciliationObservation#ObservedMinor
-  ^references=matrix/workforce/internal/operationswork.AccountingDraft
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.ReconciliationObservation#Currency kind=field
@@ -456,8 +417,6 @@ NODE id=matrix/workforce/internal/operationswork.Result kind=type
   sig=type Result struct {\n	SchemaVersion	string			`json:"schema_version"`\n	Outcome		string			`json:"outcome"`\n	Artifact	contracts.ArtifactRef	`json:"artifact"`\n	Evidence	[]contracts.EvidenceRef	`json:"evidence"`\n	RequiresHuman	bool			`json:"requires_human"`\n	Payload		[]byte			`json:"-"`\n}
 EDGES
   contains=matrix/workforce/internal/operationswork.Result#Artifact,matrix/workforce/internal/operationswork.Result#Evidence,matrix/workforce/internal/operationswork.Result#Outcome,matrix/workforce/internal/operationswork.Result#Payload,matrix/workforce/internal/operationswork.Result#RequiresHuman,matrix/workforce/internal/operationswork.Result#SchemaVersion
-  references=matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.EvidenceRef
-  ^references=matrix/workforce/internal/operationswork.Service.Execute
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.Result#Artifact kind=field
@@ -501,8 +460,6 @@ NODE id=matrix/workforce/internal/operationswork.Service kind=type
   sig=type Service struct {\n	now		func() time.Time\n	approvals	*approval.Store\n}
 EDGES
   contains=matrix/workforce/internal/operationswork.Service#approvals,matrix/workforce/internal/operationswork.Service#now,matrix/workforce/internal/operationswork.Service.Execute
-  references=matrix/workforce/internal/approval.Store
-  ^references=matrix/workforce/internal/departmentadapter.Adapter,matrix/workforce/internal/operationswork.New,matrix/workforce/internal/operationswork.Service.Execute
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.Service#approvals kind=field
@@ -521,21 +478,13 @@ NODE id=matrix/workforce/internal/operationswork.Service.Execute kind=method
   digest=b3:e0ad44f2019fd2f8d1465a3477d4ab23ae70de53f9df9470f9accfc8b6b95efa file=workforce/internal/operationswork/service.go range=117:172 lang=go exported=true byte_range=4176:5922
   sig=func (service *Service) Execute(ctx context.Context, input Input) (Result, error)
 EDGES
-  calls=matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/operationswork.Input.validateAt
-  references=matrix/workforce/internal/approval.Store.ConsumeBatch,matrix/workforce/internal/contracts.ArtifactID,matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.EncodeCanonical,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.HashCanonical,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/operationswork.Input,matrix/workforce/internal/operationswork.Input.validateAt,matrix/workforce/internal/operationswork.Result,matrix/workforce/internal/operationswork.Service,matrix/workforce/internal/operationswork.authorization,matrix/workforce/internal/operationswork.ctx,matrix/workforce/internal/operationswork.digest,matrix/workforce/internal/operationswork.err,matrix/workforce/internal/operationswork.evidence,matrix/workforce/internal/operationswork.index,matrix/workforce/internal/operationswork.input,matrix/workforce/internal/operationswork.now,matrix/workforce/internal/operationswork.outcome,matrix/workforce/internal/operationswork.payload,matrix/workforce/internal/operationswork.requiresHuman,matrix/workforce/internal/operationswork.service,matrix/workforce/internal/skills.PaymentProposalSkill
   ^contains=matrix/workforce/internal/operationswork.Service
-  ^calls=matrix/workforce/internal/departmentadapter.Adapter.Dispatch
-  ^references=matrix/workforce/internal/departmentadapter.Adapter.Dispatch
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork.operationsSkillAllowed kind=func
   digest=b3:f702834a600af89644623d66147fe62aad50b850bfd781379920fb46e107b86e file=workforce/internal/operationswork/service.go range=314:333 lang=go exported=false byte_range=11495:11939
   sig=func operationsSkillAllowed(\n	department contracts.DepartmentKind,\n	skillID contracts.SkillID,\n) bool
 EDGES
-  calls=matrix/workforce/internal/skills.AccountingSkillIDs,matrix/workforce/internal/skills.BackOfficeSkillIDs
-  references=matrix/workforce/internal/contracts.DepartmentAccounting,matrix/workforce/internal/contracts.DepartmentBackOffice,matrix/workforce/internal/contracts.DepartmentKind,matrix/workforce/internal/contracts.SkillID,matrix/workforce/internal/operationswork.allowed,matrix/workforce/internal/operationswork.candidate,matrix/workforce/internal/operationswork.department,matrix/workforce/internal/operationswork.skillID,matrix/workforce/internal/skills.AccountingSkillIDs,matrix/workforce/internal/skills.BackOfficeSkillIDs
-  ^calls=matrix/workforce/internal/operationswork.Input.validateAt
-  ^references=matrix/workforce/internal/operationswork.Input.validateAt
   ^defines=matrix/workforce/internal/operationswork/service.go
 
 NODE id=matrix/workforce/internal/operationswork/service.go kind=file

@@ -1,12 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/workforce/internal/mail kind=package
   digest=b3:7c3e21f3e51e0480c7400700a5eb8af4ad5616ef9b81ee96e157fa2e12f13c69 file=workforce/internal/mail range=0:0 lang=go exported=true
 EDGES
   contains=matrix/workforce/internal/mail/doc.go,matrix/workforce/internal/mail/store.go,matrix/workforce/internal/mail/types.go
-  imports=matrix/vault,matrix/workforce/internal/contracts,matrix/workforce/internal/dependency
   ^contains=mod:matrix/workforce
-  ^imports=matrix/workforce/cmd/workforced,matrix/workforce/internal/actorstate
 
 NODE id=matrix/workforce/internal/mail.Config kind=type
   digest=b3:47e6c2651235e5742f40fe3718a00ebd953ec7c44ccf6857b654a4e083e88258 file=workforce/internal/mail/types.go range=70:79 lang=go exported=true byte_range=2219:2491
@@ -15,7 +13,6 @@ NODE id=matrix/workforce/internal/mail.Config kind=type
 EDGES
   contains=matrix/workforce/internal/mail.Config#MaxAttachmentBytes,matrix/workforce/internal/mail.Config#MaxAutoReplies,matrix/workforce/internal/mail.Config#MaxMailboxMessages,matrix/workforce/internal/mail.Config#MaxMessageLifetime,matrix/workforce/internal/mail.Config#MaxRecipients,matrix/workforce/internal/mail.Config#MaxThreadDepth,matrix/workforce/internal/mail.Config#MaxThreadMessages,matrix/workforce/internal/mail.Config.Validate
   implements=matrix/workforce/internal/contracts.Validatable
-  ^references=matrix/workforce/cmd/workforced.buildWakeRunner,matrix/workforce/internal/mail.Config.Validate,matrix/workforce/internal/mail.New,matrix/workforce/internal/mail.Store
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.Config#MaxAttachmentBytes kind=field
@@ -65,10 +62,7 @@ NODE id=matrix/workforce/internal/mail.Config.Validate kind=method
   sig=func (config Config) Validate() error
   doc=Validate rejects absent or unreasonable mail bounds.
 EDGES
-  references=matrix/workforce/internal/mail.Config,matrix/workforce/internal/mail.config
   ^contains=matrix/workforce/internal/mail.Config
-  ^calls=matrix/workforce/internal/mail.New
-  ^references=matrix/workforce/internal/mail.New
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.ConsumeRequest kind=type
@@ -77,8 +71,6 @@ NODE id=matrix/workforce/internal/mail.ConsumeRequest kind=type
   doc=ConsumeRequest identifies one idempotent message opening.
 EDGES
   contains=matrix/workforce/internal/mail.ConsumeRequest#IdempotencyKey,matrix/workforce/internal/mail.ConsumeRequest#MessageID,matrix/workforce/internal/mail.ConsumeRequest#OrganizationID,matrix/workforce/internal/mail.ConsumeRequest#SeatID
-  references=matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID
-  ^references=matrix/workforce/internal/actorstate.Assembler.openInbox,matrix/workforce/internal/mail.Store.Consume
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.ConsumeRequest#IdempotencyKey kind=field
@@ -111,8 +103,6 @@ NODE id=matrix/workforce/internal/mail.CorrectionBinding kind=type
   doc=CorrectionBinding binds mail delivery to a durable ledger correction notice.
 EDGES
   contains=matrix/workforce/internal/mail.CorrectionBinding#AffectedRecord,matrix/workforce/internal/mail.CorrectionBinding#CorrectionID,matrix/workforce/internal/mail.CorrectionBinding#NoticeID,matrix/workforce/internal/mail.CorrectionBinding#RecipientSeatID
-  references=matrix/workforce/internal/contracts.CorrectionID,matrix/workforce/internal/contracts.RecordID,matrix/workforce/internal/contracts.SeatID
-  ^references=matrix/workforce/internal/mail.SendOptions,matrix/workforce/internal/mail.bindingEnvelope,matrix/workforce/internal/mail.validateCorrection
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.CorrectionBinding#AffectedRecord kind=field
@@ -145,8 +135,6 @@ NODE id=matrix/workforce/internal/mail.DelegationBinding kind=type
   doc=DelegationBinding is the exact graph mutation requested by a delegation message.
 EDGES
   contains=matrix/workforce/internal/mail.DelegationBinding#Edge,matrix/workforce/internal/mail.DelegationBinding#Node
-  references=matrix/workforce/internal/dependency.Edge,matrix/workforce/internal/dependency.Node
-  ^references=matrix/workforce/internal/mail.SendOptions,matrix/workforce/internal/mail.bindingEnvelope,matrix/workforce/internal/mail.validateDelegation
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.DelegationBinding#Edge kind=field
@@ -167,8 +155,6 @@ NODE id=matrix/workforce/internal/mail.Delivery kind=type
   doc=Delivery is one recipient-facing mailbox projection.
 EDGES
   contains=matrix/workforce/internal/mail.Delivery#Automatic,matrix/workforce/internal/mail.Delivery#BindingReady,matrix/workforce/internal/mail.Delivery#ConsumptionKey,matrix/workforce/internal/mail.Delivery#CreatedAt,matrix/workforce/internal/mail.Delivery#ExpiresAt,matrix/workforce/internal/mail.Delivery#MessageID,matrix/workforce/internal/mail.Delivery#ParentIntentID,matrix/workforce/internal/mail.Delivery#Priority,matrix/workforce/internal/mail.Delivery#Recipient,matrix/workforce/internal/mail.Delivery#RequiredAction,matrix/workforce/internal/mail.Delivery#State,matrix/workforce/internal/mail.Delivery#ThreadID,matrix/workforce/internal/mail.Delivery#TimeoutAction
-  references=matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/contracts.SeatAddress,matrix/workforce/internal/contracts.ThreadID,matrix/workforce/internal/contracts.TimeoutAction,matrix/workforce/internal/mail.DeliveryState
-  ^references=matrix/workforce/internal/mail.Store.Inbox
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.Delivery#Automatic kind=field
@@ -255,7 +241,6 @@ NODE id=matrix/workforce/internal/mail.DeliveryState kind=type
   doc=DeliveryState is the closed per-recipient mailbox lifecycle.
 EDGES
   contains=matrix/workforce/internal/mail.DeliveryState.Terminal,matrix/workforce/internal/mail.DeliveryState.Valid
-  ^references=matrix/workforce/internal/mail.Delivery,matrix/workforce/internal/mail.DeliveryState.Terminal,matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.StateAcknowledged,matrix/workforce/internal/mail.StateCancelled,matrix/workforce/internal/mail.StateCorrected,matrix/workforce/internal/mail.StateDelivered,matrix/workforce/internal/mail.StateExpired,matrix/workforce/internal/mail.StateOpened,matrix/workforce/internal/mail.StateQueued,matrix/workforce/internal/mail.StateRejected,matrix/workforce/internal/mail.StateReplied,matrix/workforce/internal/mail.StateResolved,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.Store.logAccess,matrix/workforce/internal/mail.TransitionRequest,matrix/workforce/internal/mail.allowedTransition
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.DeliveryState.Terminal kind=method
@@ -263,10 +248,7 @@ NODE id=matrix/workforce/internal/mail.DeliveryState.Terminal kind=method
   sig=func (state DeliveryState) Terminal() bool
   doc=Terminal reports whether no further recipient transition is allowed.
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState,matrix/workforce/internal/mail.StateCancelled,matrix/workforce/internal/mail.StateCorrected,matrix/workforce/internal/mail.StateExpired,matrix/workforce/internal/mail.StateRejected,matrix/workforce/internal/mail.StateResolved,matrix/workforce/internal/mail.state
   ^contains=matrix/workforce/internal/mail.DeliveryState
-  ^calls=matrix/workforce/internal/mail.Store.Consume
-  ^references=matrix/workforce/internal/mail.Store.Consume
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.DeliveryState.Valid kind=method
@@ -274,10 +256,7 @@ NODE id=matrix/workforce/internal/mail.DeliveryState.Valid kind=method
   sig=func (state DeliveryState) Valid() bool
   doc=Valid reports whether the delivery state is recognized.
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState,matrix/workforce/internal/mail.StateAcknowledged,matrix/workforce/internal/mail.StateCancelled,matrix/workforce/internal/mail.StateCorrected,matrix/workforce/internal/mail.StateDelivered,matrix/workforce/internal/mail.StateExpired,matrix/workforce/internal/mail.StateOpened,matrix/workforce/internal/mail.StateQueued,matrix/workforce/internal/mail.StateRejected,matrix/workforce/internal/mail.StateReplied,matrix/workforce/internal/mail.StateResolved,matrix/workforce/internal/mail.state
   ^contains=matrix/workforce/internal/mail.DeliveryState
-  ^calls=matrix/workforce/internal/mail.Store.Transition
-  ^references=matrix/workforce/internal/mail.Store.Transition
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.ErrConflict kind=var
@@ -285,7 +264,6 @@ NODE id=matrix/workforce/internal/mail.ErrConflict kind=var
   sig=error
   doc=ErrConflict means an immutable message or consumption identity was reused.
 EDGES
-  ^references=matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.PublishSeatKey,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.Store.deliverCorrectionNotice,matrix/workforce/internal/mail.Store.enforceThreadAndQuotas,matrix/workforce/internal/mail.Store.findExisting
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.ErrExpired kind=var
@@ -293,7 +271,6 @@ NODE id=matrix/workforce/internal/mail.ErrExpired kind=var
   sig=error
   doc=ErrExpired means the message can no longer be consumed.
 EDGES
-  ^references=matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.validateSend
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.ErrNotReady kind=var
@@ -301,7 +278,6 @@ NODE id=matrix/workforce/internal/mail.ErrNotReady kind=var
   sig=error
   doc=ErrNotReady means delivery or binding has not reached a consumable state.
 EDGES
-  ^references=matrix/workforce/internal/mail.Store.Consume
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.ErrQuota kind=var
@@ -309,7 +285,6 @@ NODE id=matrix/workforce/internal/mail.ErrQuota kind=var
   sig=error
   doc=ErrQuota means a mailbox, thread, attachment, or automatic-reply bound was reached.
 EDGES
-  ^references=matrix/workforce/internal/mail.Store.enforceThreadAndQuotas,matrix/workforce/internal/mail.Store.validateSend
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.ErrUnauthorized kind=var
@@ -317,7 +292,6 @@ NODE id=matrix/workforce/internal/mail.ErrUnauthorized kind=var
   sig=error
   doc=ErrUnauthorized means a sender, recipient, signature, or delegation is invalid.
 EDGES
-  ^references=matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.PublishSeatKey,matrix/workforce/internal/mail.Store.ResolveBindings,matrix/workforce/internal/mail.Store.RevokeSeatKey,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.Store.validateSend,matrix/workforce/internal/mail.Store.verifyRecipient,matrix/workforce/internal/mail.Store.verifySender,matrix/workforce/internal/mail.validateCorrection,matrix/workforce/internal/mail.validateDelegation
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.ErrUncertain kind=var
@@ -325,7 +299,6 @@ NODE id=matrix/workforce/internal/mail.ErrUncertain kind=var
   sig=error
   doc=ErrUncertain means durable mail state cannot be established and fails closed.
 EDGES
-  ^references=matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Dispatch,matrix/workforce/internal/mail.Store.Inbox,matrix/workforce/internal/mail.Store.PublishSeatKey,matrix/workforce/internal/mail.Store.ResolveBindings,matrix/workforce/internal/mail.Store.RevokeSeatKey,matrix/workforce/internal/mail.Store.Send,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.Store.currentTime,matrix/workforce/internal/mail.Store.deliverCorrectionNotice,matrix/workforce/internal/mail.Store.enforceThreadAndQuotas,matrix/workforce/internal/mail.Store.findExisting,matrix/workforce/internal/mail.Store.insertTimeout,matrix/workforce/internal/mail.Store.logAccess,matrix/workforce/internal/mail.Store.sendOnce,matrix/workforce/internal/mail.Store.verifyRecipient,matrix/workforce/internal/mail.Store.verifySender
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.New kind=func
@@ -333,10 +306,6 @@ NODE id=matrix/workforce/internal/mail.New kind=func
   sig=func New(\n	pool *pgxpool.Pool,\n	userVault *vault.UserVault,\n	graph *dependency.Store,\n	tenantID string,\n	config Config,\n	now func() time.Time,\n) (*Store, error)
   doc=New constructs a fail-closed tenant-scoped mail store.
 EDGES
-  calls=matrix/vault.UserVault.User,matrix/workforce/internal/mail.Config.Validate
-  references=matrix/vault.UserVault,matrix/vault.UserVault.User,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/mail.Config,matrix/workforce/internal/mail.Config.Validate,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.config,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.graph,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.pool,matrix/workforce/internal/mail.tenantID,matrix/workforce/internal/mail.userVault
-  ^calls=matrix/workforce/cmd/workforced.buildWakeRunner
-  ^references=matrix/workforce/cmd/workforced.buildWakeRunner
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.SeatKey kind=type
@@ -345,8 +314,6 @@ NODE id=matrix/workforce/internal/mail.SeatKey kind=type
   doc=SeatKey binds one seat address to a real Ed25519 verification key.
 EDGES
   contains=matrix/workforce/internal/mail.SeatKey#Address,matrix/workforce/internal/mail.SeatKey#EffectiveAt,matrix/workforce/internal/mail.SeatKey#KeyID,matrix/workforce/internal/mail.SeatKey#PublicKey
-  references=matrix/workforce/internal/contracts.SeatAddress
-  ^references=matrix/workforce/internal/mail.Store.PublishSeatKey
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.SeatKey#Address kind=field
@@ -379,8 +346,6 @@ NODE id=matrix/workforce/internal/mail.SendOptions kind=type
   doc=SendOptions are kernel-owned delivery controls outside the signed envelope.
 EDGES
   contains=matrix/workforce/internal/mail.SendOptions#Automatic,matrix/workforce/internal/mail.SendOptions#Correction,matrix/workforce/internal/mail.SendOptions#Delegation,matrix/workforce/internal/mail.SendOptions.binding
-  references=matrix/workforce/internal/mail.CorrectionBinding,matrix/workforce/internal/mail.DelegationBinding
-  ^references=matrix/workforce/internal/mail.SendOptions.binding,matrix/workforce/internal/mail.Store.Send,matrix/workforce/internal/mail.Store.enforceThreadAndQuotas,matrix/workforce/internal/mail.Store.sendOnce,matrix/workforce/internal/mail.Store.validateSend
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.SendOptions#Automatic kind=field
@@ -405,10 +370,7 @@ NODE id=matrix/workforce/internal/mail.SendOptions.binding kind=method
   digest=b3:74d9890d8af592b83cf172917ab2732005b4660ff278a9232c5f283d891da456 file=workforce/internal/mail/types.go range=243:261 lang=go exported=false byte_range=8635:9455
   sig=func (options SendOptions) binding(kind contracts.MessageKind) (bindingEnvelope, error)
 EDGES
-  references=matrix/workforce/internal/contracts.MessageCorrection,matrix/workforce/internal/contracts.MessageDelegation,matrix/workforce/internal/contracts.MessageKind,matrix/workforce/internal/mail.SendOptions,matrix/workforce/internal/mail.bindingEnvelope,matrix/workforce/internal/mail.kind,matrix/workforce/internal/mail.options
   ^contains=matrix/workforce/internal/mail.SendOptions
-  ^calls=matrix/workforce/internal/mail.Store.sendOnce,matrix/workforce/internal/mail.Store.validateSend
-  ^references=matrix/workforce/internal/mail.Store.sendOnce,matrix/workforce/internal/mail.Store.validateSend
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.SendResult kind=type
@@ -417,8 +379,6 @@ NODE id=matrix/workforce/internal/mail.SendResult kind=type
   doc=SendResult is the durable immutable send projection.
 EDGES
   contains=matrix/workforce/internal/mail.SendResult#BindingReady,matrix/workforce/internal/mail.SendResult#Deduplicated,matrix/workforce/internal/mail.SendResult#EnvelopeHash,matrix/workforce/internal/mail.SendResult#MessageID
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.MessageID
-  ^references=matrix/workforce/internal/mail.Store.Send,matrix/workforce/internal/mail.Store.findExisting,matrix/workforce/internal/mail.Store.sendOnce
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.SendResult#BindingReady kind=field
@@ -450,8 +410,6 @@ NODE id=matrix/workforce/internal/mail.SignEnvelope kind=func
   sig=func SignEnvelope(\n	envelope *contracts.MessageEnvelope,\n	keyID string,\n	privateKey ed25519.PrivateKey,\n) error
   doc=SignEnvelope signs the canonical unsigned envelope with one seat key.
 EDGES
-  calls=matrix/workforce/internal/contracts.MessageEnvelope.Validate,matrix/workforce/internal/mail.SigningBytes,matrix/workforce/internal/mail.validateToken
-  references=matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/contracts.MessageEnvelope.Validate,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/mail.SigningBytes,matrix/workforce/internal/mail.envelope,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.keyID,matrix/workforce/internal/mail.payload,matrix/workforce/internal/mail.privateKey,matrix/workforce/internal/mail.validateToken
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.SigningBytes kind=func
@@ -459,90 +417,66 @@ NODE id=matrix/workforce/internal/mail.SigningBytes kind=func
   sig=func SigningBytes(envelope contracts.MessageEnvelope) ([]byte, error)
   doc=SigningBytes returns the canonical unsigned message bytes.
 EDGES
-  calls=matrix/workforce/internal/contracts.MessageEnvelope.Validate
-  references=matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/contracts.MessageEnvelope.Validate,matrix/workforce/internal/contracts.Signature,matrix/workforce/internal/mail.copyEnvelope,matrix/workforce/internal/mail.envelope,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.payload,matrix/workforce/internal/mail.unsignedEnvelope
-  ^calls=matrix/workforce/internal/mail.SignEnvelope,matrix/workforce/internal/mail.Store.verifySender
-  ^references=matrix/workforce/internal/mail.SignEnvelope,matrix/workforce/internal/mail.Store.verifySender
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.StateAcknowledged kind=const
   digest=b3:82add85cf197b80cf71c7bab78849dc17ea099c9f8b5b0f14e6d7bd28c79b739 file=workforce/internal/mail/types.go range=39:39 lang=go exported=true byte_range=1308:1356
   sig=mail.DeliveryState
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState
-  ^references=matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.allowedTransition
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.StateCancelled kind=const
   digest=b3:33bdc64b3d7d67abf53b1ed7dc1b3f49e3366222891477b99e10b8c39dfce422 file=workforce/internal/mail/types.go range=44:44 lang=go exported=true byte_range=1540:1585
   sig=mail.DeliveryState
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState
-  ^references=matrix/workforce/internal/mail.DeliveryState.Terminal,matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.allowedTransition
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.StateCorrected kind=const
   digest=b3:91be35c0c4c2b6444612bb2e9a11c24585b6a171d58db3b0434379da285c02c8 file=workforce/internal/mail/types.go range=45:45 lang=go exported=true byte_range=1587:1632
   sig=mail.DeliveryState
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState
-  ^references=matrix/workforce/internal/mail.DeliveryState.Terminal,matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.allowedTransition
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.StateDelivered kind=const
   digest=b3:3717a2418280cff0915482fdb69c13ee15e8c490ef1f6500a902526b082e4d09 file=workforce/internal/mail/types.go range=37:37 lang=go exported=true byte_range=1217:1262
   sig=mail.DeliveryState
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState
-  ^references=matrix/workforce/internal/actorstate.Assembler.openInbox,matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.Store.Dispatch,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.allowedTransition
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.StateExpired kind=const
   digest=b3:f549a7c0a1a6136e544e08a1e0b4fd5163b709e24fb8623c93a27416b661e6bc file=workforce/internal/mail/types.go range=42:42 lang=go exported=true byte_range=1449:1492
   sig=mail.DeliveryState
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState
-  ^references=matrix/workforce/internal/mail.DeliveryState.Terminal,matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Dispatch,matrix/workforce/internal/mail.Store.Transition
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.StateOpened kind=const
   digest=b3:e3e454cda333fe3bd81b56dae96cfd2bda0ec2bada2641b55198be6288b93ba4 file=workforce/internal/mail/types.go range=38:38 lang=go exported=true byte_range=1264:1306
   sig=mail.DeliveryState
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState
-  ^references=matrix/workforce/internal/actorstate.Assembler.openInbox,matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.allowedTransition
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.StateQueued kind=const
   digest=b3:b0f77eb0a4f618ad207603e4a30cc6a2fb449939a72a14dc175492234fee8121 file=workforce/internal/mail/types.go range=36:36 lang=go exported=true byte_range=1173:1215
   sig=mail.DeliveryState
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState
-  ^references=matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.Store.sendOnce
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.StateRejected kind=const
   digest=b3:195ef52dde6085219f31b985fb2a1bde8a48825f5a9a4d907191747d268b21f3 file=workforce/internal/mail/types.go range=43:43 lang=go exported=true byte_range=1494:1538
   sig=mail.DeliveryState
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState
-  ^references=matrix/workforce/internal/mail.DeliveryState.Terminal,matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.allowedTransition
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.StateReplied kind=const
   digest=b3:fd5a02e26f3539a5509b652b0fe0f90ce88b1d40e390d8a440b7ebe713b27bf5 file=workforce/internal/mail/types.go range=40:40 lang=go exported=true byte_range=1358:1401
   sig=mail.DeliveryState
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState
-  ^references=matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.allowedTransition
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.StateResolved kind=const
   digest=b3:0a8d2b38656757b93c9ae85fa687e77f833261ef752ef3bdc56b21971fea586e file=workforce/internal/mail/types.go range=41:41 lang=go exported=true byte_range=1403:1447
   sig=mail.DeliveryState
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState
-  ^references=matrix/workforce/internal/mail.DeliveryState.Terminal,matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.allowedTransition
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.Store kind=type
@@ -551,8 +485,6 @@ NODE id=matrix/workforce/internal/mail.Store kind=type
   doc=Store owns one tenant's durable mailbox protocol.
 EDGES
   contains=matrix/workforce/internal/mail.Store#config,matrix/workforce/internal/mail.Store#graph,matrix/workforce/internal/mail.Store#now,matrix/workforce/internal/mail.Store#pool,matrix/workforce/internal/mail.Store#tenantID,matrix/workforce/internal/mail.Store#vault,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Dispatch,matrix/workforce/internal/mail.Store.Inbox,matrix/workforce/internal/mail.Store.PublishSeatKey,matrix/workforce/internal/mail.Store.ResolveBindings,matrix/workforce/internal/mail.Store.RevokeSeatKey,matrix/workforce/internal/mail.Store.Send,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.Store.bindingAD,matrix/workforce/internal/mail.Store.currentTime,matrix/workforce/internal/mail.Store.deliverCorrectionNotice,matrix/workforce/internal/mail.Store.enforceThreadAndQuotas,matrix/workforce/internal/mail.Store.findExisting,matrix/workforce/internal/mail.Store.insertTimeout,matrix/workforce/internal/mail.Store.logAccess,matrix/workforce/internal/mail.Store.messageAD,matrix/workforce/internal/mail.Store.noteBindingError,matrix/workforce/internal/mail.Store.sendOnce,matrix/workforce/internal/mail.Store.validateSend,matrix/workforce/internal/mail.Store.verifyRecipient,matrix/workforce/internal/mail.Store.verifySender
-  references=matrix/vault.UserVault,matrix/workforce/internal/dependency.Store,matrix/workforce/internal/mail.Config
-  ^references=matrix/workforce/internal/actorstate.Assembler,matrix/workforce/internal/actorstate.NewAssembler,matrix/workforce/internal/mail.New,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Dispatch,matrix/workforce/internal/mail.Store.Inbox,matrix/workforce/internal/mail.Store.PublishSeatKey,matrix/workforce/internal/mail.Store.ResolveBindings,matrix/workforce/internal/mail.Store.RevokeSeatKey,matrix/workforce/internal/mail.Store.Send,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.Store.bindingAD,matrix/workforce/internal/mail.Store.currentTime,matrix/workforce/internal/mail.Store.deliverCorrectionNotice,matrix/workforce/internal/mail.Store.enforceThreadAndQuotas,matrix/workforce/internal/mail.Store.findExisting,matrix/workforce/internal/mail.Store.insertTimeout,matrix/workforce/internal/mail.Store.logAccess,matrix/workforce/internal/mail.Store.messageAD,matrix/workforce/internal/mail.Store.noteBindingError,matrix/workforce/internal/mail.Store.sendOnce,matrix/workforce/internal/mail.Store.validateSend,matrix/workforce/internal/mail.Store.verifyRecipient,matrix/workforce/internal/mail.Store.verifySender
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store#config kind=field
@@ -596,11 +528,7 @@ NODE id=matrix/workforce/internal/mail.Store.Consume kind=method
   sig=func (store *Store) Consume(\n	ctx context.Context,\n	request ConsumeRequest,\n) (contracts.MessageEnvelope, bool, error)
   doc=Consume opens one delivered envelope exactly once per recipient identity.
 EDGES
-  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.MessageEnvelope.Validate,matrix/workforce/internal/mail.DeliveryState.Terminal,matrix/workforce/internal/mail.Store.currentTime,matrix/workforce/internal/mail.Store.deliverCorrectionNotice,matrix/workforce/internal/mail.Store.insertTimeout,matrix/workforce/internal/mail.Store.logAccess,matrix/workforce/internal/mail.Store.messageAD,matrix/workforce/internal/mail.validateToken
-  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.MessageCorrection,matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/contracts.MessageEnvelope.Validate,matrix/workforce/internal/mail.ConsumeRequest,matrix/workforce/internal/mail.DeliveryState,matrix/workforce/internal/mail.DeliveryState.Terminal,matrix/workforce/internal/mail.ErrConflict,matrix/workforce/internal/mail.ErrExpired,matrix/workforce/internal/mail.ErrNotReady,matrix/workforce/internal/mail.ErrUnauthorized,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.StateCancelled,matrix/workforce/internal/mail.StateCorrected,matrix/workforce/internal/mail.StateExpired,matrix/workforce/internal/mail.StateOpened,matrix/workforce/internal/mail.StateQueued,matrix/workforce/internal/mail.StateRejected,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.Store.currentTime,matrix/workforce/internal/mail.Store.deliverCorrectionNotice,matrix/workforce/internal/mail.Store.insertTimeout,matrix/workforce/internal/mail.Store.logAccess,matrix/workforce/internal/mail.Store.messageAD,matrix/workforce/internal/mail.consumptionKey,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.deduplicated,matrix/workforce/internal/mail.envelope,matrix/workforce/internal/mail.envelopeHash,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.expiresAt,matrix/workforce/internal/mail.kind,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.opened,matrix/workforce/internal/mail.request,matrix/workforce/internal/mail.sealed,matrix/workforce/internal/mail.state,matrix/workforce/internal/mail.store,matrix/workforce/internal/mail.sum,matrix/workforce/internal/mail.tx,matrix/workforce/internal/mail.validateToken
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/actorstate.Assembler.openInbox
-  ^references=matrix/workforce/internal/actorstate.Assembler.openInbox
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.Dispatch kind=method
@@ -608,8 +536,6 @@ NODE id=matrix/workforce/internal/mail.Store.Dispatch kind=method
   sig=func (store *Store) Dispatch(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	limit uint32,\n) (uint32, error)
   doc=Dispatch queues wake requests and marks durable mailbox delivery.
 EDGES
-  calls=matrix/workforce/internal/mail.Store.currentTime,matrix/workforce/internal/mail.Store.insertTimeout,matrix/workforce/internal/mail.Store.logAccess,matrix/workforce/internal/mail.deterministicID
-  references=matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.StateDelivered,matrix/workforce/internal/mail.StateExpired,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.Store.currentTime,matrix/workforce/internal/mail.Store.insertTimeout,matrix/workforce/internal/mail.Store.logAccess,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.delivered,matrix/workforce/internal/mail.deterministicID,matrix/workforce/internal/mail.due,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.item,matrix/workforce/internal/mail.items,matrix/workforce/internal/mail.limit,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.organizationID,matrix/workforce/internal/mail.rows,matrix/workforce/internal/mail.state,matrix/workforce/internal/mail.store,matrix/workforce/internal/mail.tx,matrix/workforce/internal/mail.wakeID
   ^contains=matrix/workforce/internal/mail.Store
   ^defines=matrix/workforce/internal/mail/store.go
 
@@ -618,10 +544,7 @@ NODE id=matrix/workforce/internal/mail.Store.Inbox kind=method
   sig=func (store *Store) Inbox(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	seatID contracts.SeatID,\n	limit uint32,\n) ([]Delivery, error)
   doc=Inbox returns a deterministic authorized mailbox projection without payload bytes.
 EDGES
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatAddress,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/mail.Delivery,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.delivery,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.limit,matrix/workforce/internal/mail.organizationID,matrix/workforce/internal/mail.result,matrix/workforce/internal/mail.rows,matrix/workforce/internal/mail.seatID,matrix/workforce/internal/mail.store
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/actorstate.Assembler.openInbox
-  ^references=matrix/workforce/internal/actorstate.Assembler.openInbox
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.PublishSeatKey kind=method
@@ -629,8 +552,6 @@ NODE id=matrix/workforce/internal/mail.Store.PublishSeatKey kind=method
   sig=func (store *Store) PublishSeatKey(ctx context.Context, key SeatKey) error
   doc=PublishSeatKey binds a current durable seat to a real verification key.
 EDGES
-  calls=matrix/workforce/internal/contracts.SeatAddress.Validate,matrix/workforce/internal/mail.validateToken
-  references=matrix/workforce/internal/contracts.SeatAddress.Validate,matrix/workforce/internal/mail.ErrConflict,matrix/workforce/internal/mail.ErrUnauthorized,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.SeatKey,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.active,matrix/workforce/internal/mail.command,matrix/workforce/internal/mail.count,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.key,matrix/workforce/internal/mail.store,matrix/workforce/internal/mail.validateToken
   ^contains=matrix/workforce/internal/mail.Store
   ^defines=matrix/workforce/internal/mail/store.go
 
@@ -639,11 +560,7 @@ NODE id=matrix/workforce/internal/mail.Store.ResolveBindings kind=method
   sig=func (store *Store) ResolveBindings(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	limit uint32,\n) (uint32, error)
   doc=ResolveBindings idempotently applies pending delegation and correction bindings.
 EDGES
-  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/dependency.Store.AddEdge,matrix/workforce/internal/dependency.Store.PutNode,matrix/workforce/internal/mail.Store.bindingAD,matrix/workforce/internal/mail.Store.noteBindingError
-  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.MessageCorrection,matrix/workforce/internal/contracts.MessageDelegation,matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/contracts.MessageKind,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/dependency.Store.AddEdge,matrix/workforce/internal/dependency.Store.PutNode,matrix/workforce/internal/mail.ErrUnauthorized,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.Store.bindingAD,matrix/workforce/internal/mail.Store.noteBindingError,matrix/workforce/internal/mail.binding,matrix/workforce/internal/mail.bindingEnvelope,matrix/workforce/internal/mail.command,matrix/workforce/internal/mail.count,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.item,matrix/workforce/internal/mail.limit,matrix/workforce/internal/mail.opened,matrix/workforce/internal/mail.organizationID,matrix/workforce/internal/mail.pending,matrix/workforce/internal/mail.pendingBinding,matrix/workforce/internal/mail.resolved,matrix/workforce/internal/mail.rows,matrix/workforce/internal/mail.store
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.sendOnce
-  ^references=matrix/workforce/internal/mail.Store.sendOnce
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.RevokeSeatKey kind=method
@@ -651,8 +568,6 @@ NODE id=matrix/workforce/internal/mail.Store.RevokeSeatKey kind=method
   sig=func (store *Store) RevokeSeatKey(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	seatID contracts.SeatID,\n	keyID string,\n) error
   doc=RevokeSeatKey prevents new messages while preserving historical verification.
 EDGES
-  calls=matrix/workforce/internal/mail.Store.currentTime
-  references=matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/mail.ErrUnauthorized,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.Store.currentTime,matrix/workforce/internal/mail.command,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.keyID,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.organizationID,matrix/workforce/internal/mail.seatID,matrix/workforce/internal/mail.store
   ^contains=matrix/workforce/internal/mail.Store
   ^defines=matrix/workforce/internal/mail/store.go
 
@@ -661,8 +576,6 @@ NODE id=matrix/workforce/internal/mail.Store.Send kind=method
   sig=func (store *Store) Send(\n	ctx context.Context,\n	envelope contracts.MessageEnvelope,\n	options SendOptions,\n) (SendResult, error)
   doc=Send verifies, seals, and durably queues one at-least-once message delivery.
 EDGES
-  calls=matrix/workforce/internal/mail.Store.sendOnce,matrix/workforce/internal/mail.retryableMail
-  references=matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.SendOptions,matrix/workforce/internal/mail.SendResult,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.Store.sendOnce,matrix/workforce/internal/mail.attempt,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.envelope,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.options,matrix/workforce/internal/mail.result,matrix/workforce/internal/mail.retryableMail,matrix/workforce/internal/mail.store
   ^contains=matrix/workforce/internal/mail.Store
   ^defines=matrix/workforce/internal/mail/store.go
 
@@ -671,8 +584,6 @@ NODE id=matrix/workforce/internal/mail.Store.Transition kind=method
   sig=func (store *Store) Transition(ctx context.Context, request TransitionRequest) error
   doc=Transition advances one recipient through the closed delivery lifecycle.
 EDGES
-  calls=matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.Store.currentTime,matrix/workforce/internal/mail.Store.logAccess,matrix/workforce/internal/mail.allowedTransition,matrix/workforce/internal/mail.validateToken
-  references=matrix/workforce/internal/mail.DeliveryState,matrix/workforce/internal/mail.DeliveryState.Valid,matrix/workforce/internal/mail.ErrConflict,matrix/workforce/internal/mail.ErrUnauthorized,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.StateDelivered,matrix/workforce/internal/mail.StateExpired,matrix/workforce/internal/mail.StateOpened,matrix/workforce/internal/mail.StateQueued,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.Store.currentTime,matrix/workforce/internal/mail.Store.logAccess,matrix/workforce/internal/mail.TransitionRequest,matrix/workforce/internal/mail.allowedTransition,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.current,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.request,matrix/workforce/internal/mail.store,matrix/workforce/internal/mail.tx,matrix/workforce/internal/mail.validateToken
   ^contains=matrix/workforce/internal/mail.Store
   ^defines=matrix/workforce/internal/mail/store.go
 
@@ -680,136 +591,91 @@ NODE id=matrix/workforce/internal/mail.Store.bindingAD kind=method
   digest=b3:63e297d3604932b4f19d045b2c903a2da66e83861f8df70513bdb1399d8f712a file=workforce/internal/mail/store.go range=1131:1140 lang=go exported=false byte_range=39077:39371
   sig=func (store *Store) bindingAD(\n	organizationID contracts.OrganizationID,\n	messageID contracts.MessageID,\n) vault.AD
 EDGES
-  references=matrix/vault.AD,matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.messageID,matrix/workforce/internal/mail.organizationID,matrix/workforce/internal/mail.store
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.ResolveBindings,matrix/workforce/internal/mail.Store.deliverCorrectionNotice,matrix/workforce/internal/mail.Store.sendOnce
-  ^references=matrix/workforce/internal/mail.Store.ResolveBindings,matrix/workforce/internal/mail.Store.deliverCorrectionNotice,matrix/workforce/internal/mail.Store.sendOnce
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.currentTime kind=method
   digest=b3:9e419d7607968152ec0bd2895f1b0749c7af1f52b21c864d37af380d2d76268a file=workforce/internal/mail/store.go range=1112:1118 lang=go exported=false byte_range=38556:38778
   sig=func (store *Store) currentTime() (time.Time, error)
 EDGES
-  references=matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.store
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Dispatch,matrix/workforce/internal/mail.Store.RevokeSeatKey,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.Store.validateSend
-  ^references=matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Dispatch,matrix/workforce/internal/mail.Store.RevokeSeatKey,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.Store.validateSend
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.deliverCorrectionNotice kind=method
   digest=b3:66a40892aacc62c0c3425eaed5158e34e30116f74b974e59942af30ff1e502a2 file=workforce/internal/mail/store.go range=1016:1062 lang=go exported=false byte_range=35499:37246
   sig=func (store *Store) deliverCorrectionNotice(\n	ctx context.Context,\n	tx pgx.Tx,\n	organizationID contracts.OrganizationID,\n	messageID contracts.MessageID,\n	seatID contracts.SeatID,\n) error
 EDGES
-  calls=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/mail.Store.bindingAD
-  references=matrix/vault.UserVault.OpenRecord,matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/mail.ErrConflict,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.Store.bindingAD,matrix/workforce/internal/mail.binding,matrix/workforce/internal/mail.bindingEnvelope,matrix/workforce/internal/mail.command,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.messageID,matrix/workforce/internal/mail.opened,matrix/workforce/internal/mail.organizationID,matrix/workforce/internal/mail.sealed,matrix/workforce/internal/mail.seatID,matrix/workforce/internal/mail.state,matrix/workforce/internal/mail.store,matrix/workforce/internal/mail.tx
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.Consume
-  ^references=matrix/workforce/internal/mail.Store.Consume
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.enforceThreadAndQuotas kind=method
   digest=b3:ad5d8ade4895f6d64fe06989e5d99aa88e7a0dbc5a1278d278a4e0242d3b8dcb file=workforce/internal/mail/store.go range=787:866 lang=go exported=false byte_range=28050:30855
   sig=func (store *Store) enforceThreadAndQuotas(\n	ctx context.Context,\n	tx pgx.Tx,\n	envelope contracts.MessageEnvelope,\n	options SendOptions,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/mail.recipientList
-  references=matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/contracts.ThreadID,matrix/workforce/internal/mail.ErrConflict,matrix/workforce/internal/mail.ErrQuota,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.SendOptions,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.automaticCount,matrix/workforce/internal/mail.count,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.depth,matrix/workforce/internal/mail.envelope,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.options,matrix/workforce/internal/mail.parentThread,matrix/workforce/internal/mail.recipient,matrix/workforce/internal/mail.recipientList,matrix/workforce/internal/mail.store,matrix/workforce/internal/mail.threadCount,matrix/workforce/internal/mail.tx
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.sendOnce
-  ^references=matrix/workforce/internal/mail.Store.sendOnce
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.findExisting kind=method
   digest=b3:8e6538215d92ad83bbad591f42f2f7d25098c6b1373c1dee5e0f1586318898d6 file=workforce/internal/mail/store.go range=868:901 lang=go exported=false byte_range=30857:31949
   sig=func (store *Store) findExisting(\n	ctx context.Context,\n	tx pgx.Tx,\n	envelope contracts.MessageEnvelope,\n	envelopeHash string,\n) (SendResult, bool, error)
 EDGES
-  references=matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/mail.ErrConflict,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.SendResult,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.bindingState,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.envelope,matrix/workforce/internal/mail.envelopeHash,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.messageID,matrix/workforce/internal/mail.store,matrix/workforce/internal/mail.storedHash,matrix/workforce/internal/mail.tx
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.sendOnce
-  ^references=matrix/workforce/internal/mail.Store.sendOnce
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.insertTimeout kind=method
   digest=b3:bd16cd7c25aa282d1d02850a0217306d451e985b2259a37673923533cba184fc file=workforce/internal/mail/store.go range=1064:1086 lang=go exported=false byte_range=37248:37916
   sig=func (store *Store) insertTimeout(\n	ctx context.Context,\n	tx pgx.Tx,\n	organizationID contracts.OrganizationID,\n	messageID contracts.MessageID,\n	seatID contracts.SeatID,\n	now time.Time,\n) error
 EDGES
-  references=matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.messageID,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.organizationID,matrix/workforce/internal/mail.seatID,matrix/workforce/internal/mail.store,matrix/workforce/internal/mail.tx
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Dispatch
-  ^references=matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Dispatch
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.logAccess kind=method
   digest=b3:8f4d48b8df5fb0dbb835fdf44492eabf1d7aaf80f6955738ca46a26a17fcb72f file=workforce/internal/mail/store.go range=1088:1110 lang=go exported=false byte_range=37918:38554
   sig=func (store *Store) logAccess(\n	ctx context.Context,\n	tx pgx.Tx,\n	organizationID contracts.OrganizationID,\n	messageID contracts.MessageID,\n	seatID contracts.SeatID,\n	state DeliveryState,\n	idempotencyKey string,\n	now time.Time,\n) error
 EDGES
-  references=matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/mail.DeliveryState,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.idempotencyKey,matrix/workforce/internal/mail.messageID,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.organizationID,matrix/workforce/internal/mail.seatID,matrix/workforce/internal/mail.state,matrix/workforce/internal/mail.store,matrix/workforce/internal/mail.tx
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Dispatch,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.Store.sendOnce
-  ^references=matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.Dispatch,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.Store.sendOnce
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.messageAD kind=method
   digest=b3:422aae3ab2fbb881a89963da2ba6a29e7c732bdfc0dc53bc1ae6cb177edf9ab4 file=workforce/internal/mail/store.go range=1120:1129 lang=go exported=false byte_range=38780:39075
   sig=func (store *Store) messageAD(\n	organizationID contracts.OrganizationID,\n	messageID contracts.MessageID,\n) vault.AD
 EDGES
-  references=matrix/vault.AD,matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SchemaVersionV1,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.messageID,matrix/workforce/internal/mail.organizationID,matrix/workforce/internal/mail.store
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.sendOnce
-  ^references=matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.sendOnce
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.noteBindingError kind=method
   digest=b3:8bfbe2e18adc4ef570150bf9caa5203496d4df8a9456edeb8992e2e0b062dc7c file=workforce/internal/mail/store.go range=1002:1014 lang=go exported=false byte_range=35077:35497
   sig=func (store *Store) noteBindingError(\n	ctx context.Context,\n	organizationID contracts.OrganizationID,\n	messageID contracts.MessageID,\n	cause error,\n) error
 EDGES
-  calls=matrix/workforce/internal/mail.boundedError
-  references=matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.boundedError,matrix/workforce/internal/mail.cause,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.messageID,matrix/workforce/internal/mail.organizationID,matrix/workforce/internal/mail.store
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.ResolveBindings
-  ^references=matrix/workforce/internal/mail.Store.ResolveBindings
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.sendOnce kind=method
   digest=b3:993d9e85947794635dae1eea962b522aef1c75d2b905dc4bd5da7f9e184b250e file=workforce/internal/mail/store.go range=161:276 lang=go exported=false byte_range=4799:9088
   sig=func (store *Store) sendOnce(\n	ctx context.Context,\n	envelope contracts.MessageEnvelope,\n	options SendOptions,\n) (SendResult, error)
 EDGES
-  calls=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/mail.SendOptions.binding,matrix/workforce/internal/mail.Store.ResolveBindings,matrix/workforce/internal/mail.Store.bindingAD,matrix/workforce/internal/mail.Store.enforceThreadAndQuotas,matrix/workforce/internal/mail.Store.findExisting,matrix/workforce/internal/mail.Store.logAccess,matrix/workforce/internal/mail.Store.messageAD,matrix/workforce/internal/mail.Store.validateSend,matrix/workforce/internal/mail.optionalBytes,matrix/workforce/internal/mail.optionalMessage,matrix/workforce/internal/mail.recipientList
-  references=matrix/vault.UserVault.SealRecord,matrix/workforce/internal/contracts.ContentHash,matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.SendOptions,matrix/workforce/internal/mail.SendOptions.binding,matrix/workforce/internal/mail.SendResult,matrix/workforce/internal/mail.StateQueued,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.Store.ResolveBindings,matrix/workforce/internal/mail.Store.bindingAD,matrix/workforce/internal/mail.Store.enforceThreadAndQuotas,matrix/workforce/internal/mail.Store.findExisting,matrix/workforce/internal/mail.Store.logAccess,matrix/workforce/internal/mail.Store.messageAD,matrix/workforce/internal/mail.Store.validateSend,matrix/workforce/internal/mail.binding,matrix/workforce/internal/mail.bindingKind,matrix/workforce/internal/mail.bindingState,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.encodeErr,matrix/workforce/internal/mail.encoded,matrix/workforce/internal/mail.encodedBinding,matrix/workforce/internal/mail.envelope,matrix/workforce/internal/mail.envelopeHash,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.existing,matrix/workforce/internal/mail.found,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.optionalBytes,matrix/workforce/internal/mail.optionalMessage,matrix/workforce/internal/mail.options,matrix/workforce/internal/mail.recipient,matrix/workforce/internal/mail.recipientList,matrix/workforce/internal/mail.recipients,matrix/workforce/internal/mail.result,matrix/workforce/internal/mail.sealed,matrix/workforce/internal/mail.sealedBinding,matrix/workforce/internal/mail.store,matrix/workforce/internal/mail.sum,matrix/workforce/internal/mail.tx
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.Send
-  ^references=matrix/workforce/internal/mail.Store.Send
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.validateSend kind=method
   digest=b3:bec827a0d02f662079aea314078f5223646c04f679bbf884a0b5a4447b170dbb file=workforce/internal/mail/store.go range=711:785 lang=go exported=false byte_range=25614:28048
   sig=func (store *Store) validateSend(\n	ctx context.Context,\n	envelope contracts.MessageEnvelope,\n	options SendOptions,\n) (time.Time, error)
 EDGES
-  calls=matrix/workforce/internal/contracts.MessageEnvelope.Validate,matrix/workforce/internal/mail.SendOptions.binding,matrix/workforce/internal/mail.Store.currentTime,matrix/workforce/internal/mail.Store.verifyRecipient,matrix/workforce/internal/mail.Store.verifySender,matrix/workforce/internal/mail.recipientList,matrix/workforce/internal/mail.validateCorrection,matrix/workforce/internal/mail.validateDelegation
-  references=matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.MessageCorrection,matrix/workforce/internal/contracts.MessageDelegation,matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/contracts.MessageEnvelope.Validate,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/mail.ErrExpired,matrix/workforce/internal/mail.ErrQuota,matrix/workforce/internal/mail.ErrUnauthorized,matrix/workforce/internal/mail.SendOptions,matrix/workforce/internal/mail.SendOptions.binding,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.Store.currentTime,matrix/workforce/internal/mail.Store.verifyRecipient,matrix/workforce/internal/mail.Store.verifySender,matrix/workforce/internal/mail.artifact,matrix/workforce/internal/mail.attachmentBytes,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.envelope,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.options,matrix/workforce/internal/mail.owner,matrix/workforce/internal/mail.recipient,matrix/workforce/internal/mail.recipientList,matrix/workforce/internal/mail.recipients,matrix/workforce/internal/mail.seen,matrix/workforce/internal/mail.store,matrix/workforce/internal/mail.validateCorrection,matrix/workforce/internal/mail.validateDelegation
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.sendOnce
-  ^references=matrix/workforce/internal/mail.Store.sendOnce
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.verifyRecipient kind=method
   digest=b3:37dfde037c26df82009be16a5455763d4bc1da7e4d10ed6678bd912883c2d27a file=workforce/internal/mail/store.go range=938:957 lang=go exported=false byte_range=33101:33687
   sig=func (store *Store) verifyRecipient(\n	ctx context.Context,\n	address contracts.SeatAddress,\n	now time.Time,\n) error
 EDGES
-  references=matrix/workforce/internal/contracts.SeatAddress,matrix/workforce/internal/mail.ErrUnauthorized,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.address,matrix/workforce/internal/mail.count,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.store
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.validateSend
-  ^references=matrix/workforce/internal/mail.Store.validateSend
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.Store.verifySender kind=method
   digest=b3:9546c327354f0254097eee348efa6ce4a4316ab9d8b2661eda3ccd099838e86e file=workforce/internal/mail/store.go range=903:936 lang=go exported=false byte_range=31951:33099
   sig=func (store *Store) verifySender(\n	ctx context.Context,\n	envelope contracts.MessageEnvelope,\n	now time.Time,\n) error
 EDGES
-  calls=matrix/workforce/internal/mail.SigningBytes
-  references=matrix/workforce/internal/contracts.DepartmentID,matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/mail.ErrUnauthorized,matrix/workforce/internal/mail.ErrUncertain,matrix/workforce/internal/mail.SigningBytes,matrix/workforce/internal/mail.Store,matrix/workforce/internal/mail.ctx,matrix/workforce/internal/mail.departmentID,matrix/workforce/internal/mail.envelope,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.now,matrix/workforce/internal/mail.payload,matrix/workforce/internal/mail.publicKey,matrix/workforce/internal/mail.signature,matrix/workforce/internal/mail.store
   ^contains=matrix/workforce/internal/mail.Store
-  ^calls=matrix/workforce/internal/mail.Store.validateSend
-  ^references=matrix/workforce/internal/mail.Store.validateSend
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.TransitionRequest kind=type
@@ -818,8 +684,6 @@ NODE id=matrix/workforce/internal/mail.TransitionRequest kind=type
   doc=TransitionRequest identifies one authorized recipient lifecycle transition.
 EDGES
   contains=matrix/workforce/internal/mail.TransitionRequest#IdempotencyKey,matrix/workforce/internal/mail.TransitionRequest#MessageID,matrix/workforce/internal/mail.TransitionRequest#OrganizationID,matrix/workforce/internal/mail.TransitionRequest#SeatID,matrix/workforce/internal/mail.TransitionRequest#State
-  references=matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/contracts.OrganizationID,matrix/workforce/internal/contracts.SeatID,matrix/workforce/internal/mail.DeliveryState
-  ^references=matrix/workforce/internal/mail.Store.Transition
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.TransitionRequest#IdempotencyKey kind=field
@@ -856,9 +720,6 @@ NODE id=matrix/workforce/internal/mail.allowedTransition kind=func
   digest=b3:64b01c970d15adbeefe3228fb1505400f4bf59b77f7bebd447f6ab1467c69159 file=workforce/internal/mail/store.go range=1164:1177 lang=go exported=false byte_range=40060:40577
   sig=func allowedTransition(current, target DeliveryState) bool
 EDGES
-  references=matrix/workforce/internal/mail.DeliveryState,matrix/workforce/internal/mail.StateAcknowledged,matrix/workforce/internal/mail.StateCancelled,matrix/workforce/internal/mail.StateCorrected,matrix/workforce/internal/mail.StateDelivered,matrix/workforce/internal/mail.StateOpened,matrix/workforce/internal/mail.StateRejected,matrix/workforce/internal/mail.StateReplied,matrix/workforce/internal/mail.StateResolved,matrix/workforce/internal/mail.current,matrix/workforce/internal/mail.target
-  ^calls=matrix/workforce/internal/mail.Store.Transition
-  ^references=matrix/workforce/internal/mail.Store.Transition
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.bindingEnvelope kind=type
@@ -866,8 +727,6 @@ NODE id=matrix/workforce/internal/mail.bindingEnvelope kind=type
   sig=type bindingEnvelope struct {\n	Kind		contracts.MessageKind	`json:"kind"`\n	Delegation	*DelegationBinding	`json:"delegation,omitempty"`\n	Correction	*CorrectionBinding	`json:"correction,omitempty"`\n}
 EDGES
   contains=matrix/workforce/internal/mail.bindingEnvelope#Correction,matrix/workforce/internal/mail.bindingEnvelope#Delegation,matrix/workforce/internal/mail.bindingEnvelope#Kind
-  references=matrix/workforce/internal/contracts.MessageKind,matrix/workforce/internal/mail.CorrectionBinding,matrix/workforce/internal/mail.DelegationBinding
-  ^references=matrix/workforce/internal/mail.SendOptions.binding,matrix/workforce/internal/mail.Store.ResolveBindings,matrix/workforce/internal/mail.Store.deliverCorrectionNotice
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.bindingEnvelope#Correction kind=field
@@ -892,36 +751,24 @@ NODE id=matrix/workforce/internal/mail.boundedError kind=func
   digest=b3:15f8eba810c1681f60c78fad536078f13f0f8b35807666bc84dd9874201b4d19 file=workforce/internal/mail/store.go range=1198:1207 lang=go exported=false byte_range=40954:41108
   sig=func boundedError(err error) string
 EDGES
-  references=matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.value
-  ^calls=matrix/workforce/internal/mail.Store.noteBindingError
-  ^references=matrix/workforce/internal/mail.Store.noteBindingError
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.deterministicID kind=func
   digest=b3:1d995961cac04f4c2ded1ffbd0acd51f0599b30cdb838a2f5b4b5978318220f4 file=workforce/internal/mail/store.go range=1193:1196 lang=go exported=false byte_range=40781:40952
   sig=func deterministicID(prefix string, parts ...string) string
 EDGES
-  references=matrix/workforce/internal/mail.parts,matrix/workforce/internal/mail.prefix,matrix/workforce/internal/mail.sum
-  ^calls=matrix/workforce/internal/mail.Store.Dispatch
-  ^references=matrix/workforce/internal/mail.Store.Dispatch
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.optionalBytes kind=func
   digest=b3:0d637655cf1461a4821824b7202f6097703b062bb55777905ced61c55b5e750c file=workforce/internal/mail/store.go range=1186:1191 lang=go exported=false byte_range=40687:40779
   sig=func optionalBytes(value []byte) any
 EDGES
-  references=matrix/workforce/internal/mail.value
-  ^calls=matrix/workforce/internal/mail.Store.sendOnce
-  ^references=matrix/workforce/internal/mail.Store.sendOnce
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.optionalMessage kind=func
   digest=b3:6ee56106de7ccc3de0d62436e34a65889ab64a5e50706b0620907f72a84b22f2 file=workforce/internal/mail/store.go range=1179:1184 lang=go exported=false byte_range=40579:40685
   sig=func optionalMessage(value *contracts.MessageID) any
 EDGES
-  references=matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/mail.value
-  ^calls=matrix/workforce/internal/mail.Store.sendOnce
-  ^references=matrix/workforce/internal/mail.Store.sendOnce
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.recipient kind=type
@@ -929,8 +776,6 @@ NODE id=matrix/workforce/internal/mail.recipient kind=type
   sig=type recipient struct {\n	address	contracts.SeatAddress\n	kind	string\n}
 EDGES
   contains=matrix/workforce/internal/mail.recipient#address,matrix/workforce/internal/mail.recipient#kind
-  references=matrix/workforce/internal/contracts.SeatAddress
-  ^references=matrix/workforce/internal/mail.Store.enforceThreadAndQuotas,matrix/workforce/internal/mail.Store.sendOnce,matrix/workforce/internal/mail.Store.validateSend,matrix/workforce/internal/mail.recipientList
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.recipient#address kind=field
@@ -949,18 +794,12 @@ NODE id=matrix/workforce/internal/mail.recipientList kind=func
   digest=b3:78f7c2571f96b0185a011abefc7ca4c446305b855e17f921fc04da9c1ad9672d file=workforce/internal/mail/store.go range=1147:1162 lang=go exported=false byte_range=39447:40058
   sig=func recipientList(envelope contracts.MessageEnvelope) []recipient
 EDGES
-  references=matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/mail.address,matrix/workforce/internal/mail.envelope,matrix/workforce/internal/mail.left,matrix/workforce/internal/mail.recipient,matrix/workforce/internal/mail.result,matrix/workforce/internal/mail.right
-  ^calls=matrix/workforce/internal/mail.Store.enforceThreadAndQuotas,matrix/workforce/internal/mail.Store.sendOnce,matrix/workforce/internal/mail.Store.validateSend
-  ^references=matrix/workforce/internal/mail.Store.enforceThreadAndQuotas,matrix/workforce/internal/mail.Store.sendOnce,matrix/workforce/internal/mail.Store.validateSend
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.retryableMail kind=func
   digest=b3:8f4b4ce9a7cfe0f6832d05af6db8026500cb7241402258f7340ea45dbc1afb72 file=workforce/internal/mail/store.go range=1209:1214 lang=go exported=false byte_range=41110:41328
   sig=func retryableMail(err error) bool
 EDGES
-  references=matrix/workforce/internal/mail.databaseError,matrix/workforce/internal/mail.err
-  ^calls=matrix/workforce/internal/mail.Store.Send
-  ^references=matrix/workforce/internal/mail.Store.Send
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.unsignedEnvelope kind=type
@@ -968,8 +807,6 @@ NODE id=matrix/workforce/internal/mail.unsignedEnvelope kind=type
   sig=type unsignedEnvelope struct {\n	SchemaVersion	string				`json:"schema_version"`\n	ID		contracts.MessageID		`json:"message_id"`\n	ThreadID	contracts.ThreadID		`json:"thread_id"`\n	InReplyTo	*contracts.MessageID		`json:"in_reply_to"`\n	From		contracts.SeatAddress		`json:"from"`\n	To		[]contracts.SeatAddress		`json:"to"`\n	CC		[]contracts.SeatAddress		`json:"cc"`\n	Kind		contracts.MessageKind		`json:"kind"`\n	Subject		string				`json:"subject"`\n	Payload		contracts.MessagePayloadRef	`json:"payload"`\n	ParentIntentID	contracts.IntentID		`json:"parent_intent_id"`\n	RequiredAction	string				`json:"required_action"`\n	Artifacts	[]contracts.ArtifactRef		`json:"artifacts"`\n	Evidence	[]contracts.EvidenceRef		`json:"evidence"`\n	Priority	int32				`json:"priority"`\n	Deadline	*time.Time			`json:"deadline"`\n	TimeoutAction	contracts.TimeoutAction		`json:"timeout_action"`\n	Classification	contracts.Classification	`json:"classification"`\n	IdempotencyKey	string				`json:"idempotency_key"`\n	CreatedAt	time.Time			`json:"created_at"`\n	ExpiresAt	time.Time			`json:"expires_at"`\n}
 EDGES
   contains=matrix/workforce/internal/mail.unsignedEnvelope#Artifacts,matrix/workforce/internal/mail.unsignedEnvelope#CC,matrix/workforce/internal/mail.unsignedEnvelope#Classification,matrix/workforce/internal/mail.unsignedEnvelope#CreatedAt,matrix/workforce/internal/mail.unsignedEnvelope#Deadline,matrix/workforce/internal/mail.unsignedEnvelope#Evidence,matrix/workforce/internal/mail.unsignedEnvelope#ExpiresAt,matrix/workforce/internal/mail.unsignedEnvelope#From,matrix/workforce/internal/mail.unsignedEnvelope#ID,matrix/workforce/internal/mail.unsignedEnvelope#IdempotencyKey,matrix/workforce/internal/mail.unsignedEnvelope#InReplyTo,matrix/workforce/internal/mail.unsignedEnvelope#Kind,matrix/workforce/internal/mail.unsignedEnvelope#ParentIntentID,matrix/workforce/internal/mail.unsignedEnvelope#Payload,matrix/workforce/internal/mail.unsignedEnvelope#Priority,matrix/workforce/internal/mail.unsignedEnvelope#RequiredAction,matrix/workforce/internal/mail.unsignedEnvelope#SchemaVersion,matrix/workforce/internal/mail.unsignedEnvelope#Subject,matrix/workforce/internal/mail.unsignedEnvelope#ThreadID,matrix/workforce/internal/mail.unsignedEnvelope#TimeoutAction,matrix/workforce/internal/mail.unsignedEnvelope#To
-  references=matrix/workforce/internal/contracts.ArtifactRef,matrix/workforce/internal/contracts.Classification,matrix/workforce/internal/contracts.EvidenceRef,matrix/workforce/internal/contracts.IntentID,matrix/workforce/internal/contracts.MessageID,matrix/workforce/internal/contracts.MessageKind,matrix/workforce/internal/contracts.MessagePayloadRef,matrix/workforce/internal/contracts.SeatAddress,matrix/workforce/internal/contracts.ThreadID,matrix/workforce/internal/contracts.TimeoutAction
-  ^references=matrix/workforce/internal/mail.SigningBytes
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail.unsignedEnvelope#Artifacts kind=field
@@ -1102,29 +939,18 @@ NODE id=matrix/workforce/internal/mail.validateCorrection kind=func
   digest=b3:045518f866381dffd4faf8a5d4d5f14ecacf0b89565464e54f4e3b0e64022c48 file=workforce/internal/mail/store.go range=984:1000 lang=go exported=false byte_range=34617:35075
   sig=func validateCorrection(\n	envelope contracts.MessageEnvelope,\n	binding CorrectionBinding,\n) error
 EDGES
-  calls=matrix/workforce/internal/mail.validateToken
-  references=matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/mail.CorrectionBinding,matrix/workforce/internal/mail.ErrUnauthorized,matrix/workforce/internal/mail.binding,matrix/workforce/internal/mail.envelope,matrix/workforce/internal/mail.err,matrix/workforce/internal/mail.validateToken,matrix/workforce/internal/mail.value
-  ^calls=matrix/workforce/internal/mail.Store.validateSend
-  ^references=matrix/workforce/internal/mail.Store.validateSend
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.validateDelegation kind=func
   digest=b3:28aae823d70855282bcdbbb5780482d8e3c94dbdfb137197567eda17ae0eb828 file=workforce/internal/mail/store.go range=959:982 lang=go exported=false byte_range=33689:34615
   sig=func validateDelegation(\n	envelope contracts.MessageEnvelope,\n	binding DelegationBinding,\n) error
 EDGES
-  calls=matrix/workforce/internal/dependency.Edge.Validate,matrix/workforce/internal/dependency.Node.Validate
-  references=matrix/workforce/internal/contracts.MessageEnvelope,matrix/workforce/internal/dependency.Edge.Validate,matrix/workforce/internal/dependency.EdgeDelegation,matrix/workforce/internal/dependency.Node.Validate,matrix/workforce/internal/dependency.NodeDelegation,matrix/workforce/internal/dependency.StatePending,matrix/workforce/internal/mail.DelegationBinding,matrix/workforce/internal/mail.ErrUnauthorized,matrix/workforce/internal/mail.binding,matrix/workforce/internal/mail.envelope,matrix/workforce/internal/mail.err
-  ^calls=matrix/workforce/internal/mail.Store.validateSend
-  ^references=matrix/workforce/internal/mail.Store.validateSend
   ^defines=matrix/workforce/internal/mail/store.go
 
 NODE id=matrix/workforce/internal/mail.validateToken kind=func
   digest=b3:4801ce01c41405180ff555fe58b4f357e71505b26b123e25ec6e4b471f9977c3 file=workforce/internal/mail/types.go range=263:277 lang=go exported=false byte_range=9457:9935
   sig=func validateToken(name, value string) error
 EDGES
-  references=matrix/workforce/internal/mail.char,matrix/workforce/internal/mail.name,matrix/workforce/internal/mail.value
-  ^calls=matrix/workforce/internal/mail.SignEnvelope,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.PublishSeatKey,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.validateCorrection
-  ^references=matrix/workforce/internal/mail.SignEnvelope,matrix/workforce/internal/mail.Store.Consume,matrix/workforce/internal/mail.Store.PublishSeatKey,matrix/workforce/internal/mail.Store.Transition,matrix/workforce/internal/mail.validateCorrection
   ^defines=matrix/workforce/internal/mail/types.go
 
 NODE id=matrix/workforce/internal/mail/doc.go kind=file

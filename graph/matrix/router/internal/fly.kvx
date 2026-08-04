@@ -1,12 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/router/internal/fly kind=package
   digest=b3:a38bd704e5a2f2a9f78deec02152eee712b33034318a024bffcd9bd0317d1058 file=router/internal/fly range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/fly/fly.go,matrix/router/internal/fly/provisioner.go
-  imports=matrix/router/internal/provision
   ^contains=mod:matrix/router
-  ^imports=matrix/router/cmd/matrix-router
 
 NODE id=matrix/router/internal/fly.Client kind=type
   digest=b3:15cd63a9daa20e042279827cbaf38e889a2b19b17b0bbf11e9bc27f7c9974b88 file=router/internal/fly/fly.go range=44:50 lang=go exported=true byte_range=1395:1548
@@ -14,7 +12,6 @@ NODE id=matrix/router/internal/fly.Client kind=type
   doc=Client makes authenticated calls to the Machines API.
 EDGES
   contains=matrix/router/internal/fly.Client#app,matrix/router/internal/fly.Client#endpoint,matrix/router/internal/fly.Client#hc,matrix/router/internal/fly.Client#token,matrix/router/internal/fly.Client.CreateMachine,matrix/router/internal/fly.Client.CreateVolume,matrix/router/internal/fly.Client.DestroyMachine,matrix/router/internal/fly.Client.EnsureStarted,matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Client.StartMachine,matrix/router/internal/fly.Client.WithEndpoint,matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.machinesPath,matrix/router/internal/fly.Client.volumesPath
-  ^references=matrix/router/internal/fly.Client.CreateMachine,matrix/router/internal/fly.Client.CreateVolume,matrix/router/internal/fly.Client.DestroyMachine,matrix/router/internal/fly.Client.EnsureStarted,matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Client.StartMachine,matrix/router/internal/fly.Client.WithEndpoint,matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.machinesPath,matrix/router/internal/fly.Client.volumesPath,matrix/router/internal/fly.New,matrix/router/internal/fly.Provisioner
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Client#app kind=field
@@ -46,11 +43,7 @@ NODE id=matrix/router/internal/fly.Client.CreateMachine kind=method
   sig=func (c *Client) CreateMachine(ctx context.Context, req *CreateMachineRequest) (*Machine, error)
   doc=CreateMachine provisions a new machine with the given config.
 EDGES
-  calls=matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.machinesPath
-  references=matrix/router/internal/fly.Client,matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.machinesPath,matrix/router/internal/fly.CreateMachineRequest,matrix/router/internal/fly.Machine,matrix/router/internal/fly.c,matrix/router/internal/fly.ctx,matrix/router/internal/fly.err,matrix/router/internal/fly.m,matrix/router/internal/fly.req
   ^contains=matrix/router/internal/fly.Client
-  ^calls=matrix/router/internal/fly.Provisioner.Ensure
-  ^references=matrix/router/internal/fly.Provisioner.Ensure
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Client.CreateVolume kind=method
@@ -58,11 +51,7 @@ NODE id=matrix/router/internal/fly.Client.CreateVolume kind=method
   sig=func (c *Client) CreateVolume(ctx context.Context, req *CreateVolumeRequest) (*Volume, error)
   doc=CreateVolume provisions a fresh volume in the given region.
 EDGES
-  calls=matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.volumesPath
-  references=matrix/router/internal/fly.Client,matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.volumesPath,matrix/router/internal/fly.CreateVolumeRequest,matrix/router/internal/fly.Volume,matrix/router/internal/fly.c,matrix/router/internal/fly.ctx,matrix/router/internal/fly.err,matrix/router/internal/fly.req,matrix/router/internal/fly.v
   ^contains=matrix/router/internal/fly.Client
-  ^calls=matrix/router/internal/fly.Provisioner.Ensure
-  ^references=matrix/router/internal/fly.Provisioner.Ensure
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Client.DestroyMachine kind=method
@@ -70,11 +59,7 @@ NODE id=matrix/router/internal/fly.Client.DestroyMachine kind=method
   sig=func (c *Client) DestroyMachine(ctx context.Context, id string, force bool) error
   doc=DestroyMachine deletes a machine. force=true unconditionally tears it\ndown even if started.
 EDGES
-  calls=matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.machinesPath
-  references=matrix/router/internal/fly.Client,matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.machinesPath,matrix/router/internal/fly.c,matrix/router/internal/fly.ctx,matrix/router/internal/fly.force,matrix/router/internal/fly.id,matrix/router/internal/fly.q
   ^contains=matrix/router/internal/fly.Client
-  ^calls=matrix/router/internal/fly.Provisioner.Destroy
-  ^references=matrix/router/internal/fly.Provisioner.Destroy
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Client.EnsureStarted kind=method
@@ -82,11 +67,7 @@ NODE id=matrix/router/internal/fly.Client.EnsureStarted kind=method
   sig=func (c *Client) EnsureStarted(ctx context.Context, id string, probeInterval time.Duration) (*Machine, error)
   doc=EnsureStarted wakes the machine if not already started, then polls\nat probeInterval (jittered up to 1.5x) until the machine reports\nstate=started or ctx times out. Returns the final Machine state.\n\nThis is the hot-path the proxy calls per request: when the user's\nmachine is suspended it incurs a wake-then-poll latency (~250ms-2s\nin our experience). The proxy adds ~one extra DB round-trip + the\nwake; an already-started machine returns near-instantly because the\nfirst GetMachine sees Started=true.
 EDGES
-  calls=matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Client.StartMachine,matrix/router/internal/fly.Machine.Started
-  references=matrix/router/internal/fly.Client,matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Client.StartMachine,matrix/router/internal/fly.Machine,matrix/router/internal/fly.Machine.Started,matrix/router/internal/fly.c,matrix/router/internal/fly.ctx,matrix/router/internal/fly.err,matrix/router/internal/fly.id,matrix/router/internal/fly.m,matrix/router/internal/fly.probeInterval,matrix/router/internal/fly.t
   ^contains=matrix/router/internal/fly.Client
-  ^calls=matrix/router/internal/fly.Provisioner.Wake
-  ^references=matrix/router/internal/fly.Provisioner.Wake
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Client.GetMachine kind=method
@@ -94,11 +75,7 @@ NODE id=matrix/router/internal/fly.Client.GetMachine kind=method
   sig=func (c *Client) GetMachine(ctx context.Context, id string) (*Machine, error)
   doc=GetMachine fetches a machine by id.
 EDGES
-  calls=matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.machinesPath
-  references=matrix/router/internal/fly.Client,matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.machinesPath,matrix/router/internal/fly.Machine,matrix/router/internal/fly.c,matrix/router/internal/fly.ctx,matrix/router/internal/fly.err,matrix/router/internal/fly.id,matrix/router/internal/fly.m
   ^contains=matrix/router/internal/fly.Client
-  ^calls=matrix/router/internal/fly.Client.EnsureStarted,matrix/router/internal/fly.Provisioner.Status
-  ^references=matrix/router/internal/fly.Client.EnsureStarted,matrix/router/internal/fly.Provisioner.Status
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Client.StartMachine kind=method
@@ -106,11 +83,7 @@ NODE id=matrix/router/internal/fly.Client.StartMachine kind=method
   sig=func (c *Client) StartMachine(ctx context.Context, id string) error
   doc=StartMachine wakes a stopped/suspended machine. Idempotent: starting\nan already-started machine returns nil.
 EDGES
-  calls=matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.machinesPath
-  references=matrix/router/internal/fly.Client,matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.machinesPath,matrix/router/internal/fly.c,matrix/router/internal/fly.ctx,matrix/router/internal/fly.id
   ^contains=matrix/router/internal/fly.Client
-  ^calls=matrix/router/internal/fly.Client.EnsureStarted
-  ^references=matrix/router/internal/fly.Client.EnsureStarted
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Client.WithEndpoint kind=method
@@ -118,7 +91,6 @@ NODE id=matrix/router/internal/fly.Client.WithEndpoint kind=method
   sig=func (c *Client) WithEndpoint(ep string) *Client
   doc=WithEndpoint overrides the API base URL — used by tests with mock\nservers. Returns *Client for chaining.
 EDGES
-  references=matrix/router/internal/fly.Client,matrix/router/internal/fly.c,matrix/router/internal/fly.ep
   ^contains=matrix/router/internal/fly.Client
   ^defines=matrix/router/internal/fly/fly.go
 
@@ -127,11 +99,7 @@ NODE id=matrix/router/internal/fly.Client.do kind=method
   sig=func (c *Client) do(ctx context.Context, method, path string, body any, out any) error
   doc=do executes a JSON request, decoding the response into out (nil to\ndiscard). Maps 401/403/404 to sentinel errors for clean callsite\nbranching.
 EDGES
-  calls=matrix/router/internal/fly.Client.machinesPath,matrix/router/internal/fly.truncate
-  references=matrix/router/internal/fly.Client,matrix/router/internal/fly.Client.machinesPath,matrix/router/internal/fly.ErrAppNotFound,matrix/router/internal/fly.ErrMachineNotFound,matrix/router/internal/fly.ErrUnauthorized,matrix/router/internal/fly.ErrUpstream,matrix/router/internal/fly.body,matrix/router/internal/fly.buf,matrix/router/internal/fly.c,matrix/router/internal/fly.ctx,matrix/router/internal/fly.err,matrix/router/internal/fly.method,matrix/router/internal/fly.out,matrix/router/internal/fly.path,matrix/router/internal/fly.rdr,matrix/router/internal/fly.req,matrix/router/internal/fly.resp,matrix/router/internal/fly.respBody,matrix/router/internal/fly.truncate
   ^contains=matrix/router/internal/fly.Client
-  ^calls=matrix/router/internal/fly.Client.CreateMachine,matrix/router/internal/fly.Client.CreateVolume,matrix/router/internal/fly.Client.DestroyMachine,matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Client.StartMachine
-  ^references=matrix/router/internal/fly.Client.CreateMachine,matrix/router/internal/fly.Client.CreateVolume,matrix/router/internal/fly.Client.DestroyMachine,matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Client.StartMachine
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Client.machinesPath kind=method
@@ -139,10 +107,7 @@ NODE id=matrix/router/internal/fly.Client.machinesPath kind=method
   sig=func (c *Client) machinesPath() string
   doc=machinesPath returns "/v1/apps/<app>/machines".
 EDGES
-  references=matrix/router/internal/fly.Client,matrix/router/internal/fly.c
   ^contains=matrix/router/internal/fly.Client
-  ^calls=matrix/router/internal/fly.Client.CreateMachine,matrix/router/internal/fly.Client.DestroyMachine,matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Client.StartMachine,matrix/router/internal/fly.Client.do
-  ^references=matrix/router/internal/fly.Client.CreateMachine,matrix/router/internal/fly.Client.DestroyMachine,matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Client.StartMachine,matrix/router/internal/fly.Client.do
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Client.volumesPath kind=method
@@ -150,10 +115,7 @@ NODE id=matrix/router/internal/fly.Client.volumesPath kind=method
   sig=func (c *Client) volumesPath() string
   doc=volumesPath returns "/v1/apps/<app>/volumes".
 EDGES
-  references=matrix/router/internal/fly.Client,matrix/router/internal/fly.c
   ^contains=matrix/router/internal/fly.Client
-  ^calls=matrix/router/internal/fly.Client.CreateVolume
-  ^references=matrix/router/internal/fly.Client.CreateVolume
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.CreateMachineConfig kind=type
@@ -162,8 +124,6 @@ NODE id=matrix/router/internal/fly.CreateMachineConfig kind=type
   doc=CreateMachineConfig wraps the immutable Machine config block.
 EDGES
   contains=matrix/router/internal/fly.CreateMachineConfig#AutoDestroy,matrix/router/internal/fly.CreateMachineConfig#Env,matrix/router/internal/fly.CreateMachineConfig#Guest,matrix/router/internal/fly.CreateMachineConfig#Image,matrix/router/internal/fly.CreateMachineConfig#Init,matrix/router/internal/fly.CreateMachineConfig#Mounts,matrix/router/internal/fly.CreateMachineConfig#Restart,matrix/router/internal/fly.CreateMachineConfig#Services
-  references=matrix/router/internal/fly.CreateMachineGuest,matrix/router/internal/fly.CreateMachineMount,matrix/router/internal/fly.CreateMachineRestart
-  ^references=matrix/router/internal/fly.CreateMachineRequest,matrix/router/internal/fly.Provisioner.Ensure
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.CreateMachineConfig#AutoDestroy kind=field
@@ -220,7 +180,6 @@ NODE id=matrix/router/internal/fly.CreateMachineGuest kind=type
   doc=CreateMachineGuest sizes the VM.
 EDGES
   contains=matrix/router/internal/fly.CreateMachineGuest#CPUKind,matrix/router/internal/fly.CreateMachineGuest#CPUs,matrix/router/internal/fly.CreateMachineGuest#MemoryMB
-  ^references=matrix/router/internal/fly.CreateMachineConfig,matrix/router/internal/fly.Provisioner.Ensure
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.CreateMachineGuest#CPUKind kind=field
@@ -247,7 +206,6 @@ NODE id=matrix/router/internal/fly.CreateMachineMount kind=type
   doc=CreateMachineMount attaches a volume.
 EDGES
   contains=matrix/router/internal/fly.CreateMachineMount#Path,matrix/router/internal/fly.CreateMachineMount#Volume
-  ^references=matrix/router/internal/fly.CreateMachineConfig,matrix/router/internal/fly.Provisioner.Ensure
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.CreateMachineMount#Path kind=field
@@ -268,8 +226,6 @@ NODE id=matrix/router/internal/fly.CreateMachineRequest kind=type
   doc=CreateMachineRequest is the POST /machines body. We omit everything\noptional so callers can supply only what the matrix-daemon image\nneeds (image+env+region+volume mount).
 EDGES
   contains=matrix/router/internal/fly.CreateMachineRequest#Config,matrix/router/internal/fly.CreateMachineRequest#Name,matrix/router/internal/fly.CreateMachineRequest#Region
-  references=matrix/router/internal/fly.CreateMachineConfig
-  ^references=matrix/router/internal/fly.Client.CreateMachine,matrix/router/internal/fly.Provisioner.Ensure
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.CreateMachineRequest#Config kind=field
@@ -296,7 +252,6 @@ NODE id=matrix/router/internal/fly.CreateMachineRestart kind=type
   doc=CreateMachineRestart matches Fly's restart policy block.
 EDGES
   contains=matrix/router/internal/fly.CreateMachineRestart#Policy
-  ^references=matrix/router/internal/fly.CreateMachineConfig,matrix/router/internal/fly.Provisioner.Ensure
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.CreateMachineRestart#Policy kind=field
@@ -311,7 +266,6 @@ NODE id=matrix/router/internal/fly.CreateVolumeRequest kind=type
   doc=CreateVolumeRequest creates a volume.
 EDGES
   contains=matrix/router/internal/fly.CreateVolumeRequest#Name,matrix/router/internal/fly.CreateVolumeRequest#Region,matrix/router/internal/fly.CreateVolumeRequest#SizeGB
-  ^references=matrix/router/internal/fly.Client.CreateVolume,matrix/router/internal/fly.Provisioner.Ensure
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.CreateVolumeRequest#Name kind=field
@@ -337,7 +291,6 @@ NODE id=matrix/router/internal/fly.DefaultEndpoint kind=const
   sig=untyped string
   doc=DefaultEndpoint is the public Machines API base. Override via\nWithEndpoint for local mock servers.
 EDGES
-  ^references=matrix/router/internal/fly.New
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.ErrAppNotFound kind=var
@@ -345,7 +298,6 @@ NODE id=matrix/router/internal/fly.ErrAppNotFound kind=var
   sig=error
   doc=Sentinel errors. Callers errors.Is to dispatch on these.
 EDGES
-  ^references=matrix/router/internal/fly.Client.do,matrix/router/internal/fly.mapErr
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.ErrMachineNotFound kind=var
@@ -353,7 +305,6 @@ NODE id=matrix/router/internal/fly.ErrMachineNotFound kind=var
   sig=error
   doc=Sentinel errors. Callers errors.Is to dispatch on these.
 EDGES
-  ^references=matrix/router/internal/fly.Client.do,matrix/router/internal/fly.mapErr
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.ErrUnauthorized kind=var
@@ -361,7 +312,6 @@ NODE id=matrix/router/internal/fly.ErrUnauthorized kind=var
   sig=error
   doc=Sentinel errors. Callers errors.Is to dispatch on these.
 EDGES
-  ^references=matrix/router/internal/fly.Client.do,matrix/router/internal/fly.mapErr
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.ErrUpstream kind=var
@@ -369,7 +319,6 @@ NODE id=matrix/router/internal/fly.ErrUpstream kind=var
   sig=error
   doc=Sentinel errors. Callers errors.Is to dispatch on these.
 EDGES
-  ^references=matrix/router/internal/fly.Client.do
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Machine kind=type
@@ -378,7 +327,6 @@ NODE id=matrix/router/internal/fly.Machine kind=type
   doc=Machine is the subset of the Fly Machines API "machine" object that\nmatrix-router cares about. Other fields are intentionally dropped.
 EDGES
   contains=matrix/router/internal/fly.Machine#Config,matrix/router/internal/fly.Machine#CreatedAt,matrix/router/internal/fly.Machine#ID,matrix/router/internal/fly.Machine#InstanceID,matrix/router/internal/fly.Machine#Name,matrix/router/internal/fly.Machine#PrivateIP,matrix/router/internal/fly.Machine#Region,matrix/router/internal/fly.Machine#State,matrix/router/internal/fly.Machine.Started
-  ^references=matrix/router/internal/fly.Client.CreateMachine,matrix/router/internal/fly.Client.EnsureStarted,matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Machine.Started,matrix/router/internal/fly.Provisioner.env
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Machine#Config kind=field
@@ -434,10 +382,7 @@ NODE id=matrix/router/internal/fly.Machine.Started kind=method
   sig=func (m *Machine) Started() bool
   doc=Started reports whether the Machine state is the running state ("started").
 EDGES
-  references=matrix/router/internal/fly.Machine,matrix/router/internal/fly.m
   ^contains=matrix/router/internal/fly.Machine
-  ^calls=matrix/router/internal/fly.Client.EnsureStarted,matrix/router/internal/fly.Provisioner.env
-  ^references=matrix/router/internal/fly.Client.EnsureStarted,matrix/router/internal/fly.Provisioner.env
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.New kind=func
@@ -445,9 +390,6 @@ NODE id=matrix/router/internal/fly.New kind=func
   sig=func New(token, app string) *Client
   doc=New constructs a Client. Token is the FLY_API_TOKEN. app is the Fly\napp slug (e.g. "matrix-daemon"). Uses an internal http.Client with\n30s default timeout for read endpoints; long polls (start) take\ntheir own context.
 EDGES
-  references=matrix/router/internal/fly.Client,matrix/router/internal/fly.DefaultEndpoint,matrix/router/internal/fly.app,matrix/router/internal/fly.token
-  ^calls=matrix/router/cmd/matrix-router.main
-  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Provisioner kind=type
@@ -457,8 +399,6 @@ NODE id=matrix/router/internal/fly.Provisioner kind=type
 EDGES
   contains=matrix/router/internal/fly.Provisioner#Client,matrix/router/internal/fly.Provisioner#Image,matrix/router/internal/fly.Provisioner#ProbeInterval,matrix/router/internal/fly.Provisioner#VolumeSizeGB,matrix/router/internal/fly.Provisioner.Destroy,matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/fly.Provisioner.Status,matrix/router/internal/fly.Provisioner.Wake,matrix/router/internal/fly.Provisioner.WakeOnRequest,matrix/router/internal/fly.Provisioner.env
   implements=matrix/router/internal/provision.Provisioner
-  references=matrix/router/internal/fly.Client
-  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/fly.Provisioner.Destroy,matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/fly.Provisioner.Status,matrix/router/internal/fly.Provisioner.Wake,matrix/router/internal/fly.Provisioner.WakeOnRequest,matrix/router/internal/fly.Provisioner.env,matrix/router/internal/fly._
   ^defines=matrix/router/internal/fly/provisioner.go
 
 NODE id=matrix/router/internal/fly.Provisioner#Client kind=field
@@ -493,10 +433,7 @@ NODE id=matrix/router/internal/fly.Provisioner.Destroy kind=method
   sig=func (p *Provisioner) Destroy(ctx context.Context, ref provision.Ref) error
   doc=Destroy force-deletes the machine even if started. The volume is\nleft for the operator (same policy as the admin delete path).
 EDGES
-  calls=matrix/router/internal/fly.Client.DestroyMachine,matrix/router/internal/fly.mapErr
-  references=matrix/router/internal/fly.Client.DestroyMachine,matrix/router/internal/fly.Provisioner,matrix/router/internal/fly.ctx,matrix/router/internal/fly.err,matrix/router/internal/fly.mapErr,matrix/router/internal/fly.p,matrix/router/internal/fly.ref,matrix/router/internal/provision.Ref
   ^contains=matrix/router/internal/fly.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.deleteUser
   ^defines=matrix/router/internal/fly/provisioner.go
 
 NODE id=matrix/router/internal/fly.Provisioner.Ensure kind=method
@@ -504,10 +441,7 @@ NODE id=matrix/router/internal/fly.Provisioner.Ensure kind=method
   sig=func (p *Provisioner) Ensure(ctx context.Context, req provision.CreateRequest) (*provision.Env, error)
   doc=Ensure provisions a fresh Volume + Machine for the user. The Machine\nconfig (guest sizing, restart policy, /data mount) is unchanged from\nthe pre-extraction admin.provisionMachine.
 EDGES
-  calls=matrix/router/internal/fly.Client.CreateMachine,matrix/router/internal/fly.Client.CreateVolume,matrix/router/internal/fly.Provisioner.env,matrix/router/internal/fly.mapErr,matrix/router/internal/fly.safeName,matrix/router/internal/fly.volumeSafeName
-  references=matrix/router/internal/fly.Client.CreateMachine,matrix/router/internal/fly.Client.CreateVolume,matrix/router/internal/fly.CreateMachineConfig,matrix/router/internal/fly.CreateMachineGuest,matrix/router/internal/fly.CreateMachineMount,matrix/router/internal/fly.CreateMachineRequest,matrix/router/internal/fly.CreateMachineRestart,matrix/router/internal/fly.CreateVolumeRequest,matrix/router/internal/fly.Provisioner,matrix/router/internal/fly.Provisioner.env,matrix/router/internal/fly.ctx,matrix/router/internal/fly.env,matrix/router/internal/fly.err,matrix/router/internal/fly.mach,matrix/router/internal/fly.mapErr,matrix/router/internal/fly.mreq,matrix/router/internal/fly.p,matrix/router/internal/fly.req,matrix/router/internal/fly.safeName,matrix/router/internal/fly.vol,matrix/router/internal/fly.volName,matrix/router/internal/fly.volSize,matrix/router/internal/fly.volumeSafeName,matrix/router/internal/provision.CreateRequest,matrix/router/internal/provision.Env
   ^contains=matrix/router/internal/fly.Provisioner
-  ^calls=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/fly/provisioner.go
 
 NODE id=matrix/router/internal/fly.Provisioner.Status kind=method
@@ -515,8 +449,6 @@ NODE id=matrix/router/internal/fly.Provisioner.Status kind=method
   sig=func (p *Provisioner) Status(ctx context.Context, ref provision.Ref) (*provision.Env, error)
   doc=Status fetches the machine and reports Started as readiness.
 EDGES
-  calls=matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Provisioner.env,matrix/router/internal/fly.mapErr
-  references=matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Provisioner,matrix/router/internal/fly.Provisioner.env,matrix/router/internal/fly.ctx,matrix/router/internal/fly.e,matrix/router/internal/fly.err,matrix/router/internal/fly.m,matrix/router/internal/fly.mapErr,matrix/router/internal/fly.p,matrix/router/internal/fly.ref,matrix/router/internal/provision.Env,matrix/router/internal/provision.Ref
   ^contains=matrix/router/internal/fly.Provisioner
   ^defines=matrix/router/internal/fly/provisioner.go
 
@@ -525,10 +457,7 @@ NODE id=matrix/router/internal/fly.Provisioner.Wake kind=method
   sig=func (p *Provisioner) Wake(ctx context.Context, ref provision.Ref) (*provision.Env, error)
   doc=Wake is the pre-extraction proxy hot path: EnsureStarted wakes a\nsuspended machine and polls until state=started or ctx times out.
 EDGES
-  calls=matrix/router/internal/fly.Client.EnsureStarted,matrix/router/internal/fly.Provisioner.env,matrix/router/internal/fly.mapErr
-  references=matrix/router/internal/fly.Client.EnsureStarted,matrix/router/internal/fly.Provisioner,matrix/router/internal/fly.Provisioner.env,matrix/router/internal/fly.ctx,matrix/router/internal/fly.e,matrix/router/internal/fly.err,matrix/router/internal/fly.m,matrix/router/internal/fly.mapErr,matrix/router/internal/fly.p,matrix/router/internal/fly.ref,matrix/router/internal/provision.Env,matrix/router/internal/provision.Ref
   ^contains=matrix/router/internal/fly.Provisioner
-  ^calls=matrix/router/internal/proxy.Handler.forwardWith
   ^defines=matrix/router/internal/fly/provisioner.go
 
 NODE id=matrix/router/internal/fly.Provisioner.WakeOnRequest kind=method
@@ -536,9 +465,7 @@ NODE id=matrix/router/internal/fly.Provisioner.WakeOnRequest kind=method
   sig=func (p *Provisioner) WakeOnRequest() bool
   doc=WakeOnRequest is false: Fly needs the explicit start API.
 EDGES
-  references=matrix/router/internal/fly.Provisioner
   ^contains=matrix/router/internal/fly.Provisioner
-  ^calls=matrix/router/internal/proxy.Handler.waitDaemonReadyWith
   ^defines=matrix/router/internal/fly/provisioner.go
 
 NODE id=matrix/router/internal/fly.Provisioner.env kind=method
@@ -546,11 +473,7 @@ NODE id=matrix/router/internal/fly.Provisioner.env kind=method
   sig=func (p *Provisioner) env(m *Machine) *provision.Env
   doc=env converts a Machine to the neutral view. Endpoint prefers the\nexplicit private IPv6 from Fly so requests don't depend on DNS\nresolution; when absent it falls back to Fly internal DNS\n(<machine_id>.vm.<app>.internal — requires wg0 + the 6PN resolver,\nverified live in matrix.kvx sess#26 step 3).
 EDGES
-  calls=matrix/router/internal/fly.Machine.Started
-  references=matrix/router/internal/fly.Machine,matrix/router/internal/fly.Machine.Started,matrix/router/internal/fly.Provisioner,matrix/router/internal/fly.host,matrix/router/internal/fly.m,matrix/router/internal/fly.p,matrix/router/internal/provision.Endpoint,matrix/router/internal/provision.Env
   ^contains=matrix/router/internal/fly.Provisioner
-  ^calls=matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/fly.Provisioner.Status,matrix/router/internal/fly.Provisioner.Wake
-  ^references=matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/fly.Provisioner.Status,matrix/router/internal/fly.Provisioner.Wake
   ^defines=matrix/router/internal/fly/provisioner.go
 
 NODE id=matrix/router/internal/fly.Volume kind=type
@@ -559,7 +482,6 @@ NODE id=matrix/router/internal/fly.Volume kind=type
   doc=Volume is the subset of the Fly volume object.
 EDGES
   contains=matrix/router/internal/fly.Volume#CreatedAt,matrix/router/internal/fly.Volume#ID,matrix/router/internal/fly.Volume#Name,matrix/router/internal/fly.Volume#Region,matrix/router/internal/fly.Volume#SizeGB,matrix/router/internal/fly.Volume#State
-  ^references=matrix/router/internal/fly.Client.CreateVolume
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.Volume#CreatedAt kind=field
@@ -602,7 +524,6 @@ NODE id=matrix/router/internal/fly._ kind=var
   digest=b3:a45902ed0d1abfdb7afde66643111bdb895451eb445078b34ccf45e7931e1214 file=router/internal/fly/provisioner.go range=37:37 lang=go exported=false byte_range=1307:1352
   sig=provision.Provisioner
 EDGES
-  references=matrix/router/internal/fly.Provisioner,matrix/router/internal/provision.Provisioner
   ^defines=matrix/router/internal/fly/provisioner.go
 
 NODE id=matrix/router/internal/fly.mapErr kind=func
@@ -610,9 +531,6 @@ NODE id=matrix/router/internal/fly.mapErr kind=func
   sig=func mapErr(err error) error
   doc=mapErr translates the client's sentinel errors onto the neutral ones\nso interface consumers dispatch without importing fly. Everything\nelse (including context.DeadlineExceeded) passes through unchanged.
 EDGES
-  references=matrix/router/internal/fly.ErrAppNotFound,matrix/router/internal/fly.ErrMachineNotFound,matrix/router/internal/fly.ErrUnauthorized,matrix/router/internal/fly.err,matrix/router/internal/provision.ErrNotFound,matrix/router/internal/provision.ErrUnauthorized
-  ^calls=matrix/router/internal/fly.Provisioner.Destroy,matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/fly.Provisioner.Status,matrix/router/internal/fly.Provisioner.Wake
-  ^references=matrix/router/internal/fly.Provisioner.Destroy,matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/fly.Provisioner.Status,matrix/router/internal/fly.Provisioner.Wake
   ^defines=matrix/router/internal/fly/provisioner.go
 
 NODE id=matrix/router/internal/fly.safeName kind=func
@@ -620,9 +538,6 @@ NODE id=matrix/router/internal/fly.safeName kind=func
   sig=func safeName(s string, n int) string
   doc=safeName returns a DNS-safe lowercase prefix of s, max length n.\nUsed so machine names don't blow up Fly's validation. Hyphens are\npreserved; Fly machine names accept them.
 EDGES
-  references=matrix/router/internal/fly.c,matrix/router/internal/fly.i,matrix/router/internal/fly.n,matrix/router/internal/fly.out,matrix/router/internal/fly.s
-  ^calls=matrix/router/internal/fly.Provisioner.Ensure
-  ^references=matrix/router/internal/fly.Provisioner.Ensure
   ^defines=matrix/router/internal/fly/provisioner.go
 
 NODE id=matrix/router/internal/fly.truncate kind=func
@@ -630,9 +545,6 @@ NODE id=matrix/router/internal/fly.truncate kind=func
   sig=func truncate(b []byte, n int) string
   doc=truncate trims b for error-message inclusion so we don't dump the\nupstream payload into application logs.
 EDGES
-  references=matrix/router/internal/fly.b,matrix/router/internal/fly.n
-  ^calls=matrix/router/internal/fly.Client.do
-  ^references=matrix/router/internal/fly.Client.do
   ^defines=matrix/router/internal/fly/fly.go
 
 NODE id=matrix/router/internal/fly.volumeSafeName kind=func
@@ -640,9 +552,6 @@ NODE id=matrix/router/internal/fly.volumeSafeName kind=func
   sig=func volumeSafeName(s string, n int) string
   doc=volumeSafeName returns a [a-z0-9_]-only prefix of s, max length n.\nStricter than safeName because Fly volume names reject hyphens\n("name only allows lowercase alphanumeric characters and underscores\nwith at most 30 characters" — observed 400 from POST /v1/apps/<app>/volumes).\nHyphens are mapped to underscores so UUIDs round-trip cleanly.
 EDGES
-  references=matrix/router/internal/fly.c,matrix/router/internal/fly.i,matrix/router/internal/fly.n,matrix/router/internal/fly.out,matrix/router/internal/fly.s
-  ^calls=matrix/router/internal/fly.Provisioner.Ensure
-  ^references=matrix/router/internal/fly.Provisioner.Ensure
   ^defines=matrix/router/internal/fly/provisioner.go
 
 NODE id=matrix/router/internal/fly/fly.go kind=file

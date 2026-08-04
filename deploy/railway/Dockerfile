@@ -45,9 +45,9 @@ FROM ${AGENTCORE_RUNTIME_IMAGE} AS agentcore-runtime
 # (see its header comment for the /opt/matrix + /data map).
 
 # -------- 1. Builders --------
-# CodeGraph Ultra pins a Go 1.21-era x/tools API and is intentionally built
-# with its own declared toolchain instead of Neo's newer Go 1.25 toolchain.
-FROM golang:1.21-bookworm AS codegraph-ultra-builder
+# CodeGraph Ultra declares Go 1.25 and must use that toolchain because Docker
+# builds run with GOTOOLCHAIN=local.
+FROM golang:1.25-bookworm AS codegraph-ultra-builder
 
 WORKDIR /src/codegraph-ultra
 COPY codegraph-ultra/go.mod codegraph-ultra/go.sum ./

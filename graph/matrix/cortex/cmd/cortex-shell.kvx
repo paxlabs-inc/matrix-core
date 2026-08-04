@@ -1,19 +1,15 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/cortex/cmd/cortex-shell kind=package
   digest=b3:add887fb7a7104221a6deb2cfa0b287392f0829e4f7045e21f5570396156035d file=cortex/cmd/cortex-shell range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/cmd/cortex-shell/main.go
-  imports=matrix/cortex,matrix/cortex/embed,matrix/cortex/journal,matrix/cortex/keys,matrix/cortex/memory,matrix/cortex/query,matrix/cortex/salience,matrix/cortex/scope,matrix/cortex/snapshot,matrix/cortex/store
   ^contains=mod:matrix/cortex
 
 NODE id=matrix/cortex/cmd/cortex-shell.die kind=func
   digest=b3:7680010ddf0cf379a7e842316e52d23400add1224b24804c563af5b1b142bf67 file=cortex/cmd/cortex-shell/main.go range=1400:1403 lang=go exported=false byte_range=44361:44470
   sig=func die(format string, a ...any)
 EDGES
-  references=matrix/cortex/cmd/cortex-shell.a,matrix/cortex/cmd/cortex-shell.format
-  ^calls=matrix/cortex/cmd/cortex-shell.ensureEmbedder,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.runAttest,matrix/cortex/cmd/cortex-shell.runCompact,matrix/cortex/cmd/cortex-shell.runContext,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/cmd/cortex-shell.runDumpScope,matrix/cortex/cmd/cortex-shell.runDumpWeights,matrix/cortex/cmd/cortex-shell.runFind,matrix/cortex/cmd/cortex-shell.runRebuild,matrix/cortex/cmd/cortex-shell.runUpdateHead
-  ^references=matrix/cortex/cmd/cortex-shell.ensureEmbedder,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.runAttest,matrix/cortex/cmd/cortex-shell.runCompact,matrix/cortex/cmd/cortex-shell.runContext,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/cmd/cortex-shell.runDumpScope,matrix/cortex/cmd/cortex-shell.runDumpWeights,matrix/cortex/cmd/cortex-shell.runFind,matrix/cortex/cmd/cortex-shell.runRebuild,matrix/cortex/cmd/cortex-shell.runUpdateHead
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.edgeURIToID kind=func
@@ -21,10 +17,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.edgeURIToID kind=func
   sig=func edgeURIToID(s string) (memory.ID, bool)
   doc=edgeURIToID extracts the memory ID from a canonical cortex URI; returns\n(id, true) on success and (zero, false) on parse failure. The CLI uses\nthis for edge subcommands where Type and version are irrelevant.
 EDGES
-  calls=matrix/cortex.ParseURI
-  references=matrix/cortex.ParseURI,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.id,matrix/cortex/cmd/cortex-shell.s,matrix/cortex/memory.ID,matrix/cortex/memory.URI
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.ensureEmbedder kind=func
@@ -32,18 +24,12 @@ NODE id=matrix/cortex/cmd/cortex-shell.ensureEmbedder kind=func
   sig=func ensureEmbedder(c *cortex.Cortex, root, actor string)
   doc=ensureEmbedder boots the deterministic HashEmbedder + persisted HNSW\nindex for this actor, then drains the journal backlog. Called only from\nthe find subcommand when -near / -near-uri is set. The index file lives\nalongside the actor's Pebble DB so subsequent CLI invocations reuse it.
 EDGES
-  calls=matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.StartEmbedder,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/embed.NewHashEmbedder
-  references=matrix/cortex.Cortex,matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.EmbedderOptions,matrix/cortex/cmd/cortex-shell.actor,matrix/cortex/cmd/cortex-shell.c,matrix/cortex/cmd/cortex-shell.cancel,matrix/cortex/cmd/cortex-shell.ctx,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.idxPath,matrix/cortex/cmd/cortex-shell.root,matrix/cortex/embed.NewHashEmbedder
-  ^calls=matrix/cortex/cmd/cortex-shell.runFind
-  ^references=matrix/cortex/cmd/cortex-shell.runFind
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.main kind=func
   digest=b3:ca04a6dca4d261463b499cefe22f62e7d3ae5361d502d478752663a529b459bb file=cortex/cmd/cortex-shell/main.go range=40:470 lang=go exported=false byte_range=997:13517
   sig=func main()
 EDGES
-  calls=matrix/cortex.BuildURI,matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.LoadCheckpoint,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.Snap,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.New,matrix/cortex.ParseURI,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.edgeURIToID,matrix/cortex/cmd/cortex-shell.parseFrameSpec,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/cortex-shell.printMemory,matrix/cortex/cmd/cortex-shell.runAttest,matrix/cortex/cmd/cortex-shell.runCompact,matrix/cortex/cmd/cortex-shell.runContext,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/cmd/cortex-shell.runDumpScope,matrix/cortex/cmd/cortex-shell.runDumpWeights,matrix/cortex/cmd/cortex-shell.runFind,matrix/cortex/cmd/cortex-shell.runRebuild,matrix/cortex/cmd/cortex-shell.runUpdateHead,matrix/cortex/cmd/cortex-shell.summarize,matrix/cortex/cmd/cortex-shell.usage,matrix/cortex/keys.MemoryHeadKey,matrix/cortex/memory.ParseEdgeType,matrix/cortex/memory.Type.String,matrix/cortex/memory.Type.Valid,matrix/cortex/snapshot.HashMemoryKey,matrix/cortex/snapshot.SMT.Prove,matrix/cortex/snapshot.SMT.ProveWithValue,matrix/cortex/snapshot.SMT.Root,matrix/cortex/snapshot.State.LoadSnapshot,matrix/cortex/snapshot.State.SMT,matrix/cortex/snapshot.VerifyMembership,matrix/cortex/store.Open,matrix/cortex/store.Store.AppendJournal,matrix/cortex/store.Store.Close,matrix/cortex/store.Store.Get,matrix/cortex/store.Store.IterJournal,matrix/cortex/store.Store.JournalCount,matrix/cortex/store.Store.NextSeq
-  references=matrix/cortex.AddEdgeMeta,matrix/cortex.BuildURI,matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.LoadCheckpoint,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.Snap,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.IterEdgesOptions,matrix/cortex.New,matrix/cortex.ParseURI,matrix/cortex.WriteMeta,matrix/cortex/cmd/cortex-shell.actor,matrix/cortex/cmd/cortex-shell.args,matrix/cortex/cmd/cortex-shell.body,matrix/cortex/cmd/cortex-shell.c,matrix/cortex/cmd/cortex-shell.data,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.dir,matrix/cortex/cmd/cortex-shell.dst,matrix/cortex/cmd/cortex-shell.dstOK,matrix/cortex/cmd/cortex-shell.e,matrix/cortex/cmd/cortex-shell.edge,matrix/cortex/cmd/cortex-shell.edgeURIToID,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.fr,matrix/cortex/cmd/cortex-shell.frames,matrix/cortex/cmd/cortex-shell.headBytes,matrix/cortex/cmd/cortex-shell.id,matrix/cortex/cmd/cortex-shell.ids,matrix/cortex/cmd/cortex-shell.m,matrix/cortex/cmd/cortex-shell.mem,matrix/cortex/cmd/cortex-shell.newURI,matrix/cortex/cmd/cortex-shell.ns,matrix/cortex/cmd/cortex-shell.ok,matrix/cortex/cmd/cortex-shell.opts,matrix/cortex/cmd/cortex-shell.out,matrix/cortex/cmd/cortex-shell.parseFrameSpec,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/cortex-shell.pf,matrix/cortex/cmd/cortex-shell.printEdge,matrix/cortex/cmd/cortex-shell.printMemory,matrix/cortex/cmd/cortex-shell.r,matrix/cortex/cmd/cortex-shell.rawID,matrix/cortex/cmd/cortex-shell.reason,matrix/cortex/cmd/cortex-shell.rec,matrix/cortex/cmd/cortex-shell.root,matrix/cortex/cmd/cortex-shell.runAttest,matrix/cortex/cmd/cortex-shell.runCompact,matrix/cortex/cmd/cortex-shell.runContext,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/cmd/cortex-shell.runDumpScope,matrix/cortex/cmd/cortex-shell.runDumpWeights,matrix/cortex/cmd/cortex-shell.runFind,matrix/cortex/cmd/cortex-shell.runRebuild,matrix/cortex/cmd/cortex-shell.runUpdateHead,matrix/cortex/cmd/cortex-shell.s,matrix/cortex/cmd/cortex-shell.seq,matrix/cortex/cmd/cortex-shell.smt,matrix/cortex/cmd/cortex-shell.spec,matrix/cortex/cmd/cortex-shell.src,matrix/cortex/cmd/cortex-shell.srcOK,matrix/cortex/cmd/cortex-shell.summarize,matrix/cortex/cmd/cortex-shell.t,matrix/cortex/cmd/cortex-shell.tomb,matrix/cortex/cmd/cortex-shell.typeName,matrix/cortex/cmd/cortex-shell.ulid,matrix/cortex/cmd/cortex-shell.uri,matrix/cortex/cmd/cortex-shell.usage,matrix/cortex/journal.Entry,matrix/cortex/journal.Kind,matrix/cortex/keys.MemoryHeadKey,matrix/cortex/keys.ULID,matrix/cortex/memory.EdgeRecord,matrix/cortex/memory.Forms,matrix/cortex/memory.FrameRef,matrix/cortex/memory.Head,matrix/cortex/memory.ParseEdgeType,matrix/cortex/memory.Provenance,matrix/cortex/memory.SourceUserInput,matrix/cortex/memory.Type.String,matrix/cortex/memory.Type.Valid,matrix/cortex/memory.URI,matrix/cortex/snapshot.HashMemoryKey,matrix/cortex/snapshot.SMT.Prove,matrix/cortex/snapshot.SMT.ProveWithValue,matrix/cortex/snapshot.SMT.Root,matrix/cortex/snapshot.State.LoadSnapshot,matrix/cortex/snapshot.State.SMT,matrix/cortex/snapshot.VerifyMembership,matrix/cortex/store.Open,matrix/cortex/store.Store.AppendJournal,matrix/cortex/store.Store.Close,matrix/cortex/store.Store.Get,matrix/cortex/store.Store.IterJournal,matrix/cortex/store.Store.JournalCount,matrix/cortex/store.Store.NextSeq
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.multiFlag kind=type
@@ -52,14 +38,12 @@ NODE id=matrix/cortex/cmd/cortex-shell.multiFlag kind=type
   doc=multiFlag implements flag.Value for repeated string flags (e.g.\n`-load uri1 -load uri2`). Used by runCompact.
 EDGES
   contains=matrix/cortex/cmd/cortex-shell.multiFlag.Set,matrix/cortex/cmd/cortex-shell.multiFlag.String
-  ^references=matrix/cortex/cmd/cortex-shell.multiFlag.Set,matrix/cortex/cmd/cortex-shell.multiFlag.String,matrix/cortex/cmd/cortex-shell.runCompact,matrix/cortex/cmd/cortex-shell.runUpdateHead
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.multiFlag.Set kind=method
   digest=b3:aa11e72ec9e57ac4f64eb0921f2b1466ac3d135130640086372ded298d675d42 file=cortex/cmd/cortex-shell/main.go range=1398:1398 lang=go exported=true byte_range=44285:44359
   sig=func (m *multiFlag) Set(v string) error
 EDGES
-  references=matrix/cortex/cmd/cortex-shell.m,matrix/cortex/cmd/cortex-shell.multiFlag,matrix/cortex/cmd/cortex-shell.v
   ^contains=matrix/cortex/cmd/cortex-shell.multiFlag
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
@@ -67,7 +51,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.multiFlag.String kind=method
   digest=b3:bb48ed0146208a1f5b996e231658eac4144982d639768cbe33fe2920025ade09 file=cortex/cmd/cortex-shell/main.go range=1397:1397 lang=go exported=true byte_range=44212:44284
   sig=func (m *multiFlag) String() string
 EDGES
-  references=matrix/cortex/cmd/cortex-shell.m,matrix/cortex/cmd/cortex-shell.multiFlag
   ^contains=matrix/cortex/cmd/cortex-shell.multiFlag
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
@@ -76,9 +59,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.outcomeString kind=func
   sig=func outcomeString(o cortex.AttestOutcome) string
   doc=outcomeString returns the canonical CLI string form of an AttestOutcome.
 EDGES
-  references=matrix/cortex.AttestOutcome,matrix/cortex.AttestOutcomeFailure,matrix/cortex.AttestOutcomeSuccess,matrix/cortex/cmd/cortex-shell.o
-  ^calls=matrix/cortex/cmd/cortex-shell.runDumpAttest
-  ^references=matrix/cortex/cmd/cortex-shell.runDumpAttest
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.parseFollowExpr kind=func
@@ -86,10 +66,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.parseFollowExpr kind=func
   sig=func parseFollowExpr(s string) (*query.EdgeExpr, error)
   doc=parseFollowExpr accepts <type>[,<type>...]:<dir>:<min..max> e.g.\n\n	references:out:1..2\n	references,corroborates:both:1..3\n\nEmpty type list (":out:1..2") means any type. Direction defaults to "out";\nhop range defaults to "1..1".
 EDGES
-  calls=matrix/cortex/memory.ParseEdgeType
-  references=matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.expr,matrix/cortex/cmd/cortex-shell.hopParts,matrix/cortex/cmd/cortex-shell.maxHops,matrix/cortex/cmd/cortex-shell.minHops,matrix/cortex/cmd/cortex-shell.name,matrix/cortex/cmd/cortex-shell.ok,matrix/cortex/cmd/cortex-shell.parts,matrix/cortex/cmd/cortex-shell.s,matrix/cortex/cmd/cortex-shell.t,matrix/cortex/memory.ParseEdgeType,matrix/cortex/query.DirBoth,matrix/cortex/query.DirIn,matrix/cortex/query.DirOut,matrix/cortex/query.EdgeExpr
-  ^calls=matrix/cortex/cmd/cortex-shell.runFind
-  ^references=matrix/cortex/cmd/cortex-shell.runFind
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.parseFrameSpec kind=func
@@ -97,19 +73,12 @@ NODE id=matrix/cortex/cmd/cortex-shell.parseFrameSpec kind=func
   sig=func parseFrameSpec(s string) (memory.FrameRef, error)
   doc=parseFrameSpec parses one `verb:kind:ref` spec into a FrameRef. Verb\nand kind use the lower-case enum names from memory.ParseVerb /\nmemory.ParseObjKind. Ref is anything up to MaxObjRefLen; colons in\nthe ref are permitted by splitting on the first two ':'.
 EDGES
-  calls=matrix/cortex/memory.ParseObjKind,matrix/cortex/memory.ParseVerb
-  references=matrix/cortex/cmd/cortex-shell.first,matrix/cortex/cmd/cortex-shell.kind,matrix/cortex/cmd/cortex-shell.kindName,matrix/cortex/cmd/cortex-shell.ok,matrix/cortex/cmd/cortex-shell.ref,matrix/cortex/cmd/cortex-shell.rest,matrix/cortex/cmd/cortex-shell.s,matrix/cortex/cmd/cortex-shell.second,matrix/cortex/cmd/cortex-shell.verb,matrix/cortex/cmd/cortex-shell.verbName,matrix/cortex/memory.FrameRef,matrix/cortex/memory.ParseObjKind,matrix/cortex/memory.ParseVerb
-  ^calls=matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.runUpdateHead
-  ^references=matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.runUpdateHead
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.parseTypeName kind=func
   digest=b3:d477ca432728f247e6b32534851df30fbbc74060bb09aee2b34bd9f8d189a013 file=cortex/cmd/cortex-shell/main.go range=1292:1314 lang=go exported=false byte_range=38864:39346
   sig=func parseTypeName(name string) memory.Type
 EDGES
-  references=matrix/cortex/cmd/cortex-shell.name,matrix/cortex/memory.Type,matrix/cortex/memory.TypeBelief,matrix/cortex/memory.TypeCapability,matrix/cortex/memory.TypeConstraint,matrix/cortex/memory.TypeEvent,matrix/cortex/memory.TypeFact,matrix/cortex/memory.TypeGoal,matrix/cortex/memory.TypeIdentity,matrix/cortex/memory.TypePattern,matrix/cortex/memory.TypePreference
-  ^calls=matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.runFind
-  ^references=matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.runFind
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.parseTypedJSON kind=func
@@ -117,19 +86,12 @@ NODE id=matrix/cortex/cmd/cortex-shell.parseTypedJSON kind=func
   sig=func parseTypedJSON(typeName, body string) (memory.TypedData, error)
   doc=parseTypedJSON converts a JSON body into the corresponding TypedData.\n\nNote: this uses encoding/json (the convenient ergonomic wrapper), not\ncanonical CBOR. The cortex stores the canonical CBOR form internally; the\nJSON here is only the CLI surface.
 EDGES
-  references=matrix/cortex/cmd/cortex-shell.body,matrix/cortex/cmd/cortex-shell.d,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.typeName,matrix/cortex/memory.BeliefData,matrix/cortex/memory.CapabilityData,matrix/cortex/memory.ConstraintData,matrix/cortex/memory.EventData,matrix/cortex/memory.FactData,matrix/cortex/memory.GoalData,matrix/cortex/memory.IdentityData,matrix/cortex/memory.PatternData,matrix/cortex/memory.PreferenceData,matrix/cortex/memory.TypedData
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.printMemory kind=func
   digest=b3:caadd855a1685674b39e3a36db126771c08f9c4ceb4025b6a153615a7fbd1960 file=cortex/cmd/cortex-shell/main.go range=1316:1342 lang=go exported=false byte_range=39348:40249
   sig=func printMemory(m *memory.Memory)
 EDGES
-  calls=matrix/cortex/memory.DecodeData
-  references=matrix/cortex/cmd/cortex-shell.dec,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.m,matrix/cortex/cmd/cortex-shell.pretty,matrix/cortex/memory.DecodeData,matrix/cortex/memory.Memory
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.runAttest kind=func
@@ -137,10 +99,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.runAttest kind=func
   sig=func runAttest(c *cortex.Cortex, actor string, args []string)
   doc=runAttest parses CLI flags and invokes cortex.Attest. Positional\n<uri>... args are the cited memories. Mirrors research/04-cortex.md §8.3\n"intent.attest" but the cortex-side primitive only — the MCL envelope\n+ agent-runtime wiring is out of scope for this CLI.
 EDGES
-  calls=matrix/cortex.Cortex.Attest,matrix/cortex/cmd/cortex-shell.die
-  references=matrix/cortex.AttestOpts,matrix/cortex.AttestOutcome,matrix/cortex.AttestOutcomeFailure,matrix/cortex.AttestOutcomeSuccess,matrix/cortex.Cortex,matrix/cortex.Cortex.Attest,matrix/cortex/cmd/cortex-shell.actor,matrix/cortex/cmd/cortex-shell.args,matrix/cortex/cmd/cortex-shell.by,matrix/cortex/cmd/cortex-shell.c,matrix/cortex/cmd/cortex-shell.cited,matrix/cortex/cmd/cortex-shell.creator,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.fs,matrix/cortex/cmd/cortex-shell.intent,matrix/cortex/cmd/cortex-shell.oc,matrix/cortex/cmd/cortex-shell.outcome,matrix/cortex/cmd/cortex-shell.reason,matrix/cortex/cmd/cortex-shell.res,matrix/cortex/cmd/cortex-shell.u,matrix/cortex/cmd/cortex-shell.uris,matrix/cortex/memory.URI
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.runCompact kind=func
@@ -148,10 +106,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.runCompact kind=func
   sig=func runCompact(c *cortex.Cortex, args []string)
   doc=runCompact parses CLI flags and invokes cortex.Compact. The positional\n<uri>... args form the InContext list; -load URI (repeatable) becomes\nLoadBearing; -dir sets CheckpointDir (filesystem mirror). Mirrors the\nresearch/03 §5.3 primitive signature.
 EDGES
-  calls=matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Resolve,matrix/cortex/cmd/cortex-shell.die
-  references=matrix/cortex.CompactOpts,matrix/cortex.Cortex,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Resolve,matrix/cortex.DefaultCompactBudgetTokens,matrix/cortex/cmd/cortex-shell.args,matrix/cortex/cmd/cortex-shell.budget,matrix/cortex/cmd/cortex-shell.c,matrix/cortex/cmd/cortex-shell.ci,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.dir,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.fs,matrix/cortex/cmd/cortex-shell.inCtx,matrix/cortex/cmd/cortex-shell.intent,matrix/cortex/cmd/cortex-shell.loadBearing,matrix/cortex/cmd/cortex-shell.loadFlags,matrix/cortex/cmd/cortex-shell.m,matrix/cortex/cmd/cortex-shell.multiFlag,matrix/cortex/cmd/cortex-shell.res,matrix/cortex/cmd/cortex-shell.step,matrix/cortex/cmd/cortex-shell.u,matrix/cortex/cmd/cortex-shell.uris,matrix/cortex/memory.Memory,matrix/cortex/memory.URI
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.runContext kind=func
@@ -159,10 +113,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.runContext kind=func
   sig=func runContext(c *cortex.Cortex, args []string)
   doc=runContext drives the §12.1 Context bundle composer from the CLI:\n\n	context [-verb V] [-obj kind:ref]... [-include-tier t]...\n	        [-budget N] [-outcome-limit N] [-form short|medium|full]\n\nPrints one line per memory across the three tiers, plus a header\nwith bundle compile_metadata for latency/budget audit.
 EDGES
-  calls=matrix/cortex.Cortex.Context,matrix/cortex.ParseTier,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/memory.ParseVerb
-  references=matrix/cortex.BuildURI,matrix/cortex.ContextOpts,matrix/cortex.Cortex,matrix/cortex.Cortex.Context,matrix/cortex.ParseTier,matrix/cortex/cmd/cortex-shell.args,matrix/cortex/cmd/cortex-shell.bundle,matrix/cortex/cmd/cortex-shell.c,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.i,matrix/cortex/cmd/cortex-shell.label,matrix/cortex/cmd/cortex-shell.m,matrix/cortex/cmd/cortex-shell.mems,matrix/cortex/cmd/cortex-shell.n,matrix/cortex/cmd/cortex-shell.objs,matrix/cortex/cmd/cortex-shell.ok,matrix/cortex/cmd/cortex-shell.opts,matrix/cortex/cmd/cortex-shell.parts,matrix/cortex/cmd/cortex-shell.printTier,matrix/cortex/cmd/cortex-shell.score,matrix/cortex/cmd/cortex-shell.t,matrix/cortex/cmd/cortex-shell.u,matrix/cortex/cmd/cortex-shell.uri,matrix/cortex/cmd/cortex-shell.v,matrix/cortex/memory.Memory,matrix/cortex/memory.ParseVerb,matrix/cortex/query.FormFull,matrix/cortex/query.FormMedium,matrix/cortex/query.FormShort
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.runDumpAttest kind=func
@@ -170,10 +120,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.runDumpAttest kind=func
   sig=func runDumpAttest(c *cortex.Cortex, seqStr string)
   doc=runDumpAttest reads j/<seq> and prints the decoded AttestPayload as\nindented JSON. Fails if the entry at seq is not KindAttest.
 EDGES
-  calls=matrix/cortex.Cortex.Store,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.outcomeString,matrix/cortex/journal.Decode,matrix/cortex/journal.DecodeAttestPayload,matrix/cortex/keys.JournalKey,matrix/cortex/store.Store.Get
-  references=matrix/cortex.Cortex,matrix/cortex.Cortex.Store,matrix/cortex/cmd/cortex-shell.c,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.entry,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.id,matrix/cortex/cmd/cortex-shell.ok,matrix/cortex/cmd/cortex-shell.out,matrix/cortex/cmd/cortex-shell.outcomeString,matrix/cortex/cmd/cortex-shell.pl,matrix/cortex/cmd/cortex-shell.raw,matrix/cortex/cmd/cortex-shell.seq,matrix/cortex/cmd/cortex-shell.seqStr,matrix/cortex/cmd/cortex-shell.v,matrix/cortex/cmd/cortex-shell.view,matrix/cortex/journal.AttestPayload,matrix/cortex/journal.Decode,matrix/cortex/journal.DecodeAttestPayload,matrix/cortex/journal.Entry,matrix/cortex/journal.KindAttest,matrix/cortex/keys.JournalKey,matrix/cortex/store.Store.Get
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.runDumpSalience kind=func
@@ -181,10 +127,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.runDumpSalience kind=func
   sig=func runDumpSalience(c *cortex.Cortex, uri string)
   doc=runDumpSalience reads salience/<id> for the memory referenced by uri\nand prints it as JSON. ID is parsed from the URI; the cached Score is\nread raw (no live recompute).
 EDGES
-  calls=matrix/cortex.Cortex.Store,matrix/cortex.ParseURI,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/keys.SalienceKey,matrix/cortex/salience.Decode,matrix/cortex/store.Store.Get
-  references=matrix/cortex.Cortex,matrix/cortex.Cortex.Store,matrix/cortex.ParseURI,matrix/cortex/cmd/cortex-shell.c,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.id,matrix/cortex/cmd/cortex-shell.ok,matrix/cortex/cmd/cortex-shell.out,matrix/cortex/cmd/cortex-shell.raw,matrix/cortex/cmd/cortex-shell.sc,matrix/cortex/cmd/cortex-shell.ulid,matrix/cortex/cmd/cortex-shell.uri,matrix/cortex/keys.SalienceKey,matrix/cortex/keys.ULID,matrix/cortex/memory.URI,matrix/cortex/salience.Decode,matrix/cortex/salience.Score,matrix/cortex/store.Store.Get
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.runDumpScope kind=func
@@ -192,10 +134,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.runDumpScope kind=func
   sig=func runDumpScope(path string)
   doc=runDumpScope reads canonical CBOR Scope bytes from path, decodes,\nand prints a JSON-pretty view. Pure offline tool — does NOT verify\nthe scope (no key resolver wired here). Useful for inspecting a\nscope envelope received from a parent agent before plumbing it into\na sub-agent's Cortex.
 EDGES
-  calls=matrix/cortex/cmd/cortex-shell.die,matrix/cortex/scope.DecodeScope
-  references=matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.out,matrix/cortex/cmd/cortex-shell.path,matrix/cortex/cmd/cortex-shell.raw,matrix/cortex/cmd/cortex-shell.s,matrix/cortex/scope.DecodeScope,matrix/cortex/scope.Scope
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.runDumpWeights kind=func
@@ -203,10 +141,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.runDumpWeights kind=func
   sig=func runDumpWeights(c *cortex.Cortex)
   doc=runDumpWeights prints the per-actor learned salience.Weights from\nmeta/salience_weights as JSON. Cold start (key absent) prints the\nDefaultWeights set with a `cold_start: true` annotation so the caller\ncan tell apart "no EMA updates yet" from "learned but happens to\nmatch cold weights".
 EDGES
-  calls=matrix/cortex.Cortex.Store,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/salience.ReadWeights
-  references=matrix/cortex.Cortex,matrix/cortex.Cortex.Store,matrix/cortex/cmd/cortex-shell.c,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.dump,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.found,matrix/cortex/cmd/cortex-shell.out,matrix/cortex/cmd/cortex-shell.w,matrix/cortex/salience.ReadWeights,matrix/cortex/salience.Weights
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.runFind kind=func
@@ -214,10 +148,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.runFind kind=func
   sig=func runFind(c *cortex.Cortex, root, actor string, args []string)
   doc=runFind drives the §12 typed Find surface from the CLI. Supports a tiny\nsubset of the predicate AST so smoke tests can exercise the engine end\nto end:\n\n	find <Type|*> [-tag T]... [-eq field=value]... [-limit N] [-late]\n	              [-near "text"|-near-uri <uri>]\n	              [-from <uri> [-follow <type>:<dir>:<min..max>]]\n\nMore expressive querying is intentionally NOT exposed here; complex\npredicates belong in a real authoring layer, not a smoke shell.
 EDGES
-  calls=matrix/cortex.BuildURI,matrix/cortex.Cortex.Find,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.ensureEmbedder,matrix/cortex/cmd/cortex-shell.parseFollowExpr,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/memory.Type.Valid
-  references=matrix/cortex.BuildURI,matrix/cortex.Cortex,matrix/cortex.Cortex.Find,matrix/cortex.Cortex.StopEmbedder,matrix/cortex/cmd/cortex-shell.actor,matrix/cortex/cmd/cortex-shell.args,matrix/cortex/cmd/cortex-shell.c,matrix/cortex/cmd/cortex-shell.conjuncts,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.ensureEmbedder,matrix/cortex/cmd/cortex-shell.eq,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.expr,matrix/cortex/cmd/cortex-shell.follow,matrix/cortex/cmd/cortex-shell.fromURI,matrix/cortex/cmd/cortex-shell.i,matrix/cortex/cmd/cortex-shell.m,matrix/cortex/cmd/cortex-shell.n,matrix/cortex/cmd/cortex-shell.near,matrix/cortex/cmd/cortex-shell.nearURI,matrix/cortex/cmd/cortex-shell.parseFollowExpr,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/cortex-shell.q,matrix/cortex/cmd/cortex-shell.res,matrix/cortex/cmd/cortex-shell.root,matrix/cortex/cmd/cortex-shell.t,matrix/cortex/cmd/cortex-shell.u,matrix/cortex/cmd/cortex-shell.uri,matrix/cortex/memory.Type,matrix/cortex/memory.Type.Valid,matrix/cortex/memory.URI,matrix/cortex/query.And,matrix/cortex/query.Eq,matrix/cortex/query.FieldRef,matrix/cortex/query.HasTag,matrix/cortex/query.Predicate,matrix/cortex/query.Query
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.runRebuild kind=func
@@ -225,10 +155,6 @@ NODE id=matrix/cortex/cmd/cortex-shell.runRebuild kind=func
   sig=func runRebuild(c *cortex.Cortex, args []string)
   doc=runRebuild parses CLI flags and invokes cortex.Rebuild. With\n-verify-only, the post-rebuild root MUST equal the pre-drop root or\nthe command exits non-zero — useful in CI / disaster-recovery scripts\nto assert the §13.4 invariant on a real actor's data.
 EDGES
-  calls=matrix/cortex.Cortex.Rebuild,matrix/cortex/cmd/cortex-shell.die
-  references=matrix/cortex.Cortex,matrix/cortex.Cortex.Rebuild,matrix/cortex.RebuildOptions,matrix/cortex/cmd/cortex-shell.args,matrix/cortex/cmd/cortex-shell.c,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.fs,matrix/cortex/cmd/cortex-shell.res,matrix/cortex/cmd/cortex-shell.verifyOnly
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.runUpdateHead kind=func
@@ -236,27 +162,18 @@ NODE id=matrix/cortex/cmd/cortex-shell.runUpdateHead kind=func
   sig=func runUpdateHead(c *cortex.Cortex, actor string, args []string)
   doc=runUpdateHead drives Phase 10 cortex.UpdateHead from the CLI:\n\n	update-head <uri> [-tag T]... [-frame V:K:R]...\n	            [-importance N] [-visibility private|scoped|actor_public]\n\nEmpty -tag/-frame flag sets are NOT a "remove all" — to clear, pass\nthe explicit -clear-tags / -clear-frames flag. Pointer-vs-zero\nsemantics mirrors the HeadPatch struct.
 EDGES
-  calls=matrix/cortex.Cortex.UpdateHead,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.parseFrameSpec
-  references=matrix/cortex.Cortex,matrix/cortex.Cortex.UpdateHead,matrix/cortex.HeadPatch,matrix/cortex.UpdateHeadMeta,matrix/cortex/cmd/cortex-shell.actor,matrix/cortex/cmd/cortex-shell.args,matrix/cortex/cmd/cortex-shell.c,matrix/cortex/cmd/cortex-shell.clearFrames,matrix/cortex/cmd/cortex-shell.clearTags,matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.empty,matrix/cortex/cmd/cortex-shell.err,matrix/cortex/cmd/cortex-shell.fr,matrix/cortex/cmd/cortex-shell.frameFlags,matrix/cortex/cmd/cortex-shell.frames,matrix/cortex/cmd/cortex-shell.fs,matrix/cortex/cmd/cortex-shell.got,matrix/cortex/cmd/cortex-shell.importance,matrix/cortex/cmd/cortex-shell.multiFlag,matrix/cortex/cmd/cortex-shell.parseFrameSpec,matrix/cortex/cmd/cortex-shell.patch,matrix/cortex/cmd/cortex-shell.spec,matrix/cortex/cmd/cortex-shell.t,matrix/cortex/cmd/cortex-shell.tagFlags,matrix/cortex/cmd/cortex-shell.tags,matrix/cortex/cmd/cortex-shell.uri,matrix/cortex/cmd/cortex-shell.v,matrix/cortex/cmd/cortex-shell.vis,matrix/cortex/cmd/cortex-shell.visibility,matrix/cortex/memory.FrameRef,matrix/cortex/memory.Tag,matrix/cortex/memory.URI,matrix/cortex/memory.VisActorPublic,matrix/cortex/memory.VisPrivate,matrix/cortex/memory.VisScoped,matrix/cortex/memory.Visibility
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.summarize kind=func
   digest=b3:8d64c9cde2ac869499936df1842047c1a458f93d14ec5e234f859e078c342531 file=cortex/cmd/cortex-shell/main.go range=1344:1350 lang=go exported=false byte_range=40251:40367
   sig=func summarize(s string) string
 EDGES
-  references=matrix/cortex/cmd/cortex-shell.s
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell.usage kind=func
   digest=b3:a9a538b1efaf234e900395c69ac022fb03b393ac26b95df1d815f4b7cb25a8e9 file=cortex/cmd/cortex-shell/main.go range=1352:1391 lang=go exported=false byte_range=40369:44069
   sig=func usage()
 EDGES
-  ^calls=matrix/cortex/cmd/cortex-shell.main
-  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/cmd/cortex-shell/main.go
 
 NODE id=matrix/cortex/cmd/cortex-shell/main.go kind=file

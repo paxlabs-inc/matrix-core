@@ -1,11 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/gateway/internal/ratelimit kind=package
   digest=b3:ea4411d209c69221390b413f486ee26a3e2ce7e84cdf4de233b74a034026ab8a file=gateway/internal/ratelimit range=0:0 lang=go exported=true
 EDGES
   contains=matrix/gateway/internal/ratelimit/ratelimit.go
   ^contains=mod:matrix/gateway
-  ^imports=matrix/gateway/cmd/matrix-gateway,matrix/gateway/internal/proxy
 
 NODE id=matrix/gateway/internal/ratelimit.Limiter kind=type
   digest=b3:5604a3a57055f45503f23fad749e45a7b7e1430b7074a4bfff036ffbd3d493ca file=gateway/internal/ratelimit/ratelimit.go range=24:38 lang=go exported=true byte_range=957:1306
@@ -13,8 +12,6 @@ NODE id=matrix/gateway/internal/ratelimit.Limiter kind=type
   doc=Limiter is a per-key token bucket store.
 EDGES
   contains=matrix/gateway/internal/ratelimit.Limiter#buckets,matrix/gateway/internal/ratelimit.Limiter#burst,matrix/gateway/internal/ratelimit.Limiter#mu,matrix/gateway/internal/ratelimit.Limiter#now,matrix/gateway/internal/ratelimit.Limiter#rate,matrix/gateway/internal/ratelimit.Limiter.Allow,matrix/gateway/internal/ratelimit.Limiter.AllowN,matrix/gateway/internal/ratelimit.Limiter.Reset,matrix/gateway/internal/ratelimit.Limiter.SetClock,matrix/gateway/internal/ratelimit.Limiter.Snapshot,matrix/gateway/internal/ratelimit.Limiter.String,matrix/gateway/internal/ratelimit.Limiter.nowFn
-  references=matrix/gateway/internal/ratelimit.bucket
-  ^references=matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.Server,matrix/gateway/internal/ratelimit.Limiter.Allow,matrix/gateway/internal/ratelimit.Limiter.AllowN,matrix/gateway/internal/ratelimit.Limiter.Reset,matrix/gateway/internal/ratelimit.Limiter.SetClock,matrix/gateway/internal/ratelimit.Limiter.Snapshot,matrix/gateway/internal/ratelimit.Limiter.String,matrix/gateway/internal/ratelimit.Limiter.nowFn,matrix/gateway/internal/ratelimit.New
   ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
 
 NODE id=matrix/gateway/internal/ratelimit.Limiter#buckets kind=field
@@ -55,11 +52,7 @@ NODE id=matrix/gateway/internal/ratelimit.Limiter.Allow kind=method
   sig=func (l *Limiter) Allow(key string) bool
   doc=Allow consumes one token from the bucket identified by key. Returns\ntrue when the request is allowed; false when the bucket is empty.\nWhen ratePerSec was 0 at construction, every call returns true\n(no-op limiter).
 EDGES
-  calls=matrix/gateway/internal/ratelimit.Limiter.AllowN
-  references=matrix/gateway/internal/ratelimit.Limiter,matrix/gateway/internal/ratelimit.Limiter.AllowN,matrix/gateway/internal/ratelimit.key,matrix/gateway/internal/ratelimit.l
   ^contains=matrix/gateway/internal/ratelimit.Limiter
-  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
-  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
 
 NODE id=matrix/gateway/internal/ratelimit.Limiter.AllowN kind=method
@@ -67,11 +60,7 @@ NODE id=matrix/gateway/internal/ratelimit.Limiter.AllowN kind=method
   sig=func (l *Limiter) AllowN(key string, n float64) bool
   doc=AllowN consumes n tokens from the bucket identified by key.\nConvenience for batched/embedding-window calls. Returns false when\nthe bucket can't satisfy the full demand (no partial consumption).
 EDGES
-  calls=matrix/gateway/internal/ratelimit.Limiter.nowFn
-  references=matrix/gateway/internal/ratelimit.Limiter,matrix/gateway/internal/ratelimit.Limiter.nowFn,matrix/gateway/internal/ratelimit.b,matrix/gateway/internal/ratelimit.bucket,matrix/gateway/internal/ratelimit.elapsed,matrix/gateway/internal/ratelimit.key,matrix/gateway/internal/ratelimit.l,matrix/gateway/internal/ratelimit.n,matrix/gateway/internal/ratelimit.now,matrix/gateway/internal/ratelimit.ok
   ^contains=matrix/gateway/internal/ratelimit.Limiter
-  ^calls=matrix/gateway/internal/ratelimit.Limiter.Allow
-  ^references=matrix/gateway/internal/ratelimit.Limiter.Allow
   ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
 
 NODE id=matrix/gateway/internal/ratelimit.Limiter.Reset kind=method
@@ -79,7 +68,6 @@ NODE id=matrix/gateway/internal/ratelimit.Limiter.Reset kind=method
   sig=func (l *Limiter) Reset()
   doc=Reset clears all buckets. Test-only.
 EDGES
-  references=matrix/gateway/internal/ratelimit.Limiter,matrix/gateway/internal/ratelimit.bucket,matrix/gateway/internal/ratelimit.l
   ^contains=matrix/gateway/internal/ratelimit.Limiter
   ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
 
@@ -88,7 +76,6 @@ NODE id=matrix/gateway/internal/ratelimit.Limiter.SetClock kind=method
   sig=func (l *Limiter) SetClock(now func() time.Time)
   doc=SetClock injects a clock function for tests so refill arithmetic is\ndeterministic. nil resets to wall clock.
 EDGES
-  references=matrix/gateway/internal/ratelimit.Limiter,matrix/gateway/internal/ratelimit.l,matrix/gateway/internal/ratelimit.now
   ^contains=matrix/gateway/internal/ratelimit.Limiter
   ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
 
@@ -97,7 +84,6 @@ NODE id=matrix/gateway/internal/ratelimit.Limiter.Snapshot kind=method
   sig=func (l *Limiter) Snapshot(key string) float64
   doc=Snapshot returns the current token count for key, useful for\n/metrics endpoints or assertions in tests. Missing keys return\nburst (the bucket is virtually full until first use).
 EDGES
-  references=matrix/gateway/internal/ratelimit.Limiter,matrix/gateway/internal/ratelimit.b,matrix/gateway/internal/ratelimit.key,matrix/gateway/internal/ratelimit.l,matrix/gateway/internal/ratelimit.ok
   ^contains=matrix/gateway/internal/ratelimit.Limiter
   ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
 
@@ -106,7 +92,6 @@ NODE id=matrix/gateway/internal/ratelimit.Limiter.String kind=method
   sig=func (l *Limiter) String() string
   doc=String returns a single-line descriptor for log lines.
 EDGES
-  references=matrix/gateway/internal/ratelimit.Limiter,matrix/gateway/internal/ratelimit.l
   ^contains=matrix/gateway/internal/ratelimit.Limiter
   ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
 
@@ -115,10 +100,7 @@ NODE id=matrix/gateway/internal/ratelimit.Limiter.nowFn kind=method
   sig=func (l *Limiter) nowFn() time.Time
   doc=nowFn returns the active clock, defaulting to time.Now.
 EDGES
-  references=matrix/gateway/internal/ratelimit.Limiter,matrix/gateway/internal/ratelimit.l
   ^contains=matrix/gateway/internal/ratelimit.Limiter
-  ^calls=matrix/gateway/internal/ratelimit.Limiter.AllowN
-  ^references=matrix/gateway/internal/ratelimit.Limiter.AllowN
   ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
 
 NODE id=matrix/gateway/internal/ratelimit.New kind=func
@@ -126,9 +108,6 @@ NODE id=matrix/gateway/internal/ratelimit.New kind=func
   sig=func New(ratePerSec, burst float64) *Limiter
   doc=New constructs a Limiter with the given refill rate (tokens/second)\nand burst capacity. ratePerSec=0 disables rate limiting (every\nAllow returns true). burst<=0 defaults to ratePerSec (i.e. one\nsecond of burst headroom).
 EDGES
-  references=matrix/gateway/internal/ratelimit.Limiter,matrix/gateway/internal/ratelimit.bucket,matrix/gateway/internal/ratelimit.burst,matrix/gateway/internal/ratelimit.ratePerSec
-  ^calls=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/internal/proxy.New
-  ^references=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/internal/proxy.New
   ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
 
 NODE id=matrix/gateway/internal/ratelimit.bucket kind=type
@@ -136,7 +115,6 @@ NODE id=matrix/gateway/internal/ratelimit.bucket kind=type
   sig=type bucket struct {\n	tokens		float64\n	lastFill	time.Time\n}
 EDGES
   contains=matrix/gateway/internal/ratelimit.bucket#lastFill,matrix/gateway/internal/ratelimit.bucket#tokens
-  ^references=matrix/gateway/internal/ratelimit.Limiter,matrix/gateway/internal/ratelimit.Limiter.AllowN,matrix/gateway/internal/ratelimit.Limiter.Reset,matrix/gateway/internal/ratelimit.New
   ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
 
 NODE id=matrix/gateway/internal/ratelimit.bucket#lastFill kind=field

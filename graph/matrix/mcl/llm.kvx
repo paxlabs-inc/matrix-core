@@ -1,12 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fb4fd09f86b5856c0ddc37e28848bffbfa07ac8452a6ccfc0123701eeec4c508
+# GENERATED gen=codegraph do-not-edit merkle=b3:fe911cb1f7a507fabd9c2bc42abd2cb7bde3365d68eea68ae9d0cbe8df2fc6cb
 
 NODE id=matrix/mcl/llm kind=package
   digest=b3:7d9332a8fec3ce3d10e3aa3bf7f5659b23a400a3d8f1d20abb62dc59b6e8603d file=MCL/llm range=0:0 lang=go exported=true
 EDGES
   contains=matrix/mcl/llm/identity.go,matrix/mcl/llm/llm.go,matrix/mcl/llm/messages_api.go,matrix/mcl/llm/model.go,matrix/mcl/llm/responses_api.go
-  imports=matrix/mcl/mtx/interpreter
   ^contains=mod:matrix/mcl
-  ^imports=matrix/bridge/cmd/mclc-cortex,matrix/codegraph/enrich,matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/mcl/cmd/mclc,matrix/neo/cmd/neo,matrix/neo/internal/llm
 
 NODE id=matrix/mcl/llm.APIShape kind=type
   digest=b3:26971c0c32b130a1d009ececbdc37e07903b91672a4d9bdf3d550e2d6f11db10 file=MCL/llm/llm.go range=68:81 lang=go exported=true byte_range=1835:2619
@@ -14,14 +12,12 @@ NODE id=matrix/mcl/llm.APIShape kind=type
   doc=APIShape identifies the on-wire API contract for a given endpoint. Three\nshapes are supported as of Session 34:\n\n  - ShapeChatCompletions — OpenAI /v1/chat/completions (existing legacy path;\n    Together + Fireworks + opencode openai-compatible models).\n  - ShapeMessages        — Anthropic Messages API at /v1/messages (Claude\n    models routed through opencode.ai/zen/v1/messages).\n  - ShapeResponses       — OpenAI Responses API at /v1/responses (GPT-5+\n    models routed through opencode.ai/zen/v1/responses).\n\nAPIShape is derived from the endpoint URL suffix at New() time; callers\nrarely set it explicitly. ShapeUnknown is reserved as the zero value and\ntriggers fallback to ShapeChatCompletions for backwards-compat.
 EDGES
   contains=matrix/mcl/llm.APIShape.String
-  ^references=matrix/mcl/llm.APIShape.String,matrix/mcl/llm.Config,matrix/mcl/llm.DetectAPIShape,matrix/mcl/llm.ShapeUnknown
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.APIShape.String kind=method
   digest=b3:412ff7738bf7dac228f6b4895f7056466c2b36c42b0667237fdde5f0cb39fae2 file=MCL/llm/llm.go range=90:100 lang=go exported=true byte_range=2820:3030
   sig=func (s APIShape) String() string
 EDGES
-  references=matrix/mcl/llm.APIShape,matrix/mcl/llm.ShapeChatCompletions,matrix/mcl/llm.ShapeMessages,matrix/mcl/llm.ShapeResponses,matrix/mcl/llm.s
   ^contains=matrix/mcl/llm.APIShape
   ^defines=matrix/mcl/llm/llm.go
 
@@ -30,7 +26,6 @@ NODE id=matrix/mcl/llm.AllStepKindNames kind=var
   sig=[]string
   doc=AllStepKindNames is the wire-form ordered list for plan_tree@1\ngrammar enum + audit. Excludes "unspecified" (synthetic).
 EDGES
-  ^references=matrix/mcl/llm.ValidStepKindName
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.AllStepKinds kind=var
@@ -38,7 +33,6 @@ NODE id=matrix/mcl/llm.AllStepKinds kind=var
   sig=[]llm.StepKind
   doc=AllStepKinds is the canonical ordered list of executor step kinds.\nUsed by grammar enums + audit. Excludes KindUnspecified (synthetic).
 EDGES
-  references=matrix/mcl/llm.KindClassify,matrix/mcl/llm.KindCode,matrix/mcl/llm.KindHardReason,matrix/mcl/llm.KindReason,matrix/mcl/llm.KindSummarize,matrix/mcl/llm.KindTransform,matrix/mcl/llm.KindWrite,matrix/mcl/llm.StepKind
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.Client kind=type
@@ -48,8 +42,6 @@ NODE id=matrix/mcl/llm.Client kind=type
 EDGES
   contains=matrix/mcl/llm.Client#apiKey,matrix/mcl/llm.Client#cfg,matrix/mcl/llm.Client#endpoint,matrix/mcl/llm.Client#httpClient,matrix/mcl/llm.Client#provider,matrix/mcl/llm.Client.Decode,matrix/mcl/llm.Client.DecodeWithReasoning,matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.applyGrammar,matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.Client.decodeMessage,matrix/mcl/llm.Client.dispatchHeaders,matrix/mcl/llm.Client.newHTTPRequest
   implements=matrix/mcl/mtx/interpreter.LLM,matrix/mcl/mtx/interpreter.StreamingLLM
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.Provider
-  ^references=matrix/mcl/llm.Client.Decode,matrix/mcl/llm.Client.DecodeWithReasoning,matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.applyGrammar,matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.Client.decodeMessage,matrix/mcl/llm.Client.dispatchHeaders,matrix/mcl/llm.Client.newHTTPRequest,matrix/mcl/llm.New,matrix/mcl/llm.NewChatClient,matrix/mcl/llm._
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.Client#apiKey kind=field
@@ -87,10 +79,7 @@ NODE id=matrix/mcl/llm.Client.Decode kind=method
   sig=func (c *Client) Decode(ctx context.Context, messages []interpreter.Message, grammar string) (string, error)
   doc=Decode implements interpreter.LLM. It sends messages to the configured model\nwith an optional grammar constraint and returns the raw text output.\n\nWhen cfg.InjectIdentity is true (Session 34 / Forge Phase 1), IdentityPreamble\nis prepended as the FIRST system message before serialization. Legacy paths\n(cfg.InjectIdentity == false) preserve their pre-sess#34 wire bytes byte-\nidentically.
 EDGES
-  calls=matrix/mcl/llm.Client.decodeMessage
-  references=matrix/mcl/llm.Client,matrix/mcl/llm.Client.decodeMessage,matrix/mcl/llm.c,matrix/mcl/llm.ctx,matrix/mcl/llm.err,matrix/mcl/llm.grammar,matrix/mcl/llm.messages,matrix/mcl/llm.msg,matrix/mcl/mtx/interpreter.Message
   ^contains=matrix/mcl/llm.Client
-  ^calls=matrix/mcl/mtx/interpreter.Interpreter.execPrompt
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.Client.DecodeWithReasoning kind=method
@@ -98,8 +87,6 @@ NODE id=matrix/mcl/llm.Client.DecodeWithReasoning kind=method
   sig=func (c *Client) DecodeWithReasoning(ctx context.Context, messages []interpreter.Message, grammar string) (content, reasoning string, err error)
   doc=DecodeWithReasoning behaves exactly like Decode but additionally returns\nthe model's reasoning_content (chain-of-thought) when the provider\nsurfaces it as a separate field. Used by side-channel callers (the\nLiaison) that render reasoning as a DISTINCT, labeled channel — never\nas the answer. The replay-critical pipeline keeps using Decode, which\nis byte-for-byte unchanged.
 EDGES
-  calls=matrix/mcl/llm.Client.decodeMessage
-  references=matrix/mcl/llm.Client,matrix/mcl/llm.Client.decodeMessage,matrix/mcl/llm.c,matrix/mcl/llm.ctx,matrix/mcl/llm.err,matrix/mcl/llm.grammar,matrix/mcl/llm.messages,matrix/mcl/llm.msg,matrix/mcl/mtx/interpreter.Message
   ^contains=matrix/mcl/llm.Client
   ^defines=matrix/mcl/llm/llm.go
 
@@ -108,8 +95,6 @@ NODE id=matrix/mcl/llm.Client.Stream kind=method
   sig=func (c *Client) Stream(ctx context.Context, messages []interpreter.Message,\n	grammar string, onDelta func(delta string)) (string, error)
   doc=Stream implements interpreter.StreamingLLM. It sends messages to the\nconfigured model with stream=true and invokes onDelta synchronously\nfor every incremental content fragment received over the SSE wire,\nreturning the fully accumulated text on completion.\n\nSession 31c (model router · P3a). Both Together AI and Fireworks AI\nexpose OpenAI-compatible streaming on /v1/chat/completions: each SSE\nframe is `data: <json>` carrying choices[0].delta.content; the stream\nis terminated by `data: [DONE]`. Grammar-constrained streaming is\nsupported on Fireworks for json_schema/grammar modes; Together is\nper-model and may decline the schema. We forward whatever the caller\npassed through applyGrammar; the provider's response_format echo is\npassed through unchanged.\n\nReliability:\n  - HTTP non-2xx → returns error with the body preview (mirrors Decode).\n  - The first SSE error frame (data: {"error": ...}) terminates the\n    stream with a wrapped error AND the partial text accumulated so far.\n  - Context cancellation interrupts the read loop and surfaces ctx.Err()\n    so callers can distinguish operator abort from provider error.\n  - onDelta == nil is allowed; the stream still drains and returns the\n    accumulated text (callers may use Stream for buffered-but-token-aware\n    decoding without wiring a delta sink).\n\nonDelta MUST NOT be invoked after Stream returns.\n\nWhen cfg.InjectIdentity is true (Session 34 / Forge Phase 1), IdentityPreamble\nis prepended as the FIRST system message before serialization. Legacy paths\npreserve their pre-sess#34 wire bytes byte-identically.
 EDGES
-  calls=matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.Client.dispatchHeaders,matrix/mcl/llm.Client.newHTTPRequest,matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.parseSSEStream,matrix/mcl/llm.truncate
-  references=matrix/mcl/llm.Client,matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.Client.dispatchHeaders,matrix/mcl/llm.Client.newHTTPRequest,matrix/mcl/llm.body,matrix/mcl/llm.c,matrix/mcl/llm.chatResponse,matrix/mcl/llm.ctx,matrix/mcl/llm.err,matrix/mcl/llm.grammar,matrix/mcl/llm.httpReq,matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.messages,matrix/mcl/llm.onDelta,matrix/mcl/llm.parseSSEStream,matrix/mcl/llm.parsed,matrix/mcl/llm.req,matrix/mcl/llm.resp,matrix/mcl/llm.respBody,matrix/mcl/llm.truncate,matrix/mcl/mtx/interpreter.Message
   ^contains=matrix/mcl/llm.Client
   ^defines=matrix/mcl/llm/llm.go
 
@@ -118,10 +103,7 @@ NODE id=matrix/mcl/llm.Client.applyGrammar kind=method
   sig=func (c *Client) applyGrammar(req *chatRequest, grammarID string) error
   doc=applyGrammar sets the response_format or grammar field on the request.
 EDGES
-  references=matrix/mcl/llm.Client,matrix/mcl/llm.GrammarEBNF,matrix/mcl/llm.GrammarJSONSchema,matrix/mcl/llm.c,matrix/mcl/llm.chatRequest,matrix/mcl/llm.def,matrix/mcl/llm.grammarID,matrix/mcl/llm.jsonSchemaRef,matrix/mcl/llm.name,matrix/mcl/llm.ok,matrix/mcl/llm.req,matrix/mcl/llm.responseFormat
   ^contains=matrix/mcl/llm.Client
-  ^calls=matrix/mcl/llm.Client.buildRequest
-  ^references=matrix/mcl/llm.Client.buildRequest
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.Client.buildRequest kind=method
@@ -129,11 +111,7 @@ NODE id=matrix/mcl/llm.Client.buildRequest kind=method
   sig=func (c *Client) buildRequest(messages []interpreter.Message, grammar string) (*chatRequest, error)
   doc=buildRequest assembles the chatRequest skeleton shared between Decode\nand Stream. Pure (no I/O); keeps the seed/grammar/temp logic in one\nplace so streaming and non-streaming paths can never diverge.
 EDGES
-  calls=matrix/mcl/llm.Client.applyGrammar,matrix/mcl/llm.IsXaiModel,matrix/mcl/llm.IsXiaomiModel,matrix/mcl/llm.XiaomiModelID,matrix/mcl/llm.reasoningEffort,matrix/mcl/llm.supportsReasoningEffort,matrix/mcl/llm.xiaomiThinkingType
-  references=matrix/mcl/llm.Client,matrix/mcl/llm.Client.applyGrammar,matrix/mcl/llm.GrammarNone,matrix/mcl/llm.IsXaiModel,matrix/mcl/llm.IsXiaomiModel,matrix/mcl/llm.XiaomiModelID,matrix/mcl/llm.c,matrix/mcl/llm.chatMessage,matrix/mcl/llm.chatMsgs,matrix/mcl/llm.chatRequest,matrix/mcl/llm.err,matrix/mcl/llm.grammar,matrix/mcl/llm.i,matrix/mcl/llm.m,matrix/mcl/llm.messages,matrix/mcl/llm.reasoningEffort,matrix/mcl/llm.req,matrix/mcl/llm.seed,matrix/mcl/llm.supportsReasoningEffort,matrix/mcl/llm.thinkingConfig,matrix/mcl/llm.xiaomiThinkingType,matrix/mcl/mtx/interpreter.Message
   ^contains=matrix/mcl/llm.Client
-  ^calls=matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.decodeMessage
-  ^references=matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.decodeMessage
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.Client.decodeMessage kind=method
@@ -141,11 +119,7 @@ NODE id=matrix/mcl/llm.Client.decodeMessage kind=method
   sig=func (c *Client) decodeMessage(ctx context.Context, messages []interpreter.Message, grammar string) (chatMessage, error)
   doc=decodeMessage performs the one-shot chat request and returns the first\nchoice's full message (content + reasoning_content). Decode and\nDecodeWithReasoning are thin wrappers so the wire bytes and behavior\nof the existing Decode path are preserved exactly.
 EDGES
-  calls=matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.Client.dispatchHeaders,matrix/mcl/llm.Client.newHTTPRequest,matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.truncate
-  references=matrix/mcl/llm.Client,matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.Client.dispatchHeaders,matrix/mcl/llm.Client.newHTTPRequest,matrix/mcl/llm.body,matrix/mcl/llm.c,matrix/mcl/llm.chatMessage,matrix/mcl/llm.chatResponse,matrix/mcl/llm.ctx,matrix/mcl/llm.err,matrix/mcl/llm.grammar,matrix/mcl/llm.httpReq,matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.messages,matrix/mcl/llm.parsed,matrix/mcl/llm.req,matrix/mcl/llm.resp,matrix/mcl/llm.respBody,matrix/mcl/llm.truncate,matrix/mcl/mtx/interpreter.Message
   ^contains=matrix/mcl/llm.Client
-  ^calls=matrix/mcl/llm.Client.Decode,matrix/mcl/llm.Client.DecodeWithReasoning
-  ^references=matrix/mcl/llm.Client.Decode,matrix/mcl/llm.Client.DecodeWithReasoning
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.Client.dispatchHeaders kind=method
@@ -153,10 +127,7 @@ NODE id=matrix/mcl/llm.Client.dispatchHeaders kind=method
   sig=func (c *Client) dispatchHeaders(h http.Header)
   doc=dispatchHeaders invokes the configured OnResponseHeaders hook with\nthe upstream response headers. Panics in the callback are swallowed\nso a buggy hook never propagates into Decode/Stream's contract.\nDaemons read X-Matrix-Cost-Pax + Daily-Spent + Daily-Remaining off\nthe headers passed in; gateway proxy stamps these on every metered\ncall (plan §5.15).
 EDGES
-  references=matrix/mcl/llm.Client,matrix/mcl/llm.c,matrix/mcl/llm.h
   ^contains=matrix/mcl/llm.Client
-  ^calls=matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.decodeMessage
-  ^references=matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.decodeMessage
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.Client.newHTTPRequest kind=method
@@ -164,10 +135,7 @@ NODE id=matrix/mcl/llm.Client.newHTTPRequest kind=method
   sig=func (c *Client) newHTTPRequest(ctx context.Context, body []byte, accept string) (*http.Request, error)
   doc=newHTTPRequest builds the *http.Request shared between Decode +\nStream. When c.cfg.GatewayURL is non-empty (sess#32 ambient-architect\nMatrixGateway routing per plan §5.16) the URL is rewritten to\n${GatewayURL}/v1/chat/completions, Authorization carries the gateway\nbearer token (env var defaults to MATRIX_GATEWAY_TOKEN; overridable\nvia cfg.GatewayTokenEnv), and the X-Matrix-* metadata headers are\nstamped so the gateway can authenticate, route, meter, and bill the\ncall. Otherwise the legacy direct-provider posture is preserved\nverbatim (Bearer <APIKey> on c.endpoint).
 EDGES
-  references=matrix/mcl/llm.Client,matrix/mcl/llm.accept,matrix/mcl/llm.body,matrix/mcl/llm.c,matrix/mcl/llm.ctx,matrix/mcl/llm.err,matrix/mcl/llm.req,matrix/mcl/llm.tok,matrix/mcl/llm.tokenEnv,matrix/mcl/llm.url
   ^contains=matrix/mcl/llm.Client
-  ^calls=matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.decodeMessage
-  ^references=matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.decodeMessage
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.Config kind=type
@@ -176,8 +144,6 @@ NODE id=matrix/mcl/llm.Config kind=type
   doc=Config holds the runtime configuration for an LLM client.
 EDGES
   contains=matrix/mcl/llm.Config#APIKey,matrix/mcl/llm.Config#ActorDID,matrix/mcl/llm.Config#EnableThinking,matrix/mcl/llm.Config#Endpoint,matrix/mcl/llm.Config#GatewayTokenEnv,matrix/mcl/llm.Config#GatewayURL,matrix/mcl/llm.Config#GoalID,matrix/mcl/llm.Config#GrammarMode,matrix/mcl/llm.Config#Grammars,matrix/mcl/llm.Config#InjectIdentity,matrix/mcl/llm.Config#IntentID,matrix/mcl/llm.Config#KindRoute,matrix/mcl/llm.Config#MaxTokens,matrix/mcl/llm.Config#Model,matrix/mcl/llm.Config#OnRawExchange,matrix/mcl/llm.Config#OnResponseHeaders,matrix/mcl/llm.Config#Provider,matrix/mcl/llm.Config#ProviderSet,matrix/mcl/llm.Config#Seed,matrix/mcl/llm.Config#Shape,matrix/mcl/llm.Config#SlotLabel,matrix/mcl/llm.Config#Temperature,matrix/mcl/llm.Config#Timeout
-  references=matrix/mcl/llm.APIShape,matrix/mcl/llm.GrammarDef,matrix/mcl/llm.GrammarMode,matrix/mcl/llm.Provider
-  ^references=matrix/codegraph/enrich.NewCody,matrix/executor/cmd/mcl-execute.compile,matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.llmStepHandler.cfgFor,matrix/executor/cmd/mcl-execute.llmStepHandler.clientFor,matrix/executor/cmd/mcl-execute.synthesize,matrix/mcl/llm.Client,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.DefaultExecutorModel,matrix/mcl/llm.DefaultPlannerModel,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeCompilerModel,matrix/mcl/llm.ForgeExecutorModel,matrix/mcl/llm.ForgePlannerModel,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.IdentityModelDigestSuffix,matrix/mcl/llm.ModelRegistry,matrix/mcl/llm.ModelRegistry.Fallback,matrix/mcl/llm.ModelRegistry.Register,matrix/mcl/llm.ModelRegistry.Resolve,matrix/mcl/llm.ModelRegistry.Routes,matrix/mcl/llm.New,matrix/mcl/llm.NewChatClient,matrix/mcl/llm.NewModelRegistry,matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.messagesClient,matrix/mcl/llm.newMessagesClient,matrix/mcl/llm.newResponsesClient,matrix/mcl/llm.responsesClient,matrix/neo/cmd/neo.newOmniClient,matrix/neo/cmd/neo.newSlotClient,matrix/neo/internal/llm.New
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.Config#APIKey kind=field
@@ -346,10 +312,6 @@ NODE id=matrix/mcl/llm.DefaultCompilerModel kind=func
   sig=func DefaultCompilerModel() Config
   doc=DefaultCompilerModel returns the Config for SlotCompiler from the\ndefault registry. Backwards-compatible shim. New call sites should\nuse DefaultRegistry().Resolve(...) directly so per-call kind/LongCtx\nhints propagate.
 EDGES
-  calls=matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ModelRegistry.Resolve
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ModelRegistry.Resolve,matrix/mcl/llm.RouteKey,matrix/mcl/llm.SlotCompiler
-  ^calls=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.compile,matrix/mcl/cmd/mclc.cmdCompile
-  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.compile,matrix/mcl/cmd/mclc.cmdCompile
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.DefaultExecutorModel kind=func
@@ -357,8 +319,6 @@ NODE id=matrix/mcl/llm.DefaultExecutorModel kind=func
   sig=func DefaultExecutorModel() Config
   doc=DefaultExecutorModel returns the Config for SlotExecutor + KindReason\nfrom the default registry. Backwards-compatible shim. New call sites\nthat know their step kind (set by SKILL.mtx + propagated through\nplan_tree@1 in P2) should use DefaultRegistry().Resolve(...) directly.
 EDGES
-  calls=matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ModelRegistry.Resolve
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.KindReason,matrix/mcl/llm.ModelRegistry.Resolve,matrix/mcl/llm.RouteKey,matrix/mcl/llm.SlotExecutor
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.DefaultGrammars kind=func
@@ -366,9 +326,6 @@ NODE id=matrix/mcl/llm.DefaultGrammars kind=func
   sig=func DefaultGrammars() map[string]*GrammarDef
   doc=DefaultGrammars returns the built-in grammar definitions for the compiler\nand planner slots. The intent_frame@1 + verb_vocab@1 grammars enforce\nthe D7 closed verb vocab + v1 closed obj_kind enum. plan_tree@1 mirrors\nMCL/ir/plan.go with recursive $defs/plan_node.
 EDGES
-  references=matrix/mcl/llm.GrammarDef
-  ^calls=matrix/executor/cmd/mcl-execute.synthesize,matrix/mcl/llm.DefaultRegistry
-  ^references=matrix/executor/cmd/mcl-execute.synthesize,matrix/mcl/llm.DefaultRegistry
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.DefaultPlannerModel kind=func
@@ -376,10 +333,6 @@ NODE id=matrix/mcl/llm.DefaultPlannerModel kind=func
   sig=func DefaultPlannerModel() Config
   doc=DefaultPlannerModel returns the Config for SlotPlanner from the\ndefault registry. New in P1; previously plan_tree@1 synthesis ran\nagainst DefaultExecutorModel which conflated two semantically\ndifferent tiers.
 EDGES
-  calls=matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ModelRegistry.Resolve
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ModelRegistry.Resolve,matrix/mcl/llm.RouteKey,matrix/mcl/llm.SlotPlanner
-  ^calls=matrix/executor/cmd/mcl-execute.daemonState.critiquePlan,matrix/executor/cmd/mcl-execute.synthesize
-  ^references=matrix/executor/cmd/mcl-execute.daemonState.critiquePlan,matrix/executor/cmd/mcl-execute.synthesize
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.DefaultRegistry kind=func
@@ -387,10 +340,6 @@ NODE id=matrix/mcl/llm.DefaultRegistry kind=func
   sig=func DefaultRegistry() *ModelRegistry
   doc=DefaultRegistry returns the v1 router populated per the matrix.kvx\nSession 31a model router design. Models pinned to xAI for the primary path\n(grok-4.3 via api.x.ai; matches MCL/llm provider detection, which resolves\nthe bare "grok-*" shape to xAI). Together/Fireworks/Baseten remain reachable\nas explicit alt paths the gateway may select on 5xx or latency-budget breach.\n\nProvider-specific model ID conventions:\n\n	xAI:       "grok-*"           (e.g. "grok-4.3")\n	Baseten:   "<vendor>/<name>"  (e.g. "moonshotai/Kimi-K2")\n	Fireworks: "accounts/fireworks/models/<name>"
 EDGES
-  calls=matrix/mcl/llm.DefaultGrammars,matrix/mcl/llm.ModelRegistry.Register,matrix/mcl/llm.NewModelRegistry
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.DefaultGrammars,matrix/mcl/llm.GrammarJSONSchema,matrix/mcl/llm.GrammarNone,matrix/mcl/llm.KindClassify,matrix/mcl/llm.KindCode,matrix/mcl/llm.KindHardReason,matrix/mcl/llm.KindReason,matrix/mcl/llm.KindSummarize,matrix/mcl/llm.KindTransform,matrix/mcl/llm.KindWrite,matrix/mcl/llm.ModelRegistry,matrix/mcl/llm.ModelRegistry.Register,matrix/mcl/llm.NewModelRegistry,matrix/mcl/llm.RouteKey,matrix/mcl/llm.SlotCompiler,matrix/mcl/llm.SlotExecutor,matrix/mcl/llm.SlotLiaison,matrix/mcl/llm.SlotPlanner,matrix/mcl/llm.compiler,matrix/mcl/llm.compilerLongCtx,matrix/mcl/llm.executorClassify,matrix/mcl/llm.executorCode,matrix/mcl/llm.executorHardReason,matrix/mcl/llm.executorReason,matrix/mcl/llm.executorSummarize,matrix/mcl/llm.executorTransform,matrix/mcl/llm.executorWrite,matrix/mcl/llm.grammars,matrix/mcl/llm.liaison,matrix/mcl/llm.planner,matrix/mcl/llm.plannerLongCtx,matrix/mcl/llm.reg
-  ^calls=matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.newLLMStepHandlerOpts,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.DefaultExecutorModel,matrix/mcl/llm.DefaultPlannerModel
-  ^references=matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.newLLMStepHandlerOpts,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.DefaultExecutorModel,matrix/mcl/llm.DefaultPlannerModel
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.DetectAPIShape kind=func
@@ -398,9 +347,6 @@ NODE id=matrix/mcl/llm.DetectAPIShape kind=func
   sig=func DetectAPIShape(endpoint string) APIShape
   doc=DetectAPIShape inspects an endpoint URL suffix and returns the matching\nAPIShape. Pure (no allocations beyond the trim).
 EDGES
-  references=matrix/mcl/llm.APIShape,matrix/mcl/llm.ShapeChatCompletions,matrix/mcl/llm.ShapeMessages,matrix/mcl/llm.ShapeResponses,matrix/mcl/llm.ShapeUnknown,matrix/mcl/llm.endpoint,matrix/mcl/llm.ep
-  ^calls=matrix/mcl/llm.New,matrix/mcl/llm.NewChatClient,matrix/neo/internal/llm.New
-  ^references=matrix/mcl/llm.New,matrix/mcl/llm.NewChatClient,matrix/neo/internal/llm.New
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.DetectProvider kind=func
@@ -408,10 +354,6 @@ NODE id=matrix/mcl/llm.DetectProvider kind=func
   sig=func DetectProvider(model string) (Provider, error)
   doc=DetectProvider maps a model string to its provider.\n\n	"accounts/fireworks/models/<X>"                 → Fireworks\n	"grok-*"                                         → xAI (Grok — primary chat provider)\n	"claude-*" / "gpt-5*" / opencode bare-model id  → Opencode (sess#34)\n	"<vendor>/<model>"                              → Baseten (fallback chat provider)\n\nGrok models ("grok-*", e.g. "grok-4.3") route to xAI's OpenAI-compatible API\n(api.x.ai). The bare "grok-*" id is both the fleet id (rate card, whitelists,\nenv pins) and xAI's native model code — no send-time rewrite is needed\n(unlike the retired Z.ai path). The xAI check precedes the opencode bare-id\ncheck so grok-build-* resolves to xAI rather than opencode. The remaining\ngeneric "<vendor>/<model>" shape resolves to Baseten. Together remains\nreachable but only when selected explicitly via Config.Provider + ProviderSet\n(it is the gateway alt-path, never auto-detected from a bare model id).
 EDGES
-  calls=matrix/mcl/llm.IsXaiModel,matrix/mcl/llm.IsXiaomiModel,matrix/mcl/llm.isOpencodeModelID
-  references=matrix/mcl/llm.IsXaiModel,matrix/mcl/llm.IsXiaomiModel,matrix/mcl/llm.Provider,matrix/mcl/llm.ProviderBaseten,matrix/mcl/llm.ProviderFireworks,matrix/mcl/llm.ProviderOpencode,matrix/mcl/llm.ProviderXai,matrix/mcl/llm.ProviderXiaomi,matrix/mcl/llm.isOpencodeModelID,matrix/mcl/llm.model
-  ^calls=matrix/mcl/llm.New,matrix/neo/internal/llm.New
-  ^references=matrix/mcl/llm.New,matrix/neo/internal/llm.New
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.ForgeCompilerModel kind=func
@@ -419,10 +361,6 @@ NODE id=matrix/mcl/llm.ForgeCompilerModel kind=func
   sig=func ForgeCompilerModel() Config
   doc=ForgeCompilerModel returns the SlotCompiler Config from ForgeRegistry.\nConvenience shim for callers that don't need full router resolution.
 EDGES
-  calls=matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ModelRegistry.Resolve
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ModelRegistry.Resolve,matrix/mcl/llm.RouteKey,matrix/mcl/llm.SlotCompiler
-  ^calls=matrix/executor/cmd/mcl-execute.compile
-  ^references=matrix/executor/cmd/mcl-execute.compile
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.ForgeExecutorModel kind=func
@@ -430,8 +368,6 @@ NODE id=matrix/mcl/llm.ForgeExecutorModel kind=func
   sig=func ForgeExecutorModel() Config
   doc=ForgeExecutorModel returns the SlotExecutor+KindReason Config from\nForgeRegistry (the default executor route).
 EDGES
-  calls=matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ModelRegistry.Resolve
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.KindReason,matrix/mcl/llm.ModelRegistry.Resolve,matrix/mcl/llm.RouteKey,matrix/mcl/llm.SlotExecutor
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.ForgeModelClaudeOpus45 kind=const
@@ -453,7 +389,6 @@ NODE id=matrix/mcl/llm.ForgeModelClaudeOpus47 kind=const
   sig=untyped string
   doc=Forge model id constants. Edit these constants (not the routing logic) to\nupgrade or downgrade individual slots; the wiring stays valid.
 EDGES
-  ^references=matrix/mcl/llm.ForgeRegistry
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.ForgeModelGLM51 kind=const
@@ -482,7 +417,6 @@ NODE id=matrix/mcl/llm.ForgeModelGPT55 kind=const
   sig=untyped string
   doc=Forge model id constants. Edit these constants (not the routing logic) to\nupgrade or downgrade individual slots; the wiring stays valid.
 EDGES
-  ^references=matrix/mcl/llm.ForgeRegistry
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.ForgeModelGPT55Pro kind=const
@@ -504,10 +438,6 @@ NODE id=matrix/mcl/llm.ForgePlannerModel kind=func
   sig=func ForgePlannerModel() Config
   doc=ForgePlannerModel returns the SlotPlanner Config from ForgeRegistry.
 EDGES
-  calls=matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ModelRegistry.Resolve
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ModelRegistry.Resolve,matrix/mcl/llm.RouteKey,matrix/mcl/llm.SlotPlanner
-  ^calls=matrix/executor/cmd/mcl-execute.synthesize
-  ^references=matrix/executor/cmd/mcl-execute.synthesize
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.ForgeRegistry kind=func
@@ -515,10 +445,6 @@ NODE id=matrix/mcl/llm.ForgeRegistry kind=func
   sig=func ForgeRegistry() *ModelRegistry
   doc=ForgeRegistry returns the v1 Forge model router populated per matrix.kvx\nsess#34. Powers the local self-maintenance Matrix instance whose sole\npurpose is to optimize its own codebase at /root/matrix.\n\nRouting strategy:\n\n	SlotCompiler              gpt-5.5             (fast structured-output for verb classify + frame extract)\n	SlotPlanner               claude-opus-4-7     (strongest reasoning for plan_tree@1 synthesis)\n	SlotExecutor/reason       claude-opus-4-7     (agentic loops, code-context reasoning)\n	SlotExecutor/code         claude-opus-4-7     (code-gen at frontier quality)\n	SlotExecutor/summarize    gpt-5.5             (long-context summarisation)\n	SlotExecutor/write        claude-opus-4-7     (prose / docs)\n	SlotExecutor/transform    gpt-5.5             (structured shape, no creativity)\n	SlotExecutor/classify     gpt-5.5             (pick-from-list, fast)\n	SlotExecutor/hard_reason  claude-opus-4-7     (formal proofs, adversarial debugging)\n\nEvery route has InjectIdentity=true so the Matrix-maintaining-Matrix\nidentity preamble (llm.IdentityPreamble) ships on every routed call.\nProviderSet=true so DetectProvider is skipped (bare opencode model ids\nlike "claude-opus-4-7" and "gpt-5.5" don't fit the "<vendor>/<model>"\nshape).\n\nCaller pins OPENCODE_API_KEY in the daemon environment; New() reads it\nvia envKey(ProviderOpencode).
 EDGES
-  calls=matrix/mcl/llm.ModelRegistry.Register,matrix/mcl/llm.NewModelRegistry
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.ForgeModelClaudeOpus47,matrix/mcl/llm.ForgeModelGPT55,matrix/mcl/llm.GrammarNone,matrix/mcl/llm.KindClassify,matrix/mcl/llm.KindCode,matrix/mcl/llm.KindHardReason,matrix/mcl/llm.KindReason,matrix/mcl/llm.KindSummarize,matrix/mcl/llm.KindTransform,matrix/mcl/llm.KindWrite,matrix/mcl/llm.ModelRegistry,matrix/mcl/llm.ModelRegistry.Register,matrix/mcl/llm.NewModelRegistry,matrix/mcl/llm.OpencodeMessagesEndpoint,matrix/mcl/llm.OpencodeResponsesEndpoint,matrix/mcl/llm.ProviderOpencode,matrix/mcl/llm.RouteKey,matrix/mcl/llm.ShapeMessages,matrix/mcl/llm.ShapeResponses,matrix/mcl/llm.SlotCompiler,matrix/mcl/llm.SlotExecutor,matrix/mcl/llm.SlotLiaison,matrix/mcl/llm.SlotPlanner,matrix/mcl/llm.compiler,matrix/mcl/llm.executorClassify,matrix/mcl/llm.executorCode,matrix/mcl/llm.executorHardReason,matrix/mcl/llm.executorReason,matrix/mcl/llm.executorSummarize,matrix/mcl/llm.executorTransform,matrix/mcl/llm.executorWrite,matrix/mcl/llm.gpt55,matrix/mcl/llm.liaison,matrix/mcl/llm.maxTok,matrix/mcl/llm.opus,matrix/mcl/llm.planner,matrix/mcl/llm.reg,matrix/mcl/llm.temp
-  ^calls=matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.newLLMStepHandlerOpts,matrix/mcl/llm.ForgeCompilerModel,matrix/mcl/llm.ForgeExecutorModel,matrix/mcl/llm.ForgePlannerModel
-  ^references=matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.newLLMStepHandlerOpts,matrix/mcl/llm.ForgeCompilerModel,matrix/mcl/llm.ForgeExecutorModel,matrix/mcl/llm.ForgePlannerModel
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.GrammarDef kind=type
@@ -527,7 +453,6 @@ NODE id=matrix/mcl/llm.GrammarDef kind=type
   doc=GrammarDef defines a grammar constraint that can be sent to the provider.
 EDGES
   contains=matrix/mcl/llm.GrammarDef#EBNF,matrix/mcl/llm.GrammarDef#JSONSchema,matrix/mcl/llm.GrammarDef#Name
-  ^references=matrix/mcl/llm.Config,matrix/mcl/llm.DefaultGrammars
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.GrammarDef#EBNF kind=field
@@ -556,7 +481,6 @@ NODE id=matrix/mcl/llm.GrammarEBNF kind=const
   sig=llm.GrammarMode
   doc=GrammarEBNF uses Fireworks-specific EBNF grammar constraint.\nOnly works with Fireworks models.
 EDGES
-  ^references=matrix/mcl/llm.Client.applyGrammar
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.GrammarJSONSchema kind=const
@@ -564,7 +488,6 @@ NODE id=matrix/mcl/llm.GrammarJSONSchema kind=const
   sig=llm.GrammarMode
   doc=GrammarJSONSchema uses response_format with a JSON schema.\nSupported by both Together and Fireworks.
 EDGES
-  ^references=matrix/executor/cmd/mcl-execute.synthesize,matrix/mcl/llm.Client.applyGrammar,matrix/mcl/llm.DefaultRegistry
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.GrammarMode kind=type
@@ -572,7 +495,6 @@ NODE id=matrix/mcl/llm.GrammarMode kind=type
   sig=type GrammarMode int
   doc=GrammarMode selects how grammar constraints are communicated to the provider.
 EDGES
-  ^references=matrix/mcl/llm.Config,matrix/mcl/llm.GrammarNone
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.GrammarNone kind=const
@@ -580,8 +502,6 @@ NODE id=matrix/mcl/llm.GrammarNone kind=const
   sig=llm.GrammarMode
   doc=GrammarNone sends no grammar constraint (free-form generation).
 EDGES
-  references=matrix/mcl/llm.GrammarMode
-  ^references=matrix/executor/cmd/mcl-execute.daemonState.critiquePlan,matrix/executor/cmd/mcl-execute.llmStepHandler.cfgFor,matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.IdentityModelDigestSuffix kind=func
@@ -589,7 +509,6 @@ NODE id=matrix/mcl/llm.IdentityModelDigestSuffix kind=func
   sig=func IdentityModelDigestSuffix(cfg Config) string
   doc=IdentityModelDigestSuffix returns the suffix to append to a model's\ndigest string when computing compile-cache keys for Identity-injected\nroutes. Use:\n\n	digest := "claude-opus-4-7@opencode" + llm.IdentityModelDigestSuffix(cfg)\n\nReturns "" when cfg.InjectIdentity is false (legacy callers unaffected).\nReturns "+identity=<IdentityVersion>" when true. Caller composes this\ninto the digest string passed to compilecache.Key per sess#31d S31dQ2.
 EDGES
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.IdentityVersion,matrix/mcl/llm.cfg
   ^defines=matrix/mcl/llm/identity.go
 
 NODE id=matrix/mcl/llm.IdentityPreamble kind=const
@@ -597,7 +516,6 @@ NODE id=matrix/mcl/llm.IdentityPreamble kind=const
   sig=untyped string
   doc=IdentityPreamble is the system-message text injected at every Decode +\nStream call when Config.InjectIdentity is true. Locked verbatim by Andrew\n2026-05-27 (matrix.kvx sess#34). Edits MUST also bump IdentityVersion.
 EDGES
-  ^references=matrix/mcl/llm.InjectIdentity
   ^defines=matrix/mcl/llm/identity.go
 
 NODE id=matrix/mcl/llm.IdentityVersion kind=const
@@ -605,7 +523,6 @@ NODE id=matrix/mcl/llm.IdentityVersion kind=const
   sig=untyped string
   doc=IdentityVersion identifies the IdentityPreamble revision. Bumped whenever\nthe preamble text changes; mixed into model_digest by callers so the\ncompile-cache (sess#31d) invalidates cleanly across preamble migrations.\nReplay byte-identity (cortex §13.4) is preserved across the bump because\ncached entries with stale version simply miss + recompute.
 EDGES
-  ^references=matrix/mcl/llm.IdentityModelDigestSuffix
   ^defines=matrix/mcl/llm/identity.go
 
 NODE id=matrix/mcl/llm.InjectIdentity kind=func
@@ -613,9 +530,6 @@ NODE id=matrix/mcl/llm.InjectIdentity kind=func
   sig=func InjectIdentity(messages []interpreter.Message) []interpreter.Message
   doc=InjectIdentity prepends IdentityPreamble as the FIRST system message of\nthe returned slice. If messages already begins with a system role, the\npreamble is prepended as a SECOND system message ahead of it — both\nproviders (Anthropic Messages, OpenAI Responses, OpenAI Chat Completions)\naccept multiple system messages and concatenate them in declaration order.\n\nPure: the input slice is not mutated; the returned slice is freshly\nallocated with len(messages)+1 elements.\n\nCallers MUST honor Config.InjectIdentity — passing this helper through\nunconditionally would break legacy paths (e.g. mcl-e2e harness assertions\non exact wire bytes pre-sess#34).
 EDGES
-  references=matrix/mcl/llm.IdentityPreamble,matrix/mcl/llm.messages,matrix/mcl/llm.out,matrix/mcl/mtx/interpreter.Message
-  ^calls=matrix/mcl/llm.maybeInjectIdentity
-  ^references=matrix/mcl/llm.maybeInjectIdentity
   ^defines=matrix/mcl/llm/identity.go
 
 NODE id=matrix/mcl/llm.IsXaiModel kind=func
@@ -623,9 +537,6 @@ NODE id=matrix/mcl/llm.IsXaiModel kind=func
   sig=func IsXaiModel(model string) bool
   doc=IsXaiModel reports whether the fleet model id is an xAI-served Grok model\n("grok-*", e.g. "grok-4.3", "grok-build-0.1", "grok-4.20-0309-non-reasoning").
 EDGES
-  references=matrix/mcl/llm.model
-  ^calls=matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.DetectProvider,matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.DetectProvider,matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.IsXiaomiModel kind=func
@@ -633,9 +544,6 @@ NODE id=matrix/mcl/llm.IsXiaomiModel kind=func
   sig=func IsXiaomiModel(model string) bool
   doc=IsXiaomiModel reports whether the model is Xiaomi MiMo 2.5 Pro, accepting\nboth the native direct-provider id and the retired Novita fleet id.
 EDGES
-  references=matrix/mcl/llm.m,matrix/mcl/llm.model
-  ^calls=matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.DetectProvider,matrix/mcl/llm.XiaomiModelID,matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.isMimoFamily
-  ^references=matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.DetectProvider,matrix/mcl/llm.XiaomiModelID,matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.isMimoFamily
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.KindClassify kind=const
@@ -643,7 +551,6 @@ NODE id=matrix/mcl/llm.KindClassify kind=const
   sig=llm.StepKind
   doc=KindClassify signals pick-from-list or boolean output with grammar.\ngpt-oss-20b + grammar specialist.
 EDGES
-  ^references=matrix/mcl/llm.AllStepKinds,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ParseStepKind,matrix/mcl/llm.StepKind.String
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.KindCode kind=const
@@ -651,7 +558,6 @@ NODE id=matrix/mcl/llm.KindCode kind=const
   sig=llm.StepKind
   doc=KindCode signals code generation. Qwen3-Coder-480B specialist.
 EDGES
-  ^references=matrix/mcl/llm.AllStepKinds,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ParseStepKind,matrix/mcl/llm.StepKind.String
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.KindHardReason kind=const
@@ -659,7 +565,6 @@ NODE id=matrix/mcl/llm.KindHardReason kind=const
   sig=llm.StepKind
   doc=KindHardReason is opt-in only via SKILL.mtx flag. Reserved for\nhardest reasoning tasks (formal proofs, adversarial debugging).\nDeepSeek-V4-Pro specialist. Expensive + slow.
 EDGES
-  ^references=matrix/mcl/llm.AllStepKinds,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ParseStepKind,matrix/mcl/llm.StepKind.String
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.KindReason kind=const
@@ -667,7 +572,6 @@ NODE id=matrix/mcl/llm.KindReason kind=const
   sig=llm.StepKind
   doc=KindReason is the default agentic step decode. GLM-5.1 default.
 EDGES
-  ^references=matrix/executor/cmd/mcl-execute.llmStepHandler.clientFor,matrix/executor/cmd/mcl-execute.newLLMStepHandlerOpts,matrix/mcl/llm.AllStepKinds,matrix/mcl/llm.DefaultExecutorModel,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeExecutorModel,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ModelRegistry.Resolve,matrix/mcl/llm.ParseStepKind,matrix/mcl/llm.StepKind.String,matrix/mcl/llm.normalizeKind
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.KindSummarize kind=const
@@ -675,7 +579,6 @@ NODE id=matrix/mcl/llm.KindSummarize kind=const
   sig=llm.StepKind
   doc=KindSummarize signals input > 50k tokens or summarization/extraction.\nDeepSeek-V4-Flash (1M context) specialist.
 EDGES
-  ^references=matrix/mcl/llm.AllStepKinds,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ParseStepKind,matrix/mcl/llm.StepKind.String
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.KindTransform kind=const
@@ -683,7 +586,6 @@ NODE id=matrix/mcl/llm.KindTransform kind=const
   sig=llm.StepKind
   doc=KindTransform signals structured input -> structured output, no\ncreative leap. gpt-oss-20b specialist.
 EDGES
-  ^references=matrix/mcl/llm.AllStepKinds,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ParseStepKind,matrix/mcl/llm.StepKind.String
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.KindUnspecified kind=const
@@ -691,8 +593,6 @@ NODE id=matrix/mcl/llm.KindUnspecified kind=const
   sig=llm.StepKind
   doc=KindUnspecified is the zero value. Treated as KindReason during\nrouting. Used by older plans + bulk-converted skills that don't\ndeclare a kind explicitly.
 EDGES
-  references=matrix/mcl/llm.StepKind
-  ^references=matrix/executor/cmd/mcl-execute.llmStepHandler.clientFor,matrix/mcl/llm.ParseStepKind,matrix/mcl/llm.StepKind.String,matrix/mcl/llm.normalizeKind
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.KindWrite kind=const
@@ -700,7 +600,6 @@ NODE id=matrix/mcl/llm.KindWrite kind=const
   sig=llm.StepKind
   doc=KindWrite signals free-form prose / creative copy. Kimi K2.6 specialist.
 EDGES
-  ^references=matrix/mcl/llm.AllStepKinds,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ParseStepKind,matrix/mcl/llm.StepKind.String
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.ModelRegistry kind=type
@@ -709,8 +608,6 @@ NODE id=matrix/mcl/llm.ModelRegistry kind=type
   doc=ModelRegistry resolves (Slot, Kind, LongCtx) -> Config. Runtime policy\nonly — never persisted in cortex OverallRoot. Mirrors the sidecar\nposture of meta/salience_weights (Phase 12) and the rate-limit buckets\n(Phase 14).
 EDGES
   contains=matrix/mcl/llm.ModelRegistry#fallback,matrix/mcl/llm.ModelRegistry#longCtxRoutes,matrix/mcl/llm.ModelRegistry#routes,matrix/mcl/llm.ModelRegistry.Fallback,matrix/mcl/llm.ModelRegistry.Register,matrix/mcl/llm.ModelRegistry.Resolve,matrix/mcl/llm.ModelRegistry.Routes
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.RouteKey
-  ^references=matrix/executor/cmd/mcl-execute.llmStepHandler,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ModelRegistry.Fallback,matrix/mcl/llm.ModelRegistry.Register,matrix/mcl/llm.ModelRegistry.Resolve,matrix/mcl/llm.ModelRegistry.Routes,matrix/mcl/llm.NewModelRegistry
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.ModelRegistry#fallback kind=field
@@ -739,7 +636,6 @@ NODE id=matrix/mcl/llm.ModelRegistry.Fallback kind=method
   sig=func (r *ModelRegistry) Fallback() Config
   doc=Fallback returns the registry's fallback Config (read-only accessor).
 EDGES
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.ModelRegistry,matrix/mcl/llm.r
   ^contains=matrix/mcl/llm.ModelRegistry
   ^defines=matrix/mcl/llm/model.go
 
@@ -748,11 +644,7 @@ NODE id=matrix/mcl/llm.ModelRegistry.Register kind=method
   sig=func (r *ModelRegistry) Register(k RouteKey, cfg Config) *ModelRegistry
   doc=Register sets the Config for a route key. LongCtx routes are stored\nin a separate map so non-LongCtx lookups don't see them.\n\nReturns the registry for fluent chaining:\n\n	reg := NewModelRegistry(fallback).\n	    Register(RouteKey{Slot: SlotCompiler}, compilerCfg).\n	    Register(RouteKey{Slot: SlotPlanner},  plannerCfg)
 EDGES
-  calls=matrix/mcl/llm.normalizeKind
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.ModelRegistry,matrix/mcl/llm.RouteKey,matrix/mcl/llm.bare,matrix/mcl/llm.cfg,matrix/mcl/llm.k,matrix/mcl/llm.normalizeKind,matrix/mcl/llm.r
   ^contains=matrix/mcl/llm.ModelRegistry
-  ^calls=matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry
-  ^references=matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.ModelRegistry.Resolve kind=method
@@ -760,11 +652,7 @@ NODE id=matrix/mcl/llm.ModelRegistry.Resolve kind=method
   sig=func (r *ModelRegistry) Resolve(k RouteKey) Config
   doc=Resolve returns the Config for a route key. Normalization rules:\n\n  - Kind is ignored (zeroed) when Slot != SlotExecutor.\n  - KindUnspecified on SlotExecutor normalizes to KindReason.\n  - LongCtx=true prefers the LongCtx variant; falls through to primary\n    when no LongCtx variant is registered.\n  - Unknown KindCode/Summarize/Write/etc. on SlotExecutor fall back to\n    KindReason (the executor default) before hitting the global fallback.
 EDGES
-  calls=matrix/mcl/llm.normalizeKind
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.KindReason,matrix/mcl/llm.ModelRegistry,matrix/mcl/llm.RouteKey,matrix/mcl/llm.SlotExecutor,matrix/mcl/llm.bare,matrix/mcl/llm.cfg,matrix/mcl/llm.k,matrix/mcl/llm.normalizeKind,matrix/mcl/llm.ok,matrix/mcl/llm.r
   ^contains=matrix/mcl/llm.ModelRegistry
-  ^calls=matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.llmStepHandler.cfgFor,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.DefaultExecutorModel,matrix/mcl/llm.DefaultPlannerModel,matrix/mcl/llm.ForgeCompilerModel,matrix/mcl/llm.ForgeExecutorModel,matrix/mcl/llm.ForgePlannerModel
-  ^references=matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.llmStepHandler.cfgFor,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.DefaultExecutorModel,matrix/mcl/llm.DefaultPlannerModel,matrix/mcl/llm.ForgeCompilerModel,matrix/mcl/llm.ForgeExecutorModel,matrix/mcl/llm.ForgePlannerModel
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.ModelRegistry.Routes kind=method
@@ -772,7 +660,6 @@ NODE id=matrix/mcl/llm.ModelRegistry.Routes kind=method
   sig=func (r *ModelRegistry) Routes() map[RouteKey]Config
   doc=Routes returns a snapshot of all registered routes (primary + LongCtx)\nfor inspection + audit. The returned map's LongCtx keys carry\nLongCtx=true; primary keys carry LongCtx=false.
 EDGES
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.ModelRegistry,matrix/mcl/llm.RouteKey,matrix/mcl/llm.k,matrix/mcl/llm.long,matrix/mcl/llm.out,matrix/mcl/llm.r
   ^contains=matrix/mcl/llm.ModelRegistry
   ^defines=matrix/mcl/llm/model.go
 
@@ -782,17 +669,13 @@ NODE id=matrix/mcl/llm.ModelSlot kind=type
   doc=ModelSlot identifies which routing tier a call belongs to.
 EDGES
   contains=matrix/mcl/llm.ModelSlot.String
-  ^references=matrix/mcl/llm.ModelSlot.String,matrix/mcl/llm.RouteKey,matrix/mcl/llm.SlotCompiler,matrix/mcl/llm.normalizeKind
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.ModelSlot.String kind=method
   digest=b3:f4d8324f5c2ec3af0f5d0590d54c49eee59a71c17fca217665611a72e404b163 file=MCL/llm/model.go range=66:78 lang=go exported=true byte_range=2788:3015
   sig=func (s ModelSlot) String() string
 EDGES
-  references=matrix/mcl/llm.ModelSlot,matrix/mcl/llm.SlotCompiler,matrix/mcl/llm.SlotExecutor,matrix/mcl/llm.SlotLiaison,matrix/mcl/llm.SlotPlanner,matrix/mcl/llm.s
   ^contains=matrix/mcl/llm.ModelSlot
-  ^calls=matrix/executor/cmd/mcl-execute.buildDaemonWalker,matrix/executor/cmd/mcl-execute.compile,matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.llmStepHandler.HandleStep,matrix/executor/cmd/mcl-execute.llmStepHandler.cfgFor,matrix/executor/cmd/mcl-execute.runMessage,matrix/executor/cmd/mcl-execute.runMessageDirect,matrix/executor/cmd/mcl-execute.synthesize
-  ^references=matrix/executor/cmd/mcl-execute.buildDaemonWalker,matrix/executor/cmd/mcl-execute.compile,matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.llmStepHandler.HandleStep,matrix/executor/cmd/mcl-execute.llmStepHandler.cfgFor,matrix/executor/cmd/mcl-execute.runMessage,matrix/executor/cmd/mcl-execute.runMessageDirect,matrix/executor/cmd/mcl-execute.synthesize
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.New kind=func
@@ -800,10 +683,6 @@ NODE id=matrix/mcl/llm.New kind=func
   sig=func New(cfg *Config) (interpreter.LLM, error)
   doc=New creates an LLM client for the configured endpoint shape.\n\nDispatch (Session 34 / Forge Phase 1):\n\n	cfg.Endpoint suffix → APIShape   → returned concrete type\n	/v1/chat/completions  Chat        *Client\n	/v1/messages          Messages    *messagesClient (Anthropic Messages API)\n	/v1/responses         Responses   *responsesClient (OpenAI Responses API)\n\nFalls back to ShapeChatCompletions when the suffix is unrecognized,\npreserving the legacy contract verbatim (Together + Fireworks paths\npre-sess#34 keep working with no caller changes).\n\nReturns an interpreter.LLM (the streaming capability is opt-in via\ntype assertion to interpreter.StreamingLLM, which all three concrete\ntypes implement).\n\nThe provided *Config is copied into the returned client and may be\nreused or discarded by the caller after the call returns.
 EDGES
-  calls=matrix/mcl/llm.DetectAPIShape,matrix/mcl/llm.DetectProvider,matrix/mcl/llm.defaultEndpoint,matrix/mcl/llm.envKey,matrix/mcl/llm.newMessagesClient,matrix/mcl/llm.newResponsesClient
-  references=matrix/mcl/llm.Client,matrix/mcl/llm.Config,matrix/mcl/llm.DetectAPIShape,matrix/mcl/llm.DetectProvider,matrix/mcl/llm.Provider,matrix/mcl/llm.ShapeChatCompletions,matrix/mcl/llm.ShapeMessages,matrix/mcl/llm.ShapeResponses,matrix/mcl/llm.ShapeUnknown,matrix/mcl/llm.apiKey,matrix/mcl/llm.cfg,matrix/mcl/llm.defaultEndpoint,matrix/mcl/llm.endpoint,matrix/mcl/llm.envKey,matrix/mcl/llm.err,matrix/mcl/llm.httpClient,matrix/mcl/llm.key,matrix/mcl/llm.local,matrix/mcl/llm.newMessagesClient,matrix/mcl/llm.newResponsesClient,matrix/mcl/llm.p,matrix/mcl/llm.provider,matrix/mcl/llm.shape,matrix/mcl/mtx/interpreter.LLM
-  ^calls=matrix/bridge/cmd/mclc-cortex.run,matrix/codegraph/enrich.NewCody,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.compile,matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.daemonState.critiquePlan,matrix/executor/cmd/mcl-execute.llmStepHandler.clientFor,matrix/executor/cmd/mcl-execute.synthesize,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/llm.NewChatClient
-  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/codegraph/enrich.NewCody,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.compile,matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.daemonState.critiquePlan,matrix/executor/cmd/mcl-execute.llmStepHandler.clientFor,matrix/executor/cmd/mcl-execute.synthesize,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/llm.NewChatClient
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.NewChatClient kind=func
@@ -811,8 +690,6 @@ NODE id=matrix/mcl/llm.NewChatClient kind=func
   sig=func NewChatClient(cfg *Config) (*Client, error)
   doc=NewChatClient is a typed-return constructor preserved for tests that need\nthe concrete *Client to introspect endpoint/provider/apiKey fields. New\nproduction code should use New() which returns interpreter.LLM.
 EDGES
-  calls=matrix/mcl/llm.DetectAPIShape,matrix/mcl/llm.New
-  references=matrix/mcl/llm.Client,matrix/mcl/llm.Config,matrix/mcl/llm.DetectAPIShape,matrix/mcl/llm.New,matrix/mcl/llm.c,matrix/mcl/llm.cc,matrix/mcl/llm.cfg,matrix/mcl/llm.err,matrix/mcl/llm.ok
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.NewModelRegistry kind=func
@@ -820,9 +697,6 @@ NODE id=matrix/mcl/llm.NewModelRegistry kind=func
   sig=func NewModelRegistry(fallback Config) *ModelRegistry
   doc=NewModelRegistry returns an empty registry with the given fallback.\nUse Register to populate routes.
 EDGES
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.ModelRegistry,matrix/mcl/llm.RouteKey,matrix/mcl/llm.fallback
-  ^calls=matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry
-  ^references=matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.OpencodeChatEndpoint kind=const
@@ -830,7 +704,6 @@ NODE id=matrix/mcl/llm.OpencodeChatEndpoint kind=const
   sig=untyped string
   doc=Opencode endpoint constants for the zen proxy that fronts Anthropic\nMessages + OpenAI Responses APIs behind a single OPENCODE_API_KEY. Source:\nmatrix/temp/model.opencode catalog 2026-05-27.
 EDGES
-  ^references=matrix/neo/internal/llm.defaultChatEndpoint
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.OpencodeMessagesEndpoint kind=const
@@ -838,7 +711,6 @@ NODE id=matrix/mcl/llm.OpencodeMessagesEndpoint kind=const
   sig=untyped string
   doc=Opencode endpoint constants for the zen proxy that fronts Anthropic\nMessages + OpenAI Responses APIs behind a single OPENCODE_API_KEY. Source:\nmatrix/temp/model.opencode catalog 2026-05-27.
 EDGES
-  ^references=matrix/mcl/llm.ForgeRegistry
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.OpencodeResponsesEndpoint kind=const
@@ -846,7 +718,6 @@ NODE id=matrix/mcl/llm.OpencodeResponsesEndpoint kind=const
   sig=untyped string
   doc=Opencode endpoint constants for the zen proxy that fronts Anthropic\nMessages + OpenAI Responses APIs behind a single OPENCODE_API_KEY. Source:\nmatrix/temp/model.opencode catalog 2026-05-27.
 EDGES
-  ^references=matrix/mcl/llm.ForgeRegistry
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.ParseStepKind kind=func
@@ -854,9 +725,6 @@ NODE id=matrix/mcl/llm.ParseStepKind kind=func
   sig=func ParseStepKind(s string) StepKind
   doc=ParseStepKind converts a wire-form string to StepKind. Empty + unknown\nvalues both map to KindUnspecified (which routes as KindReason). Case-\ninsensitive; trims whitespace.
 EDGES
-  references=matrix/mcl/llm.KindClassify,matrix/mcl/llm.KindCode,matrix/mcl/llm.KindHardReason,matrix/mcl/llm.KindReason,matrix/mcl/llm.KindSummarize,matrix/mcl/llm.KindTransform,matrix/mcl/llm.KindUnspecified,matrix/mcl/llm.KindWrite,matrix/mcl/llm.StepKind,matrix/mcl/llm.s
-  ^calls=matrix/executor/cmd/mcl-execute.llmStepHandler.HandleStep
-  ^references=matrix/executor/cmd/mcl-execute.llmStepHandler.HandleStep
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.Provider kind=type
@@ -865,60 +733,49 @@ NODE id=matrix/mcl/llm.Provider kind=type
   doc=Provider identifies the API backend.
 EDGES
   contains=matrix/mcl/llm.Provider.String
-  ^references=matrix/executor/cmd/mcl-e2e.CompileOpts,matrix/executor/cmd/mcl-e2e.RunConfig,matrix/mcl/llm.Client,matrix/mcl/llm.Config,matrix/mcl/llm.DetectProvider,matrix/mcl/llm.New,matrix/mcl/llm.Provider.String,matrix/mcl/llm.ProviderTogether,matrix/mcl/llm.defaultEndpoint,matrix/mcl/llm.envKey,matrix/mcl/llm.messagesClient,matrix/mcl/llm.newMessagesClient,matrix/mcl/llm.newResponsesClient,matrix/mcl/llm.parseMessagesSSEStream,matrix/mcl/llm.parseResponsesSSEStream,matrix/mcl/llm.parseSSEStream,matrix/mcl/llm.responsesClient,matrix/neo/internal/llm.Client,matrix/neo/internal/llm.defaultChatEndpoint,matrix/neo/internal/llm.envKey
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.Provider.String kind=method
   digest=b3:243c7f89ebca8abaed190dacc03344d7f4cf102cd531b38c13483386dc33c152 file=MCL/llm/llm.go range=50:66 lang=go exported=true byte_range=1513:1833
   sig=func (p Provider) String() string
 EDGES
-  references=matrix/mcl/llm.Provider,matrix/mcl/llm.ProviderBaseten,matrix/mcl/llm.ProviderFireworks,matrix/mcl/llm.ProviderOpencode,matrix/mcl/llm.ProviderTogether,matrix/mcl/llm.ProviderXai,matrix/mcl/llm.ProviderXiaomi,matrix/mcl/llm.p
   ^contains=matrix/mcl/llm.Provider
-  ^calls=matrix/neo/internal/llm.Client.Provider
-  ^references=matrix/neo/internal/llm.Client.Provider
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.ProviderBaseten kind=const
   digest=b3:ccf74237c422e66ff5097a35c2f71aedac7c3767004e770cc7fbf578472325e0 file=MCL/llm/llm.go range=45:45 lang=go exported=true byte_range=1246:1261
   sig=llm.Provider
 EDGES
-  ^references=matrix/mcl/llm.DetectProvider,matrix/mcl/llm.Provider.String,matrix/mcl/llm.defaultEndpoint,matrix/mcl/llm.envKey,matrix/neo/internal/llm.defaultChatEndpoint,matrix/neo/internal/llm.envKey
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.ProviderFireworks kind=const
   digest=b3:906d42b70b0109e12f9dabe4706424283267d48e9366a8ecfdf9690d9fa38e42 file=MCL/llm/llm.go range=43:43 lang=go exported=true byte_range=1116:1133
   sig=llm.Provider
 EDGES
-  ^references=matrix/executor/cmd/mcl-e2e.main,matrix/mcl/llm.DetectProvider,matrix/mcl/llm.Provider.String,matrix/mcl/llm.defaultEndpoint,matrix/mcl/llm.envKey,matrix/neo/internal/llm.defaultChatEndpoint,matrix/neo/internal/llm.envKey
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.ProviderOpencode kind=const
   digest=b3:d3a6074fdada17d3cc1a19a2af035adc17724d71ae459032410ac09a74e06fa2 file=MCL/llm/llm.go range=44:44 lang=go exported=true byte_range=1171:1187
   sig=llm.Provider
 EDGES
-  ^references=matrix/mcl/llm.DetectProvider,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.Provider.String,matrix/mcl/llm.defaultEndpoint,matrix/mcl/llm.envKey,matrix/neo/internal/llm.defaultChatEndpoint,matrix/neo/internal/llm.envKey
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.ProviderTogether kind=const
   digest=b3:cc7c9da549c51a4d22d12e90145be0183ae61ad1b6d2fa715f51ff34be5e00c1 file=MCL/llm/llm.go range=42:42 lang=go exported=true byte_range=1061:1094
   sig=llm.Provider
 EDGES
-  references=matrix/mcl/llm.Provider
-  ^references=matrix/executor/cmd/mcl-e2e.main,matrix/mcl/llm.Provider.String,matrix/mcl/llm.defaultEndpoint,matrix/mcl/llm.envKey,matrix/neo/internal/llm.defaultChatEndpoint,matrix/neo/internal/llm.envKey
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.ProviderXai kind=const
   digest=b3:4c56b0c3c914085b41c262ccc14bdfb3f62cd88ee5bb21c8bf0de879dbde2af9 file=MCL/llm/llm.go range=46:46 lang=go exported=true byte_range=1330:1341
   sig=llm.Provider
 EDGES
-  ^references=matrix/mcl/llm.DetectProvider,matrix/mcl/llm.Provider.String,matrix/mcl/llm.defaultEndpoint,matrix/mcl/llm.envKey,matrix/neo/internal/llm.defaultChatEndpoint,matrix/neo/internal/llm.envKey
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.ProviderXiaomi kind=const
   digest=b3:e506c87ab99a9070b7e170770dedcfb67ca0b784d6c256151103eba57661cfb8 file=MCL/llm/llm.go range=47:47 lang=go exported=true byte_range=1414:1428
   sig=llm.Provider
 EDGES
-  ^references=matrix/mcl/llm.DetectProvider,matrix/mcl/llm.Provider.String,matrix/mcl/llm.defaultEndpoint,matrix/mcl/llm.envKey,matrix/neo/cmd/neo.newOmniClient,matrix/neo/internal/llm.defaultChatEndpoint,matrix/neo/internal/llm.envKey
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.RouteKey kind=type
@@ -927,8 +784,6 @@ NODE id=matrix/mcl/llm.RouteKey kind=type
   doc=RouteKey identifies which model should serve a particular call.\n\n  - Slot is required.\n  - Kind is ignored when Slot != SlotExecutor.\n  - LongCtx is an estimation hint (input > ~100k tokens). When true,\n    Resolve prefers the long-context variant of the route if one is\n    registered, falling back to the primary otherwise.
 EDGES
   contains=matrix/mcl/llm.RouteKey#Kind,matrix/mcl/llm.RouteKey#LongCtx,matrix/mcl/llm.RouteKey#Slot
-  references=matrix/mcl/llm.ModelSlot,matrix/mcl/llm.StepKind
-  ^references=matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/executor/cmd/mcl-execute.llmStepHandler,matrix/executor/cmd/mcl-execute.llmStepHandler.HandleStep,matrix/executor/cmd/mcl-execute.llmStepHandler.cfgFor,matrix/executor/cmd/mcl-execute.llmStepHandler.clientFor,matrix/executor/cmd/mcl-execute.newLLMStepHandlerOpts,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.DefaultExecutorModel,matrix/mcl/llm.DefaultPlannerModel,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeCompilerModel,matrix/mcl/llm.ForgeExecutorModel,matrix/mcl/llm.ForgePlannerModel,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ModelRegistry,matrix/mcl/llm.ModelRegistry.Register,matrix/mcl/llm.ModelRegistry.Resolve,matrix/mcl/llm.ModelRegistry.Routes,matrix/mcl/llm.NewModelRegistry
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.RouteKey#Kind kind=field
@@ -953,29 +808,24 @@ NODE id=matrix/mcl/llm.ShapeChatCompletions kind=const
   digest=b3:96da71571db9f27ac191bf8e6f4751799937e45ed3ddb6e4a3a6f3bb9e249549 file=MCL/llm/llm.go range=85:85 lang=go exported=true byte_range=2668:2688
   sig=llm.APIShape
 EDGES
-  ^references=matrix/mcl/llm.APIShape.String,matrix/mcl/llm.DetectAPIShape,matrix/mcl/llm.New,matrix/neo/internal/llm.New
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.ShapeMessages kind=const
   digest=b3:875ad2f40c665d33680c3144f5a1850eab66edf7ca28061dcf9faa8c6c1793a5 file=MCL/llm/llm.go range=86:86 lang=go exported=true byte_range=2723:2736
   sig=llm.APIShape
 EDGES
-  ^references=matrix/mcl/llm.APIShape.String,matrix/mcl/llm.DetectAPIShape,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.New
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.ShapeResponses kind=const
   digest=b3:041b7d16de2e133c115445207f9b20ff112f66cfbd6f04de997a7278916f54dd file=MCL/llm/llm.go range=87:87 lang=go exported=true byte_range=2770:2784
   sig=llm.APIShape
 EDGES
-  ^references=matrix/mcl/llm.APIShape.String,matrix/mcl/llm.DetectAPIShape,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.New
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.ShapeUnknown kind=const
   digest=b3:d459617a84d3660bf42528dadffcd3206f442afffba0f8ce429e7b28b770fc8c file=MCL/llm/llm.go range=84:84 lang=go exported=true byte_range=2630:2666
   sig=llm.APIShape
 EDGES
-  references=matrix/mcl/llm.APIShape
-  ^references=matrix/mcl/llm.DetectAPIShape,matrix/mcl/llm.New
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.SlotCompiler kind=const
@@ -983,8 +833,6 @@ NODE id=matrix/mcl/llm.SlotCompiler kind=const
   sig=llm.ModelSlot
   doc=SlotCompiler is the small/seedable/grammar-constrained model.\nUsed for verb classification + intent frame extraction. Sub-second\ntarget. Determinism (D11) required.
 EDGES
-  references=matrix/mcl/llm.ModelSlot
-  ^references=matrix/executor/cmd/mcl-execute.compile,matrix/executor/cmd/mcl-execute.runMessage,matrix/mcl/llm.DefaultCompilerModel,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeCompilerModel,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ModelSlot.String
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.SlotExecutor kind=const
@@ -992,7 +840,6 @@ NODE id=matrix/mcl/llm.SlotExecutor kind=const
   sig=llm.ModelSlot
   doc=SlotExecutor is the agentic model for step decode + gate generation.\nFree-form output by default; step-kind sub-routing (see StepKind)\nselects a specialist per call.
 EDGES
-  ^references=matrix/executor/cmd/mcl-execute.buildDaemonWalker,matrix/executor/cmd/mcl-execute.llmStepHandler.HandleStep,matrix/executor/cmd/mcl-execute.llmStepHandler.cfgFor,matrix/executor/cmd/mcl-execute.llmStepHandler.clientFor,matrix/executor/cmd/mcl-execute.newLLMStepHandlerOpts,matrix/mcl/llm.DefaultExecutorModel,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeExecutorModel,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ModelRegistry.Resolve,matrix/mcl/llm.ModelSlot.String,matrix/mcl/llm.normalizeKind
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.SlotLiaison kind=const
@@ -1000,7 +847,6 @@ NODE id=matrix/mcl/llm.SlotLiaison kind=const
   sig=llm.ModelSlot
   doc=SlotLiaison is the user-facing conversational agent ("the Liaison").\nIt narrates the compiler/planner/executor pipeline to the human in\nnatural language, fields chat replies + clarifications, and composes\nthe final answer. It is a pure observability SIDE-CHANNEL: it never\nwrites cortex, signs envelopes, or touches the plan/walk, so it\ncannot perturb the D11 replay byte-identity invariant. Free-form\nprose output (GrammarNone); warmth over determinism.
 EDGES
-  ^references=matrix/executor/cmd/mcl-execute.daemonState.callLiaison,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ModelSlot.String
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.SlotPlanner kind=const
@@ -1008,7 +854,6 @@ NODE id=matrix/mcl/llm.SlotPlanner kind=const
   sig=llm.ModelSlot
   doc=SlotPlanner is the medium/grammar-aware model used for plan_tree@1\nsynthesis. Recursive $defs/plan_node schema; needs reliable JSON\nshape output. Was previously folded under SlotExecutor.
 EDGES
-  ^references=matrix/executor/cmd/mcl-execute.buildDaemonWalker,matrix/executor/cmd/mcl-execute.runMessage,matrix/executor/cmd/mcl-execute.runMessageDirect,matrix/executor/cmd/mcl-execute.synthesize,matrix/mcl/llm.DefaultPlannerModel,matrix/mcl/llm.DefaultRegistry,matrix/mcl/llm.ForgePlannerModel,matrix/mcl/llm.ForgeRegistry,matrix/mcl/llm.ModelSlot.String
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.StepKind kind=type
@@ -1017,7 +862,6 @@ NODE id=matrix/mcl/llm.StepKind kind=type
   doc=StepKind identifies the cognitive shape of an executor step. Only\nmeaningful when ModelSlot == SlotExecutor; ignored otherwise.
 EDGES
   contains=matrix/mcl/llm.StepKind.String
-  ^references=matrix/mcl/llm.AllStepKinds,matrix/mcl/llm.KindUnspecified,matrix/mcl/llm.ParseStepKind,matrix/mcl/llm.RouteKey,matrix/mcl/llm.StepKind.String,matrix/mcl/llm.normalizeKind
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.StepKind.String kind=method
@@ -1025,10 +869,7 @@ NODE id=matrix/mcl/llm.StepKind.String kind=method
   sig=func (k StepKind) String() string
   doc=String returns the wire-form name for a StepKind. KindUnspecified\nreturns "reason" because routing normalizes Unspecified -> Reason.
 EDGES
-  references=matrix/mcl/llm.KindClassify,matrix/mcl/llm.KindCode,matrix/mcl/llm.KindHardReason,matrix/mcl/llm.KindReason,matrix/mcl/llm.KindSummarize,matrix/mcl/llm.KindTransform,matrix/mcl/llm.KindUnspecified,matrix/mcl/llm.KindWrite,matrix/mcl/llm.StepKind,matrix/mcl/llm.k
   ^contains=matrix/mcl/llm.StepKind
-  ^calls=matrix/executor/cmd/mcl-execute.llmStepHandler.HandleStep,matrix/executor/cmd/mcl-execute.llmStepHandler.cfgFor
-  ^references=matrix/executor/cmd/mcl-execute.llmStepHandler.HandleStep,matrix/executor/cmd/mcl-execute.llmStepHandler.cfgFor
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.ValidStepKindName kind=func
@@ -1036,7 +877,6 @@ NODE id=matrix/mcl/llm.ValidStepKindName kind=func
   sig=func ValidStepKindName(s string) bool
   doc=ValidStepKindName reports whether s is one of the closed wire-form\nstep-kind names. Used by plan validators + SKILL.mtx validators to\nreject typos at the boundary instead of silently dropping to default.
 EDGES
-  references=matrix/mcl/llm.AllStepKindNames,matrix/mcl/llm.k,matrix/mcl/llm.s
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.XaiChatEndpoint kind=const
@@ -1044,7 +884,6 @@ NODE id=matrix/mcl/llm.XaiChatEndpoint kind=const
   sig=untyped string
   doc=XaiChatEndpoint is xAI's OpenAI-compatible chat-completions endpoint.
 EDGES
-  ^references=matrix/mcl/llm.defaultEndpoint,matrix/neo/internal/llm.defaultChatEndpoint
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.XiaomiChatEndpoint kind=const
@@ -1052,24 +891,18 @@ NODE id=matrix/mcl/llm.XiaomiChatEndpoint kind=const
   sig=untyped string
   doc=XiaomiChatEndpoint is Xiaomi MiMo's OpenAI-compatible chat-completions endpoint.
 EDGES
-  ^references=matrix/mcl/llm.defaultEndpoint,matrix/neo/internal/llm.defaultChatEndpoint
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.XiaomiModelID kind=func
   digest=b3:1c6aaa0c23aee95c5cd421cb6a1d8e8afc911dcba003f47129b8045eb038f99b file=MCL/llm/llm.go range=863:868 lang=go exported=true byte_range=31063:31175
   sig=func XiaomiModelID(model string) string
 EDGES
-  calls=matrix/mcl/llm.IsXiaomiModel
-  references=matrix/mcl/llm.IsXiaomiModel,matrix/mcl/llm.model
-  ^calls=matrix/mcl/llm.Client.buildRequest,matrix/neo/internal/llm.Client.Chat
-  ^references=matrix/mcl/llm.Client.buildRequest,matrix/neo/internal/llm.Client.Chat
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm._ kind=var
   digest=b3:38c7200cecd46966420c392922cead1b0292fce8a2bba6b5593772c7ba39bb58 file=MCL/llm/responses_api.go range=89:89 lang=go exported=false byte_range=3085:3137
   sig=interpreter.StreamingLLM
 EDGES
-  references=matrix/mcl/llm.Client,matrix/mcl/llm.messagesClient,matrix/mcl/llm.responsesClient,matrix/mcl/mtx/interpreter.LLM,matrix/mcl/mtx/interpreter.StreamingLLM
   ^defines=matrix/mcl/llm/llm.go,matrix/mcl/llm/messages_api.go,matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.chatChoice kind=type
@@ -1077,8 +910,6 @@ NODE id=matrix/mcl/llm.chatChoice kind=type
   sig=type chatChoice struct {\n	Index		int		`json:"index"`\n	Message		chatMessage	`json:"message"`\n	FinishReason	string		`json:"finish_reason"`\n}
 EDGES
   contains=matrix/mcl/llm.chatChoice#FinishReason,matrix/mcl/llm.chatChoice#Index,matrix/mcl/llm.chatChoice#Message
-  references=matrix/mcl/llm.chatMessage
-  ^references=matrix/mcl/llm.chatResponse
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.chatChoice#FinishReason kind=field
@@ -1104,7 +935,6 @@ NODE id=matrix/mcl/llm.chatErrorBody kind=type
   sig=type chatErrorBody struct {\n	Message	string	`json:"message"`\n	Type	string	`json:"type"`\n	Code	string	`json:"code"`\n}
 EDGES
   contains=matrix/mcl/llm.chatErrorBody#Code,matrix/mcl/llm.chatErrorBody#Message,matrix/mcl/llm.chatErrorBody#Type
-  ^references=matrix/mcl/llm.chatResponse,matrix/mcl/llm.streamFrame
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.chatErrorBody#Code kind=field
@@ -1130,7 +960,6 @@ NODE id=matrix/mcl/llm.chatMessage kind=type
   sig=type chatMessage struct {\n	Role	string	`json:"role"`\n	Content	string	`json:"content"`\n	// ReasoningContent carries a reasoning model's chain-of-thought when\n	// the provider returns it as a sibling of `content` (Fireworks /\n	// DeepSeek-style). It is parsed so callers that want to surface\n	// reasoning as a SEPARATE channel (never as the answer) can read it;\n	// the replay-critical Decode path ignores it and returns only Content.\n	ReasoningContent	string	`json:"reasoning_content,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.chatMessage#Content,matrix/mcl/llm.chatMessage#ReasoningContent,matrix/mcl/llm.chatMessage#Role
-  ^references=matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.Client.decodeMessage,matrix/mcl/llm.chatChoice,matrix/mcl/llm.chatRequest
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.chatMessage#Content kind=field
@@ -1157,8 +986,6 @@ NODE id=matrix/mcl/llm.chatRequest kind=type
   sig=type chatRequest struct {\n	Model		string		`json:"model"`\n	Messages	[]chatMessage	`json:"messages"`\n	Temperature	float64		`json:"temperature"`\n	MaxTokens	int		`json:"max_tokens,omitempty"`\n	// MaxCompletionTokens is xAI/grok's replacement for the deprecated\n	// max_tokens; it bounds only visible output (not reasoning/tool tokens).\n	MaxCompletionTokens	int		`json:"max_completion_tokens,omitempty"`\n	Seed			*int64		`json:"seed,omitempty"`\n	ResponseFormat		*responseFormat	`json:"response_format,omitempty"`\n	// Stream toggles SSE delivery on /v1/chat/completions. Set by\n	// (*Client).Stream; unset by Decode (omitempty preserves wire\n	// shape parity with pre-P3 Decode requests for replay tests).\n	Stream	bool	`json:"stream,omitempty"`\n	// ReasoningEffort is xAI's reasoning-depth control ("none"|"low"|\n	// "medium"|"high"); set ONLY for grok-4.3 (omitempty keeps every other\n	// provider's/model's wire shape unchanged).\n	ReasoningEffort	string		`json:"reasoning_effort,omitempty"`\n	Thinking	*thinkingConfig	`json:"thinking,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.chatRequest#MaxCompletionTokens,matrix/mcl/llm.chatRequest#MaxTokens,matrix/mcl/llm.chatRequest#Messages,matrix/mcl/llm.chatRequest#Model,matrix/mcl/llm.chatRequest#ReasoningEffort,matrix/mcl/llm.chatRequest#ResponseFormat,matrix/mcl/llm.chatRequest#Seed,matrix/mcl/llm.chatRequest#Stream,matrix/mcl/llm.chatRequest#Temperature,matrix/mcl/llm.chatRequest#Thinking
-  references=matrix/mcl/llm.chatMessage,matrix/mcl/llm.responseFormat,matrix/mcl/llm.thinkingConfig
-  ^references=matrix/mcl/llm.Client.applyGrammar,matrix/mcl/llm.Client.buildRequest
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.chatRequest#MaxCompletionTokens kind=field
@@ -1229,8 +1056,6 @@ NODE id=matrix/mcl/llm.chatResponse kind=type
   sig=type chatResponse struct {\n	ID	string		`json:"id"`\n	Choices	[]chatChoice	`json:"choices"`\n	Usage	*chatUsage	`json:"usage,omitempty"`\n	Error	*chatErrorBody	`json:"error,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.chatResponse#Choices,matrix/mcl/llm.chatResponse#Error,matrix/mcl/llm.chatResponse#ID,matrix/mcl/llm.chatResponse#Usage
-  references=matrix/mcl/llm.chatChoice,matrix/mcl/llm.chatErrorBody,matrix/mcl/llm.chatUsage
-  ^references=matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.decodeMessage
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.chatResponse#Choices kind=field
@@ -1262,7 +1087,6 @@ NODE id=matrix/mcl/llm.chatUsage kind=type
   sig=type chatUsage struct {\n	PromptTokens		int	`json:"prompt_tokens"`\n	CompletionTokens	int	`json:"completion_tokens"`\n	TotalTokens		int	`json:"total_tokens"`\n}
 EDGES
   contains=matrix/mcl/llm.chatUsage#CompletionTokens,matrix/mcl/llm.chatUsage#PromptTokens,matrix/mcl/llm.chatUsage#TotalTokens
-  ^references=matrix/mcl/llm.chatResponse
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.chatUsage#CompletionTokens kind=field
@@ -1288,9 +1112,6 @@ NODE id=matrix/mcl/llm.collectRefusal kind=func
   sig=func collectRefusal(items []responsesOutputItem) string
   doc=collectRefusal returns the first non-empty refusal text from any\ncontent part across the output items. Empty when no refusal landed.
 EDGES
-  references=matrix/mcl/llm.item,matrix/mcl/llm.items,matrix/mcl/llm.part,matrix/mcl/llm.responsesOutputItem
-  ^calls=matrix/mcl/llm.responsesClient.Decode
-  ^references=matrix/mcl/llm.responsesClient.Decode
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.collectResponsesText kind=func
@@ -1298,36 +1119,24 @@ NODE id=matrix/mcl/llm.collectResponsesText kind=func
   sig=func collectResponsesText(items []responsesOutputItem) string
   doc=collectResponsesText walks every output item shape and returns the\nconcatenated visible text. Empty when nothing readable.
 EDGES
-  references=matrix/mcl/llm.item,matrix/mcl/llm.items,matrix/mcl/llm.part,matrix/mcl/llm.responsesOutputItem,matrix/mcl/llm.sb
-  ^calls=matrix/mcl/llm.responsesClient.Decode
-  ^references=matrix/mcl/llm.responsesClient.Decode
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.defaultEndpoint kind=func
   digest=b3:9d5f27156ba627e219cecd84d9c40e6507cc94a60eca0ded8e1a3e95e214db48 file=MCL/llm/llm.go range=914:932 lang=go exported=false byte_range=32323:32935
   sig=func defaultEndpoint(p Provider) string
 EDGES
-  references=matrix/mcl/llm.Provider,matrix/mcl/llm.ProviderBaseten,matrix/mcl/llm.ProviderFireworks,matrix/mcl/llm.ProviderOpencode,matrix/mcl/llm.ProviderTogether,matrix/mcl/llm.ProviderXai,matrix/mcl/llm.ProviderXiaomi,matrix/mcl/llm.XaiChatEndpoint,matrix/mcl/llm.XiaomiChatEndpoint,matrix/mcl/llm.p
-  ^calls=matrix/mcl/llm.New
-  ^references=matrix/mcl/llm.New
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.describeIncomplete kind=func
   digest=b3:c73f8c6f18d930812dd6b8de3781c43aba07f6d26b731affa47b8208aa0e67b5 file=MCL/llm/responses_api.go range=235:240 lang=go exported=false byte_range=7944:8098
   sig=func describeIncomplete(d *responsesIncomplete) string
 EDGES
-  references=matrix/mcl/llm.d,matrix/mcl/llm.responsesIncomplete
-  ^calls=matrix/mcl/llm.responsesClient.Decode
-  ^references=matrix/mcl/llm.responsesClient.Decode
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.envKey kind=func
   digest=b3:3a608609bd66f42676694cfaeb050549b466221134557ff062ffcfd0b0fdaff6 file=MCL/llm/llm.go range=940:963 lang=go exported=false byte_range=33235:33777
   sig=func envKey(p Provider) (string, error)
 EDGES
-  references=matrix/mcl/llm.Provider,matrix/mcl/llm.ProviderBaseten,matrix/mcl/llm.ProviderFireworks,matrix/mcl/llm.ProviderOpencode,matrix/mcl/llm.ProviderTogether,matrix/mcl/llm.ProviderXai,matrix/mcl/llm.ProviderXiaomi,matrix/mcl/llm.name,matrix/mcl/llm.p,matrix/mcl/llm.v
-  ^calls=matrix/mcl/llm.New
-  ^references=matrix/mcl/llm.New
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.isOpencodeModelID kind=func
@@ -1335,18 +1144,12 @@ NODE id=matrix/mcl/llm.isOpencodeModelID kind=func
   sig=func isOpencodeModelID(model string) bool
   doc=isOpencodeModelID returns true for the bare model ids served by\nopencode.ai/zen (matrix/temp/model.opencode 2026-05-27 catalog):\nclaude-*, gpt-5*, gemini-3*, qwen3.*-plus, kimi-k*, glm-*, minimax-m*,\ngrok-build-*, big-pickle, deepseek-v4-flash-free, mimo-v2.5-free,\nnemotron-3-super-free.
 EDGES
-  references=matrix/mcl/llm.m,matrix/mcl/llm.model
-  ^calls=matrix/mcl/llm.DetectProvider
-  ^references=matrix/mcl/llm.DetectProvider
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.joinItemTypes kind=func
   digest=b3:734f4ad33dde9a998534fb5389db47fb9456c62a4ea219eecd7cc32f7f56b06f file=MCL/llm/responses_api.go range=242:251 lang=go exported=false byte_range=8100:8346
   sig=func joinItemTypes(items []responsesOutputItem) string
 EDGES
-  references=matrix/mcl/llm.it,matrix/mcl/llm.items,matrix/mcl/llm.parts,matrix/mcl/llm.responsesOutputItem
-  ^calls=matrix/mcl/llm.responsesClient.Decode
-  ^references=matrix/mcl/llm.responsesClient.Decode
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.jsonSchemaRef kind=type
@@ -1354,7 +1157,6 @@ NODE id=matrix/mcl/llm.jsonSchemaRef kind=type
   sig=type jsonSchemaRef struct {\n	Name	string			`json:"name"`\n	Schema	map[string]interface{}	`json:"schema"`\n	Strict	bool			`json:"strict"`\n}
 EDGES
   contains=matrix/mcl/llm.jsonSchemaRef#Name,matrix/mcl/llm.jsonSchemaRef#Schema,matrix/mcl/llm.jsonSchemaRef#Strict
-  ^references=matrix/mcl/llm.Client.applyGrammar,matrix/mcl/llm.responseFormat
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.jsonSchemaRef#Name kind=field
@@ -1380,10 +1182,6 @@ NODE id=matrix/mcl/llm.maybeInjectIdentity kind=func
   sig=func maybeInjectIdentity(cfg Config, messages []interpreter.Message) []interpreter.Message
   doc=maybeInjectIdentity applies InjectIdentity iff cfg.InjectIdentity is set.\nInternal helper called from each client (chat-completions / messages /\nresponses) at the top of Decode + Stream so the gate is enforced uniformly\nacross all three API shapes.
 EDGES
-  calls=matrix/mcl/llm.InjectIdentity
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.InjectIdentity,matrix/mcl/llm.cfg,matrix/mcl/llm.messages,matrix/mcl/mtx/interpreter.Message
-  ^calls=matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.decodeMessage,matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream,matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream
-  ^references=matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.decodeMessage,matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream,matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream
   ^defines=matrix/mcl/llm/identity.go
 
 NODE id=matrix/mcl/llm.messagesClient kind=type
@@ -1393,8 +1191,6 @@ NODE id=matrix/mcl/llm.messagesClient kind=type
 EDGES
   contains=matrix/mcl/llm.messagesClient#apiKey,matrix/mcl/llm.messagesClient#cfg,matrix/mcl/llm.messagesClient#endpoint,matrix/mcl/llm.messagesClient#httpClient,matrix/mcl/llm.messagesClient#provider,matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream,matrix/mcl/llm.messagesClient.buildRequest,matrix/mcl/llm.messagesClient.dispatchHeaders,matrix/mcl/llm.messagesClient.newHTTPRequest
   implements=matrix/mcl/mtx/interpreter.LLM,matrix/mcl/mtx/interpreter.StreamingLLM
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.Provider
-  ^references=matrix/mcl/llm._,matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream,matrix/mcl/llm.messagesClient.buildRequest,matrix/mcl/llm.messagesClient.dispatchHeaders,matrix/mcl/llm.messagesClient.newHTTPRequest,matrix/mcl/llm.newMessagesClient
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesClient#apiKey kind=field
@@ -1432,10 +1228,7 @@ NODE id=matrix/mcl/llm.messagesClient.Decode kind=method
   sig=func (c *messagesClient) Decode(ctx context.Context, messages []interpreter.Message, grammar string) (string, error)
   doc=Decode sends a one-shot Messages request and returns the concatenated text\nfrom all content blocks of type "text" in the response.
 EDGES
-  calls=matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.messagesClient.buildRequest,matrix/mcl/llm.messagesClient.dispatchHeaders,matrix/mcl/llm.messagesClient.newHTTPRequest,matrix/mcl/llm.truncate
-  references=matrix/mcl/llm.blk,matrix/mcl/llm.body,matrix/mcl/llm.c,matrix/mcl/llm.ctx,matrix/mcl/llm.err,matrix/mcl/llm.httpReq,matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.messages,matrix/mcl/llm.messagesClient,matrix/mcl/llm.messagesClient.buildRequest,matrix/mcl/llm.messagesClient.dispatchHeaders,matrix/mcl/llm.messagesClient.newHTTPRequest,matrix/mcl/llm.messagesErrorEnvelope,matrix/mcl/llm.messagesResponse,matrix/mcl/llm.parsed,matrix/mcl/llm.req,matrix/mcl/llm.resp,matrix/mcl/llm.respBody,matrix/mcl/llm.sb,matrix/mcl/llm.truncate,matrix/mcl/mtx/interpreter.Message
   ^contains=matrix/mcl/llm.messagesClient
-  ^calls=matrix/mcl/mtx/interpreter.Interpreter.execPrompt
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesClient.Stream kind=method
@@ -1443,8 +1236,6 @@ NODE id=matrix/mcl/llm.messagesClient.Stream kind=method
   sig=func (c *messagesClient) Stream(ctx context.Context, messages []interpreter.Message,\n	grammar string, onDelta func(delta string)) (string, error)
   doc=Stream sends a Messages request with stream:true, parses the SSE event\nstream, and invokes onDelta for each text_delta fragment. Returns the\nfully accumulated text on message_stop or EOF.\n\nonDelta MUST NOT be invoked after Stream returns. onDelta == nil is\npermitted; the stream still drains.
 EDGES
-  calls=matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.messagesClient.buildRequest,matrix/mcl/llm.messagesClient.dispatchHeaders,matrix/mcl/llm.messagesClient.newHTTPRequest,matrix/mcl/llm.parseMessagesSSEStream,matrix/mcl/llm.truncate
-  references=matrix/mcl/llm.body,matrix/mcl/llm.c,matrix/mcl/llm.ctx,matrix/mcl/llm.err,matrix/mcl/llm.httpReq,matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.messages,matrix/mcl/llm.messagesClient,matrix/mcl/llm.messagesClient.buildRequest,matrix/mcl/llm.messagesClient.dispatchHeaders,matrix/mcl/llm.messagesClient.newHTTPRequest,matrix/mcl/llm.messagesErrorEnvelope,matrix/mcl/llm.onDelta,matrix/mcl/llm.parseMessagesSSEStream,matrix/mcl/llm.parsed,matrix/mcl/llm.req,matrix/mcl/llm.resp,matrix/mcl/llm.respBody,matrix/mcl/llm.truncate,matrix/mcl/mtx/interpreter.Message
   ^contains=matrix/mcl/llm.messagesClient
   ^defines=matrix/mcl/llm/messages_api.go
 
@@ -1453,10 +1244,7 @@ NODE id=matrix/mcl/llm.messagesClient.buildRequest kind=method
   sig=func (c *messagesClient) buildRequest(messages []interpreter.Message) *messagesRequest
   doc=buildRequest assembles the messagesRequest. Splits role=system messages\nout into the top-level `system` field (Anthropic requirement) and folds\nthe rest into the `messages[]` array. Multiple system messages are\nconcatenated with double-newline separators in declaration order — the\nnatural reading order matches the OpenAI convention where every system\nmessage is appended.
 EDGES
-  references=matrix/mcl/llm.c,matrix/mcl/llm.convo,matrix/mcl/llm.m,matrix/mcl/llm.maxTokens,matrix/mcl/llm.messages,matrix/mcl/llm.messagesClient,matrix/mcl/llm.messagesRequest,matrix/mcl/llm.messagesTurn,matrix/mcl/llm.req,matrix/mcl/llm.role,matrix/mcl/llm.systemParts,matrix/mcl/mtx/interpreter.Message
   ^contains=matrix/mcl/llm.messagesClient
-  ^calls=matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream
-  ^references=matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesClient.dispatchHeaders kind=method
@@ -1464,10 +1252,7 @@ NODE id=matrix/mcl/llm.messagesClient.dispatchHeaders kind=method
   sig=func (c *messagesClient) dispatchHeaders(h http.Header)
   doc=dispatchHeaders invokes the configured OnResponseHeaders hook with the\nupstream response headers. Mirrors (*Client).dispatchHeaders verbatim so\ngateway header capture (sess#33 cost telemetry) works uniformly across\nevery API shape.
 EDGES
-  references=matrix/mcl/llm.c,matrix/mcl/llm.h,matrix/mcl/llm.messagesClient
   ^contains=matrix/mcl/llm.messagesClient
-  ^calls=matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream
-  ^references=matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesClient.newHTTPRequest kind=method
@@ -1475,10 +1260,7 @@ NODE id=matrix/mcl/llm.messagesClient.newHTTPRequest kind=method
   sig=func (c *messagesClient) newHTTPRequest(ctx context.Context, body []byte, accept string) (*http.Request, error)
   doc=newHTTPRequest builds the *http.Request shared between Decode + Stream.\n\nAuth posture (sess#36 fix — verified live against opencode.ai/zen\n2026-05-28):\n\n	The Anthropic Messages API (and every proxy that fronts it,\n	including opencode.ai/zen) authenticates via the x-api-key header,\n	NOT Authorization: Bearer. The earlier sess#34 wiring sent Bearer\n	to opencode and the proxy 401'd with `{"type":"AuthError","message":\n	"Missing API key."}`. A direct probe confirmed x-api-key returns 200\n	with a real assistant response while Bearer 401s — opencode's\n	messages endpoint behaves like Anthropic's native auth.\n\nWe send BOTH headers — x-api-key (the load-bearing one) AND Authorization:\nBearer (preserved as a no-op for any future proxy that prefers it; many\nproxies accept either). The previous "either x-api-key OR Bearer based on\nhost substring" heuristic was wrong — the format is shape-driven, not\nhost-driven, and opencode is shape-Anthropic.\n\nAnthropic also requires an `anthropic-version` header; opencode passes it\nthrough, direct Anthropic enforces it.
 EDGES
-  references=matrix/mcl/llm.accept,matrix/mcl/llm.body,matrix/mcl/llm.c,matrix/mcl/llm.ctx,matrix/mcl/llm.err,matrix/mcl/llm.host,matrix/mcl/llm.messagesClient,matrix/mcl/llm.req,matrix/mcl/llm.url
   ^contains=matrix/mcl/llm.messagesClient
-  ^calls=matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream
-  ^references=matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesContentBlock kind=type
@@ -1486,7 +1268,6 @@ NODE id=matrix/mcl/llm.messagesContentBlock kind=type
   sig=type messagesContentBlock struct {\n	Type	string	`json:"type"`\n	Text	string	`json:"text,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.messagesContentBlock#Text,matrix/mcl/llm.messagesContentBlock#Type
-  ^references=matrix/mcl/llm.messagesResponse
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesContentBlock#Text kind=field
@@ -1506,7 +1287,6 @@ NODE id=matrix/mcl/llm.messagesDelta kind=type
   sig=type messagesDelta struct {\n	Type		string	`json:"type"`\n	Text		string	`json:"text,omitempty"`\n	StopReason	string	`json:"stop_reason,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.messagesDelta#StopReason,matrix/mcl/llm.messagesDelta#Text,matrix/mcl/llm.messagesDelta#Type
-  ^references=matrix/mcl/llm.messagesStreamFrame
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesDelta#StopReason kind=field
@@ -1532,7 +1312,6 @@ NODE id=matrix/mcl/llm.messagesErrorBody kind=type
   sig=type messagesErrorBody struct {\n	Type	string	`json:"type"`\n	Message	string	`json:"message"`\n}
 EDGES
   contains=matrix/mcl/llm.messagesErrorBody#Message,matrix/mcl/llm.messagesErrorBody#Type
-  ^references=matrix/mcl/llm.messagesErrorEnvelope,matrix/mcl/llm.messagesResponse,matrix/mcl/llm.messagesStreamFrame
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesErrorBody#Message kind=field
@@ -1552,8 +1331,6 @@ NODE id=matrix/mcl/llm.messagesErrorEnvelope kind=type
   sig=type messagesErrorEnvelope struct {\n	Type	string			`json:"type"`\n	Error	*messagesErrorBody	`json:"error,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.messagesErrorEnvelope#Error,matrix/mcl/llm.messagesErrorEnvelope#Type
-  references=matrix/mcl/llm.messagesErrorBody
-  ^references=matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesErrorEnvelope#Error kind=field
@@ -1573,8 +1350,6 @@ NODE id=matrix/mcl/llm.messagesRequest kind=type
   sig=type messagesRequest struct {\n	Model		string		`json:"model"`\n	MaxTokens	int		`json:"max_tokens"`\n	System		string		`json:"system,omitempty"`\n	Messages	[]messagesTurn	`json:"messages"`\n	Temperature	float64		`json:"temperature,omitempty"`\n	Stream		bool		`json:"stream,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.messagesRequest#MaxTokens,matrix/mcl/llm.messagesRequest#Messages,matrix/mcl/llm.messagesRequest#Model,matrix/mcl/llm.messagesRequest#Stream,matrix/mcl/llm.messagesRequest#System,matrix/mcl/llm.messagesRequest#Temperature
-  references=matrix/mcl/llm.messagesTurn
-  ^references=matrix/mcl/llm.messagesClient.buildRequest
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesRequest#MaxTokens kind=field
@@ -1618,8 +1393,6 @@ NODE id=matrix/mcl/llm.messagesResponse kind=type
   sig=type messagesResponse struct {\n	ID		string			`json:"id"`\n	Type		string			`json:"type"`\n	Role		string			`json:"role"`\n	Content		[]messagesContentBlock	`json:"content"`\n	Model		string			`json:"model"`\n	StopReason	string			`json:"stop_reason"`\n	Usage		*messagesUsage		`json:"usage,omitempty"`\n	Error		*messagesErrorBody	`json:"error,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.messagesResponse#Content,matrix/mcl/llm.messagesResponse#Error,matrix/mcl/llm.messagesResponse#ID,matrix/mcl/llm.messagesResponse#Model,matrix/mcl/llm.messagesResponse#Role,matrix/mcl/llm.messagesResponse#StopReason,matrix/mcl/llm.messagesResponse#Type,matrix/mcl/llm.messagesResponse#Usage
-  references=matrix/mcl/llm.messagesContentBlock,matrix/mcl/llm.messagesErrorBody,matrix/mcl/llm.messagesUsage
-  ^references=matrix/mcl/llm.messagesClient.Decode
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesResponse#Content kind=field
@@ -1676,8 +1449,6 @@ NODE id=matrix/mcl/llm.messagesStreamFrame kind=type
   doc=messagesStreamFrame matches every event payload Anthropic emits on the\nstreaming SSE channel. Fields populated depend on Type; unused fields\nstay zero-valued.
 EDGES
   contains=matrix/mcl/llm.messagesStreamFrame#Delta,matrix/mcl/llm.messagesStreamFrame#Error,matrix/mcl/llm.messagesStreamFrame#Index,matrix/mcl/llm.messagesStreamFrame#Type
-  references=matrix/mcl/llm.messagesDelta,matrix/mcl/llm.messagesErrorBody
-  ^references=matrix/mcl/llm.parseMessagesSSEStream
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesStreamFrame#Delta kind=field
@@ -1709,7 +1480,6 @@ NODE id=matrix/mcl/llm.messagesTurn kind=type
   sig=type messagesTurn struct {\n	Role	string	`json:"role"`\n	Content	string	`json:"content"`\n}
 EDGES
   contains=matrix/mcl/llm.messagesTurn#Content,matrix/mcl/llm.messagesTurn#Role
-  ^references=matrix/mcl/llm.messagesClient.buildRequest,matrix/mcl/llm.messagesRequest
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesTurn#Content kind=field
@@ -1729,7 +1499,6 @@ NODE id=matrix/mcl/llm.messagesUsage kind=type
   sig=type messagesUsage struct {\n	InputTokens	int	`json:"input_tokens"`\n	OutputTokens	int	`json:"output_tokens"`\n}
 EDGES
   contains=matrix/mcl/llm.messagesUsage#InputTokens,matrix/mcl/llm.messagesUsage#OutputTokens
-  ^references=matrix/mcl/llm.messagesResponse
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.messagesUsage#InputTokens kind=field
@@ -1748,18 +1517,12 @@ NODE id=matrix/mcl/llm.newMessagesClient kind=func
   digest=b3:fbb676543b7ba06637ba7d6f39ad14f07af4e33615dd121f47fece21b35835db file=MCL/llm/messages_api.go range=88:96 lang=go exported=false byte_range=3221:3457
   sig=func newMessagesClient(cfg Config, hc *http.Client, p Provider, endpoint, apiKey string) *messagesClient
 EDGES
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.Provider,matrix/mcl/llm.apiKey,matrix/mcl/llm.cfg,matrix/mcl/llm.endpoint,matrix/mcl/llm.hc,matrix/mcl/llm.messagesClient,matrix/mcl/llm.p
-  ^calls=matrix/mcl/llm.New
-  ^references=matrix/mcl/llm.New
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.newResponsesClient kind=func
   digest=b3:43aa05663380ceeb445a5a5239be8c4d61f82e57ec8d6692a4a55bb93f2127c6 file=MCL/llm/responses_api.go range=91:99 lang=go exported=false byte_range=3139:3378
   sig=func newResponsesClient(cfg Config, hc *http.Client, p Provider, endpoint, apiKey string) *responsesClient
 EDGES
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.Provider,matrix/mcl/llm.apiKey,matrix/mcl/llm.cfg,matrix/mcl/llm.endpoint,matrix/mcl/llm.hc,matrix/mcl/llm.p,matrix/mcl/llm.responsesClient
-  ^calls=matrix/mcl/llm.New
-  ^references=matrix/mcl/llm.New
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.normalizeKind kind=func
@@ -1767,9 +1530,6 @@ NODE id=matrix/mcl/llm.normalizeKind kind=func
   sig=func normalizeKind(slot ModelSlot, kind StepKind) StepKind
   doc=normalizeKind enforces the rule that Kind is only meaningful for\nSlotExecutor. Other slots get Kind=0 (KindUnspecified). Executor +\nKindUnspecified normalizes to KindReason.
 EDGES
-  references=matrix/mcl/llm.KindReason,matrix/mcl/llm.KindUnspecified,matrix/mcl/llm.ModelSlot,matrix/mcl/llm.SlotExecutor,matrix/mcl/llm.StepKind,matrix/mcl/llm.kind,matrix/mcl/llm.slot
-  ^calls=matrix/mcl/llm.ModelRegistry.Register,matrix/mcl/llm.ModelRegistry.Resolve
-  ^references=matrix/mcl/llm.ModelRegistry.Register,matrix/mcl/llm.ModelRegistry.Resolve
   ^defines=matrix/mcl/llm/model.go
 
 NODE id=matrix/mcl/llm.parseMessagesSSEStream kind=func
@@ -1777,9 +1537,6 @@ NODE id=matrix/mcl/llm.parseMessagesSSEStream kind=func
   sig=func parseMessagesSSEStream(ctx context.Context, r io.Reader, provider Provider,\n	onDelta func(delta string)) (string, error)
   doc=parseMessagesSSEStream consumes an Anthropic-shaped SSE stream and\ninvokes onDelta for each text_delta fragment. Returns the accumulated\ntext on message_stop or EOF.\n\nThe Anthropic SSE framing differs from OpenAI's in two important ways:\n  - Each event has both `event:` and `data:` lines (OpenAI uses data: only).\n  - Text fragments arrive as `content_block_delta` events whose JSON payload\n    looks like {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"..."}}.\n    Other event types (message_start, content_block_start, message_delta,\n    message_stop, ping) are accepted and ignored for text accumulation.
 EDGES
-  references=matrix/mcl/llm.Provider,matrix/mcl/llm.ctx,matrix/mcl/llm.err,matrix/mcl/llm.frame,matrix/mcl/llm.line,matrix/mcl/llm.messagesStreamFrame,matrix/mcl/llm.onDelta,matrix/mcl/llm.payload,matrix/mcl/llm.provider,matrix/mcl/llm.r,matrix/mcl/llm.sb,matrix/mcl/llm.scanner
-  ^calls=matrix/mcl/llm.messagesClient.Stream
-  ^references=matrix/mcl/llm.messagesClient.Stream
   ^defines=matrix/mcl/llm/messages_api.go
 
 NODE id=matrix/mcl/llm.parseResponsesSSEStream kind=func
@@ -1787,9 +1544,6 @@ NODE id=matrix/mcl/llm.parseResponsesSSEStream kind=func
   sig=func parseResponsesSSEStream(ctx context.Context, r io.Reader, provider Provider,\n	onDelta func(delta string)) (string, error)
   doc=parseResponsesSSEStream consumes an OpenAI-Responses-shaped SSE stream\nand invokes onDelta for each response.output_text.delta event. Returns\nthe accumulated text on response.completed or EOF.\n\nThe Responses SSE framing differs from chat-completions:\n  - Each event has both `event:` and `data:` lines (chat-completions uses\n    data: only). We rely on the data: line's `type` field exclusively.\n  - Text fragments arrive as `response.output_text.delta` events whose\n    JSON payload carries a top-level `delta` STRING field (not nested).\n  - response.completed signals end-of-stream; we also accept EOF and\n    [DONE] sentinels for proxy compatibility.
 EDGES
-  references=matrix/mcl/llm.Provider,matrix/mcl/llm.ctx,matrix/mcl/llm.err,matrix/mcl/llm.frame,matrix/mcl/llm.line,matrix/mcl/llm.onDelta,matrix/mcl/llm.payload,matrix/mcl/llm.provider,matrix/mcl/llm.r,matrix/mcl/llm.responsesStreamFrame,matrix/mcl/llm.sb,matrix/mcl/llm.scanner
-  ^calls=matrix/mcl/llm.responsesClient.Stream
-  ^references=matrix/mcl/llm.responsesClient.Stream
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.parseSSEStream kind=func
@@ -1797,9 +1551,6 @@ NODE id=matrix/mcl/llm.parseSSEStream kind=func
   sig=func parseSSEStream(ctx context.Context, r io.Reader, provider Provider,\n	onDelta func(delta string)) (string, error)
   doc=parseSSEStream consumes an OpenAI-compatible text/event-stream body\nemitting onDelta(content) for each chunk and returning the full\naccumulated text on `data: [DONE]` or EOF. Exported for testing\n(parseSSEStreamForTest).\n\nThe OpenAI streaming framing is one event per `data: <json>\\n\\n`\nblock; we tolerate both LF and CRLF line endings and drop any\nnon-data lines (event:, id:, retry:, comments) as the chat\ncompletions schema only carries data frames.
 EDGES
-  references=matrix/mcl/llm.Provider,matrix/mcl/llm.ctx,matrix/mcl/llm.delta,matrix/mcl/llm.err,matrix/mcl/llm.frame,matrix/mcl/llm.line,matrix/mcl/llm.onDelta,matrix/mcl/llm.payload,matrix/mcl/llm.provider,matrix/mcl/llm.r,matrix/mcl/llm.sb,matrix/mcl/llm.scanner,matrix/mcl/llm.streamFrame
-  ^calls=matrix/mcl/llm.Client.Stream
-  ^references=matrix/mcl/llm.Client.Stream
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.reasoningEffort kind=func
@@ -1807,9 +1558,6 @@ NODE id=matrix/mcl/llm.reasoningEffort kind=func
   sig=func reasoningEffort(enabled bool) string
   doc=reasoningEffort maps the per-role EnableThinking flag onto xAI's\nreasoning_effort enum: reasoning ON → "medium" (balanced reasoning that keeps\ngrok-4.3 answering in the visible content channel rather than exhausting the\nturn on chain-of-thought), OFF → "none" (disables reasoning entirely for\ntoken-tight mechanical roles).
 EDGES
-  references=matrix/mcl/llm.enabled
-  ^calls=matrix/mcl/llm.Client.buildRequest
-  ^references=matrix/mcl/llm.Client.buildRequest
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.responseFormat kind=type
@@ -1817,8 +1565,6 @@ NODE id=matrix/mcl/llm.responseFormat kind=type
   sig=type responseFormat struct {\n	Type		string		`json:"type"`\n	JSONSchema	*jsonSchemaRef	`json:"json_schema,omitempty"`\n	Grammar		string		`json:"grammar,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.responseFormat#Grammar,matrix/mcl/llm.responseFormat#JSONSchema,matrix/mcl/llm.responseFormat#Type
-  references=matrix/mcl/llm.jsonSchemaRef
-  ^references=matrix/mcl/llm.Client.applyGrammar,matrix/mcl/llm.chatRequest
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.responseFormat#Grammar kind=field
@@ -1846,8 +1592,6 @@ NODE id=matrix/mcl/llm.responsesClient kind=type
 EDGES
   contains=matrix/mcl/llm.responsesClient#apiKey,matrix/mcl/llm.responsesClient#cfg,matrix/mcl/llm.responsesClient#endpoint,matrix/mcl/llm.responsesClient#httpClient,matrix/mcl/llm.responsesClient#provider,matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream,matrix/mcl/llm.responsesClient.buildRequest,matrix/mcl/llm.responsesClient.dispatchHeaders,matrix/mcl/llm.responsesClient.newHTTPRequest
   implements=matrix/mcl/mtx/interpreter.LLM,matrix/mcl/mtx/interpreter.StreamingLLM
-  references=matrix/mcl/llm.Config,matrix/mcl/llm.Provider
-  ^references=matrix/mcl/llm._,matrix/mcl/llm.newResponsesClient,matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream,matrix/mcl/llm.responsesClient.buildRequest,matrix/mcl/llm.responsesClient.dispatchHeaders,matrix/mcl/llm.responsesClient.newHTTPRequest
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesClient#apiKey kind=field
@@ -1885,10 +1629,7 @@ NODE id=matrix/mcl/llm.responsesClient.Decode kind=method
   sig=func (c *responsesClient) Decode(ctx context.Context, messages []interpreter.Message, grammar string) (string, error)
   doc=Decode sends a one-shot Responses request and returns the concatenated\ntext from all output_text content parts in the response.
 EDGES
-  calls=matrix/mcl/llm.collectRefusal,matrix/mcl/llm.collectResponsesText,matrix/mcl/llm.describeIncomplete,matrix/mcl/llm.joinItemTypes,matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.responsesClient.buildRequest,matrix/mcl/llm.responsesClient.dispatchHeaders,matrix/mcl/llm.responsesClient.newHTTPRequest,matrix/mcl/llm.truncate
-  references=matrix/mcl/llm.body,matrix/mcl/llm.c,matrix/mcl/llm.collectRefusal,matrix/mcl/llm.collectResponsesText,matrix/mcl/llm.ctx,matrix/mcl/llm.describeIncomplete,matrix/mcl/llm.err,matrix/mcl/llm.httpReq,matrix/mcl/llm.joinItemTypes,matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.messages,matrix/mcl/llm.parsed,matrix/mcl/llm.refusal,matrix/mcl/llm.req,matrix/mcl/llm.resp,matrix/mcl/llm.respBody,matrix/mcl/llm.responsesClient,matrix/mcl/llm.responsesClient.buildRequest,matrix/mcl/llm.responsesClient.dispatchHeaders,matrix/mcl/llm.responsesClient.newHTTPRequest,matrix/mcl/llm.responsesErrorEnvelope,matrix/mcl/llm.responsesResponse,matrix/mcl/llm.text,matrix/mcl/llm.truncate,matrix/mcl/mtx/interpreter.Message
   ^contains=matrix/mcl/llm.responsesClient
-  ^calls=matrix/mcl/mtx/interpreter.Interpreter.execPrompt
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesClient.Stream kind=method
@@ -1896,8 +1637,6 @@ NODE id=matrix/mcl/llm.responsesClient.Stream kind=method
   sig=func (c *responsesClient) Stream(ctx context.Context, messages []interpreter.Message,\n	grammar string, onDelta func(delta string)) (string, error)
   doc=Stream sends a Responses request with stream:true, parses the SSE event\nstream, and invokes onDelta for each response.output_text.delta event.\nReturns the fully accumulated text on response.completed or EOF.\n\nonDelta MUST NOT be invoked after Stream returns. onDelta == nil is\npermitted; the stream still drains.
 EDGES
-  calls=matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.parseResponsesSSEStream,matrix/mcl/llm.responsesClient.buildRequest,matrix/mcl/llm.responsesClient.dispatchHeaders,matrix/mcl/llm.responsesClient.newHTTPRequest,matrix/mcl/llm.truncate
-  references=matrix/mcl/llm.body,matrix/mcl/llm.c,matrix/mcl/llm.ctx,matrix/mcl/llm.err,matrix/mcl/llm.httpReq,matrix/mcl/llm.maybeInjectIdentity,matrix/mcl/llm.messages,matrix/mcl/llm.onDelta,matrix/mcl/llm.parseResponsesSSEStream,matrix/mcl/llm.parsed,matrix/mcl/llm.req,matrix/mcl/llm.resp,matrix/mcl/llm.respBody,matrix/mcl/llm.responsesClient,matrix/mcl/llm.responsesClient.buildRequest,matrix/mcl/llm.responsesClient.dispatchHeaders,matrix/mcl/llm.responsesClient.newHTTPRequest,matrix/mcl/llm.responsesErrorEnvelope,matrix/mcl/llm.truncate,matrix/mcl/mtx/interpreter.Message
   ^contains=matrix/mcl/llm.responsesClient
   ^defines=matrix/mcl/llm/responses_api.go
 
@@ -1906,10 +1645,7 @@ NODE id=matrix/mcl/llm.responsesClient.buildRequest kind=method
   sig=func (c *responsesClient) buildRequest(messages []interpreter.Message) *responsesRequest
   doc=buildRequest assembles the responsesRequest. Splits role=system messages\nout into the top-level `instructions` field (OpenAI Responses convention)\nand folds the rest into the `input[]` array. Multiple system messages are\nconcatenated with double-newline separators in declaration order.
 EDGES
-  references=matrix/mcl/llm.c,matrix/mcl/llm.input,matrix/mcl/llm.m,matrix/mcl/llm.maxOut,matrix/mcl/llm.messages,matrix/mcl/llm.req,matrix/mcl/llm.responsesClient,matrix/mcl/llm.responsesInputMessage,matrix/mcl/llm.responsesRequest,matrix/mcl/llm.role,matrix/mcl/llm.systemParts,matrix/mcl/mtx/interpreter.Message
   ^contains=matrix/mcl/llm.responsesClient
-  ^calls=matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream
-  ^references=matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesClient.dispatchHeaders kind=method
@@ -1917,10 +1653,7 @@ NODE id=matrix/mcl/llm.responsesClient.dispatchHeaders kind=method
   sig=func (c *responsesClient) dispatchHeaders(h http.Header)
   doc=dispatchHeaders invokes the configured OnResponseHeaders hook with the\nupstream response headers. Mirrors (*Client).dispatchHeaders verbatim.
 EDGES
-  references=matrix/mcl/llm.c,matrix/mcl/llm.h,matrix/mcl/llm.responsesClient
   ^contains=matrix/mcl/llm.responsesClient
-  ^calls=matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream
-  ^references=matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesClient.newHTTPRequest kind=method
@@ -1928,10 +1661,7 @@ NODE id=matrix/mcl/llm.responsesClient.newHTTPRequest kind=method
   sig=func (c *responsesClient) newHTTPRequest(ctx context.Context, body []byte, accept string) (*http.Request, error)
   doc=newHTTPRequest builds the *http.Request shared between Decode + Stream.\nBearer authorization works against both the real OpenAI API and the\nopencode.ai/zen proxy; no provider-specific header dance like Anthropic's\nx-api-key.
 EDGES
-  references=matrix/mcl/llm.accept,matrix/mcl/llm.body,matrix/mcl/llm.c,matrix/mcl/llm.ctx,matrix/mcl/llm.err,matrix/mcl/llm.req,matrix/mcl/llm.responsesClient,matrix/mcl/llm.url
   ^contains=matrix/mcl/llm.responsesClient
-  ^calls=matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream
-  ^references=matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesContentPart kind=type
@@ -1939,7 +1669,6 @@ NODE id=matrix/mcl/llm.responsesContentPart kind=type
   sig=type responsesContentPart struct {\n	Type	string	`json:"type"`\n	Text	string	`json:"text,omitempty"`\n	Refusal	string	`json:"refusal,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.responsesContentPart#Refusal,matrix/mcl/llm.responsesContentPart#Text,matrix/mcl/llm.responsesContentPart#Type
-  ^references=matrix/mcl/llm.responsesOutputItem
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesContentPart#Refusal kind=field
@@ -1965,7 +1694,6 @@ NODE id=matrix/mcl/llm.responsesErrorBody kind=type
   sig=type responsesErrorBody struct {\n	Type	string	`json:"type"`\n	Message	string	`json:"message"`\n	Code	string	`json:"code,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.responsesErrorBody#Code,matrix/mcl/llm.responsesErrorBody#Message,matrix/mcl/llm.responsesErrorBody#Type
-  ^references=matrix/mcl/llm.responsesErrorEnvelope,matrix/mcl/llm.responsesResponse,matrix/mcl/llm.responsesStreamFrame
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesErrorBody#Code kind=field
@@ -1991,8 +1719,6 @@ NODE id=matrix/mcl/llm.responsesErrorEnvelope kind=type
   sig=type responsesErrorEnvelope struct {\n	Error *responsesErrorBody `json:"error,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.responsesErrorEnvelope#Error
-  references=matrix/mcl/llm.responsesErrorBody
-  ^references=matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesErrorEnvelope#Error kind=field
@@ -2006,7 +1732,6 @@ NODE id=matrix/mcl/llm.responsesIncomplete kind=type
   sig=type responsesIncomplete struct {\n	Reason string `json:"reason,omitempty"`	// e.g. "max_output_tokens", "content_filter"\n}
 EDGES
   contains=matrix/mcl/llm.responsesIncomplete#Reason
-  ^references=matrix/mcl/llm.describeIncomplete,matrix/mcl/llm.responsesResponse
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesIncomplete#Reason kind=field
@@ -2020,7 +1745,6 @@ NODE id=matrix/mcl/llm.responsesInputMessage kind=type
   sig=type responsesInputMessage struct {\n	Role	string	`json:"role"`\n	Content	string	`json:"content"`\n}
 EDGES
   contains=matrix/mcl/llm.responsesInputMessage#Content,matrix/mcl/llm.responsesInputMessage#Role
-  ^references=matrix/mcl/llm.responsesClient.buildRequest,matrix/mcl/llm.responsesRequest
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesInputMessage#Content kind=field
@@ -2041,8 +1765,6 @@ NODE id=matrix/mcl/llm.responsesOutputItem kind=type
   doc=responsesOutputItem covers every variant in `output[]`:\n\n	type=message            visible assistant turn (content[] carries output_text/refusal)\n	type=reasoning          chain-of-thought summary; some models surface text via Summary[]\n	type=function_call      tool call (Name + Arguments populated; Content stays empty)\n	type=tool_call          alias used by some proxies\n	type=output_text        flat shape some opencode-zen builds emit (Text on the item itself)
 EDGES
   contains=matrix/mcl/llm.responsesOutputItem#Content,matrix/mcl/llm.responsesOutputItem#Role,matrix/mcl/llm.responsesOutputItem#Summary,matrix/mcl/llm.responsesOutputItem#Text,matrix/mcl/llm.responsesOutputItem#Type
-  references=matrix/mcl/llm.responsesContentPart
-  ^references=matrix/mcl/llm.collectRefusal,matrix/mcl/llm.collectResponsesText,matrix/mcl/llm.joinItemTypes,matrix/mcl/llm.responsesResponse
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesOutputItem#Content kind=field
@@ -2081,8 +1803,6 @@ NODE id=matrix/mcl/llm.responsesRequest kind=type
   sig=type responsesRequest struct {\n	Model		string			`json:"model"`\n	Input		[]responsesInputMessage	`json:"input"`\n	Instructions	string			`json:"instructions,omitempty"`\n	MaxOutputTokens	int			`json:"max_output_tokens,omitempty"`\n	Temperature	float64			`json:"temperature,omitempty"`\n	Stream		bool			`json:"stream,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.responsesRequest#Input,matrix/mcl/llm.responsesRequest#Instructions,matrix/mcl/llm.responsesRequest#MaxOutputTokens,matrix/mcl/llm.responsesRequest#Model,matrix/mcl/llm.responsesRequest#Stream,matrix/mcl/llm.responsesRequest#Temperature
-  references=matrix/mcl/llm.responsesInputMessage
-  ^references=matrix/mcl/llm.responsesClient.buildRequest
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesRequest#Input kind=field
@@ -2126,8 +1846,6 @@ NODE id=matrix/mcl/llm.responsesResponse kind=type
   sig=type responsesResponse struct {\n	ID			string			`json:"id"`\n	Object			string			`json:"object"`\n	Status			string			`json:"status"`\n	Model			string			`json:"model"`\n	Output			[]responsesOutputItem	`json:"output"`\n	OutputText		string			`json:"output_text,omitempty"`	// convenience field\n	Usage			*responsesUsage		`json:"usage,omitempty"`\n	Error			*responsesErrorBody	`json:"error,omitempty"`\n	IncompleteDetails	*responsesIncomplete	`json:"incomplete_details,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.responsesResponse#Error,matrix/mcl/llm.responsesResponse#ID,matrix/mcl/llm.responsesResponse#IncompleteDetails,matrix/mcl/llm.responsesResponse#Model,matrix/mcl/llm.responsesResponse#Object,matrix/mcl/llm.responsesResponse#Output,matrix/mcl/llm.responsesResponse#OutputText,matrix/mcl/llm.responsesResponse#Status,matrix/mcl/llm.responsesResponse#Usage
-  references=matrix/mcl/llm.responsesErrorBody,matrix/mcl/llm.responsesIncomplete,matrix/mcl/llm.responsesOutputItem,matrix/mcl/llm.responsesUsage
-  ^references=matrix/mcl/llm.responsesClient.Decode
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesResponse#Error kind=field
@@ -2190,8 +1908,6 @@ NODE id=matrix/mcl/llm.responsesStreamFrame kind=type
   doc=responsesStreamFrame matches every event payload the Responses SSE\nchannel emits. Fields populated depend on Type; unused fields stay\nzero-valued.
 EDGES
   contains=matrix/mcl/llm.responsesStreamFrame#Delta,matrix/mcl/llm.responsesStreamFrame#Error,matrix/mcl/llm.responsesStreamFrame#Text,matrix/mcl/llm.responsesStreamFrame#Type
-  references=matrix/mcl/llm.responsesErrorBody
-  ^references=matrix/mcl/llm.parseResponsesSSEStream
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesStreamFrame#Delta kind=field
@@ -2223,7 +1939,6 @@ NODE id=matrix/mcl/llm.responsesUsage kind=type
   sig=type responsesUsage struct {\n	InputTokens	int	`json:"input_tokens"`\n	OutputTokens	int	`json:"output_tokens"`\n	TotalTokens	int	`json:"total_tokens"`\n}
 EDGES
   contains=matrix/mcl/llm.responsesUsage#InputTokens,matrix/mcl/llm.responsesUsage#OutputTokens,matrix/mcl/llm.responsesUsage#TotalTokens
-  ^references=matrix/mcl/llm.responsesResponse
   ^defines=matrix/mcl/llm/responses_api.go
 
 NODE id=matrix/mcl/llm.responsesUsage#InputTokens kind=field
@@ -2249,8 +1964,6 @@ NODE id=matrix/mcl/llm.streamChoice kind=type
   sig=type streamChoice struct {\n	Index		int		`json:"index"`\n	Delta		streamDelta	`json:"delta"`\n	FinishReason	string		`json:"finish_reason"`\n}
 EDGES
   contains=matrix/mcl/llm.streamChoice#Delta,matrix/mcl/llm.streamChoice#FinishReason,matrix/mcl/llm.streamChoice#Index
-  references=matrix/mcl/llm.streamDelta
-  ^references=matrix/mcl/llm.streamFrame
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.streamChoice#Delta kind=field
@@ -2276,7 +1989,6 @@ NODE id=matrix/mcl/llm.streamDelta kind=type
   sig=type streamDelta struct {\n	Role	string	`json:"role,omitempty"`\n	Content	string	`json:"content,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.streamDelta#Content,matrix/mcl/llm.streamDelta#Role
-  ^references=matrix/mcl/llm.streamChoice
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.streamDelta#Content kind=field
@@ -2296,8 +2008,6 @@ NODE id=matrix/mcl/llm.streamFrame kind=type
   sig=type streamFrame struct {\n	ID	string		`json:"id"`\n	Choices	[]streamChoice	`json:"choices"`\n	Error	*chatErrorBody	`json:"error,omitempty"`\n}
 EDGES
   contains=matrix/mcl/llm.streamFrame#Choices,matrix/mcl/llm.streamFrame#Error,matrix/mcl/llm.streamFrame#ID
-  references=matrix/mcl/llm.chatErrorBody,matrix/mcl/llm.streamChoice
-  ^references=matrix/mcl/llm.parseSSEStream
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.streamFrame#Choices kind=field
@@ -2323,9 +2033,6 @@ NODE id=matrix/mcl/llm.supportsReasoningEffort kind=func
   sig=func supportsReasoningEffort(model string) bool
   doc=supportsReasoningEffort reports whether an xAI model accepts the\n`reasoning_effort` request field. Per xAI docs it is currently only honored\nby grok-4.3; other Grok models (grok-build-*, grok-4.20-*-non-reasoning)\nignore or reject it, so the field is omitted for them.
 EDGES
-  references=matrix/mcl/llm.model
-  ^calls=matrix/mcl/llm.Client.buildRequest
-  ^references=matrix/mcl/llm.Client.buildRequest
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.thinkingConfig kind=type
@@ -2333,7 +2040,6 @@ NODE id=matrix/mcl/llm.thinkingConfig kind=type
   sig=type thinkingConfig struct {\n	Type string `json:"type"`\n}
 EDGES
   contains=matrix/mcl/llm.thinkingConfig#Type
-  ^references=matrix/mcl/llm.Client.buildRequest,matrix/mcl/llm.chatRequest
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.thinkingConfig#Type kind=field
@@ -2346,18 +2052,12 @@ NODE id=matrix/mcl/llm.truncate kind=func
   digest=b3:aef98bcecd1bec2c20323e380dc201ab827146b8fc985f7331fc6ba9717f76ae file=MCL/llm/llm.go range=965:970 lang=go exported=false byte_range=33779:33874
   sig=func truncate(s string, n int) string
 EDGES
-  references=matrix/mcl/llm.n,matrix/mcl/llm.s
-  ^calls=matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.decodeMessage,matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream,matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream
-  ^references=matrix/mcl/llm.Client.Stream,matrix/mcl/llm.Client.decodeMessage,matrix/mcl/llm.messagesClient.Decode,matrix/mcl/llm.messagesClient.Stream,matrix/mcl/llm.responsesClient.Decode,matrix/mcl/llm.responsesClient.Stream
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm.xiaomiThinkingType kind=func
   digest=b3:82bd515282fe44e6fb2758221fa5d662ff7ad88dd35a0a64b5f67e1537c61253 file=MCL/llm/llm.go range=870:875 lang=go exported=false byte_range=31177:31280
   sig=func xiaomiThinkingType(enabled bool) string
 EDGES
-  references=matrix/mcl/llm.enabled
-  ^calls=matrix/mcl/llm.Client.buildRequest
-  ^references=matrix/mcl/llm.Client.buildRequest
   ^defines=matrix/mcl/llm/llm.go
 
 NODE id=matrix/mcl/llm/identity.go kind=file
