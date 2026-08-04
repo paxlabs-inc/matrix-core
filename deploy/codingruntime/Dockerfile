@@ -61,6 +61,7 @@ RUN test "$(sha256sum uv.lock | cut -d' ' -f1)" = "${AGENTCORE_UV_LOCK_SHA256}" 
 
 COPY . .
 RUN uv sync --frozen --no-dev --extra web && \
+    /opt/agentcore/.venv/bin/python -c 'from importlib.util import find_spec; from pathlib import Path; source = Path("/opt/agentcore").resolve(); names = ("plugins.browser", "gateway.session_context"); specs = tuple(find_spec(name) for name in names); assert all(spec is not None and spec.origin is not None and Path(spec.origin).resolve().is_relative_to(source) for spec in specs)' && \
     printf '%s\n' "${AGENTCORE_GIT_SHA}" > /opt/agentcore/.agentcore_build_sha && \
     uv export --frozen --no-dev --extra web --no-emit-project \
       --format cyclonedx1.5 --output-file /opt/agentcore/python.cdx.json && \

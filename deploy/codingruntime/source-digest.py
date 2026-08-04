@@ -9,7 +9,7 @@ from pathlib import Path
 
 EXCLUDED_PARTS = {
     ".git", ".venv", "__pycache__", "node_modules", ".pytest_cache",
-    ".uv-cache", ".pip-cache", "dist", "build",
+    ".uv-cache", ".pip-cache", "dist", "build", "test_durations.json",
 }
 
 
@@ -41,4 +41,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

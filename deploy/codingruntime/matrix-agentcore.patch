@@ -1,52 +1,37 @@
---- a/providers/__init__.py
-+++ b/providers/__init__.py
-@@ -32,6 +32,7 @@
- 
- import importlib
- import importlib.util
- import logging
-+import os
+diff --git a/plugins/browser/__init__.py b/plugins/browser/__init__.py
+new file mode 100644
+index 0000000..c74bf56
+--- /dev/null
++++ b/plugins/browser/__init__.py
+@@ -0,0 +1 @@
++"""Bundled browser-provider plugins."""
+diff --git a/tests/test_packaging_build_guard.py b/tests/test_packaging_build_guard.py
+index 8e93293..e356223 100644
+--- a/tests/test_packaging_build_guard.py
++++ b/tests/test_packaging_build_guard.py
+@@ -3,6 +3,7 @@
+ import os
+ import subprocess
  import sys
++import zipfile
  from pathlib import Path
  
-@@ -89,6 +90,13 @@ def list_providers() -> list[ProviderProfile]:
+ import pytest
+@@ -70,3 +71,17 @@ def test_artifact_build_allows_explicit_nix_package_build_marker(kind, artifact_
  
- def _user_plugins_dir() -> Path | None:
-     """Return ``$AGENTCORE_HOME/plugins/model-providers/`` if it exists."""
-+    if os.environ.get("AGENTCORE_SAFE_MODE", "").strip().lower() in {
-+        "1",
-+        "true",
-+        "yes",
-+        "on",
-+    }:
-+        return None
-     try:
-         from agentcore_constants import get_agentcore_home
- 
---- a/toolsets.py
-+++ b/toolsets.py
-@@ -393,6 +393,24 @@ TOOLSETS = {
-         # non-configurable-toolset recovery loop in agentcore_cli/tools_config.py).
-         "posture": True,
-     },
+     assert result.returncode == 0, result.stderr
+     assert list(tmp_path.glob(artifact_glob))
 +
-+    "matrix-coding-v1": {
-+        "description": "Matrix managed coding runtime v1",
-+        "tools": [
-+            "web_search", "web_extract",
-+            "terminal", "process",
-+            "read_file", "write_file", "patch", "search_files",
-+            "vision_analyze",
-+            "skills_list", "skill_view",
-+            "browser_navigate", "browser_snapshot", "browser_click",
-+            "browser_type", "browser_scroll", "browser_back",
-+            "browser_press", "browser_get_images",
-+            "browser_vision", "browser_console", "browser_cdp", "browser_dialog",
-+            "todo", "clarify", "delegate_task",
-+        ],
-+        "includes": [],
-+        "posture": True,
-+    },
-     
-     # ==========================================================================
-     # Full AgentCore toolsets (CLI + messaging platforms)
++
++def test_wheel_contains_bundled_browser_plugins(tmp_path):
++    result = _build_artifact("wheel", tmp_path, nix_build=True)
++
++    assert result.returncode == 0, result.stderr
++    wheel = next(tmp_path.glob("agentcore_agent-*.whl"))
++    with zipfile.ZipFile(wheel) as artifact:
++        members = set(artifact.namelist())
++    assert "plugins/browser/__init__.py" in members
++    assert "plugins/browser/browserbase/provider.py" in members
++    assert "plugins/browser/browser_use/provider.py" in members
++    assert "plugins/browser/firecrawl/provider.py" in members
++    assert "gateway/session_context.py" in members

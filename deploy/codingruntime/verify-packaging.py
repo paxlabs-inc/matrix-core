@@ -38,6 +38,7 @@ def main() -> None:
         raise SystemExit("agentcore.pin: runtime_image_digest must be a sha256 digest")
 
     dockerfile = (ROOT / "deploy" / "railway" / "Dockerfile").read_text(encoding="utf-8")
+    agentcore_dockerfile = (RUNTIME / "Dockerfile").read_text(encoding="utf-8")
     neo_serve = (ROOT / "neo" / "cmd" / "neo" / "serve.go").read_text(encoding="utf-8")
     agentcore_dockerignore = (RUNTIME / "Dockerfile.dockerignore").read_text(encoding="utf-8")
     image = f'{pin["runtime_image_repository"]}@{pin["runtime_image_digest"]}'
@@ -67,6 +68,8 @@ def main() -> None:
     require(agentcore_dockerignore, "!plugins/browser", "AgentCore Docker build context")
     require(agentcore_dockerignore, "!plugins/browser/**", "AgentCore Docker build context")
     require(agentcore_dockerignore, "!gateway/session_context.py", "AgentCore Docker build context")
+    require(agentcore_dockerfile, 'names = ("plugins.browser", "gateway.session_context")', "AgentCore Dockerfile")
+    require(agentcore_dockerfile, "spec is not None and spec.origin is not None", "AgentCore Dockerfile")
     require(
         neo_serve,
         'strings.EqualFold(strings.TrimSpace(os.Getenv("NEO_CODING_RUNTIME_ENABLED")), "true")',

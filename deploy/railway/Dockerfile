@@ -5,7 +5,7 @@
 # package. The digest is the OCI index recorded in
 # deploy/codingruntime/agentcore.pin; an explicit build arg may replace the
 # repository while retaining the same digest for mirrors.
-ARG AGENTCORE_RUNTIME_IMAGE=ghcr.io/paxlabs-inc/matrix/matrix-agentcore@sha256:34abf460b2a7b372fa81af4cac3425bd0e52f19ec128208df270ca285a26c9f4
+ARG AGENTCORE_RUNTIME_IMAGE=ghcr.io/paxlabs-inc/matrix/matrix-agentcore@sha256:b4e2d88e31445f9681f0b7833a612b5a74ef3a3b23ce9fc06f04a48a1276d280
 FROM ${AGENTCORE_RUNTIME_IMAGE} AS agentcore-runtime
 
 # Matrix Railway dev-environment image.
@@ -447,7 +447,7 @@ RUN --mount=from=agentcore-runtime,source=/opt/agentcore,target=/run/matrix-agen
       --python /opt/agentcore/.venv/bin/python \
       "${package_root}"; \
     rm -rf "${package_root}"; \
-    test "$(cat /opt/agentcore/.agentcore_build_sha)" = "f5d27c088a6629636a8a54dcefa014e5e5fbec38"; \
+    test "$(cat /opt/agentcore/.agentcore_build_sha)" = "dbe6fd6389291ad806e9213da5ee82453e010a75"; \
     test -x /opt/agentcore/.venv/bin/agentcore; \
     test -x /opt/matrix/coding-bin/git; \
     test -r /etc/matrix-agentcore/config.yaml; \
