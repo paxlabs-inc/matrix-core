@@ -1,6 +1,6 @@
 # Contributing to Matrix
 
-## Contribution policy — please read first
+## Contribution policy — please read first 
 
 Matrix is open source and you are free to **fork it and modify it as much
 as you want**. That is exactly what the license is for: build on it, ship
