@@ -100,6 +100,52 @@ func (manager *ScopedToolManager) Execute(
 	return manager.parent.Execute(ctx, call, idempotencyKey)
 }
 
+func (manager *ScopedToolManager) PrepareEffect(
+	ctx context.Context,
+	call protocol.NormalizedToolCall,
+	idempotencyKey string,
+) error {
+	if _, ok := manager.allowed[call.Name]; !ok {
+		return fmt.Errorf(
+			"%w: tool %q is outside the immutable task packet",
+			ErrAuthorityDenied, call.Name,
+		)
+	}
+	preparer, ok := manager.parent.(loop.EffectPreparer)
+	if !ok {
+		return nil
+	}
+	return preparer.PrepareEffect(ctx, call, idempotencyKey)
+}
+
+func (manager *ScopedToolManager) EffectMetadata(
+	call protocol.NormalizedToolCall,
+) (loop.EffectMetadata, error) {
+	if _, ok := manager.allowed[call.Name]; !ok {
+		return loop.EffectMetadata{}, fmt.Errorf(
+			"%w: tool %q is outside the immutable task packet",
+			ErrAuthorityDenied, call.Name,
+		)
+	}
+	class, found := manager.metadata.SideEffectClass(call.Name)
+	if !found || class != manager.packet.ToolClasses[call.Name] {
+		return loop.EffectMetadata{}, fmt.Errorf(
+			"%w: tool %q manifest authority changed",
+			ErrAuthorityDenied, call.Name,
+		)
+	}
+	if err := authorizeClass(manager.packet.Scope, class); err != nil {
+		return loop.EffectMetadata{}, fmt.Errorf(
+			"%w: %s: %v", ErrAuthorityDenied, call.Name, err,
+		)
+	}
+	provider, ok := manager.parent.(loop.EffectMetadataProvider)
+	if !ok {
+		return loop.EffectMetadata{RetrySafe: class == "read"}, nil
+	}
+	return provider.EffectMetadata(call)
+}
+
 func (manager *ScopedToolManager) Reconcile(
 	ctx context.Context,
 	idempotencyKey string,

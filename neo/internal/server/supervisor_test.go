@@ -42,17 +42,17 @@ func TestSuperviseDecision(t *testing.T) {
 		{"user stop wins over error", true, hardErr, delegate.ClassNone, nil, 1, 50, actInterrupted},
 		{"user stop wins over success", true, nil, delegate.ClassNone, nil, 3, 50, actInterrupted},
 		{"user stop wins over deterministic", true, hardErr, delegate.ClassDeterministic, nil, 1, 50, actInterrupted},
-		{"model error, budget left → respawn", false, hardErr, delegate.ClassNone, nil, 1, 50, actRespawn},
-		{"incomplete (stall/budget) → respawn", false, incomplete, delegate.ClassNone, nil, 2, 50, actRespawn},
+		{"model error stays out of respawn loop", false, hardErr, delegate.ClassNone, nil, 1, 50, actStop},
+		{"incomplete stall or budget stops honestly", false, incomplete, delegate.ClassNone, nil, 2, 50, actStop},
 		{"deterministic blocker → stop, no respawn", false, incomplete, delegate.ClassDeterministic, nil, 1, 50, actStop},
 		{"deterministic stops even with full budget", false, hardErr, delegate.ClassDeterministic, nil, 1, 50, actStop},
-		{"deterministic stops before the ceiling", false, hardErr, delegate.ClassDeterministic, wall, 5, 50, actStop},
+		{"wall ceiling wins over deterministic", false, hardErr, delegate.ClassDeterministic, wall, 5, 50, actCeiling},
 		{"transient failure → respawn (existing path)", false, incomplete, delegate.ClassTransient, nil, 1, 50, actRespawn},
-		{"conflict → respawn in P1 (attach is P2)", false, incomplete, delegate.ClassConflict, nil, 1, 50, actRespawn},
-		{"pending → respawn in P1 (slot-fill is P4)", false, incomplete, delegate.ClassPending, nil, 1, 50, actRespawn},
+		{"conflict remains in the cognitive run", false, incomplete, delegate.ClassConflict, nil, 1, 50, actStop},
+		{"pending clarification remains in the cognitive run", false, incomplete, delegate.ClassPending, nil, 1, 50, actStop},
 		{"wall-clock blown → ceiling", false, hardErr, delegate.ClassNone, wall, 5, 50, actCeiling},
 		{"respawn budget exhausted → ceiling", false, hardErr, delegate.ClassNone, nil, 1, 0, actCeiling},
-		{"last allowed attempt still respawns", false, hardErr, delegate.ClassNone, nil, 50, 50, actRespawn},
+		{"non-transient last allowed attempt stops", false, hardErr, delegate.ClassNone, nil, 50, 50, actStop},
 		{"one past budget → ceiling", false, hardErr, delegate.ClassNone, nil, 51, 50, actCeiling},
 	}
 	for _, c := range cases {
@@ -99,8 +99,8 @@ func TestPostureRespawnLimit(t *testing.T) {
 	if got := postureRespawnLimit(cfg, "implement and deploy the fix"); got != 7 {
 		t.Fatalf("execution limit = %d, want 7", got)
 	}
-	if got := superviseDecision(false, agent.ErrIncomplete, delegate.ClassNone, nil, 1, postureRespawnLimit(cfg, "implement the fix")); got != actRespawn {
-		t.Fatalf("wedged execution must retain supervisor respawn, got %v", got)
+	if got := superviseDecision(false, agent.ErrIncomplete, delegate.ClassNone, nil, 1, postureRespawnLimit(cfg, "implement the fix")); got != actStop {
+		t.Fatalf("wedged execution must stop without a fresh-life loop, got %v", got)
 	}
 }
 

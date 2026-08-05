@@ -81,8 +81,23 @@ void AppendAssertion(std::string& output, const schema::Assertion& assertion) {
   AppendText(output, Text(assertion.value()));
 }
 
+bool IsSemanticMemoryEvent(log::EventKind kind) {
+  switch (kind) {
+    case log::EventKind::kUserMsg:
+    case log::EventKind::kDeliveredMsg:
+    case log::EventKind::kAssertion:
+    case log::EventKind::kConsolidation:
+      return true;
+    default:
+      return false;
+  }
+}
+
 std::string DocumentText(const events::VerifiedEvent& event) {
   std::string output;
+  if (!IsSemanticMemoryEvent(event.kind)) {
+    return output;
+  }
   switch (event.kind) {
     case log::EventKind::kUserMsg:
       AppendText(output, Text(event.envelope->payload_as_UserMsg()->content()));
@@ -412,6 +427,9 @@ std::expected<std::vector<LexicalHit>, Error> LexicalProjection::Query(
     return std::unexpected(stats.error());
   }
   auto stats_bytes = std::move(*stats).value_or(std::vector<std::byte>{});
+  if (stats_bytes.empty()) {
+    return std::vector<LexicalHit>{};
+  }
   if (stats_bytes.size() != 16) {
     return std::unexpected(Error{ErrorCode::kLexicalIndexCorrupt, 0});
   }

@@ -368,8 +368,8 @@ func Default() Config {
 		SuperviseTasks:        true,
 		TaskMaxWall:           6 * time.Hour,
 		TaskAttemptTimeout:    20 * time.Minute,
-		TaskMaxRespawns:       50,
-		DeathConsolidateEvery: 3, // self-author how-I-fail memories every 3rd loop death
+		TaskMaxRespawns:       8,
+		DeathConsolidateEvery: 0, // diagnostic deaths never auto-promote into cognitive memory
 
 		MinPatternSuccesses: 3,
 

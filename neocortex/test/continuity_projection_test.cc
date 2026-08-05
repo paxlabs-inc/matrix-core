@@ -483,8 +483,10 @@ int TestContinuity(const std::filesystem::path& root) {
     }
     auto activation = neocortex::compose::Composer::Activate(
         *successor_snapshot, Request(conversation, 1'000'000));
-    if (!activation || activation->sections[3].items.size() != prefix) {
-      return Fail("INV-1 successor lost conversation evidence");
+    if (!activation || !activation->sections[1].items.empty() ||
+        !activation->sections[2].items.empty() ||
+        !activation->sections[3].items.empty()) {
+      return Fail("INV-1 operational or transcript state leaked into activation");
     }
     const bool loop_a_open = prefix >= 2 && prefix < 12;
     const bool loop_b_open = prefix >= 8;
@@ -494,14 +496,21 @@ int TestContinuity(const std::filesystem::path& root) {
     const auto expected_work =
         (prefix >= 4 ? 1U : 0U) + (prefix >= 5 ? 1U : 0U) +
         (prefix >= 9 ? 1U : 0U) + (prefix >= 10 ? 1U : 0U);
-    if (activation->sections[1].items.size() != expected_intent_items ||
-        activation->sections[2].items.size() != expected_work) {
-      return Fail("INV-1 successor lost intent or ledger evidence");
+    auto successor_intent = neocortex::proj::IntentFrameProjection::Read(
+        *successor_snapshot, conversation);
+    if (!successor_intent ||
+        (successor_intent->objective.has_value() ? 1U : 0U) +
+                successor_intent->open_loops.size() !=
+            expected_intent_items) {
+      return Fail("INV-1 successor lost recoverable intent evidence");
     }
     auto successor_work = neocortex::proj::WorkLedgerProjection::ReadConversation(
         *successor_snapshot, conversation);
     if (!successor_work) {
       return Fail("INV-1 successor ledger read failed");
+    }
+    if (successor_work->size() != expected_work) {
+      return Fail("INV-1 successor lost recoverable ledger evidence");
     }
     for (const auto& item : *successor_work) {
       const bool expected_reconcile =
@@ -518,10 +527,11 @@ int TestContinuity(const std::filesystem::path& root) {
                            activation->sections[2].tokens;
     auto overflow = neocortex::compose::Composer::Activate(
         *successor_snapshot, Request(conversation, mandatory + 9U * prefix));
-    if (!overflow || overflow->sections[3].items.size() != prefix ||
-        overflow->sections[3].coarsened_items == 0 ||
+    if (!overflow || !overflow->sections[1].items.empty() ||
+        !overflow->sections[2].items.empty() ||
+        !overflow->sections[3].items.empty() ||
         overflow->spent_tokens > overflow->budget_tokens) {
-      return Fail("INV-1 overflow coarsening dropped continuity evidence");
+      return Fail("INV-1 overflow handling leaked operational state");
     }
 
     if (prefix == frames.size()) {

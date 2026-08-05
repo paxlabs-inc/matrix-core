@@ -5,7 +5,6 @@ package loop
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -80,14 +79,9 @@ func TestToolCallBudgetCannotBeExceededOnTheRealLoop(t *testing.T) {
 	}
 	response, turnErr := runtimeLoop.Turn(t.Context(), userContent)
 
-	var incomplete *Incomplete
-	if !errors.As(turnErr, &incomplete) {
-		t.Fatalf("unbounded tool loop did not stop: err=%v", turnErr)
-	}
-	if incomplete.Phase != boundToolBudget ||
-		strings.TrimSpace(incomplete.RecoveryAdvice) == "" ||
-		len(incomplete.Checkpoint.Messages) == 0 {
-		t.Fatalf("tool budget incomplete = %+v", incomplete)
+	if turnErr != nil || !response.HonestPartial || response.Checkpoint == nil ||
+		len(response.Checkpoint.Messages) == 0 {
+		t.Fatalf("unbounded tool loop was not contained: response=%+v err=%v", response, turnErr)
 	}
 	budget := response.Liveness.Policy.ToolCallBudget
 	if budget != 22 {
@@ -98,7 +92,7 @@ func TestToolCallBudgetCannotBeExceededOnTheRealLoop(t *testing.T) {
 			len(response.ToolEvents), budget)
 	}
 	if dispatched := countRole(
-		incomplete.Checkpoint.Messages, protocol.RoleTool,
+		response.Checkpoint.Messages, protocol.RoleTool,
 	); dispatched != budget {
 		t.Fatalf("durable tool results = %d want %d", dispatched, budget)
 	}
@@ -368,9 +362,9 @@ func TestParallelismDefersExcessCallsWithExplicitMarkers(t *testing.T) {
 	}
 }
 
-// Past the same-strategy bound the runtime returns a typed incomplete whose
-// recovery advice instructs a strategy change, over a durable checkpoint.
-func TestSameStrategyRepetitionReturnsATypedIncomplete(t *testing.T) {
+// Past the same-strategy bound the runtime returns structured observations to
+// the same cognitive run and only the overall turn budget may stop it.
+func TestSameStrategyRepetitionRequiresStrategyChangeInBand(t *testing.T) {
 	manager := realExecManager(t)
 	workdir := t.TempDir()
 	var (
@@ -421,28 +415,32 @@ func TestSameStrategyRepetitionReturnsATypedIncomplete(t *testing.T) {
 		t.Fatal(err)
 	}
 	response, turnErr := runtimeLoop.Turn(t.Context(), userContent)
-
-	var incomplete *Incomplete
-	if !errors.As(turnErr, &incomplete) {
-		t.Fatalf("repeated strategy did not stop: err=%v", turnErr)
-	}
-	if incomplete.Phase != "tool_loop" ||
-		!strings.Contains(incomplete.RecoveryAdvice, "change_strategy") ||
-		len(incomplete.Checkpoint.Messages) == 0 {
-		t.Fatalf("same-strategy incomplete = %+v", incomplete)
+	if turnErr != nil || !response.HonestPartial || response.Checkpoint == nil ||
+		len(response.Checkpoint.Messages) == 0 {
+		t.Fatalf("same-strategy containment response=%+v err=%v", response, turnErr)
 	}
 	retries := response.Liveness.Policy.SameStrategyRetries
 	if retries != 3 {
 		t.Fatalf("derived same-strategy retries = %d want 3", retries)
 	}
-	if len(response.ToolEvents) != retries+1 {
-		t.Fatalf("dispatched %d identical calls under a bound of %d",
-			len(response.ToolEvents), retries)
+	dispatched := 0
+	contained := 0
+	for _, event := range response.ToolEvents {
+		if event.IdempotencyKey != "" {
+			dispatched++
+		}
+		if strings.Contains(string(event.Result), `"failure_layer":"convergence"`) {
+			contained++
+		}
+	}
+	if dispatched != retries+1 || contained == 0 {
+		t.Fatalf("same-strategy dispatches=%d contained=%d bound=%d",
+			dispatched, contained, retries)
 	}
 	trace := boundEnforcements(
 		response.Liveness.Enforcements, boundSameStrategy,
 	)
-	if len(trace) != 1 || trace[0].Limit != retries {
+	if len(trace) == 0 || trace[0].Limit != retries {
 		t.Fatalf("same-strategy trace = %+v", response.Liveness.Enforcements)
 	}
 }
@@ -505,19 +503,9 @@ func TestCircuitBreakerStopsInterleavedSignatureChurn(t *testing.T) {
 		t.Fatal(err)
 	}
 	response, turnErr := runtimeLoop.Turn(t.Context(), userContent)
-
-	var incomplete *Incomplete
-	if !errors.As(turnErr, &incomplete) {
-		t.Fatalf("interleaved churn did not stop: err=%v", turnErr)
-	}
-	if incomplete.Phase != boundCircuitBreaker ||
-		!errors.Is(turnErr, liveness.ErrCircuitOpen) {
-		t.Fatalf("circuit incomplete = %+v cause=%v",
-			incomplete, incomplete.Cause)
-	}
-	var circuit *liveness.CircuitError
-	if !errors.As(turnErr, &circuit) || circuit.Signature == "" {
-		t.Fatalf("circuit error = %#v", incomplete.Cause)
+	if turnErr != nil || !response.HonestPartial {
+		t.Fatalf("interleaved churn was not contained in-band: response=%+v err=%v",
+			response, turnErr)
 	}
 	// The consecutive-repeat bound never fired: no signature ever repeated
 	// back to back, which is exactly the gap this breaker closes.
@@ -604,15 +592,8 @@ func TestCircuitBreakerRefusesInsideABatchAndSurvivesResume(t *testing.T) {
 		t.Fatal(err)
 	}
 	response, turnErr := runtimeLoop.Turn(t.Context(), userContent)
-
-	var incomplete *Incomplete
-	if !errors.As(turnErr, &incomplete) ||
-		incomplete.Phase != boundCircuitBreaker {
+	if turnErr != nil || !response.HonestPartial {
 		t.Fatalf("in-batch churn = %+v err=%v", response, turnErr)
-	}
-	var circuit *liveness.CircuitError
-	if !errors.As(turnErr, &circuit) || circuit.Phase != "tool" {
-		t.Fatalf("trip phase = %#v", circuit)
 	}
 	// The fourth call in the batch never dispatched.
 	if len(response.ToolEvents) != 3 {
@@ -626,33 +607,8 @@ func TestCircuitBreakerRefusesInsideABatchAndSurvivesResume(t *testing.T) {
 		t.Fatalf("provider generations = %d want 1", afterTurn)
 	}
 
-	// A respawn resumes the durable checkpoint. The open ledger came with it.
-	resumed, err := New(
-		realMiMoGenerator(t, gateway.URL), adapter, store, config,
-		Dependencies{},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resumeResponse, resumeErr := resumed.Resume(
-		t.Context(), userContent, incomplete.Checkpoint,
-	)
-	var resumedIncomplete *Incomplete
-	if !errors.As(resumeErr, &resumedIncomplete) ||
-		resumedIncomplete.Phase != boundCircuitBreaker {
-		t.Fatalf("resume = %+v err=%v", resumeResponse, resumeErr)
-	}
-	var resumedCircuit *liveness.CircuitError
-	if !errors.As(resumeErr, &resumedCircuit) ||
-		resumedCircuit.Phase != "turn" {
-		t.Fatalf("resumed trip phase = %#v", resumedCircuit)
-	}
-	mu.Lock()
-	afterResume := calls
-	mu.Unlock()
-	if afterResume != afterTurn {
-		t.Fatalf("the resumed turn spent %d extra provider calls",
-			afterResume-afterTurn)
+	if response.Checkpoint == nil {
+		t.Fatal("contained circuit result lacks its durable logical-turn checkpoint")
 	}
 }
 

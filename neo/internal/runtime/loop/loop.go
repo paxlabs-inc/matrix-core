@@ -59,6 +59,8 @@ const (
 )
 
 const tokenBudgetBoundary = "I stopped this turn at its work limit before I could write a full summary, so the account below is what is actually finished rather than a claim that the request is complete."
+const toolBudgetBoundary = "I stopped dispatching tools because this logical turn reached its persisted convergence limit."
+const circuitBoundary = "I stopped the repeated strategy because its persisted circuit breaker opened."
 
 type Config struct {
 	TurnID                 string
@@ -200,6 +202,8 @@ type cursor struct {
 	ExplorationCalls   int                   `json:"exploration_calls,omitempty"`
 	LastSignature      string                `json:"last_signature,omitempty"`
 	RepeatedCalls      int                   `json:"repeated_calls,omitempty"`
+	FailureFingerprint string                `json:"failure_fingerprint,omitempty"`
+	FailureRepeats     int                   `json:"failure_repeats,omitempty"`
 	Circuit            liveness.BreakerState `json:"circuit,omitempty"`
 	TokensSpent        int                   `json:"tokens_spent,omitempty"`
 }
@@ -217,6 +221,58 @@ func (state cursor) repairDiagnostics() RepairDiagnostics {
 		FinalAnswer:         state.FinalRepairs,
 		CompletionDeferrals: state.CompletionDefers,
 	}
+}
+
+func (state *cursor) annotateFailure(
+	call protocol.NormalizedToolCall,
+	result ToolResult,
+) ToolResult {
+	if state == nil {
+		return result
+	}
+	if !result.IsError {
+		state.FailureFingerprint = ""
+		state.FailureRepeats = 0
+		return result
+	}
+	cause := strings.ToLower(strings.Join(strings.Fields(result.FailureMessage), " "))
+	if cause == "" {
+		cause = strings.ToLower(strings.Join(strings.Fields(string(result.Content)), " "))
+	}
+	digest := sha256.New()
+	_, _ = digest.Write([]byte(strings.TrimSpace(call.Name)))
+	_, _ = digest.Write([]byte{0})
+	_, _ = digest.Write(call.Arguments)
+	_, _ = digest.Write([]byte{0})
+	_, _ = digest.Write([]byte(strings.TrimSpace(result.FailureClass)))
+	_, _ = digest.Write([]byte{0})
+	_, _ = digest.Write([]byte(cause))
+	fingerprint := hex.EncodeToString(digest.Sum(nil))
+	if fingerprint == state.FailureFingerprint {
+		state.FailureRepeats++
+	} else {
+		state.FailureFingerprint = fingerprint
+		state.FailureRepeats = 1
+	}
+	payload := map[string]any{}
+	if json.Unmarshal(result.Content, &payload) != nil {
+		payload["outcome"] = "error"
+		payload["failure_layer"] = result.FailureClass
+		payload["effect_status"] = "completed"
+		payload["evidence"] = string(result.Content)
+	}
+	payload["failure_fingerprint"] = fingerprint
+	payload["repeat_count"] = state.FailureRepeats
+	if state.FailureRepeats > 1 {
+		payload["retryable"] = false
+		payload["strategy_change_required"] = true
+		payload["suggested_recovery"] = "Do not repeat this operation unchanged; change strategy, degrade to verified evidence, or state the blocker honestly."
+		result.Retryable = false
+	}
+	if encoded, err := json.Marshal(payload); err == nil {
+		result.Content = encoded
+	}
+	return result
 }
 
 type Loop struct {
@@ -349,12 +405,6 @@ func (loop *Loop) TurnWithHistory(
 	}
 	if loop.recorder != nil {
 		loop.recorder.RecordUser(userContent)
-		if err := loop.recordingError(); err != nil {
-			return Response{}, loop.incomplete(
-				ctx, "turn_recording", checkpoint, Response{},
-				time.Now().UTC(), "resume_after_memory_recorder_recovery", err,
-			)
-		}
 	}
 	return loop.runTurn(ctx, userContent, checkpoint, cursor{})
 }
@@ -464,15 +514,18 @@ func (loop *Loop) runTurn(
 	}
 	breaker := loop.config.Breaker
 	if err := state.Circuit.Enforce("turn"); err != nil {
-		return response, loop.incomplete(
-			ctx, boundCircuitBreaker, checkpoint, response,
-			time.Now().UTC(), "resume_with_a_different_strategy", err,
+		response.Liveness.Enforcements = append(
+			response.Liveness.Enforcements,
+			LivenessEnforcement{Bound: boundCircuitBreaker},
+		)
+		return loop.deliverHonestPartial(
+			ctx, userContent, checkpoint, response, state, circuitBoundary,
 		)
 	}
 	tools := loop.tools.Surface(ctx)
 	if checkpoint.PendingCall != nil {
 		if err := loop.reconcilePending(
-			ctx, &checkpoint, &response, state,
+			ctx, &checkpoint, &response, &state,
 		); err != nil {
 			return response, err
 		}
@@ -489,9 +542,12 @@ func (loop *Loop) runTurn(
 			)
 		}
 		if err := state.Circuit.Enforce("provider"); err != nil {
-			return response, loop.incomplete(
-				ctx, boundCircuitBreaker, checkpoint, response,
-				time.Now().UTC(), "resume_with_a_different_strategy", err,
+			response.Liveness.Enforcements = append(
+				response.Liveness.Enforcements,
+				LivenessEnforcement{Bound: boundCircuitBreaker},
+			)
+			return loop.deliverHonestPartial(
+				ctx, userContent, checkpoint, response, state, circuitBoundary,
 			)
 		}
 		// The cumulative token budget is checked HERE and nowhere else: at the
@@ -529,10 +585,7 @@ func (loop *Loop) runTurn(
 				},
 			)
 			if err != nil {
-				return response, loop.incomplete(
-					ctx, "memory_activation", checkpoint, response,
-					time.Now().UTC(), "resume_memory_activation", err,
-				)
+				activation = "[memory_diagnostics]\nRecalled memory is temporarily unavailable; continue from the authoritative durable transcript."
 			}
 		}
 		request := protocol.GenerationRequest{
@@ -637,12 +690,6 @@ func (loop *Loop) runTurn(
 				loop.recorder.RecordAssistant(
 					checkpoint.Messages[len(checkpoint.Messages)-1],
 				)
-				if err := loop.recordingError(); err != nil {
-					return response, loop.incomplete(
-						ctx, "turn_recording", checkpoint, response, started,
-						"resume_after_memory_recorder_recovery", err,
-					)
-				}
 			}
 			continue
 		}
@@ -813,12 +860,6 @@ func (loop *Loop) runTurn(
 			loop.recorder.RecordAssistant(
 				checkpoint.Messages[len(checkpoint.Messages)-1],
 			)
-			if err := loop.recordingError(); err != nil {
-				return response, loop.incomplete(
-					ctx, "turn_recording", checkpoint, response, started,
-					"resume_after_memory_recorder_recovery", err,
-				)
-			}
 		}
 		// Excess parallel calls are deferred, never dropped: every deferred
 		// call gets an explicit tool-result marker below so the model sees a
@@ -853,9 +894,8 @@ func (loop *Loop) runTurn(
 						Limit: toolCallLimit,
 					},
 				)
-				return response, loop.incomplete(
-					ctx, boundToolBudget, checkpoint, response, started,
-					"resume_with_a_different_strategy", nil,
+				return loop.deliverHonestPartial(
+					ctx, userContent, checkpoint, response, state, toolBudgetBoundary,
 				)
 			}
 			if liveness.IsExplorationTool(call.Name) {
@@ -877,19 +917,18 @@ func (loop *Loop) runTurn(
 					if err := loop.save(ctx, &checkpoint, state); err != nil {
 						return response, err
 					}
-					if err := loop.recordingError(); err != nil {
-						return response, loop.incomplete(
-							ctx, "turn_recording", checkpoint, response, started,
-							"resume_after_memory_recorder_recovery", err,
-						)
-					}
 					continue
 				}
 			}
 			if err := state.Circuit.Enforce("tool"); err != nil {
-				return response, loop.incomplete(
-					ctx, boundCircuitBreaker, checkpoint, response, started,
-					"resume_with_a_different_strategy", err,
+				response.Liveness.Enforcements = append(
+					response.Liveness.Enforcements,
+					LivenessEnforcement{
+						Bound: boundCircuitBreaker, Tool: call.Name, CallID: call.ID,
+					},
+				)
+				return loop.deliverHonestPartial(
+					ctx, userContent, checkpoint, response, state, circuitBoundary,
 				)
 			}
 			signature := liveness.CanonicalToolSignature(
@@ -897,6 +936,7 @@ func (loop *Loop) runTurn(
 			)
 			if signature == state.LastSignature &&
 				state.RepeatedCalls >= policy.SameStrategyRetries+1 {
+				state.RepeatedCalls++
 				response.Liveness.Enforcements = append(
 					response.Liveness.Enforcements,
 					LivenessEnforcement{
@@ -905,11 +945,20 @@ func (loop *Loop) runTurn(
 						Limit: policy.SameStrategyRetries,
 					},
 				)
-				return response, loop.incomplete(
-					ctx, "tool_loop", checkpoint, response, started,
-					"change_strategy_the_repeated_call_produced_no_new_evidence",
-					nil,
+				failure := structuredToolFailure(
+					"convergence", false, "not_started",
+					"The same operation, arguments, phase, and normalized cause repeated without new evidence.",
+					"Change strategy, degrade to verified evidence already available, or state the blocker honestly.",
 				)
+				failure = state.annotateFailure(call, failure)
+				loop.injectToolResult(
+					&checkpoint, &response, call, failure.Content,
+					failure.FailureMessage,
+				)
+				if err := loop.save(ctx, &checkpoint, state); err != nil {
+					return response, err
+				}
+				continue
 			}
 			if signature == state.LastSignature {
 				state.RepeatedCalls++
@@ -921,6 +970,49 @@ func (loop *Loop) runTurn(
 			idempotencyKey := makeIdempotencyKey(
 				loop.config.TurnID, call,
 			)
+			atomicStore, hasAtomicStore := loop.store.(PendingEffectStore)
+			metadataProvider, hasMetadata := loop.tools.(EffectMetadataProvider)
+			var effectMetadata EffectMetadata
+			useAtomicStart := hasAtomicStore && hasMetadata
+			if useAtomicStart {
+				var metadataErr error
+				effectMetadata, metadataErr = metadataProvider.EffectMetadata(call)
+				if metadataErr != nil {
+					failure := structuredToolFailure(
+						"effect_start", false, "not_started",
+						metadataErr.Error(),
+						"Correct the call or use another available operation; no dispatch occurred.",
+					)
+					failure = state.annotateFailure(call, failure)
+					loop.injectToolResult(
+						&checkpoint, &response, call, failure.Content,
+						failure.FailureMessage,
+					)
+					if err := loop.save(ctx, &checkpoint, state); err != nil {
+						return response, err
+					}
+					continue
+				}
+			} else if preparer, ok := loop.tools.(EffectPreparer); ok {
+				if prepareErr := preparer.PrepareEffect(
+					ctx, call, idempotencyKey,
+				); prepareErr != nil {
+					failure := structuredToolFailure(
+						"effect_start", false, "not_started",
+						prepareErr.Error(),
+						"Correct the call or use another available operation; no dispatch occurred.",
+					)
+					failure = state.annotateFailure(call, failure)
+					loop.injectToolResult(
+						&checkpoint, &response, call, failure.Content,
+						failure.FailureMessage,
+					)
+					if err := loop.save(ctx, &checkpoint, state); err != nil {
+						return response, err
+					}
+					continue
+				}
+			}
 			pending := &turnstate.PendingCall{
 				CallID: call.ID, IdempotencyKey: idempotencyKey,
 				ToolName: call.Name, Arguments: call.Arguments,
@@ -928,20 +1020,39 @@ func (loop *Loop) runTurn(
 				DispatchedAt: time.Now().UTC(),
 			}
 			checkpoint.PendingCall = pending
-			if err := loop.save(ctx, &checkpoint, state); err != nil {
+			if useAtomicStart {
+				encoded, err := json.Marshal(state)
+				if err != nil {
+					return response, fmt.Errorf(
+						"runtime loop: encode pending cursor: %w", err,
+					)
+				}
+				checkpoint.Runtime = encoded
+				checkpoint.SavedAt = time.Now().UTC()
+				if err := atomicStore.SavePendingEffect(
+					ctx, loop.config.TurnID, checkpoint,
+					idempotencyKey, call.Name, call.Arguments,
+					effectMetadata.RetrySafe,
+				); err != nil {
+					return response, fmt.Errorf(
+						"runtime loop: atomically start pending effect: %w", err,
+					)
+				}
+			} else if err := loop.save(ctx, &checkpoint, state); err != nil {
 				return response, err
 			}
 			result, executeErr := loop.execute(
 				ctx, call, idempotencyKey, started,
 			)
 			if executeErr != nil {
-				return response, loop.incomplete(
-					context.WithoutCancel(ctx), "tool", checkpoint,
-					response, started,
-					"reconcile_effect_by_idempotency_key",
-					executeErr,
-				)
+				if reconcileErr := loop.reconcilePending(
+					context.WithoutCancel(ctx), &checkpoint, &response, &state,
+				); reconcileErr != nil {
+					return response, reconcileErr
+				}
+				continue
 			}
+			result = state.annotateFailure(call, result)
 			if resultObserver, ok := loop.observer.(interface {
 				ObserveToolResult(context.Context, protocol.NormalizedToolCall, ToolResult)
 			}); ok {
@@ -991,12 +1102,6 @@ func (loop *Loop) runTurn(
 				loop.recorder.RecordTool(
 					checkpoint.Messages[len(checkpoint.Messages)-1],
 				)
-				if err := loop.recordingError(); err != nil {
-					return response, loop.incomplete(
-						ctx, "turn_recording", checkpoint, response, started,
-						"resume_after_memory_recorder_recovery", err,
-					)
-				}
 			}
 		}
 		for _, call := range deferred {
@@ -1009,12 +1114,6 @@ func (loop *Loop) runTurn(
 		if len(deferred) > 0 {
 			if err := loop.save(ctx, &checkpoint, state); err != nil {
 				return response, err
-			}
-			if err := loop.recordingError(); err != nil {
-				return response, loop.incomplete(
-					ctx, "turn_recording", checkpoint, response, started,
-					"resume_after_memory_recorder_recovery", err,
-				)
 			}
 		}
 	}
@@ -1165,13 +1264,13 @@ func (loop *Loop) reconcilePending(
 	ctx context.Context,
 	checkpoint *turnstate.Checkpoint,
 	response *Response,
-	state cursor,
+	state *cursor,
 ) error {
 	pending := checkpoint.PendingCall
 	reconciled, err := loop.tools.Reconcile(
 		ctx, pending.IdempotencyKey,
 	)
-	if err != nil || reconciled.Status == ReconcileUnknown {
+	if err != nil {
 		return loop.incomplete(
 			ctx, "effect_reconciliation", *checkpoint, *response,
 			pending.DispatchedAt,
@@ -1182,18 +1281,32 @@ func (loop *Loop) reconcilePending(
 		ID: pending.CallID, Name: pending.ToolName,
 		Arguments: append(json.RawMessage(nil), pending.Arguments...),
 	}
+	if reconciled.Status == ReconcileNotStarted {
+		reconciled.Result = structuredToolFailure(
+			"dispatch", false, "not_started",
+			"No durable effect-start record exists; dispatch did not begin.",
+			"Correct the tool call or choose another available operation.",
+		)
+	} else if reconciled.Status == ReconcileUnknown {
+		reconciled.Result = structuredToolFailure(
+			"effect_reconciliation", false, "outcome_unknown",
+			"The effect may have started, but no authoritative completion is recorded.",
+			"The effect is isolated from replay. Inspect authoritative external state before any further mutation.",
+		)
+	}
 	if reconciled.Status == ReconcileRetrySafe {
 		reconciled.Result, err = loop.execute(
 			ctx, call, pending.IdempotencyKey, pending.DispatchedAt,
 		)
 		if err != nil {
-			return loop.incomplete(
-				ctx, "effect_reconciliation", *checkpoint, *response,
-				pending.DispatchedAt,
-				"reconcile_effect_by_idempotency_key", err,
+			reconciled.Result = structuredToolFailure(
+				"dispatch", true, "retry_safe",
+				err.Error(),
+				"Inspect the observation, change strategy, or retry later with backoff.",
 			)
 		}
 	}
+	reconciled.Result = state.annotateFailure(call, reconciled.Result)
 	execution := ToolExecution{
 		Call: call, Result: reconciled.Result.Content,
 		Expect:         pending.Expect,
@@ -1225,21 +1338,36 @@ func (loop *Loop) reconcilePending(
 	)
 	checkpoint.PendingCall = nil
 	checkpoint.Step++
-	if err := loop.save(ctx, checkpoint, state); err != nil {
+	if err := loop.save(ctx, checkpoint, *state); err != nil {
 		return err
 	}
 	if loop.recorder != nil {
 		loop.recorder.RecordTool(
 			checkpoint.Messages[len(checkpoint.Messages)-1],
 		)
-		if err := loop.recordingError(); err != nil {
-			return loop.incomplete(
-				ctx, "turn_recording", *checkpoint, *response,
-				pending.DispatchedAt, "resume_after_memory_recorder_recovery", err,
-			)
-		}
 	}
 	return nil
+}
+
+func structuredToolFailure(
+	layer string,
+	retryable bool,
+	effectStatus string,
+	evidence string,
+	recovery string,
+) ToolResult {
+	content, err := json.Marshal(map[string]any{
+		"outcome": "error", "failure_layer": layer,
+		"retryable": retryable, "effect_status": effectStatus,
+		"evidence": evidence, "suggested_recovery": recovery,
+	})
+	if err != nil {
+		content = json.RawMessage(`{"outcome":"error","failure_layer":"runtime"}`)
+	}
+	return ToolResult{
+		Content: content, IsError: true, FailureClass: layer,
+		Retryable: retryable, FailureMessage: evidence,
+	}
 }
 
 func (loop *Loop) deliverAccepted(
@@ -1260,30 +1388,11 @@ func (loop *Loop) deliverAccepted(
 		},
 	)
 	checkpoint.Step++
-	if err := loop.save(ctx, &checkpoint, state); err != nil {
-		return response, err
-	}
-	if loop.observer != nil {
-		if err := loop.observer.CommitAttempt(ctx); err != nil {
-			return response, loop.incomplete(
-				ctx, "observer_commit", checkpoint, response,
-				time.Now().UTC(), "resume_delivery", err,
-			)
-		}
-	}
 	response.Content = generation.Content
 	response.Generation = generation
 	response.ContentStreamed = streamed && generation.Content != ""
 	response.ReasoningStreamed = streamed && generation.Reasoning != ""
 	response.Checkpoint = &checkpoint
-	if err := loop.store.SetTurnStatus(
-		ctx, loop.config.TurnID, turnstate.StatusCompleted,
-	); err != nil {
-		return response, loop.incomplete(
-			ctx, "completion_commit", checkpoint, response,
-			time.Now().UTC(), "resume_delivery", err,
-		)
-	}
 	if loop.delivery != nil {
 		var delivered DeliveryResult
 		loop.terminalOnce.Do(func() {
@@ -1296,22 +1405,18 @@ func (loop *Loop) deliverAccepted(
 			response.Content = delivered.Content
 			response.Generation.Content = delivered.Content
 		}
-		if err := loop.recordingError(); err != nil {
-			return response, loop.incomplete(
-				ctx, "turn_recording", checkpoint, response,
-				time.Now().UTC(), "resume_after_memory_recorder_recovery", err,
-			)
-		}
 	}
+	// Delivery is a distinct terminal state. Later observer/checkpoint/status
+	// bookkeeping is best-effort and can never replace a valid delivered answer
+	// with an internal incomplete marker or restart cognition.
+	_ = loop.save(context.WithoutCancel(ctx), &checkpoint, state)
+	if loop.observer != nil {
+		_ = loop.observer.CommitAttempt(context.WithoutCancel(ctx))
+	}
+	_ = loop.store.SetTurnStatus(
+		context.WithoutCancel(ctx), loop.config.TurnID, turnstate.StatusCompleted,
+	)
 	return response, nil
-}
-
-func (loop *Loop) recordingError() error {
-	source, ok := loop.recorder.(interface{ RecordError() error })
-	if !ok {
-		return nil
-	}
-	return source.RecordError()
 }
 
 func (loop *Loop) deliverHonestPartial(

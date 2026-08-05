@@ -4,6 +4,7 @@
 package memory
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -25,8 +26,16 @@ import (
 )
 
 const (
-	stateCheckpoint = "neo.neocortex.memory-state.v1"
-	consentNotice   = "2026-07-17"
+	stateCheckpoint           = "neo.neocortex.memory-state.v1" // read-only migration source
+	recordsCheckpoint         = "neo.neocortex.semantic-records.v1"
+	consentCheckpoint         = "neo.neocortex.consent.v1"
+	opportunitiesCheckpoint   = "neo.neocortex.opportunities.v1"
+	patternsCheckpoint        = "neo.neocortex.patterns.v1"
+	personalizationCheckpoint = "neo.neocortex.personalization.v1"
+	structuralCheckpoint      = "neo.neocortex.structural-identity.v1"
+	diagnosticsCheckpoint     = "neo.neocortex.diagnostics.v1"
+	failuresCheckpoint        = "neo.neocortex.learned-failures.v1"
+	consentNotice             = "2026-07-17"
 )
 
 var ErrNeocortexUnavailable = errors.New("neo/memory: Neocortex unavailable")
@@ -58,6 +67,21 @@ type durableState struct {
 	StructuralURI          string                     `json:"structural_uri,omitempty"`
 	Failures               []FailurePattern           `json:"failures,omitempty"`
 	Deaths                 []DeathRecord              `json:"deaths,omitempty"`
+}
+
+type personalizationState struct {
+	Profile *PersonalizationProfile `json:"profile,omitempty"`
+	Version uint64                  `json:"version,omitempty"`
+}
+
+type structuralState struct {
+	Structural StructuralSelf `json:"structural"`
+	URI        string         `json:"uri,omitempty"`
+	Record     storedRecord   `json:"record"`
+}
+
+type diagnosticState struct {
+	Deaths []DeathRecord `json:"deaths,omitempty"`
 }
 
 type Pager struct {
@@ -124,6 +148,74 @@ func Open(cfg config.Config) (*Pager, error) {
 			managed.Stop()
 		}
 		return nil, fmt.Errorf("%w: load state: %v", ErrNeocortexUnavailable, loadErr)
+	}
+	if p.state.Records == nil {
+		p.state.Records = make(map[string]storedRecord)
+	}
+	if p.state.Opportunities == nil {
+		p.state.Opportunities = make(map[string]OpportunitySpec)
+	}
+	if p.state.Patterns == nil {
+		p.state.Patterns = make(map[string]Pattern)
+	}
+	// Overlay independently persisted domains. The legacy whole-state blob is
+	// migration input only and is never rewritten.
+	load := func(key string, target any) error {
+		blob, _, loadErr := client.LatestCheckpoint(context.Background(), key)
+		if errors.Is(loadErr, cortexclient.ErrAbsent) {
+			return nil
+		}
+		if loadErr != nil {
+			return loadErr
+		}
+		return json.Unmarshal(blob, target)
+	}
+	if err := load(recordsCheckpoint, &p.state.Records); err != nil {
+		_ = p.Close()
+		return nil, fmt.Errorf("neo/memory: load semantic records: %w", err)
+	}
+	if err := load(consentCheckpoint, &p.state.Consent); err != nil {
+		_ = p.Close()
+		return nil, fmt.Errorf("neo/memory: load consent: %w", err)
+	}
+	if err := load(opportunitiesCheckpoint, &p.state.Opportunities); err != nil {
+		_ = p.Close()
+		return nil, fmt.Errorf("neo/memory: load opportunities: %w", err)
+	}
+	if err := load(patternsCheckpoint, &p.state.Patterns); err != nil {
+		_ = p.Close()
+		return nil, fmt.Errorf("neo/memory: load patterns: %w", err)
+	}
+	var personalization personalizationState
+	if err := load(personalizationCheckpoint, &personalization); err != nil {
+		_ = p.Close()
+		return nil, fmt.Errorf("neo/memory: load personalization: %w", err)
+	}
+	if personalization.Profile != nil || personalization.Version != 0 {
+		p.state.Personalization = personalization.Profile
+		p.state.PersonalizationVersion = personalization.Version
+	}
+	var structural structuralState
+	if err := load(structuralCheckpoint, &structural); err != nil {
+		_ = p.Close()
+		return nil, fmt.Errorf("neo/memory: load structural identity: %w", err)
+	}
+	if structural.URI != "" {
+		p.state.Structural = structural.Structural
+		p.state.StructuralURI = structural.URI
+		p.state.Records["structural-self"] = structural.Record
+	}
+	var diagnostics diagnosticState
+	if err := load(diagnosticsCheckpoint, &diagnostics); err != nil {
+		_ = p.Close()
+		return nil, fmt.Errorf("neo/memory: load diagnostics: %w", err)
+	}
+	if diagnostics.Deaths != nil {
+		p.state.Deaths = diagnostics.Deaths
+	}
+	if err := load(failuresCheckpoint, &p.state.Failures); err != nil {
+		_ = p.Close()
+		return nil, fmt.Errorf("neo/memory: load learned failures: %w", err)
 	}
 	if p.state.Records == nil {
 		p.state.Records = make(map[string]storedRecord)
@@ -280,13 +372,25 @@ func defaultConsent() MemoryConsentState {
 	return MemoryConsentState{NoticeVersion: consentNotice, ExistingData: "retained until explicitly edited or deleted"}
 }
 
-func (p *Pager) saveLocked(ctx context.Context) error {
-	blob, err := json.Marshal(p.state)
+func (p *Pager) saveDomainLocked(ctx context.Context, key string, value any) error {
+	blob, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
-	_, err = p.client.WriteCheckpoint(ctx, stateCheckpoint, blob)
+	_, err = p.client.WriteCheckpoint(ctx, key, blob)
 	return err
+}
+
+func (p *Pager) saveRecordsLocked(ctx context.Context) error {
+	return p.saveDomainLocked(ctx, recordsCheckpoint, p.state.Records)
+}
+
+func (p *Pager) saveStructuralLocked(ctx context.Context) error {
+	return p.saveDomainLocked(ctx, structuralCheckpoint, structuralState{
+		Structural: p.state.Structural,
+		URI:        p.state.StructuralURI,
+		Record:     p.state.Records["structural-self"],
+	})
 }
 
 func beliefType(name string) uint8 {
@@ -362,6 +466,10 @@ func recordType(name string) string {
 }
 
 func (p *Pager) put(ctx context.Context, typ, identity, text string, data any) (string, error) {
+	return p.putRecord(ctx, typ, identity, text, data, true)
+}
+
+func (p *Pager) putRecord(ctx context.Context, typ, identity, text string, data any, checkpointState bool) (string, error) {
 	p.writeMu.Lock()
 	defer p.writeMu.Unlock()
 	identity = boundedIdentity(identity)
@@ -375,7 +483,13 @@ func (p *Pager) put(ctx context.Context, typ, identity, text string, data any) (
 		return "", err
 	}
 	p.mu.RLock()
-	nextVersion := p.state.Records[identity].Version + 1
+	existing := p.state.Records[identity]
+	if !existing.Deleted && existing.URI != "" && existing.Type == typ &&
+		existing.Text == text && bytes.Equal(existing.Data, encoded) {
+		p.mu.RUnlock()
+		return existing.URI, nil
+	}
+	nextVersion := existing.Version + 1
 	p.mu.RUnlock()
 	conversation := cortexclient.ConversationBytes("neo-memory")
 	sourceAck, err := p.client.Append(ctx, []cortexclient.AppendEvent{
@@ -406,8 +520,10 @@ func (p *Pager) put(ctx context.Context, typ, identity, text string, data any) (
 	record.UpdatedAt, record.Deleted = now, false
 	record.LSN = ack.LastLsn
 	p.state.Records[identity] = record
-	if err := p.saveLocked(ctx); err != nil {
-		return "", err
+	if checkpointState {
+		if err := p.saveRecordsLocked(ctx); err != nil {
+			return "", err
+		}
 	}
 	return record.URI, nil
 }
@@ -582,7 +698,7 @@ func (p *Pager) LinkSessionProvenance(uri, conversation string, lo, hi uint64) e
 		if record.URI == uri {
 			record.Conversation, record.SeqLo, record.SeqHi = conversation, lo, hi
 			p.state.Records[key] = record
-			return p.saveLocked(context.Background())
+			return p.saveRecordsLocked(context.Background())
 		}
 	}
 	return errors.New("memory record not found")
@@ -606,7 +722,7 @@ func (p *Pager) SetMemoryConsent(ctx context.Context, enabled bool, by string) (
 	p.state.Consent.Explicit = true
 	p.state.Consent.UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
 	p.state.Consent.UpdatedBy = strings.TrimSpace(by)
-	if err := p.saveLocked(ctx); err != nil {
+	if err := p.saveDomainLocked(ctx, consentCheckpoint, p.state.Consent); err != nil {
 		return MemoryConsentState{}, err
 	}
 	return p.state.Consent, nil
@@ -703,7 +819,7 @@ func (p *Pager) Mutate(ctx context.Context, req MutationRequest) (MutationBatchR
 				record.Deleted = true
 				record.UpdatedAt = time.Now().UTC()
 				p.state.Records[record.Identity] = record
-				err = p.saveLocked(ctx)
+				err = p.saveRecordsLocked(ctx)
 				p.mu.Unlock()
 				if err != nil {
 					return MutationBatchResult{}, err
@@ -813,7 +929,9 @@ func (p *Pager) SavePersonalizationProfile(ctx context.Context, profile Personal
 	defer p.mu.Unlock()
 	p.state.Personalization = &profile
 	p.state.PersonalizationVersion++
-	if err := p.saveLocked(ctx); err != nil {
+	if err := p.saveDomainLocked(ctx, personalizationCheckpoint, personalizationState{
+		Profile: p.state.Personalization, Version: p.state.PersonalizationVersion,
+	}); err != nil {
 		return "", err
 	}
 	return recordURI("personalization", p.state.PersonalizationVersion), nil
@@ -824,7 +942,9 @@ func (p *Pager) DeletePersonalization(ctx context.Context) (bool, error) {
 	existed := p.state.Personalization != nil
 	p.state.Personalization = nil
 	if existed {
-		if err := p.saveLocked(ctx); err != nil {
+		if err := p.saveDomainLocked(ctx, personalizationCheckpoint, personalizationState{
+			Profile: p.state.Personalization, Version: p.state.PersonalizationVersion,
+		}); err != nil {
 			return false, err
 		}
 	}
@@ -858,7 +978,7 @@ func (p *Pager) RememberOpportunity(ctx context.Context, spec OpportunitySpec) (
 	spec.URI = uri
 	p.mu.Lock()
 	p.state.Opportunities[identity] = spec
-	err = p.saveLocked(ctx)
+	err = p.saveDomainLocked(ctx, opportunitiesCheckpoint, p.state.Opportunities)
 	p.mu.Unlock()
 	return uri, err
 }
@@ -907,7 +1027,7 @@ func (p *Pager) SetOpportunityStatus(ctx context.Context, uri string, status Opp
 			spec.Status = status
 			spec.UpdatedAt = time.Now().UTC()
 			p.state.Opportunities[key] = spec
-			return p.saveLocked(ctx)
+			return p.saveDomainLocked(ctx, opportunitiesCheckpoint, p.state.Opportunities)
 		}
 	}
 	return errors.New("opportunity not found")
@@ -925,7 +1045,7 @@ func (p *Pager) FailOpportunityAttempt(ctx context.Context, uri string, max int)
 			}
 			spec.UpdatedAt = time.Now().UTC()
 			p.state.Opportunities[key] = spec
-			return spec.Status, p.saveLocked(ctx)
+			return spec.Status, p.saveDomainLocked(ctx, opportunitiesCheckpoint, p.state.Opportunities)
 		}
 	}
 	return "", errors.New("opportunity not found")
@@ -942,7 +1062,7 @@ func (p *Pager) WritePattern(ctx context.Context, spec PatternSpec, confidence f
 	}
 	p.mu.Lock()
 	p.state.Patterns[identity] = Pattern{Spec: spec, Confidence: confidence, Coverage: coverage, URI: uri}
-	err = p.saveLocked(ctx)
+	err = p.saveDomainLocked(ctx, patternsCheckpoint, p.state.Patterns)
 	p.mu.Unlock()
 	return uri, err
 }
@@ -979,7 +1099,10 @@ func (p *Pager) RecordLoopDeath(ctx context.Context, summary, intent string) (st
 	identity := boundedIdentity("death:" + intent + ":" + summary)
 	uri := recordURI(identity, uint64(len(p.state.Deaths)+1))
 	p.state.Deaths = append(p.state.Deaths, DeathRecord{URI: uri, IntentID: intent, Summary: summary, CreatedAt: time.Now().UTC()})
-	return uri, p.saveLocked(ctx)
+	if len(p.state.Deaths) > 256 {
+		p.state.Deaths = append([]DeathRecord(nil), p.state.Deaths[len(p.state.Deaths)-256:]...)
+	}
+	return uri, p.saveDomainLocked(ctx, diagnosticsCheckpoint, diagnosticState{Deaths: p.state.Deaths})
 }
 func (p *Pager) DeathJournal(_ context.Context, limit int) ([]DeathRecord, error) {
 	p.mu.RLock()
@@ -1026,15 +1149,26 @@ func (p *Pager) WriteStructuralSelf(ctx context.Context, structural StructuralSe
 	if structural.Surface == nil {
 		structural.Surface = p.state.Structural.Surface
 	}
+	existing := p.state.Records["structural-self"]
+	existingURI := p.state.StructuralURI
 	p.mu.RUnlock()
-	uri, err := p.put(ctx, "capability", "structural-self", structural.Summary, structural)
+	encoded, err := json.Marshal(structural)
+	if err != nil {
+		return "", err
+	}
+	if existingURI != "" && !existing.Deleted &&
+		existing.Text == strings.TrimSpace(structural.Summary) &&
+		bytes.Equal(existing.Data, encoded) {
+		return existingURI, nil
+	}
+	uri, err := p.putRecord(ctx, "capability", "structural-self", structural.Summary, structural, false)
 	if err != nil {
 		return "", err
 	}
 	p.mu.Lock()
 	p.state.Structural = structural
 	p.state.StructuralURI = uri
-	err = p.saveLocked(ctx)
+	err = p.saveStructuralLocked(ctx)
 	p.mu.Unlock()
 	return uri, err
 }
@@ -1062,7 +1196,10 @@ func (p *Pager) WriteFailurePattern(ctx context.Context, statement string, deriv
 	if !replaced {
 		p.state.Failures = append(p.state.Failures, FailurePattern{URI: uri, Statement: statement, DerivedFrom: derived})
 	}
-	err = p.saveLocked(ctx)
+	if len(p.state.Failures) > 32 {
+		p.state.Failures = append([]FailurePattern(nil), p.state.Failures[len(p.state.Failures)-32:]...)
+	}
+	err = p.saveDomainLocked(ctx, failuresCheckpoint, p.state.Failures)
 	p.mu.Unlock()
 	return uri, err
 }

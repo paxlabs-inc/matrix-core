@@ -29,6 +29,22 @@ type EffectLifecycle interface {
 	CompleteEffect(context.Context, string, ToolResult) error
 }
 
+type EffectPreparer interface {
+	PrepareEffect(
+		context.Context,
+		protocol.NormalizedToolCall,
+		string,
+	) error
+}
+
+type EffectMetadata struct {
+	RetrySafe bool
+}
+
+type EffectMetadataProvider interface {
+	EffectMetadata(protocol.NormalizedToolCall) (EffectMetadata, error)
+}
+
 type ToolManagerAdapter struct {
 	manager    *tools.Manager
 	reconciler EffectReconciler
@@ -107,6 +123,24 @@ func (adapter *ToolManagerAdapter) Execute(
 		Retryable:      retryable,
 		FailureMessage: strings.TrimSpace(failureMessage),
 	}
+	if result.IsError && err == nil {
+		layer := strings.TrimSpace(result.FailureClass)
+		if layer == "" {
+			layer = "application"
+		}
+		evidence := strings.TrimSpace(content)
+		if result.FailureMessage != "" {
+			evidence = result.FailureMessage + ": " + evidence
+		}
+		recovery := "Change the arguments or choose another available operation."
+		if result.Retryable {
+			recovery = "Retry later with backoff or continue with an independent approach."
+		}
+		result = structuredToolFailure(
+			layer, result.Retryable, "completed", evidence, recovery,
+		)
+		result.FailureClass = layer
+	}
 	if err == nil && durable {
 		if persistErr := lifecycle.CompleteEffect(
 			context.WithoutCancel(ctx), idempotencyKey, result,
@@ -115,6 +149,44 @@ func (adapter *ToolManagerAdapter) Execute(
 		}
 	}
 	return result, err
+}
+
+// PrepareEffect establishes durable effect identity before a PendingCall can
+// enter the turn checkpoint. BeginEffect is idempotent, so Execute repeats this
+// guard without opening a second effect.
+func (adapter *ToolManagerAdapter) PrepareEffect(
+	ctx context.Context,
+	call protocol.NormalizedToolCall,
+	idempotencyKey string,
+) error {
+	metadata, err := adapter.EffectMetadata(call)
+	if err != nil {
+		return err
+	}
+	lifecycle, durable := adapter.reconciler.(EffectLifecycle)
+	if !durable {
+		return nil
+	}
+	return lifecycle.BeginEffect(
+		ctx, idempotencyKey, call.Name, call.Arguments, metadata.RetrySafe,
+	)
+}
+
+func (adapter *ToolManagerAdapter) EffectMetadata(
+	call protocol.NormalizedToolCall,
+) (EffectMetadata, error) {
+	if !json.Valid(call.Arguments) {
+		return EffectMetadata{}, fmt.Errorf(
+			"runtime loop: decode %s arguments: invalid JSON", call.Name,
+		)
+	}
+	sideEffect, found := adapter.manager.ToolSideEffectClass(call.Name)
+	if !found {
+		return EffectMetadata{}, fmt.Errorf(
+			"runtime loop: effect metadata unavailable for %s", call.Name,
+		)
+	}
+	return EffectMetadata{RetrySafe: sideEffect == "read"}, nil
 }
 
 func (adapter *ToolManagerAdapter) Reconcile(

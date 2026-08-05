@@ -414,9 +414,24 @@ void AddAssertionText(std::vector<ExtractedEntity>& entities,
   }
 }
 
+bool IsSemanticMemoryEvent(log::EventKind kind) {
+  switch (kind) {
+    case log::EventKind::kUserMsg:
+    case log::EventKind::kDeliveredMsg:
+    case log::EventKind::kAssertion:
+    case log::EventKind::kConsolidation:
+      return true;
+    default:
+      return false;
+  }
+}
+
 std::vector<ExtractedEntity> EventEntities(
     const events::VerifiedEvent& event) {
   std::vector<ExtractedEntity> entities;
+  if (!IsSemanticMemoryEvent(event.kind)) {
+    return entities;
+  }
   const auto* envelope = event.envelope;
   switch (event.kind) {
     case log::EventKind::kUserMsg:

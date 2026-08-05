@@ -19,9 +19,9 @@ import (
 
 // NeocortexAdapter implements the resurrection loop seam roles (activation
 // source, turn recorder, evidence journal) over one cortexd conversation
-// seam. Tool calls and results are recorded exclusively by
-// CommitToolExecution as typed write-ahead evidence, so RecordTool is a
-// no-op: the tool_call/tool_result events already carry that turn content.
+// seam. Working assistant text remains in the authoritative turn checkpoint;
+// only genuine user input and delivered answers enter semantic conversation
+// memory. Tool calls/results are typed execution evidence and never duplicated.
 type NeocortexAdapter struct {
 	seam *cortexclient.LoopSeam
 
@@ -58,9 +58,7 @@ func (adapter *NeocortexAdapter) RecordUser(content string) {
 	adapter.seam.RecordUser(strings.TrimSpace(content))
 }
 
-func (adapter *NeocortexAdapter) RecordAssistant(message protocol.Message) {
-	adapter.seam.RecordAssistantWorking(strings.TrimSpace(message.Content))
-}
+func (adapter *NeocortexAdapter) RecordAssistant(protocol.Message) {}
 
 func (adapter *NeocortexAdapter) RecordTool(protocol.Message) {}
 
@@ -209,12 +207,9 @@ func neocortexConsolidationAssertion(
 	}, nil
 }
 
-// NeocortexCheckpointStore serves the turnstate role on the neocortex
-// substrate: turn checkpoints become durable checkpoint events in cortexd
-// (fail-closed) and are mirrored into the local turnstate store so resume
-// paths that still read it keep working side by side until the wave-7
-// consumer re-point. Status and recovery transitions are process-local turn
-// lifecycle, not memory, and stay in the turnstate store.
+// NeocortexCheckpointStore keeps operational recovery state in turnstate,
+// outside the semantic Neocortex event log and every cognitive projection.
+// Seam remains available for semantic recording; checkpoints never use it.
 type NeocortexCheckpointStore struct {
 	Seam  *cortexclient.LoopSeam
 	Turns CheckpointStore
@@ -225,22 +220,31 @@ func (store *NeocortexCheckpointStore) SaveTurnCheckpoint(
 	turnID string,
 	checkpoint turnstate.Checkpoint,
 ) error {
-	blob, err := json.Marshal(checkpoint)
-	if err != nil {
-		return fmt.Errorf(
-			"runtime loop: encode neocortex checkpoint: %w", err,
-		)
-	}
-	if _, err := store.Seam.SaveTurnCheckpoint(ctx, turnID, blob); err != nil {
-		return err
-	}
 	return store.Turns.SaveTurnCheckpoint(ctx, turnID, checkpoint)
 }
 
-// LoadTurnState keeps process-local lifecycle metadata in turnstate but always
-// replaces its checkpoint with the latest cortexd projection. Missing,
-// malformed, or unavailable cortexd state is an error; local checkpoint bytes
-// are never a recovery fallback on the neocortex substrate.
+func (store *NeocortexCheckpointStore) SavePendingEffect(
+	ctx context.Context,
+	turnID string,
+	checkpoint turnstate.Checkpoint,
+	idempotencyKey string,
+	toolName string,
+	arguments json.RawMessage,
+	retrySafe bool,
+) error {
+	atomicStore, ok := store.Turns.(PendingEffectStore)
+	if !ok {
+		return fmt.Errorf(
+			"runtime loop: operational store lacks atomic pending-effect support",
+		)
+	}
+	return atomicStore.SavePendingEffect(
+		ctx, turnID, checkpoint, idempotencyKey, toolName, arguments, retrySafe,
+	)
+}
+
+// LoadTurnState restores operational state from its dedicated store; semantic
+// activation has no path to these bytes.
 func (store *NeocortexCheckpointStore) LoadTurnState(
 	ctx context.Context,
 	turnID string,
@@ -253,24 +257,7 @@ func (store *NeocortexCheckpointStore) LoadTurnState(
 			"runtime loop: neocortex checkpoint metadata store cannot load turns",
 		)
 	}
-	state, err := loader.LoadTurnState(ctx, turnID)
-	if err != nil {
-		return turnstate.TurnState{}, err
-	}
-	blob, _, err := store.Seam.LatestTurnCheckpoint(ctx, turnID)
-	if err != nil {
-		return turnstate.TurnState{}, fmt.Errorf(
-			"runtime loop: load neocortex checkpoint: %w", err,
-		)
-	}
-	var checkpoint turnstate.Checkpoint
-	if err := json.Unmarshal(blob, &checkpoint); err != nil {
-		return turnstate.TurnState{}, fmt.Errorf(
-			"runtime loop: decode neocortex checkpoint: %w", err,
-		)
-	}
-	state.Checkpoint = &checkpoint
-	return state, nil
+	return loader.LoadTurnState(ctx, turnID)
 }
 
 func (store *NeocortexCheckpointStore) SetTurnRecovery(

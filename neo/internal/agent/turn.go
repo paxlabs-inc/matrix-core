@@ -11,6 +11,7 @@ package agent
 import (
 	"sync"
 
+	"matrix/cortexclient"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
@@ -216,6 +217,10 @@ type turn struct {
 	seqLo   uint64
 	seqHi   uint64
 	haveSeq bool
+	// memorySeam is the single Neocortex append/activation seam for this turn.
+	// Reusing it preserves one authoritative provenance span instead of losing
+	// acknowledgements across a fresh seam per event.
+	memorySeam *cortexclient.LoopSeam
 
 	// Surfaced-memory sets: every Neocortex memory surfaced this turn, so a
 	// successful completion can attest USED vs IGNORED (the usage-salience +

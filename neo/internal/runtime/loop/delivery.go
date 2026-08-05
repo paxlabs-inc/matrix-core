@@ -49,16 +49,6 @@ func (choke *DeliveryChoke) Deliver(
 		name = "Neo"
 	}
 	scrubbed, leaked := neoidentity.Scrub(name, content)
-	if choke.Recorder != nil {
-		choke.Recorder.RecordDelivery(scrubbed)
-		if source, ok := choke.Recorder.(interface{ RecordError() error }); ok &&
-			source.RecordError() != nil {
-			return DeliveryResult{
-				Content: scrubbed, Suppressed: true,
-				IdentityScrubbed: leaked,
-			}
-		}
-	}
 	suppressed := shouldSuppressDelivery(userInput, scrubbed)
 	if !suppressed && choke.Reporter != nil {
 		if honestPartial {
@@ -70,6 +60,9 @@ func (choke *DeliveryChoke) Deliver(
 		} else {
 			choke.Reporter.Say(scrubbed, false)
 		}
+	}
+	if choke.Recorder != nil {
+		choke.Recorder.RecordDelivery(scrubbed)
 	}
 	choke.consolidate(checkpoint, userInput, scrubbed, true)
 	return DeliveryResult{

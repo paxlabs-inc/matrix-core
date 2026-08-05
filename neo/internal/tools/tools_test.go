@@ -88,3 +88,25 @@ func TestCoreExecuteSchema(t *testing.T) {
 		)
 	}
 }
+
+func TestEveryNativeAndSyntheticToolHasEffectMetadata(t *testing.T) {
+	manager := &Manager{byFunc: map[string]*boundTool{}}
+	for _, schema := range nativeSchemas() {
+		name := schema.Function.Name
+		class, ok := manager.ToolSideEffectClass(name)
+		if !ok || class == "" {
+			t.Fatalf("native tool %q has no effect metadata", name)
+		}
+	}
+	for _, name := range []string{
+		CoreExecuteTool, MemoryRecallTool, MemoryMutateTool,
+		SpawnSubagentsTool, ConstructRenderTool, WriteSkillTool,
+		TodoTool, PreviewTool, BuildProjectTool, DesktopLookTool,
+		DesktopA11yTool, SavePersonalizationTool,
+	} {
+		class, ok := manager.ToolSideEffectClass(name)
+		if !ok || class == "" {
+			t.Fatalf("synthetic tool %q has no effect metadata", name)
+		}
+	}
+}

@@ -5,7 +5,6 @@ package agent
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -23,43 +22,44 @@ func (a *Agent) cmConvID() string {
 }
 
 func (a *Agent) memorySeam() *cortexclient.LoopSeam {
-	if a.pager == nil {
+	if a.pager == nil || a.turn == nil {
 		return nil
+	}
+	if a.turn.memorySeam != nil {
+		return a.turn.memorySeam
 	}
 	seam, err := a.pager.NewNeocortexLoopSeam(a.cmConvID(), a.cfg.ActivationBudget())
 	if err != nil {
 		return nil
 	}
-	return seam
+	a.turn.memorySeam = seam
+	return a.turn.memorySeam
+}
+
+func (a *Agent) captureMemoryProvenance(seam *cortexclient.LoopSeam) {
+	if a.turn == nil || seam == nil {
+		return
+	}
+	_, lo, hi := seam.ProvenanceRange()
+	if lo != 0 {
+		a.turn.noteSessionSeq(lo)
+	}
+	if hi != 0 {
+		a.turn.noteSessionSeq(hi)
+	}
 }
 
 func (a *Agent) cmRecordUser(content string) {
 	if seam := a.memorySeam(); seam != nil {
 		seam.RecordUser(strings.TrimSpace(content))
+		a.captureMemoryProvenance(seam)
 	}
 }
 
-func (a *Agent) cmRecordAssistant(msg llm.Message) {
-	if msg.IsGuidance() {
-		return
-	}
-	seam := a.memorySeam()
-	if seam == nil {
-		return
-	}
-	if content := strings.TrimSpace(msg.Content); content != "" {
-		seam.RecordAssistantWorking(content)
-	}
-	for _, call := range msg.ToolCalls {
-		payload, _ := json.Marshal(map[string]any{"tool": call.Function.Name, "arguments": json.RawMessage(call.Function.Arguments)})
-		seam.RecordAssistantWorking(string(payload))
-	}
-}
-
-func (a *Agent) cmRecordToolResult(name, content string) {
+func (a *Agent) cmRecordDelivery(content string) {
 	if seam := a.memorySeam(); seam != nil {
-		payload, _ := json.Marshal(map[string]string{"tool": name, "result": content})
-		seam.RecordAssistantWorking(string(payload))
+		seam.RecordDelivery(strings.TrimSpace(content))
+		a.captureMemoryProvenance(seam)
 	}
 }
 
@@ -93,21 +93,25 @@ func (a *Agent) restoreO1State(contractID string) *o1.RunLedger {
 }
 
 func (a *Agent) provenanceRange() (string, uint64, uint64) {
-	if a.turn == nil || !a.turn.haveSeq {
+	if a.turn == nil {
+		return "", 0, 0
+	}
+	a.captureMemoryProvenance(a.turn.memorySeam)
+	if !a.turn.haveSeq {
 		return "", 0, 0
 	}
 	return a.cmConvID(), a.turn.seqLo, a.turn.seqHi
 }
 
-func (a *Agent) cmActivate(query string) *cortexclient.Bundle {
+func (a *Agent) cmActivate(query string) (*cortexclient.Bundle, error) {
 	if a.pager == nil {
-		return nil
+		return nil, nil
 	}
 	bundle, err := a.pager.Activate(context.Background(), a.cmConvID(), query, a.cfg.ActivationBudget())
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return bundle
+	return bundle, nil
 }
 
 func (a *Agent) cmRelevancePush(ctx context.Context, query string) ([]memory.Snippet, string) {
@@ -130,19 +134,22 @@ func (a *Agent) cmRelevancePush(ctx context.Context, query string) ([]memory.Sni
 
 type MemoryEvent struct {
 	StorySoFar      string
-	Timeline        []string
+	Timeline        []cortexclient.MemoryProjection
 	TriggerClass    string
 	SelectionReason string
 	Excerpts        []EpisodicMemoryEvent
 }
 
 type EpisodicMemoryEvent struct {
-	ConversationID string `json:"conversation_id"`
-	Date           string `json:"date"`
-	SeqLo          uint64 `json:"seq_lo"`
-	SeqHi          uint64 `json:"seq_hi"`
-	Exact          bool   `json:"exact"`
-	Text           string `json:"text"`
+	ConversationID  string  `json:"conversation_id"`
+	Date            string  `json:"date"`
+	SeqLo           uint64  `json:"seq_lo"`
+	SeqHi           uint64  `json:"seq_hi"`
+	Exact           bool    `json:"exact"`
+	SourceType      string  `json:"source_type"`
+	Confidence      float64 `json:"confidence"`
+	SelectionReason string  `json:"selection_reason"`
+	Text            string  `json:"text"`
 }
 
 type MemoryObserver func(MemoryEvent)
@@ -153,17 +160,22 @@ func (a *Agent) emitMemory(bundle *cortexclient.Bundle, triggerClass string, exc
 	}
 	event := MemoryEvent{TriggerClass: triggerClass}
 	if bundle != nil {
-		for _, section := range bundle.Sections {
-			for _, item := range section.Items {
-				line := strings.TrimSpace(string(item.Content))
-				if line != "" {
-					event.Timeline = append(event.Timeline, line)
-				}
-			}
-		}
+		event.Timeline = cortexclient.ProjectBundle(bundle)
 	}
 	for _, excerpt := range excerpts {
-		event.Excerpts = append(event.Excerpts, EpisodicMemoryEvent{ConversationID: excerpt.ConversationID, Date: excerpt.Date.UTC().Format("2006-01-02"), SeqLo: excerpt.SeqLo, SeqHi: excerpt.SeqHi, Exact: excerpt.Exact, Text: excerpt.Text})
+		confidence := 0.5
+		sourceType := "semantic_recall"
+		if excerpt.Exact {
+			confidence = 1
+			sourceType = "exact_transcript"
+		}
+		date := ""
+		if !excerpt.Date.IsZero() {
+			date = excerpt.Date.UTC().Format("2006-01-02")
+		} else {
+			date = "unknown"
+		}
+		event.Excerpts = append(event.Excerpts, EpisodicMemoryEvent{ConversationID: excerpt.ConversationID, Date: date, SeqLo: excerpt.SeqLo, SeqHi: excerpt.SeqHi, Exact: excerpt.Exact, SourceType: sourceType, Confidence: confidence, SelectionReason: triggerClass + " relevance", Text: excerpt.Text})
 	}
 	if len(event.Timeline) > 0 || len(event.Excerpts) > 0 {
 		a.memObserver(event)
@@ -181,9 +193,6 @@ func (a *Agent) renderActivationBundle(bundle *cortexclient.Bundle) string {
 		fmt.Fprintf(&out, "Current user objective (authoritative; newer than any historical task): %s\n", objective)
 	}
 	if bundle != nil {
-		if a.cfg.SessionExactProjection {
-			out.WriteString("\nExact Neocortex transcript slice recovered after live-window trimming:\n")
-		}
 		if rendered := strings.TrimSpace(cortexclient.RenderBundle(bundle, nil)); rendered != "" {
 			out.WriteString("\nDurable Neocortex activation; the live exchange wins on conflict:\n")
 			out.WriteString(rendered)
@@ -191,10 +200,6 @@ func (a *Agent) renderActivationBundle(bundle *cortexclient.Bundle) string {
 		}
 	}
 	return out.String()
-}
-
-func assembleWindowUserTail(stableSystem string, transcript []llm.Message, tail string) []llm.Message {
-	return append(append([]llm.Message{llm.SystemMessage(stableSystem)}, transcript...), llm.UserMessage(tail))
 }
 
 func assembleWindowContextSidecar(stableSystem string, transcript []llm.Message, contextProjection string) []llm.Message {

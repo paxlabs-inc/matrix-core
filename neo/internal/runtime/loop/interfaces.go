@@ -43,9 +43,10 @@ type ToolResult struct {
 type ReconcileStatus string
 
 const (
-	ReconcileCompleted ReconcileStatus = "completed"
-	ReconcileRetrySafe ReconcileStatus = "retry_safe"
-	ReconcileUnknown   ReconcileStatus = "unknown"
+	ReconcileCompleted  ReconcileStatus = "completed"
+	ReconcileRetrySafe  ReconcileStatus = "retry_safe"
+	ReconcileNotStarted ReconcileStatus = "not_started"
+	ReconcileUnknown    ReconcileStatus = "unknown"
 )
 
 type ReconcileResult struct {
@@ -72,6 +73,20 @@ type CheckpointStore interface {
 		turnstate.Recovery,
 	) error
 	SetTurnStatus(context.Context, string, turnstate.Status) error
+}
+
+// PendingEffectStore commits the recoverable PendingCall checkpoint and the
+// durable effect-start record in one storage transaction.
+type PendingEffectStore interface {
+	SavePendingEffect(
+		context.Context,
+		string,
+		turnstate.Checkpoint,
+		string,
+		string,
+		json.RawMessage,
+		bool,
+	) error
 }
 
 type ActivationRequest struct {

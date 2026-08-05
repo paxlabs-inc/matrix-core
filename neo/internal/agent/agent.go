@@ -871,9 +871,12 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData, resumeGui
 		}
 	}
 
-	bundle := a.cmActivate(userInput)
+	bundle, activationErr := a.cmActivate(userInput)
 	a.activationAssemblies++
 	cmTail := a.renderActivationBundle(bundle)
+	if activationErr != nil {
+		cmTail += "\nMemory diagnostics: recalled memory is temporarily unavailable; continue from the authoritative live transcript.\n"
+	}
 	// Q2 first-message relevance push: Activate's tiers are recency-based
 	// + query-independent, so on the OPENING turn also inject a bounded
 	// relevance retrieval keyed on the message — the agent gets
@@ -935,7 +938,7 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData, resumeGui
 //
 // The single window law (MORPHEUS req.1.3): the byte-stable charter prefix at
 // index 0 + the append-only live transcript + the rendered Activate bundle as
-// ONE trailing USER-role message (Qwen-template portability). Over-budget
+// one trailing SYSTEM context sidecar. Over-budget
 // trimming is NON-summarizing (cmTrimWorking) because the older turns are
 // durable in Neocortex and the coarse history rides the durable story-so-far
 // already surfaced in cmTail. The request-body byte cap is independent of the
@@ -972,11 +975,10 @@ func (a *Agent) prepareWindow(cmTail string) (window []llm.Message, tail string,
 			a.turn.projectionFrozen = true
 		}
 		tail = a.turn.projection
-		window = assembleWindowContextSidecar(a.stableSystem(), a.working, tail)
 	} else {
 		tail = cmTail + checkpointTail + a.epistemicTail() + a.budgetTail(pct)
-		window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
 	}
+	window = assembleWindowContextSidecar(a.stableSystem(), a.working, tail)
 	a.windowAssemblies++
 	return window, tail, pct, nil
 }
@@ -1101,19 +1103,9 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 func (a *Agent) deliberate(step int, res *llm.ChatResult, streamedReasoning bool) (casMod bool) {
 	t := a.turn
 	a.working = append(a.working, res.Message)
-	// Continuous-memory (task 6.1): record a TOOL-CALLING assistant turn
-	// (content + calls) to the durable Neocortex transcript. No-op when off. The
-	// ORIGINAL content is recorded here BEFORE the Cassandra controller may
-	// edit the in-window copy, so Neocortex stays ground truth (req.7.1). A BARE
-	// answer is NOT recorded here: its fate is decided by the close chain, and
-	// recording it before the verdict wrote guard-rejected, never-delivered
-	// answers into durable memory as if the user had seen them — the model
-	// then believed it had already answered and dismissed every steer (the
-	// 2026-07-22 loopty-loop incident). Bare answers are recorded at the
-	// delivery choke point in closeTurn instead.
-	if res.HasToolCalls() {
-		a.cmRecordAssistant(res.Message)
-	}
+	// Tool-calling working content already lives in the authoritative transcript
+	// and execution journal. Only the answer that actually clears the delivery
+	// choke is recorded as semantic Neocortex conversation memory.
 
 	// The unified per-step signal state (MORPHEUS req.5.1): computed ONCE
 	// here — the one behavioral read every self-correction consumer shares.
@@ -1192,7 +1184,7 @@ func (a *Agent) closeTurn(ctx context.Context, res *llm.ChatResult, _ bool, user
 	// the durable Neocortex transcript now (deliberate defers bare answers to
 	// this delivery verdict so a rejected close never poisons durable memory
 	// with an answer the user was never shown).
-	a.cmRecordAssistant(res.Message)
+	a.cmRecordDelivery(cc.answer)
 	a.finishTurn(ctx, cc.answer, t.surfaced, t.surfacedSnips, userInput, false)
 	return true, nil
 }
@@ -1359,8 +1351,8 @@ func (a *Agent) noteBatch(calls []llm.ToolCall) (repeat, stalled bool) {
 // steer, the self-claim contradiction and forced-revision directives, and the
 // prediction-mismatch guidance — flows through this one function. It builds
 // the turn via llm.GuidanceMessage (the Guidance flag + envelope are what keep
-// steering out of the durable Neocortex transcript — cmRecordAssistant's
-// IsGuidance gate — and off every user-facing surface — StripGuidance at the
+// steering out of the durable Neocortex transcript and off every user-facing
+// surface — StripGuidance at the
 // harness) and appends it to the working transcript. Contract — mutates: the
 // working transcript only; blank text appends nothing. Returns the built
 // message (zero when nothing was appended) so a caller that must also thread
@@ -1844,7 +1836,6 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 		a.working = append(a.working, llm.ToolResult(call.ID, name, capped))
 		// Continuous-memory (task 6.1): record the FULL tool result to the
 		// durable Neocortex transcript (Neocortex spills oversized payloads itself).
-		a.cmRecordToolResult(name, evidence)
 		a.noteWebEvidence(name, parsedArgs[i], evidence, isErr)
 		// Epistemic-core Mechanisms 3+4 (req.6.2/7.1): the belief-update seam —
 		// the probe's expectation is checked against the real outcome, then the
@@ -1951,7 +1942,6 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) er
 		a.working = append(a.working, llm.ToolResult(call.ID, name, capped))
 		// Continuous-memory (task 6.1): record the FULL tool result to the
 		// durable Neocortex transcript (Neocortex spills oversized payloads itself).
-		a.cmRecordToolResult(name, evidence)
 		a.noteWebEvidence(name, args, evidence, isErr)
 		// Epistemic-core Mechanisms 3+4 (req.6.2/7.1): the belief-update seam,
 		// then the task-graph action link + evidence delta.

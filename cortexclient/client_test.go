@@ -445,14 +445,18 @@ func TestLoopSeamContractAgainstRealCortexd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("activate: %v", err)
 	}
-	for _, expect := range []string{
-		"what is the status of moltbook.com",
-		"moltbook lives",
-		"moltbook.com is alive",
-		"[premises]",
-	} {
+	for _, expect := range []string{"moltbook.com is alive", "[premises]"} {
 		if !strings.Contains(rendered, expect) {
 			t.Fatalf("activation missing %q:\n%s", expect, rendered)
+		}
+	}
+	for _, forbidden := range []string{
+		"what is the status of moltbook.com", // authoritative live transcript
+		"moltbook lives",                     // operational tool result
+		"drafting answer",                    // undelivered reasoning
+	} {
+		if strings.Contains(rendered, forbidden) {
+			t.Fatalf("activation leaked %q:\n%s", forbidden, rendered)
 		}
 	}
 
@@ -464,11 +468,13 @@ func TestLoopSeamContractAgainstRealCortexd(t *testing.T) {
 		t.Fatalf("bundle spend %d budget %d", bundle.SpentTokens, bundle.BudgetTokens)
 	}
 	var used []uint64
-	for _, item := range bundle.Sections[4].Items {
-		used = append(used, item.Provenance...)
+	for _, section := range []int{0, 4, 6} {
+		for _, item := range bundle.Sections[section].Items {
+			used = append(used, item.Provenance...)
+		}
 	}
 	if len(used) == 0 {
-		t.Fatalf("entity lane empty for stored identifier moltbook.com")
+		t.Fatal("semantic activation lacks attestable provenance")
 	}
 	count, err := client.Attest(ctx, used, nil)
 	if err != nil || count == 0 {

@@ -139,10 +139,10 @@ func TestWindowLaw_GoldenOnRealMultiStepTurn(t *testing.T) {
 			t.Fatalf("step %d: system prefix not byte-stable across steps (len %d vs %d)", step, len(msgs[0].Content), len(prefix))
 		}
 
-		// ONE trailing USER-role tail, in the fixed section order.
+		// ONE trailing SYSTEM context sidecar, in the fixed section order.
 		tail := msgs[len(msgs)-1]
-		if tail.Role != "user" {
-			t.Fatalf("step %d: trailing message role = %q, want user", step, tail.Role)
+		if tail.Role != "system" {
+			t.Fatalf("step %d: trailing message role = %q, want system context", step, tail.Role)
 		}
 		prev := -1
 		for _, s := range []string{"Reference notes, not a new message", "Standing objective for this conversation", "[context:"} {
@@ -222,8 +222,8 @@ func TestWindowLaw_TrimFiresUnderPressureAt32K(t *testing.T) {
 	body := append([]byte(nil), lastBody...)
 	mu.Unlock()
 	msgs := decodeWireMessages(t, body)
-	if msgs[0].Role != "system" || msgs[len(msgs)-1].Role != "user" {
-		t.Fatalf("trimmed window must keep the single shape (system head, user tail); head=%q tail=%q", msgs[0].Role, msgs[len(msgs)-1].Role)
+	if msgs[0].Role != "system" || msgs[len(msgs)-1].Role != "system" {
+		t.Fatalf("trimmed window must keep the single shape (system head, context sidecar); head=%q tail=%q", msgs[0].Role, msgs[len(msgs)-1].Role)
 	}
 	total := 0
 	for _, m := range msgs {

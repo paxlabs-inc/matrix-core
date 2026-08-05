@@ -77,7 +77,7 @@ func (journal *DurableEffectJournal) ReconcileEffect(
 	record, err := journal.Store.LoadEffect(ctx, idempotencyKey)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return ReconcileResult{Status: ReconcileUnknown}, nil
+			return ReconcileResult{Status: ReconcileNotStarted}, nil
 		}
 		return ReconcileResult{}, err
 	}

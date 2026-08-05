@@ -87,13 +87,6 @@ type session struct {
 	asksMu sync.Mutex
 	asks   map[string]*askWaiter // ask surface id -> waiter, for Construct Ask back-channel
 
-	// deathsSinceConsolidate counts loop deaths recorded since the last
-	// self-authoring consolidation pass (self-model task 3.2). When it reaches
-	// cfg.DeathConsolidateEvery the pass runs and the counter resets, so
-	// consolidation happens on a bounded cadence — never every turn (req.5.2).
-	// Mutated only under the serialized turn path (drive holds s.mu), so it needs
-	// no separate lock.
-	deathsSinceConsolidate int
 }
 
 // askWaiter parks a construct_render(kind=ask) tool call until the human posts
@@ -876,12 +869,12 @@ func superviseDecision(stopped bool, attemptErr error, failClass delegate.Failur
 		return actInterrupted
 	case attemptErr == nil:
 		return actDone
-	case failClass == delegate.ClassDeterministic:
-		return actStop
 	case taskCtxErr != nil:
 		return actCeiling
 	case attempt > maxRespawns:
 		return actCeiling
+	case failClass != delegate.ClassTransient:
+		return actStop
 	default:
 		return actRespawn
 	}
@@ -1001,28 +994,6 @@ func (s *session) recordLoopDeath(ctx context.Context, intentID, objective strin
 	}
 	entry := newDeathEntry(objective, attempt, err, failClass, state)
 	_, _ = s.engine.pager.RecordLoopDeath(ctx, entry.durableSummary(), intentID)
-	s.maybeConsolidateDeaths(ctx)
-}
-
-// maybeConsolidateDeaths runs the self-authoring consolidation pass (self-model
-// task 3.2) on a bounded cadence: every cfg.DeathConsolidateEvery recorded loop
-// deaths, the agent reads its death journal and writes/reinforces durable
-// how-I-fail failure-pattern memories, then the counter resets. It runs NEVER
-// every turn (req.5.2) and is a pure observability + reasoning side-channel
-// (req.5.4). Best-effort: a store error is swallowed so it can never block the
-// respawn (Task-Durability preserved). cfg.DeathConsolidateEvery <= 0 disables
-// the pass.
-func (s *session) maybeConsolidateDeaths(ctx context.Context) {
-	every := s.engine.cfg.DeathConsolidateEvery
-	if every <= 0 {
-		return
-	}
-	s.deathsSinceConsolidate++
-	if s.deathsSinceConsolidate < every {
-		return
-	}
-	s.deathsSinceConsolidate = 0
-	_, _ = s.engine.pager.ConsolidateDeathJournal(ctx)
 }
 
 // emitProgress tells the user the task is STILL IN PROGRESS after a failed

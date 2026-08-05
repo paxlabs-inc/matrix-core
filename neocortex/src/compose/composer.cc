@@ -50,21 +50,6 @@ void AppendBytes(std::vector<std::byte>& output,
   output.insert(output.end(), value.begin(), value.end());
 }
 
-std::vector<std::byte> EncodeWork(const proj::WorkItem& work) {
-  std::vector<std::byte> content;
-  content.push_back(static_cast<std::byte>(work.kind));
-  content.push_back(static_cast<std::byte>(work.state));
-  content.push_back(work.requires_reconciliation ? std::byte{1} : std::byte{0});
-  AppendU64(content, work.tool_call_lsn);
-  AppendU64(content, work.state_lsn);
-  AppendBytes(content, work.call_id);
-  AppendBytes(content, work.tool_name);
-  AppendBytes(content, work.arguments);
-  AppendBytes(content, work.effect_id);
-  AppendBytes(content, work.detail);
-  return content;
-}
-
 std::vector<std::uint64_t> BeliefProvenance(
     const proj::BeliefRecord& belief) {
   std::vector<std::uint64_t> provenance;
@@ -134,11 +119,6 @@ std::size_t Total(const ActivationBundle& bundle) {
 
 std::expected<void, Error> Trim(ActivationBundle& bundle,
                                 const ActivationRequest& request) {
-  const auto mandatory = bundle.sections[0].tokens + bundle.sections[1].tokens +
-                         bundle.sections[2].tokens;
-  if (mandatory > request.budget_tokens) {
-    return std::unexpected(Error{ErrorCode::kInvariantViolation, 0});
-  }
   std::size_t total = Total(bundle);
   for (std::size_t tier_index = 8; tier_index > 4 &&
                                         total > request.budget_tokens;
@@ -178,8 +158,21 @@ std::expected<void, Error> Trim(ActivationBundle& bundle,
       ++conversation.coarsened_items;
     }
   }
-  if (total > request.budget_tokens) {
-    return std::unexpected(Error{ErrorCode::kInvariantViolation, 0});
+  // A large resident or work projection must degrade to a smaller valid
+  // activation, never turn memory pressure into a supervisor respawn. Optional
+  // recall tiers were removed first above; only then shed resident, intent, and
+  // work items while preserving explicit trim diagnostics.
+  for (const std::size_t tier_index : {0U, 1U, 2U}) {
+    auto& section = bundle.sections[tier_index];
+    while (!section.items.empty() && total > request.budget_tokens) {
+      auto item = std::move(section.items.back());
+      section.items.pop_back();
+      section.tokens -= item.tokens;
+      total -= item.tokens;
+      ++section.trimmed_items;
+      bundle.trimmed.push_back(
+          TrimmedItem{.tier = item.tier, .uri = std::move(item.uri)});
+    }
   }
   bundle.spent_tokens = total;
   return {};
@@ -189,6 +182,29 @@ bool IsResident(schema::BeliefType type) {
   return type == schema::BeliefType::identity ||
          type == schema::BeliefType::constraint ||
          type == schema::BeliefType::goal;
+}
+
+bool IsPromptResident(const proj::BeliefRecord& belief) {
+  if (!IsResident(belief.type)) {
+    return false;
+  }
+  return belief.canonical_identity != "structural-self" &&
+         !belief.canonical_identity.starts_with("failure:");
+}
+
+bool IsActivatableEvent(log::EventKind kind) {
+  return kind == log::EventKind::kUserMsg ||
+         kind == log::EventKind::kDeliveredMsg ||
+         kind == log::EventKind::kAssertion;
+}
+
+std::vector<std::byte> TypedEventContent(
+    const proj::ConversationRecord& record) {
+  std::vector<std::byte> content;
+  content.reserve(record.payload.size() + 1U);
+  content.push_back(static_cast<std::byte>(record.kind));
+  content.insert(content.end(), record.payload.begin(), record.payload.end());
+  return content;
 }
 
 }  // namespace
@@ -227,7 +243,7 @@ std::expected<ActivationBundle, Error> Composer::Activate(
     return std::unexpected(beliefs.error());
   }
   for (const auto& belief : *beliefs) {
-    if (IsResident(belief.type)) {
+    if (IsPromptResident(belief)) {
       auto added = AddBelief(bundle, request.token_model, Tier::kResident,
                              belief);
       if (!added) {
@@ -236,66 +252,9 @@ std::expected<ActivationBundle, Error> Composer::Activate(
     }
   }
 
-  auto intent = proj::IntentFrameProjection::Read(snapshot,
-                                                   request.conversation);
-  if (!intent) {
-    return std::unexpected(intent.error());
-  }
-  if (intent->objective.has_value()) {
-    const auto& objective = *intent->objective;
-    auto added = AddItem(bundle, request.token_model, Tier::kIntent,
-                         "intent://objective/" + Hex(request.conversation.bytes),
-                         {objective.set_lsn}, objective.content);
-    if (!added) {
-      return std::unexpected(added.error());
-    }
-  }
-  for (const auto& loop : intent->open_loops) {
-    auto added = AddItem(bundle, request.token_model, Tier::kIntent,
-                         "intent://loop/" + Hex(loop.loop_id),
-                         {loop.opened_lsn}, loop.objective);
-    if (!added) {
-      return std::unexpected(added.error());
-    }
-  }
-
-  auto work = proj::WorkLedgerProjection::ReadConversation(
-      snapshot, request.conversation, request.maximum_candidates);
-  if (!work) {
-    return std::unexpected(work.error());
-  }
-  for (const auto& item : *work) {
-    const auto uri = item.kind == proj::WorkKind::kToolCall
-                         ? "work://call/" + std::to_string(item.tool_call_lsn)
-                         : "work://effect/" + Hex(item.effect_id);
-    std::vector<std::uint64_t> provenance = {item.tool_call_lsn};
-    if (item.state_lsn != item.tool_call_lsn) {
-      provenance.push_back(item.state_lsn);
-    }
-    auto added = AddItem(bundle, request.token_model, Tier::kWorkLedger, uri,
-                         std::move(provenance), EncodeWork(item));
-    if (!added) {
-      return std::unexpected(added.error());
-    }
-  }
-
-  auto conversation = proj::ReadConversationRecords(
-      snapshot, request.conversation, request.maximum_conversation_records);
-  if (!conversation) {
-    return std::unexpected(conversation.error());
-  }
-  for (const auto& record : *conversation) {
-    std::vector<std::byte> content;
-    content.reserve(record.payload.size() + 1U);
-    content.push_back(static_cast<std::byte>(record.kind));
-    content.insert(content.end(), record.payload.begin(), record.payload.end());
-    auto added = AddItem(bundle, request.token_model, Tier::kConversation,
-                         "event://" + std::to_string(record.lsn), {record.lsn},
-                         std::move(content));
-    if (!added) {
-      return std::unexpected(added.error());
-    }
-  }
+  // Current objectives, open loops, pending effects, and tool state are owned
+  // by the authoritative turn checkpoint. They remain available to recovery
+  // code but are never duplicated into ordinary cognitive activation.
 
   auto entity_hits = proj::EntityProjection::Query(
       snapshot, request.query, request.turn_text);
@@ -320,9 +279,16 @@ std::expected<ActivationBundle, Error> Composer::Activate(
     if (!maybe_record.has_value()) {
       return std::unexpected(Error{ErrorCode::kInvariantViolation, 0, lsn});
     }
+    // The live transcript is the only source for current-conversation turns.
+    // Ambient entity activation may add only a semantic assertion owned by
+    // this conversation, never a duplicated user/assistant turn.
+    if (maybe_record->conversation != request.conversation ||
+        maybe_record->kind != log::EventKind::kAssertion) {
+      continue;
+    }
     auto added = AddItem(bundle, request.token_model, Tier::kEntity,
                          "event://" + std::to_string(lsn), {lsn},
-                         std::move(maybe_record->payload));
+                         TypedEventContent(*maybe_record));
     if (!added) {
       return std::unexpected(added.error());
     }
@@ -357,9 +323,26 @@ std::expected<ActivationBundle, Error> Composer::Activate(
     if (!maybe_record.has_value()) {
       continue;
     }
+    if (maybe_record->conversation == request.conversation ||
+        !IsActivatableEvent(maybe_record->kind)) {
+      continue;
+    }
+    const auto source = std::to_string(
+        static_cast<std::uint8_t>(maybe_record->kind));
+    const auto reason = hit.vector_rank != 0 && hit.lexical_rank != 0
+                            ? "vector_and_lexical"
+                        : hit.vector_rank != 0 ? "vector"
+                                               : "lexical";
     auto added = AddItem(bundle, request.token_model, Tier::kFused,
-                         "event://" + std::to_string(hit.lsn), {hit.lsn},
-                         std::move(maybe_record->payload));
+                         "recall://" + Hex(maybe_record->conversation.bytes) +
+                             "/" + std::to_string(hit.lsn) + "?at_ns=" +
+                             std::to_string(maybe_record->wall_timestamp_ns) +
+                             "&source=" + source + "&score=" +
+                             std::to_string(hit.rrf_score) + "&vector_rank=" +
+                             std::to_string(hit.vector_rank) +
+                             "&lexical_rank=" +
+                             std::to_string(hit.lexical_rank) + "&why=" + reason,
+                         {hit.lsn}, TypedEventContent(*maybe_record));
     if (!added) {
       return std::unexpected(added.error());
     }

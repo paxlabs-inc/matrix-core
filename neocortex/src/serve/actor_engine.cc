@@ -1009,6 +1009,7 @@ ActorEngine::LatestCheckpoint(std::span<const std::byte> turn_id) {
           proj::ConversationRecord{.lsn = 0,
                                    .kind = log::EventKind::kCheckpoint,
                                    .wall_timestamp_ns = 0,
+                                   .conversation = conversation,
                                    .payload = {}});
       auto verified = events::VerifyEvent(record.payload, record.kind,
                                           events::Boundary::kDisk);

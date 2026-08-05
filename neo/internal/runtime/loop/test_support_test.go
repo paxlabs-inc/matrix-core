@@ -150,6 +150,38 @@ func realExecManager(t *testing.T) *neotools.Manager {
 	return manager
 }
 
+func realNativeManager(t *testing.T) (*neotools.Manager, string) {
+	t.Helper()
+	root := t.TempDir()
+	manifestPath := filepath.Join(t.TempDir(), "agent.json")
+	manifest := executortool.AgentManifest{
+		SchemaVersion: 1,
+		Agent:         "matrix://agent/resurrection-native-test",
+	}
+	raw, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(manifestPath, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	manager, err := neotools.Spawn(t.Context(), neotools.Options{
+		ManifestPath:   manifestPath,
+		StderrSink:     io.Discard,
+		NativeRoot:     root,
+		NativeStateDir: filepath.Join(t.TempDir(), "services"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if warnings := manager.Warnings(); len(warnings) != 0 {
+		_ = manager.Close()
+		t.Fatalf("native manager warnings: %v", warnings)
+	}
+	t.Cleanup(func() { _ = manager.Close() })
+	return manager, root
+}
+
 func realTurnStore(t *testing.T, turnID, userContent string) *turnstate.Store {
 	t.Helper()
 	dir := t.TempDir()

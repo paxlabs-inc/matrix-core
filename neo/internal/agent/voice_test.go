@@ -59,8 +59,8 @@ func TestAudioTurnWindowAndDurableTranscript(t *testing.T) {
 	if err := json.Unmarshal(body, &wire); err != nil {
 		t.Fatal(err)
 	}
-	if len(wire.Messages) < 3 || wire.Messages[0].Role != "system" || wire.Messages[len(wire.Messages)-1].Role != "user" {
-		t.Fatalf("window roles do not preserve [system, transcript, user-tail]: %#v", wire.Messages)
+	if len(wire.Messages) < 3 || wire.Messages[0].Role != "system" || wire.Messages[len(wire.Messages)-1].Role != "system" {
+		t.Fatalf("window roles do not preserve [system, transcript, context-sidecar]: %#v", wire.Messages)
 	}
 	var parts []struct {
 		Type       string `json:"type"`

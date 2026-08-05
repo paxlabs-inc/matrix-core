@@ -150,6 +150,14 @@ std::vector<std::byte> Outcome() {
                     .Union());
 }
 
+std::vector<std::byte> Checkpoint(std::string_view cursor) {
+  flatbuffers::FlatBufferBuilder builder;
+  return Finish(builder, neocortex::schema::EventPayload::Checkpoint,
+                neocortex::schema::CreateCheckpoint(builder,
+                                                     Vector(builder, cursor))
+                    .Union());
+}
+
 neocortex::log::Frame Frame(std::uint64_t lsn,
                             neocortex::log::EventKind kind,
                             neocortex::log::ConversationId conversation,
@@ -199,6 +207,15 @@ std::vector<neocortex::log::Frame> Workload(
                          Assertion({11, neocortex::schema::BeliefType::fact,
                                     "fact-b", "beta", "beta replacement",
                                     "subject"})));
+  auto previous = conversation;
+  previous.bytes[0] = std::byte{0x44};
+  frames.push_back(Frame(
+      12, neocortex::log::EventKind::kDeliveredMsg, previous,
+      Message(neocortex::schema::EventPayload::DeliveredMsg,
+              "past alpha result from another conversation")));
+  frames.push_back(Frame(
+      13, neocortex::log::EventKind::kCheckpoint, previous,
+      Checkpoint("neo.neocortex.memory-state.v1 alpha checkpoint payload")));
   return frames;
 }
 
@@ -271,15 +288,21 @@ int TestComposer(const std::filesystem::path& path) {
                              std::unexpected(first.error()));
   if (!first || !second || *first != *second || first->spent_tokens == 0 ||
       first->sections[0].items.size() != 1 ||
-      first->sections[1].items.size() != 2 ||
-      first->sections[2].items.size() != 2 ||
-      first->sections[3].items.size() != frames.size() ||
+      !first->sections[1].items.empty() ||
+      !first->sections[2].items.empty() ||
+      !first->sections[3].items.empty() ||
       first->sections[4].items.empty() || first->sections[5].items.size() != 2 ||
       first->sections[6].items.empty() || first->sections[7].items.empty() ||
       !canonical) {
     return Fail("composer tier order, sources, or determinism failed");
   }
-  if (Fnv1a(*canonical) != 17579792627312296872ULL) {
+  if (first->sections[6].items.size() != 1 ||
+      first->sections[6].items.front().provenance !=
+          std::vector<std::uint64_t>{12} ||
+      !first->sections[6].items.front().uri.starts_with("recall://")) {
+    return Fail("cross-conversation recall was not isolated with provenance");
+  }
+  if (Fnv1a(*canonical) != 14330236724531321862ULL) {
     return Fail("composer canonical golden changed");
   }
   for (std::size_t index = 0; index < first->sections.size(); ++index) {
@@ -290,14 +313,13 @@ int TestComposer(const std::filesystem::path& path) {
   }
   const auto mandatory = first->sections[0].tokens + first->sections[1].tokens +
                          first->sections[2].tokens;
-  request.budget_tokens = mandatory + 9U * first->sections[3].items.size();
+  request.budget_tokens = mandatory;
   auto trimmed = neocortex::compose::Composer::Activate(*snapshot, request);
   if (!trimmed || trimmed->spent_tokens > request.budget_tokens ||
       trimmed->sections[0].items != first->sections[0].items ||
       trimmed->sections[1].items != first->sections[1].items ||
       trimmed->sections[2].items != first->sections[2].items ||
-      trimmed->sections[3].items.size() != frames.size() ||
-      trimmed->sections[3].coarsened_items == 0 ||
+      !trimmed->sections[3].items.empty() ||
       !trimmed->sections[4].items.empty() ||
       !trimmed->sections[5].items.empty() ||
       !trimmed->sections[6].items.empty() ||
@@ -305,10 +327,10 @@ int TestComposer(const std::filesystem::path& path) {
     return Fail("composer trim law violated a protected tier");
   }
   request.budget_tokens = mandatory - 1U;
-  auto impossible = neocortex::compose::Composer::Activate(*snapshot, request);
-  if (impossible ||
-      impossible.error().code != neocortex::ErrorCode::kInvariantViolation) {
-    return Fail("oversized mandatory context did not fail as an invariant");
+  auto degraded = neocortex::compose::Composer::Activate(*snapshot, request);
+  if (!degraded || degraded->spent_tokens > request.budget_tokens ||
+      degraded->trimmed.empty()) {
+    return Fail("oversized mandatory context did not degrade to a valid bundle");
   }
 
   auto attestations = neocortex::compose::Composer::BuildAttestations(

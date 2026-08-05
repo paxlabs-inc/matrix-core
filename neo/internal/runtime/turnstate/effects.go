@@ -40,6 +40,121 @@ type EffectRecord struct {
 	CompletedAt    *time.Time    `json:"completed_at,omitempty"`
 }
 
+// SavePendingEffect is the production dispatch boundary: the turn checkpoint
+// cannot contain a PendingCall unless the matching effect-start record exists,
+// and an effect-start record for that pending call cannot commit alone.
+func (store *Store) SavePendingEffect(
+	ctx context.Context,
+	turnID string,
+	checkpoint Checkpoint,
+	idempotencyKey string,
+	toolName string,
+	arguments json.RawMessage,
+	retrySafe bool,
+) error {
+	turnID = strings.TrimSpace(turnID)
+	idempotencyKey = strings.TrimSpace(idempotencyKey)
+	toolName = strings.TrimSpace(toolName)
+	checkpoint.SavedAt = store.now().UTC()
+	if turnID == "" || checkpoint.PendingCall == nil ||
+		checkpoint.PendingCall.IdempotencyKey != idempotencyKey ||
+		idempotencyKey == "" || toolName == "" || len(arguments) == 0 ||
+		!json.Valid(arguments) {
+		return fmt.Errorf("turnstate: valid atomic pending effect is required")
+	}
+	if err := checkpoint.Validate(); err != nil {
+		return err
+	}
+	record := EffectRecord{
+		IdempotencyKey: idempotencyKey,
+		ToolName:       toolName,
+		ArgumentsHash:  sha256.Sum256(arguments),
+		RetrySafe:      retrySafe,
+		Status:         EffectStarted,
+		StartedAt:      store.now().UTC(),
+	}
+	effectEnvelope, err := store.sealEffect(record)
+	if err != nil {
+		return err
+	}
+	defer zero(effectEnvelope)
+	return store.submit(ctx, func(runCtx context.Context, db *sql.DB) error {
+		tx, err := db.BeginTx(runCtx, nil)
+		if err != nil {
+			return fmt.Errorf("turnstate: begin atomic pending effect: %w", err)
+		}
+		committed := false
+		defer func() {
+			if !committed {
+				_ = tx.Rollback()
+			}
+		}()
+
+		var turnEnvelope []byte
+		if err := tx.QueryRowContext(runCtx,
+			`SELECT state FROM turn_state WHERE turn_id = ?`, turnID,
+		).Scan(&turnEnvelope); err != nil {
+			return fmt.Errorf("turnstate: load turn for pending effect: %w", err)
+		}
+		state, err := store.openTurn(turnID, turnEnvelope)
+		if err != nil {
+			return err
+		}
+		state.Checkpoint = &checkpoint
+		state.UpdatedAt = store.now().UTC()
+		if err := state.Validate(); err != nil {
+			return err
+		}
+		replacement, err := store.sealTurn(state)
+		if err != nil {
+			return err
+		}
+		defer zero(replacement)
+
+		var existingEnvelope []byte
+		err = tx.QueryRowContext(runCtx,
+			`SELECT state FROM effect_state WHERE idempotency_key = ?`,
+			idempotencyKey,
+		).Scan(&existingEnvelope)
+		switch {
+		case err == nil:
+			existing, openErr := store.openEffect(idempotencyKey, existingEnvelope)
+			if openErr != nil {
+				return openErr
+			}
+			if existing.ToolName != record.ToolName ||
+				existing.ArgumentsHash != record.ArgumentsHash ||
+				existing.RetrySafe != record.RetrySafe {
+				return fmt.Errorf("turnstate: effect idempotency conflict")
+			}
+		case errors.Is(err, sql.ErrNoRows):
+			if _, err := tx.ExecContext(runCtx,
+				`INSERT INTO effect_state(
+				 idempotency_key, tool_name, status, state, updated_at
+				 ) VALUES (?, ?, ?, ?, ?)`,
+				record.IdempotencyKey, record.ToolName, string(record.Status),
+				effectEnvelope, record.StartedAt.UnixMicro(),
+			); err != nil {
+				return fmt.Errorf("turnstate: insert pending effect: %w", err)
+			}
+		default:
+			return fmt.Errorf("turnstate: inspect pending effect: %w", err)
+		}
+		if _, err := tx.ExecContext(runCtx,
+			`UPDATE turn_state SET status = ?, state = ?, updated_at = ?
+			 WHERE turn_id = ?`,
+			string(state.Status), replacement, state.UpdatedAt.UnixMicro(), turnID,
+		); err != nil {
+			return fmt.Errorf("turnstate: save pending checkpoint: %w", err)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("turnstate: commit atomic pending effect: %w", err)
+		}
+		committed = true
+		return nil
+	})
+}
+
 func (store *Store) BeginEffect(
 	ctx context.Context,
 	idempotencyKey string,

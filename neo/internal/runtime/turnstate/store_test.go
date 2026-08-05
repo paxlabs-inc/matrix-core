@@ -162,6 +162,69 @@ func TestStoreSerializesConcurrentCheckpointWrites(t *testing.T) {
 	}
 }
 
+func TestSavePendingEffectCommitsCheckpointAndEffectAtomically(t *testing.T) {
+	ctx := context.Background()
+	store, _ := openTestStore(t)
+	defer store.Close(ctx)
+	if err := store.CreateTurnState(ctx, baseTurnState()); err != nil {
+		t.Fatal(err)
+	}
+	baseline := Checkpoint{
+		Messages: []protocol.Message{{Role: protocol.RoleUser, Content: "turn"}},
+		Step:     1,
+	}
+	if err := store.SaveTurnCheckpoint(ctx, testTurnID, baseline); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.BeginEffect(
+		ctx, "occupied", "fs__read_file", json.RawMessage(`{"path":"a"}`), true,
+	); err != nil {
+		t.Fatal(err)
+	}
+	conflicting := baseline
+	conflicting.Step = 2
+	conflicting.PendingCall = &PendingCall{
+		CallID: "call-conflict", IdempotencyKey: "occupied",
+		ToolName: "fs__write_file", Arguments: json.RawMessage(`{"path":"b"}`),
+		DispatchedAt: time.Now().UTC(),
+	}
+	if err := store.SavePendingEffect(
+		ctx, testTurnID, conflicting, "occupied", "fs__write_file",
+		conflicting.PendingCall.Arguments, false,
+	); err == nil {
+		t.Fatal("idempotency conflict unexpectedly committed")
+	}
+	loaded, err := store.LoadTurnState(ctx, testTurnID)
+	if err != nil || loaded.Checkpoint == nil || loaded.Checkpoint.Step != 1 ||
+		loaded.Checkpoint.PendingCall != nil {
+		t.Fatalf("failed transaction changed checkpoint: state=%+v err=%v", loaded, err)
+	}
+
+	pending := baseline
+	pending.Step = 2
+	pending.PendingCall = &PendingCall{
+		CallID: "call-read", IdempotencyKey: "atomic-read",
+		ToolName: "fs__read_file", Arguments: json.RawMessage(`{"path":"a"}`),
+		DispatchedAt: time.Now().UTC(),
+	}
+	if err := store.SavePendingEffect(
+		ctx, testTurnID, pending, "atomic-read", "fs__read_file",
+		pending.PendingCall.Arguments, true,
+	); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err = store.LoadTurnState(ctx, testTurnID)
+	if err != nil || loaded.Checkpoint == nil ||
+		loaded.Checkpoint.PendingCall == nil ||
+		loaded.Checkpoint.PendingCall.IdempotencyKey != "atomic-read" {
+		t.Fatalf("pending checkpoint missing after commit: state=%+v err=%v", loaded, err)
+	}
+	effect, err := store.LoadEffect(ctx, "atomic-read")
+	if err != nil || effect.Status != EffectStarted || !effect.RetrySafe {
+		t.Fatalf("effect missing after commit: effect=%+v err=%v", effect, err)
+	}
+}
+
 func TestStoreTamperAndTruncationFailClosed(t *testing.T) {
 	for _, test := range []struct {
 		name string

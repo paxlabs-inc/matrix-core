@@ -17,6 +17,7 @@ import (
 	"sync"
 	"testing"
 
+	"matrix/cortexclient"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/sessionjournal"
@@ -128,7 +129,7 @@ func TestExactProjectionRealMultiStepSidecarFrozenAndJournaled(t *testing.T) {
 	}
 }
 
-func TestExactProjectionRendersCortexTranscriptAfterRealTrim(t *testing.T) {
+func TestExactProjectionDoesNotDuplicateCurrentTranscriptAfterRealTrim(t *testing.T) {
 	ctx := context.Background()
 	var (
 		mu     sync.Mutex
@@ -164,6 +165,24 @@ func TestExactProjectionRendersCortexTranscriptAfterRealTrim(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	records, truncated, err := pager.NeocortexClient().Transcript(
+		ctx, cortexclient.ConversationBytes("conv-exact-trim"), 0, 1000,
+	)
+	if err != nil || truncated {
+		t.Fatalf("semantic conversation transcript: records=%d truncated=%v err=%v",
+			len(records), truncated, err)
+	}
+	counts := map[cortexclient.EventKind]int{}
+	for _, record := range records {
+		counts[record.Kind]++
+	}
+	if counts[cortexclient.KindUserMsg] != 8 ||
+		counts[cortexclient.KindDeliveredMsg] != 8 ||
+		counts[cortexclient.KindReasoning] != 0 ||
+		counts[cortexclient.KindToolCall] != 0 ||
+		counts[cortexclient.KindToolResult] != 0 {
+		t.Fatalf("semantic transcript contains duplicate working/tool state: %+v", counts)
+	}
 	a.cmTrimWorking()
 	if err := a.Chat(ctx, "current request after the forced trim"); err != nil {
 		t.Fatal(err)
@@ -173,8 +192,10 @@ func TestExactProjectionRendersCortexTranscriptAfterRealTrim(t *testing.T) {
 	mu.Unlock()
 	messages := decodeWireMessages(t, lastBody)
 	sidecar := messages[len(messages)-1]
-	if sidecar.Role != "system" || !strings.Contains(sidecar.Content, "Exact Neocortex transcript slice recovered") || !strings.Contains(sidecar.Content, "historical exact message 0") {
-		t.Fatalf("trimmed exact transcript was not projected:\n%s", sidecar.Content)
+	if sidecar.Role != "system" ||
+		strings.Contains(sidecar.Content, "historical exact message 0") ||
+		strings.Contains(sidecar.Content, "Exact Neocortex transcript slice recovered") {
+		t.Fatalf("current-conversation transcript was duplicated into activation:\n%s", sidecar.Content)
 	}
 	newestUser := ""
 	for index := len(messages) - 1; index >= 0; index-- {

@@ -92,10 +92,14 @@ std::expected<ConversationRecord, Error> DecodeRecord(const KeyValue& item) {
     timestamp |= std::to_integer<std::uint64_t>(item.value[index + 1U])
                  << (index * 8U);
   }
+  log::ConversationId conversation{};
+  std::copy_n(item.key.begin() + 1, conversation.bytes.size(),
+              conversation.bytes.begin());
   return ConversationRecord{
       .lsn = lsn,
       .kind = static_cast<log::EventKind>(raw_kind),
       .wall_timestamp_ns = std::bit_cast<std::int64_t>(timestamp),
+      .conversation = conversation,
       .payload = std::vector<std::byte>(item.value.begin() + 9,
                                        item.value.end()),
   };

@@ -613,13 +613,16 @@ func runtimeBestEffort(response loop.Response) string {
 
 func runtimeFailureClass(err error) delegate.FailureClass {
 	switch {
-	case runtimeprovider.IsFailureKind(
-		err, runtimeprovider.FailureRejected,
-	), runtimeprovider.IsFailureKind(
-		err, runtimeprovider.FailureProtocol,
-	):
-		return delegate.ClassDeterministic
-	default:
+	case runtimeprovider.IsFailureKind(err, runtimeprovider.FailureRateLimited),
+		runtimeprovider.IsFailureKind(err, runtimeprovider.FailureServer),
+		runtimeprovider.IsFailureKind(err, runtimeprovider.FailureTransport),
+		runtimeprovider.IsFailureKind(err, runtimeprovider.FailureIdle),
+		errors.Is(err, context.DeadlineExceeded):
 		return delegate.ClassTransient
+	case strings.Contains(strings.ToLower(err.Error()), "turnstate:"),
+		strings.Contains(strings.ToLower(err.Error()), "checkpoint store"):
+		return delegate.ClassTransient
+	default:
+		return delegate.ClassDeterministic
 	}
 }

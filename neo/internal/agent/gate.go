@@ -167,7 +167,6 @@ func (a *Agent) checkBeforeAct(calls []llm.ToolCall) ([]llm.ToolCall, bool) {
 		}
 		refusedAny = true
 		a.working = append(a.working, llm.ToolResult(call.ID, call.Function.Name, directive))
-		a.cmRecordToolResult(call.Function.Name, directive)
 	}
 	if refusedAny {
 		a.turn.revisionPending = "A premise your plan depends on was refuted: " + strings.Join(names, "; ") +
@@ -195,7 +194,6 @@ func (a *Agent) forcedRevisionStep(ctx context.Context, window []llm.Message, on
 	content := strings.TrimSpace(res.Message.Content)
 	if content != "" {
 		a.working = append(a.working, llm.Message{Role: llm.RoleAssistant, Content: content})
-		a.cmRecordAssistant(llm.Message{Role: llm.RoleAssistant, Content: content})
 	}
 	// The revision IS the plan change: refuted premises are answered, the
 	// ledger re-extracts from the revised plan, and the per-strategy mismatch

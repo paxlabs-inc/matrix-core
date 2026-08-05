@@ -9,9 +9,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
+	"unicode/utf8"
 
 	flatbuffers "matrix/cortexclient/internal/flatbuffers"
 	"matrix/cortexclient/wire/neocortex/protocol"
@@ -431,12 +434,85 @@ var tierNames = [8]string{
 	"entity", "conflicts", "recall", "temporal",
 }
 
-// eventText extracts a readable line from a typed event envelope payload.
-func eventText(kind EventKind, payload []byte) string {
-	defer func() { _ = recover() }()
+func eventPayloadForKind(kind EventKind) (schema.EventPayload, bool) {
+	switch kind {
+	case KindUserMsg:
+		return schema.EventPayloadUserMsg, true
+	case KindDeliveredMsg:
+		return schema.EventPayloadDeliveredMsg, true
+	case KindToolCall:
+		return schema.EventPayloadToolCall, true
+	case KindToolResult:
+		return schema.EventPayloadToolResult, true
+	case KindReasoning:
+		return schema.EventPayloadReasoning, true
+	case KindProviderFrame:
+		return schema.EventPayloadProviderFrame, true
+	case KindMediaRef:
+		return schema.EventPayloadMediaRef, true
+	case KindEffect:
+		return schema.EventPayloadEffect, true
+	case KindApproval:
+		return schema.EventPayloadApproval, true
+	case KindOutcome:
+		return schema.EventPayloadOutcome, true
+	case KindCheckpoint:
+		return schema.EventPayloadCheckpoint, true
+	case KindSupervisor:
+		return schema.EventPayloadSupervisor, true
+	case KindRecovery:
+		return schema.EventPayloadRecovery, true
+	case KindIntentSet:
+		return schema.EventPayloadIntentSet, true
+	case KindLoopOpened:
+		return schema.EventPayloadLoopOpened, true
+	case KindLoopClosed:
+		return schema.EventPayloadLoopClosed, true
+	case KindAssertion:
+		return schema.EventPayloadAssertion, true
+	case KindConsolidation:
+		return schema.EventPayloadConsolidation, true
+	case KindEmbedding:
+		return schema.EventPayloadEmbedding, true
+	case KindRetract:
+		return schema.EventPayloadRetract, true
+	case KindAttestation:
+		return schema.EventPayloadAttestation, true
+	default:
+		return schema.EventPayloadNONE, false
+	}
+}
+
+func eventTable(kind EventKind, payload []byte) (table flatbuffers.Table, err error) {
+	defer func() {
+		if recover() != nil {
+			err = ErrProtocol
+		}
+	}()
+	expected, ok := eventPayloadForKind(kind)
+	if !ok || len(payload) < 8 ||
+		!schema.EventEnvelopeBufferHasIdentifier(payload) {
+		return flatbuffers.Table{}, ErrProtocol
+	}
 	envelope := schema.GetRootAsEventEnvelope(payload, 0)
-	var table flatbuffers.Table
+	if envelope.SchemaVersion() != 1 || envelope.PayloadType() != expected {
+		return flatbuffers.Table{}, ErrProtocol
+	}
 	if !envelope.Payload(&table) {
+		return flatbuffers.Table{}, ErrProtocol
+	}
+	return table, nil
+}
+
+func isActivationEvent(kind EventKind) bool {
+	return kind == KindUserMsg || kind == KindDeliveredMsg || kind == KindAssertion
+}
+
+// eventText extracts a readable line only after the envelope's actual union
+// payload type has been proven to match the journal event kind.
+func eventText(kind EventKind, payload []byte) string {
+	table, err := eventTable(kind, payload)
+	if err != nil {
 		return ""
 	}
 	switch kind {
@@ -467,7 +543,7 @@ func eventText(kind EventKind, payload []byte) string {
 		return "memory " + string(value.CanonicalIdentity()) + ": " +
 			string(value.ValueBytes())
 	default:
-		return string(schema.EnumNamesEventPayload[schema.EventPayload(envelope.PayloadType())]) + " event"
+		return ""
 	}
 }
 
@@ -478,6 +554,21 @@ type DecodedEvent struct {
 	ToolName string
 }
 
+// MemoryProjection is the typed, presentation-safe view of one activated
+// semantic memory. It deliberately cannot carry an opaque event envelope.
+type MemoryProjection struct {
+	Tier            string   `json:"tier"`
+	Kind            string   `json:"kind"`
+	Text            string   `json:"text"`
+	URI             string   `json:"uri"`
+	ConversationID  string   `json:"conversation_id,omitempty"`
+	Date            string   `json:"date,omitempty"`
+	SourceType      string   `json:"source_type"`
+	Confidence      float64  `json:"confidence,omitempty"`
+	SelectionReason string   `json:"selection_reason,omitempty"`
+	Provenance      []uint64 `json:"provenance,omitempty"`
+}
+
 // DecodeEvent decodes one typed transcript frame without exposing generated
 // FlatBuffers tables to Neo.
 func DecodeEvent(kind EventKind, payload []byte) (out DecodedEvent, err error) {
@@ -486,10 +577,9 @@ func DecodeEvent(kind EventKind, payload []byte) (out DecodedEvent, err error) {
 			err = fmt.Errorf("%w: malformed event payload", ErrProtocol)
 		}
 	}()
-	envelope := schema.GetRootAsEventEnvelope(payload, 0)
-	var table flatbuffers.Table
-	if !envelope.Payload(&table) {
-		return DecodedEvent{}, ErrProtocol
+	table, err := eventTable(kind, payload)
+	if err != nil {
+		return DecodedEvent{}, err
 	}
 	switch kind {
 	case KindUserMsg:
@@ -524,18 +614,41 @@ func DecodeEvent(kind EventKind, payload []byte) (out DecodedEvent, err error) {
 // RenderBundle turns the structured bundle into the activation string the
 // resurrection loop consumes. Rendering is the client's job by design.
 func RenderBundle(bundle *Bundle, premises []string) string {
+	if bundle == nil {
+		return ""
+	}
 	var out strings.Builder
+	seenURI := make(map[string]struct{})
+	seenContent := make(map[[32]byte]struct{})
 	for index := range bundle.Sections {
 		section := &bundle.Sections[index]
 		if len(section.Items) == 0 {
 			continue
 		}
-		out.WriteString("[" + tierNames[index] + "]\n")
+		var rendered []string
 		for _, item := range section.Items {
 			line := renderItem(index, item)
 			if line == "" {
 				continue
 			}
+			digest := sha256.Sum256([]byte(line))
+			if _, exists := seenURI[item.URI]; item.URI != "" && exists {
+				continue
+			}
+			if _, exists := seenContent[digest]; exists {
+				continue
+			}
+			if item.URI != "" {
+				seenURI[item.URI] = struct{}{}
+			}
+			seenContent[digest] = struct{}{}
+			rendered = append(rendered, line)
+		}
+		if len(rendered) == 0 {
+			continue
+		}
+		out.WriteString("[" + tierNames[index] + "]\n")
+		for _, line := range rendered {
 			out.WriteString(line)
 			out.WriteString("\n")
 		}
@@ -550,36 +663,142 @@ func RenderBundle(bundle *Bundle, premises []string) string {
 	return strings.TrimRight(out.String(), "\n")
 }
 
+// ProjectBundle returns only decoded semantic memories suitable for a UI.
+// Operational work, checkpoints, supervisor/recovery records, and malformed or
+// mismatched envelopes are omitted while remaining retrievable through their
+// dedicated recovery APIs.
+func ProjectBundle(bundle *Bundle) []MemoryProjection {
+	if bundle == nil {
+		return nil
+	}
+	seen := make(map[[32]byte]struct{})
+	var projected []MemoryProjection
+	for sectionIndex := range bundle.Sections {
+		if sectionIndex != 0 && sectionIndex != 1 && sectionIndex != 4 &&
+			sectionIndex != 5 && sectionIndex != 6 {
+			continue
+		}
+		for _, item := range bundle.Sections[sectionIndex].Items {
+			entry := MemoryProjection{
+				Tier: tierNames[sectionIndex], URI: item.URI,
+				Provenance: append([]uint64(nil), item.Provenance...),
+			}
+			if sectionIndex == 0 || sectionIndex == 1 || sectionIndex == 5 {
+				if !utf8.Valid(item.Content) || internalActivationContent(item.Content) {
+					continue
+				}
+				entry.Text = strings.TrimSpace(string(item.Content))
+				entry.Kind = "belief"
+				entry.SourceType = "semantic_belief"
+			} else {
+				if item.Coarsened || len(item.Content) < 2 {
+					continue
+				}
+				kind := EventKind(item.Content[0])
+				if !isActivationEvent(kind) {
+					continue
+				}
+				entry.Text = eventText(kind, item.Content[1:])
+				if entry.Text == "" {
+					continue
+				}
+				payloadType, _ := eventPayloadForKind(kind)
+				entry.Kind = strings.ToLower(payloadType.String())
+				entry.SourceType = payloadType.String()
+				if sectionIndex == 6 {
+					applyRecallProvenance(&entry)
+				}
+			}
+			if entry.Text == "" {
+				continue
+			}
+			digest := sha256.Sum256([]byte(entry.SourceType + "\x00" + entry.Text))
+			if _, exists := seen[digest]; exists {
+				continue
+			}
+			seen[digest] = struct{}{}
+			projected = append(projected, entry)
+		}
+	}
+	return projected
+}
+
+func applyRecallProvenance(entry *MemoryProjection) {
+	parsed, err := url.Parse(entry.URI)
+	if err != nil || parsed.Scheme != "recall" {
+		return
+	}
+	entry.ConversationID = parsed.Host
+	query := parsed.Query()
+	entry.SelectionReason = strings.ReplaceAll(query.Get("why"), "_", " ")
+	if entry.SelectionReason == "" {
+		entry.SelectionReason = "relevance ranked cross-conversation recall"
+	}
+	if timestamp, err := strconv.ParseInt(query.Get("at_ns"), 10, 64); err == nil && timestamp > 0 {
+		entry.Date = time.Unix(0, timestamp).UTC().Format("2006-01-02")
+	}
+	if entry.Date == "" {
+		entry.Date = "unknown"
+	}
+	vectorRank, _ := strconv.ParseUint(query.Get("vector_rank"), 10, 32)
+	lexicalRank, _ := strconv.ParseUint(query.Get("lexical_rank"), 10, 32)
+	rank := vectorRank
+	if rank == 0 || lexicalRank != 0 && lexicalRank < rank {
+		rank = lexicalRank
+	}
+	if rank > 0 {
+		entry.Confidence = 1 / float64(rank)
+	} else {
+		entry.Confidence = 0.25
+	}
+}
+
 func renderItem(sectionIndex int, item BundleItem) string {
 	switch sectionIndex {
 	case 0, 1, 5:
-		return string(item.Content)
+		if !utf8.Valid(item.Content) || internalActivationContent(item.Content) {
+			return ""
+		}
+		return strings.TrimSpace(string(item.Content))
 	case 2:
 		return renderWork(item.Content)
 	case 3, 4, 6:
 		if item.Coarsened {
 			return "(coarsened " + item.URI + ")"
 		}
-		content := item.Content
-		kind := EventKind(0)
-		if sectionIndex == 3 && len(content) > 0 {
-			kind = EventKind(content[0])
-			content = content[1:]
-			return eventText(kind, content)
+		if len(item.Content) < 2 {
+			return ""
 		}
-		for _, candidate := range []EventKind{KindUserMsg, KindDeliveredMsg,
-			KindToolCall, KindToolResult, KindReasoning, KindAssertion} {
-			if text := eventText(candidate, content); text != "" {
-				return text
+		kind := EventKind(item.Content[0])
+		if !isActivationEvent(kind) {
+			return ""
+		}
+		if text := eventText(kind, item.Content[1:]); text != "" {
+			if sectionIndex == 6 {
+				return "past memory [" + item.URI + "]: " + text
 			}
+			return text
 		}
-		return item.URI
+		return ""
 	case 7:
 		return "(time window " + item.URI + " members " +
 			strconv.Itoa(len(item.Provenance)) + ")"
 	default:
 		return item.URI
 	}
+}
+
+func internalActivationContent(content []byte) bool {
+	text := strings.ToLower(string(content))
+	for _, marker := range []string{
+		"ncev", "neo.neocortex.memory-state.v1", "turn checkpoint",
+		"neo.o1.", "supervisor record", "recovery record",
+	} {
+		if strings.Contains(text, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func renderWork(content []byte) string {

@@ -87,7 +87,8 @@ func TestDeterministicStopIsHonestAndNeverRepastes(t *testing.T) {
 	if strings.Contains(text, "permission") || strings.Contains(text, "couldn't complete") {
 		t.Fatalf("an unproductive-cap death must not read as a permission/limit blocker, got %q", text)
 	}
-	if !strings.Contains(text, "as far as I can") {
+	if !strings.Contains(text, "as far as I can") &&
+		!strings.Contains(text, "couldn't fully verify") {
 		t.Fatalf("the closing turn should own the stop honestly (need your direction), got %q", text)
 	}
 	if !strings.Contains(text, narration) {

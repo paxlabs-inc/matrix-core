@@ -99,7 +99,7 @@ func TestStageContracts_RealMultiStepTurn(t *testing.T) {
 	}
 
 	// The assembled shape holds on every request: byte-stable system prefix at
-	// index 0, ONE trailing USER-role tail carrying exactly one budget stat.
+	// index 0, ONE trailing SYSTEM context sidecar carrying one budget stat.
 	var prefix string
 	for step, raw := range captured {
 		msgs := decodeWireMessages(t, []byte(raw))
@@ -112,8 +112,8 @@ func TestStageContracts_RealMultiStepTurn(t *testing.T) {
 			t.Fatalf("step %d: system prefix not byte-stable across steps", step)
 		}
 		tail := msgs[len(msgs)-1]
-		if tail.Role != "user" {
-			t.Fatalf("step %d: trailing message role = %q, want user", step, tail.Role)
+		if tail.Role != "system" {
+			t.Fatalf("step %d: trailing message role = %q, want system context", step, tail.Role)
 		}
 		if n := strings.Count(tail.Content, "[context:"); n != 1 {
 			t.Fatalf("step %d: tail must carry exactly one budget stat, got %d", step, n)
@@ -127,7 +127,7 @@ func TestStageContracts_RealMultiStepTurn(t *testing.T) {
 }
 
 // TestStageContracts_SingleAssemblySiteAudit pins the structural half of
-// req.3.2: assembleWindowUserTail has exactly ONE production call site
+// req.3.2: assembleWindowContextSidecar has exactly ONE production call site
 // (prepareWindow). A second caller would reintroduce the multi-site window
 // drift the reassembly removed.
 func TestStageContracts_SingleAssemblySiteAudit(t *testing.T) {
@@ -147,15 +147,15 @@ func TestStageContracts_SingleAssemblySiteAudit(t *testing.T) {
 		}
 		for _, line := range strings.Split(string(src), "\n") {
 			trimmed := strings.TrimSpace(line)
-			if strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "func assembleWindowUserTail(") {
+			if strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "func assembleWindowContextSidecar(") {
 				continue
 			}
-			if strings.Contains(trimmed, "assembleWindowUserTail(") {
+			if strings.Contains(trimmed, "assembleWindowContextSidecar(") {
 				callSites++
 			}
 		}
 	}
 	if callSites != 1 {
-		t.Fatalf("assembleWindowUserTail must have exactly ONE production call site (prepareWindow), found %d", callSites)
+		t.Fatalf("assembleWindowContextSidecar must have exactly ONE production call site (prepareWindow), found %d", callSites)
 	}
 }

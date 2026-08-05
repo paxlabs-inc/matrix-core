@@ -32,46 +32,24 @@ func selfModelPatternCount(t *testing.T, p *memory.Pager) int {
 	return n
 }
 
-// TestSelfAuthoringRunsOnBoundedCadence proves the self-authoring consolidation
-// pass fires on a BOUNDED cadence through the REAL session death path (self-model
-// task 3.2, req.5.2): recording loop deaths via session.recordLoopDeath does NOT
-// author a how-I-fail memory every death — it authors only when the configured
-// cadence (DeathConsolidateEvery) is reached. No fakes: a real Engine, a real
-// Neocortex pager, the real recordLoopDeath → RecordLoopDeath → ConsolidateDeathJournal
-// path.
-func TestSelfAuthoringRunsOnBoundedCadence(t *testing.T) {
+// TestLoopDeathsNeverAutoPromoteIntoCognitiveMemory proves diagnostics remain
+// in the death journal even if an obsolete cadence value is configured.
+func TestLoopDeathsNeverAutoPromoteIntoCognitiveMemory(t *testing.T) {
 	e, pager := newRunTestEngine(t, "")
-	if e.cfg.DeathConsolidateEvery != 3 {
-		t.Fatalf("precondition: default cadence should be 3, got %d", e.cfg.DeathConsolidateEvery)
-	}
+	e.cfg.DeathConsolidateEvery = 3
 	s := e.newSession("conv-cadence")
 	ctx := context.Background()
 	err := fmt.Errorf("%w: kept re-running the same status check without progress", agent.ErrIncomplete)
 
-	// Deaths 1 and 2: below the cadence — nothing authored yet (NOT every turn).
-	s.recordLoopDeath(ctx, "run-cadence-1", "ship the migration", 1, err, delegate.ClassNone)
-	if got := selfModelPatternCount(t, pager); got != 0 {
-		t.Fatalf("after 1 death (< cadence) no pattern must be authored; got %d", got)
-	}
-	s.recordLoopDeath(ctx, "run-cadence-2", "ship the migration", 2, err, delegate.ClassNone)
-	if got := selfModelPatternCount(t, pager); got != 0 {
-		t.Fatalf("after 2 deaths (< cadence) no pattern must be authored; got %d", got)
-	}
-
-	// Death 3 hits the cadence: the consolidation pass runs and authors the
-	// how-I-fail memory from the accumulated journal.
-	s.recordLoopDeath(ctx, "run-cadence-3", "ship the migration", 3, err, delegate.ClassNone)
-	if got := selfModelPatternCount(t, pager); got != 1 {
-		t.Fatalf("at the cadence the pass must author exactly ONE pattern; got %d", got)
-	}
-
-	// The counter reset: three more deaths of the same mode reinforce the SAME
-	// one belief (no duplicate) at the next cadence tick.
-	for i := 4; i <= 6; i++ {
+	for i := 1; i <= 6; i++ {
 		s.recordLoopDeath(ctx, fmt.Sprintf("run-cadence-%d", i), "ship the migration", i, err, delegate.ClassNone)
 	}
-	if got := selfModelPatternCount(t, pager); got != 1 {
-		t.Fatalf("recurrence must reinforce ONE belief, not duplicate; got %d", got)
+	if got := selfModelPatternCount(t, pager); got != 0 {
+		t.Fatalf("loop deaths must not auto-promote into failure beliefs; got %d", got)
+	}
+	journal, journalErr := pager.DeathJournal(ctx, 10)
+	if journalErr != nil || len(journal) != 6 {
+		t.Fatalf("diagnostic death journal = %d, %v; want 6", len(journal), journalErr)
 	}
 }
 

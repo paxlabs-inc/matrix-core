@@ -24,6 +24,7 @@ struct ConversationRecord final {
   std::uint64_t lsn;
   log::EventKind kind;
   std::int64_t wall_timestamp_ns;
+  log::ConversationId conversation;
   std::vector<std::byte> payload;
 
   bool operator==(const ConversationRecord&) const = default;

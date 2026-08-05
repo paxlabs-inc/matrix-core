@@ -228,19 +228,10 @@ func TestRealLoopSmokeOnNeocortexSubstrate(t *testing.T) {
 		t.Fatalf("durable role sequence = %s", got)
 	}
 
-	blob, _, err := seam.LatestTurnCheckpoint(t.Context(), turnID)
-	if err != nil {
-		t.Fatalf("cortexd checkpoint: %v", err)
+	if _, _, err := seam.LatestTurnCheckpoint(t.Context(), turnID); err == nil {
+		t.Fatal("operational turn checkpoint leaked into the Neocortex event log")
 	}
-	var mirrored turnstate.Checkpoint
-	if err := json.Unmarshal(blob, &mirrored); err != nil {
-		t.Fatalf("cortexd checkpoint blob: %v", err)
-	}
-	if len(mirrored.Messages) == 0 ||
-		mirrored.Messages[0].Role != "user" {
-		t.Fatalf("cortexd checkpoint transcript = %+v", mirrored.Messages)
-	}
-	localOnly := mirrored
+	localOnly := *loaded.Checkpoint
 	localOnly.Step += 1000
 	if err := turns.SaveTurnCheckpoint(t.Context(), turnID, localOnly); err != nil {
 		t.Fatalf("write divergent local checkpoint: %v", err)
@@ -249,10 +240,9 @@ func TestRealLoopSmokeOnNeocortexSubstrate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load checkpoint through neocortex store: %v", err)
 	}
-	if recovered.Checkpoint == nil || recovered.Checkpoint.Step != mirrored.Step ||
-		recovered.Checkpoint.Step == localOnly.Step {
-		t.Fatalf("recovery used local checkpoint: recovered=%+v local=%+v cortexd=%+v",
-			recovered.Checkpoint, localOnly.Step, mirrored.Step)
+	if recovered.Checkpoint == nil || recovered.Checkpoint.Step != localOnly.Step {
+		t.Fatalf("recovery did not use the dedicated operational store: recovered=%+v local=%d",
+			recovered.Checkpoint, localOnly.Step)
 	}
 
 	conversation, sequenceLow, sequenceHigh := adapter.ProvenanceRange()
@@ -275,17 +265,14 @@ func TestRealLoopSmokeOnNeocortexSubstrate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("activate on neocortex substrate: %v", err)
 	}
-	for _, expect := range []string{
+	for _, forbidden := range []string{
 		"Run the neocortex smoke command",
 		"neocortex-smoke-dispatch",
-		"neocortex substrate and returned",
+		"Consolidation event",
 	} {
-		if !strings.Contains(activation, expect) {
-			t.Fatalf("activation missing %q:\n%s", expect, activation)
+		if strings.Contains(activation, forbidden) {
+			t.Fatalf("same-conversation or consolidation content leaked through activation as %q:\n%s", forbidden, activation)
 		}
-	}
-	if strings.Count(activation, "Consolidation event") < 2 {
-		t.Fatalf("delivery and explicit consolidation events missing:\n%s", activation)
 	}
 }
 
@@ -424,11 +411,9 @@ func TestRealLoopRecoversFromCortexdSIGKILLDuringToolTurn(t *testing.T) {
 	var interrupted turnstate.Checkpoint
 	deadline = time.Now().Add(10 * time.Second)
 	for {
-		blob, _, checkpointErr := seam.LatestTurnCheckpoint(t.Context(), turnID)
-		if checkpointErr == nil {
-			checkpointErr = json.Unmarshal(blob, &interrupted)
-		}
-		if checkpointErr == nil {
+		loaded, checkpointErr := turns.LoadTurnState(t.Context(), turnID)
+		if checkpointErr == nil && loaded.Checkpoint != nil {
+			interrupted = *loaded.Checkpoint
 			break
 		}
 		if time.Now().After(deadline) {
@@ -500,7 +485,8 @@ func TestRealLoopRecoversFromCortexdSIGKILLDuringToolTurn(t *testing.T) {
 	if counts[cortexclient.KindUserMsg] != 1 ||
 		counts[cortexclient.KindToolCall] != 1 ||
 		counts[cortexclient.KindToolResult] != 1 ||
-		counts[cortexclient.KindDeliveredMsg] != 1 {
+		counts[cortexclient.KindDeliveredMsg] != 1 ||
+		counts[cortexclient.KindReasoning] != 0 {
 		t.Fatalf("recovered transcript event counts = %+v", counts)
 	}
 	mu.Lock()
@@ -511,7 +497,7 @@ func TestRealLoopRecoversFromCortexdSIGKILLDuringToolTurn(t *testing.T) {
 	}
 }
 
-func TestNeocortexRecorderSurfacesBoundedQueueFailure(t *testing.T) {
+func TestNeocortexRecorderFailureDoesNotDestroyDeliveredAnswer(t *testing.T) {
 	seam, _, supervisor := realNeocortexSeam(t, "neocortex-recorder-failure")
 	adapter, err := NewNeocortexAdapter(seam)
 	if err != nil {
@@ -530,8 +516,9 @@ func TestNeocortexRecorderSurfacesBoundedQueueFailure(t *testing.T) {
 		t.Context(), "preserve this result", turnstate.Checkpoint{},
 		"must not surface without durable recording", false,
 	)
-	if !delivery.Suppressed || len(reporter.said()) != 0 {
-		t.Fatalf("failed recorder leaked delivery: result=%+v output=%v",
+	if delivery.Suppressed || len(reporter.said()) != 1 ||
+		reporter.said()[0] != "must not surface without durable recording" {
+		t.Fatalf("bookkeeping failure destroyed delivery: result=%+v output=%v",
 			delivery, reporter.said())
 	}
 }

@@ -5,7 +5,6 @@ package loop
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -217,14 +216,9 @@ func TestFinishedAnswerSurvivesTheTokenBudget(t *testing.T) {
 	}
 }
 
-// The cumulative budget is durable: tokens merged by an earlier run of the same
-// turn ride the checkpoint, so a respawn continues ONE budget instead of buying
-// a fresh one on every resume.
-//
-// The first run stops UNDER the ceiling (on the same-strategy bound), so the
-// resumed run has real budget left. It gets exactly the remainder: three more
-// generations, not the eight a fresh budget would have paid for.
-func TestTokenBudgetIsCumulativeAcrossResume(t *testing.T) {
+// Deterministic repetition stays inside one logical turn. It cannot manufacture
+// a fresh retry budget by forcing a supervisor respawn.
+func TestTokenBudgetContainsRepetitionWithoutRespawn(t *testing.T) {
 	manager := realExecManager(t)
 	workdir := t.TempDir()
 	const perCall = 40_000
@@ -286,54 +280,16 @@ func TestTokenBudgetIsCumulativeAcrossResume(t *testing.T) {
 		t.Fatal(err)
 	}
 	response, turnErr := first.Turn(t.Context(), userContent)
-	var incomplete *Incomplete
-	if !errors.As(turnErr, &incomplete) || incomplete.Phase != "tool_loop" {
+	if turnErr != nil || !response.HonestPartial {
 		t.Fatalf("first run = %+v err=%v", response, turnErr)
 	}
 	spent := response.Liveness.TokensSpent
-	if spent == 0 || spent >= budget {
-		t.Fatalf("first run spent %d of %d: it must stop UNDER the ceiling",
+	if spent < budget {
+		t.Fatalf("single logical run spent %d of %d without reaching its ceiling",
 			spent, budget)
 	}
-	dispatched := len(response.ToolEvents)
-
-	mu.Lock()
-	beforeResume := step
-	resuming = true
-	mu.Unlock()
-	resumed, err := New(
-		realMiMoGenerator(t, gateway.URL), adapter, store, config,
-		Dependencies{},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resumeResponse, resumeErr := resumed.Resume(
-		t.Context(), userContent, incomplete.Checkpoint,
-	)
-	if resumeErr != nil {
-		t.Fatalf("resume = %+v err=%v", resumeResponse, resumeErr)
-	}
-	if !resumeResponse.HonestPartial {
-		t.Fatalf("the resumed turn did not stop at the budget: %+v",
-			resumeResponse)
-	}
-	if resumeResponse.Liveness.TokensSpent < budget {
-		t.Fatalf("resumed spend = %d never reached the %d budget",
-			resumeResponse.Liveness.TokensSpent, budget)
-	}
-	mu.Lock()
-	afterResume := step
-	mu.Unlock()
-	remainder := (budget - spent + perCall - 1) / perCall
-	if generations := afterResume - beforeResume; generations != remainder {
-		t.Fatalf("the resumed turn made %d generations; carrying %d of the %d"+
-			" budget leaves exactly %d", generations, spent, budget, remainder)
-	}
-	// The evidence from before the interruption came back with the checkpoint.
-	if len(resumeResponse.ToolEvents) <= dispatched {
-		t.Fatalf("resumed evidence = %d lost the carried %d",
-			len(resumeResponse.ToolEvents), dispatched)
+	if response.ProviderCalls != (budget+perCall-1)/perCall {
+		t.Fatalf("provider calls=%d exceeded one bounded turn", response.ProviderCalls)
 	}
 }
 

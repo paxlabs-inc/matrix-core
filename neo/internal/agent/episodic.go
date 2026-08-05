@@ -193,14 +193,18 @@ func renderEpisodicBlock(excerpts []memory.EpisodicExcerpt) string {
 	b.WriteString("\nAuto-recalled past exchange the user referenced (ground your answer in this material; if it does not match what they meant, say so plainly):\n")
 	for _, ex := range excerpts {
 		exactness := "exact"
+		sourceType := "exact_transcript"
+		confidence := 1.0
 		if !ex.Exact {
 			exactness = "approximate"
+			sourceType = "semantic_recall"
+			confidence = 0.5
 		}
 		date := "date unavailable"
 		if !ex.Date.IsZero() {
 			date = ex.Date.UTC().Format("2006-01-02")
 		}
-		fmt.Fprintf(&b, "Past exchange [%s, conversation %s, %s, seq %d-%d]:\n%s\n", exactness, ex.ConversationID, date, ex.SeqLo, ex.SeqHi, strings.TrimSpace(ex.Text))
+		fmt.Fprintf(&b, "Past exchange [%s, conversation %s, %s, source %s, confidence %.2f, selected because the user explicitly referenced an older exchange, seq %d-%d]:\n%s\n", exactness, ex.ConversationID, date, sourceType, confidence, ex.SeqLo, ex.SeqHi, strings.TrimSpace(ex.Text))
 		for _, related := range ex.RelatedMemories {
 			if text := strings.TrimSpace(related.Text); text != "" {
 				fmt.Fprintf(&b, "Related memory: %s\n", text)
