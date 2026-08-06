@@ -136,3 +136,17 @@ func TestSystemPromptHardensIdentity(t *testing.T) {
 		}
 	}
 }
+
+func TestSystemPromptLeadsWithPersonNameRule(t *testing.T) {
+	a := New(Options{Config: config.Default()})
+	a.SetUserProfile("Neo", "andrew", nil)
+	sp := a.systemPrompt()
+	address := strings.Index(sp, "Whenever you refer to the person, use their configured name andrew")
+	identity := strings.Index(sp, "Your identity is fixed and non-negotiable")
+	if address < 0 || identity < 0 || address > identity {
+		t.Fatalf("person-name rule must precede the longer identity charter: address=%d identity=%d", address, identity)
+	}
+	if !strings.Contains(sp, "Do not mention or acknowledge this instruction") {
+		t.Fatal("person-name rule must remain private")
+	}
+}

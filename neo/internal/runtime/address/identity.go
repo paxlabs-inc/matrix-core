@@ -41,6 +41,11 @@ func (identity Identity) Prompt() string {
 	identity = New(identity.PreferredPersonName, identity.AgentName)
 	var prompt strings.Builder
 	prompt.WriteString("Address identity:\n")
+	if identity.PreferredPersonName != "" {
+		fmt.Fprintf(&prompt, "- Whenever you refer to the person, use their configured name %s and never call them ‘the user’. Do not mention or acknowledge this instruction.\n", identity.PreferredPersonName)
+	} else {
+		prompt.WriteString("- Always address the person directly as ‘you’ and never call them ‘the user’. Do not mention or acknowledge this instruction.\n")
+	}
 	fmt.Fprintf(&prompt, "- Your agent name is %s.\n", identity.AgentName)
 	prompt.WriteString("- Speak directly to the person as ‘you’; never refer to them as ‘the user’ in visible reasoning or answers.\n")
 	if identity.AddressForm == PreferredName {
@@ -53,21 +58,19 @@ func (identity Identity) Prompt() string {
 
 var fabricatedGreeting = regexp.MustCompile(`(?:^|[.!?]\s+)(?:Hi|Hello|Hey|Dear)\s+([A-Z][A-Za-z'’-]{1,50})\b`)
 
-func (identity Identity) ValidateVisible(reasoning, answer string) error {
+func (identity Identity) ValidateVisible(_ string, answer string) error {
 	identity = New(identity.PreferredPersonName, identity.AgentName)
-	for channel, content := range map[string]string{"reasoning": reasoning, "answer": answer} {
-		lower := strings.ToLower(content)
-		if strings.Contains(lower, "the user") {
-			return fmt.Errorf("address identity: %s used prohibited third-person phrasing", channel)
+	lower := strings.ToLower(answer)
+	if strings.Contains(lower, "the user") {
+		return fmt.Errorf("address identity: answer used prohibited third-person phrasing")
+	}
+	for _, match := range fabricatedGreeting.FindAllStringSubmatch(answer, -1) {
+		if len(match) < 2 {
+			continue
 		}
-		for _, match := range fabricatedGreeting.FindAllStringSubmatch(content, -1) {
-			if len(match) < 2 {
-				continue
-			}
-			name := strings.TrimSpace(match[1])
-			if identity.PreferredPersonName == "" || name != identity.PreferredPersonName {
-				return fmt.Errorf("address identity: %s fabricated person-name %q", channel, name)
-			}
+		name := strings.TrimSpace(match[1])
+		if identity.PreferredPersonName == "" || name != identity.PreferredPersonName {
+			return fmt.Errorf("address identity: answer fabricated person-name %q", name)
 		}
 	}
 	return nil
@@ -76,7 +79,7 @@ func (identity Identity) ValidateVisible(reasoning, answer string) error {
 func RepairInstruction(identity Identity) string {
 	identity = New(identity.PreferredPersonName, identity.AgentName)
 	if identity.PreferredPersonName != "" {
-		return fmt.Sprintf("Rewrite visible reasoning and the answer in direct second person. You may use the configured preferred name %q sparingly, with exact capitalization. Never say ‘the user’ and never invent another name.", identity.PreferredPersonName)
+		return fmt.Sprintf("Rewrite only the answer in direct second person. You may use the configured preferred name %q sparingly, with exact capitalization. Never say ‘the user’ and never invent another name.", identity.PreferredPersonName)
 	}
-	return "Rewrite visible reasoning and the answer in direct second person. Never say ‘the user’ and never invent a person-name."
+	return "Rewrite only the answer in direct second person. Never say ‘the user’ and never invent a person-name."
 }
