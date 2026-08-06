@@ -536,14 +536,15 @@ func TestCircuitBreakerStopsInterleavedSignatureChurn(t *testing.T) {
 		t.Fatalf("the tool budget, not the breaker, ended the turn: %d",
 			dispatched)
 	}
-	// The PROVIDER phase is what caught it: the run stopped before asking the
-	// model for one more generation, so the trip cost no extra tokens.
+	// The provider phase catches the churn, then the canonical runtime spends
+	// its reserved synthesis generation. MiMo performs one bounded conformance
+	// retry when the scripted provider ignores the tools-disabled request.
 	mu.Lock()
 	generations := step
 	mu.Unlock()
-	if generations != dispatched {
-		t.Fatalf("provider generations = %d dispatches = %d: the trip was not"+
-			" caught at the provider phase", generations, dispatched)
+	if generations != dispatched+2 {
+		t.Fatalf("provider generations = %d dispatches = %d: want the breaker"+
+			" generation plus the bounded synthesis attempt", generations, dispatched)
 	}
 }
 
@@ -616,8 +617,8 @@ func TestCircuitBreakerRefusesInsideABatchAndSurvivesResume(t *testing.T) {
 	mu.Lock()
 	afterTurn := calls
 	mu.Unlock()
-	if afterTurn != 1 {
-		t.Fatalf("provider generations = %d want 1", afterTurn)
+	if afterTurn != 3 {
+		t.Fatalf("provider generations = %d want tool batch plus bounded synthesis", afterTurn)
 	}
 
 	if response.Checkpoint == nil {

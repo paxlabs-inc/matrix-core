@@ -57,11 +57,17 @@ func TestLocalChronosAPIRealStoreCapabilityAndDelivery(t *testing.T) {
 	mux.HandleFunc("/chronos/v1/alarms/", state.handleLocalChronosAlarm)
 	api := httptest.NewServer(mux)
 	defer api.Close()
-	runChronosBridgeCall(t, api.URL, capability, "alarm_set", map[string]interface{}{
-		"kind": "cron", "cron_expr": "0 */6 * * *", "timezone": "UTC",
+	automatrixAlarm := map[string]interface{}{
+		"kind": "cron", "cron_expr": "@every 45m", "timezone": "UTC",
 		"wake_message": "run automatrix work", "idempotency_key": "automatrix-reconcile",
 		"label": "Automatrix",
-	})
+	}
+	runChronosBridgeCall(t, api.URL, capability, "alarm_set", automatrixAlarm)
+	// Neo sends the same stable alarm_set on every process boot. The local
+	// decoder derives a different next_fire_at each time; that must deduplicate
+	// to the durable cron alarm instead of returning an HTTP 409 and crashing
+	// the co-located runtime.
+	runChronosBridgeCall(t, api.URL, capability, "alarm_set", automatrixAlarm)
 
 	unauthorized, err := http.Post(api.URL+"/chronos/v1/alarms", "application/json", bytes.NewBufferString(`{}`))
 	if err != nil {

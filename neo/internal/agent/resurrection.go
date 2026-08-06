@@ -404,19 +404,6 @@ func (a *Agent) chatResurrectionWithInput(
 		a.runtimeLast = runtimeBestEffort(response)
 	}
 	if turnErr == nil {
-		if response.HonestPartial {
-			a.runtimeIncomplete = &loop.IncompleteRecord{
-				TurnID: turnID, ConversationID: conversationID,
-				Phase: "honest_partial", AttemptCount: response.ProviderCalls,
-				RecoveryAdvice: "resume_from_saved_partial",
-				Repairs:        response.Repairs,
-			}
-			a.runtimeFailure = delegate.ClassDeterministic
-			return fmt.Errorf(
-				"%w: the bounded runtime delivered saved partial work",
-				ErrIncomplete,
-			)
-		}
 		a.runtimeFailure = delegate.ClassNone
 		return nil
 	}

@@ -44,11 +44,12 @@ const (
 )
 
 const (
-	textualToolRepairPrompt = "The previous provider response used invalid textual tool-call markup. Do not repeat or quote that markup. Either emit a native structured tool call that satisfies the active JSON Schema, or return a normal final answer with no tool-call tags."
-	textualToolFinalPrompt  = "Tool use is now disabled because repeated responses used unsafe tool-call markup. Give the user an honest ordinary-text answer from the available conversation and evidence. State any action you could not complete. Do not emit or quote tool names, tool-call tags, function tags, parameter tags, XML, JSON, or code fences."
-	expectationRepairPrompt = "The previous uncertain network/search probe was not executed because it omitted its non-empty expect hypothesis. Resubmit that probe with a one-line predicted outcome shape, or answer normally without tools. Deterministic file, mutation, and shell calls do not use expect."
-	expectationFinalPrompt  = "Tool use is now disabled because repeated uncertain probes omitted their required expect hypothesis. Give the user an honest ordinary-text answer from the available conversation and evidence, and state any action you could not complete. Do not call tools."
-	emptyFinalRepairPrompt  = "The previous response ended without a user-facing answer. Answer the original user request now as ordinary text using the available conversation and tool results. Do not call tools, emit tool-call markup, or return an empty response."
+	textualToolRepairPrompt      = "The previous provider response used invalid textual tool-call markup. Do not repeat or quote that markup. Either emit a native structured tool call that satisfies the active JSON Schema, or return a normal final answer with no tool-call tags."
+	textualToolFinalPrompt       = "Tool use is now disabled because repeated responses used unsafe tool-call markup. Give the user an honest ordinary-text answer from the available conversation and evidence. State any action you could not complete. Do not emit or quote tool names, tool-call tags, function tags, parameter tags, XML, JSON, or code fences."
+	expectationRepairPrompt      = "The previous uncertain network/search probe was not executed because it omitted its non-empty expect hypothesis. Resubmit that probe with a one-line predicted outcome shape, or answer normally without tools. Deterministic file, mutation, and shell calls do not use expect."
+	expectationFinalPrompt       = "Tool use is now disabled because repeated uncertain probes omitted their required expect hypothesis. Give the user an honest ordinary-text answer from the available conversation and evidence, and state any action you could not complete. Do not call tools."
+	emptyFinalRepairPrompt       = "The previous response ended without a user-facing answer. Answer the original user request now as ordinary text using the available conversation and tool results. Do not call tools, emit tool-call markup, or return an empty response."
+	honestPartialSynthesisPrompt = "Tool execution is finished for this turn. Produce the most useful evidence-backed answer possible from the completed results already in the conversation. Clearly separate verified findings from unresolved gaps, state any limitations precisely, and answer the original request directly. Do not call tools, discuss internal control flow, or replace the answer with counts of completed and failed operations."
 )
 
 const (
@@ -752,10 +753,7 @@ func (loop *Loop) runTurn(
 			}
 			protocolCorruption := errors.Is(generateErr, provider.ErrToolProtocol) ||
 				errors.Is(generateErr, ErrTextualToolMarkup)
-			kind := converge.FailureProcessUnusable
-			if protocolCorruption {
-				kind = converge.FailureProviderCorruption
-			}
+			kind := generationFailureKind(generateErr)
 			convergenceDecision := state.decide(kind, converge.Fingerprint{
 				Operation: "provider.generate", Phase: "provider",
 				FailureLayer: "provider", NormalizedCause: generateErr.Error(),
@@ -772,6 +770,19 @@ func (loop *Loop) runTurn(
 				}
 				if err := loop.save(ctx, &checkpoint, state); err != nil {
 					return response, err
+				}
+				continue
+			}
+			if kind == converge.FailureTransient &&
+				convergenceDecision.Retry && ctx.Err() == nil {
+				if err := loop.save(ctx, &checkpoint, state); err != nil {
+					return response, err
+				}
+				if !waitForRetry(ctx, convergenceDecision.Backoff) {
+					return response, loop.incomplete(
+						context.WithoutCancel(ctx), "provider", checkpoint, response,
+						started, "resume_from_checkpoint", ctx.Err(),
+					)
 				}
 				continue
 			}
@@ -956,9 +967,8 @@ func (loop *Loop) runTurn(
 			if loop.gate != nil {
 				decision, gateErr := loop.gate.CheckCompletion(ctx)
 				if gateErr != nil {
-					return response, loop.incomplete(
-						ctx, "completion_gate", checkpoint, response,
-						started, "resume_completion_check", gateErr,
+					return loop.deliverHonestPartial(
+						ctx, userContent, checkpoint, response, state, "",
 					)
 				}
 				if !decision.Ready && decision.Stop {
@@ -977,10 +987,8 @@ func (loop *Loop) runTurn(
 					})
 					if state.CompletionDefers >=
 						loop.config.CompletionDeferrals || convergenceDecision.Action == converge.ActionDegrade {
-						return response, loop.incomplete(
-							ctx, "evidence_convergence",
-							checkpoint, response, started,
-							"resume_next_verified_work_item", nil,
+						return loop.deliverHonestPartial(
+							ctx, userContent, checkpoint, response, state, "",
 						)
 					}
 					state.CompletionDefers++
@@ -1842,20 +1850,146 @@ func (loop *Loop) deliverHonestPartial(
 	boundary string,
 ) (Response, error) {
 	response.Repairs = state.repairDiagnostics()
-	content := finalAnswerHonestFallback(response.ToolEvents)
-	if boundary = strings.TrimSpace(boundary); boundary != "" {
-		content = boundary + " " + content
-	}
-	generation := protocol.NormalizedGeneration{
-		Content: content, FinishReason: protocol.FinishStop,
-		Usage: loop.usage.Snapshot().Usage,
+	generation, streamed := loop.synthesizeHonestPartial(
+		ctx, userContent, checkpoint, &response, &state,
+	)
+	if strings.TrimSpace(generation.Content) == "" {
+		content := finalAnswerHonestFallback(response.ToolEvents)
+		if boundary = strings.TrimSpace(boundary); boundary != "" {
+			content = boundary + " " + content
+		}
+		generation = protocol.NormalizedGeneration{
+			Content: content, FinishReason: protocol.FinishStop,
+			Usage: loop.usage.Snapshot().Usage,
+		}
+		streamed = false
 	}
 	response.HonestPartial = true
-	response.ContentStreamed = false
-	response.ReasoningStreamed = false
 	return loop.deliverAccepted(
-		ctx, userContent, checkpoint, response, state, generation, false,
+		ctx, userContent, checkpoint, response, state, generation, streamed,
 	)
+}
+
+func (loop *Loop) synthesizeHonestPartial(
+	ctx context.Context,
+	userContent string,
+	checkpoint turnstate.Checkpoint,
+	response *Response,
+	state *cursor,
+) (protocol.NormalizedGeneration, bool) {
+	if response == nil || state == nil || ctx.Err() != nil {
+		return protocol.NormalizedGeneration{}, false
+	}
+	if candidate := response.Generation; len(candidate.ToolCalls) == 0 &&
+		partialAnswerAddressesRequest(
+			userContent, candidate.Content, response.ToolEvents,
+		) {
+		candidate.Content = strings.TrimSpace(candidate.Content)
+		candidate.ToolCalls = nil
+		return candidate, response.ContentStreamed
+	}
+	messages, manifest := composeRequestMessages(
+		loop.config.ConversationID, loop.config.SystemPrompt,
+		checkpoint.Messages, honestPartialSynthesisPrompt, "",
+	)
+	if store, ok := loop.store.(ContextManifestStore); ok {
+		if err := store.SaveContextManifest(
+			ctx, loop.config.TurnID, uint64(checkpoint.Step), manifest,
+		); err != nil {
+			return protocol.NormalizedGeneration{}, false
+		}
+	}
+	request := protocol.GenerationRequest{
+		Model: loop.config.Model, Messages: messages, Tools: nil,
+		MaxOutputTokens: loop.config.MaxOutputTokens,
+		Stream:          loop.stream != nil,
+	}
+	request.Messages = appendCodingCheckpoint(request.Messages, checkpoint.Coding)
+	if loop.stream != nil {
+		loop.stream.Begin(uint64(checkpoint.Step))
+	}
+	generation, streamed, err := loop.generate(ctx, request)
+	checkpoint.ProviderAttempts++
+	response.ProviderCalls = checkpoint.ProviderAttempts
+	response.Usage = loop.usage.Snapshot().Usage
+	state.InputTokens = max(state.InputTokens, response.Usage.PromptTokens)
+	state.OutputTokens = max(state.OutputTokens, response.Usage.CompletionTokens)
+	state.TokensSpent = max(
+		state.TokensSpent,
+		state.InputTokens+state.OutputTokens,
+	)
+	if err != nil {
+		if streamed && loop.observer != nil {
+			_ = loop.retractAttempt(context.WithoutCancel(ctx))
+		}
+		return protocol.NormalizedGeneration{}, false
+	}
+	content := strings.TrimSpace(generation.Content)
+	if content == "" || len(generation.ToolCalls) > 0 ||
+		rejectTextualToolMarkup(content) != nil ||
+		!partialAnswerAddressesRequest(
+			userContent, content, response.ToolEvents,
+		) {
+		if streamed && loop.observer != nil {
+			_ = loop.retractAttempt(context.WithoutCancel(ctx))
+		}
+		return protocol.NormalizedGeneration{}, false
+	}
+	generation.Content = content
+	generation.ToolCalls = nil
+	generation.FinishReason = protocol.FinishStop
+	return generation, streamed
+}
+
+func partialAnswerAddressesRequest(
+	request string,
+	answer string,
+	events []ToolExecution,
+) bool {
+	answer = strings.TrimSpace(answer)
+	if answer == "" {
+		return false
+	}
+	if accepted, _ := finalAnswerAddressesRequest(
+		request, answer, events,
+	); !accepted {
+		return false
+	}
+	if !requestsResearchAnswer(request) {
+		return true
+	}
+	return len(strings.Fields(answer)) >= 20 &&
+		sharesRequestSubject(request, answer)
+}
+
+func generationFailureKind(err error) converge.FailureKind {
+	switch {
+	case errors.Is(err, provider.ErrToolProtocol),
+		errors.Is(err, ErrTextualToolMarkup):
+		return converge.FailureProviderCorruption
+	case provider.IsFailureKind(err, provider.FailureRateLimited),
+		provider.IsFailureKind(err, provider.FailureServer),
+		provider.IsFailureKind(err, provider.FailureTransport),
+		provider.IsFailureKind(err, provider.FailureIdle),
+		errors.Is(err, context.DeadlineExceeded):
+		return converge.FailureTransient
+	default:
+		return converge.FailureProcessUnusable
+	}
+}
+
+func waitForRetry(ctx context.Context, delay time.Duration) bool {
+	if delay <= 0 {
+		return ctx.Err() == nil
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
+	}
 }
 
 func (loop *Loop) save(

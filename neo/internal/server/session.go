@@ -723,6 +723,17 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 			err = s.agent.Chat(withRun(actx, r), prompt)
 		}
 		acancel()
+		if r.closed {
+			s.appendSupervisorEvent(ctx, r, attempt, "complete", "")
+			return task.StatusDone
+		}
+		if r.narrated && strings.TrimSpace(r.lastText) != "" {
+			s.finishRun(
+				r, runrecord.StatusCompleted, r.lastText, "", nil, false,
+			)
+			s.appendSupervisorEvent(ctx, r, attempt, "complete", "")
+			return task.StatusDone
+		}
 
 		// The agent carries the shared failure class of this attempt's most
 		// recent classified tool failure, so the supervisor reads the SAME

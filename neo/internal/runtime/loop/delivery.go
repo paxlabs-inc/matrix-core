@@ -58,12 +58,6 @@ func (choke *DeliveryChoke) Deliver(
 			if err := reliable.SayResult(scrubbed, honestPartial); err != nil {
 				deliveryError = strings.TrimSpace(err.Error())
 			}
-		} else if honestPartial {
-			if reporter, ok := choke.Reporter.(HonestPartialReporter); ok {
-				reporter.SayHonestPartial(scrubbed)
-			} else {
-				choke.Reporter.Say(scrubbed, false)
-			}
 		} else {
 			choke.Reporter.Say(scrubbed, false)
 		}

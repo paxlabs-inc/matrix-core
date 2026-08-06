@@ -372,7 +372,7 @@ func TestTokenBudgetContainsRepetitionWithoutRespawn(t *testing.T) {
 		t.Fatalf("single logical run spent %d of %d without reaching its ceiling",
 			spent, budget)
 	}
-	if response.ProviderCalls != (budget+perCall-1)/perCall {
+	if response.ProviderCalls != (budget+perCall-1)/perCall+1 {
 		t.Fatalf("provider calls=%d exceeded one bounded turn", response.ProviderCalls)
 	}
 }

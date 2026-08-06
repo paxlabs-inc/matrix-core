@@ -425,11 +425,11 @@ func TestResurrectionRuntimeSurfacesHonestPartialAsTypedIncomplete(
 	err := agent.Chat(
 		t.Context(), "Produce a complete bounded resurrection result.",
 	)
-	if !errors.Is(err, ErrIncomplete) {
-		t.Fatalf("Chat() error = %v, want ErrIncomplete", err)
+	if err != nil {
+		t.Fatalf("a delivered bounded result must not regress to ErrIncomplete: %v", err)
 	}
-	if taskCalls.Load() != 2 {
-		t.Fatalf("bounded repair calls = %d, want 2", taskCalls.Load())
+	if taskCalls.Load() != 3 {
+		t.Fatalf("bounded repair calls = %d, want two repairs plus reserved synthesis", taskCalls.Load())
 	}
 	if partial := reporter.lastPartial(); !strings.Contains(
 		partial, "will not claim",

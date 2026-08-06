@@ -6,6 +6,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -31,11 +32,17 @@ func detstopModelServer(t *testing.T, narration string, calls *int, mu *sync.Mut
 		fmt.Fprintf(w, "data: %s\n", b)
 	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
 		mu.Lock()
 		idx := *calls
 		*calls++
 		mu.Unlock()
 		w.Header().Set("Content-Type", "text/event-stream")
+		if strings.Contains(string(body), "Tool execution is finished for this turn") {
+			frame(w, map[string]any{"role": "assistant", "content": "The brand-kit site could not be fully inspected because the requested file was unavailable. The existing work remains intact; the next useful step is to confirm the project path, then continue the visual review from that verified location."}, "stop")
+			fmt.Fprint(w, "data: [DONE]\n")
+			return
+		}
 		if idx == 0 {
 			frame(w, map[string]any{"role": "assistant", "content": narration}, "")
 			tc := map[string]any{"index": 0, "id": "call_read", "type": "function",
@@ -76,8 +83,8 @@ func TestDeterministicStopIsHonestAndNeverRepastes(t *testing.T) {
 	r := s.dispatch("pick back up on the brand kit site", false)
 	events := collectUntilClosed(t, e, r.id, 20*time.Second)
 
-	if !hasTerminal(events, "failed") {
-		t.Fatalf("the deterministic stop must still terminate the stream; events: %+v", events)
+	if !hasTerminal(events, "completed") {
+		t.Fatalf("the evidence-backed synthesis must complete the stream; events: %+v", events)
 	}
 	text, ok := closingTurn(events)
 	if !ok {
@@ -86,9 +93,9 @@ func TestDeterministicStopIsHonestAndNeverRepastes(t *testing.T) {
 	if strings.Contains(text, "permission") || strings.Contains(text, "couldn't complete") {
 		t.Fatalf("an unproductive-cap death must not read as a permission/limit blocker, got %q", text)
 	}
-	if !strings.Contains(text, "will not claim") &&
-		!strings.Contains(text, "couldn't fully verify") {
-		t.Fatalf("the closing turn should refuse a false completion claim, got %q", text)
+	if !strings.Contains(text, "brand-kit site") ||
+		!strings.Contains(text, "could not be fully inspected") {
+		t.Fatalf("the closing turn must synthesize the preserved evidence, got %q", text)
 	}
 	if strings.Contains(text, narration) {
 		t.Fatalf("the closing turn repasted rejected provisional text:\n%q", text)
