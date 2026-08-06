@@ -80,13 +80,6 @@ func finalAnswerAddressesRequestWithHistory(
 		return false,
 			"a research turn ended without a substantive evidence-backed answer"
 	}
-	if !strings.Contains(lower, "http://") &&
-		!strings.Contains(lower, "https://") &&
-		!strings.Contains(lower, "](") &&
-		!statesResearchLimitation(lower) {
-		return false,
-			"a completed research answer omitted sources or an explicit evidence limitation"
-	}
 	return true, ""
 }
 
@@ -313,17 +306,4 @@ func finalAnswerStopword(token string) bool {
 	default:
 		return false
 	}
-}
-
-func statesResearchLimitation(answer string) bool {
-	for _, marker := range []string{
-		"could not verify", "couldn't verify", "unable to verify",
-		"could not access", "couldn't access", "no reliable source",
-		"no relevant result",
-	} {
-		if strings.Contains(answer, marker) {
-			return true
-		}
-	}
-	return false
 }
