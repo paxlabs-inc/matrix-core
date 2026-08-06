@@ -111,7 +111,8 @@ func TestScheduledWakeRedeliveryCreatesOneTurnAndOneMessage(t *testing.T) {
 	}
 	var turns, occurrences, transcriptRows int
 	if err := store.readDB.QueryRow(
-		`SELECT COUNT(*) FROM turn_state WHERE turn_id = ?`, turnID,
+		`SELECT COUNT(*) FROM canonical_records
+		 WHERE logical_turn_id = ? AND record_type = 'turn' AND record_key = 'current'`, turnID,
 	).Scan(&turns); err != nil {
 		t.Fatal(err)
 	}

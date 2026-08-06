@@ -35,7 +35,7 @@ func (OpenAIAdapter) TranslateRequest(request protocol.GenerationRequest) (json.
 	}
 	type openAIRequestMessage struct {
 		Role       protocol.MessageRole `json:"role"`
-		Content    string               `json:"content"`
+		Content    any                  `json:"content"`
 		Reasoning  string               `json:"reasoning_content,omitempty"`
 		Name       string               `json:"name,omitempty"`
 		ToolCallID string               `json:"tool_call_id,omitempty"`
@@ -54,9 +54,19 @@ func (OpenAIAdapter) TranslateRequest(request protocol.GenerationRequest) (json.
 	}
 	messages := make([]openAIRequestMessage, 0, len(request.Messages))
 	for _, message := range request.Messages {
+		content := any(message.Content)
+		if message.Role == protocol.RoleUser &&
+			strings.TrimSpace(message.AudioDataURL) != "" {
+			content = []map[string]any{
+				{"type": "text", "text": message.Content},
+				{"type": "input_audio", "input_audio": map[string]string{
+					"data": message.AudioDataURL,
+				}},
+			}
+		}
 		translated := openAIRequestMessage{
 			Role:       message.Role,
-			Content:    message.Content,
+			Content:    content,
 			Reasoning:  message.Reasoning,
 			Name:       message.Name,
 			ToolCallID: message.ToolCallID,

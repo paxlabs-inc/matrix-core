@@ -129,3 +129,21 @@ func TestInMemoryFallbackToggles(t *testing.T) {
 		t.Fatal("in-memory store must reflect the toggle")
 	}
 }
+
+func TestTaskCounterUsesConfiguredUserTimezone(t *testing.T) {
+	s := Open(t.TempDir())
+	if err := s.SetTimezone("Pacific/Honolulu"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.RecordTaskStarted(); err != nil {
+		t.Fatal(err)
+	}
+	location, _ := time.LoadLocation("Pacific/Honolulu")
+	state := s.View()
+	if state.Timezone != "Pacific/Honolulu" || state.TasksDay != time.Now().In(location).Format("2006-01-02") {
+		t.Fatalf("state=%+v", state)
+	}
+	if err := s.SetTimezone("Not/A_Zone"); err == nil {
+		t.Fatal("invalid timezone was accepted")
+	}
+}

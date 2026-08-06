@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/memory"
@@ -35,7 +36,12 @@ func TestDiagSelfModelReturnsRealResidentSummaryAndFailurePatterns(t *testing.T)
 	if _, err := pager.WriteStructuralSelf(ctx, memory.StructuralSelf{Summary: summary, Scope: []string{"neo", "Neocortex"}, ContextLimit: 131072}); err != nil {
 		t.Fatalf("WriteStructuralSelf: %v", err)
 	}
-	if _, err := pager.WriteFailurePattern(ctx, pattern, []string{"matrix://Neocortex/Event/death#1"}); err != nil {
+	if _, err := pager.WriteFailureLesson(ctx, memory.FailureLesson{
+		Statement:   pattern,
+		DerivedFrom: []string{"matrix://Neocortex/Event/death#1", "matrix://Neocortex/Event/death#2"},
+		Scope:       "diagnostic test", Usefulness: "exercise the inspection surface",
+		Confirmed: true, ExpiresAt: time.Now().UTC().Add(30 * 24 * time.Hour),
+	}); err != nil {
 		t.Fatalf("WriteFailurePattern: %v", err)
 	}
 

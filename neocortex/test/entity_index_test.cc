@@ -57,6 +57,22 @@ neocortex::log::Frame Assertion(std::uint64_t lsn,
   };
 }
 
+neocortex::log::Frame Operational(std::uint64_t lsn,
+                                  std::string_view content) {
+  const auto bytes = Bytes(content);
+  return neocortex::log::Frame{
+      .header = neocortex::log::FrameHeader{
+          .lsn = lsn,
+          .kind = neocortex::log::EventKind::kToolResult,
+          .wall_timestamp_ns = static_cast<std::int64_t>(lsn) * 1000,
+          .actor = 73,
+          .conversation = {},
+      },
+      .sealed_payload = neocortex::test::BuildEvent(
+          neocortex::log::EventKind::kToolResult, lsn, bytes),
+  };
+}
+
 bool HasHit(std::span<const neocortex::proj::EntityHit> hits,
             std::uint64_t lsn, neocortex::proj::EntityKind kind,
             std::string_view canonical) {
@@ -131,8 +147,10 @@ int TestGuaranteedRecallAndReplay(const std::filesystem::path& path) {
          "550e8400-e29b-41d4-a716-446655440000."));
   frames.push_back(Assertion(
       3, "The durable belief references belief.example.net exactly."));
+  frames.push_back(Operational(
+      4, "private-ops.example.net must never enter semantic lookup"));
   for (std::uint64_t index = 0; index < 96; ++index) {
-    const auto lsn = index + 4U;
+    const auto lsn = index + 5U;
     const auto content =
         std::string("Record https://entity") + std::to_string(index) +
         ".example.com/items/item_" + std::to_string(index) +
@@ -183,12 +201,16 @@ int TestGuaranteedRecallAndReplay(const std::filesystem::path& path) {
               "grace hopper")) {
     return Fail("stored identifier or entity did not receive guaranteed recall");
   }
+  auto operational = Query(*store, "private-ops.example.net");
+  if (!operational || !operational->empty()) {
+    return Fail("operational record became an entity hit before rebuild");
+  }
 
   for (std::uint64_t index = 0; index < 96; ++index) {
     const auto domain_query =
         std::string("entity") + std::to_string(index) + ".example.com";
     auto hits = Query(*store, domain_query);
-    if (!hits || !HasHit(*hits, index + 4U,
+      if (!hits || !HasHit(*hits, index + 5U,
                          neocortex::proj::EntityKind::kDomain,
                          domain_query)) {
       return Fail("property corpus violated verbatim identifier recall");
@@ -202,6 +224,10 @@ int TestGuaranteedRecallAndReplay(const std::filesystem::path& path) {
   if (!original || !replayed || !replayed->complete || !rebuilt ||
       *original != *rebuilt) {
     return Fail("entity projection replay was not byte-identical");
+  }
+  operational = Query(*store, "private-ops.example.net");
+  if (!operational || !operational->empty()) {
+    return Fail("operational record became an entity hit after rebuild");
   }
   return 0;
 }

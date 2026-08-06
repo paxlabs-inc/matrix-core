@@ -33,10 +33,9 @@ func TestReporterObserverSuppressesToolNarrationAndEmitsMilestone(t *testing.T) 
 	}}); err != nil {
 		t.Fatal(err)
 	}
-	for _, delta := range reporter.deltas {
-		if delta.Channel == "content" || delta.Text != "" {
-			t.Fatalf("model-authored tool narration escaped: %+v", reporter.deltas)
-		}
+	if len(reporter.deltas) != 2 || reporter.deltas[0].Channel != "content" ||
+		reporter.deltas[0].Text == "" || reporter.deltas[1].Channel != "retraction" {
+		t.Fatalf("provisional narration was not immediately emitted then retracted: %+v", reporter.deltas)
 	}
 	if len(reporter.milestones) != 1 || reporter.milestones[0] != "Updating project files." {
 		t.Fatalf("milestones = %#v", reporter.milestones)

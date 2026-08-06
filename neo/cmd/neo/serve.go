@@ -25,6 +25,7 @@ import (
 	"syscall"
 	"time"
 
+	machineidentity "matrix/machine/identity"
 	"matrix/neo/internal/agent"
 	"matrix/neo/internal/automatrixlog"
 	"matrix/neo/internal/automatrixsettings"
@@ -103,6 +104,13 @@ func runServe(args []string) {
 	// best-effort degrade path. The wrapped keyfile lives beside /data (the
 	// Neocortex root's parent). The hermetic sandbox preset runs plaintext.
 	vaultDataDir := filepath.Dir(cfg.DataRoot)
+	machineDescriptor, err := machineidentity.Ensure(
+		context.Background(), machineidentity.RuntimeConfig(vaultDataDir),
+	)
+	if err != nil {
+		fatal("machine identity: %v", err)
+	}
+	fmt.Fprintf(os.Stdout, "neo: machine identity verified did=%s gene=%s\n", machineDescriptor.DID, machineDescriptor.Gene)
 	vaultUser := cfg.ActorDID
 	if vaultUser == "" {
 		vaultUser = os.Getenv("MATRIX_USER_ID")
@@ -339,7 +347,13 @@ func runServe(args []string) {
 	switch cfg.AgentRuntime {
 	case "", "legacy":
 		cfg.AgentRuntime = "legacy"
+		fmt.Println("  runtime selector: legacy is deprecated; using canonical")
 	case "resurrection":
+		fmt.Println("  runtime selector: resurrection is deprecated; using canonical")
+	default:
+		fatal("unsupported NEO_RUNTIME %q (expected legacy or resurrection)", cfg.AgentRuntime)
+	}
+	{
 		statePath := strings.TrimSpace(os.Getenv("NEO_TURNSTATE_PATH"))
 		if statePath == "" {
 			statePath = filepath.Join(vaultDataDir, "neo-turnstate.db")
@@ -350,9 +364,7 @@ func runServe(args []string) {
 		if err != nil {
 			fatal("cannot start resurrection runtime: %v", err)
 		}
-		fmt.Printf("  runtime: resurrection (%s)\n", statePath)
-	default:
-		fatal("unsupported NEO_RUNTIME %q (expected legacy or resurrection)", cfg.AgentRuntime)
+		fmt.Printf("  runtime: canonical (%s)\n", statePath)
 	}
 
 	engine := server.NewEngine(server.EngineOptions{
@@ -396,6 +408,7 @@ func runServe(args []string) {
 		DojoBridgeToken: dojoBridgeToken,
 		BackendURL:      backendURL,
 		BackendToken:    os.Getenv("NEO_DAEMON_TOKEN"),
+		ProfilePath:     filepath.Join(vaultDataDir, "neo-profile.vault"),
 		Vault:           vaultSess,
 	})
 	var codingCredentialSource *codingworker.GatewayCredentialSource
@@ -515,6 +528,9 @@ func runServe(args []string) {
 	srv, err := server.New(engine, backendURL)
 	if err != nil {
 		fatal("build server: %v", err)
+	}
+	if err := engine.ReconcileAutomatrix(context.Background()); err != nil {
+		fatal("automatrix schedule reconciliation: %v", err)
 	}
 
 	httpSrv := &http.Server{Addr: *addr, Handler: srv.Handler()}

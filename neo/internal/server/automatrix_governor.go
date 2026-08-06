@@ -140,15 +140,34 @@ func (g *automatrixGovernor) CancelAlarm(ctx context.Context) error {
 	return g.settings.SetEnabled(false, "")
 }
 
-// Reschedule is the per-fire jittered next-fire hook (req 4.3). The recurring
-// Chronos cron alarm is the durable timing backbone and fires on its base
-// cadence regardless; updating a specific next-fire instant requires a Chronos
-// alarm-mutation capability the current MCP surface does not expose, so this is
-// a deliberate no-op here — the jitter/skip DECISION still runs in the engine
-// (it just does not yet rewrite the DB's next-fire). Honest partial, tracked
-// for a follow-up once Chronos exposes an alarm-update tool.
-func (g *automatrixGovernor) Reschedule(context.Context, time.Time) error {
-	return nil
+// Reschedule persists the per-fire jitter decision into the authoritative
+// local alarm row through the Chronos alarm_reschedule tool.
+func (g *automatrixGovernor) Reschedule(ctx context.Context, next time.Time) error {
+	alarmID := g.settings.AlarmID()
+	if alarmID == "" {
+		return fmt.Errorf("automatrix: cannot reschedule without an owned alarm")
+	}
+	controller, ok := g.alarms.(interface {
+		Reschedule(context.Context, string, time.Time) error
+	})
+	if !ok {
+		return fmt.Errorf("automatrix: Chronos controller does not support reschedule")
+	}
+	return controller.Reschedule(ctx, alarmID, next.UTC())
+}
+
+func (g *automatrixGovernor) Reconcile(ctx context.Context) error {
+	if !g.settings.Enabled() {
+		return nil
+	}
+	alarmID, err := g.alarms.Set(ctx, AutomatrixAlarmSpec{
+		ConversationID: g.convID, CronExpr: g.cronExpr,
+		WakeMessage: agent.AutomatrixWakeMessage, IdempotencyKey: g.idemKey, Label: g.label,
+	})
+	if err != nil {
+		return fmt.Errorf("automatrix: reconcile alarm: %w", err)
+	}
+	return g.settings.SetEnabled(true, alarmID)
 }
 
 // SetEnabled is the control-surface toggle (task 6.1, req 7.5): enabling creates
@@ -192,6 +211,10 @@ func (g *automatrixGovernor) SettingsView() automatrixsettings.State {
 	return g.settings.View()
 }
 
+func (g *automatrixGovernor) SetTimezone(timezone string) error {
+	return g.settings.SetTimezone(timezone)
+}
+
 // --- production Chronos alarm controller (MCP alarm_set / alarm_cancel) ---
 
 // mcpAlarmController issues the Chronos alarm lifecycle through Neo's MCP tool
@@ -215,8 +238,9 @@ func newMCPAlarmController(tm *tools.Manager) *mcpAlarmController {
 // regardless of the alias prefix Neo assigns (funcName is alias+name). Resolving
 // by suffix keeps the controller robust to manifest aliasing.
 const (
-	alarmSetToolSuffix    = "alarm_set"
-	alarmCancelToolSuffix = "alarm_cancel"
+	alarmSetToolSuffix        = "alarm_set"
+	alarmCancelToolSuffix     = "alarm_cancel"
+	alarmRescheduleToolSuffix = "alarm_reschedule"
 )
 
 func (c *mcpAlarmController) Set(ctx context.Context, spec AutomatrixAlarmSpec) (string, error) {
@@ -264,6 +288,23 @@ func (c *mcpAlarmController) Cancel(ctx context.Context, alarmID string) error {
 	}
 	if isErr {
 		return fmt.Errorf("automatrix: alarm_cancel failed: %s", strings.TrimSpace(out))
+	}
+	return nil
+}
+
+func (c *mcpAlarmController) Reschedule(ctx context.Context, alarmID string, next time.Time) error {
+	fn, ok := c.resolveTool(alarmRescheduleToolSuffix)
+	if !ok {
+		return fmt.Errorf("automatrix: chronos %q tool not available", alarmRescheduleToolSuffix)
+	}
+	out, isErr, err := c.tools.Dispatch(ctx, fn, map[string]interface{}{
+		"id": alarmID, "next_fire_at": next.UTC().Format(time.RFC3339Nano),
+	})
+	if err != nil {
+		return err
+	}
+	if isErr {
+		return fmt.Errorf("automatrix: alarm_reschedule failed: %s", strings.TrimSpace(out))
 	}
 	return nil
 }

@@ -3,9 +3,9 @@
 
 // capability.go renders the resident capability surface (epistemic-core
 // req.2): the FULL load-bearing facts of the agent's own architecture —
-// external API surface, architectural is/is-not facts, tool inventory with
-// one-line semantics, and accumulated failure patterns — generated from the
-// self-model artifact and the live tool schemas, never hand-written prose.
+// external API surface, architectural is/is-not facts, and accumulated failure
+// patterns — generated from the self-model artifact. Callable tools are sent
+// only as structured provider schemas, never duplicated here as prose.
 // It lives in the byte-stable system prefix so a false self-premise ("I have
 // an OpenAI-compatible API") collides with the resident truth at the moment
 // it would form, instead of one recallSelf tool call away (which, at
@@ -42,9 +42,7 @@ func capabilityUnknown(what string) string {
 
 // renderCapabilitySurface renders the resident capability-surface section of
 // the stable prefix. Byte-stable per agent: it reads only construction-time
-// state (a.capability, a.allSchemas — the full bound surface fixed at New, never
-// the per-turn O1-selected a.schemas), so it is byte-identical across every step
-// AND every turn, even under O1ConstrainTools (req.2.4).
+// state, so it is byte-identical across every step and turn.
 func (a *Agent) renderCapabilitySurface() string {
 	cs := a.capability
 	if cs == nil {
@@ -89,36 +87,7 @@ func (a *Agent) renderCapabilitySurface() string {
 		}
 	}
 
-	b.WriteString("Your tools (the complete inventory — a capability not listed here is one you do NOT have):\n")
-	wrote := false
-	// Render the CONSTRUCTION-TIME full surface (allSchemas), not the per-turn O1-
-	// selected subset (schemas): under O1ConstrainTools the selected subset varies
-	// turn to turn, which would silently break the byte-stable-prefix prompt-cache
-	// invariant this section lives in. The full inventory is also the more honest
-	// answer to "what can I do" — the per-turn narrowing is a routing optimization,
-	// not a change to the agent's real capabilities. Falls back to the per-turn set
-	// only for a bare struct-literal agent that never populated allSchemas.
-	schemas := a.allSchemas
-	if len(schemas) == 0 {
-		schemas = a.schemas
-	}
-	for _, s := range schemas {
-		name := strings.TrimSpace(s.Function.Name)
-		if name == "" {
-			continue
-		}
-		b.WriteString("- ")
-		b.WriteString(name)
-		if desc := firstLine(s.Function.Description); desc != "" {
-			b.WriteString(" — ")
-			b.WriteString(desc)
-		}
-		b.WriteString("\n")
-		wrote = true
-	}
-	if !wrote {
-		b.WriteString(capabilityUnknown("tool inventory"))
-	}
+	b.WriteString("Callable tools are defined exclusively by the structured schemas attached to the current provider request. Never infer an unadvertised tool.\n")
 
 	if len(cs.FailurePatterns) > 0 {
 		b.WriteString("How you tend to fail (self-authored from real past failures — actively avoid these):\n")

@@ -500,16 +500,30 @@ func sameEvidence(left, right []ToolExecution) bool {
 }
 
 func normalizedEvidenceResult(raw json.RawMessage) string {
-	var decoded map[string]interface{}
+	var decoded interface{}
 	if json.Unmarshal(raw, &decoded) != nil {
 		return string(raw)
 	}
-	delete(decoded, "duration_ms")
+	stripVolatileEvidenceFields(decoded)
 	normalized, err := json.Marshal(decoded)
 	if err != nil {
 		return string(raw)
 	}
 	return string(normalized)
+}
+
+func stripVolatileEvidenceFields(value interface{}) {
+	switch current := value.(type) {
+	case map[string]interface{}:
+		delete(current, "duration_ms")
+		for _, nested := range current {
+			stripVolatileEvidenceFields(nested)
+		}
+	case []interface{}:
+		for _, nested := range current {
+			stripVolatileEvidenceFields(nested)
+		}
+	}
 }
 
 func TestTaskLedgerReconcilerSurfacesUnsafeOrphan(t *testing.T) {

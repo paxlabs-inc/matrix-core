@@ -17,6 +17,7 @@ import (
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/llm"
+	"matrix/neo/internal/memory"
 	"matrix/neo/internal/task"
 	"matrix/neo/internal/tools"
 )
@@ -64,14 +65,27 @@ func testEngine(t *testing.T, gatewayURL string) *Engine {
 	}
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
+	cfg.DataRoot = t.TempDir()
+	cfg.NeocortexActor = "neo-run-death-test"
 	cfg.TaskMaxRespawns = 0 // one attempt: these tests probe lifecycle seams, not retry policy
-	return NewEngine(EngineOptions{
+	pager, err := memory.Open(cfg)
+	if err != nil {
+		t.Fatalf("memory.Open: %v", err)
+	}
+	manager := &tools.Manager{}
+	runtime := openCanonicalTestRuntime(t, &cfg, manager, pager, gatewayURL)
+	t.Cleanup(func() { _ = pager.Close() })
+	e := NewEngine(EngineOptions{
 		Config:          cfg,
 		Main:            client,
-		Tools:           &tools.Manager{},
+		Tools:           manager,
+		Pager:           pager,
+		Runtime:         runtime,
 		ConversationDir: t.TempDir(),
 		TaskDir:         t.TempDir(),
 	})
+	t.Cleanup(e.Close)
+	return e
 }
 
 // collectUntilClosed drains a real broker subscription (replay + live) until

@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"strings"
 
+	"matrix/neo/internal/runtime/artifacts"
 	"matrix/neo/internal/runtime/protocol"
+	"matrix/neo/internal/runtime/turnstate"
 	"matrix/neo/internal/tools"
 )
 
@@ -38,7 +40,12 @@ type EffectPreparer interface {
 }
 
 type EffectMetadata struct {
-	RetrySafe bool
+	SideEffectClass       string
+	IdempotencyStrategy   string
+	RequiredEvidence      string
+	RetryStrategy         string
+	ReconciliationHandler string
+	RetrySafe             bool
 }
 
 type EffectMetadataProvider interface {
@@ -48,6 +55,11 @@ type EffectMetadataProvider interface {
 type ToolManagerAdapter struct {
 	manager    *tools.Manager
 	reconciler EffectReconciler
+	artifacts  *artifacts.Store
+}
+
+func (adapter *ToolManagerAdapter) SetArtifactStore(store *artifacts.Store) {
+	adapter.artifacts = store
 }
 
 func NewToolManagerAdapter(
@@ -95,6 +107,12 @@ func (adapter *ToolManagerAdapter) Execute(
 			"runtime loop: decode %s arguments: %w", call.Name, err,
 		)
 	}
+	if err := adapter.manager.ValidateAndResolve(call.Name, arguments); err != nil {
+		return structuredToolFailure(
+			"validation", false, "not_started", err.Error(),
+			"Correct the arguments or choose another available operation; no dispatch occurred.",
+		), nil
+	}
 	lifecycle, durable := adapter.reconciler.(EffectLifecycle)
 	if durable {
 		sideEffect, found := adapter.manager.ToolSideEffectClass(call.Name)
@@ -123,12 +141,37 @@ func (adapter *ToolManagerAdapter) Execute(
 		Retryable:      retryable,
 		FailureMessage: strings.TrimSpace(failureMessage),
 	}
+	contentForFailure := content
+	if adapter.artifacts != nil && len(content) > 32<<10 {
+		mime := "text/plain"
+		if json.Valid([]byte(strings.TrimSpace(content))) {
+			mime = "application/json"
+		}
+		status := "completed"
+		if isError {
+			status = "failed"
+		}
+		_, projection, artifactErr := adapter.artifacts.Put(context.WithoutCancel(ctx), artifacts.Metadata{
+			LogicalTurnID: turnstate.LogicalTurnFromContext(ctx), CycleIdentity: "current",
+			CallIdentity: call.ID, Tool: call.Name, NormalizedArgs: call.Arguments,
+			MIME: mime, EffectStatus: status,
+		}, []byte(content))
+		if artifactErr != nil {
+			return ToolResult{}, fmt.Errorf("runtime loop: externalize tool result: %w", artifactErr)
+		}
+		encodedProjection, artifactErr := json.Marshal(projection)
+		if artifactErr != nil {
+			return ToolResult{}, artifactErr
+		}
+		result.Content = encodedProjection
+		contentForFailure = string(encodedProjection)
+	}
 	if result.IsError && err == nil {
 		layer := strings.TrimSpace(result.FailureClass)
 		if layer == "" {
 			layer = "application"
 		}
-		evidence := strings.TrimSpace(content)
+		evidence := strings.TrimSpace(contentForFailure)
 		if result.FailureMessage != "" {
 			evidence = result.FailureMessage + ": " + evidence
 		}
@@ -140,6 +183,8 @@ func (adapter *ToolManagerAdapter) Execute(
 			layer, result.Retryable, "completed", evidence, recovery,
 		)
 		result.FailureClass = layer
+	} else if err == nil {
+		result = structuredToolSuccess(result.Content)
 	}
 	if err == nil && durable {
 		if persistErr := lifecycle.CompleteEffect(
@@ -175,18 +220,29 @@ func (adapter *ToolManagerAdapter) PrepareEffect(
 func (adapter *ToolManagerAdapter) EffectMetadata(
 	call protocol.NormalizedToolCall,
 ) (EffectMetadata, error) {
-	if !json.Valid(call.Arguments) {
+	var arguments map[string]interface{}
+	if err := json.Unmarshal(call.Arguments, &arguments); err != nil {
 		return EffectMetadata{}, fmt.Errorf(
-			"runtime loop: decode %s arguments: invalid JSON", call.Name,
+			"runtime loop: decode %s arguments: %w", call.Name, err,
 		)
 	}
-	sideEffect, found := adapter.manager.ToolSideEffectClass(call.Name)
+	if err := adapter.manager.ValidateAndResolve(call.Name, arguments); err != nil {
+		return EffectMetadata{}, err
+	}
+	registered, found := adapter.manager.ToolEffectMetadata(call.Name)
 	if !found {
 		return EffectMetadata{}, fmt.Errorf(
 			"runtime loop: effect metadata unavailable for %s", call.Name,
 		)
 	}
-	return EffectMetadata{RetrySafe: sideEffect == "read"}, nil
+	return EffectMetadata{
+		SideEffectClass:       registered.SideEffectClass,
+		IdempotencyStrategy:   registered.IdempotencyStrategy,
+		RequiredEvidence:      registered.RequiredEvidence,
+		RetryStrategy:         registered.RetryStrategy,
+		ReconciliationHandler: registered.ReconciliationHandler,
+		RetrySafe:             registered.SideEffectClass == "read-only",
+	}, nil
 }
 
 func (adapter *ToolManagerAdapter) Reconcile(

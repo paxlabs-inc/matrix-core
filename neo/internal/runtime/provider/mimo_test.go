@@ -99,7 +99,7 @@ func TestParseMiMoToolCallsHandlesRecordedTruncationWithoutMarkupLeak(t *testing
 	}
 }
 
-func TestMiMoGeneratorPreflightsBuffersAndHandlesSSE(t *testing.T) {
+func TestMiMoGeneratorPreflightsAndForwardsActualSSE(t *testing.T) {
 	simulator := newMiMoSimulator()
 	server := httptest.NewServer(simulator)
 	defer server.Close()
@@ -122,7 +122,7 @@ func TestMiMoGeneratorPreflightsBuffersAndHandlesSSE(t *testing.T) {
 		result.ToolCalls[0].Name != "web_search" {
 		t.Fatalf("result = %+v", result)
 	}
-	if len(delivered) != 1 || delivered[0].ContentDelta != "Checking." {
+	if len(delivered) != 1 || delivered[0].ContentDelta != "Checking.<tool_call><function=web_search><parameter=query>Matrix</parameter></function></tool_call>" {
 		t.Fatalf("delivered = %+v", delivered)
 	}
 	status := generator.CapabilityStatus()

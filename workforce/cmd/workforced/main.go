@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	machineidentity "matrix/machine/identity"
 	neoprovider "matrix/neo/provider"
 	"matrix/vault"
 
@@ -108,6 +109,18 @@ func runContext(ctx context.Context, args []string, stdout, stderr io.Writer) in
 		fmt.Fprintln(stderr, err)
 		return 2
 	}
+	machineDataRoot := strings.TrimSpace(os.Getenv("MATRIX_MACHINE_DATA_ROOT"))
+	if machineDataRoot == "" {
+		machineDataRoot = filepath.Dir(config.dataDir)
+	}
+	machineDescriptor, err := machineidentity.Ensure(
+		ctx, machineidentity.RuntimeConfig(machineDataRoot),
+	)
+	if err != nil {
+		fmt.Fprintln(stderr, "workforced: machine identity:", err)
+		return 1
+	}
+	fmt.Fprintf(stdout, "workforced: machine identity verified did=%s gene=%s\n", machineDescriptor.DID, machineDescriptor.Gene)
 	pool, err := pgxpool.New(ctx, config.postgresURI)
 	if err != nil {
 		fmt.Fprintln(stderr, "workforced: connect:", err)

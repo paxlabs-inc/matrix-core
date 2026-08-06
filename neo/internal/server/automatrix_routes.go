@@ -48,6 +48,7 @@ import (
 // than a panic.
 type automatrixControl interface {
 	SetEnabled(ctx context.Context, enabled bool) error
+	SetTimezone(timezone string) error
 	SettingsView() automatrixsettings.State
 }
 
@@ -85,9 +86,10 @@ func (s *Server) automatrixControlOrError(w http.ResponseWriter) (automatrixCont
 // settingsResponse is the GET/PUT /automatrix/settings wire shape — the opt-in
 // and whether an alarm is currently live. No alarm id / protocol detail leaks.
 type settingsResponse struct {
-	Enabled    bool `json:"enabled"`
-	AlarmLive  bool `json:"alarm_live"`
-	TasksToday int  `json:"tasks_today"`
+	Enabled    bool   `json:"enabled"`
+	AlarmLive  bool   `json:"alarm_live"`
+	TasksToday int    `json:"tasks_today"`
+	Timezone   string `json:"timezone"`
 }
 
 func viewToResponse(v automatrixsettings.State) settingsResponse {
@@ -95,6 +97,7 @@ func viewToResponse(v automatrixsettings.State) settingsResponse {
 		Enabled:    v.Enabled,
 		AlarmLive:  v.AlarmID != "",
 		TasksToday: v.TasksToday,
+		Timezone:   v.Timezone,
 	}
 }
 
@@ -108,7 +111,14 @@ func (s *Server) handleAutomatrixSettings(w http.ResponseWriter, r *http.Request
 		writeJSON(w, http.StatusOK, viewToResponse(ctl.SettingsView()))
 	case http.MethodPut:
 		var body struct {
-			Enabled bool `json:"enabled"`
+			Enabled  bool    `json:"enabled"`
+			Timezone *string `json:"timezone,omitempty"`
+		}
+		if body.Timezone != nil {
+			if err := ctl.SetTimezone(*body.Timezone); err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+				return
+			}
 		}
 		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&body); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "decode body: " + err.Error()})

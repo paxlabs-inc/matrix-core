@@ -71,6 +71,7 @@ type routeFact struct {
 func (s *Server) routes() []routeFact {
 	return []routeFact{
 		{"/chat", "POST /chat — send a user message; the reply streams back over the SSE event stream (this is the ONLY way to talk to you)", s.handleChat},
+		{"/profile", "GET/PUT/DELETE /profile — manage the encrypted onboarding identity profile independently of semantic memory", s.handleProfile},
 		{"/events", "GET /events — the SSE event stream carrying your replies, tool steps, and workspace events", s.handleEvents},
 		{"/events/replay/", "GET /events/replay/{conversation} — replay a conversation's durable event trace", s.handleReplay},
 		{"/messages/async/", "", s.handleAsyncPoll},

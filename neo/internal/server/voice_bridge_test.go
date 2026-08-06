@@ -78,11 +78,14 @@ func TestVoiceBridgeSubprocessAgainstRealNeoServer(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pager.Close()
+	manager := &tools.Manager{}
+	runtime := openCanonicalTestRuntime(t, &cfg, manager, pager, model.URL)
 	e := NewEngine(EngineOptions{
 		Config:          cfg,
 		Main:            client,
-		Tools:           &tools.Manager{},
+		Tools:           manager,
 		Pager:           pager,
+		Runtime:         runtime,
 		ConversationDir: t.TempDir(),
 		TaskDir:         t.TempDir(),
 		TraceDir:        t.TempDir(),
@@ -209,11 +212,14 @@ func TestVoiceWorkerCrashMidTurnLeavesTextTurnRunning(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pager.Close()
+	manager := &tools.Manager{}
+	runtime := openCanonicalTestRuntime(t, &cfg, manager, pager, model.URL)
 	e := NewEngine(EngineOptions{
 		Config:             cfg,
 		Main:               client,
-		Tools:              &tools.Manager{},
+		Tools:              manager,
 		Pager:              pager,
+		Runtime:            runtime,
 		ConversationDir:    t.TempDir(),
 		TaskDir:            t.TempDir(),
 		TraceDir:           t.TempDir(),
@@ -316,11 +322,14 @@ func TestVoiceBargeInIsSingleFlightAndCancelsPriorRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pager.Close()
+	manager := &tools.Manager{}
+	runtime := openCanonicalTestRuntime(t, &cfg, manager, pager, model.URL)
 	e := NewEngine(EngineOptions{
 		Config:          cfg,
 		Main:            client,
-		Tools:           &tools.Manager{},
+		Tools:           manager,
 		Pager:           pager,
+		Runtime:         runtime,
 		ConversationDir: t.TempDir(),
 		TaskDir:         t.TempDir(),
 		TraceDir:        t.TempDir(),

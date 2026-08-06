@@ -6,6 +6,7 @@ package loop
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"matrix/cortexclient"
 	"matrix/neo/internal/consolidation"
 	"matrix/neo/internal/runtime/protocol"
+	"matrix/neo/internal/runtime/records"
 	"matrix/neo/internal/runtime/turnstate"
 )
 
@@ -221,6 +223,30 @@ func (store *NeocortexCheckpointStore) SaveTurnCheckpoint(
 	checkpoint turnstate.Checkpoint,
 ) error {
 	return store.Turns.SaveTurnCheckpoint(ctx, turnID, checkpoint)
+}
+
+func (store *NeocortexCheckpointStore) SaveContextManifest(ctx context.Context, turnID string, generation uint64, manifest records.ContextManifest) error {
+	target, ok := store.Turns.(ContextManifestStore)
+	if !ok {
+		return nil
+	}
+	return target.SaveContextManifest(ctx, turnID, generation, manifest)
+}
+
+func (store *NeocortexCheckpointStore) SaveConvergenceRecord(ctx context.Context, turnID string, record records.ConvergenceRecord) error {
+	target, ok := store.Turns.(ConvergenceStore)
+	if !ok {
+		return nil
+	}
+	return target.SaveConvergenceRecord(ctx, turnID, record)
+}
+
+func (store *NeocortexCheckpointStore) LoadConvergenceRecord(ctx context.Context, turnID string) (records.ConvergenceRecord, error) {
+	target, ok := store.Turns.(ConvergenceStore)
+	if !ok {
+		return records.ConvergenceRecord{}, sql.ErrNoRows
+	}
+	return target.LoadConvergenceRecord(ctx, turnID)
 }
 
 func (store *NeocortexCheckpointStore) SavePendingEffect(

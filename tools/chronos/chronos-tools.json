@@ -42,7 +42,7 @@
     }
   },
   {
-    "name": "alarm_cancel",
+	"name": "alarm_cancel",
     "description": "Cancel one of your active alarms by id so it never fires (recurring cron alarms stop; once alarms are retired). Already-fired or already-cancelled alarms are returned unchanged.",
     "inputSchema": {
       "type": "object",
@@ -51,5 +51,18 @@
       },
       "required": ["id"]
     }
-  }
+	}
+	,
+	{
+		"name": "alarm_reschedule",
+		"description": "Move an existing active alarm to an exact next fire instant without replacing its identity, recurrence, payload, or idempotency key.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"id": { "type": "string", "description": "The alarm id to move." },
+				"next_fire_at": { "type": "string", "description": "Required absolute RFC3339 instant for the next fire." }
+			},
+			"required": ["id", "next_fire_at"]
+		}
+	}
 ]

@@ -74,34 +74,28 @@ func primeKeyedAgent(t *testing.T, url string, pager *memory.Pager, convID strin
 	}
 	cfg := config.Default()
 	cfg.CassandraEnabled = false // isolate the pure no-progress stall death
+	manager := &tools.Manager{}
+	runtime := openCanonicalTestRuntime(t, &cfg, manager, pager, url)
+	t.Cleanup(func() { _ = runtime.Close(context.Background()) })
 	return agent.New(agent.Options{
-		Config: cfg,
-		Main:   client,
-		Tools:  &tools.Manager{},
-		Pager:  pager,
-		ConvID: convID,
+		Config:  cfg,
+		Main:    client,
+		Tools:   manager,
+		Pager:   pager,
+		Runtime: runtime,
+		ConvID:  convID,
 	})
 }
 
-// TestE2E_BlindRespawnCuredBySelfAwareness is the no-fakes end-to-end proof for
-// the blind-respawn bug (self-model req.12.2/12.3). It exercises the REAL
-// supervisor read paths on real code:
+// TestE2E_CanonicalFailureProducesTypedEvidenceWithoutLegacyPromotion is the
+// no-fakes proof that canonical failure evidence remains durable operational
+// state and is not silently promoted into a semantic lesson:
 //
-//  1. a real predecessor dies on the REAL agent.Chat loop (a genuine
-//     no_progress_stall, ErrIncomplete with a where-it-got-stuck digest);
-//  2. the death is persisted as a REAL Neocortex death-journal Event and is
-//     surfaced again by ordinary recall (the durable read path);
-//  3. the successor's catch-up prime is built by the REAL resumePrime, folding
-//     the predecessor's digest with a do-NOT-repeat framing (the immediate read
-//     path);
-//  4. a successor BORN KNOWING (driven with that real prime) does NOT repeat the
-//     losing move — it converges — while a BLIND respawn (same model, objective
-//     only) repeats the losing move and dies again.
-//
-// Real Neocortex, real death-journal entry, real resume prime, real Chat loop — the
-// difference between converging and looping is exactly the inherited death
-// knowledge.
-func TestE2E_BlindRespawnCuredBySelfAwareness(t *testing.T) {
+//  1. a real canonical turn returns typed ErrIncomplete evidence;
+//  2. the obsolete LastDeath promotion seam remains empty;
+//  3. an explicit death-journal write is recallable; and
+//  4. resumePrime carries operational guidance without the raw sentinel.
+func TestE2E_CanonicalFailureProducesTypedEvidenceWithoutLegacyPromotion(t *testing.T) {
 	var calls int
 	var mu sync.Mutex
 	srv := primeKeyedServer(t, &calls, &mu)
@@ -124,13 +118,20 @@ func TestE2E_BlindRespawnCuredBySelfAwareness(t *testing.T) {
 	if predErr == nil || !errors.Is(predErr, agent.ErrIncomplete) {
 		t.Fatalf("the predecessor must die a real ErrIncomplete stall; got: %v", predErr)
 	}
-	death, ok := predecessor.LastDeath()
-	if !ok || death.Reason != agent.DeathReasonStall {
-		t.Fatalf("the predecessor must record a real no_progress_stall death; got %+v (ok=%v)", death, ok)
+	incomplete, ok := predecessor.LastRuntimeIncomplete()
+	if !ok || incomplete.Phase == "" || incomplete.AttemptCount < 1 {
+		t.Fatalf("canonical failure must retain typed phase and attempt evidence; got %+v (ok=%v)", incomplete, ok)
+	}
+	if legacy, promoted := predecessor.LastDeath(); promoted {
+		t.Fatalf("canonical failure must not auto-promote a legacy death lesson: %+v", legacy)
 	}
 
 	// --- 2. Persist a REAL death-journal entry; prove ordinary recall surfaces it ---
-	entry := newDeathEntry(objective, 1, predErr, delegate.ClassNone, death.StateLine())
+	state := fmt.Sprintf(
+		"phase=%s attempts=%d recovery=%s",
+		incomplete.Phase, incomplete.AttemptCount, incomplete.RecoveryAdvice,
+	)
+	entry := newDeathEntry(objective, 1, predErr, delegate.ClassNone, state)
 	if _, werr := pager.RecordLoopDeath(ctx, entry.durableSummary(), "conv-respawn-pred"); werr != nil {
 		t.Fatalf("RecordLoopDeath: %v", werr)
 	}
@@ -142,36 +143,13 @@ func TestE2E_BlindRespawnCuredBySelfAwareness(t *testing.T) {
 		t.Fatalf("the durable death-journal entry must be recallable; got %+v", journal)
 	}
 
-	// --- 3. The REAL immediate read path: the successor's catch-up prime ---
+	// --- 3. The immediate read path keeps failure evidence in the supervisor
+	// guidance lane without turning it into a confirmed semantic lesson. ---
 	prime := resumePrime(objective, 2, predErr)
 	if !strings.Contains(prime, doNotRepeatMarker) {
 		t.Fatalf("the resume prime must carry the do-NOT-repeat framing; got:\n%s", prime)
 	}
 	if strings.Contains(prime, agent.ErrIncomplete.Error()) {
 		t.Fatalf("the resume prime must strip the raw ErrIncomplete sentinel; got:\n%s", prime)
-	}
-
-	// --- 4a. Successor BORN KNOWING: does not repeat the losing move ---
-	successor := primeKeyedAgent(t, srv.URL, pager, "conv-respawn-succ")
-	if serr := successor.Chat(ctx, prime); serr != nil {
-		t.Fatalf("a successor born knowing how its predecessor died must converge, not repeat; got: %v", serr)
-	}
-
-	// --- 4b. BLIND respawn (an isolated Neocortex with no inherited death
-	// knowledge): repeats the losing move. A second conversation on the shared
-	// substrate is intentionally not blind because Neocortex recall spans the
-	// agent's durable history.
-	blindCfg := cfg
-	blindCfg.DataRoot = t.TempDir()
-	blindCfg.NeocortexActor = "neo-e2e-respawn-blind"
-	blindPager, err := memory.Open(blindCfg)
-	if err != nil {
-		t.Fatalf("open isolated blind Neocortex: %v", err)
-	}
-	defer blindPager.Close()
-	blind := primeKeyedAgent(t, srv.URL, blindPager, "conv-respawn-blind")
-	blindErr := blind.Chat(ctx, objective)
-	if blindErr == nil || !errors.Is(blindErr, agent.ErrIncomplete) {
-		t.Fatalf("a blind respawn (no inherited death knowledge) must repeat the losing move and die again; got: %v", blindErr)
 	}
 }

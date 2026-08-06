@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"matrix/neo/internal/automatrixsettings"
 	"matrix/neo/internal/config"
@@ -34,13 +35,16 @@ import (
 // alarm id. It fabricates no governor decisions — it only tallies the calls the
 // real code path makes.
 type recordingAlarmController struct {
-	setCalls    int
-	cancelCalls int
-	lastSetSpec AutomatrixAlarmSpec
-	lastCancel  string
-	nextID      string
-	setErr      error
-	cancelErr   error
+	setCalls         int
+	cancelCalls      int
+	lastSetSpec      AutomatrixAlarmSpec
+	lastCancel       string
+	nextID           string
+	setErr           error
+	cancelErr        error
+	rescheduleCalls  int
+	lastRescheduleID string
+	lastRescheduleAt time.Time
 }
 
 func (c *recordingAlarmController) Set(_ context.Context, spec AutomatrixAlarmSpec) (string, error) {
@@ -60,6 +64,13 @@ func (c *recordingAlarmController) Cancel(_ context.Context, alarmID string) err
 	c.cancelCalls++
 	c.lastCancel = alarmID
 	return c.cancelErr
+}
+
+func (c *recordingAlarmController) Reschedule(_ context.Context, alarmID string, next time.Time) error {
+	c.rescheduleCalls++
+	c.lastRescheduleID = alarmID
+	c.lastRescheduleAt = next
+	return nil
 }
 
 // newControlTestEngine builds a real Engine with a real Neocortex pager + a real
@@ -194,6 +205,37 @@ func TestGovernorRecordsPerDayCounter(t *testing.T) {
 	}
 	if gov.TasksToday(ctx) != 1 {
 		t.Fatalf("tasks today = %d, want 1", gov.TasksToday(ctx))
+	}
+}
+
+func TestGovernorPersistsJitteredReschedule(t *testing.T) {
+	_, controller, governor := newControlTestEngine(t)
+	ctx := context.Background()
+	if err := governor.SetEnabled(ctx, true); err != nil {
+		t.Fatal(err)
+	}
+	next := time.Now().UTC().Add(37 * time.Minute).Truncate(time.Microsecond)
+	if err := governor.Reschedule(ctx, next); err != nil {
+		t.Fatal(err)
+	}
+	if controller.rescheduleCalls != 1 || controller.lastRescheduleID != governor.SettingsView().AlarmID || !controller.lastRescheduleAt.Equal(next) {
+		t.Fatalf("reschedule calls=%d id=%q at=%s", controller.rescheduleCalls, controller.lastRescheduleID, controller.lastRescheduleAt)
+	}
+}
+
+func TestGovernorReconcilesEnabledAlarmWithoutDuplication(t *testing.T) {
+	directory := t.TempDir()
+	settings := automatrixsettings.Open(directory)
+	if err := settings.SetEnabled(true, "shared-alarm-old"); err != nil {
+		t.Fatal(err)
+	}
+	controller := &recordingAlarmController{nextID: "local-alarm-current"}
+	governor := newAutomatrixGovernor(settings, controller, 45)
+	if err := governor.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if controller.setCalls != 1 || governor.SettingsView().AlarmID != "local-alarm-current" {
+		t.Fatalf("set calls=%d state=%+v", controller.setCalls, governor.SettingsView())
 	}
 }
 

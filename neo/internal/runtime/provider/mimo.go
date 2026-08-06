@@ -348,19 +348,21 @@ func (generator *MiMoGenerator) GenerateStream(
 	turnUsage *TurnUsage,
 	deliver func(protocol.StreamChunk) error,
 ) (protocol.NormalizedGeneration, error) {
-	generation, err := generator.Generate(ctx, request, turnUsage)
+	hasTools := len(request.Tools) > 0
+	request.Stream = true
+	if hasTools {
+		generator.ensureCapability(ctx, request.Model)
+		request = generator.applyStrategy(request)
+	}
+	generation, err := generator.inner.GenerateStream(ctx, request, turnUsage, deliver)
 	if err != nil {
 		return protocol.NormalizedGeneration{}, err
 	}
-	if generation.Reasoning != "" {
-		if err := deliver(protocol.StreamChunk{ReasoningDelta: generation.Reasoning}); err != nil {
-			return protocol.NormalizedGeneration{}, err
-		}
-	}
-	if generation.Content != "" {
-		if err := deliver(protocol.StreamChunk{ContentDelta: generation.Content}); err != nil {
-			return protocol.NormalizedGeneration{}, err
-		}
+	if !hasTools && len(generation.ToolCalls) > 0 {
+		return protocol.NormalizedGeneration{}, fmt.Errorf(
+			"%w: MiMo emitted a tool call while the active streaming request exposed no tools",
+			ErrToolProtocol,
+		)
 	}
 	return generation, nil
 }

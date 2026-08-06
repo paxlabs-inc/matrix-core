@@ -28,12 +28,13 @@ const (
 )
 
 type Message struct {
-	Role       MessageRole          `json:"role"`
-	Content    string               `json:"content"`
-	Reasoning  string               `json:"reasoning,omitempty"`
-	Name       string               `json:"name,omitempty"`
-	ToolCallID string               `json:"tool_call_id,omitempty"`
-	ToolCalls  []NormalizedToolCall `json:"tool_calls,omitempty"`
+	Role         MessageRole          `json:"role"`
+	Content      string               `json:"content"`
+	AudioDataURL string               `json:"-"`
+	Reasoning    string               `json:"reasoning,omitempty"`
+	Name         string               `json:"name,omitempty"`
+	ToolCallID   string               `json:"tool_call_id,omitempty"`
+	ToolCalls    []NormalizedToolCall `json:"tool_calls,omitempty"`
 }
 
 type ToolDefinition struct {

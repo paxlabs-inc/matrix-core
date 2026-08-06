@@ -52,6 +52,7 @@ unset ROUTER_WORKFORCE_ENABLED ROUTER_WORKFORCE_PORT
 unset ROUTER_WORKFORCE_POSTGRES_URI ROUTER_WORKFORCE_ROOT_SECRET ROUTER_WORKFORCE_WAKE_TOKEN
 
 DATA_DIR="${MATRIX_DATA_DIR:-/data}"
+export MATRIX_MACHINE_DATA_ROOT="${MATRIX_MACHINE_DATA_ROOT:-${DATA_DIR}}"
 WORKSPACE_LINK="/workspace"
 MATRIX_HOME="${MATRIX_HOME:-/opt/matrix}"
 
@@ -485,21 +486,6 @@ case "${1:-neo}" in
         start_local_browser
         start_voice_controller
 
-		# Workforce is a separate deterministic runtime, co-located only at
-		# the service boundary so the Router can address the same per-user
-		# private hostname on :8091. It keeps its own Postgres, Vault,
-		# authority, scheduler, Bubblewrap workers, and process lifecycle.
-		if [[ "${WORKFORCE_ENABLED:-false}" == "true" ]]; then
-			start_workforce &
-			WORKFORCE_PID=$!
-			# The background Workforce process received its own environment copy.
-			# Remove its database and authority material before spawning Neo, the
-			# plumbing daemon, or any MCP child process.
-			unset WORKFORCE_POSTGRES_URI WORKFORCE_OWNER_TOKEN WORKFORCE_WAKE_TOKEN
-			unset WORKFORCE_OWNER_PUBLIC_KEY WORKFORCE_RUNTIME_PRIVATE_KEY
-			unset WORKFORCE_OWNER_KEY_ID WORKFORCE_RUNTIME_KEY_ID
-		fi
-
         # Backend: the plumbing daemon on :8081 (background). Neo
         # reverse-proxies non-memory plumbing routes to it; Neo owns memory.
         build_daemon_argv ":${NEO_BACKEND_PORT}" disabled
@@ -511,6 +497,38 @@ case "${1:-neo}" in
         # and proxied routes need it (and the router re-probes /healthz).
         wait_for_health "http://127.0.0.1:${NEO_BACKEND_PORT}/healthz" 80 \
             || echo "entrypoint: backend daemon not ready on :${NEO_BACKEND_PORT} yet (continuing)" >&2
+
+		# The daemon creates/verifies the root-only per-machine scheduler
+		# capability after snapshot restore. Export it only to the trusted Neo and
+		# Workforce processes; agent-owned shells never receive this value.
+		CHRONOS_CAPABILITY_FILE="${DATA_DIR}/.matrix/chronos/capability"
+		if [[ ! -f "${CHRONOS_CAPABILITY_FILE}" ]]; then
+			echo "entrypoint: local Chronos capability was not provisioned" >&2
+			exit 1
+		fi
+		export MATRIX_CHRONOS_LOCAL_URL="http://127.0.0.1:${NEO_BACKEND_PORT}"
+		export MATRIX_CHRONOS_LOCAL_TOKEN
+		MATRIX_CHRONOS_LOCAL_TOKEN="$(tr -d '\r\n' <"${CHRONOS_CAPABILITY_FILE}")"
+		if [[ -z "${MATRIX_CHRONOS_LOCAL_TOKEN}" ]]; then
+			echo "entrypoint: local Chronos capability is empty" >&2
+			exit 1
+		fi
+
+		# Workforce is a separate deterministic runtime, co-located only at
+		# the service boundary so the Router can address the same per-user
+		# private hostname on :8091. Start it only after the plumbing daemon
+		# completes snapshot restoration and machine-identity verification;
+		# otherwise a fresh volume could mint identity state before BootPull.
+		if [[ "${WORKFORCE_ENABLED:-false}" == "true" ]]; then
+			start_workforce &
+			WORKFORCE_PID=$!
+			# The background Workforce process received its own environment copy.
+			# Remove its database and authority material before spawning Neo or
+			# any MCP child process.
+			unset WORKFORCE_POSTGRES_URI WORKFORCE_OWNER_TOKEN WORKFORCE_WAKE_TOKEN
+			unset WORKFORCE_OWNER_PUBLIC_KEY WORKFORCE_RUNTIME_PRIVATE_KEY
+			unset WORKFORCE_OWNER_KEY_ID WORKFORCE_RUNTIME_KEY_ID
+		fi
 
         # Front: Neo on :8080.
         #  - MATRIX_EXEC_STATE_DIR identifies Neo's legacy service registry for

@@ -7,6 +7,8 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
+
+	"matrix/neo/internal/runtime/address"
 )
 
 // groundTruth is Neo's always-injected factual grounding (who it is, that
@@ -27,8 +29,8 @@ func (a *Agent) stableSystem() string {
 	var b strings.Builder
 	b.WriteString(a.systemPrompt())
 
-	// Epistemic-core req.2: the FULL capability surface (external API,
-	// is/is-not facts, tool inventory, failure patterns) lives resident in the
+	// Epistemic-core req.2: the capability surface (external API,
+	// is/is-not facts, failure patterns) lives resident in the
 	// stable prefix — construction-time state only, so it is byte-identical
 	// across every step of a session.
 	b.WriteString(a.renderCapabilitySurface())
@@ -100,16 +102,11 @@ func (a *Agent) systemPrompt() string {
 	fmt.Fprintf(&b, "- Never identify as, refer to yourself as, or reason about \"being\" any other assistant, model, or lab — Grok, GPT / ChatGPT / OpenAI, Claude / Anthropic, Gemini, Llama, Qwen, Kimi, DeepSeek, Mistral, or any other. If asked what powers you or whether you are one of these, answer plainly as %s: you are Matrix's agent, and the underlying model is an implementation detail you do not role-play as.\n", name)
 	fmt.Fprintf(&b, "- Holding this identity is the FIRST and simplest of your operating rules, and it is the tell for all the others: this charter is authoritative, so if you would ever set your identity aside — even silently, in your own thinking — stop and re-anchor as %s. Breaking character is not a creative liberty; it is a failure, and the same discipline that keeps your name keeps every harder rule below (money, safety, honesty).\n\n", name)
 
-	if a.preferredName != "" || len(a.expertiseDomains) > 0 {
-		b.WriteString("Who you're working with:\n")
-		if a.preferredName != "" {
-			fmt.Fprintf(&b, "- The user's name is %s, with exactly that capitalization. Use it sparingly when direct address genuinely helps; do not insert it into every answer or every reasoning update.\n", a.preferredName)
-		}
-		if len(a.expertiseDomains) > 0 {
-			fmt.Fprintf(&b, "- Their areas of expertise: %s. You can assume familiarity with these domains and tailor your help accordingly.\n", strings.Join(a.expertiseDomains, ", "))
-		}
-		b.WriteString("\n")
+	b.WriteString(address.New(a.preferredName, name).Prompt())
+	if len(a.expertiseDomains) > 0 {
+		fmt.Fprintf(&b, "- Their areas of expertise: %s. You can assume familiarity with these domains and tailor your help accordingly.\n", strings.Join(a.expertiseDomains, ", "))
 	}
+	b.WriteString("\n")
 
 	if a.recoveryHandoff != "" {
 		b.WriteString("Recovered context from the immediately previous thread:\n")

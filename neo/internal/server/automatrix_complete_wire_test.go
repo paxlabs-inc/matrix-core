@@ -116,12 +116,15 @@ func newCompleteWireEngine(t *testing.T, modelURL string) (*Engine, *memory.Page
 		}
 	}
 
+	manager := &tools.Manager{}
+	runtime := openCanonicalTestRuntime(t, &cfg, manager, pager, modelURL)
 	e := NewEngine(EngineOptions{
 		Config:        cfg,
 		Main:          client,
 		Cheap:         client,
-		Tools:         &tools.Manager{},
+		Tools:         manager,
 		Pager:         pager,
+		Runtime:       runtime,
 		AutomatrixDir: t.TempDir(),
 		BackendURL:    "http://127.0.0.1:1",
 	})
@@ -185,10 +188,10 @@ func TestAutomatrixCompletionWiring_GenuinePassRecordsAndPings(t *testing.T) {
 	srv := doneModelServer(t)
 	e, pager, cap := newCompleteWireEngine(t, srv.URL)
 
-	const summary = "Draft the quarterly update doc you mentioned"
+	const summary = "Explain what a useful quarterly update should contain"
 	uri, err := pager.RememberOpportunity(context.Background(), memory.OpportunitySpec{
 		Summary:              summary,
-		Rationale:            "user said they owe a quarterly update next week",
+		Rationale:            "a concise planning explanation would help next week",
 		EligibleAutonomous:   true,
 		Confidence:           0.9,
 		OriginConversationID: "conv-origin",
@@ -238,7 +241,7 @@ func TestAutomatrixCompletionWiring_GenuinePassRecordsAndPings(t *testing.T) {
 	if strings.TrimSpace(rec.ResultSummary) == "" {
 		t.Error("record result summary must carry the run's produced answer")
 	}
-	if !strings.Contains(rec.ResultSummary, "finished draft") {
+	if !strings.Contains(rec.ResultSummary, "outcomes, risks, and next steps") {
 		t.Errorf("record result summary should reflect the run's answer, got %q", rec.ResultSummary)
 	}
 	assertNoJargon(t, "record opportunity summary", rec.OpportunitySummary)

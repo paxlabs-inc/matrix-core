@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"matrix/neo/internal/runtime/protocol"
+	"matrix/neo/internal/runtime/records"
 	"matrix/vault"
 	sqliteDriver "modernc.org/sqlite"
 )
@@ -134,24 +136,17 @@ func (store *Store) CreateTurnState(ctx context.Context, state TurnState) error 
 	if err := state.Validate(); err != nil {
 		return err
 	}
-	envelope, err := store.sealTurn(state)
+	record, err := canonicalFromCompatibility(state)
 	if err != nil {
 		return err
 	}
-	defer zero(envelope)
-	return store.submit(ctx, func(runCtx context.Context, db *sql.DB) error {
-		_, err := db.ExecContext(runCtx,
-			`INSERT INTO turn_state(
-			 turn_id, actor_id, session_id, status, state, updated_at
-			 ) VALUES (?, ?, ?, ?, ?, ?)`,
-			state.TurnID, state.ActorID, state.SessionID, string(state.Status),
-			envelope, state.UpdatedAt.UnixMicro(),
-		)
-		if err != nil {
-			return fmt.Errorf("turnstate: create turn: %w", err)
-		}
-		return nil
-	})
+	if err := store.CreateTurnRecord(ctx, record); err != nil {
+		return err
+	}
+	if err := store.TransitionTurn(ctx, state.TurnID, records.StatePreparing, nil); err != nil {
+		return err
+	}
+	return store.TransitionTurn(ctx, state.TurnID, records.StateGenerating, nil)
 }
 
 func (store *Store) LoadTurnState(
@@ -165,13 +160,14 @@ func (store *Store) LoadTurnState(
 	if turnID == "" {
 		return TurnState{}, fmt.Errorf("turnstate: turn ID is required")
 	}
-	var envelope []byte
-	if err := store.readDB.QueryRowContext(ctx,
-		`SELECT state FROM turn_state WHERE turn_id = ?`, turnID,
-	).Scan(&envelope); err != nil {
-		return TurnState{}, fmt.Errorf("turnstate: load turn: %w", err)
+	record, err := store.LoadTurnRecord(ctx, turnID)
+	if err == nil {
+		return store.compatibilityFromCanonical(ctx, record)
 	}
-	return store.openTurn(turnID, envelope)
+	if !errors.Is(err, sql.ErrNoRows) {
+		return TurnState{}, err
+	}
+	return store.legacyTurnState(ctx, turnID)
 }
 
 func (store *Store) SaveTurnCheckpoint(
@@ -183,10 +179,25 @@ func (store *Store) SaveTurnCheckpoint(
 	if err := checkpoint.Validate(); err != nil {
 		return err
 	}
-	return store.updateTurn(ctx, turnID, func(state *TurnState) error {
+	if err := store.updateTurn(ctx, turnID, func(state *TurnState) error {
 		state.Checkpoint = &checkpoint
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+	if checkpointConsumesToolEvidence(checkpoint) {
+		record, err := store.LoadTurnRecord(ctx, turnID)
+		if err != nil {
+			return err
+		}
+		if record.CurrentState == records.StateSynthesisOwed && record.SynthesisDebt.Owed {
+			return store.TransitionTurn(ctx, turnID, records.StateGenerating, func(turn *records.TurnRecord) error {
+				turn.SynthesisDebt = records.SynthesisDebt{}
+				return nil
+			})
+		}
+	}
+	return nil
 }
 
 func (store *Store) SetTurnRecovery(
@@ -254,11 +265,9 @@ func (store *Store) RecoverableTurnStates(
 		return nil, err
 	}
 	rows, err := store.readDB.QueryContext(ctx,
-		`SELECT turn_id, state FROM turn_state
-		 WHERE status IN (?, ?, ?, ?)
-		 ORDER BY updated_at, turn_id`,
-		string(StatusRunning), string(StatusRecovering),
-		string(StatusIncomplete), string(StatusInterrupted),
+		`SELECT logical_turn_id, state FROM canonical_records
+		 WHERE record_type = ? AND record_key = ? ORDER BY updated_at, logical_turn_id`,
+		string(records.KindTurn), "current",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("turnstate: query recoverable turns: %w", err)
@@ -271,16 +280,72 @@ func (store *Store) RecoverableTurnStates(
 		if err := rows.Scan(&turnID, &envelope); err != nil {
 			return nil, fmt.Errorf("turnstate: scan recoverable turn: %w", err)
 		}
+		plaintext, err := store.openCanonical(turnID, records.KindTurn, "current", envelope)
+		if err != nil {
+			return nil, err
+		}
+		record, err := records.DecodeTurn(plaintext)
+		if err != nil {
+			return nil, err
+		}
+		state, err := store.compatibilityFromCanonical(ctx, record)
+		if err != nil {
+			return nil, err
+		}
+		if state.Status == StatusRunning || state.Status == StatusRecovering ||
+			state.Status == StatusIncomplete || state.Status == StatusInterrupted {
+			states = append(states, state)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("turnstate: iterate recoverable turns: %w", err)
+	}
+	seen := make(map[string]bool, len(states))
+	for _, state := range states {
+		seen[state.TurnID] = true
+	}
+	legacyRows, err := store.readDB.QueryContext(ctx,
+		`SELECT turn_id, state FROM turn_state
+		 WHERE status IN (?, ?, ?, ?) ORDER BY updated_at, turn_id`,
+		string(StatusRunning), string(StatusRecovering), string(StatusIncomplete), string(StatusInterrupted),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("turnstate: query legacy recoverable turns: %w", err)
+	}
+	defer legacyRows.Close()
+	for legacyRows.Next() {
+		var turnID string
+		var envelope []byte
+		if err := legacyRows.Scan(&turnID, &envelope); err != nil {
+			return nil, fmt.Errorf("turnstate: scan legacy recoverable turn: %w", err)
+		}
+		if seen[turnID] {
+			continue
+		}
 		state, err := store.openTurn(turnID, envelope)
 		if err != nil {
 			return nil, err
 		}
 		states = append(states, state)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("turnstate: iterate recoverable turns: %w", err)
+	if err := legacyRows.Err(); err != nil {
+		return nil, fmt.Errorf("turnstate: iterate legacy recoverable turns: %w", err)
 	}
 	return states, nil
+}
+
+func checkpointConsumesToolEvidence(checkpoint Checkpoint) bool {
+	lastTool := -1
+	lastAssistant := -1
+	for index, message := range checkpoint.Messages {
+		switch message.Role {
+		case protocol.RoleTool:
+			lastTool = index
+		case protocol.RoleAssistant:
+			lastAssistant = index
+		}
+	}
+	return lastTool >= 0 && lastAssistant > lastTool
 }
 
 func (store *Store) SaveCognitionState(
@@ -366,53 +431,30 @@ func (store *Store) updateTurn(
 	if turnID == "" || update == nil {
 		return fmt.Errorf("turnstate: turn update requires an ID and mutation")
 	}
-	return store.submit(ctx, func(runCtx context.Context, db *sql.DB) error {
-		tx, err := db.BeginTx(runCtx, nil)
-		if err != nil {
-			return fmt.Errorf("turnstate: begin turn update: %w", err)
-		}
-		committed := false
-		defer func() {
-			if !committed {
-				_ = tx.Rollback()
-			}
-		}()
-		var envelope []byte
-		if err := tx.QueryRowContext(runCtx,
-			`SELECT state FROM turn_state WHERE turn_id = ?`, turnID,
-		).Scan(&envelope); err != nil {
-			return fmt.Errorf("turnstate: load turn for update: %w", err)
-		}
-		state, err := store.openTurn(turnID, envelope)
-		if err != nil {
-			return err
-		}
-		if err := update(&state); err != nil {
-			return err
-		}
-		state.UpdatedAt = store.now().UTC()
-		if err := state.Validate(); err != nil {
-			return err
-		}
-		replacement, err := store.sealTurn(state)
-		if err != nil {
-			return err
-		}
-		defer zero(replacement)
-		if _, err := tx.ExecContext(runCtx,
-			`UPDATE turn_state
-			 SET status = ?, state = ?, updated_at = ?
-			 WHERE turn_id = ?`,
-			string(state.Status), replacement, state.UpdatedAt.UnixMicro(), turnID,
-		); err != nil {
-			return fmt.Errorf("turnstate: update turn: %w", err)
-		}
-		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("turnstate: commit turn update: %w", err)
-		}
-		committed = true
-		return nil
-	})
+	state, err := store.LoadTurnState(ctx, turnID)
+	if err != nil {
+		return err
+	}
+	if err := update(&state); err != nil {
+		return err
+	}
+	state.UpdatedAt = store.now().UTC()
+	if err := state.Validate(); err != nil {
+		return err
+	}
+	if err := store.transitionCompatibilityStatus(ctx, turnID, state.Status); err != nil {
+		return err
+	}
+	if err := store.updateCompatibilityIdentity(ctx, turnID, func(identity *compatibilityIdentity) {
+		identity.ActorID = state.ActorID
+		identity.Surface = state.Surface
+		identity.Origin = state.Origin
+		identity.Status = state.Status
+		identity.FailureCode = state.FailureCode
+	}); err != nil {
+		return err
+	}
+	return store.saveCompatibilityCycle(ctx, state)
 }
 
 func (store *Store) sealTurn(state TurnState) ([]byte, error) {

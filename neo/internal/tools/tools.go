@@ -692,6 +692,63 @@ func (m *Manager) Preflight(funcNames []string) error {
 	return nil
 }
 
+// ValidateAndResolve is the side-effect-free half of dispatch. The runtime
+// calls it before durably recording EffectStarted, guaranteeing that malformed
+// arguments, missing bindings, and registry drift cannot leave a pending
+// effect which never had dispatch prerequisites.
+func (m *Manager) ValidateAndResolve(funcName string, args map[string]interface{}) error {
+	if err := m.Preflight([]string{funcName}); err != nil {
+		return err
+	}
+	var parameters map[string]interface{}
+	if isNativeTool(funcName) {
+		for _, schema := range nativeSchemas() {
+			if schema.Function.Name == funcName {
+				parameters = schema.Function.Parameters
+				break
+			}
+		}
+	} else if bound, ok := m.byFunc[funcName]; ok && bound != nil {
+		parameters = bound.params
+	} else {
+		var schema llm.Tool
+		switch funcName {
+		case CoreExecuteTool:
+			schema = coreExecuteSchema()
+		case MemoryRecallTool:
+			schema = memoryRecallSchema()
+		case MemoryMutateTool:
+			schema = memoryMutateSchema()
+		case SpawnSubagentsTool:
+			schema = spawnSubagentsSchema()
+		case ConstructRenderTool:
+			schema = constructRenderSchema()
+		case WriteSkillTool:
+			schema = writeSkillSchema()
+		case TodoTool:
+			schema = todoSchema()
+		case PreviewTool:
+			schema = previewSchema()
+		case BuildProjectTool:
+			schema = buildProjectSchema()
+		case DesktopLookTool:
+			schema = desktopLookSchema()
+		case DesktopA11yTool:
+			schema = desktopA11ySchema()
+		case SavePersonalizationTool:
+			schema = PersonalizationSchema()
+		}
+		parameters = schema.Function.Parameters
+	}
+	if parameters == nil {
+		return fmt.Errorf("%s has no registered argument schema", funcName)
+	}
+	if message, valid := validateToolArgs(funcName, parameters, args); !valid {
+		return errors.New(message)
+	}
+	return nil
+}
+
 func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, failureClass tool.FailureClass, retryable bool, failureMessage string, err error) {
 	if isNativeTool(funcName) {
 		if m.native == nil {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// chronos — MCP stdio proxy bridging Matrix agents to the SHARED chronosd
-// (the centralized agent scheduler / wake control plane) over its REST API.
+// chronos — MCP stdio proxy bridging Matrix agents to the built-in per-machine
+// scheduler, with the former shared chronosd retained as explicit compatibility.
 //
 // Same shape as tools/tachyon/tachyon.mjs + tools/uwac/uwac.mjs: the daemon
 // spawns this over stdio (the transport executor/mcp/http.go supports), answers
@@ -40,6 +40,8 @@ const SERVER_NAME = 'chronos'
 const SERVER_VERSION = '0.1.0'
 const PROTOCOL_VERSION = '2024-11-05'
 
+const LOCAL_URL = (process.env.MATRIX_CHRONOS_LOCAL_URL || '').trim().replace(/\/+$/, '')
+const LOCAL_TOKEN = (process.env.MATRIX_CHRONOS_LOCAL_TOKEN || '').trim()
 const REMOTE_URL = (process.env.MATRIX_CHRONOS_URL || '').trim().replace(/\/+$/, '')
 const TRANSPORT_TOKEN = (process.env.MATRIX_CHRONOS_TOKEN || '').trim()
 const TIMEOUT_MS = clampInt(process.env.MATRIX_CHRONOS_TIMEOUT_MS, 30000, 2000, 300000)
@@ -143,15 +145,16 @@ function transportHeaders(extra = {}) {
   return h
 }
 
-async function httpJson(method, path, { body, headers, token } = {}) {
-  if (!REMOTE_URL) throw new Error('chronos scheduler not configured')
+async function httpJson(method, path, { body, headers, token, baseURL = REMOTE_URL, transportToken = TRANSPORT_TOKEN } = {}) {
+	if (!baseURL) throw new Error('chronos scheduler not configured')
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
-  const hdrs = transportHeaders(headers)
+	const hdrs = { 'Content-Type': 'application/json', Accept: 'application/json', ...(headers || {}) }
+	if (transportToken) hdrs.Authorization = `Bearer ${transportToken}`
   if (token) hdrs['X-Chronos-Agent'] = token
   let res
   try {
-    res = await fetch(`${REMOTE_URL}${path}`, {
+		res = await fetch(`${baseURL}${path}`, {
       method,
       headers: hdrs,
       body: body != null ? JSON.stringify(body) : undefined,
@@ -160,7 +163,7 @@ async function httpJson(method, path, { body, headers, token } = {}) {
   } catch (e) {
     clearTimeout(timer)
     const reason = e && e.name === 'AbortError' ? `timed out after ${TIMEOUT_MS}ms` : (e && e.message) || String(e)
-    throw httpError(`POST ${hostOf(REMOTE_URL)} failed: ${reason}`, 0)
+		throw httpError(`${method} ${hostOf(baseURL)} failed: ${reason}`, 0)
   }
   clearTimeout(timer)
   const raw = await safeText(res)
@@ -264,6 +267,10 @@ async function mintAgentToken(force = false) {
 
 // Authed call against the alarm lane; re-mints once on a 401.
 async function alarmCall(method, path, body, retry = true) {
+	if (LOCAL_URL) {
+		if (!LOCAL_TOKEN) throw new Error('local chronos capability is not configured')
+		return httpJson(method, `/chronos${path}`, { body, baseURL: LOCAL_URL, transportToken: LOCAL_TOKEN })
+	}
   if (AGENT.disabled) {
     throw new Error('chronos principal auth is disabled (MATRIX_CHRONOS_AUTH_DISABLE=1)')
   }
@@ -296,10 +303,17 @@ async function callRemoteTool(name, rawArgs) {
       if (!args.id) return errResult(name, 'id is required')
       return envelopeResult(await alarmCall('GET', `/v1/alarms/${encodeURIComponent(args.id)}`, null))
     }
-    case 'alarm_cancel': {
+		case 'alarm_cancel': {
       if (!args.id) return errResult(name, 'id is required')
-      return envelopeResult(await alarmCall('DELETE', `/v1/alarms/${encodeURIComponent(args.id)}`, null))
-    }
+			return envelopeResult(await alarmCall('DELETE', `/v1/alarms/${encodeURIComponent(args.id)}`, null))
+		}
+		case 'alarm_reschedule': {
+			if (!args.id) return errResult(name, 'id is required')
+			if (!args.next_fire_at) return errResult(name, 'next_fire_at is required')
+			return envelopeResult(await alarmCall('POST', `/v1/alarms/${encodeURIComponent(args.id)}/reschedule`, {
+				next_fire_at: args.next_fire_at,
+			}))
+		}
     default:
       return errResult(name, `unknown tool: ${name}`)
   }
@@ -319,9 +333,9 @@ const handlers = {
     if (!TOOL_SET.has(name)) {
       return errResult(name, `unknown tool: ${name}`)
     }
-    if (!REMOTE_URL) {
-      return errResult(name, 'chronos scheduler not configured', {
-        hint: 'set MATRIX_CHRONOS_URL to the shared chronosd (e.g. http://matrix-chronos.internal:9096)',
+		if (!LOCAL_URL && !REMOTE_URL) {
+			return errResult(name, 'chronos scheduler not configured', {
+				hint: 'start the built-in local scheduler or explicitly configure MATRIX_CHRONOS_URL for compatibility',
       })
     }
     try {
@@ -369,7 +383,7 @@ function startStdioServer() {
 // `--selftest`: list the registry, verify bijection against every agent
 // manifest that ships a chronos server, then exercise arg coercion. Offline.
 function runSelftest() {
-  console.log(`chronos: ${tools.length} tools (remote=${REMOTE_URL || 'UNSET'})`)
+	console.log(`chronos: ${tools.length} tools (mode=${LOCAL_URL ? 'local' : REMOTE_URL ? 'remote-compat' : 'unconfigured'})`)
   for (const t of tools) console.log(`  - ${t.name}`)
 
   const bridge = new Set(TOOL_NAMES)

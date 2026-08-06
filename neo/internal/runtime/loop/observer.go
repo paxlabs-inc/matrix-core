@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"matrix/neo/internal/runtime/protocol"
+	"matrix/neo/internal/runtime/records"
 )
 
 type Reporter interface {
@@ -17,11 +18,28 @@ type Reporter interface {
 }
 
 type ReporterObserver struct {
-	mu        sync.Mutex
-	reporter  Reporter
-	attempt   int
-	content   strings.Builder
-	reasoning strings.Builder
+	mu       sync.Mutex
+	reporter Reporter
+	attempt  int
+}
+
+type observerStreamSink struct {
+	observer GenerationObserver
+}
+
+func (sink observerStreamSink) Provisional(ctx context.Context, output records.StreamedOutput) error {
+	if output.Channel == records.StreamReasoning {
+		return sink.observer.ReasoningDelta(ctx, output.Content)
+	}
+	return sink.observer.ContentDelta(ctx, output.Content)
+}
+
+func (sink observerStreamSink) Commit(ctx context.Context, _ string) error {
+	return sink.observer.CommitAttempt(ctx)
+}
+
+func (sink observerStreamSink) Retract(ctx context.Context, _ string) error {
+	return sink.observer.Reset(ctx)
 }
 
 func NewReporterObserver(reporter Reporter, turn int) *ReporterObserver {
@@ -32,7 +50,7 @@ func (observer *ReporterObserver) ContentDelta(
 	_ context.Context,
 	content string,
 ) error {
-	observer.buffer("content", content)
+	observer.emit("content", content)
 	return nil
 }
 
@@ -40,7 +58,7 @@ func (observer *ReporterObserver) ReasoningDelta(
 	_ context.Context,
 	content string,
 ) error {
-	observer.buffer("reasoning", content)
+	observer.emit("reasoning", content)
 	return nil
 }
 
@@ -50,8 +68,6 @@ func (observer *ReporterObserver) Reset(context.Context) error {
 	if observer.reporter != nil {
 		observer.reporter.Delta(observer.attempt, "retraction", "")
 	}
-	observer.content.Reset()
-	observer.reasoning.Reset()
 	observer.attempt++
 	return nil
 }
@@ -60,16 +76,8 @@ func (observer *ReporterObserver) CommitAttempt(context.Context) error {
 	observer.mu.Lock()
 	defer observer.mu.Unlock()
 	if observer.reporter != nil {
-		if observer.content.Len() > 0 {
-			observer.reporter.Delta(observer.attempt, "content", observer.content.String())
-		}
-		if observer.reasoning.Len() > 0 {
-			observer.reporter.Delta(observer.attempt, "reasoning", observer.reasoning.String())
-		}
 		observer.reporter.Delta(observer.attempt, "commit", "")
 	}
-	observer.content.Reset()
-	observer.reasoning.Reset()
 	observer.attempt++
 	return nil
 }
@@ -77,20 +85,23 @@ func (observer *ReporterObserver) CommitAttempt(context.Context) error {
 // CommitToolAttempt drops all model-authored tool-call prose and emits one
 // deterministic runtime milestone derived from the actual operation.
 func (observer *ReporterObserver) CommitToolAttempt(_ context.Context, calls []protocol.NormalizedToolCall) error {
+	if err := observer.Reset(context.Background()); err != nil {
+		return err
+	}
+	observer.ObserveToolAttempt(calls)
+	return nil
+}
+
+func (observer *ReporterObserver) ObserveToolAttempt(calls []protocol.NormalizedToolCall) {
 	observer.mu.Lock()
 	defer observer.mu.Unlock()
 	if observer.reporter != nil {
-		observer.reporter.Delta(observer.attempt, "retraction", "")
 		if progress, ok := observer.reporter.(interface{ Progress(string) }); ok {
 			if milestone := runtimeMilestone(calls); milestone != "" {
 				progress.Progress(milestone)
 			}
 		}
 	}
-	observer.content.Reset()
-	observer.reasoning.Reset()
-	observer.attempt++
-	return nil
 }
 
 // ObserveToolResult emits only deterministic failure milestones. It never
@@ -110,16 +121,14 @@ func (observer *ReporterObserver) ObserveToolResult(_ context.Context, call prot
 	}
 }
 
-func (observer *ReporterObserver) buffer(channel, content string) {
+func (observer *ReporterObserver) emit(channel, content string) {
 	observer.mu.Lock()
 	defer observer.mu.Unlock()
 	if content == "" {
 		return
 	}
-	if channel == "reasoning" {
-		observer.reasoning.WriteString(content)
-	} else {
-		observer.content.WriteString(content)
+	if observer.reporter != nil {
+		observer.reporter.Delta(observer.attempt, channel, content)
 	}
 }
 

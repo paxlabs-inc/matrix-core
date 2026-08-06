@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"matrix/neo/internal/agent"
 	"matrix/neo/internal/delegate"
@@ -50,6 +51,42 @@ func TestLoopDeathsNeverAutoPromoteIntoCognitiveMemory(t *testing.T) {
 	journal, journalErr := pager.DeathJournal(ctx, 10)
 	if journalErr != nil || len(journal) != 6 {
 		t.Fatalf("diagnostic death journal = %d, %v; want 6", len(journal), journalErr)
+	}
+	if promoted, err := pager.ConsolidateDeathJournal(ctx); err != nil || promoted != 0 {
+		t.Fatalf("obsolete death consolidation promoted=%d err=%v", promoted, err)
+	}
+}
+
+func TestFailureLessonsRequireConfirmationEvidenceScopeAndExpiry(t *testing.T) {
+	_, pager := newRunTestEngine(t, "")
+	ctx := context.Background()
+	if _, err := pager.WriteFailurePattern(ctx, "legacy bypass", []string{"event:1"}); err == nil {
+		t.Fatal("legacy unconfirmed failure-pattern bypass remained writable")
+	}
+	lesson := memory.FailureLesson{
+		Statement:   "Use a different read strategy after a stable missing-path fingerprint.",
+		DerivedFrom: []string{"event:1"}, Scope: "filesystem reads",
+		Usefulness: "avoid repeating deterministic misses", Confirmed: true,
+		ExpiresAt: time.Now().UTC().Add(30 * 24 * time.Hour),
+	}
+	if _, err := pager.WriteFailureLesson(ctx, lesson); err == nil {
+		t.Fatal("single-source lesson passed the independent-evidence gate")
+	}
+	lesson.DerivedFrom = append(lesson.DerivedFrom, "event:2")
+	uri, err := pager.WriteFailureLesson(ctx, lesson)
+	if err != nil {
+		t.Fatal(err)
+	}
+	model, err := pager.SelfModel(ctx)
+	if err != nil || len(model.FailurePatterns) != 1 {
+		t.Fatalf("confirmed lesson model=%+v err=%v", model, err)
+	}
+	if err := pager.RetireFailurePattern(ctx, uri); err != nil {
+		t.Fatal(err)
+	}
+	model, err = pager.SelfModel(ctx)
+	if err != nil || len(model.FailurePatterns) != 0 {
+		t.Fatalf("retired lesson remained active: %+v err=%v", model, err)
 	}
 }
 

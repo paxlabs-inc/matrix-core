@@ -7,6 +7,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"matrix/neo/internal/memory"
 )
@@ -30,7 +31,12 @@ func TestSwarmResolvesSharedSelfModelBrief(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("WriteStructuralSelf: %v", err)
 	}
-	if _, err := pager.WriteFailurePattern(ctx, "[failure-mode:no_progress_stall] I tend to die by repeating the same step (seen 3 times).", []string{"matrix://Neocortex/Event/d#1"}); err != nil {
+	if _, err := pager.WriteFailureLesson(ctx, memory.FailureLesson{
+		Statement:   "[failure-mode:no_progress_stall] I tend to die by repeating the same step (seen 3 times).",
+		DerivedFrom: []string{"matrix://Neocortex/Event/d#1", "matrix://Neocortex/Event/d#2"},
+		Scope:       "no-progress tool loops", Usefulness: "require a strategy change after a repeated fingerprint",
+		Confirmed: true, ExpiresAt: time.Now().UTC().Add(30 * 24 * time.Hour),
+	}); err != nil {
 		t.Fatalf("WriteFailurePattern: %v", err)
 	}
 

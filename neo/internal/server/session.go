@@ -1211,6 +1211,13 @@ func (s *session) superviseAutomatrixTask(ctx context.Context, objective string)
 		acancel()
 
 		failClass := s.agent.LastFailureClass()
+		if err != nil {
+			if incomplete, ok := s.agent.LastRuntimeIncomplete(); ok {
+				fmt.Fprintf(os.Stderr, "neo/automatrix: canonical attempt %d failed in %s: %v (%s)\n", attempt, incomplete.Phase, err, incomplete.CauseDetail)
+			} else {
+				fmt.Fprintf(os.Stderr, "neo/automatrix: canonical attempt %d failed: %v\n", attempt, err)
+			}
+		}
 		switch superviseDecision(false, err, failClass, ctx.Err(), attempt, maxRespawns) {
 		case actDone:
 			// Genuine completion: the agent's own gate accepted.
@@ -1269,6 +1276,13 @@ func (s *session) superviseBriefTask(ctx context.Context, objective string) task
 		acancel()
 
 		failClass := s.agent.LastFailureClass()
+		if err != nil {
+			if incomplete, ok := s.agent.LastRuntimeIncomplete(); ok {
+				fmt.Fprintf(os.Stderr, "neo/brief: canonical attempt %d failed in %s: %v (%s)\n", attempt, incomplete.Phase, err, incomplete.CauseDetail)
+			} else {
+				fmt.Fprintf(os.Stderr, "neo/brief: canonical attempt %d failed: %v\n", attempt, err)
+			}
+		}
 		switch superviseDecision(false, err, failClass, ctx.Err(), attempt, maxRespawns) {
 		case actDone:
 			return task.StatusDone

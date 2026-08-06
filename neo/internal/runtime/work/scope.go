@@ -141,7 +141,13 @@ func (manager *ScopedToolManager) EffectMetadata(
 	}
 	provider, ok := manager.parent.(loop.EffectMetadataProvider)
 	if !ok {
-		return loop.EffectMetadata{RetrySafe: class == "read"}, nil
+		return loop.EffectMetadata{
+			SideEffectClass: class, RetrySafe: class == "read",
+			IdempotencyStrategy:   "logical-turn-call-key",
+			RequiredEvidence:      "structured-tool-outcome",
+			RetryStrategy:         "reconcile-before-retry",
+			ReconciliationHandler: "authoritative-effect-journal",
+		}, nil
 	}
 	return provider.EffectMetadata(call)
 }

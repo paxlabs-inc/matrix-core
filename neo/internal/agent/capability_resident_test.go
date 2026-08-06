@@ -111,10 +111,13 @@ func TestCapabilitySurfaceResidentAndByteStable(t *testing.T) {
 
 	// The resident truth rides the real request bytes.
 	first := systems[0]
-	for _, want := range []string{"POST /chat", "SSE", "NO OpenAI-compatible endpoint", "read_overflow", "probing spiral"} {
+	for _, want := range []string{"POST /chat", "SSE", "NO OpenAI-compatible endpoint", "structured schemas", "probing spiral"} {
 		if !strings.Contains(first, want) {
 			t.Errorf("resident system prefix missing %q", want)
 		}
+	}
+	if strings.Contains(first, "read_overflow") {
+		t.Fatal("structured tool schema was duplicated into system prose")
 	}
 	// Byte-identical across every step of the turn (req.2.4 / prompt-cache).
 	for i := 1; i < len(systems); i++ {

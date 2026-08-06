@@ -62,6 +62,8 @@ type State struct {
 	TasksDay string `json:"tasks_day,omitempty"`
 	// TasksToday is the number of proactive tasks started on TasksDay.
 	TasksToday int `json:"tasks_today,omitempty"`
+	// Timezone is the user's IANA timezone for the daily proactive-work budget.
+	Timezone string `json:"timezone,omitempty"`
 }
 
 // Store is the durable Automatrix opt-in store. State is held in memory for the
@@ -208,7 +210,7 @@ func (s *Store) TasksToday() int {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.st.TasksDay != today() {
+	if s.st.TasksDay != today(s.st.Timezone) {
 		return 0
 	}
 	return s.st.TasksToday
@@ -223,7 +225,7 @@ func (s *Store) RecordTaskStarted() error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	d := today()
+	d := today(s.st.Timezone)
 	if s.st.TasksDay != d {
 		s.st.TasksDay = d
 		s.st.TasksToday = 0
@@ -270,7 +272,29 @@ func (s *Store) path() string {
 }
 
 // today is the current UTC date as YYYY-MM-DD (the per-day counter window key).
-func today() string { return time.Now().UTC().Format("2006-01-02") }
+func today(timezone string) string {
+	location := time.Local
+	if strings.TrimSpace(timezone) != "" {
+		if parsed, err := time.LoadLocation(timezone); err == nil {
+			location = parsed
+		}
+	}
+	return time.Now().In(location).Format("2006-01-02")
+}
+
+func (s *Store) SetTimezone(timezone string) error {
+	timezone = strings.TrimSpace(timezone)
+	if timezone == "" {
+		timezone = time.Local.String()
+	}
+	if _, err := time.LoadLocation(timezone); err != nil {
+		return fmt.Errorf("automatrixsettings: invalid timezone %q: %w", timezone, err)
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.st.Timezone = timezone
+	return s.persistLocked()
+}
 
 // Dir resolves Neo's Automatrix settings directory. An explicit override wins;
 // else it derives from the Neocortex root's parent (matching the conversation /

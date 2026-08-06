@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"matrix/neo/internal/runtime/protocol"
+	"matrix/neo/internal/runtime/records"
 )
 
 type WakeKind string
@@ -105,7 +106,15 @@ func (store *Store) CreateScheduledTurn(
 		TurnID:    occurrenceID, SessionID: state.SessionID,
 		Role: protocol.RoleUser, Content: state.Content, CreatedAt: now,
 	}
-	stateEnvelope, err := store.sealTurn(state)
+	canonical, err := canonicalFromCompatibility(state)
+	if err != nil {
+		return TurnState{}, false, err
+	}
+	canonicalBytes, err := records.EncodeTurn(canonical)
+	if err != nil {
+		return TurnState{}, false, err
+	}
+	stateEnvelope, err := store.sealCanonical(occurrenceID, records.KindTurn, "current", canonicalBytes)
 	if err != nil {
 		return TurnState{}, false, err
 	}
@@ -149,10 +158,10 @@ func (store *Store) CreateScheduledTurn(
 			return fmt.Errorf("turnstate: inspect scheduled occurrence: %w", err)
 		}
 		if _, err := tx.ExecContext(runCtx,
-			`INSERT INTO turn_state(
-			 turn_id, actor_id, session_id, status, state, updated_at
-			 ) VALUES (?, ?, ?, ?, ?, ?)`,
-			state.TurnID, state.ActorID, state.SessionID, string(state.Status),
+			`INSERT INTO canonical_records(
+			 logical_turn_id, record_type, record_key, state, updated_at
+			 ) VALUES (?, ?, ?, ?, ?)`,
+			state.TurnID, string(records.KindTurn), "current",
 			stateEnvelope, state.UpdatedAt.UnixMicro(),
 		); err != nil {
 			return fmt.Errorf("turnstate: insert scheduled turn: %w", err)
@@ -188,6 +197,12 @@ func (store *Store) CreateScheduledTurn(
 	if !created {
 		existing, err := store.LoadTurnState(ctx, occurrenceID)
 		return existing, false, err
+	}
+	if err := store.TransitionTurn(ctx, occurrenceID, records.StatePreparing, nil); err != nil {
+		return TurnState{}, false, err
+	}
+	if err := store.TransitionTurn(ctx, occurrenceID, records.StateGenerating, nil); err != nil {
+		return TurnState{}, false, err
 	}
 	return state, true, nil
 }

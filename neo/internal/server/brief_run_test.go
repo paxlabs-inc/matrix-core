@@ -63,12 +63,24 @@ func newBriefRunTestEngine(t *testing.T, modelURL string) (*Engine, *briefGovern
 			t.Fatalf("llm.New: %v", err)
 		}
 	}
+	manager := &tools.Manager{}
+	manager.SetRecall(pager.Recall)
+	if _, err := pager.RememberFact(
+		t.Context(), "Recent brief context is ready.",
+	); err != nil {
+		t.Fatalf("seed brief recall evidence: %v", err)
+	}
+	var runtime *agent.ResurrectionRuntime
+	if modelURL != "" {
+		runtime = openCanonicalTestRuntime(t, &cfg, manager, pager, modelURL)
+	}
 	e := NewEngine(EngineOptions{
 		Config:          cfg,
 		Main:            client,
 		Cheap:           client,
-		Tools:           &tools.Manager{},
+		Tools:           manager,
 		Pager:           pager,
+		Runtime:         runtime,
 		ConversationDir: t.TempDir(),
 		TaskDir:         t.TempDir(),
 		AutomatrixDir:   t.TempDir(),

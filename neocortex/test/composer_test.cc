@@ -302,7 +302,7 @@ int TestComposer(const std::filesystem::path& path) {
       !first->sections[6].items.front().uri.starts_with("recall://")) {
     return Fail("cross-conversation recall was not isolated with provenance");
   }
-  if (Fnv1a(*canonical) != 14330236724531321862ULL) {
+  if (Fnv1a(*canonical) != 8978597216399691716ULL) {
     return Fail("composer canonical golden changed");
   }
   for (std::size_t index = 0; index < first->sections.size(); ++index) {

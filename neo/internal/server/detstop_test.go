@@ -56,10 +56,9 @@ func detstopModelServer(t *testing.T, narration string, calls *int, mu *sync.Mut
 // TestDeterministicStopIsHonestAndNeverRepastes drives a REAL run to the
 // unproductive-cap death and pins the fixed closing turn:
 //
-//  1. the copy says "I need your direction" (taken this as far as I can) —
-//     never the false "permission, limit" blocker language, and
-//  2. the suppressed working text may appear once in the honest closing turn,
-//     never as repeated progress narration.
+//  1. the copy refuses to claim completion — never false permission/limit
+//     blocker language, and
+//  2. rejected provisional working text is retracted and never repasted.
 func TestDeterministicStopIsHonestAndNeverRepastes(t *testing.T) {
 	const narration = "The brand-kit site looks complete already. Which part should I pick back up?"
 	var (
@@ -87,12 +86,12 @@ func TestDeterministicStopIsHonestAndNeverRepastes(t *testing.T) {
 	if strings.Contains(text, "permission") || strings.Contains(text, "couldn't complete") {
 		t.Fatalf("an unproductive-cap death must not read as a permission/limit blocker, got %q", text)
 	}
-	if !strings.Contains(text, "as far as I can") &&
+	if !strings.Contains(text, "will not claim") &&
 		!strings.Contains(text, "couldn't fully verify") {
-		t.Fatalf("the closing turn should own the stop honestly (need your direction), got %q", text)
+		t.Fatalf("the closing turn should refuse a false completion claim, got %q", text)
 	}
-	if !strings.Contains(text, narration) {
-		t.Fatalf("the honest closing turn lost the suppressed best-effort result:\n%q", text)
+	if strings.Contains(text, narration) {
+		t.Fatalf("the closing turn repasted rejected provisional text:\n%q", text)
 	}
 
 	// The working text is public exactly once in the terminal honest partial,
@@ -106,7 +105,7 @@ func TestDeterministicStopIsHonestAndNeverRepastes(t *testing.T) {
 			seen++
 		}
 	}
-	if seen != 1 {
-		t.Fatalf("the narration must appear exactly once in the stream, saw it %d times", seen)
+	if seen != 0 {
+		t.Fatalf("rejected provisional narration must not be repasted, saw it %d times", seen)
 	}
 }

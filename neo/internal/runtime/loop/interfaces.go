@@ -9,60 +9,27 @@ import (
 
 	"matrix/cortexclient"
 	"matrix/neo/internal/consolidation"
+	runtimecontract "matrix/neo/internal/runtime"
 	"matrix/neo/internal/runtime/liveness"
 	"matrix/neo/internal/runtime/protocol"
-	"matrix/neo/internal/runtime/provider"
+	"matrix/neo/internal/runtime/records"
 	"matrix/neo/internal/runtime/turnstate"
 )
 
-type Generator interface {
-	Generate(
-		context.Context,
-		protocol.GenerationRequest,
-		*provider.TurnUsage,
-	) (protocol.NormalizedGeneration, error)
-}
-
-type StreamingGenerator interface {
-	GenerateStream(
-		context.Context,
-		protocol.GenerationRequest,
-		*provider.TurnUsage,
-		func(protocol.StreamChunk) error,
-	) (protocol.NormalizedGeneration, error)
-}
-
-type ToolResult struct {
-	Content        json.RawMessage `json:"content"`
-	IsError        bool            `json:"is_error"`
-	FailureClass   string          `json:"failure_class,omitempty"`
-	Retryable      bool            `json:"retryable,omitempty"`
-	FailureMessage string          `json:"failure_message,omitempty"`
-}
-
-type ReconcileStatus string
+type Generator = runtimecontract.ProviderGenerator
+type StreamingGenerator = runtimecontract.ProviderStreamer
+type ToolResult = runtimecontract.ToolResult
+type ReconcileStatus = runtimecontract.ReconcileStatus
 
 const (
-	ReconcileCompleted  ReconcileStatus = "completed"
-	ReconcileRetrySafe  ReconcileStatus = "retry_safe"
-	ReconcileNotStarted ReconcileStatus = "not_started"
-	ReconcileUnknown    ReconcileStatus = "unknown"
+	ReconcileCompleted  = runtimecontract.ReconcileCompleted
+	ReconcileRetrySafe  = runtimecontract.ReconcileRetrySafe
+	ReconcileNotStarted = runtimecontract.ReconcileNotStarted
+	ReconcileUnknown    = runtimecontract.ReconcileUnknown
 )
 
-type ReconcileResult struct {
-	Status ReconcileStatus
-	Result ToolResult
-}
-
-type ToolManager interface {
-	Surface(context.Context) []protocol.ToolDefinition
-	Execute(
-		context.Context,
-		protocol.NormalizedToolCall,
-		string,
-	) (ToolResult, error)
-	Reconcile(context.Context, string) (ReconcileResult, error)
-}
+type ReconcileResult = runtimecontract.ReconcileResult
+type ToolManager = runtimecontract.ToolDispatcher
 
 type CheckpointStore interface {
 	SaveTurnCheckpoint(context.Context, string, turnstate.Checkpoint) error
@@ -73,6 +40,30 @@ type CheckpointStore interface {
 		turnstate.Recovery,
 	) error
 	SetTurnStatus(context.Context, string, turnstate.Status) error
+}
+
+type ContextManifestStore interface {
+	SaveContextManifest(context.Context, string, uint64, records.ContextManifest) error
+}
+
+type AnswerStateStore interface {
+	SaveAnswerRecord(context.Context, string, string, records.AnswerRecord) error
+}
+
+type DeliveryStateStore interface {
+	AnswerStateStore
+	LoadAnswerRecord(context.Context, string, string) (records.AnswerRecord, error)
+	SaveDeliveryRecord(context.Context, string, string, records.DeliveryRecord) error
+	LoadDeliveryRecord(context.Context, string, string) (records.DeliveryRecord, error)
+	MarkAnswerReady(context.Context, string, string) error
+	MarkDelivering(context.Context, string, string) error
+	MarkDeliveryRetry(context.Context, string) error
+	MarkDelivered(context.Context, string) error
+}
+
+type ConvergenceStore interface {
+	SaveConvergenceRecord(context.Context, string, records.ConvergenceRecord) error
+	LoadConvergenceRecord(context.Context, string) (records.ConvergenceRecord, error)
 }
 
 // PendingEffectStore commits the recoverable PendingCall checkpoint and the
@@ -89,15 +80,8 @@ type PendingEffectStore interface {
 	) error
 }
 
-type ActivationRequest struct {
-	ConversationID string
-	Query          string
-	Premises       []string
-}
-
-type ActivationSource interface {
-	Activate(context.Context, ActivationRequest) (string, error)
-}
+type ActivationRequest = runtimecontract.MemoryRequest
+type ActivationSource = runtimecontract.MemoryRetriever
 
 type PremiseSource interface {
 	ActivePremises() []string
@@ -115,12 +99,11 @@ type TurnRecorder interface {
 	ProvenanceRange() (string, uint64, uint64)
 }
 
-type DeliveryReporter interface {
-	Say(string, bool)
-}
+type DeliveryReporter = runtimecontract.DeliveryReporter
+type HonestPartialReporter = runtimecontract.HonestPartialReporter
 
-type HonestPartialReporter interface {
-	SayHonestPartial(string)
+type ReliableDeliveryReporter interface {
+	SayResult(string, bool) error
 }
 
 type Consolidator interface {
@@ -163,20 +146,6 @@ type DoubtController interface {
 	ObserveMismatch(context.Context, int, ToolExecution) (string, bool)
 }
 
-type GenerationObserver interface {
-	ContentDelta(context.Context, string) error
-	ReasoningDelta(context.Context, string) error
-	Reset(context.Context) error
-	CommitAttempt(context.Context) error
-}
-
-type CompletionDecision struct {
-	Ready      bool
-	Stop       bool
-	Reason     string
-	NextAction string
-}
-
-type CompletionGate interface {
-	CheckCompletion(context.Context) (CompletionDecision, error)
-}
+type GenerationObserver = runtimecontract.GenerationObserver
+type CompletionDecision = runtimecontract.CompletionDecision
+type CompletionGate = runtimecontract.AnswerCompleter

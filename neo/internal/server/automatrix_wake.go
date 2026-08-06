@@ -86,6 +86,14 @@ type AutomatrixRunner func(ctx context.Context, opp memory.OpportunitySpec) erro
 // (task 6.1). Safe to leave unset: the wake handler fails closed without it.
 func (e *Engine) SetAutomatrixGovernor(g AutomatrixGovernor) { e.automatrixGov = g }
 
+func (e *Engine) ReconcileAutomatrix(ctx context.Context) error {
+	governor, ok := e.automatrixGov.(*automatrixGovernor)
+	if !ok || governor == nil {
+		return nil
+	}
+	return governor.Reconcile(ctx)
+}
+
 // SetAutomatrixRunner wires the supervised restricted-surface run dispatch
 // (task 4.1). Safe to leave unset: the handler still picks + reschedules.
 func (e *Engine) SetAutomatrixRunner(r AutomatrixRunner) { e.automatrixRunner = r }

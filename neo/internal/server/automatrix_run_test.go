@@ -22,13 +22,16 @@ package server
 // surface (the advertised schema set is asserted clean).
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	mcllm "matrix/mcl/llm"
+	"matrix/neo/internal/agent"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
@@ -62,12 +65,18 @@ func newRunTestEngine(t *testing.T, modelURL string) (*Engine, *memory.Pager) {
 			t.Fatalf("llm.New: %v", err)
 		}
 	}
+	manager := &tools.Manager{}
+	var runtime *agent.ResurrectionRuntime
+	if modelURL != "" {
+		runtime = openCanonicalTestRuntime(t, &cfg, manager, pager, modelURL)
+	}
 	e := NewEngine(EngineOptions{
 		Config:     cfg,
 		Main:       client,
 		Cheap:      client,
-		Tools:      &tools.Manager{}, // real Manager; full Schemas() advertises core_execute
+		Tools:      manager, // real Manager; full Schemas() advertises core_execute
 		Pager:      pager,
+		Runtime:    runtime,
 		BackendURL: "http://127.0.0.1:1",
 	})
 	t.Cleanup(func() {
@@ -83,10 +92,17 @@ func newRunTestEngine(t *testing.T, modelURL string) (*Engine, *memory.Pager) {
 // returns nil → the supervisor reports task done).
 func doneModelServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`data: {"choices":[{"delta":{"content":"Here is the finished draft you needed."},"finish_reason":"stop"}]}` + "\n\n"))
+		if bytes.Contains(body, []byte(`"name":"memory_recall"`)) &&
+			!bytes.Contains(body, []byte(`"role":"tool"`)) {
+			_, _ = w.Write([]byte(`data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"brief-recall","type":"function","function":{"name":"memory_recall","arguments":"{\"query\":\"recent brief context\",\"expect\":\"returns ready\"}"}}]},"finish_reason":"tool_calls"}]}` + "\n\n"))
+			_, _ = w.Write([]byte("data: [DONE]\n\n"))
+			return
+		}
+		_, _ = w.Write([]byte(`data: {"choices":[{"delta":{"content":"A quarterly update should summarize outcomes, risks, and next steps."},"finish_reason":"stop"}]}` + "\n\n"))
 		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 	}))
 	t.Cleanup(srv.Close)
@@ -186,8 +202,8 @@ func TestRunAutomatrixOpportunity_GatePassMarksDone(t *testing.T) {
 	e, pager := newRunTestEngine(t, srv.URL)
 
 	uri, err := pager.RememberOpportunity(context.Background(), memory.OpportunitySpec{
-		Summary:              "Draft the quarterly update doc you mentioned",
-		Rationale:            "user said they owe a quarterly update next week",
+		Summary:              "Explain what a useful quarterly update should contain",
+		Rationale:            "a concise planning explanation would help next week",
 		EligibleAutonomous:   true,
 		Confidence:           0.9,
 		OriginConversationID: "conv-origin",

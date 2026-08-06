@@ -129,7 +129,7 @@ func TestNativeLocalPolicyKeepsBuildForSubstantialJobs(t *testing.T) {
 		"enter your durable Build mode",
 		"You remain the only builder",
 		"Handle simple file inspection",
-		"Once build_project reports that the durable job was accepted, STOP",
+		"Once build_project reports that your durable job was accepted, STOP",
 	} {
 		if !strings.Contains(policy, want) {
 			t.Errorf("coding delegation policy missing %q", want)

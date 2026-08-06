@@ -329,6 +329,19 @@ type FailurePattern struct {
 	URI         string
 	Statement   string
 	DerivedFrom []string
+	Scope       string
+	Usefulness  string
+	ConfirmedAt time.Time
+	ExpiresAt   time.Time
+}
+
+type FailureLesson struct {
+	Statement   string
+	DerivedFrom []string
+	Scope       string
+	Usefulness  string
+	Confirmed   bool
+	ExpiresAt   time.Time
 }
 type SelfModel struct {
 	Identity        string
@@ -355,8 +368,9 @@ type EpisodicBudget struct {
 	ExcludeConversation string
 }
 type EpisodicCurrentHit struct {
-	Role string
-	Text string
+	Role           string
+	Text           string
+	SourceIdentity string
 }
 type EpisodicExcerpt struct {
 	Ref             string

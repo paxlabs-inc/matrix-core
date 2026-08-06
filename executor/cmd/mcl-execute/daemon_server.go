@@ -35,6 +35,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	machinechronos "matrix/machine/chronos"
 )
 
 // newDaemonMux assembles the HTTP routes for the daemon.
@@ -100,6 +102,8 @@ func newDaemonMux(d *daemonState, t *transcript) http.Handler {
 	mux.HandleFunc("/diag/embedder", d.handleDiagEmbedder)
 	mux.HandleFunc("/diag/mcp", d.handleDiagMCP)
 	mux.HandleFunc("/diag/bridge", d.handleDiagBridge)
+	mux.HandleFunc("/chronos/v1/alarms", d.handleLocalChronosAlarms)
+	mux.HandleFunc("/chronos/v1/alarms/", d.handleLocalChronosAlarm)
 
 	// Chat: the Liaison front door (triage → reply or dispatch+narrate).
 	mux.HandleFunc("/chat", d.handleChat(t))
@@ -347,16 +351,19 @@ func (d *daemonState) requireAuth(w http.ResponseWriter, r *http.Request) bool {
 // --- /healthz -------------------------------------------------------
 
 type healthzResponse struct {
-	OK            bool   `json:"ok"`
-	Actor         string `json:"actor"`
-	Agent         string `json:"agent"`
-	OverallRoot   string `json:"overall_root,omitempty"`
-	UptimeSeconds int64  `json:"uptime_seconds"`
-	Subscribers   int    `json:"sse_subscribers"`
-	Published     uint64 `json:"sse_published"`
-	Dropped       uint64 `json:"sse_dropped"`
-	Busy          bool   `json:"in_flight"`
-	GideonMode    bool   `json:"gideon_mode"`
+	OK            bool                   `json:"ok"`
+	Actor         string                 `json:"actor"`
+	Agent         string                 `json:"agent"`
+	OverallRoot   string                 `json:"overall_root,omitempty"`
+	UptimeSeconds int64                  `json:"uptime_seconds"`
+	Subscribers   int                    `json:"sse_subscribers"`
+	Published     uint64                 `json:"sse_published"`
+	Dropped       uint64                 `json:"sse_dropped"`
+	Busy          bool                   `json:"in_flight"`
+	GideonMode    bool                   `json:"gideon_mode"`
+	MachineDID    string                 `json:"machine_did"`
+	MachineGene   string                 `json:"machine_gene"`
+	Chronos       *machinechronos.Health `json:"chronos,omitempty"`
 }
 
 func (d *daemonState) handleHealthz(w http.ResponseWriter, r *http.Request) {
@@ -377,6 +384,12 @@ func (d *daemonState) handleHealthz(w http.ResponseWriter, r *http.Request) {
 		Dropped:       drop,
 		Busy:          d.tryProbeBusy(),
 		GideonMode:    d.gideonMode,
+		MachineDID:    d.machineIdentity.DID,
+		MachineGene:   d.machineIdentity.Gene,
+	}
+	if d.chronosEngine != nil {
+		health := d.chronosEngine.Health(r.Context())
+		resp.Chronos = &health
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

@@ -110,3 +110,36 @@ func TestEveryNativeAndSyntheticToolHasEffectMetadata(t *testing.T) {
 		}
 	}
 }
+
+func TestAdvertisedInventoryAndEffectRegistryHaveExactParity(t *testing.T) {
+	manager := &Manager{
+		native: newNativeTestRuntime(t),
+		byFunc: map[string]*boundTool{
+			"docs__lookup": {
+				funcName: "docs__lookup", sideEffect: "read",
+				params: map[string]interface{}{"type": "object"},
+			},
+		},
+		order: []string{"docs__lookup"},
+	}
+	registry, err := manager.AdvertisedEffectRegistry()
+	if err != nil {
+		t.Fatal(err)
+	}
+	schemas := manager.Schemas()
+	if len(registry) != len(schemas) {
+		t.Fatalf("registry=%d inventory=%d", len(registry), len(schemas))
+	}
+	for _, schema := range schemas {
+		name := schema.Function.Name
+		metadata, ok := registry[name]
+		if !ok {
+			t.Fatalf("advertised tool %q absent from registry", name)
+		}
+		if metadata.SideEffectClass == "" || metadata.IdempotencyStrategy == "" ||
+			metadata.RequiredEvidence == "" || metadata.RetryStrategy == "" ||
+			metadata.ReconciliationHandler == "" {
+			t.Fatalf("incomplete metadata for %q: %+v", name, metadata)
+		}
+	}
+}

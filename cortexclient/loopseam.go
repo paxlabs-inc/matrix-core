@@ -565,8 +565,19 @@ type MemoryProjection struct {
 	Date            string   `json:"date,omitempty"`
 	SourceType      string   `json:"source_type"`
 	Confidence      float64  `json:"confidence,omitempty"`
+	RelevanceScore  float64  `json:"relevance_score,omitempty"`
 	SelectionReason string   `json:"selection_reason,omitempty"`
+	SourceIdentity  string   `json:"source_identity"`
+	EpistemicStatus string   `json:"epistemic_status,omitempty"`
 	Provenance      []uint64 `json:"provenance,omitempty"`
+}
+
+// ProjectionExclusions removes semantic candidates already represented by the
+// active turn. Callers combine transcript, latest tool-batch, working-state,
+// and stable-identity sources into these two canonical sets.
+type ProjectionExclusions struct {
+	SourceIdentities map[string]struct{}
+	ContentHashes    map[[32]byte]struct{}
 }
 
 // DecodeEvent decodes one typed transcript frame without exposing generated
@@ -668,6 +679,12 @@ func RenderBundle(bundle *Bundle, premises []string) string {
 // mismatched envelopes are omitted while remaining retrievable through their
 // dedicated recovery APIs.
 func ProjectBundle(bundle *Bundle) []MemoryProjection {
+	return ProjectBundleExcluding(bundle, ProjectionExclusions{})
+}
+
+// ProjectBundleExcluding returns the two isolated recall lanes and applies
+// same-turn identity/content exclusion before anything reaches a prompt or UI.
+func ProjectBundleExcluding(bundle *Bundle, exclusions ProjectionExclusions) []MemoryProjection {
 	if bundle == nil {
 		return nil
 	}
@@ -681,7 +698,8 @@ func ProjectBundle(bundle *Bundle) []MemoryProjection {
 		for _, item := range bundle.Sections[sectionIndex].Items {
 			entry := MemoryProjection{
 				Tier: tierNames[sectionIndex], URI: item.URI,
-				Provenance: append([]uint64(nil), item.Provenance...),
+				SourceIdentity: item.URI,
+				Provenance:     append([]uint64(nil), item.Provenance...),
 			}
 			if sectionIndex == 0 || sectionIndex == 1 || sectionIndex == 5 {
 				if !utf8.Valid(item.Content) || internalActivationContent(item.Content) {
@@ -706,10 +724,23 @@ func ProjectBundle(bundle *Bundle) []MemoryProjection {
 				entry.Kind = strings.ToLower(payloadType.String())
 				entry.SourceType = payloadType.String()
 				if sectionIndex == 6 {
-					applyRecallProvenance(&entry)
+					if !applyRecallProvenance(&entry) {
+						continue
+					}
+				} else if sectionIndex == 4 {
+					if !applyAmbientProvenance(&entry) {
+						continue
+					}
 				}
 			}
 			if entry.Text == "" {
+				continue
+			}
+			if _, excluded := exclusions.SourceIdentities[entry.SourceIdentity]; excluded {
+				continue
+			}
+			contentDigest := sha256.Sum256([]byte(strings.TrimSpace(entry.Text)))
+			if _, excluded := exclusions.ContentHashes[contentDigest]; excluded {
 				continue
 			}
 			digest := sha256.Sum256([]byte(entry.SourceType + "\x00" + entry.Text))
@@ -723,22 +754,42 @@ func ProjectBundle(bundle *Bundle) []MemoryProjection {
 	return projected
 }
 
-func applyRecallProvenance(entry *MemoryProjection) {
+func applyAmbientProvenance(entry *MemoryProjection) bool {
 	parsed, err := url.Parse(entry.URI)
-	if err != nil || parsed.Scheme != "recall" {
-		return
+	if err != nil || parsed.Scheme != "event" || parsed.Host == "" || strings.Trim(parsed.Path, "/") == "" || len(entry.Provenance) == 0 {
+		return false
+	}
+	entry.ConversationID = parsed.Host
+	entry.SelectionReason = "same-conversation semantic match"
+	entry.SourceIdentity = entry.URI
+	entry.EpistemicStatus = epistemicStatus(entry.Kind)
+	entry.Confidence = 1
+	entry.RelevanceScore = 1
+	return true
+}
+
+func applyRecallProvenance(entry *MemoryProjection) bool {
+	parsed, err := url.Parse(entry.URI)
+	if err != nil || parsed.Scheme != "recall" || parsed.Host == "" || strings.Trim(parsed.Path, "/") == "" || len(entry.Provenance) == 0 {
+		return false
 	}
 	entry.ConversationID = parsed.Host
 	query := parsed.Query()
-	entry.SelectionReason = strings.ReplaceAll(query.Get("why"), "_", " ")
-	if entry.SelectionReason == "" {
-		entry.SelectionReason = "relevance ranked cross-conversation recall"
+	if query.Get("at_ns") == "" || query.Get("source") == "" || query.Get("score") == "" || query.Get("why") == "" {
+		return false
 	}
+	entry.SelectionReason = strings.ReplaceAll(query.Get("why"), "_", " ")
 	if timestamp, err := strconv.ParseInt(query.Get("at_ns"), 10, 64); err == nil && timestamp > 0 {
 		entry.Date = time.Unix(0, timestamp).UTC().Format("2006-01-02")
 	}
 	if entry.Date == "" {
-		entry.Date = "unknown"
+		return false
+	}
+	entry.SourceIdentity = entry.URI
+	entry.EpistemicStatus = epistemicStatus(entry.Kind)
+	entry.RelevanceScore, err = strconv.ParseFloat(query.Get("score"), 64)
+	if err != nil || entry.RelevanceScore <= 0 {
+		return false
 	}
 	vectorRank, _ := strconv.ParseUint(query.Get("vector_rank"), 10, 32)
 	lexicalRank, _ := strconv.ParseUint(query.Get("lexical_rank"), 10, 32)
@@ -750,6 +801,18 @@ func applyRecallProvenance(entry *MemoryProjection) {
 		entry.Confidence = 1 / float64(rank)
 	} else {
 		entry.Confidence = 0.25
+	}
+	return true
+}
+
+func epistemicStatus(kind string) string {
+	switch strings.ToLower(kind) {
+	case "usermsg", "deliveredmsg":
+		return "observed"
+	case "assertion", "consolidation":
+		return "inferred"
+	default:
+		return "unknown"
 	}
 }
 

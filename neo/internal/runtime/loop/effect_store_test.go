@@ -5,10 +5,16 @@ package loop
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -154,6 +160,58 @@ func TestDurableEffectJournalNotStartedForMissingKey(t *testing.T) {
 	result, err := journal.ReconcileEffect(t.Context(), "never-recorded")
 	if err != nil || result.Status != ReconcileNotStarted {
 		t.Fatalf("missing effect = %+v, %v", result, err)
+	}
+}
+
+func TestPredispatchValidationFailureIsObservationWithoutPendingEffect(t *testing.T) {
+	manager, _ := realNativeManager(t)
+	var calls atomic.Int32
+	gateway := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		body, _ := io.ReadAll(request.Body)
+		var decoded gatewayRequest
+		_ = json.Unmarshal(body, &decoded)
+		if handleCapabilityCanary(writer, decoded) {
+			return
+		}
+		if calls.Add(1) == 1 {
+			writeSSETool(writer, "missing-path", "read_text_file", map[string]interface{}{
+				"expect": "reads the requested file",
+			})
+			return
+		}
+		writeSSEText(writer, "I could not read the requested file because its required path was missing.")
+	}))
+	t.Cleanup(gateway.Close)
+	turnID := "predispatch-validation-turn"
+	userContent := "Read the requested file and report the result."
+	store := realTurnStore(t, turnID, userContent)
+	adapter, err := NewToolManagerAdapter(manager, &DurableEffectJournal{Store: store})
+	if err != nil {
+		t.Fatal(err)
+	}
+	runtimeLoop, err := New(realMiMoGenerator(t, gateway.URL), adapter, store,
+		Config{TurnID: turnID, Model: "mimo-v2", IdleTimeout: 5 * time.Second}, Dependencies{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err := runtimeLoop.Turn(t.Context(), userContent)
+	if err != nil || len(response.ToolEvents) != 1 {
+		t.Fatalf("response=%+v err=%v", response, err)
+	}
+	var outcome map[string]interface{}
+	if err := json.Unmarshal(response.ToolEvents[0].Result, &outcome); err != nil ||
+		outcome["outcome"] != "error" || outcome["effect_status"] != "not_started" {
+		t.Fatalf("pre-dispatch outcome=%+v err=%v", outcome, err)
+	}
+	state, err := store.LoadTurnState(t.Context(), turnID)
+	if err != nil || state.Checkpoint == nil || state.Checkpoint.PendingCall != nil {
+		t.Fatalf("validation left pending state=%+v err=%v", state, err)
+	}
+	key := makeIdempotencyKey(turnID, protocol.NormalizedToolCall{
+		ID: "missing-path", Name: "read_text_file", Arguments: json.RawMessage(`{}`),
+	})
+	if _, err := store.LoadEffect(t.Context(), key); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("validation created an effect record: %v", err)
 	}
 }
 

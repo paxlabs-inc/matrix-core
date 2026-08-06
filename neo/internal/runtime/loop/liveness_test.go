@@ -253,10 +253,14 @@ func TestParallelismDefersExcessCallsWithExplicitMarkers(t *testing.T) {
 	)
 	batch := make([]toolFrame, 0, 6)
 	for index := 1; index <= 6; index++ {
+		command := fmt.Sprintf("printf fan-%d", index)
+		if index == 2 {
+			command = "exit 7"
+		}
 		batch = append(batch, toolFrame{
 			ID: fmt.Sprintf("fan-%d", index), Name: "exec__shell",
 			Arguments: map[string]interface{}{
-				"command": fmt.Sprintf("printf fan-%d", index),
+				"command": command,
 				"cwd":     workdir,
 				"expect":  fmt.Sprintf("prints fan-%d", index),
 			},
@@ -313,15 +317,24 @@ func TestParallelismDefersExcessCallsWithExplicitMarkers(t *testing.T) {
 	if parallelism != 4 {
 		t.Fatalf("derived parallelism = %d want the healthy 4", parallelism)
 	}
-	executed, deferredCount := 0, 0
+	executed, deferredCount, failed := 0, 0, 0
 	for _, event := range response.ToolEvents {
 		if strings.Contains(string(event.Result), "dispatch deferred") {
 			deferredCount++
 			continue
 		}
 		executed++
+		var outcome map[string]interface{}
+		if err := json.Unmarshal(event.Result, &outcome); err != nil {
+			t.Fatalf("unstructured executed result: %s: %v", event.Result, err)
+		}
+		if outcome["outcome"] == "error" {
+			failed++
+		} else if outcome["outcome"] != "success" {
+			t.Fatalf("unexpected structured outcome: %+v", outcome)
+		}
 	}
-	if executed != parallelism || deferredCount != len(batch)-parallelism {
+	if executed != parallelism || failed != 1 || deferredCount != len(batch)-parallelism {
 		t.Fatalf("executed=%d deferred=%d for a batch of %d under %d",
 			executed, deferredCount, len(batch), parallelism)
 	}

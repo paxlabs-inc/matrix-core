@@ -315,6 +315,8 @@ type Agent struct {
 	recoveryHandoff string
 }
 
+var allowLegacyTestLoop bool
+
 // Options configures New.
 type Options struct {
 	Config       config.Config
@@ -426,17 +428,23 @@ func New(o Options) *Agent {
 		interview:        o.Interview,
 		turn:             newTurn(),
 	}
-	if a.runtimeMode == "" {
-		a.runtimeMode = "legacy"
+	requestedRuntime := a.runtimeMode
+	if requestedRuntime == "" {
+		requestedRuntime = "legacy"
 	}
-	if a.runtimeMode == "resurrection" && a.runtime == nil {
+	if requestedRuntime == "legacy" || requestedRuntime == "resurrection" {
+		switch {
+		case a.runtime != nil:
+			a.runtimeMode = "canonical"
+		case allowLegacyTestLoop && requestedRuntime == "legacy" && (a.main != nil || a.cheap != nil):
+			a.runtimeMode = "legacy-test"
+		default:
+			a.runtimeMode = "canonical"
+			a.runtimeErr = fmt.Errorf("neo: canonical runtime is unavailable")
+		}
+	} else {
 		a.runtimeErr = fmt.Errorf(
-			"neo: resurrection runtime is selected but unavailable",
-		)
-	} else if a.runtimeMode != "legacy" &&
-		a.runtimeMode != "resurrection" {
-		a.runtimeErr = fmt.Errorf(
-			"neo: unsupported runtime %q", a.runtimeMode,
+			"neo: unsupported runtime %q", requestedRuntime,
 		)
 	}
 	if a.interview {
@@ -678,10 +686,10 @@ func (a *Agent) effectiveStepBudget(sig effectiveBudgetSignals) int {
 // — prepare → generate → deliberate → act | close — each a named stage with a
 // documented contract. Conversation state persists across calls.
 func (a *Agent) Chat(ctx context.Context, userInput string) error {
-	if a.runtimeMode == "resurrection" || a.runtimeErr != nil {
-		return a.chatResurrection(ctx, userInput)
+	if a.runtimeMode == "legacy-test" {
+		return a.chat(ctx, userInput, nil, "")
 	}
-	return a.chat(ctx, userInput, nil, "")
+	return a.chatResurrection(ctx, userInput)
 }
 
 // ChatAudio runs the same staged turn with one audio-native user message. The
@@ -689,10 +697,10 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 // any downstream deliberation/close, the visible user content is replaced by
 // the durable transcript plus sealed media ref and recorded to Neocortex.
 func (a *Agent) ChatAudio(ctx context.Context, userInput string, audio *AudioTurn) error {
-	if a.runtimeMode == "resurrection" || a.runtimeErr != nil {
-		return a.chatAudioResurrection(ctx, userInput, audio)
+	if a.runtimeMode == "legacy-test" {
+		return a.chat(ctx, userInput, audio, "")
 	}
-	return a.chat(ctx, userInput, audio, "")
+	return a.chatAudioResurrection(ctx, userInput, audio)
 }
 
 // ChatResume enters supervisor guidance into the cognitive window without
@@ -700,10 +708,10 @@ func (a *Agent) ChatAudio(ctx context.Context, userInput string, audio *AudioTur
 func (a *Agent) ChatResume(ctx context.Context, objective, guidance string) error {
 	goalID := a.RegisterPersistentGoal(objective)
 	var err error
-	if a.runtimeMode == "resurrection" || a.runtimeErr != nil {
-		err = a.chatResurrectionResume(ctx, objective, guidance)
-	} else {
+	if a.runtimeMode == "legacy-test" {
 		err = a.chat(ctx, objective, nil, guidance)
+	} else {
+		err = a.chatResurrectionResume(ctx, objective, guidance)
 	}
 	if err == nil && goalID != "" {
 		a.CompletePersistentGoal(goalID)
@@ -1422,7 +1430,7 @@ func (a *Agent) Reset() {
 // when a task hits its hard ceiling; it is never a fabricated success. Empty
 // when there is genuinely nothing to report.
 func (a *Agent) BestEffort() string {
-	if a.runtimeMode == "resurrection" {
+	if a.runtime != nil {
 		return strings.TrimSpace(a.runtimeLast)
 	}
 	if s := strings.TrimSpace(lastAssistantText(a.working, 1600)); s != "" {
@@ -2033,14 +2041,14 @@ func (a *Agent) noteNormalizedFailure(name string, args map[string]interface{}, 
 // non-clean exit is a deterministic blocker (stop-and-ask, no respawn) or a
 // transient/model/stall failure (the existing respawn path).
 func (a *Agent) LastFailureClass() delegate.FailureClass {
-	if a.runtimeMode == "resurrection" {
+	if a.runtime != nil {
 		return a.runtimeFailure
 	}
 	return a.turn.lastFailureClass
 }
 
 func (a *Agent) LastO1Decision() (o1.SupervisorDecision, bool) {
-	if a.runtimeMode == "resurrection" {
+	if a.runtime != nil {
 		return o1.SupervisorDecision{}, false
 	}
 	if a.turn == nil || a.turn.runLedger == nil {

@@ -287,7 +287,9 @@ std::expected<ActivationBundle, Error> Composer::Activate(
       continue;
     }
     auto added = AddItem(bundle, request.token_model, Tier::kEntity,
-                         "event://" + std::to_string(lsn), {lsn},
+                         "event://" + Hex(maybe_record->conversation.bytes) +
+                             "/" + std::to_string(lsn),
+                         {lsn},
                          TypedEventContent(*maybe_record));
     if (!added) {
       return std::unexpected(added.error());

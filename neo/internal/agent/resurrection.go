@@ -18,6 +18,8 @@ import (
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/runtime/address"
+	"matrix/neo/internal/runtime/artifacts"
 	"matrix/neo/internal/runtime/belief"
 	"matrix/neo/internal/runtime/controller"
 	"matrix/neo/internal/runtime/loop"
@@ -32,6 +34,7 @@ type ResurrectionRuntime struct {
 	tools     *loop.ToolManagerAdapter
 	store     *turnstate.Store
 	journal   *loop.DurableEffectJournal
+	artifacts *artifacts.Store
 	pager     *memory.Pager
 
 	closeOnce sync.Once
@@ -105,11 +108,20 @@ func OpenResurrectionRuntime(
 		_ = store.Close(closeCtx)
 		return nil, err
 	}
+	artifactStore, err := artifacts.Open(statePath+".artifacts", cfg.Vault)
+	if err != nil {
+		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_ = store.Close(closeCtx)
+		return nil, err
+	}
+	toolManager.SetArtifactStore(artifactStore)
 	return &ResurrectionRuntime{
 		generator: generator,
 		tools:     toolManager,
 		store:     store,
 		journal:   journal,
+		artifacts: artifactStore,
 		pager:     pager,
 	}, nil
 }
@@ -146,6 +158,17 @@ func (a *Agent) chatResurrectionWithGuidance(
 	userInput string,
 	resumeGuidance string,
 ) error {
+	return a.chatResurrectionWithInput(
+		ctx, userInput, resumeGuidance, "",
+	)
+}
+
+func (a *Agent) chatResurrectionWithInput(
+	ctx context.Context,
+	userInput string,
+	resumeGuidance string,
+	audioDataURL string,
+) error {
 	userInput = strings.TrimSpace(userInput)
 	if userInput == "" {
 		return nil
@@ -160,6 +183,25 @@ func (a *Agent) chatResurrectionWithGuidance(
 		return fmt.Errorf(
 			"neo: resurrection runtime is unavailable",
 		)
+	}
+	if !a.cfg.SessionCurrentIntent && a.activeGoal == "" {
+		a.activeGoal = userInput
+	}
+	turn := newTurn()
+	turn.objective = userInput
+	turn.turnObjective = userInput
+	turn.posture = ClassifyInteractionPosture(a.cfg, userInput)
+	turn.attempt = a.supervisedAttempt
+	if strings.TrimSpace(resumeGuidance) != "" {
+		turn.inputOrigin = originSupervisorResume
+	}
+	if a.cfg.SessionCurrentIntent {
+		a.activeGoal = userInput
+	}
+	a.turn = turn
+	if err := a.preparePosture(); err != nil {
+		a.runtimeFailure = delegate.ClassDeterministic
+		return err
 	}
 	a.turnSeq++
 	turnID := a.turnIntentID()
@@ -265,12 +307,14 @@ func (a *Agent) chatResurrectionWithGuidance(
 				}
 				return a.wsRoot
 			}(),
-			Model:           a.cfg.MainModel,
-			SystemPrompt:    a.stableSystem(),
-			MaxOutputTokens: 8192,
-			MaxToolCalls:    resurrectionToolLimit(a.cfg),
-			IdleTimeout:     a.cfg.RuntimeProvider.IdleTimeout,
-			MaxTurnTokens:   a.cfg.ContextWindowTokens,
+			Model:                   a.cfg.MainModel,
+			SystemPrompt:            a.stableSystem(),
+			MaxOutputTokens:         8192,
+			AddressIdentity:         address.New(a.preferredName, a.agentName()),
+			MaxToolCalls:            canonicalToolLimit(a.cfg, turn.posture),
+			IdleTimeout:             a.cfg.RuntimeProvider.IdleTimeout,
+			MaxTurnTokens:           a.cfg.ContextWindowTokens,
+			InitialUserAudioDataURL: strings.TrimSpace(audioDataURL),
 		},
 		loop.Dependencies{
 			Observer:        observer,
@@ -462,7 +506,9 @@ func (a *Agent) chatAudioResurrection(
 	if audio.OnTranscript != nil {
 		audio.OnTranscript(durable)
 	}
-	return a.chatResurrection(ctx, durable)
+	return a.chatResurrectionWithInput(
+		ctx, durable, "", audio.DataURL,
+	)
 }
 
 // openBeliefState restores this conversation's durable cognition so premises,
@@ -599,6 +645,21 @@ func resurrectionToolLimit(cfg config.Config) int {
 		return cfg.StepBudget
 	}
 	return 50
+}
+
+func canonicalToolLimit(cfg config.Config, posture InteractionPosture) int {
+	configured := resurrectionToolLimit(cfg)
+	switch posture {
+	case PostureConversation:
+		if configured > 4 {
+			return 4
+		}
+	case PostureExploration:
+		if configured > 20 {
+			return 20
+		}
+	}
+	return configured
 }
 
 func runtimeBestEffort(response loop.Response) string {

@@ -12,6 +12,7 @@ package server
 // is the writeback-exclusion proof).
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -22,6 +23,7 @@ import (
 	"testing"
 
 	mcllm "matrix/mcl/llm"
+	"matrix/neo/internal/agent"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
@@ -39,10 +41,16 @@ func capturingModelServer(t *testing.T) (*httptest.Server, func() string) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		mu.Lock()
-		last = string(body)
+		last += "\n" + string(body)
 		mu.Unlock()
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)
+		if bytes.Contains(body, []byte(`"name":"memory_recall"`)) &&
+			!bytes.Contains(body, []byte(`"role":"tool"`)) {
+			_, _ = w.Write([]byte(`data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"brief-recall","type":"function","function":{"name":"memory_recall","arguments":"{\"query\":\"recent brief context\",\"expect\":\"returns ready\"}"}}]},"finish_reason":"tool_calls"}]}` + "\n\n"))
+			_, _ = w.Write([]byte("data: [DONE]\n\n"))
+			return
+		}
 		_, _ = w.Write([]byte(`data: {"choices":[{"delta":{"content":"Great — first question: what topics do you care about?"},"finish_reason":"stop"}]}` + "\n\n"))
 		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 	}))
@@ -80,12 +88,18 @@ func newInterviewTestEngine(t *testing.T, modelURL string) (*Engine, *memory.Pag
 			t.Fatalf("llm.New: %v", err)
 		}
 	}
+	manager := &tools.Manager{}
+	var runtime *agent.ResurrectionRuntime
+	if modelURL != "" {
+		runtime = openCanonicalTestRuntime(t, &cfg, manager, pager, modelURL)
+	}
 	e := NewEngine(EngineOptions{
 		Config:          cfg,
 		Main:            client,
 		Cheap:           client,
-		Tools:           &tools.Manager{},
+		Tools:           manager,
 		Pager:           pager,
+		Runtime:         runtime,
 		Consolidator:    writeback.New(client, client, pager, cfg),
 		ConversationDir: t.TempDir(),
 		BackendURL:      "http://127.0.0.1:1",

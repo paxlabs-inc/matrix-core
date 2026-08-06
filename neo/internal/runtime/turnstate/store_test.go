@@ -33,7 +33,7 @@ func TestStoreMigratesSealsAndRecoversTypedState(t *testing.T) {
 	ctx := context.Background()
 	store, path := openTestStore(t)
 	defer store.Close(ctx)
-	if version, err := store.SchemaVersion(ctx); err != nil || version != 3 {
+	if version, err := store.SchemaVersion(ctx); err != nil || version != 5 {
 		t.Fatalf("SchemaVersion() = %d, %v", version, err)
 	}
 	info, err := os.Stat(path)
@@ -263,12 +263,14 @@ func TestStoreTamperAndTruncationFailClosed(t *testing.T) {
 			}
 			var envelope []byte
 			if err := db.QueryRow(
-				`SELECT state FROM turn_state WHERE turn_id = ?`, testTurnID,
+				`SELECT state FROM canonical_records
+				 WHERE logical_turn_id = ? AND record_type = 'turn' AND record_key = 'current'`, testTurnID,
 			).Scan(&envelope); err != nil {
 				t.Fatal(err)
 			}
 			if _, err := db.Exec(
-				`UPDATE turn_state SET state = ? WHERE turn_id = ?`,
+				`UPDATE canonical_records SET state = ?
+				 WHERE logical_turn_id = ? AND record_type = 'turn' AND record_key = 'current'`,
 				test.edit(envelope), testTurnID,
 			); err != nil {
 				t.Fatal(err)

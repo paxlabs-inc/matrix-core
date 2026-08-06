@@ -45,6 +45,22 @@ neocortex::log::Frame Message(std::uint64_t lsn, std::string_view text) {
   };
 }
 
+neocortex::log::Frame Operational(std::uint64_t lsn,
+                                  std::string_view text) {
+  const auto content = Bytes(text);
+  return neocortex::log::Frame{
+      .header = neocortex::log::FrameHeader{
+          .lsn = lsn,
+          .kind = neocortex::log::EventKind::kToolResult,
+          .wall_timestamp_ns = static_cast<std::int64_t>(lsn),
+          .actor = 91,
+          .conversation = {},
+      },
+      .sealed_payload = neocortex::test::BuildEvent(
+          neocortex::log::EventKind::kToolResult, lsn, content),
+  };
+}
+
 struct EmbeddingPosition final {
   std::uint64_t lsn;
   std::uint64_t target_lsn;
@@ -118,6 +134,7 @@ int TestIndexPlane(const std::filesystem::path& path) {
   frames.push_back(Embedding(EmbeddingPosition{.lsn = 4, .target_lsn = 2},
                              second, second_binary));
   frames.push_back(Message(5, "rareterm lexical only no embedding"));
+  frames.push_back(Operational(6, "privateoperationaltoken"));
 
   auto vectors = lane->Rebuild(*store, frames, false);
   auto lexical = neocortex::proj::LexicalProjection::Rebuild(*store, frames);
@@ -148,8 +165,11 @@ int TestIndexPlane(const std::filesystem::path& path) {
   }
   auto alpha = neocortex::proj::LexicalProjection::Query(*snapshot, "alpha", 8);
   auto rare = neocortex::proj::LexicalProjection::Query(*snapshot, "rareterm", 8);
+  auto operational = neocortex::proj::LexicalProjection::Query(
+      *snapshot, "privateoperationaltoken", 8);
   if (!alpha || alpha->size() != 2 || alpha->front().lsn != 1 || !rare ||
-      rare->size() != 1 || rare->front().lsn != 5) {
+      rare->size() != 1 || rare->front().lsn != 5 || !operational ||
+      !operational->empty()) {
     return Fail("BM25 failed ranking or embedding-independent reachability");
   }
   const auto fused = neocortex::proj::LexicalProjection::Fuse(
@@ -181,6 +201,15 @@ int TestIndexPlane(const std::filesystem::path& path) {
       !rebuilt_lexical_bytes || *vector_bytes != *rebuilt_vector_bytes ||
       *lexical_bytes != *rebuilt_lexical_bytes) {
     return Fail("vector or lexical replay was not byte-identical");
+  }
+  auto filtered = rebuilt_snapshot
+                      ? neocortex::proj::LexicalProjection::Query(
+                            *rebuilt_snapshot, "privateoperationaltoken", 8)
+                      : std::expected<std::vector<neocortex::proj::LexicalHit>,
+                                      neocortex::Error>(
+                            std::unexpected(rebuilt_snapshot.error()));
+  if (!filtered || !filtered->empty()) {
+    return Fail("operational record became a lexical hit after rebuild");
   }
   rebuilt_snapshot = std::unexpected(neocortex::Error{
       neocortex::ErrorCode::kBackendUnavailable, 0});

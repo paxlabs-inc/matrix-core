@@ -6,18 +6,25 @@ package loop
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"matrix/cortexclient"
+	"matrix/neo/internal/runtime/address"
+	runtimecompose "matrix/neo/internal/runtime/compose"
+	"matrix/neo/internal/runtime/converge"
 	"matrix/neo/internal/runtime/liveness"
 	"matrix/neo/internal/runtime/protocol"
 	"matrix/neo/internal/runtime/provider"
+	"matrix/neo/internal/runtime/records"
+	runtimestream "matrix/neo/internal/runtime/stream"
 	"matrix/neo/internal/runtime/turnstate"
 )
 
@@ -45,8 +52,8 @@ const (
 )
 
 const (
-	explorationExhaustedResult = `{"error":"exploration budget exhausted by the enforced liveness decision policy"}`
-	parallelismDeferredResult  = `{"error":"dispatch deferred: enforced liveness parallelism limit"}`
+	explorationExhaustedResult = `{"outcome":"error","failure_layer":"convergence","retryable":false,"effect_status":"not_started","evidence":[{"identity":"runtime-policy","kind":"inline","content":{"message":"exploration budget exhausted by the enforced liveness decision policy"}}],"normalized_cause":"exploration budget exhausted","suggested_recovery":"Synthesize from collected evidence or explain the remaining blocker.","artifact_references":[]}`
+	parallelismDeferredResult  = `{"outcome":"error","failure_layer":"convergence","retryable":false,"effect_status":"not_started","evidence":[{"identity":"runtime-policy","kind":"inline","content":{"message":"dispatch deferred by the enforced liveness parallelism limit"}}],"normalized_cause":"parallelism limit","suggested_recovery":"Observe the completed sibling results before proposing another bounded batch.","artifact_references":[]}`
 )
 
 const (
@@ -63,21 +70,23 @@ const toolBudgetBoundary = "I stopped dispatching tools because this logical tur
 const circuitBoundary = "I stopped the repeated strategy because its persisted circuit breaker opened."
 
 type Config struct {
-	TurnID                 string
-	ConversationID         string
-	ProjectRoot            string
-	Model                  string
-	SystemPrompt           string
-	MaxOutputTokens        int
-	MaxToolCalls           int
-	IdleTimeout            time.Duration
-	TextualRepairLimit     int
-	ExpectationRepairLimit int
-	EmptyRepairLimit       int
-	FinalAnswerRepairLimit int
-	CompletionDeferrals    int
-	MaxTurnTokens          int
-	Breaker                liveness.BreakerConfig
+	TurnID                  string
+	ConversationID          string
+	ProjectRoot             string
+	Model                   string
+	SystemPrompt            string
+	MaxOutputTokens         int
+	MaxToolCalls            int
+	IdleTimeout             time.Duration
+	TextualRepairLimit      int
+	ExpectationRepairLimit  int
+	EmptyRepairLimit        int
+	FinalAnswerRepairLimit  int
+	CompletionDeferrals     int
+	MaxTurnTokens           int
+	Breaker                 liveness.BreakerConfig
+	AddressIdentity         address.Identity
+	InitialUserAudioDataURL string
 }
 
 type Dependencies struct {
@@ -152,6 +161,19 @@ type Incomplete struct {
 	Cause            error                `json:"-"`
 }
 
+type DeliveryRetry struct {
+	Answer   string `json:"answer"`
+	Attempts uint64 `json:"attempts"`
+	Cause    string `json:"cause"`
+}
+
+func (retry *DeliveryRetry) Error() string {
+	if retry == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("runtime loop: answer is ready; delivery retry required after %d attempt(s): %s", retry.Attempts, retry.Cause)
+}
+
 type IncompleteRecord struct {
 	TurnID           string            `json:"turn_id"`
 	ConversationID   string            `json:"conversation_id,omitempty"`
@@ -193,6 +215,7 @@ func (incomplete *Incomplete) Unwrap() error {
 }
 
 type cursor struct {
+	Posture            converge.Posture      `json:"posture,omitempty"`
 	ToolCalls          int                   `json:"tool_calls"`
 	TextualRepairs     int                   `json:"textual_repairs"`
 	ExpectationRepairs int                   `json:"expectation_repairs"`
@@ -204,8 +227,11 @@ type cursor struct {
 	RepeatedCalls      int                   `json:"repeated_calls,omitempty"`
 	FailureFingerprint string                `json:"failure_fingerprint,omitempty"`
 	FailureRepeats     int                   `json:"failure_repeats,omitempty"`
+	Controller         converge.State        `json:"convergence_controller,omitempty"`
 	Circuit            liveness.BreakerState `json:"circuit,omitempty"`
 	TokensSpent        int                   `json:"tokens_spent,omitempty"`
+	InputTokens        int                   `json:"input_tokens,omitempty"`
+	OutputTokens       int                   `json:"output_tokens,omitempty"`
 }
 
 func (state cursor) repaired() bool {
@@ -239,21 +265,6 @@ func (state *cursor) annotateFailure(
 	if cause == "" {
 		cause = strings.ToLower(strings.Join(strings.Fields(string(result.Content)), " "))
 	}
-	digest := sha256.New()
-	_, _ = digest.Write([]byte(strings.TrimSpace(call.Name)))
-	_, _ = digest.Write([]byte{0})
-	_, _ = digest.Write(call.Arguments)
-	_, _ = digest.Write([]byte{0})
-	_, _ = digest.Write([]byte(strings.TrimSpace(result.FailureClass)))
-	_, _ = digest.Write([]byte{0})
-	_, _ = digest.Write([]byte(cause))
-	fingerprint := hex.EncodeToString(digest.Sum(nil))
-	if fingerprint == state.FailureFingerprint {
-		state.FailureRepeats++
-	} else {
-		state.FailureFingerprint = fingerprint
-		state.FailureRepeats = 1
-	}
 	payload := map[string]any{}
 	if json.Unmarshal(result.Content, &payload) != nil {
 		payload["outcome"] = "error"
@@ -261,18 +272,50 @@ func (state *cursor) annotateFailure(
 		payload["effect_status"] = "completed"
 		payload["evidence"] = string(result.Content)
 	}
+	effectStatus, _ := payload["effect_status"].(string)
+	kind := converge.FailureDeterministic
+	if result.Retryable {
+		kind = converge.FailureTransient
+	}
+	if effectStatus == "outcome_unknown" || effectStatus == "unknown" {
+		kind = converge.FailureUnknownEffect
+	}
+	decision := state.decide(kind, converge.Fingerprint{
+		Operation: call.Name, NormalizedArguments: call.Arguments,
+		Phase: "tool", FailureLayer: result.FailureClass,
+		NormalizedCause: cause, EffectStatus: effectStatus,
+	})
+	fingerprint := converge.Fingerprint{
+		Operation: call.Name, NormalizedArguments: call.Arguments,
+		Phase: "tool", FailureLayer: result.FailureClass,
+		NormalizedCause: cause, EffectStatus: effectStatus,
+	}.Key()
+	state.FailureFingerprint = fingerprint
+	state.FailureRepeats = int(decision.Count)
 	payload["failure_fingerprint"] = fingerprint
-	payload["repeat_count"] = state.FailureRepeats
-	if state.FailureRepeats > 1 {
+	payload["repeat_count"] = decision.Count
+	if decision.RequiresStrategyChange || decision.Action == converge.ActionDegrade {
 		payload["retryable"] = false
 		payload["strategy_change_required"] = true
-		payload["suggested_recovery"] = "Do not repeat this operation unchanged; change strategy, degrade to verified evidence, or state the blocker honestly."
+		payload["suggested_recovery"] = string(decision.Action) + ": do not repeat this operation unchanged; change strategy, degrade to verified evidence, or state the blocker honestly."
 		result.Retryable = false
 	}
 	if encoded, err := json.Marshal(payload); err == nil {
 		result.Content = encoded
 	}
 	return result
+}
+
+func (state *cursor) decide(kind converge.FailureKind, fingerprint converge.Fingerprint) converge.Decision {
+	posture := state.Posture
+	if posture == "" {
+		posture = converge.Conversation
+	}
+	return (converge.Controller{}).Observe(
+		&state.Controller,
+		converge.Failure{Kind: kind, Fingerprint: fingerprint},
+		converge.ForPosture(posture),
+	)
 }
 
 type Loop struct {
@@ -293,6 +336,7 @@ type Loop struct {
 	liveness         LivenessSource
 	guidance         GuidanceSource
 	delivery         *DeliveryChoke
+	stream           *runtimestream.Transaction
 	usage            provider.TurnUsage
 
 	terminalOnce sync.Once
@@ -347,6 +391,10 @@ func New(
 	if config.MaxTurnTokens == 0 {
 		config.MaxTurnTokens = defaultMaxTurnTokens
 	}
+	config.AddressIdentity = address.New(
+		config.AddressIdentity.PreferredPersonName,
+		config.AddressIdentity.AgentName,
+	)
 	delivery := dependencies.Delivery
 	incompletes := dependencies.Incompletes
 	if incompletes == nil {
@@ -357,7 +405,7 @@ func New(
 	} else if delivery != nil && delivery.Recorder == nil {
 		delivery.Recorder = dependencies.Recorder
 	}
-	return &Loop{
+	runtimeLoop := &Loop{
 		provider: generator, tools: toolManager, store: store,
 		config: config, observer: dependencies.Observer,
 		gate:             dependencies.CompletionGate,
@@ -372,7 +420,18 @@ func New(
 		liveness:         dependencies.Liveness,
 		guidance:         dependencies.Guidance,
 		delivery:         delivery,
-	}, nil
+	}
+	if dependencies.Observer != nil {
+		var streamRecorder runtimestream.Recorder
+		if recorder, ok := store.(runtimestream.Recorder); ok {
+			streamRecorder = recorder
+		}
+		runtimeLoop.stream = runtimestream.New(
+			config.TurnID, streamRecorder,
+			observerStreamSink{observer: dependencies.Observer},
+		)
+	}
+	return runtimeLoop, nil
 }
 
 func (loop *Loop) Turn(
@@ -397,6 +456,7 @@ func (loop *Loop) TurnWithHistory(
 	checkpoint := turnstate.Checkpoint{
 		Messages: append(visibleConversationHistory(history), protocol.Message{
 			Role: protocol.RoleUser, Content: userContent,
+			AudioDataURL: strings.TrimSpace(loop.config.InitialUserAudioDataURL),
 		}),
 	}
 	loop.initializeCodingCheckpoint(&checkpoint, userContent)
@@ -490,6 +550,25 @@ func (loop *Loop) runTurn(
 	checkpoint turnstate.Checkpoint,
 	state cursor,
 ) (Response, error) {
+	if store, ok := loop.store.(ConvergenceStore); ok {
+		persisted, loadErr := store.LoadConvergenceRecord(ctx, loop.config.TurnID)
+		if loadErr != nil && !errors.Is(loadErr, sql.ErrNoRows) {
+			return Response{}, fmt.Errorf("runtime loop: load convergence record: %w", loadErr)
+		}
+		if loadErr == nil {
+			state.InputTokens = max(state.InputTokens, int(persisted.CumulativeInputTokens))
+			state.OutputTokens = max(state.OutputTokens, int(persisted.CumulativeOutputTokens))
+			state.TokensSpent = max(state.TokensSpent, state.InputTokens+state.OutputTokens)
+			state.ToolCalls = max(state.ToolCalls, int(persisted.ToolCalls))
+			state.TextualRepairs = max(state.TextualRepairs, int(persisted.RepairCounters["textual"]))
+			state.ExpectationRepairs = max(state.ExpectationRepairs, int(persisted.RepairCounters["expectation"]))
+			state.EmptyRepairs = max(state.EmptyRepairs, int(persisted.RepairCounters["empty"]))
+			state.FinalRepairs = max(state.FinalRepairs, int(persisted.RepairCounters["final_answer"]))
+			for _, usage := range persisted.ProviderUsage {
+				checkpoint.ProviderAttempts = max(checkpoint.ProviderAttempts, int(usage.RequestCount))
+			}
+		}
+	}
 	response, err := responseFromCheckpoint(checkpoint)
 	if err != nil {
 		return Response{}, err
@@ -508,6 +587,8 @@ func (loop *Loop) runTurn(
 	// so a respawn continues one cumulative budget instead of buying a fresh
 	// one on every resume.
 	carriedTokens := state.TokensSpent
+	carriedInputTokens := state.InputTokens
+	carriedOutputTokens := state.OutputTokens
 	toolCallLimit := loop.config.MaxToolCalls
 	if policy.ToolCallBudget < toolCallLimit {
 		toolCallLimit = policy.ToolCallBudget
@@ -588,17 +669,21 @@ func (loop *Loop) runTurn(
 				activation = "[memory_diagnostics]\nRecalled memory is temporarily unavailable; continue from the authoritative durable transcript."
 			}
 		}
+		messages, manifest := composeRequestMessages(
+			loop.config.ConversationID, loop.config.SystemPrompt,
+			checkpoint.Messages, nextRepair, activation,
+		)
+		if store, ok := loop.store.(ContextManifestStore); ok {
+			if manifestErr := store.SaveContextManifest(ctx, loop.config.TurnID, uint64(checkpoint.Step), manifest); manifestErr != nil {
+				return response, fmt.Errorf("runtime loop: persist context manifest: %w", manifestErr)
+			}
+		}
 		request := protocol.GenerationRequest{
-			Model: loop.config.Model,
-			Messages: requestMessages(
-				loop.config.SystemPrompt,
-				checkpoint.Messages,
-				nextRepair,
-				activation,
-			),
+			Model:           loop.config.Model,
+			Messages:        messages,
 			Tools:           tools,
 			MaxOutputTokens: loop.config.MaxOutputTokens,
-			Stream:          loop.observer != nil,
+			Stream:          loop.stream != nil,
 		}
 		request.Messages = appendCodingCheckpoint(request.Messages, checkpoint.Coding)
 		if loop.guidance != nil {
@@ -623,22 +708,37 @@ func (loop *Loop) runTurn(
 			revisionActive = true
 		}
 		started := time.Now().UTC()
+		if loop.stream != nil {
+			loop.stream.Begin(uint64(checkpoint.Step))
+		}
 		generation, streamed, generateErr := loop.generate(ctx, request)
 		checkpoint.ProviderAttempts++
 		response.ProviderCalls = checkpoint.ProviderAttempts
 		response.Usage = loop.usage.Snapshot().Usage
+		state.InputTokens = carriedInputTokens + response.Usage.PromptTokens
+		state.OutputTokens = carriedOutputTokens + response.Usage.CompletionTokens
 		state.TokensSpent = carriedTokens + response.Usage.TotalTokens
 		response.Liveness.TokensSpent = state.TokensSpent
 		if generateErr != nil {
 			revisionActive = false
 			if loop.observer != nil && streamed {
-				if resetErr := loop.observer.Reset(ctx); resetErr != nil {
+				if resetErr := loop.retractAttempt(ctx); resetErr != nil {
 					generateErr = errors.Join(generateErr, resetErr)
 				}
 			}
+			protocolCorruption := errors.Is(generateErr, provider.ErrToolProtocol) ||
+				errors.Is(generateErr, ErrTextualToolMarkup)
+			kind := converge.FailureProcessUnusable
+			if protocolCorruption {
+				kind = converge.FailureProviderCorruption
+			}
+			convergenceDecision := state.decide(kind, converge.Fingerprint{
+				Operation: "provider.generate", Phase: "provider",
+				FailureLayer: "provider", NormalizedCause: generateErr.Error(),
+				EffectStatus: "not_started",
+			})
 			if state.TextualRepairs < loop.config.TextualRepairLimit &&
-				(errors.Is(generateErr, provider.ErrToolProtocol) ||
-					errors.Is(generateErr, ErrTextualToolMarkup)) {
+				protocolCorruption && convergenceDecision.Retry {
 				state.TextualRepairs++
 				nextRepair = textualToolRepairPrompt
 				if adaptive, ok := loop.provider.(interface {
@@ -650,6 +750,9 @@ func (loop *Loop) runTurn(
 					return response, err
 				}
 				continue
+			}
+			if err := loop.save(context.WithoutCancel(ctx), &checkpoint, state); err != nil {
+				return response, err
 			}
 			return response, loop.incomplete(
 				ctx, "provider", checkpoint, response, started,
@@ -664,7 +767,7 @@ func (loop *Loop) runTurn(
 			// emitted under a tools-stripped request are discarded — sibling
 			// dispatches are blocked for the whole revision step.
 			if loop.observer != nil && streamed {
-				if resetErr := loop.observer.Reset(ctx); resetErr != nil {
+				if resetErr := loop.retractAttempt(ctx); resetErr != nil {
 					return response, loop.incomplete(
 						ctx, "observer_commit", checkpoint, response,
 						started, "resume_from_checkpoint", resetErr,
@@ -697,9 +800,14 @@ func (loop *Loop) runTurn(
 			generation.Content + generation.Reasoning,
 		); err != nil {
 			if loop.observer != nil && streamed {
-				_ = loop.observer.Reset(ctx)
+				_ = loop.retractAttempt(ctx)
 			}
-			if state.TextualRepairs < loop.config.TextualRepairLimit {
+			convergenceDecision := state.decide(converge.FailureProviderCorruption, converge.Fingerprint{
+				Operation: "provider.conform", Phase: "provider",
+				FailureLayer: "provider", NormalizedCause: err.Error(),
+				EffectStatus: "not_started",
+			})
+			if state.TextualRepairs < loop.config.TextualRepairLimit && convergenceDecision.Retry {
 				state.TextualRepairs++
 				nextRepair = textualToolRepairPrompt
 				if err := loop.save(ctx, &checkpoint, state); err != nil {
@@ -716,14 +824,40 @@ func (loop *Loop) runTurn(
 				ctx, userContent, checkpoint, response, state, "",
 			)
 		}
+		if addressErr := loop.config.AddressIdentity.ValidateVisible(
+			generation.Reasoning, generation.Content,
+		); addressErr != nil {
+			if loop.observer != nil && streamed {
+				_ = loop.retractAttempt(ctx)
+			}
+			convergenceDecision := state.decide(converge.FailureProviderCorruption, converge.Fingerprint{
+				Operation: "provider.address_identity", Phase: "provider",
+				FailureLayer: "validation", NormalizedCause: addressErr.Error(),
+				EffectStatus: "not_started",
+			})
+			if state.FinalRepairs < loop.config.FinalAnswerRepairLimit && convergenceDecision.Retry {
+				state.FinalRepairs++
+				nextRepair = address.RepairInstruction(loop.config.AddressIdentity)
+				if err := loop.save(ctx, &checkpoint, state); err != nil {
+					return response, err
+				}
+				continue
+			}
+			return loop.deliverHonestPartial(ctx, userContent, checkpoint, response, state, "")
+		}
 		expectations, calls, expectationErr :=
 			extractExpectations(generation.ToolCalls)
 		if expectationErr != nil {
 			if loop.observer != nil && streamed {
-				_ = loop.observer.Reset(ctx)
+				_ = loop.retractAttempt(ctx)
 			}
+			convergenceDecision := state.decide(converge.FailureProviderCorruption, converge.Fingerprint{
+				Operation: "provider.tool_expectation", Phase: "provider",
+				FailureLayer: "provider", NormalizedCause: expectationErr.Error(),
+				EffectStatus: "not_started",
+			})
 			if state.ExpectationRepairs <
-				loop.config.ExpectationRepairLimit {
+				loop.config.ExpectationRepairLimit && convergenceDecision.Retry {
 				state.ExpectationRepairs++
 				nextRepair = expectationRepairPrompt
 				if err := loop.save(ctx, &checkpoint, state); err != nil {
@@ -746,9 +880,14 @@ func (loop *Loop) runTurn(
 			content := strings.TrimSpace(generation.Content)
 			if content == "" {
 				if loop.observer != nil && streamed {
-					_ = loop.observer.Reset(ctx)
+					_ = loop.retractAttempt(ctx)
 				}
-				if state.EmptyRepairs < loop.config.EmptyRepairLimit {
+				convergenceDecision := state.decide(converge.FailureProviderCorruption, converge.Fingerprint{
+					Operation: "provider.empty_answer", Phase: "provider",
+					FailureLayer: "provider", NormalizedCause: "empty answer",
+					EffectStatus: "not_started",
+				})
+				if state.EmptyRepairs < loop.config.EmptyRepairLimit && convergenceDecision.Retry {
 					state.EmptyRepairs++
 					toolsDisabled = true
 					nextRepair = emptyFinalRepairPrompt
@@ -768,10 +907,15 @@ func (loop *Loop) runTurn(
 				checkpoint.Messages,
 			); !accepted {
 				if loop.observer != nil && streamed {
-					_ = loop.observer.Reset(ctx)
+					_ = loop.retractAttempt(ctx)
 				}
+				convergenceDecision := state.decide(converge.FailureRepeatedSemantic, converge.Fingerprint{
+					Operation: "answer.acceptance", Phase: "completion",
+					FailureLayer: "provider", NormalizedCause: reason,
+					EffectStatus: "completed",
+				})
 				if state.FinalRepairs <
-					loop.config.FinalAnswerRepairLimit {
+					loop.config.FinalAnswerRepairLimit && convergenceDecision.Action != converge.ActionDegrade {
 					state.FinalRepairs++
 					nextRepair = finalAnswerRepairPrompt(reason)
 					if err := loop.save(
@@ -800,10 +944,15 @@ func (loop *Loop) runTurn(
 					}
 				} else if !decision.Ready {
 					if loop.observer != nil && streamed {
-						_ = loop.observer.Reset(ctx)
+						_ = loop.retractAttempt(ctx)
 					}
+					convergenceDecision := state.decide(converge.FailureRepeatedSemantic, converge.Fingerprint{
+						Operation: "completion.gate", Phase: "completion",
+						FailureLayer: "validation", NormalizedCause: decision.Reason,
+						EffectStatus: "completed",
+					})
 					if state.CompletionDefers >=
-						loop.config.CompletionDeferrals {
+						loop.config.CompletionDeferrals || convergenceDecision.Action == converge.ActionDegrade {
 						return response, loop.incomplete(
 							ctx, "evidence_convergence",
 							checkpoint, response, started,
@@ -828,19 +977,27 @@ func (loop *Loop) runTurn(
 			)
 		}
 		if loop.observer != nil {
-			var observerErr error
-			if toolObserver, ok := loop.observer.(interface {
-				CommitToolAttempt(context.Context, []protocol.NormalizedToolCall) error
-			}); ok {
-				observerErr = toolObserver.CommitToolAttempt(ctx, calls)
-			} else {
-				observerErr = loop.observer.Reset(ctx)
-			}
+			observerErr := loop.commitToolAttempt(ctx, calls)
 			if observerErr != nil {
 				return response, loop.incomplete(
 					ctx, "observer_commit", checkpoint, response,
 					started, "resume_from_checkpoint", observerErr,
 				)
+			}
+		}
+		if state.Posture == "" {
+			if toolCallLimit <= 4 {
+				state.Posture = converge.Conversation
+			} else if toolCallLimit <= 20 {
+				state.Posture = converge.Exploration
+			} else {
+				state.Posture = converge.Execution
+			}
+		}
+		for _, call := range calls {
+			if state.Posture == converge.Conversation && isResearchReadOperation(call.Name) {
+				state.Posture = converge.Exploration
+				toolCallLimit = max(toolCallLimit, int(converge.ForPosture(converge.Exploration).ToolCalls))
 			}
 		}
 		checkpoint.Messages = append(
@@ -937,6 +1094,12 @@ func (loop *Loop) runTurn(
 			if signature == state.LastSignature &&
 				state.RepeatedCalls >= policy.SameStrategyRetries+1 {
 				state.RepeatedCalls++
+				convergenceDecision := state.decide(converge.FailureRepeatedSemantic, converge.Fingerprint{
+					Operation: call.Name, NormalizedArguments: call.Arguments,
+					Phase: "tool_selection", FailureLayer: "convergence",
+					NormalizedCause: "same operation and arguments repeated without new evidence",
+					EffectStatus:    "not_started",
+				})
 				response.Liveness.Enforcements = append(
 					response.Liveness.Enforcements,
 					LivenessEnforcement{
@@ -948,7 +1111,7 @@ func (loop *Loop) runTurn(
 				failure := structuredToolFailure(
 					"convergence", false, "not_started",
 					"The same operation, arguments, phase, and normalized cause repeated without new evidence.",
-					"Change strategy, degrade to verified evidence already available, or state the blocker honestly.",
+					string(convergenceDecision.Action)+": change strategy, degrade to verified evidence already available, or state the blocker honestly.",
 				)
 				failure = state.annotateFailure(call, failure)
 				loop.injectToolResult(
@@ -1191,27 +1354,8 @@ func (loop *Loop) generate(
 		generation, err := loop.provider.Generate(
 			providerCtx, request, &loop.usage,
 		)
-		if err != nil {
-			return generation, false, err
-		}
-		streamed := false
-		if generation.Reasoning != "" {
-			streamed = true
-			if err := loop.observer.ReasoningDelta(
-				providerCtx, generation.Reasoning,
-			); err != nil {
-				return protocol.NormalizedGeneration{}, streamed, err
-			}
-		}
-		if generation.Content != "" {
-			streamed = true
-			if err := loop.observer.ContentDelta(
-				providerCtx, generation.Content,
-			); err != nil {
-				return protocol.NormalizedGeneration{}, streamed, err
-			}
-		}
-		return generation, streamed, nil
+		// A settled generation is not streaming. Do not replay it as fake deltas.
+		return generation, false, err
 	}
 	streamed := false
 	generation, err := streamer.GenerateStream(
@@ -1219,22 +1363,71 @@ func (loop *Loop) generate(
 		func(chunk protocol.StreamChunk) error {
 			if chunk.ReasoningDelta != "" {
 				streamed = true
-				if err := loop.observer.ReasoningDelta(
-					providerCtx, chunk.ReasoningDelta,
-				); err != nil {
+				if err := loop.streamDelta(providerCtx, records.StreamReasoning, chunk.ReasoningDelta); err != nil {
 					return err
 				}
 			}
 			if chunk.ContentDelta != "" {
 				streamed = true
-				return loop.observer.ContentDelta(
-					providerCtx, chunk.ContentDelta,
-				)
+				return loop.streamDelta(providerCtx, records.StreamAnswer, chunk.ContentDelta)
 			}
 			return nil
 		},
 	)
 	return generation, streamed, err
+}
+
+func (loop *Loop) streamDelta(ctx context.Context, channel records.StreamChannel, content string) error {
+	if loop.stream != nil {
+		return loop.stream.Delta(ctx, channel, content)
+	}
+	if loop.observer == nil {
+		return nil
+	}
+	if channel == records.StreamReasoning {
+		return loop.observer.ReasoningDelta(ctx, content)
+	}
+	return loop.observer.ContentDelta(ctx, content)
+}
+
+func (loop *Loop) retractAttempt(ctx context.Context) error {
+	if loop.stream != nil {
+		return loop.stream.Retract(ctx)
+	}
+	if loop.observer != nil {
+		return loop.observer.Reset(ctx)
+	}
+	return nil
+}
+
+func (loop *Loop) commitAttempt(ctx context.Context) error {
+	if loop.stream != nil {
+		return loop.stream.Commit(ctx)
+	}
+	if loop.observer != nil {
+		return loop.observer.CommitAttempt(ctx)
+	}
+	return nil
+}
+
+func (loop *Loop) commitToolAttempt(ctx context.Context, calls []protocol.NormalizedToolCall) error {
+	if loop.stream != nil {
+		if err := loop.stream.Retract(ctx); err != nil {
+			return err
+		}
+		if toolObserver, ok := loop.observer.(interface {
+			ObserveToolAttempt([]protocol.NormalizedToolCall)
+		}); ok {
+			toolObserver.ObserveToolAttempt(calls)
+		}
+		return nil
+	}
+	if toolObserver, ok := loop.observer.(interface {
+		CommitToolAttempt(context.Context, []protocol.NormalizedToolCall) error
+	}); ok {
+		return toolObserver.CommitToolAttempt(ctx, calls)
+	}
+	return loop.retractAttempt(ctx)
 }
 
 func (loop *Loop) execute(
@@ -1245,6 +1438,7 @@ func (loop *Loop) execute(
 ) (ToolResult, error) {
 	toolCtx, cancel := context.WithTimeout(ctx, loop.config.IdleTimeout)
 	defer cancel()
+	toolCtx = turnstate.ContextWithLogicalTurn(toolCtx, loop.config.TurnID)
 	result, err := loop.tools.Execute(
 		toolCtx, call, idempotencyKey,
 	)
@@ -1356,10 +1550,17 @@ func structuredToolFailure(
 	evidence string,
 	recovery string,
 ) ToolResult {
+	normalizedCause := strings.Join(strings.Fields(evidence), " ")
 	content, err := json.Marshal(map[string]any{
 		"outcome": "error", "failure_layer": layer,
 		"retryable": retryable, "effect_status": effectStatus,
-		"evidence": evidence, "suggested_recovery": recovery,
+		"evidence": []map[string]any{{
+			"identity": "tool-failure", "kind": "inline",
+			"content": map[string]string{"message": evidence},
+		}},
+		"normalized_cause":    normalizedCause,
+		"suggested_recovery":  recovery,
+		"artifact_references": []string{},
 	})
 	if err != nil {
 		content = json.RawMessage(`{"outcome":"error","failure_layer":"runtime"}`)
@@ -1368,6 +1569,32 @@ func structuredToolFailure(
 		Content: content, IsError: true, FailureClass: layer,
 		Retryable: retryable, FailureMessage: evidence,
 	}
+}
+
+func structuredToolSuccess(evidence json.RawMessage) ToolResult {
+	var decoded any
+	if err := json.Unmarshal(evidence, &decoded); err != nil {
+		decoded = map[string]string{"content": string(evidence)}
+	}
+	artifactReferences := []string{}
+	if object, ok := decoded.(map[string]any); ok {
+		if artifactID, ok := object["artifact_id"].(string); ok && strings.TrimSpace(artifactID) != "" {
+			artifactReferences = append(artifactReferences, artifactID)
+		}
+	}
+	content, err := json.Marshal(map[string]any{
+		"outcome": "success", "failure_layer": "none",
+		"retryable": false, "effect_status": "completed",
+		"evidence": []map[string]any{{
+			"identity": "tool-result", "kind": "inline", "content": decoded,
+		}},
+		"normalized_cause": "", "suggested_recovery": "",
+		"artifact_references": artifactReferences,
+	})
+	if err != nil {
+		content = json.RawMessage(`{"outcome":"error","failure_layer":"runtime","retryable":false,"effect_status":"failed"}`)
+	}
+	return ToolResult{Content: content}
 }
 
 func (loop *Loop) deliverAccepted(
@@ -1393,30 +1620,167 @@ func (loop *Loop) deliverAccepted(
 	response.ContentStreamed = streamed && generation.Content != ""
 	response.ReasoningStreamed = streamed && generation.Reasoning != ""
 	response.Checkpoint = &checkpoint
-	if loop.delivery != nil {
-		var delivered DeliveryResult
-		loop.terminalOnce.Do(func() {
-			delivered = loop.delivery.Deliver(
-				ctx, userContent, checkpoint, generation.Content,
-				response.HonestPartial,
-			)
-		})
-		if delivered.Content != "" {
-			response.Content = delivered.Content
-			response.Generation.Content = delivered.Content
+	// Acceptance is the durable boundary: commit the exact stream attempt and
+	// persist AnswerReady before any reporter can acknowledge delivery.
+	if loop.observer != nil {
+		if err := loop.commitAttempt(context.WithoutCancel(ctx)); err != nil {
+			return response, fmt.Errorf("runtime loop: commit accepted stream: %w", err)
 		}
 	}
-	// Delivery is a distinct terminal state. Later observer/checkpoint/status
-	// bookkeeping is best-effort and can never replace a valid delivered answer
-	// with an internal incomplete marker or restart cognition.
-	_ = loop.save(context.WithoutCancel(ctx), &checkpoint, state)
-	if loop.observer != nil {
-		_ = loop.observer.CommitAttempt(context.WithoutCancel(ctx))
+	if answerStore, ok := loop.store.(AnswerStateStore); ok {
+		evidenceIDs := make([]string, 0, len(response.ToolEvents))
+		for _, event := range response.ToolEvents {
+			if event.IdempotencyKey != "" {
+				evidenceIDs = append(evidenceIDs, event.IdempotencyKey+":result")
+			}
+		}
+		if err := answerStore.SaveAnswerRecord(
+			context.WithoutCancel(ctx), loop.config.TurnID, "accepted",
+			records.AnswerRecord{
+				GeneratedAnswer:       generation.Content,
+				SupportingEvidenceIDs: evidenceIDs,
+				CompletionAssessment:  records.CompletionAssessment{Ready: true},
+				StreamCommitState:     records.StreamCommitted,
+			},
+		); err != nil {
+			return response, fmt.Errorf("runtime loop: persist accepted answer: %w", err)
+		}
 	}
+	// Checkpoint/bookkeeping is independent and cannot erase AnswerReady.
+	_ = loop.save(context.WithoutCancel(ctx), &checkpoint, state)
+	if terminalStore, ok := loop.store.(DeliveryStateStore); ok {
+		if err := terminalStore.MarkAnswerReady(context.WithoutCancel(ctx), loop.config.TurnID, "accepted"); err != nil {
+			return response, fmt.Errorf("runtime loop: mark answer ready: %w", err)
+		}
+	}
+	delivered, deliveryErr := loop.attemptDelivery(
+		ctx, userContent, checkpoint, generation.Content,
+		response.HonestPartial, &state,
+	)
+	if delivered.Content != "" {
+		response.Content = delivered.Content
+		response.Generation.Content = delivered.Content
+	}
+	if deliveryErr != nil {
+		return response, deliveryErr
+	}
+	// Delivery is a distinct terminal state. Later status bookkeeping is
+	// best-effort and can never replace a valid durable answer.
 	_ = loop.store.SetTurnStatus(
 		context.WithoutCancel(ctx), loop.config.TurnID, turnstate.StatusCompleted,
 	)
 	return response, nil
+}
+
+func (loop *Loop) attemptDelivery(
+	ctx context.Context,
+	userContent string,
+	checkpoint turnstate.Checkpoint,
+	content string,
+	honestPartial bool,
+	state *cursor,
+) (DeliveryResult, error) {
+	terminalStore, durable := loop.store.(DeliveryStateStore)
+	deliveryRecord := records.DeliveryRecord{Channel: "chat", Attempts: []records.DeliveryAttempt{}}
+	if durable {
+		loaded, err := terminalStore.LoadDeliveryRecord(ctx, loop.config.TurnID, "primary")
+		if err == nil {
+			deliveryRecord = loaded
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			return DeliveryResult{}, err
+		}
+	}
+	for {
+		if durable {
+			if err := terminalStore.MarkDelivering(context.WithoutCancel(ctx), loop.config.TurnID, "primary"); err != nil {
+				return DeliveryResult{}, err
+			}
+		}
+		delivered := DeliveryResult{Content: content, Acknowledged: true}
+		if loop.delivery != nil {
+			delivered = loop.delivery.Deliver(ctx, userContent, checkpoint, content, honestPartial)
+		}
+		attempt := records.DeliveryAttempt{Number: uint64(len(deliveryRecord.Attempts) + 1), Error: delivered.Error}
+		deliveryRecord.Attempts = append(deliveryRecord.Attempts, attempt)
+		if delivered.Acknowledged {
+			deliveryRecord.Acknowledgement = "acknowledged"
+			deliveryRecord.LastDeliveryError = ""
+		} else {
+			deliveryRecord.LastDeliveryError = delivered.Error
+		}
+		if durable {
+			if err := terminalStore.SaveDeliveryRecord(context.WithoutCancel(ctx), loop.config.TurnID, "primary", deliveryRecord); err != nil {
+				return delivered, err
+			}
+		}
+		if delivered.Acknowledged {
+			if durable {
+				if err := terminalStore.MarkDelivered(context.WithoutCancel(ctx), loop.config.TurnID); err != nil {
+					return delivered, err
+				}
+			}
+			return delivered, nil
+		}
+		if durable {
+			if err := terminalStore.MarkDeliveryRetry(context.WithoutCancel(ctx), loop.config.TurnID); err != nil {
+				return delivered, err
+			}
+		}
+		decision := state.decide(converge.FailureDelivery, converge.Fingerprint{
+			Operation: "delivery.chat", Phase: "delivery",
+			FailureLayer: "delivery", NormalizedCause: delivered.Error,
+			EffectStatus: "completed",
+		})
+		_ = loop.save(context.WithoutCancel(ctx), &checkpoint, *state)
+		if !decision.Retry {
+			return delivered, &DeliveryRetry{
+				Answer: content, Attempts: attempt.Number, Cause: delivered.Error,
+			}
+		}
+	}
+}
+
+// RetryDelivery resumes only the durable delivery state. It never composes
+// context, calls a provider, reasons, or dispatches tools.
+func (loop *Loop) RetryDelivery(ctx context.Context) (Response, error) {
+	terminalStore, ok := loop.store.(DeliveryStateStore)
+	if !ok {
+		return Response{}, fmt.Errorf("runtime loop: durable delivery store unavailable")
+	}
+	stateStore, ok := loop.store.(interface {
+		LoadTurnState(context.Context, string) (turnstate.TurnState, error)
+	})
+	if !ok {
+		return Response{}, fmt.Errorf("runtime loop: turn snapshot unavailable")
+	}
+	turn, err := stateStore.LoadTurnState(ctx, loop.config.TurnID)
+	if err != nil {
+		return Response{}, err
+	}
+	answer, err := terminalStore.LoadAnswerRecord(ctx, loop.config.TurnID, "accepted")
+	if err != nil {
+		return Response{}, err
+	}
+	checkpoint := turnstate.Checkpoint{}
+	if turn.Checkpoint != nil {
+		checkpoint = *turn.Checkpoint
+	}
+	var state cursor
+	if len(checkpoint.Runtime) > 0 {
+		_ = json.Unmarshal(checkpoint.Runtime, &state)
+	}
+	delivered, err := loop.attemptDelivery(
+		ctx, firstUserContent(checkpoint.Messages), checkpoint,
+		answer.GeneratedAnswer, false, &state,
+	)
+	response := Response{Content: answer.GeneratedAnswer, Checkpoint: &checkpoint}
+	if delivered.Content != "" {
+		response.Content = delivered.Content
+	}
+	if err == nil {
+		_ = loop.store.SetTurnStatus(context.WithoutCancel(ctx), loop.config.TurnID, turnstate.StatusCompleted)
+	}
+	return response, err
 }
 
 func (loop *Loop) deliverHonestPartial(
@@ -1460,7 +1824,73 @@ func (loop *Loop) save(
 	); err != nil {
 		return fmt.Errorf("runtime loop: save checkpoint: %w", err)
 	}
+	if store, ok := loop.store.(ConvergenceStore); ok {
+		if err := store.SaveConvergenceRecord(ctx, loop.config.TurnID, loop.convergenceRecord(*checkpoint, state)); err != nil {
+			return fmt.Errorf("runtime loop: save convergence record: %w", err)
+		}
+	}
 	return nil
+}
+
+func (loop *Loop) convergenceRecord(checkpoint turnstate.Checkpoint, state cursor) records.ConvergenceRecord {
+	posture := state.Posture
+	if posture == "" {
+		posture = converge.Execution
+		if loop.config.MaxToolCalls <= 4 {
+			posture = converge.Conversation
+		} else if loop.config.MaxToolCalls <= 20 {
+			posture = converge.Exploration
+		}
+	}
+	limits := converge.ForPosture(posture)
+	record := records.ConvergenceRecord{
+		CumulativeInputTokens:  uint64(max(state.InputTokens, 0)),
+		CumulativeOutputTokens: uint64(max(state.OutputTokens, 0)),
+		ToolCalls:              uint64(max(state.ToolCalls, 0)),
+		ProviderUsage:          []records.ProviderUsage{{Provider: "configured", Model: loop.config.Model, RequestCount: uint64(max(checkpoint.ProviderAttempts, 0)), InputTokens: uint64(max(state.InputTokens, 0)), OutputTokens: uint64(max(state.OutputTokens, 0))}},
+		RepairCounters: map[string]uint64{
+			"textual": uint64(max(state.TextualRepairs, 0)), "expectation": uint64(max(state.ExpectationRepairs, 0)),
+			"empty": uint64(max(state.EmptyRepairs, 0)), "final_answer": uint64(max(state.FinalRepairs, 0)),
+			"completion_deferrals": uint64(max(state.CompletionDefers, 0)),
+		},
+		Tuning: map[string]uint64{
+			"provider_calls": limits.ProviderCalls, "tool_calls": limits.ToolCalls,
+			"cumulative_input_tokens": limits.CumulativeInputTokens,
+			"preferred_input_tokens":  limits.PreferredInputTokens, "hard_input_tokens": limits.HardInputTokens,
+			"response_reserve_tokens": limits.ResponseReserveTokens, "synthesis_reserve": limits.SynthesisReserve,
+			"identical_failure_repeats": limits.IdenticalFailureRepeats,
+		},
+	}
+	attemptKeys := make([]string, 0, len(state.Controller.Attempts))
+	for key := range state.Controller.Attempts {
+		attemptKeys = append(attemptKeys, key)
+	}
+	sort.Strings(attemptKeys)
+	for _, key := range attemptKeys {
+		attempt := state.Controller.Attempts[key]
+		fingerprint := records.FailureFingerprint{
+			Operation:           attempt.Failure.Fingerprint.Operation,
+			NormalizedArguments: append(json.RawMessage(nil), attempt.Failure.Fingerprint.NormalizedArguments...),
+			Phase:               attempt.Failure.Fingerprint.Phase,
+			FailureLayer:        records.FailureLayer(attempt.Failure.Fingerprint.FailureLayer),
+			NormalizedCause:     attempt.Failure.Fingerprint.NormalizedCause,
+			EffectStatus:        records.EffectStatus(attempt.Failure.Fingerprint.EffectStatus),
+		}
+		record.FailureFingerprints = append(record.FailureFingerprints, fingerprint)
+		record.AttemptCounts = append(record.AttemptCounts, records.AttemptCount{Fingerprint: fingerprint, Count: attempt.Count})
+	}
+	record.StrategyChanges = append([]string(nil), state.Controller.StrategyChanges...)
+	return record
+}
+
+func isResearchReadOperation(name string) bool {
+	name = strings.ToLower(strings.TrimSpace(name))
+	for _, marker := range []string{"search", "fetch", "news", "quote", "series", "fundamentals", "earnings", "read_text", "read_multiple", "git_log", "git_show", "service_logs"} {
+		if strings.Contains(name, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func (loop *Loop) incomplete(
@@ -1707,8 +2137,56 @@ func requestMessages(
 	repair string,
 	activation string,
 ) []protocol.Message {
-	result := make([]protocol.Message, 0, len(durable)+3)
+	messages, _ := composeRequestMessages("", systemPrompt, durable, repair, activation)
+	return messages
+}
+
+func composeRequestMessages(
+	conversationID string,
+	systemPrompt string,
+	durable []protocol.Message,
+	repair string,
+	activation string,
+) ([]protocol.Message, records.ContextManifest) {
+	items := make([]runtimecompose.Item, 0, len(durable)+3)
 	if prompt := strings.TrimSpace(systemPrompt); prompt != "" {
+		items = append(items, runtimecompose.Item{SourceNamespace: "stable", SourceID: "charter", ConversationID: conversationID, SemanticKind: "stable_identity", RevisionIdentity: "1", Content: prompt, Sector: runtimecompose.SectorStableIdentity, NeverTrim: true})
+	}
+	latestUser := -1
+	for index, message := range durable {
+		if message.Role == protocol.RoleUser {
+			latestUser = index
+		}
+	}
+	for index, message := range durable {
+		kind := "transcript_" + string(message.Role)
+		sector := runtimecompose.SectorRecentTranscript
+		neverTrim := index == latestUser
+		if neverTrim {
+			sector = runtimecompose.SectorLatestMessage
+		}
+		if message.Role == protocol.RoleTool {
+			kind = "tool_result"
+			if index > latestUser {
+				sector = runtimecompose.SectorUnconsumedToolBatch
+				neverTrim = true
+			}
+		}
+		items = append(items, runtimecompose.Item{SourceNamespace: "transcript", SourceID: fmt.Sprintf("%d", index), ConversationID: conversationID, SemanticKind: kind, Content: message.Content, Sector: sector, NeverTrim: neverTrim})
+	}
+	if tail := strings.TrimSpace(activation); tail != "" {
+		items = append(items, runtimecompose.Item{SourceNamespace: "memory", SourceID: "activation", ConversationID: conversationID, SemanticKind: "memory_activation", Content: tail, Sector: runtimecompose.SectorLongTermMemory})
+	}
+	if prompt := strings.TrimSpace(repair); prompt != "" {
+		items = append(items, runtimecompose.Item{SourceNamespace: "controller", SourceID: "repair", ConversationID: conversationID, SemanticKind: "controller_repair", Content: prompt, Sector: runtimecompose.SectorWorkingState})
+	}
+	included, manifest, diagnostics := runtimecompose.Compose(items, runtimecompose.DefaultSectorPolicy(160_000, 8_192))
+	accepted := make(map[string]bool, len(included))
+	for _, item := range included {
+		accepted[item.SourceNamespace+"\x00"+item.SourceID] = true
+	}
+	result := make([]protocol.Message, 0, len(durable)+3)
+	if prompt := strings.TrimSpace(systemPrompt); prompt != "" && accepted["stable\x00charter"] {
 		result = append(result, protocol.Message{
 			Role: protocol.RoleSystem, Content: prompt,
 		})
@@ -1716,18 +2194,25 @@ func requestMessages(
 	// Memory and controller repair are reference context. They must precede
 	// the durable conversation so the newest user message remains the final,
 	// authoritative live request on the initial generation.
-	if tail := strings.TrimSpace(activation); tail != "" {
+	if tail := strings.TrimSpace(activation); tail != "" && accepted["memory\x00activation"] {
 		result = append(result, protocol.Message{
 			Role: protocol.RoleSystem, Content: tail,
 		})
 	}
-	if prompt := strings.TrimSpace(repair); prompt != "" {
+	if prompt := strings.TrimSpace(repair); prompt != "" && accepted["controller\x00repair"] {
 		result = append(result, protocol.Message{
 			Role: protocol.RoleSystem, Content: prompt,
 		})
 	}
-	result = append(result, cloneMessages(durable)...)
-	return result
+	if len(diagnostics) > 0 {
+		result = append(result, protocol.Message{Role: protocol.RoleSystem, Content: "[context_diagnostics]\n" + strings.Join(diagnostics, "\n")})
+	}
+	for index, message := range durable {
+		if accepted["transcript\x00"+fmt.Sprintf("%d", index)] {
+			result = append(result, message)
+		}
+	}
+	return result, manifest
 }
 
 func appendGuidance(

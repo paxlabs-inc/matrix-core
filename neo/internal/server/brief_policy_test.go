@@ -232,7 +232,8 @@ func TestBriefRun_ObjectiveCarriesProfile(t *testing.T) {
 	}
 	// The run completes in the background; wait for the model request.
 	deadline := time.Now().Add(10 * time.Second)
-	for lastBody() == "" && time.Now().Before(deadline) {
+	for !strings.Contains(lastBody(), "At most 5 news items") &&
+		time.Now().Before(deadline) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	body := lastBody()

@@ -19,6 +19,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -31,14 +32,20 @@ import (
 
 	"matrix/construct/surfacestore"
 	"matrix/executor/internal/snapshot"
+	machinechronos "matrix/machine/chronos"
+	machineidentity "matrix/machine/identity"
 	"matrix/vault"
 )
 
 // daemonState owns every long-lived dependency the daemon shares
 // across messages. One instance per process.
 type daemonState struct {
-	infra *infra
-	actor *actorIdentity
+	infra             *infra
+	actor             *actorIdentity
+	machineIdentity   machineidentity.Descriptor
+	chronosEngine     *machinechronos.Engine
+	chronosStore      *machinechronos.Store
+	chronosCapability string
 	// vault is the fail-closed data-at-rest session; nil-safe (plaintext dev/
 	// CLI). vaultUser is the DID bound into every sealed object's associated
 	// data (the daemon serves one user). Threaded into the transcript writer,
@@ -499,9 +506,22 @@ func runDaemon(args []string) {
 		})
 	}
 
-	// Identity + vault come up BEFORE infra (both keyed off the snapshot-
+	// Identity + vault come up BEFORE infra (all keyed off the snapshot-
 	// restored volume, both needed by infra): the cortex store seals its
 	// values under the per-user vault from its first write.
+	machineDataRoot := strings.TrimSpace(os.Getenv("MATRIX_MACHINE_DATA_ROOT"))
+	if machineDataRoot == "" {
+		machineDataRoot = filepath.Dir(filepath.Dir(*keyfile))
+	}
+	machineIdentity, err := machineidentity.Ensure(
+		bootCtx, machineidentity.RuntimeConfig(machineDataRoot),
+	)
+	if err != nil {
+		fatalf("daemon: machine identity: %v", err)
+	}
+	t.Event("machine_identity.loaded", "boot", map[string]interface{}{
+		"did": machineIdentity.DID, "gene": machineIdentity.Gene,
+	})
 	actor, err := loadOrCreateIdentity(*keyfile, *didLabel)
 	if err != nil {
 		fatalf("daemon: identity: %v", err)
@@ -518,7 +538,7 @@ func runDaemon(args []string) {
 	// /data (the cortex root's parent). The hermetic sandbox preset runs
 	// plaintext. actor.DID is the per-user identity bound into every sealed
 	// object's associated data.
-	vcfg := vault.ConfigFromEnv(filepath.Dir(*cortexRoot), actor.DID)
+	vcfg := vault.ConfigFromEnv(machineDataRoot, actor.DID)
 	if *sandbox {
 		vcfg.Required = false
 	}
@@ -533,6 +553,42 @@ func runDaemon(args []string) {
 	// Future pushes seal the tarball before it leaves the machine; BootPull
 	// (already run) self-bootstraps sealed restores from the keyfile sidecar.
 	snapMgr.SetVault(vaultSess, actor.DID)
+
+	var chronosStore *machinechronos.Store
+	var chronosEngine *machinechronos.Engine
+	var chronosCapability string
+	if userVault := vaultSess.UserVault(); userVault != nil {
+		chronosDir := filepath.Join(machineDataRoot, ".matrix", "chronos")
+		chronosCapability, err = machinechronos.EnsureCapability(chronosDir)
+		if err != nil {
+			fatalf("daemon: local Chronos capability: %v", err)
+		}
+		chronosStore, err = machinechronos.Open(bootCtx, machinechronos.Config{
+			Path: filepath.Join(chronosDir, "chronos.db"), MachineGene: machineIdentity.Gene, Vault: userVault,
+		})
+		if err != nil {
+			fatalf("daemon: local Chronos store: %v", err)
+		}
+		wakeURL := strings.TrimSpace(os.Getenv("MATRIX_CHRONOS_LOCAL_WAKE_URL"))
+		if wakeURL == "" {
+			wakeURL = "http://127.0.0.1:8080/chat"
+		}
+		chronosEngine, err = machinechronos.Start(context.Background(), machinechronos.EngineConfig{
+			Store:  chronosStore,
+			Target: machinechronos.LoopbackTarget{URL: wakeURL, Capability: chronosCapability},
+			OnError: func(err error) {
+				t.Event("chronos.local.error", "chronos", map[string]interface{}{"error": err.Error()})
+			},
+		})
+		if err != nil {
+			chronosStore.Close()
+			fatalf("daemon: local Chronos engine: %v", err)
+		}
+		localBase := daemonLoopbackURL(*addr)
+		_ = os.Setenv("MATRIX_CHRONOS_LOCAL_URL", localBase)
+		_ = os.Setenv("MATRIX_CHRONOS_LOCAL_TOKEN", chronosCapability)
+		t.Event("chronos.local.ready", "boot", map[string]interface{}{"url": localBase, "gene": machineIdentity.Gene})
+	}
 
 	in, err := newInfra(bootCtx, infraOpts{
 		ManifestPath:       *manifestPath,
@@ -566,6 +622,10 @@ func runDaemon(args []string) {
 	state := &daemonState{
 		infra:                      in,
 		actor:                      actor,
+		machineIdentity:            machineIdentity,
+		chronosEngine:              chronosEngine,
+		chronosStore:               chronosStore,
+		chronosCapability:          chronosCapability,
 		vault:                      vaultSess,
 		vaultUser:                  actor.DID,
 		skillsRoot:                 *skillsRoot,
@@ -770,6 +830,16 @@ func runDaemon(args []string) {
 	}
 	broker.CloseAll()
 	t.Event("daemon.drain.done", "shutdown", nil)
+	if state.chronosEngine != nil {
+		if err := state.chronosEngine.Close(shutdownCtx); err != nil {
+			t.Event("chronos.local.close.error", "shutdown", map[string]interface{}{"error": err.Error()})
+		}
+		if err := state.chronosStore.Close(); err != nil {
+			t.Event("chronos.local.store.error", "shutdown", map[string]interface{}{"error": err.Error()})
+		} else {
+			t.Event("chronos.local.closed", "shutdown", nil)
+		}
+	}
 
 	// Flush + close the durable Construct surface store after the server has
 	// drained: every in-flight run's surface-store tee has stopped recording
@@ -808,6 +878,18 @@ func envOrDefault(name, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func daemonLoopbackURL(addr string) string {
+	addr = strings.TrimSpace(addr)
+	if strings.HasPrefix(addr, ":") {
+		return "http://127.0.0.1" + addr
+	}
+	_, port, err := net.SplitHostPort(addr)
+	if err == nil {
+		return "http://127.0.0.1:" + port
+	}
+	return "http://127.0.0.1:8080"
 }
 
 // Copyright © 2026 Paxlabs Inc. All rights reserved.

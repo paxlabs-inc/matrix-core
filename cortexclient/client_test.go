@@ -376,6 +376,12 @@ func TestLoopSeamContractAgainstRealCortexd(t *testing.T) {
 	fixture := startDaemon(t)
 	client := dialActor(t, fixture, 1)
 	ctx := context.Background()
+	if _, err := client.Append(ctx, []AppendEvent{UserMsgEvent(
+		ConversationBytes("conv-previous"),
+		"Earlier conversation observed moltbook.com serving traffic.",
+	)}); err != nil {
+		t.Fatalf("append previous-conversation memory: %v", err)
+	}
 
 	seam, err := NewLoopSeam(client, SeamConfig{
 		ConversationID: "conv-contract",
@@ -475,6 +481,23 @@ func TestLoopSeamContractAgainstRealCortexd(t *testing.T) {
 	}
 	if len(used) == 0 {
 		t.Fatal("semantic activation lacks attestable provenance")
+	}
+	foundExplicitRecall := false
+	for _, memory := range ProjectBundle(bundle) {
+		if memory.Tier != "recall" {
+			continue
+		}
+		foundExplicitRecall = true
+		if memory.ConversationID == "" || memory.Date == "" ||
+			memory.SourceType == "" || memory.Confidence <= 0 ||
+			memory.RelevanceScore <= 0 || memory.SelectionReason == "" ||
+			memory.SourceIdentity == "" || memory.EpistemicStatus == "" ||
+			len(memory.Provenance) == 0 {
+			t.Fatalf("real cortexd recall lacked provenance: %#v", memory)
+		}
+	}
+	if !foundExplicitRecall {
+		t.Fatalf("real cortexd bundle lacked explicit previous-conversation recall: %#v", bundle.Sections[6].Items)
 	}
 	count, err := client.Attest(ctx, used, nil)
 	if err != nil || count == 0 {

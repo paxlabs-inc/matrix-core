@@ -164,6 +164,28 @@ func (client *Client) Generate(
 	request protocol.GenerationRequest,
 	turnUsage *TurnUsage,
 ) (protocol.NormalizedGeneration, error) {
+	return client.generate(ctx, request, turnUsage, nil)
+}
+
+func (client *Client) GenerateStream(
+	ctx context.Context,
+	request protocol.GenerationRequest,
+	turnUsage *TurnUsage,
+	deliver func(protocol.StreamChunk) error,
+) (protocol.NormalizedGeneration, error) {
+	if deliver == nil {
+		return protocol.NormalizedGeneration{}, &Failure{Kind: FailureProtocol, Err: fmt.Errorf("stream callback is required")}
+	}
+	request.Stream = true
+	return client.generate(ctx, request, turnUsage, deliver)
+}
+
+func (client *Client) generate(
+	ctx context.Context,
+	request protocol.GenerationRequest,
+	turnUsage *TurnUsage,
+	deliver func(protocol.StreamChunk) error,
+) (protocol.NormalizedGeneration, error) {
 	body, err := client.adapter.TranslateRequest(request)
 	if err != nil {
 		return protocol.NormalizedGeneration{}, &Failure{
@@ -173,7 +195,7 @@ func (client *Client) Generate(
 	started := time.Now()
 	var last *Failure
 	for attempt := 1; attempt <= client.maxAttempts; attempt++ {
-		generation, failure := client.generateAttempt(ctx, body, request.Stream)
+		generation, failure, delivered := client.generateAttempt(ctx, body, request.Stream, deliver)
 		if failure == nil {
 			generation.Provider = client.adapter.Name()
 			if generation.Model == "" {
@@ -200,6 +222,12 @@ func (client *Client) Generate(
 		}
 		failure.Attempts = attempt
 		last = failure
+		// Once a provisional delta escaped, this provider attempt belongs to the
+		// outer StreamTransaction. It must retract that exact attempt before any
+		// retry; a hidden client retry would merge two attempts into one stream.
+		if delivered {
+			return protocol.NormalizedGeneration{}, failure
+		}
 		if !failure.transient() || attempt == client.maxAttempts {
 			return protocol.NormalizedGeneration{}, failure
 		}
@@ -216,7 +244,8 @@ func (client *Client) generateAttempt(
 	ctx context.Context,
 	body []byte,
 	stream bool,
-) (protocol.NormalizedGeneration, *Failure) {
+	deliver func(protocol.StreamChunk) error,
+) (protocol.NormalizedGeneration, *Failure, bool) {
 	attemptContext, cancel := context.WithCancel(ctx)
 	defer cancel()
 	request, err := http.NewRequestWithContext(
@@ -226,11 +255,14 @@ func (client *Client) generateAttempt(
 		bytes.NewReader(body),
 	)
 	if err != nil {
-		return protocol.NormalizedGeneration{}, &Failure{Kind: FailureProtocol, Err: err}
+		return protocol.NormalizedGeneration{}, &Failure{Kind: FailureProtocol, Err: err}, false
 	}
 	request.Header.Set("Authorization", "Bearer "+client.bearer)
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
+	if stream {
+		request.Header.Set("Accept", "text/event-stream")
+	}
 	request.Header.Set("X-Matrix-Actor-DID", client.actorDID)
 	if client.slotLabel != "" {
 		request.Header.Set("X-Matrix-Slot", client.slotLabel)
@@ -238,13 +270,13 @@ func (client *Client) generateAttempt(
 	response, err := client.httpClient.Do(request)
 	if err != nil {
 		if ctx.Err() != nil {
-			return protocol.NormalizedGeneration{}, &Failure{Kind: FailureTransport, Err: ctx.Err()}
+			return protocol.NormalizedGeneration{}, &Failure{Kind: FailureTransport, Err: ctx.Err()}, false
 		}
 		var networkError net.Error
 		if errors.As(err, &networkError) && networkError.Timeout() {
-			return protocol.NormalizedGeneration{}, &Failure{Kind: FailureIdle, Err: err}
+			return protocol.NormalizedGeneration{}, &Failure{Kind: FailureIdle, Err: err}, false
 		}
-		return protocol.NormalizedGeneration{}, &Failure{Kind: FailureTransport, Err: err}
+		return protocol.NormalizedGeneration{}, &Failure{Kind: FailureTransport, Err: err}, false
 	}
 	defer response.Body.Close()
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
@@ -265,7 +297,7 @@ func (client *Client) generateAttempt(
 		default:
 			failure.Kind = FailureRejected
 		}
-		return protocol.NormalizedGeneration{}, failure
+		return protocol.NormalizedGeneration{}, failure, false
 	}
 
 	var rawResponse bytes.Buffer
@@ -276,8 +308,9 @@ func (client *Client) generateAttempt(
 	})
 	defer reader.Stop()
 	var generation protocol.NormalizedGeneration
+	delivered := false
 	if stream {
-		generation, err = client.decodeStream(reader)
+		generation, delivered, err = client.decodeStream(reader, deliver)
 	} else {
 		var raw []byte
 		raw, err = io.ReadAll(reader)
@@ -289,12 +322,12 @@ func (client *Client) generateAttempt(
 	if idle.Load() {
 		return protocol.NormalizedGeneration{}, &Failure{
 			Kind: FailureIdle, Err: fmt.Errorf("provider stream idle for %s", client.idleTimeout),
-		}
+		}, delivered
 	}
 	if err != nil {
-		return protocol.NormalizedGeneration{}, &Failure{Kind: FailureProtocol, Err: err}
+		return protocol.NormalizedGeneration{}, &Failure{Kind: FailureProtocol, Err: err}, delivered
 	}
-	return generation, nil
+	return generation, nil, delivered
 }
 
 func (client *Client) recordRawExchange(request, response []byte) {
@@ -307,7 +340,7 @@ func (client *Client) recordRawExchange(request, response []byte) {
 	client.onRawExchange(requestCopy, responseCopy)
 }
 
-func (client *Client) decodeStream(reader io.Reader) (protocol.NormalizedGeneration, error) {
+func (client *Client) decodeStream(reader io.Reader, deliver func(protocol.StreamChunk) error) (protocol.NormalizedGeneration, bool, error) {
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(make([]byte, 64<<10), 4<<20)
 	var generation protocol.NormalizedGeneration
@@ -317,6 +350,7 @@ func (client *Client) decodeStream(reader io.Reader) (protocol.NormalizedGenerat
 		arguments strings.Builder
 	}
 	calls := map[int]*callBuilder{}
+	delivered := false
 	for scanner.Scan() {
 		line := bytes.TrimSpace(scanner.Bytes())
 		if len(line) == 0 || line[0] == ':' ||
@@ -329,10 +363,16 @@ func (client *Client) decodeStream(reader io.Reader) (protocol.NormalizedGenerat
 		}
 		chunk, err := client.adapter.TranslateStreamEvent(line)
 		if err != nil {
-			return protocol.NormalizedGeneration{}, err
+			return protocol.NormalizedGeneration{}, delivered, err
 		}
 		if chunk.Done {
 			break
+		}
+		if deliver != nil && (chunk.ContentDelta != "" || chunk.ReasoningDelta != "") {
+			if err := deliver(chunk); err != nil {
+				return protocol.NormalizedGeneration{}, delivered, err
+			}
+			delivered = true
 		}
 		generation.Content += chunk.ContentDelta
 		generation.Reasoning += chunk.ReasoningDelta
@@ -358,7 +398,7 @@ func (client *Client) decodeStream(reader io.Reader) (protocol.NormalizedGenerat
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return protocol.NormalizedGeneration{}, err
+		return protocol.NormalizedGeneration{}, delivered, err
 	}
 	indexes := make([]int, 0, len(calls))
 	for index := range calls {
@@ -377,11 +417,11 @@ func (client *Client) decodeStream(reader io.Reader) (protocol.NormalizedGenerat
 			Arguments: json.RawMessage(arguments),
 		}
 		if err := call.Validate(); err != nil {
-			return protocol.NormalizedGeneration{}, err
+			return protocol.NormalizedGeneration{}, delivered, err
 		}
 		generation.ToolCalls = append(generation.ToolCalls, call)
 	}
-	return generation, nil
+	return generation, delivered, nil
 }
 
 func (client *Client) backoff(attempt int) time.Duration {

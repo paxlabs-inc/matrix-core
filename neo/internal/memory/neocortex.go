@@ -1115,33 +1115,10 @@ func (p *Pager) DeathJournal(_ context.Context, limit int) ([]DeathRecord, error
 	return out, nil
 }
 func (p *Pager) ConsolidateDeathJournal(ctx context.Context) (int, error) {
-	journal, err := p.DeathJournal(ctx, 64)
-	if err != nil {
-		return 0, err
-	}
-	seen := make(map[string]bool)
-	written := 0
-	for _, death := range journal {
-		mode := death.Summary
-		if _, suffix, ok := strings.Cut(mode, "Where it got stuck:"); ok {
-			mode = suffix
-		}
-		if prefix, _, ok := strings.Cut(mode, "[loop-state:"); ok {
-			mode = prefix
-		}
-		mode = strings.TrimSpace(mode)
-		key := normalizeStatement(mode)
-		if key == "" || seen[key] {
-			continue
-		}
-		seen[key] = true
-		statement := "[failure-mode: repeated supervised loop death] " + mode
-		if _, err := p.WriteFailurePattern(ctx, statement, []string{death.URI}); err != nil {
-			return written, err
-		}
-		written++
-	}
-	return written, nil
+	// Deaths are operational diagnostics, never cognitive evidence. This
+	// compatibility entrypoint intentionally performs no promotion; a lesson can
+	// only enter the self-model through WriteFailureLesson's explicit gate.
+	return 0, nil
 }
 
 func (p *Pager) WriteStructuralSelf(ctx context.Context, structural StructuralSelf) (string, error) {
@@ -1180,21 +1157,56 @@ func (p *Pager) WriteSurfaceFacts(ctx context.Context, facts SurfaceFacts) (stri
 	return p.WriteStructuralSelf(ctx, structural)
 }
 func (p *Pager) WriteFailurePattern(ctx context.Context, statement string, derived []string) (string, error) {
-	uri, err := p.put(ctx, "constraint", "failure:"+statement, statement, map[string]any{"statement": statement, "derived_from": derived})
+	return "", fmt.Errorf("memory: failure lessons require confirmation, independent evidence, scope, usefulness, and expiry")
+}
+
+func (p *Pager) WriteFailureLesson(ctx context.Context, lesson FailureLesson) (string, error) {
+	lesson.Statement = strings.TrimSpace(lesson.Statement)
+	lesson.Scope = strings.TrimSpace(lesson.Scope)
+	lesson.Usefulness = strings.TrimSpace(lesson.Usefulness)
+	now := time.Now().UTC()
+	uniqueEvidence := make(map[string]struct{})
+	derived := make([]string, 0, len(lesson.DerivedFrom))
+	for _, identity := range lesson.DerivedFrom {
+		identity = strings.TrimSpace(identity)
+		if identity == "" {
+			continue
+		}
+		if _, exists := uniqueEvidence[identity]; exists {
+			continue
+		}
+		uniqueEvidence[identity] = struct{}{}
+		derived = append(derived, identity)
+	}
+	if !lesson.Confirmed || lesson.Statement == "" || lesson.Scope == "" ||
+		lesson.Usefulness == "" || len(derived) < 2 ||
+		!lesson.ExpiresAt.After(now) || lesson.ExpiresAt.After(now.Add(180*24*time.Hour)) {
+		return "", fmt.Errorf("memory: failure lesson did not pass confirmation, evidence, scope, usefulness, and expiry gates")
+	}
+	uri, err := p.put(ctx, "constraint", "failure:"+lesson.Statement, lesson.Statement, map[string]any{
+		"statement": lesson.Statement, "derived_from": derived,
+		"scope": lesson.Scope, "usefulness": lesson.Usefulness,
+		"confirmed_at": now, "expires_at": lesson.ExpiresAt.UTC(),
+	})
 	if err != nil {
 		return "", err
+	}
+	pattern := FailurePattern{
+		URI: uri, Statement: lesson.Statement, DerivedFrom: derived,
+		Scope: lesson.Scope, Usefulness: lesson.Usefulness,
+		ConfirmedAt: now, ExpiresAt: lesson.ExpiresAt.UTC(),
 	}
 	p.mu.Lock()
 	replaced := false
 	for index, existing := range p.state.Failures {
-		if normalizeStatement(existing.Statement) == normalizeStatement(statement) {
-			p.state.Failures[index] = FailurePattern{URI: uri, Statement: statement, DerivedFrom: derived}
+		if normalizeStatement(existing.Statement) == normalizeStatement(lesson.Statement) {
+			p.state.Failures[index] = pattern
 			replaced = true
 			break
 		}
 	}
 	if !replaced {
-		p.state.Failures = append(p.state.Failures, FailurePattern{URI: uri, Statement: statement, DerivedFrom: derived})
+		p.state.Failures = append(p.state.Failures, pattern)
 	}
 	if len(p.state.Failures) > 32 {
 		p.state.Failures = append([]FailurePattern(nil), p.state.Failures[len(p.state.Failures)-32:]...)
@@ -1203,10 +1215,41 @@ func (p *Pager) WriteFailurePattern(ctx context.Context, statement string, deriv
 	p.mu.Unlock()
 	return uri, err
 }
-func (p *Pager) SelfModel(context.Context) (SelfModel, error) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	return SelfModel{Identity: p.cfg.AgentName, Structural: p.state.Structural, StructuralURI: p.state.StructuralURI, FailurePatterns: append([]FailurePattern(nil), p.state.Failures...)}, nil
+
+func (p *Pager) RetireFailurePattern(ctx context.Context, uri string) error {
+	uri = strings.TrimSpace(uri)
+	p.mu.Lock()
+	kept := p.state.Failures[:0]
+	for _, pattern := range p.state.Failures {
+		if pattern.URI != uri {
+			kept = append(kept, pattern)
+		}
+	}
+	p.state.Failures = append([]FailurePattern(nil), kept...)
+	err := p.saveDomainLocked(ctx, failuresCheckpoint, p.state.Failures)
+	p.mu.Unlock()
+	return err
+}
+
+func (p *Pager) SelfModel(ctx context.Context) (SelfModel, error) {
+	p.mu.Lock()
+	now := time.Now().UTC()
+	active := make([]FailurePattern, 0, len(p.state.Failures))
+	for _, pattern := range p.state.Failures {
+		if pattern.ExpiresAt.IsZero() || pattern.ExpiresAt.After(now) {
+			active = append(active, pattern)
+		}
+	}
+	if len(active) != len(p.state.Failures) {
+		p.state.Failures = append([]FailurePattern(nil), active...)
+		if err := p.saveDomainLocked(ctx, failuresCheckpoint, p.state.Failures); err != nil {
+			p.mu.Unlock()
+			return SelfModel{}, err
+		}
+	}
+	model := SelfModel{Identity: p.cfg.AgentName, Structural: p.state.Structural, StructuralURI: p.state.StructuralURI, FailurePatterns: append([]FailurePattern(nil), active...)}
+	p.mu.Unlock()
+	return model, nil
 }
 func (p *Pager) LoadStructuralSelf(ctx context.Context) (string, error) {
 	encoded, err := os.ReadFile(filepath.Join(p.cfg.SelfModelGraph, "self-model.json"))
@@ -1317,8 +1360,18 @@ func (p *Pager) EpisodicRetrieve(ctx context.Context, query string, window Episo
 		limit = 8
 	}
 	currentText := ""
+	exclusions := cortexclient.ProjectionExclusions{
+		SourceIdentities: make(map[string]struct{}),
+		ContentHashes:    make(map[[32]byte]struct{}),
+	}
 	for _, hit := range current {
 		currentText += " " + normalizeStatement(hit.Text)
+		if identity := strings.TrimSpace(hit.SourceIdentity); identity != "" {
+			exclusions.SourceIdentities[identity] = struct{}{}
+		}
+		if text := strings.TrimSpace(hit.Text); text != "" {
+			exclusions.ContentHashes[sha256.Sum256([]byte(text))] = struct{}{}
+		}
 	}
 	var out []EpisodicExcerpt
 	for _, record := range p.recordList() {
@@ -1358,21 +1411,30 @@ func (p *Pager) EpisodicRetrieve(ctx context.Context, query string, window Episo
 	for _, excerpt := range out {
 		seen[excerpt.Text] = true
 	}
-	for _, section := range bundle.Sections {
-		for _, item := range section.Items {
-			text := strings.TrimSpace(string(item.Content))
-			if text == "" || seen[text] || tokenOverlap(query, text) == 0 || strings.Contains(currentText, normalizeStatement(text)) {
-				continue
-			}
-			seen[text] = true
-			var lo, hi uint64
-			if len(item.Provenance) > 0 {
-				lo, hi = item.Provenance[0], item.Provenance[len(item.Provenance)-1]
-			}
-			out = append(out, EpisodicExcerpt{Ref: item.URI, ConversationID: "neocortex-activation", Date: time.Now().UTC(), SeqLo: lo, SeqHi: hi, Exact: !item.Coarsened, Text: text})
-			if len(out) == limit {
-				return out
-			}
+	for _, item := range cortexclient.ProjectBundleExcluding(bundle, exclusions) {
+		text := strings.TrimSpace(item.Text)
+		if text == "" || seen[text] || tokenOverlap(query, text) == 0 || strings.Contains(currentText, normalizeStatement(text)) {
+			continue
+		}
+		seen[text] = true
+		var lo, hi uint64
+		if len(item.Provenance) > 0 {
+			lo, hi = item.Provenance[0], item.Provenance[len(item.Provenance)-1]
+		}
+		conversation := strings.TrimSpace(item.ConversationID)
+		if conversation == "" {
+			conversation = "neocortex-activation"
+		}
+		occurredAt := time.Now().UTC()
+		if parsed, parseErr := time.Parse("2006-01-02", item.Date); parseErr == nil {
+			occurredAt = parsed.UTC()
+		}
+		out = append(out, EpisodicExcerpt{
+			Ref: item.URI, ConversationID: conversation, Date: occurredAt,
+			SeqLo: lo, SeqHi: hi, Exact: len(item.Provenance) > 0, Text: text,
+		})
+		if len(out) == limit {
+			return out
 		}
 	}
 	return out

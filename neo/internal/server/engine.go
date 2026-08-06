@@ -43,6 +43,7 @@ import (
 	"matrix/neo/internal/notify"
 	"matrix/neo/internal/preview"
 	"matrix/neo/internal/runrecord"
+	profileStore "matrix/neo/internal/runtime/profile"
 	"matrix/neo/internal/sandbox"
 	"matrix/neo/internal/sessionjournal"
 	"matrix/neo/internal/task"
@@ -129,6 +130,8 @@ type Engine struct {
 	userPreferredName    string
 	userExpertiseDomains []string
 	profileFetchedAt     time.Time
+	profileStore         *profileStore.Store
+	profileStoreErr      error
 
 	broker   *broker
 	sessions *sessionRegistry
@@ -257,6 +260,7 @@ type EngineOptions struct {
 	DojoBridgeToken        string             // shared secret gating the loopback /dojo/computer-use proxy the desktop bridge posts to ("" disables the proxy)
 	BackendURL             string
 	BackendToken           string
+	ProfilePath            string
 	Vault                  *vault.Session // fail-closed encryption session for data-at-rest ("" nil = plaintext dev/CLI)
 }
 
@@ -319,6 +323,9 @@ func NewEngine(o EngineOptions) *Engine {
 		vaultUser = os.Getenv("MATRIX_USER_ID")
 	}
 	e.vaultUser = vaultUser
+	if strings.TrimSpace(o.ProfilePath) != "" {
+		e.profileStore, e.profileStoreErr = profileStore.Open(o.ProfilePath, o.Vault)
+	}
 	e.conv.SetVault(o.Vault, vaultUser)
 	e.trace.SetVault(o.Vault, vaultUser)
 	// Seal the whole-file/JSONL atomic stores under the same per-user vault
@@ -1383,13 +1390,28 @@ func (e *Engine) fetchUserProfile() {
 	e.profileFetchedAt = time.Now()
 	e.profileMu.Unlock()
 
-	if e.backendURL == "" {
+	if e.profileStore != nil {
+		stored, err := e.profileStore.Get(context.Background(), e.readLegacyProfile)
+		if err == nil {
+			e.cacheProfile(stored)
+		}
 		return
 	}
-	url := strings.TrimRight(e.backendURL, "/") + "/profile"
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
+	legacy, ok, err := e.readLegacyProfile(context.Background())
+	if err != nil || !ok {
 		return
+	}
+	e.cacheProfile(legacy)
+}
+
+func (e *Engine) readLegacyProfile(ctx context.Context) (profileStore.Profile, bool, error) {
+	if e.backendURL == "" {
+		return profileStore.Profile{}, false, nil
+	}
+	url := strings.TrimRight(e.backendURL, "/") + "/profile"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return profileStore.Profile{}, false, err
 	}
 	if e.backendToken != "" {
 		req.Header.Set("Authorization", "Bearer "+e.backendToken)
@@ -1397,23 +1419,35 @@ func (e *Engine) fetchUserProfile() {
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return
+		return profileStore.Profile{}, false, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return
+		return profileStore.Profile{}, false, nil
 	}
 	var pr struct {
 		PreferredName    string   `json:"preferred_name"`
 		AgentName        string   `json:"agent_name"`
 		ExpertiseDomains []string `json:"expertise_domains"`
+		URI              string   `json:"uri"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&pr); err != nil {
-		return
+		return profileStore.Profile{}, false, err
 	}
+	if strings.TrimSpace(pr.URI) == "" {
+		return profileStore.Profile{}, false, nil
+	}
+	return profileStore.Profile{
+		PreferredPersonName: strings.TrimSpace(pr.PreferredName),
+		AgentName:           strings.TrimSpace(pr.AgentName),
+		ExpertiseDomains:    append([]string(nil), pr.ExpertiseDomains...),
+	}, true, nil
+}
+
+func (e *Engine) cacheProfile(pr profileStore.Profile) {
 	e.profileMu.Lock()
-	e.userPreferredName = strings.TrimSpace(pr.PreferredName)
-	e.userExpertiseDomains = pr.ExpertiseDomains
+	e.userPreferredName = strings.TrimSpace(pr.PreferredPersonName)
+	e.userExpertiseDomains = append([]string(nil), pr.ExpertiseDomains...)
 	if pr.AgentName != "" {
 		e.userAgentName = pr.AgentName
 	}

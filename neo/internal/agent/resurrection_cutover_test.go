@@ -130,6 +130,144 @@ func TestAgentRuntimeFlagKeepsLegacyDefaultAndServesFrozenSeam(
 	}
 }
 
+func TestCanonicalRuntimeKeepsLegacyConversationProfileAndDeliveryBehavior(t *testing.T) {
+	var turns atomic.Int32
+	var sawProfile atomic.Bool
+	var newestRole atomic.Value
+	gateway := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var decoded struct {
+			Messages []struct {
+				Role    string `json:"role"`
+				Content string `json:"content"`
+			} `json:"messages"`
+		}
+		body, err := io.ReadAll(request.Body)
+		if err != nil || json.Unmarshal(body, &decoded) != nil || len(decoded.Messages) == 0 {
+			http.Error(writer, "invalid request", http.StatusBadRequest)
+			return
+		}
+		latest := decoded.Messages[len(decoded.Messages)-1]
+		switch {
+		case strings.Contains(latest.Content, "Reply with READY"):
+			writeCutoverText(writer, "READY")
+		case strings.Contains(latest.Content, "matrix_runtime_capability_echo"):
+			writeCutoverTool(writer, "capability-call", "matrix_runtime_capability_echo", map[string]interface{}{"value": "READY", "expect": "returns READY"})
+		default:
+			turns.Add(1)
+			newestRole.Store(latest.Role)
+			for _, message := range decoded.Messages {
+				if strings.Contains(message.Content, "Their preferred name is Ada") {
+					sawProfile.Store(true)
+				}
+			}
+			writeCutoverText(writer, "Hello Ada. Good to see you.")
+		}
+	}))
+	t.Cleanup(gateway.Close)
+	manager := &tools.Manager{}
+	cfg, pager, runtime := openCutoverRuntime(t, gateway.URL, manager)
+	cfg.InteractionPosture = true
+	reporter := &cutoverReporter{}
+	current := New(Options{Config: cfg, Tools: manager, Pager: pager, Reporter: reporter, Runtime: runtime})
+	current.SetUserProfile("Neo", "Ada", []string{"distributed systems"})
+	if err := current.Chat(t.Context(), "Hello, how has your day been?"); err != nil {
+		t.Fatal(err)
+	}
+	role, _ := newestRole.Load().(string)
+	if turns.Load() != 1 || current.TurnPosture() != PostureConversation ||
+		!sawProfile.Load() || role != "user" || reporter.lastSay() != "Hello Ada. Good to see you." {
+		t.Fatalf("turns=%d posture=%s profile=%t newest=%q delivery=%q", turns.Load(), current.TurnPosture(), sawProfile.Load(), role, reporter.lastSay())
+	}
+}
+
+func TestCanonicalRuntimeAliasesProduceEquivalentDurableAndVisibleState(t *testing.T) {
+	gateway := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var decoded struct {
+			Messages []struct {
+				Content string `json:"content"`
+			} `json:"messages"`
+		}
+		body, err := io.ReadAll(request.Body)
+		if err != nil || json.Unmarshal(body, &decoded) != nil || len(decoded.Messages) == 0 {
+			http.Error(writer, "invalid request", http.StatusBadRequest)
+			return
+		}
+		latest := decoded.Messages[len(decoded.Messages)-1].Content
+		hasToolResult := false
+		for _, message := range decoded.Messages {
+			if strings.Contains(message.Content, `"outcome":"success"`) {
+				hasToolResult = true
+			}
+		}
+		switch {
+		case strings.Contains(latest, "Reply with READY"):
+			writeCutoverText(writer, "READY")
+		case strings.Contains(latest, "matrix_runtime_capability_echo"):
+			writeCutoverTool(writer, "capability-call", "matrix_runtime_capability_echo", map[string]interface{}{"value": "READY", "expect": "returns READY"})
+		case strings.Contains(latest, "alias scenario tool") && !hasToolResult:
+			writeCutoverTool(writer, "alias-tool", "exec__shell", map[string]interface{}{"command": "printf alias-parity"})
+		case hasToolResult:
+			writeCutoverText(writer, "Canonical tool scenario synthesized from the result.")
+		case strings.Contains(latest, "alias scenario profile"):
+			writeCutoverText(writer, "Hello Ada. Profile parity is intact.")
+		default:
+			writeCutoverText(writer, "Canonical conversation scenario completed.")
+		}
+	}))
+	t.Cleanup(gateway.Close)
+	type outcome struct {
+		answer     string
+		state      string
+		toolEvents int
+	}
+	manager := cutoverProbeManager(t)
+	for _, scenario := range []struct {
+		name        string
+		prompt      string
+		profileName string
+	}{
+		{name: "conversation", prompt: "alias scenario hello"},
+		{name: "profile", prompt: "alias scenario profile", profileName: "Ada"},
+		{name: "tool_synthesis", prompt: "alias scenario tool"},
+	} {
+		results := make(map[string]outcome)
+		for _, alias := range []string{"", "legacy", "resurrection"} {
+			cfg, pager, runtime := openCutoverRuntime(t, gateway.URL, manager)
+			cfg.AgentRuntime = alias
+			reporter := &cutoverReporter{}
+			current := New(Options{
+				Config: cfg, Tools: manager, Pager: pager, Reporter: reporter,
+				Runtime: runtime, ConvID: "alias-" + scenario.name + "-" + alias,
+			})
+			if scenario.profileName != "" {
+				current.SetUserProfile("Neo", scenario.profileName, []string{"distributed systems"})
+			}
+			if err := current.Chat(t.Context(), scenario.prompt); err != nil {
+				t.Fatalf("scenario %q alias %q: %v", scenario.name, alias, err)
+			}
+			turnID := current.turnIntentID()
+			turn, err := runtime.store.LoadTurnRecord(t.Context(), turnID)
+			if err != nil {
+				t.Fatalf("scenario %q alias %q durable turn: %v", scenario.name, alias, err)
+			}
+			state, err := runtime.store.LoadTurnState(t.Context(), turnID)
+			if err != nil || state.Checkpoint == nil {
+				t.Fatalf("scenario %q alias %q checkpoint: %+v %v", scenario.name, alias, state, err)
+			}
+			results[alias] = outcome{
+				answer: reporter.lastSay(), state: string(turn.CurrentState),
+				toolEvents: len(state.Checkpoint.ToolEvents),
+			}
+		}
+		want := results[""]
+		for alias, got := range results {
+			if got != want {
+				t.Fatalf("scenario %q alias %q = %+v, direct = %+v", scenario.name, alias, got, want)
+			}
+		}
+	}
+}
+
 func TestResurrectionRuntimeSurfacesHonestPartialAsTypedIncomplete(
 	t *testing.T,
 ) {
@@ -186,8 +324,8 @@ func TestResurrectionRuntimeSurfacesHonestPartialAsTypedIncomplete(
 	if !errors.Is(err, ErrIncomplete) {
 		t.Fatalf("Chat() error = %v, want ErrIncomplete", err)
 	}
-	if taskCalls.Load() != 3 {
-		t.Fatalf("bounded repair calls = %d, want 3", taskCalls.Load())
+	if taskCalls.Load() != 2 {
+		t.Fatalf("bounded repair calls = %d, want 2", taskCalls.Load())
 	}
 	if partial := reporter.lastPartial(); !strings.Contains(
 		partial, "will not claim",

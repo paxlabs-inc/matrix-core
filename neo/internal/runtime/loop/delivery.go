@@ -25,6 +25,8 @@ type DeliveryResult struct {
 	Content          string
 	Suppressed       bool
 	IdentityScrubbed bool
+	Acknowledged     bool
+	Error            string
 }
 
 type DeliveryChoke struct {
@@ -50,8 +52,13 @@ func (choke *DeliveryChoke) Deliver(
 	}
 	scrubbed, leaked := neoidentity.Scrub(name, content)
 	suppressed := shouldSuppressDelivery(userInput, scrubbed)
+	deliveryError := ""
 	if !suppressed && choke.Reporter != nil {
-		if honestPartial {
+		if reliable, ok := choke.Reporter.(ReliableDeliveryReporter); ok {
+			if err := reliable.SayResult(scrubbed, honestPartial); err != nil {
+				deliveryError = strings.TrimSpace(err.Error())
+			}
+		} else if honestPartial {
 			if reporter, ok := choke.Reporter.(HonestPartialReporter); ok {
 				reporter.SayHonestPartial(scrubbed)
 			} else {
@@ -61,13 +68,16 @@ func (choke *DeliveryChoke) Deliver(
 			choke.Reporter.Say(scrubbed, false)
 		}
 	}
-	if choke.Recorder != nil {
+	if deliveryError == "" && choke.Recorder != nil {
 		choke.Recorder.RecordDelivery(scrubbed)
 	}
-	choke.consolidate(checkpoint, userInput, scrubbed, true)
+	if deliveryError == "" {
+		choke.consolidate(checkpoint, userInput, scrubbed, true)
+	}
 	return DeliveryResult{
 		Content: scrubbed, Suppressed: suppressed,
-		IdentityScrubbed: leaked,
+		IdentityScrubbed: leaked, Acknowledged: deliveryError == "",
+		Error: deliveryError,
 	}
 }
 

@@ -106,6 +106,7 @@ COPY MCL/go.mod     MCL/go.sum     MCL/
 COPY codegraph/go.mod codegraph/go.sum codegraph/
 COPY bridge/go.mod  bridge/go.sum  bridge/
 COPY construct/go.mod              construct/
+COPY machine/go.mod machine/go.sum machine/
 COPY executor/go.mod executor/go.sum executor/
 COPY neo/go.mod     neo/go.sum     neo/
 COPY workforce/go.mod workforce/go.sum workforce/
@@ -122,6 +123,7 @@ COPY MCL/       MCL/
 COPY codegraph/ codegraph/
 COPY bridge/    bridge/
 COPY construct/ construct/
+COPY machine/   machine/
 COPY executor/  executor/
 COPY neo/       neo/
 COPY workforce/ workforce/
@@ -129,6 +131,9 @@ COPY cassandra/ cassandra/
 
 WORKDIR /src/executor
 RUN go build -ldflags="-s -w" -o /out/mcl-execute ./cmd/mcl-execute
+
+WORKDIR /src/machine
+RUN go build -ldflags="-s -w" -o /out/matrix-machine ./cmd/matrix-machine
 
 # Neo — the conversational FRONT (matrix/neo). Reuses cortex/MCL/executor via
 # the sibling replace directives in neo/go.mod (those trees are copied above).
@@ -405,6 +410,7 @@ WORKDIR /opt/matrix
 # (healthz, /memory + /profile stores, volume snapshots); neo = the agent
 # (matrix/neo serve) — the only agent in the runtime.
 COPY --from=builder /out/mcl-execute /opt/matrix/bin/mcl-execute
+COPY --from=builder /out/matrix-machine /opt/matrix/bin/matrix-machine
 COPY --from=builder /out/neo         /opt/matrix/bin/neo
 COPY --from=builder /out/workforced /opt/matrix/bin/workforced
 COPY --from=builder /out/workforce-seat /opt/matrix/bin/workforce-seat
