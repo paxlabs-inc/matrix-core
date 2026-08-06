@@ -529,8 +529,13 @@ func runServe(args []string) {
 	if err != nil {
 		fatal("build server: %v", err)
 	}
-	if err := engine.ReconcileAutomatrix(context.Background()); err != nil {
-		fatal("automatrix schedule reconciliation: %v", err)
+	if err := engine.ReconcileAutomatrix(ctx); err != nil {
+		// Automatrix is an optional background facility. A stale alarm, a busy
+		// SQLite file, or another transient scheduler failure must never take the
+		// conversational runtime down. Keep serving and converge in the
+		// background; the governor remains fail-closed until reconciliation wins.
+		fmt.Fprintf(os.Stderr, "neo: automatrix schedule reconciliation deferred: %v\n", err)
+		go retryAutomatrixReconciliation(ctx, engine)
 	}
 
 	httpSrv := &http.Server{Addr: *addr, Handler: srv.Handler()}
@@ -630,4 +635,29 @@ func randomToken() string {
 func fatal(format string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, "neo: "+format+"\n", a...)
 	os.Exit(1)
+}
+
+func retryAutomatrixReconciliation(ctx context.Context, engine *server.Engine) {
+	delay := 5 * time.Second
+	for {
+		timer := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
+		case <-timer.C:
+		}
+		if err := engine.ReconcileAutomatrix(ctx); err == nil {
+			fmt.Fprintln(os.Stdout, "neo: automatrix schedule reconciliation recovered")
+			return
+		} else {
+			fmt.Fprintf(os.Stderr, "neo: automatrix schedule reconciliation retry deferred: %v\n", err)
+		}
+		if delay < time.Minute {
+			delay *= 2
+			if delay > time.Minute {
+				delay = time.Minute
+			}
+		}
+	}
 }

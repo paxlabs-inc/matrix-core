@@ -711,7 +711,15 @@ func sameCreate(alarm Alarm, request CreateRequest, compareID bool) bool {
 		return false
 	}
 	got, err := canonicalBody(alarm.Body)
-	return err == nil && (!compareID || alarm.ID == request.ID) && alarm.NextFire.Equal(request.NextFire) &&
+	// A cron request's NextFire is derived from the wall clock when the request
+	// is decoded. It is scheduling state, not part of the caller's idempotent
+	// intent, and it legitimately changes after every fire or process restart.
+	// Once alarms retain the explicit fire time as part of their identity.
+	sameNextFire := alarm.NextFire.Equal(request.NextFire)
+	if request.CronExpr != "" {
+		sameNextFire = true
+	}
+	return err == nil && (!compareID || alarm.ID == request.ID) && sameNextFire &&
 		alarm.Interval == request.Interval && alarm.CronExpr == request.CronExpr && alarm.Timezone == request.Timezone &&
 		alarm.MisfirePolicy == request.MisfirePolicy && bytes.Equal(got, want)
 }

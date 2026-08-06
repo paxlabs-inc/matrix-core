@@ -276,6 +276,34 @@ func TestCancelRescheduleConflictAndGeneBinding(t *testing.T) {
 	}
 }
 
+func TestCronIdempotencyIgnoresDerivedNextFireAcrossRestart(t *testing.T) {
+	ctx := context.Background()
+	store := openTestStore(t, filepath.Join(t.TempDir(), "chronos", "chronos.db"), "gene-cron-restart", testVault(t))
+	defer store.Close()
+	firstFire := time.Now().UTC().Add(45 * time.Minute).Truncate(time.Microsecond)
+	request := CreateRequest{
+		IdempotencyKey: "neo-automatrix-wake", NextFire: firstFire,
+		CronExpr: "@every 45m", Timezone: "UTC", MisfirePolicy: MisfireCoalesce,
+		Body: Body{Payload: json.RawMessage(`{}`), WakeMessage: "AUTOMATRIX", ConversationID: "automatrix-wake", Label: "Neo Automatrix idle-wake"},
+	}
+	created, fresh, err := store.Create(ctx, request)
+	if err != nil || !fresh {
+		t.Fatalf("first create: alarm=%+v fresh=%v err=%v", created, fresh, err)
+	}
+
+	// The HTTP decoder derives this from a later wall clock on every Neo boot.
+	// The stable cron intent must still resolve to the original durable alarm.
+	replayed := request
+	replayed.NextFire = firstFire.Add(7 * time.Minute)
+	deduped, fresh, err := store.Create(ctx, replayed)
+	if err != nil || fresh || deduped.ID != created.ID {
+		t.Fatalf("restart replay: alarm=%+v fresh=%v err=%v", deduped, fresh, err)
+	}
+	if !deduped.NextFire.Equal(firstFire) {
+		t.Fatalf("restart replay moved durable next fire to %s, want %s", deduped.NextFire, firstFire)
+	}
+}
+
 func TestRescheduleDuringLeaseSurvivesAcknowledgement(t *testing.T) {
 	ctx := context.Background()
 	store := openTestStore(t, filepath.Join(t.TempDir(), "chronos", "chronos.db"), "gene-override", testVault(t))
