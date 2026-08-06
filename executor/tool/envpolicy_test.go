@@ -175,6 +175,38 @@ func TestFinanceMCPEnvironmentAcceptsRouterOwnedConfiguration(t *testing.T) {
 	}
 }
 
+func TestExaMCPEnvironmentAcceptsOnlyRouterOwnedConfiguration(t *testing.T) {
+	source := []string{
+		"PATH=/bin",
+		"MATRIX_USER_ID=user-1",
+		"MATRIX_EXA_URL=http://router.internal:8088/internal/exa",
+		"MATRIX_EXA_TOKEN=lane-sentinel",
+		"EXA_API_KEY=vendor-sentinel",
+		"UNREVIEWED_TOKEN=unknown-sentinel",
+	}
+	env, privileged, err := MCPEnvironment("exa", source, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !privileged {
+		t.Fatal("exa broker was not kept in the privileged service boundary")
+	}
+	for _, want := range []string{
+		"MATRIX_EXA_URL=http://router.internal:8088/internal/exa",
+		"MATRIX_EXA_TOKEN=lane-sentinel",
+	} {
+		if !slices.Contains(env, want) {
+			t.Fatalf("exa broker missing %q: %v", want, env)
+		}
+	}
+	joined := strings.Join(env, "\n")
+	for _, forbidden := range []string{"vendor-sentinel", "unknown-sentinel"} {
+		if strings.Contains(joined, forbidden) {
+			t.Fatalf("unrelated secret reached exa broker: %v", env)
+		}
+	}
+}
+
 func TestAgentEnvironmentFiltersValuesAndDuplicates(t *testing.T) {
 	source := []string{
 		"PATH=/bin", "MATRIX_USER_ID=first", "TAVILY_API_KEY=sentinel-search",

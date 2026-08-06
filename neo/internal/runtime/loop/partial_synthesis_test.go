@@ -93,3 +93,74 @@ func TestPartialResearchSynthesizesSuccessfulEvidenceInsteadOfRegressing(t *test
 		t.Fatalf("successful and failed sibling evidence was not preserved: %+v", response.ToolEvents)
 	}
 }
+
+func TestProviderProtocolCorruptionAfterCommittedEvidenceDeliversAcceptedSynthesis(t *testing.T) {
+	manager := realExecManager(t)
+	workdir := t.TempDir()
+	var (
+		mu   sync.Mutex
+		step int
+	)
+	gateway := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		body, _ := io.ReadAll(request.Body)
+		var decoded gatewayRequest
+		_ = json.Unmarshal(body, &decoded)
+		if handleCapabilityCanary(writer, decoded) {
+			return
+		}
+		for _, message := range decoded.Messages {
+			if strings.Contains(message.Content, honestPartialSynthesisPrompt) {
+				for _, synthesisMessage := range decoded.Messages {
+					if synthesisMessage.Role == "assistant" || synthesisMessage.Role == "tool" {
+						t.Errorf("synthesis replayed tool-seeking cognitive history: %+v", decoded.Messages)
+					}
+				}
+				if !strings.Contains(message.Content, "verified-interoperability-announcement") {
+					t.Errorf("synthesis omitted committed evidence: %s", message.Content)
+				}
+				writeSSEText(writer, "The committed source evidence supports a concise report: the verified interoperability announcement remains usable, while the malformed provider attempts add no new evidence and were excluded from the conclusion.")
+				return
+			}
+		}
+		mu.Lock()
+		step++
+		current := step
+		mu.Unlock()
+		if current == 1 {
+			writeSSETool(writer, "evidence-success", "exec__shell", map[string]interface{}{
+				"command": "printf verified-interoperability-announcement", "cwd": workdir,
+				"expect": "prints the verified announcement marker",
+			})
+			return
+		}
+		writeSSEText(writer, "<tool_call>")
+	}))
+	t.Cleanup(gateway.Close)
+
+	const turnID = "provider-corruption-after-evidence"
+	const request = "Research an interoperability announcement and summarize the verified evidence."
+	store := realTurnStore(t, turnID, request)
+	adapter, err := NewToolManagerAdapter(manager, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runtimeLoop, err := New(
+		realMiMoGenerator(t, gateway.URL), adapter, store,
+		Config{TurnID: turnID, Model: "mimo-v2", IdleTimeout: 30 * time.Second},
+		Dependencies{},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, turnErr := runtimeLoop.Turn(t.Context(), request)
+	if turnErr != nil {
+		t.Fatalf("committed evidence regressed into an incomplete turn: %v", turnErr)
+	}
+	if !response.HonestPartial || !strings.Contains(response.Content, "committed source evidence") {
+		t.Fatalf("response did not preserve and synthesize evidence: %+v", response)
+	}
+	answer, err := store.LoadAnswerRecord(t.Context(), turnID, "accepted")
+	if err != nil || answer.GeneratedAnswer != response.Content {
+		t.Fatalf("accepted answer was not durable: answer=%+v err=%v", answer, err)
+	}
+}

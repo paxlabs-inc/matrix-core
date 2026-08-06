@@ -101,3 +101,38 @@ func TestStructuredSelectors(t *testing.T) {
 		}
 	}
 }
+
+func TestLargeSearchProjectionIncludesBoundedEvidencePreview(t *testing.T) {
+	root := t.TempDir()
+	store, err := Open(filepath.Join(root, "artifacts"), artifactVault(t, root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	results := make([]map[string]any, 20)
+	for index := range results {
+		results[index] = map[string]any{
+			"title":     "Primary announcement",
+			"url":       "https://example.com/source",
+			"published": "2026-08-06",
+			"snippet":   string(bytes.Repeat([]byte("evidence "), 200)),
+		}
+	}
+	content, _ := json.Marshal(map[string]any{
+		"provider": "exa", "query": "agent interoperability", "results": results,
+	})
+	_, projection, err := store.Put(context.Background(), Metadata{
+		LogicalTurnID: "turn-search", CallIdentity: "call-search", Tool: "exa__exa_search",
+		MIME: "application/json",
+	}, content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, _ := json.Marshal(projection)
+	preview, ok := projection.ImportantFields["results_preview"].([]map[string]any)
+	if !ok || len(preview) != 12 || preview[0]["url"] != "https://example.com/source" {
+		t.Fatalf("search preview = %#v", projection.ImportantFields["results_preview"])
+	}
+	if len(encoded) > 16<<10 {
+		t.Fatalf("projection exceeded bounded context size: %d bytes", len(encoded))
+	}
+}

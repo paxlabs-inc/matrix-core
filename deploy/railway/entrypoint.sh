@@ -124,8 +124,8 @@ done
 # out of every inherited process environment and inject it explicitly into
 # Neo after cortexd is ready. In particular, AGENT_ENV must never carry it to
 # Playwright, workspace shells, or custom commands.
-NEOCORTEX_ACTOR_TOKEN="${NEO_NEOCORTEX_TOKEN:-}"
-unset NEO_NEOCORTEX_TOKEN
+NEOCORTEX_ACTOR_TOKEN="${NEO_NEOCORTEX_TOKEN:-${NEO_CORTEXD_TOKEN:-}}"
+unset NEO_NEOCORTEX_TOKEN NEO_CORTEXD_TOKEN
 if [[ ! -f "${OWNER_MARKER}" ]]; then
     chown -R "${AGENT_UID}:${AGENT_GID}" \
         "${DATA_DIR}/workspace" \
@@ -268,7 +268,7 @@ prepare_neocortex_config() {
     local key_path="${state_dir}/bootstrap.keys"
     local config_path="${state_dir}/engine.conf"
     local log_path="${state_dir}/engine.log"
-    local socket_path="${NEO_NEOCORTEX_SOCKET:-${state_dir}/engine.sock}"
+    local socket_path="${NEO_NEOCORTEX_SOCKET:-${NEO_CORTEXD_SOCKET:-${state_dir}/engine.sock}}"
     local key_tmp config_tmp key value
     local user_id="" kek="" signing_seed="" admin_token=""
 

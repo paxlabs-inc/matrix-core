@@ -136,6 +136,7 @@ type Agent struct {
 	runtimeLast        string
 	runtimeFailure     delegate.FailureClass
 	runtimeIncomplete  *loop.IncompleteRecord
+	currentUTCDate     string
 	out                Reporter
 	consolidator       Consolidator
 	recaller           ConvRecaller
@@ -411,6 +412,7 @@ func New(o Options) *Agent {
 		pager:            o.Pager,
 		runtime:          o.Runtime,
 		runtimeMode:      strings.TrimSpace(o.Config.AgentRuntime),
+		currentUTCDate:   time.Now().UTC().Format("January 2, 2006"),
 		out:              out,
 		consolidator:     o.Consolidator,
 		recaller:         o.Recaller,

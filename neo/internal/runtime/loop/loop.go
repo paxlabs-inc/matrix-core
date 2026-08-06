@@ -786,6 +786,18 @@ func (loop *Loop) runTurn(
 				}
 				continue
 			}
+			// Once tool evidence is durable, provider protocol corruption may
+			// prevent another ordinary generation but it must not regress the
+			// productive work into an incomplete terminal turn. The dedicated
+			// synthesis lane strips tools, performs its own provider compatibility
+			// recovery, and durably accepts either that synthesis or its honest
+			// evidence-preserving fallback.
+			if protocolCorruption && ctx.Err() == nil &&
+				(synthesisOwed || len(response.ToolEvents) > 0) {
+				return loop.deliverHonestPartial(
+					ctx, userContent, checkpoint, response, state, "",
+				)
+			}
 			if err := loop.save(context.WithoutCancel(ctx), &checkpoint, state); err != nil {
 				return response, err
 			}
@@ -1888,9 +1900,20 @@ func (loop *Loop) synthesizeHonestPartial(
 		candidate.ToolCalls = nil
 		return candidate, response.ContentStreamed
 	}
+	synthesisSystem := strings.TrimSpace(loop.config.SystemPrompt)
+	if synthesisSystem != "" {
+		synthesisSystem += "\n\n"
+	}
+	synthesisSystem += honestPartialSynthesisPrompt +
+		"\n\nCommitted tool evidence for this turn:\n" +
+		honestPartialEvidence(response.ToolEvents)
+	// Synthesis is a fresh cognitive phase over committed evidence, not a replay
+	// of the tool-seeking transcript. Refeeding every assistant call and large
+	// raw result teaches tool persistence precisely when tools are disabled and
+	// can consume the entire turn budget without producing an answer.
 	messages, manifest := composeRequestMessages(
-		loop.config.ConversationID, loop.config.SystemPrompt,
-		checkpoint.Messages, honestPartialSynthesisPrompt, "",
+		loop.config.ConversationID, synthesisSystem,
+		[]protocol.Message{{Role: protocol.RoleUser, Content: userContent}}, "", "",
 	)
 	if store, ok := loop.store.(ContextManifestStore); ok {
 		if err := store.SaveContextManifest(
@@ -1939,6 +1962,56 @@ func (loop *Loop) synthesizeHonestPartial(
 	generation.ToolCalls = nil
 	generation.FinishReason = protocol.FinishStop
 	return generation, streamed
+}
+
+func honestPartialEvidence(events []ToolExecution) string {
+	if len(events) == 0 {
+		return "No tool evidence was committed. State that limitation directly."
+	}
+	const (
+		maxEvents       = 16
+		maxResultBytes  = 5000
+		maxFailureBytes = 1000
+	)
+	var builder strings.Builder
+	seen := make(map[string]bool)
+	count := 0
+	for _, event := range events {
+		identity := event.Call.Name + "\x00" + string(event.Call.Arguments) +
+			"\x00" + string(event.Result)
+		digest := sha256.Sum256([]byte(identity))
+		key := hex.EncodeToString(digest[:])
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		if count >= maxEvents {
+			break
+		}
+		count++
+		fmt.Fprintf(&builder, "\n[evidence %d]\noperation: %s\narguments: %s\n",
+			count, event.Call.Name, boundedEvidenceText(string(event.Call.Arguments), maxFailureBytes))
+		if event.Error != "" {
+			fmt.Fprintf(&builder, "status: failed\nerror: %s\n",
+				boundedEvidenceText(event.Error, maxFailureBytes))
+		} else {
+			builder.WriteString("status: completed\n")
+		}
+		fmt.Fprintf(&builder, "result: %s\n",
+			boundedEvidenceText(string(event.Result), maxResultBytes))
+	}
+	if count < len(events) {
+		fmt.Fprintf(&builder, "\n%d additional duplicate or excess tool records remain durable and were omitted from this bounded synthesis context.\n", len(events)-count)
+	}
+	return strings.TrimSpace(builder.String())
+}
+
+func boundedEvidenceText(value string, limit int) string {
+	value = strings.TrimSpace(value)
+	if limit <= 0 || len(value) <= limit {
+		return value
+	}
+	return value[:limit] + "…"
 }
 
 func partialAnswerAddressesRequest(
@@ -2459,10 +2532,12 @@ func extractExpectations(
 			expectations[index] = strings.TrimSpace(expectations[index])
 		}
 		if runtimeUncertainProbe(result[index].Name) && expectations[index] == "" {
-			return nil, nil, fmt.Errorf(
-				"runtime loop: tool call %s is missing expect",
-				result[index].ID,
-			)
+			// A missing epistemic prediction is controller metadata, not an
+			// authorization boundary. Infer a conservative outcome shape so a
+			// safe read-only probe can proceed; refusing the tool here burns model
+			// calls without producing evidence and can prevent an otherwise
+			// complete research turn from ever reaching synthesis.
+			expectations[index] = inferredProbeExpectation(result[index].Name)
 		}
 		stripped, err := json.Marshal(arguments)
 		if err != nil {
@@ -2471,6 +2546,19 @@ func extractExpectations(
 		result[index].Arguments = stripped
 	}
 	return expectations, result, nil
+}
+
+func inferredProbeExpectation(name string) string {
+	base := strings.ToLower(strings.TrimSpace(name))
+	switch {
+	case strings.Contains(base, "search"), strings.Contains(base, "news"):
+		return "returns relevant source candidates or a structured no-results outcome"
+	case strings.Contains(base, "fetch"), strings.Contains(base, "read"),
+		strings.Contains(base, "navigate"), strings.Contains(base, "download"):
+		return "returns the requested resource content or a structured unavailable outcome"
+	default:
+		return "returns structured evidence or a typed failure observation"
+	}
 }
 
 func runtimeUncertainProbe(name string) bool {

@@ -258,7 +258,7 @@ func project(meta Metadata, content []byte) ToolResultProjection {
 		projection.ImportantFields = map[string]any{"lines": lines, "mime": meta.MIME}
 	}
 	if projection.Truncated {
-		projection.Warnings = []string{"Full output is externalized; use a typed selector before relying on an omitted subsection."}
+		projection.Warnings = []string{"A bounded evidence preview is included; additional detail remains durable in the encrypted artifact."}
 	}
 	return projection
 }
@@ -305,11 +305,56 @@ func importantJSON(value any) map[string]any {
 			}
 		case []any:
 			result[key+"_count"] = len(typed)
+			if key == "results" || key == "sources" || key == "items" {
+				if preview := boundedArrayPreview(typed); len(preview) > 0 {
+					result[key+"_preview"] = preview
+				}
+			}
 		case map[string]any:
 			result[key+"_fields"] = len(typed)
 		}
 	}
 	return result
+}
+
+func boundedArrayPreview(items []any) []map[string]any {
+	const (
+		maxItems      = 12
+		maxStringSize = 700
+	)
+	preview := make([]map[string]any, 0, min(len(items), maxItems))
+	for _, item := range items {
+		if len(preview) == maxItems {
+			break
+		}
+		object, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		entry := make(map[string]any)
+		for _, key := range []string{
+			"title", "url", "published", "publishedDate", "author",
+			"status", "snippet", "excerpt", "summary",
+		} {
+			value, exists := object[key]
+			if !exists {
+				continue
+			}
+			switch typed := value.(type) {
+			case string:
+				if len(typed) > maxStringSize {
+					typed = typed[:maxStringSize] + "…"
+				}
+				entry[key] = typed
+			case float64, bool, nil:
+				entry[key] = typed
+			}
+		}
+		if len(entry) > 0 {
+			preview = append(preview, entry)
+		}
+	}
+	return preview
 }
 
 func (s *Store) Rehydrate(_ context.Context, artifactID string, selector Selector) ([]byte, error) {

@@ -353,16 +353,43 @@ func (generator *MiMoGenerator) GenerateStream(
 	if hasTools {
 		generator.ensureCapability(ctx, request.Model)
 		request = generator.applyStrategy(request)
+		return generator.inner.GenerateStream(ctx, request, turnUsage, deliver)
 	}
-	generation, err := generator.inner.GenerateStream(ctx, request, turnUsage, deliver)
+
+	// A tools-stripped request is a final-answer boundary. Buffer it until the
+	// MiMo adapter proves that the response is ordinary prose; otherwise an
+	// invalid textual call would be streamed to the user before the request-local
+	// compatibility retry could correct it.
+	var buffered []protocol.StreamChunk
+	buffer := func(chunk protocol.StreamChunk) error {
+		buffered = append(buffered, chunk)
+		return nil
+	}
+	generation, err := generator.inner.GenerateStream(ctx, request, turnUsage, buffer)
 	if err != nil {
 		return protocol.NormalizedGeneration{}, err
 	}
-	if !hasTools && len(generation.ToolCalls) > 0 {
-		return protocol.NormalizedGeneration{}, fmt.Errorf(
-			"%w: MiMo emitted a tool call while the active streaming request exposed no tools",
-			ErrToolProtocol,
-		)
+	if len(generation.ToolCalls) > 0 {
+		retry := request
+		retry.Messages = append([]protocol.Message{{
+			Role: protocol.RoleSystem, Content: noToolCompatibilityPrompt,
+		}}, request.Messages...)
+		buffered = nil
+		generation, err = generator.inner.GenerateStream(ctx, retry, turnUsage, buffer)
+		if err != nil {
+			return protocol.NormalizedGeneration{}, err
+		}
+		if len(generation.ToolCalls) > 0 {
+			return protocol.NormalizedGeneration{}, fmt.Errorf(
+				"%w: MiMo emitted a tool call while the active streaming request exposed no tools after one compatibility retry",
+				ErrToolProtocol,
+			)
+		}
+	}
+	for _, chunk := range buffered {
+		if err := deliver(chunk); err != nil {
+			return protocol.NormalizedGeneration{}, err
+		}
 	}
 	return generation, nil
 }

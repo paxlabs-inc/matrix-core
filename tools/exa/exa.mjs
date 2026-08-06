@@ -198,11 +198,20 @@ export async function dispatch(name, args = {}) {
         const type = String(args.type || 'auto')
         if (!SEARCH_TYPES.has(type)) throw new Error('unsupported search type')
         const highlights = args.highlight_query ? { query: String(args.highlight_query), maxCharacters: clampInt(args.max_characters, 4000, 500, 12000) } : true
+		const requestedCategory = String(args.category || '').trim()
+		// Exa's company index rejects publication-date filters. A dated
+		// announcement query is general web retrieval, even when the model
+		// mistakenly labels it as a company lookup, so preserve the dates and
+		// fall back to the general index instead of spending a failed request.
+		const category = requestedCategory === 'company' &&
+			(args.start_published_date || args.end_published_date)
+			? undefined
+			: requestedCategory || undefined
         const body = {
           query,
           type,
           numResults: clampInt(args.num_results, 8, 1, 20),
-          category: args.category,
+		  category,
           includeDomains: stringList(args.include_domains),
           excludeDomains: stringList(args.exclude_domains),
           startPublishedDate: args.start_published_date,

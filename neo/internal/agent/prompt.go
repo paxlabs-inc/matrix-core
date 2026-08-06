@@ -28,6 +28,11 @@ var groundTruth string
 func (a *Agent) stableSystem() string {
 	var b strings.Builder
 	b.WriteString(a.systemPrompt())
+	if currentDate := strings.TrimSpace(a.currentUTCDate); currentDate != "" {
+		b.WriteString("\n\nCurrent time context:\n- Today's UTC date is ")
+		b.WriteString(currentDate)
+		b.WriteString(". Resolve relative time words such as current, latest, today, and recently against this date; for current research, prefer the newest source evidence available and state source dates explicitly.\n")
+	}
 
 	// Epistemic-core req.2: the capability surface (external API,
 	// is/is-not facts, failure patterns) lives resident in the

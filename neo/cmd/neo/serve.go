@@ -56,6 +56,7 @@ func runServe(args []string) {
 		configPath = fs.String("config", "", "runtime neo.kvx config (optional)")
 		manifest   = fs.String("manifest", "", "agent manifest with MCP servers (overrides config)")
 		dataRoot   = fs.String("data-root", "", "Neo runtime data root (overrides config)")
+		cortexRoot = fs.String("cortex-root", "", "deprecated alias for -data-root")
 		actor      = fs.String("actor", "", "Neocortex actor name (overrides config; default neo)")
 		addr       = fs.String("addr", envOrDefault("NEO_ADDR", ":8080"), "listen address")
 		backend    = fs.String("backend", "", "co-located MCL daemon base URL for core_execute + proxy (overrides NEO_DAEMON_URL/config)")
@@ -85,8 +86,11 @@ func runServe(args []string) {
 		cfg.ManifestPath = *manifest
 	}
 	if !*sandbox {
-		if *dataRoot != "" {
-			cfg.DataRoot = *dataRoot
+		cfg.DataRoot = resolveDataRootOverride(
+			cfg.DataRoot, *dataRoot, *cortexRoot,
+		)
+		if strings.TrimSpace(*cortexRoot) != "" {
+			fmt.Fprintln(os.Stdout, "neo: -cortex-root is deprecated; use -data-root")
 		}
 		if *actor != "" {
 			cfg.NeocortexActor = *actor
@@ -608,6 +612,16 @@ func envOrDefault(key, def string) string {
 		return v
 	}
 	return def
+}
+
+func resolveDataRootOverride(current, dataRoot, cortexRoot string) string {
+	if value := strings.TrimSpace(dataRoot); value != "" {
+		return value
+	}
+	if value := strings.TrimSpace(cortexRoot); value != "" {
+		return value
+	}
+	return current
 }
 
 func envInt(key string, fallback int) int {

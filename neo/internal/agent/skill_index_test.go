@@ -99,3 +99,16 @@ func TestPrompt_SkillIndexEmptyOmitsSection(t *testing.T) {
 		}
 	}
 }
+
+func TestStableSystemIncludesConstructionDateWithoutDrift(t *testing.T) {
+	agent := &Agent{currentUTCDate: "August 6, 2026"}
+	first := agent.stableSystem()
+	second := agent.stableSystem()
+	if first != second {
+		t.Fatal("stable system changed across calls")
+	}
+	if !strings.Contains(first, "Today's UTC date is August 6, 2026") ||
+		!strings.Contains(first, "current research") {
+		t.Fatalf("stable system omitted current-date grounding: %q", first)
+	}
+}

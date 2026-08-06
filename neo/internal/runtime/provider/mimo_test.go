@@ -177,6 +177,34 @@ func TestMiMoNoToolsCompatibilityRetryIsRequestLocal(t *testing.T) {
 	}
 }
 
+func TestMiMoStreamingNoToolsBuffersInvalidAttemptAndDeliversCompatibilityRetry(t *testing.T) {
+	simulator := newMiMoSimulator()
+	server := httptest.NewServer(simulator)
+	defer server.Close()
+	generator := newTestMiMoGenerator(t, server)
+
+	var delivered []protocol.StreamChunk
+	result, err := generator.GenerateStream(
+		context.Background(), mimoTask("no-tools", false), nil,
+		func(chunk protocol.StreamChunk) error {
+			delivered = append(delivered, chunk)
+			return nil
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Content != "Revised without tools." || len(result.ToolCalls) != 0 {
+		t.Fatalf("result = %+v", result)
+	}
+	if len(delivered) != 1 || delivered[0].ContentDelta != "Revised without tools." {
+		t.Fatalf("invalid first attempt escaped or retry was not delivered: %+v", delivered)
+	}
+	if simulator.compatibilityPrompts() != 1 {
+		t.Fatalf("compatibility prompts = %d", simulator.compatibilityPrompts())
+	}
+}
+
 func TestMiMoStrategyLadderChangesRequestAndExhausts(t *testing.T) {
 	simulator := newMiMoSimulator()
 	server := httptest.NewServer(simulator)

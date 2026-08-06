@@ -96,6 +96,9 @@ func TestGeneralExaBridgeUsesRouterAndPreservesGroundingStatuses(t *testing.T) {
 			if _, ok := body["contents"].(map[string]any); !ok {
 				t.Fatalf("search contents not nested: %#v", body)
 			}
+			if body["category"] != nil || body["startPublishedDate"] != "2026-01-01" || body["endPublishedDate"] != "2026-12-31" {
+				t.Fatalf("dated company query was not normalized to the general index: %#v", body)
+			}
 			_, _ = w.Write([]byte(`{"requestId":"search-1","searchType":"auto","results":[{"title":"Primary","url":"https://www.sec.gov/x","highlights":["Extractive fact"]}],"output":{"content":{"answer":"fact"},"grounding":[{"field":"answer","confidence":"high","citations":[{"url":"https://www.sec.gov/x","title":"Primary"}]}]},"costDollars":{"total":0.01}}`))
 		case "/contents":
 			var body map[string]any
@@ -121,7 +124,10 @@ func TestGeneralExaBridgeUsesRouterAndPreservesGroundingStatuses(t *testing.T) {
 	t.Cleanup(router.Close)
 	bridge := startExaBridge(t, router.URL+"/internal/exa", "lane-token")
 
-	search := bridge.call("exa_search", map[string]any{"query": "fact"})
+	search := bridge.call("exa_search", map[string]any{
+		"query": "fact", "category": "company",
+		"start_published_date": "2026-01-01", "end_published_date": "2026-12-31",
+	})
 	if search["provider"] != "exa" || search["request_id"] != "search-1" || len(search["results"].([]any)) != 1 {
 		t.Fatalf("search=%+v", search)
 	}
