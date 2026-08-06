@@ -35,6 +35,7 @@ func TestAgentEnvironmentOwnerClassification(t *testing.T) {
 		"NEO_VOICE_TTS_DEADLINE_SECONDS", "ALPHAVANTAGE_API_KEY", "FMP_API_KEY",
 		"ROUTER_FINANCE_TOKEN", "MATRIX_FINANCE_TOKEN", "MATRIX_FINANCE_URL",
 		"VAULT_KEK", "VAULT_KEK_FILE",
+		"MATRIX_CHRONOS_LOCAL_TOKEN",
 	}
 	for _, name := range visible {
 		if !AgentEnvironmentVisible(name) {
@@ -59,6 +60,42 @@ func TestAgentEnvironmentOwnerClassification(t *testing.T) {
 		if AgentEnvironmentVisible(unknown) {
 			t.Errorf("unknown %s was not denied", unknown)
 		}
+	}
+}
+
+func TestChronosMCPEnvironmentReceivesOnlyLocalSchedulerCapability(t *testing.T) {
+	source := []string{
+		"PATH=/bin",
+		"MATRIX_USER_ID=user-1",
+		"MATRIX_CHRONOS_LOCAL_URL=http://127.0.0.1:8081",
+		"MATRIX_CHRONOS_LOCAL_TOKEN=local-chronos-sentinel",
+		"VAULT_KEK=vault-sentinel",
+		"UNREVIEWED_TOKEN=unknown-sentinel",
+	}
+
+	env, privileged, err := MCPEnvironment("chronos", source, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !privileged {
+		t.Fatal("chronos broker was not kept in the privileged service boundary")
+	}
+	for _, want := range []string{
+		"MATRIX_CHRONOS_LOCAL_URL=http://127.0.0.1:8081",
+		"MATRIX_CHRONOS_LOCAL_TOKEN=local-chronos-sentinel",
+	} {
+		if !slices.Contains(env, want) {
+			t.Fatalf("chronos broker missing %q: %v", want, env)
+		}
+	}
+	joined := strings.Join(env, "\n")
+	for _, forbidden := range []string{"vault-sentinel", "unknown-sentinel"} {
+		if strings.Contains(joined, forbidden) {
+			t.Fatalf("unrelated secret reached chronos broker: %v", env)
+		}
+	}
+	if slices.Contains(AgentEnvironment(source), "MATRIX_CHRONOS_LOCAL_TOKEN=local-chronos-sentinel") {
+		t.Fatal("local Chronos capability reached the generic agent environment")
 	}
 }
 

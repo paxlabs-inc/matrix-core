@@ -46,6 +46,9 @@ var protectedEnvironment = stringSet(
 	// The cortexd capability token scopes the actor namespace; an agent child
 	// holding it could bypass the memory seam entirely.
 	"NEO_CORTEXD_TOKEN",
+	// The per-machine Chronos capability is root-only. It is admitted only to
+	// the fixed chronos MCP broker below, never generic agent subprocesses.
+	"MATRIX_CHRONOS_LOCAL_TOKEN",
 )
 
 var protectedEnvironmentOwner = map[string]string{
@@ -86,6 +89,7 @@ var protectedEnvironmentOwner = map[string]string{
 	"MATRIX_VAULT_KEK":               "vault-bootstrap",
 	"MATRIX_VAULT_KEK_ID":            "vault-bootstrap",
 	"NEO_CORTEXD_TOKEN":              "neocortex-substrate",
+	"MATRIX_CHRONOS_LOCAL_TOKEN":     "chronos",
 }
 
 var credentialedMCPEnvironment = map[string][]string{
@@ -120,6 +124,9 @@ var credentialedMCPEnvironment = map[string][]string{
 	},
 	"machine-mail": {
 		"MACHINEMAIL_API_URL", "MACHINEMAIL_API_KEY", "MACHINEMAIL_TIMEOUT_MS",
+	},
+	"chronos": {
+		"MATRIX_CHRONOS_LOCAL_URL", "MATRIX_CHRONOS_LOCAL_TOKEN",
 	},
 }
 

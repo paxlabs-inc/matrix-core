@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	toolpolicy "matrix/executor/tool"
 	machinechronos "matrix/machine/chronos"
 	"matrix/vault"
 )
@@ -56,6 +57,11 @@ func TestLocalChronosAPIRealStoreCapabilityAndDelivery(t *testing.T) {
 	mux.HandleFunc("/chronos/v1/alarms/", state.handleLocalChronosAlarm)
 	api := httptest.NewServer(mux)
 	defer api.Close()
+	runChronosBridgeCall(t, api.URL, capability, "alarm_set", map[string]interface{}{
+		"kind": "cron", "cron_expr": "0 */6 * * *", "timezone": "UTC",
+		"wake_message": "run automatrix work", "idempotency_key": "automatrix-reconcile",
+		"label": "Automatrix",
+	})
 
 	unauthorized, err := http.Post(api.URL+"/chronos/v1/alarms", "application/json", bytes.NewBufferString(`{}`))
 	if err != nil {
@@ -180,7 +186,19 @@ func runChronosBridgeCall(t *testing.T, apiURL, capability, tool string, argumen
 	defer cancel()
 	script := filepath.Join("..", "..", "..", "tools", "chronos", "chronos.mjs")
 	command := exec.CommandContext(ctx, "node", script)
-	command.Env = append(os.Environ(), "MATRIX_CHRONOS_LOCAL_URL="+apiURL, "MATRIX_CHRONOS_LOCAL_TOKEN="+capability, "MATRIX_CHRONOS_URL=")
+	sourceEnv := append(os.Environ(),
+		"MATRIX_CHRONOS_LOCAL_URL="+apiURL,
+		"MATRIX_CHRONOS_LOCAL_TOKEN="+capability,
+		"MATRIX_CHRONOS_URL=",
+	)
+	bridgeEnv, privileged, err := toolpolicy.MCPEnvironment("chronos", sourceEnv, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !privileged {
+		t.Fatal("chronos bridge did not retain the trusted service identity")
+	}
+	command.Env = bridgeEnv
 	stdin, err := command.StdinPipe()
 	if err != nil {
 		t.Fatal(err)
