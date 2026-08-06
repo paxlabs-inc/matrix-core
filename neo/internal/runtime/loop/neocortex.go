@@ -286,6 +286,19 @@ func (store *NeocortexCheckpointStore) LoadTurnState(
 	return loader.LoadTurnState(ctx, turnID)
 }
 
+func (store *NeocortexCheckpointStore) LoadTurnRecord(
+	ctx context.Context,
+	turnID string,
+) (records.TurnRecord, error) {
+	target, ok := store.Turns.(SynthesisDebtStore)
+	if !ok {
+		return records.TurnRecord{}, fmt.Errorf(
+			"runtime loop: operational store cannot load canonical turns",
+		)
+	}
+	return target.LoadTurnRecord(ctx, turnID)
+}
+
 func (store *NeocortexCheckpointStore) SetTurnRecovery(
 	ctx context.Context,
 	turnID string,
@@ -302,3 +315,118 @@ func (store *NeocortexCheckpointStore) SetTurnStatus(
 ) error {
 	return store.Turns.SetTurnStatus(ctx, turnID, status)
 }
+
+func (store *NeocortexCheckpointStore) SaveAnswerRecord(
+	ctx context.Context,
+	turnID string,
+	answerIdentity string,
+	record records.AnswerRecord,
+) error {
+	target, ok := store.Turns.(AnswerStateStore)
+	if !ok {
+		return fmt.Errorf(
+			"runtime loop: operational store lacks durable answer support",
+		)
+	}
+	return target.SaveAnswerRecord(ctx, turnID, answerIdentity, record)
+}
+
+func (store *NeocortexCheckpointStore) LoadAnswerRecord(
+	ctx context.Context,
+	turnID string,
+	answerIdentity string,
+) (records.AnswerRecord, error) {
+	target, err := store.deliveryStateStore()
+	if err != nil {
+		return records.AnswerRecord{}, err
+	}
+	return target.LoadAnswerRecord(ctx, turnID, answerIdentity)
+}
+
+func (store *NeocortexCheckpointStore) SaveDeliveryRecord(
+	ctx context.Context,
+	turnID string,
+	deliveryIdentity string,
+	record records.DeliveryRecord,
+) error {
+	target, err := store.deliveryStateStore()
+	if err != nil {
+		return err
+	}
+	return target.SaveDeliveryRecord(ctx, turnID, deliveryIdentity, record)
+}
+
+func (store *NeocortexCheckpointStore) LoadDeliveryRecord(
+	ctx context.Context,
+	turnID string,
+	deliveryIdentity string,
+) (records.DeliveryRecord, error) {
+	target, err := store.deliveryStateStore()
+	if err != nil {
+		return records.DeliveryRecord{}, err
+	}
+	return target.LoadDeliveryRecord(ctx, turnID, deliveryIdentity)
+}
+
+func (store *NeocortexCheckpointStore) MarkAnswerReady(
+	ctx context.Context,
+	turnID string,
+	answerIdentity string,
+) error {
+	target, err := store.deliveryStateStore()
+	if err != nil {
+		return err
+	}
+	return target.MarkAnswerReady(ctx, turnID, answerIdentity)
+}
+
+func (store *NeocortexCheckpointStore) MarkDelivering(
+	ctx context.Context,
+	turnID string,
+	deliveryIdentity string,
+) error {
+	target, err := store.deliveryStateStore()
+	if err != nil {
+		return err
+	}
+	return target.MarkDelivering(ctx, turnID, deliveryIdentity)
+}
+
+func (store *NeocortexCheckpointStore) MarkDeliveryRetry(
+	ctx context.Context,
+	turnID string,
+) error {
+	target, err := store.deliveryStateStore()
+	if err != nil {
+		return err
+	}
+	return target.MarkDeliveryRetry(ctx, turnID)
+}
+
+func (store *NeocortexCheckpointStore) MarkDelivered(
+	ctx context.Context,
+	turnID string,
+) error {
+	target, err := store.deliveryStateStore()
+	if err != nil {
+		return err
+	}
+	return target.MarkDelivered(ctx, turnID)
+}
+
+func (store *NeocortexCheckpointStore) deliveryStateStore() (
+	DeliveryStateStore,
+	error,
+) {
+	target, ok := store.Turns.(DeliveryStateStore)
+	if !ok {
+		return nil, fmt.Errorf(
+			"runtime loop: operational store lacks durable delivery support",
+		)
+	}
+	return target, nil
+}
+
+var _ PendingEffectStore = (*NeocortexCheckpointStore)(nil)
+var _ DeliveryStateStore = (*NeocortexCheckpointStore)(nil)
+var _ SynthesisDebtStore = (*NeocortexCheckpointStore)(nil)

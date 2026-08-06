@@ -594,15 +594,6 @@ func (loop *Loop) runTurn(
 		toolCallLimit = policy.ToolCallBudget
 	}
 	breaker := loop.config.Breaker
-	if err := state.Circuit.Enforce("turn"); err != nil {
-		response.Liveness.Enforcements = append(
-			response.Liveness.Enforcements,
-			LivenessEnforcement{Bound: boundCircuitBreaker},
-		)
-		return loop.deliverHonestPartial(
-			ctx, userContent, checkpoint, response, state, circuitBoundary,
-		)
-	}
 	tools := loop.tools.Surface(ctx)
 	if checkpoint.PendingCall != nil {
 		if err := loop.reconcilePending(
@@ -611,18 +602,16 @@ func (loop *Loop) runTurn(
 			return response, err
 		}
 	}
-	var nextRepair string
-	var pendingDoubt string
-	toolsDisabled := false
-	revisionActive := false
-	for {
-		if err := ctx.Err(); err != nil {
-			return response, loop.incomplete(
-				context.WithoutCancel(ctx), "turn", checkpoint, response,
-				time.Now().UTC(), "resume_from_checkpoint", err,
-			)
-		}
-		if err := state.Circuit.Enforce("provider"); err != nil {
+	synthesisOwed, err := loop.synthesisOwed(ctx)
+	if err != nil {
+		return response, loop.incomplete(
+			ctx, "synthesis_debt", checkpoint, response,
+			time.Now().UTC(), "resume_with_committed_tool_evidence", err,
+		)
+	}
+	turnCircuitErr := state.Circuit.Enforce("turn")
+	if !synthesisOwed {
+		if turnCircuitErr != nil {
 			response.Liveness.Enforcements = append(
 				response.Liveness.Enforcements,
 				LivenessEnforcement{Bound: boundCircuitBreaker},
@@ -631,14 +620,49 @@ func (loop *Loop) runTurn(
 				ctx, userContent, checkpoint, response, state, circuitBoundary,
 			)
 		}
+	}
+	var nextRepair string
+	var pendingDoubt string
+	toolsDisabled := synthesisOwed && turnCircuitErr != nil
+	revisionActive := false
+	for {
+		if err := ctx.Err(); err != nil {
+			return response, loop.incomplete(
+				context.WithoutCancel(ctx), "turn", checkpoint, response,
+				time.Now().UTC(), "resume_from_checkpoint", err,
+			)
+		}
+		synthesisOwed, err = loop.synthesisOwed(ctx)
+		if err != nil {
+			return response, loop.incomplete(
+				ctx, "synthesis_debt", checkpoint, response,
+				time.Now().UTC(), "resume_with_committed_tool_evidence", err,
+			)
+		}
+		providerCircuitErr := state.Circuit.Enforce("provider")
+		tokenExhausted := loop.config.MaxTurnTokens > 0 &&
+			state.TokensSpent >= loop.config.MaxTurnTokens
+		if synthesisOwed && (providerCircuitErr != nil || tokenExhausted) {
+			toolsDisabled = true
+		}
+		if !synthesisOwed {
+			if providerCircuitErr != nil {
+				response.Liveness.Enforcements = append(
+					response.Liveness.Enforcements,
+					LivenessEnforcement{Bound: boundCircuitBreaker},
+				)
+				return loop.deliverHonestPartial(
+					ctx, userContent, checkpoint, response, state, circuitBoundary,
+				)
+			}
+		}
 		// The cumulative token budget is checked HERE and nowhere else: at the
 		// top of an iteration, before the next provider call, after every path
 		// that could have delivered a finished answer has already returned. A
 		// budget bound must never be able to eat a completed answer — that is
 		// the o1-budget-kill class — so exhaustion only ever prevents MORE
 		// generation, and it routes to the honest partial rather than a death.
-		if loop.config.MaxTurnTokens > 0 &&
-			state.TokensSpent >= loop.config.MaxTurnTokens {
+		if !synthesisOwed && tokenExhausted {
 			response.Liveness.Enforcements = append(
 				response.Liveness.Enforcements,
 				LivenessEnforcement{
@@ -1282,6 +1306,18 @@ func (loop *Loop) runTurn(
 	}
 }
 
+func (loop *Loop) synthesisOwed(ctx context.Context) (bool, error) {
+	store, ok := loop.store.(SynthesisDebtStore)
+	if !ok {
+		return false, nil
+	}
+	turn, err := store.LoadTurnRecord(ctx, loop.config.TurnID)
+	if err != nil {
+		return false, err
+	}
+	return turn.SynthesisDebt.Owed, nil
+}
+
 // injectToolResult lands a runtime-authored result for a call the enforced
 // policy refused to dispatch. The marker is a TOOL RESULT, so it belongs in the
 // durable window: the model emitted that call ID and must see a real result for
@@ -1620,38 +1656,52 @@ func (loop *Loop) deliverAccepted(
 	response.ContentStreamed = streamed && generation.Content != ""
 	response.ReasoningStreamed = streamed && generation.Reasoning != ""
 	response.Checkpoint = &checkpoint
-	// Acceptance is the durable boundary: commit the exact stream attempt and
-	// persist AnswerReady before any reporter can acknowledge delivery.
-	if loop.observer != nil {
-		if err := loop.commitAttempt(context.WithoutCancel(ctx)); err != nil {
-			return response, fmt.Errorf("runtime loop: commit accepted stream: %w", err)
-		}
-	}
-	if answerStore, ok := loop.store.(AnswerStateStore); ok {
+	// Acceptance is the durable boundary: persist the answer and AnswerReady
+	// before stream bookkeeping or any reporter can acknowledge delivery.
+	answerStore, hasAnswerStore := loop.store.(AnswerStateStore)
+	answerRecord := records.AnswerRecord{}
+	if hasAnswerStore {
 		evidenceIDs := make([]string, 0, len(response.ToolEvents))
 		for _, event := range response.ToolEvents {
 			if event.IdempotencyKey != "" {
 				evidenceIDs = append(evidenceIDs, event.IdempotencyKey+":result")
 			}
 		}
+		streamState := records.StreamCommitted
+		if streamed && loop.observer != nil {
+			streamState = records.StreamProvisional
+		}
+		answerRecord = records.AnswerRecord{
+			GeneratedAnswer:       generation.Content,
+			SupportingEvidenceIDs: evidenceIDs,
+			CompletionAssessment:  records.CompletionAssessment{Ready: true},
+			StreamCommitState:     streamState,
+		}
 		if err := answerStore.SaveAnswerRecord(
 			context.WithoutCancel(ctx), loop.config.TurnID, "accepted",
-			records.AnswerRecord{
-				GeneratedAnswer:       generation.Content,
-				SupportingEvidenceIDs: evidenceIDs,
-				CompletionAssessment:  records.CompletionAssessment{Ready: true},
-				StreamCommitState:     records.StreamCommitted,
-			},
+			answerRecord,
 		); err != nil {
 			return response, fmt.Errorf("runtime loop: persist accepted answer: %w", err)
 		}
 	}
-	// Checkpoint/bookkeeping is independent and cannot erase AnswerReady.
-	_ = loop.save(context.WithoutCancel(ctx), &checkpoint, state)
 	if terminalStore, ok := loop.store.(DeliveryStateStore); ok {
 		if err := terminalStore.MarkAnswerReady(context.WithoutCancel(ctx), loop.config.TurnID, "accepted"); err != nil {
 			return response, fmt.Errorf("runtime loop: mark answer ready: %w", err)
 		}
+	}
+	// Checkpoint and stream bookkeeping are independent and cannot erase the
+	// now-durable accepted answer.
+	_ = loop.save(context.WithoutCancel(ctx), &checkpoint, state)
+	if loop.observer != nil {
+		if err := loop.commitAttempt(context.WithoutCancel(ctx)); err != nil {
+			return response, fmt.Errorf("runtime loop: commit accepted stream: %w", err)
+		}
+	}
+	if hasAnswerStore && answerRecord.StreamCommitState == records.StreamProvisional {
+		answerRecord.StreamCommitState = records.StreamCommitted
+		_ = answerStore.SaveAnswerRecord(
+			context.WithoutCancel(ctx), loop.config.TurnID, "accepted", answerRecord,
+		)
 	}
 	delivered, deliveryErr := loop.attemptDelivery(
 		ctx, userContent, checkpoint, generation.Content,

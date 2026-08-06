@@ -66,6 +66,10 @@ type ConvergenceStore interface {
 	LoadConvergenceRecord(context.Context, string) (records.ConvergenceRecord, error)
 }
 
+type SynthesisDebtStore interface {
+	LoadTurnRecord(context.Context, string) (records.TurnRecord, error)
+}
+
 // PendingEffectStore commits the recoverable PendingCall checkpoint and the
 // durable effect-start record in one storage transaction.
 type PendingEffectStore interface {

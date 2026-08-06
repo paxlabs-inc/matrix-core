@@ -25,6 +25,7 @@ import (
 	"matrix/neo/internal/runtime/loop"
 	"matrix/neo/internal/runtime/protocol"
 	runtimeprovider "matrix/neo/internal/runtime/provider"
+	"matrix/neo/internal/runtime/records"
 	"matrix/neo/internal/runtime/turnstate"
 	"matrix/neo/internal/tools"
 )
@@ -349,7 +350,36 @@ func (a *Agent) chatResurrectionWithInput(
 	if len(history) == 0 {
 		history = resurrectionProtocolHistory(a.working)
 	}
+	deliveryOnly := false
 	if recoveryCheckpoint != nil {
+		turnRecord, loadErr := a.runtime.store.LoadTurnRecord(ctx, turnID)
+		if loadErr != nil {
+			a.runtimeFailure = delegate.ClassTransient
+			return loadErr
+		}
+		switch turnRecord.CurrentState {
+		case records.StateAnswerReady, records.StateDeliveryRetry:
+			deliveryOnly = true
+		default:
+			if _, answerErr := a.runtime.store.LoadAnswerRecord(
+				ctx, turnID, "accepted",
+			); answerErr == nil {
+				if readyErr := a.runtime.store.MarkAnswerReady(
+					ctx, turnID, "accepted",
+				); readyErr != nil {
+					a.runtimeFailure = delegate.ClassTransient
+					return readyErr
+				}
+				deliveryOnly = true
+			} else if !errors.Is(answerErr, sql.ErrNoRows) {
+				a.runtimeFailure = delegate.ClassTransient
+				return answerErr
+			}
+		}
+	}
+	if deliveryOnly {
+		response, turnErr = runtimeLoop.RetryDelivery(ctx)
+	} else if recoveryCheckpoint != nil {
 		response, turnErr = runtimeLoop.Resume(
 			ctx, userInput, *recoveryCheckpoint,
 		)
@@ -482,6 +512,45 @@ func (surface resurrectionToolSurface) Reconcile(
 ) (loop.ReconcileResult, error) {
 	return surface.parent.Reconcile(ctx, idempotencyKey)
 }
+
+func (surface resurrectionToolSurface) EffectMetadata(
+	call protocol.NormalizedToolCall,
+) (loop.EffectMetadata, error) {
+	if _, ok := surface.allowed[call.Name]; !ok {
+		return loop.EffectMetadata{}, fmt.Errorf(
+			"neo: tool %q is outside this agent surface", call.Name,
+		)
+	}
+	provider, ok := surface.parent.(loop.EffectMetadataProvider)
+	if !ok {
+		return loop.EffectMetadata{}, fmt.Errorf(
+			"neo: effect metadata unavailable for %q", call.Name,
+		)
+	}
+	return provider.EffectMetadata(call)
+}
+
+func (surface resurrectionToolSurface) PrepareEffect(
+	ctx context.Context,
+	call protocol.NormalizedToolCall,
+	idempotencyKey string,
+) error {
+	if _, ok := surface.allowed[call.Name]; !ok {
+		return fmt.Errorf(
+			"neo: tool %q is outside this agent surface", call.Name,
+		)
+	}
+	preparer, ok := surface.parent.(loop.EffectPreparer)
+	if !ok {
+		return fmt.Errorf(
+			"neo: effect preparation unavailable for %q", call.Name,
+		)
+	}
+	return preparer.PrepareEffect(ctx, call, idempotencyKey)
+}
+
+var _ loop.EffectMetadataProvider = resurrectionToolSurface{}
+var _ loop.EffectPreparer = resurrectionToolSurface{}
 
 func (a *Agent) chatAudioResurrection(
 	ctx context.Context,
@@ -663,17 +732,39 @@ func canonicalToolLimit(cfg config.Config, posture InteractionPosture) int {
 }
 
 func runtimeBestEffort(response loop.Response) string {
-	for index := len(response.ToolEvents) - 1; index >= 0; index-- {
-		event := response.ToolEvents[index]
-		if len(event.Result) > 0 {
-			return strings.TrimSpace(string(event.Result))
+	completed := 0
+	needsAttention := 0
+	for _, event := range response.ToolEvents {
+		if event.Error == "" {
+			completed++
+		} else {
+			needsAttention++
 		}
 	}
-	return ""
+	if completed == 0 && needsAttention == 0 {
+		return ""
+	}
+	summary := fmt.Sprintf(
+		"I preserved %d completed tool result", completed,
+	)
+	if completed != 1 {
+		summary += "s"
+	}
+	if needsAttention > 0 {
+		summary += fmt.Sprintf(" and %d result", needsAttention)
+		if needsAttention != 1 {
+			summary += "s"
+		}
+		summary += " needing attention"
+	}
+	return summary + "; the exact evidence remains durable for synthesis."
 }
 
 func runtimeFailureClass(err error) delegate.FailureClass {
+	var deliveryRetry *loop.DeliveryRetry
 	switch {
+	case errors.As(err, &deliveryRetry):
+		return delegate.ClassTransient
 	case runtimeprovider.IsFailureKind(err, runtimeprovider.FailureRateLimited),
 		runtimeprovider.IsFailureKind(err, runtimeprovider.FailureServer),
 		runtimeprovider.IsFailureKind(err, runtimeprovider.FailureTransport),
@@ -681,7 +772,8 @@ func runtimeFailureClass(err error) delegate.FailureClass {
 		errors.Is(err, context.DeadlineExceeded):
 		return delegate.ClassTransient
 	case strings.Contains(strings.ToLower(err.Error()), "turnstate:"),
-		strings.Contains(strings.ToLower(err.Error()), "checkpoint store"):
+		strings.Contains(strings.ToLower(err.Error()), "checkpoint store"),
+		strings.Contains(strings.ToLower(err.Error()), "commit accepted stream"):
 		return delegate.ClassTransient
 	default:
 		return delegate.ClassDeterministic

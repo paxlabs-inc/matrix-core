@@ -24,7 +24,9 @@ import (
 
 	executortool "matrix/executor/tool"
 	"matrix/neo/internal/config"
+	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/runtime/loop"
 	"matrix/neo/internal/tools"
 	"matrix/vault"
 )
@@ -216,9 +218,11 @@ func TestCanonicalRuntimeAliasesProduceEquivalentDurableAndVisibleState(t *testi
 	}))
 	t.Cleanup(gateway.Close)
 	type outcome struct {
-		answer     string
-		state      string
-		toolEvents int
+		answer          string
+		state           string
+		toolEvents      int
+		durableAnswer   string
+		deliveryAcknowl string
 	}
 	manager := cutoverProbeManager(t)
 	for _, scenario := range []struct {
@@ -254,9 +258,38 @@ func TestCanonicalRuntimeAliasesProduceEquivalentDurableAndVisibleState(t *testi
 			if err != nil || state.Checkpoint == nil {
 				t.Fatalf("scenario %q alias %q checkpoint: %+v %v", scenario.name, alias, state, err)
 			}
+			answer, err := runtime.store.LoadAnswerRecord(
+				t.Context(), turnID, "accepted",
+			)
+			if err != nil {
+				t.Fatalf("scenario %q alias %q durable answer: %v", scenario.name, alias, err)
+			}
+			delivery, err := runtime.store.LoadDeliveryRecord(
+				t.Context(), turnID, "primary",
+			)
+			if err != nil {
+				t.Fatalf("scenario %q alias %q durable delivery: %v", scenario.name, alias, err)
+			}
+			if scenario.name == "tool_synthesis" {
+				if state.Checkpoint.PendingCall != nil || len(state.Checkpoint.ToolEvents) != 1 {
+					t.Fatalf("scenario %q alias %q tool checkpoint: %+v", scenario.name, alias, state.Checkpoint)
+				}
+				var execution struct {
+					IdempotencyKey string `json:"idempotency_key"`
+				}
+				if err := json.Unmarshal(state.Checkpoint.ToolEvents[0], &execution); err != nil || execution.IdempotencyKey == "" {
+					t.Fatalf("scenario %q alias %q effect identity: %+v %v", scenario.name, alias, execution, err)
+				}
+				effect, err := runtime.store.LoadEffect(t.Context(), execution.IdempotencyKey)
+				if err != nil || effect.Status != "completed" {
+					t.Fatalf("scenario %q alias %q durable effect: %+v %v", scenario.name, alias, effect, err)
+				}
+			}
 			results[alias] = outcome{
 				answer: reporter.lastSay(), state: string(turn.CurrentState),
-				toolEvents: len(state.Checkpoint.ToolEvents),
+				toolEvents:      len(state.Checkpoint.ToolEvents),
+				durableAnswer:   answer.GeneratedAnswer,
+				deliveryAcknowl: delivery.Acknowledgement,
 			}
 		}
 		want := results[""]
@@ -265,6 +298,77 @@ func TestCanonicalRuntimeAliasesProduceEquivalentDurableAndVisibleState(t *testi
 				t.Fatalf("scenario %q alias %q = %+v, direct = %+v", scenario.name, alias, got, want)
 			}
 		}
+	}
+}
+
+func TestCanonicalRuntimeRetriesOnlyDurableDeliveryAfterAcknowledgementFailure(
+	t *testing.T,
+) {
+	var generations atomic.Int32
+	gateway := httptest.NewServer(http.HandlerFunc(
+		func(writer http.ResponseWriter, request *http.Request) {
+			var decoded struct {
+				Messages []struct {
+					Content string `json:"content"`
+				} `json:"messages"`
+			}
+			body, err := io.ReadAll(request.Body)
+			if err != nil || json.Unmarshal(body, &decoded) != nil || len(decoded.Messages) == 0 {
+				http.Error(writer, "invalid request", http.StatusBadRequest)
+				return
+			}
+			latest := decoded.Messages[len(decoded.Messages)-1].Content
+			switch {
+			case strings.Contains(latest, "Reply with READY"):
+				writeCutoverText(writer, "READY")
+			case strings.Contains(latest, "matrix_runtime_capability_echo"):
+				writeCutoverTool(writer, "capability-call", "matrix_runtime_capability_echo", map[string]interface{}{
+					"value": "READY", "expect": "returns READY",
+				})
+			default:
+				generations.Add(1)
+				writeCutoverText(writer, "The durable answer is complete and ready for delivery.")
+			}
+		},
+	))
+	t.Cleanup(gateway.Close)
+
+	manager := &tools.Manager{}
+	cfg, pager, runtime := openCutoverRuntime(t, gateway.URL, manager)
+	reporter := &cutoverReporter{}
+	reporter.deliveryFailures.Store(3)
+	current := New(Options{
+		Config: cfg, Tools: manager, Pager: pager, Reporter: reporter,
+		Runtime: runtime, ConvID: "delivery-retry-conversation",
+	})
+	current.SetRunIdentity("delivery-retry-turn", 1)
+	err := current.Chat(t.Context(), "Give me the durable answer.")
+	var retry *loop.DeliveryRetry
+	if !errors.As(err, &retry) || current.LastFailureClass() != delegate.ClassTransient {
+		t.Fatalf("first delivery error=%v retry=%+v class=%s", err, retry, current.LastFailureClass())
+	}
+	answer, err := runtime.store.LoadAnswerRecord(t.Context(), "delivery-retry-turn", "accepted")
+	if err != nil || answer.GeneratedAnswer != retry.Answer {
+		t.Fatalf("durable answer=%+v err=%v retry=%+v", answer, err, retry)
+	}
+	turn, err := runtime.store.LoadTurnRecord(t.Context(), "delivery-retry-turn")
+	if err != nil || turn.CurrentState != "DeliveryRetry" {
+		t.Fatalf("delivery retry turn=%+v err=%v", turn, err)
+	}
+
+	current.SetRunIdentity("delivery-retry-turn", 2)
+	if err := current.ChatResume(
+		t.Context(), "Give me the durable answer.", "Resume delivery only.",
+	); err != nil {
+		t.Fatal(err)
+	}
+	if generations.Load() != 1 || reporter.deliveryAttempts.Load() != 4 ||
+		reporter.lastSay() != answer.GeneratedAnswer {
+		t.Fatalf("delivery-only resume generations=%d attempts=%d answer=%q", generations.Load(), reporter.deliveryAttempts.Load(), reporter.lastSay())
+	}
+	turn, err = runtime.store.LoadTurnRecord(t.Context(), "delivery-retry-turn")
+	if err != nil || turn.CurrentState != "Delivered" {
+		t.Fatalf("delivered turn=%+v err=%v", turn, err)
 	}
 }
 
@@ -801,9 +905,30 @@ func (observer *cutoverToolObserver) committed(name string) bool {
 }
 
 type cutoverReporter struct {
-	mu       sync.Mutex
-	says     []string
-	partials []string
+	mu               sync.Mutex
+	says             []string
+	partials         []string
+	deliveryFailures atomic.Int32
+	deliveryAttempts atomic.Int32
+}
+
+func (reporter *cutoverReporter) SayResult(text string, honestPartial bool) error {
+	reporter.deliveryAttempts.Add(1)
+	for {
+		remaining := reporter.deliveryFailures.Load()
+		if remaining <= 0 {
+			break
+		}
+		if reporter.deliveryFailures.CompareAndSwap(remaining, remaining-1) {
+			return errors.New("delivery acknowledgement unavailable")
+		}
+	}
+	if honestPartial {
+		reporter.SayHonestPartial(text)
+	} else {
+		reporter.Say(text, false)
+	}
+	return nil
 }
 
 func (reporter *cutoverReporter) Say(text string, _ bool) {

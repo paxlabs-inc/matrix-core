@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"matrix/neo/internal/runtime/protocol"
+	"matrix/neo/internal/runtime/records"
 )
 
 // The recorded non-convergence shape: a turn that keeps generating and never
@@ -213,6 +214,89 @@ func TestFinishedAnswerSurvivesTheTokenBudget(t *testing.T) {
 	if len(response.Liveness.Enforcements) != 0 {
 		t.Fatalf("the budget fired on a delivered answer: %+v",
 			response.Liveness.Enforcements)
+	}
+}
+
+func TestCommittedEvidenceReceivesReservedSynthesisAfterBudgetIsSpent(
+	t *testing.T,
+) {
+	manager := realExecManager(t)
+	workdir := t.TempDir()
+	const budget = 100_000
+	final := "The readiness evidence was committed successfully, so the checked environment is ready for the requested work."
+	var (
+		mu   sync.Mutex
+		step int
+	)
+	gateway := httptest.NewServer(http.HandlerFunc(
+		func(writer http.ResponseWriter, request *http.Request) {
+			body, _ := io.ReadAll(request.Body)
+			var decoded gatewayRequest
+			_ = json.Unmarshal(body, &decoded)
+			if handleCapabilityCanary(writer, decoded) {
+				return
+			}
+			mu.Lock()
+			step++
+			current := step
+			mu.Unlock()
+			if current == 1 {
+				writeSSEToolUsage(
+					writer, "reserved-synthesis-evidence", "exec__shell",
+					map[string]interface{}{
+						"command": "printf ready-marker",
+						"cwd":     workdir,
+						"expect":  "prints ready-marker",
+					},
+					budget,
+				)
+				return
+			}
+			if len(decoded.Tools) != 0 {
+				http.Error(writer, "synthesis request still advertised tools", http.StatusConflict)
+				return
+			}
+			writeSSEText(writer, final)
+		},
+	))
+	t.Cleanup(gateway.Close)
+
+	turnID := "reserved-synthesis-after-budget"
+	userContent := "Check the readiness marker."
+	store := realTurnStore(t, turnID, userContent)
+	adapter, err := NewToolManagerAdapter(
+		manager, &DurableEffectJournal{Store: store},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runtimeLoop, err := New(
+		realMiMoGenerator(t, gateway.URL), adapter, store,
+		Config{
+			TurnID: turnID, Model: "mimo-v2",
+			IdleTimeout: 30 * time.Second, MaxTurnTokens: budget,
+		},
+		Dependencies{},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, turnErr := runtimeLoop.Turn(t.Context(), userContent)
+	if turnErr != nil {
+		t.Fatalf("reserved synthesis failed: %v", turnErr)
+	}
+	mu.Lock()
+	generations := step
+	mu.Unlock()
+	if generations != 2 || response.Content != final || response.HonestPartial {
+		t.Fatalf("reserved synthesis generations=%d response=%+v", generations, response)
+	}
+	if len(response.Liveness.Enforcements) != 0 {
+		t.Fatalf("budget displaced committed synthesis: %+v", response.Liveness.Enforcements)
+	}
+	turn, err := store.LoadTurnRecord(t.Context(), turnID)
+	if err != nil || turn.CurrentState != records.StateDelivered || turn.SynthesisDebt.Owed {
+		t.Fatalf("reserved synthesis durable turn=%+v err=%v", turn, err)
 	}
 }
 
