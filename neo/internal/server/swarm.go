@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -21,6 +22,11 @@ import (
 // subagentTurnTimeout bounds a single sub-agent's whole run, independent of the
 // parent turn's budget, so one stuck sub-agent can't hold the swarm open.
 const subagentTurnTimeout = 12 * time.Minute
+
+// subagentMaxResultRunes bounds the evidence returned by one worker to the
+// parent context. The live step stream remains available to the client, while
+// the parent receives only this compact, structured report.
+const subagentMaxResultRunes = 16 * 1024
 
 // subagentMaxAttempts is how many times a sub-agent's whole task is attempted
 // before giving up: one initial run plus bounded recovery retries. A sub-agent
@@ -60,17 +66,28 @@ func swarmActive(ctx context.Context) bool {
 // subResult is one sub-agent's outcome, collected for the aggregated digest
 // returned to the parent agent's spawn_subagents tool call.
 type subResult struct {
-	index   int
-	name    string
-	persona string
-	text    string
-	ok      bool
+	index     int
+	name      string
+	persona   string
+	text      string
+	status    string
+	failure   string
+	truncated bool
 }
+
+const (
+	subStatusResult    = "result"
+	subStatusEmpty     = "empty"
+	subStatusPartial   = "partial"
+	subStatusTimeout   = "timeout"
+	subStatusFailed    = "failed"
+	subStatusCancelled = "cancelled"
+)
 
 // runSwarm is the SwarmFunc wired into the tool manager. It fans a set of
 // task-scoped sub-agents out to run CONCURRENTLY — each its own headless agent
-// loop over a fresh, isolated context window with the restricted (full Natural,
-// no money, no recursion) tool surface — streams their progress onto the parent
+// loop over a fresh, isolated context window with the positive read-only
+// research tool surface — streams their progress onto the parent
 // conversation's event stream as a live Agent Swarm, and returns an aggregated,
 // model-readable digest of their findings. Heavy tool work stays in the
 // sub-agents' windows; only the distilled results return to the parent's.
@@ -95,11 +112,12 @@ func (e *Engine) runSwarm(ctx context.Context, specs []tools.SubagentSpec) (stri
 		}
 	}
 	e.broker.publish(r.id, "swarm.started", "neo", map[string]interface{}{
-		"intent_id":       r.id,
-		"conversation_id": r.convID,
-		"swarm_id":        swarmID,
-		"count":           len(specs),
-		"agents":          meta,
+		"intent_id":        r.id,
+		"conversation_id":  r.convID,
+		"swarm_id":         swarmID,
+		"count":            len(specs),
+		"deadline_seconds": int(subagentTurnTimeout / time.Second),
+		"agents":           meta,
 	})
 	for i, s := range specs {
 		e.publishSubagent(r, swarmID, i+1, "subagent.created", map[string]interface{}{
@@ -138,8 +156,8 @@ func (e *Engine) runSwarm(ctx context.Context, specs []tools.SubagentSpec) (stri
 			case sem <- struct{}{}:
 				defer func() { <-sem }()
 			case <-ctx.Done():
-				results[idx] = subResult{index: idx + 1, name: spec.Name, persona: spec.Persona, text: "cancelled before starting", ok: false}
-				e.publishSubagent(r, swarmID, idx+1, "subagent.status", map[string]interface{}{"name": spec.Name, "status": "failed", "summary": "cancelled"})
+				results[idx] = classifySubResult(idx+1, spec, "", false, ctx.Err(), false, true)
+				e.publishSubagentResult(r, swarmID, results[idx])
 				return
 			}
 			results[idx] = e.runOneSubagent(ctx, r, swarmID, idx+1, spec, selfModel)
@@ -174,13 +192,16 @@ func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, ind
 	// same instant and self-amplify a transient rate-limit storm. Bounded so a
 	// high index can't over-delay; honors parent cancellation.
 	if !swarmStagger(ctx, index) {
-		return subResult{index: index, name: spec.Name, persona: spec.Persona, text: "cancelled before starting", ok: false}
+		result := classifySubResult(index, spec, "", false, ctx.Err(), false, true)
+		e.publishSubagentResult(r, swarmID, result)
+		return result
 	}
 
 	var (
-		text    string
-		ok      bool
-		lastErr error
+		text     string
+		ok       bool
+		lastErr  error
+		timedOut bool
 	)
 	for attempt := 1; attempt <= subagentMaxTransientAttempts; attempt++ {
 		// Each attempt is a brand-new headless agent over a clean window, so a
@@ -194,11 +215,15 @@ func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, ind
 			subMain = e.main
 		}
 		sub := agent.New(agent.Options{
-			Config:        cfg,
-			Main:          subMain,
-			Cheap:         e.cheap,
-			Tools:         e.tools,
-			Pager:         e.pager, // shared Neocortex READ lane; no consolidator (no write-back noise)
+			Config: cfg,
+			Main:   subMain,
+			Cheap:  e.cheap,
+			Tools:  e.tools,
+			// The worker receives no Pager at all. Its inherited self-model was
+			// resolved above, so Neocortex activation, transcripts, checkpoints,
+			// consolidation, and every other memory write path are structurally
+			// unreachable from this agent instance.
+			Pager:         nil,
 			Runtime:       e.runtime,
 			Reporter:      rep,
 			Observer:      func(ev agent.ToolEvent) { e.surfaceSubagentStep(r, swarmID, index, spec.Name, ev) },
@@ -209,12 +234,17 @@ func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, ind
 
 		cctx, cancel := context.WithTimeout(withSwarmActive(ctx), subagentTurnTimeout)
 		err := sub.Chat(cctx, spec.Task)
+		attemptContextErr := cctx.Err()
 		cancel()
 
 		text = strings.TrimSpace(rep.final())
 		ok = err == nil
 		lastErr = err
+		timedOut = errors.Is(attemptContextErr, context.DeadlineExceeded)
 		if ok {
+			break
+		}
+		if timedOut {
 			break
 		}
 		// Classify the leg's terminal error to pick its retry ceiling: a
@@ -237,24 +267,57 @@ func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, ind
 		}
 	}
 
-	if lastErr != nil && text == "" {
-		text = "couldn't finish — " + friendlyErr(lastErr)
-	}
-	if text == "" {
-		text = "(no findings returned)"
-	}
+	result := classifySubResult(index, spec, text, ok, lastErr, timedOut, ctx.Err() != nil)
+	e.publishSubagentResult(r, swarmID, result)
+	return result
+}
 
-	status := "done"
-	if !ok {
-		status = "failed"
+func classifySubResult(index int, spec tools.SubagentSpec, text string, ok bool, err error, timedOut, cancelled bool) subResult {
+	text, truncated := boundSubagentResult(text)
+	result := subResult{index: index, name: spec.Name, persona: spec.Persona, text: text, truncated: truncated}
+	switch {
+	case cancelled:
+		result.status = subStatusCancelled
+		result.failure = "cancelled before completion"
+	case timedOut:
+		result.status = subStatusTimeout
+		result.failure = "worker deadline reached"
+	case ok && text == "":
+		result.status = subStatusEmpty
+	case ok:
+		result.status = subStatusResult
+	case text != "":
+		result.status = subStatusPartial
+		result.failure = friendlyErr(err)
+	default:
+		result.status = subStatusFailed
+		result.failure = friendlyErr(err)
 	}
-	e.publishSubagent(r, swarmID, index, "subagent.status", map[string]interface{}{
-		"name":    spec.Name,
-		"status":  status,
-		"summary": clip(text, 600),
-		"ok":      ok,
+	result.failure = strings.TrimSpace(result.failure)
+	return result
+}
+
+func boundSubagentResult(text string) (string, bool) {
+	text = strings.TrimSpace(text)
+	runes := []rune(text)
+	if len(runes) <= subagentMaxResultRunes {
+		return text, false
+	}
+	return strings.TrimSpace(string(runes[:subagentMaxResultRunes])), true
+}
+
+func (e *Engine) publishSubagentResult(r *run, swarmID string, result subResult) {
+	summary := result.text
+	if summary == "" {
+		summary = result.failure
+	}
+	e.publishSubagent(r, swarmID, result.index, "subagent.status", map[string]interface{}{
+		"name":      result.name,
+		"status":    result.status,
+		"summary":   clip(summary, 600),
+		"complete":  result.status == subStatusResult || result.status == subStatusEmpty,
+		"truncated": result.truncated,
 	})
-	return subResult{index: index, name: spec.Name, persona: spec.Persona, text: text, ok: ok}
 }
 
 // shouldRetrySubagent decides whether a failed sub-agent attempt warrants a
@@ -445,31 +508,41 @@ func (e *Engine) capabilitySurface(ctx context.Context) *agent.CapabilitySurface
 	return cs
 }
 
-// aggregateResults distils the swarm's outcomes into one model-readable block
-// the parent agent reads to compose its answer. Index-ordered (stable), each
-// section labelled with the sub-agent's name + role so the parent can cite it.
+type workerEvidenceReport struct {
+	Worker    int    `json:"worker"`
+	Name      string `json:"name"`
+	Role      string `json:"role,omitempty"`
+	Status    string `json:"status"`
+	Complete  bool   `json:"complete"`
+	Evidence  string `json:"evidence,omitempty"`
+	Failure   string `json:"failure,omitempty"`
+	Truncated bool   `json:"truncated,omitempty"`
+}
+
+// aggregateResults returns exactly one bounded, structured evidence record per
+// worker. Stable index order makes retries and trace reconstruction auditable.
 func aggregateResults(results []subResult) string {
-	var b strings.Builder
-	done := 0
-	for _, res := range results {
-		if res.ok {
-			done++
+	reports := make([]workerEvidenceReport, 0, len(results))
+	for _, result := range results {
+		status := result.status
+		if status == "" {
+			if strings.TrimSpace(result.text) == "" {
+				status = subStatusEmpty
+			} else {
+				status = subStatusResult
+			}
 		}
+		evidence, truncated := boundSubagentResult(result.text)
+		reports = append(reports, workerEvidenceReport{
+			Worker: result.index, Name: result.name, Role: result.persona,
+			Status: status, Complete: status == subStatusResult || status == subStatusEmpty,
+			Evidence: evidence, Failure: strings.TrimSpace(result.failure),
+			Truncated: result.truncated || truncated,
+		})
 	}
-	fmt.Fprintf(&b, "Your %d sub-agents finished (%d succeeded). Their reports:\n", len(results), done)
-	for _, res := range results {
-		role := ""
-		if res.persona != "" {
-			role = " — " + res.persona
-		}
-		marker := ""
-		if !res.ok {
-			marker = " [did not fully complete]"
-		}
-		fmt.Fprintf(&b, "\n## %02d · %s%s%s\n%s\n", res.index, res.name, role, marker, strings.TrimSpace(res.text))
-	}
-	b.WriteString("\nSynthesize these into your answer for the user. Use their concrete findings (file paths, URLs, facts) verbatim; note honestly if any sub-agent didn't finish.")
-	return b.String()
+	payload, _ := json.MarshalIndent(map[string]interface{}{"reports": reports}, "", "  ")
+	return "Read-only research worker reports (one record per worker):\n" + string(payload) +
+		"\nSynthesize only supported evidence. Preserve timeout, partial, empty, failed, and truncated states honestly."
 }
 
 // captureReporter is a sub-agent's output sink: it captures the sub-agent's

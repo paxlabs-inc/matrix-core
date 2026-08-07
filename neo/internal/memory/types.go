@@ -263,6 +263,132 @@ type MemoryExport struct {
 	Items         []MemoryExportItem `json:"items"`
 }
 
+type KnowledgeTopic struct {
+	ID        string    `json:"id"`
+	ParentID  string    `json:"parent_id,omitempty"`
+	Name      string    `json:"name"`
+	Archived  bool      `json:"archived,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type KnowledgeSource struct {
+	ID          string    `json:"id"`
+	Kind        string    `json:"kind"`
+	Title       string    `json:"title"`
+	URL         string    `json:"url,omitempty"`
+	ContentHash string    `json:"content_hash"`
+	ImportedAt  time.Time `json:"imported_at"`
+}
+
+type KnowledgeDocumentVersion struct {
+	Version    uint64    `json:"version"`
+	Title      string    `json:"title"`
+	Content    string    `json:"content"`
+	SourceID   string    `json:"source_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	Supersedes uint64    `json:"supersedes,omitempty"`
+}
+
+type KnowledgeDocument struct {
+	ID            string                     `json:"id"`
+	TopicID       string                     `json:"topic_id"`
+	Title         string                     `json:"title"`
+	Content       string                     `json:"content"`
+	SourceID      string                     `json:"source_id"`
+	Version       uint64                     `json:"version"`
+	Versions      []KnowledgeDocumentVersion `json:"versions"`
+	Archived      bool                       `json:"archived,omitempty"`
+	RetentionDays int                        `json:"retention_days,omitempty"`
+	CreatedAt     time.Time                  `json:"created_at"`
+	UpdatedAt     time.Time                  `json:"updated_at"`
+}
+
+type KnowledgeEntity struct {
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	Kind      string   `json:"kind"`
+	SourceIDs []string `json:"source_ids,omitempty"`
+}
+
+type KnowledgeRelationship struct {
+	ID          string `json:"id"`
+	FromID      string `json:"from_id"`
+	ToID        string `json:"to_id"`
+	Kind        string `json:"kind"`
+	SourceID    string `json:"source_id"`
+	Contradicts string `json:"contradicts,omitempty"`
+	Supersedes  string `json:"supersedes,omitempty"`
+}
+
+type KnowledgeState struct {
+	SchemaVersion int                              `json:"schema_version"`
+	Topics        map[string]KnowledgeTopic        `json:"topics"`
+	Sources       map[string]KnowledgeSource       `json:"sources"`
+	Documents     map[string]KnowledgeDocument     `json:"documents"`
+	Entities      map[string]KnowledgeEntity       `json:"entities"`
+	Relationships map[string]KnowledgeRelationship `json:"relationships"`
+}
+
+func (s *KnowledgeState) initialize() {
+	if s.SchemaVersion == 0 {
+		s.SchemaVersion = 1
+	}
+	if s.Topics == nil {
+		s.Topics = map[string]KnowledgeTopic{}
+	}
+	if s.Sources == nil {
+		s.Sources = map[string]KnowledgeSource{}
+	}
+	if s.Documents == nil {
+		s.Documents = map[string]KnowledgeDocument{}
+	}
+	if s.Entities == nil {
+		s.Entities = map[string]KnowledgeEntity{}
+	}
+	if s.Relationships == nil {
+		s.Relationships = map[string]KnowledgeRelationship{}
+	}
+}
+
+type KnowledgeEntityInput struct {
+	Name string `json:"name"`
+	Kind string `json:"kind"`
+}
+type KnowledgeRelationshipInput struct {
+	From        string `json:"from"`
+	To          string `json:"to"`
+	Kind        string `json:"kind"`
+	Contradicts string `json:"contradicts,omitempty"`
+	Supersedes  string `json:"supersedes,omitempty"`
+}
+type KnowledgeImportRequest struct {
+	TopicID       string                       `json:"topic_id,omitempty"`
+	TopicName     string                       `json:"topic_name,omitempty"`
+	Title         string                       `json:"title"`
+	Content       string                       `json:"content"`
+	SourceKind    string                       `json:"source_kind"`
+	SourceTitle   string                       `json:"source_title,omitempty"`
+	SourceURL     string                       `json:"source_url,omitempty"`
+	RetentionDays int                          `json:"retention_days,omitempty"`
+	Entities      []KnowledgeEntityInput       `json:"entities,omitempty"`
+	Relationships []KnowledgeRelationshipInput `json:"relationships,omitempty"`
+}
+type KnowledgeSearchHit struct {
+	DocumentID string          `json:"document_id"`
+	TopicID    string          `json:"topic_id"`
+	Title      string          `json:"title"`
+	Snippet    string          `json:"snippet"`
+	Source     KnowledgeSource `json:"source"`
+	Score      float64         `json:"score"`
+	Exact      bool            `json:"exact"`
+}
+type KnowledgeExport struct {
+	SchemaVersion int            `json:"schema_version"`
+	ExportedAt    time.Time      `json:"exported_at"`
+	State         KnowledgeState `json:"state"`
+}
+
 type MediaTaste struct {
 	Liked    []string `json:"liked,omitempty"`
 	Disliked []string `json:"disliked,omitempty"`

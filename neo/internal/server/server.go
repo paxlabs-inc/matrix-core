@@ -18,6 +18,7 @@ import (
 
 	"matrix/construct/backchannel"
 	"matrix/construct/schema/primitives"
+	"matrix/neo/internal/channelgateway"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/runrecord"
@@ -100,9 +101,18 @@ func (s *Server) routes() []routeFact {
 		{"/memory/consent", "GET/PUT /memory/consent — read or set your default-off durable-memory opt-in", s.handleMemoryConsent},
 		{"/memory/export", "GET /memory/export — export every current learned memory as JSON", s.handleMemoryExport},
 		{"/memory/delete-all", "DELETE /memory/delete-all — request receipt-backed erasure of all your memory", s.handleMemoryDeleteAll},
+		{"/knowledge", "GET /knowledge — inspect the typed Neocortex knowledge tree and graph", s.handleKnowledge},
+		{"/knowledge/", "GET/POST/PATCH /knowledge/* — search, import, organize, archive, retain, and export typed sourced knowledge", s.handleKnowledge},
+		{"/improvement/proposals", "GET /improvement/proposals — list evidenced verified-improvement proposals", s.handleImprovement},
+		{"/improvement/proposals/", "POST /improvement/proposals/{id}/{approve|apply|reject|rollback} — review and route a proposal through its bounded owner", s.handleImprovement},
 		// Personalization profile (PRIV-01/ORACLE req 13) on Neo's own actor.
 		{"/personalization", "GET/PUT/DELETE /personalization — read, save, or delete your single personalization profile", s.handlePersonalization},
 		{"/personalization/", "", s.handlePersonalization},
+		// Capability Hub: immutable packages enter quarantine and are managed
+		// outside the conversational loop. Lifecycle changes only affect the
+		// inventory observed by subsequent turns.
+		{"/capabilities", "GET /capabilities — search installed capability versions and lifecycle state", s.handleCapabilities},
+		{"/capabilities/", "GET/POST/DELETE /capabilities/* — import, inspect, grant, verify, activate, disable, pin, roll back, and uninstall capability packages", s.handleCapabilities},
 		// Media plane: generated + uploaded images/video/audio live on the
 		// agent's machine volume.
 		{"/media/", "GET /media/{id} — serve a generated or uploaded media artifact from your machine volume", s.handleMedia},
@@ -118,7 +128,29 @@ func (s *Server) routes() []routeFact {
 		// length/sections), and pause for the ORACLE personalized brief.
 		{"/brief/", "GET/PUT /brief/settings — the morning-brief schedule + opt-in control surface", s.handleBrief},
 		{"/integrations/telegram", "GET/PUT/DELETE /integrations/telegram — connect a private Telegram chat to this user's Neo", s.handleTelegram},
+		{"/integrations/slack", "GET/PUT/DELETE /integrations/slack — connect Slack Events API or Socket Mode to the common Neo channel gateway", s.handleSlack},
+		{"/integrations/slack/events", "POST /integrations/slack/events — signature-verified Slack Events API callback", s.handleSlackEvents},
+		{"/integrations/slack/actions", "POST /integrations/slack/actions — signature-verified Slack approval actions", s.handleSlackActions},
+		{"/integrations/discord", "GET/PUT/DELETE /integrations/discord — connect Discord Gateway and signed interactions to the common Neo channel gateway", s.handleDiscord},
+		{"/integrations/discord/interactions", "POST /integrations/discord/interactions — Ed25519-verified Discord interaction callback", s.handleDiscordInteractions},
+		{"/integrations/lark", "GET/PUT/DELETE /integrations/lark — connect Lark or Feishu to the common Neo channel gateway", s.handleLark},
+		{"/integrations/lark/events", "POST /integrations/lark/events — encrypted and identity-verified Lark callback", s.handleLarkEvents},
+		{"/integrations/lark/cards", "POST /integrations/lark/cards — encrypted Lark approval-card callback", s.handleLarkCards},
+		{"/integrations/dingtalk", "GET/PUT/DELETE /integrations/dingtalk — connect DingTalk Stream to the common Neo channel gateway", s.handleDingTalk},
+		{"/integrations/wecom-bot", "GET/PUT/DELETE /integrations/wecom-bot — connect a WeCom AI Bot to the common Neo channel gateway", s.handleWeComBot},
+		{"/integrations/wecom-bot/callback", "GET/POST /integrations/wecom-bot/callback — encrypted WeCom AI Bot callback", s.handleWeComBotCallback},
+		{"/integrations/wecom-app", "GET/PUT/DELETE /integrations/wecom-app — connect a WeCom application to the common Neo channel gateway", s.handleWeComApp},
+		{"/integrations/wecom-app/callback", "GET/POST /integrations/wecom-app/callback — encrypted WeCom application callback", s.handleWeComAppCallback},
+		{"/integrations/qq", "GET/PUT/DELETE /integrations/qq — connect QQ Gateway to the common Neo channel gateway", s.handleQQ},
+		{"/integrations/weixin", "GET/PUT/DELETE /integrations/weixin — connect personal WeChat iLink to the common Neo channel gateway", s.handleWeixin},
+		{"/integrations/weixin/qr", "GET/POST /integrations/weixin/qr — begin or poll encrypted WeChat iLink QR authorization", s.handleWeixinQR},
+		{"/integrations/wechat-official", "GET/PUT/DELETE /integrations/wechat-official — connect a WeChat Official Account", s.handleWeChatMP},
+		{"/integrations/wechat-official/callback", "GET/POST /integrations/wechat-official/callback — verified WeChat Official Account callback", s.handleWeChatMPCallback},
+		{"/integrations/wechat-customer-service", "GET/PUT/DELETE /integrations/wechat-customer-service — connect WeChat Customer Service", s.handleWeChatKF},
+		{"/integrations/wechat-customer-service/callback", "GET/POST /integrations/wechat-customer-service/callback — encrypted WeChat Customer Service callback", s.handleWeChatKFCallback},
 		{"/integrations/machinemail", "GET/PUT/DELETE /integrations/machinemail — configure this user's encrypted MachineMail identity key", s.handleMachineMail},
+		{"/integrations/mcp", "GET/POST /integrations/mcp — list or stage encrypted MCP server configurations", s.handleMCPControl},
+		{"/integrations/mcp/", "GET/POST/PUT/DELETE /integrations/mcp/* — probe, classify, authorize, activate, inspect, roll back, and remove MCP servers", s.handleMCPControl},
 		// Personalization interview entry (ORACLE task 5.3): mint an interview-
 		// flagged conversation; the interview itself runs in the normal chat.
 		{"/interview/", "POST /interview/start — start (or repeat) the guided personalization interview", s.handleInterview},
@@ -324,12 +356,55 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	if convID == "" {
 		convID = synthConvID(msg)
 	}
+	channelKey := strings.TrimSpace(req.IdempotencyKey)
+	if channelKey == "" {
+		channelKey = "web:" + mintMediaID()
+	}
+	webEnvelope := channelgateway.Envelope{
+		Direction:       channelgateway.Inbound,
+		Kind:            channelgateway.KindMessage,
+		Address:         channelgateway.Address{Channel: channelgateway.ChannelWeb, AccountID: s.engine.vaultUser, ConversationID: convID, Scope: channelgateway.ScopeDirect},
+		NeoConversation: convID,
+		ExternalEventID: strings.TrimSpace(req.IdempotencyKey),
+		IdempotencyKey:  channelKey,
+		Text:            msg,
+		OccurredAt:      time.Now().UTC(),
+	}
+	if s.engine.channelGateway != nil {
+		_ = s.engine.channelGateway.Bind(r.Context(), webEnvelope.Address, convID)
+		claim, claimErr := s.engine.channelGateway.ClaimInbound(r.Context(), webEnvelope)
+		if claimErr == nil && claim.State == channelgateway.ClaimDuplicate && claim.Status == "completed" && claim.RunID != "" {
+			writeJSON(w, http.StatusAccepted, map[string]interface{}{
+				"conversation_id": claim.NeoConversation,
+				"kind":            "dispatch",
+				"intent_id":       claim.RunID,
+				"events_url":      "/events?intent_id=" + claim.RunID,
+				"poll_url":        "/messages/async/" + claim.RunID,
+			})
+			return
+		}
+	}
 	dispatchMsg, audio, voiceTurn, voiceErr := s.engine.prepareVoiceInput(r.Context(), msg)
 	if voiceErr != nil {
+		if s.engine.channelGateway != nil {
+			_ = s.engine.channelGateway.FailInbound(r.Context(), webEnvelope, voiceErr.Error())
+		}
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": voiceErr.Error()})
 		return
 	}
 	msg = dispatchMsg
+	// The one-shot verified-improvement Chronos wake is intercepted before any
+	// conversational dispatch. The observer runs only when the engine is idle.
+	if s.engine.MaybeHandleImprovementWake(r.Context(), msg) {
+		if s.engine.channelGateway != nil {
+			_ = s.engine.channelGateway.CompleteInbound(r.Context(), webEnvelope, convID, "")
+		}
+		writeJSON(w, http.StatusAccepted, map[string]interface{}{
+			"conversation_id": convID,
+			"kind":            "improvement_observer_wake",
+		})
+		return
+	}
 	// Chronos AUTOMATRIX idle-wake: NOT a normal user turn. The engine wake
 	// handler re-reads the per-user opt-in, defers on a busy session, enforces
 	// the per-day cap, picks one eligible opportunity (handed to the supervised
@@ -337,6 +412,9 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	// produces no live conversational run of its own, so respond with an
 	// accepted, run-less envelope rather than dispatching a turn.
 	if s.engine.MaybeHandleAutomatrixWake(r.Context(), convID, msg) {
+		if s.engine.channelGateway != nil {
+			_ = s.engine.channelGateway.CompleteInbound(r.Context(), webEnvelope, convID, "")
+		}
 		writeJSON(w, http.StatusAccepted, map[string]interface{}{
 			"conversation_id": convID,
 			"kind":            "automatrix_wake",
@@ -350,6 +428,9 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	// (delivered out of band as a durable turn + inbox record). It produces no
 	// live conversational run, so respond with an accepted, run-less envelope.
 	if s.engine.MaybeHandleMorningBriefWake(r.Context(), convID, msg) {
+		if s.engine.channelGateway != nil {
+			_ = s.engine.channelGateway.CompleteInbound(r.Context(), webEnvelope, convID, "")
+		}
 		writeJSON(w, http.StatusAccepted, map[string]interface{}{
 			"conversation_id": convID,
 			"kind":            "morning_brief_wake",
@@ -371,6 +452,12 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	// minted: rebuildAgent reads the tag to inject the coding-workspace
 	// context into the agent's system prompt, so the very first turn must
 	// already see it.
+	// The MCP control plane takes this tiny server-owned boundary around session
+	// mint + synchronous run registration. A staged pool may swap immediately
+	// before this point only when no other run is live; once submit returns, the
+	// run registry prevents any further swap until all active turns settle.
+	s.engine.beginTurnBoundary(r.Context())
+	defer s.engine.endTurnBoundary()
 	if p := strings.TrimSpace(req.Project); p != "" {
 		s.engine.conv.SetProject(convID, p)
 	}
@@ -381,8 +468,13 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		runID, _ = sess.submitAudio(msg, audio)
 	} else {
 		var submitErr error
-		runID, _, duplicate, submitErr = sess.submitIdempotent(msg, req.IdempotencyKey, nil)
+		observeCompletion, armObservation := s.engine.improvementCompletionObserver(convID)
+		var fresh bool
+		runID, fresh, duplicate, submitErr = sess.submitIdempotent(msg, req.IdempotencyKey, observeCompletion)
 		if submitErr != nil {
+			if s.engine.channelGateway != nil {
+				_ = s.engine.channelGateway.FailInbound(r.Context(), webEnvelope, submitErr.Error())
+			}
 			status := http.StatusInternalServerError
 			if errors.Is(submitErr, runrecord.ErrIdempotencyConflict) {
 				status = http.StatusConflict
@@ -390,9 +482,13 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, status, map[string]string{"error": submitErr.Error()})
 			return
 		}
+		armObservation(runID, fresh)
 		if !duplicate && (!voiceTurn || s.engine.cfg.VoiceMode == "asr_first") {
 			s.engine.conv.AppendUser(convID, runID, msg)
 		}
+	}
+	if s.engine.channelGateway != nil {
+		_ = s.engine.channelGateway.CompleteInbound(r.Context(), webEnvelope, convID, runID)
 	}
 	writeJSON(w, http.StatusAccepted, map[string]interface{}{
 		"conversation_id": convID,

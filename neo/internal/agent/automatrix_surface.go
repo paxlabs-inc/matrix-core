@@ -6,10 +6,9 @@ package agent
 import "matrix/neo/internal/llm"
 
 // NewAutomatrix builds an Agent for an autonomous Automatrix run on the
-// RESTRICTED (no-money) tool surface. It is a thin wrapper over New that FORCES
-// RestrictTools — the existing sub-agent restricted-surface mechanism — so the
-// money/chain core_execute delegate is structurally absent from the advertised
-// tool schema set (req.3.2).
+// read-only research surface. It is a thin wrapper over New that FORCES
+// RestrictTools, so mutation, shell, scheduling, memory writes, external
+// actions, and the money/chain core_execute delegate are structurally absent.
 //
 // Constructing the run through this helper means the restriction is a property
 // of the constructor, not a caller responsibility: the engine cannot

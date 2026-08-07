@@ -56,7 +56,7 @@ func (m *Manager) AdvertisedEffectRegistry() (map[string]EffectMetadata, error) 
 		return nil, fmt.Errorf("tool manager is unavailable")
 	}
 	registry := make(map[string]EffectMetadata)
-	for _, schema := range m.Schemas() {
+	for _, schema := range m.VerificationSchemas() {
 		name := strings.TrimSpace(schema.Function.Name)
 		metadata, ok := m.ToolEffectMetadata(name)
 		if name == "" || !ok {
@@ -83,10 +83,12 @@ func (m *Manager) ToolSideEffectClass(name string) (string, bool) {
 		switch name {
 		case MemoryRecallTool:
 			return "read", true
+		case CapabilitySearchTool:
+			return "read", true
 		case DesktopLookTool, DesktopA11yTool:
 			return "network", true
 		case CoreExecuteTool, MemoryMutateTool,
-			ConstructRenderTool, WriteSkillTool,
+			ConstructRenderTool, WriteSkillTool, CapabilityCandidateTool,
 			TodoTool, SavePersonalizationTool:
 			return "write", true
 		case SpawnSubagentsTool, PreviewTool, BuildProjectTool:

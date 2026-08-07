@@ -6,7 +6,9 @@ package mcp
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -87,6 +89,101 @@ func TestHTTPInitializeAndCall(t *testing.T) {
 	}
 }
 
+func TestStreamableHTTPSessionLifecycleAgainstLocalConformanceServer(t *testing.T) {
+	const sessionID = "matrix-conformance-session"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+		if err != nil {
+			http.Error(w, "read request", http.StatusBadRequest)
+			return
+		}
+		var request struct {
+			JSONRPC string          `json:"jsonrpc"`
+			ID      json.RawMessage `json:"id"`
+			Method  string          `json:"method"`
+			Params  json.RawMessage `json:"params"`
+		}
+		if json.Unmarshal(body, &request) != nil || request.JSONRPC != "2.0" {
+			http.Error(w, "invalid JSON-RPC", http.StatusBadRequest)
+			return
+		}
+		if request.Method != MethodInitialize && r.Header.Get("MCP-Session-Id") != sessionID {
+			http.Error(w, "missing MCP session", http.StatusBadRequest)
+			return
+		}
+		if request.Method == MethodNotificationsInit {
+			w.WriteHeader(http.StatusAccepted)
+			return
+		}
+		var result any
+		switch request.Method {
+		case MethodInitialize:
+			w.Header().Set("MCP-Session-Id", sessionID)
+			result = map[string]any{
+				"protocolVersion": ProtocolVersion,
+				"capabilities":    map[string]any{"tools": map[string]any{}},
+				"serverInfo":      map[string]any{"name": "matrix-http-conformance", "version": "1.0.0"},
+			}
+		case MethodToolsList:
+			result = map[string]any{"tools": []any{map[string]any{
+				"name": "checksum", "description": "Compute a SHA-256 digest.",
+				"inputSchema": map[string]any{
+					"type": "object", "properties": map[string]any{"text": map[string]any{"type": "string"}},
+					"required": []string{"text"},
+				},
+			}}}
+		case MethodPing:
+			result = map[string]any{}
+		case MethodToolsCall:
+			var params struct {
+				Name      string         `json:"name"`
+				Arguments map[string]any `json:"arguments"`
+			}
+			if json.Unmarshal(request.Params, &params) != nil || params.Name != "checksum" {
+				http.Error(w, "invalid tool call", http.StatusBadRequest)
+				return
+			}
+			digest := sha256.Sum256([]byte(fmt.Sprint(params.Arguments["text"])))
+			result = map[string]any{"content": []any{map[string]any{"type": "text", "text": fmt.Sprintf("%x", digest[:])}}}
+		default:
+			http.Error(w, "unsupported method", http.StatusBadRequest)
+			return
+		}
+		response, _ := json.Marshal(map[string]any{"jsonrpc": "2.0", "id": json.RawMessage(request.ID), "result": result})
+		if request.Method == MethodInitialize || request.Method == MethodPing {
+			w.Header().Set("Content-Type", "text/event-stream")
+			_, _ = fmt.Fprintf(w, "event: message\ndata: %s\n\n", response)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(response)
+	}))
+	defer server.Close()
+
+	manager := NewManager(ManagerParams{})
+	defer manager.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	client, err := manager.Spawn(ctx, ServerSpec{
+		Alias: "conformance", Transport: "http", Endpoint: server.URL,
+		PackageDigest: "sha256:local-conformance", ExpectedTools: []string{"checksum"},
+	})
+	if err != nil {
+		t.Fatalf("spawn Streamable HTTP server: %v", err)
+	}
+	if err := client.Ping(ctx); err != nil {
+		t.Fatalf("session ping: %v", err)
+	}
+	result, err := client.ToolsCall(ctx, "checksum", map[string]any{"text": "neo"})
+	if err != nil {
+		t.Fatalf("real tool call: %v", err)
+	}
+	want := sha256.Sum256([]byte("neo"))
+	if got := ExtractText(result); got != fmt.Sprintf("%x", want[:]) {
+		t.Fatalf("checksum=%q", got)
+	}
+}
+
 func TestHTTPCustomHeaders(t *testing.T) {
 	got := make(chan string, 1)
 	httpSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -131,10 +228,10 @@ func TestHTTPCustomHeaders(t *testing.T) {
 	}
 }
 
-func TestHTTPRejectsSSEResponse(t *testing.T) {
+func TestHTTPAcceptsSSEJSONRPCResponse(t *testing.T) {
 	httpSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
-		_, _ = w.Write([]byte("data: {}\n\n"))
+		_, _ = w.Write([]byte("event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{}}\n\n"))
 	}))
 	defer httpSrv.Close()
 
@@ -149,9 +246,12 @@ func TestHTTPRejectsSSEResponse(t *testing.T) {
 		Method: MethodPing,
 		Params: json.RawMessage(`{}`),
 	})
-	err = tr.Send(context.Background(), frame)
-	if err == nil || !strings.Contains(err.Error(), "SSE") {
-		t.Fatalf("expected SSE rejection, got %v", err)
+	if err = tr.Send(context.Background(), frame); err != nil {
+		t.Fatalf("SSE send: %v", err)
+	}
+	received, err := tr.Recv(context.Background())
+	if err != nil || !bytes.Contains(received, []byte(`"id":1`)) {
+		t.Fatalf("SSE receive=%s err=%v", received, err)
 	}
 }
 

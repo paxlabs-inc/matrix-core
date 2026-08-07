@@ -7,12 +7,14 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +23,8 @@ import (
 	"matrix/construct/backchannel"
 	"matrix/construct/schema/primitives"
 	constructtransport "matrix/construct/transport"
+	executortool "matrix/executor/tool"
+	"matrix/neo/internal/channelgateway"
 	"matrix/neo/internal/telegramsettings"
 )
 
@@ -257,12 +261,14 @@ func (b *telegramBridge) poll(ctx context.Context, done chan struct{}, generatio
 		}
 		b.setWorkerState(generation, true, "")
 		backoff = time.Second
+		b.drainOutbound(ctx, generation, token)
 		for _, update := range updates {
 			if !b.workerCurrent(generation) {
 				return
 			}
-			if update.UpdateID >= offset {
-				offset = update.UpdateID + 1
+			if err := b.processUpdate(ctx, generation, token, update); err != nil && ctx.Err() == nil {
+				b.setWorkerState(generation, true, err.Error())
+				break
 			}
 			current, err := b.setLastUpdateID(generation, update.UpdateID)
 			if !current {
@@ -270,10 +276,10 @@ func (b *telegramBridge) poll(ctx context.Context, done chan struct{}, generatio
 			}
 			if err != nil {
 				b.setWorkerState(generation, false, err.Error())
-				continue
+				break
 			}
-			if err := b.processUpdate(ctx, generation, token, update); err != nil && ctx.Err() == nil {
-				b.setWorkerState(generation, true, err.Error())
+			if update.UpdateID >= offset {
+				offset = update.UpdateID + 1
 			}
 		}
 	}
@@ -314,16 +320,44 @@ func (b *telegramBridge) setWorkerState(generation uint64, connected bool, lastE
 }
 
 func (b *telegramBridge) processUpdate(ctx context.Context, generation uint64, token string, update telegramUpdate) error {
+	state, current := b.currentState(generation)
+	if !current {
+		return nil
+	}
+	envelope, normalized := normalizeTelegramUpdate(state, update)
+	if normalized && b.engine != nil && b.engine.channelGateway != nil {
+		if state.Paired() && state.ConversationID != "" {
+			_ = b.engine.channelGateway.Bind(ctx, envelope.Address, state.ConversationID)
+		}
+		claim, err := b.engine.channelGateway.ClaimInbound(ctx, envelope)
+		if errors.Is(err, channelgateway.ErrIdempotencyConflict) {
+			return err
+		}
+		if err == nil && claim.State == channelgateway.ClaimDuplicate && claim.Status == "completed" {
+			return nil
+		}
+	}
+	var err error
 	if update.CallbackQuery != nil {
-		return b.processCallback(ctx, generation, token, update.CallbackQuery)
+		err = b.processCallback(ctx, generation, token, update.CallbackQuery)
+	} else if update.Message != nil {
+		err = b.processMessage(ctx, generation, token, update.Message, fmt.Sprintf("telegram:%d", update.UpdateID))
 	}
-	if update.Message != nil {
-		return b.processMessage(ctx, generation, token, update.Message)
+	if normalized && b.engine != nil && b.engine.channelGateway != nil {
+		currentState, _ := b.currentState(generation)
+		if err != nil {
+			_ = b.engine.channelGateway.FailInbound(ctx, envelope, err.Error())
+		} else {
+			if currentState.Paired() && currentState.ConversationID != "" {
+				_ = b.engine.channelGateway.Bind(ctx, envelope.Address, currentState.ConversationID)
+			}
+			_ = b.engine.channelGateway.CompleteInbound(ctx, envelope, currentState.ConversationID, "")
+		}
 	}
-	return nil
+	return err
 }
 
-func (b *telegramBridge) processMessage(ctx context.Context, generation uint64, token string, message *telegramMessage) error {
+func (b *telegramBridge) processMessage(ctx context.Context, generation uint64, token string, message *telegramMessage, idempotencyKey string) error {
 	if message == nil || message.From == nil || message.Chat.Type != "private" {
 		return nil
 	}
@@ -394,7 +428,7 @@ func (b *telegramBridge) processMessage(ctx context.Context, generation uint64, 
 	if content == "" {
 		return b.sendText(ctx, token, message.Chat.ID, "Send text, a photo, or a file and I will pass it to Neo.", nil)
 	}
-	runID, conversationID, current, err := b.submitMessage(generation, state.ChatID, state.TelegramUserID, content)
+	runID, conversationID, current, err := b.submitMessage(ctx, generation, state.ChatID, state.TelegramUserID, content, idempotencyKey)
 	if !current {
 		return nil
 	}
@@ -436,7 +470,7 @@ func (b *telegramBridge) interruptConversation(generation uint64, conversationID
 	return b.engine.sessions.get(conversationID).interruptActive()
 }
 
-func (b *telegramBridge) submitMessage(generation uint64, chatID, userID int64, content string) (string, string, bool, error) {
+func (b *telegramBridge) submitMessage(ctx context.Context, generation uint64, chatID, userID int64, content, idempotencyKey string) (string, string, bool, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if generation != b.generation {
@@ -453,9 +487,18 @@ func (b *telegramBridge) submitMessage(generation uint64, chatID, userID int64, 
 			return "", "", true, err
 		}
 	}
-	session := b.engine.sessions.get(conversationID)
-	runID, _ := session.submit(content)
-	b.engine.conv.AppendUser(conversationID, runID, content)
+	runID, _, _, err := b.engine.submitNormalizedMessage(ctx, channelgateway.Envelope{
+		Direction: channelgateway.Inbound,
+		Kind:      channelgateway.KindMessage,
+		Address: channelgateway.Address{
+			Channel: channelgateway.ChannelTelegram, AccountID: fmt.Sprintf("%d", state.BotID),
+			ConversationID: fmt.Sprintf("%d", chatID), ParticipantID: fmt.Sprintf("%d", userID), Scope: channelgateway.ScopeDirect,
+		},
+		NeoConversation: conversationID, IdempotencyKey: idempotencyKey, Text: content, OccurredAt: time.Now().UTC(),
+	})
+	if err != nil {
+		return "", "", true, err
+	}
 	return runID, conversationID, true, nil
 }
 
@@ -582,12 +625,12 @@ func (b *telegramBridge) deliverEvent(ctx context.Context, generation uint64, to
 	case "chat.assistant":
 		text, _ := event.Fields["text"].(string)
 		if strings.TrimSpace(text) != "" {
-			if err := b.sendText(ctx, token, chatID, text, nil); err != nil {
+			if err := b.sendTextKey(ctx, token, chatID, text, nil, fmt.Sprintf("telegram:%s:%d:text", runID, event.Seq)); err != nil {
 				b.setWorkerState(generation, true, err.Error())
 			}
 		}
 	case "tool.media":
-		if err := b.sendRunMedia(ctx, token, chatID, event); err != nil {
+		if err := b.sendRunMedia(ctx, token, chatID, runID, event); err != nil {
 			b.setWorkerState(generation, true, err.Error())
 		}
 	case "gate.invoked":
@@ -601,7 +644,7 @@ func (b *telegramBridge) deliverEvent(ctx context.Context, generation uint64, to
 			{Text: "Approve", CallbackData: "mx:approve"},
 			{Text: "Deny", CallbackData: "mx:deny"},
 		}}}
-		_ = b.sendText(ctx, token, chatID, strings.TrimSpace(question), keyboard)
+		_ = b.sendTextKey(ctx, token, chatID, strings.TrimSpace(question), keyboard, fmt.Sprintf("telegram:%s:%d:gate", runID, event.Seq))
 	case "construct.surface":
 		surface, err := constructtransport.SurfaceFromEvent(event.Fields)
 		if err != nil || surface.Ask == nil {
@@ -611,7 +654,7 @@ func (b *telegramBridge) deliverEvent(ctx context.Context, generation uint64, to
 		if !b.setPending(generation, chatID, pending) {
 			return
 		}
-		_ = b.sendText(ctx, token, chatID, surface.Ask.Prompt, telegramAskKeyboard(surface.Ask))
+		_ = b.sendTextKey(ctx, token, chatID, surface.Ask.Prompt, telegramAskKeyboard(surface.Ask), fmt.Sprintf("telegram:%s:%d:ask", runID, event.Seq))
 	}
 }
 
@@ -848,7 +891,27 @@ func (b *telegramBridge) storeTelegramAttachment(ctx context.Context, token stri
 	return "/media/" + name, kindForMIME(mimeType), nil
 }
 
-func (b *telegramBridge) sendRunMedia(ctx context.Context, token string, chatID int64, event Event) error {
+func (b *telegramBridge) sendRunMedia(ctx context.Context, token string, chatID int64, runID string, event Event) error {
+	if b.engine == nil || b.engine.channelDispatch == nil {
+		return b.sendRunMediaDirect(ctx, token, chatID, event)
+	}
+	ref, _ := event.Fields["url"].(string)
+	kind, _ := event.Fields["kind"].(string)
+	envelope := b.outboundEnvelope(chatID, channelgateway.KindMessage, fmt.Sprintf("telegram:%s:%d:media", runID, event.Seq))
+	envelope.Media = []channelgateway.Media{{Kind: mediaKindForMIME(mimeForName(ref)), Ref: ref}}
+	envelope.Metadata = map[string]string{"media_ref": ref, "media_kind": kind}
+	_, err := b.engine.channelDispatch.Dispatch(ctx, envelope, telegramOutboundSender{bridge: b, token: token})
+	var deliveryErr *channelgateway.DeliveryError
+	if errors.As(err, &deliveryErr) {
+		return nil
+	}
+	if err != nil {
+		return b.sendRunMediaDirect(ctx, token, chatID, event)
+	}
+	return nil
+}
+
+func (b *telegramBridge) sendRunMediaDirect(ctx context.Context, token string, chatID int64, event Event) error {
 	ref, _ := event.Fields["url"].(string)
 	kind, _ := event.Fields["kind"].(string)
 	name, data, err := b.readRunMedia(ref)
@@ -918,6 +981,50 @@ func (b *telegramBridge) readRunMedia(ref string) (string, []byte, error) {
 }
 
 func (b *telegramBridge) sendText(ctx context.Context, token string, chatID int64, text string, keyboard *telegramInlineKeyboard) error {
+	return b.sendTextKey(ctx, token, chatID, text, keyboard, "telegram:out:"+mintMediaID())
+}
+
+func (b *telegramBridge) sendTextKey(ctx context.Context, token string, chatID int64, text string, keyboard *telegramInlineKeyboard, key string) error {
+	if b.engine == nil || b.engine.channelDispatch == nil {
+		return b.sendTextDirect(ctx, token, chatID, text, keyboard)
+	}
+	envelope := b.outboundEnvelope(chatID, channelgateway.KindMessage, key)
+	envelope.Text = strings.TrimSpace(text)
+	if keyboard != nil {
+		encoded, err := json.Marshal(keyboard)
+		if err != nil {
+			return err
+		}
+		envelope.Metadata = map[string]string{"telegram_keyboard": string(encoded)}
+	}
+	_, err := b.engine.channelDispatch.Dispatch(ctx, envelope, telegramOutboundSender{bridge: b, token: token})
+	var deliveryErr *channelgateway.DeliveryError
+	if errors.As(err, &deliveryErr) {
+		return nil
+	}
+	if err != nil {
+		return b.sendTextDirect(ctx, token, chatID, text, keyboard)
+	}
+	return nil
+}
+
+func (b *telegramBridge) outboundEnvelope(chatID int64, kind channelgateway.Kind, key string) channelgateway.Envelope {
+	state := b.store.View()
+	return channelgateway.Envelope{
+		Direction: channelgateway.Outbound,
+		Kind:      kind,
+		Address: channelgateway.Address{
+			Channel: channelgateway.ChannelTelegram, AccountID: fmt.Sprintf("%d", state.BotID),
+			ConversationID: fmt.Sprintf("%d", chatID), ParticipantID: fmt.Sprintf("%d", state.TelegramUserID), Scope: channelgateway.ScopeDirect,
+		},
+		NeoConversation: state.ConversationID,
+		IdempotencyKey:  key,
+		SideEffectClass: executortool.SideEffectNetwork,
+		OccurredAt:      time.Now().UTC(),
+	}
+}
+
+func (b *telegramBridge) sendTextDirect(ctx context.Context, token string, chatID int64, text string, keyboard *telegramInlineKeyboard) error {
 	parts := splitTelegramText(text, 4000)
 	if len(parts) == 0 {
 		return nil
@@ -932,6 +1039,50 @@ func (b *telegramBridge) sendText(ctx context.Context, token string, chatID int6
 		}
 	}
 	return nil
+}
+
+type telegramOutboundSender struct {
+	bridge *telegramBridge
+	token  string
+}
+
+func (s telegramOutboundSender) Send(ctx context.Context, envelope channelgateway.Envelope) (channelgateway.SendReceipt, error) {
+	chatID, err := strconv.ParseInt(envelope.Address.ConversationID, 10, 64)
+	if err != nil {
+		return channelgateway.SendReceipt{}, &channelgateway.DeliveryError{Code: "address", Message: "Telegram chat identity is invalid", Permanent: true}
+	}
+	if ref := envelope.Metadata["media_ref"]; ref != "" {
+		event := Event{Fields: map[string]interface{}{"url": ref, "kind": envelope.Metadata["media_kind"]}}
+		if err := s.bridge.sendRunMediaDirect(ctx, s.token, chatID, event); err != nil {
+			return channelgateway.SendReceipt{}, &channelgateway.DeliveryError{Code: "telegram", Message: err.Error()}
+		}
+		return channelgateway.SendReceipt{Code: "accepted"}, nil
+	}
+	var keyboard *telegramInlineKeyboard
+	if encoded := envelope.Metadata["telegram_keyboard"]; encoded != "" {
+		keyboard = &telegramInlineKeyboard{}
+		if err := json.Unmarshal([]byte(encoded), keyboard); err != nil {
+			return channelgateway.SendReceipt{}, &channelgateway.DeliveryError{Code: "payload", Message: "Telegram approval controls are invalid", Permanent: true}
+		}
+	}
+	if err := s.bridge.sendTextDirect(ctx, s.token, chatID, envelope.Text, keyboard); err != nil {
+		return channelgateway.SendReceipt{}, &channelgateway.DeliveryError{Code: "telegram", Message: err.Error()}
+	}
+	return channelgateway.SendReceipt{Code: "accepted"}, nil
+}
+
+func (b *telegramBridge) drainOutbound(ctx context.Context, generation uint64, token string) {
+	if b.engine == nil || b.engine.channelDispatch == nil {
+		return
+	}
+	state, current := b.currentState(generation)
+	if !current || !state.Configured() {
+		return
+	}
+	_, err := b.engine.channelDispatch.Drain(ctx, channelgateway.ChannelTelegram, fmt.Sprintf("%d", state.BotID), telegramOutboundSender{bridge: b, token: token}, 20)
+	if err != nil && ctx.Err() == nil {
+		b.setWorkerState(generation, true, err.Error())
+	}
 }
 
 func telegramAskKeyboard(ask *primitives.Ask) *telegramInlineKeyboard {
@@ -984,6 +1135,83 @@ func telegramAskCallbackResponse(ask *primitives.Ask, index int) (*primitives.As
 		return response, "Signing declined", nil
 	default:
 		return nil, "", errors.New("reply to the message instead")
+	}
+}
+
+func normalizeTelegramUpdate(state telegramsettings.State, update telegramUpdate) (channelgateway.Envelope, bool) {
+	var message *telegramMessage
+	kind := channelgateway.KindMessage
+	if update.CallbackQuery != nil {
+		message = update.CallbackQuery.Message
+		kind = channelgateway.KindApproval
+	} else {
+		message = update.Message
+	}
+	if message == nil {
+		return channelgateway.Envelope{}, false
+	}
+	scope := channelgateway.ScopeGroup
+	if message.Chat.Type == "private" {
+		scope = channelgateway.ScopeDirect
+	}
+	participantID := ""
+	if message.From != nil {
+		participantID = fmt.Sprintf("%d", message.From.ID)
+	}
+	text := strings.TrimSpace(message.Text)
+	if text == "" {
+		text = strings.TrimSpace(message.Caption)
+	}
+	command, _ := parseTelegramCommand(text)
+	switch command {
+	case "stop":
+		kind = channelgateway.KindInterrupt
+	case "new":
+		kind = channelgateway.KindSteer
+	}
+	envelope := channelgateway.Envelope{
+		Direction: channelgateway.Inbound,
+		Kind:      kind,
+		Address: channelgateway.Address{
+			Channel:        channelgateway.ChannelTelegram,
+			AccountID:      fmt.Sprintf("%d", state.BotID),
+			ConversationID: fmt.Sprintf("%d", message.Chat.ID),
+			ParticipantID:  participantID,
+			Scope:          scope,
+		},
+		NeoConversation:   state.ConversationID,
+		ExternalEventID:   fmt.Sprintf("%d", update.UpdateID),
+		ExternalMessageID: fmt.Sprintf("%d", message.MessageID),
+		IdempotencyKey:    fmt.Sprintf("telegram:%d", update.UpdateID),
+		Text:              text,
+		OccurredAt:        time.Now().UTC(),
+	}
+	if update.CallbackQuery != nil {
+		envelope.Approval = &channelgateway.Approval{
+			ID: update.CallbackQuery.ID, Prompt: "Telegram approval response", Decision: update.CallbackQuery.Data,
+		}
+		envelope.Text = update.CallbackQuery.Data
+		return envelope, true
+	}
+	if attachment, ok := selectTelegramAttachment(message); ok {
+		envelope.Media = append(envelope.Media, channelgateway.Media{
+			Kind: mediaKindForMIME(attachment.mimeType), Ref: "telegram:" + attachment.fileID,
+			Name: attachment.fileName, MIMEType: attachment.mimeType, Size: attachment.fileSize,
+		})
+	}
+	return envelope, true
+}
+
+func mediaKindForMIME(mimeType string) channelgateway.MediaKind {
+	switch {
+	case strings.HasPrefix(mimeType, "image/"):
+		return channelgateway.MediaImage
+	case strings.HasPrefix(mimeType, "audio/"):
+		return channelgateway.MediaAudio
+	case strings.HasPrefix(mimeType, "video/"):
+		return channelgateway.MediaVideo
+	default:
+		return channelgateway.MediaFile
 	}
 }
 

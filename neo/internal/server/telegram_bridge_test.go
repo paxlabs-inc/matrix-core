@@ -11,10 +11,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"matrix/construct/backchannel"
 	"matrix/construct/schema/primitives"
+	"matrix/neo/internal/channelgateway"
 	"matrix/neo/internal/telegramsettings"
 )
 
@@ -143,5 +146,78 @@ func TestTelegramReadRunMedia(t *testing.T) {
 	}
 	if _, _, err := bridge.readRunMedia("/media/../secret"); err == nil {
 		t.Fatal("path traversal was accepted")
+	}
+}
+
+func TestTelegramGatewayDrainsDurableDeliveryAfterRestart(t *testing.T) {
+	var calls atomic.Int32
+	token := "123456:ABCDEFGHIJKLMNOPQRSTUVWXYZ123456"
+	protocol := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/bot"+token+"/sendMessage" {
+			t.Errorf("path = %q", r.URL.Path)
+		}
+		if calls.Add(1) == 1 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_ = json.NewEncoder(w).Encode(telegramEnvelope{OK: false, ErrorCode: 503, Description: "temporary outage"})
+			return
+		}
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Errorf("decode message: %v", err)
+		}
+		if body["chat_id"] != float64(42) || body["text"] != "durable Telegram answer" {
+			t.Errorf("message = %#v", body)
+		}
+		_ = json.NewEncoder(w).Encode(telegramEnvelope{OK: true, Result: json.RawMessage(`{"message_id":99}`)})
+	}))
+	defer protocol.Close()
+
+	ctx := context.Background()
+	root := t.TempDir()
+	gateway, err := channelgateway.Open(ctx, root, nil, "did:matrix:alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	engine := &Engine{channelGateway: gateway, channelDispatch: channelgateway.NewDispatcher(gateway, channelgateway.RetryPolicy{
+		BaseBackoff: time.Millisecond, MaximumBackoff: time.Millisecond, MaximumAttempts: 3,
+	})}
+	settings := telegramsettings.Open("")
+	if err := settings.Replace(telegramsettings.State{
+		Token: token, BotID: 7, BotUsername: "matrix_test_bot", ChatID: 42,
+		TelegramUserID: 8, ConversationID: "tg-7-42",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	bridge := newTelegramBridge(engine, settings)
+	bridge.api.baseURL = protocol.URL
+	bridge.api.client = protocol.Client()
+	bridge.generation = 1
+	if err := bridge.sendTextKey(ctx, token, 42, "durable Telegram answer", nil, "telegram:run-1:4:text"); err != nil {
+		t.Fatalf("initial queued send: %v", err)
+	}
+	if calls.Load() != 1 {
+		t.Fatalf("initial calls = %d", calls.Load())
+	}
+	if err := gateway.Close(); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(2 * time.Millisecond)
+
+	reopened, err := channelgateway.Open(ctx, root, nil, "did:matrix:alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	engine.channelGateway = reopened
+	engine.channelDispatch = channelgateway.NewDispatcher(reopened, channelgateway.RetryPolicy{
+		BaseBackoff: time.Millisecond, MaximumBackoff: time.Millisecond, MaximumAttempts: 3,
+	})
+	bridge.drainOutbound(ctx, 1, token)
+	if calls.Load() != 2 {
+		t.Fatalf("calls after restart = %d, want 2", calls.Load())
+	}
+	due, err := reopened.Due(ctx, channelgateway.ChannelTelegram, "7", 10)
+	if err != nil || len(due) != 0 {
+		t.Fatalf("remaining due = %+v, err %v", due, err)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"sync"
 	"time"
 )
@@ -78,6 +79,10 @@ type ServerSpec struct {
 	// auth tokens (Q18 — never logged).
 	Endpoint string
 	Headers  map[string]string
+	// HTTPClient optionally supplies a pre-hardened client for this server.
+	// Dynamic control-plane servers use a DNS-pinned, no-redirect client;
+	// static manifests leave it nil for the legacy internal-network posture.
+	HTTPClient *http.Client
 
 	// PackageDigest is the sha256 hash that pins this server's package
 	// version (Q22). Manager records it but verification of the local
@@ -295,6 +300,7 @@ func (m *Manager) buildTransport(spec ServerSpec) (Transport, error) {
 		return NewHTTPTransport(HTTPParams{
 			Endpoint: spec.Endpoint,
 			Headers:  hdr,
+			Client:   spec.HTTPClient,
 		})
 	default:
 		return nil, fmt.Errorf("unsupported transport %q (want stdio|http)", spec.Transport)

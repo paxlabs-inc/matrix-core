@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"matrix/neo/internal/channelgateway"
 	"matrix/neo/internal/machinemailsettings"
 	"matrix/neo/internal/tools"
 )
@@ -20,12 +21,14 @@ type machineMailStatus struct {
 }
 
 type machineMailBridge struct {
-	store *machinemailsettings.Store
-	tools *tools.Manager
+	store   *machinemailsettings.Store
+	tools   *tools.Manager
+	gateway *channelgateway.Store
+	account string
 }
 
-func newMachineMailBridge(store *machinemailsettings.Store, manager *tools.Manager) *machineMailBridge {
-	return &machineMailBridge{store: store, tools: manager}
+func newMachineMailBridge(store *machinemailsettings.Store, manager *tools.Manager, gateway *channelgateway.Store, account string) *machineMailBridge {
+	return &machineMailBridge{store: store, tools: manager, gateway: gateway, account: strings.TrimSpace(account)}
 }
 
 func (b *machineMailBridge) Status() machineMailStatus {
@@ -49,7 +52,16 @@ func (b *machineMailBridge) Restore(ctx context.Context) error {
 	}
 	restoreCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	return b.tools.LoadMachineMail(restoreCtx, key)
+	if err := b.tools.LoadMachineMail(restoreCtx, key); err != nil {
+		return err
+	}
+	if b.gateway != nil {
+		_ = b.gateway.Bind(restoreCtx, channelgateway.Address{
+			Channel: channelgateway.ChannelMachineMail, AccountID: b.account,
+			ConversationID: "primary", Scope: channelgateway.ScopeDirect,
+		}, "machinemail")
+	}
+	return nil
 }
 
 func (b *machineMailBridge) Configure(ctx context.Context, apiKey string) (machineMailStatus, error) {
@@ -77,6 +89,12 @@ func (b *machineMailBridge) Configure(ctx context.Context, apiKey string) (machi
 		}
 		return b.Status(), err
 	}
+	if b.gateway != nil {
+		_ = b.gateway.Bind(ctx, channelgateway.Address{
+			Channel: channelgateway.ChannelMachineMail, AccountID: b.account,
+			ConversationID: "primary", Scope: channelgateway.ScopeDirect,
+		}, "machinemail")
+	}
 	return b.Status(), nil
 }
 
@@ -95,6 +113,9 @@ func (b *machineMailBridge) Disconnect(ctx context.Context) error {
 			_ = b.tools.LoadMachineMail(context.Background(), previous.APIKey)
 		}
 		return err
+	}
+	if b.gateway != nil {
+		_ = b.gateway.Unbind(ctx, channelgateway.ChannelMachineMail, b.account, "primary")
 	}
 	return nil
 }

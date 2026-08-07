@@ -6,10 +6,12 @@ package mcp
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -20,13 +22,13 @@ import (
 // Wire shape:
 //   - Each client→server message is a POST to a single endpoint URL.
 //   - The request body is one JSON-RPC frame (no batching at v1).
-//   - Successful responses arrive synchronously as the POST response body.
-//     Server-initiated notifications (and SSE-shaped streamed responses)
-//     are deferred to v1.1 — Matrix v1 only consumes simple JSON responses.
+//   - Successful responses arrive synchronously as JSON or as a bounded SSE
+//     sequence of JSON-RPC messages in the POST response body.
+//   - The server-issued MCP-Session-Id is retained for later requests.
 //
-// Q14 + executor_deferrals: streaming progress / SSE-shaped responses
-// deferred to v1.1; we surface a clean error if a server tries to use
-// them so manifest authors notice the gap rather than silently lose data.
+// A standalone GET notification stream is not opened: notifications carried
+// by POST response streams are handled, which is sufficient for Neo's bounded
+// request/response tool execution and progress callbacks.
 type HTTPTransport struct {
 	endpoint string
 	headers  http.Header
@@ -47,7 +49,12 @@ type HTTPTransport struct {
 
 	mu     sync.Mutex
 	closed bool
+	// sessionID is issued by a Streamable HTTP server on initialize and must
+	// accompany every subsequent request in that logical MCP session.
+	sessionID string
 }
+
+const maxHTTPResponseBytes = 8 << 20
 
 // HTTPParams configures a streamable HTTP transport.
 type HTTPParams struct {
@@ -89,7 +96,7 @@ func NewHTTPTransport(p HTTPParams) (*HTTPTransport, error) {
 		}
 	}
 	hdr.Set("Content-Type", "application/json")
-	hdr.Set("Accept", "application/json")
+	hdr.Set("Accept", "application/json, text/event-stream")
 
 	return &HTTPTransport{
 		endpoint: p.Endpoint,
@@ -125,25 +132,53 @@ func (t *HTTPTransport) Send(ctx context.Context, frame []byte) error {
 			req.Header.Add(k, v)
 		}
 	}
+	t.mu.Lock()
+	sessionID := t.sessionID
+	t.mu.Unlock()
+	if sessionID != "" {
+		req.Header.Set("MCP-Session-Id", sessionID)
+	}
+	req.Header.Set("MCP-Protocol-Version", ProtocolVersion)
 
 	resp, err := t.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("mcp/http: post: %w", err)
 	}
 	defer resp.Body.Close()
+	if issued := strings.TrimSpace(resp.Header.Get("MCP-Session-Id")); issued != "" {
+		t.mu.Lock()
+		if t.sessionID == "" {
+			t.sessionID = issued
+		}
+		t.mu.Unlock()
+	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxHTTPResponseBytes+1))
 	if err != nil {
 		return fmt.Errorf("mcp/http: read body: %w", err)
+	}
+	if len(body) > maxHTTPResponseBytes {
+		return fmt.Errorf("mcp/http: response exceeds %d byte bound", maxHTTPResponseBytes)
 	}
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		// Should be a JSON-RPC response; enqueue for Recv.
-		// Reject SSE-shaped responses explicitly so manifest authors
-		// see the v1 limitation rather than silently lose frames.
+		// Streamable HTTP permits either one JSON response or an SSE stream of
+		// JSON-RPC messages for a request. Decode every bounded SSE data event in
+		// order; Client.readLoop routes responses and notifications normally.
 		if ct := resp.Header.Get("Content-Type"); ct != "" && isSSE(ct) {
-			return fmt.Errorf("mcp/http: server returned SSE (%s); streamable HTTP SSE responses deferred to v1.1", ct)
+			frames, err := decodeSSEFrames(body)
+			if err != nil {
+				return fmt.Errorf("mcp/http: decode SSE: %w", err)
+			}
+			for _, frame := range frames {
+				select {
+				case t.inbox <- frame:
+				default:
+					return errors.New("mcp/http: response inbox full")
+				}
+			}
+			return nil
 		}
 		if len(body) == 0 {
 			// Empty success body — server treated us as a notification.
@@ -171,6 +206,52 @@ func (t *HTTPTransport) Send(ctx context.Context, frame []byte) error {
 		}
 		return err
 	}
+}
+
+func decodeSSEFrames(body []byte) ([][]byte, error) {
+	lines := strings.Split(strings.ReplaceAll(string(body), "\r\n", "\n"), "\n")
+	frames := make([][]byte, 0)
+	data := make([]string, 0)
+	flush := func() error {
+		if len(data) == 0 {
+			return nil
+		}
+		joined := strings.Join(data, "\n")
+		data = data[:0]
+		if strings.TrimSpace(joined) == "" || strings.TrimSpace(joined) == "[DONE]" {
+			return nil
+		}
+		if !json.Valid([]byte(joined)) {
+			return errors.New("SSE data event is not valid JSON")
+		}
+		frames = append(frames, []byte(joined))
+		return nil
+	}
+	for _, line := range lines {
+		if line == "" {
+			if err := flush(); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		if strings.HasPrefix(line, ":") {
+			continue
+		}
+		if strings.HasPrefix(line, "data:") {
+			value := strings.TrimPrefix(line, "data:")
+			if strings.HasPrefix(value, " ") {
+				value = value[1:]
+			}
+			data = append(data, value)
+		}
+	}
+	if err := flush(); err != nil {
+		return nil, err
+	}
+	if len(frames) == 0 {
+		return nil, errors.New("SSE response contained no JSON-RPC messages")
+	}
+	return frames, nil
 }
 
 // Recv blocks for the next frame, an out-of-band error, ctx cancel,

@@ -13,6 +13,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -31,13 +32,18 @@ import (
 	"matrix/neo/internal/automatrixsettings"
 	"matrix/neo/internal/briefhistory"
 	"matrix/neo/internal/briefsettings"
+	"matrix/neo/internal/capabilityhub"
+	"matrix/neo/internal/channelgateway"
+	"matrix/neo/internal/cloudchannels"
 	"matrix/neo/internal/codingruntime"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/dojo"
+	"matrix/neo/internal/improvement"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/machinemailsettings"
+	"matrix/neo/internal/mcpcontrol"
 	"matrix/neo/internal/mediastudio"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/notify"
@@ -76,6 +82,22 @@ type Engine struct {
 	trace              *trace.Store         // durable per-run workspace timeline ("Neo's Computer"); sidecar, never Neocortex
 	automatrix         *automatrixlog.Store // durable Automatrix completion inbox (in-app surprise results); sidecar, never Neocortex
 	briefHistory       *briefhistory.Store  // durable morning-brief recommendation history + feedback (ORACLE task 5.5); sidecar, never Neocortex
+	capabilities       *capabilityhub.Store // optional, independently failing capability package registry
+	capabilityErr      error
+	capabilityLibrary  string
+	improvement        *improvement.Store
+	improvementErr     error
+	improvementAlarms  improvementAlarmController
+	improvementWG      sync.WaitGroup
+	mcpControl         *mcpcontrol.Store
+	mcpControlErr      error
+	mcpBoundary        sync.Mutex
+	mcpLoaded          bool
+	mcpDirty           bool
+	channelGateway     *channelgateway.Store
+	channelDispatch    *channelgateway.Dispatcher
+	channelGatewayErr  error
+	cloudChannels      *cloudChannelBridge
 	telegram           *telegramBridge
 	machineMail        *machineMailBridge
 	mediaDir           string // machine-volume dir for generated + uploaded media ("" disables)
@@ -243,6 +265,12 @@ type EngineOptions struct {
 	AutomatrixSettingsDir  string // durable Automatrix opt-in settings dir ("" = in-memory only; wiring the production governor)
 	BriefSettingsDir       string // durable morning-brief schedule sidecar dir ("" = in-memory only; wiring the production brief governor)
 	BriefHistoryDir        string // durable morning-brief recommendation-history dir ("" disables; the no-repeat + feedback store)
+	CapabilityDir          string // durable private Capability Hub dir ("" disables the optional subsystem)
+	CapabilityLibraryDir   string // trusted read-only Matrix skill corpus used by library imports
+	ImprovementDir         string // sealed verified-improvement observations and proposals (empty disables)
+	MCPControlDir          string // encrypted, versioned MCP configuration and OAuth control plane
+	ChannelGatewayDir      string // durable normalized channel identities, idempotency, and delivery receipts
+	CloudChannelDir        string // encrypted Slack and Discord connection state ("" disables cloud adapters)
 	TelegramSettingsDir    string // encrypted per-user Telegram bot/channel state ("" disables the integration)
 	MachineMailSettingsDir string // encrypted per-user MachineMail API key ("" disables the integration)
 	MediaDir               string // machine-volume media dir ("" disables image/video/audio I/O)
@@ -283,6 +311,7 @@ func NewEngine(o EngineOptions) *Engine {
 		trace:              trace.Open(o.TraceDir),
 		automatrix:         automatrixlog.Open(o.AutomatrixDir),
 		briefHistory:       briefhistory.Open(o.BriefHistoryDir),
+		capabilityLibrary:  strings.TrimRight(strings.TrimSpace(o.CapabilityLibraryDir), "/"),
 		buildJobs:          codingruntime.Open(o.BuildDir),
 		mediaDir:           strings.TrimRight(o.MediaDir, "/"),
 		voiceASRURL:        strings.TrimSpace(o.VoiceASRURL),
@@ -313,6 +342,12 @@ func NewEngine(o EngineOptions) *Engine {
 			AgentDID:   o.Config.ActorDID,
 		}),
 	}
+	if strings.TrimSpace(o.CapabilityDir) != "" {
+		e.capabilities, e.capabilityErr = capabilityhub.Open(context.Background(), o.CapabilityDir)
+	}
+	if e.capabilities != nil && e.tools != nil {
+		e.tools.SetCapabilityHub(e.snapshotCapabilities, e.createCapabilityCandidate)
+	}
 	// Data-at-rest: seal the durable JSONL conversation store (hot + archive)
 	// under the per-user vault. The user DID bound into each record's associated
 	// data matches the key booted in serve.go (ActorDID, else MATRIX_USER_ID),
@@ -323,6 +358,32 @@ func NewEngine(o EngineOptions) *Engine {
 		vaultUser = os.Getenv("MATRIX_USER_ID")
 	}
 	e.vaultUser = vaultUser
+	if o.Config.ImprovementEnabled && strings.TrimSpace(o.ImprovementDir) != "" {
+		e.improvement, e.improvementErr = improvement.Open(o.ImprovementDir, o.Vault, vaultUser)
+		e.improvementAlarms = &mcpImprovementAlarmController{tools: o.Tools}
+	}
+	if strings.TrimSpace(o.MCPControlDir) != "" {
+		e.mcpControl, e.mcpControlErr = mcpcontrol.Open(context.Background(), o.MCPControlDir, o.Vault, vaultUser)
+		if e.mcpControl != nil && e.tools != nil {
+			e.tools.SetDynamicMCPHooks(e.mcpControl.Guard, e.mcpControl.Observe, e.mcpControl.Redact)
+			_, e.mcpControlErr = e.applyMCPBound(context.Background(), true)
+		}
+	}
+	if strings.TrimSpace(o.ChannelGatewayDir) != "" {
+		e.channelGateway, e.channelGatewayErr = channelgateway.Open(context.Background(), o.ChannelGatewayDir, o.Vault, vaultUser)
+		if e.channelGateway != nil {
+			e.channelDispatch = channelgateway.NewDispatcher(e.channelGateway, channelgateway.RetryPolicy{
+				MinimumInterval: 35 * time.Millisecond,
+				BaseBackoff:     time.Second,
+				MaximumBackoff:  2 * time.Minute,
+				MaximumAttempts: 8,
+			})
+		}
+	}
+	if strings.TrimSpace(o.CloudChannelDir) != "" {
+		cloudStore, cloudErr := cloudchannels.Open(o.CloudChannelDir, o.Vault, vaultUser)
+		e.cloudChannels = newCloudChannelBridge(e, cloudStore, cloudErr)
+	}
 	if strings.TrimSpace(o.ProfilePath) != "" {
 		e.profileStore, e.profileStoreErr = profileStore.Open(o.ProfilePath, o.Vault)
 	}
@@ -453,7 +514,7 @@ func NewEngine(o EngineOptions) *Engine {
 	if o.MachineMailSettingsDir != "" {
 		ms := machinemailsettings.Open(o.MachineMailSettingsDir)
 		ms.SetVault(o.Vault, vaultUser)
-		e.machineMail = newMachineMailBridge(ms, e.tools)
+		e.machineMail = newMachineMailBridge(ms, e.tools, e.channelGateway, vaultUser)
 		_ = e.machineMail.Restore(context.Background())
 	}
 	if e.mediaDir != "" {
@@ -471,6 +532,12 @@ func NewEngine(o EngineOptions) *Engine {
 func (e *Engine) StartTelegram(ctx context.Context) {
 	if e != nil && e.telegram != nil {
 		e.telegram.Start(ctx)
+	}
+}
+
+func (e *Engine) StartCloudChannels(ctx context.Context) {
+	if e != nil && e.cloudChannels != nil {
+		e.cloudChannels.Start(ctx)
 	}
 }
 
@@ -526,6 +593,9 @@ func (e *Engine) Close() {
 	if e.telegram != nil {
 		e.telegram.Stop()
 	}
+	if e.cloudChannels != nil {
+		e.cloudChannels.Stop()
+	}
 	if e.buildWorker != nil {
 		e.buildWorker.Stop()
 	}
@@ -545,6 +615,9 @@ func (e *Engine) Close() {
 	// a brief that outlives the bound stays durably running in the task ledger
 	// and resumes on the restricted brief surface at next boot.
 	waitBounded(&e.briefWG, 30*time.Second)
+	// The observer can write proposals and route an approved proposal through
+	// Neocortex or Capability Hub, so drain it before those owners close.
+	waitBounded(&e.improvementWG, 30*time.Second)
 	if e.runtime != nil {
 		ctx, cancel := context.WithTimeout(
 			context.Background(), 10*time.Second,
@@ -556,7 +629,87 @@ func (e *Engine) Close() {
 	if e.journal != nil {
 		_ = e.journal.Close()
 	}
+	if e.capabilities != nil {
+		_ = e.capabilities.Close()
+	}
+	if e.mcpControl != nil {
+		_ = e.mcpControl.Close()
+	}
+	if e.channelGateway != nil {
+		_ = e.channelGateway.Close()
+	}
 }
+
+// applyMCPBound publishes a staged MCP snapshot only while the caller holds
+// mcpBoundary and the global run registry is empty. A replacement is built and
+// qualified before tools.Manager swaps it, so failure leaves the previous live
+// pool intact and rolls the desired configuration back durably.
+func (e *Engine) applyMCPBound(ctx context.Context, force bool) (bool, error) {
+	if e == nil || e.mcpControl == nil || e.tools == nil {
+		return false, e.mcpControlErr
+	}
+	if force {
+		e.mcpDirty = true
+	}
+	e.mu.Lock()
+	busy := len(e.runs) > 0
+	e.mu.Unlock()
+	if busy {
+		return false, nil
+	}
+	pending := e.mcpControl.HasPending(ctx)
+	refresh := e.mcpControl.OAuthRefreshDue(ctx)
+	if !force && e.mcpLoaded && !e.mcpDirty && !pending && !refresh {
+		return false, nil
+	}
+	entries, err := e.mcpControl.RuntimeEntries(ctx)
+	if err == nil {
+		err = e.tools.ReloadDynamicMCP(ctx, entries)
+	}
+	if err != nil {
+		safeErr := mcpcontrol.SafeRuntimeError(err)
+		if pending {
+			_ = e.mcpControl.RollbackPending(ctx, safeErr)
+		}
+		e.mcpControlErr = safeErr
+		return false, safeErr
+	}
+	if pending {
+		if err := e.mcpControl.MarkApplied(ctx); err != nil {
+			e.mcpControlErr = err
+			return false, err
+		}
+	}
+	e.mcpLoaded = true
+	e.mcpDirty = false
+	e.mcpControlErr = nil
+	return true, nil
+}
+
+func (e *Engine) applyMCP(ctx context.Context) (bool, error) {
+	if e == nil {
+		return false, errors.New("Neo engine is unavailable")
+	}
+	e.mcpBoundary.Lock()
+	defer e.mcpBoundary.Unlock()
+	return e.applyMCPBound(ctx, false)
+}
+
+func (e *Engine) applyMCPForced(ctx context.Context) (bool, error) {
+	if e == nil {
+		return false, errors.New("Neo engine is unavailable")
+	}
+	e.mcpBoundary.Lock()
+	defer e.mcpBoundary.Unlock()
+	return e.applyMCPBound(ctx, true)
+}
+
+func (e *Engine) beginTurnBoundary(ctx context.Context) {
+	e.mcpBoundary.Lock()
+	_, _ = e.applyMCPBound(ctx, false)
+}
+
+func (e *Engine) endTurnBoundary() { e.mcpBoundary.Unlock() }
 
 // waitBounded waits for wg up to d, returning early when it drains. Used only
 // on the shutdown path, where a hung background goroutine must not wedge Close.

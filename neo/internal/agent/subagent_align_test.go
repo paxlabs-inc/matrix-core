@@ -41,8 +41,11 @@ func TestSubagentInheritsSelfModelRoleAndBounds(t *testing.T) {
 	if !strings.Contains(strings.ToLower(sp), "ephemeral") || !strings.Contains(strings.ToLower(sp), "scoped instance") {
 		t.Errorf("sub-agent must carry explicit ephemeral-role awareness:\n%s", sp)
 	}
-	// Bounds: restricted surface (no money / no spawn) and a budget.
-	if !strings.Contains(sp, "Your bounds:") || !strings.Contains(strings.ToLower(sp), "no money") {
+	// Bounds: positive read-only surface, no mutation / action / recursion, and a budget.
+	lower := strings.ToLower(sp)
+	if !strings.Contains(sp, "Your bounds:") || !strings.Contains(lower, "read-only research worker") ||
+		!strings.Contains(lower, "shell") || !strings.Contains(lower, "memory writes") ||
+		!strings.Contains(lower, "external actions") || !strings.Contains(lower, "spawning sub-agents") {
 		t.Errorf("sub-agent must state its restricted-surface bounds:\n%s", sp)
 	}
 	if !strings.Contains(sp, "40 tool-call steps") {

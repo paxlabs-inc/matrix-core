@@ -2,12 +2,14 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"matrix/neo/internal/channelgateway"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/runrecord"
 )
@@ -173,6 +175,13 @@ func TestInterruptedTerminalCannotBeOverwrittenAfterStop(t *testing.T) {
 
 func TestChatRetryWithSameIdempotencyKeyReusesIntentWithoutDuplicateTurn(t *testing.T) {
 	e := newRunRecordEngine(t)
+	gateway, err := channelgateway.Open(context.Background(), t.TempDir(), nil, "did:matrix:test")
+	if err != nil {
+		t.Fatalf("gateway: %v", err)
+	}
+	defer gateway.Close()
+	e.channelGateway = gateway
+	e.vaultUser = "did:matrix:test"
 	const (
 		intentID = "neo_idempotent"
 		convID   = "conv_idempotent"

@@ -390,6 +390,12 @@ func runServe(args []string) {
 		AutomatrixSettingsDir:  automatrixsettings.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.DataRoot),
 		BriefSettingsDir:       briefsettings.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.DataRoot),
 		BriefHistoryDir:        briefhistory.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.DataRoot),
+		CapabilityDir:          envOrDefault("NEO_CAPABILITY_DIR", filepath.Join(vaultDataDir, "capability-hub")),
+		CapabilityLibraryDir:   envOrDefault("NEO_SKILLS_DIR", "/opt/matrix/skills"),
+		ImprovementDir:         envOrDefault("NEO_IMPROVEMENT_DIR", filepath.Join(vaultDataDir, "improvement")),
+		MCPControlDir:          envOrDefault("NEO_MCP_CONTROL_DIR", filepath.Join(vaultDataDir, "mcp-control")),
+		ChannelGatewayDir:      envOrDefault("NEO_CHANNEL_GATEWAY_DIR", filepath.Join(vaultDataDir, "channel-gateway")),
+		CloudChannelDir:        envOrDefault("NEO_CLOUD_CHANNEL_DIR", filepath.Join(vaultDataDir, "cloud-channels")),
 		TelegramSettingsDir:    telegramsettings.Dir(os.Getenv("NEO_TELEGRAM_DIR"), cfg.DataRoot),
 		MachineMailSettingsDir: machinemailsettings.Dir(os.Getenv("NEO_MACHINEMAIL_DIR"), cfg.DataRoot),
 		MediaDir:               mediaPath,
@@ -528,6 +534,7 @@ func runServe(args []string) {
 	// Idle / over-lifetime dojo desktops are torn down server-side (DOJO req 1.4).
 	engine.StartDojoReaper(ctx)
 	engine.StartTelegram(ctx)
+	engine.StartCloudChannels(ctx)
 
 	srv, err := server.New(engine, backendURL)
 	if err != nil {

@@ -271,6 +271,22 @@ func nativeSchemas() []llm.Tool {
 	}
 }
 
+func nativeResearchSchemas() []llm.Tool {
+	allowed := map[string]bool{
+		nativeReadFile: true, nativeReadMany: true, nativeListDir: true,
+		nativeTree: true, nativeSearchFiles: true, nativeFileInfo: true,
+		nativeGitStatus: true, nativeGitDiff: true, nativeGitLog: true,
+		nativeGitShow: true, nativeGitBranch: true,
+	}
+	out := make([]llm.Tool, 0, len(allowed))
+	for _, schema := range nativeSchemas() {
+		if allowed[schema.Function.Name] {
+			out = append(out, schema)
+		}
+	}
+	return out
+}
+
 func isNativeTool(name string) bool {
 	for _, schema := range nativeSchemas() {
 		if schema.Function.Name == name {

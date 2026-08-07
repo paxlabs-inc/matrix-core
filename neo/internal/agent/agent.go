@@ -362,10 +362,9 @@ type Options struct {
 	// ConvID is the conversation this agent serves; stamped on the per-turn
 	// attestation IntentID for audit. Empty on the CLI path.
 	ConvID string
-	// RestrictTools advertises the SUB-AGENT tool surface (full Natural set,
-	// minus core_execute / memory_recall / spawn_subagents) instead of the
-	// full one. Set for sub-agents so money stays with the parent and a
-	// sub-agent can't spawn its own sub-agents.
+	// RestrictTools advertises the positive read-only research surface instead
+	// of the full one. Set for sub-agents so mutation, shell, scheduling,
+	// memory-write, external-action, and recursive tools are structurally absent.
 	RestrictTools bool
 	// Automatrix marks an autonomous Automatrix run: the user is AWAY and did
 	// not initiate this turn. The system prompt gains an autonomous-mode

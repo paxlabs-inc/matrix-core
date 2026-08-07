@@ -19,9 +19,9 @@ func automatrixTestManager() *Manager {
 	obj := func() map[string]interface{} { return map[string]interface{}{"type": "object"} }
 	m := &Manager{
 		byFunc: map[string]*boundTool{
-			"fs__read_file":        {funcName: "fs__read_file", desc: "read", params: obj(), surface: Natural},
-			"web__search":          {funcName: "web__search", desc: "search", params: obj(), surface: Natural},
-			"paxeer__send_payment": {funcName: "paxeer__send_payment", desc: "move funds", params: obj(), surface: Escalate},
+			"fs__read_file":        {funcName: "fs__read_file", alias: "fs", name: "read_file", sideEffect: "read", desc: "read", params: obj(), surface: Natural},
+			"web__search":          {funcName: "web__search", alias: "web-search", name: "web_search", sideEffect: "network", desc: "search", params: obj(), surface: Natural},
+			"paxeer__send_payment": {funcName: "paxeer__send_payment", alias: "paxeer", name: "send_payment", sideEffect: "network", desc: "move funds", params: obj(), surface: Escalate},
 		},
 		// Escalate tools are bound but NEVER advertised (never in order); the
 		// only money path on the full surface is the synthetic core_execute.
@@ -56,7 +56,7 @@ func TestAutomatrixSchemasOmitMoney(t *testing.T) {
 	if err := AssertNoValueTransferTools(auto); err != nil {
 		t.Errorf("Automatrix advertised set not clean: %v", err)
 	}
-	// The restriction removes money, not capability: the Natural tools remain.
+	// The restriction retains only structurally read-only research capability.
 	if !got["fs__read_file"] || !got["web__search"] {
 		t.Errorf("Automatrix surface should keep the natural tools, got %v", keys(got))
 	}

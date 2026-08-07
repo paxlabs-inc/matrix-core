@@ -266,6 +266,12 @@ type Config struct {
 	NtfyTopic                     string
 	AppriseURL                    string
 
+	// Verified improvement observer. Disabled by default. When enabled, a
+	// completed idle session schedules a bounded one-shot Chronos wake; the
+	// observer can only create reviewable evidenced proposals.
+	ImprovementEnabled          bool
+	ImprovementIdleDelayMinutes int
+
 	// --- execution surface ---
 	NaturalAllow    []string // reversible actions Neo performs directly (no wallet signature)
 	EscalateActions []string // actions that cross into MCL (require a user wallet signature)
@@ -407,6 +413,8 @@ func Default() Config {
 		NtfyServer:                    "https://ntfy.sh",
 		NtfyTopic:                     "",
 		AppriseURL:                    "",
+		ImprovementEnabled:            false,
+		ImprovementIdleDelayMinutes:   10,
 
 		// P2-5: parallel dispatch of independent tool calls in a turn.
 		// Bounded so a batch of N calls doesn't fork-bomb MCP servers.
@@ -625,6 +633,10 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.NtfyTopic = d.strOr("automatrix", "ntfy_topic", c.NtfyTopic)
 		c.AppriseURL = d.strOr("automatrix", "apprise_url", c.AppriseURL)
 	}
+	if d.has("improvement") {
+		c.ImprovementEnabled = d.boolOr("improvement", "enabled", c.ImprovementEnabled)
+		c.ImprovementIdleDelayMinutes = d.intOr("improvement", "idle_delay_minutes", c.ImprovementIdleDelayMinutes)
+	}
 	if d.has("execution") {
 		if v := d.list("execution", "natural_allow"); v != nil {
 			c.NaturalAllow = v
@@ -746,6 +758,8 @@ func (c *Config) applyEnv() {
 	c.NtfyServer = envOr("NTFY_SERVER", c.NtfyServer)
 	c.NtfyTopic = envOr("NTFY_TOPIC", c.NtfyTopic)
 	c.AppriseURL = envOr("APPRISE_URL", c.AppriseURL)
+	c.ImprovementEnabled = envBool("NEO_IMPROVEMENT_ENABLED", c.ImprovementEnabled)
+	c.ImprovementIdleDelayMinutes = envIntNonNeg("NEO_IMPROVEMENT_IDLE_MINUTES", c.ImprovementIdleDelayMinutes)
 
 	// P2-5: MCP result cache TTL (seconds). 0 = disabled.
 	if v := envIntNonNeg("NEO_MCP_CACHE_TTL_SECONDS", 0); v > 0 {

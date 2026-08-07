@@ -18,9 +18,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"matrix/construct/backchannel"
@@ -79,6 +81,16 @@ const ConstructRenderTool = projection.ConstructRenderTool
 // MCP server, so it never enters the manifest tool-bijection check.
 const WriteSkillTool = "write_skill"
 
+// CapabilitySearchTool and CapabilityCandidateTool expose the quarantined Hub
+// without granting Neo lifecycle authority. Search/read is bounded and only
+// returns instructions for an already-active package; candidate creation can
+// only create a quarantined version. Grants, verification, activation, pinning,
+// rollback, and uninstall remain human-facing server actions.
+const (
+	CapabilitySearchTool    = "capability_search"
+	CapabilityCandidateTool = "capability_create_candidate"
+)
+
 // TodoTool is the synthetic function Neo exposes to maintain a short, ordered
 // task plan with per-item status, surfaced to the user as a live checklist that
 // ticks off in real time (neo-smoothness req.3). Like core_execute it is NOT a
@@ -116,6 +128,34 @@ const maxFileMutationBytes = 16 * 1024
 // verifiable outcome. Injected by the agent wiring (see internal/delegate);
 // nil until wired, in which case core_execute reports it is unavailable.
 type DelegateFunc func(ctx context.Context, proseIntent string) (string, error)
+
+type CapabilitySnapshotItem struct {
+	Slug         string `json:"slug"`
+	Version      string `json:"version"`
+	Display      string `json:"display"`
+	Description  string `json:"description"`
+	Digest       string `json:"digest"`
+	Instructions string `json:"instructions,omitempty"`
+}
+
+type CapabilitySnapshotFunc func(ctx context.Context) ([]CapabilitySnapshotItem, error)
+type CapabilityCandidateFunc func(ctx context.Context, manifest, prose, provenance string) (string, error)
+
+// DynamicMCPServer is one already-validated control-plane server snapshot.
+// Manifest contains no credentials; Environment and Headers are resolved only
+// in memory immediately before the executor transport is built.
+type DynamicMCPServer struct {
+	Manifest    tool.ServerEntry
+	Environment []string
+	Headers     map[string]string
+	RunAs       *mcp.ProcessIdentity
+	Enabled     map[string]bool
+	HTTPClient  *http.Client
+}
+
+type DynamicMCPGuardFunc func(alias string) error
+type DynamicMCPObserveFunc func(alias string, latency time.Duration, err error)
+type DynamicMCPRedactFunc func(alias, content string) string
 
 // MediaPersistFunc writes a tool-produced image (base64 payload + MIME) to the
 // served media plane and returns its /media/<id> URL. It is the seam that keeps
@@ -249,25 +289,29 @@ type boundTool struct {
 
 // Manager owns the MCP server pool + registry and the bound tool surface.
 type Manager struct {
-	manifest    *tool.AgentManifest
-	mcp         *mcp.Manager
-	registry    *tool.Registry
-	classifier  *Classifier
-	delegate    DelegateFunc
-	recall      RecallFunc
-	mutation    MemoryMutationFunc
-	swarm       SwarmFunc
-	surface     SurfaceFunc
-	ask         AskFunc
-	writeSkill  WriteSkillFunc
-	todo        TodoFunc
-	preview     PreviewFunc
-	build       BuildFunc
-	desktopLook DesktopLookFunc
-	desktopA11y DesktopA11yFunc
-	media       MediaPersistFunc
-	native      *nativeLocal
-	maxAgents   int
+	manifest            *tool.AgentManifest
+	mcp                 *mcp.Manager
+	registry            *tool.Registry
+	classifier          *Classifier
+	delegate            DelegateFunc
+	recall              RecallFunc
+	mutation            MemoryMutationFunc
+	swarm               SwarmFunc
+	surface             SurfaceFunc
+	ask                 AskFunc
+	writeSkill          WriteSkillFunc
+	capabilitySource    CapabilitySnapshotFunc
+	capabilityCandidate CapabilityCandidateFunc
+	capabilityMu        sync.RWMutex
+	capabilitySnapshot  []CapabilitySnapshotItem
+	todo                TodoFunc
+	preview             PreviewFunc
+	build               BuildFunc
+	desktopLook         DesktopLookFunc
+	desktopA11y         DesktopA11yFunc
+	media               MediaPersistFunc
+	native              *nativeLocal
+	maxAgents           int
 
 	// personalization persists the user-confirmed personalization profile
 	// (ORACLE task 5.3). Reached only through save_personalization_profile,
@@ -278,6 +322,18 @@ type Manager struct {
 	order     []string // sorted natural func names (advertised)
 	escalated []string // sorted escalate func names (NOT advertised)
 	warnings  []string // non-fatal spawn failures
+
+	dynamicMu       sync.RWMutex
+	dynamicMCP      *mcp.Manager
+	dynamicRegistry *tool.Registry
+	dynamicByFunc   map[string]*boundTool
+	dynamicOrder    []string
+	dynamicAliases  map[string]bool
+	dynamicGuard    DynamicMCPGuardFunc
+	dynamicObserve  DynamicMCPObserveFunc
+	dynamicRedact   DynamicMCPRedactFunc
+	stderrSink      io.Writer
+	spawnTimeout    time.Duration
 }
 
 // DirectResult is the bounded application-facing result of one real tool call.
@@ -413,13 +469,15 @@ func Spawn(ctx context.Context, opts Options) (*Manager, error) {
 	}
 
 	m := &Manager{
-		manifest:   manifest,
-		mcp:        mgr,
-		registry:   reg,
-		classifier: NewClassifier(opts.EscalatePatterns),
-		delegate:   opts.Delegate,
-		byFunc:     map[string]*boundTool{},
-		warnings:   warnings,
+		manifest:     manifest,
+		mcp:          mgr,
+		registry:     reg,
+		classifier:   NewClassifier(opts.EscalatePatterns),
+		delegate:     opts.Delegate,
+		byFunc:       map[string]*boundTool{},
+		warnings:     warnings,
+		stderrSink:   opts.StderrSink,
+		spawnTimeout: opts.SpawnTimeout,
 	}
 	if strings.TrimSpace(opts.NativeRoot) != "" {
 		native, nativeErr := newNativeLocal(opts.NativeRoot, opts.NativeReadRoots, opts.NativeStateDir, opts.NativeGitPath)
@@ -480,6 +538,174 @@ func (m *Manager) bind(spawned map[string]bool) {
 	sort.Strings(m.escalated)
 }
 
+// SetDynamicMCPHooks connects the control plane's circuit breaker and health
+// accounting. Hooks are optional and never alter the static manifest surface.
+func (m *Manager) SetDynamicMCPHooks(guard DynamicMCPGuardFunc, observe DynamicMCPObserveFunc, redact ...DynamicMCPRedactFunc) {
+	if m == nil {
+		return
+	}
+	m.dynamicMu.Lock()
+	m.dynamicGuard = guard
+	m.dynamicObserve = observe
+	if len(redact) > 0 {
+		m.dynamicRedact = redact[0]
+	}
+	m.dynamicMu.Unlock()
+}
+
+// ReloadDynamicMCP builds a complete replacement pool before publishing it.
+// A failed spawn or manifest mismatch leaves the current pool untouched. The
+// server calls this only while its global run registry is empty, so a model
+// turn observes one immutable inventory from schema snapshot through dispatch.
+func (m *Manager) ReloadDynamicMCP(ctx context.Context, servers []DynamicMCPServer) error {
+	if m == nil {
+		return errors.New("tool manager is unavailable")
+	}
+	manifest := &tool.AgentManifest{
+		SchemaVersion: 1,
+		Agent:         "neo:mcp-control-plane",
+		Description:   "Neo user-authorized MCP server snapshot",
+		Servers:       make([]tool.ServerEntry, 0, len(servers)),
+	}
+	resolved := make(map[string]DynamicMCPServer, len(servers))
+	functions := make(map[string]string)
+	for _, server := range servers {
+		entry := server.Manifest
+		entry.Env = nil
+		entry.Headers = nil
+		if _, exists := resolved[entry.Alias]; exists {
+			return fmt.Errorf("duplicate dynamic MCP alias %q", entry.Alias)
+		}
+		for _, declared := range entry.Tools {
+			fn := funcName(entry.Alias, declared.Name)
+			if _, exists := m.byFunc[fn]; exists || reservedFunctionName(fn) || isNativeTool(fn) {
+				return fmt.Errorf("dynamic MCP function %q collides with Neo's existing surface", fn)
+			}
+			if previous, exists := functions[fn]; exists {
+				return fmt.Errorf("dynamic MCP functions %q and %q normalize to the same name %q", previous, entry.Alias+"/"+declared.Name, fn)
+			}
+			functions[fn] = entry.Alias + "/" + declared.Name
+		}
+		manifest.Servers = append(manifest.Servers, entry)
+		resolved[entry.Alias] = server
+	}
+	if err := manifest.Validate(); err != nil && len(servers) > 0 {
+		return fmt.Errorf("dynamic MCP manifest: %w", err)
+	}
+
+	pool := mcp.NewManager(mcp.ManagerParams{
+		HealthInterval: 30 * time.Second,
+		StderrSink:     m.stderrSink,
+		OnUnhealthy: func(alias string, err error) {
+			m.dynamicMu.RLock()
+			observe := m.dynamicObserve
+			m.dynamicMu.RUnlock()
+			if observe != nil {
+				observe(alias, 0, err)
+			}
+		},
+	})
+	for _, entry := range manifest.Servers {
+		server := resolved[entry.Alias]
+		spec := mcp.ServerSpec{
+			Alias: entry.Alias, Transport: entry.Transport,
+			Command: entry.Command, Args: append([]string(nil), entry.Args...),
+			Env: append([]string(nil), server.Environment...), RunAs: server.RunAs,
+			Endpoint: entry.Endpoint, Headers: cloneStringMap(server.Headers),
+			HTTPClient:    server.HTTPClient,
+			PackageDigest: entry.PackageDigest, ExpectedTools: toolNames(entry.Tools),
+		}
+		timeout := m.spawnTimeout
+		if timeout <= 0 {
+			timeout = 15 * time.Second
+		}
+		spawnCtx, cancel := context.WithTimeout(ctx, timeout)
+		_, err := pool.Spawn(spawnCtx, spec)
+		cancel()
+		if err != nil {
+			_ = pool.Close()
+			return fmt.Errorf("dynamic MCP %q did not qualify: %w", entry.Alias, err)
+		}
+	}
+	registry, err := tool.NewRegistry(tool.RegistryParams{Manifest: manifest, MCP: pool})
+	if err != nil {
+		_ = pool.Close()
+		return fmt.Errorf("dynamic MCP registry: %w", err)
+	}
+	bound := make(map[string]*boundTool)
+	order := make([]string, 0)
+	aliases := make(map[string]bool, len(manifest.Servers))
+	for i := range manifest.Servers {
+		entry := &manifest.Servers[i]
+		aliases[entry.Alias] = true
+		schemas := map[string]json.RawMessage{}
+		descriptions := map[string]string{}
+		for _, advertised := range pool.Tools(entry.Alias) {
+			schemas[advertised.Name] = advertised.InputSchema
+			descriptions[advertised.Name] = advertised.Description
+		}
+		for j := range entry.Tools {
+			declared := &entry.Tools[j]
+			if !resolved[entry.Alias].Enabled[declared.Name] {
+				continue
+			}
+			fn := funcName(entry.Alias, declared.Name)
+			description := declared.Description
+			if description == "" {
+				description = descriptions[declared.Name]
+			}
+			item := &boundTool{
+				funcName: fn,
+				uri:      tool.ToolURI{Provider: "mcp", Server: entry.Alias, Name: declared.Name, Version: entry.Version}.String(),
+				alias:    entry.Alias, name: declared.Name,
+				sideEffect: declared.SideEffectClass, desc: description,
+				params:  schemaToParams(schemas[declared.Name]),
+				surface: m.classifier.Classify(declared.Name, declared.SideEffectClass),
+			}
+			bound[fn] = item
+			if item.surface != Escalate {
+				order = append(order, fn)
+			}
+		}
+	}
+	sort.Strings(order)
+	m.dynamicMu.Lock()
+	old := m.dynamicMCP
+	m.dynamicMCP = pool
+	m.dynamicRegistry = registry
+	m.dynamicByFunc = bound
+	m.dynamicOrder = order
+	m.dynamicAliases = aliases
+	m.dynamicMu.Unlock()
+	if old != nil {
+		_ = old.Close()
+	}
+	return nil
+}
+
+func reservedFunctionName(name string) bool {
+	switch name {
+	case CoreExecuteTool, MemoryRecallTool, MemoryMutateTool, SpawnSubagentsTool,
+		ConstructRenderTool, WriteSkillTool, CapabilitySearchTool,
+		CapabilityCandidateTool, TodoTool, PreviewTool, BuildProjectTool,
+		DesktopLookTool, DesktopA11yTool, SavePersonalizationTool:
+		return true
+	default:
+		return false
+	}
+}
+
+func cloneStringMap(source map[string]string) map[string]string {
+	if len(source) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(source))
+	for key, value := range source {
+		out[key] = value
+	}
+	return out
+}
+
 // nativeShadows keeps legacy local MCP bindings callable for journal replay
 // while removing them from the model-facing inventory whenever the in-process
 // native runtime is active. One operation must have one canonical schema.
@@ -519,9 +745,24 @@ func (m *Manager) nativeShadows(bound *boundTool) bool {
 // to it under failure (the 2026-07-13 LayerX deposit transcript). Synthetics
 // (memory_recall etc.) append when their seams are wired. Deterministic order.
 func (m *Manager) Schemas() []llm.Tool {
-	out := make([]llm.Tool, 0, len(m.order)+24)
+	m.refreshCapabilitySnapshot(context.Background())
+	return m.schemas()
+}
+
+func (m *Manager) VerificationSchemas() []llm.Tool { return m.schemas() }
+
+func (m *Manager) schemas() []llm.Tool {
+	m.dynamicMu.RLock()
+	dynamicOrder := append([]string(nil), m.dynamicOrder...)
+	dynamicBound := m.dynamicByFunc
+	m.dynamicMu.RUnlock()
+	out := make([]llm.Tool, 0, len(m.order)+len(dynamicOrder)+24)
 	for _, fn := range m.order {
 		bt := m.byFunc[fn]
+		out = append(out, llm.NewFunctionTool(fn, bt.desc, bt.params))
+	}
+	for _, fn := range dynamicOrder {
+		bt := dynamicBound[fn]
 		out = append(out, llm.NewFunctionTool(fn, bt.desc, bt.params))
 	}
 	if m.native != nil {
@@ -545,6 +786,12 @@ func (m *Manager) Schemas() []llm.Tool {
 	if m.writeSkill != nil {
 		out = append(out, writeSkillSchema())
 	}
+	if m.capabilitySource != nil {
+		out = append(out, capabilitySearchSchema())
+	}
+	if m.capabilityCandidate != nil {
+		out = append(out, capabilityCandidateSchema())
+	}
 	if m.todo != nil {
 		out = append(out, todoSchema())
 	}
@@ -563,26 +810,91 @@ func (m *Manager) Schemas() []llm.Tool {
 	return out
 }
 
-// SubagentSchemas is the tool surface advertised to a SUB-AGENT: every Natural
-// tool, but NOT core_execute (money stays with the user-facing parent — a
-// background sub-agent can't service an inline approval gate), memory_recall,
-// or spawn_subagents (no recursion). Deterministic order.
+// SubagentSchemas is the positive, research-only tool surface advertised to a
+// sub-agent. A worker can inspect local material, read Git state, and gather web
+// evidence, but it cannot receive a mutation, shell, scheduling, memory-write,
+// external-action, or recursive tool even when the parent can. Deterministic
+// order keeps the advertised context stable.
 func (m *Manager) SubagentSchemas() []llm.Tool {
 	out := make([]llm.Tool, 0, len(m.order)+24)
 	for _, fn := range m.order {
-		// The disposable-desktop lane is a human-shared, spend-capable surface
-		// (DOJO guard_surface): it is driven only by the top-level user-facing
-		// agent, never advertised to an autonomous sub-agent / Automatrix run.
-		if IsDesktopTool(fn) {
+		bt := m.byFunc[fn]
+		if !researchBoundToolAllowed(bt) {
 			continue
 		}
-		bt := m.byFunc[fn]
 		out = append(out, llm.NewFunctionTool(fn, bt.desc, bt.params))
 	}
 	if m.native != nil {
-		out = append(out, nativeSchemas()...)
+		out = append(out, nativeResearchSchemas()...)
 	}
 	return out
+}
+
+func researchBoundToolAllowed(bt *boundTool) bool {
+	if bt == nil {
+		return false
+	}
+	alias := strings.ToLower(strings.TrimSpace(bt.alias))
+	name := strings.ToLower(strings.TrimSpace(bt.name))
+	effect := strings.ToLower(strings.TrimSpace(bt.sideEffect))
+
+	// Browser research is navigation and observation only. Input, click,
+	// upload, page script, and other action verbs are intentionally absent.
+	if alias == "browser" {
+		switch name {
+		case "browser_navigate", "browser_navigate_back",
+			"browser_snapshot", "browser_take_screenshot", "browser_wait_for",
+			"browser_console_messages", "browser_network_requests", "browser_network_request":
+			return effect == tool.SideEffectRead || effect == tool.SideEffectNetwork
+		default:
+			return false
+		}
+	}
+
+	// Fetch and web-search are the only network-class operations available to
+	// a worker. Matching both the server and operation prevents a mail/send or
+	// arbitrary network integration from entering through a suggestive name.
+	switch alias {
+	case "fetch":
+		return effect == tool.SideEffectNetwork && name == "fetch"
+	case "web-search", "web_search", "web":
+		return effect == tool.SideEffectNetwork && (name == "web_search" || name == "web_news")
+	}
+
+	if effect != tool.SideEffectRead || researchDomainTool(alias) || researchDomainTool(name) {
+		return false
+	}
+	if alias == "git" {
+		switch name {
+		case "git_status", "git_diff_unstaged", "git_diff_staged", "git_diff",
+			"git_log", "git_show", "git_branch":
+			return true
+		default:
+			return false
+		}
+	}
+	return researchReadVerb(name)
+}
+
+func researchDomainTool(name string) bool {
+	for _, token := range []string{"schedule", "calendar", "reminder", "cron", "memory", "todo"} {
+		if strings.Contains(name, token) {
+			return true
+		}
+	}
+	return false
+}
+
+func researchReadVerb(name string) bool {
+	for _, verb := range []string{
+		"read", "list", "search", "stat", "get", "find", "query", "inspect",
+		"describe", "show", "lookup", "view",
+	} {
+		if name == verb || strings.HasPrefix(name, verb+"_") {
+			return true
+		}
+	}
+	return false
 }
 
 // Dispatch executes a tool call by function name.
@@ -655,6 +967,14 @@ func (m *Manager) Preflight(funcNames []string) error {
 			if m.writeSkill == nil {
 				return fmt.Errorf("%s is not connected", funcName)
 			}
+		case CapabilitySearchTool:
+			if m.capabilitySource == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
+		case CapabilityCandidateTool:
+			if m.capabilityCandidate == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
 		case TodoTool:
 			if m.todo == nil {
 				return fmt.Errorf("%s is not connected", funcName)
@@ -681,11 +1001,23 @@ func (m *Manager) Preflight(funcNames []string) error {
 			}
 		default:
 			bt, ok := m.byFunc[funcName]
-			if !ok {
+			if ok {
+				if _, err := m.registry.Get(bt.uri); err != nil {
+					return fmt.Errorf("%s registry preflight: %w", funcName, err)
+				}
+				continue
+			}
+			m.dynamicMu.RLock()
+			dynamic := m.dynamicByFunc[funcName]
+			registry := m.dynamicRegistry
+			if dynamic == nil || registry == nil {
+				m.dynamicMu.RUnlock()
 				return fmt.Errorf("%s has no live binding", funcName)
 			}
-			if _, err := m.registry.Get(bt.uri); err != nil {
-				return fmt.Errorf("%s registry preflight: %w", funcName, err)
+			_, resolveErr := registry.Get(dynamic.uri)
+			m.dynamicMu.RUnlock()
+			if resolveErr != nil {
+				return fmt.Errorf("%s registry preflight: %w", funcName, resolveErr)
 			}
 		}
 	}
@@ -711,34 +1043,46 @@ func (m *Manager) ValidateAndResolve(funcName string, args map[string]interface{
 	} else if bound, ok := m.byFunc[funcName]; ok && bound != nil {
 		parameters = bound.params
 	} else {
+		m.dynamicMu.RLock()
+		if bound := m.dynamicByFunc[funcName]; bound != nil {
+			parameters = bound.params
+		}
+		m.dynamicMu.RUnlock()
 		var schema llm.Tool
-		switch funcName {
-		case CoreExecuteTool:
+		switch {
+		case parameters != nil:
+		case funcName == CoreExecuteTool:
 			schema = coreExecuteSchema()
-		case MemoryRecallTool:
+		case funcName == MemoryRecallTool:
 			schema = memoryRecallSchema()
-		case MemoryMutateTool:
+		case funcName == MemoryMutateTool:
 			schema = memoryMutateSchema()
-		case SpawnSubagentsTool:
+		case funcName == SpawnSubagentsTool:
 			schema = spawnSubagentsSchema()
-		case ConstructRenderTool:
+		case funcName == ConstructRenderTool:
 			schema = constructRenderSchema()
-		case WriteSkillTool:
+		case funcName == WriteSkillTool:
 			schema = writeSkillSchema()
-		case TodoTool:
+		case funcName == CapabilitySearchTool:
+			schema = capabilitySearchSchema()
+		case funcName == CapabilityCandidateTool:
+			schema = capabilityCandidateSchema()
+		case funcName == TodoTool:
 			schema = todoSchema()
-		case PreviewTool:
+		case funcName == PreviewTool:
 			schema = previewSchema()
-		case BuildProjectTool:
+		case funcName == BuildProjectTool:
 			schema = buildProjectSchema()
-		case DesktopLookTool:
+		case funcName == DesktopLookTool:
 			schema = desktopLookSchema()
-		case DesktopA11yTool:
+		case funcName == DesktopA11yTool:
 			schema = desktopA11ySchema()
-		case SavePersonalizationTool:
+		case funcName == SavePersonalizationTool:
 			schema = PersonalizationSchema()
 		}
-		parameters = schema.Function.Parameters
+		if parameters == nil {
+			parameters = schema.Function.Parameters
+		}
 	}
 	if parameters == nil {
 		return fmt.Errorf("%s has no registered argument schema", funcName)
@@ -784,6 +1128,12 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 	case WriteSkillTool:
 		c, e, er := m.dispatchWriteSkill(ctx, args)
 		return syntheticResult(c, e, er)
+	case CapabilitySearchTool:
+		c, e, er := m.dispatchCapabilitySearch(ctx, args)
+		return syntheticResult(c, e, er)
+	case CapabilityCandidateTool:
+		c, e, er := m.dispatchCapabilityCandidate(ctx, args)
+		return syntheticResult(c, e, er)
 	case TodoTool:
 		c, e, er := m.dispatchTodo(ctx, args)
 		return syntheticResult(c, e, er)
@@ -805,7 +1155,7 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 	}
 	bt, ok := m.byFunc[funcName]
 	if !ok {
-		return fmt.Sprintf("unknown tool %q — it is not available in this session", funcName), "", true, tool.FailureInvocation, false, "", nil
+		return m.dispatchDynamicMCP(ctx, funcName, args)
 	}
 	if bt.surface == Escalate {
 		return fmt.Sprintf("%q moves funds or needs a wallet signature and cannot be called directly; use %q with a clear description of the task so it runs through the secure path under the user's authorization (their inline approval, or a pre-authorized wallet leash).", funcName, CoreExecuteTool), "", true, tool.FailureInvocation, false, "", nil
@@ -867,6 +1217,58 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 		text = summarizeNonText(res)
 	}
 	return text, shotURL, res.IsError, res.FailureClass, res.Retryable, res.FailureMessage, nil
+}
+
+func (m *Manager) dispatchDynamicMCP(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, failureClass tool.FailureClass, retryable bool, failureMessage string, err error) {
+	m.dynamicMu.RLock()
+	defer m.dynamicMu.RUnlock()
+	bound := m.dynamicByFunc[funcName]
+	registry := m.dynamicRegistry
+	guard := m.dynamicGuard
+	observe := m.dynamicObserve
+	redact := m.dynamicRedact
+	if bound == nil || registry == nil {
+		return fmt.Sprintf("unknown tool %q — it is not available in this session", funcName), "", true, tool.FailureInvocation, false, "", nil
+	}
+	if bound.surface == Escalate {
+		return fmt.Sprintf("%q requires Neo's secure delegated execution path and cannot be called directly", funcName), "", true, tool.FailureInvocation, false, "", nil
+	}
+	if guard != nil {
+		if guardErr := guard(bound.alias); guardErr != nil {
+			message := fmt.Sprintf("integration %q is temporarily unavailable: %v", bound.alias, guardErr)
+			return message, "", true, tool.FailureTransport, false, message, nil
+		}
+	}
+	if message, valid := validateToolArgs(funcName, bound.params, args); !valid {
+		return message, "", true, tool.FailureValidation, false, message, nil
+	}
+	resolved, resolveErr := registry.Get(bound.uri)
+	if resolveErr != nil {
+		message := fmt.Sprintf("tool %q is unavailable: %v", funcName, resolveErr)
+		return message, "", true, tool.FailureClassOf(resolveErr), false, message, nil
+	}
+	started := time.Now()
+	result, callErr := resolved.Call(ctx, args)
+	latency := time.Since(started)
+	if observe != nil {
+		observe(bound.alias, latency, callErr)
+	}
+	if callErr != nil {
+		// User-installed integrations are an optional subsystem. Their transport
+		// failures are structured observations for Neo, never runtime failures
+		// that can enter resurrection or disturb reply delivery.
+		message := fmt.Sprintf("integration %q is currently unavailable", bound.alias)
+		return message, "", true, tool.FailureClassOf(callErr), false, message, nil
+	}
+	text := tool.ExtractText(result)
+	if redact != nil {
+		text = redact(bound.alias, text)
+	}
+	shotURL = m.persistFirstImage(result)
+	if text == "" {
+		text = summarizeNonText(result)
+	}
+	return text, shotURL, result.IsError, result.FailureClass, result.Retryable, result.FailureMessage, nil
 }
 
 func syntheticResult(content string, isErr bool, err error) (string, string, bool, tool.FailureClass, bool, string, error) {
@@ -994,21 +1396,30 @@ func parseSubagentSpecs(args map[string]interface{}) []SubagentSpec {
 		if !ok {
 			continue
 		}
-		task := strings.TrimSpace(asString(m["task"]))
+		task := boundedSubagentText(asString(m["task"]), 12_000)
 		if task == "" {
 			continue
 		}
-		name := strings.TrimSpace(asString(m["name"]))
+		name := boundedSubagentText(asString(m["name"]), 80)
 		if name == "" {
 			name = fmt.Sprintf("Agent %02d", i+1)
 		}
 		out = append(out, SubagentSpec{
 			Name:    name,
-			Persona: strings.TrimSpace(asString(m["persona"])),
+			Persona: boundedSubagentText(asString(m["persona"]), 600),
 			Task:    task,
 		})
 	}
 	return out
+}
+
+func boundedSubagentText(value string, maxRunes int) string {
+	value = strings.TrimSpace(value)
+	runes := []rune(value)
+	if len(runes) <= maxRunes {
+		return value
+	}
+	return strings.TrimSpace(string(runes[:maxRunes]))
 }
 
 func asString(v interface{}) string {
@@ -1061,6 +1472,53 @@ func (m *Manager) dispatchMemoryMutation(ctx context.Context, args map[string]in
 		return "Memory updated.", false, nil
 	}
 	return strings.Join(lines, " "), false, nil
+}
+
+func (m *Manager) dispatchCapabilitySearch(ctx context.Context, args map[string]interface{}) (string, bool, error) {
+	if m.capabilitySource == nil {
+		return "The Capability Hub is not connected in this session.", true, nil
+	}
+	_ = ctx
+	query := strings.ToLower(strings.TrimSpace(asString(args["query"])))
+	slug := strings.TrimSpace(asString(args["slug"]))
+	m.capabilityMu.RLock()
+	snapshot := append([]CapabilitySnapshotItem(nil), m.capabilitySnapshot...)
+	m.capabilityMu.RUnlock()
+	if slug != "" {
+		for _, item := range snapshot {
+			if item.Slug == slug {
+				body, err := json.Marshal(item)
+				return string(body), err != nil, err
+			}
+		}
+		return fmt.Sprintf("No active capability named %q exists in this turn's snapshot.", slug), true, nil
+	}
+	filtered := make([]CapabilitySnapshotItem, 0, len(snapshot))
+	for _, item := range snapshot {
+		haystack := strings.ToLower(item.Slug + " " + item.Display + " " + item.Description)
+		if query == "" || strings.Contains(haystack, query) {
+			item.Instructions = ""
+			filtered = append(filtered, item)
+		}
+	}
+	body, err := json.Marshal(struct {
+		Capabilities []CapabilitySnapshotItem `json:"capabilities"`
+	}{Capabilities: filtered})
+	return string(body), err != nil, err
+}
+
+func (m *Manager) dispatchCapabilityCandidate(ctx context.Context, args map[string]interface{}) (string, bool, error) {
+	if m.capabilityCandidate == nil {
+		return "The Capability Hub is not connected in this session.", true, nil
+	}
+	manifest := strings.TrimSpace(asString(args["manifest"]))
+	prose := strings.TrimSpace(asString(args["instructions"]))
+	provenance := strings.TrimSpace(asString(args["provenance"]))
+	result, err := m.capabilityCandidate(ctx, manifest, prose, provenance)
+	if err != nil {
+		return fmt.Sprintf("Capability candidate creation failed: %v", err), true, nil
+	}
+	return result, false, nil
 }
 
 func isShellMemoryMutation(bt *boundTool, args map[string]interface{}) bool {
@@ -1414,6 +1872,35 @@ func (m *Manager) MediaPersistEnabled() bool { return m != nil && m.media != nil
 // Pattern via ReinforcePattern.
 func (m *Manager) SetWriteSkill(f WriteSkillFunc) { m.writeSkill = f }
 
+func (m *Manager) SetCapabilityHub(source CapabilitySnapshotFunc, candidate CapabilityCandidateFunc) {
+	if m == nil {
+		return
+	}
+	m.capabilitySource = source
+	m.capabilityCandidate = candidate
+}
+
+func (m *Manager) refreshCapabilitySnapshot(ctx context.Context) {
+	if m == nil || m.capabilitySource == nil {
+		return
+	}
+	items, err := m.capabilitySource(ctx)
+	if err != nil {
+		return
+	}
+	if len(items) > 64 {
+		items = items[:64]
+	}
+	for index := range items {
+		if len(items[index].Instructions) > 128<<10 {
+			items[index].Instructions = items[index].Instructions[:128<<10]
+		}
+	}
+	m.capabilityMu.Lock()
+	m.capabilitySnapshot = append([]CapabilitySnapshotItem(nil), items...)
+	m.capabilityMu.Unlock()
+}
+
 // WriteSkillEnabled reports whether the write_skill tool is wired this session
 // (a durable Neocortex store is connected and skill authoring is available).
 func (m *Manager) WriteSkillEnabled() bool { return m != nil && m.writeSkill != nil }
@@ -1531,6 +2018,9 @@ func (m *Manager) ClearMachineMail(ctx context.Context) error {
 // NaturalToolNames returns the advertised (directly-callable) function names.
 func (m *Manager) NaturalToolNames() []string {
 	out := append([]string{}, m.order...)
+	m.dynamicMu.RLock()
+	out = append(out, m.dynamicOrder...)
+	m.dynamicMu.RUnlock()
 	if m != nil && m.native != nil {
 		for _, schema := range nativeSchemas() {
 			out = append(out, schema.Function.Name)
@@ -1564,10 +2054,24 @@ func (m *Manager) NativeToolNames() []string {
 
 // Close stops every MCP server.
 func (m *Manager) Close() error {
-	if m.mcp == nil {
-		return nil
+	var first error
+	if m.mcp != nil {
+		first = m.mcp.Close()
 	}
-	return m.mcp.Close()
+	m.dynamicMu.Lock()
+	dynamic := m.dynamicMCP
+	m.dynamicMCP = nil
+	m.dynamicRegistry = nil
+	m.dynamicByFunc = nil
+	m.dynamicOrder = nil
+	m.dynamicAliases = nil
+	m.dynamicMu.Unlock()
+	if dynamic != nil {
+		if err := dynamic.Close(); err != nil && first == nil {
+			first = err
+		}
+	}
+	return first
 }
 
 func coreExecuteSchema() llm.Tool {
@@ -1618,6 +2122,38 @@ func memoryRecallSchema() llm.Tool {
 					"description": "Optional point in time (RFC3339, e.g. \"2026-01-15T00:00:00Z\", or a date \"2026-01-15\") to ask what was true THEN — memories superseded or expired after that instant are excluded. Omit to read the current truth.",
 				},
 			},
+		},
+	)
+}
+
+func capabilitySearchSchema() llm.Tool {
+	return llm.NewFunctionTool(
+		CapabilitySearchTool,
+		"Search the user's Capability Hub. With slug, read the bounded instructions of an already-active capability. Quarantined packages never enter your context.",
+		map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"query": map[string]interface{}{"type": "string", "maxLength": 256},
+				"slug":  map[string]interface{}{"type": "string", "maxLength": 128},
+			},
+			"additionalProperties": false,
+		},
+	)
+}
+
+func capabilityCandidateSchema() llm.Tool {
+	return llm.NewFunctionTool(
+		CapabilityCandidateTool,
+		"Create a quarantined capability candidate after the user asks for a reusable capability. This cannot grant permissions, verify, activate, or replace an existing version.",
+		map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"manifest":     map[string]interface{}{"type": "string", "minLength": 1, "maxLength": 524288},
+				"instructions": map[string]interface{}{"type": "string", "maxLength": 524288},
+				"provenance":   map[string]interface{}{"type": "string", "maxLength": 512},
+			},
+			"required":             []interface{}{"manifest", "provenance"},
+			"additionalProperties": false,
 		},
 	)
 }
@@ -1832,27 +2368,32 @@ func desktopA11ySchema() llm.Tool {
 func spawnSubagentsSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		SpawnSubagentsTool,
-		"Spawn several task-scoped sub-agents that run CONCURRENTLY and return their combined results. Use this for work that splits into independent parts — e.g. analyzing different modules of a codebase, researching several topics at once, or comparing options in parallel. Each sub-agent runs in its OWN fresh context with the full reversible toolset (shell, files, browser, web, git), so heavy exploration stays out of your window and only the distilled findings come back. Give each a clear, self-contained task that does NOT depend on another sub-agent's output (they run at the same time and can't talk to each other). They CANNOT move funds (no core_execute) or spawn their own sub-agents. Use only when the task genuinely parallelizes; otherwise just do it yourself.",
+		"Spawn several isolated READ-ONLY research workers that run concurrently and return one structured evidence report per worker. Use this for independent code inspection, source research, or option comparison. Workers can only read/list/search/stat local material, inspect Git, and use bounded browser/fetch/web-search tools. They cannot run shell commands, write files or memory, schedule work, perform external actions, or recurse. Give each worker a self-contained investigation and exact evidence to report; Neo remains the only builder and actor.",
 		map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
 				"agents": map[string]interface{}{
 					"type":        "array",
 					"description": "The sub-agents to run in parallel (2 or more). Keep them coarse — a few broad agents beat many tiny ones.",
+					"minItems":    2,
+					"maxItems":    16,
 					"items": map[string]interface{}{
 						"type": "object",
 						"properties": map[string]interface{}{
 							"name": map[string]interface{}{
 								"type":        "string",
 								"description": "A short human name for this sub-agent, shown to the user (e.g. \"Go Code Analyst\").",
+								"maxLength":   80,
 							},
 							"persona": map[string]interface{}{
 								"type":        "string",
 								"description": "The role/expertise framing it should adopt (e.g. \"a senior Go reviewer focused on concurrency and error handling\").",
+								"maxLength":   600,
 							},
 							"task": map[string]interface{}{
 								"type":        "string",
-								"description": "A complete, self-contained instruction: what to investigate or do, where to look, and exactly what to report back. Include any context it needs — it does NOT see this conversation.",
+								"description": "A complete, self-contained read-only investigation: what to examine, where to look, and exactly what evidence to report. Include any context it needs — it does NOT see this conversation.",
+								"maxLength":   12000,
 							},
 						},
 						"required": []interface{}{"name", "task"},

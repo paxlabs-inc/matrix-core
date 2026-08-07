@@ -35,6 +35,7 @@ const (
 	structuralCheckpoint      = "neo.neocortex.structural-identity.v1"
 	diagnosticsCheckpoint     = "neo.neocortex.diagnostics.v1"
 	failuresCheckpoint        = "neo.neocortex.learned-failures.v1"
+	knowledgeCheckpoint       = "neo.neocortex.knowledge.v1"
 	consentNotice             = "2026-07-17"
 )
 
@@ -67,6 +68,7 @@ type durableState struct {
 	StructuralURI          string                     `json:"structural_uri,omitempty"`
 	Failures               []FailurePattern           `json:"failures,omitempty"`
 	Deaths                 []DeathRecord              `json:"deaths,omitempty"`
+	Knowledge              KnowledgeState             `json:"knowledge"`
 }
 
 type personalizationState struct {
@@ -82,6 +84,21 @@ type structuralState struct {
 
 type diagnosticState struct {
 	Deaths []DeathRecord `json:"deaths,omitempty"`
+}
+
+// CapabilityProvenance is the typed, prompt-invisible Neocortex projection of
+// one Capability Hub audit event. The Hub database remains the lifecycle
+// authority; this checkpoint stream gives every install and state change a
+// durable cognitive provenance trail without adding packages to recall or
+// canonical context assembly.
+type CapabilityProvenance struct {
+	SchemaVersion int       `json:"schema_version"`
+	AuditID       int64     `json:"audit_id"`
+	Slug          string    `json:"slug"`
+	Version       string    `json:"version,omitempty"`
+	Action        string    `json:"action"`
+	Detail        string    `json:"detail,omitempty"`
+	OccurredAt    time.Time `json:"occurred_at"`
 }
 
 type Pager struct {
@@ -217,6 +234,11 @@ func Open(cfg config.Config) (*Pager, error) {
 		_ = p.Close()
 		return nil, fmt.Errorf("neo/memory: load learned failures: %w", err)
 	}
+	if err := load(knowledgeCheckpoint, &p.state.Knowledge); err != nil {
+		_ = p.Close()
+		return nil, fmt.Errorf("neo/memory: load knowledge: %w", err)
+	}
+	p.state.Knowledge.initialize()
 	if p.state.Records == nil {
 		p.state.Records = make(map[string]storedRecord)
 	}
@@ -383,6 +405,27 @@ func (p *Pager) saveDomainLocked(ctx context.Context, key string, value any) err
 
 func (p *Pager) saveRecordsLocked(ctx context.Context) error {
 	return p.saveDomainLocked(ctx, recordsCheckpoint, p.state.Records)
+}
+
+func (p *Pager) WriteCapabilityProvenance(ctx context.Context, record CapabilityProvenance) (uint64, error) {
+	if p == nil || p.client == nil {
+		return 0, ErrNeocortexUnavailable
+	}
+	record.Slug = strings.TrimSpace(record.Slug)
+	record.Action = strings.TrimSpace(record.Action)
+	if record.AuditID <= 0 || record.Slug == "" || record.Action == "" {
+		return 0, errors.New("neo/memory: capability provenance identity is required")
+	}
+	if record.SchemaVersion == 0 {
+		record.SchemaVersion = 1
+	}
+	record.OccurredAt = record.OccurredAt.UTC()
+	body, err := json.Marshal(record)
+	if err != nil {
+		return 0, err
+	}
+	key := fmt.Sprintf("neo.capability-provenance.%s.%d.v1", boundedIdentity(record.Slug), record.AuditID)
+	return p.client.WriteCheckpoint(ctx, key, body)
 }
 
 func (p *Pager) saveStructuralLocked(ctx context.Context) error {
