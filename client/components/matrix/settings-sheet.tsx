@@ -194,7 +194,7 @@ export function SettingsSheet({
     setMobileMenu(true)
   }, [open])
 
-  const userLabel = userDisplayName(user) ?? 'Matrix'
+  const userLabel = userDisplayName(user) ?? 'Centra'
   const email = user?.email ?? null
   const selectedCategory =
     CATEGORIES.find((category) => category.id === activeCategory) ?? CATEGORIES[0]

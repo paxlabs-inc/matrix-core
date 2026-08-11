@@ -1,34 +1,34 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:2eece1e371401718b5b83332ea874dc9d69dc31720a509148678833de7350783
+# GENERATED gen=codegraph do-not-edit merkle=b3:8adaec31d110422a96613f590adad21e781eb8f302a1fdaad8310a524483c514
 
 NODE id=matrix/executor/materiality kind=package
-  digest=b3:a0304ec571490779cd1a71905bdf684a020e21b1f54c1fa424849fd2de080039 file=executor/materiality range=0:0 lang=go exported=true
+  digest=b3:761d8254b96450c0b3e38cb561a86133766145f5a6bae037526a3c9b315671e2 file=executor/materiality range=0:0 lang=go exported=true
 EDGES
   contains=matrix/executor/materiality/classify.go
   ^contains=mod:matrix/executor
 
 NODE id=matrix/executor/materiality.AllRules kind=var
-  digest=b3:5716e69f6f3e70d64f4824b50592397a47156f88c93c181d2f0b77c64cbfaee8 file=executor/materiality/classify.go range=102:112 lang=go exported=true byte_range=3620:3879
+  digest=b3:5716e69f6f3e70d64f4824b50592397a47156f88c93c181d2f0b77c64cbfaee8 file=executor/materiality/classify.go range=102:112 lang=go exported=true byte_range=3616:3875
   sig=[]string
   doc=AllRules is the canonical ordered list of §18.1 rules.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.BudgetAbsoluteThresholdPAX kind=const
-  digest=b3:d8300aecd0ed25d076ca7948291ccd2ea1460cba63e9d27c6723a789a4e47ba1 file=executor/materiality/classify.go range=119:120 lang=go exported=true byte_range=4072:4202
+  digest=b3:d8300aecd0ed25d076ca7948291ccd2ea1460cba63e9d27c6723a789a4e47ba1 file=executor/materiality/classify.go range=119:120 lang=go exported=true byte_range=4068:4198
   sig=untyped float
   doc=BudgetAbsoluteThresholdPAX: §18.1 "OR expected_cost_new − expected_cost_original > 5 PAX".
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.BudgetPercentThreshold kind=const
-  digest=b3:b3b72bfcd978c7507d08a14e1eedc866a4320ca90158d0c3236b1b61c63d5978 file=executor/materiality/classify.go range=116:117 lang=go exported=true byte_range=3951:4069
+  digest=b3:b3b72bfcd978c7507d08a14e1eedc866a4320ca90158d0c3236b1b61c63d5978 file=executor/materiality/classify.go range=116:117 lang=go exported=true byte_range=3947:4065
   sig=untyped float
   doc=BudgetPercentThreshold: §18.1 "expected_cost_new > expected_cost_original × 1.10".
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.Classification kind=type
-  digest=b3:5f925960f9997db2c776bc3e985d9674e55df5288f9462edb011d33468656b4b file=executor/materiality/classify.go range=68:76 lang=go exported=true byte_range=2441:2765
+  digest=b3:5f925960f9997db2c776bc3e985d9674e55df5288f9462edb011d33468656b4b file=executor/materiality/classify.go range=68:76 lang=go exported=true byte_range=2437:2761
   sig=type Classification struct {\n	// Material is the binary D9 decision. True iff at least one rule fired.\n	Material	bool\n\n	// Reasons enumerate every §18.1 rule that fired, in evaluation order.\n	// Multiple rules may fire on a single correction.\n	Reasons	[]Reason\n}
   doc=Classification is the outcome of a single classifier run.
 EDGES
@@ -36,35 +36,35 @@ EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.Classification#Material kind=field
-  digest=b3:10f64e230a127604d670c9e95e55a34551e5c30bd41c457c897aa5dc2f7ddb82 file=executor/materiality/classify.go range=70:71 lang=go exported=true byte_range=2532:2619
+  digest=b3:10f64e230a127604d670c9e95e55a34551e5c30bd41c457c897aa5dc2f7ddb82 file=executor/materiality/classify.go range=70:71 lang=go exported=true byte_range=2528:2615
   sig=bool
   doc=Material is the binary D9 decision. True iff at least one rule fired.
 EDGES
   ^contains=matrix/executor/materiality.Classification
 
 NODE id=matrix/executor/materiality.Classification#Reasons kind=field
-  digest=b3:29da12400cad2d673b427626eb244f0317e11e6100214d96c5a2949a1d541f65 file=executor/materiality/classify.go range=73:75 lang=go exported=true byte_range=2622:2763
+  digest=b3:29da12400cad2d673b427626eb244f0317e11e6100214d96c5a2949a1d541f65 file=executor/materiality/classify.go range=73:75 lang=go exported=true byte_range=2618:2759
   sig=[]materiality.Reason
   doc=Reasons enumerate every §18.1 rule that fired, in evaluation order.\nMultiple rules may fire on a single correction.
 EDGES
   ^contains=matrix/executor/materiality.Classification
 
 NODE id=matrix/executor/materiality.Classify kind=func
-  digest=b3:05b6853568afa940ae417b18211d33339bdba2d030ba828087ed51a13523f439 file=executor/materiality/classify.go range=127:152 lang=go exported=true byte_range=4342:4975
+  digest=b3:05b6853568afa940ae417b18211d33339bdba2d030ba828087ed51a13523f439 file=executor/materiality/classify.go range=127:152 lang=go exported=true byte_range=4338:4971
   sig=func Classify(in Inputs) Classification
   doc=Classify runs every §18.1 rule against the inputs and returns the\naggregate Classification. Material iff at least one rule fires.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.DeadlineShiftThreshold kind=const
-  digest=b3:801d44b4114dfb2051c205fbf0c9ea8a39467b5907498a7b254660de1aaa18d5 file=executor/materiality/classify.go range=122:124 lang=go exported=true byte_range=4205:4338
+  digest=b3:801d44b4114dfb2051c205fbf0c9ea8a39467b5907498a7b254660de1aaa18d5 file=executor/materiality/classify.go range=122:124 lang=go exported=true byte_range=4201:4334
   sig=untyped float
   doc=DeadlineShiftThreshold: §18.1 "New deadline moves the remaining-time\nwindow by more than 25%".
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.Inputs kind=type
-  digest=b3:8732045fcf9df75554a950f1b7dc720e2e4f291ff28374b788f82f4e48e69c6d file=executor/materiality/classify.go range=46:66 lang=go exported=true byte_range=1727:2439
+  digest=b3:8732045fcf9df75554a950f1b7dc720e2e4f291ff28374b788f82f4e48e69c6d file=executor/materiality/classify.go range=46:66 lang=go exported=true byte_range=1723:2435
   sig=type Inputs struct {\n	OriginalIntent	*ir.Intent\n	OriginalPlan	*ir.PlanTree\n	NewIntent	*ir.Intent\n	NewPlan		*ir.PlanTree\n\n	OriginalAnchor	bool\n	NewAnchor	bool\n\n	Now	time.Time\n}
   doc=Inputs are the comparison surfaces for the §18.1 ruleset.\n\nOriginal* fields are the last-accepted plan + intent (what the user\nsigned). New* fields are the post-correction candidates.\nOriginalAnchor / NewAnchor carry the D10 anchor flag from the\ncorresponding intent.accept envelopes (Intent itself does not store\nanchor state; the accept envelope does — envelope/body.go:107).\n\nNow is the wall-clock used for deadline-shift remaining-window\ncalculation. Zero defers to time.Now().UTC().
 EDGES
@@ -72,49 +72,49 @@ EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.Inputs#NewAnchor kind=field
-  digest=b3:4d4c01d6bea18d3ea40e1a02324329bd13efe99cda926fb81d06a9fcba412255 file=executor/materiality/classify.go range=63:63 lang=go exported=true byte_range=2402:2421
+  digest=b3:4d4c01d6bea18d3ea40e1a02324329bd13efe99cda926fb81d06a9fcba412255 file=executor/materiality/classify.go range=63:63 lang=go exported=true byte_range=2398:2417
   sig=bool
 EDGES
   ^contains=matrix/executor/materiality.Inputs
 
 NODE id=matrix/executor/materiality.Inputs#NewIntent kind=field
-  digest=b3:8f81991290a8905675fbbb63b55026f4c5d4073b2c71e67610afc9937632a643 file=executor/materiality/classify.go range=59:59 lang=go exported=true byte_range=2324:2349
+  digest=b3:8f81991290a8905675fbbb63b55026f4c5d4073b2c71e67610afc9937632a643 file=executor/materiality/classify.go range=59:59 lang=go exported=true byte_range=2320:2345
   sig=*ir.Intent
 EDGES
   ^contains=matrix/executor/materiality.Inputs
 
 NODE id=matrix/executor/materiality.Inputs#NewPlan kind=field
-  digest=b3:290c47718d893a588e61de3e2b7e267856f2f45604793bb1642ac3b7975a0e7a file=executor/materiality/classify.go range=60:60 lang=go exported=true byte_range=2351:2378
+  digest=b3:290c47718d893a588e61de3e2b7e267856f2f45604793bb1642ac3b7975a0e7a file=executor/materiality/classify.go range=60:60 lang=go exported=true byte_range=2347:2374
   sig=*ir.PlanTree
 EDGES
   ^contains=matrix/executor/materiality.Inputs
 
 NODE id=matrix/executor/materiality.Inputs#Now kind=field
-  digest=b3:ac936b89f7ab8c84e921220f5e94c9b3eeabf11ec625650c2b67e90a2ef0ddd1 file=executor/materiality/classify.go range=65:65 lang=go exported=true byte_range=2424:2437
+  digest=b3:ac936b89f7ab8c84e921220f5e94c9b3eeabf11ec625650c2b67e90a2ef0ddd1 file=executor/materiality/classify.go range=65:65 lang=go exported=true byte_range=2420:2433
   sig=time.Time
 EDGES
   ^contains=matrix/executor/materiality.Inputs
 
 NODE id=matrix/executor/materiality.Inputs#OriginalAnchor kind=field
-  digest=b3:58f60d5c3b0a6d5f575bad1871fd18e3df54bd2a6481f26151498f0c8a83f31e file=executor/materiality/classify.go range=62:62 lang=go exported=true byte_range=2381:2400
+  digest=b3:58f60d5c3b0a6d5f575bad1871fd18e3df54bd2a6481f26151498f0c8a83f31e file=executor/materiality/classify.go range=62:62 lang=go exported=true byte_range=2377:2396
   sig=bool
 EDGES
   ^contains=matrix/executor/materiality.Inputs
 
 NODE id=matrix/executor/materiality.Inputs#OriginalIntent kind=field
-  digest=b3:92c179e63cc7dfbdbfe9e05a2cd090b1fb0c25123875175469ace75e2bffd43d file=executor/materiality/classify.go range=57:57 lang=go exported=true byte_range=2268:2293
+  digest=b3:92c179e63cc7dfbdbfe9e05a2cd090b1fb0c25123875175469ace75e2bffd43d file=executor/materiality/classify.go range=57:57 lang=go exported=true byte_range=2264:2289
   sig=*ir.Intent
 EDGES
   ^contains=matrix/executor/materiality.Inputs
 
 NODE id=matrix/executor/materiality.Inputs#OriginalPlan kind=field
-  digest=b3:a1d053f8681786ba8e9cac75561bd5ffbbad6607e277d7c32e6fd2d7ee0ce188 file=executor/materiality/classify.go range=58:58 lang=go exported=true byte_range=2295:2322
+  digest=b3:a1d053f8681786ba8e9cac75561bd5ffbbad6607e277d7c32e6fd2d7ee0ce188 file=executor/materiality/classify.go range=58:58 lang=go exported=true byte_range=2291:2318
   sig=*ir.PlanTree
 EDGES
   ^contains=matrix/executor/materiality.Inputs
 
 NODE id=matrix/executor/materiality.Reason kind=type
-  digest=b3:74412b7683d4c6358e15138f433961633069db82957937164427776a56f96298 file=executor/materiality/classify.go range=78:88 lang=go exported=true byte_range=2767:3146
+  digest=b3:74412b7683d4c6358e15138f433961633069db82957937164427776a56f96298 file=executor/materiality/classify.go range=78:88 lang=go exported=true byte_range=2763:3142
   sig=type Reason struct {\n	// Rule is one of the rule name constants (RuleBudgetDelta etc).\n	// Use this for programmatic routing / metrics.\n	Rule	string\n\n	// Detail is human-readable — e.g.\n	// "expected_cost_new=12.50 PAX exceeds 1.10× original 10.00 PAX".\n	// Surfaced into the intent.correct journal entry for audit.\n	Detail	string\n}
   doc=Reason names one §18.1 rule that fired.
 EDGES
@@ -122,133 +122,133 @@ EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.Reason#Detail kind=field
-  digest=b3:3d92cfde983782172011f6aa7a9c22e8942d847cb78ab23a2298bf805d64e1cb file=executor/materiality/classify.go range=84:87 lang=go exported=true byte_range=2962:3144
+  digest=b3:3d92cfde983782172011f6aa7a9c22e8942d847cb78ab23a2298bf805d64e1cb file=executor/materiality/classify.go range=84:87 lang=go exported=true byte_range=2958:3140
   sig=string
   doc=Detail is human-readable — e.g.\n"expected_cost_new=12.50 PAX exceeds 1.10× original 10.00 PAX".\nSurfaced into the intent.correct journal entry for audit.
 EDGES
   ^contains=matrix/executor/materiality.Reason
 
 NODE id=matrix/executor/materiality.Reason#Rule kind=field
-  digest=b3:d93be668dbc0e4f42b6ab152bc014e2827f547e07b4c751e864f397206482881 file=executor/materiality/classify.go range=80:82 lang=go exported=true byte_range=2833:2959
+  digest=b3:d93be668dbc0e4f42b6ab152bc014e2827f547e07b4c751e864f397206482881 file=executor/materiality/classify.go range=80:82 lang=go exported=true byte_range=2829:2955
   sig=string
   doc=Rule is one of the rule name constants (RuleBudgetDelta etc).\nUse this for programmatic routing / metrics.
 EDGES
   ^contains=matrix/executor/materiality.Reason
 
 NODE id=matrix/executor/materiality.RuleAnchorFlip kind=const
-  digest=b3:32719e33443e12095dd50116a218c4db51387851daa17b80c4200e926a2dc046 file=executor/materiality/classify.go range=90:99 lang=go exported=true byte_range=3148:3616
+  digest=b3:32719e33443e12095dd50116a218c4db51387851daa17b80c4200e926a2dc046 file=executor/materiality/classify.go range=90:99 lang=go exported=true byte_range=3144:3612
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleBudgetDelta kind=const
-  digest=b3:1978e0a9b1e22e3a349cfa12469915fde7c21106ed86f2d05352582cc3a78327 file=executor/materiality/classify.go range=90:92 lang=go exported=true byte_range=3148:3267
+  digest=b3:1978e0a9b1e22e3a349cfa12469915fde7c21106ed86f2d05352582cc3a78327 file=executor/materiality/classify.go range=90:92 lang=go exported=true byte_range=3144:3263
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleDeadlineShift kind=const
-  digest=b3:8d9e88cf0f800b6f4cb569bb0760a4254950fa61c687d2c3a210b81952333099 file=executor/materiality/classify.go range=90:98 lang=go exported=true byte_range=3148:3572
+  digest=b3:8d9e88cf0f800b6f4cb569bb0760a4254950fa61c687d2c3a210b81952333099 file=executor/materiality/classify.go range=90:98 lang=go exported=true byte_range=3144:3568
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleHardConstraintRelaxed kind=const
-  digest=b3:eb08ba7dc178c0ecc03fb73d559a973b907713d0cf3fe56465acb7b8c05f5d07 file=executor/materiality/classify.go range=90:96 lang=go exported=true byte_range=3148:3468
+  digest=b3:eb08ba7dc178c0ecc03fb73d559a973b907713d0cf3fe56465acb7b8c05f5d07 file=executor/materiality/classify.go range=90:96 lang=go exported=true byte_range=3144:3464
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleNewSubAgent kind=const
-  digest=b3:bd2e2fc38856b30cfd0e2ed022be742f839fab36d43abbcffbbc440f5264427f file=executor/materiality/classify.go range=90:93 lang=go exported=true byte_range=3148:3313
+  digest=b3:bd2e2fc38856b30cfd0e2ed022be742f839fab36d43abbcffbbc440f5264427f file=executor/materiality/classify.go range=90:93 lang=go exported=true byte_range=3144:3309
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleNewToolNamespace kind=const
-  digest=b3:2e3a1e11cac4baf522c0d7b298a2e8423133bf337c2d8dd7fcb9939975cee67c file=executor/materiality/classify.go range=90:95 lang=go exported=true byte_range=3148:3412
+  digest=b3:2e3a1e11cac4baf522c0d7b298a2e8423133bf337c2d8dd7fcb9939975cee67c file=executor/materiality/classify.go range=90:95 lang=go exported=true byte_range=3144:3408
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleScopeExpansion kind=const
-  digest=b3:ea6be2fa830ca919ca324204aa9f6ab79a7bcdf214b9b25d5c79a3889734662f file=executor/materiality/classify.go range=90:94 lang=go exported=true byte_range=3148:3361
+  digest=b3:ea6be2fa830ca919ca324204aa9f6ab79a7bcdf214b9b25d5c79a3889734662f file=executor/materiality/classify.go range=90:94 lang=go exported=true byte_range=3144:3357
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleSuccessCriteriaChanged kind=const
-  digest=b3:971d1bf3c3e7624f599f647cfdd9261d94e1d913110a354a05acc50d97b4d014 file=executor/materiality/classify.go range=90:97 lang=go exported=true byte_range=3148:3525
+  digest=b3:971d1bf3c3e7624f599f647cfdd9261d94e1d913110a354a05acc50d97b4d014 file=executor/materiality/classify.go range=90:97 lang=go exported=true byte_range=3144:3521
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.budgetAmount kind=func
-  digest=b3:61cf7afbf04f24bd14bce88e984807866ff071798f42262ff0c2875121fa1e95 file=executor/materiality/classify.go range=208:216 lang=go exported=false byte_range=6721:7178
+  digest=b3:61cf7afbf04f24bd14bce88e984807866ff071798f42262ff0c2875121fa1e95 file=executor/materiality/classify.go range=208:216 lang=go exported=false byte_range=6717:7174
   sig=func budgetAmount(intent *ir.Intent, plan *ir.PlanTree) (maybeBudget, string)
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.collectAgentRefs kind=func
-  digest=b3:90357423c8e28fb9c4e87e608fcd27cc422943d39533b52f07eb509f883b23dd file=executor/materiality/classify.go range=247:258 lang=go exported=false byte_range=8044:8364
+  digest=b3:90357423c8e28fb9c4e87e608fcd27cc422943d39533b52f07eb509f883b23dd file=executor/materiality/classify.go range=247:258 lang=go exported=false byte_range=8040:8360
   sig=func collectAgentRefs(plan *ir.PlanTree) map[string]bool
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.collectAgentScope kind=func
-  digest=b3:6bdefdd78417743fb2bb36c968b5d1664fd668312081a0eb5e0f7a82b66e7c99 file=executor/materiality/classify.go range=310:318 lang=go exported=false byte_range=9971:10280
+  digest=b3:6bdefdd78417743fb2bb36c968b5d1664fd668312081a0eb5e0f7a82b66e7c99 file=executor/materiality/classify.go range=310:318 lang=go exported=false byte_range=9967:10276
   sig=func collectAgentScope(plan *ir.PlanTree) map[string]string
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.collectToolNamespaces kind=func
-  digest=b3:482ac9e5dff00519741d748489b005a2341a22f4adc1e47e1be06da5dd22fe17 file=executor/materiality/classify.go range=353:377 lang=go exported=false byte_range=11336:11955
+  digest=b3:482ac9e5dff00519741d748489b005a2341a22f4adc1e47e1be06da5dd22fe17 file=executor/materiality/classify.go range=353:377 lang=go exported=false byte_range=11332:11951
   sig=func collectToolNamespaces(plan *ir.PlanTree) map[string]bool
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.constraintsOf kind=func
-  digest=b3:af3cc952627aae5868b2586f6e4ae9ce5156894252aea7cb567689db92bf3faa file=executor/materiality/classify.go range=421:426 lang=go exported=false byte_range=13198:13324
+  digest=b3:af3cc952627aae5868b2586f6e4ae9ce5156894252aea7cb567689db92bf3faa file=executor/materiality/classify.go range=421:426 lang=go exported=false byte_range=13194:13320
   sig=func constraintsOf(intent *ir.Intent) []ir.Constraint
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.deadlineOf kind=func
-  digest=b3:01dd5488e05eb18b407a27323d74e893ec02bbf09b8a30cf8e565a43ae9bb1d7 file=executor/materiality/classify.go range=674:679 lang=go exported=false byte_range=20604:20708
+  digest=b3:01dd5488e05eb18b407a27323d74e893ec02bbf09b8a30cf8e565a43ae9bb1d7 file=executor/materiality/classify.go range=674:679 lang=go exported=false byte_range=20600:20704
   sig=func deadlineOf(intent *ir.Intent) string
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.indexHardConstraints kind=func
-  digest=b3:ac80621646427a7d21045fbeb62179e5d63553be473a26dfa8a9bb67596554ce file=executor/materiality/classify.go range=428:451 lang=go exported=false byte_range=13326:13942
+  digest=b3:ac80621646427a7d21045fbeb62179e5d63553be473a26dfa8a9bb67596554ce file=executor/materiality/classify.go range=428:451 lang=go exported=false byte_range=13322:13938
   sig=func indexHardConstraints(list []ir.Constraint) map[string]ir.Constraint
   doc=indexHardConstraints keys constraints by a stable identifier so the\ncomparison can find matched pairs across the two intents.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.indexPredicates kind=func
-  digest=b3:359b0e8019de5bb8aa3d0b9b4c739c5e98111441fdb56534c5b0ce28636dbf5b file=executor/materiality/classify.go range=580:586 lang=go exported=false byte_range=17871:18042
+  digest=b3:359b0e8019de5bb8aa3d0b9b4c739c5e98111441fdb56534c5b0ce28636dbf5b file=executor/materiality/classify.go range=580:586 lang=go exported=false byte_range=17867:18038
   sig=func indexPredicates(list []ir.Predicate) map[string]ir.Predicate
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.looser kind=func
-  digest=b3:0c12bf46f50297b9a7d3bef065f294d9e6ed5622d4b2669025b8249575d443a4 file=executor/materiality/classify.go range=453:513 lang=go exported=false byte_range=13944:16216
+  digest=b3:0c12bf46f50297b9a7d3bef065f294d9e6ed5622d4b2669025b8249575d443a4 file=executor/materiality/classify.go range=453:513 lang=go exported=false byte_range=13940:16212
   sig=func looser(orig, cand ir.Constraint) (bool, string)
   doc=looser reports whether candidate is a looser version of the original.\nReturns (loose=false) on equal or tighter (non-material direction).\n\n"Loosening" semantics per §18.1:\n\n	budget   — Max higher\n	deadline — By later\n	quality  — Min lower\n	jurisdiction — Allow widened OR Deny narrowed\n	rule/policy/x:custom — any change (we can't reason about internal\n	                       loosening without resolving the ref)
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.maybeBudget kind=type
-  digest=b3:f7596ee6fe8b831bbe1610a84d3a0c7e3636e833cee0ffed1a9aae2316b0af0b file=executor/materiality/classify.go range=202:206 lang=go exported=false byte_range=6590:6719
+  digest=b3:f7596ee6fe8b831bbe1610a84d3a0c7e3636e833cee0ffed1a9aae2316b0af0b file=executor/materiality/classify.go range=202:206 lang=go exported=false byte_range=6586:6715
   sig=type maybeBudget struct {\n	amount	float64\n	valid	bool\n}
   doc=budgetAmount returns the MaxCost from the plan (preferred) or intent.
 EDGES
@@ -256,114 +256,114 @@ EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.maybeBudget#amount kind=field
-  digest=b3:3e35d84091a1fe511d3435a109159095020d977a82ef684992839a6920357e12 file=executor/materiality/classify.go range=204:204 lang=go exported=false byte_range=6690:6704
+  digest=b3:3e35d84091a1fe511d3435a109159095020d977a82ef684992839a6920357e12 file=executor/materiality/classify.go range=204:204 lang=go exported=false byte_range=6686:6700
   sig=float64
 EDGES
   ^contains=matrix/executor/materiality.maybeBudget
 
 NODE id=matrix/executor/materiality.maybeBudget#valid kind=field
-  digest=b3:019f5f7a908b92abecbf252a44542083df7e115d1f69b3b5504105a0da246162 file=executor/materiality/classify.go range=205:205 lang=go exported=false byte_range=6706:6717
+  digest=b3:019f5f7a908b92abecbf252a44542083df7e115d1f69b3b5504105a0da246162 file=executor/materiality/classify.go range=205:205 lang=go exported=false byte_range=6702:6713
   sig=bool
 EDGES
   ^contains=matrix/executor/materiality.maybeBudget
 
 NODE id=matrix/executor/materiality.parseTime kind=func
-  digest=b3:9b025b6a0a5893c50d467e38efdc681a93c6f1c8dc62b39bb81f6a9252d55fce file=executor/materiality/classify.go range=681:693 lang=go exported=false byte_range=20710:21140
+  digest=b3:9b025b6a0a5893c50d467e38efdc681a93c6f1c8dc62b39bb81f6a9252d55fce file=executor/materiality/classify.go range=681:693 lang=go exported=false byte_range=20706:21136
   sig=func parseTime(s string) (time.Time, error)
   doc=parseTime tries RFC3339 then RFC3339Nano then date-only. Returns the\nfirst successful parse.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.predicateEqual kind=func
-  digest=b3:1d28c436e1e4d3ea2df5316d04f283859dcc71afc4c855b3cec18a3aa6b820ad file=executor/materiality/classify.go range=604:614 lang=go exported=false byte_range=18391:18653
+  digest=b3:1d28c436e1e4d3ea2df5316d04f283859dcc71afc4c855b3cec18a3aa6b820ad file=executor/materiality/classify.go range=604:614 lang=go exported=false byte_range=18387:18649
   sig=func predicateEqual(a, b ir.Predicate) bool
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.predicateKey kind=func
-  digest=b3:7981a008435b4b9d65718b76344a329452f55e4b72315190c745a55044b7e9b0 file=executor/materiality/classify.go range=588:602 lang=go exported=false byte_range=18044:18389
+  digest=b3:7981a008435b4b9d65718b76344a329452f55e4b72315190c745a55044b7e9b0 file=executor/materiality/classify.go range=588:602 lang=go exported=false byte_range=18040:18385
   sig=func predicateKey(p ir.Predicate) string
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.predicatesOf kind=func
-  digest=b3:7a51a981c88b3cc58b280b2a613ce0e3a27663c18e789075073ad19f6703e8c0 file=executor/materiality/classify.go range=573:578 lang=go exported=false byte_range=17741:17869
+  digest=b3:7a51a981c88b3cc58b280b2a613ce0e3a27663c18e789075073ad19f6703e8c0 file=executor/materiality/classify.go range=573:578 lang=go exported=false byte_range=17737:17865
   sig=func predicatesOf(intent *ir.Intent) []ir.Predicate
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleAnchorFlip kind=func
-  digest=b3:8050434fc565883b1e7ff754163516eb8108cc1425e5e88291379baffbbba40c file=executor/materiality/classify.go range=695:712 lang=go exported=false byte_range=21142:21535
+  digest=b3:8050434fc565883b1e7ff754163516eb8108cc1425e5e88291379baffbbba40c file=executor/materiality/classify.go range=695:712 lang=go exported=false byte_range=21138:21531
   sig=func ruleAnchorFlip(in Inputs) *Reason
   doc=---- rule 8: Anchor flip ----\n\n§18.1: "The plan changes from anchor-off to anchor-on (per D10), or\n\n	vice-versa."
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleBudgetDelta kind=func
-  digest=b3:58796dbdba181746b4fbcf0c27bf006e69b64971e22819d4054adfe9aca3b312 file=executor/materiality/classify.go range=154:200 lang=go exported=false byte_range=4977:6588
+  digest=b3:58796dbdba181746b4fbcf0c27bf006e69b64971e22819d4054adfe9aca3b312 file=executor/materiality/classify.go range=154:200 lang=go exported=false byte_range=4973:6584
   sig=func ruleBudgetDelta(in Inputs) *Reason
   doc=---- rule 1: Budget delta ----\n\n§18.1: "expected_cost_new > expected_cost_original × 1.10 OR\n\n	expected_cost_new − expected_cost_original > 5 PAX.\n	(Whichever is larger.)"\n\nSource of expected_cost: ir.Budget.MaxCost (intent or plan). Plan budget\nnarrows intent budget (MCL/ir/plan.go:63-65); we read from plan when\npresent, else from intent.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleDeadlineShift kind=func
-  digest=b3:a460777871ba471297ae74d854f0f683b23d8649441aa685404e56ed1d00dcf1 file=executor/materiality/classify.go range=616:672 lang=go exported=false byte_range=18655:20602
+  digest=b3:a460777871ba471297ae74d854f0f683b23d8649441aa685404e56ed1d00dcf1 file=executor/materiality/classify.go range=616:672 lang=go exported=false byte_range=18651:20598
   sig=func ruleDeadlineShift(in Inputs) *Reason
   doc=---- rule 7: Deadline shift > 25% ----\n\n§18.1: "New deadline moves the remaining-time window by more than 25%."\n\nremaining_orig = original_deadline − now\nremaining_new  = new_deadline − now\nshift_ratio    = |remaining_new − remaining_orig| / |remaining_orig|\nmaterial iff shift_ratio > 0.25.\n\nEdge cases:\n  - Adding a deadline where none existed → material (new constraint)\n  - Removing a deadline → material (removed deadline = unbounded)\n  - Original deadline already in the past → cannot compute remaining\n    window; treat any change as material.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleHardConstraintRelaxed kind=func
-  digest=b3:30efdd6fd8112eb2d3124d6ba8f75c4da3997a4b7d79cf919614f0fe5c667777 file=executor/materiality/classify.go range=379:419 lang=go exported=false byte_range=11957:13196
+  digest=b3:30efdd6fd8112eb2d3124d6ba8f75c4da3997a4b7d79cf919614f0fe5c667777 file=executor/materiality/classify.go range=379:419 lang=go exported=false byte_range=11953:13192
   sig=func ruleHardConstraintRelaxed(in Inputs) *Reason
   doc=---- rule 5: Hard constraint relaxation ----\n\n§18.1: "Any Constraint { hard: true } removed, or its bound loosened\n\n	(budget up, deadline later, quality min down, jurisdiction set\n	widened)."\n\nComparison strategy:\n  - Build a map of original hard constraints keyed by (Type, identifier).\n  - For each candidate constraint, find the matching original and check\n    whether the bound moved in the loosening direction.\n  - For each original hard constraint missing from candidate, fire.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleNewSubAgent kind=func
-  digest=b3:e46400670fb2fda965db3c1b412027869c35d08090b68fdd9fb9ee8d082f65e7 file=executor/materiality/classify.go range=218:245 lang=go exported=false byte_range=7180:8042
+  digest=b3:e46400670fb2fda965db3c1b412027869c35d08090b68fdd9fb9ee8d082f65e7 file=executor/materiality/classify.go range=218:245 lang=go exported=false byte_range=7176:8038
   sig=func ruleNewSubAgent(in Inputs) *Reason
   doc=---- rule 2: New sub-agent ----\n\n§18.1: "Any intent.dispatch to an AgentRef not present in the\n\n	originally-accepted plan."\n\nWe approximate intent.dispatch presence via NodeSubDispatch.AgentRef\nin the PlanTree (the plan-time declaration of what dispatches will\nfire). A run-time dispatch to an AgentRef NOT pre-declared in the\noriginally-accepted plan would be caught here when the corrected\nplan is the input.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleNewToolNamespace kind=func
-  digest=b3:5975579c13e0cf05b91acefd641b105d1d602d77512518577cb26af88f44edd9 file=executor/materiality/classify.go range=320:351 lang=go exported=false byte_range=10282:11334
+  digest=b3:5975579c13e0cf05b91acefd641b105d1d602d77512518577cb26af88f44edd9 file=executor/materiality/classify.go range=320:351 lang=go exported=false byte_range=10278:11330
   sig=func ruleNewToolNamespace(in Inputs) *Reason
   doc=---- rule 4: New tool namespace ----\n\n§18.1: "A ToolRef whose namespace (tools/<ns>/*) was not in the original\n\n	plan. Same-namespace swaps are non-material."\n\nWe parse every ToolRef via tool.ParseToolURI (which already enforces\nthe Q17 split into Provider/Server). The "namespace" is:\n\n  - For MCP tools: (Provider, Server). Two MCP tools differing only\n    in Name are same-namespace; differing in Server are different.\n  - For native tools: Provider alone (one of the 8 S6 namespaces).\n\nUnparseable tool refs surface as a material reason since they would\nfail validation anyway.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleScopeExpansion kind=func
-  digest=b3:706cece6b2fcec469028657489e054c2a8097cf994f4393106f5cb1074ed08e4 file=executor/materiality/classify.go range=273:308 lang=go exported=false byte_range=8724:9969
+  digest=b3:706cece6b2fcec469028657489e054c2a8097cf994f4393106f5cb1074ed08e4 file=executor/materiality/classify.go range=273:308 lang=go exported=false byte_range=8720:9965
   sig=func ruleScopeExpansion(in Inputs) *Reason
   doc=---- rule 3: Scope expansion ----\n\n§18.1: "Any CortexScope.include or query widening passed to an existing\n\n	sub-agent vs. the originally-accepted scope."\n\nWe detect ScopeURI added/changed for an existing AgentRef. Full\nCortexScope set-difference would require resolving the Scope record\nfrom cortex (CortexScope lives in cortex/scope/ per Phase 10).\nv1 lock: signature-level change is the trigger; deeper Scope.include\ndiffing is deferred to v1.1 when the materiality classifier can take\nthe resolved Scope records as inputs.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleSuccessCriteriaChanged kind=func
-  digest=b3:dc1d1c1dd0be93d7cec07c16ae085879526ace74e185d6b57802b7d51ea2e3f1 file=executor/materiality/classify.go range=530:571 lang=go exported=false byte_range=16507:17739
+  digest=b3:dc1d1c1dd0be93d7cec07c16ae085879526ace74e185d6b57802b7d51ea2e3f1 file=executor/materiality/classify.go range=530:571 lang=go exported=false byte_range=16503:17735
   sig=func ruleSuccessCriteriaChanged(in Inputs) *Reason
   doc=---- rule 6: Success criteria change ----\n\n§18.1: "Any add, remove, or weakening of a Predicate in\n\n	frame.success_criteria."\n\nv1 detection: signature-level (Type + key identifying field). Any add\nor remove fires. Weakening of identically-typed predicates is hard to\nreason about without semantic understanding of the predicate's\ninternal data; we treat parameter changes on the same (Type, key)\npair as a material reason.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.stringDifference kind=func
-  digest=b3:bd1b21b4e3bd7334424d133876a22342752716f065f834ed14831756c6736017 file=executor/materiality/classify.go range=515:528 lang=go exported=false byte_range=16218:16505
+  digest=b3:bd1b21b4e3bd7334424d133876a22342752716f065f834ed14831756c6736017 file=executor/materiality/classify.go range=515:528 lang=go exported=false byte_range=16214:16501
   sig=func stringDifference(a, b []string) []string
   doc=stringDifference returns elements present in a but not in b.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.walkPlanNodes kind=func
-  digest=b3:84f0efa040a3fdf80aceb5c73610188ccb380db56e410af7819bf6a600723f0b file=executor/materiality/classify.go range=260:271 lang=go exported=false byte_range=8366:8722
+  digest=b3:84f0efa040a3fdf80aceb5c73610188ccb380db56e410af7819bf6a600723f0b file=executor/materiality/classify.go range=260:271 lang=go exported=false byte_range=8362:8718
   sig=func walkPlanNodes(n *ir.PlanNode, fn func(*ir.PlanNode))
   doc=walkPlanNodes is a simple recursive visitor over the plan tree.\nNot exported because callers should compose with the kind-specific\nextractors below rather than re-implement traversal.
 EDGES
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality/classify.go kind=file
-  digest=b3:50d5b7fd2ab2d75a2342ca6b44e32e28ed874783876188d600bc0e2bbd12d506 file=executor/materiality/classify.go range=1:714 lang=go exported=true
+  digest=b3:a73d5797978825fd699d44f995dd85f4c4a55313985b94a6f7ae66322869cb9f file=executor/materiality/classify.go range=1:714 lang=go exported=true
 EDGES
   defines=matrix/executor/materiality.AllRules,matrix/executor/materiality.BudgetAbsoluteThresholdPAX,matrix/executor/materiality.BudgetPercentThreshold,matrix/executor/materiality.Classification,matrix/executor/materiality.Classify,matrix/executor/materiality.DeadlineShiftThreshold,matrix/executor/materiality.Inputs,matrix/executor/materiality.Reason,matrix/executor/materiality.RuleAnchorFlip,matrix/executor/materiality.RuleBudgetDelta,matrix/executor/materiality.RuleDeadlineShift,matrix/executor/materiality.RuleHardConstraintRelaxed,matrix/executor/materiality.RuleNewSubAgent,matrix/executor/materiality.RuleNewToolNamespace,matrix/executor/materiality.RuleScopeExpansion,matrix/executor/materiality.RuleSuccessCriteriaChanged,matrix/executor/materiality.budgetAmount,matrix/executor/materiality.collectAgentRefs,matrix/executor/materiality.collectAgentScope,matrix/executor/materiality.collectToolNamespaces,matrix/executor/materiality.constraintsOf,matrix/executor/materiality.deadlineOf,matrix/executor/materiality.indexHardConstraints,matrix/executor/materiality.indexPredicates,matrix/executor/materiality.looser,matrix/executor/materiality.maybeBudget,matrix/executor/materiality.parseTime,matrix/executor/materiality.predicateEqual,matrix/executor/materiality.predicateKey,matrix/executor/materiality.predicatesOf,matrix/executor/materiality.ruleAnchorFlip,matrix/executor/materiality.ruleBudgetDelta,matrix/executor/materiality.ruleDeadlineShift,matrix/executor/materiality.ruleHardConstraintRelaxed,matrix/executor/materiality.ruleNewSubAgent,matrix/executor/materiality.ruleNewToolNamespace,matrix/executor/materiality.ruleScopeExpansion,matrix/executor/materiality.ruleSuccessCriteriaChanged,matrix/executor/materiality.stringDifference,matrix/executor/materiality.walkPlanNodes
   ^contains=matrix/executor/materiality

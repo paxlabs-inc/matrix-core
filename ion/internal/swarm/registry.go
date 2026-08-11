@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/coordination"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/security/coordination"
 )
 
 var (

@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 
 package tool
 
@@ -246,4 +246,4 @@ func (f *fakeClock) advance(d time.Duration) {
 	f.t = f.t.Add(d)
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

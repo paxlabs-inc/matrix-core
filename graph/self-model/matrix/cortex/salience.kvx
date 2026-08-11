@@ -1,153 +1,153 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:2eece1e371401718b5b83332ea874dc9d69dc31720a509148678833de7350783
+# GENERATED gen=codegraph do-not-edit merkle=b3:8adaec31d110422a96613f590adad21e781eb8f302a1fdaad8310a524483c514
 
 NODE id=matrix/cortex/salience kind=package
-  digest=b3:0f092d243dab6cc9d63865facafbc29fdfec9c3be8196a01f2743631f57f0ea5 file=cortex/salience range=0:0 lang=go exported=true
+  digest=b3:0cc7fd2a1299b48f3e46bd74224830bfd5f14ea225464d6befaff68101b527a9 file=cortex/salience range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/salience/salience.go
   ^contains=mod:matrix/cortex
 
 NODE id=matrix/cortex/salience.AccessSaturation kind=const
-  digest=b3:d3fbdb491e2b9dd9c426733e9f8ccc16292570ed35a82b491b0551b3f2b6c911 file=cortex/salience/salience.go range=150:156 lang=go exported=true byte_range=6019:6465
+  digest=b3:d3fbdb491e2b9dd9c426733e9f8ccc16292570ed35a82b491b0551b3f2b6c911 file=cortex/salience/salience.go range=150:156 lang=go exported=true byte_range=6015:6461
   sig=untyped float
   doc=AccessSaturation is the denominator constant used to normalize\naccess_count and cite_in_successful_plans into [0,1]. We use a fixed\nconstant (not per-actor max) because the spec's max-based formula is\nunstable under cold start and creates ranking discontinuities when a\nsingle memory pulls the max upward. log(1+1000) is the saturation point\nwhere ranking gain approaches zero in practical loads.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.BumpForAccess kind=func
-  digest=b3:3928b5af7ef12183eddb735648d504d7e464c07b26c2f79a728be8c5402a1fab file=cortex/salience/salience.go range=460:478 lang=go exported=true byte_range=16356:17253
+  digest=b3:3928b5af7ef12183eddb735648d504d7e464c07b26c2f79a728be8c5402a1fab file=cortex/salience/salience.go range=460:478 lang=go exported=true byte_range=16352:17249
   sig=func BumpForAccess(s *Score, now time.Time)
   doc=BumpForAccess increments AccessCount, advances LastUsed, and recomputes\nthe cached cold score. Fired per returned candidate from a LateBinding\nFind (research/04-cortex.md §8.1 input `access_count` + §8.4 cache\ninvalidation trigger). AccessCount saturates at math.MaxUint64; the\nlogSat normalizer floors the score contribution at 1.0 well before\nthen, so we just refuse to wrap rather than journal an overflow.\n\nPhase 11.5: this is the only path that feeds salience.AccessCount.\nCompile-time Find does NOT call this (research/04 §12 + Phase 3\ninvariant: compile-time Find does not journal); compile-time access\ngets accounted for downstream via cortex.Attest cited_uris.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.BumpForCitation kind=func
-  digest=b3:11e3a7e5c33eee6d716f72616bb7cf010b31450448c97f27837a4c04eaa65510 file=cortex/salience/salience.go range=480:500 lang=go exported=true byte_range=17255:18136
+  digest=b3:11e3a7e5c33eee6d716f72616bb7cf010b31450448c97f27837a4c04eaa65510 file=cortex/salience/salience.go range=480:500 lang=go exported=true byte_range=17251:18132
   sig=func BumpForCitation(s *Score, now time.Time)
   doc=BumpForCitation increments Citations AND AccessCount, advances LastUsed,\nand recomputes the cached cold score. Fired per cited URI from a\nsuccessful cortex.Attest (research/04-cortex.md §8.3 verbatim: "For\neach `cited` memory in the plan, increment `cite_in_successful_plans`").\n\nAccessCount also goes up because a citation implies an access — the\nagent had to read the memory to cite it. Bundling the two bumps in a\nsingle primitive keeps the salience cache consistent across the\nFind→Attest path: a memory found via late-binding Find and then cited\nin a successful attest has both signals reflected.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.BumpForUpdate kind=func
-  digest=b3:1307ec1ca2ba9cfd7ae0e3012d7956b906a0c750b21b9ac2942d02a7709d8c54 file=cortex/salience/salience.go range=451:458 lang=go exported=true byte_range=16038:16354
+  digest=b3:1307ec1ca2ba9cfd7ae0e3012d7956b906a0c750b21b9ac2942d02a7709d8c54 file=cortex/salience/salience.go range=451:458 lang=go exported=true byte_range=16034:16350
   sig=func BumpForUpdate(s *Score, importance uint8, now time.Time)
   doc=BumpForUpdate refreshes a Score after a memory's Data was updated.\nLastUsed advances to now and the cached value is recomputed.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.ColdScore kind=func
-  digest=b3:bf2752bca45130ae92c4866ef0a4ee12e0a77a475d2f158918f5ef11190d726d file=cortex/salience/salience.go range=230:242 lang=go exported=true byte_range=8632:9256
+  digest=b3:bf2752bca45130ae92c4866ef0a4ee12e0a77a475d2f158918f5ef11190d726d file=cortex/salience/salience.go range=230:242 lang=go exported=true byte_range=8628:9252
   sig=func ColdScore(s *Score, now time.Time) float32
   doc=ColdScore computes salience(m) using the cold (default) weights with V\nskipped (no q.near). Preserved for source-compat with Phase 3+ callers;\ninternally delegates to ColdScoreWith.\n\nLive ranking SHOULD prefer ColdScoreWith with the actor's learned\nWeights (loaded via ReadWeights) so EMA updates are honored. Bumpers\n(BumpForAccess/BumpForCitation/etc.) intentionally use this default-\nweights path for sc.Cached: per Phase 12 Q4, sc.Cached is a debug\nsnapshot, not the live ranking value.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.ColdScoreWith kind=func
-  digest=b3:fc705c7b2c35a398580c85b95dc0038a8777631eb6419ae26b383553df3d51c3 file=cortex/salience/salience.go range=244:281 lang=go exported=true byte_range=9258:10423
+  digest=b3:fc705c7b2c35a398580c85b95dc0038a8777631eb6419ae26b383553df3d51c3 file=cortex/salience/salience.go range=244:281 lang=go exported=true byte_range=9254:10419
   sig=func ColdScoreWith(s *Score, w Weights, now time.Time) float32
   doc=ColdScoreWith computes salience(m) using the supplied weights with V\nskipped (q.near unset). The non-vector weights are renormalised over\ntheir own sum so the final score lives in [0,1] regardless of what\nEMA has done to WV.\n\n§8.2 "vector weight gating" rule when q.near is unset: w5 is\nredistributed across the remaining weights proportionally. Equivalent\nto dividing the non-vector component by (WR+WA+WC+WD). Done here so\nthe formula is symmetric for both default and learned weights.\n\nPinned memories floor at PinnedFloor.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.ColdScoreWithV kind=func
-  digest=b3:6c902850938a3791d68cf45ee249d0f382afb4ea74fb3cd28f6d794cd9318cc8 file=cortex/salience/salience.go range=283:328 lang=go exported=true byte_range=10425:11911
+  digest=b3:6c902850938a3791d68cf45ee249d0f382afb4ea74fb3cd28f6d794cd9318cc8 file=cortex/salience/salience.go range=283:328 lang=go exported=true byte_range=10421:11907
   sig=func ColdScoreWithV(s *Score, w Weights, dist float32, now time.Time) float32
   doc=ColdScoreWithV computes salience(m) using the supplied weights with the\nV (vector-similarity) term LIVE — the q.near-SET counterpart to\nColdScoreWith. The §8.1 V(m,q) = cos(embedding(m), embedding(q)) term is\nrecovered from the HNSW distance: distance is 1 - cosine in unit-norm\nspace (vector package), so v := 1 - dist/2 maps dist∈[0,2] back to a\ncosine-like proximity in [0,1] (dist=0 → v=1, dist=2 → v=0). v is clamped\nto [0,1] defensively.\n\nAll five weights already sum to 1.0 (DefaultWeights and the EMA\nrenormaliser both preserve this), so — unlike ColdScoreWith, which\nredistributes WV across the other four when q.near is unset — no\nrenormalisation denominator is applied here. Utility stays primary by\nweight (WC=0.30 citations, plus WR/WA/WD) dwarfing WV=0.10, so semantic\nproximity refines the utility ranking rather than dominating it.\n\nPinned memories floor at PinnedFloor; the result is clamped to [0,1].
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Decode kind=func
-  digest=b3:80f2a0898e195bd6ece9cf3f8488245bdfb6538c27aa42dde9afb51ee6eca0fb file=cortex/salience/salience.go range=203:206 lang=go exported=true byte_range=8032:8156
+  digest=b3:80f2a0898e195bd6ece9cf3f8488245bdfb6538c27aa42dde9afb51ee6eca0fb file=cortex/salience/salience.go range=203:206 lang=go exported=true byte_range=8028:8152
   sig=func Decode(b []byte, out *Score) error
   doc=Decode parses canonical CBOR into out.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.DecodeWeights kind=func
-  digest=b3:ff39d0bf83073575ab9c6e148be343538883f641687acf02aa6d0439aae0d6be file=cortex/salience/salience.go range=116:119 lang=go exported=true byte_range=4648:4788
+  digest=b3:ff39d0bf83073575ab9c6e148be343538883f641687acf02aa6d0439aae0d6be file=cortex/salience/salience.go range=116:119 lang=go exported=true byte_range=4644:4784
   sig=func DecodeWeights(b []byte, out *Weights) error
   doc=DecodeWeights parses canonical CBOR into out.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.DecrementCitation kind=func
-  digest=b3:ffa9f2104fc6ddde692a2bc1848508d70bf2feddf90f88b162de4c516ca38bca file=cortex/salience/salience.go range=502:523 lang=go exported=true byte_range=18138:19121
+  digest=b3:ffa9f2104fc6ddde692a2bc1848508d70bf2feddf90f88b162de4c516ca38bca file=cortex/salience/salience.go range=502:523 lang=go exported=true byte_range=18134:19117
   sig=func DecrementCitation(s *Score, now time.Time)
   doc=DecrementCitation decrements Citations (floored at zero), advances\nLastUsed, and recomputes the cached cold score. Fired per cited URI\nfrom a failed cortex.Attest whose reason ∈ {factual_error,\nwrong_assumption} (research/04-cortex.md §8.3: "For memories cited\nat the failed step, *decrement* `cite_in_successful_plans`").\n\nAccessCount is NOT decremented — the access happened, even if the\ndownstream use was wrong. Only the success-citation signal flips.\n\nLastUsed advances because the attest action is itself a touch of\nthese memories (the agent had them in context at attest time); this\nmatches BumpForCitation symmetry and avoids the "decrement zeros R"\nsurprise where a recently-cited-but-failed memory would otherwise\nstay at its pre-attest recency.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.DefaultWeights kind=func
-  digest=b3:b589468a374fdc3063c5e9a2e032f5101bbb4a4201b98755a223b457872dd2e1 file=cortex/salience/salience.go range=96:106 lang=go exported=true byte_range=4175:4433
+  digest=b3:b589468a374fdc3063c5e9a2e032f5101bbb4a4201b98755a223b457872dd2e1 file=cortex/salience/salience.go range=96:106 lang=go exported=true byte_range=4171:4429
   sig=func DefaultWeights() Weights
   doc=DefaultWeights returns the cold-start weights from §8.2.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.EMARate kind=const
-  digest=b3:2e479d78437d78b05083aea8323107076bd840edd628f0515170720b1c48f26e file=cortex/salience/salience.go range=74:79 lang=go exported=true byte_range=3087:3426
+  digest=b3:2e479d78437d78b05083aea8323107076bd840edd628f0515170720b1c48f26e file=cortex/salience/salience.go range=74:79 lang=go exported=true byte_range=3083:3422
   sig=float32
   doc=EMARate is alpha from research/04-cortex.md §8.3 ("EMA rate α = 0.05\n(slow)"). Exported so the journal/cortex layers can stamp it on\nLearnWeightsPayload entries for audit-replay determinism, and so a\nfuture migration can change it without ambiguity over which value any\ngiven replay step used.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Encode kind=func
-  digest=b3:99787f95c4e0e9e3629cc89a91fc0d5dcbff8562ca618baad026e74b4a206818 file=cortex/salience/salience.go range=195:201 lang=go exported=true byte_range=7839:8030
+  digest=b3:99787f95c4e0e9e3629cc89a91fc0d5dcbff8562ca618baad026e74b4a206818 file=cortex/salience/salience.go range=195:201 lang=go exported=true byte_range=7835:8026
   sig=func Encode(s *Score) ([]byte, error)
   doc=Encode returns the canonical CBOR encoding of s.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.EncodeWeights kind=func
-  digest=b3:3cf5144ae7f51b2ad71c7f4bf069491634c87b1d5e5e53fce4b99d3a9af952b1 file=cortex/salience/salience.go range=108:114 lang=go exported=true byte_range=4435:4646
+  digest=b3:3cf5144ae7f51b2ad71c7f4bf069491634c87b1d5e5e53fce4b99d3a9af952b1 file=cortex/salience/salience.go range=108:114 lang=go exported=true byte_range=4431:4642
   sig=func EncodeWeights(w *Weights) ([]byte, error)
   doc=EncodeWeights returns canonical deterministic CBOR for w.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.HalfLifeNanos kind=const
-  digest=b3:80cd8e1af0c67d33653c2f08b9b3500225836bf4bb07e54c8d0a01340b134bc1 file=cortex/salience/salience.go range=138:145 lang=go exported=true byte_range=5363:5919
+  digest=b3:80cd8e1af0c67d33653c2f08b9b3500225836bf4bb07e54c8d0a01340b134bc1 file=cortex/salience/salience.go range=138:145 lang=go exported=true byte_range=5359:5915
   sig=int64
   doc=HalfLifeNanos is the recency time constant from §8.1: 90 days. The spec\nformula is `exp(-Δt / half_life)`; despite the label, this is a 1/e decay\n(R drops to ~0.368 at one constant, not 0.5). Adopting the spec formula\nverbatim keeps cortex_snapshot_hash byte-identical with any independent\nre-implementation. If we ever switch to a strict-half-life decay\n(`exp(-Δt·ln2 / H)`), every salience cache entry needs recomputation —\nthat's a journaled migration, not a code change.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.NewForWrite kind=func
-  digest=b3:af771f202c479a5c5fe2d4d8b593c569930d65bf06e33daaaeb418ea14d23ca7 file=cortex/salience/salience.go range=438:449 lang=go exported=true byte_range=15650:16036
+  digest=b3:af771f202c479a5c5fe2d4d8b593c569930d65bf06e33daaaeb418ea14d23ca7 file=cortex/salience/salience.go range=438:449 lang=go exported=true byte_range=15646:16032
   sig=func NewForWrite(importance uint8, now time.Time) Score
   doc=NewForWrite builds an initial Score for a freshly-written memory at the\ngiven clock. AccessCount and Citations are zero; LastUsed = now.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.PinnedFloor kind=const
-  digest=b3:a389b047f3dd7688839e743737c4d342703bdda7891af4954b8a89c59a202ac9 file=cortex/salience/salience.go range=147:148 lang=go exported=true byte_range=5921:6017
+  digest=b3:a389b047f3dd7688839e743737c4d342703bdda7891af4954b8a89c59a202ac9 file=cortex/salience/salience.go range=147:148 lang=go exported=true byte_range=5917:6013
   sig=float32
   doc=PinnedFloor is the §8.2 floor for memories with Pinned=true.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Read kind=func
-  digest=b3:cf2bcc02773cf6bd3dc586cbc13f3eaeba74b50f895a21d1272aea8a3c846d6e file=cortex/salience/salience.go range=535:553 lang=go exported=true byte_range=19560:20133
+  digest=b3:cf2bcc02773cf6bd3dc586cbc13f3eaeba74b50f895a21d1272aea8a3c846d6e file=cortex/salience/salience.go range=535:553 lang=go exported=true byte_range=19556:20129
   sig=func Read(s *store.Store, id memory.ID) (*Score, bool, error)
   doc=Read fetches the salience record for id. Returns (nil, false, nil) if\nabsent (e.g. memories written before Phase 3 wiring; planner falls back\nto a zero score).
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.ReadWeights kind=func
-  digest=b3:14fd0d8300d4d4624b38813cd3533190d15c86c6e004c743344eff34f0508987 file=cortex/salience/salience.go range=121:136 lang=go exported=true byte_range=4790:5361
+  digest=b3:14fd0d8300d4d4624b38813cd3533190d15c86c6e004c743344eff34f0508987 file=cortex/salience/salience.go range=121:136 lang=go exported=true byte_range=4786:5357
   sig=func ReadWeights(s *store.Store) (Weights, bool, error)
   doc=ReadWeights fetches the actor's learned weights from meta/salience_weights.\nReturns (DefaultWeights(), false, nil) when the key is absent (cold start).
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.SchemaVersion kind=const
-  digest=b3:f82316a94c37fc1062ebec1f4a0beb8832e0a617eb0f14a0e7730d780bf15b48 file=cortex/salience/salience.go range=54:55 lang=go exported=true byte_range=2273:2372
+  digest=b3:f82316a94c37fc1062ebec1f4a0beb8832e0a617eb0f14a0e7730d780bf15b48 file=cortex/salience/salience.go range=54:55 lang=go exported=true byte_range=2269:2368
   sig=uint8
   doc=SchemaVersion is bumped on any incompatible Score-encoding change.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Score kind=type
-  digest=b3:fc695b07b74f6f1482450f8e147d10928d0b47f022014c549447c69779742332 file=cortex/salience/salience.go range=158:172 lang=go exported=true byte_range=6467:7305
+  digest=b3:fc695b07b74f6f1482450f8e147d10928d0b47f022014c549447c69779742332 file=cortex/salience/salience.go range=158:172 lang=go exported=true byte_range=6463:7301
   sig=type Score struct {\n	SchemaVersion	uint8	`cbor:"0,keyasint"`\n	LastUsed	int64	`cbor:"1,keyasint"`		// unix nano\n	AccessCount	uint64	`cbor:"2,keyasint,omitempty"`	// bumps on read access (Phase 3+)\n	Citations	uint64	`cbor:"3,keyasint,omitempty"`	// cite_in_successful_plans\n	Importance	uint8	`cbor:"4,keyasint,omitempty"`	// mirrors Head.DeclaredImportance\n	Pinned		bool	`cbor:"5,keyasint,omitempty"`\n	Cached		float32	`cbor:"6,keyasint"`	// last computed cold-formula value\n	ComputedAt	int64	`cbor:"7,keyasint"`	// unix nano\n}
   doc=Score is the cached salience record at salience/<id>.\n\nAll factor inputs are stored alongside the cached score so a recompute\ntriggered by a single input change (e.g. attestation citation update) is\nO(1) without needing to re-scan the head/version.
 EDGES
@@ -155,97 +155,97 @@ EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Score#AccessCount kind=field
-  digest=b3:5d55d98e0b506bdd2f90f8dedef74c296d5a61fb57088076701c86da9e65f0b6 file=cortex/salience/salience.go range=166:166 lang=go exported=true byte_range=6860:6911
+  digest=b3:5d55d98e0b506bdd2f90f8dedef74c296d5a61fb57088076701c86da9e65f0b6 file=cortex/salience/salience.go range=166:166 lang=go exported=true byte_range=6856:6907
   sig=uint64
 EDGES
   ^contains=matrix/cortex/salience.Score
 
 NODE id=matrix/cortex/salience.Score#Cached kind=field
-  digest=b3:4bef9f80a7b2cb6c59d8690636e389ed93252bf8dab874da2aa0de371178ef9f file=cortex/salience/salience.go range=170:170 lang=go exported=true byte_range=7170:7211
+  digest=b3:4bef9f80a7b2cb6c59d8690636e389ed93252bf8dab874da2aa0de371178ef9f file=cortex/salience/salience.go range=170:170 lang=go exported=true byte_range=7166:7207
   sig=float32
 EDGES
   ^contains=matrix/cortex/salience.Score
 
 NODE id=matrix/cortex/salience.Score#Citations kind=field
-  digest=b3:9a065aeabe1d40ad0571a31d66667110894690469af7577bd575751dbd356850 file=cortex/salience/salience.go range=167:167 lang=go exported=true byte_range=6948:6999
+  digest=b3:9a065aeabe1d40ad0571a31d66667110894690469af7577bd575751dbd356850 file=cortex/salience/salience.go range=167:167 lang=go exported=true byte_range=6944:6995
   sig=uint64
 EDGES
   ^contains=matrix/cortex/salience.Score
 
 NODE id=matrix/cortex/salience.Score#ComputedAt kind=field
-  digest=b3:0c305dc623f112c90b178db75f64e3ad2f98db816101757dc08361d8babae60d file=cortex/salience/salience.go range=171:171 lang=go exported=true byte_range=7249:7290
+  digest=b3:0c305dc623f112c90b178db75f64e3ad2f98db816101757dc08361d8babae60d file=cortex/salience/salience.go range=171:171 lang=go exported=true byte_range=7245:7286
   sig=int64
 EDGES
   ^contains=matrix/cortex/salience.Score
 
 NODE id=matrix/cortex/salience.Score#Importance kind=field
-  digest=b3:cb405ebea98504ab1450203a62c3756239072104987bf8a521066608ddfd4bec file=cortex/salience/salience.go range=168:168 lang=go exported=true byte_range=7029:7080
+  digest=b3:cb405ebea98504ab1450203a62c3756239072104987bf8a521066608ddfd4bec file=cortex/salience/salience.go range=168:168 lang=go exported=true byte_range=7025:7076
   sig=uint8
 EDGES
   ^contains=matrix/cortex/salience.Score
 
 NODE id=matrix/cortex/salience.Score#LastUsed kind=field
-  digest=b3:3df66cfacf886ff5913163dfd3d77f32053e9ca1e7747ff2c43f4d9fedc44fac file=cortex/salience/salience.go range=165:165 lang=go exported=true byte_range=6794:6835
+  digest=b3:3df66cfacf886ff5913163dfd3d77f32053e9ca1e7747ff2c43f4d9fedc44fac file=cortex/salience/salience.go range=165:165 lang=go exported=true byte_range=6790:6831
   sig=int64
 EDGES
   ^contains=matrix/cortex/salience.Score
 
 NODE id=matrix/cortex/salience.Score#Pinned kind=field
-  digest=b3:c36d507be7e9993034cce221779f805bc257a9d88fc9492c7098c4e929f46893 file=cortex/salience/salience.go range=169:169 lang=go exported=true byte_range=7117:7168
+  digest=b3:c36d507be7e9993034cce221779f805bc257a9d88fc9492c7098c4e929f46893 file=cortex/salience/salience.go range=169:169 lang=go exported=true byte_range=7113:7164
   sig=bool
 EDGES
   ^contains=matrix/cortex/salience.Score
 
 NODE id=matrix/cortex/salience.Score#SchemaVersion kind=field
-  digest=b3:b65bb80fdb488d90ace2e79754fb8c14bac7f2520f2cfe80600ae163d703df2d file=cortex/salience/salience.go range=164:164 lang=go exported=true byte_range=6751:6792
+  digest=b3:b65bb80fdb488d90ace2e79754fb8c14bac7f2520f2cfe80600ae163d703df2d file=cortex/salience/salience.go range=164:164 lang=go exported=true byte_range=6747:6788
   sig=uint8
 EDGES
   ^contains=matrix/cortex/salience.Score
 
 NODE id=matrix/cortex/salience.UpdateWeightsEMA kind=func
-  digest=b3:86a9b880e008da42355c14c8e8f975b4dfb08e1e5ec7745b7a56c80f9f5a060e file=cortex/salience/salience.go range=346:436 lang=go exported=true byte_range=12483:15648
+  digest=b3:86a9b880e008da42355c14c8e8f975b4dfb08e1e5ec7745b7a56c80f9f5a060e file=cortex/salience/salience.go range=346:436 lang=go exported=true byte_range=12479:15644
   sig=func UpdateWeightsEMA(w *Weights, citedScores []Score, alpha float32, decrementOnFailure bool, now time.Time) bool
   doc=UpdateWeightsEMA applies one EMA step to w in place, training toward (on\nsuccess) or away from (on failure with reason ∈ §8.3 decrement set) the\naverage per-factor profile of citedScores at the given clock.\n\nSpec: research/04-cortex.md §8.3 ("EMA-update the actor's weights\ntoward the high-performing weighting" / "away from the weighting that\nranked the bad memory highly"). alpha is the EMA rate (typically\nEMARate = 0.05). decrementOnFailure indicates whether the (outcome,\nreason) pair triggers the away-pull (i.e. matches §8.3 decrement set);\nwhen false (success or any other failure reason) the toward-pull is\napplied.\n\nAlgorithm:\n 1. profile_i = average over citedScores of factor i (i ∈ {R,A,C,D})\n 2. normalise profile so sum_i profile_i = 1; if sum_i == 0 (all\n    cited memories have zero factor inputs — degenerate cold-start\n    case) skip the update entirely and return false.\n 3. delta_i = profile_i - w_i\n 4. w_i_new = w_i + α·delta_i           (toward)\n    or       = w_i - α·delta_i          (away)\n 5. Clamp w_i_new ≥ 0; if any clamp fired we still proceed to renormalise.\n 6. Renormalise: w_i_new /= Σ_j w_j_new (V preserved exactly).\n\nThe V (vector) weight is left at its current value through this entire\nstep — Phase 12 trains four-factor only. Renormalisation step (6) does\ninclude w.WV in the denominator so the full 5-weight sum stays at 1.0.\n\nReturns true iff an update was applied; false on degenerate input\n(empty citedScores or all-zero profile). UpdatedAt is advanced and\nUpdates incremented when an update IS applied.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.WA kind=const
-  digest=b3:8f4366b529f89d881296875fb8dcc9a0ae118ddb9f751d9f018f4fe35cf35a8b file=cortex/salience/salience.go range=57:63 lang=go exported=true byte_range=2374:2726
+  digest=b3:8f4366b529f89d881296875fb8dcc9a0ae118ddb9f751d9f018f4fe35cf35a8b file=cortex/salience/salience.go range=57:63 lang=go exported=true byte_range=2370:2722
   sig=float32
   doc=Cold weights from §8.2. They sum to 1.0. These are the DEFAULT weights\nused when meta/salience_weights is absent (i.e. a freshly initialized\nactor) and the floor that BumpFor* helpers use to recompute sc.Cached.\nAuthoritative live ranking uses the learned Weights via ColdScoreWith.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.WC kind=const
-  digest=b3:16c232941fde66d190f442428392e2d161633f434ccc4d704f756512eb27e445 file=cortex/salience/salience.go range=57:64 lang=go exported=true byte_range=2374:2755
+  digest=b3:16c232941fde66d190f442428392e2d161633f434ccc4d704f756512eb27e445 file=cortex/salience/salience.go range=57:64 lang=go exported=true byte_range=2370:2751
   sig=float32
   doc=Cold weights from §8.2. They sum to 1.0. These are the DEFAULT weights\nused when meta/salience_weights is absent (i.e. a freshly initialized\nactor) and the floor that BumpFor* helpers use to recompute sc.Cached.\nAuthoritative live ranking uses the learned Weights via ColdScoreWith.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.WD kind=const
-  digest=b3:494a8f754d84403e63d9d9b99545cd60edf48cc670f053629cd0382937976ce9 file=cortex/salience/salience.go range=57:65 lang=go exported=true byte_range=2374:2787
+  digest=b3:494a8f754d84403e63d9d9b99545cd60edf48cc670f053629cd0382937976ce9 file=cortex/salience/salience.go range=57:65 lang=go exported=true byte_range=2370:2783
   sig=float32
   doc=Cold weights from §8.2. They sum to 1.0. These are the DEFAULT weights\nused when meta/salience_weights is absent (i.e. a freshly initialized\nactor) and the floor that BumpFor* helpers use to recompute sc.Cached.\nAuthoritative live ranking uses the learned Weights via ColdScoreWith.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.WR kind=const
-  digest=b3:f4ad031e383f225631f5619836fb7a508a242f06f1fd88e3ecc96679e7cf8d11 file=cortex/salience/salience.go range=57:62 lang=go exported=true byte_range=2374:2696
+  digest=b3:f4ad031e383f225631f5619836fb7a508a242f06f1fd88e3ecc96679e7cf8d11 file=cortex/salience/salience.go range=57:62 lang=go exported=true byte_range=2370:2692
   sig=float32
   doc=Cold weights from §8.2. They sum to 1.0. These are the DEFAULT weights\nused when meta/salience_weights is absent (i.e. a freshly initialized\nactor) and the floor that BumpFor* helpers use to recompute sc.Cached.\nAuthoritative live ranking uses the learned Weights via ColdScoreWith.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.WV kind=const
-  digest=b3:d122c230099ea5350fe4686ce18c2441a7300474bbf4a628832bdb631d0f689e file=cortex/salience/salience.go range=57:66 lang=go exported=true byte_range=2374:2829
+  digest=b3:d122c230099ea5350fe4686ce18c2441a7300474bbf4a628832bdb631d0f689e file=cortex/salience/salience.go range=57:66 lang=go exported=true byte_range=2370:2825
   sig=float32
   doc=Cold weights from §8.2. They sum to 1.0. These are the DEFAULT weights\nused when meta/salience_weights is absent (i.e. a freshly initialized\nactor) and the floor that BumpFor* helpers use to recompute sc.Cached.\nAuthoritative live ranking uses the learned Weights via ColdScoreWith.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Weights kind=type
-  digest=b3:b087617321780d6e83926ffd5fe6871afbe97a9c71d7713d3c526e0501ee658c file=cortex/salience/salience.go range=81:94 lang=go exported=true byte_range=3428:4173
+  digest=b3:b087617321780d6e83926ffd5fe6871afbe97a9c71d7713d3c526e0501ee658c file=cortex/salience/salience.go range=81:94 lang=go exported=true byte_range=3424:4169
   sig=type Weights struct {\n	SchemaVersion	uint8	`cbor:"0,keyasint"`\n	WR		float32	`cbor:"1,keyasint"`	// recency\n	WA		float32	`cbor:"2,keyasint"`	// access\n	WC		float32	`cbor:"3,keyasint"`	// citations\n	WD		float32	`cbor:"4,keyasint"`	// declared importance\n	WV		float32	`cbor:"5,keyasint"`	// vector similarity\n	UpdatedAt	int64	`cbor:"6,keyasint,omitempty"`\n	Updates		uint64	`cbor:"7,keyasint,omitempty"`\n}
   doc=Weights is the per-actor learned weight set persisted at\nmeta/salience_weights. WR+WA+WC+WD+WV must sum to 1.0 (renormalised on\nevery UpdateWeightsEMA). UpdatedAt + Updates are advisory audit fields,\nnot part of the math — the journal-of-record is KindLearnWeights.
 EDGES
@@ -253,110 +253,110 @@ EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Weights#SchemaVersion kind=field
-  digest=b3:b65bb80fdb488d90ace2e79754fb8c14bac7f2520f2cfe80600ae163d703df2d file=cortex/salience/salience.go range=86:86 lang=go exported=true byte_range=3731:3772
+  digest=b3:b65bb80fdb488d90ace2e79754fb8c14bac7f2520f2cfe80600ae163d703df2d file=cortex/salience/salience.go range=86:86 lang=go exported=true byte_range=3727:3768
   sig=uint8
 EDGES
   ^contains=matrix/cortex/salience.Weights
 
 NODE id=matrix/cortex/salience.Weights#UpdatedAt kind=field
-  digest=b3:e578398fd50ddc609c16b6b0a3dad7cddad13a54f7edec2e464699c13656f0bc file=cortex/salience/salience.go range=92:92 lang=go exported=true byte_range=4067:4118
+  digest=b3:e578398fd50ddc609c16b6b0a3dad7cddad13a54f7edec2e464699c13656f0bc file=cortex/salience/salience.go range=92:92 lang=go exported=true byte_range=4063:4114
   sig=int64
 EDGES
   ^contains=matrix/cortex/salience.Weights
 
 NODE id=matrix/cortex/salience.Weights#Updates kind=field
-  digest=b3:8fd82e6b7b38f782cff470682de7d030edeef6a9694cb548e2f3be5f2d82c645 file=cortex/salience/salience.go range=93:93 lang=go exported=true byte_range=4120:4171
+  digest=b3:8fd82e6b7b38f782cff470682de7d030edeef6a9694cb548e2f3be5f2d82c645 file=cortex/salience/salience.go range=93:93 lang=go exported=true byte_range=4116:4167
   sig=uint64
 EDGES
   ^contains=matrix/cortex/salience.Weights
 
 NODE id=matrix/cortex/salience.Weights#WA kind=field
-  digest=b3:ffe60b47caebaddc9dd0fc56b15e07e57b064475a83191bd29758df9c1a65db1 file=cortex/salience/salience.go range=88:88 lang=go exported=true byte_range=3828:3869
+  digest=b3:ffe60b47caebaddc9dd0fc56b15e07e57b064475a83191bd29758df9c1a65db1 file=cortex/salience/salience.go range=88:88 lang=go exported=true byte_range=3824:3865
   sig=float32
 EDGES
   ^contains=matrix/cortex/salience.Weights
 
 NODE id=matrix/cortex/salience.Weights#WC kind=field
-  digest=b3:3af6566f86b82f7a07bf813b7a8479e118f8cd1c14f13e884a5e127f852c1347 file=cortex/salience/salience.go range=89:89 lang=go exported=true byte_range=3881:3922
+  digest=b3:3af6566f86b82f7a07bf813b7a8479e118f8cd1c14f13e884a5e127f852c1347 file=cortex/salience/salience.go range=89:89 lang=go exported=true byte_range=3877:3918
   sig=float32
 EDGES
   ^contains=matrix/cortex/salience.Weights
 
 NODE id=matrix/cortex/salience.Weights#WD kind=field
-  digest=b3:4abd08bab7754bc8473a7f6a4a4d9c80260978a7ea01a903b89853b8f046eb75 file=cortex/salience/salience.go range=90:90 lang=go exported=true byte_range=3937:3978
+  digest=b3:4abd08bab7754bc8473a7f6a4a4d9c80260978a7ea01a903b89853b8f046eb75 file=cortex/salience/salience.go range=90:90 lang=go exported=true byte_range=3933:3974
   sig=float32
 EDGES
   ^contains=matrix/cortex/salience.Weights
 
 NODE id=matrix/cortex/salience.Weights#WR kind=field
-  digest=b3:0d2cf6a3bad61ada9815a1b57a1c5b1e1556920fb40ddead7233d2cb42205ac8 file=cortex/salience/salience.go range=87:87 lang=go exported=true byte_range=3774:3815
+  digest=b3:0d2cf6a3bad61ada9815a1b57a1c5b1e1556920fb40ddead7233d2cb42205ac8 file=cortex/salience/salience.go range=87:87 lang=go exported=true byte_range=3770:3811
   sig=float32
 EDGES
   ^contains=matrix/cortex/salience.Weights
 
 NODE id=matrix/cortex/salience.Weights#WV kind=field
-  digest=b3:c25b7e28f365dc9cd840d1fdc118769b4f84694a0fe7459cadcddd8e68b1e754 file=cortex/salience/salience.go range=91:91 lang=go exported=true byte_range=4003:4044
+  digest=b3:c25b7e28f365dc9cd840d1fdc118769b4f84694a0fe7459cadcddd8e68b1e754 file=cortex/salience/salience.go range=91:91 lang=go exported=true byte_range=3999:4040
   sig=float32
 EDGES
   ^contains=matrix/cortex/salience.Weights
 
 NODE id=matrix/cortex/salience.WeightsSchemaVersion kind=const
-  digest=b3:4ceba7b4c4c6a097b034d0e726a58616e492716f7c6a78550d7046d8240957b1 file=cortex/salience/salience.go range=69:72 lang=go exported=true byte_range=2872:3085
+  digest=b3:4ceba7b4c4c6a097b034d0e726a58616e492716f7c6a78550d7046d8240957b1 file=cortex/salience/salience.go range=69:72 lang=go exported=true byte_range=2868:3081
   sig=uint8
   doc=WeightsSchemaVersion is bumped on any incompatible Weights-encoding\nchange. Bump invalidates every actor's learned weights → fallback to\nDefaultWeights at next read.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.ZeroForTombstone kind=func
-  digest=b3:a41ecab52ef6c2ac926088373e0be83e04a80fa87c03eae9397e5bf23620b8e2 file=cortex/salience/salience.go range=525:533 lang=go exported=true byte_range=19123:19558
+  digest=b3:a41ecab52ef6c2ac926088373e0be83e04a80fa87c03eae9397e5bf23620b8e2 file=cortex/salience/salience.go range=525:533 lang=go exported=true byte_range=19119:19554
   sig=func ZeroForTombstone(s *Score, now time.Time)
   doc=ZeroForTombstone collapses a Score to a tombstoned-equivalent state. We\nkeep the record (as opposed to deleting it) so that operational replay\nfrom journal+m/+mv/ produces a byte-identical salience namespace; deleting\nwould require an explicit tombstone marker in the salience namespace too,\nwhich is unnecessary complexity.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.canonicalDec kind=var
-  digest=b3:dcdd8cc7cd99193be8e275aa339d7a71b3555ade1b84b89a33117ed2ddff3826 file=cortex/salience/salience.go range=174:179 lang=go exported=false byte_range=7307:7541
+  digest=b3:dcdd8cc7cd99193be8e275aa339d7a71b3555ade1b84b89a33117ed2ddff3826 file=cortex/salience/salience.go range=174:179 lang=go exported=false byte_range=7303:7537
   sig=cbor.DecMode
   doc=canonicalEnc / canonicalDec ensure Score encodes deterministically so the\ncached bytes hash identically across processes (matters for snapshot\nintegrity in Phase 7).
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.canonicalEnc kind=var
-  digest=b3:5094b9935714df28122dd888d216c646b14c0af42e56adf96c0ab38fc53174f0 file=cortex/salience/salience.go range=174:178 lang=go exported=false byte_range=7307:7514
+  digest=b3:5094b9935714df28122dd888d216c646b14c0af42e56adf96c0ab38fc53174f0 file=cortex/salience/salience.go range=174:178 lang=go exported=false byte_range=7303:7510
   sig=cbor.EncMode
   doc=canonicalEnc / canonicalDec ensure Score encodes deterministically so the\ncached bytes hash identically across processes (matters for snapshot\nintegrity in Phase 7).
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.factorProfile kind=func
-  digest=b3:24b082f5a6a2cad24e4d7aa2ae8ef5b717207c93ea4598cf99ff19bd6177cdae file=cortex/salience/salience.go range=330:344 lang=go exported=false byte_range=11913:12481
+  digest=b3:24b082f5a6a2cad24e4d7aa2ae8ef5b717207c93ea4598cf99ff19bd6177cdae file=cortex/salience/salience.go range=330:344 lang=go exported=false byte_range=11909:12477
   sig=func factorProfile(s *Score, now time.Time) [4]float32
   doc=factorProfile returns the (R, A, C, D) factor contributions for one\nScore at the given clock, normalised against the cold-weight denominator.\nV is omitted (Phase 12 trains four-factor only; vector signal lands when\nV-aware Find ranking lands in a later phase). Returned slice always has\nlength 4 in order WR, WA, WC, WD.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.init kind=func
-  digest=b3:e27dc940b384d2de32b865e83bc01c4e805ed924992d002b00d21453c5ed0cf4 file=cortex/salience/salience.go range=182:193 lang=go exported=false byte_range=7545:7837
+  digest=b3:e27dc940b384d2de32b865e83bc01c4e805ed924992d002b00d21453c5ed0cf4 file=cortex/salience/salience.go range=182:193 lang=go exported=false byte_range=7541:7833
   sig=func init()
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.logSat kind=func
-  digest=b3:0e380a11d835e74e5c06385b898cf608f52cb89c0cd6a6a3f2b0a54251bd29f8 file=cortex/salience/salience.go range=218:228 lang=go exported=false byte_range=8406:8630
+  digest=b3:0e380a11d835e74e5c06385b898cf608f52cb89c0cd6a6a3f2b0a54251bd29f8 file=cortex/salience/salience.go range=218:228 lang=go exported=false byte_range=8402:8626
   sig=func logSat(x uint64) float32
   doc=logSat returns log(1+x) / log(1+saturation), clamped to [0,1].
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.recency kind=func
-  digest=b3:7cee5d88c3f8c24674f98984ef807c3f5afc1e89df8dcc3375d6e71b09922e9d file=cortex/salience/salience.go range=208:216 lang=go exported=false byte_range=8158:8404
+  digest=b3:7cee5d88c3f8c24674f98984ef807c3f5afc1e89df8dcc3375d6e71b09922e9d file=cortex/salience/salience.go range=208:216 lang=go exported=false byte_range=8154:8400
   sig=func recency(lastUsedUnixNano int64, now time.Time) float32
   doc=recency returns R(m) at the given clock.
 EDGES
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience/salience.go kind=file
-  digest=b3:90f35e877a341667e9fc495c30a4c56911ee4bff4b7a232d44310d790bb6679e file=cortex/salience/salience.go range=1:555 lang=go exported=true
+  digest=b3:7188d30f05809e4254411fa63e9a3543ca951cb53901b7332d086b6fb4dbc298 file=cortex/salience/salience.go range=1:555 lang=go exported=true
 EDGES
   defines=matrix/cortex/salience.AccessSaturation,matrix/cortex/salience.BumpForAccess,matrix/cortex/salience.BumpForCitation,matrix/cortex/salience.BumpForUpdate,matrix/cortex/salience.ColdScore,matrix/cortex/salience.ColdScoreWith,matrix/cortex/salience.ColdScoreWithV,matrix/cortex/salience.Decode,matrix/cortex/salience.DecodeWeights,matrix/cortex/salience.DecrementCitation,matrix/cortex/salience.DefaultWeights,matrix/cortex/salience.EMARate,matrix/cortex/salience.Encode,matrix/cortex/salience.EncodeWeights,matrix/cortex/salience.HalfLifeNanos,matrix/cortex/salience.NewForWrite,matrix/cortex/salience.PinnedFloor,matrix/cortex/salience.Read,matrix/cortex/salience.ReadWeights,matrix/cortex/salience.SchemaVersion,matrix/cortex/salience.Score,matrix/cortex/salience.UpdateWeightsEMA,matrix/cortex/salience.WA,matrix/cortex/salience.WC,matrix/cortex/salience.WD,matrix/cortex/salience.WR,matrix/cortex/salience.WV,matrix/cortex/salience.Weights,matrix/cortex/salience.WeightsSchemaVersion,matrix/cortex/salience.ZeroForTombstone,matrix/cortex/salience.canonicalDec,matrix/cortex/salience.canonicalEnc,matrix/cortex/salience.factorProfile,matrix/cortex/salience.init,matrix/cortex/salience.logSat,matrix/cortex/salience.recency
   ^contains=matrix/cortex/salience

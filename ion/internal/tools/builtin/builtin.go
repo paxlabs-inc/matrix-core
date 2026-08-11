@@ -23,12 +23,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory/cortex"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/skills"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	"github.com/paxlabs-inc/ion-agent/internal/memory"
-	"github.com/paxlabs-inc/ion-agent/internal/memory/cortex"
-	"github.com/paxlabs-inc/ion-agent/internal/skills"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
 )
 
 const (

@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package server
@@ -544,4 +544,4 @@ func bearerEquals(r *http.Request, want string) bool {
 	return strings.HasPrefix(h, "Bearer ") && strings.TrimSpace(strings.TrimPrefix(h, "Bearer ")) == want
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

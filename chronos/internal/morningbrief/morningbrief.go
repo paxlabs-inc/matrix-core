@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 
 // Package morningbrief implements the Chronos MORNING_BRIEF convention: a
 // recurring alarm that wakes Neo at the user's chosen LOCAL time on their chosen
@@ -18,8 +18,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/paxlabs-inc/chronos/internal/schedule"
-	"github.com/paxlabs-inc/chronos/pkg/types"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/schedule"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/pkg/types"
 )
 
 // WakeMessage is the canonical wake_message a Chronos MORNING_BRIEF alarm

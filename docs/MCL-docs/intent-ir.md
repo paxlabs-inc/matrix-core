@@ -1,6 +1,6 @@
 # Intent IR
 
-Package `matrix/mcl/ir` defines the Go types for the Intent IR — the central typed artifact that Matrix produces and operates on. Everything the MCL compiler produces ends up here. Everything the executor consumes comes from here.
+Package `matrix/mcl/ir` defines the Go types for the Intent IR — the central typed artifact that Centra AI produces and operates on. Everything the MCL compiler produces ends up here. Everything the executor consumes comes from here.
 
 The IR is canonical JSON with sorted keys for deterministic hashing (D11). CBOR encoding is layered on top for the wire protocol via the `envelope` package. When you see `IntentCompiledBody.IntentJSON`, it's the canonical JSON bytes of one of these types.
 

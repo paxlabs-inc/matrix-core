@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
 )
 
 func TestOpenAIAdapterRoundTripTranslation(t *testing.T) {

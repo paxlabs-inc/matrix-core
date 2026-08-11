@@ -1,6 +1,6 @@
-# matrix-agent-testkit — adversarial black-box probe of a deployed Matrix agent
+# matrix-agent-testkit — adversarial black-box probe of a deployed Centra AI agent
 
-Hammers a **deployed** Matrix agent (Neo, and Cody via the `/cody` prefix)
+Hammers a **deployed** Centra agent (Neo, and Cody via the `/cody` prefix)
 through its public API exactly like a browser client would, to expose real
 flaws in the running system — no soft spots. Stdlib-only Python; no third-party
 deps. The target deployment is supplied via env (`MATRIX_API`); no endpoints are

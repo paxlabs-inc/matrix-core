@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package agent
@@ -29,7 +29,7 @@ func trueSurface() *CapabilitySurface {
 			"GET /events — the SSE event stream carrying your replies, tool steps, and workspace events",
 		},
 		Is: []string{
-			"You are the conversational agent behind the Matrix daemon's HTTP front: clients send POST /chat and read your streamed replies over SSE GET /events.",
+			"You are the conversational agent behind the Centra AI daemon's HTTP front: clients send POST /chat and read your streamed replies over SSE GET /events.",
 		},
 		IsNot: []string{
 			"You have NO OpenAI-compatible endpoint: /v1/chat/completions, /v1/completions, and /v1/models are NOT served. Nothing can integrate with you as an OpenAI-style API.",

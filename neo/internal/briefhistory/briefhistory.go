@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 
 // Package briefhistory is the durable recommendation-history sidecar for the
 // ORACLE morning brief (task 5.5, req 17): delivered recommendation identifiers

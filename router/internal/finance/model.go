@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Package finance is the router's market-data lane: the ONE place a Matrix
+// Package finance is the router's market-data lane: the ONE place a Centra AI
 // finance call is served from, whether it came from the browser's /finance route
 // or from Neo's finance MCP bridge.
 //

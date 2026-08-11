@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Lazy-migration tests for the embedder model swap (sess#19 Q3 lock).
@@ -253,4 +253,4 @@ func TestEmbedderModelSwap_DrainBlocksOnRewalk(t *testing.T) {
 	}
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

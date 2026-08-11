@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package mcp
@@ -166,7 +166,7 @@ func (c *Client) ToolsList(ctx context.Context) ([]Tool, error) {
 }
 
 // ToolsCall invokes a tool by name. Args are server-validated against
-// the tool's inputSchema (and Matrix re-validates client-side via the
+// the tool's inputSchema (and Centra AI re-validates client-side via the
 // tool registry).
 //
 // Returns the typed CallToolResult. Note: result.IsError=true is NOT
@@ -395,4 +395,4 @@ func (c *Client) ReadError() error {
 	return c.readErr
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

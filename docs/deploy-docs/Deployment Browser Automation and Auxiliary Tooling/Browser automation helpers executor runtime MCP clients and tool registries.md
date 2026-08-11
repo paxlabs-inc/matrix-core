@@ -2,7 +2,7 @@
 
 ## Overview
 
-This section covers the support tooling that lets Matrix agents talk to browser automation, resolve runtime references in tool arguments, and dispatch tools through a manifest-driven MCP registry. The code here sits below the product features: it is the execution and integration layer that keeps browser automation, JSON-RPC transport, and tool lookup deterministic.
+This section covers the support tooling that lets Centra AI agents talk to browser automation, resolve runtime references in tool arguments, and dispatch tools through a manifest-driven MCP registry. The code here sits below the product features: it is the execution and integration layer that keeps browser automation, JSON-RPC transport, and tool lookup deterministic.
 
 The main runtime flow is: the browser proxy exposes a local stdio MCP surface and forwards browser tool calls to a remote Playwright server; the executor runtime resolves `${}` and `{{}}` references before tool invocation; and the tool registry turns version-pinned `matrix://tool/...` URIs into concrete MCP-backed or native tool objects with capability gating and manifest validation.
 
@@ -51,7 +51,7 @@ flowchart TB
 
 *`tools/browser/browser.mjs`*
 
-This file is the local stdio proxy for browser automation. It advertises a static tool list, accepts Matrix-side JSON-RPC requests on stdin, and forwards browser tool calls to the remote Playwright MCP server over Streamable HTTP.
+This file is the local stdio proxy for browser automation. It advertises a static tool list, accepts Centra AI-side JSON-RPC requests on stdin, and forwards browser tool calls to the remote Playwright MCP server over Streamable HTTP.
 
 #### Runtime configuration
 
@@ -130,7 +130,7 @@ The proxy is designed to keep daemon boot local and deterministic: initialize an
 
 *`tools/browser/playwright-tools.json`*
 
-This file is the static registry of Playwright MCP tools advertised by the browser proxy. `browser.mjs` loads it verbatim and uses it as the exact `tools/list` response, so Matrix sees the same tool set the pinned remote server is expected to expose.
+This file is the static registry of Playwright MCP tools advertised by the browser proxy. `browser.mjs` loads it verbatim and uses it as the exact `tools/list` response, so Centra AI sees the same tool set the pinned remote server is expected to expose.
 
 #### File behavior
 
@@ -604,7 +604,7 @@ This file defines the uniform tool interface and the result shape that the regis
 | `AllowOnlySideEffects` | Builds a gate that allows only named classes. |
 | `validateSideEffect` | Fails manifest validation for unknown side-effect classes. |
 | `ErrUnknownTool` | Tool URI not found in the manifest-backed registry. |
-| `ErrInvalidURI` | URI is not a valid Matrix tool URI. |
+| `ErrInvalidURI` | URI is not a valid `matrix://` tool URI. |
 | `ErrUnpinnedTool` | Tool URI omits the version pin. |
 | `ErrSideEffectDenied` | Capability gate rejected the tool class. |
 | `ErrInvalidSideEffect` | Manifest declared an unknown side-effect class. |
@@ -662,7 +662,7 @@ This file builds the manifest-backed registry and turns tool URIs into live tool
 
 | Method | Description |
 | --- | --- |
-| `URI` | Returns the canonical Matrix tool URI. |
+| `URI` | Returns the canonical `matrix://` tool URI. |
 | `Description` | Returns the registry description. |
 | `SideEffectClass` | Returns the declared side-effect class. |
 | `Server` | Returns the backing MCP server alias. |
@@ -674,7 +674,7 @@ This file builds the manifest-backed registry and turns tool URIs into live tool
 
 | Method | Description |
 | --- | --- |
-| `URI` | Returns the canonical Matrix tool URI. |
+| `URI` | Returns the canonical `matrix://` tool URI. |
 | `Description` | Returns a placeholder description for the native chain tool. |
 | `SideEffectClass` | Returns the declared side-effect class. |
 | `Namespace` | Returns the namespace. |

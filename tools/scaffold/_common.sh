@@ -15,9 +15,10 @@
 #   -h | --help        print usage and exit
 #
 # Environment overrides (defaults in parens):
-#   SCAFFOLD_AUTHOR   (PaxLabs Inc.)      SCAFFOLD_EMAIL   (engineering@paxlabs.io)
+#   SCAFFOLD_AUTHOR   (Sidiora Labs)      SCAFFOLD_EMAIL   (engineering@paxlabs.io)
 #   SCAFFOLD_LICENSE  (MIT)               SCAFFOLD_YEAR    (current year)
-#   SCAFFOLD_VCS_ORG  (paxlabs-inc)       SCAFFOLD_MODULE  (github.com/<org>/<name>)
+#   SCAFFOLD_VCS_ORG  (Sidiora-Labs)      SCAFFOLD_MODULE  (github.com/<org>/<name>)
+#   SCAFFOLD_PACKAGE_SCOPE (centra-ai)
 #   SCAFFOLD_INSTALL  (0)                 SCAFFOLD_GIT     (1)
 #   SCAFFOLD_PM       (pnpm)              SCAFFOLD_FORCE   (0)
 #
@@ -26,11 +27,12 @@
 set -Eeuo pipefail
 
 # ------------------------------------------------------------------ defaults --
-: "${SCAFFOLD_AUTHOR:=PaxLabs Inc.}"
+: "${SCAFFOLD_AUTHOR:=Sidiora Labs}"
 : "${SCAFFOLD_EMAIL:=engineering@paxlabs.io}"
 : "${SCAFFOLD_LICENSE:=MIT}"
 : "${SCAFFOLD_YEAR:=$(date +%Y)}"
-: "${SCAFFOLD_VCS_ORG:=paxlabs-inc}"
+: "${SCAFFOLD_VCS_ORG:=Sidiora-Labs}"
+: "${SCAFFOLD_PACKAGE_SCOPE:=centra-ai}"
 : "${SCAFFOLD_INSTALL:=0}"
 : "${SCAFFOLD_GIT:=1}"
 : "${SCAFFOLD_PM:=pnpm}"
@@ -127,7 +129,7 @@ ${_C_CYN}scaffold-$1${_C_RST}  —  production scaffold for a $1 project
     -h, --help         this message
 
   env:  SCAFFOLD_AUTHOR  SCAFFOLD_EMAIL  SCAFFOLD_LICENSE  SCAFFOLD_MODULE
-        SCAFFOLD_VCS_ORG SCAFFOLD_INSTALL SCAFFOLD_GIT     SCAFFOLD_PM
+        SCAFFOLD_VCS_ORG SCAFFOLD_PACKAGE_SCOPE SCAFFOLD_INSTALL SCAFFOLD_GIT SCAFFOLD_PM
 EOF
 }
 

@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Command mcl-execute is the Session 23 end-to-end driver:
@@ -68,7 +68,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, `mcl-execute — Matrix executor end-to-end driver (sess#23)
+	fmt.Fprintf(os.Stderr, `mcl-execute — Centra AI executor end-to-end driver (sess#23)
 
 Subcommands:
   walk      Compile prose → synthesize plan via executor LLM → walk → attest.
@@ -86,4 +86,4 @@ func fatalf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

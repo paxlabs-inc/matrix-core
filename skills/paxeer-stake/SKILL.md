@@ -1,7 +1,7 @@
 ---
 name: paxeer-stake
 description: Stake PAX on Paxeer via the staking precompile (0x0800) — delegate, undelegate, redelegate, and read delegations. Validators are bech32 paxvaloper.... Signs via the embedded wallet; confirms balance and records every action as an Event with its tx hash.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Stake

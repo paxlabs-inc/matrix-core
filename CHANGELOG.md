@@ -808,8 +808,8 @@ git tags.
 - Initial `research/01-foundations.md` ... `06-agents.md` chapters.
 - Canonical project state at `knowledge/matrix.kvx`.
 
-[Unreleased]: https://github.com/paxlabs-inc/matrix-core/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/paxlabs-inc/matrix-core/releases/tag/v1.0.0
+[Unreleased]: https://github.com/Sidiora-Labs/centra-llm-agents/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v1.0.0
 [0.65.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.65.0
 [0.25.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.25.0
 [0.24.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.24.0

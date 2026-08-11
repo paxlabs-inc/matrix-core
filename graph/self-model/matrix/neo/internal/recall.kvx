@@ -1,19 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:2eece1e371401718b5b83332ea874dc9d69dc31720a509148678833de7350783
+# GENERATED gen=codegraph do-not-edit merkle=b3:8adaec31d110422a96613f590adad21e781eb8f302a1fdaad8310a524483c514
 
 NODE id=matrix/neo/internal/recall kind=package
-  digest=b3:f5411e18d1f103b588586f6dd64120a44f695b9c32d301e5a1dea1f6ba03af2c file=neo/internal/recall range=0:0 lang=go exported=true
+  digest=b3:f23924631560570cbd62470785e617e11bf148377b922f04695127e9608cb818 file=neo/internal/recall range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/recall/recall.go
   ^contains=mod:matrix/neo
 
 NODE id=matrix/neo/internal/recall.Embedder kind=interface
-  digest=b3:fbe479d65b956818457426057b77c577dd415d5b18cdfc69dd04695d3ed09b72 file=neo/internal/recall/recall.go range=32:34 lang=go exported=true byte_range=1369:1430
+  digest=b3:fbe479d65b956818457426057b77c577dd415d5b18cdfc69dd04695d3ed09b72 file=neo/internal/recall/recall.go range=32:34 lang=go exported=true byte_range=1365:1426
   sig=type Embedder interface {\n	Embed(string) ([]float32, error)\n}
 EDGES
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.Hit kind=type
-  digest=b3:be7e5e99c1c99a25739b3f3759c0cfce2c37d8da97131cbc36e8ef1b60782f30 file=neo/internal/recall/recall.go range=36:41 lang=go exported=true byte_range=1432:1624
+  digest=b3:be7e5e99c1c99a25739b3f3759c0cfce2c37d8da97131cbc36e8ef1b60782f30 file=neo/internal/recall/recall.go range=36:41 lang=go exported=true byte_range=1428:1620
   sig=type Hit struct {\n	Role	string	// "user" | "assistant"\n	Text	string\n}
   doc=Hit is one recalled past turn, rendered verbatim (high-entropy tokens are\nnever paraphrased — the trust contract).
 EDGES
@@ -21,26 +21,26 @@ EDGES
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.Hit#Role kind=field
-  digest=b3:4cf5726e7c3d076ee5800d00e1db77af53219c34859ce90baf5c8f471a711dd1 file=neo/internal/recall/recall.go range=39:39 lang=go exported=true byte_range=1574:1585
+  digest=b3:4cf5726e7c3d076ee5800d00e1db77af53219c34859ce90baf5c8f471a711dd1 file=neo/internal/recall/recall.go range=39:39 lang=go exported=true byte_range=1570:1581
   sig=string
 EDGES
   ^contains=matrix/neo/internal/recall.Hit
 
 NODE id=matrix/neo/internal/recall.Hit#Text kind=field
-  digest=b3:a0367d1c5ee4bc8713af6325c3fa2eef16704c3681176f244cc5f702a6d4e4dd file=neo/internal/recall/recall.go range=40:40 lang=go exported=true byte_range=1611:1622
+  digest=b3:a0367d1c5ee4bc8713af6325c3fa2eef16704c3681176f244cc5f702a6d4e4dd file=neo/internal/recall/recall.go range=40:40 lang=go exported=true byte_range=1607:1618
   sig=string
 EDGES
   ^contains=matrix/neo/internal/recall.Hit
 
 NODE id=matrix/neo/internal/recall.New kind=func
-  digest=b3:49b6e5f6541c157bce30e9ec5e3dca6ca688f5012db7c61d038660a6d75e3a4a file=neo/internal/recall/recall.go range=67:84 lang=go exported=true byte_range=2426:2931
+  digest=b3:49b6e5f6541c157bce30e9ec5e3dca6ca688f5012db7c61d038660a6d75e3a4a file=neo/internal/recall/recall.go range=67:84 lang=go exported=true byte_range=2422:2927
   sig=func New(conv *conversation.Store, convID string, emb Embedder, topK, budgetTokens int) *Recaller
   doc=New builds a Recaller for convID. A nil embedder or disabled store yields a\nsafe no-op recaller (Relevant returns nil). topK / budgetTokens fall back to\nsane defaults when non-positive.
 EDGES
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.Recaller kind=type
-  digest=b3:7af0b401dfb587178d71d8b4203c249fd3b9b9909884efda3b4ba80d3f03851b file=neo/internal/recall/recall.go range=50:65 lang=go exported=true byte_range=1746:2424
+  digest=b3:7af0b401dfb587178d71d8b4203c249fd3b9b9909884efda3b4ba80d3f03851b file=neo/internal/recall/recall.go range=50:65 lang=go exported=true byte_range=1742:2420
   sig=type Recaller struct {\n	conv	*conversation.Store\n	convID	string\n	emb	Embedder\n	topK	int\n	budget	int	// token ceiling (bytes/4 heuristic) for the recalled block\n\n	mu		sync.Mutex\n	cache		[]turnVec	// embedded turns, thread order\n	embedded	int		// count of source turns already folded into cache\n}
   doc=Recaller surfaces relevant past turns of ONE conversation thread. It is\nsession-scoped (one per conversation) and serialized by a mutex, so the\nopening fault and the mid-turn refault never race the embedding cache. The\ncache is lazy + incremental: only turns appended since the last call are\nembedded, so steady-state cost is one embed per new turn.
 EDGES
@@ -49,55 +49,55 @@ EDGES
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.Recaller#budget kind=field
-  digest=b3:1fe7e20b56b9409d8ff786d2caafc80e47350e05391aad32628e840e5eea44a2 file=neo/internal/recall/recall.go range=60:60 lang=go exported=false byte_range=2207:2217
+  digest=b3:1fe7e20b56b9409d8ff786d2caafc80e47350e05391aad32628e840e5eea44a2 file=neo/internal/recall/recall.go range=60:60 lang=go exported=false byte_range=2203:2213
   sig=int
 EDGES
   ^contains=matrix/neo/internal/recall.Recaller
 
 NODE id=matrix/neo/internal/recall.Recaller#cache kind=field
-  digest=b3:fc51797528a4a6ebd45bf47e8c2d8c921c6f3784a5e15ec41a6670c11b46ed19 file=neo/internal/recall/recall.go range=63:63 lang=go exported=false byte_range=2301:2319
+  digest=b3:fc51797528a4a6ebd45bf47e8c2d8c921c6f3784a5e15ec41a6670c11b46ed19 file=neo/internal/recall/recall.go range=63:63 lang=go exported=false byte_range=2297:2315
   sig=[]recall.turnVec
 EDGES
   ^contains=matrix/neo/internal/recall.Recaller
 
 NODE id=matrix/neo/internal/recall.Recaller#conv kind=field
-  digest=b3:3ae609040bdce707a1d1ed7a4011f36e2b87099d659301825dac1a58ed1c68e6 file=neo/internal/recall/recall.go range=56:56 lang=go exported=false byte_range=2135:2161
+  digest=b3:3ae609040bdce707a1d1ed7a4011f36e2b87099d659301825dac1a58ed1c68e6 file=neo/internal/recall/recall.go range=56:56 lang=go exported=false byte_range=2131:2157
   sig=*conversation.Store
 EDGES
   ^contains=matrix/neo/internal/recall.Recaller
 
 NODE id=matrix/neo/internal/recall.Recaller#convID kind=field
-  digest=b3:44231f147e598697d7e858a79f1fae40d6c81606758a1844ae3f1862407f748c file=neo/internal/recall/recall.go range=57:57 lang=go exported=false byte_range=2163:2176
+  digest=b3:44231f147e598697d7e858a79f1fae40d6c81606758a1844ae3f1862407f748c file=neo/internal/recall/recall.go range=57:57 lang=go exported=false byte_range=2159:2172
   sig=string
 EDGES
   ^contains=matrix/neo/internal/recall.Recaller
 
 NODE id=matrix/neo/internal/recall.Recaller#emb kind=field
-  digest=b3:cdf9efb1e37396a33f794d48105ca2742e2be9ec1b0b913144524a0366f5e0c6 file=neo/internal/recall/recall.go range=58:58 lang=go exported=false byte_range=2178:2193
+  digest=b3:cdf9efb1e37396a33f794d48105ca2742e2be9ec1b0b913144524a0366f5e0c6 file=neo/internal/recall/recall.go range=58:58 lang=go exported=false byte_range=2174:2189
   sig=recall.Embedder
 EDGES
   ^contains=matrix/neo/internal/recall.Recaller
 
 NODE id=matrix/neo/internal/recall.Recaller#embedded kind=field
-  digest=b3:e6aed54b7a41c01bab987017772da58ee5143bfab30359959028aca496d7536f file=neo/internal/recall/recall.go range=64:64 lang=go exported=false byte_range=2353:2365
+  digest=b3:e6aed54b7a41c01bab987017772da58ee5143bfab30359959028aca496d7536f file=neo/internal/recall/recall.go range=64:64 lang=go exported=false byte_range=2349:2361
   sig=int
 EDGES
   ^contains=matrix/neo/internal/recall.Recaller
 
 NODE id=matrix/neo/internal/recall.Recaller#mu kind=field
-  digest=b3:5aedaaf462c3fae4f7947c3a76aea8d11d8fd86e187f728847e2ba5590be0e2d file=neo/internal/recall/recall.go range=62:62 lang=go exported=false byte_range=2280:2299
+  digest=b3:5aedaaf462c3fae4f7947c3a76aea8d11d8fd86e187f728847e2ba5590be0e2d file=neo/internal/recall/recall.go range=62:62 lang=go exported=false byte_range=2276:2295
   sig=sync.Mutex
 EDGES
   ^contains=matrix/neo/internal/recall.Recaller
 
 NODE id=matrix/neo/internal/recall.Recaller#topK kind=field
-  digest=b3:5077c8050efb7bad315457cdbc186d024e5ffeef2c9cb14e560d6607178b4b8d file=neo/internal/recall/recall.go range=59:59 lang=go exported=false byte_range=2195:2205
+  digest=b3:5077c8050efb7bad315457cdbc186d024e5ffeef2c9cb14e560d6607178b4b8d file=neo/internal/recall/recall.go range=59:59 lang=go exported=false byte_range=2191:2201
   sig=int
 EDGES
   ^contains=matrix/neo/internal/recall.Recaller
 
 NODE id=matrix/neo/internal/recall.Recaller.Relevant kind=method
-  digest=b3:c46c6f5f9385e7c3b789f13387d9f9e767f85ee1133dc80a9fead77f6546b226 file=neo/internal/recall/recall.go range=90:145 lang=go exported=true byte_range=3060:4434
+  digest=b3:c46c6f5f9385e7c3b789f13387d9f9e767f85ee1133dc80a9fead77f6546b226 file=neo/internal/recall/recall.go range=90:145 lang=go exported=true byte_range=3056:4430
   sig=func (r *Recaller) Relevant(ctx context.Context, queryText string) []Hit
   doc=Relevant returns up to topK past turns most similar to queryText, ranked by\ncosine similarity and bounded by the token budget. Best-effort: any embed\nfailure degrades to fewer/no hits rather than erroring (the RAM tier + recent\ntail still carry the turn). The caller is expected to drop any hit already\npresent in the live transcript (dedup lives at the agent boundary).
 EDGES
@@ -105,14 +105,14 @@ EDGES
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.Recaller.enabled kind=method
-  digest=b3:a677a38ba37f514ebf6cfc140c766c15ac7e9bf17466cb26ed4a7fba898ea189 file=neo/internal/recall/recall.go range=86:88 lang=go exported=false byte_range=2933:3058
+  digest=b3:a677a38ba37f514ebf6cfc140c766c15ac7e9bf17466cb26ed4a7fba898ea189 file=neo/internal/recall/recall.go range=86:88 lang=go exported=false byte_range=2929:3054
   sig=func (r *Recaller) enabled() bool
 EDGES
   ^contains=matrix/neo/internal/recall.Recaller
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.Recaller.refreshLocked kind=method
-  digest=b3:00370653d598a49587d4c8df302a8cc6f7954602e994648a2fb5b9389c796d6e file=neo/internal/recall/recall.go range=171:194 lang=go exported=false byte_range=4821:5563
+  digest=b3:00370653d598a49587d4c8df302a8cc6f7954602e994648a2fb5b9389c796d6e file=neo/internal/recall/recall.go range=171:194 lang=go exported=false byte_range=4817:5559
   sig=func (r *Recaller) refreshLocked()
   doc=refreshLocked embeds any turns appended since the last call, extending the\ncache. On an embed error it stops and leaves the remaining turns for a later\npass (embedded is not advanced past the failed turn), so transient embedder\nhiccups self-heal. Caller MUST hold r.mu.
 EDGES
@@ -120,19 +120,19 @@ EDGES
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.cosine kind=func
-  digest=b3:b1d8e99e554b6f4d0caa44b89b390e33c01b2850c2cb91457aee07a6137466bb file=neo/internal/recall/recall.go range=147:161 lang=go exported=false byte_range=4436:4703
+  digest=b3:b1d8e99e554b6f4d0caa44b89b390e33c01b2850c2cb91457aee07a6137466bb file=neo/internal/recall/recall.go range=147:161 lang=go exported=false byte_range=4432:4699
   sig=func cosine(a, b []float32) float32
 EDGES
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.sqrt32 kind=func
-  digest=b3:633506e4de0bf63998ce58f16dbcf4e8b63c42bbf213534d97070a3cae4e4d02 file=neo/internal/recall/recall.go range=163:169 lang=go exported=false byte_range=4705:4819
+  digest=b3:633506e4de0bf63998ce58f16dbcf4e8b63c42bbf213534d97070a3cae4e4d02 file=neo/internal/recall/recall.go range=163:169 lang=go exported=false byte_range=4701:4815
   sig=func sqrt32(value float32) float32
 EDGES
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.turnVec kind=type
-  digest=b3:20010d5b54bf054c0e86353a7b6c55f08af396aca082dea3fbeefe86fc75c924 file=neo/internal/recall/recall.go range=43:48 lang=go exported=false byte_range=1626:1744
+  digest=b3:20010d5b54bf054c0e86353a7b6c55f08af396aca082dea3fbeefe86fc75c924 file=neo/internal/recall/recall.go range=43:48 lang=go exported=false byte_range=1622:1740
   sig=type turnVec struct {\n	role	string\n	text	string\n	vec	[]float32\n}
   doc=turnVec caches one embedded turn in thread order.
 EDGES
@@ -140,25 +140,25 @@ EDGES
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.turnVec#role kind=field
-  digest=b3:a80e3e9c1d5d6c859f6fc8da32b57ffa159d2394cbd78dde0faec66e926b32d2 file=neo/internal/recall/recall.go range=45:45 lang=go exported=false byte_range=1702:1713
+  digest=b3:a80e3e9c1d5d6c859f6fc8da32b57ffa159d2394cbd78dde0faec66e926b32d2 file=neo/internal/recall/recall.go range=45:45 lang=go exported=false byte_range=1698:1709
   sig=string
 EDGES
   ^contains=matrix/neo/internal/recall.turnVec
 
 NODE id=matrix/neo/internal/recall.turnVec#text kind=field
-  digest=b3:4453a13196e8b44083b2b06872e9e91444475db01cb163959df69084963382d4 file=neo/internal/recall/recall.go range=46:46 lang=go exported=false byte_range=1715:1726
+  digest=b3:4453a13196e8b44083b2b06872e9e91444475db01cb163959df69084963382d4 file=neo/internal/recall/recall.go range=46:46 lang=go exported=false byte_range=1711:1722
   sig=string
 EDGES
   ^contains=matrix/neo/internal/recall.turnVec
 
 NODE id=matrix/neo/internal/recall.turnVec#vec kind=field
-  digest=b3:475d68a2968d0c0bfaac7eec01765327dff0b39ca2bb7a7f30985b7a312a595e file=neo/internal/recall/recall.go range=47:47 lang=go exported=false byte_range=1728:1742
+  digest=b3:475d68a2968d0c0bfaac7eec01765327dff0b39ca2bb7a7f30985b7a312a595e file=neo/internal/recall/recall.go range=47:47 lang=go exported=false byte_range=1724:1738
   sig=[]float32
 EDGES
   ^contains=matrix/neo/internal/recall.turnVec
 
 NODE id=matrix/neo/internal/recall/recall.go kind=file
-  digest=b3:7000d4d1c56e33f4b0d4b410fe1f522adaffb90a9d8d6cefb867e60f2eb3e603 file=neo/internal/recall/recall.go range=1:194 lang=go exported=true
+  digest=b3:46485a20a7df346aa71912ed6cc352668815b612fd05fc70ed8d27c7c8966bf1 file=neo/internal/recall/recall.go range=1:194 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/recall.Embedder,matrix/neo/internal/recall.Hit,matrix/neo/internal/recall.New,matrix/neo/internal/recall.Recaller,matrix/neo/internal/recall.Recaller.Relevant,matrix/neo/internal/recall.Recaller.enabled,matrix/neo/internal/recall.Recaller.refreshLocked,matrix/neo/internal/recall.cosine,matrix/neo/internal/recall.sqrt32,matrix/neo/internal/recall.turnVec
   ^contains=matrix/neo/internal/recall

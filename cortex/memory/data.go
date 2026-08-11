@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Per-type Data schemas. Spec: research/04-cortex.md §4.2.
@@ -265,4 +265,4 @@ func TypeOf(d TypedData) Type {
 // nine canonical types.
 var ErrUnknownDataKind = errors.New("memory: unknown data kind")
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

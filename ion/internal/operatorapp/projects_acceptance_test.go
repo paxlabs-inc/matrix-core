@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	projectcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/project"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/policy"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	projectcontrol "github.com/paxlabs-inc/ion-agent/internal/project"
-	"github.com/paxlabs-inc/ion-agent/internal/security/policy"
 )
 
 type scopedPreviewInspector struct{ actor uuid.UUID }

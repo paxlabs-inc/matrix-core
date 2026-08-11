@@ -3,7 +3,7 @@ import {
   isComputerEventPayload,
   migrateDisplayModel,
   type EventEnvelope,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 import { useQuery } from '@tanstack/react-query'
 import {
   type KeyboardEvent,

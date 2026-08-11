@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Command mclc-cortex is the bridged compiler: mclc against a live cortex.
@@ -366,7 +366,7 @@ func statusName(s interpreter.SlotStatus) string {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, `mclc-cortex — MatrixScript compiler bridged to a live cortex
+	fmt.Fprintf(os.Stderr, `mclc-cortex — CentraScript compiler bridged to a live cortex
 
 Usage:
   mclc-cortex -skill <SKILL.mtx> -prose "user goal" [flags]
@@ -392,4 +392,4 @@ Environment:
 `)
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

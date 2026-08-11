@@ -2,7 +2,7 @@
 
 ## Overview
 
-Chronos is the fleet-wide wake and scheduling control plane for Matrix agents. The daemon takes durable alarm requests, stores them in Postgres, applies auth around agent identity, and later wakes the router so the agent can resume with the original context.
+Chronos is the fleet-wide wake and scheduling control plane for Centra AI agents. The daemon takes durable alarm requests, stores them in Postgres, applies auth around agent identity, and later wakes the router so the agent can resume with the original context.
 
 This section focuses on the Chronos surface that is unique to this runtime slice: the auth primitives, config overlay loader, Postgres-backed alarm store, HTTP server wiring, the documentation set that explains the service, and the shell assets that install and expose `chronosd`.
 
@@ -60,7 +60,7 @@ The daemon logs a warning when CHRONOS_TOKEN or CHRONOS_WAKE_TOKEN is empty. In 
 
 Chronos uses two auth layers:
 
-1. A shared transport bearer that proves the caller is a legitimate Matrix daemon.
+1. A shared transport bearer that proves the caller is a legitimate Centra AI daemon.
 2. An agent-DID principal token that proves which owner is acting.
 
 ### Type fields
@@ -215,7 +215,7 @@ Chronos config is env-first with an optional `chronos.config.kvx` overlay. The l
 | Property | Type | Description |
 | --- | --- | --- |
 | `Port` | `int` | Box-local listen port |
-| `PostgresURI` | `string` | Shared Matrix Postgres DSN |
+| `PostgresURI` | `string` | Shared Centra AI Postgres DSN |
 | `MigrationsDir` | `string` | Forward-only SQL migration directory |
 | `TransportToken` | `string` | Shared bearer token for transport auth |
 | `AgentAuthSecret` | `string` | HMAC secret for principal tokens |
@@ -303,7 +303,7 @@ The parser is zero-dependency, scanner-based, and honors `${ENV_VAR}` interpolat
 
 The same env-first overlay pattern is mirrored in deus/internal/config/config.go, layerx/internal/config/config.go, and neo/internal/config/config.go. Their companion tests are deus/internal/config/config_test.go, layerx/internal/config/config_test.go, and neo/internal/config/config_test.go.
 
-The Chronos loader fits the same general daemon pattern used across the matrix-core services, but the Chronos-specific twist is the optional `chronos.config.kvx` overlay and the dedicated wake, claim, and auth knobs.
+The Chronos loader fits the same general daemon pattern used across the Centra AI services, but the Chronos-specific twist is the optional `chronos.config.kvx` overlay and the dedicated wake, claim, and auth knobs.
 
 ## Postgres store
 

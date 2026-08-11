@@ -1,4 +1,4 @@
-# gateway — Matrix LLM Gateway (sess#32)
+# gateway — Centra AI LLM Gateway (sess#32)
 
 Top-level Go module that mediates every per-user daemon's LLM call to
 Fireworks/Together, debiting a Postgres `credit_ledger` row per call

@@ -1,7 +1,7 @@
 ---
 name: machine-mail
 description: Operate Neo's MachineMail identity safely: inspect mailboxes and conversations, search, compose, reply in-thread, park draft-scoped sends for approval, and follow authoritative lifecycle events with stable idempotency keys.
-origin: Matrix/MachineMail
+origin: Centra AI/MachineMail
 ---
 
 # MachineMail

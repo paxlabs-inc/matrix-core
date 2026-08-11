@@ -1,5 +1,5 @@
-# Matrix — root Makefile
-# Drives the twelve sibling Go modules that make up the deployed system plus
+# Centra AI — root Makefile
+# Drives the fifteen sibling Go modules that make up the deployed system plus
 # repo-wide tasks (lint, fmt, e2e, deploy artefacts).
 #
 # Style: zero implicit magic. Every target is grep-able and self-contained.
@@ -48,7 +48,7 @@ endef
 
 .PHONY: help
 help: ## Show this help.
-	@awk 'BEGIN {FS = ":.*##"; printf "\n  $(C_BOLD)Matrix$(C_RESET) — pair-programmer monorepo\n\n  $(C_BOLD)Usage:$(C_RESET) make $(C_DIM)<target>$(C_RESET)\n\n  $(C_BOLD)Targets:$(C_RESET)\n"} /^[a-zA-Z0-9_.\/-]+:.*?##/ { printf "    $(C_BLUE)%-22s$(C_RESET) %s\n", $$1, $$2 } /^##@/ { printf "\n  $(C_BOLD)%s$(C_RESET)\n", substr($$0, 5) }' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "\n  $(C_BOLD)Centra AI$(C_RESET) — agent platform monorepo\n\n  $(C_BOLD)Usage:$(C_RESET) make $(C_DIM)<target>$(C_RESET)\n\n  $(C_BOLD)Targets:$(C_RESET)\n"} /^[a-zA-Z0-9_.\/-]+:.*?##/ { printf "    $(C_BLUE)%-22s$(C_RESET) %s\n", $$1, $$2 } /^##@/ { printf "\n  $(C_BOLD)%s$(C_RESET)\n", substr($$0, 5) }' $(MAKEFILE_LIST)
 	@printf "\n  $(C_DIM)Modules: $(MODULES)$(C_RESET)\n\n"
 
 .PHONY: version

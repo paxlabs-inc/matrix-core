@@ -11,14 +11,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/action"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/agent"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/provider"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/policy"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/session"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/action"
-	"github.com/paxlabs-inc/ion-agent/internal/agent"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	"github.com/paxlabs-inc/ion-agent/internal/provider"
-	"github.com/paxlabs-inc/ion-agent/internal/security/policy"
-	"github.com/paxlabs-inc/ion-agent/internal/session"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
 )
 
 const (

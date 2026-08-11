@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
+	workcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/work"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
-	workcontrol "github.com/paxlabs-inc/ion-agent/internal/work"
 )
 
 const supervisorStartToolSchema = `{

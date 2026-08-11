@@ -57,7 +57,7 @@ def node_notices(root: Path) -> list[tuple[str, str, list[str]]]:
 def main() -> None:
     root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.cwd()
     output = Path(sys.argv[2]) if len(sys.argv) > 2 else Path("THIRD_PARTY_NOTICES.txt")
-    lines = ["Matrix AgentCore third-party notices", ""]
+    lines = ["Centra AI AgentCore third-party notices", ""]
     for label, license_name, texts in python_notices() + node_notices(root):
         lines.extend([label, f"Declared license: {license_name}"])
         for text in texts:
@@ -68,4 +68,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

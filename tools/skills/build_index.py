@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build matrix/skills/INDEX.md and INDEX.json from ported SKILL.md frontmatter."""
+"""Build the Centra AI skills INDEX.md and INDEX.json from ported SKILL.md frontmatter."""
 import json
 import re
 import sys
@@ -79,14 +79,14 @@ def main() -> int:
 
     # Write INDEX.md
     lines = [
-        "# Matrix Skills Index",
+        "# Centra AI Skills Index",
         "",
         f"**Total ported:** {len(entries)} ({len([e for e in entries if e['status']=='keep'])} keep + {len([e for e in entries if e['status']=='adapt'])} adapt)",
         "",
         "**Source:** `/root/matrix/development/skills/` — see `PORT_MANIFEST.json` for full drop/defer lists.",
         "",
         "**Status legend:**",
-        "- `keep` — ported near-as-is; conforms or near-conforms to matrix S1 schema",
+        "- `keep` — ported near-as-is; conforms or near-conforms to the Centra AI S1 schema",
         "- `adapt` — copied with MCL+cortex rewrite pending (see `journal/notes/01-skill-triage.md`)",
         "",
         "**Schema:** see `research/05-skills-and-tools.md` §2.3 for canonical frontmatter (S1).",

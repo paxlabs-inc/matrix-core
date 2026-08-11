@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
 )
 
 // Source identifies the subsystem that proposed idle work.

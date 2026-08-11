@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Command neo runs the Neo default agent as an interactive CLI: a normal
@@ -288,7 +288,7 @@ func readLine(r *bufio.Reader) (string, bool) {
 }
 
 func printBanner(cfg config.Config, tm *tools.Manager, pager *memory.Pager) {
-	fmt.Printf("%s — Matrix default agent\n", cfg.AgentName)
+	fmt.Printf("%s — Centra AI default agent\n", cfg.AgentName)
 	fmt.Printf("  model: %s\n", cfg.MainModel)
 	if pager != nil {
 		mode := "salience"

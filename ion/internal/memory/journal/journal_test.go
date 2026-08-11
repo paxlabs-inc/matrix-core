@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory/integrity"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory/journal"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory/mmr"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/vault"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/memory"
-	"github.com/paxlabs-inc/ion-agent/internal/memory/integrity"
-	"github.com/paxlabs-inc/ion-agent/internal/memory/journal"
-	"github.com/paxlabs-inc/ion-agent/internal/memory/mmr"
-	"github.com/paxlabs-inc/ion-agent/internal/security/vault"
 )
 
 func TestEncryptedAppendReplayAndDeterministicIntegrity(t *testing.T) {

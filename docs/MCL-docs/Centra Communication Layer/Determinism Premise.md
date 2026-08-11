@@ -1,8 +1,8 @@
-# Matrix Communication Layer - Determinism Premise
+# MCL - Determinism Premise
 
 ## Overview
 
-Matrix Communication Layer treats message packaging and model calls as deterministic artifacts instead of ad hoc text blobs. The envelope package turns every MCL message into a typed body, a canonical CBOR envelope, and a signature over signature-cleared bytes; the LLM package turns every frontier-model call into a repeatable request shape, a stable provider route, and a predictable response parser.
+MCL treats message packaging and model calls as deterministic artifacts instead of ad hoc text blobs. The envelope package turns every MCL message into a typed body, a canonical CBOR envelope, and a signature over signature-cleared bytes; the LLM package turns every frontier-model call into a repeatable request shape, a stable provider route, and a predictable response parser.
 
 This section is about the rules that keep those artifacts replayable. It covers the closed 15-kind envelope map, typed body validation, canonical wire encoding, self-hashing, identity preamble injection, provider and API-shape detection, and the request builders used by the chat-completions and Anthropic Messages clients.
 
@@ -442,7 +442,7 @@ The tests in `MCL/envelope/envelope_test.go` prove those branches with unknown k
 | `IdentityPreamble` | Locked system message text injected into model calls. |
 
 
-`IdentityVersion` is `matrix-identity-v1`. `IdentityPreamble` is the exact system message locked by the tests, and those tests also check that it starts with `You are Matrix`, contains `/root/matrix`, and ends with `improving Matrix itself.`
+`IdentityVersion` is `centra-ai-identity-v2`. `IdentityPreamble` is the exact system message locked by the tests, and those tests also check that it starts with `You are Centra AI`, contains `/root/matrix`, and ends with `improving Centra AI itself.`
 
 ### Behavior
 

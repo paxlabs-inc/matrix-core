@@ -1,6 +1,6 @@
 # Architecture
 
-Chronos is a centralized control plane: one `chronosd` process serves every per-user agent in the Matrix fleet. It is NOT a per-daemon timer — it is the single source of truth for scheduled time across the entire system.
+Chronos is a centralized control plane: one `chronosd` process serves every per-user agent in the Centra AI fleet. It is NOT a per-daemon timer — it is the single source of truth for scheduled time across the entire system.
 
 Source files: `chronos.frozen.kvx` (design contract), `cmd/chronosd/main.go` (service entry).
 
@@ -68,7 +68,7 @@ Chronos **never** talks to Fly or the daemon directly. It reuses the router's ex
 
 ## Mission
 
-> Give every Matrix agent a reliable sense of time: schedule future work, defer mid-task, recur daily, and get woken with enough context to resume seamlessly.
+> Give every Centra AI agent a reliable sense of time: schedule future work, defer mid-task, recur daily, and get woken with enough context to resume seamlessly.
 
 Agents are episodic — a per-user daemon scales to zero between requests and has no way to act later or wait without holding an expensive live process. A centralized durable scheduler lets an agent set work down, release the machine, and be woken precisely when due.
 

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/session"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	"github.com/paxlabs-inc/ion-agent/internal/session"
 )
 
 // SessionStore is the narrow encrypted-session contract consumed by adapters.

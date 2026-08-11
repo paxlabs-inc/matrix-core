@@ -10,7 +10,7 @@ import (
 )
 
 // CodyConfig configures the production Summarizer that routes through the
-// Matrix Gateway's cheap "cody" tier. GatewayURL and ActorDID are required for
+// Centra AI gateway's cheap "cody" tier. GatewayURL and ActorDID are required for
 // gateway routing; Model should be one of the cody-slot whitelist (the cheap
 // glm-5p1-fast prototype model is the default cheap tier).
 type CodyConfig struct {

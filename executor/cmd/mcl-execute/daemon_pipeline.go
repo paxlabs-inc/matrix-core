@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -459,7 +459,7 @@ func runMessage(
 
 	// Phase 11.5 — completeness critic + bounded re-plan gate.
 	//
-	// The Matrix pipeline plans once then executes blind, so a fast planner
+	// The Centra AI pipeline plans once then executes blind, so a fast planner
 	// can emit a partial plan (e.g. only the first of several requested
 	// deliverables) that walks cleanly and would otherwise attest as
 	// "completed". The critic audits the EXECUTED work (real tool calls +
@@ -808,4 +808,4 @@ func dtoFromQuestions(qs []*interpreter.ClarifyQuestion) []clarifyQuestionDTO {
 	return out
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

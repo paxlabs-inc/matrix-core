@@ -1,0 +1,238 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:8adaec31d110422a96613f590adad21e781eb8f302a1fdaad8310a524483c514
+
+NODE id=matrix/neo/internal/runtime/profile kind=package
+  digest=b3:f608d8e562e29749c82c887a645088bd1432c2dca9f03c5e9e0c81eba9fb67ec file=neo/internal/runtime/profile range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/neo/internal/runtime/profile/store.go
+  ^contains=mod:matrix/neo
+
+NODE id=matrix/neo/internal/runtime/profile.ConsentDenied kind=const
+  digest=b3:3afd2ada29d9f4ff6a77ac118c9090c12939b55e216d3c5ac434efce736132e2 file=neo/internal/runtime/profile/store.go range=30:30 lang=go exported=true byte_range=509:547
+  sig=profile.ConsentState
+EDGES
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.ConsentGranted kind=const
+  digest=b3:0ed8dab2f1fbde03c5c765c8c5e0e7835e0e7cf6063b4c2ec97ea4fa812e86a6 file=neo/internal/runtime/profile/store.go range=29:29 lang=go exported=true byte_range=468:507
+  sig=profile.ConsentState
+EDGES
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.ConsentState kind=type
+  digest=b3:c4a69109930c117efc4f3d3304ed6177e7062cb7e4588541d1ad8a31abd281e7 file=neo/internal/runtime/profile/store.go range=25:25 lang=go exported=true byte_range=394:418
+  sig=type ConsentState string
+EDGES
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.ConsentUnset kind=const
+  digest=b3:2bf45e28bade05c24df48cff6f06b1a30bf1ea6aa643da3fc370e8c5f169baed file=neo/internal/runtime/profile/store.go range=28:28 lang=go exported=true byte_range=429:466
+  sig=profile.ConsentState
+EDGES
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.DeletionActive kind=const
+  digest=b3:7620791b47459ec20e64104b6cacc5da6d42840dc245069221ee6ff442bcccba file=neo/internal/runtime/profile/store.go range=36:36 lang=go exported=true byte_range=587:627
+  sig=profile.DeletionState
+EDGES
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.DeletionDeleted kind=const
+  digest=b3:917e9db827c1633e2331262e604a18f6c66beb300025c9c2a8902e8ad8fc2387 file=neo/internal/runtime/profile/store.go range=37:37 lang=go exported=true byte_range=629:670
+  sig=profile.DeletionState
+EDGES
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.DeletionState kind=type
+  digest=b3:6604aa85e0ff499273e05242879398a56dcd6ee5ccd39382f70386e3cb674d85 file=neo/internal/runtime/profile/store.go range=33:33 lang=go exported=true byte_range=551:576
+  sig=type DeletionState string
+EDGES
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.ErrAbsent kind=var
+  digest=b3:d8dac63b94a765ac6a74a5ac634647feca45003e3f3ab43b1c841b283c5c581f file=neo/internal/runtime/profile/store.go range=23:23 lang=go exported=true byte_range=351:392
+  sig=error
+EDGES
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.LegacyReader kind=type
+  digest=b3:3ab61abb307f57d24b7f755e033f980d2a45a5f87fcab051438b5e618b93d0dc file=neo/internal/runtime/profile/store.go range=56:56 lang=go exported=true byte_range=1296:1358
+  sig=type LegacyReader func(context.Context) (Profile, bool, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.Open kind=func
+  digest=b3:8199e5bce7d5f1e04702339c0ec7cc5916c89354297749a92cb946458d519c62 file=neo/internal/runtime/profile/store.go range=66:78 lang=go exported=true byte_range=1477:2004
+  sig=func Open(path string, session *vault.Session) (*Store, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.Profile kind=type
+  digest=b3:0a64e112e5484d6e130bce8552c18ddd66644cd7b2cc08044ef403cd52920c1d file=neo/internal/runtime/profile/store.go range=40:49 lang=go exported=true byte_range=674:1160
+  sig=type Profile struct {\n	PreferredPersonName	string		`json:"preferred_name"`\n	AgentName		string		`json:"agent_name"`\n	ExpertiseDomains	[]string	`json:"expertise_domains"`\n	ProfileVersion		uint64		`json:"profile_version"`\n	CreatedAt		time.Time	`json:"created_at"`\n	UpdatedAt		time.Time	`json:"updated_at"`\n	Consent			ConsentState	`json:"consent_state"`\n	Deletion		DeletionState	`json:"deletion_state"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/profile.Profile#AgentName,matrix/neo/internal/runtime/profile.Profile#Consent,matrix/neo/internal/runtime/profile.Profile#CreatedAt,matrix/neo/internal/runtime/profile.Profile#Deletion,matrix/neo/internal/runtime/profile.Profile#ExpertiseDomains,matrix/neo/internal/runtime/profile.Profile#PreferredPersonName,matrix/neo/internal/runtime/profile.Profile#ProfileVersion,matrix/neo/internal/runtime/profile.Profile#UpdatedAt
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.Profile#AgentName kind=field
+  digest=b3:3d0aef0cdaea57250310db8b0f3539bdd7a989aaf325d10e4b1746692ad177d0 file=neo/internal/runtime/profile/store.go range=42:42 lang=go exported=true byte_range=756:809
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Profile
+
+NODE id=matrix/neo/internal/runtime/profile.Profile#Consent kind=field
+  digest=b3:1fb0ad25233bbf5a0fa0b0f29526dfba14912aead6c06ab65f915624470b5ef5 file=neo/internal/runtime/profile/store.go range=47:47 lang=go exported=true byte_range=1043:1099
+  sig=profile.ConsentState
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Profile
+
+NODE id=matrix/neo/internal/runtime/profile.Profile#CreatedAt kind=field
+  digest=b3:d37d0a6d36c9f1067b3a888a12c0d08500f0b4c50e72945e9d357af1c1afd495 file=neo/internal/runtime/profile/store.go range=45:45 lang=go exported=true byte_range=933:986
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Profile
+
+NODE id=matrix/neo/internal/runtime/profile.Profile#Deletion kind=field
+  digest=b3:976caec3a96e916fc2b03b7e353cabb13023da3184b5c3f86eec6af4f19f2bad file=neo/internal/runtime/profile/store.go range=48:48 lang=go exported=true byte_range=1101:1158
+  sig=profile.DeletionState
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Profile
+
+NODE id=matrix/neo/internal/runtime/profile.Profile#ExpertiseDomains kind=field
+  digest=b3:a4684dbced50818d9cc4b27f3b57895e73ec7cacbc2d8bb1caea35d3eb4a6fdf file=neo/internal/runtime/profile/store.go range=43:43 lang=go exported=true byte_range=811:871
+  sig=[]string
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Profile
+
+NODE id=matrix/neo/internal/runtime/profile.Profile#PreferredPersonName kind=field
+  digest=b3:2052ed9dafd7474cb506cb395da15a6cd73c610566fd623f32f55a4634b75df2 file=neo/internal/runtime/profile/store.go range=41:41 lang=go exported=true byte_range=697:754
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Profile
+
+NODE id=matrix/neo/internal/runtime/profile.Profile#ProfileVersion kind=field
+  digest=b3:f2672463eaf9059f759e3ff47bea4e760bf4a53ce27659ffd950dc77f591b82d file=neo/internal/runtime/profile/store.go range=44:44 lang=go exported=true byte_range=873:931
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Profile
+
+NODE id=matrix/neo/internal/runtime/profile.Profile#UpdatedAt kind=field
+  digest=b3:f68a709be7bc90ae06fb4307d74b4ba7a222a0307f989074fe2dd10bfed825b7 file=neo/internal/runtime/profile/store.go range=46:46 lang=go exported=true byte_range=988:1041
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Profile
+
+NODE id=matrix/neo/internal/runtime/profile.Store kind=type
+  digest=b3:70e318a912c642c67032057d106170f5226fc4aaf8df5786814a20d376293b4c file=neo/internal/runtime/profile/store.go range=58:64 lang=go exported=true byte_range=1360:1475
+  sig=type Store struct {\n	path	string\n	vault	*vault.UserVault\n	user	string\n	now	func() time.Time\n	mu	sync.Mutex\n}
+EDGES
+  contains=matrix/neo/internal/runtime/profile.Store#mu,matrix/neo/internal/runtime/profile.Store#now,matrix/neo/internal/runtime/profile.Store#path,matrix/neo/internal/runtime/profile.Store#user,matrix/neo/internal/runtime/profile.Store#vault,matrix/neo/internal/runtime/profile.Store.Delete,matrix/neo/internal/runtime/profile.Store.Get,matrix/neo/internal/runtime/profile.Store.Put,matrix/neo/internal/runtime/profile.Store.ad,matrix/neo/internal/runtime/profile.Store.read,matrix/neo/internal/runtime/profile.Store.write
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.Store#mu kind=field
+  digest=b3:310fe5057943da02eaa2bd692fe105426780237e3a3659c4f6ff79923e64a299 file=neo/internal/runtime/profile/store.go range=63:63 lang=go exported=false byte_range=1457:1473
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Store
+
+NODE id=matrix/neo/internal/runtime/profile.Store#now kind=field
+  digest=b3:47af080b4860cd710591b444f53739ba7da7908cd7a8a50e597fdaf30c22e139 file=neo/internal/runtime/profile/store.go range=62:62 lang=go exported=false byte_range=1433:1455
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Store
+
+NODE id=matrix/neo/internal/runtime/profile.Store#path kind=field
+  digest=b3:6fd194edb9704943a268bf35820b1bed56316866b19bb6821bda13b3521fcb30 file=neo/internal/runtime/profile/store.go range=59:59 lang=go exported=false byte_range=1381:1393
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Store
+
+NODE id=matrix/neo/internal/runtime/profile.Store#user kind=field
+  digest=b3:d6e3aa39dcac5194e82f4d88b0e0a05b1aa2e4c600d380e23a30f8afcefb41c5 file=neo/internal/runtime/profile/store.go range=61:61 lang=go exported=false byte_range=1419:1431
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Store
+
+NODE id=matrix/neo/internal/runtime/profile.Store#vault kind=field
+  digest=b3:c9e12c8693318a957572cb18b05c408e58078e9f560b41037083cc3b7fbb6daa file=neo/internal/runtime/profile/store.go range=60:60 lang=go exported=false byte_range=1395:1417
+  sig=*vault.UserVault
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Store
+
+NODE id=matrix/neo/internal/runtime/profile.Store.Delete kind=method
+  digest=b3:440733b324e9d5980978b3fe855b4e50ee09df0ff9db3baea82b2e345f9e001c file=neo/internal/runtime/profile/store.go range=245:264 lang=go exported=true byte_range=6246:6749
+  sig=func (s *Store) Delete(_ context.Context) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Store
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.Store.Get kind=method
+  digest=b3:98c5bac489e01e4d925489c0d1dd21e6ee64c9fb2d33bd7cf9ed6122be7ed054 file=neo/internal/runtime/profile/store.go range=209:243 lang=go exported=true byte_range=5363:6244
+  sig=func (s *Store) Get(ctx context.Context, legacy LegacyReader) (Profile, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Store
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.Store.Put kind=method
+  digest=b3:90de777aab41772b8fd93c687ef946110948d89d7bffc2e71c1af705bea1321b file=neo/internal/runtime/profile/store.go range=182:207 lang=go exported=true byte_range=4727:5361
+  sig=func (s *Store) Put(_ context.Context, input Profile) (Profile, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Store
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.Store.ad kind=method
+  digest=b3:6504b1437876519db71ad9dcf1aab5be495e003d290da5058816e1bcf5067535 file=neo/internal/runtime/profile/store.go range=80:82 lang=go exported=false byte_range=2006:2127
+  sig=func (s *Store) ad() vault.AD
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Store
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.Store.read kind=method
+  digest=b3:ec4a131fb9e3580d5c5c9efc8bb385b52f355975a1f052f5951dda0df27d4443 file=neo/internal/runtime/profile/store.go range=84:101 lang=go exported=false byte_range=2129:2626
+  sig=func (s *Store) read() (state, error)
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Store
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.Store.write kind=method
+  digest=b3:7c965791c6fdcd0f7637b4783b862c2cd78c4395db11ddacce1ceee8c1681466 file=neo/internal/runtime/profile/store.go range=103:142 lang=go exported=false byte_range=2628:3465
+  sig=func (s *Store) write(current state) error
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.Store
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.normalize kind=func
+  digest=b3:e8bc8cc6e0257428d59543e15eb0700fc85a7c82e47a2fd0dc26be0903d11d18 file=neo/internal/runtime/profile/store.go range=144:180 lang=go exported=false byte_range=3467:4725
+  sig=func normalize(input Profile) (Profile, error)
+EDGES
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.schema kind=const
+  digest=b3:7842c35a549b67fa34e692f29a52b171ef2006d0a2ec06045b3624c260d50239 file=neo/internal/runtime/profile/store.go range=21:21 lang=go exported=false byte_range=320:345
+  sig=untyped string
+EDGES
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.state kind=type
+  digest=b3:74407921cefa59e86a97c3d14301c903e562cca9d31adf059fee08a6b73c1cf1 file=neo/internal/runtime/profile/store.go range=51:54 lang=go exported=false byte_range=1162:1294
+  sig=type state struct {\n	Profile			*Profile	`json:"profile,omitempty"`\n	MigrationComplete	bool		`json:"migration_complete"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/profile.state#MigrationComplete,matrix/neo/internal/runtime/profile.state#Profile
+  ^defines=matrix/neo/internal/runtime/profile/store.go
+
+NODE id=matrix/neo/internal/runtime/profile.state#MigrationComplete kind=field
+  digest=b3:980c33cc56daad6c195f3f9375b633cf466b4ac42ed459d0dfa1af587a5ac6c2 file=neo/internal/runtime/profile/store.go range=53:53 lang=go exported=true byte_range=1238:1292
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.state
+
+NODE id=matrix/neo/internal/runtime/profile.state#Profile kind=field
+  digest=b3:689bc573234bfed4808844e943038d4c5dfc82355bd39f29470733a3290cd14a file=neo/internal/runtime/profile/store.go range=52:52 lang=go exported=true byte_range=1183:1236
+  sig=*profile.Profile
+EDGES
+  ^contains=matrix/neo/internal/runtime/profile.state
+
+NODE id=matrix/neo/internal/runtime/profile/store.go kind=file
+  digest=b3:cbcbabca73ce943c81a0f04780190db5055ca4c461f03e0633b53222c047b942 file=neo/internal/runtime/profile/store.go range=1:264 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/profile.ConsentDenied,matrix/neo/internal/runtime/profile.ConsentGranted,matrix/neo/internal/runtime/profile.ConsentState,matrix/neo/internal/runtime/profile.ConsentUnset,matrix/neo/internal/runtime/profile.DeletionActive,matrix/neo/internal/runtime/profile.DeletionDeleted,matrix/neo/internal/runtime/profile.DeletionState,matrix/neo/internal/runtime/profile.ErrAbsent,matrix/neo/internal/runtime/profile.LegacyReader,matrix/neo/internal/runtime/profile.Open,matrix/neo/internal/runtime/profile.Profile,matrix/neo/internal/runtime/profile.Store,matrix/neo/internal/runtime/profile.Store.Delete,matrix/neo/internal/runtime/profile.Store.Get,matrix/neo/internal/runtime/profile.Store.Put,matrix/neo/internal/runtime/profile.Store.ad,matrix/neo/internal/runtime/profile.Store.read,matrix/neo/internal/runtime/profile.Store.write,matrix/neo/internal/runtime/profile.normalize,matrix/neo/internal/runtime/profile.schema,matrix/neo/internal/runtime/profile.state
+  ^contains=matrix/neo/internal/runtime/profile

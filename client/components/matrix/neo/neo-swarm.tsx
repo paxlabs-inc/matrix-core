@@ -13,7 +13,7 @@
  */
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronDown, MatrixIcon } from '@/lib/matrix-icons'
+import { CentraIcon, ChevronDown } from '@/lib/matrix-icons'
 import { cn } from '@/lib/utils'
 import type { NeoSubAgent, NeoSwarm as NeoSwarmData } from '@/hooks/api/useChat'
 import { NeoWorkspace } from '@/components/matrix/neo/neo-workspace'
@@ -137,7 +137,7 @@ export function NeoSwarm({ swarm }: { swarm: NeoSwarmData }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <MatrixIcon name="network" className="text-primary size-4 shrink-0" />
+        <CentraIcon name="network" className="text-primary size-4 shrink-0" />
         <span className="text-foreground text-sm font-semibold">Agent Swarm</span>
         <span className="text-muted-foreground font-mono text-[0.7rem]">
           · {count} {count === 1 ? 'task' : 'tasks'}

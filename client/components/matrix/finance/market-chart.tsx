@@ -6,7 +6,7 @@
  * Drawn in-repo as plain SVG from the dependencies already in the tree: no
  * charting package, no vendor script, no iframe. It reads as part of the app
  * because it uses the app's tokens — surfaces separate by background tone, never
- * by a border stroke; the single accent is Matrix Sage; there is no glow.
+ * by a border stroke; the single accent is Centra Sage; there is no glow.
  *
  * What it carries:
  *   - two forms, area and candlestick, over the same series

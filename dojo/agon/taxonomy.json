@@ -3,7 +3,7 @@
   "description": "AGON capability taxonomy. Versioned source of truth. Partitioned by system-under-test into three suites; each suite has realms; each realm has leaf capabilities. Every scenario in the corpus references only leaves defined here. A breaking change requires a standard_version bump plus a migration note.",
   "migration_note": "0.1.0 -> 0.2.0 (additive): broadened the scored corpus to the full test taxonomy. Suite 1 gained reasoning leaves (algebra, logic puzzle, constraint satisfaction, inductive entailment), an anti-hallucination knowledge probe, structured-output breadth (yaml/csv, grammar/escaping edges), long-context breadth (multi-needle, distractor resistance, cross-reference, read-full fidelity), and two new realms (multilingual/cross-tokenizer, adversarial-prompt robustness). Suite 2 gained correct-tool-selection, no-redundant-rescan, accept-genuine-evidence + reject-trivial-test, destructive-command restraint + workspace-escape refusal, and three new realms (multi-file/multi-step project, in-task state/memory, anti-Goodhart traps). Suite 3 gained four new realms (guardrail enforcement, composition economics, negative/no-regression ablation, multi-session continuity). No leaf was removed or renamed; all 0.1.0 leaf ids remain valid.",
   "aqi": {
-    "description": "The Agent Qualification Index. A single headline number composed from the three suite sub-indices - MPI (Suite 1 Raw Model), APS (Suite 2 Agentic), RAS (Suite 3 MRA ablation). The composition formula lives here in the versioned standard artifact, never buried in code, so a published AQI is reproducible from a documented rule.",
+    "description": "The Agent Qualification Index. A single headline number composed from the three suite sub-indices - MPI (Suite 1 Raw Model), APS (Suite 2 Agentic), RAS (Suite 3 CRA ablation). The composition formula lives here in the versioned standard artifact, never buried in code, so a published AQI is reproducible from a documented rule.",
     "composition": "weighted_mean",
     "weights": {
       "MPI": 0.30,
@@ -448,7 +448,7 @@
     },
     "mra": {
       "index": "RAS",
-      "title": "Suite 3 - Matrix Receptive Agent Performance",
+      "title": "Suite 3 - Centra AI Receptive Agent Performance",
       "sut": "The composed production agent: main agent + Cassandra modifier agent + cortex memory logger agent. Scored by ablation/differential method (main-only vs main+cassandra vs main+cassandra+cortex).",
       "realms": {
         "loop_kill_self_heal": {

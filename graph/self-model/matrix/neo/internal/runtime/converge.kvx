@@ -1,0 +1,437 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:8adaec31d110422a96613f590adad21e781eb8f302a1fdaad8310a524483c514
+
+NODE id=matrix/neo/internal/runtime/converge kind=package
+  digest=b3:035816b36220b8a5f871a0e9058e97cfaf74a67f79e3e851dee6618eeb50ad39 file=neo/internal/runtime/converge range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/neo/internal/runtime/converge/controller.go,matrix/neo/internal/runtime/converge/limits.go
+  ^contains=mod:matrix/neo
+
+NODE id=matrix/neo/internal/runtime/converge.Action kind=type
+  digest=b3:4ce3d53fe013d38cae1d65d9a810528d3bd878e3fab415f34a160893163d0d70 file=neo/internal/runtime/converge/controller.go range=27:27 lang=go exported=true byte_range=711:729
+  sig=type Action string
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.ActionBackoffRetry kind=const
+  digest=b3:317182ed6f2c018b8a1d6d12ec1db3513882892539d6171bac290b39bcb3057f file=neo/internal/runtime/converge/controller.go range=30:30 lang=go exported=true byte_range=740:793
+  sig=converge.Action
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.ActionDegrade kind=const
+  digest=b3:29d28209c60c684a59af164a272c57f87bfa0c6da6dacbf6f943e07ed3635e77 file=neo/internal/runtime/converge/controller.go range=33:33 lang=go exported=true byte_range=887:944
+  sig=converge.Action
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.ActionReconcile kind=const
+  digest=b3:aa4c3b1e48dafc0bef1072390bd0ca7fcc63f690785aac31bb0b45338efd8328 file=neo/internal/runtime/converge/controller.go range=32:32 lang=go exported=true byte_range=844:885
+  sig=converge.Action
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.ActionResumeTurn kind=const
+  digest=b3:54b0f296aa49116508ee9b84f44fc56c2db81cd833107ed1480ba8e49e7ab8f4 file=neo/internal/runtime/converge/controller.go range=35:35 lang=go exported=true byte_range=994:1050
+  sig=converge.Action
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.ActionRetryDelivery kind=const
+  digest=b3:59db66630bf1ee8f6e893f1c33b7c62305edfcb151165f46006e6cfa655271ba file=neo/internal/runtime/converge/controller.go range=36:36 lang=go exported=true byte_range=1052:1103
+  sig=converge.Action
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.ActionRetryProvider kind=const
+  digest=b3:0ca124f88069642b52dde3c8914c0417ca2ed25c084bbb445b63c37bd7ad75ad file=neo/internal/runtime/converge/controller.go range=34:34 lang=go exported=true byte_range=946:992
+  sig=converge.Action
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.ActionStop kind=const
+  digest=b3:69169166748a370bfbcc536442ebe01771c3b68671c19ab6a67f56e9485826e9 file=neo/internal/runtime/converge/controller.go range=37:37 lang=go exported=true byte_range=1105:1141
+  sig=converge.Action
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.ActionStrategyChange kind=const
+  digest=b3:3a632ce63e69680fd061b5d4487e03979776066742b747480cf0b0a804fab4e8 file=neo/internal/runtime/converge/controller.go range=31:31 lang=go exported=true byte_range=795:842
+  sig=converge.Action
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.Attempt kind=type
+  digest=b3:35dc9226038a8c89c1cc2b08eab93bf7ef185e7459a6b2440e186b317ef23441 file=neo/internal/runtime/converge/controller.go range=66:69 lang=go exported=true byte_range=2112:2201
+  sig=type Attempt struct {\n	Failure	Failure	`json:"failure"`\n	Count	uint64	`json:"count"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/converge.Attempt#Count,matrix/neo/internal/runtime/converge.Attempt#Failure
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.Attempt#Count kind=field
+  digest=b3:497542b7a18d745a78b7ecf1572336b8e13e37e38ea8d8817884fb6d89bccad9 file=neo/internal/runtime/converge/controller.go range=68:68 lang=go exported=true byte_range=2169:2199
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Attempt
+
+NODE id=matrix/neo/internal/runtime/converge.Attempt#Failure kind=field
+  digest=b3:ab508e9c3bea0cd56ee71065d4d5ff2a7a6bab8d9c1135d68a639c0fc05daf46 file=neo/internal/runtime/converge/controller.go range=67:67 lang=go exported=true byte_range=2135:2167
+  sig=converge.Failure
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Attempt
+
+NODE id=matrix/neo/internal/runtime/converge.AttemptFacts kind=type
+  digest=b3:800286a885d8a659553481e0597b3424872d9ec7bf91bfe9d47da8c4b7b89c9c file=neo/internal/runtime/converge/controller.go range=131:138 lang=go exported=true byte_range=4342:4537
+  sig=type AttemptFacts struct {\n	GenerationAttempts	uint64\n	ToolAttempts		uint64\n	ResultsPreserved	uint64\n	UnresolvedIssue		string\n	RetryClass		FailureKind\n	NextRecovery		Action\n}
+EDGES
+  contains=matrix/neo/internal/runtime/converge.AttemptFacts#GenerationAttempts,matrix/neo/internal/runtime/converge.AttemptFacts#NextRecovery,matrix/neo/internal/runtime/converge.AttemptFacts#ResultsPreserved,matrix/neo/internal/runtime/converge.AttemptFacts#RetryClass,matrix/neo/internal/runtime/converge.AttemptFacts#ToolAttempts,matrix/neo/internal/runtime/converge.AttemptFacts#UnresolvedIssue
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.AttemptFacts#GenerationAttempts kind=field
+  digest=b3:ff2ff3811dfb573ed041fbae77ec8a20766d1e4c8dbc450e9df70f8b7e75ad02 file=neo/internal/runtime/converge/controller.go range=132:132 lang=go exported=true byte_range=4370:4395
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.AttemptFacts
+
+NODE id=matrix/neo/internal/runtime/converge.AttemptFacts#NextRecovery kind=field
+  digest=b3:76c09107d5c839920ca6531b2167bbd6b205f5470771895ee191bd195d27540c file=neo/internal/runtime/converge/controller.go range=137:137 lang=go exported=true byte_range=4510:4535
+  sig=converge.Action
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.AttemptFacts
+
+NODE id=matrix/neo/internal/runtime/converge.AttemptFacts#ResultsPreserved kind=field
+  digest=b3:dceb21c30112539c54421254cbeb0169bee785c2cc1a69ef10788a27d8aa1140 file=neo/internal/runtime/converge/controller.go range=134:134 lang=go exported=true byte_range=4424:4449
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.AttemptFacts
+
+NODE id=matrix/neo/internal/runtime/converge.AttemptFacts#RetryClass kind=field
+  digest=b3:410f2b4936c2040eb1911a41422da5a20866b916c39f9cf04b95970968ce75c6 file=neo/internal/runtime/converge/controller.go range=136:136 lang=go exported=true byte_range=4478:4508
+  sig=converge.FailureKind
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.AttemptFacts
+
+NODE id=matrix/neo/internal/runtime/converge.AttemptFacts#ToolAttempts kind=field
+  digest=b3:18702bbeb224e5cfb07e5e110c9bf046391f0a03908725735fbdd62a46a11dea file=neo/internal/runtime/converge/controller.go range=133:133 lang=go exported=true byte_range=4397:4422
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.AttemptFacts
+
+NODE id=matrix/neo/internal/runtime/converge.AttemptFacts#UnresolvedIssue kind=field
+  digest=b3:ed251e5b1464785c80277a6a482c2c840c19b84733df6f2172a30dceee88dda3 file=neo/internal/runtime/converge/controller.go range=135:135 lang=go exported=true byte_range=4451:4476
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.AttemptFacts
+
+NODE id=matrix/neo/internal/runtime/converge.CeilingReport kind=func
+  digest=b3:109a7f7bab9f26015c2041391530a35096b92954462fac08d8b98b9ef3dc5471 file=neo/internal/runtime/converge/controller.go range=140:155 lang=go exported=true byte_range=4539:5078
+  sig=func CeilingReport(facts AttemptFacts) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.Controller kind=type
+  digest=b3:baeb8670714d11a829ed69727177308d631401fa7342311c32f890aa4f26dcbd file=neo/internal/runtime/converge/controller.go range=84:84 lang=go exported=true byte_range=2685:2709
+  sig=type Controller struct{}
+EDGES
+  contains=matrix/neo/internal/runtime/converge.Controller.Observe
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.Controller.Observe kind=method
+  digest=b3:4eb89a18ea61851b4e44d443fcfd9d0ccd24295c21ea697c61740cb1883c73f9 file=neo/internal/runtime/converge/controller.go range=86:129 lang=go exported=true byte_range=2711:4340
+  sig=func (Controller) Observe(state *State, failure Failure, limits Limits) Decision
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Controller
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.Conversation kind=const
+  digest=b3:02c7c3719096cffca092003a15bc68d10215e01fbdb5da568e1806588a0e7bdf file=neo/internal/runtime/converge/limits.go range=9:9 lang=go exported=true byte_range=213:250
+  sig=converge.Posture
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/limits.go
+
+NODE id=matrix/neo/internal/runtime/converge.Decision kind=type
+  digest=b3:bdabf3cf2187268b061020758ae7a5b4c296661fe0c16fe28c0d203de80c7344 file=neo/internal/runtime/converge/controller.go range=76:82 lang=go exported=true byte_range=2362:2683
+  sig=type Decision struct {\n	Action			Action		`json:"action"`\n	Count			uint64		`json:"count"`\n	Retry			bool		`json:"retry"`\n	RequiresStrategyChange	bool		`json:"requires_strategy_change"`\n	Backoff			time.Duration	`json:"backoff,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/converge.Decision#Action,matrix/neo/internal/runtime/converge.Decision#Backoff,matrix/neo/internal/runtime/converge.Decision#Count,matrix/neo/internal/runtime/converge.Decision#RequiresStrategyChange,matrix/neo/internal/runtime/converge.Decision#Retry
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.Decision#Action kind=field
+  digest=b3:6b0287fa17ceb5d3589b7f82781ee2c955627b205ba2ffc750ee7c3a23ff812d file=neo/internal/runtime/converge/controller.go range=77:77 lang=go exported=true byte_range=2386:2438
+  sig=converge.Action
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Decision
+
+NODE id=matrix/neo/internal/runtime/converge.Decision#Backoff kind=field
+  digest=b3:43d44997b0baa76cbfd86a7047bb5bd272b7e0a1a23ba7da70bc6ee4ed7dfd3b file=neo/internal/runtime/converge/controller.go range=81:81 lang=go exported=true byte_range=2618:2681
+  sig=time.Duration
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Decision
+
+NODE id=matrix/neo/internal/runtime/converge.Decision#Count kind=field
+  digest=b3:83741f9327380234429b8ef936b28cda95f78ef34bec26edc68196a109de2429 file=neo/internal/runtime/converge/controller.go range=78:78 lang=go exported=true byte_range=2440:2491
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Decision
+
+NODE id=matrix/neo/internal/runtime/converge.Decision#RequiresStrategyChange kind=field
+  digest=b3:02e0c8d7e3df9c98a5cea45b59471dbfe359ed0806f20aa9bca22bd1cc9faf7a file=neo/internal/runtime/converge/controller.go range=80:80 lang=go exported=true byte_range=2546:2616
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Decision
+
+NODE id=matrix/neo/internal/runtime/converge.Decision#Retry kind=field
+  digest=b3:eb344b0277429ad35cfa743c7b915cc577448ba1a79aa3b0f4bc0630b4d4cddf file=neo/internal/runtime/converge/controller.go range=79:79 lang=go exported=true byte_range=2493:2544
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Decision
+
+NODE id=matrix/neo/internal/runtime/converge.Execution kind=const
+  digest=b3:d4415fbf13a43f93caed0c2e6fba9881671c8a52b8b2b5e9ab310ea0c8826477 file=neo/internal/runtime/converge/limits.go range=11:11 lang=go exported=true byte_range=290:324
+  sig=converge.Posture
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/limits.go
+
+NODE id=matrix/neo/internal/runtime/converge.Exploration kind=const
+  digest=b3:86f7bc5efa60c8ba866e118fa468368ca1f12d71352706e0be10d614b2a5d549 file=neo/internal/runtime/converge/limits.go range=10:10 lang=go exported=true byte_range=252:288
+  sig=converge.Posture
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/limits.go
+
+NODE id=matrix/neo/internal/runtime/converge.Failure kind=type
+  digest=b3:a5ae953368248cfc8036a2a3faf36fd82da0a8398cbede2dd70372fa880a8362 file=neo/internal/runtime/converge/controller.go range=61:64 lang=go exported=true byte_range=2002:2110
+  sig=type Failure struct {\n	Kind		FailureKind	`json:"kind"`\n	Fingerprint	Fingerprint	`json:"fingerprint"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/converge.Failure#Fingerprint,matrix/neo/internal/runtime/converge.Failure#Kind
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.Failure#Fingerprint kind=field
+  digest=b3:b63bc6939999f97ad5c936fe93283fea67555221d9c8c148cf652b824d7e79d6 file=neo/internal/runtime/converge/controller.go range=63:63 lang=go exported=true byte_range=2064:2108
+  sig=converge.Fingerprint
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Failure
+
+NODE id=matrix/neo/internal/runtime/converge.Failure#Kind kind=field
+  digest=b3:775c6eb022c008ad9a6ed856afc1a38beb280d95b96e518c7d5a45d93d0f9d09 file=neo/internal/runtime/converge/controller.go range=62:62 lang=go exported=true byte_range=2025:2062
+  sig=converge.FailureKind
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Failure
+
+NODE id=matrix/neo/internal/runtime/converge.FailureDelivery kind=const
+  digest=b3:7e056ba55341b3bbcf6595460eb490f4f6df0fd915b18deac10899c7eafb3882 file=neo/internal/runtime/converge/controller.go range=24:24 lang=go exported=true byte_range=657:707
+  sig=converge.FailureKind
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.FailureDeterministic kind=const
+  digest=b3:2be20fcb30124c89766be48f222ebe4adc85d54151eef85726019c83b2bad0c3 file=neo/internal/runtime/converge/controller.go range=19:19 lang=go exported=true byte_range=358:413
+  sig=converge.FailureKind
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.FailureKind kind=type
+  digest=b3:fe26c29c36c2e67f0b9564540720e0023c3fe4d50c3846d4d442595e52d61b7c file=neo/internal/runtime/converge/controller.go range=15:15 lang=go exported=true byte_range=271:294
+  sig=type FailureKind string
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.FailureProcessUnusable kind=const
+  digest=b3:570859353906c92cbd107e3e2c8ce36533ff8676b3a32539b5f7d4ace02ed134 file=neo/internal/runtime/converge/controller.go range=23:23 lang=go exported=true byte_range=597:655
+  sig=converge.FailureKind
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.FailureProviderCorruption kind=const
+  digest=b3:3d592940cc6f04c83aec09d3189bbaafd9f5e0668dff379a11f12dd2b30f2d6f file=neo/internal/runtime/converge/controller.go range=22:22 lang=go exported=true byte_range=534:595
+  sig=converge.FailureKind
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.FailureRepeatedSemantic kind=const
+  digest=b3:93efbd063df163534fa801d8b78d126bfe50667699b8757f9e221b713e425927 file=neo/internal/runtime/converge/controller.go range=21:21 lang=go exported=true byte_range=473:532
+  sig=converge.FailureKind
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.FailureTransient kind=const
+  digest=b3:0f5a76bc29d875bb39b84eae0ec9081426708858d7c1bfe8d1f2164ced483f24 file=neo/internal/runtime/converge/controller.go range=18:18 lang=go exported=true byte_range=305:356
+  sig=converge.FailureKind
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.FailureUnknownEffect kind=const
+  digest=b3:7fff7537f3cab1f70418dcaaf6ea69881c24745905ee4ac1f8c59cddf369fc6f file=neo/internal/runtime/converge/controller.go range=20:20 lang=go exported=true byte_range=415:471
+  sig=converge.FailureKind
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.Fingerprint kind=type
+  digest=b3:eb1ca08cc037d2b5f6476665be1223d95dfb39a574a2e5a08e04bed2ab87df17 file=neo/internal/runtime/converge/controller.go range=40:47 lang=go exported=true byte_range=1145:1540
+  sig=type Fingerprint struct {\n	Operation		string		`json:"operation"`\n	NormalizedArguments	json.RawMessage	`json:"normalized_arguments,omitempty"`\n	Phase			string		`json:"phase"`\n	FailureLayer		string		`json:"failure_layer"`\n	NormalizedCause		string		`json:"normalized_cause"`\n	EffectStatus		string		`json:"effect_status"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/converge.Fingerprint#EffectStatus,matrix/neo/internal/runtime/converge.Fingerprint#FailureLayer,matrix/neo/internal/runtime/converge.Fingerprint#NormalizedArguments,matrix/neo/internal/runtime/converge.Fingerprint#NormalizedCause,matrix/neo/internal/runtime/converge.Fingerprint#Operation,matrix/neo/internal/runtime/converge.Fingerprint#Phase,matrix/neo/internal/runtime/converge.Fingerprint.Key
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.Fingerprint#EffectStatus kind=field
+  digest=b3:3bef6b17b8aa9f61353df7ab70c25fdc962d84ccd92671af36b5300ca46b5ee3 file=neo/internal/runtime/converge/controller.go range=46:46 lang=go exported=true byte_range=1480:1538
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Fingerprint
+
+NODE id=matrix/neo/internal/runtime/converge.Fingerprint#FailureLayer kind=field
+  digest=b3:66567bd37a6159c70b9e0283b38672cf5be3cd0c5bc1996693be3dfb0751c754 file=neo/internal/runtime/converge/controller.go range=44:44 lang=go exported=true byte_range=1357:1415
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Fingerprint
+
+NODE id=matrix/neo/internal/runtime/converge.Fingerprint#NormalizedArguments kind=field
+  digest=b3:663b9861dbeddd753fdcfdc7fa1acb65db045484f72a58c0839be14a4317f872 file=neo/internal/runtime/converge/controller.go range=42:42 lang=go exported=true byte_range=1228:1303
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Fingerprint
+
+NODE id=matrix/neo/internal/runtime/converge.Fingerprint#NormalizedCause kind=field
+  digest=b3:0fb8457e442760b1784f6016e75f5d00369a79cc71538bcc3e4a943e421b6469 file=neo/internal/runtime/converge/controller.go range=45:45 lang=go exported=true byte_range=1417:1478
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Fingerprint
+
+NODE id=matrix/neo/internal/runtime/converge.Fingerprint#Operation kind=field
+  digest=b3:6a8de5095c4f6ef4ca45c4949794b343f663889fadfd6215a4308134c1f3d8f9 file=neo/internal/runtime/converge/controller.go range=41:41 lang=go exported=true byte_range=1172:1226
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Fingerprint
+
+NODE id=matrix/neo/internal/runtime/converge.Fingerprint#Phase kind=field
+  digest=b3:e0179c64d6b2def2ccdf0c191df89c213242abe6204ae83a40e5cacf88c9079a file=neo/internal/runtime/converge/controller.go range=43:43 lang=go exported=true byte_range=1305:1355
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Fingerprint
+
+NODE id=matrix/neo/internal/runtime/converge.Fingerprint.Key kind=method
+  digest=b3:8a64390ef1dea10065a00324a7696501228046790362f079729f41aaf15a4884 file=neo/internal/runtime/converge/controller.go range=49:59 lang=go exported=true byte_range=1542:2000
+  sig=func (fingerprint Fingerprint) Key() string
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Fingerprint
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.ForPosture kind=func
+  digest=b3:6ca4083b95ae2e411a4b2ec30dcb948bb579f296871c7c19c1c62cd35b347a22 file=neo/internal/runtime/converge/limits.go range=28:47 lang=go exported=true byte_range=1027:1711
+  sig=func ForPosture(posture Posture) Limits
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/limits.go
+
+NODE id=matrix/neo/internal/runtime/converge.Limits kind=type
+  digest=b3:b50e304eb035a919b05f6b0545cf7e687fc7c43dea6119197e2c789c0f2d262e file=neo/internal/runtime/converge/limits.go range=14:26 lang=go exported=true byte_range=328:1025
+  sig=type Limits struct {\n	ProviderCalls		uint64	`json:"provider_calls"`\n	ToolCalls		uint64	`json:"tool_calls"`\n	CumulativeInputTokens	uint64	`json:"cumulative_input_tokens"`\n	SynthesisReserve	uint64	`json:"synthesis_reserve"`\n	IdenticalFailureRepeats	uint64	`json:"identical_failure_repeats"`\n	EpistemicRepairAttempts	uint64	`json:"epistemic_repair_attempts"`\n	CassandraO1Repairs	uint64	`json:"cassandra_o1_repairs"`\n	DeliveryAttempts	uint64	`json:"delivery_attempts"`\n	PreferredInputTokens	uint64	`json:"preferred_input_tokens"`\n	HardInputTokens		uint64	`json:"hard_input_tokens"`\n	ResponseReserveTokens	uint64	`json:"response_reserve_tokens"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/converge.Limits#CassandraO1Repairs,matrix/neo/internal/runtime/converge.Limits#CumulativeInputTokens,matrix/neo/internal/runtime/converge.Limits#DeliveryAttempts,matrix/neo/internal/runtime/converge.Limits#EpistemicRepairAttempts,matrix/neo/internal/runtime/converge.Limits#HardInputTokens,matrix/neo/internal/runtime/converge.Limits#IdenticalFailureRepeats,matrix/neo/internal/runtime/converge.Limits#PreferredInputTokens,matrix/neo/internal/runtime/converge.Limits#ProviderCalls,matrix/neo/internal/runtime/converge.Limits#ResponseReserveTokens,matrix/neo/internal/runtime/converge.Limits#SynthesisReserve,matrix/neo/internal/runtime/converge.Limits#ToolCalls
+  ^defines=matrix/neo/internal/runtime/converge/limits.go
+
+NODE id=matrix/neo/internal/runtime/converge.Limits#CassandraO1Repairs kind=field
+  digest=b3:d23acbfe239d9153526fdaf0cbe298a87af06713d2eb0307f0a2f13e075c1a73 file=neo/internal/runtime/converge/limits.go range=21:21 lang=go exported=true byte_range=716:776
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Limits
+
+NODE id=matrix/neo/internal/runtime/converge.Limits#CumulativeInputTokens kind=field
+  digest=b3:8d7480e9ae0b4aee0c8d9ed93f60c14087bff6cb49c825f418e88d21780a1d74 file=neo/internal/runtime/converge/limits.go range=17:17 lang=go exported=true byte_range=458:521
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Limits
+
+NODE id=matrix/neo/internal/runtime/converge.Limits#DeliveryAttempts kind=field
+  digest=b3:88ead86c0efb879fc8ea7798283c85cd45f3df679279c01a678c8a6f76c474be file=neo/internal/runtime/converge/limits.go range=22:22 lang=go exported=true byte_range=778:835
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Limits
+
+NODE id=matrix/neo/internal/runtime/converge.Limits#EpistemicRepairAttempts kind=field
+  digest=b3:d2eb45715196e23df60f69e0b675024a24f180613fc6ad455f7744e922595b55 file=neo/internal/runtime/converge/limits.go range=20:20 lang=go exported=true byte_range=649:714
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Limits
+
+NODE id=matrix/neo/internal/runtime/converge.Limits#HardInputTokens kind=field
+  digest=b3:6d9a1eede69735498d7498f9c85bfcbb3fd5b5ae274de5b25a960c05b5a01d0c file=neo/internal/runtime/converge/limits.go range=24:24 lang=go exported=true byte_range=901:958
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Limits
+
+NODE id=matrix/neo/internal/runtime/converge.Limits#IdenticalFailureRepeats kind=field
+  digest=b3:4270981ba1b6bccf008ff1a57b3a5bd3523d14b51dfda67025c930c1d67f3384 file=neo/internal/runtime/converge/limits.go range=19:19 lang=go exported=true byte_range=582:647
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Limits
+
+NODE id=matrix/neo/internal/runtime/converge.Limits#PreferredInputTokens kind=field
+  digest=b3:3814c21785a7dc898a3d03dfd8505def51648944df5d2b7530cc17367604e9c7 file=neo/internal/runtime/converge/limits.go range=23:23 lang=go exported=true byte_range=837:899
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Limits
+
+NODE id=matrix/neo/internal/runtime/converge.Limits#ProviderCalls kind=field
+  digest=b3:abe285d3ca440fd455c44a37a3a1d4502bd93ab39a1ca47739fcd79a5e03dfc4 file=neo/internal/runtime/converge/limits.go range=15:15 lang=go exported=true byte_range=350:404
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Limits
+
+NODE id=matrix/neo/internal/runtime/converge.Limits#ResponseReserveTokens kind=field
+  digest=b3:d28035c12eb4ffec9c5b217ba8c1e7db0f98b8859eb69b1000399f1e76988942 file=neo/internal/runtime/converge/limits.go range=25:25 lang=go exported=true byte_range=960:1023
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Limits
+
+NODE id=matrix/neo/internal/runtime/converge.Limits#SynthesisReserve kind=field
+  digest=b3:a1044a16e904553f0053c1cb81ca521c2bb4d5d3f01a2be9c38cbbb228cec825 file=neo/internal/runtime/converge/limits.go range=18:18 lang=go exported=true byte_range=523:580
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Limits
+
+NODE id=matrix/neo/internal/runtime/converge.Limits#ToolCalls kind=field
+  digest=b3:22463965efbd2002c18510726a38baba7feed6d1c522c377d4d52d08c9825758 file=neo/internal/runtime/converge/limits.go range=16:16 lang=go exported=true byte_range=406:456
+  sig=uint64
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.Limits
+
+NODE id=matrix/neo/internal/runtime/converge.Posture kind=type
+  digest=b3:58971b2f8c1b1d14f0c76c1dd709a7ae19f2889879746586d19f8539db9a6c23 file=neo/internal/runtime/converge/limits.go range=6:6 lang=go exported=true byte_range=183:202
+  sig=type Posture string
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/limits.go
+
+NODE id=matrix/neo/internal/runtime/converge.State kind=type
+  digest=b3:ce202730521735ee5f5cb6bbfddd3116da4202a03f2ca5d54e6c0b1a14de5365 file=neo/internal/runtime/converge/controller.go range=71:74 lang=go exported=true byte_range=2203:2360
+  sig=type State struct {\n	Attempts	map[string]Attempt	`json:"attempts,omitempty"`\n	StrategyChanges	[]string		`json:"strategy_changes,omitempty"`\n}
+EDGES
+  contains=matrix/neo/internal/runtime/converge.State#Attempts,matrix/neo/internal/runtime/converge.State#StrategyChanges
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge.State#Attempts kind=field
+  digest=b3:85a0d692f50094772c7a1b556a4c8ab8359e0b86b88510181d227194ccd78233 file=neo/internal/runtime/converge/controller.go range=72:72 lang=go exported=true byte_range=2224:2286
+  sig=map[string]converge.Attempt
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.State
+
+NODE id=matrix/neo/internal/runtime/converge.State#StrategyChanges kind=field
+  digest=b3:211a21d88fbdaecf638ee66beb3bd1a391f2aaa77fa475dab2f0907f90bd8739 file=neo/internal/runtime/converge/controller.go range=73:73 lang=go exported=true byte_range=2288:2358
+  sig=[]string
+EDGES
+  ^contains=matrix/neo/internal/runtime/converge.State
+
+NODE id=matrix/neo/internal/runtime/converge.appendUnique kind=func
+  digest=b3:aa83440513e9f475c113a5842391bc57842e8898e8cc72536562fd67bb7cb003 file=neo/internal/runtime/converge/controller.go range=157:164 lang=go exported=false byte_range=5080:5255
+  sig=func appendUnique(values []string, value string) []string
+EDGES
+  ^defines=matrix/neo/internal/runtime/converge/controller.go
+
+NODE id=matrix/neo/internal/runtime/converge/controller.go kind=file
+  digest=b3:a84236ff4d3db519bc5e3768efce2770e2cbbea644b894142fae162fd901183c file=neo/internal/runtime/converge/controller.go range=1:164 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/converge.Action,matrix/neo/internal/runtime/converge.ActionBackoffRetry,matrix/neo/internal/runtime/converge.ActionDegrade,matrix/neo/internal/runtime/converge.ActionReconcile,matrix/neo/internal/runtime/converge.ActionResumeTurn,matrix/neo/internal/runtime/converge.ActionRetryDelivery,matrix/neo/internal/runtime/converge.ActionRetryProvider,matrix/neo/internal/runtime/converge.ActionStop,matrix/neo/internal/runtime/converge.ActionStrategyChange,matrix/neo/internal/runtime/converge.Attempt,matrix/neo/internal/runtime/converge.AttemptFacts,matrix/neo/internal/runtime/converge.CeilingReport,matrix/neo/internal/runtime/converge.Controller,matrix/neo/internal/runtime/converge.Controller.Observe,matrix/neo/internal/runtime/converge.Decision,matrix/neo/internal/runtime/converge.Failure,matrix/neo/internal/runtime/converge.FailureDelivery,matrix/neo/internal/runtime/converge.FailureDeterministic,matrix/neo/internal/runtime/converge.FailureKind,matrix/neo/internal/runtime/converge.FailureProcessUnusable,matrix/neo/internal/runtime/converge.FailureProviderCorruption,matrix/neo/internal/runtime/converge.FailureRepeatedSemantic,matrix/neo/internal/runtime/converge.FailureTransient,matrix/neo/internal/runtime/converge.FailureUnknownEffect,matrix/neo/internal/runtime/converge.Fingerprint,matrix/neo/internal/runtime/converge.Fingerprint.Key,matrix/neo/internal/runtime/converge.State,matrix/neo/internal/runtime/converge.appendUnique
+  ^contains=matrix/neo/internal/runtime/converge
+
+NODE id=matrix/neo/internal/runtime/converge/limits.go kind=file
+  digest=b3:223ebc194a23559464cb8025e6aa23009c159d23210c3cf0df7106b40bbc6c24 file=neo/internal/runtime/converge/limits.go range=1:50 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/converge.Conversation,matrix/neo/internal/runtime/converge.Execution,matrix/neo/internal/runtime/converge.Exploration,matrix/neo/internal/runtime/converge.ForPosture,matrix/neo/internal/runtime/converge.Limits,matrix/neo/internal/runtime/converge.Posture
+  ^contains=matrix/neo/internal/runtime/converge

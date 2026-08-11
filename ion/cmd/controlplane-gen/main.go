@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
 )
 
 func main() {

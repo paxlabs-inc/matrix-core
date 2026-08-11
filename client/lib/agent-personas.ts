@@ -2,7 +2,7 @@
  * Agent persona catalog — curated character profiles for sub-agents.
  *
  * Each persona carries a role title, a one-line backstory/motto, and a
- * warm-toned accent color that fits the Matrix design system. The swarm
+ * warm-toned accent color that fits the Centra AI design system. The swarm
  * assigner picks one deterministically per agent index so the same agent
  * gets the same persona across re-renders.
  */

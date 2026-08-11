@@ -28,7 +28,7 @@ const loadMode = packages.NeedName | packages.NeedFiles | packages.NeedCompiledG
 // Config describes an extraction run.
 type Config struct {
 	RepoRoot string   // absolute repo root; emitted file paths are relative to it
-	RepoName string   // e.g. "matrix"
+	RepoName string   // e.g. "centra-llm-agents"
 	Modules  []string // absolute module directories (each holds a go.mod)
 }
 

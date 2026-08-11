@@ -1,8 +1,8 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package vector implements a small pure-Go HNSW (Hierarchical Navigable
-// Small World) index for the Matrix cortex's Phase 5 vector recall path.
+// Small World) index for the Centra AI cortex's Phase 5 vector recall path.
 //
 // Spec: research/04-cortex.md §10 (vector recall as Phase 3 cascade), §13.1
 // (vector index storage + per-actor model pin), §19 (HNSW parameters).
@@ -964,4 +964,4 @@ func (h *maxHeap) Pop() any {
 	return x
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

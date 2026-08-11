@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package server
@@ -82,7 +82,7 @@ func (s *Server) handleMemoryExport(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	w.Header().Set("Content-Disposition", `attachment; filename="matrix-memory-export.json"`)
+	w.Header().Set("Content-Disposition", `attachment; filename="centra-memory-export.json"`)
 	writeJSON(w, http.StatusOK, export)
 }
 
@@ -177,6 +177,6 @@ func (s *Server) handlePersonalizationExport(w http.ResponseWriter, r *http.Requ
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	w.Header().Set("Content-Disposition", `attachment; filename="matrix-personalization-export.json"`)
+	w.Header().Set("Content-Disposition", `attachment; filename="centra-personalization-export.json"`)
 	writeJSON(w, http.StatusOK, rec)
 }

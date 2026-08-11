@@ -1,7 +1,7 @@
 ---
 name: database-schema-design
 description: Relational schema design playbook — normalization, keys and identifiers, constraints, indexing, migrations, and modeling common relationships. Use when designing or evolving a database schema.
-origin: Matrix
+origin: Centra AI
 ---
 
 # Database Schema Design Playbook

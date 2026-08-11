@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package llm
@@ -14,9 +14,9 @@ import (
 // matrix.kvx sess#34 lock verbatim. Edits MUST bump IdentityVersion
 // concurrently; this test fails until both are updated.
 func TestIdentityPreamble_Locked(t *testing.T) {
-	const wantPrefix = "You are Matrix"
+	const wantPrefix = "You are Centra AI"
 	const wantPath = "/root/matrix"
-	const wantTail = "improving Matrix itself."
+	const wantTail = "improving Centra AI itself."
 
 	if !strings.HasPrefix(IdentityPreamble, wantPrefix) {
 		t.Errorf("IdentityPreamble must start with %q; got %q", wantPrefix, truncate(IdentityPreamble, 60))
@@ -29,12 +29,12 @@ func TestIdentityPreamble_Locked(t *testing.T) {
 	}
 }
 
-// TestIdentityVersion_Format guards the matrix-identity-v<N> format.
+// TestIdentityVersion_Format guards the centra-ai-identity-v<N> format.
 // Compile-cache (sess#31d) composes this into model_digest; a regex-
 // unfriendly value would break audit consumers downstream.
 func TestIdentityVersion_Format(t *testing.T) {
-	if !strings.HasPrefix(IdentityVersion, "matrix-identity-v") {
-		t.Errorf("IdentityVersion must start with 'matrix-identity-v'; got %q", IdentityVersion)
+	if !strings.HasPrefix(IdentityVersion, "centra-ai-identity-v") {
+		t.Errorf("IdentityVersion must start with 'centra-ai-identity-v'; got %q", IdentityVersion)
 	}
 }
 
@@ -119,4 +119,4 @@ func TestIdentityModelDigestSuffix_Gated(t *testing.T) {
 	}
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

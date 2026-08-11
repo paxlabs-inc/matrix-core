@@ -236,7 +236,7 @@ export function detectLaunch(rootInput) {
 
 async function request(method, path, body) {
   if (!REMOTE_URL) fail('SERVICE_NOT_CONFIGURED', 'connect', 'sandbox service URL is not configured')
-  if (!TOKEN || !USER_ID) fail('IDENTITY_NOT_CONFIGURED', 'connect', 'sandbox service token or Matrix user identity is not configured')
+  if (!TOKEN || !USER_ID) fail('IDENTITY_NOT_CONFIGURED', 'connect', 'sandbox service token or Centra AI user identity is not configured')
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
   try {

@@ -1,24 +1,24 @@
-# Matrix Communication Layer - MCL syntax
+# MCL syntax
 
 ## Overview
 
-Matrix Communication Layer, or MCL, is the typed heart of the Matrix compiler path. The repository README frames it as the place where natural language becomes an `intent.draft`, the compiler turns that draft into typed `Intent IR`, the user reviews and signs the result, and execution ends in `intent.attest`. The key constraint is that the protocol never leaves the typed surface: prose is display-only, while the structured artifacts carry the meaning that gets signed and executed.
+MCL is the typed heart of the Centra AI compiler path. The repository README frames it as the place where natural language becomes an `intent.draft`, the compiler turns that draft into typed `Intent IR`, the user reviews and signs the result, and execution ends in `intent.attest`. The key constraint is that the protocol never leaves the typed surface: prose is display-only, while the structured artifacts carry the meaning that gets signed and executed.
 
-This section documents the language core that makes that flow possible: the MatrixScript grammar, the lexer token model, the AST shape, the canonical hashing rules, and the Go IR types that represent the compiled intent. It also covers the core `.mtx` modules that define the frame schema, confidence scoring, and compiler pipeline declarations loaded by `mclc` at startup.
+This section documents the language core that makes that flow possible: the CentraScript grammar, the lexer token model, the AST shape, the canonical hashing rules, and the Go IR types that represent the compiled intent. It also covers the core `.mtx` modules that define the frame schema, confidence scoring, and compiler pipeline declarations loaded by `mclc` at startup.
 
 ## Source Files in Scope
 
 | Path | Responsibility |
 | --- | --- |
-| `MCL/README.md` | Introduces MCL as the protocol heart of Matrix, describes the `intent.draft` to `intent.attest` lifecycle, and states that every input produces a typed artifact. |
+| `MCL/README.md` | Introduces MCL as the protocol heart of Centra AI, describes the `intent.draft` to `intent.attest` lifecycle, and states that every input produces a typed artifact. |
 | `MCL/core/confidence.mtx` | Declares confidence weights and thresholds used when the compiler aggregates slot confidence into an overall score. |
 | `MCL/core/frame.mtx` | Declares the typed `Frame` schema, its slot validation rules, and the grammar identifier used for compiler output. |
 | `MCL/core/pipeline.mtx` | Declares the fixed compiler stage sequence, stage metadata, and pipeline-level error and timeout policy. |
-| `MCL/mtx/ast/ast.go` | Defines the typed AST for MatrixScript files, including sections, entries, values, conditions, and type references. |
-| `MCL/mtx/canonical/canonical.go` | Computes deterministic AST bytes and sha256 digests for MatrixScript files, excluding comments and `§HASH`. |
+| `MCL/mtx/ast/ast.go` | Defines the typed AST for CentraScript files, including sections, entries, values, conditions, and type references. |
+| `MCL/mtx/canonical/canonical.go` | Computes deterministic AST bytes and sha256 digests for CentraScript files, excluding comments and `§HASH`. |
 | `MCL/mtx/canonical/canonical_test.go` | Verifies canonical hashing behavior, including determinism, comment handling, block serialization, and hash stability. |
 | `MCL/mtx/token/token.go` | [REDACTED] |
-| `MCL/mtx/grammar.bnf` | Defines the formal MatrixScript grammar and the syntax rules mirrored by the lexer and AST. |
+| `MCL/mtx/grammar.bnf` | Defines the formal CentraScript grammar and the syntax rules mirrored by the lexer and AST. |
 | `MCL/ir/intent.go` | Defines the compiled Intent IR, including `Intent`, `Frame`, slots, constraints, predicates, unknowns, references, budget, and compile metadata. |
 | `MCL/ir/intent_test.go` | Verifies verb validation, JSON round-trip behavior, canonical JSON determinism, hash behavior, and compile metadata serialization. |
 | `MCL/ir/encode.go` | Implements canonical JSON encoding and sha256 hashing for `Intent` and `PlanTree` values. |
@@ -31,7 +31,7 @@ This section documents the language core that makes that flow possible: the Matr
 
 ## Syntax and Compiler Surface
 
-MCL syntax is line-oriented, section-based, and strongly typed. A MatrixScript file is made from `§SECTION` headers, key-value pairs, typed slot declarations, blocks such as `on`, `prompt`, `unknown`, and `clarify`, and a small set of value forms such as strings, booleans, numbers, URIs, space-separated identifiers, slot expressions, and option lists.
+MCL syntax is line-oriented, section-based, and strongly typed. A CentraScript file is made from `§SECTION` headers, key-value pairs, typed slot declarations, blocks such as `on`, `prompt`, `unknown`, and `clarify`, and a small set of value forms such as strings, booleans, numbers, URIs, space-separated identifiers, slot expressions, and option lists.
 
 The core grammar and token model agree on a few important rules:
 
@@ -47,7 +47,7 @@ The core grammar and token model agree on a few important rules:
 
 ```mermaid
 sequenceDiagram
-    participant s as MatrixScript source
+    participant s as CentraScript source
     participant k as token.LookupIdent
     participant a as ast.File
     participant c as canonical.Hash
@@ -65,7 +65,7 @@ sequenceDiagram
     h-->>a: final sha256 hex string
 ```
 
-## MatrixScript Grammar
+## CentraScript Grammar
 
 *`MCL/mtx/grammar.bnf`*
 
@@ -142,13 +142,13 @@ The keyword map includes the block and modifier words used by the grammar: `on`,
 
 *`MCL/mtx/ast/ast.go`*
 
-The AST package gives MatrixScript a typed tree structure that mirrors the grammar. Every node carries a `token.Pos` so parser and validator errors can point back to the source line and column.
+The AST package gives CentraScript a typed tree structure that mirrors the grammar. Every node carries a `token.Pos` so parser and validator errors can point back to the source line and column.
 
 ### Tree root and section structure
 
 | Type | Properties | Methods | Notes |
 | --- | --- | --- | --- |
-| `File` | `Sections []*Section`, `Comments []*Comment` | `Pos` | Root node for a MatrixScript file. Top-level comments are preserved before the first section. |
+| `File` | `Sections []*Section`, `Comments []*Comment` | `Pos` | Root node for a CentraScript file. Top-level comments are preserved before the first section. |
 | `Section` | `Name string`, `NamePos token.Pos`, `Entries []Entry` | `Pos` | Represents a `§NAME` section and its entries. |
 | `Comment` | `Text string`, `TextPos token.Pos` | `Pos`, `entryNode` | Preserved for display and diff purposes, but excluded from canonical hashing. |
 | `KVPair` | `Key []string`, `Value Value`, `KeyPos token.Pos` | `Pos`, `entryNode` | Dotted keys are split into path parts. |
@@ -188,7 +188,7 @@ The AST package gives MatrixScript a typed tree structure that mirrors the gramm
 | `FloatValue` | `Raw string`, `FloatPos token.Pos` | `Pos`, `valueNode` | Floating-point literal stored as source text. |
 | `BoolValue` | `Val bool`, `BoolPos token.Pos` | `Pos`, `valueNode` | Boolean literal. |
 | `IdentValue` | `Name string`, `IdentPos token.Pos` | `Pos`, `valueNode` | Bare identifier used as a value. |
-| `URIValue` | `URI string`, `URIPos token.Pos` | `Pos`, `valueNode` | Matrix URI literal. |
+| `URIValue` | `URI string`, `URIPos token.Pos` | `Pos`, `valueNode` | `matrix://` URI literal. |
 | `SpaceListValue` | `Items []string`, `ListPos token.Pos` | `Pos`, `valueNode` | Space-separated list of identifiers. |
 | `SlotExprValue` | `Parts []string`, `ExprPos token.Pos` | `Pos`, `valueNode` | Slot reference such as `slot.target.prose`. |
 | `OptionListValue` | `Items []Value`, `ListPos token.Pos` | `Pos`, `valueNode` | Bracketed list of values. |
@@ -205,7 +205,7 @@ The AST uses four marker interfaces: `Node`, `Entry`, `Condition`, and `Value`. 
 
 *`MCL/mtx/canonical/canonical.go`*
 
-This package produces the deterministic byte representation used for the MatrixScript AST hash. The hash is sha256 over those canonical bytes, and the comments in the package state that the result is the `mtx_digest` used in compiler seeding.
+This package produces the deterministic byte representation used for the CentraScript AST hash. The hash is sha256 over those canonical bytes, and the comments in the package state that the result is the `mtx_digest` used in compiler seeding.
 
 ### Exported functions and their behavior
 
@@ -261,7 +261,7 @@ The IR package defines the typed artifact that the compiler produces and the exe
 
 | Type | Properties | Notes |
 | --- | --- | --- |
-| `Intent` | `ID string`, `Version string`, `Parent string`, `Actor string`, `Agent string`, `Prose string`, `Frame Frame`, `Unknowns []Unknown`, `References []Reference`, `State string`, `Confidence float64`, `Budget *Budget`, `Deadline string`, `CreatedAt string`, `ExpiresAt string`, `GoalID string`, `SignedBy string`, `Hash string`, `CompileMetadata *CompileMetadata` | Central typed artifact for Matrix. |
+| `Intent` | `ID string`, `Version string`, `Parent string`, `Actor string`, `Agent string`, `Prose string`, `Frame Frame`, `Unknowns []Unknown`, `References []Reference`, `State string`, `Confidence float64`, `Budget *Budget`, `Deadline string`, `CreatedAt string`, `ExpiresAt string`, `GoalID string`, `SignedBy string`, `Hash string`, `CompileMetadata *CompileMetadata` | Central typed artifact for Centra AI. |
 | `Frame` | `Verb string`, `Objects []SlotEntry`, `Constraints []Constraint`, `SuccessCriteria []Predicate`, `Preferences []Preference` | Typed source-of-truth surface of the intent. |
 | `SlotEntry` | `Name string`, `Value string`, `URI string`, `Type string` | Named referent inside `Frame.Objects`. |
 | `Constraint` | `Type string`, `Hard bool`, `Max *AssetAmount`, `By string`, `Allow []string`, `Deny []string`, `Metric string`, `Min float64`, `Rule string`, `Policy string`, `Schema string`, `Data string` | Typed predicate that must hold during execution. |
@@ -399,7 +399,7 @@ These documentation files mirror the code-facing surface for developers and the 
 
 | Path | Coverage |
 | --- | --- |
-| `docs/MCL-docs/index.md` | Introduces MCL as the compiler and protocol backbone of Matrix and links the language, pipeline, IR, envelope, LLM client, skill authoring, and CLI docs. |
+| `docs/MCL-docs/index.md` | Introduces MCL as the compiler and protocol backbone of Centra AI and links the language, pipeline, IR, envelope, LLM client, skill authoring, and CLI docs. |
 | `docs/MCL-docs/compiler-pipeline.md` | Explains the six-stage compiler, D13 entity resolution, confidence thresholds, clarification loop, fail-fast handling, timeout behavior, and dry-run interpreter behavior. |
 | `docs/MCL-docs/intent-ir.md` | Describes the Go IR types, canonical JSON, CBOR layering, `Intent`, `Frame`, `Constraint`, `Predicate`, `Budget`, state constants, and verb constants. |
 | `docs/.web/src/content/MCL-docs/index.md` | Web content copy of the MCL docs index. |
@@ -421,7 +421,7 @@ These documentation files mirror the code-facing surface for developers and the 
 | `Budget` | `MCL/ir/intent.go` | Optional resource cap. |
 | `AssetAmount` | `MCL/ir/intent.go` | Amount-bearing asset value. |
 | `CompileMetadata` | `MCL/ir/intent.go` | Replay and provenance record for compiler output. |
-| `File` | `MCL/mtx/ast/ast.go` | Root AST node for a MatrixScript file. |
+| `File` | `MCL/mtx/ast/ast.go` | Root AST node for a CentraScript file. |
 | `Section` | `MCL/mtx/ast/ast.go` | AST section node. |
 | `TypeRef` | `MCL/mtx/ast/ast.go` | AST type annotation node. |
 | `Pos` | `MCL/mtx/token/token.go` | Source position record. |

@@ -1,7 +1,7 @@
-# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 # Contact · license@Paxeer.app · legal@Paxeer.app
 
-# self-optimize — Matrix recursive self-optimization suite (3/5: ACT)
+# self-optimize — Centra AI recursive self-optimization suite (3/5: ACT)
 # Reads the target file(s), applies the concrete edit, and persists an Event memory of the change.
 # Pairs with self-verify; never lands an edit it did not first read and afterwards record.
 # Companion prose body lives in SKILL.md and MUST carry the same tool-call mandate.
@@ -11,7 +11,7 @@ id=self-optimize
 version=0.1.0
 display="Self Optimize"
 author=did:pax:0xMATRIX
-description="Apply one ranked optimization to the Matrix codebase: read the target file, write the edit through fs.write_file, and persist an Event memory binding the change to the surface it resolves."
+description="Apply one ranked optimization to the Centra AI codebase: read the target file, write the edit through fs.write_file, and persist an Event memory binding the change to the surface it resolves."
 mcl.verbs=modify build
 determinism=seedable
 seed_policy=per_intent
@@ -47,7 +47,7 @@ on verb=modify
   kind="code"
   output_cardinality=1
   prompt
-    system="You are the Matrix planner running self-optimize. Output a PlanTree, not prose. You MUST emit tool_call nodes in this order: (1) tool_call fs.read_text_file on slot.target to load the exact current bytes; (2) one code step producing the full edited file content (complete file, never a diff); (3) tool_call fs.write_file writing that content back to slot.target; (4) tool_call git.git_diff to capture the applied change; (5) tool_call forge-bridge.shell_exec POSTing an Event memory to the MATRIX_DAEMON /memory route, statement = what changed, which ranked surface it resolves, and the file path, tagged matrix:self,optimize,edit. Editing a file you did not read in step 1 is FORBIDDEN."
+    system="You are the Centra AI planner running self-optimize. Output a PlanTree, not prose. You MUST emit tool_call nodes in this order: (1) tool_call fs.read_text_file on slot.target to load the exact current bytes; (2) one code step producing the full edited file content (complete file, never a diff); (3) tool_call fs.write_file writing that content back to slot.target; (4) tool_call git.git_diff to capture the applied change; (5) tool_call forge-bridge.shell_exec POSTing an Event memory to the MATRIX_DAEMON /memory route, statement = what changed, which ranked surface it resolves, and the file path, tagged matrix:self,optimize,edit. Editing a file you did not read in step 1 is FORBIDDEN."
     user="Optimize: {slot.target.prose}\nChange: {slot.change.prose}\n\nVerb: {verb}\nRanked surfaces and constraints in cortex:\n{cortex.bundle}\n\nResolved slots:\n{slots}\nPending unknowns:\n{unknowns}\n\nRead, edit, write, diff, record. Honor every hard constraint, especially the cortex replay invariant."
   end
   resolve slot.change <- cortex.find(type=Pattern, near=slot.target.prose, limit=4)
@@ -66,7 +66,7 @@ on verb=build
   kind="code"
   output_cardinality=1
   prompt
-    system="You are the Matrix planner running self-optimize in build mode (new file). Output a PlanTree with tool_call nodes: (1) one code step producing the complete new file content; (2) tool_call fs.write_file creating slot.target; (3) tool_call git.git_diff; (4) tool_call forge-bridge.shell_exec POSTing an Event memory recording the new artifact and the surface it serves, tagged matrix:self,optimize,build. No reason-only plan."
+    system="You are the Centra AI planner running self-optimize in build mode (new file). Output a PlanTree with tool_call nodes: (1) one code step producing the complete new file content; (2) tool_call fs.write_file creating slot.target; (3) tool_call git.git_diff; (4) tool_call forge-bridge.shell_exec POSTing an Event memory recording the new artifact and the surface it serves, tagged matrix:self,optimize,build. No reason-only plan."
     user="Build: {slot.target.prose}\nSpec: {slot.change.prose}\n\nVerb: {verb}\nContext:\n{cortex.bundle}\n\nResolved slots:\n{slots}\nPending unknowns:\n{unknowns}\n\nCreate the file, diff it, record the Event."
   end
   resolve slot.change <- cortex.find(type=Pattern, near=slot.target.prose, limit=4)
@@ -129,4 +129,4 @@ v=1
 algo=sha256_ast
 digest=
 
-# Copyright © 2026 Paxlabs Inc. All rights reserved.
+# Copyright © 2026 Sidiora Labs. All rights reserved.

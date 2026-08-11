@@ -1,8 +1,8 @@
-# Matrix Communication Layer - Pipeline
+# MCL - Pipeline
 
 ## Overview
 
-This section documents the command wiring that turns MatrixScript into a compiler-style workflow. The `mclc` CLI parses command arguments, validates and hashes `.mtx` inputs, and runs the interpreter over a parsed `SKILL.mtx`; the `mclc-cortex` CLI follows the same compiler path but also opens a live cortex, starts an embedder when requested, and passes a `bridge.Adapter` into the interpreter.
+This section documents the command wiring that turns CentraScript into a compiler-style workflow. The `mclc` CLI parses command arguments, validates and hashes `.mtx` inputs, and runs the interpreter over a parsed `SKILL.mtx`; the `mclc-cortex` CLI follows the same compiler path but also opens a live cortex, starts an embedder when requested, and passes a `bridge.Adapter` into the interpreter.
 
 The bridge module sits between `matrix/mcl` and `matrix/cortex`. Its role is narrow and explicit: translate SKILL argument dictionaries into `query.Query` and `cortex.ContextOpts`, resolve `cortex.find` / `cortex.resolve` / `cortex.context` calls, and return cortex errors without inventing new semantics.
 

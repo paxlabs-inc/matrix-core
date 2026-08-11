@@ -6,7 +6,7 @@ import {
   emptyOperatorState,
   type EventEnvelope,
   type OperatorState,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const context = vi.hoisted(() => ({

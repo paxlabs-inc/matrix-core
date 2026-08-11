@@ -327,7 +327,7 @@ func (s *buildWorkerService) process(job codingruntime.Job) error {
 	if job.Runtime.SessionID == "" {
 		session, err = client.Create(s.ctx, codingworker.CreateOptions{
 			CWD: job.CWD, Title: "Neo Build: " + truncateBuildText(job.Brief.Intent, 120),
-			Source: "matrix-neo-build", Model: s.cfg.Model, Provider: s.cfg.Provider,
+			Source: "centra-neo-build", Model: s.cfg.Model, Provider: s.cfg.Provider,
 			CloseOnDisconnect: false,
 		})
 		if err != nil {
@@ -341,7 +341,7 @@ func (s *buildWorkerService) process(job codingruntime.Job) error {
 		}
 	} else {
 		session, err = client.Resume(s.ctx, codingworker.StoredSessionID(job.Runtime.SessionID), codingworker.ResumeOptions{
-			CWD: job.CWD, Source: "matrix-neo-build", CloseOnDisconnect: false,
+			CWD: job.CWD, Source: "centra-neo-build", CloseOnDisconnect: false,
 		})
 		if err != nil {
 			return fmt.Errorf("resume bound AgentCore session: %w", err)
@@ -607,7 +607,7 @@ func initialBuildPrompt(job codingruntime.Job) string {
 		Corrections []codingruntime.Correction `json:"corrections,omitempty"`
 	}{Brief: job.Brief, Corrections: job.Corrections}
 	brief, _ := json.Marshal(request)
-	return "Implement this bounded Matrix Build job in the current working directory. Work only inside that directory. Do not deploy, access production credentials, change git history, or claim a check passed unless you ran it. Preserve the existing project and implement complete runnable code. Use the clarification or approval protocol only when user input is genuinely required. Run relevant local verification before completion. For a frontend preview, bind the dev server on an unprivileged port to 0.0.0.0 on this managed private server; Matrix will expose it through its existing authenticated preview path.\n\nBuild brief:\n" + string(brief)
+	return "Implement this bounded Centra Build job in the current working directory. Work only inside that directory. Do not deploy, access production credentials, change git history, or claim a check passed unless you ran it. Preserve the existing project and implement complete runnable code. Use the clarification or approval protocol only when user input is genuinely required. Run relevant local verification before completion. For a frontend preview, bind the dev server on an unprivileged port to 0.0.0.0 on this managed private server; Centra AI will expose it through its existing authenticated preview path.\n\nBuild brief:\n" + string(brief)
 }
 
 func (s *buildWorkerService) applyDelivery(jobID string, batch codingruntime.DeliveryBatch) (codingruntime.Job, error) {

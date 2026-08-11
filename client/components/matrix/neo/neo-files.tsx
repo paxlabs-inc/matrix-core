@@ -14,7 +14,7 @@
  * into the workspace).
  *
  * Design system: full-page overlay separated by background TONE only
- * (bg-background / bg-card), single Matrix Sage accent on interactive chrome,
+ * (bg-background / bg-card), single Centra Sage accent on interactive chrome,
  * no border strokes for depth, no emojis / glow.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

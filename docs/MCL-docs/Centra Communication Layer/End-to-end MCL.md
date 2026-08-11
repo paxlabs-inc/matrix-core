@@ -1,8 +1,8 @@
-# Matrix Communication Layer - End-to-end MCL
+# MCL - End-to-end flow
 
 ## Overview
 
-This section covers the executable harnesses that drive Matrix Communication Layer behavior end to end. It does not re-explain the MCL language itself; instead, it focuses on the command-line entrypoints that compile MCL into typed intent data, seed and replay a live cortex, journal signed envelopes, ingest operational corpora into cortex memory, and smoke-test agent tool manifests.
+This section covers the executable harnesses that drive MCL behavior end to end. It does not re-explain the MCL language itself; instead, it focuses on the command-line entrypoints that compile MCL into typed intent data, seed and replay a live cortex, journal signed envelopes, ingest operational corpora into cortex memory, and smoke-test agent tool manifests.
 
 The result is a practical validation layer around MCL: one command exercises a full live run against real models and a real cortex, another turns ops knowledge and source-tree modules into typed memory graphs, and a third inspects and invokes tool manifests without booting the full executor. The files below are the concrete surfaces for that workflow.
 
@@ -52,7 +52,7 @@ It also records banner metadata such as router mode and skip state, then runs cr
 | --- | --- | --- |
 | `-root` | `${PWD}/runs` | Base directory for artifacts. |
 | `-skill` | `/root/matrix/skills/writing-plans/SKILL.mtx` | Input skill file for compilation. |
-| `-prose` | `Build a concise launch checklist for Matrix v1 covering compiler, cortex, executor, and bridge readiness.` | Natural-language task prompt. |
+| `-prose` | `Build a concise launch checklist for Centra AI covering compiler, cortex, executor, and bridge readiness.` | Natural-language task prompt. |
 | `-verb` | `build` | Pre-classified verb passed to the compiler. |
 | `-seed` | `42` | LLM seed used for the repeat run. |
 | `-fireworks-model` | `accounts/fireworks/models/deepseek-v4-flash` | Compiler model for runs A and B. |
@@ -233,7 +233,7 @@ This file fixes the initial cortex state used by the harness. `FixedClock` retur
 `SeedCortex` writes a fixed set of memory nodes and then logs the resulting overall root:
 
 - `Identity:Andrew`
-- `Fact:Matrix-project`
+- `Fact:Centra-AI-project`
 - `Fact:Paxeer-chain`
 - `Goal:v1-launch`
 - `Constraint:no-chain-v1`

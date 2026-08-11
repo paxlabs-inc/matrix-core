@@ -242,7 +242,7 @@ export function NeoComposer({
   )
 
   // Quiet text controls mirror the reference composer instead of recreating
-  // the old circular Matrix toolbar inside the Astryx shell.
+  // the old circular product toolbar inside the Astryx shell.
   const toolSelector = (
     <DropdownMenu
       button={{

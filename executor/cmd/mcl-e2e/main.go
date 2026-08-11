@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Command mcl-e2e is the full end-to-end live test for the Matrix v1 stack.
+// Command mcl-e2e is the full end-to-end live test for the Centra AI v1 stack.
 //
 // It exercises every layer that has been built so far:
 //
@@ -54,7 +54,7 @@ func main() {
 	var (
 		rootBase        = flag.String("root", filepath.Join(os.Getenv("PWD"), "runs"), "Base directory for run artifacts")
 		skillPath       = flag.String("skill", "/root/matrix/skills/writing-plans/SKILL.mtx", "Path to SKILL.mtx")
-		prose           = flag.String("prose", "Build a concise launch checklist for Matrix v1 covering compiler, cortex, executor, and bridge readiness.", "User prose")
+		prose           = flag.String("prose", "Build a concise launch checklist for Centra AI v1 covering compiler, cortex, executor, and bridge readiness.", "User prose")
 		verb            = flag.String("verb", "build", "Pre-classified verb (skip stage 2 classifier)")
 		seed            = flag.Int64("seed", 42, "LLM seed for determinism")
 		fireworksModel  = flag.String("fireworks-model", "grok-4.3", "compiler model id")
@@ -89,7 +89,7 @@ func main() {
 	defer topT.Close()
 	assert := NewAssertCtx(topT)
 
-	fmt.Fprintf(os.Stderr, "%s%s━━━━━━ Matrix v1 end-to-end live test ━━━━━━%s\n", cBold, cBlue, cReset)
+	fmt.Fprintf(os.Stderr, "%s%s━━━━━━ Centra AI v1 end-to-end live test ━━━━━━%s\n", cBold, cBlue, cReset)
 	fmt.Fprintf(os.Stderr, "  root:           %s\n", rootDir)
 	fmt.Fprintf(os.Stderr, "  skill:          %s\n", *skillPath)
 	fmt.Fprintf(os.Stderr, "  prose:          %q\n", *prose)
@@ -301,4 +301,4 @@ func routerModeLabel(legacy bool) string {
 // Used in early debugging; kept exported via package for grep.
 var _ = hex.EncodeToString
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

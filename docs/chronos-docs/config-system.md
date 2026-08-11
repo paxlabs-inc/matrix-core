@@ -95,7 +95,7 @@ claim_batch = 100
 
 - `#` starts a comment (not inside double-quoted strings)
 - `[section]` / `[section.sub]` headers
-- `key = "string"` — double-quoted strings (Matrix `.mtx` convention)
+- `key = "string"` — double-quoted strings (CentraScript `.mtx` convention)
 - `key = 9096` — bare integers
 - `${ENV_VAR}` — interpolated from the process environment
 - Missing file is not an error (returns an empty doc)

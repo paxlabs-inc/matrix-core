@@ -5,7 +5,7 @@ import {
   COMPUTER_EVENT_VERSION,
   DISPLAY_MODEL_VERSION,
   emptyOperatorState,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 import { App } from './App.js'
 
 describe('terminal operator shell', () => {

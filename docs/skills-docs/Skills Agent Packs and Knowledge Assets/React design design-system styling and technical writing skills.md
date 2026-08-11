@@ -2,7 +2,7 @@
 
 ## Overview
 
-This section documents the skill packs that shape React performance guidance, visual design workflows, token-driven UI systems, accessible styling, long-form writing, and documentation optimization in `matrix-core`. The material is split between human-facing `SKILL.md` guides, compiler-facing `SKILL.mtx` manifests, reference files, and a small set of runtime scripts that turn structured knowledge into search, prompts, mockups, and analysis reports.
+This section documents the skill packs that shape React performance guidance, visual design workflows, token-driven UI systems, accessible styling, long-form writing, and documentation optimization in `centra-llm-agents`. The material is split between human-facing `SKILL.md` guides, compiler-facing `SKILL.mtx` manifests, reference files, and a small set of runtime scripts that turn structured knowledge into search, prompts, mockups, and analysis reports.
 
 The packs are intentionally specialized. React best practices focuses on performance rules for React and Next.js, design combines brand and corporate identity generation with banner and presentation workflows, design-system formalizes token layers and component specs, ui-styling concentrates on shadcn/ui and Tailwind usage, article-writing enforces a distinctive long-form voice, and llm-docs-optimizer improves documentation quality for AI-assisted workflows.
 
@@ -19,7 +19,7 @@ flowchart TB
         optimizer[LLM Docs Optimizer]
     end
 
-    subgraph manifests [MatrixScript Manifests]
+    subgraph manifests [CentraScript Manifests]
         reactM[React Best Practices Manifest]
         designM[Design Manifest]
         designSystemM[Design System Manifest]
@@ -46,7 +46,7 @@ flowchart TB
     optimizer --> optimizerM --> docs
 ```
 
-The `SKILL.md` files define what each skill is for, while the `SKILL.mtx` files make the same capability executable by the Matrix compiler. Across the packs, the manifests follow the same structure: `§SKILL`, `§INPUTS`, `§CORTEX`, `§PROCEDURE`, `§OUTPUTS`, and `§FAILURE_MODES`, with `slot.target` resolved through `cortex.find` and clarification prompts triggered when the target stays ambiguous.
+The `SKILL.md` files define what each skill is for, while the `SKILL.mtx` files make the same capability executable by the Centra AI compiler. Across the packs, the manifests follow the same structure: `§SKILL`, `§INPUTS`, `§CORTEX`, `§PROCEDURE`, `§OUTPUTS`, and `§FAILURE_MODES`, with `slot.target` resolved through `cortex.find` and clarification prompts triggered when the target stays ambiguous.
 
 | Manifest element | Shared behavior |
 | --- | --- |

@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/belief/premise"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/presence/integrity"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/belief/premise"
-	"github.com/paxlabs-inc/ion-agent/internal/memory"
-	"github.com/paxlabs-inc/ion-agent/internal/presence/integrity"
 )
 
 func TestProductionPresenceRunsForgettingGoalsHeartbeatAndRestartSchedules(

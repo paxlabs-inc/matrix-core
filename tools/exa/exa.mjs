@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// exa — zero-dependency MCP bridge to Matrix's router-owned Exa evidence lane.
+// exa — zero-dependency MCP bridge to Centra AI's router-owned Exa evidence lane.
 // The vendor key never enters this process. Search defaults to extractive
 // highlights; Contents reports every per-URL status; Agent results treat only
 // terminal output.grounding as authoritative. Social output is draft-only.

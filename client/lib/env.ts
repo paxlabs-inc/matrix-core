@@ -10,7 +10,7 @@
  */
 
 export interface PublicEnv {
-  /** Base URL of the Matrix Router (the public-facing JWT-protected proxy). */
+  /** Base URL of the Centra AI Router (the public-facing JWT-protected proxy). */
   routerUrl: string
   /** Optional same-origin or absolute Workforce API base. Local development
    * uses `/api/workforce` so owner credentials remain server-side. */

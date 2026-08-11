@@ -35,7 +35,7 @@ func TestOpenRecoversInterruptedJobsWithoutRepeatingThem(t *testing.T) {
 	now := time.Now().UTC().Add(-time.Minute)
 	job := Job{
 		ID: "job-interrupted", Kind: KindTextToVideo, Status: StatusRunning,
-		Provider: "matrix", Progress: 5,
+		Provider: "Centra Media", Progress: 5,
 		Request: Request{Kind: KindTextToVideo, Prompt: "A slow camera move", Seed: -1},
 		Assets:  []Asset{}, CreatedAt: now, UpdatedAt: now,
 		IdempotencyKey: "idem-interrupted",
@@ -100,7 +100,7 @@ func TestNormalizeUsesOwnedMediaReferencesAndDeleteRemovesOnlyOutput(t *testing.
 	now := time.Now().UTC()
 	job := Job{
 		ID: "job-delete", Kind: KindImageToImage, Status: StatusSucceeded,
-		Provider: "matrix", Progress: 100, Request: request,
+		Provider: "Centra Media", Progress: 100, Request: request,
 		Assets: []Asset{{
 			ID: "asset-delete", MediaType: "image", MIMEType: "image/png",
 			Name: "generated.png", Size: 9, URL: "/media/generated.png",

@@ -2,7 +2,7 @@
 
 /**
  * Cody sidebar — projects, new project, the Workspace/History/Settings nav, and
- * back-to-Matrix. Layers separate by background tone only (the sidebar
+ * back to Centra AI. Layers separate by background tone only (the sidebar
  * primitive uses `bg-sidebar`); no border strokes. Icons come from the ported
  * custom set (currentColor, so they track the accent).
  */
@@ -70,7 +70,7 @@ export function CodySidebar({
       footer={
         <>
           <SideNavItem label="Templates" icon={<IconGrid />} href="/code" />
-          <SideNavItem label="Back to Matrix" icon={<IconArrowLeft />} href={backHref} />
+          <SideNavItem label="Back to Centra AI" icon={<IconArrowLeft />} href={backHref} />
         </>
       }
     >

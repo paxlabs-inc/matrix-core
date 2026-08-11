@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/paxlabs-inc/chronos/pkg/types"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/pkg/types"
 )
 
 // ErrNotFound is returned when an alarm id is unknown or not owned by the caller.

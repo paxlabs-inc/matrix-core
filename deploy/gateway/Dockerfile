@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-# Matrix v1 gateway image — the metered LLM proxy (credit_ledger + budget caps).
+# Centra AI v1 gateway image — the metered LLM proxy (credit_ledger + budget caps).
 #
 # matrix-gateway is a leaf Go module (only github.com/lib/pq); it talks to the
 # per-user daemons over HTTP, never via Go imports, so this image builds from

@@ -1,16 +1,16 @@
 ---
 name: deep-research
-description: Multi-source deep research through Matrix web search, fetch, and the router-owned Exa MCP. Searches, extracts, synthesizes, and delivers cited reports with explicit grounding.
-origin: Matrix/Paxlabs
+description: Multi-source deep research through Centra AI web search, fetch, and the router-owned Exa MCP. Searches, extracts, synthesizes, and delivers cited reports with explicit grounding.
+origin: Centra AI/Paxlabs
 ---
 
 # Deep Research
 
-Produce a cited research answer from multiple web sources using ordinary discovery plus Matrix's router-owned Exa evidence tools.
+Produce a cited research answer from multiple web sources using ordinary discovery plus Centra AI's router-owned Exa evidence tools.
 
 ## Tool Boundary
 
-Use the shipped `web_search`, `web_news`, `fetch`, and `exa__*` tools. Exa vendor credentials and run ownership stay in the Matrix router. Do not install a direct vendor MCP or ask the user for an API key.
+Use the shipped `web_search`, `web_news`, `fetch`, and `exa__*` tools. Exa vendor credentials and run ownership stay in the Centra router. Do not install a direct vendor MCP or ask the user for an API key.
 
 ## Workflow
 

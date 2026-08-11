@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package server turns Neo into a production conversational service: it speaks
@@ -266,7 +266,7 @@ type EngineOptions struct {
 	BriefSettingsDir       string // durable morning-brief schedule sidecar dir ("" = in-memory only; wiring the production brief governor)
 	BriefHistoryDir        string // durable morning-brief recommendation-history dir ("" disables; the no-repeat + feedback store)
 	CapabilityDir          string // durable private Capability Hub dir ("" disables the optional subsystem)
-	CapabilityLibraryDir   string // trusted read-only Matrix skill corpus used by library imports
+	CapabilityLibraryDir   string // trusted read-only Centra AI skill corpus used by library imports
 	ImprovementDir         string // sealed verified-improvement observations and proposals (empty disables)
 	MCPControlDir          string // encrypted, versioned MCP configuration and OAuth control plane
 	ChannelGatewayDir      string // durable normalized channel identities, idempotency, and delivery receipts

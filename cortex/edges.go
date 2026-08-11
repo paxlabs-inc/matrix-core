@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Edge writes for the Matrix cortex (Phase 6).
+// Edge writes for the Centra AI cortex (Phase 6).
 //
 // Spec: research/04-cortex.md §5 (taxonomy, EdgeRecord shape) and §11.1
 // (atomic batch — edge keys + journal entry commit-or-abort together).
@@ -334,4 +334,4 @@ func edgeTypeSet(types []memory.EdgeType) map[memory.EdgeType]struct{} {
 	return out
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

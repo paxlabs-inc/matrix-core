@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package episodicsweep
@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/paxlabs-inc/chronos/pkg/types"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/pkg/types"
 )
 
 func TestAlarmIsRecurringBoundedSweep(t *testing.T) {

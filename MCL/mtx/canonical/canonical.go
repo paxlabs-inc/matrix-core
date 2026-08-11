@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Package canonical computes the deterministic AST hash for a MatrixScript file.
+// Package canonical computes the deterministic AST hash for a CentraScript file.
 //
 // Per spec §10, the canonical hash:
 //   - Includes all section entries in declaration order
@@ -23,7 +23,7 @@ import (
 	"matrix/mcl/mtx/ast"
 )
 
-// Hash computes the sha256 AST hash of a MatrixScript file.
+// Hash computes the sha256 AST hash of a CentraScript file.
 // Returns the hex-encoded digest string.
 func Hash(file *ast.File) string {
 	var buf []byte
@@ -292,4 +292,4 @@ func appendQuotedString(buf []byte, s string) []byte {
 	return buf
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

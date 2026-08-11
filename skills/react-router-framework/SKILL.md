@@ -1,7 +1,7 @@
 ---
 name: react-router-framework
 description: React Router v7 framework mode (Remix) playbook for chat/realtime/collaborative apps — loaders/actions, nested routes, streaming, optimistic UI, and why not Next. Use when the app class is chat/realtime.
-origin: Matrix
+origin: Centra AI
 ---
 
 # React Router Framework Mode Playbook

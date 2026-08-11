@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Package validator enforces the 12 MatrixScript validation rules from spec §11.
+// Package validator enforces the 12 CentraScript validation rules from spec §11.
 //
 // The validator operates on a parsed AST (ast.File). It checks structural and
 // semantic constraints that the parser does not enforce (the parser accepts
@@ -432,4 +432,4 @@ func isVersionPinned(uri string) bool {
 	return true
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

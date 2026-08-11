@@ -1,7 +1,7 @@
 ---
 name: paxeer-trade
 description: Quote, price, and trade on Paxeer — oracle prices (0x0903), oracle-relative pricing (OROB 0x0901), uniform clearing (0x0902), fill-quality reputation (PoFQ 0x0904), market data, and DEX swaps on the wired routers via the embedded wallet with explicit min-out. Quote before swapping.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Trade

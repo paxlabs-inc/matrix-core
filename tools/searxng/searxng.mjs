@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// searxng — MCP stdio bridge giving Matrix agents private web search via a
+// searxng — MCP stdio bridge giving Centra AI agents private web search via a
 // SELF-HOSTED SearXNG meta-search instance (no API keys, no per-query bills).
 //
 // Pairs with the baked-in `fetch` server (URL -> Markdown) and `firecrawl`

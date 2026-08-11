@@ -1,7 +1,7 @@
 ---
 name: paxeer-defi-guardian
 description: Watch a Paxeer wallet's DeFi positions (LP, lending, staking, payment streams), assess concrete risk (IL, liquidation, depeg, stream drain), and execute an authorized protective unwind. Grounded in real reads; never acts on an unread position or claims an action without a tx hash.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer DeFi Guardian

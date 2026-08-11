@@ -21,7 +21,7 @@ PM_RUN_LINT="$(pm_run_field lint)"
 # --- package.json -----------------------------------------------------------
 write_if_absent package.json <<EOF
 {
-  "name": "@${SCAFFOLD_VCS_ORG}/${PROJECT_SLUG}",
+  "name": "@${SCAFFOLD_PACKAGE_SCOPE}/${PROJECT_SLUG}",
   "version": "0.1.0",
   "description": "",
   "type": "module",

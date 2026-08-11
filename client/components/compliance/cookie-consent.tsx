@@ -82,7 +82,7 @@ export function CookieConsent() {
           We use cookies
         </p>
         <p className="text-muted-foreground mt-1 text-xs text-pretty">
-          Matrix uses strictly necessary cookies to run, and — with your consent — functional and
+          Centra AI uses strictly necessary cookies to run, and — with your consent — functional and
           analytics cookies to improve the experience. See our{' '}
           <Link
             href="/cookies"

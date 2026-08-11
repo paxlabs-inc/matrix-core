@@ -1,9 +1,9 @@
-# Matrix KVX + MatrixScript
+# Centra AI KVX + CentraScript
 
-Syntax highlighting for two Matrix-stack file formats and Paxeer-branded icons for the directories that host them:
+Syntax highlighting for two Centra AI file formats and Centra AI-branded icons for the directories that host them:
 
 - **`.kvx`** — dense-key-value format (MATRIX.CTX session-boot files)
-- **`.mtx`** — MatrixScript, the declarative language the MCL compiler is written in
+- **`.mtx`** — CentraScript, the declarative language the MCL compiler is written in
 
 Plus a devicon-backed language icon pack covering ~77 common dev tools.
 
@@ -13,10 +13,10 @@ Plus a devicon-backed language icon pack covering ~77 common dev tools.
 
 | Language     | Extension      | Also matches                |
 | ------------ | -------------- | --------------------------- |
-| Matrix KVX   | `.kvx`         | `MATRIX.CTX`, `matrix.ctx`  |
-| MatrixScript | `.mtx`         | `SKILL.mtx`                 |
+| Centra KVX   | `.kvx`         | `MATRIX.CTX`, `matrix.ctx`  |
+| CentraScript | `.mtx`         | `SKILL.mtx`                 |
 
-### MatrixScript grammar (`.mtx`)
+### CentraScript grammar (`.mtx`)
 
 Scopes for:
 - `§SECTION` headers (`§SKILL`, `§INPUTS`, `§PROCEDURE`, `§OUTPUTS`, `§FAILURE_MODES`, `§HASH`, …)
@@ -44,13 +44,13 @@ Scopes for:
 
 Indentation rules + folding markers wire `on`/`prompt`/`unknown`/`clarify` to `end` blocks so VSCode auto-indents inside them and offers fold gutters.
 
-### Matrix KVX grammar (`.kvx`)
+### Centra KVX grammar (`.kvx`)
 
 Section headers, k=v pairs, decision IDs (`D1`–`D18`, `R1`–`R9`, `Q1`–`Q11`, `A1`–`A9`, `S1`–`S8`), session refs (`sess#14`), phase refs (`phase14_status`), spec section refs (`§13.4`), `matrix://` URIs, file:line refs, paths, SHA256 hashes, ISO dates, durations, byte sizes, percentages, unicode operators, status markers (`[DONE]`, `[DEFERRED]`, `[CLOSED]`, `[BLOCKED]`, …), positive/negative/state vocab, pipe and `>` separators, backticks, strings, `#` comments.
 
-### Icon theme: "Matrix / Paxeer Icons"
+### Icon theme: "Centra AI Icons"
 
-**Paxeer-branded slots:**
+**Centra AI-branded slots:**
 - `.kvx` files (and `MATRIX.CTX`) → **blue** Paxeer X
 - `.mtx` files (and `SKILL.mtx`) → **white** Paxeer X
 - Directories literally named `cortex` (any case) → white Paxeer X
@@ -88,7 +88,7 @@ code --install-extension matrix-kvx-0.1.0.vsix
 
 Syntax highlighting activates automatically as soon as you open a `.kvx` file. The icon theme is opt-in (VSCode only runs one icon theme at a time):
 
-`Command Palette → "Preferences: File Icon Theme" → Matrix / Paxeer Icons`
+`Command Palette → "Preferences: File Icon Theme" → Centra AI Icons`
 
 If you'd rather keep your existing icon theme (e.g. Material Icon Theme) and only want the `.kvx` association, that's already wired via the `languages.icon` field — VSCode will show the Paxeer X on `.kvx` files even when a different icon theme is active. The custom folder icons for `cortex/` / `MCL/`, however, only apply when this icon theme is selected (that's a VSCode limitation, not the extension's).
 
@@ -157,7 +157,7 @@ matrix-kvx/
 ├── language-configuration-mtx.json    # .mtx — block-aware indent/folding
 ├── syntaxes/
 │   ├── kvx.tmLanguage.json            # .kvx grammar
-│   └── mtx.tmLanguage.json            # .mtx grammar (MatrixScript)
+│   └── mtx.tmLanguage.json            # .mtx grammar (CentraScript)
 ├── icons/
 │   ├── matrix-icon-theme.json         # icon theme manifest
 │   ├── kvx-file.svg                   # blue Paxeer X — .kvx files

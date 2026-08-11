@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Matrix devcontainer post-create setup.
+# Centra AI devcontainer post-create setup.
 # Installs all toolchain components not covered by devcontainer features.
 set -euo pipefail
 
@@ -41,7 +41,7 @@ echo "==> Go module dependencies (make tidy)"
 make -C "$REPO_ROOT" tidy
 
 echo ""
-echo "Matrix devcontainer ready."
+echo "Centra AI devcontainer ready."
 echo "  make build   — build all Go modules"
 echo "  make test    — run unit tests"
 echo "  make lint    — golangci-lint"

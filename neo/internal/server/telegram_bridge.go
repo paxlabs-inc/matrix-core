@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 
 package server
 
@@ -143,7 +143,7 @@ func (b *telegramBridge) Configure(ctx context.Context, token string) (telegramS
 		return b.Status(), errors.New("Telegram accepted the token but it does not identify a usable bot account")
 	}
 	if err := b.api.deleteWebhook(validateCtx, token); err != nil {
-		return b.Status(), fmt.Errorf("could not switch the bot to Matrix message delivery: %w", err)
+		return b.Status(), fmt.Errorf("could not switch the bot to Centra AI message delivery: %w", err)
 	}
 	pairSecret, err := randomTelegramSecret()
 	if err != nil {
@@ -375,10 +375,10 @@ func (b *telegramBridge) processMessage(ctx context.Context, generation uint64, 
 			return nil
 		}
 		if err != nil {
-			return b.sendText(ctx, token, message.Chat.ID, "Matrix could not complete pairing: "+err.Error(), nil)
+			return b.sendText(ctx, token, message.Chat.ID, "Centra AI could not complete pairing: "+err.Error(), nil)
 		}
 		if !paired {
-			return b.sendText(ctx, token, message.Chat.ID, "This pairing link is invalid or has expired. Create a new link in Matrix Settings.", nil)
+			return b.sendText(ctx, token, message.Chat.ID, "This pairing link is invalid or has expired. Create a new link in Centra AI Settings.", nil)
 		}
 		return b.sendText(ctx, token, message.Chat.ID, "Connected to Neo. Send a message here whenever you want to talk. Use /new for a fresh conversation or /stop to stop the current task.", nil)
 	}

@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Edge taxonomy and EdgeRecord shape for the Matrix cortex.
+// Edge taxonomy and EdgeRecord shape for the Centra AI cortex.
 //
 // Spec: research/04-cortex.md §5 (edge taxonomy, 14 byte-tagged types) and
 // §11 (AddEdge/RemoveEdge atomicity — both directions commit in one batch).
@@ -167,4 +167,4 @@ var (
 	ErrSelfEdge        = errors.New("memory: self-edges are not permitted")
 )
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

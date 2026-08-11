@@ -1,7 +1,7 @@
 ---
 name: paxeer-guard
 description: Audit and clean up a Paxeer wallet's risk surface. Read-only enumeration of live ERC-20 approvals + exposure, then one-tap revoke (allowance -> 0) of the risky ones through the embedded wallet. Never claims a revoke without a real tx hash.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Guard

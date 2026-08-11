@@ -1,7 +1,7 @@
-# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 # Contact · license@Paxeer.app · legal@Paxeer.app
 
-# self-verify — Matrix recursive self-optimization suite (4/5: VERIFY)
+# self-verify — Centra AI recursive self-optimization suite (4/5: VERIFY)
 # Runs go build/vet/test (and targeted module checks) and persists build-health Fact + outcome Event.
 # This is the closed-loop check: an optimization is not "done" until self-verify confirms it.
 # Companion prose body lives in SKILL.md and MUST carry the same tool-call mandate.
@@ -11,7 +11,7 @@ id=self-verify
 version=0.1.0
 display="Self Verify"
 author=did:pax:0xMATRIX
-description="Run the Matrix build, vet, and test gates over the affected modules, then persist a build-health Fact and a pass/fail Event so the loop can decide whether to keep, retry, or revert the change."
+description="Run the Centra AI build, vet, and test gates over the affected modules, then persist a build-health Fact and a pass/fail Event so the loop can decide whether to keep, retry, or revert the change."
 mcl.verbs=analyze monitor
 determinism=seedable
 seed_policy=per_intent
@@ -42,7 +42,7 @@ on verb=analyze
   kind="transform"
   output_cardinality=1
   prompt
-    system="You are the Matrix planner running self-verify. Output a PlanTree of tool_call nodes, never a reason-only plan. Emit, for the module(s) covering slot.target: (1) tool_call forge-bridge.shell_exec running go vet ./...; (2) tool_call forge-bridge.shell_exec running go build ./...; (3) tool_call forge-bridge.shell_exec running go test -count=1 ./... (add -race when the constraint asks); (4) a classify step reading the three exit codes and outputs into a single pass|fail verdict; (5) tool_call forge-bridge.shell_exec POSTing a build-health Fact (subject = module, statement = vet/build/test results + key failures) tagged matrix:self,verify,health, AND an Event recording the verdict bound to the change under test. Do not declare pass without all three commands having actually run with exit 0."
+    system="You are the Centra AI planner running self-verify. Output a PlanTree of tool_call nodes, never a reason-only plan. Emit, for the module(s) covering slot.target: (1) tool_call forge-bridge.shell_exec running go vet ./...; (2) tool_call forge-bridge.shell_exec running go build ./...; (3) tool_call forge-bridge.shell_exec running go test -count=1 ./... (add -race when the constraint asks); (4) a classify step reading the three exit codes and outputs into a single pass|fail verdict; (5) tool_call forge-bridge.shell_exec POSTing a build-health Fact (subject = module, statement = vet/build/test results + key failures) tagged matrix:self,verify,health, AND an Event recording the verdict bound to the change under test. Do not declare pass without all three commands having actually run with exit 0."
     user="Verify: {slot.target.prose}\n\nVerb: {verb}\nPrior build-health and the change under test:\n{cortex.bundle}\n\nResolved slots:\n{slots}\nPending unknowns:\n{unknowns}\n\nRun vet, build, test. Persist health Fact + verdict Event. Quote the first failing line if any suite fails."
   end
   resolve slot.target <- cortex.find(type=Event, near=slot.target.prose, limit=6)
@@ -56,7 +56,7 @@ on verb=monitor
   kind="classify"
   output_cardinality=1
   prompt
-    system="You are the Matrix planner running self-verify in monitor mode. Emit tool_call forge-bridge.shell_exec nodes that re-run go vet/build/test across all four core modules (cortex, MCL, bridge, executor) plus router and gateway, then a classify step and a tool_call forge-bridge.shell_exec POSTing a whole-system build-health Fact tagged matrix:self,verify,health,monitor. No reason-only plan."
+    system="You are the Centra AI planner running self-verify in monitor mode. Emit tool_call forge-bridge.shell_exec nodes that re-run go vet/build/test across all four core modules (cortex, MCL, bridge, executor) plus router and gateway, then a classify step and a tool_call forge-bridge.shell_exec POSTing a whole-system build-health Fact tagged matrix:self,verify,health,monitor. No reason-only plan."
     user="Monitor whole-system build health.\n\nVerb: {verb}\nLast known health:\n{cortex.bundle}\n\nResolved slots:\n{slots}\n\nRun every gate, persist the rollup Fact, flag any module that regressed since the last pass."
   end
 end
@@ -110,4 +110,4 @@ v=1
 algo=sha256_ast
 digest=
 
-# Copyright © 2026 Paxlabs Inc. All rights reserved.
+# Copyright © 2026 Sidiora Labs. All rights reserved.

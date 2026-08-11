@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -78,14 +78,14 @@ func SeedCortex(c *cortex.Cortex, actorURI string, t *Transcript) ([]memory.URI,
 			},
 		},
 		{
-			label: "Fact:Matrix-project",
+			label: "Fact:Centra-AI-project",
 			head: memory.Head{
 				ActorScope: "private",
-				Tags:       []memory.Tag{"matrix", "project", "v1"},
+				Tags:       []memory.Tag{"centra", "project", "v1"},
 			},
 			data: memory.FactData{
 				SchemaVersion: 1,
-				Statement:     "Matrix is the cognition+UX layer atop Paxeer Network targeting non-developer end-users.",
+				Statement:     "Centra AI is the cognition and agent-operations layer atop Paxeer Network targeting non-developer end-users.",
 				Subject:       "matrix://knowledge/matrix-project",
 				Predicate:     "is",
 				Source:        "matrix://knowledge/foundations",
@@ -113,7 +113,7 @@ func SeedCortex(c *cortex.Cortex, actorURI string, t *Transcript) ([]memory.URI,
 			},
 			data: memory.GoalData{
 				SchemaVersion: 1,
-				Statement:     "Ship Matrix v1: MCL compiler + cortex + executor + bridge with no chain coupling.",
+				Statement:     "Ship Centra AI v1: MCL compiler + cortex + executor + bridge with no chain coupling.",
 				Status:        memory.GoalActive,
 			},
 		},
@@ -197,4 +197,4 @@ func MakeAndDrainEmbedder(c *cortex.Cortex) (embed.Embedder, error) {
 	return emb, nil
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

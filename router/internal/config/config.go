@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package config loads matrix-router configuration from environment.
@@ -314,4 +314,4 @@ func (c *Config) AdminEnabled() bool {
 // hit but no ROUTER_ADMIN_TOKEN is configured.
 var ErrAdminDisabled = errors.New("admin: ROUTER_ADMIN_TOKEN not configured")
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

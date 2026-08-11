@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Package token defines the token types produced by the MatrixScript lexer.
+// Package token defines the token types produced by the CentraScript lexer.
 //
 // Every production in grammar.bnf maps to one or more token types here.
 // The lexer emits a flat stream of these tokens; the parser consumes them.
@@ -332,4 +332,4 @@ func (t Type) String() string {
 	}
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

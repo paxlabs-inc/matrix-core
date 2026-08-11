@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-# Matrix chronos image — the centralized agent scheduler / wake control plane.
+# Centra AI Chronos image — the centralized agent scheduler / wake control plane.
 #
 # chronosd is a leaf Go module (jackc/pgx + robfig/cron); it stores alarms in
 # Postgres, fires due ones, and delivers resume turns through the router's

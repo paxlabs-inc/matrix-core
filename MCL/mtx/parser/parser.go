@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Package parser builds a typed AST from the MatrixScript token stream.
+// Package parser builds a typed AST from the CentraScript token stream.
 //
 // The parser is top-down recursive-descent. It consumes tokens from the
 // lexer and builds ast.File → []ast.Section → []ast.Entry trees.
@@ -1010,4 +1010,4 @@ func (p *Parser) errorf(format string, args ...interface{}) {
 	})
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

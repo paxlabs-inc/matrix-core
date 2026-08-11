@@ -10,7 +10,7 @@ The config system loads daemon settings from a `.kvx` file with environment vari
 
 ### `.kvx` format, not TOML/YAML/JSON
 
-The config uses a custom sectioned key/value format (`.kvx`) that is zero-dependency, deterministic, and matches the Matrix `.mtx` convention:
+The config uses a custom sectioned key/value format (`.kvx`) that is zero-dependency, deterministic, and matches the CentraScript `.mtx` convention:
 
 ```
 [section]

@@ -1,6 +1,6 @@
 # Auth System
 
-Package `chronos/internal/auth` implements Chronos's two-layer principal authentication: a shared transport bearer proves "a legitimate Matrix daemon," and an ed25519 agent-DID challenge/verify handshake proves WHICH owner — so alarms are owner-scoped and the wake target resolves from the DID alone.
+Package `chronos/internal/auth` implements Chronos's two-layer principal authentication: a shared transport bearer proves "a legitimate Centra AI daemon," and an ed25519 agent-DID challenge/verify handshake proves WHICH owner — so alarms are owner-scoped and the wake target resolves from the DID alone.
 
 Source files: `internal/auth/identity.go`, `internal/auth/token.go`, `internal/auth/auth_test.go`.
 
@@ -12,7 +12,7 @@ Source files: `internal/auth/identity.go`, `internal/auth/token.go`, `internal/a
 ┌──────────────────────────────────────┐
 │  Layer 1: Transport Auth             │
 │  Shared bearer (CHRONOS_TOKEN)       │
-│  Proves: "a legitimate Matrix daemon"│
+│ Proves: "a legitimate Centra AI daemon" │
 │  Checked: on every /v1/* request     │
 └──────────────┬───────────────────────┘
                │

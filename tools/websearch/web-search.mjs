@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// web-search — MCP stdio bridge giving Matrix agents real internet search.
+// web-search — MCP stdio bridge giving Centra AI agents real internet search.
 //
 // Pairs with the baked-in `fetch` server (URL -> Markdown): web_search/web_news
 // FIND sources, `fetch` READS them. Provider-agnostic — wraps Tavily or
@@ -272,11 +272,11 @@ function runSelftest() {
   console.log(`web-search: ${tools.length} tools (provider=${provider()})`)
   for (const t of tools) console.log(`  - ${t.name}`)
 
-  const relevanceProbe = validatedSearch('selftest', 'Automatrix Matrix app Paxlabs', [
+  const relevanceProbe = validatedSearch('selftest', 'Centra AI app Sidiora Labs', [
     { title: 'PAX Labs launches a cannabis app', url: 'https://example.test/pax', snippet: 'PAX Labs app' },
-    { title: 'Matrix Automatrix app by Paxlabs', url: 'https://example.test/matrix', snippet: 'Automatrix for Matrix' },
+    { title: 'Centra AI Automatrix app by Sidiora Labs', url: 'https://example.test/centra', snippet: 'Automatrix for Centra AI' },
   ])
-  if (relevanceProbe.results.length !== 1 || relevanceProbe.results[0].url !== 'https://example.test/matrix') {
+  if (relevanceProbe.results.length !== 1 || relevanceProbe.results[0].url !== 'https://example.test/centra') {
     console.error('web-search SELFTEST FAILED: relevance validation accepted an entity-substitution result')
     process.exit(1)
   }

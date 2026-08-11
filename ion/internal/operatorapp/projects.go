@@ -9,13 +9,13 @@ import (
 	"syscall"
 	"time"
 
+	nativebrowser "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/browser"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controllease"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	projectcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/project"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/policy"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"github.com/google/uuid"
-	nativebrowser "github.com/paxlabs-inc/ion-agent/internal/browser"
-	"github.com/paxlabs-inc/ion-agent/internal/controllease"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	projectcontrol "github.com/paxlabs-inc/ion-agent/internal/project"
-	"github.com/paxlabs-inc/ion-agent/internal/security/policy"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
 )
 
 type projectEventEmitter struct {

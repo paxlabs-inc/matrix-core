@@ -5,7 +5,7 @@ import {
   isTerminalTurnEvent,
   Message,
 } from '../features/chat/ChatHost'
-import type { EventEnvelope } from '@matrixmcl/ion-shared'
+import type { EventEnvelope } from '@centra-ai/ion-shared'
 
 function turnEvent(
   type: 'turn.failed' | 'turn.incomplete' | 'turn.completed',

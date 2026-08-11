@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package heartbeat implements the P1-4 Chronos heartbeat convention: a
@@ -15,8 +15,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/paxlabs-inc/chronos/internal/schedule"
-	"github.com/paxlabs-inc/chronos/pkg/types"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/schedule"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/pkg/types"
 )
 
 // WakeMessage is the canonical wake_message a Chronos heartbeat alarm

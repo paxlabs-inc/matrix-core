@@ -24,9 +24,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/session"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/session"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
 )
 
 const (

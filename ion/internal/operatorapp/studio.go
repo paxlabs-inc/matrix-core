@@ -8,11 +8,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	projectcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/project"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/skills"
+	studiocontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/studio"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	projectcontrol "github.com/paxlabs-inc/ion-agent/internal/project"
-	"github.com/paxlabs-inc/ion-agent/internal/skills"
-	studiocontrol "github.com/paxlabs-inc/ion-agent/internal/studio"
 )
 
 type studioServiceProjection struct {

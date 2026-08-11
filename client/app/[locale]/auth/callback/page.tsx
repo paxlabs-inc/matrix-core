@@ -9,7 +9,7 @@ import { useSearchParams } from 'next/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { stripLocalePrefixFromHref } from '@/lib/i18n/proxy-path'
-import { MatrixLogo } from '@/components/matrix/matrix-logo'
+import { CentraLogo } from '@/components/brand/centra-logo'
 
 function safeNext(next: string | null): string {
   if (!next) return '/'
@@ -60,7 +60,7 @@ function AuthCallbackInner() {
 
   return (
     <main className="bg-background flex min-h-dvh flex-col items-center justify-center gap-6 px-6">
-      <MatrixLogo size="lg" />
+      <CentraLogo size="lg" />
       {failed ? (
         <div className="flex max-w-sm flex-col items-center gap-4 text-center">
           <p className="text-foreground text-sm font-medium">Couldn’t complete sign-in</p>

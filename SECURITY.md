@@ -1,6 +1,6 @@
 # Security Policy
 
-The Matrix project takes security seriously. This document explains what is in
+The Centra AI project takes security seriously. This document explains what is in
 scope, how to report a vulnerability, and what to expect after a report.
 
 <p>
@@ -10,14 +10,14 @@ scope, how to report a vulnerability, and what to expect after a report.
 
 ## Supported versions
 
-Matrix is pre-1.0 and ships from `main`. Until v1.0 is tagged we **only**
-provide fixes against the current `main` branch.
+Centra AI 1.0 ships from `main`. We provide fixes against the current `main`
+branch and the active 1.0 release line.
 
 | Version  | Supported          |
 | -------- | ------------------ |
-| `main`   | ✅ active           |
-| `< 1.0`  | ✅ rolling on `main`|
-| tagged releases | ⚠️ best-effort backport at maintainer discretion |
+| `main`   | active |
+| `1.0.x`  | active |
+| `< 1.0`  | unsupported |
 
 ## Scope
 
@@ -57,7 +57,7 @@ Out of scope:
 Send your report to one of the channels below:
 
 - **GitHub Security Advisory** (preferred):
-  [`paxlabs-inc/matrix` → Security → Report a vulnerability](https://github.com/paxlabs-inc/matrix/security/advisories/new)
+  [`Sidiora-Labs/centra-llm-agents` → Security → Report a vulnerability](https://github.com/Sidiora-Labs/centra-llm-agents/security/advisories/new)
 - **Email**: `security@paxeer.app` (PGP optional; key fingerprint below)
 - **Encrypted alternative**: if email is risky, mention "security" in a
   GitHub Discussions thread and a maintainer will provide a private channel.
@@ -97,7 +97,7 @@ We ask that you:
 
 ## Hardening notes for operators
 
-If you are running Matrix in production, the following are already enforced
+If you are running Centra AI in production, the following are already enforced
 in code; this list is for operator-side defence-in-depth.
 
 - **Replay invariant** (`cortex` §13.4): run `cortex-shell rebuild

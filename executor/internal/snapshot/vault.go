@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package snapshot
@@ -23,8 +23,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/minio/minio-go/v7"
 	"matrix/vault"
+
+	"github.com/minio/minio-go/v7"
 )
 
 const (

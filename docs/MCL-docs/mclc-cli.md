@@ -1,6 +1,6 @@
 # mclc CLI Reference
 
-`mclc` is the MatrixScript compiler CLI. It wires together the MCL runtime packages and provides commands for compilation, validation, hashing, and parsing of `.mtx` files.
+`mclc` is the CentraScript compiler CLI. It wires together the MCL runtime packages and provides commands for compilation, validation, hashing, and parsing of `.mtx` files.
 
 Built from `MCL/cmd/mclc/main.go`. Install with `make install` — binary lands at `./bin/mclc`.
 

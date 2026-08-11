@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// deus — MCP stdio proxy bridging Matrix agents to the Deus gateway HTTP API.
+// deus — MCP stdio proxy bridging Centra AI agents to the Deus gateway HTTP API.
 // Mirrors tools/browser/browser.mjs: local tools/list, lazy remote on tools/call.
 
 import { createInterface } from 'node:readline'

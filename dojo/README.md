@@ -1,6 +1,6 @@
 # Testing Suite
 
-Model and agent qualification grounds for the Matrix framework. Candidate models are run
+Model and agent qualification grounds for the Centra framework. Candidate models are run
 through seeded scenario gauntlets in real sandboxed workspaces and scored per role-slot
 (worker / planner / judge / neo) before they are allowed anywhere near a production slot.
 

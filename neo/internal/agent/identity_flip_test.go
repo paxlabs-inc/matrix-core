@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package agent
@@ -28,8 +28,8 @@ func TestMorpheusIdentity_CharterRendersFromConfig(t *testing.T) {
 	a := New(Options{Config: config.Default()})
 	sp := a.systemPrompt()
 	for _, want := range []string{
-		"You are Morpheus, Matrix's default agent",
-		"You are Morpheus, the default agent of Matrix", // ground truth, name bound from config
+		"You are Morpheus, Centra AI's default agent",
+		"You are Morpheus, the default agent of Centra AI", // ground truth, name bound from config
 	} {
 		if !strings.Contains(sp, want) {
 			t.Errorf("default charter missing %q", want)
@@ -61,8 +61,8 @@ func TestMorpheusIdentity_NeoStaysAValidConfiguredName(t *testing.T) {
 	cfg.AgentName = "Neo"
 	a := New(Options{Config: cfg})
 	sp := a.systemPrompt()
-	if !strings.Contains(sp, "You are Neo, Matrix's default agent") ||
-		!strings.Contains(sp, "You are Neo, the default agent of Matrix") {
+	if !strings.Contains(sp, "You are Neo, Centra AI's default agent") ||
+		!strings.Contains(sp, "You are Neo, the default agent of Centra AI") {
 		t.Error("a configured Neo identity must render as Neo")
 	}
 	if strings.Contains(sp, "Morpheus") {

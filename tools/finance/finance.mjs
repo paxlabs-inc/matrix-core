@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// finance — MCP stdio bridge giving Matrix agents real market data.
+// finance — MCP stdio bridge giving Centra AI agents real market data.
 //
 // It reaches market data ONLY through the matrix-router's finance lane, never
 // the vendors directly. That is deliberate: the router holds the Financial

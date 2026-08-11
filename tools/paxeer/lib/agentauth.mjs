@@ -1,6 +1,6 @@
 // Agent-native DID auth for the Paxeer embedded-wallet lane.
 //
-// The Matrix daemon's ed25519 executor key (the SAME key it signs envelopes
+// The Centra AI daemon's ed25519 executor key (the SAME key it signs envelopes
 // with) IS the agent's identity. This module proves possession of that key to
 // the wallet API via a challenge/verify handshake and exchanges it for a
 // short-lived agent_token that authorizes the dedicated kind='agent' routes

@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package runtime
@@ -48,12 +48,12 @@ func TestCoerceArg_JSONObject(t *testing.T) {
 
 // constructor_args / args arrays must survive the same way.
 func TestCoerceArg_JSONArray(t *testing.T) {
-	got := coerceArg(`["Matrix Flow Test","MFT",1000000]`)
+	got := coerceArg(`["Centra Flow Test","CFT",1000000]`)
 	arr, ok := got.([]interface{})
 	if !ok {
 		t.Fatalf("coerceArg(array) = %T, want []interface{}", got)
 	}
-	if len(arr) != 3 || arr[0] != "Matrix Flow Test" {
+	if len(arr) != 3 || arr[0] != "Centra Flow Test" {
 		t.Errorf("array coercion mangled values: %#v", arr)
 	}
 }
@@ -72,26 +72,26 @@ func TestCoerceArg_InvalidJSONFallsThrough(t *testing.T) {
 // the inner JSON object so tachyon_compile receives a real `sources` map
 // instead of an unparseable fenced string.
 func TestCoerceArg_FencedJSONObject(t *testing.T) {
-	in := "```json\n{\"src/MatrixFlowTest.sol\":\"// SPDX\\npragma solidity ^0.8.20;\"}\n```"
+	in := "```json\n{\"src/CentraFlowTest.sol\":\"// SPDX\\npragma solidity ^0.8.20;\"}\n```"
 	got := coerceArg(in)
 	m, ok := got.(map[string]interface{})
 	if !ok {
 		t.Fatalf("coerceArg(fenced object) = %T, want map[string]interface{}", got)
 	}
-	if m["src/MatrixFlowTest.sol"] == "" {
+	if m["src/CentraFlowTest.sol"] == "" {
 		t.Errorf("fenced sources map lost its key/value: %#v", m)
 	}
 }
 
 // A bare (unlabeled) fence around a JSON array must also strip + parse.
 func TestCoerceArg_FencedJSONArray(t *testing.T) {
-	in := "```\n[\"Matrix Flow Test\",\"MFT\",1000000]\n```"
+	in := "```\n[\"Centra Flow Test\",\"CFT\",1000000]\n```"
 	got := coerceArg(in)
 	arr, ok := got.([]interface{})
 	if !ok {
 		t.Fatalf("coerceArg(fenced array) = %T, want []interface{}", got)
 	}
-	if len(arr) != 3 || arr[0] != "Matrix Flow Test" {
+	if len(arr) != 3 || arr[0] != "Centra Flow Test" {
 		t.Errorf("fenced array coercion mangled values: %#v", arr)
 	}
 }

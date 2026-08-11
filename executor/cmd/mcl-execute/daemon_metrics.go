@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -72,7 +72,7 @@ func writeProcessMetrics(sb *strings.Builder, uptimeSec int64,
 
 	// matrix_daemon_up: 1 when scraped (defensive: the routerMetrics
 	// path also emits this when attached; here is the cold fallback).
-	sb.WriteString("# HELP matrix_daemon_up Whether the matrix daemon is up (always 1 when scraped).\n")
+	sb.WriteString("# HELP matrix_daemon_up Whether the Centra AI daemon is up (always 1 when scraped).\n")
 	sb.WriteString("# TYPE matrix_daemon_up gauge\n")
 	sb.WriteString("matrix_daemon_up 1\n")
 
@@ -159,4 +159,4 @@ func utoa(n uint64) string {
 	return string(buf[i:])
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

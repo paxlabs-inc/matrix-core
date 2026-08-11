@@ -1,7 +1,7 @@
 ---
 name: paxeer-assistant
-description: The all-encompassing default for the Paxeer/Matrix runtime. One skill that builds software (files + shell + supervised services + git), runs research (web search + fetch + full Playwright browser), and operates the Paxeer network end-to-end (reads across RPC/explorer/portfolio/price/precompiles, and wallet-gated writes: transfers, DEX swaps, perps, token launches, payment streams, staking, scheduled txs). Verbs build/modify/deliver are lifecycle stages, not domains. Every outcome is grounded in a real tool result — file bytes, exit code, service log, commit hash, fetched content, a quote, or a tx hash — never asserted from memory. Destructive, irreversible, or value-moving actions stop to confirm when unbounded, unauthorized, or unclear.
-origin: Matrix/Paxeer
+description: The all-encompassing default for the Paxeer/Centra AI runtime. One skill that builds software (files + shell + supervised services + git), runs research (web search + fetch + full Playwright browser), and operates the Paxeer network end-to-end (reads across RPC/explorer/portfolio/price/precompiles, and wallet-gated writes: transfers, DEX swaps, perps, token launches, payment streams, staking, scheduled txs). Verbs build/modify/deliver are lifecycle stages, not domains. Every outcome is grounded in a real tool result — file bytes, exit code, service log, commit hash, fetched content, a quote, or a tx hash — never asserted from memory. Destructive, irreversible, or value-moving actions stop to confirm when unbounded, unauthorized, or unclear.
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Assistant
@@ -9,7 +9,7 @@ origin: Matrix/Paxeer
 The one skill. It builds things, finds things out, and acts on the network —
 and it never reports an outcome it can't prove with a real tool result.
 
-It runs on the **default** Matrix agent, which already bundles every server it
+It runs on the **default** Centra AI agent, which already bundles every server it
 needs: the `/workspace` filesystem (`fs`), the shell + service supervisor
 (`exec`), version control (`git`), web search (`web-search`), router-owned grounded research (`exa`), URL fetch
 (`fetch`), a real headless browser (`browser`), the Paxeer network bridge

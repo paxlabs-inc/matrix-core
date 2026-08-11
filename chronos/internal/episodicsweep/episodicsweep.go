@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package episodicsweep
@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/paxlabs-inc/chronos/internal/schedule"
-	"github.com/paxlabs-inc/chronos/pkg/types"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/schedule"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/pkg/types"
 )
 
 const WakeMessage = "DEJA_VU_SWEEP: idle backfill trigger. Build bounded transcript lexical postings and provenance links; produce no chat reply."

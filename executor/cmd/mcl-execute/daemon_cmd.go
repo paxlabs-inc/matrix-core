@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -178,7 +178,7 @@ type daemonState struct {
 	// wizard, OR by CLI -llm-base-url.
 	llmBaseURL string
 
-	// sess#32 ambient-architect MatrixGateway routing (plan §5.16).
+	// sess#32 ambient-architect Centra AI gateway routing (plan §5.16).
 	// gatewayURL is the host portion of the gateway (e.g.
 	// "https://matrix.paxeer.app/gw"); empty disables gateway
 	// routing and the daemon falls back to the legacy direct-
@@ -310,8 +310,8 @@ func runDaemon(args []string) {
 		liaisonModel          = fs.String("liaison-model", os.Getenv("MATRIX_LIAISON_MODEL"), "override the Liaison (user-facing conversational narrator) LLM model. Empty uses the SlotLiaison registry default (deepseek-v4-flash). Must be on the gateway liaison-slot whitelist. Defaults to env MATRIX_LIAISON_MODEL.")
 		liaisonDisable        = fs.Bool("liaison-disable", os.Getenv("MATRIX_LIAISON_DISABLE") == "1", "disable the Liaison conversational agent: no per-run narration and POST /chat returns 503. Defaults to env MATRIX_LIAISON_DISABLE==1.")
 		constructDisable      = fs.Bool("construct-disable", os.Getenv("MATRIX_CONSTRUCT_DISABLE") == "1", "disable the Construct passive projector: the pipeline emits no construct.surface events. Pure side-channel; deterministic, no model. Defaults to env MATRIX_CONSTRUCT_DISABLE==1.")
-		llmBaseURL            = fs.String("llm-base-url", "", "override LLM endpoint base URL (e.g. https://matrix.paxeer.app/gw for MatrixGateway, or https://api.fireworks.ai/inference for BYO). Empty falls back to MCL/llm's per-provider default. Path '/v1/chat/completions' is appended by the client.")
-		gatewayURL            = fs.String("gateway-url", os.Getenv("MATRIX_GATEWAY_URL"), "MatrixGateway base URL (host portion, no /v1/...). When set, EVERY routed LLM call (compile, planner, executor) is proxied through ${gateway-url}/v1/chat/completions with X-Matrix-Actor-DID + X-Matrix-Intent-ID + X-Matrix-Slot headers and is metered against the credit_ledger. Empty (default) preserves the legacy direct-provider posture. Sess#32 ambient-architect plan §5.16. Defaults to env MATRIX_GATEWAY_URL.")
+		llmBaseURL            = fs.String("llm-base-url", "", "override LLM endpoint base URL (e.g. the Centra AI gateway, or https://api.fireworks.ai/inference for BYO). Empty falls back to MCL/llm's per-provider default. Path '/v1/chat/completions' is appended by the client.")
+		gatewayURL            = fs.String("gateway-url", os.Getenv("MATRIX_GATEWAY_URL"), "Centra AI gateway base URL (host portion, no /v1/...). When set, EVERY routed LLM call (compile, planner, executor) is proxied through ${gateway-url}/v1/chat/completions with X-Matrix-Actor-DID + X-Matrix-Intent-ID + X-Matrix-Slot headers and is metered against the credit_ledger. Empty (default) preserves the legacy direct-provider posture. Sess#32 ambient-architect plan §5.16. Defaults to env MATRIX_GATEWAY_URL.")
 		seed                  = fs.Int64("seed", 42, "compiler seed (D11)")
 		maxRetry              = fs.Int("max-retry", 2, "max plan-synthesis retry rounds")
 		criticEnabled         = fs.Bool("completeness-critic", os.Getenv("MATRIX_COMPLETENESS_CRITIC") != "0",
@@ -892,4 +892,4 @@ func daemonLoopbackURL(addr string) string {
 	return "http://127.0.0.1:8080"
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

@@ -16,7 +16,7 @@ import { EmptyState } from '@astryxdesign/core/EmptyState'
 import { Button } from '@astryxdesign/core/Button'
 import { Spinner } from '@astryxdesign/core/Spinner'
 import { Text } from '@astryxdesign/core/Text'
-import { MatrixLogo } from '@/components/matrix/matrix-logo'
+import { CentraLogo } from '@/components/brand/centra-logo'
 import { useProvisionStatus } from '@/hooks/api/useOnboarding'
 
 const STATUS_LINES = [
@@ -58,7 +58,7 @@ export function ProvisioningWait({ onReady }: { onReady: () => void }) {
                 description={t('provisionFailedBody')}
                 icon={
                   <div className="flex flex-col items-center gap-4">
-                    <MatrixLogo size="lg" />
+                    <CentraLogo size="lg" />
                     <AlertCircle className="text-destructive size-8" />
                   </div>
                 }
@@ -85,7 +85,7 @@ export function ProvisioningWait({ onReady }: { onReady: () => void }) {
         content={
           <Center>
             <div className="flex max-w-sm flex-col items-center gap-5 text-center">
-              <MatrixLogo size="lg" />
+              <CentraLogo size="lg" />
               <Spinner size="xl" label={t('provisionWaitTitle')} />
               <Text type="supporting" color="secondary" display="block" aria-live="polite">
                 {STATUS_LINES[line]}

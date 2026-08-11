@@ -41,7 +41,7 @@ func NewGatewayCredentialSource(cfg GatewayCredentialSourceConfig) (*GatewayCred
 		return nil, err
 	}
 	if len(cfg.LegacyBearer) == 0 || bytes.IndexFunc(cfg.LegacyBearer, func(r rune) bool { return r <= ' ' }) >= 0 {
-		return nil, errors.New("legacy Matrix gateway bearer is required")
+		return nil, errors.New("legacy Centra AI gateway bearer is required")
 	}
 	if cfg.Timeout <= 0 {
 		cfg.Timeout = 5 * time.Second
@@ -82,14 +82,14 @@ func NewGatewayCredentialSource(cfg GatewayCredentialSourceConfig) (*GatewayCred
 func credentialEndpoint(raw string) (string, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil {
-		return "", fmt.Errorf("parse Matrix gateway URL: %w", err)
+		return "", fmt.Errorf("parse Centra AI gateway URL: %w", err)
 	}
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
-		return "", errors.New("Matrix gateway URL must be an HTTP(S) origin or /v1 base URL")
+		return "", errors.New("Centra AI gateway URL must be an HTTP(S) origin or /v1 base URL")
 	}
 	path := strings.TrimRight(u.Path, "/")
 	if path != "" && path != "/v1" {
-		return "", errors.New("Matrix gateway URL path must be empty or /v1")
+		return "", errors.New("Centra AI gateway URL path must be empty or /v1")
 	}
 	u.Path = "/internal/agentcore/token"
 	u.RawPath = ""

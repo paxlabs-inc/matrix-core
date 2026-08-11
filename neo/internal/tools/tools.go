@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package tools is Neo's tool surface. Local filesystem, shell, process, and
@@ -2077,7 +2077,7 @@ func (m *Manager) Close() error {
 func coreExecuteSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		CoreExecuteTool,
-		"Delegate a rigorous or money-moving task to Matrix's secure execution pipeline. Use this for anything that spends or moves funds, signs a transaction, deploys a contract for gas, approves a token, launches/trades/collects-fees on KindleLaunch, or funds/settles a payment stream or channel — and for tasks that need verifiable, auditable, replayable execution. Funds are signed server-side by the user's embedded wallet, never by you. If the user has granted a pre-authorized leash (a spending mode + caps on their wallet), actions within that leash run without a per-action approval prompt; the wallet enforces the limits and cleanly declines anything outside them. Otherwise, for a one-off spend the user is asked to approve it inline before it happens. Provide a clear, complete natural-language description of exactly what to do.",
+		"Delegate a rigorous or money-moving task to Centra AI's secure execution pipeline. Use this for anything that spends or moves funds, signs a transaction, deploys a contract for gas, approves a token, launches/trades/collects-fees on KindleLaunch, or funds/settles a payment stream or channel — and for tasks that need verifiable, auditable, replayable execution. Funds are signed server-side by the user's embedded wallet, never by you. If the user has granted a pre-authorized leash (a spending mode + caps on their wallet), actions within that leash run without a per-action approval prompt; the wallet enforces the limits and cleanly declines anything outside them. Otherwise, for a one-off spend the user is asked to approve it inline before it happens. Provide a clear, complete natural-language description of exactly what to do.",
 		map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{

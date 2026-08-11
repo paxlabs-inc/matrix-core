@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/belief/premise"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/belief/selfmodel"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/intent/taskgraph"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/liveness/decision"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/reflection/cassandra"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/circuit"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/belief/premise"
-	"github.com/paxlabs-inc/ion-agent/internal/belief/selfmodel"
-	"github.com/paxlabs-inc/ion-agent/internal/intent/taskgraph"
-	"github.com/paxlabs-inc/ion-agent/internal/liveness/decision"
-	"github.com/paxlabs-inc/ion-agent/internal/reflection/cassandra"
-	"github.com/paxlabs-inc/ion-agent/internal/security/circuit"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
 )
 
 // PremiseLedger is the narrow interface the loop uses to manage premises.

@@ -1,7 +1,7 @@
 /**
  * Mappers — translate backend wire types into the UI types declared
  * in `lib/matrix-data.ts`. Keeping the boundary explicit means UI
- * components don't have to reason about Matrix-specific concepts
+ * components don't have to reason about platform-specific concepts
  * (envelopes, replay roots, lifecycle paths) and the wire shape can
  * evolve without rippling through the dashboard.
  */
@@ -342,7 +342,7 @@ function roleForSkill(slug: string, description?: string): string {
   if (/build|forge|deploy|compile|code/.test(hay)) return 'Build & deploy'
   if (/wallet|pay|treasury|invoice|spend/.test(hay)) return 'Wallet & payments'
   if (/data|sheet|reconcil|ledger|ops/.test(hay)) return 'Data & ops'
-  return 'Matrix skill'
+  return 'Centra AI skill'
 }
 
 /** Build the user-facing agent roster from the daemon's live skill
@@ -441,7 +441,7 @@ export function intentsToActivity(items: IntentSummary[]): ActivityDay[] {
       id: `ac_${s.intent_id}`,
       kind: kindForState(s.state),
       text,
-      agent: 'Matrix',
+      agent: 'Centra AI',
       time,
     })
     byDate.set(key, list)

@@ -1,6 +1,6 @@
-# Copyright © 2026 Paxlabs Inc.
+# Copyright © 2026 Sidiora Labs.
 #
-# probe.py — black-box client for the live Matrix agent surface.
+# probe.py — black-box client for the live Centra AI agent surface.
 #
 # It speaks the exact wire contract the deployed router + Neo front expose:
 #   POST /chat  {"message","conversation_id?"}

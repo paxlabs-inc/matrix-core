@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	projectcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/project"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	projectcontrol "github.com/paxlabs-inc/ion-agent/internal/project"
 )
 
 func TestStudioTransactionalEditingTerminalAndDependencyProductionSurface(t *testing.T) {

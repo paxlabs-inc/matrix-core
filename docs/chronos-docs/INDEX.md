@@ -1,6 +1,6 @@
 # Chronos Developer Documentation
 
-Chronos is Matrix's centralized agent scheduler and wake control plane. One always-on `chronosd` service serves the entire fleet: agents POST alarms (once or cron) with a contextful wake payload, Chronos durably stores them in Postgres, fires due alarms, and asks the router to wake the agent and deliver the resume turn.
+Chronos is Centra AI's centralized agent scheduler and wake control plane. One always-on `chronosd` service serves the entire fleet: agents POST alarms (once or cron) with a contextful wake payload, Chronos durably stores them in Postgres, fires due alarms, and asks the router to wake the agent and deliver the resume turn.
 
 This documentation is written for people working on Chronos itself — extending the schedule engine, modifying the dispatch worker, wiring new tools, or understanding how the wake path works.
 

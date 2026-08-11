@@ -84,8 +84,8 @@ ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
 CMD ["dashboard"]
 
 LABEL org.opencontainers.image.title="Ion" \
-      org.opencontainers.image.description="Persistent general agent runtime from MatrixMCL" \
-      org.opencontainers.image.url="https://ion.matrixmcl.com" \
-      org.opencontainers.image.source="https://github.com/paxlabs-inc/ion-agent" \
+      org.opencontainers.image.description="Persistent general agent runtime from Centra AI" \
+      org.opencontainers.image.url="https://github.com/Sidiora-Labs/centra-llm-agents" \
+      org.opencontainers.image.source="https://github.com/Sidiora-Labs/centra-llm-agents" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.vendor="MatrixMCL"
+      org.opencontainers.image.vendor="Sidiora Labs"

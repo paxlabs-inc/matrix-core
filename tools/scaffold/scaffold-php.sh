@@ -18,7 +18,7 @@ mkdir -p src tests
 
 write_if_absent composer.json <<EOF
 {
-  "name": "${SCAFFOLD_VCS_ORG}/${PROJECT_SLUG}",
+  "name": "${SCAFFOLD_PACKAGE_SCOPE}/${PROJECT_SLUG}",
   "description": "",
   "type": "library",
   "license": "${SCAFFOLD_LICENSE}",

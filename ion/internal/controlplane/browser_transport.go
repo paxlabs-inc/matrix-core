@@ -14,9 +14,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
 )
 
 const (

@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1.7
 
 # The private coding runtime is built and attested independently from the
-# pruned AgentCore source checkout, then promoted to Matrix's private GHCR
+# pruned AgentCore source checkout, then promoted to Centra AI's private GHCR
 # package. The digest is the OCI index recorded in
 # deploy/codingruntime/agentcore.pin; an explicit build arg may replace the
 # repository while retaining the same digest for mirrors.
 ARG AGENTCORE_RUNTIME_IMAGE=ghcr.io/paxlabs-inc/matrix/matrix-agentcore@sha256:b4e2d88e31445f9681f0b7833a612b5a74ef3a3b23ce9fc06f04a48a1276d280
 FROM ${AGENTCORE_RUNTIME_IMAGE} AS agentcore-runtime
 
-# Matrix Railway dev-environment image.
+# Centra AI Railway dev-environment image.
 #
 # The Railway sibling of deploy/daemon/Dockerfile: the SAME daemon stack
 # (mcl-execute + neo, baked skills/agents/tools, pre-cached MCP servers, mc)
@@ -423,7 +423,7 @@ COPY --from=neocortex-builder /src/neocortex/build/release/cortexd /opt/matrix/b
 # browser assets, and build metadata are copied from the artifact. The project
 # itself is installed non-editably from a read-only BuildKit mount below, so
 # the private checkout and editable source locator never enter a final layer.
-# Installed Python modules remain inspectable by their own process; Matrix does
+# Installed Python modules remain inspectable by their own process; Centra AI does
 # not claim that Python packaging provides native-code secrecy.
 COPY --from=agentcore-runtime /usr/local/bin/python3.13 /usr/local/bin/python3.13
 COPY --from=agentcore-runtime /usr/local/lib/libpython3.13.so.1.0 /usr/local/lib/libpython3.13.so.1.0

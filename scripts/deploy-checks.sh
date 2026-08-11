@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Matrix Deploy Gates — deterministic check runner
+# Centra AI Deploy Gates — deterministic check runner
 # Location in repo: /root/matrix/scripts/deploy-checks.sh
 #
 # Semantics:

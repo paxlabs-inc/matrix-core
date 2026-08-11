@@ -1,5 +1,5 @@
 /**
- * Notifications — derived, not fetched. Matrix has no dedicated notifications
+ * Notifications — derived, not fetched. Centra AI has no dedicated notifications
  * endpoint in v1, so the panel composes a feed from the live domain data the
  * dashboard already holds: runs that need the user (needs_input) or failed,
  * and receipts that just got signed. Read/unread state is tracked client-side

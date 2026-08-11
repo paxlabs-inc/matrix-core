@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 
 package cloudchannels
 
@@ -329,7 +329,7 @@ func (g *DiscordGateway) serve(ctx context.Context, endpoint string, config Disc
 	} else {
 		err = writer.JSON(map[string]any{"op": 2, "d": map[string]any{
 			"token": config.BotToken, "intents": 37376,
-			"properties": map[string]string{"os": "linux", "browser": "matrix-neo", "device": "matrix-neo"},
+			"properties": map[string]string{"os": "linux", "browser": "centra-neo", "device": "centra-neo"},
 		}})
 	}
 	if err != nil {

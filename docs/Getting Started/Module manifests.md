@@ -64,12 +64,8 @@ The Go layer is split by runtime boundary rather than by a single top-level modu
 | `executor/go.mod` | `matrix/executor` | 1.21 | Depends on `matrix/mcl`, `matrix/bridge`, and `matrix/cortex`; local `replace` directives point to `../MCL`, `../bridge`, and `../cortex`; also uses `github.com/gorilla/websocket` and `github.com/creack/pty` |
 | `neo/go.mod` | `matrix/neo` | 1.21 | Depends on `matrix/cortex`, `matrix/executor`, and `matrix/mcl`; local `replace` directives point to `../cortex`, `../executor`, `../bridge`, and `../MCL` |
 | `router/go.mod` | `matrix/router` | 1.21 | `github.com/jackc/pgx/v5` |
-| `chronos/go.mod` | `github.com/paxlabs-inc/chronos` | 1.22 | `github.com/jackc/pgx/v5`, `github.com/robfig/cron/v3` |
+| `chronos/go.mod` | `github.com/Sidiora-Labs/centra-llm-agents/chronos` | 1.22 | `github.com/jackc/pgx/v5`, `github.com/robfig/cron/v3` |
 | `gateway/go.mod` | `matrix/gateway` | 1.21 | Commented as a leaf module with no `replace` directives; visible requirement on `github.com/lib/pq v1.12.3` |
-| `deus/go.mod` | `github.com/paxlabs-inc/deus` | 1.22 | `github.com/go-chi/chi/v5`, `github.com/ethereum/go-ethereum`, `github.com/google/uuid`, `github.com/jackc/pgx/v5`, `github.com/minio/minio-go/v7`, `github.com/pgvector/pgvector-go`, `github.com/rs/zerolog`, `github.com/santhosh-tekuri/jsonschema/v5`, `github.com/spf13/cobra`, `gopkg.in/yaml.v3` |
-| `layerx/go.mod` | `github.com/paxlabs-inc/layerx` | 1.22 | `github.com/jackc/pgx/v5` |
-| `uwac/go.mod` | `github.com/paxlabs-inc/uwac` | 1.22 | Module declaration only in the visible file |
-| `tachyon/go.mod` | `github.com/paxlabs-inc/tachyon-tools` | 1.22 | Direct requirement on `github.com/ethereum/go-ethereum v1.14.13` |
 | `router/go.mod` | `matrix/router` | 1.21 | `github.com/jackc/pgx/v5` |
 
 
@@ -123,12 +119,10 @@ The contract workspaces are backed by explicit submodule declarations.
 
 ## Web Package Partitioning
 
-The web layer is split by delivery target: the documentation app, the Deus runner, and the marketplace frontend each have their own package manifest and their own scripts.
+The current web package manifest belongs to the marketplace frontend.
 
 | Path | Package metadata | Scripts | Notes |
 | --- | --- | --- | --- |
-| `docs/.web/package.json` | `name = "matrix-docs-client"`, `private = true`, `version = "0.0.2"`, `type = "module"` | `dev`, `build`, `lint`, `preview` | Uses Vite, TypeScript, React 19, `react-router`, `react-markdown`, `sonner`, `zod`, and `fuse.js` |
-| `deus/runner/package.json` | `name = "@paxlabs/deus-runner"`, `version = "0.1.0-phase3"`, `private = true`, `type = "module"` | `start`, `check` | Declares `engines.node = ">=20"` and checks `src/server.js` plus `src/harness.js` |
 | `marketplace/package.json` | `name = "marketplace"`, `private = true`, `type = "module"` | `build`, `dev`, `preview`, `deploy`, `cf-typegen`, `typecheck`, `test`, `test:watch` | Uses React Router, Cloudflare tooling, Vitest, TypeScript, and Wrangler |
 
 
@@ -225,14 +219,8 @@ Tachyon’s contract tree is its own submodule boundary. It keeps Forge Standard
 | `executor/go.mod` | Declares the `matrix/executor` module and binds it to local `MCL`, `bridge`, and `cortex` replacements |
 | `neo/go.mod` | Declares the `matrix/neo` module and binds it to local `cortex`, `executor`, `bridge`, and `MCL` replacements |
 | `router/go.mod` | Declares the `matrix/router` module and its PostgreSQL client dependency |
-| `chronos/go.mod` | Declares the `github.com/paxlabs-inc/chronos` module and its PostgreSQL and cron dependencies |
+| `chronos/go.mod` | Declares the `github.com/Sidiora-Labs/centra-llm-agents/chronos` module and its PostgreSQL and cron dependencies |
 | `gateway/go.mod` | Declares the `matrix/gateway` leaf module and its PostgreSQL driver dependency |
-| `deus/go.mod` | Declares the `github.com/paxlabs-inc/deus` module and its HTTP, Ethereum, storage, schema, and CLI dependencies |
-| `layerx/go.mod` | Declares the `github.com/paxlabs-inc/layerx` module and its PostgreSQL dependency |
-| `uwac/go.mod` | Declares the `github.com/paxlabs-inc/uwac` module |
-| `tachyon/go.mod` | Declares the `github.com/paxlabs-inc/tachyon-tools` module and its Go 1.22 baseline |
-| `docs/.web/package.json` | Defines the docs client scripts and package metadata |
-| `deus/runner/package.json` | Defines the Deus runner scripts, package metadata, and Node 20 runtime floor |
 | `marketplace/package.json` | Defines the marketplace frontend scripts and Cloudflare build/deploy flow |
 | `marketplace/Dockerfile` | Builds the marketplace image in dev, production, and runtime stages |
 | `tachyon/.env.example` | Documents the Tachyon runtime environment variables and auth token behavior |

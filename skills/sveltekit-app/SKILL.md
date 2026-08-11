@@ -1,7 +1,7 @@
 ---
 name: sveltekit-app
 description: SvelteKit playbook — routing, load functions, form actions, runes-based state, adapters, and testing. A defensible deviation when bundle size and authoring ergonomics are the priority. Use when the team picks Svelte.
-origin: Matrix
+origin: Centra AI
 ---
 
 # SvelteKit App Playbook

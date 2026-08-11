@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package llm implements the interpreter.LLM interface over OpenAI-compatible
@@ -175,7 +175,7 @@ type Config struct {
 	// to the actual constraint payload sent to the provider.
 	Grammars map[string]*GrammarDef
 
-	// --- sess#32 ambient-architect MatrixGateway routing (plan §5.16) ---
+	// --- sess#32 ambient-architect Centra AI gateway routing (plan §5.16) ---
 	//
 	// When GatewayURL != "", Decode/Stream redirect every chat-completions
 	// POST through the gateway: URL becomes ${GatewayURL}/v1/chat/completions,
@@ -235,7 +235,7 @@ type Config struct {
 	// InjectIdentity, when true, prepends llm.IdentityPreamble as the
 	// FIRST system message at every Decode + Stream call. The Forge
 	// self-maintenance posture (matrix.kvx sess#34) requires every
-	// frontier-model invocation to be reminded that it IS Matrix and
+	// frontier-model invocation to be reminded that it IS Centra AI and
 	// its sole purpose is to optimize the codebase at /root/matrix.
 	//
 	// Defaults to false (legacy paths preserved byte-identically).
@@ -568,7 +568,7 @@ func (c *Client) Stream(ctx context.Context, messages []interpreter.Message,
 
 // newHTTPRequest builds the *http.Request shared between Decode +
 // Stream. When c.cfg.GatewayURL is non-empty (sess#32 ambient-architect
-// MatrixGateway routing per plan §5.16) the URL is rewritten to
+// Centra AI gateway routing per plan §5.16) the URL is rewritten to
 // ${GatewayURL}/v1/chat/completions, Authorization carries the gateway
 // bearer token (env var defaults to MATRIX_GATEWAY_TOKEN; overridable
 // via cfg.GatewayTokenEnv), and the X-Matrix-* metadata headers are
@@ -1068,4 +1068,4 @@ type streamDelta struct {
 	Content string `json:"content,omitempty"`
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

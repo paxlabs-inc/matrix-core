@@ -1,6 +1,6 @@
 # Envelope & Wire Protocol
 
-Package `matrix/mcl/envelope` is the canonical wire codec for all 15 MCL message kinds. Every message Matrix sends or receives rides inside an `Envelope`: a typed header, an opaque CBOR body, and an ed25519 signature over the canonical encoding.
+Package `matrix/mcl/envelope` is the canonical wire codec for all 15 MCL message kinds. Every message Centra AI sends or receives rides inside an `Envelope`: a typed header, an opaque CBOR body, and an ed25519 signature over the canonical encoding.
 
 Source files: `MCL/envelope/envelope.go`, `MCL/envelope/kinds.go`, `MCL/envelope/body.go`, `MCL/envelope/json.go`, `MCL/envelope/keyresolver.go`.
 

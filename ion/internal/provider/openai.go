@@ -8,7 +8,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
 )
 
 // OpenAIAdapter translates OpenAI Chat Completions requests and responses.

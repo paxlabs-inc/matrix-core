@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -61,7 +61,7 @@ type llmStepHandler struct {
 	overrideBaseURL string
 	overrideSeed    int64
 
-	// --- sess#32 ambient-architect MatrixGateway routing (plan §5.16) ---
+	// --- sess#32 ambient-architect Centra AI gateway routing (plan §5.16) ---
 	// Empty gatewayURL preserves the legacy direct-provider posture.
 	gatewayURL string
 	actorDID   string
@@ -95,7 +95,7 @@ type stepHandlerOpts struct {
 	// ForgeMode (sess#36 / Forge Phase 3) — when true, the executor
 	// step handler binds llm.ForgeRegistry instead of DefaultRegistry
 	// so every step decode runs through opencode.ai/zen (Claude Opus
-	// 4.7 + GPT 5.5) with the Matrix identity preamble injected.
+	// 4.7 + GPT 5.5) with the Centra AI identity preamble injected.
 	ForgeMode bool
 }
 
@@ -161,7 +161,7 @@ func (h *llmStepHandler) cfgFor(key llm.RouteKey) llm.Config {
 		cfg.Seed = h.overrideSeed
 	}
 	if h.gatewayURL != "" {
-		// Sess#32 ambient-architect MatrixGateway routing (plan §5.16).
+		// Sess#32 ambient-architect Centra AI gateway routing (plan §5.16).
 		// Executor slot — kind label rides X-Matrix-Kind-Route so the
 		// gateway audit trail can split reason / code / classify
 		// per-call. cfg.Model stays the registry-resolved model so
@@ -411,7 +411,7 @@ func (h *llmStepHandler) streamStep(
 
 func (h *llmStepHandler) buildSystem() string {
 	var sb strings.Builder
-	sb.WriteString("You are the Matrix executor running a single Step inside a plan walk.\n\n")
+	sb.WriteString("You are the Centra AI executor running a single Step inside a plan walk.\n\n")
 	sb.WriteString("Skill: " + h.skillURI + "\n")
 	if len(h.skillMD) > 0 {
 		sb.WriteString("\n== Skill body (SKILL.md) ==\n")
@@ -809,4 +809,4 @@ func lastOption(opts []string, fallback string) string {
 	return fallback
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

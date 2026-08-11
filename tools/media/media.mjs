@@ -1,4 +1,4 @@
-// media — MCP stdio bridge giving Matrix agents (Neo + the MCL daemon) media
+// media — MCP stdio bridge giving Centra AI agents (Neo + the MCL daemon) media
 // I/O. PRIMARY provider is the xAI Grok Imagine API (image generation, image
 // editing incl. multi-reference, text-to-video, image-to-video) — the fleet
 // standardized on xAI and the credits live there. Novita remains the FALLBACK

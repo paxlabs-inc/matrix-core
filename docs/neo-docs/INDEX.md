@@ -1,6 +1,6 @@
 # Neo Developer Documentation
 
-Neo is Matrix's default conversational agent: a recursive LLM tool-calling loop with cortex-backed memory, the shared MCP tool surface, and `core_execute` delegation to the MCL pipeline for rigorous / money-moving tasks.
+Neo is Centra AI's default conversational agent: a recursive LLM tool-calling loop with cortex-backed memory, the shared MCP tool surface, and `core_execute` delegation to the MCL pipeline for rigorous / money-moving tasks.
 
 This documentation is written for people working on Neo itself — extending the control loop, adding memory mechanisms, wiring new tools, or understanding how the conversational HTTP service works.
 

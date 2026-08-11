@@ -20,7 +20,7 @@
  * House rules (R13) + non-jargon copy (R12): separation from the stage is by
  * background tone only (no border strokes, no shadow, no glow); the ascend
  * control is a plain, consumer-readable "Back" affordance with no protocol
- * jargon; no emojis, no purple gradients. Matrix Sage (`text-pax` / `#99bd9c`)
+ * jargon; no emojis, no purple gradients. Centra Sage (`text-pax` / `#99bd9c`)
  * is the shell's SINGLE accent and is the one color the ascend control lifts to
  * on hover/focus; no other accent is introduced.
  */

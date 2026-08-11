@@ -2,7 +2,7 @@
 
 ## Overview
 
-This section covers the repository’s main launch points: interactive CLIs, compiler and smoke-test tools, long-running daemons, and the browser bootstrap for the docs web app. These entrypoints are the fastest way to move from a checkout to a working Matrix environment, whether the goal is to explore Cortex state, compile MatrixScript, run service processes, or bring up the documentation UI.
+This section covers the repository’s main launch points: interactive CLIs, compiler and smoke-test tools, long-running daemons, and the browser bootstrap for the docs web app. These entrypoints are the fastest way to move from a checkout to a working Centra AI environment, whether the goal is to explore Cortex state, compile CentraScript, run service processes, or bring up the documentation UI.
 
 The binaries fall into three practical groups. Some are local command-line tools that complete a task and exit, some are daemons that load config, start background workers, and keep HTTP or MCP listeners alive, and two files bootstrap the docs web app in the browser. A few tools are explicitly wired for smoke testing, so their startup path is as important as their output.
 
@@ -66,7 +66,7 @@ flowchart LR
 
 ## Interactive and Compiler Binaries
 
-These are the quickest binaries to try first when you want to understand the system from the shell. They either run a conversation loop, compile MatrixScript, inspect Cortex state, or smoke-test manifest and execution tooling.
+These are the quickest binaries to try first when you want to understand the system from the shell. They either run a conversation loop, compile CentraScript, inspect Cortex state, or smoke-test manifest and execution tooling.
 
 | File | Startup surface | What it does |
 | --- | --- | --- |
@@ -200,7 +200,7 @@ These binaries are for proving that the system still behaves the way the source 
 
 | File | Startup surface | What it does |
 | --- | --- | --- |
-| `executor/cmd/mcl-e2e/main.go` | Live end-to-end harness | Runs the Matrix v1 stack across Cortex, MCL, bridge, envelope, lifecycle, MCP, and tool registry surfaces. It performs runs A, B, and C, writes a transcript, and compares intent hashes and replay roots. |
+| `executor/cmd/mcl-e2e/main.go` | Live end-to-end harness | Runs the Centra AI stack across Cortex, MCL, bridge, envelope, lifecycle, MCP, and tool registry surfaces. It performs runs A, B, and C, writes a transcript, and compares intent hashes and replay roots. |
 | `executor/cmd/gideon-ingest/main.go` | Knowledge graph ingestion tool | Reads the ops corpus and the HyperPax-OS source tree, builds Cortex memory nodes and edges, and skips writes in `-dry-run` mode. Re-runs are idempotent because each node carries a stable `gideon:key:` tag. |
 | `cortex/cmd/embed-smoke/main.go` | Fireworks embedder smoke test | Calls the real Fireworks embedding API, checks vector dimension and L2 norm, compares related and unrelated cosine similarity, and repeats the same embedding three times to inspect determinism. |
 | `cortex/cmd/two-model-smoke/main.go` | Dual-model conversational smoke test | Alternates two agents across a shared Cortex store, records a JSONL transcript, and asserts that `Cortex.Rebuild` preserves `OverallRoot` byte-for-byte unless `-no-rebuild-assert` is set. |
@@ -280,7 +280,7 @@ The HTML file is a standard Vite entry shell with a dark theme class on the `<ht
 If you are trying to orient yourself quickly, the binaries line up with a few direct workflows:
 
 - interactive assistant work: `neo/cmd/neo/main.go`
-- MatrixScript compilation and validation: `MCL/cmd/mclc/main.go`
+- CentraScript compilation and validation: `MCL/cmd/mclc/main.go`
 - live Cortex-backed compilation: `bridge/cmd/mclc-cortex/main.go`
 - local Cortex inspection and mutation: `cortex/cmd/cortex-shell/main.go`
 - manifest and tool execution smoke tests: `executor/cmd/mcl-tools/main.go`

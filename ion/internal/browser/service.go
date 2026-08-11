@@ -21,6 +21,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controllease"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
 	cdpbrowser "github.com/chromedp/cdproto/browser"
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/fetch"
@@ -30,8 +32,6 @@ import (
 	"github.com/chromedp/cdproto/target"
 	"github.com/chromedp/chromedp"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controllease"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
 )
 
 const (

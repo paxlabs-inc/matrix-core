@@ -2,7 +2,7 @@
 
 ## Overview
 
-`matrix-core` is organized as a monorepo of product areas, operational assets, and documentation hubs rather than a single application tree. The root-level README files explain the product story, while the module-specific READMEs map each subsystem to its own implementation surface, deployment shape, and contributor entry point.
+`centra-llm-agents` is organized as a monorepo of product areas, operational assets, and documentation hubs rather than a single application tree. The root-level README files explain the product story, while the module-specific READMEs map each subsystem to its own implementation surface, deployment shape, and contributor entry point.
 
 For new contributors, the shortest path is: start at `README.md`, use `ARCHITECTURE.md` as the navigation index, then jump into the relevant module README or deployment asset. The sibling pages for module manifests and primary binaries cover buildable code; this page focuses on how the repository is partitioned and what each top-level area is for.
 
@@ -67,7 +67,7 @@ The root README is the broadest map of the repository. `ARCHITECTURE.md` compres
 
 | Directory prefix | What it represents in the repository |
 | --- | --- |
-| `MCL/` | Matrix Communication Layer, the typed intent and compiler-focused core. |
+| `MCL/` | MCL, the typed intent and compiler-focused core. |
 | `cortex/` | The per-actor memory system, query engine, snapshots, and replay surfaces. |
 | `bridge/` | The adapter layer that connects MCL to a live cortex instance. |
 | `executor/` | Plan walking, lifecycle handling, tool dispatch, and the live e2e harness. |
@@ -92,13 +92,13 @@ The root README is the broadest map of the repository. `ARCHITECTURE.md` compres
 
 | Path | What it does |
 | --- | --- |
-| `README.md` | The root repository overview. It introduces Matrix as a layered product, explains the two agent rails, and maps the major directories so newcomers can jump straight to the right subsystem. |
+| `README.md` | The root repository overview. It introduces Centra AI as a layered product, explains the two agent rails, and maps the major directories so newcomers can jump straight to the right subsystem. |
 | `ARCHITECTURE.md` | The high-level navigation index. It explains that the detailed source of truth is split across the research chapters and the project-state record, then summarizes the load-bearing surfaces for the core modules. |
 | `CHANGELOG.md` | The repository release log. It records notable changes by version, ties them to session references, and shows how product areas such as the gateway, daemon, executor, bridge, cortex, and deployment surface evolved over time. |
 | `README.es.md` | Spanish translation of the root overview and repository layout. It preserves the same product map while localizing the narrative and the directory guide. |
 | `README.ja.md` | Japanese translation of the root overview and repository layout. It mirrors the same repository map and onboarding story. |
 | `README.pt-BR.md` | Brazilian Portuguese translation of the root overview and repository layout. It keeps the same structure and product framing as the English root README. |
-| `README.ru.md` | Russian translation of the root overview and repository layout. It presents the same layered map of Matrix and its top-level areas. |
+| `README.ru.md` | Russian translation of the root overview and repository layout. It presents the same layered map of Centra AI and its top-level areas. |
 | `README.zh-CN.md` | Simplified Chinese translation of the root overview and repository layout. It preserves the same repository story and directory map. |
 
 
@@ -106,7 +106,7 @@ The root README is the broadest map of the repository. `ARCHITECTURE.md` compres
 
 | Path | What it documents |
 | --- | --- |
-| `MCL/README.md` | The Matrix Communication Layer. It describes MCL as the heart of the system, explains the compiler-oriented structure, and records the typed and signed intent pipeline that feeds execution. |
+| `MCL/README.md` | The MCL coordination layer. It describes MCL as the heart of the system, explains the compiler-oriented structure, and records the typed and signed intent pipeline that feeds execution. |
 | `cortex/README.md` | The phased cortex implementation. It lays out the memory store, journal, typed memory taxonomy, query engine, salience cache, forms, embeddings, vector index, and replay surfaces. |
 | `bridge/README.md` | The glue layer between the MCL interpreter and cortex. It shows how the adapter maps skill arguments into cortex queries and context reads. |
 | `executor/README.md` | The plan walker and lifecycle surface. It describes the tool registry, MCP client and manager, runtime walker, materiality classifier, and the live execution CLI. |
@@ -133,7 +133,7 @@ The root README is the broadest map of the repository. `ARCHITECTURE.md` compres
 | `deploy/chronos/chronosd.service` | The systemd unit for the Chronos scheduler daemon. It defines the service environment, restart behavior, hardening settings, and service wiring. |
 | `deploy/chronos/install.sh` | An idempotent installer for `chronosd`. It creates the system user and group, installs the binary and migrations, writes the environment file, installs the service unit, and enables the service. |
 | `deploy/chronos/nginx-snippet.conf` | An optional nginx drop-in for exposing Chronos through a public path while keeping the normal private topology intact. |
-| `deploy/daemon/Dockerfile` | Builds the per-user Matrix daemon image. It compiles the Go binaries, installs Node, Python, and uv, pre-caches MCP servers, bakes the skill corpus and agent manifests, and defines the container runtime layout. |
+| `deploy/daemon/Dockerfile` | Builds the per-user Centra AI daemon image. It compiles the Go binaries, installs Node, Python, and uv, pre-caches MCP servers, bakes the skill corpus and agent manifests, and defines the container runtime layout. |
 | `deploy/daemon/README.md` | Documents the daemon deployment surface. It covers local image smoke testing, Fly app bootstrap, and the per-user machine creation model. |
 | `deploy/daemon/entrypoint.sh` | The daemon launch script. It prepares the data layout, sets up workspace linking, initializes the workspace repository, and starts either the dual-process Neo mode or the standalone daemon mode. |
 | `deploy/daemon/fly.toml.tmpl` | The per-user Fly Machine template rendered by the router. It defines the machine shape, volume mount, health checks, and environment wiring for daemon provisioning. |
@@ -152,7 +152,7 @@ The root README is the broadest map of the repository. `ARCHITECTURE.md` compres
 
 ## Repository signals worth noting
 
-- The root README presents Matrix as a layered system with MCL, cortex, bridge, executor, neo, gateway, router, Deus, uwac, and tachyon as the major product areas.
+- The root README presents Centra AI as a layered system with MCL, cortex, bridge, executor, neo, gateway, router, Deus, uwac, and tachyon as the major product areas.
 - The documentation tree is not just prose; it also contains runtime-facing assets such as the docs web app scaffold and deployment templates.
 - The skill and rules corpora are first-class repository areas, not afterthoughts. They exist alongside the product modules because agent behavior and coding policy are part of the system design.
 - The deployment directory is split by runtime target, which makes the browser service, daemon image, Chronos service, and Deus control plane independently inspectable.

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
 )
 
 func (supervisor *Supervisor) Registrations() []tools.Registration {

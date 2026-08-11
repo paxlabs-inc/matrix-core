@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
 )
 
 var ErrNonNegotiable = errors.New("automatrix: opportunity violates non-negotiables")

@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/agent"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/skills"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/agent"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	"github.com/paxlabs-inc/ion-agent/internal/skills"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
 )
 
 type skillProposalGenerator struct {

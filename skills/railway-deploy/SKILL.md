@@ -1,7 +1,7 @@
 ---
 name: railway-deploy
 description: Deploy an app to Railway — build/start command detection, service config, environment variables, private networking, databases, and health checks. Use when deploying any web app or service to Railway.
-origin: Matrix
+origin: Centra AI
 ---
 
 # Railway Deploy Playbook

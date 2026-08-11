@@ -42,7 +42,7 @@ export function CookiePreferencesDialog({
           </p>
           <DialogTitle>Cookie preferences</DialogTitle>
           <DialogDescription>
-            Choose which optional cookies Matrix may use. Strictly necessary cookies are always
+            Choose which optional cookies Centra AI may use. Strictly necessary cookies are always
             enabled. See our{' '}
             <Link
               href="/cookies"

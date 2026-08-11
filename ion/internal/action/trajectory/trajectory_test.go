@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/paxlabs-inc/ion-agent/internal/action"
-	"github.com/paxlabs-inc/ion-agent/internal/security/vault"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/action"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/vault"
 )
 
 func TestEncryptedTrajectoryExportImportsAndReplaysInOrder(t *testing.T) {

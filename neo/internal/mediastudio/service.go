@@ -178,12 +178,12 @@ func Open(parent context.Context, config Config) (*Service, error) {
 func (service *Service) Status() StatusView {
 	if service != nil && service.configured {
 		return StatusView{
-			Configured: true, Provider: "Matrix Media",
+			Configured: true, Provider: "Centra Media",
 			Message: "Image and video generation is ready.",
 		}
 	}
 	return StatusView{
-		Configured: false, Provider: "Matrix Media",
+		Configured: false, Provider: "Centra Media",
 		Message: "Image and video generation is not configured on this machine.",
 	}
 }
@@ -245,7 +245,7 @@ func (service *Service) Create(idempotencyKey string, input Request) (Job, error
 	now := time.Now().UTC()
 	job := Job{
 		ID: uuid.NewString(), Kind: request.Kind, Status: StatusQueued,
-		Provider: "matrix", Request: request, Assets: []Asset{},
+		Provider: "Centra Media", Request: request, Assets: []Asset{},
 		CreatedAt: now, UpdatedAt: now, IdempotencyKey: idempotencyKey,
 	}
 	service.jobs[job.ID] = job

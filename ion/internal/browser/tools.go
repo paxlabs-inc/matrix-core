@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
 )
 
 // Registrations exposes the browser through the shared production tool manager.

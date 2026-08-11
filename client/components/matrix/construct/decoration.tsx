@@ -4,7 +4,7 @@
  * Attribute decoration — the axes that DECORATE a primitive rather than
  * becoming one (frozen spec §attributes, invariant i4): stakes, confidence,
  * cost, temporality. Rendered as quiet, tone-only chips above a surface; the
- * single accent is Matrix Sage (#99bd9c via --primary), irreversible borrows
+ * single accent is Centra Sage (#99bd9c via --primary), irreversible borrows
  * the destructive tone, nothing uses borders/glow/purple.
  */
 import type { Attributes, Stakes, Cost } from '@/lib/construct/types.gen'

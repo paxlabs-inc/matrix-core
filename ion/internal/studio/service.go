@@ -17,11 +17,11 @@ import (
 	"sync"
 	"time"
 
+	projectcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/project"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/session"
+	workcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/work"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"github.com/google/uuid"
-	projectcontrol "github.com/paxlabs-inc/ion-agent/internal/project"
-	"github.com/paxlabs-inc/ion-agent/internal/session"
-	workcontrol "github.com/paxlabs-inc/ion-agent/internal/work"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
 )
 
 const (

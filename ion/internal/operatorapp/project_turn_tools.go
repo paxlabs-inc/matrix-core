@@ -9,15 +9,15 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/agent"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	projectcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/project"
+	studiocontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/studio"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools/builtin"
+	workcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/work"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/agent"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	projectcontrol "github.com/paxlabs-inc/ion-agent/internal/project"
-	studiocontrol "github.com/paxlabs-inc/ion-agent/internal/studio"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
-	"github.com/paxlabs-inc/ion-agent/internal/tools/builtin"
-	workcontrol "github.com/paxlabs-inc/ion-agent/internal/work"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
 )
 
 var studioProjectReference = regexp.MustCompile(

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This section groups the repository’s skill packs and companion knowledge assets that shape how Matrix writes brand content, evolves its own behavior, manages learning from sessions, formats commit messages, and enforces code-pattern guidance. The files here are mostly manifest-driven documentation, shell and Python orchestration, and reference guides rather than application runtime code.
+This section groups the repository’s skill packs and companion knowledge assets that shape how Centra AI writes brand content, evolves its own behavior, manages learning from sessions, formats commit messages, and enforces code-pattern guidance. The files here are mostly manifest-driven documentation, shell and Python orchestration, and reference guides rather than application runtime code.
 
 The packs split into a few clear roles: `skills/brand` handles brand voice and asset approval, `skills/self-improve` and `skills/continuous-learning-v2` define recursive learning loops and observer agents, `skills/writing-git-commits` standardizes semantic commit writing, `skills/coding-patterns` captures code-convention rules, and `skills/miniproject/scripts/validate.ts` validates memory-file hygiene.
 
@@ -92,11 +92,11 @@ This manifest declares the `brand` skill with frontmatter keys `name`, `descript
 
 The routing section is concrete: it parses the first word from `$ARGUMENTS`, loads `references/{subcommand}.md`, and executes the matching reference with the remaining arguments. That makes the reference files the real knowledge assets behind the skill.
 
-### Brand Skill Manifest MatrixScript
+### Brand Skill Manifest CentraScript
 
 *`skills/brand/SKILL.mtx`*
 
-The MatrixScript manifest gives the compiler-facing contract for the same skill. It sets `id=brand`, `display="Brand"`, `mcl.verbs=analyze`, `determinism=seedable`, and `seed_policy=per_intent`, then defines a required `target: ArtifactRef` slot and an optional `constraints: Constraint[]` slot.
+The CentraScript manifest gives the compiler-facing contract for the same skill. It sets `id=brand`, `display="Brand"`, `mcl.verbs=analyze`, `determinism=seedable`, and `seed_policy=per_intent`, then defines a required `target: ArtifactRef` slot and an optional `constraints: Constraint[]` slot.
 
 Its procedure resolves `slot.target` from Cortex facts near the input text and fails closed if the target cannot be found. The manifest also clarifies on low confidence and on unknown target resolution, which keeps the skill typed and explicit instead of returning an underspecified frame.
 
@@ -148,7 +148,7 @@ This Node script validates marketing assets against the brand rules. It uses `fs
 
 > **Note:** The usage comment advertises `--fix`, but `main()` only branches on `--json` and the asset path. The implemented runtime behavior is validation plus formatted reporting, not a fix mode.
 
-This pack defines the recursive self-optimization loop. The prose README explains the loop in human terms, while the MatrixScript manifests specify the exact tool surfaces and sub-skill choreography for the compiler.
+This pack defines the recursive self-optimization loop. The prose README explains the loop in human terms, while the CentraScript manifests specify the exact tool surfaces and sub-skill choreography for the compiler.
 
 ### Recursive Self Improvement Guide
 
@@ -202,11 +202,11 @@ This manifest describes an instinct-based learning system that evolves session p
 
 The README-style content also contrasts v2.1 with earlier versions: observations are now scoped by project hash or repo path, cross-project contamination is reduced, and global instincts remain available as shared knowledge. That makes the pack as much about memory hygiene as about learning.
 
-### Continuous Learning Skill Manifest MatrixScript
+### Continuous Learning Skill Manifest CentraScript
 
 *`skills/continuous-learning-v2/SKILL.mtx`*
 
-The MatrixScript surface declares `id=continuous-learning-v2` with `mcl.verbs=monitor build`. It accepts a required `target: ArtifactRef` and optional `constraints: Constraint[]`, then clarifies on low confidence or unknown targets.
+The CentraScript surface declares `id=continuous-learning-v2` with `mcl.verbs=monitor build`. It accepts a required `target: ArtifactRef` and optional `constraints: Constraint[]`, then clarifies on low confidence or unknown targets.
 
 Its procedures resolve `slot.target` through Cortex facts and keep the skill typed across both monitor and build intents. The manifest is intentionally minimal at the tool level, because the agent and script layer carry most of the operational behavior.
 
@@ -334,11 +334,11 @@ The manifest introduces Conventional Commits as a machine-readable commit style 
 
 The core commit types visible in the prose are `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, and `ci`, plus breaking-change forms. The emphasis is on clear intent, atomic changes, and commit messages that are easy for both humans and tools to parse.
 
-### Writing Git Commits Manifest MatrixScript
+### Writing Git Commits Manifest CentraScript
 
 *`skills/writing-git-commits/SKILL.mtx`*
 
-This MatrixScript manifest packages the commit-writing guidance as a typed `analyze` skill. It uses a required `target: ArtifactRef` slot, an optional `constraints: Constraint[]` slot, and no tools.
+This CentraScript manifest packages the commit-writing guidance as a typed `analyze` skill. It uses a required `target: ArtifactRef` slot, an optional `constraints: Constraint[]` slot, and no tools.
 
 The procedure resolves the target from Cortex and clarifies when the target is not identifiable. The result is a skill interface for commit-message guidance rather than a build or runtime workflow.
 
@@ -378,11 +378,11 @@ The manifest is a quick-reference skill with `allowed-tools: Read, Grep, Glob, W
 
 The visible reference table points at three rule files: promise handling, React components, and restricted patterns. That makes the manifest a dispatcher into concrete rule pages rather than a standalone policy document.
 
-### Coding Patterns Manifest MatrixScript
+### Coding Patterns Manifest CentraScript
 
 *`skills/coding-patterns/SKILL.mtx`*
 
-This MatrixScript surface packages the coding-patterns guidance as `id=coding-patterns` with `mcl.verbs=build`. It accepts the standard required `target: ArtifactRef` and optional `constraints: Constraint[]` slots, then resolves the target and clarifies when it is not identifiable.
+This CentraScript surface packages the coding-patterns guidance as `id=coding-patterns` with `mcl.verbs=build`. It accepts the standard required `target: ArtifactRef` and optional `constraints: Constraint[]` slots, then resolves the target and clarifies when it is not identifiable.
 
 The manifest is intentionally tool-free. It exists to produce a typed frame for code-convention guidance, not to execute file operations.
 

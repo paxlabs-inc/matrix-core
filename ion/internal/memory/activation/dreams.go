@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/liveness/dreamweaver"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory/cortex"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/liveness/dreamweaver"
-	"github.com/paxlabs-inc/ion-agent/internal/memory"
-	"github.com/paxlabs-inc/ion-agent/internal/memory/cortex"
 )
 
 // DreamBeliefs loads Dreamweaver-derived Beliefs into the insertion tier

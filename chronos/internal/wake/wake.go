@@ -17,7 +17,7 @@ import (
 
 	"matrix/workforce/scheduler"
 
-	"github.com/paxlabs-inc/chronos/pkg/types"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/pkg/types"
 )
 
 // Request is the body POSTed to the router /internal/wake endpoint. The router

@@ -1,9 +1,9 @@
-# /deploy — Matrix release pipeline
+# /deploy — Centra AI release pipeline
 # Location in repo: /root/matrix/.claude/commands/deploy.md
 # Invoke from Claude Code inside /root/matrix with: /deploy
 # Optional argument: /deploy force   (proceed past soft-gate failures — build failure always aborts)
 
-You are executing the Matrix deploy pipeline. Work through the phases below **in order**. Never skip the leak sweep. Never push if Phase 1 blocked the release (unless the user passed `force`, and even then only past soft gates — a build failure is always terminal).
+You are executing the Centra AI deploy pipeline. Work through the phases below **in order**. Never skip the leak sweep. Never push if Phase 1 blocked the release (unless the user passed `force`, and even then only past soft gates — a build failure is always terminal).
 
 Argument passed: $ARGUMENTS
 
@@ -22,8 +22,8 @@ Argument passed: $ARGUMENTS
 
 ## Phase 2 — Version + Changelog + Docs
 1. Determine the bump from the actual diff since the last tag (semver): breaking API/consensus/schema change → major; new module, agent, endpoint, or capability → minor; fixes/refactors/docs → patch. State your reasoning in one line.
-2. Update every version declaration the repo actually uses — check for `VERSION`, `Makefile` VERSION var, `package.json` (Matrix Client), `Cargo.toml`, module manifests, and any `.kvx` spec headers that carry a version field. All must agree.
-3. Prepend a `CHANGELOG.md` entry: version, date, sections (Added / Changed / Fixed / Security), written from the real commit diff — not from commit messages alone. Keep it in the PaxLabs README house style.
+2. Update every version declaration the repo actually uses — check for `VERSION`, `Makefile` VERSION var, `package.json` (Centra AI Client), `Cargo.toml`, module manifests, and any `.kvx` spec headers that carry a version field. All must agree.
+3. Prepend a `CHANGELOG.md` entry: version, date, sections (Added / Changed / Fixed / Security), written from the real commit diff — not from commit messages alone. Keep it in the Sidiora Labs README house style.
 4. Update `README.md` and module docs **only if** the shipped changes alter documented behavior, commands, config, or public interfaces. Do not touch docs for internal-only changes. List every doc file you modified and why.
 
 ## Phase 3 — Leak sweep (mandatory, blocking)

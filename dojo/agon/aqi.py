@@ -4,7 +4,7 @@ The AQI composes the three suite sub-indices into one legible number:
 
   - MPI  (Suite 1 Raw Model)   - intrinsic capability, the ceiling of any agent
   - APS  (Suite 2 Agentic)     - behavior-under-agency on the real tool loop
-  - RAS  (Suite 3 MRA)         - the ablation-attributed composition delta index
+  - RAS  (Suite 3 CRA)         - the ablation-attributed composition delta index
 
 The composition formula is NOT hard-coded here - it is read from the versioned
 standard artifact (taxonomy.json "aqi"), so a published AQI is reproducible from a

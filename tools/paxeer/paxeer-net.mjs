@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// paxeer-net — MCP stdio bridge exposing the Paxeer network to Matrix agents.
+// paxeer-net — MCP stdio bridge exposing the Paxeer network to Centra AI agents.
 //
 // READS (no auth): direct EVM JSON-RPC, PaxScan/Blockscout explorer, and price
 // feeds.

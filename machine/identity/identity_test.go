@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package identity
@@ -152,7 +152,7 @@ func testConfig(t *testing.T, name string) Config {
 	return Config{
 		Dir: filepath.Join(t.TempDir(), "machine-genome"), Name: name,
 		SubjectType: "agent-instance", Version: "1.0.0",
-		Description: "Matrix durable agent instance",
+		Description: "Centra AI durable agent instance",
 	}
 }
 

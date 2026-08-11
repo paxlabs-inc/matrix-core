@@ -1,6 +1,6 @@
 import { localizeLegalHtml } from '@/lib/legal/localize'
 
-/** Map static legal HTML class names to Matrix app Tailwind utilities. */
+/** Map static legal HTML class names to Centra AI app Tailwind utilities. */
 const CLASS_MAP: Record<string, string> = {
   shell:
     'mx-auto grid max-w-6xl gap-10 px-6 pb-20 pt-8 lg:grid-cols-[minmax(0,220px)_1fr] lg:gap-14',

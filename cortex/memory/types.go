@@ -1,8 +1,8 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package memory defines typed memory records, schema validation, and
-// canonical encoding for the Matrix cortex.
+// canonical encoding for the Centra AI cortex.
 //
 // Spec: research/04-cortex.md §3 (taxonomy), §4 (schema), §6 (versioning),
 // §9 (forms), §10 (visibility).
@@ -326,4 +326,4 @@ var (
 // MaxTagsPerMemory caps tag count to keep keys/scans bounded.
 const MaxTagsPerMemory = 16
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

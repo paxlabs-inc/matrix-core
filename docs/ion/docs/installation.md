@@ -8,8 +8,8 @@ environment.
 The canonical method. Produces `bin/ion` with embedded operator artifacts.
 
 ```bash
-git clone https://github.com/paxlabs-inc/ion-agent.git
-cd ion-agent
+git clone https://github.com/Sidiora-Labs/centra-llm-agents.git
+cd centra-llm-agents/ion
 make build          # web + TUI + Go binary
 # or
 make build-all      # also build the Rust HNSW sidecar

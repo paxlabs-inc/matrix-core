@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/paxlabs-inc/ion-agent/internal/liveness/decision"
-	"github.com/paxlabs-inc/ion-agent/internal/liveness/relationship"
-	"github.com/paxlabs-inc/ion-agent/internal/liveness/temporal"
-	"github.com/paxlabs-inc/ion-agent/internal/security/safety"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/liveness/decision"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/liveness/relationship"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/liveness/temporal"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/safety"
 )
 
 func TestCounterfactualStateChangesDecisionsWithoutChangingSafety(t *testing.T) {

@@ -12,7 +12,7 @@ import type {
   ProjectVerificationRun,
   ProjectVerificationWaiver,
   StudioIntent,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 import {
   type FormEvent,
   type CSSProperties,

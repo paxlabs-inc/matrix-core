@@ -3,7 +3,8 @@ import Image from 'next/image'
 import { Layout, Section, VStack } from '@astryxdesign/core/Layout'
 import { Heading, Text } from '@astryxdesign/core/Text'
 import LoginForm from './login-form'
-import { MatrixLogo } from '@/components/matrix/matrix-logo'
+import { CentraLogo } from '@/components/brand/centra-logo'
+import { BRAND_NAME } from '@/lib/brand'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -25,7 +26,7 @@ export default function LoginPage() {
             padding={0}
             className="relative flex min-h-screen flex-col px-6 py-8 sm:px-10 lg:px-16"
           >
-            <MatrixLogo size="md" />
+            <CentraLogo size="md" />
 
             <VStack gap={8} className="mx-auto w-full max-w-sm flex-1 justify-center py-10">
               <VStack gap={3}>
@@ -46,7 +47,7 @@ export default function LoginPage() {
             </VStack>
 
             <Text type="supporting" color="secondary">
-              &copy; {new Date().getFullYear()} Matrix
+              &copy; {new Date().getFullYear()} {BRAND_NAME}
             </Text>
           </Section>
 

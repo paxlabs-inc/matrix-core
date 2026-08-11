@@ -1,6 +1,6 @@
-# Matrix recursive self-optimization skill suite
+# Centra AI recursive self-optimization skill suite
 
-Five `SKILL.mtx` manifests that let the Matrix system improve itself through the Forge surface
+Five `SKILL.mtx` manifests that let the Centra AI system improve itself through the Forge surface
 without falling into the sess#37 failure mode (reason-only plans that read nothing and persist
 nothing). Each one is the compiler-participating manifest; author a matching `SKILL.md` prose
 body in the same directory — the **planner reads `SKILL.md`**, so the tool-call mandate in each

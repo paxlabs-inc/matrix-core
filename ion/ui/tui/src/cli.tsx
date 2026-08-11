@@ -8,7 +8,7 @@ import {
   ControlPlaneClient,
   OperatorEventStore,
   type OperatorState,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 import { App } from './App.js'
 import { LocalControlPlaneTransport } from './local-client.js'
 

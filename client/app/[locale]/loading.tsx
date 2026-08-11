@@ -9,7 +9,7 @@ export default function Loading() {
       height="fill"
       padding={4}
       role="status"
-      aria-label="Loading Matrix dashboard"
+      aria-label="Loading Centra AI dashboard"
       header={
         <LayoutHeader>
           <div className="flex h-10 items-center gap-3">

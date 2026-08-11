@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -152,7 +152,7 @@ func TestABReplay_CacheHitBytesIdentical(t *testing.T) {
 		Version:    "mcl/0.1",
 		Actor:      "matrix://user/ab",
 		Agent:      "matrix://agent/ab",
-		Prose:      "Brainstorm ideas for a Matrix observability dashboard",
+		Prose:      "Brainstorm ideas for a Centra AI observability dashboard",
 		Confidence: 1.0,
 		CreatedAt:  "2026-05-27T05:00:00Z",
 		SignedBy:   "matrix://user/ab",
@@ -463,4 +463,4 @@ var (
 	_ = json.Marshal
 )
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

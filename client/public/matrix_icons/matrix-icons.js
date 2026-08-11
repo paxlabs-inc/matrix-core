@@ -1,4 +1,4 @@
-/* Matrix Icon Set — 24×24 line icons, 1.75px stroke, round caps/joins.
+/* Centra AI Icon Set — 24×24 line icons, 1.75px stroke, round caps/joins.
    Each icon `b` (body) is inner SVG markup; the host <svg> sets the stroke. */
 window.MATRIX_ICON_CATEGORIES = [
   'Navigation',
@@ -8,7 +8,7 @@ window.MATRIX_ICON_CATEGORIES = [
   'Communication',
   'Account & Security',
   'Media',
-  'Matrix Core',
+  'Centra AI Core',
   'Paxeer Chain',
 ]
 
@@ -414,82 +414,82 @@ window.MATRIX_ICONS = [
     b: `<path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.8"/>`,
   },
 
-  /* ——— Matrix Core ——————————————————————————————— */
+  /* ——— Centra AI Core ——————————————————————————————— */
   {
     n: 'mcl',
-    c: 'Matrix Core',
-    k: 'matrixscript compiler runtime natural language intent transform',
+    c: 'Centra AI Core',
+    k: 'centrascript compiler runtime natural language intent transform',
     b: `<path d="M4 8h5"/><path d="M4 12h4"/><path d="M4 16h5"/><path d="M11.5 12h6"/><path d="M15 9.5 17.5 12l-2.5 2.5"/><path d="M20.5 8v8"/>`,
   },
   {
     n: 'intent',
-    c: 'Matrix Core',
+    c: 'Centra AI Core',
     k: 'aim goal target objective ask resolve',
     b: `<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/><path d="M12 1.5V5"/><path d="M12 19v3.5"/><path d="M1.5 12H5"/><path d="M19 12h3.5"/>`,
   },
   {
     n: 'intent-ir',
-    c: 'Matrix Core',
+    c: 'Centra AI Core',
     k: 'typed intermediate representation structured inspectable braces',
     b: `<path d="M9 5c-1.7 0-2.4 1-2.4 2.6v1.5c0 1.3-.7 2.1-2 2.4 1.3.3 2 1.1 2 2.4v1.5C6.6 19 7.3 20 9 20"/><path d="M15 5c1.7 0 2.4 1 2.4 2.6v1.5c0 1.3.7 2.1 2 2.4-1.3.3-2 1.1-2 2.4v1.5C17.4 19 16.7 20 15 20"/><path d="M12 12h.01"/>`,
   },
   {
     n: 'cortex',
-    c: 'Matrix Core',
+    c: 'Centra AI Core',
     k: 'memory graph typed knowledge nodes facts beliefs context',
     b: `<circle cx="12" cy="12" r="2.3"/><circle cx="5" cy="6.5" r="1.8"/><circle cx="19" cy="6.5" r="1.8"/><circle cx="5.5" cy="18" r="1.8"/><circle cx="18.5" cy="18" r="1.8"/><path d="M10.2 10.7 6.4 7.6"/><path d="M13.8 10.7 17.6 7.6"/><path d="M10.4 13.3 7 16.5"/><path d="M13.6 13.3 17 16.5"/>`,
   },
   {
     n: 'agent',
-    c: 'Matrix Core',
+    c: 'Centra AI Core',
     k: 'did bound assistant bot dispatch reliable autonomous',
     b: `<path d="M12 3.2l7.4 4.2v8.4L12 20l-7.4-4.2V7.4z"/><circle cx="12" cy="10.5" r="2.2"/><path d="M8.4 16.4a4 4 0 0 1 7.2 0"/>`,
   },
   {
     n: 'tools',
-    c: 'Matrix Core',
+    c: 'Centra AI Core',
     k: 'wrench primitives chain wrap utility configure',
     b: `<path d="M15.5 4.5a4.5 4.5 0 0 0-5.8 5.6L4 15.8a1.6 1.6 0 0 0 2.3 2.3l5.7-5.7a4.5 4.5 0 0 0 5.6-5.8l-2.7 2.7-2.5-.7-.7-2.5 2.5-2.6z"/>`,
   },
   {
     n: 'merkle',
-    c: 'Matrix Core',
+    c: 'Centra AI Core',
     k: 'tree hash proof anchor root leaves verify',
     b: `<circle cx="12" cy="4.5" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="17" cy="12" r="1.7"/><circle cx="4.5" cy="19.5" r="1.5"/><circle cx="9.5" cy="19.5" r="1.5"/><circle cx="14.5" cy="19.5" r="1.5"/><circle cx="19.5" cy="19.5" r="1.5"/><path d="M10.6 5.6 8.4 10.9"/><path d="M13.4 5.6 15.6 10.9"/><path d="M6.2 13.6 5.3 18"/><path d="M7.8 13.6 8.7 18"/><path d="M16.2 13.6 15.3 18"/><path d="M17.8 13.6 18.7 18"/>`,
   },
   {
     n: 'sign',
-    c: 'Matrix Core',
+    c: 'Centra AI Core',
     k: 'signature approve authorize endorse commit consent',
     b: `<path d="M4 16.5c2.4 0 3-7 5.4-7 1.8 0 1.1 4 2.9 4 1.3 0 1.7-2 3.4-2"/><path d="M4 20.5h16"/><path d="M17.6 8.7l1.2-1.2a1.2 1.2 0 0 0-1.7-1.7L15.9 6"/>`,
   },
   {
     n: 'correction',
-    c: 'Matrix Core',
+    c: 'Centra AI Core',
     k: 'drift fix revise undo amend repair adjust',
     b: `<path d="M5 10h7.5a4.5 4.5 0 0 1 0 9H9"/><path d="M5 10l3.2-3.2"/><path d="M5 10l3.2 3.2"/><path d="M17.5 4l.9 2 2 .9-2 .9-.9 2-.9-2-2-.9 2-.9.9-2z"/>`,
   },
   {
     n: 'versioned-uri',
-    c: 'Matrix Core',
+    c: 'Centra AI Core',
     k: 'pinned reference commit version snapshot resolve uri',
     b: `<circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v5.3"/><path d="M12 15.2v5.3"/>`,
   },
   {
     n: 'did',
-    c: 'Matrix Core',
+    c: 'Centra AI Core',
     k: 'decentralized identifier identity card credential profile',
     b: `<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="8" cy="11.5" r="2.4"/><path d="M5 16a3.5 3.5 0 0 1 6 0"/><path d="M14 10.5h4.5"/><path d="M14 14h3"/>`,
   },
   {
     n: 'orchestration',
-    c: 'Matrix Core',
+    c: 'Centra AI Core',
     k: 'dispatch sub coordinate workflow pipeline route fan',
     b: `<circle cx="5" cy="5.5" r="1.9"/><circle cx="5" cy="12" r="1.9"/><circle cx="5" cy="18.5" r="1.9"/><circle cx="18.5" cy="12" r="2.1"/><path d="M6.9 6.2 16.6 11.1"/><path d="M7 12h9.4"/><path d="M6.9 17.8 16.6 12.9"/>`,
   },
   {
     n: 'attestation',
-    c: 'Matrix Core',
+    c: 'Centra AI Core',
     k: 'seal verify award certify proof stamp attest',
     b: `<circle cx="12" cy="9.5" r="5.5"/><path d="M9.5 9.5l1.8 1.8 3.2-3.4"/><path d="M9 14l-1.5 6.5 4.5-2.4 4.5 2.4L15 14"/>`,
   },

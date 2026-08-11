@@ -6,7 +6,7 @@ DST=/root/matrix/skills
 
 mkdir -p "$DST"
 
-# DROP set — off-wedge, vendor-coupled, or Matrix-replaced
+# DROP set — off-wedge, vendor-coupled, or Centra-replaced
 DROP=(
   using-superpowers skill-comply
   kotlin-coroutines-flows kotlin-exposed-patterns kotlin-ktor-patterns kotlin-patterns kotlin-testing

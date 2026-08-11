@@ -18,8 +18,8 @@ If you prefer not to install these locally, use the
 ## 2. Clone and build
 
 ```bash
-git clone https://github.com/paxlabs-inc/ion-agent.git
-cd ion-agent
+git clone https://github.com/Sidiora-Labs/centra-llm-agents.git
+cd centra-llm-agents/ion
 make build
 ```
 

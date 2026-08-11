@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Package ir defines the Go types for the Intent IR — the central type in Matrix.
+// Package ir defines the Go types for the Intent IR — the central type in Centra AI.
 //
 // The Intent IR is what the user signs. It carries the typed source-of-truth
 // (Frame) alongside structured gaps (Unknowns) and grounding references.
@@ -12,7 +12,7 @@
 // CBOR codec can be layered via encoding interface when cortex dep is wired.
 package ir
 
-// Intent is the central type in Matrix. Every interaction produces one.
+// Intent is the central type in Centra AI. Every interaction produces one.
 type Intent struct {
 	ID      string `json:"id"`               // ULID
 	Version string `json:"v"`                // schema version, "mcl/0.1"
@@ -208,4 +208,4 @@ func ValidVerb(v string) bool {
 	return false
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

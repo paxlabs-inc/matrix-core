@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package server
@@ -193,7 +193,7 @@ func (s *Server) routes() []routeFact {
 // with these resident facts at the moment it would form.
 var (
 	surfaceIs = []string{
-		"You are the conversational agent behind the Matrix daemon's HTTP front: clients send POST /chat and read your streamed replies over SSE GET /events.",
+		"You are the conversational agent behind Centra AI's daemon HTTP front: clients send POST /chat and read your streamed replies over SSE GET /events.",
 		"Every route not on your list reverse-proxies to the co-located MCL daemon (healthz, /messages, /tools, the core_execute plane).",
 	}
 	surfaceIsNot = []string{

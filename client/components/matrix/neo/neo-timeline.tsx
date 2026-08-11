@@ -15,7 +15,7 @@
  * be stored and stays quiet — nothing durable is written from casual chat.
  *
  * Design system: full-page overlay separated from the app by background TONE
- * only (bg-background), cards on bg-card, the single Matrix Sage accent on
+ * only (bg-background), cards on bg-card, the single Centra Sage accent on
  * interactive chrome, the surface's rounded brand font, no border strokes for
  * depth, no emojis / glow.
  */
@@ -34,7 +34,7 @@ import {
   Clock,
   Download,
   Loader2,
-  MatrixIcon,
+  CentraIcon,
   RotateCcw,
   Search,
   ShieldCheck,
@@ -559,7 +559,7 @@ export function MemoryRow({
             aria-label="Edit memory"
             className="text-muted-foreground/70 hover:text-foreground hover:bg-muted grid size-7 place-items-center rounded-full transition"
           >
-            <MatrixIcon name="edit" className="size-3.5" />
+            <CentraIcon name="edit" className="size-3.5" />
           </button>
           <button
             type="button"

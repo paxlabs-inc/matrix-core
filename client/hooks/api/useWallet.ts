@@ -3,7 +3,7 @@
 /**
  * Wallet hooks — the user's primary embedded wallet, the agent wallets they
  * own (owner control plane), and on-chain reads (balances/USD/tx history)
- * for any address. All authenticated calls reuse the Matrix Supabase session
+ * for any address. All authenticated calls reuse the Centra AI Supabase session
  * via the paxeer wallet client; on-chain reads hit the public explorer.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

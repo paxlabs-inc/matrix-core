@@ -15,7 +15,7 @@ type MatrixSwitchProps = {
 }
 
 /**
- * Compatibility seam for Matrix's existing controlled-switch call sites.
+ * Compatibility seam for existing Centra AI controlled-switch call sites.
  * Astryx owns rendering, focus, keyboard, loading, and theme behavior.
  */
 export function Switch({

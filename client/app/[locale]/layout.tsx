@@ -12,6 +12,7 @@ import { CookieConsent } from '@/components/compliance/cookie-consent'
 import { VercelAnalytics } from '@/components/observability/vercel-analytics'
 import { SquiCircleFilter } from '@/components/matrix/squi-circle-filter'
 import { routing } from '@/i18n/routing'
+import { BRAND_DESCRIPTION, BRAND_NAME } from '@/lib/brand'
 import Loading from './loading'
 import '../globals.css'
 
@@ -41,16 +42,15 @@ const matrixMono = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Matrix — agent operations',
-    template: '%s | Matrix',
+    default: `${BRAND_NAME} — agent operations`,
+    template: `%s | ${BRAND_NAME}`,
   },
-  description:
-    'Dispatch agents to complete real tasks, watch them run to completion, and collect signed, replay-tested receipts. Matrix optimizes for completion, not conversation.',
-  applicationName: 'Matrix',
+  description: `${BRAND_DESCRIPTION} ${BRAND_NAME} optimizes for completion, not conversation.`,
+  applicationName: BRAND_NAME,
   icons: {
-    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
-    shortcut: '/favicon.svg',
-    apple: '/matrix_icon_2.svg',
+    icon: [{ url: '/centra-icon.svg', type: 'image/svg+xml' }],
+    shortcut: '/centra-icon.svg',
+    apple: '/centra-icon.svg',
   },
   robots: { index: false, follow: false },
 }

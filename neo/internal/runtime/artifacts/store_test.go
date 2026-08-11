@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package artifacts
@@ -83,7 +83,7 @@ func TestStructuredSelectors(t *testing.T) {
 	}
 	meta, _, err := store.Put(context.Background(), Metadata{
 		LogicalTurnID: "turn-2", CallIdentity: "call-json", Tool: "api_fetch", MIME: "application/json",
-	}, []byte(`{"name":"matrix","nested":{"status":"green"},"rows":[{"id":1},{"id":2}]}`))
+	}, []byte(`{"name":"centra","nested":{"status":"green"},"rows":[{"id":1},{"id":2}]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func TestStructuredSelectors(t *testing.T) {
 	}{
 		{Selector{JSONPointer: "/nested/status"}, `"green"`},
 		{Selector{Child: "/rows/1"}, `{"id":2}`},
-		{Selector{Fields: []string{"name"}}, `{"name":"matrix"}`},
+		{Selector{Fields: []string{"name"}}, `{"name":"centra"}`},
 	} {
 		got, err := store.Rehydrate(context.Background(), meta.ArtifactID, test.selector)
 		if err != nil || string(got) != test.want {

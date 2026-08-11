@@ -72,7 +72,7 @@ export const TOKENS = {
   USDT:  { symbol: 'USDT',  name: 'Tether USD',    decimals: 6,  address: '0xe76f24bcF307290e4e09Ee45021CeC998c3749ce', stable: true },
   USDL:  { symbol: 'USDL',  name: 'Ledger USD',    decimals: 6,  address: '0x85FcD13735F4309833A503EE804ea32395851479', stable: true },
   SID:   { symbol: 'SID',   name: 'Sidiora',       decimals: 6,  address: '0x21f7b20a555199fa73A238B1a91FD0f549068fEe' },
-  WETH:  { symbol: 'MTX',   name: 'Matrix Token',  decimals: 6,  address: '0x471368EF4E11c6f8647e6743031Dfc346cB8A99c' },
+  WETH:  { symbol: 'MTX',   name: 'Centra Token',  decimals: 6,  address: '0x471368EF4E11c6f8647e6743031Dfc346cB8A99c' },
   WBNB:  { symbol: 'WBNB',  name: 'Paxie ',        decimals: 6,  address: '0x21AEd826Df2e4dd3dE3B29b7347a7aCF61F19b21' },
 }
 

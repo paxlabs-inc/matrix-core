@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-# Matrix v1 router image — the front door for Fly daemon Machines.
+# Centra AI v1 router image — the front door for Fly daemon Machines.
 #
 # matrix-router is a leaf Go module (jackc/pgx + golang.org/x/crypto); it
 # verifies Supabase JWTs, reverse-proxies authenticated requests to per-user

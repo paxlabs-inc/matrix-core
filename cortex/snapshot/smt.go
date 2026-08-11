@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Sparse Merkle Tree (SMT-256) implementation for the Matrix cortex
+// Sparse Merkle Tree (SMT-256) implementation for the Centra AI cortex
 // snapshot layer.
 //
 // Spec: research/04-cortex.md §7.2 ("sparse Merkle tree (SMT) over
@@ -460,4 +460,4 @@ func (t *SMT) Reset() error {
 	return nil
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

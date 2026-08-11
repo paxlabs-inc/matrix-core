@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/session"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/session"
 )
 
 type branchTestStore struct {

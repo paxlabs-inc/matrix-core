@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	agentscheduler "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/scheduler"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/policy"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	agentscheduler "github.com/paxlabs-inc/ion-agent/internal/scheduler"
-	"github.com/paxlabs-inc/ion-agent/internal/security/policy"
 )
 
 type scheduledTurnWaker struct {

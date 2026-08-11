@@ -1,7 +1,7 @@
 ---
 name: paxeer-read
 description: Read and investigate Paxeer through the same public web interfaces a person uses. Navigate PaxScan, Paxeer docs, and Paxeer applications with accessibility snapshots; quote visible evidence and never call private product APIs.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Browser

@@ -1,7 +1,7 @@
 ---
 name: toolchain-bootstrap
 description: On-demand install of long-tail stacks in a fresh environment — Angular CLI, Rust, uv/Python, Bun, Go, SvelteKit, via apt and mise. Use when the doctrine stack is not preinstalled on the box.
-origin: Matrix
+origin: Centra AI
 ---
 
 # Toolchain Bootstrap Playbook

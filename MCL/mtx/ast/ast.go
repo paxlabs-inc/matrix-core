@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Package ast defines the typed AST nodes for MatrixScript (.mtx) files.
+// Package ast defines the typed AST nodes for CentraScript (.mtx) files.
 //
 // The tree structure mirrors the grammar.bnf productions:
 //
@@ -368,4 +368,4 @@ type TypeRef struct {
 
 func (tr *TypeRef) Pos() token.Pos { return tr.TypePos }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

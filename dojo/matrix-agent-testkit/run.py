@@ -1,4 +1,4 @@
-# Copyright © 2026 Paxlabs Inc.
+# Copyright © 2026 Sidiora Labs.
 #
 # run.py — the live-probe runner. Dispatches the Neo battery against the
 # deployed API, follows each SSE stream, grades the result, classifies any
@@ -155,7 +155,7 @@ def select(cases: list, args) -> list:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Live adversarial probe of deployed Matrix agents.")
+    ap = argparse.ArgumentParser(description="Live adversarial probe of deployed Centra AI agents.")
     ap.add_argument("--agent", choices=["neo", "cody"], default="neo")
     ap.add_argument("--only", default="")
     ap.add_argument("--case", default="")

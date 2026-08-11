@@ -1,11 +1,11 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
 
 // critique.go — the completeness critic (Phase 10.5).
 //
-// The Matrix pipeline is plan-once-then-execute-blind: the planner emits a
+// The Centra AI pipeline is plan-once-then-execute-blind: the planner emits a
 // frozen plan_tree before any tool runs, and the walker executes it with no
 // model in the loop to course-correct. A fast planner that under-generates can
 // produce a plan covering only the FIRST sub-task of a multi-step request — and
@@ -243,4 +243,4 @@ func buildContinuationNote(executedDigest string, missing []string) string {
 	return b.String()
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

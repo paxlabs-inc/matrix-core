@@ -1,4 +1,4 @@
-import type { OperatorState } from '@matrixmcl/ion-shared'
+import type { OperatorState } from '@centra-ai/ion-shared'
 
 function isComputerSurfaceTool(tool?: string, operation?: string): boolean {
   return [tool, operation].some((candidate) => {

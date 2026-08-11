@@ -1,5 +1,5 @@
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { EventEnvelope, Operation } from '@matrixmcl/ion-shared'
+import type { EventEnvelope, Operation } from '@centra-ai/ion-shared'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'

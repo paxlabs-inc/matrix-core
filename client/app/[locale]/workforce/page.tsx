@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 
 export const metadata: Metadata = {
   title: 'Workforce',
-  description: 'Owner command center for Matrix Workforce operations.',
+  description: 'Owner command center for Centra AI Workforce operations.',
 }
 
 export default function WorkforcePage() {

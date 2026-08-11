@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package identity
@@ -25,7 +25,7 @@ const (
 	genesisFileName  = "genesis.json"
 	descriptorName   = "identity.json"
 	lockFileName     = ".bootstrap.lock"
-	runtimeName      = "Matrix durable agent machine"
+	runtimeName      = "Centra AI durable agent machine"
 	runtimeVersion   = "1.0.0"
 )
 
@@ -57,7 +57,7 @@ type Descriptor struct {
 }
 
 // RuntimeConfig returns the canonical identity coordinates used by every
-// process on one durable Matrix machine. Processes must share these exact
+// process on one durable Centra AI machine. Processes must share these exact
 // coordinates so concurrent startup verifies one identity instead of forking
 // process-specific identities.
 func RuntimeConfig(machineDataRoot string) Config {
@@ -66,7 +66,7 @@ func RuntimeConfig(machineDataRoot string) Config {
 		Name:        runtimeName,
 		SubjectType: "agent-instance",
 		Version:     runtimeVersion,
-		Description: "Durable per-machine Matrix agent runtime",
+		Description: "Durable per-machine Centra AI agent runtime",
 	}
 }
 

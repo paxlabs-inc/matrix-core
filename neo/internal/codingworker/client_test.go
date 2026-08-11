@@ -157,7 +157,7 @@ func TestClientUsesPinnedSessionProtocol(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer client.Close()
-	created, err := client.Create(ctx, CreateOptions{CWD: t.TempDir(), Source: "matrix-neo"})
+	created, err := client.Create(ctx, CreateOptions{CWD: t.TempDir(), Source: "centra-neo"})
 	if err != nil || created.RuntimeID != "runtime-1" || created.DurableID() != "stored-1" {
 		t.Fatalf("create: session=%+v err=%v", created, err)
 	}

@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -203,7 +203,7 @@ func isLiaisonOwnEvent(ev sseEvent) bool {
 // execution faculty and the conversation faculty speak with one reconciled
 // self-description that cannot disagree with the actual self-model
 // (self-model req.7.1). The persona is the identity facet only — machinery-free
-// (req.7.2) — so it still answers "what are you / what is Matrix / what is
+// (req.7.2) — so it still answers "what are you / what is Centra AI / what is
 // Paxeer" without exposing internal structure.
 var liaisonIdentity = cxself.Persona(cxself.SelfModel{Identity: cxself.DefaultName})
 
@@ -771,7 +771,7 @@ You are given the recent conversation so far (if any) and the user's new message
 Decide what to do with the user's NEW message. Respond with ONLY a JSON object, no prose around it:
 {"action":"reply"|"dispatch","reply":"<text if reply>","prose":"<clean task statement if dispatch>"}
 
-Choose "reply" for greetings, thanks, small talk, and questions about you — who or what you are, what Matrix or Paxeer is, your status, or what you can do. Set "reply" to a warm, helpful, first-person answer (use the user's name if you know it).
+Choose "reply" for greetings, thanks, small talk, and questions about you — who or what you are, what Centra AI or Paxeer is, your status, or what you can do. Set "reply" to a warm, helpful, first-person answer (use the user's name if you know it).
 Choose "dispatch" when the user wants something done. Set "prose" to a clear, SELF-CONTAINED restatement of the task for your own execution faculty — fold in any context from the conversation it needs (addresses, names, what was tried before), because that faculty does NOT see the conversation history, only this prose. Write the prose as an instruction to yourself.
 When unsure, prefer "dispatch".`
 
@@ -815,4 +815,4 @@ func parseTriage(s string) (triageDecision, bool) {
 	return dec, true
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

@@ -10,11 +10,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/paxlabs-inc/ion-agent/internal/presence/automatrix"
-	"github.com/paxlabs-inc/ion-agent/internal/security/policy"
-	"github.com/paxlabs-inc/ion-agent/internal/security/ssrf"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/presence/automatrix"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/policy"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/ssrf"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
 )
 
 type runnerClock struct{ now time.Time }

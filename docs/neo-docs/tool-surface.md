@@ -114,7 +114,7 @@ Schema:
 ```json
 {
   "name": "core_execute",
-  "description": "Delegate a rigorous or money-moving task to Matrix's secure execution pipeline...",
+  "description": "Delegate a rigorous or money-moving task to Centra AI's secure execution pipeline...",
   "parameters": {
     "type": "object",
     "properties": {

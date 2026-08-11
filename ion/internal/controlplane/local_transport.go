@@ -13,8 +13,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/localipc"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/localipc"
 )
 
 // PeerIdentityChecker validates an accepted UDS peer before credentials are

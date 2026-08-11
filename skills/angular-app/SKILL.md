@@ -1,7 +1,7 @@
 ---
 name: angular-app
 description: Angular playbook for internal enterprise and forms-heavy admin apps — standalone components, typed reactive forms, signals, DI services, routing, and testing. Use when the app class is internal enterprise/admin.
-origin: Matrix
+origin: Centra AI
 ---
 
 # Angular App Playbook

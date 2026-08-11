@@ -2,7 +2,7 @@
 
 ## Overview
 
-This section collects the agent-facing skill packs that teach matrix-core how to reason about accessibility, agent evaluation, API design, architecture, autonomous operation, and adjacent knowledge workflows. The source is split into paired assets: a prose guide in `SKILL.md` and a MatrixScript manifest in `SKILL.mtx`. Together they define what the skill means, when to activate it, what the compiler should resolve, and how the skill should fail or clarify when the target is uncertain.
+This section collects the agent-facing skill packs that teach Centra AI how to reason about accessibility, agent evaluation, API design, architecture, autonomous operation, and adjacent knowledge workflows. The source is split into paired assets: a prose guide in `SKILL.md` and a CentraScript manifest in `SKILL.mtx`. Together they define what the skill means, when to activate it, what the compiler should resolve, and how the skill should fail or clarify when the target is uncertain.
 
 The most important pattern across this section is that the markdown files describe the human-readable policy and workflow, while the `.mtx` files provide the compiler-facing contract. That contract is intentionally narrow: a required `slot.target`, optional `slot.constraints`, a typed result, and explicit handling for unknown or ambiguous targets. The result is a small but consistent family of agent packs that can be composed for engineering, API, architecture, testing, and audit work.
 

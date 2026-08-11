@@ -14,25 +14,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/paxlabs-inc/ion-agent/internal/action"
-	"github.com/paxlabs-inc/ion-agent/internal/belief/premise"
-	"github.com/paxlabs-inc/ion-agent/internal/belief/selfmodel"
-	"github.com/paxlabs-inc/ion-agent/internal/intent/prediction"
-	"github.com/paxlabs-inc/ion-agent/internal/intent/taskgraph"
-	"github.com/paxlabs-inc/ion-agent/internal/liveness/decision"
-	"github.com/paxlabs-inc/ion-agent/internal/liveness/relationship"
-	"github.com/paxlabs-inc/ion-agent/internal/memory"
-	"github.com/paxlabs-inc/ion-agent/internal/memory/cortex"
-	"github.com/paxlabs-inc/ion-agent/internal/memory/journal"
-	"github.com/paxlabs-inc/ion-agent/internal/provider"
-	"github.com/paxlabs-inc/ion-agent/internal/reflection/cassandra"
-	"github.com/paxlabs-inc/ion-agent/internal/security/circuit"
-	"github.com/paxlabs-inc/ion-agent/internal/security/dashboard"
-	"github.com/paxlabs-inc/ion-agent/internal/security/policy"
-	"github.com/paxlabs-inc/ion-agent/internal/security/safety"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/action"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/belief/premise"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/belief/selfmodel"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/intent/prediction"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/intent/taskgraph"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/liveness/decision"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/liveness/relationship"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory/cortex"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory/journal"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/provider"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/reflection/cassandra"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/circuit"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/dashboard"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/policy"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/safety"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"lukechampine.com/blake3"
 )
 
@@ -470,7 +470,7 @@ func TestAgentLoopNormalizesTextualToolCallWithoutLeakingMarkup(t *testing.T) {
 			Content: "I’ll inspect it now.\n" +
 				"<tool_call> <function=filesystem_list> " +
 				"<parameter=expect>Files in the workspace " +
-				"<parameter=path>research/matrix-core </tool_call>",
+				"<parameter=path>research/centra-core </tool_call>",
 			FinishReason: protocol.FinishStop,
 		},
 		{Content: "The directory contains Cortex.", FinishReason: protocol.FinishStop},
@@ -508,13 +508,13 @@ func TestAgentLoopNormalizesTextualToolCallWithoutLeakingMarkup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	response, err := loop.Turn(context.Background(), "Inspect Matrix Core.")
+	response, err := loop.Turn(context.Background(), "Inspect Centra Core.")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if response.Content != "The directory contains Cortex." ||
 		len(response.ToolEvents) != 1 ||
-		received.Path != "research/matrix-core" ||
+		received.Path != "research/centra-core" ||
 		received.Expect != "Files in the workspace" {
 		t.Fatalf("response=%+v parameters=%+v", response, received)
 	}

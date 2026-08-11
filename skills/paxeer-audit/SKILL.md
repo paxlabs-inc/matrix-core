@@ -1,7 +1,7 @@
 ---
 name: paxeer-audit
 description: Read-only smart-contract security review on Paxeer. Pulls verified source (or bytecode), enumerates the privileged surface, flags risky patterns, and returns a severity-rated report (LOW/MEDIUM/HIGH/CRITICAL) with evidence. No transaction is ever signed.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Audit

@@ -29,7 +29,7 @@ FORBIDDEN_DISTRIBUTIONS = {
 
 
 def fail(message: str) -> None:
-    raise SystemExit(f"matrix-agentcore preflight: {message}")
+    raise SystemExit(f"Centra AI coding runtime preflight: {message}")
 
 
 def require_directory(name: str) -> Path:
@@ -96,7 +96,7 @@ def check_runtime() -> None:
         fail("AGENTCORE_HOME must be outside the project write root")
     require_url("XIAOMI_BASE_URL")
     if not os.environ.get("XIAOMI_API_KEY", "").strip():
-        fail("XIAOMI_API_KEY scoped Matrix credential is required")
+        fail("XIAOMI_API_KEY scoped Centra AI credential is required")
     if not os.environ.get("MATRIX_ACTOR_DID", "").strip():
         fail("MATRIX_ACTOR_DID is required")
     token = os.environ.get("AGENTCORE_DASHBOARD_SESSION_TOKEN", "")
@@ -133,7 +133,7 @@ def main() -> None:
     check_policy(policy)
     check_runtime()
     if sys.argv[1:] == ["--check-only"]:
-        print("matrix-agentcore preflight ok", flush=True)
+        print("Centra AI coding runtime preflight ok", flush=True)
         return
     argv = sys.argv[1:] or [
         "agentcore", "serve", "--host", "127.0.0.1", "--port", "9119", "--isolated",
@@ -143,4 +143,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

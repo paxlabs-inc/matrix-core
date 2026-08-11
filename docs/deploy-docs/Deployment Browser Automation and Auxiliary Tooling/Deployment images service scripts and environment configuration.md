@@ -6,7 +6,7 @@ A recurring pattern appears across the deployment surfaces: private shared Fly a
 
 | Path | Concrete role |
 | --- | --- |
-| `.devcontainer/devcontainer.json` | Defines the local developer container with Go, Node, Python, Docker-in-Docker, forwarded ports, and editor customizations for the Matrix workspace. |
+| `.devcontainer/devcontainer.json` | Defines the local developer container with Go, Node, Python, Docker-in-Docker, forwarded ports, and editor customizations for the Centra AI workspace. |
 | `deploy/browser/README.md` | Describes the shared private browser app, its private 6PN reachability, optional bearer token wiring, and the daemon-side proxy relationship. |
 | `deploy/browser/Dockerfile` | Builds the shared browser image around `@playwright/mcp`, installs Chromium, exposes the MCP port, and adds a health probe. |
 | `deploy/daemon/README.md` | Documents the per-user daemon image, its Fly Machine provisioning model, and the local smoke-test flow. |
@@ -88,7 +88,7 @@ The browser app is meant to stay private. The README and Dockerfile both treat t
 
 *`deploy/daemon/fly.toml.tmpl`*
 
-The daemon directory packages the per-user Matrix runtime as a Fly Machine image and the template used by the router to provision those Machines. The README positions this directory as the deployment surface for `mcl-execute daemon`, and the template is rendered per user when the router creates a new Machine.
+The daemon directory packages the per-user Centra AI runtime as a Fly Machine image and the template used by the router to provision those Machines. The README positions this directory as the deployment surface for `mcl-execute daemon`, and the template is rendered per user when the router creates a new Machine.
 
 `deploy/daemon/Dockerfile` builds a two-stage image:
 
@@ -111,7 +111,7 @@ A notable part of the Dockerfile is the warm-up of the Fetch MCP dependency chai
 | --- | --- |
 | `DATA_DIR` | Root of the mounted data volume, defaulting to `/data`. |
 | `WORKSPACE_LINK` | The `/workspace` symlink target. |
-| `MATRIX_HOME` | Installed Matrix tree under `/opt/matrix`. |
+| `MATRIX_HOME` | Installed Centra AI tree under `/opt/matrix`. |
 | `NEO_BACKEND_PORT` | Backend daemon port when Neo fronts the daemon, defaulting to `8081`. |
 | `DAEMON_ARGV` | Array assembled by `build_daemon_argv`. |
 
@@ -433,7 +433,7 @@ These files are not deploy targets themselves, but they keep the local workspace
 
 | Setting | Behavior |
 | --- | --- |
-| `name` | Identifies the container as `Matrix`. |
+| `name` | Identifies the container as `Centra AI`. |
 | `image` | Uses `mcr.microsoft.com/devcontainers/base:bookworm`. |
 | `features` | Installs Go `1.22`, Node `22`, Python `3.12`, and Docker-in-Docker. |
 | `postCreateCommand` | Runs `bash .devcontainer/setup.sh` after container creation. |

@@ -7,7 +7,7 @@ import type {
   DisplayKind,
   DisplayModel,
   EventEnvelope,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 
 interface ApplicationProps {
   display: DisplayModel

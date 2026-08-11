@@ -30,7 +30,7 @@ set -uo pipefail
 N=50
 OUTDIR=""
 SKILL="/root/matrix/skills/writing-plans/SKILL.mtx"
-PROSE="Build a concise launch checklist for Matrix v1 covering compiler, cortex, executor, and bridge readiness."
+PROSE="Build a concise launch checklist for Centra AI v1 covering compiler, cortex, executor, and bridge readiness."
 VERB="build"
 TIMEOUT_SEC=900
 SKIP_TOGETHER=""

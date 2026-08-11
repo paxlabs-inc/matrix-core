@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/paxlabs-inc/ion-agent/internal/security/vault"
-	tuiassets "github.com/paxlabs-inc/ion-agent/ui/tui"
-	webassets "github.com/paxlabs-inc/ion-agent/ui/web"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/vault"
+	tuiassets "github.com/Sidiora-Labs/centra-llm-agents/ion/ui/tui"
+	webassets "github.com/Sidiora-Labs/centra-llm-agents/ion/ui/web"
 )
 
 func TestRunHelpAndValidation(t *testing.T) {

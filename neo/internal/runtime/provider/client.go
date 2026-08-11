@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package provider
@@ -102,7 +102,7 @@ func New(adapter Adapter, config Config) (*Client, error) {
 	parsed, err := url.Parse(gateway)
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" ||
 		(parsed.Scheme != "http" && parsed.Scheme != "https") {
-		return nil, fmt.Errorf("resurrection provider: valid matrix gateway URL is required")
+		return nil, fmt.Errorf("resurrection provider: valid Centra AI gateway URL is required")
 	}
 	bearerEnv := strings.TrimSpace(config.BearerEnv)
 	if bearerEnv == "" {

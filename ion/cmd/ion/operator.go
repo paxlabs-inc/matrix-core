@@ -18,12 +18,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/localipc"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/operatorapp"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/provider"
+	tuiassets "github.com/Sidiora-Labs/centra-llm-agents/ion/ui/tui"
+	webassets "github.com/Sidiora-Labs/centra-llm-agents/ion/ui/web"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/localipc"
-	"github.com/paxlabs-inc/ion-agent/internal/operatorapp"
-	"github.com/paxlabs-inc/ion-agent/internal/provider"
-	tuiassets "github.com/paxlabs-inc/ion-agent/ui/tui"
-	webassets "github.com/paxlabs-inc/ion-agent/ui/web"
 )
 
 const defaultDashboardAddress = "127.0.0.1:4174"

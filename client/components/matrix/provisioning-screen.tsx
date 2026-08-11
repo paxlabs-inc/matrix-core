@@ -19,7 +19,7 @@ import { Center } from '@astryxdesign/core/Center'
 import { Spinner } from '@astryxdesign/core/Spinner'
 import { Button } from '@astryxdesign/core/Button'
 import { Text } from '@astryxdesign/core/Text'
-import { MatrixLogo } from '@/components/matrix/matrix-logo'
+import { CentraLogo } from '@/components/brand/centra-logo'
 
 const STATUS_LINES = [
   'Spinning up your private agent runtime…',
@@ -76,7 +76,7 @@ export function ProvisioningScreen({ firstTime }: { firstTime: boolean }) {
               </div>
             ) : (
               <div className="flex max-w-sm flex-col items-center gap-5 text-center">
-                <MatrixLogo size="lg" />
+                <CentraLogo size="lg" />
                 <Spinner size="xl" label="Setting up your workspace" />
                 <Text type="supporting" color="secondary" display="block" aria-live="polite">
                   {STATUS_LINES[line]}

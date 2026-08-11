@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -123,7 +123,7 @@ type routeHistogram struct {
 }
 
 // costMetricKey identifies one matrix_daemon_cost_pax_total series
-// (sess#32 ambient-architect MatrixGateway · plan §5.11 / §5.15). The
+// (sess#32 ambient-architect Centra AI gateway · plan §5.11 / §5.15). The
 // gateway's response header carries a per-call PAX cost; the daemon
 // folds it into a cumulative counter labeled by (slot, kind_route,
 // goal). Empty fields collapse cleanly into empty Prometheus labels
@@ -373,7 +373,7 @@ func (m *routerMetrics) writePrometheus(w *strings.Builder, uptimeSec int64) {
 	snap := m.snapshot()
 	hits, misses := m.CacheStats()
 
-	fmt.Fprintf(w, "# HELP matrix_daemon_up Whether the matrix daemon is up (always 1 when scraped).\n")
+	fmt.Fprintf(w, "# HELP matrix_daemon_up Whether the Centra AI daemon is up (always 1 when scraped).\n")
 	fmt.Fprintf(w, "# TYPE matrix_daemon_up gauge\n")
 	fmt.Fprintf(w, "matrix_daemon_up 1\n")
 
@@ -469,4 +469,4 @@ func formatFloat(f float64) string {
 	return s
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

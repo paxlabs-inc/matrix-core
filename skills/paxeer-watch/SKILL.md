@@ -1,7 +1,7 @@
 ---
 name: paxeer-watch
 description: Set an autonomous on-chain watch or scheduled action on Paxeer via the Scheduler precompile (0x0905). Confirms the target/method with a read, builds calldata, computes the execute block from the live head, and schedules with a gas deposit. Never reports a job scheduled without a real tx hash + jobId.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Watch

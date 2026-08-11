@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
 )
 
 type testClock struct{ now time.Time }

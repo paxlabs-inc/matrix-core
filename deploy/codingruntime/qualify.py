@@ -836,7 +836,7 @@ class Harness:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Real-path Matrix coding runtime qualification")
+    parser = argparse.ArgumentParser(description="Real-path Centra AI coding runtime qualification")
     parser.add_argument("--report", help="Durable JSON report path")
     parser.add_argument("--print-contract", action="store_true", help="Print required environment and audit-command JSON contracts")
     parser.add_argument("--timeout", type=float, default=1800, help="Per-job terminal timeout in seconds")

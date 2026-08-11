@@ -1,7 +1,7 @@
 # Third-Party Licenses
 
 This directory contains the license texts for the open-source dependencies
-used by the Matrix Protocol monorepo. Paxlabs code is covered separately by
+used by the Centra AI monorepo. Sidiora Labs code is covered separately by
 `LICENSE.md` at the repository root.
 
 ---

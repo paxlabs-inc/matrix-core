@@ -9,14 +9,14 @@ import (
 	"testing"
 	"time"
 
+	nativebrowser "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/browser"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controllease"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	projectcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/project"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/vault"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/session"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"github.com/google/uuid"
-	nativebrowser "github.com/paxlabs-inc/ion-agent/internal/browser"
-	"github.com/paxlabs-inc/ion-agent/internal/controllease"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	projectcontrol "github.com/paxlabs-inc/ion-agent/internal/project"
-	"github.com/paxlabs-inc/ion-agent/internal/security/vault"
-	"github.com/paxlabs-inc/ion-agent/internal/session"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
 )
 
 func TestComputerControlDuplicateAcquireIsExactlyOnceAndRevisionBound(t *testing.T) {

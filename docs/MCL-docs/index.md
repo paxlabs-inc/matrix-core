@@ -1,6 +1,6 @@
 # MCL Developer Documentation
 
-The Matrix Communication Layer (MCL) is the compiler and protocol backbone of Matrix. Every user interaction starts here: natural language goes in, a typed signed Intent IR comes out, and the executor picks it up from there.
+MCL is the compiler and protocol backbone of Centra AI. Every user interaction starts here: natural language goes in, a typed signed Intent IR comes out, and the executor picks it up from there.
 
 This documentation is written for people working on MCL itself — extending the language, adding skills, touching the pipeline, or understanding how the wire protocol works.
 
@@ -10,7 +10,7 @@ This documentation is written for people working on MCL itself — extending the
 
 | Document | What it covers |
 |---|---|
-| [MatrixScript Language](./matrixscript.md) | The `.mtx` DSL — syntax, constructs, grammar, all the details |
+| [CentraScript Language](./centrascript.md) | The `.mtx` DSL — syntax, constructs, grammar, all the details |
 | [Compiler Pipeline](./compiler-pipeline.md) | The 6-stage pipeline from `intent.draft` to `intent.compiled` |
 | [Intent IR](./intent-ir.md) | The `ir` package — Intent, Frame, PlanTree, all the Go types |
 | [Envelope & Wire Protocol](./envelope.md) | The 15 message kinds, CBOR encoding, ed25519 signing |
@@ -37,7 +37,7 @@ MCL/
 │   ├── encode.go       canonical JSON helpers
 │   └── plan_validate.go plan validation rules
 ├── llm/                LLM client: Together, Fireworks, grammar constraints
-└── mtx/                MatrixScript runtime
+└── mtx/                CentraScript runtime
     ├── grammar.bnf     formal EBNF
     ├── spec.md         language specification
     ├── token/          token types

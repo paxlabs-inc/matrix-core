@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -55,7 +55,7 @@ type synthesizeOpts struct {
 	// server will reject. Empty string omits the section.
 	WorkspaceRoot string
 
-	// --- sess#32 ambient-architect MatrixGateway routing (plan §5.16) ---
+	// --- sess#32 ambient-architect Centra AI gateway routing (plan §5.16) ---
 	//
 	// Same posture as compileOpts: optional, opt-in via non-empty
 	// GatewayURL. When set, the planner LLM call is metered against
@@ -156,7 +156,7 @@ func synthesize(ctx context.Context, opts synthesizeOpts, t *transcript) (*synth
 		intentID = opts.Intent.ID
 	}
 	if opts.GatewayURL != "" {
-		// Sess#32 ambient-architect MatrixGateway routing (plan §5.16).
+		// Sess#32 ambient-architect Centra AI gateway routing (plan §5.16).
 		// Planner slot — the gateway whitelists which model is allowed
 		// here; BYO keys bypass that check (handled gateway-side, not
 		// the daemon's concern).
@@ -385,7 +385,7 @@ func synthesize(ctx context.Context, opts synthesizeOpts, t *transcript) (*synth
 // git) get sane absolute paths instead of hallucinated ones.
 func buildSystemPrompt(skill *runtime.LoadedSkill, manifest *tool.AgentManifest, mgr *mcp.Manager, workspaceRoot string) string {
 	var sb strings.Builder
-	sb.WriteString("You are the Matrix executor planner.\n\n")
+	sb.WriteString("You are the Centra AI executor planner.\n\n")
 	sb.WriteString("Your job: given an Intent IR and a list of available tools, ")
 	sb.WriteString("emit a single JSON document conforming to the plan_tree@1 schema. ")
 	sb.WriteString("Plan tree generation lives under the executor per research/06 §5.2.\n\n")
@@ -1012,4 +1012,4 @@ func writeStepKindHintSection(sb *strings.Builder, skill *runtime.LoadedSkill) {
 	}
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

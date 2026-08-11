@@ -4,7 +4,7 @@ import { LegalPage } from '@/components/legal/legal-page'
 export const metadata: Metadata = {
   title: 'Legal',
   description:
-    'Legal and compliance center for Matrix, the cognition and intent layer of the Paxeer Network.',
+    'Legal and compliance center for Centra AI, the cognition and intent layer of the Paxeer Network.',
 }
 
 export default async function LegalHomePage({ params }: { params: Promise<{ locale: string }> }) {

@@ -20,7 +20,7 @@ import {
   type ProjectVerificationManifest,
   type ProjectVerificationRun,
   type ProjectVerificationWaiver,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 import type { LocalControlPlaneTransport } from './local-client.js'
 
 const sections = [

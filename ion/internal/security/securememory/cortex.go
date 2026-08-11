@@ -6,10 +6,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory/cortex"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/canary"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/memory"
-	"github.com/paxlabs-inc/ion-agent/internal/memory/cortex"
-	"github.com/paxlabs-inc/ion-agent/internal/security/canary"
 )
 
 // Cortex is the guarded memory boundary used by security-sensitive callers.

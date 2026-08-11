@@ -2,7 +2,7 @@
 
 ## Overview
 
-`uwac` is the control plane for Matrix daemons that need connector discovery, agent principal authentication, OAuth scope elevation, and tool invocation. The runtime entrypoint wires together the connector catalog, the configuration loader, the OAuth client, the token vault, the orchestration engine, the HTTP server, and the MCP tool advertisement generator.
+`uwac` is the control plane for Centra AI daemons that need connector discovery, agent principal authentication, OAuth scope elevation, and tool invocation. The runtime entrypoint wires together the connector catalog, the configuration loader, the OAuth client, the token vault, the orchestration engine, the HTTP server, and the MCP tool advertisement generator.
 
 The code in this section centers on a single contract: a connector is declared once, exposed through MCP, linked through a browser OAuth flow, and invoked through a signed agent principal token. The public HTTP surface is intentionally small and is split between transport authentication, agent DID verification, connector linking, tool execution, and a browser-facing OAuth callback.
 

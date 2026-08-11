@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -60,7 +60,7 @@ func TestForgeFS_Disabled404(t *testing.T) {
 func TestForgeFS_ReadHappyPath(t *testing.T) {
 	d, tmp := newForgeTestDaemon(t)
 	target := filepath.Join(tmp, "hello.txt")
-	mustWriteFile(t, target, "hello matrix")
+	mustWriteFile(t, target, "hello centra")
 
 	req := httptest.NewRequest(http.MethodGet, "/fs/read?path="+target, http.NoBody)
 	rec := httptest.NewRecorder()
@@ -75,8 +75,8 @@ func TestForgeFS_ReadHappyPath(t *testing.T) {
 	if resp.Encoding != "utf8" {
 		t.Errorf("encoding = %q, want utf8", resp.Encoding)
 	}
-	if resp.Content != "hello matrix" {
-		t.Errorf("content = %q, want %q", resp.Content, "hello matrix")
+	if resp.Content != "hello centra" {
+		t.Errorf("content = %q, want %q", resp.Content, "hello centra")
 	}
 	if resp.SHA256 == "" {
 		t.Errorf("sha256 must be populated for optimistic-concurrency follow-ups")
@@ -453,4 +453,4 @@ func TestForgeFS_RoundTrip(t *testing.T) {
 	}
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

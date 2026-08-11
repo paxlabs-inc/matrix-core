@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	officecontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/office"
+	workcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/work"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	officecontrol "github.com/paxlabs-inc/ion-agent/internal/office"
-	workcontrol "github.com/paxlabs-inc/ion-agent/internal/work"
 )
 
 type officeHandler struct {

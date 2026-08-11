@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // MCP protocol types — typed structs for the methods the client uses
@@ -13,7 +13,7 @@
 // Methods omitted at v1 (deferred per executor_locked_design):
 //
 //	prompts/list, prompts/get          — prompt-template surface; not
-//	                                     used by Matrix skills (skills
+//	                                     used by Centra AI skills (skills
 //	                                     are MCL-authored, not server-supplied)
 //	resources/list, resources/read     — resource surface; deferred,
 //	                                     cortex is the canonical
@@ -35,7 +35,7 @@ import "encoding/json"
 // upgrade their server pins.
 const ProtocolVersion = "2024-11-05"
 
-// ClientName + ClientVersion identify Matrix in the initialize handshake
+// ClientName + ClientVersion identify Centra AI in the initialize handshake
 // so MCP servers can log who's connecting.
 const (
 	ClientName    = "matrix-executor"
@@ -68,10 +68,10 @@ type Implementation struct {
 
 // ClientCapabilities is the capability set we advertise to servers.
 // v1 advertises no client-side capabilities (no roots subscription,
-// no sampling callback) — Matrix is a pure client-of-tools.
+// no sampling callback) — Centra AI is a pure client-of-tools.
 type ClientCapabilities struct {
 	// Roots advertises filesystem roots clients expose to servers.
-	// Deferred — Matrix routes through filesystem-mcp on the server side.
+	// Deferred — Centra AI routes through filesystem-mcp on the server side.
 	Roots *RootsCapability `json:"roots,omitempty"`
 
 	// Sampling advertises that the client can serve sampling/createMessage
@@ -96,7 +96,7 @@ type ServerCapabilities struct {
 }
 
 // ToolsCapability tells us if the server supports list-changed
-// notifications (forward-compatibility flag; Matrix v1 doesn't react
+// notifications (forward-compatibility flag; Centra AI v1 doesn't react
 // to these — manifest is static per Q21).
 type ToolsCapability struct {
 	ListChanged bool `json:"listChanged,omitempty"`
@@ -116,7 +116,7 @@ type ResourcesCapability struct {
 }
 
 // LoggingCapability is a capability flag (no fields) that signals the
-// server emits notifications/message log events. Matrix v1 ignores them.
+// server emits notifications/message log events. Centra AI v1 ignores them.
 type LoggingCapability struct{}
 
 // RootsCapability advertises that the client maintains a list of
@@ -130,7 +130,7 @@ type RootsCapability struct {
 type SamplingCapability struct{}
 
 // Tool is the wire-format description of a single tool exposed by an
-// MCP server. The Matrix tool registry pins each (Name, Server) pair
+// MCP server. The Centra AI tool registry pins each (Name, Server) pair
 // against a manifest at startup and rejects drift (Q21).
 type Tool struct {
 	// Name uniquely identifies the tool within its server. Tools sharing
@@ -151,7 +151,7 @@ type Tool struct {
 // ToolsListResult is the typed response to tools/list.
 type ToolsListResult struct {
 	Tools []Tool `json:"tools"`
-	// NextCursor is set when the server supports pagination. Matrix v1
+	// NextCursor is set when the server supports pagination. Centra AI v1
 	// fetches the full list in one shot at startup; we'll page only
 	// if a server returns NextCursor.
 	NextCursor string `json:"nextCursor,omitempty"`
@@ -165,7 +165,7 @@ type CallToolParams struct {
 
 // CallToolResult is the typed response to tools/call. IsError captures
 // in-band tool failure (e.g. "shell command exited 1") without the
-// transport-level error path. Both surfaces are mapped to Matrix
+// transport-level error path. Both surfaces are mapped to Centra AI
 // failure modes by the executor.
 type CallToolResult struct {
 	Content []Content `json:"content"`
@@ -173,7 +173,7 @@ type CallToolResult struct {
 }
 
 // Content is a single piece of the tool result. MCP supports text,
-// image, and embedded-resource content kinds; Matrix v1 surfaces text
+// image, and embedded-resource content kinds; Centra AI v1 surfaces text
 // directly to the LLM and stores image/resource as base64 cortex Fact
 // memories.
 type Content struct {
@@ -245,4 +245,4 @@ func ExtractText(r *CallToolResult) string {
 	return out
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

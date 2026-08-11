@@ -2,7 +2,7 @@
 
 ## Overview
 
-This documentation set is the Cortex-facing map for Matrix’s per-actor memory system. The canonical markdown under `docs/cortex-docs/` introduces the main Cortex topics, while the mirrored pages under `docs/.web/src/content/cortex-docs/` publish selected topic pages and the top-level index into the docs web app.
+This documentation set is the Cortex-facing map for Centra AI’s per-actor memory system. The canonical markdown under `docs/cortex-docs/` introduces the main Cortex topics, while the mirrored pages under `docs/.web/src/content/cortex-docs/` publish selected topic pages and the top-level index into the docs web app.
 
 The set is organized as a reader-facing guide to the memory composer, edge graph, embedding/vector path, salience model, scope gating, attestation and compaction, and replay invariant. The mirrored web content preserves the same Cortex documentation structure so the site can present the same topic map and selected topic text from the repository docs tree.
 

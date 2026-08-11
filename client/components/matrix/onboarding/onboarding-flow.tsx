@@ -26,7 +26,7 @@ import {
 import { DisclosureScreen } from '@/components/matrix/onboarding/disclosure-screen'
 import { WalletScreen } from '@/components/matrix/onboarding/wallet-screen'
 import { SubscriptionScreen } from '@/components/matrix/onboarding/subscription-screen'
-import { MatrixLogo } from '@/components/matrix/matrix-logo'
+import { CentraLogo } from '@/components/brand/centra-logo'
 import { Dialog } from '@astryxdesign/core/Dialog'
 import { Layout, LayoutContent } from '@astryxdesign/core/Layout'
 import { Card } from '@astryxdesign/core/Card'
@@ -156,7 +156,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
             <Card variant="muted" padding={5} minHeight={640}>
               <div className="flex h-full min-h-[36rem] flex-col">
                 <div className="mb-8 flex items-center gap-4">
-                  <MatrixLogo size="sm" />
+                  <CentraLogo size="sm" />
                   {currentIdx < totalSteps ? (
                     <ProgressBar
                       value={currentIdx + 1}

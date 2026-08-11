@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package mcpcontrol
@@ -168,7 +168,7 @@ func stdioEnvironment(config Config, secrets serverSecrets) ([]string, *mcp.Proc
 	environment := tool.AgentEnvironment(os.Environ())
 	for _, key := range config.EnvKeys {
 		if tool.ProtectedEnvironment(key) {
-			return nil, nil, fmt.Errorf("MCP environment name %q belongs to a protected Matrix capability", key)
+			return nil, nil, fmt.Errorf("MCP environment name %q belongs to a protected Centra AI capability", key)
 		}
 		value, ok := secrets.Env[key]
 		if !ok {

@@ -15,7 +15,7 @@ func TestId_EveryKind(t *testing.T) {
 		sym  string
 		want string
 	}{
-		{"repo", KindRepo, "", "matrix", "repo:matrix"},
+		{"repo", KindRepo, "", "centra", "repo:centra"},
 		{"module", KindModule, "", "cortex", "matrix/cortex"},
 		{"package", KindPackage, "", "cortex", "matrix/cortex"},
 		{"file", KindFile, "", "snapshot.go", "matrix/cortex/snapshot.go"},

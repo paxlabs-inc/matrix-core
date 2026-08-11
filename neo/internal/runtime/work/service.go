@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package work
@@ -13,10 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"matrix/cortexclient"
 	"matrix/neo/internal/runtime/loop"
 	"matrix/neo/internal/runtime/turnstate"
+
+	"github.com/google/uuid"
 )
 
 type Service struct {

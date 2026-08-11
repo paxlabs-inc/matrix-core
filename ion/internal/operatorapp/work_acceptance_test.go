@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	workcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/work"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	workcontrol "github.com/paxlabs-inc/ion-agent/internal/work"
 )
 
 func TestDisciplinedWorkProductionBoundaryRestartIsolationAndFalseCompletion(t *testing.T) {

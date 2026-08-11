@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // matrix-router — front door for the per-user daemon services.
@@ -200,7 +200,7 @@ func main() {
 			"MATRIX_S3_BUCKET":   cfg.S3Bucket,
 			"MATRIX_S3_KEY":      os.Getenv("MATRIX_S3_KEY"),
 			"MATRIX_S3_SECRET":   os.Getenv("MATRIX_S3_SECRET"),
-			// MatrixGateway (metered LLM). Provisioned daemons route EVERY
+			// Centra AI gateway (metered LLM). Provisioned daemons route EVERY
 			// LLM call through the gateway: the daemon's -gateway-url flag
 			// defaults to env MATRIX_GATEWAY_URL and the bearer is read from
 			// MATRIX_GATEWAY_TOKEN, so injecting these two env vars is
@@ -680,4 +680,4 @@ func envOr(key, def string) string {
 	return def
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package provider
@@ -122,7 +122,7 @@ func TestMiMoGeneratorPreflightsAndForwardsActualSSE(t *testing.T) {
 		result.ToolCalls[0].Name != "web_search" {
 		t.Fatalf("result = %+v", result)
 	}
-	if len(delivered) != 1 || delivered[0].ContentDelta != "Checking.<tool_call><function=web_search><parameter=query>Matrix</parameter></function></tool_call>" {
+	if len(delivered) != 1 || delivered[0].ContentDelta != "Checking.<tool_call><function=web_search><parameter=query>Centra AI</parameter></function></tool_call>" {
 		t.Fatalf("delivered = %+v", delivered)
 	}
 	status := generator.CapabilityStatus()
@@ -384,7 +384,7 @@ func (simulator *miMoSimulator) ServeHTTP(writer http.ResponseWriter, request *h
 		}
 		writeMiMoSSE(writer, `{"choices":[{"delta":{"content":"Recovered."},"finish_reason":"stop"}]}`, 2, 1)
 	case lastUser == "tag-content":
-		writeMiMoSSE(writer, `{"choices":[{"delta":{"content":"Checking.<tool_call><function=web_search><parameter=query>Matrix</parameter></function></tool_call>"},"finish_reason":"stop"}]}`, 2, 1)
+		writeMiMoSSE(writer, `{"choices":[{"delta":{"content":"Checking.<tool_call><function=web_search><parameter=query>Centra AI</parameter></function></tool_call>"},"finish_reason":"stop"}]}`, 2, 1)
 	case lastUser == "dual-match":
 		writeMiMoSSE(writer, `{"choices":[{"delta":{"content":"<tool_call><function=echo><parameter=value>ok</parameter></function></tool_call>","tool_calls":[{"index":0,"id":"native","function":{"name":"echo","arguments":"{\"value\":\"ok\"}"}}]},"finish_reason":"tool_calls"}]}`, 2, 1)
 	case lastUser == "dual-disagree":

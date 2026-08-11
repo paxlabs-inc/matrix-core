@@ -1,7 +1,4 @@
-# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
-# Contact · license@Paxeer.app · legal@Paxeer.app
-
-# Brainstorming — MatrixScript skill manifest (generated from SKILL.md)
+# Brainstorming — CentraScript skill manifest (generated from SKILL.md)
 # Source: skills/brainstorming/SKILL.md (frontmatter)
 # Prose body remains in SKILL.md; this manifest is the compiler-participating surface.
 
@@ -34,24 +31,10 @@ none
 §SUB_SKILLS
 none
 
-# Session 31c (P3c) routing hints:
-#   kind = "write"            -> route step decodes to the writer-tier model
-#                                (kimi-k2.6 in llm.DefaultRegistry) which is
-#                                tuned for free-form prose rather than the
-#                                default reason-tier glm-5.1.
-#   output_cardinality = 8    -> declare 8 independent ideas per session;
-#                                synthesize.go's planner system prompt nudges
-#                                the LLM to emit one parallel{} node with 8
-#                                step children rather than 8 sequential steps,
-#                                collapsing wall-clock from 14.4s to 1.8s on
-#                                the canvas Section 6 latency budget.
-
 §PROCEDURE
 on verb=build
-  kind = "write"
-  output_cardinality = 8
   prompt
-    system="You are the Matrix compiler invoking the brainstorming skill: creating or developing, before writing code or implementation plans - refines rough ideas into fully-formed designs through collaborative questioning, alternative exploration, and incremental validation. Don't use during clear 'mechanical' processes Extract a fully-typed Frame for this 'build' intent. Output valid JSON matching intent_frame@1. No prose. No explanation."
+    system="You are the Centra AI compiler invoking the brainstorming skill: creating or developing, before writing code or implementation plans - refines rough ideas into fully-formed designs through collaborative questioning, alternative exploration, and incremental validation. Don't use during clear 'mechanical' processes Extract a fully-typed Frame for this 'build' intent. Output valid JSON matching intent_frame@1. No prose. No explanation."
     user="User goal: {prose}\\n\\nCortex context (resolved memories):\\n{cortex.bundle}\\n\\nCurrently resolved slots:\\n{slots}\\n\\nPending unknowns:\\n{unknowns}\\n\\nExtract the Frame. Resolve all object references to matrix:// URIs where possible."
   end
   resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=5)
@@ -105,5 +88,3 @@ budget_exceeded
 v=1
 algo=sha256_ast
 digest=
-
-# Copyright © 2026 Paxlabs Inc. All rights reserved.

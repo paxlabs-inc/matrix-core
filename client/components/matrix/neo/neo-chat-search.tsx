@@ -13,7 +13,7 @@
  *
  * Design system: centered overlay separated by background TONE only (a
  * translucent scrim over the app, a bg-popover panel above it), single
- * Matrix Sage accent, no border strokes for depth, no emojis / glow.
+ * Centra Sage accent, no border strokes for depth, no emojis / glow.
  */
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { motion, useReducedMotion } from 'motion/react'

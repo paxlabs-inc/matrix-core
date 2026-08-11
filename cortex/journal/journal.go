@@ -1,8 +1,8 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package journal defines the append-only write log entry shape for the
-// Matrix cortex, plus canonical encoding and Merkle leaf hashing.
+// Centra AI cortex, plus canonical encoding and Merkle leaf hashing.
 //
 // Spec: research/04-cortex.md §7.1 (journal Merkle accumulator) and §11.1
 // (write batch atomicity: every store mutation appends one Entry).
@@ -771,4 +771,4 @@ func LeafHash(encoded []byte) [32]byte {
 	return out
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

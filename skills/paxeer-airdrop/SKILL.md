@@ -1,7 +1,7 @@
 ---
 name: paxeer-airdrop
 description: Check airdrop/claim eligibility on Paxeer and claim what is owed. Read-only eligibility from a confirming contract read, then claim via the embedded wallet only when a nonzero claimable is confirmed. Never reports a claim without a real tx hash.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Airdrop

@@ -1,9 +1,9 @@
 /**
  * Paxeer embedded-wallet REST client.
  *
- * Talks to connect.paxportwallet.com using the Matrix client's existing
+ * Talks to connect.paxportwallet.com using the Centra AI client's existing
  * Supabase session (lib/auth/session.getAccessToken) as the Bearer token —
- * the same identity that authenticates the Matrix router. Covers two
+ * the same identity that authenticates the Centra AI router. Covers two
  * surfaces:
  *
  *   - Primary wallet      /v1/wallet/*   (the user's standard embedded wallet)

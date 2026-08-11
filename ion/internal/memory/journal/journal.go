@@ -15,8 +15,8 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/memory"
 )
 
 const (

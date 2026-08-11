@@ -1,5 +1,5 @@
 // Command chronosd is the centralized agent scheduler / wake control plane.
-// One always-on service for the whole Matrix fleet: agents POST alarms (once /
+// One always-on service for the whole Centra AI fleet: agents POST alarms (once /
 // cron) with a contextful wake payload; chronosd durably stores them in
 // Postgres, fires due alarms, and asks the router to wake the agent + deliver
 // the resume turn.
@@ -21,13 +21,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/paxlabs-inc/chronos/internal/auth"
-	"github.com/paxlabs-inc/chronos/internal/config"
-	"github.com/paxlabs-inc/chronos/internal/dispatch"
-	"github.com/paxlabs-inc/chronos/internal/server"
-	"github.com/paxlabs-inc/chronos/internal/store"
-	"github.com/paxlabs-inc/chronos/internal/telemetry"
-	"github.com/paxlabs-inc/chronos/internal/wake"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/auth"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/config"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/dispatch"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/server"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/store"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/telemetry"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/wake"
 )
 
 func main() {

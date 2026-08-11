@@ -2,7 +2,7 @@
 
 ## Overview
 
-`cortex/README.md` describes `matrix/cortex` as the core per-actor memory package for the Matrix system. In this section, the package is used for four main runtime surfaces: attestation, compaction, cold-start context composition, and rebuild of derived state. The README also records the phase-by-phase invariants that keep these operations deterministic across journal replay, snapshotting, and root computation.
+`cortex/README.md` describes `matrix/cortex` as the core per-actor memory package for the Centra AI system. In this section, the package is used for four main runtime surfaces: attestation, compaction, cold-start context composition, and rebuild of derived state. The README also records the phase-by-phase invariants that keep these operations deterministic across journal replay, snapshotting, and root computation.
 
 The package code in `cortex/attest.go`, `cortex/compact.go`, `cortex/context.go`, `cortex/ratelimit.go`, and `cortex/rebuild.go` implements those surfaces directly. The two command entrypoints, `cortex/cmd/cortex-shell/main.go` and `cortex/cmd/embed-smoke/main.go`, expose the core package for smoke testing and live embedding verification.
 

@@ -1,7 +1,7 @@
 ---
 name: paxeer-schedule
 description: Schedule future on-chain actions via the Scheduler precompile (0x0905) — encode any call, pick a future block, fund a gas deposit, then cancel/reschedule/inspect jobs. The network executes with no agent online. Signs via the embedded wallet; records every job as an Event with jobId + tx hash.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Schedule

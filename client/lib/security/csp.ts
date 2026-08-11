@@ -7,7 +7,7 @@ const toOrigin = (value: string | undefined): string => {
   }
 }
 
-/** The Matrix Router origin the client talks to (API + SSE + preview proxy). */
+/** The Centra AI Router origin the client talks to (API + SSE + preview proxy). */
 export function routerOrigin(): string {
   return toOrigin(process.env.NEXT_PUBLIC_MATRIX_ROUTER_URL || 'https://api.paxlabs.app')
 }

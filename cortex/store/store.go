@@ -1,8 +1,8 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package store opens and manages the per-actor Pebble database that backs
-// the Matrix cortex.
+// the Centra AI cortex.
 //
 // Spec: research/04-cortex.md §1 (per-actor isolation), §2 (key encoding),
 // §11.1 (write batch atomicity).
@@ -406,4 +406,4 @@ func hasMetaPrefix(k []byte) bool {
 	return true
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

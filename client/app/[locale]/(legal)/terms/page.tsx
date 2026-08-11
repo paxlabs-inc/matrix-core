@@ -3,7 +3,7 @@ import { LegalPage } from '@/components/legal/legal-page'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'Terms of Service governing access to and use of Matrix, operated by PaxLabs Inc.',
+  description: 'Terms of Service governing access to and use of Centra AI, operated by PaxLabs Inc.',
 }
 
 export default async function TermsPage({ params }: { params: Promise<{ locale: string }> }) {

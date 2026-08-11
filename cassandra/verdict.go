@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Package cassandra is Matrix's epistemic-completeness faculty: the shared
+// Package cassandra is Centra AI's epistemic-completeness faculty: the shared
 // cross-rail layer that refuses to read the ABSENCE of an error as the
 // PRESENCE of success. It is the generalization of the MCL completeness critic
 // (executor/cmd/mcl-execute/critique.go, Phase 11.5) into a first-class module
@@ -152,4 +152,4 @@ func cleanList(in []string) []string {
 	return out
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

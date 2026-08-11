@@ -23,7 +23,7 @@ source_snapshot="$(python3 "${runtime_dir}/source-digest.py" "${source_dir}")"
 
 vendor_patch="$(sha256sum "${runtime_dir}/matrix-agentcore.patch" | cut -d' ' -f1)"
 [[ "${vendor_patch}" == "${pin[vendor_patch_sha256]}" ]] || {
-  printf 'Matrix vendor patch digest mismatch: expected %s, found %s\n' \
+  printf 'Centra AI vendor patch digest mismatch: expected %s, found %s\n' \
     "${pin[vendor_patch_sha256]}" "${vendor_patch}" >&2
   exit 1
 }

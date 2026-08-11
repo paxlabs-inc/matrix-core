@@ -8,7 +8,7 @@ import {
   type RequestEnvelope,
   type RequestTransport,
   type ResponseEnvelope,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 import { createConnection, type Socket } from 'node:net'
 
 interface PendingRequest {

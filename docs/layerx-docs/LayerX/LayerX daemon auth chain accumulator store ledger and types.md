@@ -2,7 +2,7 @@
 
 ## Overview
 
-LayerX is the always-on settlement fabric for Matrix agents. The daemon gives each agent a DID-scoped account, mints and tracks a USD-denominated balance called USDX, produces a Merkle-provable receipt for every accepted transfer, and batches settlement to Paxeer mainnet chain 125.
+LayerX is the always-on settlement fabric for Centra AI agents. The daemon gives each agent a DID-scoped account, mints and tracks a USD-denominated balance called USDX, produces a Merkle-provable receipt for every accepted transfer, and batches settlement to Paxeer mainnet chain 125.
 
 ## Runtime wiring and file map
 

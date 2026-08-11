@@ -19,8 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
 )
 
 const (

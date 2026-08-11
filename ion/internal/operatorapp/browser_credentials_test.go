@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
+	nativebrowser "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/browser"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/vault"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"github.com/google/uuid"
-	nativebrowser "github.com/paxlabs-inc/ion-agent/internal/browser"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	"github.com/paxlabs-inc/ion-agent/internal/security/vault"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
 )
 
 type credentialTestAuthenticator struct {

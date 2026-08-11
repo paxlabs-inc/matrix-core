@@ -347,7 +347,7 @@ The architecture spec explains the runtime split:
 - on-chain `ServiceRegistry` plus Paxeer precompiles
 - Postgres and pgvector as the derived mirror
 - Next.js console
-- Matrix MCP proxy bridge
+- Centra AI MCP proxy bridge
 
 It also spells out the major flows: service listing, hosted listings, discovery plus invocation, streaming use, confidential calls, and failure behavior such as search fallback, runner failures, settlement retries, policy denials, and chain-RPC failures.
 

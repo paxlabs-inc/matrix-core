@@ -1,7 +1,7 @@
 ---
 name: paxeer-identity
 description: Establish and prove the agent's Paxeer network identity — resolve/provision the embedded wallet (network-side custody), bind its address to a durable cortex Identity, report the on-chain footprint, and sign messages as proof. Read + sign only; never moves value.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Identity

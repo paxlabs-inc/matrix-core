@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
+	nativebrowser "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/browser"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controllease"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
 	"github.com/google/uuid"
-	nativebrowser "github.com/paxlabs-inc/ion-agent/internal/browser"
-	"github.com/paxlabs-inc/ion-agent/internal/controllease"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
 )
 
 type computerResourceInput struct {

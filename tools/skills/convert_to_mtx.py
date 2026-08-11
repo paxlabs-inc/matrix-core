@@ -70,7 +70,7 @@ class SkillSource:
 
 def parse_frontmatter(md_text: str) -> dict[str, str]:
     """Parse minimal YAML frontmatter into a dict.
-    Handles the subset used by the Matrix skill corpus: scalar key:value pairs
+    Handles the subset used by the Centra AI skill corpus: scalar key:value pairs
     with values that may continue on subsequent indented lines (folded).
     """
     m = FRONTMATTER_RE.match(md_text)
@@ -192,7 +192,7 @@ def render_mtx(src: SkillSource, verbs: list[str]) -> str:
 
     # Header comment + §SKILL.
     out: list[str] = []
-    out.append(f"# {display} — MatrixScript skill manifest (generated from SKILL.md)")
+    out.append(f"# {display} — CentraScript skill manifest (generated from SKILL.md)")
     out.append(f"# Source: skills/{slug}/SKILL.md (frontmatter)")
     out.append("# Prose body remains in SKILL.md; this manifest is the compiler-participating surface.")
     out.append("")
@@ -238,7 +238,7 @@ def render_mtx(src: SkillSource, verbs: list[str]) -> str:
     out.append("§PROCEDURE")
     for v in verbs:
         sys_prompt = (
-            f"You are the Matrix compiler invoking the {slug} skill: {desc} "
+            f"You are the Centra AI compiler invoking the {slug} skill: {desc} "
             f"Extract a fully-typed Frame for this '{v}' intent. "
             "Output valid JSON matching intent_frame@1. No prose. No explanation."
         )

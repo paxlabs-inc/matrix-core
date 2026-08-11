@@ -28,8 +28,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/vault"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/security/vault"
 )
 
 const (

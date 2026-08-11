@@ -33,7 +33,7 @@ func TestMediaStudioRoutesExposeRealUnconfiguredService(t *testing.T) {
 	if err := json.Unmarshal(statusResponse.Body.Bytes(), &status); err != nil {
 		t.Fatalf("decode status: %v", err)
 	}
-	if status.Configured || status.Provider != "Matrix Media" {
+	if status.Configured || status.Provider != "Centra Media" {
 		t.Fatalf("status = %+v", status)
 	}
 

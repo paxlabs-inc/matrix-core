@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 
 package cloudchannels
 
@@ -129,7 +129,7 @@ func (s *DingTalkStream) bootstrap(ctx context.Context, config DingTalkConfig) (
 	if host == "" {
 		host = "https://api.dingtalk.com"
 	}
-	payload := map[string]any{"clientId": config.ClientID, "clientSecret": config.ClientSecret, "subscriptions": []map[string]string{{"type": "CALLBACK", "topic": dingTalkBotTopic}}, "ua": "Matrix Neo", "extras": map[string]string{}}
+	payload := map[string]any{"clientId": config.ClientID, "clientSecret": config.ClientSecret, "subscriptions": []map[string]string{{"type": "CALLBACK", "topic": dingTalkBotTopic}}, "ua": "Centra AI Neo", "extras": map[string]string{}}
 	body, _ := json.Marshal(payload)
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, host+"/v1.0/gateway/connections/open", bytes.NewReader(body))
 	if err != nil {

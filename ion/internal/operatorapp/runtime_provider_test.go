@@ -3,7 +3,7 @@ package operatorapp
 import (
 	"testing"
 
-	"github.com/paxlabs-inc/ion-agent/internal/provider"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/provider"
 )
 
 func TestRuntimeSelectsMiMoGeneratorFromProviderOrModel(t *testing.T) {

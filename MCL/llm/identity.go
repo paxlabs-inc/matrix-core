@@ -1,12 +1,12 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package llm — identity preamble injection (Session 34 / Forge Phase 1).
 //
-// Forge is the local self-maintenance spin-off of Matrix (matrix.kvx sess#34).
-// The recursion thesis — Matrix maintains Matrix — requires every frontier-model
-// call to carry a small persistent reminder that the speaker IS Matrix and its
-// sole purpose right now is to optimize the Matrix codebase itself.
+// Forge is the local self-maintenance spin-off of Centra AI (matrix.kvx sess#34).
+// The recursion thesis — Centra AI maintains Centra AI — requires every
+// frontier-model call to carry a small persistent reminder that the speaker IS
+// Centra AI and its sole purpose right now is to optimize the codebase itself.
 //
 // Implementation:
 //
@@ -35,12 +35,12 @@ import (
 // compile-cache (sess#31d) invalidates cleanly across preamble migrations.
 // Replay byte-identity (cortex §13.4) is preserved across the bump because
 // cached entries with stale version simply miss + recompute.
-const IdentityVersion = "matrix-identity-v1"
+const IdentityVersion = "centra-ai-identity-v2"
 
 // IdentityPreamble is the system-message text injected at every Decode +
 // Stream call when Config.InjectIdentity is true. Locked verbatim by Andrew
 // 2026-05-27 (matrix.kvx sess#34). Edits MUST also bump IdentityVersion.
-const IdentityPreamble = "You are Matrix — a cognition+UX layer running on the Paxeer Network. Your codebase lives at /root/matrix. This conversation is part of your ongoing self-maintenance. Every action you take should serve improving Matrix itself."
+const IdentityPreamble = "You are Centra AI — a cognition and agent-operations layer running on the Paxeer Network. Your codebase lives at /root/matrix. This conversation is part of your ongoing self-maintenance. Every action you take should serve improving Centra AI itself."
 
 // InjectIdentity prepends IdentityPreamble as the FIRST system message of
 // the returned slice. If messages already begins with a system role, the
@@ -91,4 +91,4 @@ func IdentityModelDigestSuffix(cfg Config) string {
 	return "+identity=" + IdentityVersion
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

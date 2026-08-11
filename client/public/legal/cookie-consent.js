@@ -1,5 +1,5 @@
 /* ============================================================
-   Matrix Cookie Consent — drop-in, framework-agnostic
+   Centra AI Cookie Consent — drop-in, framework-agnostic
    Writes/reads the `mx_consent` cookie (see Cookie Policy).
    ------------------------------------------------------------
    USAGE
@@ -192,7 +192,7 @@
       <div class="mxc-panel">\
         <span class="mxc-eyebrow"><i></i> Your privacy</span>\
         <h3 class="mxc-title">We use cookies</h3>\
-        <p class="mxc-body">Matrix uses strictly necessary cookies to run, and — with your consent — functional and analytics cookies to improve the experience. See our <a href="cookie-policy.html">Cookie Policy</a> and <a href="privacy-policy.html">Privacy Policy</a>.</p>\
+        <p class="mxc-body">Centra AI uses strictly necessary cookies to run, and — with your consent — functional and analytics cookies to improve the experience. See our <a href="cookie-policy.html">Cookie Policy</a> and <a href="privacy-policy.html">Privacy Policy</a>.</p>\
         ' +
         signal +
         '\

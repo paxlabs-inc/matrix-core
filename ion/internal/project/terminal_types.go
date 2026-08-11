@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controllease"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controllease"
 )
 
 const TerminalVersion = "ion.project-terminal.v1"

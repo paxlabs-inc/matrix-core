@@ -168,7 +168,7 @@ The model registry keeps `AllStepKindNames` in sync with `ir.StepKindNames`. The
 
 ## Identity
 
-`MCL/llm/identity.go` provides `llm.Identity` — a per-invocation identity that flows through LLM calls for attribution and metering. The Matrix gateway routes LLM calls through the `X-Matrix-Actor-DID` header, and the `Identity` struct provides the values that populate it.
+`MCL/llm/identity.go` provides `llm.Identity` — a per-invocation identity that flows through LLM calls for attribution and metering. The Centra AI gateway routes LLM calls through the `X-Matrix-Actor-DID` header, and the `Identity` struct provides the values that populate it.
 
 ---
 

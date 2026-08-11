@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// RouterRegistrar exposes an already-running dev server through Matrix's
+// RouterRegistrar exposes an already-running dev server through Centra AI's
 // existing authenticated /preview/{user}/ reverse proxy. It owns no sandbox
 // and starts no process; the private coding worker owns the local server.
 type RouterRegistrar struct {

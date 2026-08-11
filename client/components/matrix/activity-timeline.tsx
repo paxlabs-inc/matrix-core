@@ -5,7 +5,7 @@
  * doing, grouped by day with a sticky date header that tracks the scroll.
  *
  * Adapted from Skiper UI "Skiper74" (sticky-scroll timeline). Re-themed to the
- * Matrix design tokens and driven entirely by the `days` prop, so a backend
+ * Centra AI design tokens and driven entirely by the `days` prop, so a backend
  * can supply real activity without touching this component.
  */
 

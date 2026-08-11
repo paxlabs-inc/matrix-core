@@ -23,7 +23,7 @@ import { SubsystemPage, subsystemSurfaces } from '../routes/SubsystemRoutes'
 import { ProjectsHome, StudioWorkspace } from '../routes/StudioRoutes'
 import { MediaStudio } from '../routes/MediaStudio'
 import { OfficeStudio } from '../routes/OfficeStudio'
-import type { BrowserClientOptions } from '@matrixmcl/ion-shared'
+import type { BrowserClientOptions } from '@centra-ai/ion-shared'
 import {
   activeComputerTurnID,
   hasComputerHistory,

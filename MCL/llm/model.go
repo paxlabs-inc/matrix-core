@@ -1,9 +1,9 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package llm
 
-// MCL/llm/model.go — Matrix Model Router (Session 31a, 2026-05-27).
+// MCL/llm/model.go — Centra AI Model Router (Session 31a, 2026-05-27).
 //
 // Replaces the original 2-slot {Compiler, Executor} design with a 3-tier
 // router plus step-kind sub-routing for the executor. Architecture and
@@ -516,7 +516,7 @@ const (
 )
 
 // ForgeRegistry returns the v1 Forge model router populated per matrix.kvx
-// sess#34. Powers the local self-maintenance Matrix instance whose sole
+// sess#34. Powers the local self-maintenance Centra AI instance whose sole
 // purpose is to optimize its own codebase at /root/matrix.
 //
 // Routing strategy:
@@ -531,7 +531,7 @@ const (
 //	SlotExecutor/classify     gpt-5.5             (pick-from-list, fast)
 //	SlotExecutor/hard_reason  claude-opus-4-7     (formal proofs, adversarial debugging)
 //
-// Every route has InjectIdentity=true so the Matrix-maintaining-Matrix
+// Every route has InjectIdentity=true so the Centra-maintaining-Centra
 // identity preamble (llm.IdentityPreamble) ships on every routed call.
 // ProviderSet=true so DetectProvider is skipped (bare opencode model ids
 // like "claude-opus-4-7" and "gpt-5.5" don't fit the "<vendor>/<model>"
@@ -858,4 +858,4 @@ func DefaultGrammars() map[string]*GrammarDef {
 	}
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

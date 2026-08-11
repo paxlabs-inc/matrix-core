@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"testing"
 
-	office "github.com/paxlabs-inc/ion-agent/internal/office"
+	office "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/office"
 )
 
 func TestValidateUploadedFile_Extension(t *testing.T) {

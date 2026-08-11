@@ -96,7 +96,7 @@ cfg, err := config.Load(path) // path may be "" or missing
 
 ## .kvx format
 
-The Matrix `.kvx` convention (mirrors `tachyon/internal/config/kvx.go`):
+The Centra AI `.kvx` convention (mirrors `tachyon/internal/config/kvx.go`):
 
 ```kvx
 # comment
@@ -113,7 +113,7 @@ Features:
 - Comments stripped (respecting quoted strings)
 - Later duplicate keys win
 - `${ENV}` interpolation
-- String values are ALWAYS double-quoted (Matrix `.mtx` lexer convention)
+- String values are ALWAYS double-quoted (CentraScript `.mtx` lexer convention)
 
 ---
 

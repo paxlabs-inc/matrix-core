@@ -15,11 +15,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane/adapters"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/presence/gateway"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/session"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane/adapters"
-	"github.com/paxlabs-inc/ion-agent/internal/presence/gateway"
-	"github.com/paxlabs-inc/ion-agent/internal/session"
 )
 
 const (

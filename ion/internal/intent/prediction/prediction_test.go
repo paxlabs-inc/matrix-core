@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
 )
 
 type testClock struct{ now time.Time }
@@ -123,7 +123,7 @@ func Test_StrategyKey_DistinguishesSearchQueriesAndOptions(t *testing.T) {
 	)
 	second := StrategyKey(
 		"web_search",
-		json.RawMessage(`{"query":"matrixmcl.com","limit":10}`),
+		json.RawMessage(`{"query":"centra.cloud","limit":10}`),
 	)
 	if first != same {
 		t.Fatalf("same exact search has keys %q and %q", first, same)

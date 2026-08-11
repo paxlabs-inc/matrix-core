@@ -123,7 +123,7 @@ The enforcement section also states that complaints are reviewed promptly and fa
 
 ## Licensing and Third-Party Terms
 
-`LICENSE.md` is the repository’s primary license for Paxlabs code. It is not a standard permissive license; it is a custom Matrix-Protocol license with explicit copyleft, commercial-trigger, audit, and termination terms.
+`LICENSE.md` is the repository’s primary license for Sidiora Labs code. It is not a standard permissive license; it is the custom Centra AI Protocol License with explicit copyleft, commercial-trigger, audit, and termination terms.
 
 ### `LICENSE.md` summary
 
@@ -134,7 +134,7 @@ The enforcement section also states that complaints are reviewed promptly and fa
 | Copyleft | Modifications and extensions must be released under the same license, with preserved notices, clear change marking, and reproducibility instructions. |
 | Commercial Trigger | A commercial license is required if charged fees exceed USD 100,000 in any rolling year or if liquidity under control exceeds USD 10,000,000. |
 | Contact duty | Crossing a trigger requires contacting `license@Paxeer.app` within 15 days to execute a commercial license. |
-| Audit | Paxlabs may request a yearly audit, and may request an additional for-cause attestation. |
+| Audit | Sidiora Labs may request a yearly audit, and may request an additional for-cause attestation. |
 | Patent and trademark terms | The file includes limited patent rights, trademark restrictions, reservation of rights, and no-endorsement terms. |
 | Warranty and liability | The work is provided as-is, without warranties, and liability is limited as stated. |
 | Termination | Material breach not cured within 15 days terminates the license; prior compliant distributions survive. |
@@ -144,7 +144,7 @@ The enforcement section also states that complaints are reviewed promptly and fa
 
 ### Third-party license inventory
 
-`licenses/README.md` explains that the directory contains the texts for open-source dependencies used by the monorepo, and that Paxlabs code is covered separately by `LICENSE.md`.
+`licenses/README.md` explains that the directory contains the texts for open-source dependencies used by the monorepo, and that Sidiora Labs code is covered separately by `LICENSE.md`.
 
 | File | Responsibility |
 | --- | --- |
@@ -170,7 +170,7 @@ The enforcement section also states that complaints are reviewed promptly and fa
 | --- | --- |
 | `CODE_OF_CONDUCT.md` | Defines the repository’s community standards, reporting channel, and enforcement ladder under Contributor Covenant 2.1. |
 | `CHANGELOG.md` | Records all notable changes, follows Keep a Changelog structure, and uses Semantic Versioning with session and decision cross-references. |
-| `LICENSE.md` | Sets the repository’s custom Matrix-Protocol license terms, including copyleft, commercial triggers, audit rights, warranty limits, and termination. |
+| `LICENSE.md` | Sets the repository’s custom Centra AI Protocol License terms, including copyleft, commercial triggers, audit rights, warranty limits, and termination. |
 | `licenses/README.md` | Catalogs third-party licenses and explains which dependencies fall under each one. |
 | `licenses/MIT.txt` | Canonical MIT text for listed dependencies. |
 | `licenses/Apache-2.0.txt` | Canonical Apache 2.0 text for listed dependencies. |

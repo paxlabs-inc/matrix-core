@@ -18,7 +18,7 @@ import { useSettings } from '@/hooks/api/useSettings'
 import { friendlyModel } from '@/lib/api/models'
 
 /** Shown when /settings is unreachable so the section is never empty — the
- *  documented Matrix default registry, tagged "default" rather than "live". */
+ *  documented Centra AI default registry, tagged "default" rather than "live". */
 const FALLBACK_PINS = { compiler_model: 'gpt-oss-20b', executor_model: 'gpt-oss-120b' }
 
 function Tier({ level, label, icon: Icon }: { level: number; label: string; icon: typeof Zap }) {

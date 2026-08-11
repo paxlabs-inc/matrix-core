@@ -5,7 +5,7 @@
  *
  * A virtualized, keyboard-navigable tree over GET /workspace/tree via
  * react-arborist (the VSCode-sidebar-grade engine: aria, filtering, selection
- * sync, virtualized rows), rendered in Matrix chrome: background-tone
+ * sync, virtualized rows), rendered in Centra AI chrome: background-tone
  * separation only, single accent, monospace file names. Includes a filter box
  * that narrows the tree as you type. Read-only — Cody writes, the user reads.
  */

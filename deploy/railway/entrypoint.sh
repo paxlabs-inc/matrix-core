@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# entrypoint.sh — prep the per-service /data layout, then start Matrix.
+# entrypoint.sh — prep the per-service /data layout, then start Centra AI.
 # Railway variant of deploy/daemon/entrypoint.sh: same two run modes, same
 # volume layout, same daemon flag set. Railway-specific notes:
 #

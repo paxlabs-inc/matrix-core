@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package turnstate
@@ -56,7 +56,7 @@ func TestStoreMigratesSealsAndRecoversTypedState(t *testing.T) {
 		Plan: json.RawMessage(`{"goal":"report"}`),
 		PendingCall: &PendingCall{
 			CallID: "call-1", IdempotencyKey: "idem-1",
-			ToolName: "web_search", Arguments: json.RawMessage(`{"query":"Matrix"}`),
+			ToolName: "web_search", Arguments: json.RawMessage(`{"query":"Centra AI"}`),
 			DispatchedAt: time.Now().UTC(),
 		},
 	}

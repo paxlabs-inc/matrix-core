@@ -4,7 +4,7 @@ import {
   isDisplayModel,
   migrateDisplayModel,
   type DisplayModel,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 import { describe, expect, it } from 'vitest'
 
 const current: DisplayModel = {

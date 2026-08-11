@@ -3,7 +3,7 @@
 /**
  * WalletPanel — the user's primary embedded wallet plus the agent wallets
  * they own. Reads live from the Paxeer wallet API (connect.paxportwallet.com,
- * authed with the Matrix Supabase session) and the public block explorer.
+ * authed with the Centra AI Supabase session) and the public block explorer.
  */
 
 import { useState } from 'react'

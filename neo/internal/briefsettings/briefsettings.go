@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 
 // Package briefsettings is the durable per-user schedule state for the ORACLE
 // morning brief (req 14.1) — a pure SIDECAR mirroring neo/internal/

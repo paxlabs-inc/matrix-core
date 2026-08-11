@@ -1,6 +1,6 @@
-# MatrixScript Language Reference
+# CentraScript Language Reference
 
-MatrixScript (`.mtx`) is the declarative language in which MCL is written. Compiler logic, skill procedures, type schemas, and the pipeline wiring all live in `.mtx` files. The Go runtime in `MCL/mtx/` interprets them. The Go binaries contain no compile logic themselves.
+CentraScript (`.mtx`) is the declarative language in which MCL is written. Compiler logic, skill procedures, type schemas, and the pipeline wiring all live in `.mtx` files. The Go runtime in `MCL/mtx/` interprets them. The Go binaries contain no compile logic themselves.
 
 This distinction matters: if you want to change how a skill frames a user request, you edit a `.mtx` file. You don't touch Go.
 
@@ -184,7 +184,7 @@ All of these are at column 0 inside the `on` body.
 
 ```mtx
 prompt
-  system="You are the Matrix Frame Extractor..."
+  system="You are the Centra AI Frame Extractor..."
   user="Goal: {prose}\n\nContext: {cortex.bundle}\n\nExtract the frame."
 end
 ```

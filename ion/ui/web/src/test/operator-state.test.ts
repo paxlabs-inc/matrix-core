@@ -6,7 +6,7 @@ import {
   PROTOCOL_VERSION,
   type EventEnvelope,
   type RecoveryEnvelope,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 import { describe, expect, it, vi } from 'vitest'
 
 const actorID = '11111111-1111-4111-8111-111111111111'

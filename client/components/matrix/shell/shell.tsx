@@ -21,7 +21,7 @@
  *   - Separation between the narration panel and the environment stage — and
  *     elevation of the descent notice above it — is by background TONE only
  *     (background → card → popover), never a border stroke, shadow, or glow
- *     (R13.1/R13.2/R13.5); the shell's single accent is Matrix Sage `#99bd9c`
+ *     (R13.1/R13.2/R13.5); the shell's single accent is Centra Sage `#99bd9c`
  *     (including the legacy `text-pax` alias), expressed only on interactive chrome, and copy carries no
  *     protocol jargon (R12, R13.6).
  *

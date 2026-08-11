@@ -227,7 +227,9 @@ export function MediaStudio() {
                   />
                   <div className="hidden sm:block">
                     <Text type="label" weight="bold" display="block">
-                      {status?.provider ?? 'Matrix Media'}
+                      {!status?.provider || status.provider.toLowerCase() === 'matrix'
+                        ? 'Centra AI Media'
+                        : status.provider}
                     </Text>
                     <Text type="supporting" color="secondary" display="block" maxLines={2}>
                       {loading
@@ -324,7 +326,7 @@ export function MediaStudio() {
                     </h2>
                   </div>
                   <span className="bg-muted text-muted-foreground hidden rounded-full px-3 py-1 text-xs sm:inline">
-                    Matrix Media
+                    Centra AI Media
                   </span>
                 </div>
 
@@ -362,7 +364,7 @@ export function MediaStudio() {
                     </span>
                   </div>
                   <dl className="space-y-2 text-sm">
-                    <Detail label={t('provider')} value="Matrix Media" />
+                    <Detail label={t('provider')} value="Centra AI Media" />
                     <Detail label={t('seed')} value={String(selected.request.seed)} />
                     <Detail label={t('aspectRatio')} value={selected.request.aspect_ratio ?? '—'} />
                   </dl>

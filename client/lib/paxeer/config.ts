@@ -2,13 +2,13 @@
  * Paxeer embedded-wallet client configuration.
  *
  * The wallet API (connect.paxportwallet.com) is authenticated with the SAME
- * Supabase JWT the Matrix client already holds: the user's Supabase identity
+ * Supabase JWT the Centra AI client already holds: the user's Supabase identity
  * owns a primary embedded wallet on the server, which in turn owns the agent
  * wallet(s). So we reuse the existing session token (lib/auth/session
  * getAccessToken) instead of standing up a second Supabase client.
  *
  * IMPORTANT: NEXT_PUBLIC_SUPABASE_URL MUST point at the Paxport Supabase
- * project for the JWT to authenticate against the wallet API. The Matrix
+ * project for the JWT to authenticate against the wallet API. The Centra AI
  * router accepts the same token, so one login serves both surfaces.
  */
 

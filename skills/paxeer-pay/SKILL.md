@@ -1,7 +1,7 @@
 ---
 name: paxeer-pay
 description: Pay on Paxeer — send native PAX or ERC-20 tokens and open/settle/close continuous PaymentStreams (0x0906) for per-second machine settlement. Signs via the embedded wallet; confirms funds first and records every send as an Event with its tx hash.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Pay

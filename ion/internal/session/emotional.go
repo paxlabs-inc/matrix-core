@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/paxlabs-inc/ion-agent/internal/security/safety"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/safety"
 )
 
 // SaveEmotionalState persists encrypted six-axis state across sessions.

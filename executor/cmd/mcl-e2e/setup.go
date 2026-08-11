@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -103,8 +103,8 @@ func NewWorkspace(rootBase, run string) (*Workspace, error) {
 func SeedGitRepo(dir string) error {
 	cmds := [][]string{
 		{"git", "init", "-q", "-b", "main"},
-		{"git", "config", "user.email", "e2e@matrix.local"},
-		{"git", "config", "user.name", "Matrix E2E"},
+		{"git", "config", "user.email", "e2e@centra.local"},
+		{"git", "config", "user.name", "Centra AI E2E"},
 	}
 	for _, c := range cmds {
 		if err := runCmdInDir(dir, c[0], c[1:]...); err != nil {
@@ -112,7 +112,7 @@ func SeedGitRepo(dir string) error {
 		}
 	}
 	readme := filepath.Join(dir, "README.md")
-	if err := os.WriteFile(readme, []byte("# Matrix E2E test repo\n\nThis is a sandbox repo created by the mcl-e2e harness for git-mcp to operate on.\n"), 0o644); err != nil {
+	if err := os.WriteFile(readme, []byte("# Centra AI E2E test repo\n\nThis is a sandbox repo created by the mcl-e2e harness for git-mcp to operate on.\n"), 0o644); err != nil {
 		return err
 	}
 	for _, c := range [][]string{
@@ -137,7 +137,7 @@ func BuildAgentManifest(agentDID, fsJail, gitRepoDir string) *tool.AgentManifest
 	return &tool.AgentManifest{
 		SchemaVersion:      1,
 		Agent:              "matrix://agent/" + agentDID,
-		Description:        "Matrix e2e test agent (mcl-e2e harness)",
+		Description:        "Centra AI e2e test agent (mcl-e2e harness)",
 		AllowedSideEffects: []string{"read", "write", "network", "shell"},
 		Servers: []tool.ServerEntry{
 			{
@@ -245,4 +245,4 @@ func runCmdInDir(dir, name string, args ...string) error {
 	return nil
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

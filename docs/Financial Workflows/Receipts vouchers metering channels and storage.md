@@ -2,7 +2,7 @@
 
 ## Overview
 
-This slice of `matrix-core` turns payment and settlement into a set of tightly linked primitives: EIP-712 signing for quotes, receipts, and vouchers; deterministic hashing for receipt batches; channel accounting for reserved and cumulative value; and Postgres-backed persistence for invocations, receipts, vouchers, deployments, and channel mirrors. The result is a workflow that can quote work, reserve spend, finalize delivery, and persist proof material without mixing those responsibilities into one layer.
+This slice of `centra-llm-agents` turns payment and settlement into a set of tightly linked primitives: EIP-712 signing for quotes, receipts, and vouchers; deterministic hashing for receipt batches; channel accounting for reserved and cumulative value; and Postgres-backed persistence for invocations, receipts, vouchers, deployments, and channel mirrors. The result is a workflow that can quote work, reserve spend, finalize delivery, and persist proof material without mixing those responsibilities into one layer.
 
 The code is organized around three moving parts. `deus/internal/receipts/*` defines the hashing and signature material, `deus/internal/channels/*` manages caller-funded channels and co-signed vouchers, and `deus/internal/metering/ledger.go` records invocation lifecycle transitions while `deus/internal/store/*` writes the durable rows. These pieces are designed to be composed by higher-level invoke flows, but the financial correctness rules live here.
 

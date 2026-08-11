@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/vault"
+	sessionstore "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/session"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	"github.com/paxlabs-inc/ion-agent/internal/security/vault"
-	sessionstore "github.com/paxlabs-inc/ion-agent/internal/session"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
 )
 
 func TestReturnBriefAllowlistPeriodsPendingDecisionsAndActorIsolation(t *testing.T) {

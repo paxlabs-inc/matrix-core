@@ -548,7 +548,7 @@ func (value Connection) Validate() error {
 		return fmt.Errorf("external adapter: connection identity is invalid")
 	}
 	if value.Protocol == ProtocolMatrixMCP && value.Family != FamilyBrowserResearch {
-		return fmt.Errorf("external adapter: Matrix MCP is restricted to unauthenticated research")
+		return fmt.Errorf("external adapter: Centra AI MCP is restricted to unauthenticated research")
 	}
 	if _, err := validatedEndpoint(value.EndpointURL, value.PrivateNetworkHTTP); err != nil {
 		return err

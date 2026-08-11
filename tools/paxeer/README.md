@@ -1,6 +1,6 @@
 # paxeer-net — Paxeer network MCP bridge
 
-The tool surface that embeds Matrix agents into the **Paxeer** network (EVM
+The tool surface that embeds Centra agents into the **Paxeer** network (EVM
 chain `125`). One stdio MCP server exposes the whole network to the planner:
 read everything, and act through a network-custody wallet. It backs the
 `paxeer-identity / paxeer-read / paxeer-pay / paxeer-trade` skills.

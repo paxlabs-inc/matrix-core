@@ -1,7 +1,7 @@
 /**
- * Backend wire types — the exact JSON shapes returned by the Matrix
+ * Backend wire types — the exact JSON shapes returned by the Centra AI
  * Daemon (executor/cmd/mcl-execute/daemon_*.go), proxied through the
- * Matrix Router.
+ * Centra AI Router.
  *
  * These are intentionally separated from the UI types in
  * `lib/matrix-data.ts` so the mapper layer (`lib/api/mappers.ts`) can

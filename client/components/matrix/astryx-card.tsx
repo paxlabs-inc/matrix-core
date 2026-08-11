@@ -3,9 +3,9 @@ import { Card as AstryxCard } from '@astryxdesign/core/Card'
 import { cn } from '@/lib/utils'
 
 /**
- * Matrix compatibility composition for the Astryx Card.
+ * Legacy Matrix compatibility composition for the Centra AI Astryx Card.
  *
- * Existing Matrix panels use named content slots. Keeping those lightweight
+ * Existing compatibility panels use named content slots. Keeping those lightweight
  * slots lets the data-heavy surfaces migrate to Astryx's container in one
  * place without rewriting their query, table, or chart behavior.
  */

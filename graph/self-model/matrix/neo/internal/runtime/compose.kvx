@@ -1,0 +1,258 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:8adaec31d110422a96613f590adad21e781eb8f302a1fdaad8310a524483c514
+
+NODE id=matrix/neo/internal/runtime/compose kind=package
+  digest=b3:cd48b99cbd53df2ac4dc43128a7c24002a8dc613d71ad3f9681c873d94c7504e file=neo/internal/runtime/compose range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/neo/internal/runtime/compose/dedup.go,matrix/neo/internal/runtime/compose/sectors.go
+  ^contains=mod:matrix/neo
+
+NODE id=matrix/neo/internal/runtime/compose.ApplySectorBudgets kind=func
+  digest=b3:2c20f03d7a2c9047685f82c518f5afaef38f2e5ef2fc8b1aaa780e040ab93701 file=neo/internal/runtime/compose/sectors.go range=67:133 lang=go exported=true byte_range=1608:3642
+  sig=func ApplySectorBudgets(items []Item, policy SectorPolicy) TrimResult
+  doc=ApplySectorBudgets enforces independent sector ceilings, then the frozen\nglobal trim order. Never-trim evidence survives even when diagnostics must\nreport that mandatory material alone exceeds the preferred request size.
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.Compose kind=func
+  digest=b3:eb9fc86f4989eea00b52e0b068d24c310a35857f95d5dde19fadb12f55d6802b file=neo/internal/runtime/compose/sectors.go range=135:146 lang=go exported=true byte_range=3644:4139
+  sig=func Compose(items []Item, policy SectorPolicy) ([]Item, records.ContextManifest, []string)
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.Deduplicate kind=func
+  digest=b3:cdb63504124d989ec6e9e491fdf83501554e57297b32b5bf9ed56426df9f9dd2 file=neo/internal/runtime/compose/dedup.go range=62:110 lang=go exported=true byte_range=1668:3917
+  sig=func Deduplicate(items []Item) ([]Item, records.ContextManifest)
+  doc=Deduplicate applies the frozen six-step identity/content order. Input order\nis sector precedence order; the first valid representation is authoritative.
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/dedup.go
+
+NODE id=matrix/neo/internal/runtime/compose.DefaultSectorPolicy kind=func
+  digest=b3:15102c3748454da2f2b9adb165c1bd4b1055e6737df77920ac24ff172cd1edcc file=neo/internal/runtime/compose/sectors.go range=40:61 lang=go exported=true byte_range=717:1442
+  sig=func DefaultSectorPolicy(total, responseReserve int) SectorPolicy
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.Item kind=type
+  digest=b3:9252fdb9af0dbc3ecae8d390dabf9600300b03bb4ec45e47d773c9fff4c6a6a2 file=neo/internal/runtime/compose/dedup.go range=14:23 lang=go exported=true byte_range=278:496
+  sig=type Item struct {\n	SourceNamespace		string\n	SourceID		string\n	ConversationID		string\n	SemanticKind		string\n	RevisionIdentity	string\n	Content			string\n	Sector			Sector\n	NeverTrim		bool\n}
+EDGES
+  contains=matrix/neo/internal/runtime/compose.Item#Content,matrix/neo/internal/runtime/compose.Item#ConversationID,matrix/neo/internal/runtime/compose.Item#NeverTrim,matrix/neo/internal/runtime/compose.Item#RevisionIdentity,matrix/neo/internal/runtime/compose.Item#Sector,matrix/neo/internal/runtime/compose.Item#SemanticKind,matrix/neo/internal/runtime/compose.Item#SourceID,matrix/neo/internal/runtime/compose.Item#SourceNamespace
+  ^defines=matrix/neo/internal/runtime/compose/dedup.go
+
+NODE id=matrix/neo/internal/runtime/compose.Item#Content kind=field
+  digest=b3:9458be894bbd602fa2c3ca0d0d3206c7350b4cfa0963ee977a689fd56db6fe8b file=neo/internal/runtime/compose/dedup.go range=20:20 lang=go exported=true byte_range=423:446
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.Item
+
+NODE id=matrix/neo/internal/runtime/compose.Item#ConversationID kind=field
+  digest=b3:7c39c8b560dccd3b646c5e3bf098123a15c7c893ea1bfb4023ab8f195d922310 file=neo/internal/runtime/compose/dedup.go range=17:17 lang=go exported=true byte_range=348:371
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.Item
+
+NODE id=matrix/neo/internal/runtime/compose.Item#NeverTrim kind=field
+  digest=b3:29197ff2b00075dd2f1c2c9957aacb3394b62524a67544dc57c9b4de5bc39281 file=neo/internal/runtime/compose/dedup.go range=22:22 lang=go exported=true byte_range=473:494
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.Item
+
+NODE id=matrix/neo/internal/runtime/compose.Item#RevisionIdentity kind=field
+  digest=b3:364d175b52253aaef0064270b3facb9feffa0d449b05a385410fe9c40094d25e file=neo/internal/runtime/compose/dedup.go range=19:19 lang=go exported=true byte_range=398:421
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.Item
+
+NODE id=matrix/neo/internal/runtime/compose.Item#Sector kind=field
+  digest=b3:f237df9b4a3bd7dbf55f9ec2332f950a82f5cf70e534bb25fe390497a3ebb50c file=neo/internal/runtime/compose/dedup.go range=21:21 lang=go exported=true byte_range=448:471
+  sig=compose.Sector
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.Item
+
+NODE id=matrix/neo/internal/runtime/compose.Item#SemanticKind kind=field
+  digest=b3:b03e29c4ae24f8ee948265fd599fcd4be7db544a28aedefecc2a6ffe70bc1161 file=neo/internal/runtime/compose/dedup.go range=18:18 lang=go exported=true byte_range=373:396
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.Item
+
+NODE id=matrix/neo/internal/runtime/compose.Item#SourceID kind=field
+  digest=b3:2eabc278e9b67995d1c182c15d83cc0956e89069b45c47e57d5a8e4cf42986a7 file=neo/internal/runtime/compose/dedup.go range=16:16 lang=go exported=true byte_range=323:346
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.Item
+
+NODE id=matrix/neo/internal/runtime/compose.Item#SourceNamespace kind=field
+  digest=b3:f2196819c101faefa91920190e6daa5cb47ee14fbe4f5572a4fbf0b1a42e762b file=neo/internal/runtime/compose/dedup.go range=15:15 lang=go exported=true byte_range=298:321
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.Item
+
+NODE id=matrix/neo/internal/runtime/compose.Sector kind=type
+  digest=b3:77e5021011b0de63aa7f4884d9b386d7828cb0f45e055d49d7b9e62203b52d14 file=neo/internal/runtime/compose/sectors.go range=13:13 lang=go exported=true byte_range=249:266
+  sig=type Sector uint8
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.SectorLatestMessage kind=const
+  digest=b3:5bf5d4e278972bf972c139da6e6eb98ea91be4556b62fcded34c630b54609f03 file=neo/internal/runtime/compose/sectors.go range=17:17 lang=go exported=true byte_range=317:336
+  sig=compose.Sector
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.SectorLongTermMemory kind=const
+  digest=b3:d944aaca7046e50c4eb990a379a387079f590e5e7a14abaaec90bfe9383325b6 file=neo/internal/runtime/compose/sectors.go range=22:22 lang=go exported=true byte_range=429:449
+  sig=compose.Sector
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.SectorPolicy kind=type
+  digest=b3:3341bb546012471a6ac1baa732ec667d17285f6a9fe71646094fba2757d86284 file=neo/internal/runtime/compose/sectors.go range=27:31 lang=go exported=true byte_range=495:597
+  sig=type SectorPolicy struct {\n	TotalTokens	int\n	ResponseReserve	int\n	Budgets		map[Sector]int\n}
+EDGES
+  contains=matrix/neo/internal/runtime/compose.SectorPolicy#Budgets,matrix/neo/internal/runtime/compose.SectorPolicy#ResponseReserve,matrix/neo/internal/runtime/compose.SectorPolicy#TotalTokens
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.SectorPolicy#Budgets kind=field
+  digest=b3:a382e2b0b71651390e4a6128ed184004543f4aab12702369d82df19fa991da22 file=neo/internal/runtime/compose/sectors.go range=30:30 lang=go exported=true byte_range=565:595
+  sig=map[compose.Sector]int
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.SectorPolicy
+
+NODE id=matrix/neo/internal/runtime/compose.SectorPolicy#ResponseReserve kind=field
+  digest=b3:3f9a287775d30aa57c6e76231db301eee3ab0c887d19b2ac03bcfc404f0356bd file=neo/internal/runtime/compose/sectors.go range=29:29 lang=go exported=true byte_range=544:563
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.SectorPolicy
+
+NODE id=matrix/neo/internal/runtime/compose.SectorPolicy#TotalTokens kind=field
+  digest=b3:f5702630389b170369dc8917cddd3b126d9a77f347cd8ba3d68c2349c4c56db9 file=neo/internal/runtime/compose/sectors.go range=28:28 lang=go exported=true byte_range=523:542
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.SectorPolicy
+
+NODE id=matrix/neo/internal/runtime/compose.SectorRecentTranscript kind=const
+  digest=b3:29c8be78af0b0c86928f67663fdf0de14bfab8f087b4b4f7935f88a4db3c9041 file=neo/internal/runtime/compose/sectors.go range=18:18 lang=go exported=true byte_range=338:360
+  sig=compose.Sector
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.SectorResponseReserve kind=const
+  digest=b3:1c107529babb0569d9b704ac3033e3b236cc2e73fcde5a67025a1fec8e93a983 file=neo/internal/runtime/compose/sectors.go range=24:24 lang=go exported=true byte_range=470:491
+  sig=compose.Sector
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.SectorStableIdentity kind=const
+  digest=b3:5942c91f709216a41734c144c482a6f7857ed5a7f10fa63d97d5a353e788b703 file=neo/internal/runtime/compose/sectors.go range=16:16 lang=go exported=true byte_range=277:315
+  sig=compose.Sector
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.SectorToolSchemas kind=const
+  digest=b3:60917415fd59f6e17a5f89e6bfa59cda33a537236a61f4c4023397f938e57fbc file=neo/internal/runtime/compose/sectors.go range=23:23 lang=go exported=true byte_range=451:468
+  sig=compose.Sector
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.SectorUnconsumedToolBatch kind=const
+  digest=b3:f82d826fbc5e9bdcea0002fe5dd3c6b1686343db611c30bdddd6bc54f3325b4b file=neo/internal/runtime/compose/sectors.go range=20:20 lang=go exported=true byte_range=382:407
+  sig=compose.Sector
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.SectorWarmCapsules kind=const
+  digest=b3:a2af28cd2c6e37a4447024e194084d411ee918cdf24687fef1ff4cf4f330de88 file=neo/internal/runtime/compose/sectors.go range=21:21 lang=go exported=true byte_range=409:427
+  sig=compose.Sector
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.SectorWorkingState kind=const
+  digest=b3:c531de42c4e67478be2f9f2225ce5a6bb7a2cb92282c6deb61171e002ed0f02e file=neo/internal/runtime/compose/sectors.go range=19:19 lang=go exported=true byte_range=362:380
+  sig=compose.Sector
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.TrimResult kind=type
+  digest=b3:17a78e66c8f3447c9b5676abe88cbdbf0ba7f7eea811a5ae849f1cb8e1cd784e file=neo/internal/runtime/compose/sectors.go range=33:38 lang=go exported=true byte_range=599:715
+  sig=type TrimResult struct {\n	Items		[]Item\n	Suppressed	map[string]string\n	Diagnostics	[]string\n	UsedTokens	int\n}
+EDGES
+  contains=matrix/neo/internal/runtime/compose.TrimResult#Diagnostics,matrix/neo/internal/runtime/compose.TrimResult#Items,matrix/neo/internal/runtime/compose.TrimResult#Suppressed,matrix/neo/internal/runtime/compose.TrimResult#UsedTokens
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.TrimResult#Diagnostics kind=field
+  digest=b3:714d63b8ff56b1bbe49a1a3dfb67114196534b521f5d65f7bf513780fcc86948 file=neo/internal/runtime/compose/sectors.go range=36:36 lang=go exported=true byte_range=676:696
+  sig=[]string
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.TrimResult
+
+NODE id=matrix/neo/internal/runtime/compose.TrimResult#Items kind=field
+  digest=b3:4160232fef0a0b81ba6fd60bcb1264a72891349c644b3e9326a701745f5a4363 file=neo/internal/runtime/compose/sectors.go range=34:34 lang=go exported=true byte_range=625:643
+  sig=[]compose.Item
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.TrimResult
+
+NODE id=matrix/neo/internal/runtime/compose.TrimResult#Suppressed kind=field
+  digest=b3:f5f0b9f44dee9688c6f6e427b43462d1eaa31afc535c0a0eb01643d4fc9f5f78 file=neo/internal/runtime/compose/sectors.go range=35:35 lang=go exported=true byte_range=645:674
+  sig=map[string]string
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.TrimResult
+
+NODE id=matrix/neo/internal/runtime/compose.TrimResult#UsedTokens kind=field
+  digest=b3:840f2eaa6578a953f80aaf0e617066c0e374519fe539767baefeeda5de8da88b file=neo/internal/runtime/compose/sectors.go range=37:37 lang=go exported=true byte_range=698:713
+  sig=int
+EDGES
+  ^contains=matrix/neo/internal/runtime/compose.TrimResult
+
+NODE id=matrix/neo/internal/runtime/compose.category kind=func
+  digest=b3:469b07946648967460ceb8774e6b54c2e7a4c2dab561055171e03d3f203243b0 file=neo/internal/runtime/compose/dedup.go range=46:60 lang=go exported=false byte_range=1231:1666
+  sig=func category(kind string) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/dedup.go
+
+NODE id=matrix/neo/internal/runtime/compose.hash kind=func
+  digest=b3:769c0e94ca1bfc824475fd28c78d6ba2ad1605fde7e3fe033b73029a63df5aab file=neo/internal/runtime/compose/dedup.go range=25:28 lang=go exported=false byte_range=498:649
+  sig=func hash(content string) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/dedup.go
+
+NODE id=matrix/neo/internal/runtime/compose.identity kind=func
+  digest=b3:3c13b42de9c3946b3eba2c8587b99edaa8c4bc4160e44617b2ac81db1f24068d file=neo/internal/runtime/compose/dedup.go range=38:40 lang=go exported=false byte_range=944:1118
+  sig=func identity(item Item) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/dedup.go
+
+NODE id=matrix/neo/internal/runtime/compose.itemKey kind=func
+  digest=b3:4c35ccf8f913d82e69f965185e3860ccfad2b92b4453976ad6826543282af7f7 file=neo/internal/runtime/compose/sectors.go range=63:63 lang=go exported=false byte_range=1444:1531
+  sig=func itemKey(item Item) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.itemTokens kind=func
+  digest=b3:701903b8634b0a47c42a1f71e8ad6ccc3b2f073fe0b7b19be7eefca2ee57c40e file=neo/internal/runtime/compose/sectors.go range=65:65 lang=go exported=false byte_range=1533:1606
+  sig=func itemTokens(item Item) int
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/sectors.go
+
+NODE id=matrix/neo/internal/runtime/compose.normalizedOverlap kind=func
+  digest=b3:53210e1d58fb0f2988f47af9455ddbc856039614169ca80359eff4ade72d9de7 file=neo/internal/runtime/compose/dedup.go range=30:36 lang=go exported=false byte_range=651:942
+  sig=func normalizedOverlap(content string) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/dedup.go
+
+NODE id=matrix/neo/internal/runtime/compose.source kind=func
+  digest=b3:947c64814493bd94f8678c8f7dfdff35630e4d7607fb032b006e76f8740442a1 file=neo/internal/runtime/compose/dedup.go range=42:44 lang=go exported=false byte_range=1120:1229
+  sig=func source(item Item) string
+EDGES
+  ^defines=matrix/neo/internal/runtime/compose/dedup.go
+
+NODE id=matrix/neo/internal/runtime/compose/dedup.go kind=file
+  digest=b3:be090aad989f1e3632c185b3d5b069386f4a76aaa0d032a30c5722cc518de75e file=neo/internal/runtime/compose/dedup.go range=1:110 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/compose.Deduplicate,matrix/neo/internal/runtime/compose.Item,matrix/neo/internal/runtime/compose.category,matrix/neo/internal/runtime/compose.hash,matrix/neo/internal/runtime/compose.identity,matrix/neo/internal/runtime/compose.normalizedOverlap,matrix/neo/internal/runtime/compose.source
+  ^contains=matrix/neo/internal/runtime/compose
+
+NODE id=matrix/neo/internal/runtime/compose/sectors.go kind=file
+  digest=b3:68060c9dea9d4f6fb0bfda101276e20cdff300787d4a1b66ce88d9772dfa8c2f file=neo/internal/runtime/compose/sectors.go range=1:146 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/runtime/compose.ApplySectorBudgets,matrix/neo/internal/runtime/compose.Compose,matrix/neo/internal/runtime/compose.DefaultSectorPolicy,matrix/neo/internal/runtime/compose.Sector,matrix/neo/internal/runtime/compose.SectorLatestMessage,matrix/neo/internal/runtime/compose.SectorLongTermMemory,matrix/neo/internal/runtime/compose.SectorPolicy,matrix/neo/internal/runtime/compose.SectorRecentTranscript,matrix/neo/internal/runtime/compose.SectorResponseReserve,matrix/neo/internal/runtime/compose.SectorStableIdentity,matrix/neo/internal/runtime/compose.SectorToolSchemas,matrix/neo/internal/runtime/compose.SectorUnconsumedToolBatch,matrix/neo/internal/runtime/compose.SectorWarmCapsules,matrix/neo/internal/runtime/compose.SectorWorkingState,matrix/neo/internal/runtime/compose.TrimResult,matrix/neo/internal/runtime/compose.itemKey,matrix/neo/internal/runtime/compose.itemTokens
+  ^contains=matrix/neo/internal/runtime/compose

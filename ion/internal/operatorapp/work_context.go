@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/paxlabs-inc/ion-agent/internal/agent"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	workcontrol "github.com/paxlabs-inc/ion-agent/internal/work"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/agent"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	workcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/work"
 )
 
 // workAwareContextComposer adds the same durable contract visible to operator

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/browser"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/browser"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
 )
 
 // Registrations exposes receive and private verification handoff through the

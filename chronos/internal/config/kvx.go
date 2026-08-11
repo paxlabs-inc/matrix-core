@@ -15,7 +15,7 @@ import (
 //
 //	# comment
 //	[section]
-//	key = "string"            # double-quoted strings (per Matrix .mtx convention)
+//	key = "string"            # double-quoted strings (per Centra AI .mtx convention)
 //	num = 9096                # bare ints / bools
 //	list = ["a", "b"]         # bracketed, comma-separated, quoted items
 //	[section.sub]

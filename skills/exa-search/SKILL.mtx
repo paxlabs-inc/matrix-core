@@ -1,7 +1,4 @@
-# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
-# Contact · license@Paxeer.app · legal@Paxeer.app
-
-# Exa Search — MatrixScript skill manifest (generated from SKILL.md)
+# Exa Search — CentraScript skill manifest (generated from SKILL.md)
 # Source: skills/exa-search/SKILL.md (frontmatter)
 # Prose body remains in SKILL.md; this manifest is the compiler-participating surface.
 
@@ -10,7 +7,7 @@ id=exa-search
 version=0.1.0
 display="Exa Search"
 author=did:pax:0xPLACEHOLDER
-description="Neural search via Exa MCP for web, code, and company research. Use when the user needs web search, code examples, company intel, people lookup, or AI-powered deep research with Exa's neural search engine."
+description="Grounded semantic search and asynchronous research through Centra AI's router-owned Exa MCP. Use for controlled web evidence, company research, known-URL extraction, outbound briefs, or source-grounded drafts."
 mcl.verbs=find
 determinism=seedable
 seed_policy=per_intent
@@ -37,7 +34,7 @@ none
 §PROCEDURE
 on verb=find
   prompt
-    system="You are the Matrix compiler invoking the exa-search skill: Neural search via Exa MCP for web, code, and company research. Use when the user needs web search, code examples, company intel, people lookup, or AI-powered deep research with Exa's neural search engine. Extract a fully-typed Frame for this 'find' intent. Output valid JSON matching intent_frame@1. No prose. No explanation."
+    system="You are the Centra AI compiler invoking the exa-search skill: Grounded semantic search and asynchronous research through Centra AI's router-owned Exa MCP. Use for controlled web evidence, company research, known-URL extraction, outbound briefs, or source-grounded drafts. Extract a fully-typed Frame for this 'find' intent. Output valid JSON matching intent_frame@1. No prose. No explanation."
     user="User goal: {prose}\\n\\nCortex context (resolved memories):\\n{cortex.bundle}\\n\\nCurrently resolved slots:\\n{slots}\\n\\nPending unknowns:\\n{unknowns}\\n\\nExtract the Frame. Resolve all object references to matrix:// URIs where possible."
   end
   resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=5)
@@ -91,5 +88,3 @@ budget_exceeded
 v=1
 algo=sha256_ast
 digest=
-
-# Copyright © 2026 Paxlabs Inc. All rights reserved.

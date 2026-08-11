@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package tool
@@ -63,7 +63,7 @@ type ServerEntry struct {
 	// PackageDigest is the sha256 of the published server package
 	// (e.g. an npm tarball or a uv wheel). Q22 hard rule. Validation
 	// against the actual installed package is the responsibility of
-	// the operator — Matrix records it in the agent manifest so
+	// the operator — Centra AI records it in the agent manifest so
 	// auditors can re-derive what code was running for a given Intent.
 	PackageDigest string `json:"package_digest"`
 
@@ -114,7 +114,7 @@ type ToolEntry struct {
 	TimeoutMs int `json:"timeout_ms,omitempty"`
 
 	// Description hints + JSON-Schema validation are the server's job;
-	// Matrix stores only what's needed for capability + URI scoping.
+	// Centra AI stores only what's needed for capability + URI scoping.
 }
 
 // NativeToolEntry is a placeholder schema for chain tools (Q19). v1
@@ -376,4 +376,4 @@ func ResolveEnvList(in []string, lookup func(string) (string, bool)) ([]string, 
 	return out, "", nil
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

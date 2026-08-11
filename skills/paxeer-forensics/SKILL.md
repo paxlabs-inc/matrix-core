@@ -1,7 +1,7 @@
 ---
 name: paxeer-forensics
 description: "Where did my money go?" — read-only on-chain investigation on Paxeer. Traces value hop by hop from a tx hash, address, or victim wallet, labels each address, finds the sink(s), and produces a readable incident report. No transaction is ever signed.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Forensics

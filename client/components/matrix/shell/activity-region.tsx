@@ -26,7 +26,7 @@
  *
  * House rules (R13): separation is by background tone only — no border strokes,
  * no shadow, no glow; no emojis, no purple gradients; copy is consumer-readable
- * with no protocol jargon (R12). The shell's SINGLE accent is Matrix Sage
+ * with no protocol jargon (R12). The shell's SINGLE accent is Centra Sage
  * (`text-pax` / `#99bd9c`): the per-step "View detail" descent affordance lifts
  * to it on hover/focus, and no competing accent is introduced.
  */

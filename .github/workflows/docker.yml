@@ -1,6 +1,6 @@
 name: docker
 
-# Build + push the fleet images to GHCR on every push to main, then tell
+# Build + push the Centra AI fleet images to GHCR on every push to main, then tell
 # Railway to redeploy the control-plane services that got a new image.
 #
 # Images (all tagged <short-sha> + latest on main):
@@ -23,6 +23,12 @@ name: docker
 # mass-redeployed here — new provisions pick the image up via
 # ROUTER_DAEMON_IMAGE, and existing user environments are rolled by the
 # operator (staged), never by CI.
+#
+# Package compatibility after the repository transfer:
+#   The deployed images remain under ghcr.io/paxlabs-inc/matrix-core by default.
+#   Set vars.GHCR_NAMESPACE to move them deliberately. Publishing across orgs
+#   requires secrets.GHCR_TOKEN with write:packages access to that namespace;
+#   the renamed repository's GITHUB_TOKEN cannot publish into the old org.
 #
 # Required repo config for the redeploy job (skipped gracefully when absent):
 #   secret RAILWAY_API_TOKEN          project-scoped API token
@@ -93,6 +99,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ vars.GHCR_NAMESPACE || 'paxlabs-inc/matrix-core' }}
 
 jobs:
   changes:
@@ -213,6 +220,16 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
+      - name: validate package publishing credentials
+        if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || inputs.push == true)
+        env:
+          HAS_GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' }}
+        run: |
+          if [[ "$IMAGE_NAMESPACE" != "$GITHUB_REPOSITORY" && "$HAS_GHCR_TOKEN" != "true" ]]; then
+            echo "::error::Publishing to ghcr.io/$IMAGE_NAMESPACE requires the GHCR_TOKEN repository secret with write:packages access to the legacy package owner."
+            exit 1
+          fi
+
       - name: validate private coding runtime packaging
         if: matrix.image == 'matrix-daemon-railway'
         run: python3 deploy/codingruntime/verify-packaging.py
@@ -224,14 +241,14 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
+          username: ${{ vars.GHCR_USERNAME || github.actor }}
           password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}
           tags: |
             type=sha,format=short,prefix=
             type=ref,event=branch

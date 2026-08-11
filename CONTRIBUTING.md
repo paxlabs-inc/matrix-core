@@ -1,13 +1,13 @@
-# Contributing to Matrix
+# Contributing to Centra AI
 
 ## Contribution policy — please read first 
 
-Matrix is open source and you are free to **fork it and modify it as much
-as you want**. That is exactly what the license is for: build on it, ship
+Centra AI is source-available and you are free to **fork it and modify it as much
+as the Centra AI Protocol License permits**. That is exactly what the license is for: build on it, ship
 your own version, take it wherever you like.
 
 What we do **not** run is an open contribution model on `main`. The main
-branch is developed strictly by the Matrix core team, and it will continue
+branch is developed strictly by the Centra AI core team, and it will continue
 to be. This is a deliberate decision, not an oversight or a lack of
 bandwidth:
 
@@ -57,7 +57,7 @@ If you are reporting a security issue, **stop** and read
 
 ## Ground rules
 
-1. **No silent design changes.** Matrix is design-doc-driven. Locked
+1. **No silent design changes.** Centra AI is design-doc-driven. Locked
    decisions live in `research/00-decisions.md` (D1–D18) and the
    per-phase Q-locks live in `knowledge/matrix.kvx`. If your PR moves a
    locked decision, say so explicitly and propose the new lock.
@@ -79,7 +79,7 @@ If you are reporting a security issue, **stop** and read
 
 ### Required toolchain
 
-- Go **1.21** (every `go.mod` pins `go 1.21`).
+- Go **1.26.5** (the repository spans Go 1.21–1.26.5 modules).
 - GNU `make` 4.x.
 - For MCP-driven flows: `node` ≥ 20 with `npx`, `python3` ≥ 3.11, `uv`.
 - For the daemon image: `docker` ≥ 24 with `buildx`.
@@ -87,11 +87,11 @@ If you are reporting a security issue, **stop** and read
 ### First-time setup
 
 ```bash
-git clone https://github.com/paxlabs-inc/matrix.git
-cd matrix
+git clone https://github.com/Sidiora-Labs/centra-llm-agents.git
+cd centra-llm-agents
 cp .env.example .env          # fill in API keys if you want to run live LLM flows
-make build                    # builds all 4 modules
-make install                  # drops the 8 CLIs into ./bin
+make build                    # builds all 15 modules
+make install                  # drops the 12 runnable binaries into ./bin
 make lint-install             # optional: installs golangci-lint v1.61.0
 ```
 
@@ -175,7 +175,7 @@ anything touching `cortex/snapshot/`, `cortex/store/`,
 Every PR must:
 
 1. **Pass `make ci`** (`gofmt -l` empty + `go vet ./...` + `go test -race
-   -count=1 ./...` across all 4 modules).
+   -count=1 ./...` across all 15 modules).
 2. **Pass `golangci-lint`** with the repo config (`make lint`).
 3. **Not weaken existing tests.** Removing or skipping a test requires
    an explicit reason in the PR description.

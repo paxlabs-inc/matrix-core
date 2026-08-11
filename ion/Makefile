@@ -154,7 +154,7 @@ test-operator: ## Run shared, web, TUI, browser, accessibility, and budget gates
 	@cd ui && $(NPM) run test
 	@cd ui && $(NPM) run build
 	@cd ui && $(NPM) run check:budgets
-	@cd ui && $(NPM) run test:e2e --workspace=@matrixmcl/ion-web
+	@cd ui && $(NPM) run test:e2e --workspace=@centra-ai/ion-web
 	@echo "OK: Operator clients passed"
 
 .PHONY: test-operator-clean-install

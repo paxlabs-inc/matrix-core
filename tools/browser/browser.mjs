@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// browser — MCP stdio proxy bridging Matrix agents to the SHARED Fly
+// browser — MCP stdio proxy bridging Centra AI agents to the SHARED Fly
 // Playwright browser (@playwright/mcp) over its Streamable-HTTP transport.
 //
 // Why a proxy? The daemon's own MCP HTTP transport (executor/mcp/http.go)

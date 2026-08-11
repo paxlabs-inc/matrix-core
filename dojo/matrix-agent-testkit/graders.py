@@ -1,4 +1,4 @@
-# Copyright © 2026 Paxlabs Inc.
+# Copyright © 2026 Sidiora Labs.
 #
 # graders.py — checks run against a RunResult. Each check returns a CheckResult
 # (name, passed, severity, detail). "hard" failures are agent flaws; "advisory"

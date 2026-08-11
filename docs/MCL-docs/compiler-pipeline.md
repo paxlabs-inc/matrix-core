@@ -82,7 +82,7 @@ Uses the classifier prompt from `verb.mtx` with a grammar constraint that forces
 ```mtx
 # core/verb.mtx
 classifier.prompt
-  system="You are a verb classifier for the Matrix Communication Layer..."
+  system="You are a verb classifier for Centra AI's communication layer..."
   user="User goal: {prose}\n\nVerb:"
 end
 classifier.threshold=0.80

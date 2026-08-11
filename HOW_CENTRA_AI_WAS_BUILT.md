@@ -1,4 +1,4 @@
-# How Matrix is Built
+# How Centra AI Is Built
 
 ## Our 4-Person + AI Development Methodology
 
@@ -6,19 +6,19 @@
 
 ## Overview
 
-This document explains the development methodology behind the Matrix project. It is not a technical specification, a user guide, or a product pitch. It is an honest account of how the system is built -- the human team, the decision pipeline, the role of AI, and the conventions that govern the codebase.
+This document explains the development methodology behind the Centra AI project. It is not a technical specification, a user guide, or a product pitch. It is an honest account of how the system is built -- the human team, the decision pipeline, the role of AI, and the conventions that govern the codebase.
 
 If you are reading the source code and wondering why the commit messages look like timestamps, why the comments are everywhere, or why the project feels engineered at a scale that does not match its team size, this document answers those questions.
 
 We are writing this because we believe the way software is built matters as much as what it does. Transparency about process builds trust. Clarity about methodology makes the codebase comprehensible. And an honest account of how decisions are made is itself a form of engineering documentation. When someone asks, "How did this get here?" there should be an answer that is more specific than "a developer wrote it."
 
-This document is that answer. We expect readers of this document to be engineers, security reviewers, technical auditors, or stakeholders who want to understand not just what Matrix does, but how it came to be.
+This document is that answer. We expect readers of this document to be engineers, security reviewers, technical auditors, or stakeholders who want to understand not just what Centra does, but how it came to be.
 
 ---
 
 ## The Team
 
-The entire Matrix project is built by **four human developers**. AI agents write the Matrix application code, while Cortex and other root-of-trust development primitives are authored directly by the human team. Every architectural decision, security consideration, technical specification, and code-quality rule comes from this team. Each member owns a distinct phase of the design pipeline. No one is a generalist filling gaps -- each person is a specialist who completes their phase before the next begins.
+The entire Centra AI project is built by **four human developers**. AI agents write the Centra application code, while Cortex and other root-of-trust development primitives are authored directly by the human team. Every architectural decision, security consideration, technical specification, and code-quality rule comes from this team. Each member owns a distinct phase of the design pipeline. No one is a generalist filling gaps -- each person is a specialist who completes their phase before the next begins.
 
 The team is small by design. A small, tightly coordinated group produces more consistent decisions than a large, distributed organization. Every member knows what the others do, understands the full pipeline, and can trace their own work through to the final product. Communication overhead is near zero. Alignment is assumed, not managed. The cost of this approach is that each phase must wait for the previous one to complete. The benefit is that every decision is made with complete information and full context from every upstream phase.
 
@@ -155,7 +155,7 @@ We do not ask developers to do what AI does better. We do not ask AI to do what 
 
 ## Reading the Signs
 
-If you are examining the Matrix codebase or its repository history, you will notice two conventions that may seem unusual. They are not accidental. They are not oversights. They are not evidence of process failure. They are intentional outputs of the development methodology and serve specific, well-defined purposes that are critical to how the system is built and maintained.
+If you are examining the Centra codebase or its repository history, you will notice two conventions that may seem unusual. They are not accidental. They are not oversights. They are not evidence of process failure. They are intentional outputs of the development methodology and serve specific, well-defined purposes that are critical to how the system is built and maintained.
 
 ### Timestamp Commit Messages
 
@@ -200,7 +200,7 @@ This methodology produces a specific set of outcomes that would be difficult to 
 
 ### No Accepted Interpretation Drift
 
-Matrix does not accept interpretation drift into the codebase. AI agents may fail, produce invalid output, or require retries, but accepted code is merged only when it matches the human-authored spec line by line. Drift is not treated as an expected cost of development. It is treated as a failed execution.
+Centra does not accept interpretation drift into the codebase. AI agents may fail, produce invalid output, or require retries, but accepted code is merged only when it matches the human-authored spec line by line. Drift is not treated as an expected cost of development. It is treated as a failed execution.
 
 When drift does occur, it is detectable and correctable. The spec is the ground truth. The agent's output can be compared against it systematically. The datastore records provide the complete context for diagnosis. There is no ambiguity about whether a deviation was intentional, accidental, or the result of a misunderstanding.
 
@@ -230,11 +230,11 @@ In traditional teams, critical knowledge lives in the heads of individual develo
 
 ## Closing
 
-The Matrix team believes that the separation of design and execution is the future of software engineering. Humans should do what humans are best at: thinking, evaluating, deciding, and designing. Machines should do what machines are best at: executing with precision, consistency, and speed.
+The Centra AI team believes that the separation of design and execution is the future of software engineering. Humans should do what humans are best at: thinking, evaluating, deciding, and designing. Machines should do what machines are best at: executing with precision, consistency, and speed.
 
 This model does not replace engineers. It elevates them. It frees the human team from mechanical implementation work so they can focus on the problems that require judgment, creativity, and experience. It turns engineers into architects, security analysts, technical planners, and tooling designers -- roles that demand human intelligence, while delegating the translation of those decisions into code to systems that are purpose-built for that task.
 
-The codebase you are reading is the product of that philosophy. With the exception of Cortex, the agent runtime and memory substrate that powers our development system, Matrix application code is written by AI agents operating from human-authored specifications. Every AI-written line is governed by a human-authored spec, reviewed against that spec, traceable to an execution record, and backed by the human team responsible for the system.
+The codebase you are reading is the product of that philosophy. With the exception of Cortex, the agent runtime and memory substrate that powers our development system, Centra application code is written by AI agents operating from human-authored specifications. Every AI-written line is governed by a human-authored spec, reviewed against that spec, traceable to an execution record, and backed by the human team responsible for the system.
 
 We are not following a trend. We are building the way we believe software should be built. If the result is a codebase that feels different from what you are used to, that is because it is built differently. And that difference is the point.
 
@@ -246,6 +246,6 @@ If you are reading this document as part of a code review, security audit, techn
 
 If you have questions about how a specific part of the system was built, the answer is in the spec, the datastore, or the code itself. If you have questions about why a specific decision was made, the answer is in this document, in the design rationale, or in the comments. Nothing is hidden. Nothing is assumed. Everything is documented by design.
 
-This is how Matrix is built. This is how it will continue to be built. The methodology is not a one-time decision. It is the operating system of the project. It governs every line of code, every architectural choice, and every evolution of the system going forward.
+This is how Centra AI is built. This is how it will continue to be built. The methodology is not a one-time decision. It is the operating system of the project. It governs every line of code, every architectural choice, and every evolution of the system going forward.
 
 This methodology is our commitment to building software the right way, and we stand by every decision documented within these pages.

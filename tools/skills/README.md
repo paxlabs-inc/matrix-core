@@ -1,6 +1,6 @@
 # tools/skills
 
-Matrix-side utilities for the skill catalog. Chain-neutral; no Paxeer coupling.
+Centra AI-side utilities for the skill catalog. Chain-neutral; no Paxeer coupling.
 
 ## Scripts
 
@@ -8,7 +8,7 @@ Matrix-side utilities for the skill catalog. Chain-neutral; no Paxeer coupling.
 
 One-shot port of `development/skills/` → `matrix/skills/`.
 
-- Drop set: off-wedge language packs, Orderly SDK, healthcare, enterprise verticals, vendor-coupled (claude-api/devfleet, ECC, openclaw), Matrix-replaced (storage-basicmemory, opennote-vault), Tier 0 dev-meta (using-superpowers, skill-comply).
+- Drop set: off-wedge language packs, Orderly SDK, healthcare, enterprise verticals, vendor-coupled (claude-api/devfleet, ECC, openclaw), Centra-replaced (storage-basicmemory, opennote-vault), Tier 0 dev-meta (using-superpowers, skill-comply).
 - Defer set: tracked in `PORT_MANIFEST.json` but not copied. Decision pending.
 - Adapt set: copied but flagged in `INDEX.json` for MCL+cortex rewrite later.
 - Everything else: copied as-is.

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
 )
 
 type fakePreviewInspector struct{}
@@ -292,19 +292,19 @@ func TestRuntimeRepresentativeStaticFrontendAPIAndFullStackMatrix(t *testing.T) 
 		files map[string]string
 		want  string
 	}{
-		{name: "static", files: map[string]string{"index.html": "<h1>static-matrix</h1>"}, want: "static-matrix"},
+		{name: "static", files: map[string]string{"index.html": "<h1>static-centra</h1>"}, want: "static-centra"},
 		{name: "frontend", files: map[string]string{
 			"package.json": `{"scripts":{"build":"node --check server.js","test":"node --test","dev":"node server.js","start":"node server.js"}}`,
-			"server.js":    `const http=require('http');http.createServer((_q,r)=>{r.setHeader('content-type','text/html');r.end('<main>frontend-matrix</main>')}).listen(Number(process.env.PORT),'127.0.0.1')`,
-		}, want: "frontend-matrix"},
+			"server.js":    `const http=require('http');http.createServer((_q,r)=>{r.setHeader('content-type','text/html');r.end('<main>frontend-centra</main>')}).listen(Number(process.env.PORT),'127.0.0.1')`,
+		}, want: "frontend-centra"},
 		{name: "api", files: map[string]string{
 			"go.mod":  "module example.invalid/runtime-api\n\ngo 1.24\n",
-			"main.go": "package main\nimport (\"fmt\";\"net/http\";\"os\")\nfunc main(){http.HandleFunc(\"/\",func(w http.ResponseWriter,r *http.Request){fmt.Fprint(w,\"api-matrix\")}); _=http.ListenAndServe(\"127.0.0.1:\"+os.Getenv(\"PORT\"),nil)}\n",
-		}, want: "api-matrix"},
+			"main.go": "package main\nimport (\"fmt\";\"net/http\";\"os\")\nfunc main(){http.HandleFunc(\"/\",func(w http.ResponseWriter,r *http.Request){fmt.Fprint(w,\"api-centra\")}); _=http.ListenAndServe(\"127.0.0.1:\"+os.Getenv(\"PORT\"),nil)}\n",
+		}, want: "api-centra"},
 		{name: "fullstack", files: map[string]string{
 			"package.json": `{"scripts":{"dev":"node server.js"}}`,
-			"server.js":    `const http=require('http');http.createServer((q,r)=>{r.setHeader('content-type',q.url==='/api'?'application/json':'text/html');r.end(q.url==='/api'?'{"ok":true}':'<main>fullstack-matrix</main>')}).listen(Number(process.env.PORT),'127.0.0.1')`,
-		}, want: "fullstack-matrix"},
+			"server.js":    `const http=require('http');http.createServer((q,r)=>{r.setHeader('content-type',q.url==='/api'?'application/json':'text/html');r.end(q.url==='/api'?'{"ok":true}':'<main>fullstack-centra</main>')}).listen(Number(process.env.PORT),'127.0.0.1')`,
+		}, want: "fullstack-centra"},
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {

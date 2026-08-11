@@ -9,10 +9,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/paxlabs-inc/chronos/internal/schedule"
-	"github.com/paxlabs-inc/chronos/internal/store"
-	"github.com/paxlabs-inc/chronos/internal/wake"
-	"github.com/paxlabs-inc/chronos/pkg/types"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/schedule"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/store"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/wake"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/pkg/types"
 )
 
 const (

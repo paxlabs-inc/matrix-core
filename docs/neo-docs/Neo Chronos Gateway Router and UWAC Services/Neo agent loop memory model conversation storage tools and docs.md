@@ -2,7 +2,7 @@
 
 ## Overview
 
-Neo is the conversational boundary for Matrix. It takes a user message, rebuilds its system block on every turn, reads durable memory and prior turns, dispatches reversible tools directly, and routes anything that moves funds or needs a signature through `core_execute` and the MCL pipeline.
+Neo is the conversational boundary for Centra AI. It takes a user message, rebuilds its system block on every turn, reads durable memory and prior turns, dispatches reversible tools directly, and routes anything that moves funds or needs a signature through `core_execute` and the MCL pipeline.
 
 The service appears in two forms: the CLI entrypoint in `neo/cmd/neo/main.go` and the HTTP front in `neo/internal/server/server.go` and `neo/internal/server/engine.go`. Both shapes share the same agent loop, memory model, conversation store, and tool surface, so a thread can be resumed after restart without changing how the model reasons or how tool calls are executed.
 
@@ -116,7 +116,7 @@ The agent is the recursive loop that owns the live transcript, the compacted sum
 
 *`neo/internal/agent/knowledge.md`*
 
-The embedded grounding file states that Neo is the default Matrix agent, that Paxeer is a real live chain, that canonical Paxeer endpoints should be used directly, and that anything that moves value must go through `core_execute`.
+The embedded grounding file states that Neo is the default Centra AI agent, that Paxeer is a real live chain, that canonical Paxeer endpoints should be used directly, and that anything that moves value must go through `core_execute`.
 
 `systemPrompt` also changes shape when `persona` is set: the agent becomes a headless sub-agent, gets a restricted tool set, never asks the user questions, and reports its findings back to the orchestrator.
 
@@ -759,7 +759,7 @@ The server runtime is exercised indirectly by the delegate, agent, and conversat
 
 *`neo/internal/config/kvx.go`*
 
-The parser reads Matrix-style `.kvx` files, strips comments outside quoted strings, supports sectioned keys, supports `${ENV_VAR}` interpolation, and treats later duplicate keys as winning. Missing files are not fatal.
+The parser reads Centra AI-style `.kvx` files, strips comments outside quoted strings, supports sectioned keys, supports `${ENV_VAR}` interpolation, and treats later duplicate keys as winning. Missing files are not fatal.
 
 #### kvxDoc fields
 

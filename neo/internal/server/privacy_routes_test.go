@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package server
@@ -76,7 +76,7 @@ func TestMemoryExportRoute(t *testing.T) {
 	if _, err := pager.SetMemoryConsent(ctx, true, "test user"); err != nil {
 		t.Fatalf("SetMemoryConsent: %v", err)
 	}
-	if _, err := pager.RememberFact(ctx, "The user is building the Matrix Timeline."); err != nil {
+	if _, err := pager.RememberFact(ctx, "The user is building the Centra Timeline."); err != nil {
 		t.Fatalf("RememberFact: %v", err)
 	}
 

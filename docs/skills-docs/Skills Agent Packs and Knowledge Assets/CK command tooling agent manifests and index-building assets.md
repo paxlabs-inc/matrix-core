@@ -2,7 +2,7 @@
 
 ## Overview
 
-This section covers the reusable assets that shape Matrix agent behavior and project memory: the `ck` Context Keeper skill, the agent manifest packs, the continuous-learning observer scripts, and the index builder for the skills corpus. Together, these files define how Claude Code sessions load project context, how agents are packaged with tool access, how observation-driven instincts are produced, and how skill metadata is turned into searchable indexes.
+This section covers the reusable assets that shape Centra AI agent behavior and project memory: the `ck` Context Keeper skill, the agent manifest packs, the continuous-learning observer scripts, and the index builder for the skills corpus. Together, these files define how Claude Code sessions load project context, how agents are packaged with tool access, how observation-driven instincts are produced, and how skill metadata is turned into searchable indexes.
 
 The material here is intentionally operational rather than product-facing. The files document command helpers, manifest policies, runtime guards, and generation scripts that support project bootstrapping, session recall, and agent orchestration.
 
@@ -100,7 +100,7 @@ Behavioral rules from the skill file are explicit:
 
 *`skills/ck/SKILL.mtx`*
 
-This file is the MatrixScript manifest for the same skill. It is generated from `skills/ck/SKILL.md` frontmatter and keeps the prose body in the markdown file.
+This file is the CentraScript manifest for the same skill. It is generated from `skills/ck/SKILL.md` frontmatter and keeps the prose body in the markdown file.
 
 | Field | Value |
 | --- | --- |
@@ -121,7 +121,7 @@ The manifest defines two verbs:
 - If the target cannot be identified, the skill fails with a blocking unknown-target path.
 - If confidence is below `0.75`, the manifest asks for clarification before proceeding.
 
-It declares no tools. Its role is to make the skill available to the Matrix compiler rather than to end-user command execution.
+It declares no tools. Its role is to make the skill available to the Centra AI compiler rather than to end-user command execution.
 
 ### `skills/ck/commands/init.mjs`
 
@@ -553,7 +553,7 @@ The entrypoint is `main()`, and the script terminates with `sys.exit(main())`.
 | File | Responsibility |
 | --- | --- |
 | `skills/ck/SKILL.md` | Defines the Context Keeper command surface, storage layout, and session rules. |
-| `skills/ck/SKILL.mtx` | Supplies the MatrixScript manifest for `ck` with monitor and build verbs. |
+| `skills/ck/SKILL.mtx` | Supplies the CentraScript manifest for `ck` with monitor and build verbs. |
 | `skills/ck/commands/init.mjs` | Detects project metadata and prints confirmation JSON. |
 | `skills/ck/commands/info.mjs` | Prints a compact project snapshot. |
 | `skills/ck/commands/forget.mjs` | Deletes a project context and registry entry. |

@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -61,7 +61,7 @@ type compileOpts struct {
 	// this to force every compile to hit the LLM.
 	DisableCache bool
 
-	// --- sess#32 ambient-architect MatrixGateway routing (plan §5.16) ---
+	// --- sess#32 ambient-architect Centra AI gateway routing (plan §5.16) ---
 	//
 	// When GatewayURL is non-empty, the compiler LLM call is proxied
 	// through the gateway and metered against the actor's daily PAX
@@ -89,7 +89,7 @@ type compileOpts struct {
 	ConfidenceThreshold float64
 
 	// ForgeMode (sess#36 / Forge Phase 3) — when true, the compiler
-	// resolves its slot from llm.ForgeRegistry (opencode.ai/zen + Matrix
+	// resolves its slot from llm.ForgeRegistry (opencode.ai/zen + Centra AI
 	// identity preamble injection) instead of the legacy DefaultRegistry
 	// (Fireworks). Set by the daemon when -forge-mode is on. Empty
 	// preserves legacy posture.
@@ -181,7 +181,7 @@ func compile(ctx context.Context, c *cortex.Cortex, opts compileOpts, t *transcr
 	// Build compiler LLM (REQUIRED — no silent dry-run).
 	// sess#36: ForgeMode swaps to llm.ForgeRegistry (opencode.ai/zen)
 	// so self-maintenance compiles route through Claude Opus 4.7 + GPT
-	// 5.5 with the Matrix identity preamble injected. Legacy posture
+	// 5.5 with the Centra AI identity preamble injected. Legacy posture
 	// preserved when ForgeMode is false.
 	var cfg llm.Config
 	if opts.ForgeMode {
@@ -194,7 +194,7 @@ func compile(ctx context.Context, c *cortex.Cortex, opts compileOpts, t *transcr
 	}
 	if opts.BaseURL != "" {
 		// Endpoint suffix is the OpenAI-compat chat-completions path.
-		// MatrixGateway / BYO Fireworks / BYO Together / vLLM-localhost
+		// Centra AI gateway / BYO Fireworks / BYO Together / vLLM-localhost
 		// all expose /v1/chat/completions, so we append it
 		// unconditionally and let the operator point -llm-base-url
 		// (or the Tauri-shell wizard) at the host portion only.
@@ -202,7 +202,7 @@ func compile(ctx context.Context, c *cortex.Cortex, opts compileOpts, t *transcr
 	}
 	cfg.Seed = opts.Seed
 	if opts.GatewayURL != "" {
-		// Sess#32 ambient-architect MatrixGateway routing (plan §5.16).
+		// Sess#32 ambient-architect Centra AI gateway routing (plan §5.16).
 		// Populated only when the daemon was booted with -gateway-url
 		// (or env MATRIX_GATEWAY_URL). The compiler slot's free-tier
 		// whitelist is enforced on the gateway side; this end stamps
@@ -768,4 +768,4 @@ func escalateReason(verb string) string {
 	return "low_confidence"
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

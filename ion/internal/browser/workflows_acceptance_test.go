@@ -12,10 +12,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/vault"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	"github.com/paxlabs-inc/ion-agent/internal/security/vault"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
 )
 
 func TestSupervisedWorkflowCredentialHandoffRestartAndIsolation(t *testing.T) {

@@ -36,7 +36,7 @@ matrix://skill/executing-plans@1.0.0
 §PROCEDURE
 on verb=build
   prompt
-    system="You are the Matrix plan compiler. Extract the Frame for a 'build' intent as JSON matching the Intent IR schema. Output only valid JSON."
+    system="You are the Centra AI plan compiler. Extract the Frame for a 'build' intent as JSON matching the Intent IR schema. Output only valid JSON."
     user="User goal: {prose}\n\nCortex context:\n{cortex.bundle}\n\nCurrently resolved slots:\n{slots}\n\nFill all Frame fields. Use matrix:// URIs for any resolved references."
   end
   resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=5)
@@ -48,7 +48,7 @@ end
 
 on verb=modify
   prompt
-    system="You are the Matrix plan compiler. Extract the Frame for a 'modify' intent as JSON. Output only valid JSON."
+    system="You are the Centra AI plan compiler. Extract the Frame for a 'modify' intent as JSON. Output only valid JSON."
     user="User wants to modify: {prose}\n\nCortex context:\n{cortex.bundle}\n\nCurrently resolved slots:\n{slots}\n\nFill all Frame fields."
   end
   resolve slot.target <- cortex.resolve(slot.target.prose)
@@ -60,7 +60,7 @@ end
 
 on verb=delegate
   prompt
-    system="You are the Matrix plan compiler. Identify the agent to delegate to and the sub-goal."
+    system="You are the Centra AI plan compiler. Identify the agent to delegate to and the sub-goal."
     user="User wants to delegate: {prose}\n\nCortex context:\n{cortex.bundle}\n\nFill all Frame fields including the target agent reference."
   end
 end

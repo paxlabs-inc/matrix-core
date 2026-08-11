@@ -8,16 +8,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/agent"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/liveness/decision"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/liveness/relationship"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/presence/automatrix"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/safety"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
+	workcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/work"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/agent"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	"github.com/paxlabs-inc/ion-agent/internal/liveness/decision"
-	"github.com/paxlabs-inc/ion-agent/internal/liveness/relationship"
-	"github.com/paxlabs-inc/ion-agent/internal/presence/automatrix"
-	"github.com/paxlabs-inc/ion-agent/internal/security/safety"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
-	workcontrol "github.com/paxlabs-inc/ion-agent/internal/work"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
 )
 
 func TestProductionLivenessPolicyAestheticRepairRestartAndIsolation(t *testing.T) {

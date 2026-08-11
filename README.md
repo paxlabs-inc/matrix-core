@@ -1,340 +1,246 @@
-<!--
-parent:
-  order: false
--->
 <p align="center">
-<img src="MATRIX.gif" alt="Matrix" >
+  <img src="https://pub-cc719bc237f94810bec78e93e056bec4.r2.dev/centra.ai_wordmark_dark.png" alt="Centra AI" width="520" />
 </p>
 
 <p align="center">
-  <a href="https://labs.paxeer.app"><img src="https://img.shields.io/badge/Project-Matrix-0A0A0A?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxwYXRoIGQ9Ik0xMiAxNnYtNCIvPjxwYXRoIGQ9Ik0xMiA4aC4wMSIvPjwvc3ZnPg==&logoColor=white" alt="Project: Matrix" /></a>
-  <a href="https://labs.paxeer.app"><img src="https://img.shields.io/badge/Built%20by-PaxLabs-0A0A0A?style=flat-square&logoColor=white" alt="Built by PaxLabs" /></a>
-  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Matrix--Protocol-0A0A0A?style=flat-square" alt="License: Matrix-Protocol" /></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-1.0.0-0A0A0A?style=flat-square" alt="Version: 1.0.0" /></a>
-  <a href="#"><img src="https://img.shields.io/badge/Status-Active-0A0A0A?style=flat-square" alt="Status: Active" /></a>
-  <a href="https://paxeer.app"><img src="https://img.shields.io/badge/Layer-Paxeer%20Network-0A0A0A?style=flat-square" alt="Paxeer Network" /></a>
+  <strong>A stateful AI operating system for serious, long-horizon work.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/paxlabs-inc/matrix-core/stargazers"><img src="https://img.shields.io/github/stars/paxlabs-inc/matrix-core?style=flat-square&color=0A0A0A" alt="GitHub Stars" /></a>
-  <a href="https://github.com/paxlabs-inc/matrix-core/network/members"><img src="https://img.shields.io/github/forks/paxlabs-inc/matrix-core?style=flat-square&color=0A0A0A" alt="GitHub Forks" /></a>
-  <a href="https://docs.matrixmcl.com"><img src="https://img.shields.io/badge/Docs-docs.matrixmcl.com-0A0A0A?style=flat-square" alt="Documentation" /></a>
+  Centra AI gives agents memory, tools, isolated computers, coordinated work,
+  and a durable record of what they actually did.
 </p>
 
 <p align="center">
-  <a href="https://github.com/paxlabs-inc/matrix-core/search?l=go"><img src="https://img.shields.io/badge/Go-64.4%25-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go" /></a>
-  <a href="https://github.com/paxlabs-inc/matrix-core/search?l=typescript"><img src="https://img.shields.io/badge/TypeScript-13.5%25-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
-  <a href="https://github.com/paxlabs-inc/matrix-core/search?l=html"><img src="https://img.shields.io/badge/HTML-11.6%25-E34F26?style=flat-square&logo=html5&logoColor=white" alt="HTML" /></a>
-  <a href="https://github.com/paxlabs-inc/matrix-core/search?l=c%2B%2B"><img src="https://img.shields.io/badge/C%2B%2B-4.8%25-00599C?style=flat-square&logo=cplusplus&logoColor=white" alt="C++" /></a>
-  <a href="https://github.com/paxlabs-inc/matrix-core/search?l=javascript"><img src="https://img.shields.io/badge/JavaScript-2.9%25-F7DF1E?style=flat-square&logo=javascript&logoColor=black" alt="JavaScript" /></a>
-  <a href="https://github.com/paxlabs-inc/matrix-core/search?l=python"><img src="https://img.shields.io/badge/Python-1.5%25-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" /></a>
+  <a href="https://github.com/Sidiora-Labs/centra-llm-agents"><img src="https://img.shields.io/badge/Project-Centra%20AI-0A0A0A?style=flat-square" alt="Centra AI" /></a>
+  <a href="https://github.com/Sidiora-Labs"><img src="https://img.shields.io/badge/Built%20by-Sidiora%20Labs-0A0A0A?style=flat-square" alt="Built by Sidiora Labs" /></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Centra%20AI%20Protocol-0A0A0A?style=flat-square" alt="Centra AI Protocol License" /></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-1.0.0-0A0A0A?style=flat-square" alt="Version 1.0.0" /></a>
 </p>
 
----
+## What is Centra AI?
 
-<h2 align="center">An agent framework and cognition layer for LLMs.</h2>
+Centra AI is a private, persistent agent platform built by Sidiora Labs. It is designed for work that cannot be completed reliably in a single prompt: building software, investigating complex questions, operating browsers and files, coordinating parallel specialists, producing artifacts, and continuing across sessions without losing the state of the job.
 
-<p align="center">
-  Matrix takes an LLM past chat and into execution across the digital realm <br/>
-  and lets humans and machines coordinate on the work that has to be exact.
-</p>
+The system is centered on two agents:
 
----
+- **Neo** is the primary agent. It researches, reasons, operates tools, creates artifacts, manages ongoing work, and stays with a task beyond the life of one model response.
+- **Ion** is the technical agent and coding environment. It works directly with real projects, shells, files, tests, previews, and development toolchains inside a bounded workspace.
 
-## What is Matrix?
+They are supported by **Workforce**, Centra's coordinated execution layer for decomposing larger objectives into governed parallel work, and **Neo Computer**, the unified place for sources, previews, artifacts, changes, and workspace evidence.
 
-Matrix is an agent framework, built by PaxLabs, that takes an LLM past chat and into real execution: files, code, web, on-chain operations, payments, and smart contracts, all driven by natural language.
+Centra is not organized around a chat transcript. The conversation is the control surface; the product is the work system behind it.
 
-Two things sit at the **core of the system**: **Neo**, the default agent you talk to, and **Neocortex**, the deterministic evidence engine that preserves what Neo saw, did, and still owes the user. The existing Go Cortex remains available as a compatibility and rollback substrate until the explicit cutover gate. Everything else — the MCL rigor pipeline, the executor, settlement, scheduling, and the tool ecosystem — hangs off that core.
+## What makes it different
 
-Most agent stacks break on consequential work because they carry natural language all the way down, and prose is a leaky channel: fine for chat, not fine when an agent is moving funds, performing an irreversible write, or holding something confidential. Matrix keeps everyday reversible work in the Neo loop and escalates — the moment work becomes monetary, irreversible, or compliance-sensitive — to the MCL pipeline, where intents are compiled, typed, signed, and replayed, so ambiguity never reaches the parts that must be exact.
+### Persistent cognition
 
-## Neo — where everything starts
+Centra maintains durable identity, memory, active goals, evidence, and unfinished work. A process restart or a new context window does not have to turn the agent into a stranger. Cortex and Neocortex preserve the state required to reconstruct what happened, what is still open, and why the system believes what it believes.
 
-Neo is the entry point. You talk to Neo; Neo does the work.
+### Real execution environments
 
-- **Recursive tool-calling loop.** The model emits text and tool-call intents; the harness dispatches tools (shell, code, web search, files, browser, chain reads, media) and feeds results back. Per-turn step budgets, stall detection, and honest partials on exhaustion — never fabricated success.
-- **Continuous evidence via Neocortex.** A per-user `cortexd` process records typed conversation, intent, work, tool, and memory events in one append-only log. Deterministic projections reconstruct the active thread, open loops, work ledger, beliefs, exact entity/vector/lexical recall, and temporal descent after a crash or respawn.
-- **Agent swarms.** Neo can spawn concurrent sub-agents for parallel work, each with an isolated context window, a restricted tool surface, and a bounded timeout. No recursion, no fork-bombs.
-- **Automatrix.** Autonomous execution: Neo can schedule proactive tasks, wake on timers, and run background work on a restricted surface with no value-moving tools.
-- **Tool transparency.** Every tool call is surfaced as a ToolEvent with its name, arguments, and result — users see the real evidence behind an answer, not just a synthesized paragraph.
+Agents can work with files, terminals, browsers, codebases, databases, local services, media tools, and external systems. Coding happens in an actual project workspace with package managers, test runners, preview servers, and downloadable outputs—not in a simulated code block.
 
-## Neocortex — the evidence core
+### Evidence, not performance
 
-Neocortex was built because Neo's reliability problem was not simply model intelligence: conversation, intent, tool evidence, and unfinished work could be fragmented or distorted across context-window assembly, overflow, crash, and respawn boundaries. Neocortex makes those boundaries deterministic. Its C++23 single-writer engine treats one typed event log per actor as the only ground truth; LMDB projections rebuild the conversation, intent frame, work ledger, beliefs, indexes, and checkpoints from that log. A BLAKE3 MMR provides tamper evidence, XChaCha20-Poly1305 seals records below the hash boundary, and the activation composer guarantees that resident identity, current intent, and the work-ledger tail are never trimmed.
+Tool activity, source material, citations, artifacts, checkpoints, and verification results are part of the product surface. Centra is built to distinguish a convincing answer from completed work and to preserve the evidence needed to audit that difference.
 
-Neo connects through the Go `cortexclient` seam over a capability-scoped Unix socket. `cortexd` has no model and no network client. It is supervised independently, and acknowledged writes, checkpoints, citations, and recovery survive process restart. The Go Cortex remains intact as the default compatibility path until the owner-approved production cutover; select Neocortex explicitly with `NEO_MEMORY_SUBSTRATE=neocortex`.
+### Long-horizon work
 
-## Two rails, one substrate
+Tasks can be decomposed, queued, resumed, corrected, and continued. Agents can schedule follow-up work, recover after interruption, and coordinate bounded specialists without flattening the entire job into one oversized prompt.
 
-Matrix runs two execution rails over the shared evidence and tool substrate:
+### Human control at consequential boundaries
 
-- **Neo (conversational).** The default agent. A recursive tool-calling loop with persistent memory, permissive on reversible work — shell, code, web search, file operations, browser, media — that delegates high-stakes work to the MCL rail automatically. The conversation transcript *is* the state; the harness is the only effector.
-- **MCL (rigorous).** Compiles natural language into a typed Intent IR, synthesizes a plan, and walks it deterministically. Every step is signed, journaled, and replayable. Used for on-chain transactions, irreversible operations, and monetary work.
+Routine reversible work can proceed quickly. Sensitive writes, external side effects, financial actions, and other consequential operations pass through explicit authority and approval boundaries. The system records the decision path instead of hiding it behind a generic confirmation dialog.
 
-Escalation is a tool call: when a task crosses into the consequential, Neo invokes `core_execute`, which hands it to the co-located MCL daemon and returns a signed, journaled result — then control returns to the conversation. And the loop never fabricates completion: on a stalled or budget-exhausted turn it surfaces an honest partial, and a supervisor respawns a fresh agent over the durable transcript to keep going rather than reporting a fake "done".
+### Per-user isolation
 
-## How It Fits Together
+The production architecture gives each user a dedicated agent environment and durable state boundary. Central services authenticate, route, meter, and wake those environments without turning user workspaces into a shared execution pool.
 
-```
-                         +-------------------+
-                         |       User        |
-                         +---------+---------+
-                                   |
-                                   v
-                     +-------------+-------------+
-                     |            Neo            |
-                     |   recursive tool loop     |
-                     |   swarms · Automatrix      |
-                     +----+---------+--------+----+
-                          |         |        |
-                    reversible    memory   escalation
-                       work         |        |
-                          v         v        v
-                     +--------+ +--------+ +-----------+
-                     | Tools  | |Neocortex| |    MCL    |
-                     | shell  | | memory | | typed IR  |
-                     | code   | | graph  | | signed    |
-                     | web/fs | | (the   | | replayed  |
-                     | chain  | |  core) | |           |
-                     +--------+ +--------+ +-----------+
+## Product system
+
+```text
+                                User
+                                  |
+                     Centra client and Neo Computer
+                                  |
+                    +-------------+-------------+
+                    |                           |
+                   Neo                         Ion
+          research, operations,          software projects,
+          artifacts, automation          shell, tests, preview
+                    |                           |
+                    +-------------+-------------+
+                                  |
+                   cognition, evidence, work ledger
+                     Cortex / Neocortex / Vault
+                                  |
+              +-------------------+-------------------+
+              |                   |                   |
+          Workforce          native tools         external systems
+       parallel governed   browser, files,       APIs, services,
+             work          terminal, media       optional finance
 ```
 
-Neo runs the conversation and reversible tools, records its active thread and evidence through the selected memory seam, and escalates to MCL when work becomes consequential. Neocortex is the new deterministic substrate; the Go Cortex remains the rollback-compatible path pending the explicit production cutover.
+## Core capabilities
 
-## The Modules
+| Area | What Centra provides |
+| --- | --- |
+| Software engineering | Repository-aware coding, shell execution, package installation, tests, services, diffs, previews, checkpoints, and project delivery. |
+| Research | Multi-source investigation, exact citations, source excerpts, synthesis, and durable research artifacts. |
+| Computer use | Browser and desktop operation with visible evidence, bounded authority, and recoverable state. |
+| Knowledge and memory | Persistent identity, preferences, facts, goals, conversation continuity, temporal recall, and evidence-linked beliefs. |
+| Coordinated work | Task decomposition, specialist dispatch, bounded parallelism, status receipts, supervision, and resumable work. |
+| Artifacts and media | Documents, code, data, images, previews, versions, and workspace-native outputs surfaced through Neo Computer. |
+| Automation | Scheduled work, wake-on-demand execution, proactive briefs, and durable queues with explicit user control. |
+| Safety and authority | Per-user isolation, scoped tools, encrypted state, approval gates, audit trails, and fail-closed production controls. |
 
-The root Makefile drives its sibling Go modules — each independently `go build` / `go test` able with its own `go.mod`. At the center are **neo** (the agent) and **cortex** (its memory); **MCL** is the rigor pipeline and the **executor** realises the loop that binds them.
+## Architecture
 
+Centra is a monorepo of independently buildable services and clients. The important boundary is simple: agents may have broad authority inside their dedicated user environments, while daemon source, platform identity, host control, and credentials remain outside that authority.
 
-```
-📁 matrix
-├── 📁 agents        agent manifests (neo.json, default.json)
-├── 📁 apps          client   the web app
-├── 📁 bridge
-│   └── _..._
-├── 📁 cassandra
-│   └── _..._
-├── 📁 chronos
-│   └── _..._
-├── 📁 codegraph
-│   └── _..._
-├── 📁 construct
-│   └── _..._
-├── 📁 cortex
-│   └── _..._
-├── 📁 deploy        railway (per-user daemon), router, gateway, chronos
-├── 📁 dojo
-│   └── _..._
-├── 📁 executor
-│   └── _..._
-├── 📁 gateway
-│   └── _..._
-├── 📁 MCL
-│   └── _..._
-├── 📁 neo
-│   └── _..._
-├── 📁 neocortex    C++23 deterministic evidence engine and cortexd
-├── 📁 cortexclient Go client, migration, and resurrection-loop seam
-├── 📁 router
-│   └── _..._
-├── 📁 sandboxd
-│   └── _..._
-├── 📁 skills        SKILL.mtx + SKILL.md capability manifests
-├── 📁 tools         MCP server bridges
-└── 📁 vault
-    └── _..._
-```
+| Component | Responsibility |
+| --- | --- |
+| `neo/` | Primary agent runtime, streaming conversation loop, tools, memory integration, automation, swarms, and delivery. |
+| `ion/` | Technical agent runtime, project intelligence, coding workspace, computer control, security policy, and operator interfaces. |
+| `workforce/` | Governed multi-agent work decomposition, supervision, mission state, and coordinated execution. |
+| `client/` | Next.js product client: chat, coding, Neo Computer, work surfaces, settings, and live state. |
+| `neocortex/` | Deterministic evidence and memory engine with replay-built projections and exact recovery semantics. |
+| `cortex/` | Durable Go memory substrate and compatibility path. |
+| `cortexclient/` | Capability-scoped client and migration seam for Neocortex. |
+| `vault/` | Envelope encryption and per-user data protection. |
+| `executor/` | Durable action lifecycle, tool dispatch, checkpoints, and structured high-consequence execution. |
+| `MCL/` | Internal structured-action protocol used where free-form execution is not sufficient. |
+| `router/` | Authentication, per-user routing, provisioning, wake-up, and reverse proxying. |
+| `gateway/` | Model access, metering, policy, and provider routing. |
+| `chronos/` | Durable schedules, wake events, recurring work, and proactive delivery. |
+| `construct/` | Typed agent-rendered product surfaces and interaction back-channels. |
+| `codegraph/` | Structural code intelligence and agent self-model data. |
+| `sandboxd/` | Bounded workspace and preview substrate. |
+| `skills/` | Reusable capability definitions and execution guidance. |
+| `tools/` | Native bridges for browser, files, shell, search, media, mail, finance, and other systems. |
 
-| Module | Role |
-|--------|------|
-| **neo** | **The core agent** — the entry point you talk to. Recursive tool-calling loop, paged Cortex memory, conversational recall, swarms, Automatrix, writeback consolidation, and a full-duplex voice mode (MiMo-native hearing + streaming synthesis over LiveKit). Escalates to MCL for consequential operations. |
-| **neocortex** | **The deterministic evidence core.** C++23 `cortexd`, one typed append-only log per actor, BLAKE3 MMR checkpoints, sealed records, replay-built LMDB projections, exact deterministic-first recall, intent/work continuity, and a capability-scoped local protocol. |
-| **cortexclient** | Go client for `cortexd`: protocol framing, activation/recording/evidence/checkpoint interfaces, bounded reconnect semantics, and legacy Cortex export/import tooling. |
-| **cortex** | Compatibility and rollback memory substrate on Pebble. It remains operational until the separately approved Neocortex cutover and supplies the legacy export source. |
-| **MCL** | The Matrix Compiler cohort. Three rigorous closed-verb agents that plan and act on high-risk, sensitive tasks with machine exactness. |
-| **executor** | The Loop Manager. Per-agent loop engine, lifecycle state machine, MCP dispatch, per-user daemon, Liaison narrator, end-to-end test harness. |
-| **bridge** | MCL-to-cortex adapter. Separate Go module for clean interface boundaries. |
-| **gateway** | Metered LLM proxy with PAX credit ledger, free-tier whitelist, and rate card enforcement. |
-| **router** | The only public listener. Supabase JWT auth, per-user provisioning and wake on Railway, reverse proxy, machine env injection. |
-| **vault** | Envelope encryption for all user data at rest: platform KEK → per-user key → per-object DEKs, AES-256-GCM, fail-closed. |
-| **cassandra** | Verdict adjudicator. Runs as a silent-voice controller in-process in Neo, and as the executor's completeness critic. |
-| **construct** | Typed screen surfaces the agent renders onto the client, with an Ask back-channel. |
-| **codegraph** | Agent-native code graph — the structural half of the agent's self-model. |
-| **chronos** | Centralised agent scheduler and wake-up system. |
-| **sandboxd** | Railway sandbox and branded preview plane; the substrate the dojo disposable desktop boots on. |
-| **dojo** | Disposable desktop: a pinned bytebot-desktop image the agent drives by sight, plus the AGON benchmark corpus. |
-| **skills** | SKILL.mtx capability manifests and SKILL.md prose capability descriptions. |
-| **tools** | MCP server bridges: Paxeer RPC and wallet operations, browser, web-search, machine-mail, exec, media, chronos, desktop, finance, kindle, layerx, deus, sandbox; plus the per-user LiveKit voice worker. |
-| **agents** | DID-bound agent manifests (default.json, neo.json) plus MCP server templates. |
-| **apps/client** | The Next.js web app: chat over SSE, workspace trace, workbench, settings, wallet. |
-| **deploy** | Per-user daemon image (`railway/`) plus the router, gateway and chronos control-plane images. |
+The root Makefile currently drives fifteen Go modules. Compatibility-sensitive machine identifiers such as existing service names, environment variables, protocol headers, and image paths are documented in [BRANDING.md](BRANDING.md).
 
-LayerX (settlement and custody) and Deus (agent-service registry) are live
-services that ship on their own infrastructure; their source lives outside this
-repo. Neo reaches both through the `layerx` and `deus` MCP bridges in `tools/`.
+## Reliability model
 
-## Key Design Decisions
+Centra treats reliability as a systems problem rather than a prompting trick.
 
-- **Closed-verb coordination (D7)**: The MCL agents coordinate over 10 closed verbs — `find`, `acquire`, `build`, `modify`, `deliver`, `analyze`, `negotiate`, `schedule`, `monitor`, `delegate` — so intent between agents is exact, never inferred at runtime from prose.
+- **State is durable.** Conversations, work, memory, and checkpoints survive process boundaries.
+- **Claims have provenance.** Sources, tool results, and artifacts remain connected to the answer that used them.
+- **Incomplete work stays incomplete.** Exhaustion, cancellation, ambiguity, and failed verification are represented honestly.
+- **Recovery is designed in.** Supervisors can reconstruct active work from durable state instead of guessing from the last visible message.
+- **Authority is explicit.** Tools and side effects are scoped to the user, environment, operation, and approval state.
+- **Derived state is rebuildable.** Evidence logs and deterministic projections make recovery and audit possible without trusting an opaque in-memory snapshot.
 
-- **8 closed object kinds**: `service`, `model`, `agent`, `knowledge`, `intent`, `asset`, `plan`, `capability`. Every operand is one of these. No unstructured blobs cross the line into consequential execution.
+## Deployment model
 
-- **Replay invariant (section 13.4)**: Derived state can always be rebuilt byte-identically from the journal. Enforced on every pull request via `make ci`. Nothing an agent did is unaccounted for, and nothing it didn't do is hidden.
+Production uses one dedicated agent service per user, backed by durable storage and reached through authenticated central routing.
 
-- **Immutable memory**: Cortex is append-only and content-addressed, so an agent's continuity cannot be silently rewritten — durable for the agent, trustworthy for the user.
+- The user environment contains the tools needed for real work, including language toolchains, browser automation, local services, and project workspaces.
+- The router authenticates requests, resolves the user's service, wakes it when required, and proxies traffic over the private network.
+- The gateway centralizes model-provider access and metering so provider credentials do not need to live in user daemons.
+- Vault-backed encryption protects durable user state, while sandbox and capability policies bound what agent-controlled processes can see and change.
+- Services can sleep while idle and recover their work on the next request.
 
-- **Signed receipts**: Every consequential run terminates in an EIP-712 receipt — inputs, outputs, cost, hash — that anyone can verify after the fact.
+## Quick start
 
-## Deployment shape
+### Requirements
 
-In production Matrix runs **one agent per user**, each in its own isolated machine.
-
-- **One image, supervised processes.** The per-user container (`deploy/railway`) boots the MCL daemon and `neo serve`; when Neocortex is selected it also starts and supervises `cortexd` before Neo. Neo owns `POST /chat` and the SSE event stream; every other route is reverse-proxied to the daemon. A required-process exit tears down the group so the platform can restart it cleanly.
-- **Neo owns coding.** The former private AgentCore Build worker is packaged only as dormant compatibility utility and is disabled by default. It is not wired into Neo's model-facing tool inventory; Neo uses its native filesystem, bounded shell, durable service, read-only Git, task-list, and coding-checkpoint paths for project work.
-- **A real dev environment, baked in.** The image ships the toolchain Neo actually uses through its exec tool: git, Node 22 + pnpm, Go, Python 3.12 + uv, Rust, and Foundry; local PostgreSQL / Redis / SQLite as native binaries; the quality toolchain Neo verifies with (golangci-lint, ruff, eslint, prettier, tsc, vitest, clippy); and a per-user headless Chromium (Playwright) for browsing and screenshot filmstrips.
-- **The router is the front door.** `matrix/router` authenticates each request (JWT / Supabase bearer), looks up the caller's machine, wakes it if asleep, and reverse-proxies over the private network. It also mints LiveKit join tokens for voice sessions.
-- **Cost-neutral while idle.** On wake-on-request platforms the machine sleeps when network-quiet; the periodic snapshot ticker is disabled so nothing keeps it awake, and durable state (the Cortex volume) is snapshotted to object storage on boot and shutdown. An agent wakes on the next request with its full memory intact — it never starts empty.
-
-## Quickstart
-
-### Prerequisites
-
-- Go 1.25+ (the `neo` module pins 1.25; the rest build on 1.21+)
-- GNU Make 4.x
-- Node.js 20+
+- Go 1.26.5
+- Node.js 22+
+- pnpm 10.33+
 - Python 3.11+
-- Docker with Buildx
+- GNU Make 4.x
+- Docker with Buildx for container builds
 
-### Build
+### Clone and build the backend
 
 ```bash
-# Clone the repository
-git clone https://github.com/paxlabs-inc/matrix-core.git
-cd matrix-core
+git clone https://github.com/Sidiora-Labs/centra-llm-agents.git
+cd centra-llm-agents
 
-# Build all Go modules
 make build
-
-# Install runnable CLIs into ./bin
 make install
+```
 
-# Run tests (go test -count=1 -race ./... per module)
-make test
+`make build` builds the fifteen Go modules listed by the root Makefile. `make install` writes the runnable binaries to `./bin`.
 
-# Full CI check (gofmt + vet + tests; mirrors GitHub Actions)
+### Run the client
+
+```bash
+cd client
+corepack enable
+pnpm install
+pnpm dev
+```
+
+The client starts on `http://localhost:3000` by default. Runtime services require the environment values documented by their module and deployment configuration.
+
+### Run local verification
+
+```bash
 make ci
+
+cd client
+pnpm build
 ```
 
-### Configure
+## Repository layout
 
-```bash
-# Copy the example environment file
-cp .env.example .env
-
-# LLM access — either a direct provider key or the metered gateway:
-#   MATRIX_GATEWAY_URL + MATRIX_GATEWAY_TOKEN   (metered, PAX credit ledger)
-#   or a provider key (e.g. FIREWORKS_API_KEY)  (direct)
-#
-# Required for authenticated daemon mode:
-#   MATRIX_DAEMON_TOKEN
+```text
+centra-llm-agents/
+|-- client/          product client and Neo Computer
+|-- neo/             primary agent
+|-- ion/             technical agent and coding environment
+|-- workforce/       coordinated work system
+|-- cortex/          durable memory substrate
+|-- neocortex/       deterministic evidence engine
+|-- cortexclient/    Neocortex protocol client
+|-- executor/        durable action lifecycle
+|-- router/          authentication and user routing
+|-- gateway/         model gateway and metering
+|-- chronos/         scheduling and wake system
+|-- vault/           encryption and key boundaries
+|-- construct/       agent-rendered interfaces
+|-- codegraph/       structural code intelligence
+|-- sandboxd/        bounded workspaces and previews
+|-- skills/          reusable agent capabilities
+|-- tools/           native tool bridges
+|-- deploy/          service and container packaging
+|-- docs/            architecture and operator documentation
+|-- spec/            source-of-truth feature specifications
 ```
-
-### Talk to Neo (CLI)
-
-```bash
-# One-shot turn (Neo's recursive tool-calling loop with cortex memory)
-./bin/neo -prompt "Summarise the README and write it to /tmp/summary.md" \
-  -manifest    agents/neo.json \
-  -cortex-root ./runs/dev-cortex
-
-# …or an interactive REPL: ./bin/neo
-```
-
-### Run the full stack (Neo front + MCL daemon)
-
-```bash
-# The MCL plumbing daemon (core_execute, memory/profile stores) on :8081
-./bin/mcl-execute daemon -addr :8081 \
-  -cortex-root ./runs/dev-cortex \
-  -manifest    agents/default.json \
-  -skills-root ./skills
-
-# Neo as the conversational front on :8080, proxying the rest to the daemon
-./bin/neo serve -addr :8080 -backend http://127.0.0.1:8081 \
-  -manifest agents/neo.json -cortex-root ./runs/dev-cortex -actor neo
-```
-
-## API Reference
-
-Neo owns `/chat` and `/events`; every other route is served by the co-located
-MCL daemon and reachable through the same front.
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| `POST` | `/chat` | Send a user message — the reply streams back over the SSE event stream (the only way to talk to Neo) |
-| `GET` | `/events` | Server-Sent Events stream: live tokens, tool events, and transcript tailing |
-| `GET` | `/healthz` | Liveness probe + SSE broker statistics |
-| `POST` | `/messages` | Submit a consequential message directly to the MCL cohort |
-| `GET` | `/intents/{id}` | Read intent envelope chain by intent ID |
-| `GET` | `/me` | Per-user settings and identity |
-| `POST` | `/shutdown` | Graceful drain and shutdown |
 
 ## Documentation
 
 | Resource | Description |
-|----------|-------------|
-| [Architecture Guide](ARCHITECTURE.md) | System map, module boundaries, key invariants, and design rationale |
-| [Contributing Guide](CONTRIBUTING.md) | Development setup, test discipline, commit style, and PR process |
-| [Security Policy](SECURITY.md) | Vulnerability disclosure and responsible reporting |
-| [Changelog](CHANGELOG.md) | Keep-a-Changelog format release notes |
-| [MCL Documentation](docs/MCL-docs/index.md) | MCL language reference, closed-verb grammar, and agent internals |
-| [Daemon Image](deploy/railway/Dockerfile) | The per-user daemon container: baked binaries, tool bridges, and dev toolchain |
-| [Full Documentation](https://docs.matrixmcl.com) | Complete documentation site at docs.matrixmcl.com |
-
-## Contributing
-
-Matrix Core is open source and you are free to **fork and modify it**. The `main` branch, however, is developed strictly by the core team: unsolicited pull requests are generally not merged, and outside changes are accepted only after we have worked directly with the contributor.
-
-Before opening anything, read the contribution policy at the top of the [Contributing Guide](CONTRIBUTING.md). Issues, bug reports, and security disclosures are always welcome.
-
-Contributors:
-- dev-paxeer
-- Andrew
-- paxlabs-inc
-- cursoragent
-- Sidiora-Technologies
+| --- | --- |
+| [Architecture](ARCHITECTURE.md) | System boundaries, runtime topology, and design invariants. |
+| [Branding contract](BRANDING.md) | Canonical names and compatibility identifiers retained during the rebrand. |
+| [Contributing](CONTRIBUTING.md) | Development setup, quality gates, and contribution policy. |
+| [Security](SECURITY.md) | Vulnerability reporting and supported versions. |
+| [How Centra AI is built](HOW_CENTRA_AI_WAS_BUILT.md) | The team's specification-led development methodology. |
+| [Changelog](CHANGELOG.md) | Release history. |
+| [Full documentation](docs/) | Module, runtime, deployment, and operator documentation. |
 
 ## License
 
-Matrix Core is source-available under the [Matrix-Protocol License](LICENSE.md).
+Centra AI is source-available under the [Centra AI Protocol License](LICENSE.md).
 
-You may read, use, deploy, and integrate Matrix Core freely. If you modify and redistribute the software, you must release your changes under the same license. A commercial license from PaxLabs Inc. is required once you cross the commercial trigger thresholds:
-
-- Charged fees exceeding **USD 100,000** in any 12-month period; or
-- Liquidity under control exceeding **USD 10,000,000**.
-
-See [LICENSE.md](LICENSE.md) for full terms.
+```text
+Copyright © 2026 Sidiora Labs. All rights reserved.
+SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
+```
 
 ## International READMEs
 
-- [Espanol](README.es.md)
-- [Nihongo / Japanese](README.ja.md)
-- [Portugues](README.pt-BR.md)
-- [Russkiy / Russian](README.ru.md)
-- [Zhongwen / Chinese (Simplified)](README.zh-CN.md)
-
-## Related
-
-- [Paxeer Network](https://paxeer.app) — The L1 blockchain Matrix Core is built on. 400ms blocks, 400ms finality, purpose-built for agentic workloads.
-- [PaxLabs](https://labs.paxeer.app) — Building the future of human-agent collaboration.
-
----
+- [Spanish](README.es.md)
+- [Japanese](README.ja.md)
+- [Portuguese](README.pt-BR.md)
+- [Russian](README.ru.md)
+- [Chinese, Simplified](README.zh-CN.md)
 
 <p align="center">
-  Built by <a href="https://labs.paxeer.app"><strong>PaxLabs Inc.</strong></a>
-</p>
-
-<p align="center">
-  <sub>SPDX-License-Identifier: Matrix-Protocol</sub>
+  Built by <a href="https://github.com/Sidiora-Labs"><strong>Sidiora Labs</strong></a>
 </p>

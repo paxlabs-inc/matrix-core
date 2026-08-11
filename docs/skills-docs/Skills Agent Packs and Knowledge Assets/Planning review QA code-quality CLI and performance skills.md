@@ -2,7 +2,7 @@
 
 ## Overview
 
-This section documents the skill packs and reference assets that shape planning, review, QA discussion, code quality, CLI design, and performance guidance in `paxlabs-inc/matrix-core`. The repository uses a split model: human-facing `SKILL.md` and reference docs describe the practice, while `.mtx` manifests encode the compiler-facing intent, slots, and clarification behavior.
+This section documents the skill packs and reference assets that shape planning, review, QA discussion, code quality, CLI design, and performance guidance in `Sidiora-Labs/centra-llm-agents`. The repository uses a split model: human-facing `SKILL.md` and reference docs describe the practice, while `.mtx` manifests encode the compiler-facing intent, slots, and clarification behavior.
 
 The section is intentionally about delivery-oriented knowledge assets, not runtime services. It covers how each pack guides an agent or contributor from a user goal to a concrete artifact such as a plan, review, QA session, CLI spec, lint fix, or performance rule application.
 
@@ -11,7 +11,7 @@ The section is intentionally about delivery-oriented knowledge assets, not runti
 | Pack | Path | Role |
 | --- | --- | --- |
 | Project planning | `skills/project-planning/SKILL.md` | Human-facing planning guide with artifact taxonomy, phases, estimation, relationships, and schema pointers. |
-| Project planning | `skills/project-planning/SKILL.mtx` | MatrixScript manifest for `analyze`; resolves the target, clarifies uncertainty, and emits result and unknown slots. |
+| Project planning | `skills/project-planning/SKILL.mtx` | CentraScript manifest for `analyze`; resolves the target, clarifies uncertainty, and emits result and unknown slots. |
 | Project planning | `skills/project-planning/references/estimations.md` | Effort hierarchy for Epic, Story, and Task, including the rule that PRD and Spec are not estimated directly. |
 | Project planning | `skills/project-planning/references/relationships.md` | Artifact relationship taxonomy and the mandatory parent Story and parent Epic links for Tasks. |
 | Project planning | `skills/project-planning/references/schema/01-artifact-prd.md` | PRD content-structure reference stub. |
@@ -23,7 +23,7 @@ The section is intentionally about delivery-oriented knowledge assets, not runti
 | Project planning | `skills/project-planning/references/schema/07-artifact-task.md` | Task content-structure reference stub. |
 | Project planning | `skills/project-planning/references/schema/08-artifact-retrospective.md` | Retrospective content-structure reference stub. |
 | PR review | `skills/pr-review/SKILL.md` | Security-first PR review checklist with diff scoping, dependency audit, cross-platform checks, performance review, and finding categories. |
-| PR review | `skills/pr-review/SKILL.mtx` | MatrixScript manifest for `analyze` and `modify`; resolves the review target and clarifies when confidence is low. |
+| PR review | `skills/pr-review/SKILL.mtx` | CentraScript manifest for `analyze` and `modify`; resolves the review target and clarifies when confidence is low. |
 | PR review | `skills/pr-review/reference/file-analysis.md` | Changed-file inventory and import-dependency tracing guide. |
 | PR review | `skills/pr-review/reference/cross-platform.md` | Platform risk checklist for Extension, Mobile RN, Desktop Electron, and Web. |
 | PR review | `skills/pr-review/reference/dependency-audit.md` | Package diff, package metadata, `node_modules` inspection, and grep patterns for high-risk behavior. |
@@ -33,11 +33,11 @@ The section is intentionally about delivery-oriented knowledge assets, not runti
 | QA discussion | `skills/qa-discussion/TEST-REPORT.md` | Test report with commands, coverage, and validation categories. |
 | QA discussion | `skills/qa-discussion/FINALIZATION-SUMMARY.md` | Completion summary with metrics, readiness checks, and maintenance notes. |
 | Code quality | `skills/code-quality/SKILL.md` | Lint and code-quality guide with English comment rules, unused variable patterns, and direct-code examples. |
-| Code quality | `skills/code-quality/SKILL.mtx` | MatrixScript manifest for `modify`; resolves the target and handles unknown requests. |
+| Code quality | `skills/code-quality/SKILL.mtx` | CentraScript manifest for `modify`; resolves the target and handles unknown requests. |
 | Code quality | `skills/code-quality/references/rules/code-quality.md` | Rulebook and examples for comments, promises, direct code, and helper usage. |
 | Code quality | `skills/code-quality/references/rules/fix-lint.md` | Practical lint-fix playbook for unused imports, parameters, destructuring, non-null assertions, and extracted components. |
 | Create CLI | `skills/create-cli/SKILL.md` | Human-first CLI design guide with command surface, output contract, safety, configuration precedence, and examples. |
-| Create CLI | `skills/create-cli/SKILL.mtx` | MatrixScript manifest for `find`, `modify`, and `build`; resolves the target and clarifies ambiguity. |
+| Create CLI | `skills/create-cli/SKILL.mtx` | CentraScript manifest for `find`, `modify`, and `build`; resolves the target and clarifies ambiguity. |
 | Create CLI | `skills/create-cli/references/cli-guidelines.md` | Condensed CLI rubric on help, output, errors, flags, interactivity, config, signals, naming, distribution, and analytics. |
 | Create CLI | `skills/create-cli/references/styles-bash.md` | Bash CLI pattern with help, argument validation, command dispatch, and a direct execution guard. |
 | Performance | `skills/performance/references/rules/performance.md` | Cross-platform performance rulebook for batching, render deferral, memoization, virtualization, and cancellation. |
@@ -400,7 +400,7 @@ The create-cli pack is a design-time guide for command-line interfaces. It is no
 
 `skills/create-cli/SKILL.md` asks the user to clarify the command name, primary user, input sources, output contract, interactivity, config model, and platform constraints before the spec is finalized. The deliverables are a command tree, args and flags table, subcommand semantics, I/O rules, exit code map, safety rules, config/env precedence, shell completion story, and examples.
 
-`skills/create-cli/SKILL.mtx` supports the `find`, `modify`, and `build` verbs. It resolves `slot.target`, clarifies when confidence is low, and uses the same MatrixScript pattern as the other skill manifests.
+`skills/create-cli/SKILL.mtx` supports the `find`, `modify`, and `build` verbs. It resolves `slot.target`, clarifies when confidence is low, and uses the same CentraScript pattern as the other skill manifests.
 
 `skills/create-cli/references/cli-guidelines.md` is the condensed CLI rubric. It emphasizes human-first design, `stdout` for primary output, `stderr` for diagnostics, standard flags like `--help`, `--version`, `--json`, `--dry-run`, `--no-input`, and careful handling of signals and control characters.
 

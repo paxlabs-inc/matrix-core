@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // kindle — MCP stdio bridge exposing KindleLaunch (the Sidiora launchpad on
-// Paxeer Network, chain 125) to Matrix agents.
+// Paxeer Network, chain 125) to Centra AI agents.
 //
 // READS (no auth): pools, token/market detail, swap quotes, pending fees, and
 // optical info — direct chain-125 eth_call against the canonical 2026-06-20

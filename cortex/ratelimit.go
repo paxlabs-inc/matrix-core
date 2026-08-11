@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Phase 14: cortex-side rate limiting on the two sub-agent DoS surfaces
@@ -261,4 +261,4 @@ func (r *rateLimiter) snapshotForTests() (scopeBuckets, attestBuckets int) {
 	return len(r.scopeViolations), len(r.attests)
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

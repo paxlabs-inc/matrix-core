@@ -1,5 +1,5 @@
 /**
- * Matrix — backend-agnostic data layer.
+ * Centra AI — backend-agnostic data layer.
  *
  * Everything here is plain TypeScript types + mock fixtures. No fetching, no
  * SDK clients, no env vars, no infra. The UI components consume these types
@@ -18,7 +18,7 @@ export type RunStatus = 'queued' | 'running' | 'needs_input' | 'completed' | 'fa
 
 export type StageStatus = 'done' | 'active' | 'pending' | 'failed'
 
-/** A single phase of an agent run. Matrix runs are form-shaped, multi-step. */
+/** A single phase of an agent run. Centra AI runs are form-shaped, multi-step. */
 export interface RunStage {
   id: string
   label: string
@@ -523,7 +523,7 @@ export const stats: Stats = {
 }
 
 /**
- * The live Matrix model catalogue, sourced from `models/models.kvx` (the
+ * The live Centra AI model catalogue, sourced from `models/models.kvx` (the
  * Fireworks AI serverless tier the runtime actually dispatches against).
  * Tiers are derived from each model's listed pricing + context window.
  */

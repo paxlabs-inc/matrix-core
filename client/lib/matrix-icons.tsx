@@ -1,5 +1,5 @@
 /**
- * Matrix icon set rendered as React components.
+ * Centra AI icon set rendered as React components.
  *
  * The glyph geometry is ported from `public/matrix_icons/matrix-icons.js`
  * (24×24 line icons, 1.75px stroke, round caps/joins). This module exposes
@@ -19,14 +19,14 @@ import { sanitizeSvgMarkup } from '@/lib/security/sanitize'
 export const SPRITE_URL = '/icons/sprite.svg'
 
 /**
- * Maps a Matrix icon name (the kebab key used across the app) to a paxscan
- * sprite symbol. When a name is present here, `createMatrixIcon` renders the
- * paxscan glyph via <use> instead of the inline Matrix path — so the ported
+ * Maps a Centra AI icon name (the kebab key used across the app) to a paxscan
+ * sprite symbol. When a name is present here, `createCentraIcon` renders the
+ * paxscan glyph via <use> instead of the inline legacy path — so the ported
  * icon set visibly REPLACES the old line glyphs everywhere they're imported.
- * Names absent from this map keep their inline Matrix glyph as a fallback
+ * Names absent from this map keep their inline glyph as a fallback
  * (covers UI primitives the paxscan set doesn't include, e.g. chevrons).
  */
-export const MATRIX_TO_SPRITE: Record<string, IconName> = {
+export const CENTRA_TO_SPRITE: Record<string, IconName> = {
   // Navigation / layout
   search: 'search',
   filter: 'filter',
@@ -60,7 +60,7 @@ export const MATRIX_TO_SPRITE: Record<string, IconName> = {
   'shield-check': 'certified',
   logout: 'sign_out',
   user: 'profile',
-  // Matrix / Paxeer concepts
+  // Centra AI / Paxeer concepts
   attestation: 'verified',
   network: 'networks',
   block: 'block',
@@ -71,7 +71,7 @@ export const MATRIX_TO_SPRITE: Record<string, IconName> = {
 }
 
 /** name -> inner SVG markup (the host <svg> applies stroke/size). */
-export const MATRIX_ICON_BODIES: Record<string, string> = {
+export const CENTRA_ICON_BODIES: Record<string, string> = {
   /* ——— Navigation ——— */
   home: `<path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3v-4.5a2 2 0 0 1 4 0V20h3a1 1 0 0 0 1-1V9.5"/>`,
   dashboard: `<rect x="4" y="4" width="7" height="7" rx="1.4"/><rect x="13" y="4" width="7" height="7" rx="1.4"/><rect x="4" y="13" width="7" height="7" rx="1.4"/><rect x="13" y="13" width="7" height="7" rx="1.4"/>`,
@@ -154,7 +154,7 @@ export const MATRIX_ICON_BODIES: Record<string, string> = {
   camera: `<path d="M4 8.5a1.5 1.5 0 0 1 1.5-1.5H8l1.5-2h5L16 7h2.5A1.5 1.5 0 0 1 20 8.5V18a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18V8.5z"/><circle cx="12" cy="12.5" r="3.2"/>`,
   eye: `<path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.8"/>`,
 
-  /* ——— Matrix Core ——— */
+  /* ——— Centra AI Core ——— */
   mcl: `<path d="M4 8h5"/><path d="M4 12h4"/><path d="M4 16h5"/><path d="M11.5 12h6"/><path d="M15 9.5 17.5 12l-2.5 2.5"/><path d="M20.5 8v8"/>`,
   intent: `<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/><path d="M12 1.5V5"/><path d="M12 19v3.5"/><path d="M1.5 12H5"/><path d="M19 12h3.5"/>`,
   'intent-ir': `<path d="M9 5c-1.7 0-2.4 1-2.4 2.6v1.5c0 1.3-.7 2.1-2 2.4 1.3.3 2 1.1 2 2.4v1.5C6.6 19 7.3 20 9 20"/><path d="M15 5c1.7 0 2.4 1 2.4 2.6v1.5c0 1.3.7 2.1 2 2.4-1.3.3-2 1.1-2 2.4v1.5C17.4 19 16.7 20 15 20"/><path d="M12 12h.01"/>`,
@@ -180,7 +180,7 @@ export const MATRIX_ICON_BODIES: Record<string, string> = {
   rpc: `<circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7.5 9.8h7"/><path d="M12.5 7.8l2.5 2-2.5 2"/><path d="M16.5 14.2h-7"/><path d="M11.5 12.2l-2.5 2 2.5 2"/>`,
   wallet: `<path d="M4 8a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v1"/><rect x="4" y="8" width="16" height="11" rx="2"/><path d="M20 12.5h-3.3a2 2 0 0 0 0 4H20"/>`,
 
-  /* ——— Extensions (same Matrix style, for primitives/concepts not in the base set) ——— */
+  /* ——— Extensions (same Centra AI style, for primitives/concepts not in the base set) ——— */
   circle: `<circle cx="12" cy="12" r="9"/>`,
   'circle-dot': `<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>`,
   activity: `<path d="M3 12h4l2.5-7 5 14 2.5-7H21"/>`,
@@ -198,31 +198,38 @@ export const MATRIX_ICON_BODIES: Record<string, string> = {
   'git-commit': `<circle cx="12" cy="12" r="3.2"/><path d="M3 12h5.8"/><path d="M15.2 12H21"/>`,
 }
 
-/** All available Matrix icon names. */
-export const MATRIX_ICON_NAMES = Object.keys(MATRIX_ICON_BODIES)
+/** All available Centra AI icon names. */
+export const CENTRA_ICON_NAMES = Object.keys(CENTRA_ICON_BODIES)
 
-export interface MatrixIconProps extends React.SVGProps<SVGSVGElement> {
+/** Legacy exports retained while existing imports migrate to the Centra names. */
+export const MATRIX_TO_SPRITE = CENTRA_TO_SPRITE
+export const MATRIX_ICON_BODIES = CENTRA_ICON_BODIES
+export const MATRIX_ICON_NAMES = CENTRA_ICON_NAMES
+
+export interface CentraIconProps extends React.SVGProps<SVGSVGElement> {
   /** Width/height of the icon. Defaults to 24. */
   size?: string | number
   /** Keep the visual stroke width constant when scaling (Lucide compat). */
   absoluteStrokeWidth?: boolean
 }
 
+export type MatrixIconProps = CentraIconProps
+
 /** Lucide-compatible type aliases so existing `LucideIcon`/`LucideProps` usages keep working. */
-export type LucideProps = MatrixIconProps
+export type LucideProps = CentraIconProps
 export type LucideIcon = React.ForwardRefExoticComponent<
-  MatrixIconProps & React.RefAttributes<SVGSVGElement>
+  CentraIconProps & React.RefAttributes<SVGSVGElement>
 >
 
 const cache: Record<string, LucideIcon> = {}
 
-/** Build (and memoize) a React component for a given Matrix icon name. */
-export function createMatrixIcon(name: string): LucideIcon {
+/** Build (and memoize) a React component for a given Centra AI icon name. */
+export function createCentraIcon(name: string): LucideIcon {
   if (cache[name]) return cache[name]
 
-  const sprite = MATRIX_TO_SPRITE[name]
-  const body = MATRIX_ICON_BODIES[name] ?? ''
-  const Component = React.forwardRef<SVGSVGElement, MatrixIconProps>(function MatrixGlyph(
+  const sprite = CENTRA_TO_SPRITE[name]
+  const body = CENTRA_ICON_BODIES[name] ?? ''
+  const Component = React.forwardRef<SVGSVGElement, CentraIconProps>(function CentraGlyph(
     {
       size = 30,
       strokeWidth = 2,
@@ -249,6 +256,7 @@ export function createMatrixIcon(name: string): LucideIcon {
           color={color}
           className={className}
           aria-hidden="true"
+          data-centra-icon={name}
           data-matrix-icon={name}
           {...props}
         >
@@ -270,6 +278,7 @@ export function createMatrixIcon(name: string): LucideIcon {
         strokeLinecap="round"
         strokeLinejoin="round"
         className={className}
+        data-centra-icon={name}
         data-matrix-icon={name}
         {...props}
         dangerouslySetInnerHTML={{ __html: sanitizeSvgMarkup(body) }}
@@ -281,186 +290,192 @@ export function createMatrixIcon(name: string): LucideIcon {
   return Component
 }
 
-export interface MatrixIconByNameProps extends MatrixIconProps {
+export const createMatrixIcon = createCentraIcon
+
+export interface CentraIconByNameProps extends CentraIconProps {
   name: string
 }
 
-/** Render any Matrix icon by name: `<MatrixIcon name="merkle" />`. */
-export const MatrixIcon = React.forwardRef<SVGSVGElement, MatrixIconByNameProps>(
-  function MatrixIcon({ name, ...props }, ref) {
-    const Icon = createMatrixIcon(name)
+export type MatrixIconByNameProps = CentraIconByNameProps
+
+/** Render any Centra AI icon by name: `<CentraIcon name="merkle" />`. */
+export const CentraIcon = React.forwardRef<SVGSVGElement, CentraIconByNameProps>(
+  function CentraIcon({ name, ...props }, ref) {
+    const Icon = createCentraIcon(name)
     return <Icon ref={ref} {...props} />
   },
 )
+
+export const MatrixIcon = CentraIcon
 
 /*
  * ───────────────────────────────────────────────────────────────────────────
  * Lucide-compatible named exports.
  *
  * Each former `lucide-react` import name is re-exported here, mapped to the
- * closest Matrix glyph, so files only need to switch their import source.
+ * closest Centra AI glyph, so files only need to switch their import source.
  * ───────────────────────────────────────────────────────────────────────────
  */
 
 // Navigation / arrows / chevrons
-export const ArrowLeft = createMatrixIcon('arrow-left')
+export const ArrowLeft = createCentraIcon('arrow-left')
 export const ArrowLeftIcon = ArrowLeft
-export const ArrowRight = createMatrixIcon('arrow-right')
+export const ArrowRight = createCentraIcon('arrow-right')
 export const ArrowRightIcon = ArrowRight
-export const ArrowUp = createMatrixIcon('arrow-up')
+export const ArrowUp = createCentraIcon('arrow-up')
 export const ArrowUpIcon = ArrowUp
-export const ChevronUp = createMatrixIcon('chevron-up')
+export const ChevronUp = createCentraIcon('chevron-up')
 export const ChevronUpIcon = ChevronUp
-export const ChevronDown = createMatrixIcon('chevron-down')
+export const ChevronDown = createCentraIcon('chevron-down')
 export const ChevronDownIcon = ChevronDown
 export const ArrowDownIcon = ChevronDown
-export const ChevronLeft = createMatrixIcon('chevron-left')
+export const ChevronLeft = createCentraIcon('chevron-left')
 export const ChevronLeftIcon = ChevronLeft
-export const ChevronRight = createMatrixIcon('chevron-right')
+export const ChevronRight = createCentraIcon('chevron-right')
 export const ChevronRightIcon = ChevronRight
-export const ChevronsUpDownIcon = createMatrixIcon('chevrons-up-down')
-export const CornerDownLeftIcon = createMatrixIcon('corner-down-left')
-export const Search = createMatrixIcon('search')
+export const ChevronsUpDownIcon = createCentraIcon('chevrons-up-down')
+export const CornerDownLeftIcon = createCentraIcon('corner-down-left')
+export const Search = createCentraIcon('search')
 export const SearchIcon = Search
-export const MoreHorizontal = createMatrixIcon('more')
+export const MoreHorizontal = createCentraIcon('more')
 export const MoreHorizontalIcon = MoreHorizontal
-export const ExternalLink = createMatrixIcon('external-link')
+export const ExternalLink = createCentraIcon('external-link')
 export const ExternalLinkIcon = ExternalLink
-export const SlidersHorizontal = createMatrixIcon('filter')
-export const PanelLeftIcon = createMatrixIcon('panel-left')
-export const GripVerticalIcon = createMatrixIcon('grip-vertical')
+export const SlidersHorizontal = createCentraIcon('filter')
+export const PanelLeftIcon = createCentraIcon('panel-left')
+export const GripVerticalIcon = createCentraIcon('grip-vertical')
 
 // Actions
-export const Plus = createMatrixIcon('plus')
+export const Plus = createCentraIcon('plus')
 export const PlusIcon = Plus
-export const Minus = createMatrixIcon('minus')
+export const Minus = createCentraIcon('minus')
 export const MinusIcon = Minus
-export const Check = createMatrixIcon('check')
+export const Check = createCentraIcon('check')
 export const CheckIcon = Check
 export const CheckCheck = Check
-export const X = createMatrixIcon('close')
+export const X = createCentraIcon('close')
 export const XIcon = X
-export const Copy = createMatrixIcon('copy')
+export const Copy = createCentraIcon('copy')
 export const CopyIcon = Copy
-export const Trash2Icon = createMatrixIcon('trash')
-export const Download = createMatrixIcon('download')
+export const Trash2Icon = createCentraIcon('trash')
+export const Download = createCentraIcon('download')
 export const DownloadIcon = Download
 export const ArrowDownToLine = Download
 export const ArrowDownLeft = Download
-export const ArrowUpFromLine = createMatrixIcon('upload')
+export const ArrowUpFromLine = createCentraIcon('upload')
 export const ArrowUpRight = ArrowUpFromLine
-export const RotateCcw = createMatrixIcon('refresh')
+export const RotateCcw = createCentraIcon('refresh')
 export const Repeat = RotateCcw
-export const Settings = createMatrixIcon('settings')
-export const Link2 = createMatrixIcon('link')
-export const BookmarkIcon = createMatrixIcon('bookmark')
+export const Settings = createCentraIcon('settings')
+export const Link2 = createCentraIcon('link')
+export const BookmarkIcon = createCentraIcon('bookmark')
 
 // Status
-export const CheckCircle = createMatrixIcon('success')
+export const CheckCircle = createCentraIcon('success')
 export const CheckCircleIcon = CheckCircle
 export const CheckCircle2 = CheckCircle
 export const CheckCircle2Icon = CheckCircle
 export const CircleCheck = CheckCircle
-export const CircleX = createMatrixIcon('error')
+export const CircleX = createCentraIcon('error')
 export const XCircleIcon = CircleX
-export const AlertTriangle = createMatrixIcon('warning')
+export const AlertTriangle = createCentraIcon('warning')
 export const AlertTriangleIcon = AlertTriangle
 export const AlertCircle = AlertTriangle
 export const CircleAlert = AlertTriangle
 export const OctagonAlert = AlertTriangle
-export const Loader2 = createMatrixIcon('loading')
+export const Loader2 = createCentraIcon('loading')
 export const Loader2Icon = Loader2
-export const LifeBuoy = createMatrixIcon('help')
+export const LifeBuoy = createCentraIcon('help')
 
 // Content & files
-export const FileIcon = createMatrixIcon('file')
-export const FileText = createMatrixIcon('document')
+export const FileIcon = createCentraIcon('file')
+export const FileText = createCentraIcon('document')
 export const FileTextIcon = FileText
 export const ReceiptText = FileText
 export const BookIcon = FileText
-export const FolderIcon = createMatrixIcon('folder')
+export const FolderIcon = createCentraIcon('folder')
 export const FolderOpenIcon = FolderIcon
-export const Paperclip = createMatrixIcon('attachment')
+export const Paperclip = createCentraIcon('attachment')
 export const PaperclipIcon = Paperclip
-export const ImageIcon = createMatrixIcon('image')
-export const Code = createMatrixIcon('code')
+export const ImageIcon = createCentraIcon('image')
+export const Code = createCentraIcon('code')
 export const Github = Code
-export const TerminalIcon = createMatrixIcon('terminal')
-export const Database = createMatrixIcon('database')
-export const Globe = createMatrixIcon('globe')
+export const TerminalIcon = createCentraIcon('terminal')
+export const Database = createCentraIcon('database')
+export const Globe = createCentraIcon('globe')
 export const GlobeIcon = Globe
-export const Clock = createMatrixIcon('clock')
+export const Clock = createCentraIcon('clock')
 export const ClockIcon = Clock
 export const Timer = Clock
 export const CalendarClock = Clock
 
 // Communication
-export const MessageCircleIcon = createMatrixIcon('chat')
-export const MessageSquare = createMatrixIcon('message')
-export const Bell = createMatrixIcon('bell')
-export const Mail = createMatrixIcon('mail')
-export const Send = createMatrixIcon('send')
+export const MessageCircleIcon = createCentraIcon('chat')
+export const MessageSquare = createCentraIcon('message')
+export const Bell = createCentraIcon('bell')
+export const Mail = createCentraIcon('mail')
+export const Send = createCentraIcon('send')
 export const Rocket = Send
 
 // Account & security
-export const Lock = createMatrixIcon('lock')
-export const ShieldCheck = createMatrixIcon('shield-check')
+export const Lock = createCentraIcon('lock')
+export const ShieldCheck = createCentraIcon('shield-check')
 export const ShieldAlert = ShieldCheck
-export const LogOut = createMatrixIcon('logout')
-export const Bug = createMatrixIcon('warning')
-export const SkipForward = createMatrixIcon('arrow-right')
+export const LogOut = createCentraIcon('logout')
+export const Bug = createCentraIcon('warning')
+export const SkipForward = createCentraIcon('arrow-right')
 
 // Media
-export const Play = createMatrixIcon('play')
+export const Play = createCentraIcon('play')
 export const PlayIcon = Play
 export const VideoIcon = Play
-export const Pause = createMatrixIcon('pause')
+export const Pause = createCentraIcon('pause')
 export const PauseIcon = Pause
 export const PauseCircle = Pause
-export const SquareIcon = createMatrixIcon('stop')
-export const Mic = createMatrixIcon('mic')
+export const SquareIcon = createCentraIcon('stop')
+export const Mic = createCentraIcon('mic')
 export const MicIcon = Mic
 export const MicOffIcon = Mic
-export const Music2Icon = createMatrixIcon('volume')
-export const Eye = createMatrixIcon('eye')
+export const Music2Icon = createCentraIcon('volume')
+export const Eye = createCentraIcon('eye')
 export const EyeIcon = Eye
 export const EyeOffIcon = Eye
 
-// Matrix core / Paxeer concepts
-export const Bot = createMatrixIcon('agent')
+// Centra AI core / Paxeer concepts
+export const Bot = createCentraIcon('agent')
 export const BotIcon = Bot
-export const BrainIcon = createMatrixIcon('cortex')
-export const Wrench = createMatrixIcon('tools')
+export const BrainIcon = createCentraIcon('cortex')
+export const Wrench = createCentraIcon('tools')
 export const WrenchIcon = Wrench
 export const Puzzle = Wrench
-export const Workflow = createMatrixIcon('orchestration')
-export const BadgeCheck = createMatrixIcon('attestation')
-export const Gauge = createMatrixIcon('intent')
-export const Radio = createMatrixIcon('network')
-export const Package = createMatrixIcon('block')
+export const Workflow = createCentraIcon('orchestration')
+export const BadgeCheck = createCentraIcon('attestation')
+export const Gauge = createCentraIcon('intent')
+export const Radio = createCentraIcon('network')
+export const Package = createCentraIcon('block')
 export const PackageIcon = Package
-export const Coins = createMatrixIcon('payments')
-export const Wallet = createMatrixIcon('wallet')
-export const LayoutDashboard = createMatrixIcon('dashboard')
-export const Cpu = createMatrixIcon('cpu')
-export const Activity = createMatrixIcon('activity')
+export const Coins = createCentraIcon('payments')
+export const Wallet = createCentraIcon('wallet')
+export const LayoutDashboard = createCentraIcon('dashboard')
+export const Cpu = createCentraIcon('cpu')
+export const Activity = createCentraIcon('activity')
 
 // Generic primitives / extras
-export const CircleIcon = createMatrixIcon('circle')
+export const CircleIcon = createCentraIcon('circle')
 export const CircleSmallIcon = CircleIcon
 export const DotIcon = CircleIcon
-export const CircleDotIcon = createMatrixIcon('circle-dot')
-export const Sparkles = createMatrixIcon('sparkles')
-export const Zap = createMatrixIcon('zap')
-export const Lightbulb = createMatrixIcon('lightbulb')
-export const Monitor = createMatrixIcon('monitor')
-export const Wifi = createMatrixIcon('wifi')
-export const WifiOff = createMatrixIcon('wifi-off')
-export const GitCommitIcon = createMatrixIcon('git-commit')
+export const CircleDotIcon = createCentraIcon('circle-dot')
+export const Sparkles = createCentraIcon('sparkles')
+export const Zap = createCentraIcon('zap')
+export const Lightbulb = createCentraIcon('lightbulb')
+export const Monitor = createCentraIcon('monitor')
+export const Wifi = createCentraIcon('wifi')
+export const WifiOff = createCentraIcon('wifi-off')
+export const GitCommitIcon = createCentraIcon('git-commit')
 export const GitCommitHorizontal = GitCommitIcon
 
-// Voice-persona icons have no Matrix equivalent — fall back to the user glyph.
-export const MarsIcon = createMatrixIcon('user')
+// Voice-persona icons have no dedicated equivalent — fall back to the user glyph.
+export const MarsIcon = createCentraIcon('user')
 export const VenusIcon = MarsIcon
 export const NonBinaryIcon = MarsIcon
 export const TransgenderIcon = MarsIcon
@@ -469,7 +484,7 @@ export const VenusAndMarsIcon = MarsIcon
 
 /**
  * Registry used for dynamic, name-based lookups (e.g. ApprovalCard's `icon`
- * prop). Resolves both Matrix kebab-case names and PascalCase aliases.
+ * prop). Resolves both Centra AI kebab-case names and PascalCase aliases.
  */
 export const icons: Record<string, LucideIcon> = new Proxy({} as Record<string, LucideIcon>, {
   get(_target, prop) {
@@ -477,7 +492,7 @@ export const icons: Record<string, LucideIcon> = new Proxy({} as Record<string, 
     const kebab = prop.includes('-')
       ? prop
       : prop.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
-    if (MATRIX_ICON_BODIES[kebab]) return createMatrixIcon(kebab)
+    if (CENTRA_ICON_BODIES[kebab]) return createCentraIcon(kebab)
     return undefined
   },
 })

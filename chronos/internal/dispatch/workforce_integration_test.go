@@ -15,10 +15,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/store"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/wake"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/pkg/types"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/paxlabs-inc/chronos/internal/store"
-	"github.com/paxlabs-inc/chronos/internal/wake"
-	"github.com/paxlabs-inc/chronos/pkg/types"
 	"matrix/vault"
 	"matrix/workforce/scheduler"
 )

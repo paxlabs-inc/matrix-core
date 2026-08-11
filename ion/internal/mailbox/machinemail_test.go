@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/paxlabs-inc/ion-agent/internal/security/vault"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/vault"
 )
 
 func TestMachineMailSourceFeedsPrivateEncryptedVerificationStore(t *testing.T) {

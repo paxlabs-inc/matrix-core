@@ -143,7 +143,7 @@ func pickEmbedder(cfg config.Config) embed.Embedder
 
 Selection order:
 
-1. **Matrix gateway** — `${GatewayURL}/v1/embeddings` with `MATRIX_GATEWAY_TOKEN` + actor DID. Spend is attributed under slot "neo".
+1. **Centra AI gateway** — `${GatewayURL}/v1/embeddings` with `MATRIX_GATEWAY_TOKEN` + actor DID. Spend is attributed under slot "neo".
 2. **Direct provider** — Fireworks API key (`FIREWORKS_API_KEY`)
 3. **Hash fallback** — deterministic hash embedder. Retrieval degrades to pseudo-lexical, but nothing breaks.
 

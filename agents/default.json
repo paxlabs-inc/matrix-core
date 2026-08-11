@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/default",
-  "description": "Default Matrix agent integration manifest. Local filesystem, bounded shell, durable service, and read-only git work is deliberately absent from MCP because it runs natively inside Neo, including substantial project coding with runtime-owned checkpoints and verification. This manifest contains only remote or product integration adapters, including paxeer-net (the public Paxeer chain surface across RPC, PaxScan, price reads, and embedded-wallet writes). READS need no auth; chain WRITES sign through the Paxeer Embedded Wallet (custody network-side, spend-policy enforced at the wallet API) and are additionally pre-gated plan-time by PaxeerSpendPolicy (per-call PAXEER_SPEND_CAP_WEI ceiling) before any side effect. Headless wallet auth via PAXEER_WALLET_TOKEN or PAXEER_WALLET_EMAIL+PAXEER_WALLET_PASSWORD (+PAXEER_SUPABASE_ANON_KEY); without it the chain bridge is read-only. PackageDigest values are PLACEHOLDERS; operators MUST replace them with the sha256 digest of the actual installed package before any production or chain-anchoring deployment.",
+  "description": "Default Centra AI agent integration manifest. Local filesystem, bounded shell, durable service, and read-only git work is deliberately absent from MCP because it runs natively inside Neo, including substantial project coding with runtime-owned checkpoints and verification. This manifest contains only remote or product integration adapters, including paxeer-net (the public Paxeer chain surface across RPC, PaxScan, price reads, and embedded-wallet writes). READS need no auth; chain WRITES sign through the Paxeer Embedded Wallet (custody network-side, spend-policy enforced at the wallet API) and are additionally pre-gated plan-time by PaxeerSpendPolicy (per-call PAXEER_SPEND_CAP_WEI ceiling) before any side effect. Headless wallet auth via PAXEER_WALLET_TOKEN or PAXEER_WALLET_EMAIL+PAXEER_WALLET_PASSWORD (+PAXEER_SUPABASE_ANON_KEY); without it the chain bridge is read-only. PackageDigest values are PLACEHOLDERS; operators MUST replace them with the sha256 digest of the actual installed package before any production or chain-anchoring deployment.",
   "allowed_side_effects": [
     "read",
     "write",
@@ -707,7 +707,7 @@
       "tools": [
         {
           "name": "preview_app",
-          "description": "Publish a workspace web app as a live Matrix preview. Pass only app_directory; the system handles detection, upload, all dependencies including dev tools, startup, readiness, public verification, and exact failures. Never modify the app or install dependencies yourself after a failure; report the exact returned error.",
+          "description": "Publish a workspace web app as a live Centra preview. Pass only app_directory; the system handles detection, upload, all dependencies including dev tools, startup, readiness, public verification, and exact failures. Never modify the app or install dependencies yourself after a failure; report the exact returned error.",
           "side_effect_class": "network",
           "timeout_ms": 900000
         }

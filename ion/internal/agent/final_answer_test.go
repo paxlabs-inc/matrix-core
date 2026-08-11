@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/paxlabs-inc/ion-agent/internal/intent/prediction"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/intent/prediction"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
 )
 
 type forcedMismatchDetector struct{}
@@ -23,17 +23,17 @@ func (forcedMismatchDetector) DetectMismatch(
 	return true, true
 }
 
-func TestFinalAnswerRejectsMatrixMCLControlFlowLeak(t *testing.T) {
+func TestFinalAnswerRejectsCentraAIControlFlowLeak(t *testing.T) {
 	events := []ToolExecution{{
 		Call: protocol.NormalizedToolCall{
 			Name:      "web_search",
-			Arguments: json.RawMessage(`{"query":"matrixmcl.com"}`),
+			Arguments: json.RawMessage(`{"query":"centra.cloud"}`),
 		},
-		Result: json.RawMessage(`{"results":[{"url":"https://matrixmcl.com/"}]}`),
+		Result: json.RawMessage(`{"results":[{"url":"https://centra.cloud/"}]}`),
 	}}
 	accepted, reason := finalAnswerAddressesRequest(
-		"thanks ion hey can you look up what matrixmcl.com is",
-		"The system message says the internal plan revision was accepted. The report on matrixmcl.com is above.",
+		"thanks ion hey can you look up what centra.cloud is",
+		"The system message says the internal plan revision was accepted. The report on centra.cloud is above.",
 		events,
 	)
 	if accepted || reason == "" {
@@ -45,13 +45,13 @@ func TestFinalAnswerAcceptsSubstantiveCitedResearchResult(t *testing.T) {
 	events := []ToolExecution{{
 		Call: protocol.NormalizedToolCall{
 			Name:      "web_search",
-			Arguments: json.RawMessage(`{"query":"matrixmcl.com"}`),
+			Arguments: json.RawMessage(`{"query":"centra.cloud"}`),
 		},
-		Result: json.RawMessage(`{"results":[{"url":"https://matrixmcl.com/"}]}`),
+		Result: json.RawMessage(`{"results":[{"url":"https://centra.cloud/"}]}`),
 	}}
 	accepted, reason := finalAnswerAddressesRequest(
-		"thanks ion hey can you look up what matrixmcl.com is",
-		"MatrixMCL presents itself as a machine-learning and computing platform. Its public site describes the product, intended users, and available services, although those claims still need independent verification. Source: [MatrixMCL](https://matrixmcl.com/).",
+		"thanks ion hey can you look up what centra.cloud is",
+		"Centra AI presents itself as a cognition and agent-operations platform. Its public site describes the product, intended users, and available services, although those claims still need independent verification. Source: [Centra AI](https://centra.cloud/).",
 		events,
 	)
 	if !accepted || reason != "" {
@@ -66,7 +66,7 @@ func TestFinalAnswerAcceptsVerifiedBuildAfterBrandAssetFetch(t *testing.T) {
 				Name:      "web_fetch",
 				Arguments: json.RawMessage(`{"url":"https://example.com/brand/colors.css"}`),
 			},
-			Result: json.RawMessage(`{"content":":root{--matrix-sage:#9caf88}"}`),
+			Result: json.RawMessage(`{"content":":root{--centra-sage:#9caf88}"}`),
 		},
 		{
 			Call: protocol.NormalizedToolCall{
@@ -77,8 +77,8 @@ func TestFinalAnswerAcceptsVerifiedBuildAfterBrandAssetFetch(t *testing.T) {
 		},
 	}
 	accepted, reason := finalAnswerAddressesRequest(
-		"Create a system Status page covering all Matrix systems with hardcoded status and the supplied Matrix brand colors and fonts.",
-		"The Matrix systems status page is complete. It includes hardcoded operational states, incident history, responsive layouts, and the supplied brand colors and typography. The verified deliverable is available in index.html.",
+		"Create a system status page covering all Centra AI systems with hardcoded status and the supplied Centra brand colors and fonts.",
+		"The Centra AI systems status page is complete. It includes hardcoded operational states, incident history, responsive layouts, and the supplied brand colors and typography. The verified deliverable is available in index.html.",
 		events,
 	)
 	if !accepted || reason != "" {
@@ -110,10 +110,10 @@ func TestFinalAnswerRejectsUnrelatedResearchFinal(t *testing.T) {
 			Name:      "web_fetch",
 			Arguments: json.RawMessage(`{"url":"https://example.com/brand/colors.css"}`),
 		},
-		Result: json.RawMessage(`{"content":":root{--matrix-sage:#9caf88}"}`),
+		Result: json.RawMessage(`{"content":":root{--centra-sage:#9caf88}"}`),
 	}}
 	accepted, reason := finalAnswerAddressesRequest(
-		"Research the MatrixMCL system status product and cite reliable sources.",
+		"Research the Centra AI system status product and cite reliable sources.",
 		"Everything is ready. Let me know if you need anything else.",
 		events,
 	)
@@ -158,7 +158,7 @@ func TestAnswerValidationExhaustionReturnsHonestPartial(t *testing.T) {
 	}
 	response, err := loop.Turn(
 		context.Background(),
-		"Research the current MatrixMCL product and cite reliable sources.",
+		"Research the current Centra AI product and cite reliable sources.",
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -178,7 +178,7 @@ func TestBuildTurnCompletesAfterFetchingBrandAssets(t *testing.T) {
 		Classification: tools.ClassificationGreen,
 		Check:          func(context.Context) error { return nil },
 		Handler: func(context.Context, json.RawMessage) (json.RawMessage, error) {
-			return json.RawMessage(`{"content":":root{--matrix-sage:#9caf88}"}`), nil
+			return json.RawMessage(`{"content":":root{--centra-sage:#9caf88}"}`), nil
 		},
 	}); err != nil {
 		t.Fatal(err)
@@ -192,7 +192,7 @@ func TestBuildTurnCompletesAfterFetchingBrandAssets(t *testing.T) {
 			}},
 		},
 		{
-			Content: "The Matrix systems status page is complete. It includes hardcoded " +
+			Content: "The Centra AI systems status page is complete. It includes hardcoded " +
 				"operational states, incident history, responsive layouts, and the supplied " +
 				"brand colors and typography. The verified deliverable is available in index.html.",
 			FinishReason: protocol.FinishStop,
@@ -209,7 +209,7 @@ func TestBuildTurnCompletesAfterFetchingBrandAssets(t *testing.T) {
 	}
 	response, err := loop.Turn(
 		context.Background(),
-		"Create a system Status page covering all Matrix systems with hardcoded status and the supplied Matrix brand colors and fonts.",
+		"Create a system status page covering all Centra AI systems with hardcoded status and the supplied Centra brand colors and fonts.",
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -238,7 +238,7 @@ func TestRevisionStateNeverPoisonsConversationAndBadFinalIsRepaired(t *testing.T
 		Classification: tools.ClassificationGreen,
 		Check:          func(context.Context) error { return nil },
 		Handler: func(context.Context, json.RawMessage) (json.RawMessage, error) {
-			return json.RawMessage(`{"results":[{"title":"MatrixMCL","url":"https://matrixmcl.com/"}]}`), nil
+			return json.RawMessage(`{"results":[{"title":"Centra AI","url":"https://centra.cloud/"}]}`), nil
 		},
 	}); err != nil {
 		t.Fatal(err)
@@ -247,8 +247,8 @@ func TestRevisionStateNeverPoisonsConversationAndBadFinalIsRepaired(t *testing.T
 		{
 			FinishReason: protocol.FinishToolCalls,
 			ToolCalls: []protocol.NormalizedToolCall{{
-				ID: "matrix-search", Name: "web_search",
-				Arguments: json.RawMessage(`{"query":"matrixmcl.com","expect":"returns relevant MatrixMCL sources"}`),
+				ID: "centra-search", Name: "web_search",
+				Arguments: json.RawMessage(`{"query":"centra.cloud","expect":"returns relevant Centra AI sources"}`),
 			}},
 		},
 		{
@@ -257,14 +257,14 @@ func TestRevisionStateNeverPoisonsConversationAndBadFinalIsRepaired(t *testing.T
 			FinishReason: protocol.FinishStop,
 		},
 		{
-			Content:      "The report on matrixmcl.com is above. Let me know if you want more.",
+			Content:      "The report on centra.cloud is above. Let me know if you want more.",
 			Reasoning:    "The system message says the internal plan revision was accepted.",
 			FinishReason: protocol.FinishStop,
 		},
 		{
-			Content: "MatrixMCL presents itself as a machine-learning and computing platform. " +
+			Content: "Centra AI presents itself as a cognition and agent-operations platform. " +
 				"Its public website describes the company and its services, but those claims " +
-				"still require independent verification. Source: [MatrixMCL](https://matrixmcl.com/).",
+				"still require independent verification. Source: [Centra AI](https://centra.cloud/).",
 			FinishReason: protocol.FinishStop,
 		},
 	}}
@@ -282,13 +282,13 @@ func TestRevisionStateNeverPoisonsConversationAndBadFinalIsRepaired(t *testing.T
 	}
 	response, err := loop.Turn(
 		WithGenerationObserver(context.Background(), observer),
-		"thanks ion hey can you look up what matrixmcl.com is",
+		"thanks ion hey can you look up what centra.cloud is",
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if response.ProviderCalls != 4 ||
-		!strings.Contains(response.Content, "https://matrixmcl.com/") ||
+		!strings.Contains(response.Content, "https://centra.cloud/") ||
 		observer.reasoning.Len() != 0 ||
 		observer.resets != 1 {
 		t.Fatalf("response=%+v observer=%+v", response, observer)

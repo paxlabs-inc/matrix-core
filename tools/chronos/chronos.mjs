@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// chronos — MCP stdio proxy bridging Matrix agents to the built-in per-machine
+// chronos — MCP stdio proxy bridging Centra AI agents to the built-in per-machine
 // scheduler, with the former shared chronosd retained as explicit compatibility.
 //
 // Same shape as tools/tachyon/tachyon.mjs + tools/uwac/uwac.mjs: the daemon
@@ -12,7 +12,7 @@
 //
 // Two-layer auth (chronos.frozen.kvx [auth]):
 //   1. transport: every request carries MATRIX_CHRONOS_TOKEN as a Bearer
-//      (proves "a legitimate Matrix daemon").
+//      (proves "a legitimate Centra AI daemon").
 //   2. principal: the alarm_* tools additionally carry an agent-DID principal
 //      token in X-Chronos-Agent. The proxy mints it by ed25519-signing
 //      chronosd's challenge with the daemon's executor key (the SAME identity
@@ -67,7 +67,7 @@ const TOOL_NAMES = tools.map((t) => t.name)
 const TOOL_SET = new Set(TOOL_NAMES)
 
 // ── schema-driven arg re-coercion ─────────────────────────────────────────────
-// The Matrix plan IR carries every tool-call arg as a string (MCL/ir/plan.go),
+// The Centra AI plan IR carries every tool-call arg as a string (MCL/ir/plan.go),
 // and the executor's schema-blind coerceArg greedily turns numeric-looking
 // strings into JSON numbers. chronosd types idempotency_key / fire_at /
 // cron_expr / label etc. as Go strings, so a JSON number fails to unmarshal.

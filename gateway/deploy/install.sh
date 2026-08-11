@@ -81,7 +81,7 @@ install -d -m 0750 /etc/matrix
 chown root:matrix /etc/matrix
 umask 0027
 cat > "$ENV_FILE" <<EOF
-# Matrix gateway environment — managed by gateway/deploy/install.sh
+# Centra AI gateway environment — managed by gateway/deploy/install.sh
 MATRIX_GATEWAY_TOKEN=$GATEWAY_TOKEN
 MATRIX_GATEWAY_POSTGRES_URI=$POSTGRES_URI
 EOF

@@ -2,7 +2,7 @@
 
 /**
  * QueryProvider — wraps the React tree with a TanStack Query client
- * tuned for the Matrix dashboard:
+ * tuned for the Centra AI dashboard:
  *
  *   - Server-state-aware staleness: 30s for "live" reads (intents),
  *     5min for catalogue reads (agents/tools/skills) — staleTime is

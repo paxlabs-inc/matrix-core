@@ -33,7 +33,7 @@ export function LegalShell({ children }: { children: ReactNode }) {
                   M
                 </span>
               }
-              heading="Matrix"
+              heading="Centra AI"
               headingHref="/legal"
               subheading="Paxeer Network"
             />

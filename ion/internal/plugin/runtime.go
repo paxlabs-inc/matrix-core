@@ -8,10 +8,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/paxlabs-inc/ion-agent/internal/presence/gateway"
-	"github.com/paxlabs-inc/ion-agent/internal/provider"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/presence/gateway"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/provider"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
 )
 
 // ChannelRegistrar is implemented by the production multi-channel gateway.

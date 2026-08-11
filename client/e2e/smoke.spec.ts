@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import axe from 'axe-core'
 
-test.describe('Matrix smoke', () => {
+test.describe('Centra AI smoke', () => {
   test('login page renders', async ({ page }) => {
     await page.goto('/en/login')
     await expect(page.getByRole('main')).toBeVisible()

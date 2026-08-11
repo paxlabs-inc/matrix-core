@@ -24,7 +24,7 @@ See `matrix.kvx` § `executor_locked_design` (lands in v1.20 update after Sessio
 | Q2 | `PlanTree` IR lives in `MCL/ir/plan.go` — shared by skill (producer) and executor (consumer + auditor) |
 | Q3 | Envelope codec lives in `MCL/envelope/` — all 15 message kinds, ed25519 sign/verify, canonical CBOR for signing, JSON for on-disk storage |
 | Q4 | Off-chain tools via Anthropic MCP — drop custom fs/shell/http, ship MCP client (stdio + streamable HTTP) + register filesystem-mcp + fetch-mcp + git-mcp in default agent manifest |
-| Q5 | Two-layer sandbox: Matrix capability check + MCP server's own jail + subprocess rlimits |
+| Q5 | Two-layer sandbox: Centra capability check + MCP server's own jail + subprocess rlimits |
 | Q6 | Sub-dispatch v1: in-process under same agent only; cross-agent + CortexScope Merkle proof handoff deferred to v1.1 |
 | Q7 | Replay determinism: cortex state only (already byte-deterministic per Phase 11). Tool outputs captured as cortex Fact memories at moment of execution; replay reads from cortex, never re-runs tools |
 | Q8 | Intent IR + envelopes live at `journal/logs/<intent_id>/<seq>.envelope.json` (workspace-relative, cross-actor) |

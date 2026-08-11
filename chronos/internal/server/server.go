@@ -1,6 +1,6 @@
 // Package server exposes chronosd over HTTP: the agent-DID auth lane and the
 // alarm CRUD surface. Two-layer auth (chronos.frozen.kvx [auth]): a shared
-// transport bearer (CHRONOS_TOKEN) proves "a legitimate Matrix daemon", and an
+// transport bearer (CHRONOS_TOKEN) proves "a legitimate Centra AI daemon", and an
 // ed25519 agent-DID principal token (X-Chronos-Agent) proves WHICH owner — so
 // alarms are owner-scoped and the wake target resolves from the DID alone
 // (invariant i2).
@@ -19,10 +19,10 @@ import (
 
 	"matrix/workforce/scheduler"
 
-	"github.com/paxlabs-inc/chronos/internal/auth"
-	"github.com/paxlabs-inc/chronos/internal/schedule"
-	"github.com/paxlabs-inc/chronos/internal/store"
-	"github.com/paxlabs-inc/chronos/pkg/types"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/auth"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/schedule"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/internal/store"
+	"github.com/Sidiora-Labs/centra-llm-agents/chronos/pkg/types"
 )
 
 // Version is the chronosd build identity surfaced on /healthz and /.

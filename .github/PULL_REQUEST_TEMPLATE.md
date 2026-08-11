@@ -1,5 +1,5 @@
 <!--
-Thanks for contributing to Matrix.
+Thanks for contributing to Centra AI.
 Keep PRs scoped to one concern. Squash on merge unless the history is
 itself the artefact (e.g. mechanical refactor split into reviewable steps).
 -->

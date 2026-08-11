@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // mcl-tools — inspect + smoke-test agent tool manifests.
@@ -58,7 +58,7 @@ func main() {
 }
 
 func usage(w io.Writer) {
-	fmt.Fprint(w, `mcl-tools — Matrix agent tool manifest inspection and smoke testing
+	fmt.Fprint(w, `mcl-tools — Centra AI agent tool manifest inspection and smoke testing
 
 USAGE
   mcl-tools <subcommand> [flags]
@@ -298,4 +298,4 @@ func must(cond bool, msg string) {
 // silence unused-import warning when the build has no callers of strings.
 var _ = strings.TrimSpace
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

@@ -1,6 +1,6 @@
 # tachyon-tools Developer Docs
 
-**Source:** `github.com/paxlabs-inc/matrix-core/tachyon`  
+**Source:** `github.com/Sidiora-Labs/centra-llm-agents/tachyon`  
 **Language:** Go 1.22+ (daemon), Solidity (contracts corpus), JavaScript (test suite)  
 **One-sentence contract:** An agent-native Solidity / EVM toolbox that exposes compile, test, simulate, deploy, and call verbs over HTTP API, JSON-RPC, and MCP stdio — with structured I/O, simulation-first safety, idempotent deploys, and policy-gated signing.
 

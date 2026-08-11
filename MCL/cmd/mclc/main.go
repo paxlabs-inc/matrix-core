@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Command mclc is the MatrixScript compiler CLI.
+// Command mclc is the CentraScript compiler CLI.
 //
 // It wires together the MCL runtime packages (lexer, parser, validator,
 // canonical, interpreter) and drives the 6-stage compilation pipeline
@@ -59,7 +59,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, `mclc — MatrixScript compiler
+	fmt.Fprintf(os.Stderr, `mclc — CentraScript compiler
 
 Commands:
   compile   Compile a SKILL.mtx against user prose → Intent IR
@@ -439,4 +439,4 @@ func cmdParse(args []string) {
 // Ensure ir package is linked (used in compile output types)
 var _ = ir.VerbBuild
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

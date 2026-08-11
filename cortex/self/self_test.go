@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package self
@@ -168,7 +168,7 @@ func TestPersonaIsFirstPersonAndMachineryFree(t *testing.T) {
 		t.Fatal("persona is empty")
 	}
 	// First person: the agent speaks as itself.
-	for _, marker := range []string{"You are Matrix", "I'll", "my", "I remember"} {
+	for _, marker := range []string{"You are Centra AI", "I'll", "my", "I remember"} {
 		if !strings.Contains(persona, marker) {
 			t.Fatalf("persona missing first-person marker %q:\n%s", marker, persona)
 		}

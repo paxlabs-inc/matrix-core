@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/paxlabs-inc/ion-agent/internal/skills"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/skills"
 )
 
 func TestSkillCandidateGateStagesRejectsAndAdoptsWithHistory(t *testing.T) {

@@ -1,4 +1,4 @@
-module github.com/paxlabs-inc/ion-agent
+module github.com/Sidiora-Labs/centra-llm-agents/ion
 
 go 1.22.0
 

@@ -5,7 +5,7 @@ import {
   type ComputerPhase,
   type EventEnvelope,
   type OperatorState,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 import { describe, expect, it } from 'vitest'
 import {
   activeComputerTurnID,

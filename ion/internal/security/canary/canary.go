@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/memory"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/memory"
 	"lukechampine.com/blake3"
 )
 

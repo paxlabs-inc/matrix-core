@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package types holds the shared header names, request/response wire
@@ -24,7 +24,7 @@ const (
 	// + budget bookkeeping.
 	HeaderActorDID = "X-Matrix-Actor-DID"
 
-	// HeaderIntentID is the Matrix Intent.ID of the call site.
+	// HeaderIntentID is the Centra AI Intent.ID of the call site.
 	// Required when present; used for cost telemetry per-intent
 	// aggregation.
 	HeaderIntentID = "X-Matrix-Intent-ID"
@@ -135,4 +135,4 @@ type UpstreamResponseEnvelope struct {
 	Usage *UpstreamUsage `json:"usage,omitempty"`
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

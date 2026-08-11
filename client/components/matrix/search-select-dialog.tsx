@@ -4,7 +4,7 @@
  * SearchSelectDialog — a searchable single-select dialog.
  *
  * Adapted from Skiper UI "Skiper20" (Uniswap-style region picker). Stripped of
- * react-query / the REST countries API and re-themed to the Matrix tokens; it
+ * react-query / the REST countries API and re-themed to the Centra AI tokens; it
  * is now fully generic and driven by the `options` prop, so it powers both the
  * model selector and the wallet network selector.
  */

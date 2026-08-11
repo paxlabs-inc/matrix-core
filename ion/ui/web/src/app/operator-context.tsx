@@ -7,7 +7,7 @@ import {
   type Operation,
   type ResponseEnvelope,
   type Scope,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 import {
   createContext,
   type ReactNode,

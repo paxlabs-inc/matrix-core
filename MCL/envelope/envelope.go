@@ -1,8 +1,8 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package envelope is the canonical wire codec for all 15 MCL message
-// kinds. Every message Matrix sends rides inside an Envelope: typed
+// kinds. Every message Centra AI sends rides inside an Envelope: typed
 // header, opaque CBOR body, ed25519 signature over the canonical
 // CBOR encoding with Signature cleared.
 //
@@ -317,4 +317,4 @@ func requireRequiredHeaderFields(env *Envelope) error {
 	return nil
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

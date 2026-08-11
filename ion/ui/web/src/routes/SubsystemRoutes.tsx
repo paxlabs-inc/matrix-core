@@ -1,5 +1,5 @@
 import { useQueries, useQueryClient } from '@tanstack/react-query'
-import type { Operation } from '@matrixmcl/ion-shared'
+import type { Operation } from '@centra-ai/ion-shared'
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useOperator } from '../app/operator-context'
 import { Icon } from '../components/Icon'

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# deploy/chronos/install.sh — idempotent installer for chronosd (the Matrix
+# deploy/chronos/install.sh — idempotent installer for chronosd (the Centra AI
 # centralized agent scheduler / wake control plane).
 #
 # Run as root on the box. Performs:
@@ -103,7 +103,7 @@ install -d -m 0750 /etc/matrix
 chown root:matrix /etc/matrix
 umask 0027
 cat > "$ENV_FILE" <<EOF
-# Matrix chronos environment — managed by deploy/chronos/install.sh
+# Centra AI chronos environment — managed by deploy/chronos/install.sh
 CHRONOS_PORT=9096
 CHRONOS_POSTGRES_URI=$POSTGRES_URI
 CHRONOS_TOKEN=$TOKEN

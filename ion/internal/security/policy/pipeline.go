@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/paxlabs-inc/ion-agent/internal/security/safety"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
-	"github.com/paxlabs-inc/ion-agent/pkg/protocol"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/safety"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/protocol"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 )
 
 // Decision is one layer's authorization verdict.

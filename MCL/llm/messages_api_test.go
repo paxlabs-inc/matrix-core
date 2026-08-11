@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package llm
@@ -121,7 +121,7 @@ func TestMessagesDecode_HappyPath(t *testing.T) {
 			ID: "msg_test", Type: "message", Role: "assistant",
 			Content: []messagesContentBlock{
 				{Type: "text", Text: "Hello "},
-				{Type: "text", Text: "Matrix"},
+				{Type: "text", Text: "Centra"},
 			},
 			StopReason: "end_turn",
 			Usage:      &messagesUsage{InputTokens: 10, OutputTokens: 4},
@@ -139,8 +139,8 @@ func TestMessagesDecode_HappyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Decode: %v", err)
 	}
-	if got != "Hello Matrix" {
-		t.Errorf("Decode text = %q, want %q", got, "Hello Matrix")
+	if got != "Hello Centra" {
+		t.Errorf("Decode text = %q, want %q", got, "Hello Centra")
 	}
 	if captured.Model != ForgeModelClaudeOpus47 {
 		t.Errorf("captured.Model = %q, want %q", captured.Model, ForgeModelClaudeOpus47)
@@ -246,7 +246,7 @@ func TestMessagesStream_DeltaConcat(t *testing.T) {
 		})
 		writeMessagesFrame(w, fl, map[string]interface{}{
 			"type": "content_block_delta", "index": 0,
-			"delta": map[string]interface{}{"type": "text_delta", "text": "Matrix"},
+			"delta": map[string]interface{}{"type": "text_delta", "text": "Centra"},
 		})
 		writeMessagesFrame(w, fl, map[string]interface{}{"type": "content_block_stop", "index": 0})
 		writeMessagesFrame(w, fl, map[string]interface{}{"type": "message_stop"})
@@ -261,11 +261,11 @@ func TestMessagesStream_DeltaConcat(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
-	if got != "Hello Matrix" {
-		t.Errorf("final text = %q, want %q", got, "Hello Matrix")
+	if got != "Hello Centra" {
+		t.Errorf("final text = %q, want %q", got, "Hello Centra")
 	}
-	if len(deltas) != 2 || deltas[0] != "Hello " || deltas[1] != "Matrix" {
-		t.Errorf("onDelta sequence = %+v, want [Hello , Matrix]", deltas)
+	if len(deltas) != 2 || deltas[0] != "Hello " || deltas[1] != "Centra" {
+		t.Errorf("onDelta sequence = %+v, want [Hello , Centra]", deltas)
 	}
 }
 
@@ -434,4 +434,4 @@ func writeMessagesFrame(w io.Writer, fl http.Flusher, payload map[string]interfa
 	}
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

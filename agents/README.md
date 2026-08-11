@@ -1,6 +1,6 @@
 # Agent manifests
 
-JSON-on-disk descriptions of what tools a Matrix agent has access to.
+JSON-on-disk descriptions of what tools a Centra AI agent has access to.
 Loaded by `executor/tool` at agent boot; the registry resolves every
 `matrix://tool/...` URI emitted by a plan against this file.
 

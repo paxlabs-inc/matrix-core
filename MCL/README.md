@@ -1,6 +1,6 @@
-# MCL — Matrix Communication Layer
+# MCL — Centra AI's coordination layer
 
-The heart of Matrix. Every interaction passes through here.
+The heart of Centra. Every interaction passes through here.
 
 **Cortex** is the brain — persistent typed memory.
 **MCL** is the heart — every user intent pumps through it, gets typed, gets signed, and is handed to the executor.
@@ -24,7 +24,7 @@ No free-form side channels. No prose-only messages. Every input produces a typed
 ```
 MCL/
   README.md               # this file
-  mtx/                    # MatrixScript runtime
+  mtx/                    # CentraScript runtime
     spec.md               # language specification
     grammar.bnf           # formal EBNF
     lexer/                # Go: tokeniser
@@ -53,9 +53,9 @@ MCL/
     mcl-fmt/              # canonical JSON debug mirror of .mtx
 ```
 
-## The language: MatrixScript (`.mtx`)
+## The language: CentraScript (`.mtx`)
 
-The compiler is meta-programmed. Compiler logic, skill procedures, and the IR grammar itself are written in **MatrixScript** — a Matrix-native declarative DSL. The Go runtime in `mtx/` interprets `.mtx` files; it does not contain compile logic.
+The compiler is meta-programmed. Compiler logic, skill procedures, and the IR grammar itself are written in **CentraScript** — a Centra-native declarative DSL. The Go runtime in `mtx/` interprets `.mtx` files; it does not contain compile logic.
 
 - **Syntax**: `§SECTION` headers + `key=value` pairs (extended from `.kvx` DNA)
 - **Semantics**: pure data — decision trees are literal data structures, not code

@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package liveness derives bounded, inspectable execution parameters from the
@@ -9,27 +9,27 @@
 // The derivation shape, the clamps, Validate, and the Cause provenance are
 // carried over from the ion liveness decision policy. What changed is where the
 // inputs come from. Ion modulates on affect axes supplied by its emotional,
-// temporal, and relationship subsystems; Matrix has none of those and the
+// temporal, and relationship subsystems; Centra AI has none of those and the
 // resurrection spec does not adopt them. Every affect axis is therefore
-// replaced by the Matrix signal req.6.1 names, or — where Matrix measures
+// replaced by the Centra AI signal req.6.1 names, or — where Centra AI measures
 // nothing — by a documented neutral constant chosen so the affect term
 // vanishes from ion's formula rather than being invented:
 //
 //   - confidence     -> neutralConfidence. Ion's confidence lane and its
-//     unsupported-premise lane both feed verification depth; Matrix measures
+//     unsupported-premise lane both feed verification depth; Centra AI measures
 //     unsupported premises directly, so the constant is ion's own baseline and
 //     the premise count is the only term that moves.
 //   - frustration    -> neutralFrustration. Same reasoning: ion's frustration
 //     lane and its actions-without-growth lane both feed the retry bound, and
 //     actions-without-growth is the measured one.
-//   - fatigue        -> neutralLoad. Matrix has no sustained-work signal at the
+//   - fatigue        -> neutralLoad. Centra AI has no sustained-work signal at the
 //     turn boundary; parallelism starts at its ceiling and is bounded by the
 //     loop's mechanical enforcement rather than by a guessed load axis.
 //   - curiosity      -> the task shape. A request that asks for research earns
 //     the full exploration ceiling; anything else gets ion's neutral budget.
 //   - satisfaction   -> neutralSatisfaction. Proposing follow-up goals is
 //     automatrix's lane, not the runtime's.
-//   - urgency        -> neutralUrgency. Matrix carries no deadline signal into
+//   - urgency        -> neutralUrgency. Centra AI carries no deadline signal into
 //     a turn, so optional work starts at its ceiling.
 //
 // Ion's temporal stage, relationship profile, and aesthetic simplicity lanes

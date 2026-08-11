@@ -139,7 +139,7 @@ export function WorkforceCommandCenter() {
             </span>
             <div className="min-w-0">
               <p className="text-muted-foreground font-mono text-[10px] font-medium tracking-[0.14em] uppercase">
-                Matrix · {t('ownerControls')}
+                Centra AI · {t('ownerControls')}
               </p>
               <h1 className="truncate text-base font-semibold tracking-tight sm:text-lg">
                 {t('title')}

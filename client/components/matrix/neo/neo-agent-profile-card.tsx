@@ -3,11 +3,11 @@
 /**
  * AgentProfileCard — the premium sub-agent identity card.
  *
- * Inspired by Kimi's subagent character cards, adapted to Matrix's warm-charcoal
+ * Inspired by Kimi's subagent character cards, adapted to Centra AI's warm-charcoal
  * design language: tonal elevation (popover on card), sage accent, SquiCircle
  * soft corners, LT Wave typography. Each card carries a procedurally generated
  * geometric avatar, the agent's name + role, a one-line backstory, and a subtle
- * MATRIX wordmark at the bottom.
+ * Centra AI wordmark at the bottom.
  *
  * The geometric avatar is rendered as an inline SVG seeded from the agent's name
  * (or an explicit `avatarSeed`), producing a unique but deterministic pattern of
@@ -206,10 +206,10 @@ export function AgentProfileCard({ agent, className }: { agent: NeoSubAgent; cla
         </div>
       </div>
 
-      {/* MATRIX wordmark */}
+      {/* Centra AI wordmark */}
       <div className="border-border/40 border-t px-4 py-2">
         <span className="text-muted-foreground/25 font-mono text-[9px] tracking-[0.2em] uppercase">
-          Matrix
+          Centra AI
         </span>
       </div>
     </motion.div>

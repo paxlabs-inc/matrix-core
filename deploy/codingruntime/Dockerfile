@@ -7,7 +7,7 @@ ARG AGENTCORE_UV_LOCK_SHA256
 ARG AGENTCORE_PACKAGE_LOCK_SHA256
 ARG AGENTCORE_LICENSE_SHA256
 
-LABEL org.opencontainers.image.title="Matrix AgentCore coding runtime" \
+LABEL org.opencontainers.image.title="Centra AI AgentCore coding runtime" \
       org.opencontainers.image.source="https://github.com/paxlabs-inc/agentcore.git" \
       org.opencontainers.image.revision="${AGENTCORE_GIT_SHA}" \
       org.opencontainers.image.licenses="MIT"

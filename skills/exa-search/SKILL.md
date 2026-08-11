@@ -1,16 +1,16 @@
 ---
 name: exa-search
-description: Grounded semantic search and asynchronous research through Matrix's router-owned Exa MCP. Use for controlled web evidence, company research, known-URL extraction, outbound briefs, or source-grounded drafts.
-origin: Matrix/Paxlabs
+description: Grounded semantic search and asynchronous research through Centra AI's router-owned Exa MCP. Use for controlled web evidence, company research, known-URL extraction, outbound briefs, or source-grounded drafts.
+origin: Centra AI/Paxlabs
 ---
 
 # Exa Search
 
-Use Matrix's router-owned Exa lane for semantic retrieval, extractive contents, and bounded multi-source research. Neo never receives the vendor API key.
+Use Centra AI's router-owned Exa lane for semantic retrieval, extractive contents, and bounded multi-source research. Neo never receives the vendor API key.
 
 ## Runtime Boundary
 
-Use only the shipped `exa__*` tools. The Matrix router owns vendor credentials, user scoping, rate and spend limits, caching, run ownership, metering, and cancellation. Never ask the user for an Exa key, install a vendor MCP, or call Exa directly.
+Use only the shipped `exa__*` tools. The Centra router owns vendor credentials, user scoping, rate and spend limits, caching, run ownership, metering, and cancellation. Never ask the user for an Exa key, install a vendor MCP, or call Exa directly.
 
 ## Choosing the Evidence Lane
 

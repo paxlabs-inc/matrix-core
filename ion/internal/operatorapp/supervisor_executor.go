@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/agent"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/swarm"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/tools"
+	workcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/work"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/agent"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	"github.com/paxlabs-inc/ion-agent/internal/swarm"
-	"github.com/paxlabs-inc/ion-agent/internal/tools"
-	workcontrol "github.com/paxlabs-inc/ion-agent/internal/work"
 )
 
 type liveSupervisorExecutor struct {

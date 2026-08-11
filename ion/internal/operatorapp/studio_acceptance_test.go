@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	projectcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/project"
+	studiocontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/studio"
+	workcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/work"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	projectcontrol "github.com/paxlabs-inc/ion-agent/internal/project"
-	studiocontrol "github.com/paxlabs-inc/ion-agent/internal/studio"
-	workcontrol "github.com/paxlabs-inc/ion-agent/internal/work"
 )
 
 func TestStudioProductionJourneysRestartDriftAndFalseCompletion(t *testing.T) {

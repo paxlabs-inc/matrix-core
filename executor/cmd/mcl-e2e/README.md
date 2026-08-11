@@ -1,6 +1,6 @@
-# mcl-e2e — Matrix v1 end-to-end live test
+# mcl-e2e — Centra AI v1 end-to-end live test
 
-A single Go binary that drives every layer of the Matrix v1 stack against
+A single Go binary that drives every layer of the Centra AI v1 stack against
 real LLMs (Fireworks + Together), real MCP servers (`fs` + `fetch` + `git`
 spawned as subprocesses), and a real Pebble-backed cortex with the real
 Fireworks `nomic-embed-text-v1.5` 768-dim embedder.

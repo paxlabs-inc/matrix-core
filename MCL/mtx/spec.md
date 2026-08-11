@@ -1,15 +1,15 @@
-# MatrixScript Language Specification
+# CentraScript Language Specification
 
 **File extension:** `.mtx`
-**Full name:** MatrixScript
+**Full name:** CentraScript
 **Version:** 0.1
 **Status:** Canonical — implementation must conform.
 
 ---
 
-## 1. What MatrixScript is
+## 1. What CentraScript is
 
-MatrixScript is the declarative language in which the MCL compiler is written.
+CentraScript is the declarative language in which the MCL compiler is written.
 
 The Go binary `mclc` is a runtime that interprets `.mtx` files. It contains no compile logic itself. Every decision the compiler makes — which verb to classify, how to extract Frame slots, how to phrase clarify questions, how to score confidence — is declared in a `.mtx` file that the runtime executes.
 

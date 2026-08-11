@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package tool wraps MCP-backed (and v1.1 native chain) tools behind
@@ -20,7 +20,7 @@ import (
 	"fmt"
 )
 
-// Tool is the uniform interface that every Matrix tool implementation
+// Tool is the uniform interface that every Centra AI tool implementation
 // satisfies. The plan walker (next session) holds *Tool values
 // (resolved via Registry.Get(uri)) and invokes Call.
 //
@@ -49,7 +49,7 @@ type Tool interface {
 // Result is the typed outcome of a single Tool.Call.
 //
 // Mirrors mcp.CallToolResult so MCPTool can pass through cleanly, with
-// added Matrix-specific fields (CallID, DurationMs) so the executor
+// added Centra-specific fields (CallID, DurationMs) so the executor
 // can journal Event memories without re-deriving them.
 type Result struct {
 	// Content carries the typed return value(s). Text is the common
@@ -84,7 +84,7 @@ type Result struct {
 	ApplicationOK   *bool `json:"application_ok,omitempty"`
 
 	// CallID is a ULID assigned at dispatch entry by the registry.
-	// Pinned into the Matrix Event memory and the journal logs path
+	// Pinned into the Centra AI Event memory and the journal logs path
 	// for cross-referencing tool args ↔ tool results.
 	CallID string `json:"call_id,omitempty"`
 
@@ -206,4 +206,4 @@ func validateSideEffect(s string) error {
 	return nil
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

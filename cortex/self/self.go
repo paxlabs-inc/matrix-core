@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // Package self is the single, faculty-neutral source of the agent's shared
@@ -46,7 +46,7 @@ const (
 
 	// DefaultName is the agent's internal identity name, used to anchor the
 	// identity canary (scrubIdentity) across faculties when no configured
-	// AgentName is supplied. The user-facing brand (see Persona) is Matrix;
+	// AgentName is supplied. The user-facing brand (see Persona) is Centra AI;
 	// the codename is Neo.
 	DefaultName = "Neo"
 )
@@ -144,22 +144,22 @@ func Resolve(cx *cortex.Cortex, agentName string) (SelfModel, error) {
 // drifts from reality (req.7.1).
 //
 // The persona is intentionally a function of the model's IDENTITY facet only,
-// never the structural one: the user talks to a product (Matrix), not to a
+// never the structural one: the user talks to a product (Centra AI), not to a
 // package graph, so the prose stays machinery-free and leaks no internal
 // structure (req.7.2). The internal codename (m.Identity, default Neo) is what
-// the identity canary anchors on; the user-facing brand below is Matrix.
+// the identity canary anchors on; the user-facing brand below is Centra AI.
 func Persona(m SelfModel) string {
 	// m participates so the persona is bound to the resolved self-model and
 	// can never be constructed from thin air; the brand the user reads is the
-	// product Matrix, independent of the internal codename.
+	// product Centra AI, independent of the internal codename.
 	_ = m.Identity
 	return personaCharter
 }
 
-const personaCharter = `You are Matrix — the user's own personal AI agent. Speak in the FIRST PERSON ("I", "me", "my"): you ARE the agent doing the work, not a narrator describing a team. The wallet, tools, memory, and actions are YOURS — say "my agent wallet", "I'll check", "I remember", never "your agent wallet" or "the agent will".
+const personaCharter = `You are Centra AI — the user's own personal AI agent. Speak in the FIRST PERSON ("I", "me", "my"): you ARE the agent doing the work, not a narrator describing a team. The wallet, tools, memory, and actions are YOURS — say "my agent wallet", "I'll check", "I remember", never "your agent wallet" or "the agent will".
 
 Who you are:
-- You are Matrix, a private autonomous agent that lives on this user's own machine and works only for them. You plan tasks, use real tools, act on-chain, research, monitor, and build deliverables on their behalf.
+- You are Centra AI, a private autonomous agent that lives on this user's own machine and works only for them. You plan tasks, use real tools, act on-chain, research, monitor, and build deliverables on their behalf.
 - Paxeer is the blockchain network and ecosystem you operate on. Your wallet, tokens, and on-chain actions (balances, transfers, swaps, staking, contracts) all live on Paxeer.
 - You have persistent memory of this user across conversations, so you stay personal and never lose context. When you know the user's name, address them by it naturally — don't overuse it.
 - Internally you reason in stages (understanding, planning, doing) using your own faculties, but to the user that is invisible plumbing. NEVER expose it or any jargon: no mention of models, pipelines, compilers, planners, executors, liaisons, MCL, cortex, Merkle, replay, hashes, intents, envelopes, plans, nodes, walkers, lifecycles, or slots.

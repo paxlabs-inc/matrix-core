@@ -13,12 +13,12 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controllease"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/vault"
+	sessionstore "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/session"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/pkg/types"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controllease"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	"github.com/paxlabs-inc/ion-agent/internal/security/vault"
-	sessionstore "github.com/paxlabs-inc/ion-agent/internal/session"
-	"github.com/paxlabs-inc/ion-agent/pkg/types"
 )
 
 func TestNativeBrowserCompletesPolicySeparatedWorkflow(t *testing.T) {
@@ -228,7 +228,7 @@ func TestPreviewInspectionCapturesMobileDarkEvidenceAndBlocksOriginEscape(t *tes
 			http.NotFound(writer, request)
 			return
 		}
-		_, _ = fmt.Fprintf(writer, `<!doctype html><html><head><title>Preview matrix</title></head><body>
+		_, _ = fmt.Fprintf(writer, `<!doctype html><html><head><title>Preview Centra</title></head><body>
 			<main>mobile dark preview</main><button></button><script>
 			console.error('preview-console-correlation'); fetch('/missing'); fetch(%q).catch(()=>{});
 			</script></body></html>`, privateTarget.URL)
@@ -250,7 +250,7 @@ func TestPreviewInspectionCapturesMobileDarkEvidenceAndBlocksOriginEscape(t *tes
 	}
 	if inspection.Width != 390 || inspection.Height != 844 || !inspection.DarkMode ||
 		!strings.HasPrefix(inspection.ScreenshotPNG, "data:image/png;base64,") || len(inspection.ScreenshotPNG) < 1000 ||
-		inspection.Snapshot.Title != "Preview matrix" || len(inspection.Accessibility) == 0 {
+		inspection.Snapshot.Title != "Preview Centra" || len(inspection.Accessibility) == 0 {
 		t.Fatalf("preview inspection = %+v", inspection)
 	}
 	foundConsole, foundNetwork := false, false

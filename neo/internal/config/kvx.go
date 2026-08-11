@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package config
@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// kvxDoc is a parsed sectioned key/value document in the Matrix .kvx
+// kvxDoc is a parsed sectioned key/value document in the Centra AI .kvx
 // convention (mirrors tachyon/internal/config/kvx.go — copied rather than
 // imported because that parser lives behind an internal/ boundary in a
 // different module).
@@ -21,7 +21,7 @@ import (
 //
 //	# comment
 //	[section]
-//	key = "string"            # double-quoted strings (per Matrix .mtx convention)
+//	key = "string"            # double-quoted strings (per CentraScript convention)
 //	num = 50                  # bare ints / bools
 //	list = ["shell", "git"]   # bracketed, comma-separated, quoted items
 //	[section.sub]

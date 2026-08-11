@@ -9,7 +9,7 @@ const withBundleAnalyzer = BundleAnalyzer({
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
 
 // Allow-list of remote origins the client may talk to:
-//   - The Matrix Router (default https://matrix.paxeer.app) — JSON
+//   - The Centra AI Router (default legacy endpoint https://matrix.paxeer.app) — JSON
 //     APIs + SSE streams + WebSocket fallback.
 //   - The Paxport wallet API (connect.paxportwallet.com) — wallet
 //     session + balance lookups (/v1/wallet/me etc.).
@@ -115,7 +115,7 @@ const nextConfig = {
   // Image optimisation: allow Supabase + the router for any user-
   // uploaded artefacts the receipt sheet might surface in future.
   images: {
-    // The brand mark (matrix_icon_2.svg) is a trusted first-party asset in
+    // The legacy brand-mark path is a trusted first-party asset in
     // /public; allow next/image to serve SVGs, sandboxed via the policy below.
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',

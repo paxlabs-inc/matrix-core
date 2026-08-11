@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -6,7 +6,7 @@ package main
 // forge_policy.go — filesystem allow/deny policy for the Forge HTTP surface
 // (Session 34 / Forge Phase 1, matrix.kvx sess#34).
 //
-// Forge is the local self-maintenance Matrix instance (Opus 4.7 + GPT-5.5
+// Forge is the local self-maintenance Centra AI instance (Opus 4.7 + GPT-5.5
 // powered) whose sole purpose is to optimize its own codebase at /root/matrix.
 // The Vue SPA at forge/ (Phase 2) reaches the daemon's GET /fs/tree, GET
 // /fs/read, and POST /fs/write routes to render its file tree, hydrate
@@ -192,4 +192,4 @@ func isUnderPrefix(path, prefix string) bool {
 	return len(path) > len(prefix) && path[len(prefix)] == filepath.Separator
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

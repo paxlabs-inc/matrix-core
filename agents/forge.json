@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/forge",
-  "description": "Forge — local self-maintenance Matrix instance (Session 34 brain swap → Session 36 Phase 3 tooling expansion). Powered by Claude Opus 4.7 + GPT-5.5 via opencode.ai/zen with the identity preamble injected at every Decode + Stream call. MCP fleet rooted at /root/matrix: fs (file ops), git (version control), fetch (external HTTP), forge-bridge (shell.exec + opencode.run sub-agent for free-form tasks). The cortex/store, knowledge, and journal subdirectories are denied at the daemon HTTP layer (ForgeFSPolicy) per matrix.kvx sess#34 Q3=c — replay byte-identity (cortex §13.4) + kvx ledger integrity + envelope chain audit log are non-negotiable; everything else is fair game for self-modification, recoverable via git history. PackageDigest values are PLACEHOLDERS — operators MUST replace with sha256 of the installed package before any production-anchored deployment.",
+  "description": "Forge — local self-maintenance Centra AI instance (Session 34 brain swap → Session 36 Phase 3 tooling expansion). Powered by Claude Opus 4.7 + GPT-5.5 via opencode.ai/zen with the identity preamble injected at every Decode + Stream call. MCP fleet rooted at /root/matrix: fs (file ops), git (version control), fetch (external HTTP), forge-bridge (shell.exec + opencode.run sub-agent for free-form tasks). The cortex/store, knowledge, and journal subdirectories are denied at the daemon HTTP layer (ForgeFSPolicy) per matrix.kvx sess#34 Q3=c — replay byte-identity (cortex §13.4) + kvx ledger integrity + envelope chain audit log are non-negotiable; everything else is fair game for self-modification, recoverable via git history. PackageDigest values are PLACEHOLDERS — operators MUST replace with sha256 of the installed package before any production-anchored deployment.",
   "allowed_side_effects": ["read", "write", "network", "shell"],
   "servers": [
     {
@@ -78,7 +78,7 @@
       "version": "0.1.0",
       "tools": [
         {"name": "shell_exec", "description": "Run a shell command via /bin/bash -lc inside /root/matrix (cwd-jailed). PATH locked to system bins; MATRIX_DAEMON_TOKEN scrubbed from child env. Output capped at MATRIX_FORGE_SHELL_MAX_BYTES (default 256 KiB) so a runaway `cat huge.bin` doesn't blow the LLM context. Use this for `go test`, `go vet`, `go build`, npm scripts, etc. — anything that needs more than a typed git verb.", "side_effect_class": "shell", "timeout_ms": 120000},
-        {"name": "opencode_run", "description": "Spawn `opencode run \"<prompt>\"` and return the final assistant message. Same brain Matrix already routes through (Claude Opus 4.7 + GPT-5.5 via opencode.ai/zen) but as a sub-agent for free-form tasks that don't fit Matrix's IR (e.g. ad-hoc code review, brainstorming a refactor, drafting a doc). Use sparingly: it's slow + spends opencode credits + is the agent talking to itself by another path.", "side_effect_class": "network", "timeout_ms": 600000}
+        {"name": "opencode_run", "description": "Spawn `opencode run \"<prompt>\"` and return the final assistant message. Same brain Centra AI already routes through (Claude Opus 4.7 + GPT-5.5 via opencode.ai/zen) but as a sub-agent for free-form tasks that don't fit the execution IR (e.g. ad-hoc code review, brainstorming a refactor, drafting a doc). Use sparingly: it's slow + spends opencode credits + is the agent talking to itself by another path.", "side_effect_class": "network", "timeout_ms": 600000}
       ]
     }
   ],

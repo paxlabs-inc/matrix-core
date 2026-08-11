@@ -1,8 +1,8 @@
-# Matrix Communication Layer - Execution Pipeline
+# MCL - Execution Pipeline
 
 ## Overview
 
-`mcl-execute` is the execution-side command surface for Matrix Communication Layer work. It routes CLI invocations into either the standard compile-to-walk pipeline or the Gideon direct-intent pipeline, then finishes each run with a terminal envelope, replayable transcript events, and optional cost telemetry.
+`mcl-execute` is the execution-side command surface for MCL work. It routes CLI invocations into either the standard compile-to-walk pipeline or the Gideon direct-intent pipeline, then finishes each run with a terminal envelope, replayable transcript events, and optional cost telemetry.
 
 The pipeline is designed around one long-lived daemon path and one standalone classification path. The daemon reuses shared Cortex, registry, and transport state across messages, while the direct Gideon path bypasses NL-to-IR compilation and builds a signed `Intent` directly from typed request data before synthesis and execution.
 
@@ -552,7 +552,7 @@ The Gideon path bypasses NL-to-IR compilation entirely. It converts typed reques
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `DID` | `string` | Matrix DID for the executor. |
+| `DID` | `string` | Legacy `did:matrix` DID for the executor. |
 | `Public` | `ed25519.PublicKey` | Public key used for verification. |
 | `Private` | `ed25519.PrivateKey` | Private key used for signing. |
 | `UserURI` | `string` | `matrix://user/<did>` URI. |

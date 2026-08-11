@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 
 package cloudchannels
 
@@ -23,9 +23,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"matrix/neo/internal/channelgateway"
 	"matrix/vault"
+
+	"github.com/gorilla/websocket"
 )
 
 func cloudVault(t *testing.T, root string) *vault.Session {

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This section documents the Paxeer tooling surface that lets Matrix agents read from the Paxeer network, build ABI payloads, sign through the network-side wallet, and connect from the browser when a user links a wallet in the marketplace UI. The bridge is intentionally split between a broad read plane and a tightly controlled write plane so that contract calls, transfers, streams, and scheduling all pass through the same custody policy.
+This section documents the Paxeer tooling surface that lets Centra AI agents read from the Paxeer network, build ABI payloads, sign through the network-side wallet, and connect from the browser when a user links a wallet in the marketplace UI. The bridge is intentionally split between a broad read plane and a tightly controlled write plane so that contract calls, transfers, streams, and scheduling all pass through the same custody policy.
 
 The utility set is centered on `tools/paxeer/lib/tools.mjs`, `tools/paxeer/lib/wallet.mjs`, `tools/paxeer/lib/agentauth.mjs`, `tools/paxeer/lib/abi.mjs`, and `tools/paxeer/lib/keccak.mjs`, with configuration in `tools/paxeer/lib/config.mjs` and operator guidance in `tools/paxeer/README.md`. Browser-side wallet linking and request throttling are handled by `marketplace/app/components/wallet.tsx` and `marketplace/app/lib/limits.server.ts`.
 
@@ -228,7 +228,7 @@ The self-test covers:
 
 *tools/paxeer/lib/agentauth.mjs*
 
-This module gives the Paxeer wallet API a proof-of-identity lane for the Matrix executor. It derives a `did:matrix` identifier from the executor ed25519 seed, proves possession through a challenge and verify handshake, and caches the resulting token for subsequent requests.
+This module gives the Paxeer wallet API a proof-of-identity lane for the Centra executor. It derives a `did:matrix` identifier from the executor ed25519 seed, proves possession through a challenge and verify handshake, and caches the resulting token for subsequent requests.
 
 #### Public functions
 

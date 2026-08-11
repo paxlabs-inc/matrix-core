@@ -1,6 +1,6 @@
 # Cortex Developer Documentation
 
-Cortex is Matrix's per-actor persistent memory store: a Pebble-backed key-value database with a typed memory taxonomy, a salience-ranked query engine, an async embedding pipeline, a Merkle-authenticated snapshot system, and a full replay invariant. Every durable thing an agent knows — facts, preferences, goals, constraints, past events, procedural patterns — lives here.
+Cortex is Centra AI's per-actor persistent memory store: a Pebble-backed key-value database with a typed memory taxonomy, a salience-ranked query engine, an async embedding pipeline, a Merkle-authenticated snapshot system, and a full replay invariant. Every durable thing an agent knows — facts, preferences, goals, constraints, past events, procedural patterns — lives here.
 
 This documentation is written for people working on cortex itself — extending the memory types, tuning the salience formula, adding index layers, or understanding how the replay and snapshot machinery works.
 

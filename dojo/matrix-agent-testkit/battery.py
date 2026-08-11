@@ -1,4 +1,4 @@
-# Copyright © 2026 Paxlabs Inc.
+# Copyright © 2026 Sidiora Labs.
 #
 # battery.py — the adversarial Neo test battery. Each Case is a black-box
 # probe with a prompt (or a multi-turn list of prompts sharing a conversation)

@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package llm
@@ -17,7 +17,7 @@ func TestAggregateStreamToolCalls(t *testing.T) {
 		`data: {"choices":[{"index":0,"delta":{"role":"assistant","content":"Look"}}]}` + "\n" +
 		`data: {"choices":[{"index":0,"delta":{"content":"ing."}}]}` + "\n" +
 		`data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_a","type":"function","function":{"name":"web_search","arguments":"{\"q\":"}}]}}]}` + "\n" +
-		`data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\"matrix\"}"}}]}}]}` + "\n" +
+		`data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\"centra\"}"}}]}}]}` + "\n" +
 		`data: {"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}` + "\n" +
 		`data: {"choices":[],"usage":{"prompt_tokens":11,"completion_tokens":7,"total_tokens":18}}` + "\n" +
 		`data: [DONE]` + "\n"
@@ -39,8 +39,8 @@ func TestAggregateStreamToolCalls(t *testing.T) {
 	if tc.ID != "call_a" || tc.Function.Name != "web_search" {
 		t.Errorf("tool call id/name = %q/%q", tc.ID, tc.Function.Name)
 	}
-	if tc.Function.Arguments != `{"q":"matrix"}` {
-		t.Errorf("merged arguments = %q, want %q", tc.Function.Arguments, `{"q":"matrix"}`)
+	if tc.Function.Arguments != `{"q":"centra"}` {
+		t.Errorf("merged arguments = %q, want %q", tc.Function.Arguments, `{"q":"centra"}`)
 	}
 	if usage == nil || usage.TotalTokens != 18 {
 		t.Errorf("usage = %+v, want total 18", usage)

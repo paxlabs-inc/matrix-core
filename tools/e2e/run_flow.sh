@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run_flow.sh — submit ONE prose intent to the LIVE Matrix daemon, wait for the
+# run_flow.sh — submit ONE prose intent to the LIVE Centra AI daemon, wait for the
 # async job to reach a terminal state, then dump the full signed transcript via
 # /events/replay/<intent_id>.
 #

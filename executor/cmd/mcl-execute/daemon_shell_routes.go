@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
@@ -58,9 +58,10 @@ import (
 	"syscall"
 	"time"
 
+	"matrix/executor/tool"
+
 	"github.com/creack/pty"
 	"github.com/gorilla/websocket"
-	"matrix/executor/tool"
 )
 
 // shellDebug prints internal lifecycle messages to stderr when the
@@ -591,4 +592,4 @@ func exitCode(cmd *exec.Cmd) int {
 	return cmd.ProcessState.ExitCode()
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

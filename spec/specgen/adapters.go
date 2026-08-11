@@ -54,14 +54,14 @@ func adapter(label, brief, banner string) string {
 	case "cursor":
 		// Cursor rules: .mdc with YAML frontmatter; alwaysApply keeps it on.
 		fm := "---\n" +
-			"description: Matrix portable spec workflow (task-driven + cortex)\n" +
+			"description: Centra AI portable spec workflow (task-driven + cortex)\n" +
 			"alwaysApply: true\n" +
 			"---\n\n"
 		return fm + cmt + brief
 	case "windsurf_workflow":
 		// Windsurf workflow: a slash-command (/spec) with a description.
 		fm := "---\n" +
-			"description: Run the Matrix spec workflow (recall, then drive the active spec.kvx task list)\n" +
+			"description: Run the Centra AI spec workflow (recall, then drive the active spec.kvx task list)\n" +
 			"---\n\n"
 		return fm + cmt + brief
 	case "kiro":

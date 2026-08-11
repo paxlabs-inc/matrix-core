@@ -6,7 +6,7 @@ Accepted — 2026-06-06
 
 ## Context
 
-Matrix is an authenticated agent-operations dashboard. Every page read depends on
+Centra AI is an authenticated agent-operations dashboard. Every page read depends on
 the `[locale]` URL segment (next-intl) and the edge proxy auth gate, which forces
 dynamic SSR for app routes.
 
@@ -32,7 +32,7 @@ dynamic SSR for app routes.
 
 ### HTTP fetch (`apiFetch`)
 
-Default `cache: 'no-store'` for all Matrix Router JSON calls. Opt in to caching
+Default `cache: 'no-store'` for all Centra AI Router JSON calls. Opt in to caching
 per-call only for immutable catalogue endpoints when the router sends
 `Cache-Control`.
 

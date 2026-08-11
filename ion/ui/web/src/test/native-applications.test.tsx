@@ -5,7 +5,7 @@ import {
   type DisplayKind,
   type DisplayModel,
   type EventEnvelope,
-} from '@matrixmcl/ion-shared'
+} from '@centra-ai/ion-shared'
 import { afterEach, describe, expect, it } from 'vitest'
 import { NativeApplication } from '../features/computer/NativeApplications'
 

@@ -2,7 +2,7 @@ package vault
 
 import "encoding/binary"
 
-// Magic identifies a Matrix vault ciphertext object. It is the first four bytes
+// Magic identifies a Centra AI vault ciphertext object. It is the first four bytes
 // of every sealed record, file, and stream, letting sniffing readers tell a
 // vault object from a legacy plaintext JSON/JSONL line.
 var Magic = [4]byte{'M', 'X', 'V', '1'}

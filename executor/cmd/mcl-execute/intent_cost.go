@@ -1,11 +1,11 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package main
 
 // intent_cost.go — cost telemetry helpers for sess#32 ambient-architect.
 //
-// The MatrixGateway (gateway/) responds with X-Matrix-Cost-Pax +
+// The Centra AI gateway (gateway/) responds with X-Matrix-Cost-Pax +
 // X-Matrix-Daily-Spent-Pax + X-Matrix-Daily-Remaining-Pax on every
 // metered LLM call. Daemons capture those via the
 // llm.Config.OnResponseHeaders hook (MCL/llm/llm.go) and route them
@@ -264,4 +264,4 @@ func paxAdd(a, b string) (string, error) {
 	return sum.Text('f', 12), nil
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

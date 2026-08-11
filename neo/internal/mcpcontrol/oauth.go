@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package mcpcontrol
@@ -352,7 +352,7 @@ func (s *Store) registerOAuthClient(ctx context.Context, alias string, oauth *OA
 		return nil, errors.New("MCP OAuth server requires a configured client_id because dynamic registration is unavailable")
 	}
 	payload := map[string]any{
-		"client_name": "Matrix Neo", "redirect_uris": []string{oauth.RedirectURL},
+		"client_name": "Centra AI Neo", "redirect_uris": []string{oauth.RedirectURL},
 		"grant_types":    []string{"authorization_code", "refresh_token"},
 		"response_types": []string{"code"}, "token_endpoint_auth_method": "none",
 	}

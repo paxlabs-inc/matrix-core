@@ -1,7 +1,7 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// Package lexer tokenises MatrixScript (.mtx) source into a flat token stream.
+// Package lexer tokenises CentraScript (.mtx) source into a flat token stream.
 //
 // The lexer is line-oriented:
 //   - It emits NEWLINE tokens.
@@ -21,7 +21,7 @@ import (
 	"matrix/mcl/mtx/token"
 )
 
-// Lexer scans MatrixScript source bytes and produces tokens.
+// Lexer scans CentraScript source bytes and produces tokens.
 type Lexer struct {
 	src []byte // normalised source (LF only)
 
@@ -499,4 +499,4 @@ func normaliseCRLF(src []byte) []byte {
 // TODO: add golang.org/x/text/unicode/norm when the dep is justified.
 var _ = unicode.Version // reference unicode to prevent "unused import"
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

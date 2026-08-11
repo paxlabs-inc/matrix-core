@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package server
@@ -25,7 +25,7 @@ func TestMemoryRoutesReadNeoPagerMemories(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = pager.Close() })
 
-	factURI, err := pager.RememberFact(context.Background(), "The user is building the Matrix Timeline.")
+	factURI, err := pager.RememberFact(context.Background(), "The user is building the Centra Timeline.")
 	if err != nil {
 		t.Fatalf("RememberFact: %v", err)
 	}
@@ -84,12 +84,12 @@ func TestMemoryRoutesReadNeoPagerMemories(t *testing.T) {
 	}
 
 	mutateReq := httptest.NewRequest(http.MethodPost, "/memory/mutate", strings.NewReader(`{
-		"items":[{"operation":"supersede","target":{"uri":"`+factURI+`"},"value":{"content":"The user shipped the Matrix Timeline."}}]
+		"items":[{"operation":"supersede","target":{"uri":"`+factURI+`"},"value":{"content":"The user shipped the Centra Timeline."}}]
 	}`))
 	mutateReq.Header.Set("Content-Type", "application/json")
 	mutateRes := httptest.NewRecorder()
 	handler.ServeHTTP(mutateRes, mutateReq)
-	if mutateRes.Code != http.StatusOK || !strings.Contains(mutateRes.Body.String(), "Matrix Timeline") {
+	if mutateRes.Code != http.StatusOK || !strings.Contains(mutateRes.Body.String(), "Centra Timeline") {
 		t.Fatalf("POST /memory/mutate status = %d, body = %s", mutateRes.Code, mutateRes.Body.String())
 	}
 	if strings.Contains(mutateRes.Body.String(), "matrix://Neocortex/") {

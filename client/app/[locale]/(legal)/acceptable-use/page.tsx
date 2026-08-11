@@ -4,7 +4,7 @@ import { LegalPage } from '@/components/legal/legal-page'
 export const metadata: Metadata = {
   title: 'Acceptable Use Policy',
   description:
-    'Conduct that is prohibited on Matrix, including illicit-finance, abuse, and AI misuse.',
+    'Conduct that is prohibited on Centra AI, including illicit-finance, abuse, and AI misuse.',
 }
 
 export default async function AcceptableUsePage({

@@ -1,5 +1,5 @@
 /**
- * Matrix Cloud HTTP client.
+ * Centra AI HTTP client.
  *
  * Single fetch wrapper used by every resource module. Responsibilities:
  *

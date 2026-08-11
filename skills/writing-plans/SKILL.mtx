@@ -1,7 +1,7 @@
-# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 # Contact · license@Paxeer.app · legal@Paxeer.app
 
-# Writing Plans — MatrixScript skill definition
+# Writing Plans — CentraScript skill definition
 # Replaces SKILL.md for the MCL compiler.
 # The compiler-LLM follows §PROCEDURE when the user's intent matches mcl.verbs.
 
@@ -51,7 +51,7 @@ matrix://skill/executing-plans@1.0.0
 §PROCEDURE
 on verb=build
   prompt
-    system="You are the Matrix plan compiler. Your task is to extract a fully-typed Frame for a 'build' intent. The user wants to CREATE something new. Output valid JSON matching the intent_frame@1 schema. No prose. No explanation. Only the JSON Frame object."
+    system="You are the Centra AI plan compiler. Your task is to extract a fully-typed Frame for a 'build' intent. The user wants to CREATE something new. Output valid JSON matching the intent_frame@1 schema. No prose. No explanation. Only the JSON Frame object."
     user="User goal: {prose}\n\nCortex context (resolved memories):\n{cortex.bundle}\n\nCurrently resolved slots:\n{slots}\n\nPending unknowns:\n{unknowns}\n\nExtract the Frame. Resolve all object references to matrix:// URIs where possible. Flag any that cannot be resolved as unknowns."
   end
   resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=5)
@@ -64,7 +64,7 @@ end
 
 on verb=modify
   prompt
-    system="You are the Matrix plan compiler. Your task is to extract a fully-typed Frame for a 'modify' intent. The user wants to CHANGE something that already exists. Output valid JSON matching the intent_frame@1 schema. No prose. Only the JSON Frame object."
+    system="You are the Centra AI plan compiler. Your task is to extract a fully-typed Frame for a 'modify' intent. The user wants to CHANGE something that already exists. Output valid JSON matching the intent_frame@1 schema. No prose. Only the JSON Frame object."
     user="User wants to modify: {prose}\n\nCortex context:\n{cortex.bundle}\n\nCurrently resolved slots:\n{slots}\n\nExtract the Frame. Resolve slot.target to its current versioned cortex URI."
   end
   resolve slot.target <- cortex.resolve(slot.target.prose)
@@ -76,7 +76,7 @@ end
 
 on verb=delegate
   prompt
-    system="You are the Matrix plan compiler. The user wants to DELEGATE a planning task to another agent. Extract the Frame identifying the sub-agent and the sub-goal. Output valid JSON matching intent_frame@1. No prose."
+    system="You are the Centra AI plan compiler. The user wants to DELEGATE a planning task to another agent. Extract the Frame identifying the sub-agent and the sub-goal. Output valid JSON matching intent_frame@1. No prose."
     user="User wants to delegate: {prose}\n\nCortex context:\n{cortex.bundle}\n\nIdentify: (1) who to delegate to, (2) what the sub-goal is, (3) what budget/deadline constraints apply."
   end
   unknown slot.target
@@ -134,4 +134,4 @@ v=1
 algo=sha256_ast
 digest=
 
-# Copyright © 2026 Paxlabs Inc. All rights reserved.
+# Copyright © 2026 Sidiora Labs. All rights reserved.

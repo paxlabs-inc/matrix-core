@@ -412,7 +412,7 @@ function spawnService(name, command, cwd, env) {
   const logFile = logPathFor(name)
   const fd = openSync(logFile, 'a')
   try {
-    const header = `\n=== [matrix-exec] start ${new Date().toISOString()} cwd=${cwd} ===\n`
+    const header = `\n=== [centra-exec] start ${new Date().toISOString()} cwd=${cwd} ===\n`
     writeFileSync(fd, header)
   } catch {
     /* non-fatal */

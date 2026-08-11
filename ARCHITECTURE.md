@@ -1,7 +1,7 @@
-# Matrix Architecture
+# Centra AI Architecture
 
 This is the high-level map for contributors, current as of 2026-08-04
-(Matrix `1.0.0`). The
+(Centra AI `1.0.0`). The
 canonical detailed sources of truth are:
 
 - **How to work in this repo** — `spec/workflow.kvx` (rendered by
@@ -16,11 +16,11 @@ If anything below contradicts a `spec.kvx`, the spec wins.
 
 ## The system in one paragraph
 
-Matrix runs **one agent per user — Neo** — on a per-user daemon service, with
+Centra runs **one agent per user — Neo** — on a per-user daemon service, with
 **one deterministic evidence process per user — Neocortex (`cortexd`)** when
 the new substrate is selected. Neo is a conversational
 tool-using agent loop; every other agent-shaped thing (the Cassandra
-controller, the `/cody` coding workbench, Automatrix proactive tasks, the
+controller, the `/cody` coding workbench, proactive automations, the
 morning brief) is a lens or a mode of Neo, not a separate agent. Neocortex
 preserves conversation, intent, work, evidence, beliefs, and checkpoints as
 typed events and deterministic projections. The Go Cortex remains an intact
@@ -34,7 +34,7 @@ HTTP payment protocol). All user data at rest is being sealed by the **vault**
 ## Layered model
 
 ```text
-                 apps/client (Next.js web; apps/mobile is personal/off-limits)
+                    client (Next.js web application)
                         |  chat SSE · workspace trace · /cody workbench · settings
                         v
    +--------------- router (public :443, JWT auth, per-user provisioning) ---------------+
@@ -74,13 +74,13 @@ each other) and is independently buildable/testable.
 
 | Module       | Role                                                                                                     |
 | ------------ | -------------------------------------------------------------------------------------------------------- |
-| `neo/`       | **The agent.** HTTP+SSE server engine, staged agent loop, tools manager, memory pager, Automatrix, morning brief, workbench backend, sub-agent swarm, writeback consolidator. |
+| `neo/`       | **The agent.** HTTP+SSE server engine, staged agent loop, tools manager, memory pager, proactive automations, morning brief, workbench backend, sub-agent swarm, writeback consolidator. |
 | `neocortex/` | C++23 deterministic single-writer evidence engine and `cortexd`: typed append-only actor logs, sealed payloads, BLAKE3 MMR checkpoints, replay-built LMDB projections, exact entity/vector/BM25 recall, temporal descent, intent frame, work ledger, and one activation composer. |
 | `cortexclient/` | Go client and migration seam for `cortexd`: capability-scoped protocol, resurrection-loop interfaces, checkpoint recovery, evidence citations, bounded reconnect, and Pebble export/import. |
 | `cortex/`    | Compatibility and rollback memory substrate on Pebble. It remains working and is the legacy migration source until the separately gated Neocortex cutover. |
 | `vault/`     | Envelope encryption for user data at rest: platform KEK behind a KeyProvider seam → wrapped per-user key → per-object DEKs; AES-256-GCM; three shapes (record-AEAD JSONL, whole-file AEAD, chunked streaming AEAD); fail-closed under `VAULT_REQUIRED`; cryptographic deletion by user-key destruction. |
 | `executor/`  | The MCL daemon (`cmd/mcl-execute`): the signed intent pipeline (compile → plan → walk → attest, D11 determinism), MCP tool subprocess manager, daemon HTTP routes (profile, personalization, transcripts, async jobs), snapshot push/pull. Neo delegates money/rigorous work here via `core_execute`. |
-| `MCL/`       | **Library only** (no longer a separate agent): MatrixScript compiler, intent/plan IR, envelopes, and the shared `llm` client packages that neo and executor import. |
+| `MCL/`       | **Library only** (no longer a separate agent): MCL compiler, intent/plan IR, envelopes, and the shared `llm` client packages that neo and executor import. |
 | `bridge/`    | Adapter wiring MCL's `Cortex` interface to a live `*cortex.Cortex`.                                       |
 | `cassandra/` | The silent-voice controller + classic verdict adjudicator library (Neo runs the controller in-process; executor imports the critic). |
 | `chronos/`   | Centralized agent alarm clock (`chronosd`): cron/timezone scheduling with wake conventions `HEARTBEAT`, `AUTOMATRIX`, `MORNING_BRIEF` delivered as `/chat` wake turns. |
@@ -122,9 +122,9 @@ in `tools/`, never by importing their Go packages.
   pool + synthetic tools (`memory_recall`, `spawn_subagents`,
   `construct_render`, `todo`, `workspace_preview`, `save_personalization_profile`,
   `core_execute` when escalated). Restricted advertised sets per mode:
-  sub-agents (no money/recursion), Automatrix (no value transfer), morning
+  sub-agents (no money/recursion), proactive automation (no value transfer), morning
   brief (positive read-only allowlist).
-- **Autonomy**: Automatrix captures implied opportunities into a cortex queue
+- **Autonomy**: Centra automations capture implied opportunities into a cortex queue
   and runs them supervised on the restricted surface during idle wakes; the
   ORACLE morning brief is a scheduled, profile-driven, policy-checked
   restricted run delivered as a durable conversation turn + inbox record.
@@ -175,9 +175,9 @@ Fly Machines topologies have been retired out of the tree.
 
 ## Clients
 
-- `apps/client` — the Next.js web app: chat with live SSE workspace ("Neo's
+- `client` — the Next.js web app: chat with live SSE workspace ("Neo's
   Computer": tool steps, searches, browser filmstrip, todos, construct
-  surfaces), the `/cody` workbench, wallet/leash pages, settings (Automatrix,
+  surfaces), the `/cody` workbench, wallet/leash pages, settings (automations,
   morning brief + personalization interview, notifications), inbox. Five
   locales. House rules: separation by background contrast only — no border
   strokes, emojis, gradients, or glow.

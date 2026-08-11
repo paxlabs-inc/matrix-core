@@ -172,7 +172,7 @@ def run_full(client: RpcClient, workspace: Path) -> None:
     created = client.request("session.create", {
         "cwd": str(workspace),
         "source": "codingruntime-smoke",
-        "title": "Matrix coding runtime smoke",
+        "title": "Centra AI coding runtime smoke",
         "cols": 100,
         "close_on_disconnect": False,
         "model": "mimo-v2.5-pro",
@@ -281,7 +281,7 @@ def main() -> None:
         if return_code not in {0, -signal.SIGTERM} and sys.exc_info()[0] is None:
             raise RuntimeError(f"AgentCore exited with {return_code}")
 
-    print("matrix-agentcore artifact smoke ok", flush=True)
+    print("Centra AI coding runtime artifact smoke ok", flush=True)
 
 
 if __name__ == "__main__":

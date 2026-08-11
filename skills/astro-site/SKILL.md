@@ -1,7 +1,7 @@
 ---
 name: astro-site
 description: Astro playbook for content/marketing/mostly-static sites — islands architecture, content collections, zero-JS by default, and selective hydration. Use when the app class is content/marketing.
-origin: Matrix
+origin: Centra AI
 ---
 
 # Astro Site Playbook

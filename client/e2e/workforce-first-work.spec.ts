@@ -25,7 +25,7 @@ test('Workforce owner completes a seven-department verified-receipt chain', asyn
   const activate = page.getByRole('button', { name: 'Review, sign, and activate' })
   await expect(activation.or(departmentMetric).first()).toBeVisible({ timeout: 30_000 })
   if (await activation.isVisible()) {
-    await page.getByLabel('Organization name').fill('Matrix Local Workforce')
+    await page.getByLabel('Organization name').fill('Centra AI Local Workforce')
   }
   await expect
     .poll(

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 
 /**
  * SiriOrb — adapted from SmoothUI (educlopez/smoothui).
- * A purely decorative animated orb used as Matrix's "working" indicator.
+ * A purely decorative animated orb used as Centra AI's "working" indicator.
  * Backend-agnostic: only visual props.
  */
 export interface SiriOrbProps {

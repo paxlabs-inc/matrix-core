@@ -1,93 +1,100 @@
+# Machine Mail — CentraScript skill manifest (generated from SKILL.md)
+# Source: skills/machine-mail/SKILL.md (frontmatter)
+# Prose body remains in SKILL.md; this manifest is the compiler-participating surface.
+
 §SKILL
 id=machine-mail
-version=1.0.0
-display="MachineMail"
-author=did:pax:0xMATRIX
-description="Operate Neo's MachineMail identity with complete thread context, stable idempotency, draft approval, and ordered lifecycle events."
-mcl.verbs=find analyze deliver
+version=0.1.0
+display="Machine Mail"
+author=did:pax:0xPLACEHOLDER
+description="Operate Neo's MachineMail identity safely: inspect mailboxes and conversations, search, compose, reply in-thread, park draft-scoped sends for approval, and follow authoritative lifecycle events with stable idempotency keys."
+mcl.verbs=find build
 determinism=seedable
 seed_policy=per_intent
 
 §INPUTS
 slot target: ArtifactRef
   required
-  hint="The mailbox, conversation, message, recipient, or email objective."
+  hint="The artifact, system, or topic this skill should be applied to"
 
 slot constraints: Constraint[]
   optional
-  hint="Authorized recipients, approval scope, delivery requirement, attachments, and timing."
+  hint="Hard constraints the skill output must satisfy"
 
 §CORTEX
-reads=Identity Fact Constraint Goal Event Pattern
-writes=Event Fact Pattern
-tags=email machinemail mailbox conversation approval
+reads=Fact Goal Pattern Event Constraint Preference
+tags=machine mail
 
 §TOOLS
-matrix://tool/mcp/machine-mail/mail_list_mailboxes@0.1.0
-matrix://tool/mcp/machine-mail/mail_get_mailbox@0.1.0
-matrix://tool/mcp/machine-mail/mail_get_inbox@0.1.0
-matrix://tool/mcp/machine-mail/mail_get_conversation@0.1.0
-matrix://tool/mcp/machine-mail/mail_compose@0.1.0
-matrix://tool/mcp/machine-mail/mail_reply@0.1.0
-matrix://tool/mcp/machine-mail/mail_get_threading_headers@0.1.0
-matrix://tool/mcp/machine-mail/mail_get_pending_approvals@0.1.0
-matrix://tool/mcp/machine-mail/mail_get_approval@0.1.0
-matrix://tool/mcp/machine-mail/mail_search_messages@0.1.0
-matrix://tool/mcp/machine-mail/mail_poll_events@0.1.0
-matrix://tool/mcp/machine-mail/mail_get_usage@0.1.0
+none
 
 §SUB_SKILLS
 none
 
 §PROCEDURE
 on verb=find
-  kind="reason"
-  output_cardinality=1
   prompt
-    system="You are the Matrix planner running machine-mail in read mode. Output a PlanTree, not prose. List mailboxes, inspect the selected mailbox policy, then use inbox, search, and full conversation reads as needed. Never compose or reply. Finish with exactly one reason step grounded in returned mailbox data."
-    user="Mail request: {slot.target.prose}\n\nConstraints:\n{slots}\n\nContext:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+    system="You are the Centra AI compiler invoking the machine-mail skill: Operate Neo's MachineMail identity safely: inspect mailboxes and conversations, search, compose, reply in-thread, park draft-scoped sends for approval, and follow authoritative lifecycle events with stable idempotency keys. Extract a fully-typed Frame for this 'find' intent. Output valid JSON matching intent_frame@1. No prose. No explanation."
+    user="User goal: {prose}\\n\\nCortex context (resolved memories):\\n{cortex.bundle}\\n\\nCurrently resolved slots:\\n{slots}\\n\\nPending unknowns:\\n{unknowns}\\n\\nExtract the Frame. Resolve all object references to matrix:// URIs where possible."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=5)
+  unknown slot.target
+    severity=blocking
+    reason="Cannot identify the target for the machine-mail skill from the user's phrasing"
   end
 end
 
-on verb=analyze
-  kind="reason"
-  output_cardinality=1
+on verb=build
   prompt
-    system="You are the Matrix planner running machine-mail in conversation analysis mode. Output a PlanTree, not prose. Read the complete conversation and threading headers when needed. Distinguish received, pending_approval, approved, sent, rejected, and failed from authoritative data. Finish with exactly one reason step and do not create outbound mail."
-    user="Mail analysis request: {slot.target.prose}\n\nConstraints:\n{slots}\n\nContext:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+    system="You are the Centra AI compiler invoking the machine-mail skill: Operate Neo's MachineMail identity safely: inspect mailboxes and conversations, search, compose, reply in-thread, park draft-scoped sends for approval, and follow authoritative lifecycle events with stable idempotency keys. Extract a fully-typed Frame for this 'build' intent. Output valid JSON matching intent_frame@1. No prose. No explanation."
+    user="User goal: {prose}\\n\\nCortex context (resolved memories):\\n{cortex.bundle}\\n\\nCurrently resolved slots:\\n{slots}\\n\\nPending unknowns:\\n{unknowns}\\n\\nExtract the Frame. Resolve all object references to matrix:// URIs where possible."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=5)
+  unknown slot.target
+    severity=blocking
+    reason="Cannot identify the target for the machine-mail skill from the user's phrasing"
   end
 end
 
-on verb=deliver
-  kind="reason"
-  output_cardinality=1
-  prompt
-    system="You are the Matrix planner running machine-mail for an authorized outbound message. Output a PlanTree, not prose. List and inspect the mailbox, run usage preflight, read the full conversation before any reply, then call mail_reply for an existing thread or mail_compose for a new one. Supply one stable idempotency_key for the logical action. When human approval is required use approval_scope draft. pending_approval is successful parked state and MUST NOT be retried. Poll ordered events from the last cursor only when sent-state evidence is required. Finish with exactly one reason step distinguishing parked, sent, rejected, or failed; never claim delivery from compose success alone."
-    user="Outbound mail request: {slot.target.prose}\n\nAuthorized constraints:\n{slots}\n\nContext:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+on confidence<0.75
+  clarify slot.target
+    prompt="What specifically should the Machine Mail skill operate on?"
+    type=ArtifactRef
+    required=true
+  end
+end
+
+on unknown
+  clarify slot.target
+    prompt="I could not find a matching reference in your memories. Can you describe the target more specifically?"
+    type=ArtifactRef
+    required=true
   end
 end
 
 §OUTPUTS
-slot result: Event
+slot result: ArtifactRef
   required
-  hint="Authoritative mailbox finding, parked approval, or event-proven delivery state."
+  hint="The artifact, plan, or report produced by this skill"
+
+slot unknowns: Unknown[]
+  optional
 
 §FAILURE_MODES
-mailbox_not_found
+target_not_found
   action=fail
   reason=unknown_information
 
-pending_approval
-  action=succeed
-  reason=unknown_information
+ambiguous_after_clarify
+  action=fail
+  reason=ambiguous_request
 
-authorization_denied
+policy_violation
   action=fail
   reason=policy_violation
 
-external_failure
-  action=fail
-  reason=external_failure
+budget_exceeded
+  suggest=raise_budget
 
 §HASH
 v=1

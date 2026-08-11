@@ -1379,7 +1379,7 @@ func testActivationDraft() mission.ActivationDraft {
 		PermittedCounterparties:  []string{"owner-approved"},
 		OperatingScopes: []mission.OperatingScope{{
 			Kind: mission.OperatingScopeProject, ScopeID: "project:matrix",
-			Purpose:             "Build and verify the approved Matrix workspace",
+			Purpose:             "Build and verify the approved Centra AI workspace",
 			AllowedActions:      []string{"build", "read", "test", "write"},
 			DataClassifications: []string{"internal-source"},
 			Jurisdictions:       []string{"DE"},

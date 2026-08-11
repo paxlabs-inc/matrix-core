@@ -6,7 +6,7 @@ See the full design below: the split-brain problem and the self-managing-brain f
 
 ## Overview
 
-**Continuous Memory** makes **cortex** the *self-managing memory brain* of a Matrix agent.
+**Continuous Memory** makes **cortex** the *self-managing memory brain* of a Centra AI agent.
 Today the brain is split: cortex is a durable, tamper-evident store, but the agent (Neo) runs its
 own parallel controller on top of it — `neo/internal/memory/pager.go` does selection, ranking and
 recency re-ranking; `a.summary` / `a.compact` (`neo/internal/agent/agent.go`) keep an ephemeral

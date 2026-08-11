@@ -1,7 +1,7 @@
 ---
 name: paxeer-ape-check
 description: "Check this before I ape" — a read-only, pre-trade safety verdict for any Paxeer token or contract. Returns BUY-OK / CAUTION / AVOID with evidence (verification, owner privileges, holder concentration, liquidity, recent activity). No transaction is ever signed.
-origin: Matrix/Paxeer
+origin: Centra AI/Paxeer
 ---
 
 # Paxeer Ape Check

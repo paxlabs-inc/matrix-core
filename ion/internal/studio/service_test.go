@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
+	projectcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/project"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/security/vault"
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/session"
+	workcontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/work"
 	"github.com/google/uuid"
-	projectcontrol "github.com/paxlabs-inc/ion-agent/internal/project"
-	"github.com/paxlabs-inc/ion-agent/internal/security/vault"
-	"github.com/paxlabs-inc/ion-agent/internal/session"
-	workcontrol "github.com/paxlabs-inc/ion-agent/internal/work"
 )
 
 type fixedClock struct{ now time.Time }

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// layerx — MCP stdio proxy bridging Matrix agents to the SHARED layerxd
+// layerx — MCP stdio proxy bridging Centra AI agents to the SHARED layerxd
 // (the agent-native settlement layer / USDX ledger) over its REST API.
 //
 // Same shape as tools/chronos/chronos.mjs + tools/tachyon/tachyon.mjs: the
@@ -12,7 +12,7 @@
 //
 // Auth (layerx.frozen.kvx [auth], PHASE 4 full-transparency rollup model):
 //   - transport: requests MAY carry MATRIX_LAYERX_TOKEN as a Bearer (proves "a
-//     legitimate Matrix daemon"). It is an OPTIONAL fleet gate — the public
+//     legitimate Centra AI daemon"). It is an OPTIONAL fleet gate — the public
 //     rollup route does not require it, but we send it when set (harmless).
 //   - principal: the value/owner tools (balance, deposit, pay, withdraw, settle)
 //     carry an agent-DID principal token in X-LayerX-Agent. The proxy mints it
@@ -75,7 +75,7 @@ const TOOL_NAMES = tools.map((t) => t.name)
 const TOOL_SET = new Set(TOOL_NAMES)
 
 // ── schema-driven arg re-coercion ─────────────────────────────────────────────
-// The Matrix plan IR carries every tool-call arg as a string (MCL/ir/plan.go),
+// The Centra AI plan IR carries every tool-call arg as a string (MCL/ir/plan.go),
 // and the executor's schema-blind coerceArg greedily turns numeric-looking
 // strings into JSON numbers — so seq "42" or amount_usdx "5" can reach this
 // proxy as a JSON number. layerxd types to_did / amount_usdx / swap_out / seq

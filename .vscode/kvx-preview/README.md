@@ -1,6 +1,6 @@
 # KVX Spec Preview
 
-A VS Code extension that renders Matrix `.kvx` spec files as an interactive,
+A VS Code extension that renders Centra AI `.kvx` spec files as an interactive,
 human-friendly view — the way the built-in Markdown preview renders Mermaid.
 Open a `spec.kvx` or `workflow.kvx` and get a live picture of the work instead
 of a wall of key/value lines.

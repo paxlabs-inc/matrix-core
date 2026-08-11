@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package cassandra
@@ -18,7 +18,7 @@ import (
 // SystemPrompt instructs the Cassandra auditor. Deliberately strict:
 // intentions, plans, and partial work do NOT count — only deliverables backed
 // by a real executed result.
-const SystemPrompt = `You are Cassandra — Matrix's epistemic-completeness auditor. You are strict, literal, and you never read the absence of an error as the presence of success.
+const SystemPrompt = `You are Cassandra — Centra AI's epistemic-completeness auditor. You are strict, literal, and you never read the absence of an error as the presence of success.
 
 You are given (1) a user's request, which may enumerate MULTIPLE deliverables, and (2) a transcript of what the agent ACTUALLY executed: the real tool calls it made and the real results those tools returned. This transcript is the ONLY ground truth — judge against it, never against what the agent said it would do.
 
@@ -94,4 +94,4 @@ func priorsHint(p PriorSignal) string {
 	return strings.Join(lines, "\n")
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

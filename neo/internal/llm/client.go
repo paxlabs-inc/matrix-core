@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 package llm
@@ -59,7 +59,7 @@ var ErrProviderUnavailable = errors.New("neo/llm: provider unreachable (transpor
 //
 // It is constructed from a matrix/mcl/llm.Config so it inherits provider
 // detection, the model registry, and — when Config.GatewayURL is set — the
-// MatrixGateway metering path (X-Matrix-* headers, bearer from
+// Centra AI gateway metering path (X-Matrix-* headers, bearer from
 // MATRIX_GATEWAY_TOKEN). When GatewayURL is empty it talks directly to the
 // provider with the provider's API key.
 type Client struct {

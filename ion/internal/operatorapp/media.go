@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Sidiora-Labs/centra-llm-agents/ion/internal/controlplane"
+	mediacontrol "github.com/Sidiora-Labs/centra-llm-agents/ion/internal/media"
 	"github.com/google/uuid"
-	"github.com/paxlabs-inc/ion-agent/internal/controlplane"
-	mediacontrol "github.com/paxlabs-inc/ion-agent/internal/media"
 )
 
 type mediaHandler struct {

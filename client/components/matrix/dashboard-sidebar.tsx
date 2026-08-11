@@ -16,7 +16,8 @@ import {
 import { useTranslations } from 'next-intl'
 import { SideNav, SideNavHeading, SideNavItem, SideNavSection } from '@astryxdesign/core/SideNav'
 import { Badge } from '@astryxdesign/core/Badge'
-import { MatrixLogo } from '@/components/matrix/matrix-logo'
+import { CentraLogo } from '@/components/brand/centra-logo'
+import { BRAND_NAME } from '@/lib/brand'
 import { LocaleSwitcher } from '@/components/matrix/locale-switcher'
 export type DashboardView =
   | 'chat'
@@ -82,7 +83,7 @@ export function DashboardSidebar({
 
   return (
     <SideNav
-      header={<SideNavHeading icon={<MatrixLogo />} heading="Matrix" />}
+      header={<SideNavHeading icon={<CentraLogo iconOnly />} heading={BRAND_NAME} />}
       collapsible={{ buttonLabel: t('collapseSidebar') }}
       footer={
         <>

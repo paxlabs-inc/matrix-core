@@ -1,4 +1,4 @@
-// Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+// Copyright © 2026 Sidiora Labs. All rights reserved. SPDX-License-Identifier: LicenseRef-Centra-ai-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
 // EmbedderChain is a reliability wrapper around the Embedder interface that
@@ -218,7 +218,7 @@ func (c *EmbedderChain) embedWithTimeout(p Embedder, text string) ([]float32, er
 // NewChainFromEnv builds an EmbedderChain from environment variables, mirroring
 // the preference order used by neo/internal/memory.pickEmbedder:
 //
-//  1. the Matrix gateway when MATRIX_GATEWAY_URL + MATRIX_GATEWAY_TOKEN are set;
+//  1. the Centra AI gateway when MATRIX_GATEWAY_URL + MATRIX_GATEWAY_TOKEN are set;
 //  2. the provider directly when FIREWORKS_API_KEY is set;
 //  3. the Hash stub terminal fallback (always present).
 //
@@ -258,4 +258,4 @@ func NewChainFromEnv(model string, gatewayDID string) *EmbedderChain {
 	return NewEmbedderChain(cfg)
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// Copyright © 2026 Sidiora Labs. All rights reserved.

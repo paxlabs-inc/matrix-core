@@ -1,4 +1,4 @@
-module github.com/paxlabs-inc/chronos
+module github.com/Sidiora-Labs/centra-llm-agents/chronos
 
 go 1.25.0
 
