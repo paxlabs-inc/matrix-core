@@ -502,14 +502,12 @@ RUN set -eux; \
          /opt/matrix/agents/default.json /opt/matrix/agents/neo.json'; \
     rm -f /tmp/verify-mcp-manifest.py
 # rules/ is the language/standards library Neo's coding prompts reference.
-COPY rules/          /opt/matrix/rules/
 # graph/self-model is the GENERATED structural self-graph (the codegraph
 # self-scope output) that neo READS at runtime via cfg.SelfModelGraph — the
 # relative default "graph/self-model", resolved from WORKDIR /opt/matrix. It is
 # committed and anti-drift-gated in CI; bake it so the self-model's structural
 # facet is populated in prod instead of degrading to empty.
 COPY graph/self-model/ /opt/matrix/graph/self-model/
-COPY tools/paxeer    /opt/matrix/tools/paxeer
 COPY tools/websearch /opt/matrix/tools/websearch
 COPY tools/exa       /opt/matrix/tools/exa
 COPY tools/finance   /opt/matrix/tools/finance
@@ -521,8 +519,6 @@ COPY tools/exec      /opt/matrix/tools/exec
 RUN su matrix-agent -s /bin/bash -c \
       'HOME=/home/matrix-agent PATH=/usr/local/bin:/usr/bin:/bin \
        node /opt/matrix/tools/exec/exec.mjs --selftest'
-COPY tools/kindle    /opt/matrix/tools/kindle
-COPY tools/deus      /opt/matrix/tools/deus
 COPY tools/media     /opt/matrix/tools/media
 COPY tools/voice/*.py /opt/matrix/tools/voice/
 COPY tools/voice/requirements.txt /opt/matrix/tools/voice/requirements.txt
@@ -530,7 +526,6 @@ RUN set -eux; \
     cd /opt/matrix/tools/voice; \
     /opt/voice-venv/bin/python agent.py download-files
 COPY tools/chronos   /opt/matrix/tools/chronos
-COPY tools/layerx    /opt/matrix/tools/layerx
 COPY tools/sandbox   /opt/matrix/tools/sandbox
 # DOJO disposable-desktop actuation bridge (wave 2): agents/neo.json spawns it
 # at /root/matrix/tools/desktop/desktop.mjs (the symlink below); it needs no
@@ -541,11 +536,6 @@ COPY tools/desktop   /opt/matrix/tools/desktop
 # greenfield project structure instead of hand-writing boilerplate.
 COPY tools/scaffold  /opt/matrix/tools/scaffold
 RUN chmod +x /opt/matrix/tools/scaffold/*.sh
-# Paxeer Cloud CLI (static Go binary; driven through the exec shell tool, not
-# MCP). Symlink onto PATH so `paxc` resolves from any shell cwd.
-COPY tools/paxeer-cloud /opt/matrix/tools/paxeer-cloud
-RUN chmod +x /opt/matrix/tools/paxeer-cloud/paxc \
-    && ln -sfn /opt/matrix/tools/paxeer-cloud/paxc /usr/local/bin/paxc
 # /root is traverse-only for matrix-agent; known baked manifest paths resolve
 # while the root service home cannot be listed.
 RUN mkdir -p /root && ln -sfn /opt/matrix /root/matrix

@@ -1,1459 +1,2416 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-    />
-    <title>Neo — Adaptive Surface (concept)</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Figtree ≈ stand-in for the client's PP Pangram Sans Rounded; JetBrains Mono per house mono. -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      /* ───────────────────────────────────────────────────────────────────
-         Neo "Adaptive Surface" — single morphing surface.
-         Structure follows the reference (temp/neo.html); the SKIN is the real
-         client design system (client/app/globals.css):
-           - separation by TONE only — no borders / shadows / glow for depth
-           - single flat accent #004ced; oklch tone ladder
-           - flat surfaces (no glass, no gradient atmosphere)
-         Hard UI rules honored: no border-strokes for depth, no glow, no
-         decorative gradients, no emoji.
-         ─────────────────────────────────────────────────────────────────── */
-      :root {
-        --pax: #004ced;
-        --pax-soft: #004ced24;
-        --pax-softer: #004ced14;
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luxe Stay | Luxury Vacation Rentals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* tone ladder — straight from globals.css */
-        --stage: oklch(0.118 0.004 264);
-        --app: oklch(0.145 0.004 264);
-        --card: oklch(0.185 0.005 264);
-        --popover: oklch(0.215 0.005 264);
-        --muted: oklch(0.235 0.005 264);
-        --accent: oklch(0.27 0.006 264);
+:root {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-card: #1a1a1a;
+  --bg-card-hover: #222222;
+  --bg-elevated: #1e1e1e;
+  --bg-glass: rgba(20, 20, 20, 0.85);
+  --bg-glass-light: rgba(255, 255, 255, 0.04);
+  --text-primary: #f5f5f5;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666666;
+  --accent: #e8c547;
+  --accent-light: #f0d76e;
+  --accent-dark: #c9a830;
+  --accent-glow: rgba(232, 197, 71, 0.15);
+  --coral: #ff6b6b;
+  --coral-light: #ff8787;
+  --green: #51cf66;
+  --blue: #4dabf7;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 40px rgba(232, 197, 71, 0.1);
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+}
 
-        --fg: oklch(0.97 0.002 264);
-        --fg2: oklch(0.66 0.006 264);
-        --fg3: oklch(0.52 0.006 264);
+html { scroll-behavior: smooth; }
 
-        --ok: oklch(0.72 0.14 155);
-        --danger: oklch(0.62 0.2 25);
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-        --ease: cubic-bezier(0.32, 0.72, 0, 1);
-        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-        --r-pill: 999px;
-        --r-card: 28px;
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-        --ui: 'Figtree', ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
-        --mono: 'JetBrains Mono', ui-monospace, monospace;
-      }
+/* ==================== HEADER ==================== */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 0 48px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(10, 10, 10, 0.7);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+  transition: var(--transition-base);
+}
 
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        -webkit-tap-highlight-color: transparent;
-      }
-      html,
-      body {
-        height: 100%;
-      }
-      body {
-        font-family: var(--ui);
-        background: var(--stage);
-        color: var(--fg);
-        overflow: hidden;
-        -webkit-font-smoothing: antialiased;
-        letter-spacing: -0.01em;
-      }
-      ::selection {
-        background: #004ced40;
-      }
-      :focus-visible {
-        outline: 2px solid var(--pax);
-        outline-offset: 2px;
-      }
-      button {
-        font-family: inherit;
-        color: inherit;
-        border: 0;
-        background: none;
-        cursor: pointer;
-      }
+.header.scrolled {
+  background: rgba(10, 10, 10, 0.95);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
 
-      /* ── Stage: flat tone + faint spec-sheet grid (no glow, no gradient color) ── */
-      .stage {
-        position: fixed;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        background: var(--stage);
-      }
-      .stage::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        background-image:
-          linear-gradient(to right, oklch(1 0 0 / 0.022) 1px, transparent 1px),
-          linear-gradient(to bottom, oklch(1 0 0 / 0.022) 1px, transparent 1px);
-        background-size: 54px 54px;
-        mask-image: radial-gradient(circle at 50% 46%, #000 30%, transparent 76%);
-      }
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text-primary);
+}
 
-      /* ── Top chrome ── */
-      .chrome {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 40;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 22px 26px;
-        transition: opacity 0.5s var(--ease);
-      }
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 700;
-        letter-spacing: 0.16em;
-        font-size: 12.5px;
-        text-transform: uppercase;
-      }
-      .mark {
-        width: var(--s, 22px);
-        height: var(--s, 22px);
-        border-radius: 7px;
-        background: var(--pax);
-        display: grid;
-        place-items: center;
-        flex: none;
-      }
-      .mark i {
-        width: 40%;
-        height: 40%;
-        background: var(--stage);
-        border-radius: 2px;
-        display: block;
-      }
-      .statepill {
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--fg3);
-        background: var(--card);
-        border-radius: var(--r-pill);
-        padding: 7px 13px;
-        letter-spacing: 0.04em;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .statepill .live {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--fg3);
-        transition: background 0.4s;
-      }
-      [data-state='thinking'] .statepill .live {
-        background: var(--pax);
-        animation: pulse 1s infinite;
-      }
-      [data-state='task'] .statepill .live {
-        background: var(--ok);
-      }
-      @keyframes pulse {
-        50% {
-          opacity: 0.3;
-        }
-      }
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 4px 15px rgba(232, 197, 71, 0.3);
+  transition: var(--transition-base);
+}
 
-      /* ── The morphing surface ── */
-      .surface-wrap {
-        position: relative;
-        width: 100%;
-        max-width: 720px;
-        padding: 0 20px;
-        display: grid;
-        place-items: center;
-      }
-      .surface {
-        position: relative;
-        z-index: 10;
-        width: 640px;
-        max-width: 100%;
-        background: var(--card);
-        overflow: hidden;
-        height: 64px;
-        border-radius: var(--r-pill);
-        transition:
-          width 0.6s var(--ease),
-          height 0.62s var(--ease),
-          border-radius 0.6s var(--ease),
-          transform 0.5s var(--ease),
-          opacity 0.4s var(--ease);
-        will-change: height, width, border-radius, transform;
-      }
-      [data-state='task'] .surface,
-      [data-state='thinking'] .surface {
-        height: var(--task-h, 460px);
-        border-radius: var(--r-card);
-      }
+.logo:hover .logo-icon {
+  transform: rotate(-5deg) scale(1.05);
+  box-shadow: 0 6px 25px rgba(232, 197, 71, 0.4);
+}
 
-      /* REST: the input pill */
-      .rest {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 0 8px 0 16px;
-        opacity: 1;
-        transition: opacity 0.26s var(--ease);
-      }
-      [data-state='thinking'] .rest,
-      [data-state='task'] .rest {
-        opacity: 0;
-        pointer-events: none;
-      }
-      .rest .lead {
-        flex: none;
-      }
-      .rest input {
-        flex: 1;
-        background: none;
-        border: none;
-        outline: none;
-        color: var(--fg);
-        font-family: var(--ui);
-        font-size: 16px;
-        font-weight: 500;
-      }
-      .rest input::placeholder {
-        color: var(--fg3);
-      }
-      .rest .send {
-        width: 48px;
-        height: 48px;
-        flex: none;
-        border-radius: 50%;
-        background: var(--pax);
-        color: #fff;
-        display: grid;
-        place-items: center;
-        transition:
-          transform 0.22s var(--ease),
-          filter 0.2s;
-      }
-      .rest .send:hover {
-        transform: scale(1.05);
-        filter: brightness(1.08);
-      }
-      .rest .send:active {
-        transform: scale(0.94);
-      }
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
 
-      /* TASK shell */
-      .task {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        opacity: 0;
-        transition: opacity 0.3s var(--ease) 0.12s;
-        pointer-events: none;
-      }
-      [data-state='thinking'] .task,
-      [data-state='task'] .task {
-        opacity: 1;
-        pointer-events: auto;
-      }
-      .grab {
-        flex: none;
-        padding: 13px 0 7px;
-        display: grid;
-        place-items: center;
-        cursor: grab;
-        touch-action: none;
-      }
-      .grab:active {
-        cursor: grabbing;
-      }
-      .grab i {
-        display: block;
-        width: 40px;
-        height: 5px;
-        border-radius: 99px;
-        background: var(--accent);
-        transition:
-          background 0.3s,
-          width 0.3s;
-      }
-      .grab:hover i {
-        background: var(--fg3);
-        width: 52px;
-      }
-      .grab .hint {
-        font-size: 10.5px;
-        color: var(--fg3);
-        letter-spacing: 0.04em;
-        margin-top: 9px;
-        font-family: var(--mono);
-        opacity: 0;
-        transition: opacity 0.3s;
-      }
-      .grab.show-hint .hint {
-        opacity: 1;
-      }
+.logo-text span {
+  color: var(--accent);
+}
 
-      /* head sits on a slightly lighter tone band → layered without a stroke */
-      .task-head {
-        flex: none;
-        display: flex;
-        align-items: center;
-        gap: 11px;
-        padding: 4px 22px 16px;
-      }
-      .task-head .ic {
-        width: 32px;
-        height: 32px;
-        border-radius: 10px;
-        display: grid;
-        place-items: center;
-        background: var(--pax-soft);
-        color: var(--pax);
-        flex: none;
-      }
-      .task-head .ttl {
-        font-weight: 700;
-        font-size: 15px;
-      }
-      .task-head .sub {
-        font-size: 11.5px;
-        color: var(--fg3);
-        font-family: var(--mono);
-        margin-top: 1px;
-      }
-      .task-head .x {
-        margin-left: auto;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        color: var(--fg2);
-        flex: none;
-      }
-      .task-head .x:hover {
-        background: var(--muted);
-        color: var(--fg);
-      }
+/* Search Bar */
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  padding: 4px;
+  transition: var(--transition-base);
+  cursor: pointer;
+}
 
-      .task-body {
-        flex: 1;
-        overflow-y: auto;
-        padding: 2px 22px 24px;
-        scrollbar-width: thin;
-        scrollbar-color: var(--accent) transparent;
-      }
-      .task-body::-webkit-scrollbar {
-        width: 6px;
-      }
-      .task-body::-webkit-scrollbar-thumb {
-        background: var(--accent);
-        border-radius: 99px;
-      }
+.search-bar:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-md);
+}
 
-      /* reasoning trace (the thought process, as intention) */
-      .trace {
-        display: flex;
-        flex-direction: column;
-        gap: 13px;
-        margin-bottom: 4px;
-      }
-      .trace .step {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        opacity: 0;
-        transform: translateY(6px);
-        animation: rise 0.5s var(--ease-out) forwards;
-      }
-      .trace .step .gut {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        flex: none;
-        padding-top: 3px;
-      }
-      .trace .step .node {
-        width: 11px;
-        height: 11px;
-        border-radius: 50%;
-        background: var(--muted);
-        transition: background 0.3s;
-      }
-      .trace .step.done .node {
-        background: var(--pax);
-      }
-      .trace .step .stem {
-        width: 2px;
-        flex: 1;
-        min-height: 14px;
-        background: var(--muted);
-        margin-top: 3px;
-      }
-      .trace .step:last-child .stem {
-        display: none;
-      }
-      .trace .step .lbl {
-        font-size: 13.5px;
-        color: var(--fg2);
-        line-height: 1.5;
-      }
-      .trace .step.done .lbl {
-        color: var(--fg);
-      }
-      .trace .step .lbl b {
-        color: var(--fg);
-        font-weight: 600;
-      }
-      @keyframes rise {
-        to {
-          opacity: 1;
-          transform: none;
-        }
-      }
+.search-bar.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), var(--shadow-glow);
+}
 
-      .result {
-        opacity: 0;
-        animation: rise 0.55s var(--ease-out) forwards;
-      }
-      .gap {
-        height: 18px;
-      }
+.search-segment {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
 
-      /* search */
-      .answer {
-        font-size: 15px;
-        line-height: 1.6;
-        color: var(--fg);
-        margin-bottom: 16px;
-      }
-      .answer .hl {
-        color: var(--pax);
-        font-weight: 600;
-      }
-      .seclabel {
-        font-family: var(--mono);
-        font-size: 10.5px;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--fg3);
-        margin: 4px 2px 10px;
-      }
-      .src {
-        display: flex;
-        gap: 13px;
-        padding: 13px;
-        background: var(--popover);
-        border-radius: 14px;
-        margin-bottom: 9px;
-        transition: background 0.22s;
-        cursor: pointer;
-      }
-      .src:hover {
-        background: var(--muted);
-      }
-      .src .fav {
-        width: 34px;
-        height: 34px;
-        border-radius: 9px;
-        flex: none;
-        background: var(--muted);
-        display: grid;
-        place-items: center;
-        font-family: var(--mono);
-        font-size: 12px;
-        color: var(--fg2);
-        font-weight: 600;
-      }
-      .src:hover .fav {
-        background: var(--accent);
-      }
-      .src h4 {
-        font-size: 13.5px;
-        font-weight: 600;
-        margin-bottom: 3px;
-      }
-      .src p {
-        font-size: 12px;
-        color: var(--fg3);
-        line-height: 1.45;
-      }
-      .src .url {
-        font-size: 10.5px;
-        color: var(--pax);
-        font-family: var(--mono);
-        margin-top: 5px;
-      }
+.search-segment:hover { color: var(--text-primary); }
 
-      /* wallet — rows separated by 1px tone GAPS (container tone shows through) */
-      .esc {
-        display: flex;
-        gap: 10px;
-        align-items: flex-start;
-        background: var(--pax-soft);
-        border-radius: 14px;
-        padding: 12px 14px;
-        margin-bottom: 14px;
-        font-size: 13px;
-        line-height: 1.5;
-      }
-      .esc .ic {
-        color: var(--pax);
-        flex: none;
-        margin-top: 1px;
-      }
-      .wallet {
-        background: var(--muted);
-        border-radius: 18px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        gap: 1px;
-      }
-      .wallet > * {
-        background: var(--popover);
-      }
-      .wallet .net {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px 16px;
-      }
-      .wallet .net .chip {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12.5px;
-        font-weight: 600;
-      }
-      .wallet .net .chip .b {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--ok);
-      }
-      .wallet .net .id {
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--fg3);
-      }
-      .amt {
-        text-align: center;
-        padding: 24px 16px 18px;
-      }
-      .amt .big {
-        font-size: 44px;
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        line-height: 1;
-      }
-      .amt .big span {
-        font-size: 21px;
-        color: var(--fg3);
-        font-weight: 600;
-        margin-left: 6px;
-      }
-      .amt .fiat {
-        font-size: 13px;
-        color: var(--fg3);
-        margin-top: 8px;
-        font-family: var(--mono);
-      }
-      .wrow {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 13px 16px;
-        font-size: 13px;
-      }
-      .wrow .k {
-        color: var(--fg3);
-      }
-      .wrow .v {
-        font-family: var(--mono);
-        font-size: 12.5px;
-      }
-      .wrow .v.addr {
-        color: var(--fg2);
-      }
+.search-segment:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+}
 
-      /* slide to sign */
-      .sign {
-        position: relative;
-        margin: 16px 2px 4px;
-        height: 58px;
-        border-radius: var(--r-pill);
-        background: var(--muted);
-        overflow: hidden;
-        user-select: none;
-        touch-action: none;
-      }
-      .sign .track-lbl {
-        position: absolute;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        font-size: 13.5px;
-        font-weight: 600;
-        color: var(--fg2);
-        padding-left: 30px;
-        pointer-events: none;
-      }
-      .sign .knob {
-        position: absolute;
-        top: 5px;
-        left: 5px;
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        cursor: grab;
-        background: var(--pax);
-        display: grid;
-        place-items: center;
-        color: #fff;
-        transition: left 0.35s var(--ease);
-      }
-      .sign.signed {
-        background: var(--pax-soft);
-      }
-      .sign.signed .knob {
-        background: var(--ok);
-        color: #04140e;
-        left: calc(100% - 53px);
-      }
-      .sign.signed .track-lbl {
-        color: var(--ok);
-      }
-      .sign-cap {
-        text-align: center;
-        font-size: 11.5px;
-        color: var(--fg3);
-        margin-top: 10px;
-      }
+.search-segment.active { color: var(--text-primary); }
 
-      /* code */
-      .codewrap {
-        border-radius: 16px;
-        overflow: hidden;
-        background: var(--app);
-      }
-      .codewrap .bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 14px;
-        background: var(--muted);
-      }
-      .codewrap .bar .fn {
-        font-family: var(--mono);
-        font-size: 11.5px;
-        color: var(--fg3);
-      }
-      .codewrap .bar .cp {
-        font-size: 11px;
-        color: var(--fg2);
-        background: var(--popover);
-        padding: 5px 11px;
-        border-radius: 7px;
-        cursor: pointer;
-        font-family: var(--mono);
-        transition: 0.2s;
-      }
-      .codewrap .bar .cp:hover {
-        color: var(--fg);
-        background: var(--accent);
-      }
-      pre {
-        margin: 0;
-        padding: 16px;
-        overflow: auto;
-        font-family: var(--mono);
-        font-size: 12.5px;
-        line-height: 1.7;
-      }
-      pre .kw {
-        color: #6aa3ff;
-      }
-      pre .fn {
-        color: #3dd4c0;
-      }
-      pre .str {
-        color: var(--ok);
-      }
-      pre .cm {
-        color: var(--fg3);
-      }
-      pre .nm {
-        color: #d6b25e;
-      }
+.search-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-spring);
+  flex-shrink: 0;
+}
 
-      /* image — flat illustrative render (no gradient), shimmer while "rendering" */
-      .imgwrap {
-        position: relative;
-        border-radius: 18px;
-        overflow: hidden;
-        aspect-ratio: 16/10;
-        background: var(--popover);
-      }
-      .imgwrap svg {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        opacity: 0;
-        animation: reveal 1.2s var(--ease-out) 0.6s forwards;
-      }
-      @keyframes reveal {
-        to {
-          opacity: 1;
-        }
-      }
-      .imgwrap .shim {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(
-          100deg,
-          transparent 35%,
-          rgba(255, 255, 255, 0.06) 50%,
-          transparent 65%
-        );
-        transform: translateX(-100%);
-        animation: sweep 1.5s var(--ease) 2 forwards;
-      }
-      @keyframes sweep {
-        to {
-          transform: translateX(100%);
-        }
-      }
-      .imgwrap .cap {
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        padding: 11px 14px;
-        font-size: 11.5px;
-        color: var(--fg2);
-        background: var(--stage);
-        font-family: var(--mono);
-      }
+.search-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 20px rgba(232, 197, 71, 0.4);
+}
 
-      /* settings — rows separated by tone gaps */
-      .setgroup {
-        background: var(--muted);
-        border-radius: 16px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        gap: 1px;
-        margin-bottom: 10px;
-      }
-      .setrow {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 15px;
-        background: var(--popover);
-      }
-      .setrow .t {
-        font-size: 14px;
-        font-weight: 600;
-      }
-      .setrow .d {
-        font-size: 11.5px;
-        color: var(--fg3);
-        margin-top: 2px;
-      }
-      .tog {
-        width: 46px;
-        height: 27px;
-        border-radius: 99px;
-        background: var(--accent);
-        position: relative;
-        cursor: pointer;
-        transition: 0.3s;
-        flex: none;
-      }
-      .tog::after {
-        content: '';
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 21px;
-        height: 21px;
-        border-radius: 50%;
-        background: #fff;
-        transition: 0.3s var(--ease);
-      }
-      .tog.on {
-        background: var(--pax);
-      }
-      .tog.on::after {
-        left: 22px;
-      }
-      .seg {
-        display: flex;
-        gap: 3px;
-        background: var(--accent);
-        border-radius: 11px;
-        padding: 3px;
-        flex: none;
-      }
-      .seg button {
-        color: var(--fg2);
-        font-family: var(--ui);
-        font-size: 12px;
-        font-weight: 600;
-        padding: 6px 12px;
-        border-radius: 8px;
-        transition: 0.2s;
-      }
-      .seg button.on {
-        background: var(--pax);
-        color: #fff;
-      }
+.search-btn:active { transform: scale(0.95); }
 
-      .reply {
-        font-size: 15px;
-        line-height: 1.65;
-        color: var(--fg);
-      }
+.search-btn svg { width: 18px; height: 18px; color: #0a0a0a; }
 
-      /* suggestion rail */
-      .rail {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        bottom: calc(50% + 56px);
-        display: flex;
-        gap: 9px;
-        flex-wrap: wrap;
-        justify-content: center;
-        max-width: 640px;
-        transition:
-          opacity 0.35s var(--ease),
-          transform 0.45s var(--ease);
-      }
-      [data-state='thinking'] .rail,
-      [data-state='task'] .rail {
-        opacity: 0;
-        transform: translate(-50%, 12px);
-        pointer-events: none;
-      }
-      .chip {
-        font-size: 12.5px;
-        font-weight: 600;
-        color: var(--fg2);
-        cursor: pointer;
-        background: var(--card);
-        padding: 9px 15px;
-        border-radius: var(--r-pill);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: 0.22s var(--ease);
-      }
-      .chip:hover {
-        color: var(--fg);
-        background: var(--accent);
-        transform: translateY(-1px);
-      }
-      .chip svg {
-        width: 14px;
-        height: 14px;
-        opacity: 0.7;
-      }
+/* Nav Actions */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-      /* login */
-      .login {
-        position: fixed;
-        inset: 0;
-        z-index: 100;
-        display: grid;
-        place-items: center;
-        background: var(--stage);
-        transition:
-          opacity 0.8s var(--ease),
-          transform 0.8s var(--ease);
-      }
-      .login::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        background-image:
-          linear-gradient(to right, oklch(1 0 0 / 0.022) 1px, transparent 1px),
-          linear-gradient(to bottom, oklch(1 0 0 / 0.022) 1px, transparent 1px);
-        background-size: 54px 54px;
-        mask-image: radial-gradient(circle at 50% 42%, #000 26%, transparent 70%);
-      }
-      .login.gone {
-        opacity: 0;
-        transform: scale(1.04);
-        pointer-events: none;
-      }
-      .login-card {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        animation: rise 0.9s var(--ease-out);
-      }
-      .login .mark {
-        --s: 60px;
-        border-radius: 17px;
-        margin-bottom: 26px;
-      }
-      .login h1 {
-        font-size: 30px;
-        font-weight: 800;
-        letter-spacing: -0.03em;
-      }
-      .login .tag {
-        color: var(--fg3);
-        font-size: 13.5px;
-        margin-top: 9px;
-        font-family: var(--mono);
-        letter-spacing: 0.02em;
-      }
-      .login .connect {
-        margin-top: 36px;
-        font-size: 14.5px;
-        font-weight: 700;
-        color: #fff;
-        padding: 16px 30px;
-        border-radius: var(--r-pill);
-        background: var(--pax);
-        transition:
-          transform 0.25s var(--ease),
-          filter 0.2s;
-      }
-      .login .connect:hover {
-        transform: translateY(-2px);
-        filter: brightness(1.08);
-      }
-      .login .connect:active {
-        transform: scale(0.97);
-      }
-      .login .did {
-        margin-top: 18px;
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--fg3);
-      }
-      .login .signing {
-        margin-top: 36px;
-        font-family: var(--mono);
-        font-size: 12px;
-        color: var(--pax);
-        display: none;
-        align-items: center;
-        gap: 10px;
-      }
-      .login.auth .connect {
-        display: none;
-      }
-      .login.auth .signing {
-        display: flex;
-      }
-      .login .sp {
-        width: 14px;
-        height: 14px;
-        border: 2px solid var(--muted);
-        border-top-color: var(--pax);
-        border-radius: 50%;
-        animation: spin 0.7s linear infinite;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
+.nav-link {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 24px;
+  transition: var(--transition-fast);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
 
-      .footnote {
-        position: fixed;
-        bottom: 20px;
-        left: 0;
-        right: 0;
-        text-align: center;
-        font-size: 11px;
-        color: var(--fg3);
-        font-family: var(--mono);
-        z-index: 30;
-        transition: opacity 0.4s;
-      }
-      [data-state='thinking'] .footnote,
-      [data-state='task'] .footnote {
-        opacity: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- LOGIN -->
-    <div class="login" id="login">
-      <div class="login-card">
-        <div class="mark"><i></i></div>
-        <h1>Neo</h1>
-        <div class="tag">one surface · zero clutter</div>
-        <button class="connect" id="connectBtn">Continue with Paxeer</button>
-        <div class="did">DID · ed25519 challenge–response</div>
-        <div class="signing"><span class="sp"></span> Verifying your identity…</div>
+.nav-link:hover {
+  color: var(--text-primary);
+  background: var(--bg-glass-light);
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 6px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.user-menu:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.hamburger {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+}
+
+.hamburger span {
+  width: 16px;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 1px;
+  transition: var(--transition-fast);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+
+/* ==================== HERO SECTION ==================== */
+.hero {
+  padding: 140px 48px 60px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(232, 197, 71, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--accent-glow);
+  border: 1px solid rgba(232, 197, 71, 0.2);
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 28px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.hero-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.5); }
+}
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -2px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero h1 em {
+  font-style: italic;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero p {
+  font-size: 18px;
+  color: var(--text-secondary);
+  max-width: 540px;
+  margin: 0 auto 40px;
+  line-height: 1.7;
+}
+
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  margin-top: 50px;
+}
+
+.hero-stat {
+  text-align: center;
+}
+
+.hero-stat-value {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -1px;
+}
+
+.hero-stat-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ==================== FILTER CHIPS ==================== */
+.filters-wrapper {
+  padding: 0 48px;
+  margin-bottom: 40px;
+  position: sticky;
+  top: 80px;
+  z-index: 100;
+  background: var(--bg-primary);
+  padding-top: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 4px;
+}
+
+.filters::-webkit-scrollbar { display: none; }
+
+.filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-base);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.filter-chip:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+  transform: translateY(-1px);
+}
+
+.filter-chip.active {
+  color: var(--bg-primary);
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.filter-chip .chip-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.filter-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-base);
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+.filter-btn svg { width: 16px; height: 16px; }
+
+/* Sort */
+.sort-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 48px;
+  margin-bottom: 24px;
+}
+
+.sort-bar .results-count {
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+.sort-bar .results-count strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.sort-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.sort-select:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+/* ==================== LISTING GRID ==================== */
+.listings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 28px;
+  padding: 0 48px 80px;
+}
+
+/* ==================== LISTING CARD ==================== */
+.listing-card {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: var(--transition-slow);
+  cursor: pointer;
+  position: relative;
+  group: true;
+}
+
+.listing-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg);
+}
+
+.listing-card:hover .card-image img {
+  transform: scale(1.05);
+}
+
+.card-image {
+  position: relative;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.card-badges {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.card-badge {
+  padding: 6px 12px;
+  background: rgba(10, 10, 10, 0.75);
+  backdrop-filter: blur(20px);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  letter-spacing: 0.3px;
+}
+
+.card-badge.guest-fav {
+  background: rgba(232, 197, 71, 0.9);
+  color: #0a0a0a;
+}
+
+/* Wishlist Heart */
+.wishlist-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(10, 10, 10, 0.5);
+  backdrop-filter: blur(10px);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-spring);
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.listing-card:hover .wishlist-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.wishlist-btn:hover {
+  background: rgba(10, 10, 10, 0.8);
+  transform: scale(1.15) !important;
+}
+
+.wishlist-btn.liked {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.wishlist-btn svg {
+  width: 20px;
+  height: 20px;
+  transition: var(--transition-spring);
+}
+
+.wishlist-btn.liked svg {
+  fill: var(--coral);
+  color: var(--coral);
+  animation: heartPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes heartPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* Image Carousel Dots */
+.card-dots {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  z-index: 2;
+}
+
+.card-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: var(--transition-fast);
+}
+
+.card-dot.active {
+  background: white;
+  width: 18px;
+  border-radius: 3px;
+}
+
+/* Card Nav Arrows */
+.card-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  opacity: 0;
+  transition: var(--transition-base);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.listing-card:hover .card-arrow { opacity: 1; }
+.card-arrow:hover { transform: translateY(-50%) scale(1.1); }
+.card-arrow.left { left: 12px; }
+.card-arrow.right { right: 12px; }
+.card-arrow svg { width: 14px; height: 14px; color: #333; }
+
+/* Card Body */
+.card-body {
+  padding: 18px 20px 20px;
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.card-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.card-rating svg {
+  width: 14px;
+  height: 14px;
+  fill: var(--text-primary);
+}
+
+.card-location {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.card-host {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.card-dates {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.card-price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.card-price-amount {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-price-unit {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.card-price-total {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-left: 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ==================== DETAIL MODAL ==================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: var(--transition-base);
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal {
+  width: 95vw;
+  max-width: 1120px;
+  max-height: 92vh;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  overflow-y: auto;
+  transform: scale(0.92) translateY(20px);
+  transition: var(--transition-slow);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+.modal-overlay.open .modal {
+  transform: scale(1) translateY(0);
+}
+
+.modal-close {
+  position: sticky;
+  top: 16px;
+  float: right;
+  margin: 16px 16px 0 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: var(--transition-base);
+  color: var(--text-primary);
+}
+
+.modal-close:hover {
+  background: var(--bg-card-hover);
+  transform: rotate(90deg);
+}
+
+/* Image Gallery in Modal */
+.modal-gallery {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 6px;
+  height: 420px;
+  margin: 0 24px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.modal-gallery img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.modal-gallery img:hover { opacity: 0.9; }
+.modal-gallery img:first-child {
+  grid-row: 1 / -1;
+}
+
+.modal-content {Save
+812
+813
+814
+815
+816
+817
+818
+819
+820
+821
+822
+823
+824
+825
+826
+827
+828
+829
+830
+831
+832
+833
+834
+835
+836
+837
+838
+839
+840
+841
+842
+843
+844
+845
+846
+847
+848
+849
+850
+851
+852
+853
+854
+855
+856
+857
+858
+859
+860
+861
+862
+863
+864
+865
+866
+867
+868
+869
+870
+871
+872
+873
+874
+875
+876
+877
+878
+879
+880
+881
+882
+883
+884
+885
+886
+887
+888
+889
+890
+891
+892
+893
+894
+895
+896
+897
+898
+899
+
+  padding: 36px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 48px;
+}
+
+.modal-left {}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.modal-subtitle {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.modal-host-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.modal-host-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.modal-host-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.modal-host-superhost {
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.superhost-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--accent-glow);
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Highlights */
+.modal-highlights {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.highlight-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.highlight-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.highlight-title {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+
+.highlight-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Description */
+.modal-description {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+/* Amenities */
+.modal-amenities-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.amenities-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.amenity-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: var(--transition-base);
+}
+
+.amenity-item:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+}
+
+.amenity-icon {
+  font-size: 20px;
+  width: 24px;
+  text-align: center;
+}
+
+/* Reviews */
+.reviews-section {
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.reviews-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.reviews-header svg {
+  width: 28px;
+  height: 28px;
+  fill: var(--text-primary);
+}
+
+.reviews-score {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.review-card {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.review-card:last-child { border-bottom: none; }
+
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.review-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.review-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.review-date {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.review-stars {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.review-stars svg { width: 12px; height: 12px; fill: var(--accent); }
+
+.review-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* ==================== BOOKING WIDGET ==================== */
+.booking-widget {
+  position: sticky;
+  top: 100px;
+}
+
+.booking-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-lg);
+}
+
+.booking-price-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.booking-price-amount {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.booking-price-unit {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.booking-inputs {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.booking-input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.booking-input {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.booking-input:hover {
+  background: var(--bg-glass-light);
+}
+
+.booking-input:first-child { border-right: 1px solid var(--border); }
+
+.booking-input-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.booking-input-value {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.booking-guests {
+  border-top: 1px solid var(--border);
+}
+
+.booking-guests .booking-input {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.guest-counter {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.guest-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border-hover);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+}
+
+.guest-btn:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.guest-btn:active { transform: scale(0.9); }
+
+.guest-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.guest-count {
+  font-size: 16px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* Book Button */
+.book-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 700;
+  color: #0a0a0a;
+  cursor: pointer;
+  transition: var(--transition-spring);
+  position: relative;
+  overflow: hidden;
+}
+
+.book-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transform: translateX(-100%);
+  transition: 0.6s;
+}
+
+.book-btn:hover::before { transform: translateX(100%); }
+
+.book-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(232, 197, 71, 0.4);
+}
+
+.book-btn:active { transform: translateY(0) scale(0.98); }
+
+.book-btn.reserved {
+  background: var(--green);
+  pointer-events: none;
+}
+
+.booking-note {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 16px;
+}
+
+.booking-breakdown {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.breakdown-row.total {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-primary);
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  margin-bottom: 0;
+}
+
+.breakdown-row .underline-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.breakdown-row .underline-link:hover { color: var(--text-primary); }
+
+/* ==================== FOOTER ==================== */
+.footer {
+  padding: 60px 48px 40px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.footer-top {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+
+.footer-brand .logo { margin-bottom: 16px; }
+
+.footer-brand p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.7;
+  max-width: 320px;
+}
+
+.footer-col h4 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+.footer-col a {
+  display: block;
+  font-size: 14px;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 6px 0;
+  transition: var(--transition-fast);
+}
+
+.footer-col a:hover { color: var(--text-primary); transform: translateX(4px); }
+
+.footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.footer-social {
+  display: flex;
+  gap: 12px;
+}
+
+.footer-social a {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: var(--transition-base);
+  font-size: 16px;
+}
+
+.footer-social a:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+
+/* ==================== TOAST NOTIFICATION ==================== */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  padding: 14px 28px;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  z-index: 3000;
+  opacity: 0;
+  transition: var(--transition-spring);
+  pointer-events: none;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-in {
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+}
+
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 1024px) {
+  .modal-content { grid-template-columns: 1fr; }
+  .booking-widget { position: relative; top: 0; }
+  .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .hero h1 { font-size: 48px; }
+}
+
+@media (max-width: 768px) {
+  .header { padding: 0 20px; }
+  .search-bar { display: none; }
+  .nav-link { display: none; }
+  .hero { padding: 120px 20px 40px; }
+  .hero h1 { font-size: 36px; letter-spacing: -1px; }
+  .hero p { font-size: 15px; }
+  .hero-stats { gap: 32px; }
+  .hero-stat-value { font-size: 28px; }
+  .filters-wrapper { padding: 0 20px; }
+  .sort-bar { padding: 0 20px; }
+  .listings-grid { grid-template-columns: 1fr; padding: 0 20px 60px; gap: 20px; }
+  .modal { width: 100vw; max-height: 100vh; border-radius: 0; }
+  .modal-gallery { height: 260px; grid-template-columns: 1fr; grid-template-rows: auto; }
+  .modal-gallery img:first-child { grid-row: auto; }
+  .modal-gallery img:not(:first-child) { display: none; }
+  .modal-content { padding: 24px; gap: 24px; }
+  .modal-title { font-size: 24px; }
+  .amenities-grid { grid-template-columns: 1fr; }
+  .footer { padding: 40px 20px 24px; }
+  .footer-top { grid-template-columns: 1fr; gap: 24px; }
+  .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<header class="header" id="header">
+  <a class="logo" href="#">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#0a0a0a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <div class="logo-text">Luxe<span>Stay</span></div>
+  </a>
+
+  <div class="search-bar" id="searchBar">
+    <button class="search-segment active" onclick="setSearchActive(this)">Anywhere</button>
+    <button class="search-segment" onclick="setSearchActive(this)">Any week</button>
+    <button class="search-segment" onclick="setSearchActive(this)">Add guests</button>
+    <button class="search-btn" onclick="showToast('Searching for luxury stays...')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+  </div>
+
+  <div class="nav-actions">
+    <button class="nav-link" onclick="showToast('Become a Host - Coming Soon')">LuxeStay your home</button>
+    <button class="nav-link" onclick="showToast('Globe menu opened')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    </button>
+    <div class="user-menu" onclick="toggleDropdown()">
+      <div class="hamburger"><span></span><span></span><span></span></div>
+      <div class="user-avatar">J</div>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <div class="hero-badge animate-in stagger-1">Curated Luxury Collection</div>
+  <h1 class="animate-in stagger-2">Discover Your Next<br><em>Extraordinary</em> Escape</h1>
+  <p class="animate-in stagger-3">Handpicked luxury properties in the world's most breathtaking destinations. Every stay is a story waiting to be told.</p>
+  <div class="hero-stats animate-in stagger-4">
+    <div class="hero-stat">
+      <div class="hero-stat-value" data-count="2847">0</div>
+      <div class="hero-stat-label">Luxury Stays</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-value" data-count="142">0</div>
+      <div class="hero-stat-label">Destinations</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-value" data-count="4.97">0</div>
+      <div class="hero-stat-label">Avg Rating</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FILTERS ==================== -->
+<div class="filters-wrapper">
+  <div class="filters" id="filters">
+    <button class="filter-chip active" onclick="setFilter(this)"><span class="chip-icon">🔥</span> Trending</button>
+    <button class="filter-chip" onclick="setFilter(this)"><span class="chip-icon">🏖️</span> Beachfront</button>
+    <button class="filter-chip" onclick="setFilter(this)"><span class="chip-icon">🏔️</span> Mountain</button>
+    <button class="filter-chip" onclick="setFilter(this)"><span class="chip-icon">🏛️</span> Historic</button>
+    <button class="filter-chip" onclick="setFilter(this)"><span class="chip-icon">🌿</span> Countryside</button>
+    <button class="filter-chip" onclick="setFilter(this)"><span class="chip-icon">🏙️</span> City</button>
+    <button class="filter-chip" onclick="setFilter(this)"><span class="chip-icon">🏊</span> Pools</button>
+    <button class="filter-chip" onclick="setFilter(this)"><span class="chip-icon">🎿</span> Skiing</button>
+    <button class="filter-chip" onclick="setFilter(this)"><span class="chip-icon">🌴</span> Tropical</button>
+    <button class="filter-chip" onclick="setFilter(this)"><span class="chip-icon">🏰</span> Castles</button>
+    <button class="filter-chip" onclick="setFilter(this)"><span class="chip-icon">🛥️</span> Boats</button>
+    <button class="filter-chip" onclick="setFilter(this)"><span class="chip-icon">🏕️</span> Camping</button>
+    <div class="filter-divider"></div>
+    <button class="filter-btn" onclick="showToast('Filters panel opened')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+      Filters
+    </button>
+  </div>
+</div>
+
+<!-- Sort Bar -->
+<div class="sort-bar">
+  <div class="results-count"><strong>2,847</strong> luxury stays worldwide</div>
+  <div class="sort-select" onclick="showToast('Sort options: Price, Rating, Distance')">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 5h10M11 9h7M11 13h4M3 17l4 4 4-4M7 3v18"/></svg>
+    Sort: Recommended
+  </div>
+</div>
+
+<!-- ==================== LISTINGS GRID ==================== -->
+<div class="listings-grid" id="listingsGrid"></div>
+
+<!-- ==================== DETAIL MODAL ==================== -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- ==================== TOAST ==================== -->
+<div class="toast" id="toast"></div>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="footer">
+  <div class="footer-top">
+    <div class="footer-brand">
+      <a class="logo" href="#">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#0a0a0a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <div class="logo-text">Luxe<span>Stay</span></div>
+      </a>
+      <p>Curating the world's most extraordinary properties for discerning travelers. Every listing is personally vetted by our team of luxury hospitality experts.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="#">Luxury Homes</a>
+      <a href="#">Beachfront Villas</a>
+      <a href="#">Mountain Retreats</a>
+      <a href="#">City Penthouses</a>
+      <a href="#">Private Islands</a>
+    </div>
+    <div class="footer-col">
+      <h4>Hosting</h4>
+      <a href="#">Become a Host</a>
+      <a href="#">Host Resources</a>
+      <a href="#">Community Forum</a>
+      <a href="#">Hosting Guide</a>
+      <a href="#">SuperHost Program</a>
+    </div>
+    <div class="footer-col">
+      <h4>Support</h4>
+      <a href="#">Help Center</a>
+      <a href="#">Safety Info</a>
+      <a href="#">Cancellation</a>
+      <a href="#">Report Issue</a>
+      <a href="#">Accessibility</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>&copy; 2026 LuxeStay, Inc. &middot; Privacy &middot; Terms &middot; Sitemap</div>
+    <div class="footer-social">
+      <a href="#" title="Twitter">𝕏</a>
+      <a href="#" title="Instagram">IG</a>
+      <a href="#" title="Facebook">fb</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ==================== LISTINGS DATA ====================
+const listings = [
+  {
+    id: 1,
+    title: "Cliffside Infinity Villa",
+    location: "Santorini, Greece",
+    host: "Elena K.",
+    hostAvatar: "E",
+    superhost: true,
+    price: 1250,
+    rating: 4.98,
+    reviews: 247,
+    guests: 6,
+    bedrooms: 3,
+    beds: 3,
+    baths: 3,
+    type: "Entire villa",
+    dates: "Nov 12 – 17",
+    badge: "Guest favorite",
+    badgeType: "guest-fav",
+    category: "beachfront",
+    images: [
+      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1602002418816-5c0aeef426aa?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&h=600&fit=crop"
+    ],
+    description: "Perched on the caldera cliffs of Oia, this architectural masterpiece offers unobstructed sunset views over the Aegean Sea. The villa features an infinity pool that seemingly spills into the ocean, hand-carved stone interiors, and a private terrace perfect for evening cocktails under the Mediterranean stars.",
+    amenities: ["Infinity pool", "Ocean view", "Chef's kitchen", "Wine cellar", "Private terrace", "Heated floors", "Smart home", "Concierge"],
+    reviews_data: [
+      { name: "James W.", avatar: "J", date: "October 2025", stars: 5, text: "Absolutely breathtaking. The sunset views from the infinity pool are otherworldly. Elena was an incredible host who arranged everything from private chef dinners to sunset sailing." },
+      { name: "Sophie L.", avatar: "S", date: "September 2025", stars: 5, text: "This property exceeded every expectation. The attention to detail in the interior design is remarkable. We didn't want to leave." }
+    ]
+  },
+  {
+    id: 2,
+    title: "Modern Glass Treehouse",
+    location: "Monteverde, Costa Rica",
+    host: "Carlos M.",
+    hostAvatar: "C",
+    superhost: true,
+    price: 890,
+    rating: 4.96,
+    reviews: 183,
+    guests: 4,
+    bedrooms: 2,
+    beds: 2,
+    baths: 2,
+    type: "Entire treehouse",
+    dates: "Dec 1 – 6",
+    badge: "Rare find",
+    badgeType: "default",
+    category: "countryside",
+    images: [
+      "https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?w=800&h=600&fit=crop"
+    ],
+    description: "Suspended 60 feet above the cloud forest floor, this architectural marvel blends seamlessly with the surrounding canopy. Floor-to-ceiling glass walls bring the rainforest inside while maintaining all the comforts of modern luxury. Wake to howler monkeys and fall asleep to the symphony of the jungle.",
+    amenities: ["Cloud forest views", "Hot tub", "Rain shower", "Bird watching deck", "Organic garden", "Private trails", "Wifi", "Breakfast included"],
+    reviews_data: [
+      { name: "Maria R.", avatar: "M", date: "November 2025", stars: 5, text: "Like sleeping in a luxury cocoon in the clouds. The toucans visited every morning. Carlos made us feel like family." },
+      { name: "David K.", avatar: "D", date: "October 2025", stars: 5, text: "The most unique place I've ever stayed. The glass walls make you feel completely immersed in nature without sacrificing any comfort." }
+    ]
+  },
+  {
+    id: 3,
+    title: "Penthouse at The Shard",
+    location: "London, United Kingdom",
+    host: "Victoria B.",
+    hostAvatar: "V",
+    superhost: true,
+    price: 3200,
+    rating: 4.99,
+    reviews: 89,
+    guests: 8,
+    bedrooms: 4,
+    beds: 4,
+    baths: 4,
+    type: "Entire penthouse",
+    dates: "Jan 5 – 10",
+    badge: "Luxe",
+    badgeType: "guest-fav",
+    category: "city",
+    images: [
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=600&fit=crop"
+    ],
+    description: "Occupying the entire 72nd floor of Western Europe's tallest building, this penthouse offers 360-degree panoramic views spanning from Buckingham Palace to the Thames estuary. Designed by a Pritzker Prize-winning architect, every surface tells a story of craftsmanship and vision.",
+    amenities: ["360° skyline view", "Private elevator", "Home cinema", "Sauna", "Wine room", "Chef's kitchen", "24hr concierge", "Valet parking"],
+    reviews_data: [
+      { name: "Alexander T.", avatar: "A", date: "December 2025", stars: 5, text: "The views are absolutely staggering. Watching the sunrise over London from 800 feet is an experience I'll never forget. Worth every penny." },
+      { name: "Chen W.", avatar: "C", date: "November 2025", stars: 5, text: "Impeccable taste in every detail. The penthouse felt like a five-star hotel with the warmth of a home." }
+    ]
+  },
+  {
+    id: 4,
+    title: "Maldives Overwater Bungalow",
+    location: "Baa Atoll, Maldives",
+    host: "Ahmed R.",
+    hostAvatar: "A",
+    superhost: true,
+    price: 2800,
+    rating: 4.97,
+    reviews: 156,
+    guests: 2,
+    bedrooms: 1,
+    beds: 1,
+    baths: 1,
+    type: "Entire bungalow",
+    dates: "Feb 14 – 19",
+    badge: "Guest favorite",
+    badgeType: "guest-fav",
+    category: "beachfront",
+    images: [
+      "https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=600&fit=crop"
+    ],
+    description: "Your private paradise floats above the crystal-clear waters of a UNESCO Biosphere Reserve. A glass floor reveals manta rays gliding beneath your feet, while your infinity pool merges with the Indian Ocean horizon. This is the definition of barefoot luxury.",
+    amenities: ["Glass floor", "Private infinity pool", "Ocean deck", "Snorkeling gear", "Butler service", "Spa treatments", "Sunset cruise", "Underwater dining"],
+    reviews_data: [
+      { name: "Lena P.", avatar: "L", date: "January 2026", stars: 5, text: "Pure magic. We saw dolphins from our deck and the staff arranged a private dinner on a sandbank under the stars. Dreams do come true." }
+    ]
+  },
+  {
+    id: 5,
+    title: "Alpine Chalet Retreat",
+    location: "Zermatt, Switzerland",
+    host: "Hans W.",
+    hostAvatar: "H",
+    superhost: false,
+    price: 1680,
+    rating: 4.94,
+    reviews: 201,
+    guests: 10,
+    bedrooms: 5,
+    beds: 6,
+    baths: 4,
+    type: "Entire chalet",
+    dates: "Dec 20 – 27",
+    badge: null,
+    badgeType: null,
+    category: "mountain",
+    images: [
+      "https://images.unsplash.com/photo-1470770841497-7b3202cdb5c4?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&h=600&fit=crop"
+    ],
+    description: "A five-story timber masterpiece with direct Matterhorn views from every room. The hand-crafted interiors feature century-old reclaimed wood, a Finnish sauna, and a wine cave stocked with the finest Swiss vintages. Ski-in/ski-out access to Europe's finest slopes.",
+    amenities: ["Matterhorn view", "Ski-in/ski-out", "Finnish sauna", "Wine cave", "Fireplace", "Boot warmer", "Mountain bikes", "Private chef option"],
+    reviews_data: [
+      { name: "Thomas G.", avatar: "T", date: "February 2025", stars: 5, text: "The most magical winter holiday. Waking up to the Matterhorn from our bedroom window was surreal. The sauna with mountain views is incredible." },
+      { name: "Anna S.", avatar: "A", date: "January 2025", stars: 5, text: "Hans thought of everything. The chalet is even more beautiful than the photos. The ski-in/ski-out access made our trip effortless." }
+    ]
+  },
+  {
+    id: 6,
+    title: "Amalfi Coast Terraced Villa",
+    location: "Ravello, Italy",
+    host: "Giuliana F.",
+    hostAvatar: "G",
+    superhost: true,
+    price: 1950,
+    rating: 4.95,
+    reviews: 178,
+    guests: 8,
+    bedrooms: 4,
+    beds: 4,
+    baths: 3,
+    type: "Entire villa",
+    dates: "Jun 8 – 15",
+    badge: "Superhost",
+    badgeType: "default",
+    category: "beachfront",
+    images: [
+      "https://images.unsplash.com/photo-1499793983394-12a0acf50142?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop"
+    ],
+    description: "Cascading down the dramatic Amalfi cliffs, this 16th-century villa has been lovingly restored with contemporary Italian design. Lemon-scented terraces overlook the Tyrrhenian Sea, and a private path leads to a hidden cove. The villa's kitchen produces meals from its own organic garden.",
+    amenities: ["Sea view terraces", "Private beach access", "Lemon grove", "Outdoor kitchen", "Heated pool", "Art collection", "Cooking classes", "Boat tours available"],
+    reviews_data: [
+      { name: "Patricia M.", avatar: "P", date: "September 2025", stars: 5, text: "Giuliana's villa is a work of art. The lemon grove, the sea views, the homemade limoncello - everything was perfect. We extended our stay twice!" }
+    ]
+  },
+  {
+    id: 7,
+    title: "Tokyo Sky Residence",
+    location: "Shibuya, Tokyo, Japan",
+    host: "Yuki T.",
+    hostAvatar: "Y",
+    superhost: true,
+    price: 1100,
+    rating: 4.93,
+    reviews: 134,
+    guests: 4,
+    bedrooms: 2,
+    beds: 2,
+    baths: 2,
+    type: "Entire apartment",
+    dates: "Mar 20 – 25",
+    badge: null,
+    badgeType: null,
+    category: "city",
+    images: [
+      "https://images.unsplash.com/photo-1502672023488-70e25813eb80?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=600&fit=crop"
+    ],
+    description: "A minimalist masterpiece floating above Tokyo's electric skyline. Japanese-inspired interiors with tatami meditation room, hinoki cypress soaking tub, and floor-to-ceiling windows framing Mount Fuji on clear days. Steps from Shibuya Crossing yet an oasis of calm.",
+    amenities: ["Mt. Fuji views", "Hinoki soaking tub", "Tatami room", "Smart home", "Gym access", "Concierge", "Rooftop garden", "Artisan coffee bar"],
+    reviews_data: [
+      { name: "Michael C.", avatar: "M", date: "April 2025", stars: 5, text: "The perfect Tokyo base. Watching Shibuya Crossing from 40 floors up at night is mesmerizing. Yuki's restaurant recommendations were impeccable." }
+    ]
+  },
+  {
+    id: 8,
+    title: "Safari Lodge Suite",
+    location: "Serengeti, Tanzania",
+    host: "Baraka N.",
+    hostAvatar: "B",
+    superhost: true,
+    price: 2400,
+    rating: 4.99,
+    reviews: 67,
+    guests: 2,
+    bedrooms: 1,
+    beds: 1,
+    baths: 1,
+    type: "Entire lodge",
+    dates: "Aug 5 – 10",
+    badge: "Extraordinary",
+    badgeType: "guest-fav",
+    category: "countryside",
+    images: [
+      "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1516426122078-c23e76319801?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&h=600&fit=crop"
+    ],
+    description: "Wake to the sound of the African savanna in this elevated luxury tented suite. Retractable canvas walls reveal the Great Migration in all its glory. Your private plunge pool overlooks a watering hole frequented by elephants, lions, and giraffes. This is nature's greatest show.",
+    amenities: ["Game drives included", "Private plunge pool", "Bush breakfast", "Star bed", "Maasai guide", "Spa treatments", "Sundowner bar", "Photography hide"],
+    reviews_data: [
+      { name: "Robert H.", avatar: "R", date: "September 2025", stars: 5, text: "Watching a pride of lions from our plunge pool at sunset... there are no words. Baraka and his team made this the experience of a lifetime." }
+    ]
+  },
+  {
+    id: 9,
+    title: "Icelandic Glass Cabin",
+    location: "Vik, Iceland",
+    host: "Sigrid H.",
+    hostAvatar: "S",
+    superhost: false,
+    price: 950,
+    rating: 4.91,
+    reviews: 212,
+    guests: 2,
+    bedrooms: 1,
+    beds: 1,
+    baths: 1,
+    type: "Entire cabin",
+    dates: "Feb 1 – 6",
+    badge: "Rare find",
+    badgeType: "default",
+    category: "mountain",
+    images: [
+      "https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1504893524553-b855bce32c67?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1494500764479-0c8f2919a3d8?w=800&h=600&fit=crop"
+    ],
+    description: "A transparent geodesic dome perched on a moss-covered lava field. Watch the Northern Lights dance overhead from your heated bed, or soak in the geothermal hot tub as the midnight sun paints the sky. Black sand beaches and towering waterfalls are minutes away.",
+    amenities: ["Northern Lights viewing", "Geothermal hot tub", "Black beach nearby", "Glacier tours", "Heated floors", "Aurora alarm", "Local breakfast", "4x4 rental"],
+    reviews_data: [
+      { name: "Emma J.", avatar: "E", date: "March 2025", stars: 5, text: "The Northern Lights appeared on our first night and we watched them for hours from bed. The cabin is warm, cozy, and absolutely magical." }
+    ]
+  },
+  {
+    id: 10,
+    title: "Bali Jungle Villa",
+    location: "Ubud, Bali, Indonesia",
+    host: "Wayan P.",
+    hostAvatar: "W",
+    superhost: true,
+    price: 680,
+    rating: 4.96,
+    reviews: 312,
+    guests: 6,
+    bedrooms: 3,
+    beds: 3,
+    baths: 3,
+    type: "Entire villa",
+    dates: "Apr 10 – 15",
+    badge: "Guest favorite",
+    badgeType: "guest-fav",
+    category: "tropical",
+    images: [
+      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1515362778563-6a732e3f2b58?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop"
+    ],
+    description: "Hidden within the lush Balinese jungle, this open-air villa dissolves the boundary between inside and out. Private infinity pool cascades into the valley below, surrounded by ancient banyan trees and rice terraces. Daily yoga sessions and traditional Balinese healing rituals available.",
+    amenities: ["Jungle infinity pool", "Yoga pavilion", "Rice terrace views", "Outdoor bathroom", "Balinese massage", "Organic kitchen", "Meditation garden", "Scooter included"],
+    reviews_data: [
+      { name: "Rachel K.", avatar: "R", date: "May 2025", stars: 5, text: "Paradise on Earth. Wayan's family prepared the most incredible Balinese feast for us. The villa is a sanctuary of peace and beauty." }
+    ]
+  },
+  {
+    id: 11,
+    title: "Parisian Artist's Loft",
+    location: "Le Marais, Paris, France",
+    host: "Jean-Luc D.",
+    hostAvatar: "J",
+    superhost: true,
+    price: 850,
+    rating: 4.92,
+    reviews: 198,
+    guests: 4,
+    bedrooms: 2,
+    beds: 2,
+    baths: 1,
+    type: "Entire loft",
+    dates: "May 1 – 6",
+    badge: null,
+    badgeType: null,
+    category: "historic",
+    images: [
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop"
+    ],
+    description: "A converted 18th-century atelier in the heart of Le Marais. Soaring 5-meter ceilings, original exposed stone walls, and a curated collection of contemporary French art. The wrought-iron balcony offers views of a hidden courtyard garden. Steps from Place des Vosges.",
+    amenities: ["Historic building", "Art collection", "Balcony", "Courtyard garden", "Vintage records", "Espresso machine", "Bicycle rental", "Local market tours"],
+    reviews_data: [
+      { name: "Olivia N.", avatar: "O", date: "June 2025", stars: 5, text: "Jean-Luc has impeccable taste. The loft feels like staying in a living art gallery. The neighborhood is perfect for exploring Paris on foot." }
+    ]
+  },
+  {
+    id: 12,
+    title: "Patagonia Eco-Lodge",
+    location: "Torres del Paine, Chile",
+    host: "Isabella V.",
+    hostAvatar: "I",
+    superhost: true,
+    price: 1450,
+    rating: 4.95,
+    reviews: 94,
+    guests: 4,
+    bedrooms: 2,
+    beds: 2,
+    baths: 2,
+    type: "Entire lodge",
+    dates: "Jan 15 – 20",
+    badge: "Eco-certified",
+    badgeType: "default",
+    category: "mountain",
+    images: [
+      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&h=600&fit=crop"
+    ],
+    description: "Built entirely from reclaimed materials, this carbon-neutral lodge sits at the base of the iconic granite towers. Floor-to-ceiling windows frame glaciers, turquoise lakes, and guanaco herds. Every meal is prepared with locally foraged ingredients by our resident chef.",
+    amenities: ["Torres views", "Carbon neutral", "Glacier trekking", "Horseback riding", "Local cuisine", "Hot tub", "Guided hikes", "Stargazing deck"],
+    reviews_data: [
+      { name: "Marco L.", avatar: "M", date: "February 2025", stars: 5, text: "The most spectacular natural setting I've ever experienced. Isabella's commitment to sustainability while maintaining luxury is inspiring." }
+    ]
+  }
+];
+
+// ==================== RENDER LISTINGS ====================
+const grid = document.getElementById('listingsGrid');
+
+function renderListings(data) {
+  grid.innerHTML = data.map((l, idx) => `
+    <div class="listing-card animate-in stagger-${Math.min(idx % 5 + 1, 5)}" onclick="openModal(${l.id})" data-id="${l.id}">
+      <div class="card-image">
+        <img src="${l.images[0]}" alt="${l.title}" loading="lazy">
+        <div class="card-badges">
+          ${l.badge ? `<span class="card-badge ${l.badgeType}">${l.badge}</span>` : ''}
+        </div>
+        <button class="wishlist-btn" onclick="event.stopPropagation();toggleWishlist(this,${l.id})" aria-label="Add to wishlist">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+        <button class="card-arrow left" onclick="event.stopPropagation();cycleImage(this,-1)" aria-label="Previous image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="card-arrow right" onclick="event.stopPropagation();cycleImage(this,1)" aria-label="Next image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="card-dots">
+          ${l.images.map((_, i) => `<div class="card-dot ${i === 0 ? 'active' : ''}"></div>`).join('')}
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-title">${l.title}</div>
+          <div class="card-rating">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            ${l.rating}
+          </div>
+        </div>
+        <div class="card-location">${l.location}</div>
+        <div class="card-host">${l.type} &middot; Hosted by ${l.host}</div>
+        <div class="card-dates">${l.dates}</div>
+        <div class="card-price">
+          <span class="card-price-amount">$${l.price}</span>
+          <span class="card-price-unit">night</span>
+          <span class="card-price-total">&middot; $${l.price * 5} total</span>
+        </div>
       </div>
     </div>
+  `).join('');
+}
 
-    <!-- APP -->
-    <div class="stage" id="app" data-state="idle">
-      <div class="chrome">
-        <div class="brand">
-          <span class="mark"><i></i></span> Neo
-        </div>
-        <div class="statepill"><span class="live"></span><span id="stateLabel">idle</span></div>
-      </div>
+renderListings(listings);
 
-      <div class="surface-wrap">
-        <div class="rail" id="rail">
-          <div class="chip" data-cmd="search dolphins">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m21 21-4-4" />
-            </svg>
-            Search “dolphins”
-          </div>
-          <div class="chip" data-cmd="send 250 pax">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2v20M5 9l7-7 7 7" />
-            </svg>
-            Send PAX
-          </div>
-          <div class="chip" data-cmd="write code">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="m8 6-6 6 6 6M16 6l6 6-6 6" />
-            </svg>
-            Write code
-          </div>
-          <div class="chip" data-cmd="imagine a lighthouse">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="3" />
-              <circle cx="9" cy="9" r="2" />
-              <path d="m21 15-5-5L5 21" />
-            </svg>
-            Imagine
-          </div>
-          <div class="chip" data-cmd="settings">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 2v3M12 19v3M5 5l2 2M17 17l2 2M2 12h3M19 12h3" />
-            </svg>
-            Settings
-          </div>
-        </div>
+// ==================== IMAGE CAROUSEL ====================
+const imageIndices = {};
 
-        <!-- THE MORPHING SURFACE -->
-        <div class="surface" id="surface" style="--task-h: 460px">
-          <!-- rest pill -->
-          <div class="rest">
-            <span class="lead mark" aria-hidden="true"><i></i></span>
-            <input id="bar" placeholder="Ask Neo anything…" autocomplete="off" />
-            <button class="send" id="sendBtn" aria-label="Send">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.4"
-              >
-                <path d="M5 12h14M13 6l6 6-6 6" />
-              </svg>
-            </button>
-          </div>
+function cycleImage(btn, dir) {
+  const card = btn.closest('.listing-card');
+  const id = parseInt(card.dataset.id);
+  const listing = listings.find(l => l.id === id);
+  if (!imageIndices[id]) imageIndices[id] = 0;
+  imageIndices[id] = (imageIndices[id] + dir + listing.images.length) % listing.images.length;
+  const img = card.querySelector('.card-image img');
+  img.style.opacity = '0';
+  img.style.transform = `scale(${dir > 0 ? 1.02 : 0.98})`;
+  setTimeout(() => {
+    img.src = listing.images[imageIndices[id]];
+    img.style.opacity = '1';
+    img.style.transform = 'scale(1)';
+  }, 200);
+  card.querySelectorAll('.card-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === imageIndices[id]);
+  });
+}
 
-          <!-- task shell -->
-          <div class="task">
-            <div class="grab" id="grab"><i></i><span class="hint">swipe up to dismiss</span></div>
-            <div class="task-head">
-              <div class="ic" id="taskIc"></div>
-              <div>
-                <div class="ttl" id="taskTitle"></div>
-                <div class="sub" id="taskSub"></div>
-              </div>
-              <button class="x" id="taskX" aria-label="Dismiss">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M18 15l-6-6-6 6" />
-                </svg>
-              </button>
+// ==================== WISHLIST ====================
+const wishlists = new Set();
+
+function toggleWishlist(btn, id) {
+  if (wishlists.has(id)) {
+    wishlists.delete(id);
+    btn.classList.remove('liked');
+    btn.querySelector('svg').setAttribute('fill', 'none');
+    showToast('Removed from wishlist');
+  } else {
+    wishlists.add(id);
+    btn.classList.add('liked');
+    btn.querySelector('svg').setAttribute('fill', 'var(--coral)');
+    showToast('Saved to wishlist ❤️');
+  }
+}
+
+// ==================== FILTER CHIPS ====================
+function setFilter(chip) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  const cat = chip.textContent.trim().toLowerCase();
+  if (cat.includes('trending')) {
+    renderListings(listings);
+  } else {
+    const filtered = listings.filter(l =>
+      l.category === cat || l.title.toLowerCase().includes(cat) || l.location.toLowerCase().includes(cat) || l.description.toLowerCase().includes(cat)
+    );
+    renderListings(filtered.length ? filtered : listings);
+    showToast(`Showing ${filtered.length || listings.length} stays`);
+  }
+}
+
+function setSearchActive(seg) {
+  document.querySelectorAll('.search-segment').forEach(s => s.classList.remove('active'));
+  seg.classList.add('active');
+}
+
+// ==================== MODAL ====================
+let currentGuests = 2;
+
+function openModal(id) {
+  const l = listings.find(x => x.id === id);
+  if (!l) return;
+  const overlay = document.getElementById('modalOverlay');
+  const body = document.getElementById('modalBody');
+  const nights = 5;
+  const cleaning = 150;
+  const service = Math.round(l.price * nights * 0.14);
+  const total = l.price * nights + cleaning + service;
+
+  body.innerHTML = `
+    <div class="modal-gallery">
+      ${l.images.map(img => `<img src="${img}" alt="${l.title}">`).join('')}
+    </div>
+    <div class="modal-content">
+      <div class="modal-left">
+        <h2 class="modal-title">${l.title}</h2>
+        <div class="modal-subtitle">${l.location} &middot; ${l.type}</div>
+        <div class="modal-host-info">
+          <div class="modal-host-avatar">${l.hostAvatar}</div>
+          <div>
+            <div class="modal-host-name">Hosted by ${l.host}</div>
+            <div class="modal-host-superhost">
+              ${l.superhost ? '<span class="superhost-badge">✦ Superhost</span>' : ''}
+              ${l.reviews} reviews &middot; ${l.rating} ★
             </div>
-            <div class="task-body" id="taskBody"></div>
           </div>
+        </div>
+
+        <div class="modal-highlights">
+          <div class="highlight-item">
+            <div class="highlight-icon">🏠</div>
+            <div>
+              <div class="highlight-title">${l.type}</div>
+              <div class="highlight-desc">Entire place to yourself</div>
+            </div>
+          </div>
+          <div class="highlight-item">
+            <div class="highlight-icon">👥</div>
+            <div>
+              <div class="highlight-title">Up to ${l.guests} guests</div>
+              <div class="highlight-desc">${l.bedrooms} bedroom${l.bedrooms > 1 ? 's' : ''} &middot; ${l.beds} bed${l.beds > 1 ? 's' : ''}</div>
+            </div>
+          </div>
+          <div class="highlight-item">
+            <div class="highlight-icon">🚿</div>
+            <div>
+              <div class="highlight-title">${l.baths} bath${l.baths > 1 ? 's' : ''}</div>
+              <div class="highlight-desc">Full bathroom${l.baths > 1 ? 's' : ''}</div>
+            </div>
+          </div>
+          <div class="highlight-item">
+            <div class="highlight-icon">⭐</div>
+            <div>
+              <div class="highlight-title">${l.rating} rating</div>
+              <div class="highlight-desc">${l.reviews} verified reviews</div>
+            </div>
+          </div>
+        </div>
+
+        <p class="modal-description">${l.description}</p>
+
+        <h3 class="modal-amenities-title">What this place offers</h3>
+        <div class="amenities-grid">
+          ${l.amenities.map(a => `<div class="amenity-item"><span class="amenity-icon">✦</span>${a}</div>`).join('')}
+        </div>
+
+        <div class="reviews-section">
+          <div class="reviews-header">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span class="reviews-score">${l.rating}</span>
+            <span style="color:var(--text-secondary)"> &middot; ${l.reviews} reviews</span>
+          </div>
+          ${l.reviews_data.map(r => `
+            <div class="review-card">
+              <div class="review-header">
+                <div class="review-avatar">${r.avatar}</div>
+                <div>
+                  <div class="review-name">${r.name}</div>
+                  <div class="review-date">${r.date}</div>
+                </div>
+              </div>
+              <div class="review-stars">${'<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>'.repeat(r.stars)}</div>
+              <p class="review-text">${r.text}</p>
+            </div>
+          `).join('')}
         </div>
       </div>
 
-      <div class="footnote">Neo Adaptive Surface · conceptual mockup</div>
+      <div class="booking-widget">
+        <div class="booking-card">
+          <div class="booking-price-header">
+            <span class="booking-price-amount">$${l.price}</span>
+            <span class="booking-price-unit">/ night</span>
+          </div>
+
+          <div class="booking-inputs">
+            <div class="booking-input-row">
+              <div class="booking-input">
+                <div class="booking-input-label">Check-in</div>
+                <div class="booking-input-value">Nov 12, 2025</div>
+              </div>
+              <div class="booking-input">
+                <div class="booking-input-label">Checkout</div>
+                <div class="booking-input-value">Nov 17, 2025</div>
+              </div>
+            </div>
+            <div class="booking-guests">
+              <div class="booking-input">
+                <div>
+                  <div class="booking-input-label">Guests</div>
+                  <div class="booking-input-value" id="guestDisplay">${currentGuests} guest${currentGuests > 1 ? 's' : ''}</div>
+                </div>
+                <div class="guest-counter">
+                  <button class="guest-btn" onclick="updateGuests(-1)" id="guestMinus">−</button>
+                  <span class="guest-count" id="guestCount">${currentGuests}</span>
+                  <button class="guest-btn" onclick="updateGuests(1)" id="guestPlus">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="book-btn" id="bookBtn" onclick="reserveStay(this, ${l.id})">
+            Reserve
+          </button>
+          <div class="booking-note">You won't be charged yet</div>
+
+          <div class="booking-breakdown">
+            <div class="breakdown-row">
+              <span class="underline-link">$${l.price} x ${nights} nights</span>
+              <span>$${l.price * nights}</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="underline-link">Cleaning fee</span>
+              <span>$${cleaning}</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="underline-link">LuxeStay service fee</span>
+              <span>$${service}</span>
+            </div>
+            <div class="breakdown-row total">
+              <span>Total before taxes</span>
+              <span>$${total}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+  `;
 
-    <script>
-      /* ============================================================
-         Neo — single-surface state machine
-         idle → thinking → task → (dismiss) → idle
-         ============================================================ */
-      const app = document.getElementById('app')
-      const surface = document.getElementById('surface')
-      const stateLabel = document.getElementById('stateLabel')
-      const bar = document.getElementById('bar')
-      const taskBody = document.getElementById('taskBody')
-      const taskTitle = document.getElementById('taskTitle')
-      const taskSub = document.getElementById('taskSub')
-      const taskIc = document.getElementById('taskIc')
-      const grab = document.getElementById('grab')
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  currentGuests = 2;
+}
 
-      let firstTask = true
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
 
-      const ICON = {
-        search:
-          '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>',
-        wallet:
-          '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M16 13h.01"/></svg>',
-        code: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 6-6 6 6 6M16 6l6 6-6 6"/></svg>',
-        image:
-          '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>',
-        settings:
-          '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M5 5l2 2M17 17l2 2M2 12h3M19 12h3"/></svg>',
-        chat: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg>',
-        shield:
-          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>',
-      }
+function updateGuests(delta) {
+  const listing = listings.find(l => {
+    const bookBtn = document.getElementById('bookBtn');
+    return bookBtn;
+  });
+  currentGuests = Math.max(1, Math.min(16, currentGuests + delta));
+  document.getElementById('guestCount').textContent = currentGuests;
+  document.getElementById('guestDisplay').textContent = `${currentGuests} guest${currentGuests > 1 ? 's' : ''}`;
+  document.getElementById('guestMinus').disabled = currentGuests <= 1;
+  document.getElementById('guestPlus').disabled = currentGuests >= 16;
+}
 
-      /* intent router: natural language → surface */
-      function classify(t) {
-        t = t.toLowerCase()
-        if (/(send|pay|transfer|sign|swap|stake|\bpax\b)/.test(t)) return 'wallet'
-        if (/(code|function|script|write a|component|api|debounce)/.test(t)) return 'code'
-        if (/(image|imagine|draw|picture|render|lighthouse)/.test(t)) return 'image'
-        if (/(setting|preference|config|model|theme)/.test(t)) return 'settings'
-        if (/(search|find|look up|who|what|where|dolphin)/.test(t)) return 'search'
-        return 'chat'
-      }
+function reserveStay(btn, id) {
+  btn.style.transform = 'scale(0.95)';
+  setTimeout(() => {
+    btn.textContent = 'Reserving...';
+    btn.style.transform = '';
+  }, 150);
+  setTimeout(() => {
+    btn.classList.add('reserved');
+    btn.textContent = '✓ Reserved';
+    btn.style.transform = 'scale(1)';
+    showToast('Reservation confirmed! Check your email for details.');
+  }, 1200);
+}
 
-      function traceSteps(steps) {
-        const wrap = document.createElement('div')
-        wrap.className = 'trace'
-        steps.forEach((s, i) => {
-          const el = document.createElement('div')
-          el.className = 'step'
-          el.style.animationDelay = i * 0.18 + 's'
-          el.innerHTML =
-            '<div class="gut"><div class="node"></div><div class="stem"></div></div><div class="lbl">' +
-            s +
-            '</div>'
-          wrap.appendChild(el)
-          setTimeout(() => el.classList.add('done'), i * 180 + 520)
-        })
-        return wrap
-      }
+// ==================== TOAST ====================
+let toastTimeout;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
+}
 
-      /* Human, intention-first copy (per the transparency rule: surface the
-         intention, not the tool names). Substantive context — sources, chain,
-         finality — is kept because it builds trust. */
-      const SURFACES = {
-        search: {
-          title: 'Web search',
-          sub: 'dolphins · 4 sources',
-          h: 520,
-          trace: [
-            'Working out what you’re really asking',
-            'Searching the open web — <b>dolphins</b>',
-            'Reading and cross-checking 4 sources',
-            'Pulling out what actually matters',
-          ],
-          body:
-            '<div class="answer">Dolphins are highly intelligent marine mammals of the family <span class="hl">Delphinidae</span> — they live in tight social pods, hunt cooperatively with echolocation, and use signature whistles that work like names.</div>' +
-            '<div class="seclabel">Sources</div>' +
-            '<div class="src"><div class="fav">OC</div><div><h4>Dolphin — overview &amp; cognition</h4><p>Toothed whales with large, convoluted brains; show self-recognition and tool use.</p><div class="url">oceana.org/marine-life/dolphin</div></div></div>' +
-            '<div class="src"><div class="fav">NO</div><div><h4>Signature whistles &amp; pods</h4><p>Bottlenose dolphins call each other by name and coordinate group hunts.</p><div class="url">fisheries.noaa.gov/bottlenose</div></div></div>' +
-            '<div class="src"><div class="fav">NG</div><div><h4>How echolocation works</h4><p>Clicks map prey and seafloor in murky water — “seeing” with sound.</p><div class="url">nationalgeographic.com/dolphin</div></div></div>' +
-            '<div class="src"><div class="fav">WW</div><div><h4>River dolphins at risk</h4><p>Freshwater species are among the most endangered cetaceans.</p><div class="url">worldwildlife.org/river-dolphins</div></div></div>',
-        },
+// ==================== HEADER SCROLL ====================
+let lastScroll = 0;
+window.addEventListener('scroll', () => {
+  const header = document.getElementById('header');
+  header.classList.toggle('scrolled', window.scrollY > 50);
+  lastScroll = window.scrollY;
+});
 
-        wallet: {
-          title: 'Send 250 PAX',
-          sub: 'HyperPaxeer · ~400 ms finality',
-          h: 596,
-          trace: [
-            'Understood: send <b>250 PAX</b> to pax1q8…f3kd',
-            'Routing through the secure path',
-            'Dry-ran it safely — no funds touched yet',
-            'Ready for your approval',
-          ],
-          body:
-            '<div class="esc"><span class="ic">' +
-            ICON.shield +
-            '</span><span>This moves real funds, so I can’t sign on my own. The one step that needs you is the approval below.</span></div>' +
-            '<div class="wallet">' +
-            '<div class="net"><div class="chip"><span class="b"></span>HyperPaxeer</div><div class="id">chain 125</div></div>' +
-            '<div class="amt"><div class="big">250<span>PAX</span></div><div class="fiat">≈ $312.50</div></div>' +
-            '<div class="wrow"><span class="k">To</span><span class="v addr">pax1q8…f3kd</span></div>' +
-            '<div class="wrow"><span class="k">Network fee</span><span class="v">0.0012 PAX</span></div>' +
-            '<div class="wrow"><span class="k">Finality</span><span class="v">~400 ms · single block</span></div>' +
-            '</div>' +
-            '<div class="sign" id="signTrack"><div class="track-lbl" id="signLbl">Slide to approve</div><div class="knob" id="signKnob"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>' +
-            '<div class="sign-cap">Your wallet signs locally. Neo never holds your key.</div>',
-          after: initSign,
-        },
+// ==================== COUNTER ANIMATION ====================
+function animateCounters() {
+  document.querySelectorAll('.hero-stat-value').forEach(el => {
+    const target = parseFloat(el.dataset.count);
+    const isDecimal = target % 1 !== 0;
+    const duration = 2000;
+    const start = performance.now();
 
-        code: {
-          title: 'Code',
-          sub: 'TypeScript',
-          h: 470,
-          trace: [
-            'Thinking through the approach',
-            'Writing it in <b>TypeScript</b>',
-            'Checking the edge cases',
-          ],
-          body:
-            '<div class="codewrap"><div class="bar"><span class="fn">intent.ts</span><span class="cp" onclick="this.textContent=\'copied\';setTimeout(()=>this.textContent=\'copy\',1200)">copy</span></div>' +
-            '<pre><span class="cm">// Resolve a natural-language ask into a typed on-chain intent</span>\n' +
-            '<span class="kw">export async function</span> <span class="fn">resolveIntent</span>(text: <span class="nm">string</span>) {\n' +
-            '  <span class="kw">const</span> intent = <span class="kw">await</span> matrix.<span class="fn">plan</span>(text)\n' +
-            '  <span class="kw">if</span> (intent.kind === <span class="str">"transfer"</span>) {\n' +
-            '    <span class="kw">return</span> wallet.<span class="fn">sign</span>({\n' +
-            '      chainId: <span class="nm">125</span>,\n' +
-            '      to: intent.to,\n' +
-            '      amount: intent.amount,\n' +
-            '    })\n' +
-            '  }\n' +
-            '  <span class="kw">return</span> agent.<span class="fn">dispatch</span>(intent)\n' +
-            '}</pre></div>',
-        },
+    function update(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = target * eased;
+      el.textContent = isDecimal ? current.toFixed(2) : Math.round(current).toLocaleString();
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  });
+}
 
-        image: {
-          title: 'Image',
-          sub: '1024 × 1024',
-          h: 500,
-          trace: [
-            'Composing the scene',
-            'Rendering — this uses an API I pay for, not your wallet',
-            'Sharpening the details',
-          ],
-          body:
-            '<div class="imgwrap">' +
-            '<svg viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice">' +
-            '<rect width="320" height="200" fill="oklch(0.26 0.03 250)"/>' +
-            '<rect y="150" width="320" height="50" fill="oklch(0.32 0.04 250)"/>' +
-            '<rect x="150" y="44" width="20" height="112" rx="3" fill="oklch(0.84 0.02 250)"/>' +
-            '<rect x="152" y="58" width="16" height="12" fill="#004ced"/>' +
-            '<circle cx="160" cy="40" r="11" fill="oklch(0.88 0.03 250)"/>' +
-            '<path d="M160 28 L171 40 L149 40 Z" fill="oklch(0.72 0.02 250)"/>' +
-            '<circle cx="248" cy="44" r="16" fill="oklch(0.84 0.03 250)" opacity="0.4"/>' +
-            '</svg>' +
-            '<div class="shim"></div>' +
-            '<div class="cap">“a lighthouse at dusk” — illustrative render · operator API, no funds moved</div></div>',
-        },
+// ==================== INTERSECTION OBSERVER ====================
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.animationPlayState = 'running';
+    }
+  });
+}, { threshold: 0.1 });
 
-        settings: {
-          title: 'Preferences',
-          sub: 'inline · no separate screen',
-          h: 440,
-          trace: ['Opening your preferences'],
-          body:
-            '<div class="setgroup">' +
-            '<div class="setrow"><div><div class="t">Response style</div><div class="d">How Neo talks back</div></div><div class="seg"><button>Brief</button><button class="on">Balanced</button><button>Deep</button></div></div>' +
-            '<div class="setrow"><div><div class="t">Theme</div><div class="d">Dark is native</div></div><div class="seg"><button class="on">Dark</button><button>System</button></div></div>' +
-            '</div>' +
-            '<div class="setgroup">' +
-            '<div class="setrow"><div><div class="t">Show the work</div><div class="d">Surface searches &amp; steps inline</div></div><div class="tog on" data-tog></div></div>' +
-            '<div class="setrow"><div><div class="t">Confirm every spend</div><div class="d">Always ask before funds move</div></div><div class="tog on" data-tog></div></div>' +
-            '<div class="setrow"><div><div class="t">Swipe to dismiss</div><div class="d">Return to chat with a gesture</div></div><div class="tog on" data-tog></div></div>' +
-            '</div>',
-        },
+document.querySelectorAll('.animate-in').forEach(el => {
+  el.style.animationPlayState = 'paused';
+  observer.observe(el);
+});
 
-        chat: {
-          title: 'Neo',
-          sub: 'reply',
-          h: 320,
-          trace: ['Thinking it through'],
-          body: '<div class="reply">I’m a single adaptive surface — no menu, no sidebar, no separate pages. Ask me to search, send PAX, write code, or generate an image, and I morph in place to handle it. Swipe up anytime to come back here.</div>',
-        },
-      }
+// Run counter animation after a delay
+setTimeout(animateCounters, 800);
 
-      let busy = false
-      function runTask(kind) {
-        if (busy) return
-        busy = true
-        const cfg = SURFACES[kind]
-        surface.style.setProperty('--task-h', cfg.h + 'px')
-        taskIc.innerHTML = ICON[kind]
-        taskTitle.textContent = cfg.title
-        taskSub.textContent = cfg.sub
-        taskBody.innerHTML = ''
-        app.dataset.state = 'thinking'
-        stateLabel.textContent = 'thinking'
-        bar.value = ''
+// ==================== KEYBOARD SHORTCUTS ====================
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
 
-        if (firstTask) {
-          grab.classList.add('show-hint')
-          setTimeout(() => grab.classList.remove('show-hint'), 4200)
-          firstTask = false
-        }
-
-        taskBody.appendChild(traceSteps(cfg.trace))
-
-        const dwell = 520 + cfg.trace.length * 180 + 280
-        setTimeout(() => {
-          const r = document.createElement('div')
-          r.className = 'result'
-          r.innerHTML = '<div class="gap"></div>' + cfg.body
-          taskBody.appendChild(r)
-          app.dataset.state = 'task'
-          stateLabel.textContent = kind
-          busy = false
-          if (cfg.after) cfg.after()
-          // wire settings toggles
-          taskBody
-            .querySelectorAll('[data-tog]')
-            .forEach((el) => el.addEventListener('click', () => el.classList.toggle('on')))
-          taskBody.querySelectorAll('.seg').forEach((seg) =>
-            seg.querySelectorAll('button').forEach((b) =>
-              b.addEventListener('click', () => {
-                seg.querySelectorAll('button').forEach((x) => x.classList.remove('on'))
-                b.classList.add('on')
-              }),
-            ),
-          )
-        }, dwell)
-      }
-
-      function dismiss() {
-        if (app.dataset.state === 'idle') return
-        surface.style.setProperty('--task-h', '460px')
-        app.dataset.state = 'idle'
-        stateLabel.textContent = 'idle'
-        setTimeout(() => {
-          taskBody.innerHTML = ''
-          bar.focus()
-        }, 620)
-      }
-
-      function submit() {
-        const v = bar.value.trim()
-        if (!v) return
-        runTask(classify(v))
-      }
-      document.getElementById('sendBtn').onclick = submit
-      bar.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') submit()
-      })
-      document
-        .querySelectorAll('.chip')
-        .forEach((c) => (c.onclick = () => runTask(classify(c.dataset.cmd))))
-      document.getElementById('taskX').onclick = dismiss
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') dismiss()
-      })
-
-      /* swipe-up to dismiss (pointer drag on the grab handle) */
-      let dragY = 0,
-        dragging = false,
-        startY = 0
-      grab.addEventListener('pointerdown', (e) => {
-        grab.setPointerCapture(e.pointerId)
-        dragging = true
-        startY = e.clientY
-        surface.style.transition = 'transform .05s linear, opacity .05s linear'
-      })
-      grab.addEventListener('pointermove', (e) => {
-        if (!dragging) return
-        dragY = Math.min(0, e.clientY - startY)
-        surface.style.transform = 'translateY(' + dragY + 'px) scale(' + (1 + dragY / 3000) + ')'
-        surface.style.opacity = String(1 + dragY / 400)
-      })
-      function dragEnd() {
-        if (!dragging) return
-        dragging = false
-        surface.style.transition = ''
-        surface.style.transform = ''
-        surface.style.opacity = ''
-        if (dragY < -70) dismiss()
-        dragY = 0
-      }
-      grab.addEventListener('pointerup', dragEnd)
-      grab.addEventListener('pointercancel', dragEnd)
-
-      /* slide-to-sign (wallet approval gate) */
-      function initSign() {
-        const track = document.getElementById('signTrack')
-        const knob = document.getElementById('signKnob')
-        const lbl = document.getElementById('signLbl')
-        if (!track) return
-        let down = false,
-          sx = 0,
-          x = 0
-        const max = () => track.clientWidth - 53
-        knob.addEventListener('pointerdown', (e) => {
-          down = true
-          sx = e.clientX - x
-          knob.setPointerCapture(e.pointerId)
-          knob.style.transition = 'none'
-        })
-        knob.addEventListener('pointermove', (e) => {
-          if (!down) return
-          x = Math.max(0, Math.min(max(), e.clientX - sx))
-          knob.style.left = 5 + x + 'px'
-        })
-        knob.addEventListener('pointerup', () => {
-          down = false
-          knob.style.transition = ''
-          if (x > max() * 0.85) {
-            track.classList.add('signed')
-            lbl.textContent = 'Approved — broadcasting…'
-            setTimeout(() => (lbl.textContent = 'Confirmed · block 4,912,338 · 0x9f12…a73b'), 900)
-          } else {
-            x = 0
-            knob.style.left = '5px'
-          }
-        })
-      }
-
-      /* login: DID challenge–response */
-      const login = document.getElementById('login')
-      document.getElementById('connectBtn').onclick = () => {
-        login.classList.add('auth')
-        setTimeout(() => {
-          login.classList.add('gone')
-          setTimeout(() => {
-            login.style.display = 'none'
-            bar.focus()
-          }, 800)
-        }, 1400)
-      }
-    </script>
-  </body>
+// ==================== USER MENU ====================
+function toggleDropdown() {
+  showToast('Profile menu: Settings, Trips, Wishlists, Log out');
+}
+</script>
+</body>
 </html>
