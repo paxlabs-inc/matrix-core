@@ -39,7 +39,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -89,7 +89,7 @@ jobs:
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -132,7 +132,7 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -178,7 +178,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: protocol/codegraph/go.mod
           cache: true
@@ -238,7 +238,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: ${{ matrix.module }}/go.mod
           cache: true
@@ -299,7 +299,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: workforce/go.mod
           cache: true
@@ -333,7 +333,7 @@ jobs:
         working-directory: workforce
         run: go build ./cmd/workforced ./cmd/workforce-seat ./cmd/workforce-auditor
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: protocol/codegraph-ultra/go.mod
           cache: true
@@ -346,7 +346,7 @@ jobs:
           go build -o /tmp/cg ./cmd/codegraph-ultra
           sudo install -o root -g root -m 0755 /tmp/cg /usr/local/bin/cg
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: workforce/go.mod
           cache: true
