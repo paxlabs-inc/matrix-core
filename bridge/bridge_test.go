@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"matrix/cortex"
-	"matrix/cortex/embed"
-	"matrix/cortex/memory"
-	"matrix/cortex/store"
-	"matrix/mcl/mtx/ast"
-	"matrix/mcl/mtx/interpreter"
-	"matrix/mcl/mtx/parser"
+	"centra/core/cortex"
+	"centra/core/cortex/embed"
+	"centra/core/cortex/memory"
+	"centra/core/cortex/store"
+	"centra/core/mcl/mtx/ast"
+	"centra/core/mcl/mtx/interpreter"
+	"centra/core/mcl/mtx/parser"
 )
 
 // ----- test helpers -------------------------------------------------------

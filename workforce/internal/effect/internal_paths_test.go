@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/skills"
 )
 
 func TestGateway_SetStateRejectsUnknownStateBeforePersistence(t *testing.T) {

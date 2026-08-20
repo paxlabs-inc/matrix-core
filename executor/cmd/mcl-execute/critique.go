@@ -30,10 +30,10 @@ import (
 	"strings"
 	"time"
 
-	"matrix/cassandra"
-	"matrix/mcl/ir"
-	"matrix/mcl/llm"
-	"matrix/mcl/mtx/interpreter"
+	"centra/core/cassandra"
+	"centra/core/mcl/ir"
+	"centra/core/mcl/llm"
+	"centra/core/mcl/mtx/interpreter"
 )
 
 // criticSlot is the gateway slot completeness audits route + meter on. The
@@ -179,7 +179,7 @@ func (c *criticDecoder) Decode(ctx context.Context, system, user string) (string
 // critic hiccup must never convert an otherwise-clean walk into a failure).
 //
 // This is the MCL seam of the shared Cassandra faculty (cassandra.frozen.kvx
-// [seams.mcl]): the verdict-shaped logic now lives in matrix/cassandra; the
+// [seams.mcl]): the verdict-shaped logic now lives in centra/core/cassandra; the
 // MCL gate consults verdict.CoverageComplete(), preserving the legacy
 // criticVerdict.Complete behavior byte-for-byte.
 func (d *daemonState) critiquePlan(ctx context.Context, prose, executedDigest, intentID, goalID string, t *transcript, acc *intentCostAccumulator) (*cassandra.Verdict, error) {

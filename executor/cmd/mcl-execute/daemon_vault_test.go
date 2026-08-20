@@ -17,7 +17,7 @@ import (
 	"strings"
 	"testing"
 
-	"matrix/vault"
+	"centra/packages/vault"
 )
 
 // vaultSessionFor boots a real encrypting vault.Session for a user, keyed by a

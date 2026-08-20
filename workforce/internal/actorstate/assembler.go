@@ -7,14 +7,14 @@ import (
 	"sort"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
-	"matrix/workforce/internal/lease"
-	"matrix/workforce/internal/ledger"
-	"matrix/workforce/internal/mail"
-	"matrix/workforce/internal/policy"
-	"matrix/workforce/internal/projectbrain"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
+	"centra/workforce/internal/lease"
+	"centra/workforce/internal/ledger"
+	"centra/workforce/internal/mail"
+	"centra/workforce/internal/policy"
+	"centra/workforce/internal/projectbrain"
+	"centra/workforce/internal/skills"
 )
 
 type ProjectBrainReader interface {

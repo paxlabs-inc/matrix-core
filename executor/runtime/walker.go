@@ -12,7 +12,7 @@
 //
 //	S23Q1  package path                — matrix.kvx mcl_next_entry_point
 //	S23Q2  pluggable handler interfaces — Q6/Q10/Q13 v1 carve-outs
-//	S23Q3  node-kind semantics          — MCL/ir/plan.go ValidNodeKinds
+//	S23Q3  node-kind semantics          — core/mcl/ir/plan.go ValidNodeKinds
 //	S23Q4  arg coercion verbatim from harness
 //	S23Q9  material-correction halt path
 //	S23Q11 transport vs in-band error split — Q14 lock
@@ -32,11 +32,11 @@ import (
 	"sync"
 	"time"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
-	"matrix/executor/tool"
-	"matrix/mcl/envelope"
-	"matrix/mcl/ir"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
+	"centra/executor/tool"
+	"centra/core/mcl/envelope"
+	"centra/core/mcl/ir"
 )
 
 // EventSink is the structured-event surface the walker emits to.
@@ -138,7 +138,7 @@ type Walker struct {
 	onCorrection    CorrectionHandler
 
 	// actorURI is stamped onto every Event memory written by the walker.
-	// Cortex requires CreatedBy on every Write meta (cortex/cortex.go:138).
+	// Cortex requires CreatedBy on every Write meta (core/cortex/cortex.go:138).
 	actorURI string
 
 	// clock is overridable for tests.

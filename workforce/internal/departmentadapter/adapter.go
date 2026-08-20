@@ -12,13 +12,13 @@ import (
 	"io"
 	"time"
 
-	"matrix/workforce/internal/approval"
-	"matrix/workforce/internal/domainwork"
-	"matrix/workforce/internal/effect"
-	"matrix/workforce/internal/knowledgework"
-	"matrix/workforce/internal/lease"
-	"matrix/workforce/internal/operationswork"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/approval"
+	"centra/workforce/internal/domainwork"
+	"centra/workforce/internal/effect"
+	"centra/workforce/internal/knowledgework"
+	"centra/workforce/internal/lease"
+	"centra/workforce/internal/operationswork"
+	"centra/workforce/internal/skills"
 )
 
 const (

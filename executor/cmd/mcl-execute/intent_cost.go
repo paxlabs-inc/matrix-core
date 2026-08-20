@@ -8,7 +8,7 @@ package main
 // The Centra AI gateway (gateway/) responds with X-Matrix-Cost-Pax +
 // X-Matrix-Daily-Spent-Pax + X-Matrix-Daily-Remaining-Pax on every
 // metered LLM call. Daemons capture those via the
-// llm.Config.OnResponseHeaders hook (MCL/llm/llm.go) and route them
+// llm.Config.OnResponseHeaders hook (core/mcl/llm/llm.go) and route them
 // here.
 //
 // Two surfaces are produced per call:
@@ -21,7 +21,7 @@ package main
 // roll up into a single cortex Event memory tagged "cost". v1 keeps
 // the cortex aggregation as a TODO (cortex.Add API surface is
 // daemon-internal and threaded through too many layers to wire
-// cleanly here without crossing into cortex/). The transcript +
+// cleanly here without crossing into core/cortex/). The transcript +
 // Prometheus surfaces are what /metrics + the Inbox UI consume in v1.
 //
 // Concurrency: every helper is safe for concurrent use. The cost

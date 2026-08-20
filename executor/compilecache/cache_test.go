@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"matrix/cortex/keys"
-	"matrix/cortex/store"
+	"centra/core/cortex/keys"
+	"centra/core/cortex/store"
 )
 
 // openTestStore creates a real per-actor Pebble store in a tempdir.

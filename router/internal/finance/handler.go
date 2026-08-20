@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"matrix/router/internal/proxy"
+	"centra/router/internal/proxy"
 )
 
 // Logf is the router's logging shape.

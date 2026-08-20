@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/learning"
+	"centra/workforce/internal/learning"
 )
 
 type LearningEvaluationRequest struct {

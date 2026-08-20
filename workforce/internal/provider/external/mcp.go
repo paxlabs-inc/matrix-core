@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/effect"
+	"centra/workforce/internal/effect"
 )
 
 const mcpProtocolVersion = "2024-11-05"

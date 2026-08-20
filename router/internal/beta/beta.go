@@ -24,8 +24,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/router/internal/db"
-	"matrix/router/internal/proxy"
+	"centra/router/internal/db"
+	"centra/router/internal/proxy"
 )
 
 // Handler bundles dependencies for the beta user routes.

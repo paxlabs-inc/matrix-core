@@ -5,7 +5,7 @@ import (
 	"slices"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 // ExecutionOrder is the issuer-neutral projection consumed by the Workforce

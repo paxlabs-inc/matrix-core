@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
 )
 
 // FormatBundle renders a *cortex.Bundle into the canonical text shape

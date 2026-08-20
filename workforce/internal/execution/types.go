@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 type Stage string

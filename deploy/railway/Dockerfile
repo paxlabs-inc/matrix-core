@@ -50,9 +50,9 @@ FROM ${AGENTCORE_RUNTIME_IMAGE} AS agentcore-runtime
 FROM golang:1.25-bookworm AS codegraph-ultra-builder
 
 WORKDIR /src/codegraph-ultra
-COPY codegraph-ultra/go.mod codegraph-ultra/go.sum ./
+COPY protocol/codegraph-ultra/go.mod protocol/codegraph-ultra/go.sum ./
 RUN go mod download
-COPY codegraph-ultra/ ./
+COPY protocol/codegraph-ultra/ ./
 RUN CGO_ENABLED=1 go build -ldflags="-s -w" -o /out/cg ./cmd/codegraph-ultra
 
 # cortexd is built from the pinned native toolchain as a static executable so
@@ -69,7 +69,7 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src/neocortex
-COPY neocortex/ ./
+COPY core/neocortex/ ./
 RUN set -eux; \
     python3 toolchain/verify_vendored.py; \
     python3 toolchain/verify_generated.py; \
@@ -77,7 +77,7 @@ RUN set -eux; \
     cmake --build --preset release --target cortexd; \
     file build/release/cortexd | grep -q 'statically linked'
 
-# neo/go.mod requires Go >= 1.25.0 (the other modules are 1.21); the builder
+# agents/neo/go.mod requires Go >= 1.25.0 (the other modules are 1.21); the builder
 # base MUST be >= that or `go build ./cmd/neo` fails with GOTOOLCHAIN=local.
 FROM golang:1.25-bookworm AS builder
 
@@ -87,57 +87,57 @@ ENV CGO_ENABLED=0 \
 
 # Copy the Go modules. Order chosen so the module manifests land first for
 # layer caching. construct is a pure-stdlib module (no go.sum) that both
-# executor and neo pull in via `replace matrix/construct => ../construct`
+# executor and neo pull in via `replace centra/packages/construct => ../packages/construct`
 # (the Construct projection engine + transport + Ask back-channel), so its
 # tree MUST be present or `go build` can't resolve the replace target.
-# vault (matrix/vault) — the ORACLE data-at-rest envelope-encryption module.
+# vault (centra/packages/vault) — the ORACLE data-at-rest envelope-encryption module.
 # Pure-stdlib (no go.sum). cortex, neo, executor, construct, bridge, and
-# codegraph all pull it in via `replace matrix/vault => ../vault`, so its
+# codegraph all pull it in via `replace centra/packages/vault => ../packages/vault`, so its
 # tree MUST be present or every downstream `go build` fails to resolve the
 # replace target.
-COPY vault/go.mod                  vault/
-COPY cortex/go.mod  cortex/go.sum  cortex/
-COPY cortexclient/go.mod cortexclient/go.sum cortexclient/
-COPY MCL/go.mod     MCL/go.sum     MCL/
-# codegraph (matrix/codegraph) — neo pulls it in via `replace matrix/codegraph
-# => ../codegraph` (the self-model structural self-graph). It in turn replaces
+COPY packages/vault/go.mod         packages/vault/
+COPY core/cortex/go.mod core/cortex/go.sum core/cortex/
+COPY core/cortexclient/go.mod core/cortexclient/go.sum core/cortexclient/
+COPY core/mcl/go.mod core/mcl/go.sum core/mcl/
+# codegraph (centra/protocol/codegraph) — neo pulls it in via `replace centra/protocol/codegraph
+# => ../../protocol/codegraph` (the self-model structural self-graph). It in turn replaces
 # ../cortex and ../MCL (copied above), so its tree MUST be present for
 # `go build ./cmd/neo` to resolve.
-COPY codegraph/go.mod codegraph/go.sum codegraph/
+COPY protocol/codegraph/go.mod protocol/codegraph/go.sum protocol/codegraph/
 COPY bridge/go.mod  bridge/go.sum  bridge/
-COPY construct/go.mod              construct/
-COPY machine/go.mod machine/go.sum machine/
+COPY packages/construct/go.mod     packages/construct/
+COPY packages/machine/go.mod packages/machine/go.sum packages/machine/
 COPY executor/go.mod executor/go.sum executor/
-COPY neo/go.mod     neo/go.sum     neo/
+COPY agents/neo/go.mod agents/neo/go.sum agents/neo/
 COPY workforce/go.mod workforce/go.sum workforce/
-# cassandra (matrix/cassandra) — imported by the executor's critic stage
+# cassandra (centra/core/cassandra) — imported by the executor's critic stage
 # (cmd/mcl-execute/critique.go), so its tree MUST be present for the daemon
 # build. Neo no longer imports it (Cassandra 2.0 is in-process in neo).
-COPY cassandra/go.mod              cassandra/
+COPY core/cassandra/go.mod         core/cassandra/
 
 # Now the source.
-COPY vault/     vault/
-COPY cortex/    cortex/
-COPY cortexclient/ cortexclient/
-COPY MCL/       MCL/
-COPY codegraph/ codegraph/
+COPY packages/vault/ packages/vault/
+COPY core/cortex/ core/cortex/
+COPY core/cortexclient/ core/cortexclient/
+COPY core/mcl/ core/mcl/
+COPY protocol/codegraph/ protocol/codegraph/
 COPY bridge/    bridge/
-COPY construct/ construct/
-COPY machine/   machine/
+COPY packages/construct/ packages/construct/
+COPY packages/machine/ packages/machine/
 COPY executor/  executor/
-COPY neo/       neo/
+COPY agents/neo/ agents/neo/
 COPY workforce/ workforce/
-COPY cassandra/ cassandra/
+COPY core/cassandra/ core/cassandra/
 
 WORKDIR /src/executor
 RUN go build -ldflags="-s -w" -o /out/mcl-execute ./cmd/mcl-execute
 
-WORKDIR /src/machine
+WORKDIR /src/packages/machine
 RUN go build -ldflags="-s -w" -o /out/matrix-machine ./cmd/matrix-machine
 
-# Neo — the conversational FRONT (matrix/neo). Reuses cortex/MCL/executor via
-# the sibling replace directives in neo/go.mod (those trees are copied above).
-WORKDIR /src/neo
+# Neo — the conversational FRONT (centra/agents/neo). Reuses core/cortex + core/mcl + executor via
+# the sibling replace directives in agents/neo/go.mod (those trees are copied above).
+WORKDIR /src/agents/neo
 RUN go build -ldflags="-s -w" -o /out/neo ./cmd/neo
 
 # Workforce ships in the same production image. Railway can run the default
@@ -245,9 +245,9 @@ RUN set -eux; \
 # baked into the image so a freshly-provisioned per-user container can navigate
 # and screenshot locally with no external dependency (ac 1.3). The entrypoint
 # runs it on 127.0.0.1:8931 and points MATRIX_BROWSER_URL at it; the daemon-side
-# stdio bridge (tools/browser/browser.mjs) forwards unchanged in wire shape
+# stdio bridge (protocol/tools/browser/browser.mjs) forwards unchanged in wire shape
 # (ac 1.2). PWMCP_VERSION must match the version whose tools/list is mirrored in
-# tools/browser/playwright-tools.json (and enumerated in agents/neo.json) —
+# protocol/tools/browser/playwright-tools.json (and enumerated in agents/neo.json) —
 # same pin discipline as the retired deploy/browser image. Install the browser
 # with @playwright/mcp's OWN bundled playwright CLI (NOT `npx playwright
 # install`) so the chromium revision matches the mcp's pinned playwright.
@@ -322,7 +322,7 @@ RUN set -eux; \
 
 # Realtime voice worker dependencies live in an isolated runtime environment;
 # the source tree's development venv is never copied into the image.
-COPY tools/voice/requirements.txt /tmp/voice-requirements.txt
+COPY protocol/tools/voice/requirements.txt /tmp/voice-requirements.txt
 RUN set -eux; \
     python3 -m venv /opt/voice-venv; \
     /opt/voice-venv/bin/pip install --no-cache-dir -r /tmp/voice-requirements.txt; \
@@ -408,7 +408,7 @@ WORKDIR /opt/matrix
 
 # Copy the static binaries first. mcl-execute = the co-located plumbing daemon
 # (healthz, /memory + /profile stores, volume snapshots); neo = the agent
-# (matrix/neo serve) — the only agent in the runtime.
+# (centra/agents/neo serve) — the only agent in the runtime.
 COPY --from=builder /out/mcl-execute /opt/matrix/bin/mcl-execute
 COPY --from=builder /out/matrix-machine /opt/matrix/bin/matrix-machine
 COPY --from=builder /out/neo         /opt/matrix/bin/neo
@@ -476,9 +476,9 @@ RUN --mount=from=agentcore-runtime,source=/opt/agentcore,target=/run/matrix-agen
 # Bake the skill corpus, agent manifests, and remote integration bridges. Build
 # time verification remains strict even though one unavailable integration is
 # no longer allowed to terminate the running daemon.
-COPY skills/         /opt/matrix/skills/
+COPY protocol/skills/ /opt/matrix/skills/
 # agents/ carries every agent manifest (agents/neo.json + agents/default.json).
-COPY agents/         /opt/matrix/agents/
+COPY agents/*.json agents/README.md /opt/matrix/agents/
 
 # Manifest spawn gate. For EVERY uvx-launched server in the two deployed
 # manifests, run the real command AS the agent uid and assert that
@@ -508,33 +508,33 @@ RUN set -eux; \
 # committed and anti-drift-gated in CI; bake it so the self-model's structural
 # facet is populated in prod instead of degrading to empty.
 COPY graph/self-model/ /opt/matrix/graph/self-model/
-COPY tools/websearch /opt/matrix/tools/websearch
-COPY tools/exa       /opt/matrix/tools/exa
-COPY tools/finance   /opt/matrix/tools/finance
-COPY tools/browser   /opt/matrix/tools/browser
-COPY tools/machinemail /opt/matrix/tools/machinemail
+COPY protocol/tools/websearch /opt/matrix/tools/websearch
+COPY protocol/tools/exa       /opt/matrix/tools/exa
+COPY protocol/tools/finance   /opt/matrix/tools/finance
+COPY protocol/tools/browser   /opt/matrix/tools/browser
+COPY protocol/tools/machinemail /opt/matrix/tools/machinemail
 # Admin-only compatibility supervisor used by recovery and registry audits.
 # It is deliberately absent from every production agent manifest.
-COPY tools/exec      /opt/matrix/tools/exec
+COPY protocol/tools/exec      /opt/matrix/tools/exec
 RUN su matrix-agent -s /bin/bash -c \
       'HOME=/home/matrix-agent PATH=/usr/local/bin:/usr/bin:/bin \
        node /opt/matrix/tools/exec/exec.mjs --selftest'
-COPY tools/media     /opt/matrix/tools/media
-COPY tools/voice/*.py /opt/matrix/tools/voice/
-COPY tools/voice/requirements.txt /opt/matrix/tools/voice/requirements.txt
+COPY protocol/tools/media     /opt/matrix/tools/media
+COPY protocol/tools/voice/*.py /opt/matrix/tools/voice/
+COPY protocol/tools/voice/requirements.txt /opt/matrix/tools/voice/requirements.txt
 RUN set -eux; \
     cd /opt/matrix/tools/voice; \
     /opt/voice-venv/bin/python agent.py download-files
-COPY tools/chronos   /opt/matrix/tools/chronos
-COPY tools/sandbox   /opt/matrix/tools/sandbox
+COPY protocol/tools/chronos   /opt/matrix/tools/chronos
+COPY protocol/tools/sandbox   /opt/matrix/tools/sandbox
 # DOJO disposable-desktop actuation bridge (wave 2): agents/neo.json spawns it
 # at /root/matrix/tools/desktop/desktop.mjs (the symlink below); it needs no
 # credentials — MATRIX_DOJO_URL/MATRIX_DOJO_TOKEN are injected by the daemon's
 # serve wiring at runtime.
-COPY tools/desktop   /opt/matrix/tools/desktop
+COPY protocol/tools/desktop   /opt/matrix/tools/desktop
 # Scaffolder suite (scaffold-<stack>.sh): Neo runs these via exec for
 # greenfield project structure instead of hand-writing boilerplate.
-COPY tools/scaffold  /opt/matrix/tools/scaffold
+COPY protocol/tools/scaffold  /opt/matrix/tools/scaffold
 RUN chmod +x /opt/matrix/tools/scaffold/*.sh
 # /root is traverse-only for matrix-agent; known baked manifest paths resolve
 # while the root service home cannot be listed.

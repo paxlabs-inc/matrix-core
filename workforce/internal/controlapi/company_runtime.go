@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"matrix/workforce/internal/companyruntime"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/productexecution"
+	"centra/workforce/internal/companyruntime"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/productexecution"
 )
 
 func (service *Service) PreviewCompanyStart(

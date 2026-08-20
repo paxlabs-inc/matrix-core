@@ -15,10 +15,10 @@ import (
 	"testing"
 	"time"
 
-	"matrix/router/internal/fly"
-	"matrix/router/internal/provision"
-	"matrix/router/internal/railway"
-	"matrix/router/internal/workforceauth"
+	"centra/router/internal/fly"
+	"centra/router/internal/provision"
+	"centra/router/internal/railway"
+	"centra/router/internal/workforceauth"
 )
 
 func TestSubjectRoundTrip(t *testing.T) {

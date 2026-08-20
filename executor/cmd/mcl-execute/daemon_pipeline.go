@@ -29,10 +29,10 @@ import (
 	"strings"
 	"time"
 
-	"matrix/executor/runtime"
-	"matrix/mcl/ir"
-	"matrix/mcl/llm"
-	"matrix/mcl/mtx/interpreter"
+	"centra/executor/runtime"
+	"centra/core/mcl/ir"
+	"centra/core/mcl/llm"
+	"centra/core/mcl/mtx/interpreter"
 )
 
 // Compile-time imports kept to satisfy unused-warnings; cortex + ir are

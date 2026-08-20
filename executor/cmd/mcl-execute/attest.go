@@ -21,11 +21,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
-	"matrix/executor/runtime"
-	"matrix/mcl/envelope"
-	"matrix/mcl/ir"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
+	"centra/executor/runtime"
+	"centra/core/mcl/envelope"
+	"centra/core/mcl/ir"
 )
 
 // attestEvidence is the structured payload baked into IntentAttestBody.EvidenceJSON.

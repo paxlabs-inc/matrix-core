@@ -3,7 +3,7 @@ package wakeruntime
 import (
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 // legacyWorkPacket preserves the exact pre-company JSON shape so an in-flight

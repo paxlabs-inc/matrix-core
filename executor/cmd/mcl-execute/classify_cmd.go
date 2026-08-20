@@ -26,8 +26,8 @@ import (
 	"fmt"
 	"os"
 
-	"matrix/executor/materiality"
-	"matrix/mcl/ir"
+	"centra/executor/materiality"
+	"centra/core/mcl/ir"
 )
 
 func runClassify(args []string) {

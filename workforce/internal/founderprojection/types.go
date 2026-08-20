@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 const SchemaVersion = "workforce.founder-ui-projection-receipt.v1"

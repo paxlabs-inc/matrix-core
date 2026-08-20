@@ -3,7 +3,7 @@ package skills
 import (
 	"testing"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func TestDeveloperPackIsCompleteVersionedAndExecutable(t *testing.T) {

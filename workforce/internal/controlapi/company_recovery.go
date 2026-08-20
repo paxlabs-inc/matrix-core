@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"matrix/workforce/internal/companyrecovery"
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/companyrecovery"
+	"centra/workforce/internal/contracts"
 )
 
 type UsageCommitRequest struct {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"matrix/workforce/internal/productexecution"
+	"centra/workforce/internal/productexecution"
 )
 
 func (service *Service) authorizeProductExecution(

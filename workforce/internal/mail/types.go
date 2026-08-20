@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
 )
 
 var (

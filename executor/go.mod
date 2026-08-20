@@ -1,13 +1,13 @@
-module matrix/executor
+module centra/executor
 
 go 1.25.0
 
 require (
 	github.com/fxamacker/cbor/v2 v2.6.0
-	matrix/cassandra v0.0.0
-	matrix/construct v0.0.0
-	matrix/machine v0.0.0
-	matrix/mcl v0.0.0
+	centra/core/cassandra v0.0.0
+	centra/packages/construct v0.0.0
+	centra/packages/machine v0.0.0
+	centra/core/mcl v0.0.0
 )
 
 require (
@@ -16,9 +16,9 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/minio/minio-go/v7 v7.0.75
 	golang.org/x/sys v0.29.0
-	matrix/bridge v0.0.0-00010101000000-000000000000
-	matrix/cortex v0.0.0
-	matrix/vault v0.0.0
+	centra/bridge v0.0.0-00010101000000-000000000000
+	centra/core/cortex v0.0.0
+	centra/packages/vault v0.0.0
 )
 
 require (
@@ -74,16 +74,16 @@ require (
 	modernc.org/token v1.1.0 // indirect
 )
 
-replace matrix/cassandra => ../cassandra
+replace centra/core/cassandra => ../core/cassandra
 
-replace matrix/construct => ../construct
+replace centra/packages/construct => ../packages/construct
 
-replace matrix/cortex => ../cortex
+replace centra/core/cortex => ../core/cortex
 
-replace matrix/mcl => ../MCL
+replace centra/core/mcl => ../core/mcl
 
-replace matrix/machine => ../machine
+replace centra/packages/machine => ../packages/machine
 
-replace matrix/bridge => ../bridge
+replace centra/bridge => ../bridge
 
-replace matrix/vault => ../vault
+replace centra/packages/vault => ../packages/vault

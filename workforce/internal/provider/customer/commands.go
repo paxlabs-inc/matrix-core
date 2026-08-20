@@ -7,9 +7,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/provider/external"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/provider/external"
+	"centra/workforce/internal/skills"
 )
 
 type EmailCommand struct {

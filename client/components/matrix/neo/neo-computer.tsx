@@ -42,16 +42,16 @@ import {
   NeoWorkspace,
   NeoThinkingStrip,
   type FilmstripFrame,
-} from '@/components/matrix/neo/neo-workspace'
-import { NeoSwarm } from '@/components/matrix/neo/neo-swarm'
-import { NeoTodoList } from '@/components/matrix/neo/neo-todo'
-import { NeoSearchResults } from '@/components/matrix/neo/neo-search'
-import { NeoMediaGrid } from '@/components/matrix/neo/neo-media'
-import { NeoArtifacts } from '@/components/matrix/neo/neo-artifacts'
-import { NeoMemoryCard } from '@/components/matrix/neo/neo-memory'
-import { DojoDesktopScreen } from '@/components/matrix/neo/neo-desktop'
-import { NeoAuditTrail } from '@/components/matrix/neo/neo-audit'
-import { ConstructSurfaces } from '@/components/matrix/construct'
+} from '@/components/centra/agents/neo/neo-workspace'
+import { NeoSwarm } from '@/components/centra/agents/neo/neo-swarm'
+import { NeoTodoList } from '@/components/centra/agents/neo/neo-todo'
+import { NeoSearchResults } from '@/components/centra/agents/neo/neo-search'
+import { NeoMediaGrid } from '@/components/centra/agents/neo/neo-media'
+import { NeoArtifacts } from '@/components/centra/agents/neo/neo-artifacts'
+import { NeoMemoryCard } from '@/components/centra/agents/neo/neo-memory'
+import { DojoDesktopScreen } from '@/components/centra/agents/neo/neo-desktop'
+import { NeoAuditTrail } from '@/components/centra/agents/neo/neo-audit'
+import { ConstructSurfaces } from '@/components/centra/packages/construct'
 import {
   FinanceComputerScreen,
   financeEventLabel,

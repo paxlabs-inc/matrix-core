@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/executor/mcp"
+	"centra/executor/mcp"
 )
 
 // helperManifest builds a manifest with one fs MCP server and two tools.

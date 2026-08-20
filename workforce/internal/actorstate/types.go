@@ -1,8 +1,8 @@
 package actorstate
 
 import (
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/seatworker"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/seatworker"
 )
 
 type SeatOutput = seatworker.SeatOutput

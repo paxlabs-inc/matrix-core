@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/approval"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/effect"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/approval"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/effect"
+	"centra/workforce/internal/skills"
 )
 
 // A compiled plan is the only durable dispatch authority, so the projection

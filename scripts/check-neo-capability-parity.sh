@@ -2,8 +2,8 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-manifest="$repo_root/spec/neo-capability-parity/protected-runtime.sha256"
-ledger="$repo_root/spec/neo-capability-parity/parity.tsv"
+manifest="$repo_root/protocol/spec/neo-capability-parity/protected-runtime.sha256"
+ledger="$repo_root/protocol/spec/neo-capability-parity/parity.tsv"
 
 cd "$repo_root"
 sha256sum --check --quiet "$manifest"

@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/executor/tool"
+	"centra/executor/tool"
 )
 
 func TestNewInfraOmitsUnavailableMCPAdapterWithoutFailingBoot(t *testing.T) {

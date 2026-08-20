@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"time"
 
-	"matrix/router/internal/provision"
+	"centra/router/internal/provision"
 )
 
 // Provisioner adapts *Client to provision.Provisioner. The fields that

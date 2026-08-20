@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"matrix/router/internal/workforceauth"
+	"centra/router/internal/workforceauth"
 )
 
 func TestInstanceEnvAddsPerUserWorkforceCredentialsWithoutRootSecret(t *testing.T) {

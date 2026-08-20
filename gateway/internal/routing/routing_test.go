@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"matrix/gateway/internal/rates"
-	"matrix/gateway/internal/types"
+	"centra/gateway/internal/rates"
+	"centra/gateway/internal/types"
 )
 
 func TestDecideFreeTierWhitelistedCompiler(t *testing.T) {

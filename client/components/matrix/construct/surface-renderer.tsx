@@ -13,15 +13,15 @@
  */
 import { AnimatePresence, motion } from 'motion/react'
 import type { Surface, AskResponse } from '@/lib/construct/types.gen'
-import { DecorationRow, hasDecoration } from '@/components/matrix/construct/decoration'
-import { NarrationView } from '@/components/matrix/construct/narration'
-import { MetricView } from '@/components/matrix/construct/metric'
-import { EntityView } from '@/components/matrix/construct/entity'
-import { StructureView } from '@/components/matrix/construct/structure'
-import { StreamView } from '@/components/matrix/construct/stream'
-import { TimelineView } from '@/components/matrix/construct/timeline'
-import { CanvasView } from '@/components/matrix/construct/canvas'
-import { AskView } from '@/components/matrix/construct/ask'
+import { DecorationRow, hasDecoration } from '@/components/centra/packages/construct/decoration'
+import { NarrationView } from '@/components/centra/packages/construct/narration'
+import { MetricView } from '@/components/centra/packages/construct/metric'
+import { EntityView } from '@/components/centra/packages/construct/entity'
+import { StructureView } from '@/components/centra/packages/construct/structure'
+import { StreamView } from '@/components/centra/packages/construct/stream'
+import { TimelineView } from '@/components/centra/packages/construct/timeline'
+import { CanvasView } from '@/components/centra/packages/construct/canvas'
+import { AskView } from '@/components/centra/packages/construct/ask'
 
 const EASE = [0.32, 0.72, 0, 1] as const
 

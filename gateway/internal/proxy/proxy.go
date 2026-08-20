@@ -44,13 +44,13 @@ import (
 	"sync"
 	"time"
 
-	"matrix/gateway/internal/agentwire"
-	"matrix/gateway/internal/auth"
-	"matrix/gateway/internal/ledger"
-	"matrix/gateway/internal/ratelimit"
-	"matrix/gateway/internal/rates"
-	"matrix/gateway/internal/routing"
-	"matrix/gateway/internal/types"
+	"centra/gateway/internal/agentwire"
+	"centra/gateway/internal/auth"
+	"centra/gateway/internal/ledger"
+	"centra/gateway/internal/ratelimit"
+	"centra/gateway/internal/rates"
+	"centra/gateway/internal/routing"
+	"centra/gateway/internal/types"
 )
 
 const upstreamCallTimeout = 5 * time.Minute

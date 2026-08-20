@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/policy"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/policy"
 )
 
 func TestExecutiveResearchPackMatchesSignedMandatesAndLeaksNoAuthority(t *testing.T) {

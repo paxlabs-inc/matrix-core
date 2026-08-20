@@ -10,7 +10,7 @@
 //	users/<user_id>/snapshots/<ts>.tar.zst  // historical snapshots (versioned)
 //	users/<user_id>/meta.json               // (reserved; not used at v1)
 //
-// Tarball content: full <DataDir> tree (cortex/ + journal/ + transcripts/
+// Tarball content: full <DataDir> tree (core/cortex/ + journal/ + transcripts/
 // + workspace/ + .matrix/). The seeded sentinel is preserved so restores
 // land in already-seeded state and never trigger a second pull.
 //
@@ -37,8 +37,8 @@ import (
 	"sync"
 	"time"
 
-	"matrix/executor/tool"
-	"matrix/vault"
+	"centra/executor/tool"
+	"centra/packages/vault"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -52,7 +52,7 @@ import (
 // integration testing against a public test bucket).
 type Config struct {
 	// DataDir is the root that the daemon persists state under
-	// (cortex/, journal/, transcripts/, workspace/, .matrix/).
+	// (core/cortex/, journal/, transcripts/, workspace/, .matrix/).
 	// Tarballs capture this entire tree.
 	DataDir string
 

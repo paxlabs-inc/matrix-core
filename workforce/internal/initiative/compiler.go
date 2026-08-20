@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/mission"
-	"matrix/workforce/internal/portfolio"
-	"matrix/workforce/internal/workorder"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/mission"
+	"centra/workforce/internal/portfolio"
+	"centra/workforce/internal/workorder"
 )
 
 var (

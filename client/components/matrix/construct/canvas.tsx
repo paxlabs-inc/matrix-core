@@ -8,7 +8,7 @@
  */
 import { Globe, ImageIcon } from '@/lib/matrix-icons'
 import type { Canvas as CanvasPayload, CanvasRegion } from '@/lib/construct/types.gen'
-import { ConstructChart } from '@/components/matrix/construct/chart'
+import { ConstructChart } from '@/components/centra/packages/construct/chart'
 
 function Regions({
   regions,

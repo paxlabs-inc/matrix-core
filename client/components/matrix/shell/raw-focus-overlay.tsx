@@ -26,7 +26,7 @@
  */
 import { ArrowLeft } from '@/lib/matrix-icons'
 import { cn } from '@/lib/utils'
-import { SurfaceRenderer, type SurfaceHandlers } from '@/components/matrix/construct'
+import { SurfaceRenderer, type SurfaceHandlers } from '@/components/centra/packages/construct'
 import { topFocus } from '@/lib/construct/focus'
 import type { SurfaceWorkspace } from '@/lib/construct/workspace'
 

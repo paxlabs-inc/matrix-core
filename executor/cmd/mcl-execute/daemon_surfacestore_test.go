@@ -5,7 +5,7 @@ package main
 
 // daemon_surfacestore_test.go — integration test for the Construct surface-store
 // tee (daemon_surfacestore.go) wired to the REAL SSE broker (daemon_sse.go) and
-// the REAL durable store (construct/surfacestore), with a real /data-style temp
+// the REAL durable store (packages/construct/surfacestore), with a real /data-style temp
 // dir. No fakes/mocks for any component under test: the whole point of this test
 // is that the live broker → tee goroutine → durable store path behaves correctly
 // as an integrated whole.
@@ -45,8 +45,8 @@ import (
 	"testing"
 	"time"
 
-	"matrix/construct/surfacestore"
-	"matrix/construct/transport"
+	"centra/packages/construct/surfacestore"
+	"centra/packages/construct/transport"
 )
 
 // TestSurfaceStoreTee_NonBlockingDropOnSaturation drives the real broker + tee +

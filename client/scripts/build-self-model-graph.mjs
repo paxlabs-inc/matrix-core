@@ -52,10 +52,10 @@ function clip(text, max) {
 }
 
 function shortName(id) {
-  // matrix/neo/internal/agent.Agent#activeGoal -> activeGoal
+  // centra/agents/neo/internal/agent.Agent#activeGoal -> activeGoal
   // matrix/cody/internal/llm.Client.Chat       -> Chat
-  // matrix/neo/internal/agent/agent.go         -> agent.go
-  // matrix/neo/internal/agent                  -> agent
+  // centra/agents/neo/internal/agent/agent.go         -> agent.go
+  // centra/agents/neo/internal/agent                  -> agent
   const hash = id.lastIndexOf('#')
   if (hash !== -1) return id.slice(hash + 1)
   const slash = id.lastIndexOf('/')
@@ -66,7 +66,7 @@ function shortName(id) {
 }
 
 function moduleOf(id) {
-  // matrix/<module>/... (also plain "matrix/cortex" package)
+  // matrix/<module>/... (also plain "centra/core/cortex" package)
   const m = /^matrix\/([^/.]+)/.exec(id)
   return m ? m[1] : null
 }

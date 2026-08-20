@@ -13,7 +13,7 @@ package main
 //
 //   mcl-execute loader -skill matrix://skill/writing-plans@0.1.0
 //   mcl-execute loader -skill matrix://skill/writing-plans@0.1.0 -dump-md
-//   mcl-execute loader -list-corpus  # quick walk of skills/ root
+//   mcl-execute loader -list-corpus  # quick walk of protocol/skills/ root
 
 import (
 	"encoding/json"
@@ -24,7 +24,7 @@ import (
 	"sort"
 	"strings"
 
-	"matrix/executor/runtime"
+	"centra/executor/runtime"
 )
 
 func runLoader(args []string) {

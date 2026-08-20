@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/router/internal/proxy"
+	"centra/router/internal/proxy"
 )
 
 type Handler struct {

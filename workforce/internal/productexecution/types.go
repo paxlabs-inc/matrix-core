@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/companylifecycle"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/effect"
-	"matrix/workforce/internal/portfolio"
-	"matrix/workforce/internal/productcapability"
-	"matrix/workforce/internal/projectbrain"
-	"matrix/workforce/internal/squad"
-	"matrix/workforce/internal/workorder"
+	"centra/workforce/internal/companylifecycle"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/effect"
+	"centra/workforce/internal/portfolio"
+	"centra/workforce/internal/productcapability"
+	"centra/workforce/internal/projectbrain"
+	"centra/workforce/internal/squad"
+	"centra/workforce/internal/workorder"
 )
 
 const (

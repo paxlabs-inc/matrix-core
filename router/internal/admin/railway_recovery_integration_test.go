@@ -9,9 +9,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"matrix/router/internal/db"
-	"matrix/router/internal/provision"
-	"matrix/router/internal/railway"
+	"centra/router/internal/db"
+	"centra/router/internal/provision"
+	"centra/router/internal/railway"
 )
 
 func TestRailwayRecoveryRealProvider(t *testing.T) {

@@ -23,7 +23,7 @@ import (
 	"context"
 	"fmt"
 
-	"matrix/mcl/ir"
+	"centra/core/mcl/ir"
 )
 
 // enforcePaxeerSpend gates a synthesized plan against the daemon's

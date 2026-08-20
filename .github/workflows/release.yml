@@ -24,7 +24,7 @@ env:
   CGO_ENABLED: "0"
 
 # ---------------------------------------------------------------------------
-# Fan out across OS × arch. executor / bridge depend on cortex + MCL via
+# Fan out across OS × arch. executor / bridge depend on core/cortex + core/mcl via
 # `replace` directives; go -C <module> resolves them through the sibling
 # dirs that actions/checkout lands side-by-side.
 # ---------------------------------------------------------------------------
@@ -53,8 +53,8 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
           cache-dependency-path: |
-            cortex/go.sum
-            MCL/go.sum
+            core/cortex/go.sum
+            core/mcl/go.sum
             bridge/go.sum
             executor/go.sum
             gateway/go.sum
@@ -62,8 +62,8 @@ jobs:
 
       - name: download deps
         run: |
-          go -C cortex   mod download
-          go -C MCL      mod download
+          go -C core/cortex mod download
+          go -C core/mcl mod download
           go -C bridge   mod download
           go -C executor mod download
           go -C gateway  mod download
@@ -78,11 +78,11 @@ jobs:
           ldflags="-s -w"
           mkdir -p dist
 
-          go -C cortex   build -ldflags="$ldflags" -trimpath \
-            -o "../dist/cortex-shell_${platform}"     ./cmd/cortex-shell
+          go -C core/cortex build -ldflags="$ldflags" -trimpath \
+            -o "../../dist/cortex-shell_${platform}"     ./cmd/cortex-shell
 
-          go -C MCL      build -ldflags="$ldflags" -trimpath \
-            -o "../dist/mclc_${platform}"             ./cmd/mclc
+          go -C core/mcl build -ldflags="$ldflags" -trimpath \
+            -o "../../dist/mclc_${platform}"             ./cmd/mclc
 
           go -C bridge   build -ldflags="$ldflags" -trimpath \
             -o "../dist/mclc-cortex_${platform}"      ./cmd/mclc-cortex

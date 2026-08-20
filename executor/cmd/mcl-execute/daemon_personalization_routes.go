@@ -31,8 +31,8 @@ import (
 	"net/http"
 	"strings"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
 )
 
 // personalizationTag marks the single personalization-profile cortex record.

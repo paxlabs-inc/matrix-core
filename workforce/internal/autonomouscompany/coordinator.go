@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"matrix/workforce/internal/learning"
+	"centra/workforce/internal/learning"
 )
 
 type NextCycleExecutor interface {

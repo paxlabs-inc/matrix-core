@@ -47,8 +47,8 @@ import (
 
 	"github.com/fxamacker/cbor/v2"
 
-	"matrix/cortex/keys"
-	"matrix/cortex/store"
+	"centra/core/cortex/keys"
+	"centra/core/cortex/store"
 )
 
 // SchemaVersion is bumped on any incompatible Entry-encoding change.

@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func (store *Store) RecordEvidence(ctx context.Context, evidence Evidence) (Snapshot, bool, error) {

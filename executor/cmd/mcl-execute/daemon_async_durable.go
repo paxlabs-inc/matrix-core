@@ -31,7 +31,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"matrix/vault"
+	"centra/packages/vault"
 )
 
 // asyncJobDir derives the durable async-job directory from the daemon's

@@ -4,7 +4,7 @@ import {
   composeImageTweak,
   composeImageVariations,
   suggestImagePrompts,
-} from '@/components/matrix/neo/neo-media'
+} from '@/components/centra/agents/neo/neo-media'
 
 describe('suggestImagePrompts', () => {
   it('returns a stable non-empty set for an empty prompt', () => {

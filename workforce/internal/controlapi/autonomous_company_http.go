@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"matrix/workforce/internal/autonomouscompany"
+	"centra/workforce/internal/autonomouscompany"
 )
 
 type autonomousLimitRequest struct {

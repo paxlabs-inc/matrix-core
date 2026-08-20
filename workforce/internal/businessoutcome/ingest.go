@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/commercialcapability"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/productcapability"
-	"matrix/workforce/internal/productexecution"
-	"matrix/workforce/internal/provider/customer"
-	"matrix/workforce/internal/provider/external"
+	"centra/workforce/internal/commercialcapability"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/productcapability"
+	"centra/workforce/internal/productexecution"
+	"centra/workforce/internal/provider/customer"
+	"centra/workforce/internal/provider/external"
 )
 
 type RegistrationPolicy struct {

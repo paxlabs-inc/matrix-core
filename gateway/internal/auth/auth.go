@@ -5,7 +5,7 @@
 // header on every request. Future plan §5.15 line-item: ed25519 wallet
 // signature verification across the request body — stubbed here behind
 // VerifySignature, deliberately a no-op until the daemon-side wiring
-// (MCL/llm canonical signing) lands.
+// (core/mcl/llm canonical signing) lands.
 //
 // Concurrency: every exported function is pure or constructs a new
 // authenticator; the *Authenticator value is itself immutable after
@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/gateway/internal/types"
+	"centra/gateway/internal/types"
 )
 
 // Authenticator validates the gateway shared bearer token and the
@@ -171,7 +171,7 @@ func (a *Authenticator) Verify(r *http.Request) (actor string, err error) {
 // is wired in advance.
 func (a *Authenticator) VerifySignature(_ *http.Request, _ string) error {
 	// TODO(sess#32+): wire ed25519 verification when daemon-side
-	// signing is added to MCL/llm. Until then, keep returning nil
+	// signing is added to core/mcl/llm. Until then, keep returning nil
 	// so the gateway boundary already exercises this hook.
 	return nil
 }

@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"matrix/vault"
+	"centra/packages/vault"
 )
 
 const testKEKHex = "3031323334353637383961626364656630313233343536373839616263646566" // "0123456789abcdef" x2

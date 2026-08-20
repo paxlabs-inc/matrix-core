@@ -17,11 +17,11 @@ import (
 	"testing"
 	"time"
 
-	"matrix/gateway/internal/auth"
-	"matrix/gateway/internal/ledger"
-	"matrix/gateway/internal/rates"
-	"matrix/gateway/internal/routing"
-	"matrix/gateway/internal/types"
+	"centra/gateway/internal/auth"
+	"centra/gateway/internal/ledger"
+	"centra/gateway/internal/rates"
+	"centra/gateway/internal/routing"
+	"centra/gateway/internal/types"
 )
 
 // upstreamFake stands in for Fireworks/Together. It echoes a fixed

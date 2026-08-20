@@ -39,8 +39,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/executor/tool"
-	"matrix/mcl/ir"
+	"centra/executor/tool"
+	"centra/core/mcl/ir"
 )
 
 // Inputs are the comparison surfaces for the §18.1 ruleset.
@@ -159,7 +159,7 @@ func Classify(in Inputs) Classification {
 //	(Whichever is larger.)"
 //
 // Source of expected_cost: ir.Budget.MaxCost (intent or plan). Plan budget
-// narrows intent budget (MCL/ir/plan.go:63-65); we read from plan when
+// narrows intent budget (core/mcl/ir/plan.go:63-65); we read from plan when
 // present, else from intent.
 func ruleBudgetDelta(in Inputs) *Reason {
 	orig, origAsset := budgetAmount(in.OriginalIntent, in.OriginalPlan)
@@ -278,7 +278,7 @@ func walkPlanNodes(n *ir.PlanNode, fn func(*ir.PlanNode)) {
 //
 // We detect ScopeURI added/changed for an existing AgentRef. Full
 // CortexScope set-difference would require resolving the Scope record
-// from cortex (CortexScope lives in cortex/scope/ per Phase 10).
+// from cortex (CortexScope lives in core/cortex/scope/ per Phase 10).
 // v1 lock: signature-level change is the trigger; deeper Scope.include
 // diffing is deferred to v1.1 when the materiality classifier can take
 // the resolved Scope records as inputs.
@@ -319,7 +319,7 @@ func collectAgentScope(plan *ir.PlanTree) map[string]string {
 
 // ---- rule 4: New tool namespace ----
 //
-// §18.1: "A ToolRef whose namespace (tools/<ns>/*) was not in the original
+// §18.1: "A ToolRef whose namespace (protocol/tools/<ns>/*) was not in the original
 //
 //	plan. Same-namespace swaps are non-material."
 //

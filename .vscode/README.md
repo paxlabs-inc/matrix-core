@@ -90,7 +90,7 @@ Syntax highlighting activates automatically as soon as you open a `.kvx` file. T
 
 `Command Palette → "Preferences: File Icon Theme" → Centra AI Icons`
 
-If you'd rather keep your existing icon theme (e.g. Material Icon Theme) and only want the `.kvx` association, that's already wired via the `languages.icon` field — VSCode will show the Paxeer X on `.kvx` files even when a different icon theme is active. The custom folder icons for `cortex/` / `MCL/`, however, only apply when this icon theme is selected (that's a VSCode limitation, not the extension's).
+If you'd rather keep your existing icon theme (e.g. Material Icon Theme) and only want the `.kvx` association, that's already wired via the `languages.icon` field — VSCode will show the Paxeer X on `.kvx` files even when a different icon theme is active. The custom folder icons for `core/cortex/` / `core/mcl/`, however, only apply when this icon theme is selected (that's a VSCode limitation, not the extension's).
 
 ## Customizing colors
 
@@ -162,8 +162,8 @@ matrix-kvx/
 │   ├── matrix-icon-theme.json         # icon theme manifest
 │   ├── kvx-file.svg                   # blue Paxeer X — .kvx files
 │   ├── mtx-file.svg                   # white Paxeer X — .mtx files
-│   ├── folder-cortex{,-open}.svg      # white Paxeer X — cortex/ dirs
-│   ├── folder-mcl{,-open}.svg         # blue Paxeer X — MCL/ dirs
+│   ├── folder-cortex{,-open}.svg      # white Paxeer X — core/cortex/ dirs
+│   ├── folder-mcl{,-open}.svg         # blue Paxeer X — core/mcl/ dirs
 │   ├── file.svg                       # neutral fallback
 │   ├── folder{,-open}.svg             # neutral fallback
 │   └── lang/                          # 77 devicon brand marks

@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/lease"
-	"matrix/workforce/internal/policy"
-	"matrix/workforce/internal/skills"
-	"matrix/workforce/internal/workcompile"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/lease"
+	"centra/workforce/internal/policy"
+	"centra/workforce/internal/skills"
+	"centra/workforce/internal/workcompile"
 )
 
 // A WorkPacket is transported, so the compiler must treat it as a claim rather

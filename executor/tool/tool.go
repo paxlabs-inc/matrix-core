@@ -36,7 +36,7 @@ type Tool interface {
 	Description() string
 
 	// SideEffectClass declares what kind of side-effect this tool can
-	// have. Closed enum from MCL/ir/plan.go ValidSideEffectClasses.
+	// have. Closed enum from core/mcl/ir/plan.go ValidSideEffectClasses.
 	// Used by the executor's capability gate before dispatch.
 	SideEffectClass() string
 
@@ -112,7 +112,7 @@ const (
 )
 
 // SideEffectClass constants — closed enum mirrored from
-// MCL/ir/plan.go ValidSideEffectClasses to avoid a circular import.
+// core/mcl/ir/plan.go ValidSideEffectClasses to avoid a circular import.
 const (
 	SideEffectRead    = "read"
 	SideEffectWrite   = "write"

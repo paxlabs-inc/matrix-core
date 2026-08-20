@@ -178,7 +178,7 @@ export interface SSEEvent {
 /**
  * Neo "show-the-work" SSE event field shapes.
  *
- * The Neo conversational server (neo/internal/server) surfaces tool activity
+ * The Neo conversational server (agents/neo/internal/server) surfaces tool activity
  * on the SAME /events stream as chat.assistant turns, via an agent
  * ToolObserver. These describe the `fields` payload of those event rows so the
  * client can render source/snippet cards and activity chips instead of

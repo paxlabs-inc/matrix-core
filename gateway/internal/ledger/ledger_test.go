@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/gateway/internal/rates"
+	"centra/gateway/internal/rates"
 )
 
 func TestMemoryRecordAndDailySpend(t *testing.T) {

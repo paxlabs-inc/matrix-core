@@ -1,4 +1,4 @@
-module matrix/router
+module centra/router
 
 go 1.21
 

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func TestResolve_OrdersEligibleNodesAndInheritsPriority_Deterministically(t *testing.T) {

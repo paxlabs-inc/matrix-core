@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 const (

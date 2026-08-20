@@ -100,19 +100,19 @@ Centra 是由多个可独立构建的服务和客户端组成的单体仓库。�
 
 | 组件 | 职责 |
 | --- | --- |
-| `neo/` | 主要智能体运行时、流式对话、工具、记忆集成、自动化和交付。 |
+| `agents/neo/` | 主要智能体运行时、流式对话、工具、记忆集成、自动化和交付。 |
 | `ion/` | 技术智能体、项目理解、编程工作区、计算机控制和安全策略。 |
 | `workforce/` | 多智能体任务拆解、监督、任务状态和协同执行。 |
 | `client/` | Next.js 产品客户端，包括聊天、编程、Neo Computer、工作界面和实时状态。 |
-| `neocortex/` | 基于证据的确定性记忆引擎，支持重放、投影和精确恢复。 |
-| `cortex/` | 持久化 Go 记忆层及兼容路径。 |
-| `vault/` | 信封加密和每用户数据保护。 |
+| `core/neocortex/` | 基于证据的确定性记忆引擎，支持重放、投影和精确恢复。 |
+| `core/cortex/` | 持久化 Go 记忆层及兼容路径。 |
+| `packages/vault/` | 信封加密和每用户数据保护。 |
 | `executor/` | 持久操作生命周期、工具调度、检查点和高影响操作执行。 |
 | `router/` | 认证、每用户路由、配置、唤醒和反向代理。 |
 | `gateway/` | 模型访问、计量、策略和供应商路由。 |
-| `chronos/` | 持久调度、唤醒事件、周期任务和主动交付。 |
-| `sandboxd/` | 受限工作区和预览基础设施。 |
-| `codegraph/` | 结构化代码智能和智能体自我模型数据。 |
+| `packages/chronos/` | 持久调度、唤醒事件、周期任务和主动交付。 |
+| `packages/sandboxd/` | 受限工作区和预览基础设施。 |
+| `protocol/codegraph/` | 结构化代码智能和智能体自我模型数据。 |
 
 根目录 Makefile 当前管理十五个 Go 模块。现有服务名、环境变量、协议头和镜像路径等兼容性敏感的机器标识记录在 [BRANDING.md](BRANDING.md) 中。
 
@@ -175,22 +175,22 @@ pnpm build
 ```text
 centra-llm-agents/
 |-- client/          产品客户端与 Neo Computer
-|-- neo/             主要智能体
+|-- agents/neo/             主要智能体
 |-- ion/             技术智能体与编程环境
 |-- workforce/       协同工作系统
-|-- cortex/          持久记忆层
-|-- neocortex/       确定性证据引擎
+|-- core/cortex/          持久记忆层
+|-- core/neocortex/       确定性证据引擎
 |-- executor/        持久操作生命周期
 |-- router/          认证与用户路由
 |-- gateway/         模型网关与计量
-|-- chronos/         调度与唤醒系统
-|-- vault/           加密与密钥边界
-|-- sandboxd/        受限工作区与预览
-|-- skills/          可复用智能体能力
-|-- tools/           原生工具桥接
+|-- packages/chronos/         调度与唤醒系统
+|-- packages/vault/           加密与密钥边界
+|-- packages/sandboxd/        受限工作区与预览
+|-- protocol/skills/          可复用智能体能力
+|-- protocol/tools/           原生工具桥接
 |-- deploy/          服务与容器打包
 |-- docs/            架构和运维文档
-|-- spec/            功能规范的唯一事实来源
+|-- protocol/spec/            功能规范的唯一事实来源
 ```
 
 ## 文档

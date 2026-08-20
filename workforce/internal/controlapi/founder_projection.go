@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"matrix/workforce/internal/founderprojection"
+	"centra/workforce/internal/founderprojection"
 )
 
 func (service *Service) CaptureFounderProjection(

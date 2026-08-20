@@ -3,7 +3,7 @@
  * workspace change from the daemon diff endpoint with correct per-file
  * stats, and the exec client round-trips a real command result shape.
  * The network boundary serves the exact bodies the Go handlers emit
- * (proven in neo/internal/server/workspace_test.go).
+ * (proven in agents/neo/internal/server/workspace_test.go).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'

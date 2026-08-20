@@ -10,9 +10,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/workorder"
-	"matrix/workforce/scheduler"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/workorder"
+	"centra/workforce/scheduler"
 )
 
 type DispatchResult struct {

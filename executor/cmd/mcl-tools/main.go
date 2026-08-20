@@ -28,8 +28,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/executor/mcp"
-	"matrix/executor/tool"
+	"centra/executor/mcp"
+	"centra/executor/tool"
 )
 
 func main() {

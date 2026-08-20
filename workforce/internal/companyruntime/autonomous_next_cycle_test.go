@@ -4,8 +4,8 @@ import (
 	"slices"
 	"testing"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/portfolio"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/portfolio"
 )
 
 func TestAutonomousCycleCoverage_MapsSupportedCadencesExactly(t *testing.T) {

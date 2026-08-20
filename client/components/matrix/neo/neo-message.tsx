@@ -33,7 +33,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { MessageResponse } from '@/components/ai-elements/message'
 import { MarkdownErrorBoundary } from '@/components/ai-elements/markdown-error-boundary'
 import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button'
-import { NeoMediaGrid, NeoMediaItem, parseAttachments } from '@/components/matrix/neo/neo-media'
+import { NeoMediaGrid, NeoMediaItem, parseAttachments } from '@/components/centra/agents/neo/neo-media'
 import { PixelGrid, WaveBars } from '@/components/matrix/cody/loaders'
 import { cn } from '@/lib/utils'
 import type { ChatMessage } from '@/hooks/api/useChat'

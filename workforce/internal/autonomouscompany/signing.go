@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func signPropertyRecord(value *PropertyRecord, keyID string, privateKey ed25519.PrivateKey) error {

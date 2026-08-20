@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"matrix/workforce/internal/productcapability"
-	"matrix/workforce/internal/projectbrain"
+	"centra/workforce/internal/productcapability"
+	"centra/workforce/internal/projectbrain"
 )
 
 // ProductRecordCommitResult is the durable record and live-event identity

@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/companylifecycle"
-	"matrix/workforce/internal/companystate"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/developer"
-	"matrix/workforce/internal/lease"
-	"matrix/workforce/internal/projectbrain"
+	"centra/workforce/internal/companylifecycle"
+	"centra/workforce/internal/companystate"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/developer"
+	"centra/workforce/internal/lease"
+	"centra/workforce/internal/projectbrain"
 )
 
 const (

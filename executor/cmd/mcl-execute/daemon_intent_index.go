@@ -54,8 +54,8 @@ import (
 	"sync"
 	"time"
 
-	"matrix/mcl/envelope"
-	"matrix/vault"
+	"centra/core/mcl/envelope"
+	"centra/packages/vault"
 )
 
 // intentSummary is the compact view returned by /intents and used as

@@ -1,7 +1,7 @@
 /**
  * Morning brief + personalization resource module — mirrors the daemon's
  * authenticated /brief/* + /interview/* control surfaces
- * (neo/internal/server/brief_routes.go, interview_routes.go) and the
+ * (agents/neo/internal/server/brief_routes.go, interview_routes.go) and the
  * per-user daemon's /personalization profile routes.
  *
  * The morning brief is Neo's opt-in personalized daily digest: a short,

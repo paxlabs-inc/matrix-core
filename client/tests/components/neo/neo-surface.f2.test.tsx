@@ -21,7 +21,7 @@ vi.mock('@/lib/api/media', () => ({
   mediaKindForMime: () => 'file',
 }))
 
-import { NeoSurface } from '@/components/matrix/neo/neo-surface'
+import { NeoSurface } from '@/components/centra/agents/neo/neo-surface'
 
 function seededTask(): NeoTask {
   return {

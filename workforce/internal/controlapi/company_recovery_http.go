@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"matrix/workforce/internal/companyrecovery"
+	"centra/workforce/internal/companyrecovery"
 )
 
 func (service *Service) handleCompanyLimitPolicy(writer http.ResponseWriter, request *http.Request) {

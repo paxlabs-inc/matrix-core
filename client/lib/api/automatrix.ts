@@ -1,6 +1,6 @@
 /**
  * Automatrix resource module — mirrors the daemon's authenticated
- * /automatrix/* control surface (neo/internal/server/automatrix_routes.go).
+ * /automatrix/* control surface (agents/neo/internal/server/automatrix_routes.go).
  *
  * Automatrix is Neo's proactive "surprise task" feature: while the user is
  * idle Neo picks up a helpful, non-financial thing they mentioned in passing,

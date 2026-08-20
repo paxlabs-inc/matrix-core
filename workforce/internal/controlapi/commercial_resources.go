@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"matrix/workforce/internal/commercialcapability"
+	"centra/workforce/internal/commercialcapability"
 )
 
 func (service *Service) listCommercialRecords(

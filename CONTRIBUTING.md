@@ -61,7 +61,7 @@ If you are reporting a security issue, **stop** and read
    decisions live in `research/00-decisions.md` (D1–D18) and the
    per-phase Q-locks live in `knowledge/matrix.kvx`. If your PR moves a
    locked decision, say so explicitly and propose the new lock.
-2. **Replay determinism is load-bearing.** Any change to `cortex/` that
+2. **Replay determinism is load-bearing.** Any change to `core/cortex/` that
    touches mutation paths must preserve byte-identical `OverallRoot`
    under `cortex-shell rebuild -verify-only`. The §13.4 invariant is
    non-negotiable.
@@ -167,8 +167,8 @@ docs(meta): add CONTRIBUTING + CODE_OF_CONDUCT + SECURITY
 
 Sign your commits with `git commit -S` if your key is on GitHub.
 Unsigned commits are accepted but signed commits are preferred for
-anything touching `cortex/snapshot/`, `cortex/store/`,
-`MCL/envelope/`, or `deploy/`.
+anything touching `core/cortex/snapshot/`, `cortex/store/`,
+`core/mcl/envelope/`, or `deploy/`.
 
 ## Testing and quality gates
 
@@ -181,7 +181,7 @@ Every PR must:
    an explicit reason in the PR description.
 4. **Add tests for new behaviour** — at a minimum a happy-path test plus
    one error path. For cortex mutation paths: add a `Rebuild`-after-mutation
-   test (see `cortex/rebuild_test.go` for the pattern).
+   test (see `core/cortex/rebuild_test.go` for the pattern).
 5. **Update `knowledge/matrix.kvx`** when the change moves a phase status,
    adds an invariant, or closes a deferral.
 
@@ -201,7 +201,7 @@ Every PR must:
 - Touching the validator: every new rule needs a green-path and a
   red-path test.
 - Touching `canonical.go`: hash digests of `core/*.mtx` and
-  `skills/writing-plans/SKILL.mtx` must remain stable (or you must
+  `protocol/skills/writing-plans/SKILL.mtx` must remain stable (or you must
   update the canonical reference hashes in `matrix.kvx` and explain why).
 
 ### Skill corpus
@@ -209,29 +209,29 @@ Every PR must:
 If you add or modify a `SKILL.mtx`, run:
 
 ```bash
-./bin/mcl-validate skills/<slug>/SKILL.mtx
+./bin/mcl-validate protocol/skills/<slug>/SKILL.mtx
 ```
 
 The CI job `mtx-corpus` validates every `SKILL.mtx` in the corpus on
 every PR. If you regenerated the corpus via
-`tools/skills/convert_to_mtx.py`, make sure the hand-authored fixture
-`skills/writing-plans/SKILL.mtx` was preserved (it is in `RESERVED_SLUGS`
+`protocol/tools/skills/convert_to_mtx.py`, make sure the hand-authored fixture
+`protocol/skills/writing-plans/SKILL.mtx` was preserved (it is in `RESERVED_SLUGS`
 for a reason).
 
 ## Per-module conventions
 
-### `cortex/`
+### `core/cortex/`
 
 - One Pebble DB per actor. Namespaces are key prefixes — see `keys/`.
 - Every mutation goes through `store.BeginWrite` so the journal-batch
   invariant is enforced.
 - Tests live next to their packages. The cross-cutting integration
-  surface lives in `cortex/<phase>_test.go` files.
+  surface lives in `core/cortex/<phase>_test.go` files.
 - No new top-level package without a phase entry in `matrix.kvx`.
 
-### `MCL/`
+### `core/mcl/`
 
-- Stdlib-only outside `MCL/llm/` (which talks HTTP via stdlib too) and
+- Stdlib-only outside `core/mcl/llm/` (which talks HTTP via stdlib too) and
   cbor/v2 for envelope encoding.
 - Lexer / parser changes must keep `grammar.bnf` in sync.
 - New `.mtx` syntax: extend `spec.md` first, then grammar, then code.

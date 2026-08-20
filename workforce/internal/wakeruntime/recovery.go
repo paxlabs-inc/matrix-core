@@ -9,19 +9,19 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"matrix/workforce/internal/actorstate"
-	"matrix/workforce/internal/audit"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
-	"matrix/workforce/internal/effect"
-	"matrix/workforce/internal/execution"
-	"matrix/workforce/internal/lease"
-	"matrix/workforce/internal/lineage"
-	"matrix/workforce/internal/policy"
-	"matrix/workforce/internal/skills"
-	"matrix/workforce/internal/workcompile"
-	"matrix/workforce/internal/workorder"
-	"matrix/workforce/scheduler"
+	"centra/workforce/internal/actorstate"
+	"centra/workforce/internal/audit"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
+	"centra/workforce/internal/effect"
+	"centra/workforce/internal/execution"
+	"centra/workforce/internal/lease"
+	"centra/workforce/internal/lineage"
+	"centra/workforce/internal/policy"
+	"centra/workforce/internal/skills"
+	"centra/workforce/internal/workcompile"
+	"centra/workforce/internal/workorder"
+	"centra/workforce/scheduler"
 )
 
 const (

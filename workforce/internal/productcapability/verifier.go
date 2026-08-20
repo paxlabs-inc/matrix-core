@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 // VerifierProcedure is an immutable deterministic artifact predicate.

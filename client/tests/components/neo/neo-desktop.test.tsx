@@ -48,8 +48,8 @@ function session(state: string) {
 }
 
 import { buildTaskFromTrace, foldDojoEvent } from '@/hooks/api/useChat'
-import { NeoComputer } from '@/components/matrix/neo/neo-computer'
-import { NeoDesktop, DojoDesktopScreen, mapToDesktop } from '@/components/matrix/neo/neo-desktop'
+import { NeoComputer } from '@/components/centra/agents/neo/neo-computer'
+import { NeoDesktop, DojoDesktopScreen, mapToDesktop } from '@/components/centra/agents/neo/neo-desktop'
 
 /** A dojo.* trace frame exactly as the daemon persists it (publishDojo →
  *  traceWorkspaceTypes → handleTrace). */

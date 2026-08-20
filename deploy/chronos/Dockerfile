@@ -9,7 +9,7 @@
 # binary and chronosd applies them at boot (CHRONOS_ROOT resolves the relative
 # migrations dir, mirroring the systemd deployment layout).
 #
-# Config is env-first (chronos/internal/config; optional CHRONOS_CONFIG kvx
+# Config is env-first (packages/chronos/internal/config; optional CHRONOS_CONFIG kvx
 # overlay):
 #   CHRONOS_POSTGRES_URI      required — postgres://... (alarm store)
 #   CHRONOS_TOKEN             transport bearer (unset = auth off; private-net only)
@@ -23,7 +23,7 @@
 #   CHRONOS_TICK_MS / CHRONOS_MAX_FAILURES / CHRONOS_DEV — see config.go
 
 # -------- 1. Builder --------
-# chronos/go.mod requires Go >= 1.25.0 (workforce Chronos wake target); the
+# packages/chronos/go.mod requires Go >= 1.25.0 (workforce Chronos wake target); the
 # builder base MUST be >= that or `go build ./cmd/chronosd` fails with
 # GOTOOLCHAIN=local.
 FROM golang:1.25-bookworm AS builder
@@ -33,21 +33,21 @@ ENV CGO_ENABLED=0 \
     GOFLAGS=-trimpath
 
 # Module manifests first for layer caching. chronos pulls in the workforce
-# Chronos wake target via `replace matrix/workforce => ../workforce`, which in
-# turn pulls in vault (matrix/vault, pure-stdlib, no go.sum) via
-# `replace matrix/vault => ../vault`, so both trees MUST be present or
+# Chronos wake target via `replace centra/workforce => ../workforce`, which in
+# turn pulls in vault (centra/packages/vault, pure-stdlib, no go.sum) via
+# `replace centra/packages/vault => ../vault`, so both trees MUST be present or
 # `go build ./cmd/chronosd` fails to resolve the replace targets.
-COPY vault/go.mod                    vault/
+COPY packages/vault/go.mod           packages/vault/
 COPY workforce/go.mod workforce/go.sum workforce/
-COPY chronos/go.mod   chronos/go.sum   chronos/
+COPY packages/chronos/go.mod packages/chronos/go.sum packages/chronos/
 WORKDIR /src/chronos
 RUN go mod download
 
 # Then the source.
 WORKDIR /src
-COPY vault/     vault/
+COPY packages/vault/ packages/vault/
 COPY workforce/ workforce/
-COPY chronos/   chronos/
+COPY packages/chronos/ packages/chronos/
 WORKDIR /src/chronos
 RUN go build -ldflags="-s -w" -o /out/chronosd ./cmd/chronosd
 
@@ -64,7 +64,7 @@ RUN set -eux; \
     update-ca-certificates
 
 COPY --from=builder /out/chronosd       /opt/matrix-chronos/chronosd
-COPY chronos/migrations                 /opt/matrix-chronos/migrations
+COPY packages/chronos/migrations        /opt/matrix-chronos/migrations
 
 EXPOSE 9096
 

@@ -33,7 +33,7 @@ func startExaBridge(t *testing.T, laneURL, token string) *exaBridge {
 	if err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(root, "tools", "exa", "exa.mjs")
+	path := filepath.Join(root, "protocol", "tools", "exa", "exa.mjs")
 	command := exec.Command("node", path)
 	command.Env = append(os.Environ(), "MATRIX_EXA_URL="+laneURL, "MATRIX_EXA_TOKEN="+token, "MATRIX_USER_ID=user-one")
 	stdin, err := command.StdinPipe()

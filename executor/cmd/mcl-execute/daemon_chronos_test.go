@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	toolpolicy "matrix/executor/tool"
-	machinechronos "matrix/machine/chronos"
-	"matrix/vault"
+	toolpolicy "centra/executor/tool"
+	machinechronos "centra/packages/machine/chronos"
+	"centra/packages/vault"
 )
 
 func TestLocalChronosAPIRealStoreCapabilityAndDelivery(t *testing.T) {
@@ -190,7 +190,7 @@ func runChronosBridgeCall(t *testing.T, apiURL, capability, tool string, argumen
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	script := filepath.Join("..", "..", "..", "tools", "chronos", "chronos.mjs")
+	script := filepath.Join("..", "..", "..", "protocol", "tools", "chronos", "chronos.mjs")
 	command := exec.CommandContext(ctx, "node", script)
 	sourceEnv := append(os.Environ(),
 		"MATRIX_CHRONOS_LOCAL_URL="+apiURL,

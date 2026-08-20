@@ -9,7 +9,7 @@
 //	ROUTER_INTERNAL_ADDR (private, :8088)  admin + healthz (admin-token)
 //
 // Both share state: one *db.DB pool, one provider client, one
-// *jwt.Verifier. On a systemd host, /etc/matrix/router.env +
+// *jwt.Verifier. On a systemd host, /etc/centra/router.env +
 // /etc/matrix/postgres.env are loaded before exec; on Railway the
 // environment comes from the platform.
 //
@@ -39,22 +39,22 @@ import (
 	"syscall"
 	"time"
 
-	"matrix/router/internal/admin"
-	"matrix/router/internal/beta"
-	"matrix/router/internal/config"
-	"matrix/router/internal/db"
-	"matrix/router/internal/exa"
-	"matrix/router/internal/finance"
-	"matrix/router/internal/fly"
-	"matrix/router/internal/jwt"
-	"matrix/router/internal/mw"
-	"matrix/router/internal/preview"
-	"matrix/router/internal/provision"
-	"matrix/router/internal/proxy"
-	"matrix/router/internal/railway"
-	"matrix/router/internal/shard"
-	"matrix/router/internal/voice"
-	"matrix/router/internal/workforceauth"
+	"centra/router/internal/admin"
+	"centra/router/internal/beta"
+	"centra/router/internal/config"
+	"centra/router/internal/db"
+	"centra/router/internal/exa"
+	"centra/router/internal/finance"
+	"centra/router/internal/fly"
+	"centra/router/internal/jwt"
+	"centra/router/internal/mw"
+	"centra/router/internal/preview"
+	"centra/router/internal/provision"
+	"centra/router/internal/proxy"
+	"centra/router/internal/railway"
+	"centra/router/internal/shard"
+	"centra/router/internal/voice"
+	"centra/router/internal/workforceauth"
 )
 
 // version is the build identity; overridden via -ldflags="-X main.version=...".
@@ -219,7 +219,7 @@ func main() {
 			//   executor = mimo-v2.5-pro;
 			//   liaison  = mimo-v2.5-pro (user-facing conversational
 			//              narrator; MATRIX_LIAISON_MODEL knob).
-			// Override any of these via /etc/matrix/router.env if the gateway
+			// Override any of these via /etc/centra/router.env if the gateway
 			// whitelist changes.
 			"MATRIX_COMPILER_MODEL":          envOr("MATRIX_COMPILER_MODEL", "mimo-v2.5-pro"),
 			"MATRIX_COMPILER_ESCALATE_MODEL": envOr("MATRIX_COMPILER_ESCALATE_MODEL", "mimo-v2.5-pro"),
@@ -227,18 +227,18 @@ func main() {
 			"MATRIX_EXECUTOR_MODEL":          envOr("MATRIX_EXECUTOR_MODEL", "mimo-v2.5-pro"),
 			"MATRIX_LIAISON_MODEL":           envOr("MATRIX_LIAISON_MODEL", "mimo-v2.5-pro"),
 			"MATRIX_DEFAULT_SKILL":           envOr("MATRIX_DEFAULT_SKILL", "matrix://skill/paxeer-assistant@0.1.0"),
-			// Web search (tools/websearch/web-search.mjs MCP server in the
+			// Web search (protocol/tools/websearch/web-search.mjs MCP server in the
 			// daemon image). The stdio bridge inherits the Machine env (its
 			// manifest entry uses env:[]), boots even with no key (the tool
 			// degrades to a structured "not configured" result), and reads
 			// whichever is set: TAVILY_API_KEY (recommended) or BRAVE_API_KEY,
 			// with an optional WEBSEARCH_PROVIDER (tavily|brave) override. Set
-			// these in /etc/matrix/router.env to enable real internet search
+			// these in /etc/centra/router.env to enable real internet search
 			// fleet-wide; empty leaves the web_search/web_news tools dormant.
 			"TAVILY_API_KEY":     os.Getenv("TAVILY_API_KEY"),
 			"BRAVE_API_KEY":      os.Getenv("BRAVE_API_KEY"),
 			"WEBSEARCH_PROVIDER": os.Getenv("WEBSEARCH_PROVIDER"),
-			// Media I/O (tools/media/media.mjs stdio bridge in the daemon image
+			// Media I/O (protocol/tools/media/media.mjs stdio bridge in the daemon image
 			// -> xAI Grok Imagine primary, Novita fallback). The bridge boots
 			// even with no key (the media_* tools degrade to a structured "not
 			// configured" result, so an empty key never bricks daemon boot) and
@@ -248,7 +248,7 @@ func main() {
 			// prompt-based image utilities, and text/image-to-video;
 			// NOVITA_API_KEY keeps the mask-exact ops (inpainting, cleanup),
 			// alpha-transparent background removal, and text-to-speech. Set in
-			// /etc/matrix/router.env; empty leaves the media tools dormant.
+			// /etc/centra/router.env; empty leaves the media tools dormant.
 			// Outputs land on the per-Machine volume at /data/media and are
 			// served by the Neo front at /media.
 			"XAI_API_KEY":           os.Getenv("XAI_API_KEY"),
@@ -257,7 +257,7 @@ func main() {
 			"MATRIX_LIVEKIT_URL":    os.Getenv("MATRIX_LIVEKIT_URL"),
 			"MATRIX_LIVEKIT_KEY":    os.Getenv("MATRIX_LIVEKIT_KEY"),
 			"MATRIX_LIVEKIT_SECRET": os.Getenv("MATRIX_LIVEKIT_SECRET"),
-			// Shared headless browser (tools/browser/browser.mjs stdio proxy in
+			// Shared headless browser (protocol/tools/browser/browser.mjs stdio proxy in
 			// the daemon image -> the matrix-browser Fly app running
 			// @playwright/mcp over Streamable HTTP). The proxy answers
 			// initialize/tools/list locally so an unreachable browser never
@@ -275,7 +275,7 @@ func main() {
 			// daemon executor key), so no new auth env is needed. These knobs let
 			// the operator repoint the chain RPC, the media write edge (token
 			// metadata + logo/banner upload so launches render on the frontend),
-			// and the public frontend link via /etc/matrix/router.env. Defaults
+			// and the public frontend link via /etc/centra/router.env. Defaults
 			// equal the in-bridge defaults, so behavior is unchanged when unset.
 			"KINDLE_RPC_URL":       envOr("KINDLE_RPC_URL", "https://public-mainnet.rpcpaxeer.online/evm"),
 			"KINDLE_MEDIA_GATEWAY": envOr("KINDLE_MEDIA_GATEWAY", "https://cdn.kindlelaunch.com"),
@@ -284,7 +284,7 @@ func main() {
 			// Deus agent-service gateway (tools/deus/deus.mjs stdio proxy).
 			"MATRIX_DEUS_URL":        envOr("MATRIX_DEUS_URL", "http://deus-control.internal:9095"),
 			"MATRIX_DEUS_TIMEOUT_MS": os.Getenv("MATRIX_DEUS_TIMEOUT_MS"),
-			// Centralized scheduler (tools/chronos/chronos.mjs stdio proxy ->
+			// Centralized scheduler (protocol/tools/chronos/chronos.mjs stdio proxy ->
 			// the box-side chronosd at MATRIX_CHRONOS_URL). Unlike the
 			// browser/tachyon/uwac/deus Fly apps, chronosd runs co-located with
 			// the router on the front-door box, so Fly Machines reach it over
@@ -293,7 +293,7 @@ func main() {
 			// scheduler never bricks daemon boot; it dials MATRIX_CHRONOS_URL
 			// lazily on the first alarm_* call and presents MATRIX_CHRONOS_TOKEN
 			// (== chronosd CHRONOS_TOKEN) as a bearer. Override the URL via
-			// /etc/matrix/router.env if the public host changes.
+			// /etc/centra/router.env if the public host changes.
 			"MATRIX_CHRONOS_URL":   envOr("MATRIX_CHRONOS_URL", "https://matrix.paxeer.app/chronos"),
 			"MATRIX_CHRONOS_TOKEN": os.Getenv("MATRIX_CHRONOS_TOKEN"),
 			// LayerX settlement fabric (tools/layerx/layerx.mjs stdio proxy ->
@@ -307,7 +307,7 @@ func main() {
 			// is OPTIONAL (writes are authorized by the DID signature, invariant
 			// i6); MATRIX_LAYERX_TOKEN is sent only when set (== layerxd
 			// LAYERX_TOKEN, legacy fleet mode). Override either in
-			// /etc/matrix/router.env if the public host changes.
+			// /etc/centra/router.env if the public host changes.
 			"MATRIX_LAYERX_URL":   envOr("MATRIX_LAYERX_URL", "https://public-mapi.matrixlayerx.com"),
 			"MATRIX_LAYERX_TOKEN": os.Getenv("MATRIX_LAYERX_TOKEN"),
 			// Paxeer Cloud control plane (the `paxc` CLI baked into the daemon
@@ -315,11 +315,11 @@ func main() {
 			// sites). PAXC_API is the control-plane base URL; PAXC_TOKEN is the
 			// API bearer. Both inherit into the Machine env, so the shell tool's
 			// child processes (and thus paxc) see them. Override either in
-			// /etc/matrix/router.env. PAXC_TOKEN is sent only when set; with no
+			// /etc/centra/router.env. PAXC_TOKEN is sent only when set; with no
 			// token paxc errors at call time (boot-safe — it is not a server).
 			"PAXC_API":   envOr("PAXC_API", "https://cloud.hyperpaxeer.com"),
 			"PAXC_TOKEN": os.Getenv("PAXC_TOKEN"),
-			// SearXNG metasearch (tools/searxng/searxng.mjs stdio bridge ->
+			// SearXNG metasearch (protocol/tools/searxng/searxng.mjs stdio bridge ->
 			// the shared searxng service). Boot-safe when unset: the bridge
 			// starts and searx_* calls return a structured "not configured"
 			// result. MATRIX_SEARXNG_TOKEN is an optional bearer.
@@ -672,7 +672,7 @@ func main() {
 // envOr returns the value of env key, or def when the key is unset or
 // empty. Used to give the provisioned-machine model pins a sane,
 // gateway-whitelisted default while letting the operator override via
-// /etc/matrix/router.env.
+// /etc/centra/router.env.
 func envOr(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v

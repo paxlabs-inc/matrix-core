@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"matrix/mcl/envelope"
+	"centra/core/mcl/envelope"
 )
 
 // Lifecycle errors.

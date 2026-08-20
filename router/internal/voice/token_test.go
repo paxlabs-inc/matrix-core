@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/router/internal/proxy"
+	"centra/router/internal/proxy"
 )
 
 func TestTokenRoundTripAndCrossUserDenial(t *testing.T) {

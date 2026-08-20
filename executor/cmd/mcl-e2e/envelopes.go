@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"matrix/mcl/envelope"
+	"centra/core/mcl/envelope"
 )
 
 // EnvelopeStream signs envelopes for a single intent + persists them as JSON

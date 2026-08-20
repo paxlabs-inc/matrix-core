@@ -5,8 +5,8 @@ import (
 	"slices"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/projectbrain"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/projectbrain"
 )
 
 // ExecutionPhase is the closed restart-safe product execution lifecycle.

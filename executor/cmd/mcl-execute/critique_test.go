@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"matrix/cassandra"
-	"matrix/mcl/ir"
+	"centra/core/cassandra"
+	"centra/core/mcl/ir"
 )
 
 // samplePlan builds a small executed plan: a tool_call that compiled a contract

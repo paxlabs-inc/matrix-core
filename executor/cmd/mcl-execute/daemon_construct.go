@@ -10,7 +10,7 @@ package main
 // (daemon_liaison.go): it subscribes to the SAME SSE event stream the pipeline
 // already emits, runs each event through the deterministic projection engine
 // (construct/projection.ProjectEvent), and emits the resulting Construct
-// surfaces as construct.surface transcript events (construct/transport).
+// surfaces as construct.surface transcript events (packages/construct/transport).
 //
 // It exists to cover the MCL compiler/planner/executor pipeline — where the
 // agent-authored ACTIVE tier (Neo's construct_render tool) does not run — and
@@ -30,8 +30,8 @@ import (
 	"sync"
 	"time"
 
-	"matrix/construct/projection"
-	"matrix/construct/transport"
+	"centra/packages/construct/projection"
+	"centra/packages/construct/transport"
 )
 
 // constructState holds the passive projector's runtime knobs. nil disables the

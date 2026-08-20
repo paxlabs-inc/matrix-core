@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 // CyclePlan is deterministic controller work to be compiled into bounded Work Orders.

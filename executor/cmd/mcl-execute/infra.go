@@ -11,12 +11,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"matrix/cortex"
-	"matrix/cortex/embed"
-	"matrix/cortex/store"
-	"matrix/executor/mcp"
-	"matrix/executor/tool"
-	"matrix/vault"
+	"centra/core/cortex"
+	"centra/core/cortex/embed"
+	"centra/core/cortex/store"
+	"centra/executor/mcp"
+	"centra/executor/tool"
+	"centra/packages/vault"
 )
 
 // infra packages every long-lived dependency the walk subcommand owns:

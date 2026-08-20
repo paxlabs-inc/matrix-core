@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/gateway/internal/auth"
+	"centra/gateway/internal/auth"
 )
 
 const (

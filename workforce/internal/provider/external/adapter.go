@@ -11,9 +11,9 @@ import (
 	"net/http"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/effect"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/effect"
+	"centra/workforce/internal/skills"
 )
 
 type Adapter struct {

@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/router/internal/jwt"
-	"matrix/router/internal/proxy"
+	"centra/router/internal/jwt"
+	"centra/router/internal/proxy"
 )
 
 // Logf is the log sink used by middleware. Cmd/main.go wires this to

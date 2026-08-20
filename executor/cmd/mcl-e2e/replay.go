@@ -7,8 +7,8 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"matrix/cortex"
-	"matrix/cortex/replay"
+	"centra/core/cortex"
+	"centra/core/cortex/replay"
 )
 
 // VerifyReplayInvariant exercises the §13.4 byte-identical replay path:

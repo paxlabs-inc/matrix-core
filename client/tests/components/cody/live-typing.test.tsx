@@ -5,7 +5,7 @@
  * content, never a corrupted splice), and a starting write force-follows
  * into the Code view unless the user pinned a view this run. Byte-identical
  * convergence with the disk file is proven end-to-end on the daemon side
- * (neo/internal/agent/livetype_test.go).
+ * (agents/neo/internal/agent/livetype_test.go).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, fireEvent, screen } from '@testing-library/react'

@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/lease"
-	"matrix/workforce/internal/provider/external"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/lease"
+	"centra/workforce/internal/provider/external"
+	"centra/workforce/internal/skills"
 )
 
 const SchemaVersion = contracts.SchemaVersionV1

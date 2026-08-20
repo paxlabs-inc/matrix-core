@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/approval"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/operationswork"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/approval"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/operationswork"
+	"centra/workforce/internal/skills"
 )
 
 func TestIntegration_AccountingAndBackOfficeUseObservationsApprovalHandoffAndFreshWakes(t *testing.T) {

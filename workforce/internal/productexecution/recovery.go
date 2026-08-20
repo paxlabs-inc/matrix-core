@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"slices"
 
-	"matrix/workforce/internal/companylifecycle"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/productcapability"
+	"centra/workforce/internal/companylifecycle"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/productcapability"
 )
 
 // Recover authenticates every durable checkpoint after restart. It never

@@ -26,8 +26,8 @@ import (
 	"net/http"
 	"strings"
 
-	"matrix/gateway/internal/rates"
-	"matrix/gateway/internal/types"
+	"centra/gateway/internal/rates"
+	"centra/gateway/internal/types"
 )
 
 // Provider identifies the upstream API we forward to.

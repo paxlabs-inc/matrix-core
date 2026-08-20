@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/mcl/envelope"
+	"centra/core/mcl/envelope"
 )
 
 func TestStates_All8Closed(t *testing.T) {

@@ -9,7 +9,7 @@ name: docker
 #   matrix-gateway         deploy/gateway/Dockerfile  metered LLM proxy
 #   matrix-router          deploy/router/Dockerfile   front door / provisioner
 #   matrix-chronos         deploy/chronos/Dockerfile  scheduler / wake plane
-#   matrix-sandboxd        sandboxd/Dockerfile        Railway sandbox + branded preview plane
+#   matrix-sandboxd        packages/sandboxd/Dockerfile        Railway sandbox + branded preview plane
 #
 # Only images whose inputs changed are rebuilt (the `changes` job computes a
 # dynamic matrix); workflow_dispatch force-builds everything. Docker layer
@@ -25,10 +25,10 @@ name: docker
 # operator (staged), never by CI.
 #
 # Package compatibility after the repository transfer:
-#   The deployed images remain under ghcr.io/paxlabs-inc/matrix-core by default.
+#   The deployed images publish under ghcr.io/sidiora-labs/centra by default.
 #   Set vars.GHCR_NAMESPACE to move them deliberately. Publishing across orgs
 #   requires secrets.GHCR_TOKEN with write:packages access to that namespace;
-#   the renamed repository's GITHUB_TOKEN cannot publish into the old org.
+#   this repository's GITHUB_TOKEN cannot publish into another org.
 #
 # Required repo config for the redeploy job (skipped gracefully when absent):
 #   secret RAILWAY_API_TOKEN          project-scoped API token
@@ -41,24 +41,24 @@ on:
   push:
     branches: [main]
     paths:
-      - "vault/**"
-      - "cortex/**"
-      - "MCL/**"
-      - "codegraph/**"
-      - "codegraph-ultra/**"
+      - "packages/vault/**"
+      - "core/cortex/**"
+      - "core/mcl/**"
+      - "protocol/codegraph/**"
+      - "protocol/codegraph-ultra/**"
       - "bridge/**"
-      - "construct/**"
+      - "packages/construct/**"
       - "executor/**"
-      - "neo/**"
-      - "cassandra/**"
+      - "agents/neo/**"
+      - "core/cassandra/**"
       - "gateway/**"
       - "router/**"
-      - "chronos/**"
+      - "packages/chronos/**"
       - "workforce/**"
-      - "sandboxd/**"
-      - "skills/**"
+      - "packages/sandboxd/**"
+      - "protocol/skills/**"
       - "agents/**"
-      - "tools/**"
+      - "protocol/tools/**"
       - "rules/**"
       - "deploy/railway/**"
       - "deploy/codingruntime/**"
@@ -75,10 +75,10 @@ on:
       - "deploy/router/**"
       - "deploy/chronos/**"
       - "workforce/**"
-      - "neo/**"
-      - "vault/**"
-      - "codegraph-ultra/**"
-      - "sandboxd/**"
+      - "agents/neo/**"
+      - "packages/vault/**"
+      - "protocol/codegraph-ultra/**"
+      - "packages/sandboxd/**"
       - ".github/workflows/docker.yml"
   workflow_dispatch:
     inputs:
@@ -99,7 +99,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAMESPACE: ${{ vars.GHCR_NAMESPACE || 'paxlabs-inc/matrix-core' }}
+  IMAGE_NAMESPACE: ${{ vars.GHCR_NAMESPACE || 'sidiora-labs/centra' }}
 
 jobs:
   changes:
@@ -123,20 +123,20 @@ jobs:
         with:
           filters: |
             daemon-core: &daemon-core
-              - "vault/**"
-              - "cortex/**"
-              - "MCL/**"
-              - "codegraph/**"
+              - "packages/vault/**"
+              - "core/cortex/**"
+              - "core/mcl/**"
+              - "protocol/codegraph/**"
               - "bridge/**"
-              - "construct/**"
+              - "packages/construct/**"
               - "executor/**"
-              - "neo/**"
+              - "agents/neo/**"
               - "workforce/**"
-              - "codegraph-ultra/**"
-              - "cassandra/**"
-              - "skills/**"
+              - "protocol/codegraph-ultra/**"
+              - "core/cassandra/**"
+              - "protocol/skills/**"
               - "agents/**"
-              - "tools/**"
+              - "protocol/tools/**"
               - "rules/**"
               - ".github/workflows/docker.yml"
             railway:
@@ -152,8 +152,8 @@ jobs:
               - "deploy/router/**"
               - ".github/workflows/docker.yml"
             chronos:
-              - "chronos/**"
-              - "vault/**"
+              - "packages/chronos/**"
+              - "packages/vault/**"
               - "workforce/**"
               - "deploy/chronos/**"
               - ".github/workflows/docker.yml"
@@ -161,7 +161,7 @@ jobs:
               - *daemon-core
               - "deploy/railway/**"
             sandbox:
-              - "sandboxd/**"
+              - "packages/sandboxd/**"
               - ".github/workflows/docker.yml"
 
       # workflow_dispatch builds everything; push/PR builds what changed.
@@ -202,7 +202,7 @@ jobs:
           [[ "$GATEWAY" == "true" ]] && add matrix-gateway        deploy/gateway/Dockerfile
           [[ "$ROUTER"  == "true" ]] && add matrix-router         deploy/router/Dockerfile
           [[ "$CHRONOS" == "true" ]] && add matrix-chronos        deploy/chronos/Dockerfile
-          [[ "$SANDBOX" == "true" ]] && add matrix-sandboxd       sandboxd/Dockerfile sandboxd
+          [[ "$SANDBOX" == "true" ]] && add matrix-sandboxd       packages/sandboxd/Dockerfile packages/sandboxd
           echo "include=$include" >> "$GITHUB_OUTPUT"
           echo "building: $include"
 
@@ -280,60 +280,61 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-  redeploy:
-    name: railway redeploy
-    needs: [changes, build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.build.result == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - name: redeploy updated control-plane services
-        env:
-          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
-          RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
-          ROUTER_CHANGED: ${{ needs.changes.outputs.router }}
-          GATEWAY_CHANGED: ${{ needs.changes.outputs.gateway }}
-          CHRONOS_CHANGED: ${{ needs.changes.outputs.chronos }}
-          WORKFORCE_CHANGED: ${{ needs.changes.outputs.workforce }}
-          SANDBOX_CHANGED: ${{ needs.changes.outputs.sandbox }}
-          RAILWAY_ROUTER_SERVICE_ID: ${{ vars.RAILWAY_ROUTER_SERVICE_ID }}
-          RAILWAY_GATEWAY_SERVICE_ID: ${{ vars.RAILWAY_GATEWAY_SERVICE_ID }}
-          RAILWAY_CHRONOS_SERVICE_ID: ${{ vars.RAILWAY_CHRONOS_SERVICE_ID }}
-          RAILWAY_WORKFORCE_SERVICE_ID: ${{ vars.RAILWAY_WORKFORCE_SERVICE_ID }}
-          RAILWAY_SANDBOX_SERVICE_ID: ${{ vars.RAILWAY_SANDBOX_SERVICE_ID }}
-        run: |
-          if [[ -z "$RAILWAY_API_TOKEN" || -z "$RAILWAY_ENVIRONMENT_ID" ]]; then
-            echo "::notice::Railway credentials not configured; skipping redeploy"
-            exit 0
-          fi
-          fail=0
-          redeploy() {
-            local name="$1" changed="$2" service_id="$3"
-            if [[ "$changed" != "true" ]]; then
-              echo "$name: image unchanged, skipping"
-              return 0
-            fi
-            if [[ -z "$service_id" ]]; then
-              echo "::warning::$name changed but its RAILWAY_*_SERVICE_ID var is unset; skipping"
-              return 0
-            fi
-            local body resp
-            body="$(jq -cn --arg env "$RAILWAY_ENVIRONMENT_ID" --arg svc "$service_id" \
-              '{query: "mutation Redeploy($environmentId: String!, $serviceId: String!) { serviceInstanceRedeploy(environmentId: $environmentId, serviceId: $serviceId) }",
-                variables: {environmentId: $env, serviceId: $svc}}')"
-            resp="$(curl -fsS https://backboard.railway.com/graphql/v2 \
-              -H "Authorization: Bearer $RAILWAY_API_TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "$body")" || { echo "::error::$name: redeploy request failed"; fail=1; return 0; }
-            if jq -e '.errors | length > 0' <<<"$resp" >/dev/null 2>&1; then
-              echo "::error::$name: $(jq -r '.errors[0].message' <<<"$resp")"
-              fail=1
-            else
-              echo "$name: redeploy triggered"
-            fi
-          }
-          redeploy matrix-router  "$ROUTER_CHANGED"  "$RAILWAY_ROUTER_SERVICE_ID"
-          redeploy matrix-gateway "$GATEWAY_CHANGED" "$RAILWAY_GATEWAY_SERVICE_ID"
-          redeploy matrix-chronos "$CHRONOS_CHANGED" "$RAILWAY_CHRONOS_SERVICE_ID"
-          redeploy matrix-workforce "$WORKFORCE_CHANGED" "$RAILWAY_WORKFORCE_SERVICE_ID"
-          redeploy matrix-sandboxd "$SANDBOX_CHANGED" "$RAILWAY_SANDBOX_SERVICE_ID"
-          exit "$fail"
+  # Railway redeploy disabled for now — re-enable by uncommenting.
+  # redeploy:
+  #   name: railway redeploy
+  #   needs: [changes, build]
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.build.result == 'success'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: redeploy updated control-plane services
+  #       env:
+  #         RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+  #         RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
+  #         ROUTER_CHANGED: ${{ needs.changes.outputs.router }}
+  #         GATEWAY_CHANGED: ${{ needs.changes.outputs.gateway }}
+  #         CHRONOS_CHANGED: ${{ needs.changes.outputs.chronos }}
+  #         WORKFORCE_CHANGED: ${{ needs.changes.outputs.workforce }}
+  #         SANDBOX_CHANGED: ${{ needs.changes.outputs.sandbox }}
+  #         RAILWAY_ROUTER_SERVICE_ID: ${{ vars.RAILWAY_ROUTER_SERVICE_ID }}
+  #         RAILWAY_GATEWAY_SERVICE_ID: ${{ vars.RAILWAY_GATEWAY_SERVICE_ID }}
+  #         RAILWAY_CHRONOS_SERVICE_ID: ${{ vars.RAILWAY_CHRONOS_SERVICE_ID }}
+  #         RAILWAY_WORKFORCE_SERVICE_ID: ${{ vars.RAILWAY_WORKFORCE_SERVICE_ID }}
+  #         RAILWAY_SANDBOX_SERVICE_ID: ${{ vars.RAILWAY_SANDBOX_SERVICE_ID }}
+  #       run: |
+  #         if [[ -z "$RAILWAY_API_TOKEN" || -z "$RAILWAY_ENVIRONMENT_ID" ]]; then
+  #           echo "::notice::Railway credentials not configured; skipping redeploy"
+  #           exit 0
+  #         fi
+  #         fail=0
+  #         redeploy() {
+  #           local name="$1" changed="$2" service_id="$3"
+  #           if [[ "$changed" != "true" ]]; then
+  #             echo "$name: image unchanged, skipping"
+  #             return 0
+  #           fi
+  #           if [[ -z "$service_id" ]]; then
+  #             echo "::warning::$name changed but its RAILWAY_*_SERVICE_ID var is unset; skipping"
+  #             return 0
+  #           fi
+  #           local body resp
+  #           body="$(jq -cn --arg env "$RAILWAY_ENVIRONMENT_ID" --arg svc "$service_id" \
+  #             '{query: "mutation Redeploy($environmentId: String!, $serviceId: String!) { serviceInstanceRedeploy(environmentId: $environmentId, serviceId: $serviceId) }",
+  #               variables: {environmentId: $env, serviceId: $svc}}')"
+  #           resp="$(curl -fsS https://backboard.railway.com/graphql/v2 \
+  #             -H "Authorization: Bearer $RAILWAY_API_TOKEN" \
+  #             -H "Content-Type: application/json" \
+  #             -d "$body")" || { echo "::error::$name: redeploy request failed"; fail=1; return 0; }
+  #           if jq -e '.errors | length > 0' <<<"$resp" >/dev/null 2>&1; then
+  #             echo "::error::$name: $(jq -r '.errors[0].message' <<<"$resp")"
+  #             fail=1
+  #           else
+  #             echo "$name: redeploy triggered"
+  #           fi
+  #         }
+  #         redeploy matrix-router  "$ROUTER_CHANGED"  "$RAILWAY_ROUTER_SERVICE_ID"
+  #         redeploy matrix-gateway "$GATEWAY_CHANGED" "$RAILWAY_GATEWAY_SERVICE_ID"
+  #         redeploy matrix-chronos "$CHRONOS_CHANGED" "$RAILWAY_CHRONOS_SERVICE_ID"
+  #         redeploy matrix-workforce "$WORKFORCE_CHANGED" "$RAILWAY_WORKFORCE_SERVICE_ID"
+  #         redeploy matrix-sandboxd "$SANDBOX_CHANGED" "$RAILWAY_SANDBOX_SERVICE_ID"
+  #         exit "$fail"

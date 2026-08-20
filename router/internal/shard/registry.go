@@ -9,9 +9,9 @@ import (
 	"sort"
 	"strings"
 
-	"matrix/router/internal/db"
-	"matrix/router/internal/provision"
-	"matrix/router/internal/railway"
+	"centra/router/internal/db"
+	"centra/router/internal/provision"
+	"centra/router/internal/railway"
 )
 
 type Entry struct {

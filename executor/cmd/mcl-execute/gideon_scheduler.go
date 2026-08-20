@@ -26,8 +26,8 @@ import (
 	"fmt"
 	"time"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
 )
 
 // gideonSweepProse is the standing internal goal fired each cycle. Verb

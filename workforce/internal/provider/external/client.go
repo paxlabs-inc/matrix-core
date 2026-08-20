@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/effect"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/effect"
 )
 
 type connectorRequest struct {

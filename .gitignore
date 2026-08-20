@@ -19,12 +19,12 @@ tachyon/tachyon.config.kvx
 marketplace
 # --- Built binaries (one entry per top-level CLI in the 4 modules) --------
 bin/
-cortex/cortex-shell
-cortex/two-model-smoke
-cortex/embed-smoke
-MCL/mclc
-MCL/mcl-fmt
-MCL/mcl-validate
+core/cortex/cortex-shell
+core/cortex/two-model-smoke
+core/cortex/embed-smoke
+core/mcl/mclc
+core/mcl/mcl-fmt
+core/mcl/mcl-validate
 bridge/mclc-cortex
 executor/mcl-execute
 executor/mcl-e2e
@@ -60,11 +60,11 @@ tmp/
 **/*.sst
 **/*.log.zst
 
-# Vector index files written by cortex/embedder.go.
+# Vector index files written by core/cortex/embedder.go.
 **/vec/
 
 # Sweep harness outputs.
-tools/e2e/sweeps/
+protocol/tools/e2e/sweeps/
 sweeps/
 
 # --- Editors / IDEs -------------------------------------------------------
@@ -97,7 +97,7 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
-# --- Python tooling (tools/skills/, tools/e2e/aggregate_sweep.py) ---------
+# --- Python tooling (protocol/tools/skills/, protocol/tools/e2e/aggregate_sweep.py) ---
 __pycache__/
 *.py[cod]
 *$py.class
@@ -137,33 +137,33 @@ executor/mcl-e2e
 executor/mcl-execute
 executor/bin/
 gideon/
-protocol/**
-!protocol/.gitkeep
 website/
 nohup.out
 apps/
 deploy/deploy.sh
-tools/forge/
-skills/gideon-ops
+protocol/tools/forge/
+protocol/skills/gideon-ops
 agents/gideon.json
-construct/IMPLEMENTATION_PLAN.md
-construct/construct.frozen.kvx
-cassandra/CASSANDRA_SESSIONS_GUIDE.md
+packages/construct/IMPLEMENTATION_PLAN.md
+packages/construct/construct.frozen.kvx
+core/cassandra/CASSANDRA_SESSIONS_GUIDE.md
 .claude/settings.json
 
 # --- Feature specs --------------------------------------------------------
 # Ignore EVERY working spec directory; only the specgen tooling and the
 # workflow index are tracked. Git does not track empty directories, so the
-# empty spec/ working dirs are ignored implicitly as well.
-spec/*
-!spec/specgen
-!spec/specgen/**
-!spec/workflow.kvx
-!spec/architect-o1/
-spec/architect-o1/*
-!spec/architect-o1/hazards.json
-!spec/neocortex/
-!spec/neocortex/**
+# empty protocol/spec/ working dirs are ignored implicitly as well.
+# /spec is the local-only symlink -> protocol/spec kept for cg spec.
+/spec
+protocol/spec/*
+!protocol/spec/specgen
+!protocol/spec/specgen/**
+!protocol/spec/workflow.kvx
+!protocol/spec/architect-o1/
+protocol/spec/architect-o1/*
+!protocol/spec/architect-o1/hazards.json
+!protocol/spec/neocortex/
+!protocol/spec/neocortex/**
 
 # --- Local-only working material -----------------------------------------
 # Operator inventories, historical design records and the durable knowledge
@@ -173,25 +173,25 @@ research/
 knowledge/
 scripts/shard-dep.sh
 tmp/
-spec/oracle/
-spec/neo-workbench/
-spec/neo-execution-reliability/
-spec/kindle-autonomy/
-spec/continuous-memory/
-spec/construct-os-shell/
-spec/cody-smoothness/
-spec/cody-client
-spec/browser-filmstrip/
+protocol/spec/oracle/
+protocol/spec/neo-workbench/
+protocol/spec/neo-execution-reliability/
+protocol/spec/kindle-autonomy/
+protocol/spec/continuous-memory/
+protocol/spec/construct-os-shell/
+protocol/spec/cody-smoothness/
+protocol/spec/cody-client
+protocol/spec/browser-filmstrip/
 .artifacts/
 docs/handoffs/
 .cg/
 
 # Local Neo build output (release images build from source).
-neo/neo
+agents/neo/neo
 .mimocode/distill-reports/distill-report-2026-08-05-1227.md
 .mimocode/memory/distill.db
 .mimocode/skills/context-handoff/SKILL.md
 .mimocode/skills/go-verify-cycle/SKILL.md
 .mimocode/skills/spec-implementation-loop/SKILL.md
 .mimocode/skills/spec-wave-implement/SKILL.md
-keith/apps/*
+agents/keith/apps/*.codegraph/

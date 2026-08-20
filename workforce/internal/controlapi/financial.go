@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"matrix/workforce/internal/provider/financial"
+	"centra/workforce/internal/provider/financial"
 )
 
 func (service *Service) authorizedFinancialStore(

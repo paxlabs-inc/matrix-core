@@ -6,9 +6,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"matrix/workforce/internal/companylifecycle"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/productcapability"
+	"centra/workforce/internal/companylifecycle"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/productcapability"
 )
 
 func (store *Store) CompleteLaunch(ctx context.Context, request CompleteLaunchRequest) (View, error) {

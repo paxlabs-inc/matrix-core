@@ -3,16 +3,16 @@
 
 // Package bridge wires the MCL interpreter to a live cortex.
 //
-// The MCL module (matrix/mcl) defines a narrow Cortex interface in
+// The MCL module (centra/core/mcl) defines a narrow Cortex interface in
 // mtx/interpreter consisting of Find / Resolve / Context. The cortex
-// module (matrix/cortex) exposes the underlying typed query engine.
+// module (centra/core/cortex) exposes the underlying typed query engine.
 // Neither module imports the other — by design — so this bridge package
 // is the third top-level glue that adapts cortex.Cortex to the MCL
 // interpreter.Cortex interface.
 //
 // Architectural rules honored:
 //
-//   - The bridge is the ONLY place where matrix/mcl and matrix/cortex
+//   - The bridge is the ONLY place where centra/core/mcl and centra/core/cortex
 //     are linked together; it lives in its own Go module so the two
 //     core modules stay closed under their own dep graphs.
 //   - Bridge calls are compile-time (D13 pre-resolution). LateBinding
@@ -37,11 +37,11 @@ import (
 	"fmt"
 	"strings"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
-	"matrix/cortex/query"
-	"matrix/cortex/vector"
-	"matrix/mcl/mtx/interpreter"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
+	"centra/core/cortex/query"
+	"centra/core/cortex/vector"
+	"centra/core/mcl/mtx/interpreter"
 )
 
 // Adapter implements interpreter.Cortex against a live *cortex.Cortex.

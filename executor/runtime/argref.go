@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"matrix/mcl/ir"
+	"centra/core/mcl/ir"
 )
 
 // outputRefPattern matches plan-node output references the planner emits to

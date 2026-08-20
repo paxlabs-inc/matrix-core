@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"matrix/workforce/internal/businessoutcome"
+	"centra/workforce/internal/businessoutcome"
 )
 
 func writeBusinessOutcomeError(writer http.ResponseWriter, err error) {

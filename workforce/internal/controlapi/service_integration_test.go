@@ -18,15 +18,15 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/ledger"
-	"matrix/workforce/internal/mission"
-	"matrix/workforce/internal/policy"
-	"matrix/workforce/internal/skills"
-	"matrix/workforce/internal/workorder"
-	"matrix/workforce/scheduler"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/ledger"
+	"centra/workforce/internal/mission"
+	"centra/workforce/internal/policy"
+	"centra/workforce/internal/skills"
+	"centra/workforce/internal/workorder"
+	"centra/workforce/scheduler"
 )
 
 const controlPostgresImage = "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20"

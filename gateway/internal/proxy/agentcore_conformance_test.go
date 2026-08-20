@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"matrix/gateway/internal/ledger"
-	"matrix/gateway/internal/types"
+	"centra/gateway/internal/ledger"
+	"centra/gateway/internal/types"
 )
 
 type conformanceToolCall struct {

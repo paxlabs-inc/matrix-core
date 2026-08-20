@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, it } from 'vitest'
 
-import { NeoComputer } from '@/components/matrix/neo/neo-computer'
+import { NeoComputer } from '@/components/centra/agents/neo/neo-computer'
 import { buildTaskFromTrace } from '@/hooks/api/useChat'
 import type { TraceEvent } from '@/lib/api/conversations'
 import messages from '@/messages/en.json'

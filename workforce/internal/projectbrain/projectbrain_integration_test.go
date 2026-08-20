@@ -19,13 +19,13 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
-	"matrix/workforce/internal/lease"
-	"matrix/workforce/internal/ledger"
-	"matrix/workforce/internal/testauthority"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
+	"centra/workforce/internal/lease"
+	"centra/workforce/internal/ledger"
+	"centra/workforce/internal/testauthority"
 )
 
 const projectBrainPostgresImage = "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20"

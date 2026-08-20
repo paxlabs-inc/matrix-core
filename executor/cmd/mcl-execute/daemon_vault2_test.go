@@ -17,8 +17,8 @@ import (
 	"strings"
 	"testing"
 
-	"matrix/mcl/envelope"
-	"matrix/vault"
+	"centra/core/mcl/envelope"
+	"centra/packages/vault"
 )
 
 // --- async registry ---

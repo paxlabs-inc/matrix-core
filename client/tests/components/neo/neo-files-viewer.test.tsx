@@ -5,7 +5,7 @@ import {
   WorkspaceImagePreview,
   WorkspaceFileViewer,
   workspaceViewerKind,
-} from '@/components/matrix/neo/neo-files'
+} from '@/components/centra/agents/neo/neo-files'
 
 describe('Workspace file viewer', () => {
   it('routes supported and unknown file types to honest viewer modes', () => {

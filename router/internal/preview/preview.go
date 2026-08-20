@@ -28,8 +28,8 @@ import (
 	"sync"
 	"time"
 
-	"matrix/router/internal/db"
-	"matrix/router/internal/proxy"
+	"centra/router/internal/db"
+	"centra/router/internal/proxy"
 )
 
 // previewCookie MUST match mw.PreviewCookie. It is duplicated (not imported)

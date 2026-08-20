@@ -57,7 +57,7 @@ import {
   type MemoryConsentResponse,
   type MemoryEntry,
 } from '@/lib/api/memory'
-import { NeoIllustration } from '@/components/matrix/neo/neo-illustration'
+import { NeoIllustration } from '@/components/centra/agents/neo/neo-illustration'
 
 /** Friendly, human labels for the cortex type names. */
 const TYPE_LABEL: Record<string, string> = {

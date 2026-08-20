@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
-	"matrix/workforce/internal/effect"
-	"matrix/workforce/internal/lease"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
+	"centra/workforce/internal/effect"
+	"centra/workforce/internal/lease"
 )
 
 func TestIntegration_DeveloperProviderReadsRealCodeGraph(t *testing.T) {

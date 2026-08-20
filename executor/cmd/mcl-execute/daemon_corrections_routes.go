@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"matrix/executor/materiality"
-	"matrix/mcl/ir"
+	"centra/executor/materiality"
+	"centra/core/mcl/ir"
 )
 
 // classifyRequest is the wire-form body for POST /classify.

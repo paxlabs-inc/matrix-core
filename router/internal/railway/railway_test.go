@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/router/internal/provision"
+	"centra/router/internal/provision"
 )
 
 // gqlServer is an httptest GraphQL endpoint that dispatches on the

@@ -20,7 +20,7 @@ import (
 	"sort"
 	"strings"
 
-	"matrix/cortex/memory"
+	"centra/core/cortex/memory"
 )
 
 // moduleInfo is the gathered, pre-write description of one source module.

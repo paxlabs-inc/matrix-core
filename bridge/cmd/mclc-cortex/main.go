@@ -3,7 +3,7 @@
 
 // Command mclc-cortex is the bridged compiler: mclc against a live cortex.
 //
-// It mirrors `mclc compile` from matrix/mcl/cmd/mclc but additionally wires
+// It mirrors `mclc compile` from centra/core/mcl/cmd/mclc but additionally wires
 // a Pebble-backed *cortex.Cortex via the bridge package so that on-block
 // resolve statements (`cortex.find`, `cortex.resolve`, `cortex.context`) run
 // against a real memory graph instead of being dry-run no-ops.
@@ -46,15 +46,15 @@ import (
 	"strings"
 	"time"
 
-	"matrix/bridge"
-	"matrix/cortex"
-	"matrix/cortex/embed"
-	"matrix/cortex/store"
-	"matrix/mcl/llm"
-	"matrix/mcl/mtx/canonical"
-	"matrix/mcl/mtx/interpreter"
-	"matrix/mcl/mtx/parser"
-	"matrix/mcl/mtx/validator"
+	"centra/bridge"
+	"centra/core/cortex"
+	"centra/core/cortex/embed"
+	"centra/core/cortex/store"
+	"centra/core/mcl/llm"
+	"centra/core/mcl/mtx/canonical"
+	"centra/core/mcl/mtx/interpreter"
+	"centra/core/mcl/mtx/parser"
+	"centra/core/mcl/mtx/validator"
 )
 
 func main() {

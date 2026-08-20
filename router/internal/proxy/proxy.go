@@ -31,9 +31,9 @@ import (
 	"strings"
 	"time"
 
-	"matrix/router/internal/db"
-	"matrix/router/internal/provision"
-	"matrix/router/internal/workforceauth"
+	"centra/router/internal/db"
+	"centra/router/internal/provision"
+	"centra/router/internal/workforceauth"
 )
 
 // Provisioner triggers out-of-band provisioning of a user's environment

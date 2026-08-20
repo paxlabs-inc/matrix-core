@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func TestRequest_RejectsInvalidAuthorityAndBounds(t *testing.T) {

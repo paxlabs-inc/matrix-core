@@ -27,9 +27,9 @@ import (
 	"strings"
 	"testing"
 
-	"matrix/construct/schema"
-	"matrix/construct/surfacestore"
-	"matrix/construct/transport"
+	"centra/packages/construct/schema"
+	"centra/packages/construct/surfacestore"
+	"centra/packages/construct/transport"
 )
 
 // recordSurface enqueues one real construct.surface frame for a conversation

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"matrix/workforce/internal/companyruntime"
+	"centra/workforce/internal/companyruntime"
 )
 
 func (service *Service) handleCompanyStartPreview(writer http.ResponseWriter, request *http.Request) {

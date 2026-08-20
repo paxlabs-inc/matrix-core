@@ -11,13 +11,13 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"matrix/workforce/internal/companylifecycle"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/initiative"
-	"matrix/workforce/internal/productcapability"
-	"matrix/workforce/internal/squad"
-	"matrix/workforce/internal/workorder"
-	"matrix/workforce/scheduler"
+	"centra/workforce/internal/companylifecycle"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/initiative"
+	"centra/workforce/internal/productcapability"
+	"centra/workforce/internal/squad"
+	"centra/workforce/internal/workorder"
+	"centra/workforce/scheduler"
 )
 
 func (store *Store) Start(ctx context.Context, request StartRequest) (View, error) {

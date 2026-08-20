@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
-	"matrix/executor/tool"
-	"matrix/mcl/envelope"
-	"matrix/mcl/ir"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
+	"centra/executor/tool"
+	"centra/core/mcl/envelope"
+	"centra/core/mcl/ir"
 )
 
 // WalkResult collects the per-node outcomes of a manual plan walk so the

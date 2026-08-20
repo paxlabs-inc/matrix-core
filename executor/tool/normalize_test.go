@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/executor/mcp"
+	"centra/executor/mcp"
 )
 
 func TestFailureClassOfInvocationProtocolAndTransport(t *testing.T) {

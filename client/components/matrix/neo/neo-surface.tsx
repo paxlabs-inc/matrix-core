@@ -51,7 +51,7 @@ import {
 import { cn } from '@/lib/utils'
 import { contentMotion, motionTransition } from '@/lib/motion'
 import { uploadMedia, mediaKindForMime } from '@/lib/api/media'
-import { NeoMediaGrid, NeoMediaSkeleton } from '@/components/matrix/neo/neo-media'
+import { NeoMediaGrid, NeoMediaSkeleton } from '@/components/centra/agents/neo/neo-media'
 import { haltAll } from '@/lib/api/runs'
 import { getSession } from '@/lib/auth/session'
 import { usePrefs } from '@/lib/prefs'
@@ -61,16 +61,16 @@ import { EMPTY_TASK } from '@/hooks/api/useChat'
 import type { ChatMessage, ChatPhase, NeoTask, PendingGate } from '@/hooks/api/useChat'
 import type { AskResponse } from '@/lib/construct/types.gen'
 import { PixelGrid, WaveBars } from '@/components/matrix/cody/loaders'
-import { NeoComputer } from '@/components/matrix/neo/neo-computer'
-import { WalletApproval } from '@/components/matrix/neo/wallet-approval'
-import { NeoComposer, composeNeoMessage, type NeoMode } from '@/components/matrix/neo/neo-composer'
+import { NeoComputer } from '@/components/centra/agents/neo/neo-computer'
+import { WalletApproval } from '@/components/centra/agents/neo/wallet-approval'
+import { NeoComposer, composeNeoMessage, type NeoMode } from '@/components/centra/agents/neo/neo-composer'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuItem } from '@astryxdesign/core/DropdownMenu'
 import {
   NeoAssistantMessage,
   NeoLiveTurn,
   NeoUserMessage,
-} from '@/components/matrix/neo/neo-message'
+} from '@/components/centra/agents/neo/neo-message'
 
 const DONE_COLOR = 'oklch(0.72 0.14 155)' // the surface's "ready/success" green
 

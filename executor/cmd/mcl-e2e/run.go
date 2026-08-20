@@ -12,14 +12,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
-	"matrix/cortex/store"
-	"matrix/executor/mcp"
-	"matrix/executor/tool"
-	"matrix/mcl/envelope"
-	"matrix/mcl/ir"
-	"matrix/mcl/llm"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
+	"centra/core/cortex/store"
+	"centra/executor/mcp"
+	"centra/executor/tool"
+	"centra/core/mcl/envelope"
+	"centra/core/mcl/ir"
+	"centra/core/mcl/llm"
 )
 
 // RunConfig holds the per-run parameters for one end-to-end execution.

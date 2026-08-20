@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func ProcedureForRecord(body RecordBody) (ReviewProcedure, error) {

@@ -24,7 +24,7 @@
 //   - matrix.kvx executor_locked_design Q4/Q12/Q13/Q14/Q16/Q17/Q22
 //   - research/02-protocol.md §18.1 (materiality)
 //   - research/06-agents.md §5.2 (plan synthesis runs under executor)
-//   - MCL/ir/plan.go:3-8 (PlanTree IR shared producer+consumer)
+//   - core/mcl/ir/plan.go:3-8 (PlanTree IR shared producer+consumer)
 //
 // Three subcommands:
 //
@@ -38,7 +38,7 @@ import (
 	"fmt"
 	"os"
 
-	"matrix/executor/tool"
+	"centra/executor/tool"
 )
 
 func main() {

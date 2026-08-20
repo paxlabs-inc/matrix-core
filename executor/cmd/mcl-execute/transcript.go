@@ -16,7 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"matrix/vault"
+	"centra/packages/vault"
 )
 
 // Store type and schema bound into each transcript record's associated data, so

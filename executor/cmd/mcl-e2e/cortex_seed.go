@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"time"
 
-	"matrix/cortex"
-	"matrix/cortex/embed"
-	"matrix/cortex/memory"
+	"centra/core/cortex"
+	"centra/core/cortex/embed"
+	"centra/core/cortex/memory"
 )
 
 // FixedClock returns a closure that yields ts on every call. Used by

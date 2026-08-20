@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/mission"
-	"matrix/workforce/internal/policy"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/mission"
+	"centra/workforce/internal/policy"
+	"centra/workforce/internal/skills"
 )
 
 const SchemaVersion = "workforce.control.v1"

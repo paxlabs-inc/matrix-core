@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/businessoutcome"
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/businessoutcome"
+	"centra/workforce/internal/contracts"
 )
 
 const SchemaVersion = "workforce.commercial-execution.v1"

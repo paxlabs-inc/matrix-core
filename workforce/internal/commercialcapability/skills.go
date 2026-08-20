@@ -6,9 +6,9 @@ import (
 	"sort"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/organization"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/organization"
+	"centra/workforce/internal/skills"
 )
 
 const commercialCapabilityProvider = "commercial_capability"

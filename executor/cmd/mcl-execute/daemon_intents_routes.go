@@ -41,7 +41,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/mcl/envelope"
+	"centra/core/mcl/envelope"
 )
 
 // handleIntentsList serves GET /intents (the list endpoint).

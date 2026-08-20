@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/approval"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/approval"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/skills"
 )
 
 const maxDomainPayloadBytes = 1 << 20

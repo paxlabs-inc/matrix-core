@@ -33,10 +33,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"matrix/executor/runtime"
-	"matrix/executor/tool"
-	"matrix/mcl/ir"
-	"matrix/mcl/llm"
+	"centra/executor/runtime"
+	"centra/executor/tool"
+	"centra/core/mcl/ir"
+	"centra/core/mcl/llm"
 )
 
 // dispatchMessage routes a message to the correct pipeline. In Gideon

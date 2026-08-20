@@ -11,9 +11,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"matrix/vault"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/learning"
+	"centra/packages/vault"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/learning"
 )
 
 type claimedNextCycle struct {

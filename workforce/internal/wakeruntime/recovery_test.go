@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/lease"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/lease"
 )
 
 func TestAcceptancePredicatesFailClosedUnlessEvidenceHashIsExplicit(t *testing.T) {

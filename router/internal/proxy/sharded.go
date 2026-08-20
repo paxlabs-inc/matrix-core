@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/router/internal/db"
+	"centra/router/internal/db"
 )
 
 const (

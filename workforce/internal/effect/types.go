@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
+	"centra/workforce/internal/skills"
 )
 
 var (

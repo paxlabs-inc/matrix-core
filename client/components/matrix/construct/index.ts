@@ -12,13 +12,13 @@ export {
   SurfaceRenderer,
   ConstructSurfaces,
   type SurfaceHandlers,
-} from '@/components/matrix/construct/surface-renderer'
-export { NarrationView } from '@/components/matrix/construct/narration'
-export { MetricView } from '@/components/matrix/construct/metric'
-export { EntityView } from '@/components/matrix/construct/entity'
-export { StructureView } from '@/components/matrix/construct/structure'
-export { StreamView } from '@/components/matrix/construct/stream'
-export { TimelineView } from '@/components/matrix/construct/timeline'
-export { CanvasView } from '@/components/matrix/construct/canvas'
-export { AskView } from '@/components/matrix/construct/ask'
-export { DecorationRow } from '@/components/matrix/construct/decoration'
+} from '@/components/centra/packages/construct/surface-renderer'
+export { NarrationView } from '@/components/centra/packages/construct/narration'
+export { MetricView } from '@/components/centra/packages/construct/metric'
+export { EntityView } from '@/components/centra/packages/construct/entity'
+export { StructureView } from '@/components/centra/packages/construct/structure'
+export { StreamView } from '@/components/centra/packages/construct/stream'
+export { TimelineView } from '@/components/centra/packages/construct/timeline'
+export { CanvasView } from '@/components/centra/packages/construct/canvas'
+export { AskView } from '@/components/centra/packages/construct/ask'
+export { DecorationRow } from '@/components/centra/packages/construct/decoration'

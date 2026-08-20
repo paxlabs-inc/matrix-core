@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/router/internal/provision"
+	"centra/router/internal/provision"
 )
 
 func testProvisioner(srvURL string) *Provisioner {

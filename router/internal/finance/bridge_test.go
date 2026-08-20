@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	grounded "matrix/router/internal/exa"
+	grounded "centra/router/internal/exa"
 )
 
-// These drive the REAL tools/finance MCP bridge as a real node subprocess
+// These drive the REAL protocol/tools/finance MCP bridge as a real node subprocess
 // against the REAL internal finance handler. Nothing is stubbed: the bridge
 // speaks its actual wire protocol, the handler runs its actual service, and the
 // upstream is a real HTTP server serving documented vendor bodies.
@@ -31,7 +31,7 @@ func bridgePath(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("resolve repo root: %v", err)
 	}
-	path := filepath.Join(root, "tools", "finance", "finance.mjs")
+	path := filepath.Join(root, "protocol", "tools", "finance", "finance.mjs")
 	if _, err := os.Stat(path); err != nil {
 		t.Skipf("finance bridge not present at %s", path)
 	}

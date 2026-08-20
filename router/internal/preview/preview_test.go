@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"matrix/router/internal/proxy"
+	"centra/router/internal/proxy"
 )
 
 // withSubject drives the public Handler with a request whose context

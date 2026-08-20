@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"matrix/executor/lifecycle"
-	"matrix/mcl/envelope"
+	"centra/executor/lifecycle"
+	"centra/core/mcl/envelope"
 )
 
 // LifecycleDriver wraps a lifecycle.Machine + EnvelopeStream so the harness

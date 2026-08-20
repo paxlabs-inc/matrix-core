@@ -3,9 +3,9 @@ package customer
 import (
 	"fmt"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/lease"
-	"matrix/workforce/internal/provider/external"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/lease"
+	"centra/workforce/internal/provider/external"
 )
 
 func BuildEnvelope(

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"matrix/executor/runtime"
-	"matrix/executor/tool"
-	"matrix/mcl/ir"
+	"centra/executor/runtime"
+	"centra/executor/tool"
+	"centra/core/mcl/ir"
 )
 
 // fakeManifest builds a minimal AgentManifest with two tools across

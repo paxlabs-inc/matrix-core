@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 type nonFlushingResponseWriter struct {

@@ -5,9 +5,9 @@ import (
 	"crypto/ed25519"
 	"fmt"
 
-	"matrix/workforce/internal/commercialcapability"
-	"matrix/workforce/internal/provider/customer"
-	"matrix/workforce/internal/provider/external"
+	"centra/workforce/internal/commercialcapability"
+	"centra/workforce/internal/provider/customer"
+	"centra/workforce/internal/provider/external"
 )
 
 type ExternalConnectionRegistration struct {

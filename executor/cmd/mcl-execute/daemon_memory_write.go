@@ -33,8 +33,8 @@ import (
 	"sync"
 	"time"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
 )
 
 // memoryWriteRequest is the wire-shape accepted by POST /memory.

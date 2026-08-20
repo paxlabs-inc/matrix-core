@@ -14,7 +14,7 @@ plane:
   CORS, and the JWT header/query/cookie acceptance. Auto-redeployed by the `redeploy` job.
 
 ## 1. Router prod env (set BEFORE/with the push)
-On the **matrix-router** Railway service (`/etc/matrix/router.env` or Railway vars). These flow
+On the **matrix-router** Railway service (`/etc/centra/router.env` or Railway vars). These flow
 to every per-user codyd automatically via the router's MachineEnv injection.
 
     # Preview: Railway sandbox provisioning (same project/env as user VMs)

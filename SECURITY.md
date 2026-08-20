@@ -23,11 +23,11 @@ branch and the active 1.0 release line.
 
 In scope:
 
-- **`cortex/`** — replay determinism violations, journal gap conditions, Merkle
+- **`core/cortex/`** — replay determinism violations, journal gap conditions, Merkle
   root drift, scope-bypass in `cortex.Find` / `cortex.Context` / `ResolveScoped`,
   rate-limiter bypass.
-- **`MCL/`** — compiler determinism breaks (same input ⇒ different IR),
-  signature forgery in `MCL/envelope/`, prompt-injection paths that escape
+- **`core/mcl/`** — compiler determinism breaks (same input ⇒ different IR),
+  signature forgery in `core/mcl/envelope/`, prompt-injection paths that escape
   the closed verb / `obj_kind` vocab.
 - **`bridge/`** — late-binding leak (compile-time `Find` journaling when it
   must not), scope-violation suppression bypass.
@@ -41,7 +41,7 @@ In scope:
 
 Out of scope:
 
-- DoS via legitimate workload (covered by rate-limiting in `cortex/ratelimit.go`;
+- DoS via legitimate workload (covered by rate-limiting in `core/cortex/ratelimit.go`;
   reports must show a path that bypasses the documented buckets).
 - Issues that require an attacker already in possession of an actor's signing
   key, Pebble store, or MCP server credentials (root-on-the-box).
@@ -111,7 +111,7 @@ in code; this list is for operator-side defence-in-depth.
 - **Closed vocabularies** (D7, v1): the 10-verb and 8-`obj_kind` enums are
   load-bearing. Extending them is a journaled migration, not a code-only
   edit.
-- **Rate limits** (`cortex/ratelimit.go`): the `KindScopeViolation` and
+- **Rate limits** (`core/cortex/ratelimit.go`): the `KindScopeViolation` and
   `cortex.Attest` token buckets default to `10/s burst 20` and `1/s burst 5`
   respectively. Tune via `WithRateLimits` only after measuring real
   workloads.

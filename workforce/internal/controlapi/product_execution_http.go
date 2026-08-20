@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"matrix/workforce/internal/productexecution"
+	"centra/workforce/internal/productexecution"
 )
 
 func decodeProductExecution[T any](writer http.ResponseWriter, request *http.Request) (T, bool) {

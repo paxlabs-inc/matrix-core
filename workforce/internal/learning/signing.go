@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func SignHypothesis(value *Hypothesis, keyID string, key ed25519.PrivateKey) error {

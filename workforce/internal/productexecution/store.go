@@ -9,18 +9,18 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/companylifecycle"
-	"matrix/workforce/internal/companyruntime"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/effect"
-	"matrix/workforce/internal/initiative"
-	"matrix/workforce/internal/lineage"
-	"matrix/workforce/internal/mission"
-	"matrix/workforce/internal/productcapability"
-	"matrix/workforce/internal/squad"
-	"matrix/workforce/scheduler"
+	"centra/workforce/internal/companylifecycle"
+	"centra/workforce/internal/companyruntime"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/effect"
+	"centra/workforce/internal/initiative"
+	"centra/workforce/internal/lineage"
+	"centra/workforce/internal/mission"
+	"centra/workforce/internal/productcapability"
+	"centra/workforce/internal/squad"
+	"centra/workforce/scheduler"
 )
 
 var (

@@ -7,12 +7,12 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"matrix/workforce/internal/companylifecycle"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/initiative"
-	"matrix/workforce/internal/mission"
-	"matrix/workforce/internal/portfolio"
-	"matrix/workforce/internal/workorder"
+	"centra/workforce/internal/companylifecycle"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/initiative"
+	"centra/workforce/internal/mission"
+	"centra/workforce/internal/portfolio"
+	"centra/workforce/internal/workorder"
 )
 
 type Coordinator struct {

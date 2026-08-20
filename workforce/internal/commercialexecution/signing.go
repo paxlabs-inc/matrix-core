@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func SignPlan(value *Plan, keyID string, privateKey ed25519.PrivateKey) error {

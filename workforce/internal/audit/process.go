@@ -9,9 +9,9 @@ import (
 	"io"
 	"reflect"
 
-	"matrix/workforce/internal/auditorworker"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/processisolation"
+	"centra/workforce/internal/auditorworker"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/processisolation"
 )
 
 const (

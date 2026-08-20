@@ -32,10 +32,10 @@ import (
 	"sync"
 	"time"
 
-	"matrix/executor/runtime"
-	"matrix/mcl/ir"
-	"matrix/mcl/llm"
-	"matrix/mcl/mtx/interpreter"
+	"centra/executor/runtime"
+	"centra/core/mcl/ir"
+	"centra/core/mcl/llm"
+	"centra/core/mcl/mtx/interpreter"
 )
 
 // ---------------------------------------------------------------------

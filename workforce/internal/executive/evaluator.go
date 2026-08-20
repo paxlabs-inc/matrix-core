@@ -8,8 +8,8 @@ import (
 	"slices"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/mission"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/mission"
 )
 
 var (

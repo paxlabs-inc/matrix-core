@@ -21,7 +21,7 @@
 import dynamic from 'next/dynamic'
 import { useState } from 'react'
 import { Toaster } from '@/components/ui/sonner'
-import { NeoChatSearch } from '@/components/matrix/neo/neo-chat-search'
+import { NeoChatSearch } from '@/components/centra/agents/neo/neo-chat-search'
 import { SettingsSheet } from '@/components/matrix/settings-sheet'
 import { PanelErrorBoundary } from '@/components/matrix/panel-error-boundary'
 import { PanelSkeleton } from '@/components/matrix/panel-skeleton'
@@ -32,7 +32,7 @@ import { useChat, EMPTY_TASK } from '@/hooks/api/useChat'
 import { useHandoffAsk } from '@/components/matrix/finance/finance-composer'
 
 const NeoSurface = dynamic(
-  () => import('@/components/matrix/neo/neo-surface').then((m) => ({ default: m.NeoSurface })),
+  () => import('@/components/centra/agents/neo/neo-surface').then((m) => ({ default: m.NeoSurface })),
   { loading: () => <PanelSkeleton /> },
 )
 
@@ -42,7 +42,7 @@ const NeoSurface = dynamic(
 // sources/agents/media); the typed Construct surfaces are rendered by the
 // environment-stage feed, so the two never double up.
 const NeoComputer = dynamic(
-  () => import('@/components/matrix/neo/neo-computer').then((m) => ({ default: m.NeoComputer })),
+  () => import('@/components/centra/agents/neo/neo-computer').then((m) => ({ default: m.NeoComputer })),
   { ssr: false },
 )
 
@@ -50,16 +50,16 @@ const NeoComputer = dynamic(
 // full-page overlays opened from the sidebar. Loaded on demand so they never
 // weigh on the first paint of the chat surface.
 const NeoTimeline = dynamic(
-  () => import('@/components/matrix/neo/neo-timeline').then((m) => ({ default: m.NeoTimeline })),
+  () => import('@/components/centra/agents/neo/neo-timeline').then((m) => ({ default: m.NeoTimeline })),
   { ssr: false },
 )
 const NeoFiles = dynamic(
-  () => import('@/components/matrix/neo/neo-files').then((m) => ({ default: m.NeoFiles })),
+  () => import('@/components/centra/agents/neo/neo-files').then((m) => ({ default: m.NeoFiles })),
   { ssr: false },
 )
 const NeoSelfModel = dynamic(
   () =>
-    import('@/components/matrix/neo/neo-self-model').then((m) => ({
+    import('@/components/centra/agents/neo/neo-self-model').then((m) => ({
       default: m.NeoSelfModelOverlay,
     })),
   { ssr: false },

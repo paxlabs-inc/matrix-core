@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
-	"matrix/cortex/query"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
+	"centra/core/cortex/query"
 )
 
 // buildQuery translates an MCL arg dict into a query.Query.

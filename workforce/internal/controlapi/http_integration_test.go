@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/policy"
+	"centra/workforce/internal/policy"
 )
 
 func TestIntegration_HTTPFounderActivationRotationAndReadSurface(t *testing.T) {

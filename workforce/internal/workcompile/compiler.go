@@ -14,14 +14,14 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
-	"matrix/workforce/internal/effect"
-	"matrix/workforce/internal/lease"
-	"matrix/workforce/internal/policy"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
+	"centra/workforce/internal/effect"
+	"centra/workforce/internal/lease"
+	"centra/workforce/internal/policy"
+	"centra/workforce/internal/skills"
 )
 
 var (

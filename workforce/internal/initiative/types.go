@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/companystate"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/portfolio"
-	"matrix/workforce/internal/workorder"
+	"centra/workforce/internal/companystate"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/portfolio"
+	"centra/workforce/internal/workorder"
 )
 
 const (

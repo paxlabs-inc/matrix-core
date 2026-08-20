@@ -11,7 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"matrix/router/internal/exa"
+	"centra/router/internal/exa"
 )
 
 func (d *DB) PutRun(ctx context.Context, record exa.RunRecord) error {

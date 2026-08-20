@@ -4,9 +4,9 @@ This is the high-level map for contributors, current as of 2026-08-04
 (Centra AI `1.0.0`). The
 canonical detailed sources of truth are:
 
-- **How to work in this repo** — `spec/workflow.kvx` (rendered by
-  `spec/specgen`; the per-IDE rule files are generated pointers).
-- **Feature requirements / design / tasks** — one `spec/<feature>/spec.kvx`
+- **How to work in this repo** — `protocol/spec/workflow.kvx` (rendered by
+  `protocol/spec/specgen`; the per-IDE rule files are generated pointers).
+- **Feature requirements / design / tasks** — one `protocol/spec/<feature>/spec.kvx`
   per feature, rendered to `requirements.md` / `design.md` / `tasks.md`.
 - **Durable cross-session memory** — cortex (recall runs at session start).
 - **History** — `CHANGELOG.md` and the early design record under `research/`
@@ -74,28 +74,28 @@ each other) and is independently buildable/testable.
 
 | Module       | Role                                                                                                     |
 | ------------ | -------------------------------------------------------------------------------------------------------- |
-| `neo/`       | **The agent.** HTTP+SSE server engine, staged agent loop, tools manager, memory pager, proactive automations, morning brief, workbench backend, sub-agent swarm, writeback consolidator. |
-| `neocortex/` | C++23 deterministic single-writer evidence engine and `cortexd`: typed append-only actor logs, sealed payloads, BLAKE3 MMR checkpoints, replay-built LMDB projections, exact entity/vector/BM25 recall, temporal descent, intent frame, work ledger, and one activation composer. |
-| `cortexclient/` | Go client and migration seam for `cortexd`: capability-scoped protocol, resurrection-loop interfaces, checkpoint recovery, evidence citations, bounded reconnect, and Pebble export/import. |
-| `cortex/`    | Compatibility and rollback memory substrate on Pebble. It remains working and is the legacy migration source until the separately gated Neocortex cutover. |
-| `vault/`     | Envelope encryption for user data at rest: platform KEK behind a KeyProvider seam → wrapped per-user key → per-object DEKs; AES-256-GCM; three shapes (record-AEAD JSONL, whole-file AEAD, chunked streaming AEAD); fail-closed under `VAULT_REQUIRED`; cryptographic deletion by user-key destruction. |
+| `agents/neo/`       | **The agent.** HTTP+SSE server engine, staged agent loop, tools manager, memory pager, proactive automations, morning brief, workbench backend, sub-agent swarm, writeback consolidator. |
+| `core/neocortex/` | C++23 deterministic single-writer evidence engine and `cortexd`: typed append-only actor logs, sealed payloads, BLAKE3 MMR checkpoints, replay-built LMDB projections, exact entity/vector/BM25 recall, temporal descent, intent frame, work ledger, and one activation composer. |
+| `core/cortexclient/` | Go client and migration seam for `cortexd`: capability-scoped protocol, resurrection-loop interfaces, checkpoint recovery, evidence citations, bounded reconnect, and Pebble export/import. |
+| `core/cortex/`    | Compatibility and rollback memory substrate on Pebble. It remains working and is the legacy migration source until the separately gated Neocortex cutover. |
+| `packages/vault/`     | Envelope encryption for user data at rest: platform KEK behind a KeyProvider seam → wrapped per-user key → per-object DEKs; AES-256-GCM; three shapes (record-AEAD JSONL, whole-file AEAD, chunked streaming AEAD); fail-closed under `VAULT_REQUIRED`; cryptographic deletion by user-key destruction. |
 | `executor/`  | The MCL daemon (`cmd/mcl-execute`): the signed intent pipeline (compile → plan → walk → attest, D11 determinism), MCP tool subprocess manager, daemon HTTP routes (profile, personalization, transcripts, async jobs), snapshot push/pull. Neo delegates money/rigorous work here via `core_execute`. |
-| `MCL/`       | **Library only** (no longer a separate agent): MCL compiler, intent/plan IR, envelopes, and the shared `llm` client packages that neo and executor import. |
+| `core/mcl/`       | **Library only** (no longer a separate agent): MCL compiler, intent/plan IR, envelopes, and the shared `llm` client packages that neo and executor import. |
 | `bridge/`    | Adapter wiring MCL's `Cortex` interface to a live `*cortex.Cortex`.                                       |
-| `cassandra/` | The silent-voice controller + classic verdict adjudicator library (Neo runs the controller in-process; executor imports the critic). |
-| `chronos/`   | Centralized agent alarm clock (`chronosd`): cron/timezone scheduling with wake conventions `HEARTBEAT`, `AUTOMATRIX`, `MORNING_BRIEF` delivered as `/chat` wake turns. |
+| `core/cassandra/` | The silent-voice controller + classic verdict adjudicator library (Neo runs the controller in-process; executor imports the critic). |
+| `packages/chronos/`   | Centralized agent alarm clock (`chronosd`): cron/timezone scheduling with wake conventions `HEARTBEAT`, `AUTOMATRIX`, `MORNING_BRIEF` delivered as `/chat` wake turns. |
 | `router/`    | `matrix-router`: the only public listener. Supabase/GoTrue JWT auth, per-user daemon provisioning + wake on Railway, reverse proxy, machine env injection (vault KEK gate, provider keys, snapshot policy). |
 | `gateway/`   | `matrix-gateway`: OpenAI-compatible LLM metering proxy (PAX credit ledger, per-actor rate limits, free-tier whitelist, BYO bypass). |
-| `construct/` | Typed screen surfaces the agent renders onto the client (`construct_render`, Ask back-channel, surfacestore persistence). |
-| `codegraph/` | Agent-native code graph (model/store/extract/retrieve) — the structural self-model source.                |
+| `packages/construct/` | Typed screen surfaces the agent renders onto the client (`construct_render`, Ask back-channel, surfacestore persistence). |
+| `protocol/codegraph/` | Agent-native code graph (model/store/extract/retrieve) — the structural self-model source.                |
 
-`sandboxd/` (Node) rounds out the deployed set: the Railway sandbox and
+`packages/sandboxd/` (Node) rounds out the deployed set: the Railway sandbox and
 branded-preview plane the dojo disposable desktop boots on.
 
 ### Services that live outside this repo
 
 Both are live and both are reached from the daemon through an MCP stdio bridge
-in `tools/`, never by importing their Go packages.
+in `protocol/tools/`, never by importing their Go packages.
 
 | Service  | Role                                                                                                     |
 | -------- | -------------------------------------------------------------------------------------------------------- |
@@ -104,7 +104,7 @@ in `tools/`, never by importing their Go packages.
 
 ## Neo, the unified agent
 
-- **One loop** (`neo/internal/agent`): staged turn — `prepareTurn` /
+- **One loop** (`agents/neo/internal/agent`): staged turn — `prepareTurn` /
   `prepareWindow` (the ONE window-assembly site) / `generate` / `deliberate` /
   `closeTurn` / `act` — over a reified per-turn struct. 1M-token window,
   byte-stable prompt prefix for cache hits.
@@ -118,7 +118,7 @@ in `tools/`, never by importing their Go packages.
   and self-model rendered resident in the prompt.
 - **Cassandra 2.0**: an in-process controller that edits the agent's prior
   assistant message in place (doubt/assurance) — no terminal completion gate.
-- **Tool surface** (`neo/internal/tools`): one `tools.Manager` over the MCP
+- **Tool surface** (`agents/neo/internal/tools`): one `tools.Manager` over the MCP
   pool + synthetic tools (`memory_recall`, `spawn_subagents`,
   `construct_render`, `todo`, `workspace_preview`, `save_personalization_profile`,
   `core_execute` when escalated). Restricted advertised sets per mode:
@@ -137,7 +137,7 @@ in `tools/`, never by importing their Go packages.
   coding checkpoint own execution. AgentCore Build dispatch is retained only
   as dormant compatibility code and is disabled, so `build_project` is not
   visible to Neo.
-- **Durability**: task ledger (`neo/internal/task`) supervises every run and
+- **Durability**: task ledger (`agents/neo/internal/task`) supervises every run and
   resumes orphans at boot (briefs resume on their own restricted path);
   conversations, traces, settings, and inboxes are sidecar stores on `/data`,
   all vault-sealed.
@@ -185,18 +185,18 @@ Fly Machines topologies have been retired out of the tree.
 
 ## Where to start reading
 
-- How work happens here: `CLAUDE.md` → `spec/workflow.kvx` → the active
-  feature's `spec/<feature>/spec.kvx`.
-- Neo: `neo/internal/agent/agent.go` (loop) → `neo/internal/server/engine.go`
-  → `neo/internal/tools/tools.go` → `neo/internal/memory/pager.go`.
-- Neocortex: `neocortex/src/` → `neocortex/cmd/cortexd/` →
-  `cortexclient/client.go` → `neo/internal/runtime/loop/neocortex.go`.
-- Cortex compatibility path: `cortex/cortex.go` → `cortex/store/store.go` →
-  `cortex/activate.go` → `cortex/replay/replay.go`.
-- Vault: `vault/` (crypto core) → `cortex/store/vaultseam.go` →
-  `neo/internal/conversation/store.go` (record-AEAD JSONL in practice).
+- How work happens here: `CLAUDE.md` → `protocol/spec/workflow.kvx` → the active
+  feature's `protocol/spec/<feature>/spec.kvx`.
+- Neo: `agents/neo/internal/agent/agent.go` (loop) → `agents/neo/internal/server/engine.go`
+  → `agents/neo/internal/tools/tools.go` → `neo/internal/memory/pager.go`.
+- Neocortex: `core/neocortex/src/` → `core/neocortex/cmd/cortexd/` →
+  `core/cortexclient/client.go` → `agents/neo/internal/runtime/loop/neocortex.go`.
+- Cortex compatibility path: `core/cortex/cortex.go` → `cortex/store/store.go` →
+  `core/cortex/activate.go` → `core/cortex/replay/replay.go`.
+- Vault: `packages/vault/` (crypto core) → `cortex/store/vaultseam.go` →
+  `agents/neo/internal/conversation/store.go` (record-AEAD JSONL in practice).
 - Payments: the money lane from this side is `tools/layerx/layerx.mjs` and
   `tools/deus/deus.mjs`; the ledger and gateway themselves live outside this
   repo.
-- Executor/MCL: `executor/cmd/mcl-execute/daemon_cmd.go` → `MCL/mtx/spec.md`.
+- Executor/MCL: `executor/cmd/mcl-execute/daemon_cmd.go` → `core/mcl/mtx/spec.md`.
 - Deploy: `deploy/railway/`.

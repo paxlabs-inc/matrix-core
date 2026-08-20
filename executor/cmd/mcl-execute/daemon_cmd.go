@@ -30,11 +30,11 @@ import (
 	"syscall"
 	"time"
 
-	"matrix/construct/surfacestore"
-	"matrix/executor/internal/snapshot"
-	machinechronos "matrix/machine/chronos"
-	machineidentity "matrix/machine/identity"
-	"matrix/vault"
+	"centra/packages/construct/surfacestore"
+	"centra/executor/internal/snapshot"
+	machinechronos "centra/packages/machine/chronos"
+	machineidentity "centra/packages/machine/identity"
+	"centra/packages/vault"
 )
 
 // daemonState owns every long-lived dependency the daemon shares
@@ -174,7 +174,7 @@ type daemonState struct {
 	memWriteLim   *memoryWriteLimiter
 
 	// sess#29: LLM endpoint override. Empty falls back to per-provider
-	// default endpoint inside MCL/llm. Set by the Tauri shell after the
+	// default endpoint inside core/mcl/llm. Set by the Tauri shell after the
 	// wizard, OR by CLI -llm-base-url.
 	llmBaseURL string
 
@@ -211,7 +211,7 @@ type daemonState struct {
 	construct *constructState
 
 	// surfaceStore is the Construct OS Shell's durable, per-conversation
-	// surface timeline (construct/surfacestore) — the "never vanishing"
+	// surface timeline (packages/construct/surfacestore) — the "never vanishing"
 	// record. The per-run surface-store tee (daemon_surfacestore.go) is a
 	// sibling of the Construct projector: it subscribes the SAME broker
 	// stream and records every construct.surface[.patch] frame into this
@@ -299,7 +299,7 @@ func runDaemon(args []string) {
 		memoryDisabled        = fs.Bool("memory-disabled", false, "disable the daemon memory subsystem (Neo owns memory through Neocortex)")
 		journalDir            = fs.String("journal-dir", "/root/matrix/journal/logs", "envelope journal directory")
 		transcriptsDir        = fs.String("transcripts-dir", "/root/matrix/journal/logs/_transcripts", "per-message JSONL transcript directory")
-		keyfile               = fs.String("keyfile", "/root/matrix/.matrix/executor.key", "ed25519 seed path (created if absent)")
+		keyfile               = fs.String("keyfile", "/root/matrix/.centra/executor.key", "ed25519 seed path (created if absent)")
 		didLabel              = fs.String("did", "executor", "DID label suffix")
 		defaultSkill          = fs.String("skill-default", "", "default matrix://skill/<slug>@<v> when /messages omits skill")
 		compilerModel         = fs.String("compiler-model", "", "override compiler LLM model")

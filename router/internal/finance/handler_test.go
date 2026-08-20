@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"matrix/router/internal/proxy"
+	"centra/router/internal/proxy"
 )
 
 // call drives the REAL handler with a subject in context, exactly as the JWT

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	cxself "matrix/cortex/self"
+	cxself "centra/core/cortex/self"
 )
 
 // goldenLiaisonIdentity is a byte-for-byte copy of the persona text the Liaison

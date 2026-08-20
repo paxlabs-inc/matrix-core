@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/policy"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/policy"
 )
 
 type LegacyProjectionInput struct {

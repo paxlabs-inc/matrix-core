@@ -7,7 +7,7 @@
  * boundary is served by an in-memory daemon that implements the REAL
  * workspace-write contract byte for byte (atomic replace + base_hash
  * staleness → 409 {stale:true, hash}), mirroring the Go handler proven in
- * neo/internal/server/workspace_test.go.
+ * agents/neo/internal/server/workspace_test.go.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 

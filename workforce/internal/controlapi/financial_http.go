@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"matrix/workforce/internal/provider/financial"
+	"centra/workforce/internal/provider/financial"
 )
 
 func writeFinancialError(writer http.ResponseWriter, err error) {

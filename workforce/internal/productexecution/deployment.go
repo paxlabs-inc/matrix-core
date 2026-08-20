@@ -10,11 +10,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"matrix/workforce/internal/companylifecycle"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
-	"matrix/workforce/internal/effect"
-	"matrix/workforce/internal/productcapability"
+	"centra/workforce/internal/companylifecycle"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
+	"centra/workforce/internal/effect"
+	"centra/workforce/internal/productcapability"
 )
 
 func (store *Store) ExecuteDeployment(ctx context.Context, request DeploymentRequest) (View, error) {

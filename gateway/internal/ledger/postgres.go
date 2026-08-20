@@ -29,7 +29,7 @@ import (
 	"fmt"
 	"time"
 
-	"matrix/gateway/internal/rates"
+	"centra/gateway/internal/rates"
 )
 
 // Postgres is the Ledger implementation backed by database/sql.

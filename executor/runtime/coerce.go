@@ -11,7 +11,7 @@ import (
 
 // coerceArg converts a string-typed PlanTree arg into its likely
 // JSON-friendly type. ir.ToolCallPayload.Args is map[string]string for
-// canonical hashing simplicity (MCL/ir/plan.go:141), but MCP servers
+// canonical hashing simplicity (core/mcl/ir/plan.go:141), but MCP servers
 // expect ints/bools/objects/arrays per their JSON-Schema inputs.
 // Best-effort coercion:
 //

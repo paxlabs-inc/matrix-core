@@ -1,4 +1,4 @@
-module matrix/workforce
+module centra/workforce
 
 go 1.25.0
 
@@ -6,9 +6,9 @@ toolchain go1.25.12
 
 require (
 	github.com/jackc/pgx/v5 v5.9.2
-	matrix/machine v0.0.0
-	matrix/neo v0.0.0
-	matrix/vault v0.0.0
+	centra/packages/machine v0.0.0
+	centra/agents/neo v0.0.0
+	centra/packages/vault v0.0.0
 )
 
 require (
@@ -22,8 +22,8 @@ require (
 	golang.org/x/text v0.39.0 // indirect
 )
 
-replace matrix/vault => ../vault
+replace centra/packages/vault => ../packages/vault
 
-replace matrix/neo => ../neo
+replace centra/agents/neo => ../agents/neo
 
-replace matrix/machine => ../machine
+replace centra/packages/machine => ../packages/machine

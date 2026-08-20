@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"matrix/workforce/internal/founderprojection"
+	"centra/workforce/internal/founderprojection"
 )
 
 func (service *Service) handleFounderProjectionCapture(

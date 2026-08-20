@@ -13,10 +13,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/mission"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/mission"
 )
 
 // Store owns one tenant and organization's Executive policy, review,

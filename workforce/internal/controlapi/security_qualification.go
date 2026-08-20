@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/securityqualification"
+	"centra/workforce/internal/securityqualification"
 )
 
 type SecurityQualificationRequest struct {

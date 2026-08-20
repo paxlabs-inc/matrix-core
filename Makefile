@@ -10,7 +10,7 @@ SHELL              := /usr/bin/env bash
 .SHELLFLAGS        := -eu -o pipefail -c
 .DEFAULT_GOAL      := help
 
-MODULES            := vault cortex cortexclient MCL bridge construct codegraph cassandra machine executor neo router gateway chronos ion
+MODULES            := packages/vault core/cortex core/cortexclient core/mcl bridge packages/construct protocol/codegraph core/cassandra packages/machine executor agents/neo router gateway packages/chronos agents/ion
 GO                 ?= /usr/local/go/bin/go
 GOFLAGS            ?=
 GOTEST_FLAGS       ?= -count=1
@@ -81,18 +81,18 @@ tidy/%:
 install: ## Install runnable binaries into ./bin.
 	$(call HEADER,install binaries)
 	@mkdir -p $(BIN_DIR)
-	@$(GO) -C cortex   build -o $(BIN_DIR)/cortex-shell    ./cmd/cortex-shell
-	@$(GO) -C MCL      build -o $(BIN_DIR)/mclc            ./cmd/mclc
+	@$(GO) -C core/cortex build -o $(BIN_DIR)/cortex-shell    ./cmd/cortex-shell
+	@$(GO) -C core/mcl build -o $(BIN_DIR)/mclc            ./cmd/mclc
 	@$(GO) -C bridge   build -o $(BIN_DIR)/mclc-cortex     ./cmd/mclc-cortex
 	@$(GO) -C executor build -o $(BIN_DIR)/mcl-execute     ./cmd/mcl-execute
 	@$(GO) -C executor build -o $(BIN_DIR)/mcl-tools       ./cmd/mcl-tools
 	@$(GO) -C executor build -o $(BIN_DIR)/mcl-e2e         ./cmd/mcl-e2e
 	@$(GO) -C gateway  build -o $(BIN_DIR)/matrix-gateway  ./cmd/matrix-gateway
 	@$(GO) -C router   build -o $(BIN_DIR)/matrix-router   ./cmd/matrix-router
-	@$(GO) -C neo      build -o $(BIN_DIR)/neo             ./cmd/neo
-	@$(GO) -C chronos  build -o $(BIN_DIR)/chronosd        ./cmd/chronosd
-	@$(GO) -C construct build -o $(BIN_DIR)/construct      ./cmd/construct
-	@$(GO) -C codegraph build -o $(BIN_DIR)/codegraph      ./cmd/codegraph
+	@$(GO) -C agents/neo build -o $(BIN_DIR)/neo             ./cmd/neo
+	@$(GO) -C packages/chronos build -o $(BIN_DIR)/chronosd        ./cmd/chronosd
+	@$(GO) -C packages/construct build -o $(BIN_DIR)/construct      ./cmd/construct
+	@$(GO) -C protocol/codegraph build -o $(BIN_DIR)/codegraph      ./cmd/codegraph
 	@printf "  $(C_GREEN)binaries$(C_RESET) -> $(BIN_DIR)\n"
 	@ls -1 $(BIN_DIR) | sed 's/^/    /'
 
@@ -188,8 +188,8 @@ e2e: ## Run the live mcl-e2e harness (requires FIREWORKS_API_KEY + TOGETHER_API_
 	@$(GO) -C executor run ./cmd/mcl-e2e
 
 .PHONY: e2e-sweep
-e2e-sweep: ## Run the sweep harness wrapper at tools/e2e/run_sweep.sh.
-	@tools/e2e/run_sweep.sh
+e2e-sweep: ## Run the sweep harness wrapper at protocol/tools/e2e/run_sweep.sh.
+	@protocol/tools/e2e/run_sweep.sh
 
 # ---------------------------------------------------------------------------
 ##@ Deploy
@@ -217,13 +217,13 @@ docker-daemon-run: ## Run the daemon container locally (binds 8080 + mounts ./.r
 clean: ## Remove build artefacts, coverage and bin/.
 	$(call HEADER,clean)
 	@rm -rf $(BIN_DIR) $(COVERAGE_DIR)
-	@rm -f cortex/cortex-shell cortex/two-model-smoke cortex/embed-smoke
-	@rm -f MCL/mclc MCL/mcl-fmt MCL/mcl-validate
+	@rm -f core/cortex/cortex-shell core/cortex/two-model-smoke core/cortex/embed-smoke
+	@rm -f core/mcl/mclc core/mcl/mcl-fmt core/mcl/mcl-validate
 	@rm -f bridge/mclc-cortex
 	@rm -f executor/mcl-execute executor/mcl-e2e executor/mcl-tools
 	@rm -f gateway/matrix-gateway
 	@rm -f router/matrix-router
-	@rm -f neo/neo
+	@rm -f agents/neo/neo
 
 .PHONY: verify-modules
 verify-modules: ## Sanity-check every module's go.mod (version + module path).

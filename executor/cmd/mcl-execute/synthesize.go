@@ -12,14 +12,14 @@ import (
 	"strings"
 	"time"
 
-	"matrix/executor/mcp"
-	"matrix/executor/runtime"
-	"matrix/executor/tool"
-	"matrix/mcl/ir"
-	"matrix/mcl/llm"
-	"matrix/mcl/mtx/ast"
-	"matrix/mcl/mtx/interpreter"
-	"matrix/mcl/mtx/parser"
+	"centra/executor/mcp"
+	"centra/executor/runtime"
+	"centra/executor/tool"
+	"centra/core/mcl/ir"
+	"centra/core/mcl/llm"
+	"centra/core/mcl/mtx/ast"
+	"centra/core/mcl/mtx/interpreter"
+	"centra/core/mcl/mtx/parser"
 )
 
 // plannerDecodeTimeout is the per-round HTTP ceiling for the planner LLM
@@ -99,7 +99,7 @@ type synthesizeResult struct {
 //
 // Production semantics:
 //   - Planner LLM is REQUIRED. Returns error on llm.New failure.
-//   - Uses plan_tree@1 grammar (S23Q13 lock in MCL/llm/model.go) which
+//   - Uses plan_tree@1 grammar (S23Q13 lock in core/mcl/llm/model.go) which
 //     the planner slot is pre-configured for (gpt-oss-120b on Fireworks,
 //     recursive $defs/plan_node handling proven). Falls back to
 //     unconstrained decode + retry-on-parse-failure when grammar is
@@ -116,7 +116,7 @@ type synthesizeResult struct {
 //
 //	research/06-agents.md §5.2 (plan synthesis is its own tier per sess#31a)
 //	matrix.kvx sess#31a (SlotPlanner introduced; was conflated under SlotExecutor)
-//	MCL/ir/plan.go:3-8 (IR shared producer+consumer)
+//	core/mcl/ir/plan.go:3-8 (IR shared producer+consumer)
 func synthesize(ctx context.Context, opts synthesizeOpts, t *transcript) (*synthesizeResult, error) {
 	if opts.Skill == nil || opts.Intent == nil || opts.Manifest == nil || opts.Registry == nil {
 		return nil, fmt.Errorf("synthesize: missing required input (skill/intent/manifest/registry)")

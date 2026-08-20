@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func SignStartConfiguration(value *StartConfiguration, keyID string, privateKey ed25519.PrivateKey) error {

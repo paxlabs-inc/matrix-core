@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
-	"matrix/workforce/internal/lease"
-	"matrix/workforce/internal/projectbrain"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
+	"centra/workforce/internal/lease"
+	"centra/workforce/internal/projectbrain"
 )
 
 // ScopeRequest declares the exact project change requested by one fresh wake.

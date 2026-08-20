@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { NeoChatSearch } from '@/components/matrix/neo/neo-chat-search'
-import { MemoryRow } from '@/components/matrix/neo/neo-timeline'
+import { NeoChatSearch } from '@/components/centra/agents/neo/neo-chat-search'
+import { MemoryRow } from '@/components/centra/agents/neo/neo-timeline'
 import { recentActiveConversations, type ConversationSummary } from '@/lib/api/conversations'
 import type { MemoryEntry } from '@/lib/api/memory'
 

@@ -33,7 +33,7 @@ import (
 	"sync"
 	"time"
 
-	"matrix/executor/runtime"
+	"centra/executor/runtime"
 )
 
 // skillSummaryDTO is the wire shape for a skill in list views.

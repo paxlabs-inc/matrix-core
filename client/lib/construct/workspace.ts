@@ -15,8 +15,8 @@
  * deterministic default region rather than throwing or being left unplaced.
  *
  * Like `store.ts`, this module is mirrored faithfully into `apps/mobile`
- * (`src/lib/matrix/construct/workspace.ts`, import path adjusted) so both the web
- * and mobile clients read an identical model. The Go `construct/schema` remains
+ * (`src/lib/centra/packages/construct/workspace.ts`, import path adjusted) so both the web
+ * and mobile clients read an identical model. The Go `packages/construct/schema` remains
  * the source of truth for the `Surface` envelope; only `types.gen.ts` is codegen'd.
  */
 import type { Surface, Kind } from '@/lib/construct/types.gen'

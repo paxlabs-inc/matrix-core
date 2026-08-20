@@ -238,7 +238,7 @@ export interface NeoSearch {
 }
 
 /** One structured market-tool result for Neo's Computer. The payload is the
- * compact model-shaped JSON emitted by tools/finance and contains no vendor
+ * compact model-shaped JSON emitted by protocol/tools/finance and contains no vendor
  * credentials or browser-only state. */
 export interface NeoFinanceEvent {
   id: string

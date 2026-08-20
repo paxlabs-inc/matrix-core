@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/effect"
-	"matrix/workforce/internal/processisolation"
-	"matrix/workforce/internal/projectbrain"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/effect"
+	"centra/workforce/internal/processisolation"
+	"centra/workforce/internal/projectbrain"
+	"centra/workforce/internal/skills"
 )
 
 const (

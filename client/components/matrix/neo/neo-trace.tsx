@@ -12,4 +12,4 @@
 // Deprecated: the flat text trace was replaced by the animated NeoWorkspace
 // viewport (terminal / browser / editor surfaces). This re-export keeps any
 // stale import working; the prop shape (`steps`) is unchanged.
-export { NeoWorkspace as NeoTrace } from '@/components/matrix/neo/neo-workspace'
+export { NeoWorkspace as NeoTrace } from '@/components/centra/agents/neo/neo-workspace'

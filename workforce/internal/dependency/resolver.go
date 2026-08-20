@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 // Snapshot is a complete organization graph at one durable boundary.

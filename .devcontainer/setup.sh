@@ -30,7 +30,7 @@ if [ ! -f "$REPO_ROOT/go.work" ]; then
   (
     cd "$REPO_ROOT"
     $GO work init
-    for mod in MCL bridge cortex executor gateway router neo chronos deus tachyon uwac; do
+    for mod in core/mcl bridge core/cortex executor gateway router agents/neo packages/chronos deus tachyon uwac; do
       [ -f "$mod/go.mod" ] && $GO work use "./$mod"
     done
   )

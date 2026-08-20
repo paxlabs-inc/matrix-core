@@ -12,10 +12,10 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/policy"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/policy"
 )
 
 type MigrationBasis struct {

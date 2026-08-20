@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { screen } from '@testing-library/react'
-import { NeoSurface } from '@/components/matrix/neo/neo-surface'
+import { NeoSurface } from '@/components/centra/agents/neo/neo-surface'
 import { renderWithIntl } from '@/tests/test-utils'
 
 describe('Neo sidebar navigation', () => {

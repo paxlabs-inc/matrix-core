@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/actorstate"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/seatworker"
+	"centra/workforce/internal/actorstate"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/seatworker"
 )
 
 func main() {

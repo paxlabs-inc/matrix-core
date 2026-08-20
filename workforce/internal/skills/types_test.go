@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func TestContract_ValidatesCanonicalDigestAndDriftCeiling(t *testing.T) {

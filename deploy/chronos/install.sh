@@ -77,7 +77,7 @@ done
 [[ -x "$BINARY" ]] || { echo "binary not executable: $BINARY"; exit 1; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MIGRATIONS_SRC="$SCRIPT_DIR/../../chronos/migrations"
+MIGRATIONS_SRC="$SCRIPT_DIR/../../packages/chronos/migrations"
 
 # 1. user/group
 if ! getent group matrix >/dev/null; then
@@ -127,7 +127,7 @@ sleep 1
 systemctl --no-pager status chronosd.service || true
 
 echo "chronosd installed; reachable at http://127.0.0.1:9096 (healthz: /healthz)"
-echo "router side: set ROUTER_WAKE_TOKEN=<same wake token> in /etc/matrix/router.env"
+echo "router side: set ROUTER_WAKE_TOKEN=<same wake token> in /etc/centra/router.env"
 echo "router side: set ROUTER_WORKFORCE_WAKE_TOKEN=<same Workforce wake token>"
 echo "daemon side: set MATRIX_CHRONOS_URL + MATRIX_CHRONOS_TOKEN on each Machine"
 echo "optional public surface: add deploy/chronos/nginx-snippet.conf + reload nginx."

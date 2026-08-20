@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/executor/mcp"
+	"centra/executor/mcp"
 )
 
 // cacheTestManifest builds a manifest with one MCP server exposing a

@@ -35,8 +35,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"matrix/cortex"
-	"matrix/cortex/store"
+	"centra/core/cortex"
+	"centra/core/cortex/store"
 )
 
 func main() {

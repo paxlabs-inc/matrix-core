@@ -10,10 +10,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"matrix/workforce/internal/autonomouscompany"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/learning"
-	"matrix/workforce/internal/portfolio"
+	"centra/workforce/internal/autonomouscompany"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/learning"
+	"centra/workforce/internal/portfolio"
 )
 
 type AutonomousNextCycleExecutor struct {

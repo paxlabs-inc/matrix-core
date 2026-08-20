@@ -33,14 +33,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"matrix/mcl/mtx/ast"
-	"matrix/mcl/mtx/canonical"
-	"matrix/mcl/mtx/parser"
-	"matrix/mcl/mtx/validator"
+	"centra/core/mcl/mtx/ast"
+	"centra/core/mcl/mtx/canonical"
+	"centra/core/mcl/mtx/parser"
+	"centra/core/mcl/mtx/validator"
 )
 
 // DefaultSkillRepoRoot is the canonical filesystem home of the skill
-// corpus (matrix.kvx FOLDERS line 60 — skills/). Tests override via
+// corpus (matrix.kvx FOLDERS line 60 — protocol/skills/). Tests override via
 // SkillLoader.RepoRoot.
 const DefaultSkillRepoRoot = "/root/matrix/skills"
 
@@ -50,7 +50,7 @@ type LoadedSkill struct {
 	// the input URI byte-for-byte modulo normalization (e.g. lowercasing).
 	URI string
 
-	// Slug is the path component (skills/<slug>/).
+	// Slug is the path component (protocol/skills/<slug>/).
 	Slug string
 
 	// Version is the §SKILL.version value from the SKILL.mtx file. Verified

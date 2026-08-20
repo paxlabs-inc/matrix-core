@@ -33,7 +33,7 @@ design's 9 correctness properties, its hard constraints, and the agreed MVP firs
 - **Primitive**: One of the 8 frozen Construct surface kinds: `Narration`, `Metric`, `Entity`,
   `Structure`, `Stream`, `Timeline`, `Canvas`, `Ask`.
 - **Projection**: The server-side mapping of arbitrary agent world-state onto a composition of the 8
-  primitives, performed by `construct/projection`.
+  primitives, performed by `packages/construct/projection`.
 - **Projection coverage**: The property that every distinct agent action maps to at least one
   projected surface, so the environment is never hollow.
 - **Surface_State_Model** (a.k.a. `SurfaceWorkspace`, surface-state model): The shared client-side
@@ -51,7 +51,7 @@ design's 9 correctness properties, its hard constraints, and the agreed MVP firs
   PWA adapter (home-screen/app-grid) and the Desktop Web adapter (windowed/spatial) — sharing one
   model and differing only in layout geometry and chrome.
 - **Surface_Store**: The server-side, per-user, append-only durable persistence of the
-  `construct.surface[.patch]` frame stream, generalizing the F3 `neo/internal/trace` per-run JSONL
+  `construct.surface[.patch]` frame stream, generalizing the F3 `agents/neo/internal/trace` per-run JSONL
   trace and keyed by conversation.
 - **Surface_Feed**: The client consumer that applies both live SSE frames and rehydration frames
   through one reducer (`applySurfaceEvent`).

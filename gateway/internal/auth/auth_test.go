@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/gateway/internal/types"
+	"centra/gateway/internal/types"
 )
 
 var agentCoreTestNow = time.Date(2026, 8, 2, 12, 0, 0, 0, time.UTC)

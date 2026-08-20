@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func (store *Store) recordObservation(

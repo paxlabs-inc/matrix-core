@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"matrix/workforce/internal/securityqualification"
+	"centra/workforce/internal/securityqualification"
 )
 
 func decodeSecurityCommand[T any](writer http.ResponseWriter, request *http.Request) (T, bool) {

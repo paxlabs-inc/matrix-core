@@ -33,7 +33,7 @@ import (
 	"sync"
 	"time"
 
-	"matrix/vault"
+	"centra/packages/vault"
 )
 
 const (

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	neoprovider "matrix/neo/provider"
+	neoprovider "centra/agents/neo/provider"
 )
 
 func TestNewBuildsCanonicalSamplingBinding(t *testing.T) {

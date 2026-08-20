@@ -14,14 +14,14 @@ import (
 	"testing"
 	"time"
 
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/actorstate"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
-	"matrix/workforce/internal/knowledgework"
-	"matrix/workforce/internal/mail"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/actorstate"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
+	"centra/workforce/internal/knowledgework"
+	"centra/workforce/internal/mail"
+	"centra/workforce/internal/skills"
 )
 
 func TestIntegration_ExecutiveResearchLoopUsesFreshWakesTypedMailAndCorrection(t *testing.T) {

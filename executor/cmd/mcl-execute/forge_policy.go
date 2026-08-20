@@ -40,9 +40,9 @@ type ForgeFSPolicy struct {
 
 	// DenyPrefixes are absolute prefixes that, when they match a
 	// cleaned path, hard-deny BOTH read AND write. Match is path-
-	// prefix-with-separator (a deny on "/root/matrix/cortex/store"
-	// rejects "/root/matrix/cortex/store" AND "/root/matrix/cortex/
-	// store/X" but NOT "/root/matrix/cortex/storefoo").
+	// prefix-with-separator (a deny on "/root/centra/core/cortex/store"
+	// rejects "/root/centra/core/cortex/store" AND "/root/centra/core/cortex/
+	// store/X" but NOT "/root/centra/core/cortex/storefoo").
 	DenyPrefixes []string
 
 	// ReadOnlyPrefixes flag specific paths as readable but never
@@ -65,7 +65,7 @@ type ForgeFSPolicy struct {
 // DefaultForgeFSPolicy returns the Phase 1 self-maintenance policy:
 //
 //	AllowRoots       = [/root/matrix]
-//	DenyPrefixes     = [/root/matrix/cortex/store,
+//	DenyPrefixes     = [/root/centra/core/cortex/store,
 //	                    /root/matrix/knowledge,
 //	                    /root/matrix/journal]
 //	ReadOnlyPrefixes = []        (every reachable path is RW)
@@ -79,7 +79,7 @@ func DefaultForgeFSPolicy() *ForgeFSPolicy {
 	return &ForgeFSPolicy{
 		AllowRoots: []string{"/root/matrix"},
 		DenyPrefixes: []string{
-			"/root/matrix/cortex/store",
+			"/root/centra/core/cortex/store",
 			"/root/matrix/knowledge",
 			"/root/matrix/journal",
 		},

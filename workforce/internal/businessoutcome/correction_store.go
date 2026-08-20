@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func (store *Store) ApplyCorrection(ctx context.Context, value Correction) (bool, error) {

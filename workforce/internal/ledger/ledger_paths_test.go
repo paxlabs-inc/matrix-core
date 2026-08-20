@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func TestIntegration_LedgerPublicValidationAndAccessPaths(t *testing.T) {

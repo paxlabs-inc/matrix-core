@@ -16,13 +16,13 @@ import (
 	"strings"
 	"time"
 
-	"matrix/bridge"
-	"matrix/cortex"
-	"matrix/executor/compilecache"
-	"matrix/executor/runtime"
-	"matrix/mcl/ir"
-	"matrix/mcl/llm"
-	"matrix/mcl/mtx/interpreter"
+	"centra/bridge"
+	"centra/core/cortex"
+	"centra/executor/compilecache"
+	"centra/executor/runtime"
+	"centra/core/mcl/ir"
+	"centra/core/mcl/llm"
+	"centra/core/mcl/mtx/interpreter"
 )
 
 // defaultCompileConfidenceThreshold is the frame-confidence floor below
@@ -123,7 +123,7 @@ func (e *errClarifyRequired) Error() string {
 }
 
 // compile compiles prose → Intent via the compiler LLM, grounded in cortex
-// through matrix/bridge. Mirrors bridge/cmd/mclc-cortex/main.go but
+// through centra/bridge. Mirrors bridge/cmd/mclc-cortex/main.go but
 // returns a typed result + supports an interactive clarify loop.
 //
 // Production semantics:

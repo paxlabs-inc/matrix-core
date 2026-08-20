@@ -32,9 +32,9 @@ import (
 	"sync"
 	"time"
 
-	"matrix/router/internal/db"
-	"matrix/router/internal/provision"
-	"matrix/router/internal/workforceauth"
+	"centra/router/internal/db"
+	"centra/router/internal/provision"
+	"centra/router/internal/workforceauth"
 )
 
 // Logf is the optional log sink used by handlers. Cmd/main.go wires

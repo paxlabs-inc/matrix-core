@@ -12,11 +12,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/mission"
-	"matrix/workforce/internal/portfolio"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/mission"
+	"centra/workforce/internal/portfolio"
 )
 
 type Store struct {

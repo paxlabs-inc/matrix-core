@@ -16,8 +16,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import { CentraIcon, ChevronDown } from '@/lib/matrix-icons'
 import { cn } from '@/lib/utils'
 import type { NeoSubAgent, NeoSwarm as NeoSwarmData } from '@/hooks/api/useChat'
-import { NeoWorkspace } from '@/components/matrix/neo/neo-workspace'
-import { AgentProfileCard, AgentProfileMini } from '@/components/matrix/neo/neo-agent-profile-card'
+import { NeoWorkspace } from '@/components/centra/agents/neo/neo-workspace'
+import { AgentProfileCard, AgentProfileMini } from '@/components/centra/agents/neo/neo-agent-profile-card'
 
 const EASE = [0.32, 0.72, 0, 1] as const
 

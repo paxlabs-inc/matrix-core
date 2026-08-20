@@ -18,16 +18,16 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
-	"matrix/workforce/internal/lease"
-	"matrix/workforce/internal/ledger"
-	"matrix/workforce/internal/policy"
-	"matrix/workforce/internal/skills"
-	"matrix/workforce/internal/testauthority"
-	"matrix/workforce/internal/workcompile"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
+	"centra/workforce/internal/lease"
+	"centra/workforce/internal/ledger"
+	"centra/workforce/internal/policy"
+	"centra/workforce/internal/skills"
+	"centra/workforce/internal/testauthority"
+	"centra/workforce/internal/workcompile"
 )
 
 func lineageCanonicalHash[T contracts.Validatable](t *testing.T, value T) contracts.ContentHash {

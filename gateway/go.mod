@@ -1,4 +1,4 @@
-module matrix/gateway
+module centra/gateway
 
 go 1.21
 

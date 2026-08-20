@@ -23,7 +23,7 @@ import (
 	"io"
 	"os"
 
-	"matrix/vault"
+	"centra/packages/vault"
 
 	"github.com/minio/minio-go/v7"
 )

@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"matrix/cortex/memory"
+	"centra/core/cortex/memory"
 )
 
 // --- text helpers (deterministic, zero-dependency) ------------------------

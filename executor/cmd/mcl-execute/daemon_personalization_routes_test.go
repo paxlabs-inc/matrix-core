@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"matrix/cortex"
-	"matrix/cortex/store"
+	"centra/core/cortex"
+	"centra/core/cortex/store"
 )
 
 // newPersonalizationTestDaemon returns a daemonState wired to a real per-actor

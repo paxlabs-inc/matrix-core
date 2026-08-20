@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 type Catalog struct {

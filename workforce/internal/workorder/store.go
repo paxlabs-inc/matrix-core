@@ -11,10 +11,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
 )
 
 var (

@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/companylifecycle"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/initiative"
-	"matrix/workforce/internal/portfolio"
-	"matrix/workforce/internal/productcapability"
-	"matrix/workforce/internal/projectbrain"
-	"matrix/workforce/internal/squad"
+	"centra/workforce/internal/companylifecycle"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/initiative"
+	"centra/workforce/internal/portfolio"
+	"centra/workforce/internal/productcapability"
+	"centra/workforce/internal/projectbrain"
+	"centra/workforce/internal/squad"
 )
 
 const (

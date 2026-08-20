@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"matrix/workforce/internal/learning"
+	"centra/workforce/internal/learning"
 )
 
 func writeLearningError(writer http.ResponseWriter, err error) {

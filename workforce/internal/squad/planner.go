@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/organization"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/organization"
 )
 
 var (

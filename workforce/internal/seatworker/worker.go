@@ -12,7 +12,7 @@ import (
 	"io"
 	"strings"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 const (

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 // ActivationDraft contains founder-entered values before exact local signing.

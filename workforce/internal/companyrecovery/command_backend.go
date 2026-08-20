@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 const recoveryBackendSchemaVersion = "workforce.recovery-backend.v1"

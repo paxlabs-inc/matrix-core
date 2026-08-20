@@ -8,10 +8,10 @@ import (
 	"slices"
 	"time"
 
-	"matrix/workforce/internal/companylifecycle"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/mission"
-	"matrix/workforce/internal/policy"
+	"centra/workforce/internal/companylifecycle"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/mission"
+	"centra/workforce/internal/policy"
 )
 
 // CompileInput contains the already owner-controlled roots and the exact seat

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/projectbrain"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/projectbrain"
 )
 
 // NewProjectBrainProposal projects a verified Product/Design handoff or

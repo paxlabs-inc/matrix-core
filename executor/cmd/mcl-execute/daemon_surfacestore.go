@@ -34,8 +34,8 @@ import (
 	"sync"
 	"time"
 
-	"matrix/construct/schema"
-	"matrix/construct/transport"
+	"centra/packages/construct/schema"
+	"centra/packages/construct/transport"
 )
 
 // surfaceStoreTeeWait bounds how long shutdown blocks for the tee to finish

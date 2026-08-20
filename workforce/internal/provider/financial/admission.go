@@ -8,8 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/effect"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/effect"
 )
 
 func (store *Store) claimDispatch(

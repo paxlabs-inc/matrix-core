@@ -27,7 +27,7 @@ GATEWAY_TOKEN=""
 FIREWORKS_KEY=""
 TOGETHER_KEY=""
 INSTALL_DIR="/opt/matrix-gateway"
-ENV_FILE="/etc/matrix/gateway.env"
+ENV_FILE="/etc/centra/gateway.env"
 SERVICE_FILE="/etc/systemd/system/matrix-gateway.service"
 
 usage() {

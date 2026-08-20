@@ -101,24 +101,24 @@ Centra is a monorepo of independently buildable services and clients. The import
 
 | Component | Responsibility |
 | --- | --- |
-| `neo/` | Primary agent runtime, streaming conversation loop, tools, memory integration, automation, swarms, and delivery. |
+| `agents/neo/` | Primary agent runtime, streaming conversation loop, tools, memory integration, automation, swarms, and delivery. |
 | `ion/` | Technical agent runtime, project intelligence, coding workspace, computer control, security policy, and operator interfaces. |
 | `workforce/` | Governed multi-agent work decomposition, supervision, mission state, and coordinated execution. |
 | `client/` | Next.js product client: chat, coding, Neo Computer, work surfaces, settings, and live state. |
-| `neocortex/` | Deterministic evidence and memory engine with replay-built projections and exact recovery semantics. |
-| `cortex/` | Durable Go memory substrate and compatibility path. |
-| `cortexclient/` | Capability-scoped client and migration seam for Neocortex. |
-| `vault/` | Envelope encryption and per-user data protection. |
+| `core/neocortex/` | Deterministic evidence and memory engine with replay-built projections and exact recovery semantics. |
+| `core/cortex/` | Durable Go memory substrate and compatibility path. |
+| `core/cortexclient/` | Capability-scoped client and migration seam for Neocortex. |
+| `packages/vault/` | Envelope encryption and per-user data protection. |
 | `executor/` | Durable action lifecycle, tool dispatch, checkpoints, and structured high-consequence execution. |
-| `MCL/` | Internal structured-action protocol used where free-form execution is not sufficient. |
+| `core/mcl/` | Internal structured-action protocol used where free-form execution is not sufficient. |
 | `router/` | Authentication, per-user routing, provisioning, wake-up, and reverse proxying. |
 | `gateway/` | Model access, metering, policy, and provider routing. |
-| `chronos/` | Durable schedules, wake events, recurring work, and proactive delivery. |
-| `construct/` | Typed agent-rendered product surfaces and interaction back-channels. |
-| `codegraph/` | Structural code intelligence and agent self-model data. |
-| `sandboxd/` | Bounded workspace and preview substrate. |
-| `skills/` | Reusable capability definitions and execution guidance. |
-| `tools/` | Native bridges for browser, files, shell, search, media, mail, finance, and other systems. |
+| `packages/chronos/` | Durable schedules, wake events, recurring work, and proactive delivery. |
+| `packages/construct/` | Typed agent-rendered product surfaces and interaction back-channels. |
+| `protocol/codegraph/` | Structural code intelligence and agent self-model data. |
+| `packages/sandboxd/` | Bounded workspace and preview substrate. |
+| `protocol/skills/` | Reusable capability definitions and execution guidance. |
+| `protocol/tools/` | Native bridges for browser, files, shell, search, media, mail, finance, and other systems. |
 
 The root Makefile currently drives fifteen Go modules. Compatibility-sensitive machine identifiers such as existing service names, environment variables, protocol headers, and image paths are documented in [BRANDING.md](BRANDING.md).
 
@@ -191,25 +191,25 @@ pnpm build
 ```text
 centra-llm-agents/
 |-- client/          product client and Neo Computer
-|-- neo/             primary agent
+|-- agents/neo/             primary agent
 |-- ion/             technical agent and coding environment
 |-- workforce/       coordinated work system
-|-- cortex/          durable memory substrate
-|-- neocortex/       deterministic evidence engine
-|-- cortexclient/    Neocortex protocol client
+|-- core/cortex/          durable memory substrate
+|-- core/neocortex/       deterministic evidence engine
+|-- core/cortexclient/    Neocortex protocol client
 |-- executor/        durable action lifecycle
 |-- router/          authentication and user routing
 |-- gateway/         model gateway and metering
-|-- chronos/         scheduling and wake system
-|-- vault/           encryption and key boundaries
-|-- construct/       agent-rendered interfaces
-|-- codegraph/       structural code intelligence
-|-- sandboxd/        bounded workspaces and previews
-|-- skills/          reusable agent capabilities
-|-- tools/           native tool bridges
+|-- packages/chronos/         scheduling and wake system
+|-- packages/vault/           encryption and key boundaries
+|-- packages/construct/       agent-rendered interfaces
+|-- protocol/codegraph/       structural code intelligence
+|-- packages/sandboxd/        bounded workspaces and previews
+|-- protocol/skills/          reusable agent capabilities
+|-- protocol/tools/           native tool bridges
 |-- deploy/          service and container packaging
 |-- docs/            architecture and operator documentation
-|-- spec/            source-of-truth feature specifications
+|-- protocol/spec/            source-of-truth feature specifications
 ```
 
 ## Documentation

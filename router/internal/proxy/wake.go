@@ -28,8 +28,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/router/internal/db"
-	"matrix/router/internal/provision"
+	"centra/router/internal/db"
+	"centra/router/internal/provision"
 )
 
 // WakeRequest is the POST /internal/wake body sent by chronosd.

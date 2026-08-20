@@ -3,8 +3,8 @@ package developer_test
 import (
 	"testing"
 
-	"matrix/workforce/internal/developer"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/developer"
+	"centra/workforce/internal/skills"
 )
 
 func TestEveryDeclaredDeveloperSkillOperationHasExecutableAdapterSupport(t *testing.T) {

@@ -1,0 +1,197 @@
+# =============================================================================
+# Centra AI monorepo .gitignore
+# =============================================================================
+
+# --- Secrets ---------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!**/testdata/**/*.key
+*.crt
+deploy/**/secrets/
+# Wallet key material / encrypted keystores.
+*.keystore
+# Tachyon module self-host wallet config (holds keys / ${ENV} refs) — never commit.
+tachyon.config.kvx
+tachyon/tachyon.config.kvx
+marketplace
+# --- Built binaries (one entry per top-level CLI in the 4 modules) --------
+bin/
+core/cortex/cortex-shell
+core/cortex/two-model-smoke
+core/cortex/embed-smoke
+core/mcl/mclc
+core/mcl/mcl-fmt
+core/mcl/mcl-validate
+bridge/mclc-cortex
+executor/mcl-execute
+executor/mcl-e2e
+executor/mcl-tools
+.superpowers/brainstorm
+# --- Go build / test / coverage -------------------------------------------
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+*.cover
+coverage/
+profile.cov
+
+# Go workspace files (we use replace directives in each module's go.mod).
+go.work
+go.work.sum
+
+# --- Runtime data ---------------------------------------------------------
+data/
+tmp/
+*.log
+*.pid
+# Cortex Pebble stores (per-actor DBs land under runs/ or user-specified roots).
+**/cortex-data/
+**/MANIFEST-*
+**/CURRENT
+**/OPTIONS-*
+**/*.sst
+**/*.log.zst
+
+# Vector index files written by core/cortex/embedder.go.
+**/vec/
+
+# Sweep harness outputs.
+protocol/tools/e2e/sweeps/
+sweeps/
+
+# --- Editors / IDEs -------------------------------------------------------
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+.\#*
+\#*\#
+
+# VSCode: keep .vscode/ tracked because it ships the matrix-kvx language
+# extension VSIX, but ignore user-only state.
+.vscode/.history/
+.vscode/launch.json
+.vscode/settings.json
+
+# JetBrains GoLand.
+**/.idea/workspace.xml
+**/.idea/tasks.xml
+**/.idea/shelf/
+
+# --- OS noise -------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# --- Python tooling (protocol/tools/skills/, protocol/tools/e2e/aggregate_sweep.py) ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# --- Node / npm scratch (used only by MCP server install caches) ---------
+node_modules/
+npm-debug.log*
+
+# --- Docker / deploy artefacts -------------------------------------------
+fly.toml
+# Local `make docker-daemon-run` volume mount.
+.run/
+
+# --- Generated docs / static analysis ------------------------------------
+docs/_build/
+site/
+*.bak
+*.orig
+
+# --- Gideon runtime (secrets + local cortex + logs/pids) -----------------
+# gideon.env holds OPENCODE_API_KEY and local config — NEVER commit.
+.matrix/gideon.env
+# Local single-writer Pebble cortex store for the gideon actor.
+.matrix/gideon-cortex/
+# Detached process logs + recorded PIDs for the launch/stop scripts.
+.matrix/logs/
+.matrix/run/
+.matrix/
+executor/gideon-ingest
+executor/mcl-e2e
+executor/mcl-execute
+executor/bin/
+gideon/
+website/
+nohup.out
+apps/
+deploy/deploy.sh
+protocol/tools/forge/
+protocol/skills/gideon-ops
+agents/gideon.json
+packages/construct/IMPLEMENTATION_PLAN.md
+packages/construct/construct.frozen.kvx
+core/cassandra/CASSANDRA_SESSIONS_GUIDE.md
+.claude/settings.json
+
+# --- Feature specs --------------------------------------------------------
+# Ignore EVERY working spec directory; only the specgen tooling and the
+# workflow index are tracked. Git does not track empty directories, so the
+# empty protocol/spec/ working dirs are ignored implicitly as well.
+# /spec is the local-only symlink -> protocol/spec kept for cg spec.
+/spec
+protocol/spec/*
+!protocol/spec/specgen
+!protocol/spec/specgen/**
+!protocol/spec/workflow.kvx
+!protocol/spec/architect-o1/
+protocol/spec/architect-o1/*
+!protocol/spec/architect-o1/hazards.json
+!protocol/spec/neocortex/
+!protocol/spec/neocortex/**
+
+# --- Local-only working material -----------------------------------------
+# Operator inventories, historical design records and the durable knowledge
+# corpus are kept on the box, not in the published tree.
+infra/
+research/
+knowledge/
+scripts/shard-dep.sh
+tmp/
+protocol/spec/oracle/
+protocol/spec/neo-workbench/
+protocol/spec/neo-execution-reliability/
+protocol/spec/kindle-autonomy/
+protocol/spec/continuous-memory/
+protocol/spec/construct-os-shell/
+protocol/spec/cody-smoothness/
+protocol/spec/cody-client
+protocol/spec/browser-filmstrip/
+.artifacts/
+docs/handoffs/
+.cg/
+
+# Local Neo build output (release images build from source).
+agents/neo/neo
+.mimocode/distill-reports/distill-report-2026-08-05-1227.md
+.mimocode/memory/distill.db
+.mimocode/skills/context-handoff/SKILL.md
+.mimocode/skills/go-verify-cycle/SKILL.md
+.mimocode/skills/spec-implementation-loop/SKILL.md
+.mimocode/skills/spec-wave-implement/SKILL.md
+agents/keith/apps/*

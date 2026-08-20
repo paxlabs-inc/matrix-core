@@ -5,10 +5,10 @@
 ## Overview
 
 This plan implements the Construct OS Shell as a **mostly additive** layer over the existing,
-frozen stack: the 8 per-primitive renderers (web `apps/client/components/matrix/construct/*` and
-mobile `apps/mobile/src/components/neo/construct/*`) and the Go `construct/{schema,transport,
+frozen stack: the 8 per-primitive renderers (web `apps/client/components/centra/packages/construct/*` and
+mobile `apps/mobile/src/components/neo/construct/*`) and the Go `packages/construct/{schema,transport,
 projection,backchannel}` packages are **REUSED, not rebuilt**. Server work is Go (a new
-`construct/surfacestore` generalizing `neo/internal/trace`, a thin `GET /construct/state` read
+`packages/construct/surfacestore` generalizing `agents/neo/internal/trace`, a thin `GET /construct/state` read
 route, and a broker tee wired as a sibling of the liaison narrator). Client work is TypeScript
 across both `apps/client` (Next.js web) and `apps/mobile` (Expo/RN), built on a shared
 Surface_State_Model from day one.
@@ -47,9 +47,9 @@ Go `testing/quick` (server), per the design Testing Strategy.
 
 ## MVP First Slice (independently shippable — proves "one persistent home that breathes")
 
-- [x] 1. Server persistence foundation — `construct/surfacestore` (Go, GENERALIZES `neo/internal/trace`)
-  - [x] 1.1 Create the `construct/surfacestore` package generalizing the F3 trace store
-    - Port the `neo/internal/trace` design: async background writer, JSONL append, atomic rollup,
+- [x] 1. Server persistence foundation — `packages/construct/surfacestore` (Go, GENERALIZES `agents/neo/internal/trace`)
+  - [x] 1.1 Create the `packages/construct/surfacestore` package generalizing the F3 trace store
+    - Port the `agents/neo/internal/trace` design: async background writer, JSONL append, atomic rollup,
       `/data`-rooted `Dir(override, cortexRoot)` resolution, disabled (empty-dir) no-op
     - Define `Frame{Seq,Ts,Phase,Type,Fields}` mirroring the daemon SSE Event shape; key by
       `conversationID` (not run); reject `conversationID` containing path separators
@@ -58,7 +58,7 @@ Go `testing/quick` (server), per the design Testing Strategy.
       `Flush`, `Close`
     - Side-channel: no cortex write, no signing, no plan/walk mutation
     - _Requirements: 1.1, 11.1, 15.2, 16.1, 16.2_
-  - [x] 1.2 Port the `neo/internal/trace` unit-test suite to `surfacestore`
+  - [x] 1.2 Port the `agents/neo/internal/trace` unit-test suite to `surfacestore`
     - Async record/flush, atomic rollup at 2×retain, crash-truncated-line skip, disabled no-op,
       path-separator rejection — re-keyed by conversation, asserting `construct.surface[.patch]`
       round-trip
@@ -72,7 +72,7 @@ Go `testing/quick` (server), per the design Testing Strategy.
 - [x] 2. Rehydration read path — `GET /construct/state` (Go, NEW thin route) + codegen
   - [x] 2.1 Define `Frame`/`StateResponse` as codegen'd wire types and regenerate client types
     - Add the persisted `Frame` and `StateResponse{ConversationID,Frames,LastSeq}` to the Go
-      schema codegen source (`construct/internal/codegen`) and regenerate
+      schema codegen source (`packages/construct/internal/codegen`) and regenerate
       `apps/client/lib/construct/types.gen.ts` (and the mobile mirror) — never hand-edit generated output
     - _Requirements: 14.2, 15.1_
   - [x] 2.2 Implement the read-only `GET /construct/state?conversation_id=&since_seq=` daemon route
@@ -279,7 +279,7 @@ Go `testing/quick` (server), per the design Testing Strategy.
     - _Requirements: 4.1, 4.2, 4.5, 10.3_
 
 - [ ] 14. E5 — Projection coverage audit + close gaps (Go, server-side)
-  - [ ] 14.1 Audit `construct/projection` against the frozen `[coverage]` map
+  - [ ] 14.1 Audit `packages/construct/projection` against the frozen `[coverage]` map
     - Compare every distinct agent action (tool result, chain tx, browser, memory, plan/swarm,
       async, cost, human-ask) against the frozen coverage map; record gaps where an action has no projector
     - _Requirements: 9.1, 9.2_
@@ -319,8 +319,8 @@ Go `testing/quick` (server), per the design Testing Strategy.
 - The MVP slice (tasks 1–9) is independently shippable: it delivers persistence + rehydration, a
   live activity Timeline, one level of descent, frame inversion on one adapter, the shared model,
   and a verified-live Ask back-channel — then proves the side-channel (D11) invariant holds.
-- Reuse-vs-new is explicit: tasks 1.1 and 4.3 generalize/extend existing code (`neo/internal/trace`,
-  `store.ts`); the 8 renderers and the `construct/{schema,transport,projection,backchannel}` packages
+- Reuse-vs-new is explicit: tasks 1.1 and 4.3 generalize/extend existing code (`agents/neo/internal/trace`,
+  `store.ts`); the 8 renderers and the `packages/construct/{schema,transport,projection,backchannel}` packages
   are reused untouched; only `surfacestore`, the read route, the shared model, the feed hydrate path,
   and the shell adapters are new.
 - Each task references the requirement clauses (R1–R17) and/or the design correctness property it

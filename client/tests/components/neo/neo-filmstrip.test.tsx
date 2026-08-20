@@ -20,8 +20,8 @@ vi.mock('@/lib/api/media', () => ({
 }))
 
 import { buildTaskFromTrace } from '@/hooks/api/useChat'
-import { NeoComputer } from '@/components/matrix/neo/neo-computer'
-import { NeoWorkspace } from '@/components/matrix/neo/neo-workspace'
+import { NeoComputer } from '@/components/centra/agents/neo/neo-computer'
+import { NeoWorkspace } from '@/components/centra/agents/neo/neo-workspace'
 
 /** A browser tool.step trace frame exactly as the server persists it
  *  (surfaceTool → traceWorkspaceTypes → handleTrace). */

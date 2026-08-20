@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { WorkforceCommandCenter } from '@/components/matrix/workforce/workforce-command-center'
+import { WorkforceCommandCenter } from '@/components/centra/workforce/workforce-command-center'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'

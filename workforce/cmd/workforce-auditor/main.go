@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"matrix/workforce/internal/auditorworker"
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/auditorworker"
+	"centra/workforce/internal/contracts"
 )
 
 var version = "dev"

@@ -9,7 +9,7 @@
  * profile — all through Neo's OWN authenticated routes (Neo owns these; the
  * co-located daemon runs a separate cortex actor).
  *
- * Neo server routes (neo/internal/server):
+ * Neo server routes (agents/neo/internal/server):
  *   GET  /memory/recent?limit=      newest-first across all types
  *   GET  /memory/types              distinct type counts
  *   POST /memory/search             body-driven complex query

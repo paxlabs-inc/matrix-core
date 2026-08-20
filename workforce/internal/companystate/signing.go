@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func SignRecord(record *Record, keyID string, privateKey ed25519.PrivateKey) error {

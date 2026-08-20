@@ -6,7 +6,7 @@
 //
 // Single source of truth: every other internal package consumes header
 // names from here so a rename never produces a silent header-mismatch
-// regression. The daemon-side counterpart (MCL/llm + the executor
+// regression. The daemon-side counterpart (core/mcl/llm + the executor
 // daemon) hard-codes the same strings; if these change, both ends MUST
 // update together.
 package types
@@ -80,13 +80,13 @@ const (
 	// observability side-channel that humanizes plan/walk events for the
 	// user. It does not drive work. Reuses already-priced models.
 	SlotLiaison = "liaison"
-	// SlotNeo is the Neo default conversational AGENT (matrix/neo): the
+	// SlotNeo is the Neo default conversational AGENT (centra/agents/neo): the
 	// first-class function-calling agent that fronts the per-user runtime,
 	// runs its own tools, and delegates rigorous/money tasks to MCL. Neo is
 	// NOT the Liaison (which only narrates) — it gets its OWN slot so its
 	// LLM spend is metered under its own identity. See rates.FreeTierWhitelist.
 	SlotNeo = "neo"
-	// SlotCassandra is the epistemic-completeness faculty (matrix/cassandra):
+	// SlotCassandra is the epistemic-completeness faculty (centra/core/cassandra):
 	// the cross-rail auditor that adjudicates whether a claimed completion is
 	// actually grounded before an agent may terminate/attest. The MCL
 	// completeness critic routes here (was the planner slot); Cassandra

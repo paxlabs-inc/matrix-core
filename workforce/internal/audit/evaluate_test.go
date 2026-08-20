@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func TestEvaluateDeterministicPredicatesAndSemanticEscalation(t *testing.T) {
@@ -264,11 +264,11 @@ func TestAuditorDependencyGraphExcludesCognitionAndKernelStores(t *testing.T) {
 		t.Fatal(err)
 	}
 	forbidden := []string{
-		"matrix/neo", "matrix/cortex", "matrix/vault", "github.com/jackc/pgx",
-		"matrix/workforce/internal/approval", "matrix/workforce/internal/actorstate",
-		"matrix/workforce/internal/effect", "matrix/workforce/internal/ledger",
-		"matrix/workforce/internal/mail", "matrix/workforce/internal/policy",
-		"matrix/workforce/internal/projectbrain",
+		"centra/agents/neo", "centra/core/cortex", "centra/packages/vault", "github.com/jackc/pgx",
+		"centra/workforce/internal/approval", "centra/workforce/internal/actorstate",
+		"centra/workforce/internal/effect", "centra/workforce/internal/ledger",
+		"centra/workforce/internal/mail", "centra/workforce/internal/policy",
+		"centra/workforce/internal/projectbrain",
 	}
 	for _, dependency := range strings.Fields(string(output)) {
 		for _, prefix := range forbidden {

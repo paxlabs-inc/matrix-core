@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"time"
 
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/skills"
 )
 
 const commandOutputLimit = 256 << 10

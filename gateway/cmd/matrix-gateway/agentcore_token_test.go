@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"matrix/gateway/internal/auth"
-	"matrix/gateway/internal/types"
+	"centra/gateway/internal/auth"
+	"centra/gateway/internal/types"
 )
 
 func TestLoadAgentCoreVerificationKeysIncludesActiveAndRotatedKeys(t *testing.T) {

@@ -212,7 +212,7 @@ build_daemon_argv() {
         -skills-root "${MATRIX_HOME}/skills"
         -journal-dir "${DATA_DIR}/journal"
         -transcripts-dir "${DATA_DIR}/transcripts"
-        -keyfile "${DATA_DIR}/.matrix/executor.key"
+        -keyfile "${DATA_DIR}/.centra/executor.key"
         -did "${MATRIX_USER_ID:-executor}"
         -snapshot-data-dir "${DATA_DIR}"
         -workspace-root "${MATRIX_WORKSPACE_ROOT:-${DATA_DIR}/workspace}"
@@ -387,7 +387,7 @@ start_neocortex() {
 # start_local_browser -> boot the PER-USER Playwright MCP (@playwright/mcp,
 # baked into the image) on loopback and point MATRIX_BROWSER_URL at it
 # (BROWSER-FILMSTRIP req.1). The daemon-side stdio bridge
-# (tools/browser/browser.mjs) forwards to it unchanged in wire shape; it
+# (protocol/tools/browser/browser.mjs) forwards to it unchanged in wire shape; it
 # answers initialize/tools/list locally and dials lazily, so a browser that is
 # still booting (or crashed) never bricks daemon boot — browser_* calls just
 # return a structured error until it is up. A tiny restart loop revives a

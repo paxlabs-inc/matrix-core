@@ -16,8 +16,8 @@ import {
   NeoAssistantMessage,
   NeoLiveTurn,
   NeoUserMessage,
-} from '@/components/matrix/neo/neo-message'
-import { NeoComposer, type NeoMode } from '@/components/matrix/neo/neo-composer'
+} from '@/components/centra/agents/neo/neo-message'
+import { NeoComposer, type NeoMode } from '@/components/centra/agents/neo/neo-composer'
 import { ArtifactCards } from '@/components/matrix/cody/artifact-card'
 import { isNearBottom } from '@/lib/cody/scroll'
 

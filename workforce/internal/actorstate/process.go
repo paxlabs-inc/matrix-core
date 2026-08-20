@@ -7,9 +7,9 @@ import (
 	"io"
 	"reflect"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/processisolation"
-	"matrix/workforce/internal/seatworker"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/processisolation"
+	"centra/workforce/internal/seatworker"
 )
 
 const (

@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [MCL, bridge, gateway, router]
+        module: [core/mcl, bridge, gateway, router]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -58,7 +58,7 @@ jobs:
           while IFS= read -r -d '' f; do
             found=1
             shellcheck -x "$f"
-          done < <(find deploy tools -type f -name "*.sh" -print0 2>/dev/null || true)
+          done < <(find deploy protocol/tools -type f -name "*.sh" -print0 2>/dev/null || true)
           if [ "$found" = "0" ]; then
             echo "no shell scripts found — skipping"
           fi

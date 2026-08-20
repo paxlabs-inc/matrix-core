@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/policy"
-	"matrix/workforce/internal/testauthority"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/policy"
+	"centra/workforce/internal/testauthority"
 )
 
 func TestSamplingPolicyAndProofHelpersCoverEveryBoundary(t *testing.T) {

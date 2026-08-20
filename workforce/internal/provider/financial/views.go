@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 type IncidentView struct {

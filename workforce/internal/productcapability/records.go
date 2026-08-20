@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 // MetricDefinition is the exact Business Analytics identity used for a KPI.

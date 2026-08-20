@@ -5,7 +5,7 @@
 //
 // Production layout: the router runs from deploy/router/Dockerfile with its
 // environment supplied by the platform. On a systemd host it instead reads
-// /etc/matrix/router.env + /etc/matrix/postgres.env, both mode 0640 owned by
+// /etc/centra/router.env + /etc/matrix/postgres.env, both mode 0640 owned by
 // root:matrix and readable only by the service user.
 //
 // Required envs at minimum:

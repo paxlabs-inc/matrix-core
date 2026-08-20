@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"matrix/workforce/internal/audit"
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/audit"
+	"centra/workforce/internal/contracts"
 )
 
 func main() {

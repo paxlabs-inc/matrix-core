@@ -34,13 +34,13 @@ import (
 	"sync"
 	"testing"
 
-	"matrix/cortex"
-	"matrix/cortex/store"
-	"matrix/executor/compilecache"
-	"matrix/executor/runtime"
-	"matrix/mcl/ir"
-	"matrix/mcl/llm"
-	"matrix/mcl/mtx/interpreter"
+	"centra/core/cortex"
+	"centra/core/cortex/store"
+	"centra/executor/compilecache"
+	"centra/executor/runtime"
+	"centra/core/mcl/ir"
+	"centra/core/mcl/llm"
+	"centra/core/mcl/mtx/interpreter"
 )
 
 // abLLM is a deterministic stand-in for the compiler LLM. Returns

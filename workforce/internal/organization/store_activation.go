@@ -7,9 +7,9 @@ import (
 	"slices"
 
 	"github.com/jackc/pgx/v5"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 type TemplateActivationResult struct {

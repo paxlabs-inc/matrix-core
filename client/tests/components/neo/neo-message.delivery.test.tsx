@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import userEvent from '@testing-library/user-event'
-import { NEO_PROSE_CLASS, NeoAssistantMessage } from '@/components/matrix/neo/neo-message'
+import { NEO_PROSE_CLASS, NeoAssistantMessage } from '@/components/centra/agents/neo/neo-message'
 import type { ChatMessage } from '@/hooks/api/useChat'
 import { renderWithIntl, screen } from '@/tests/test-utils'
 

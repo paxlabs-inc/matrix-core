@@ -5,8 +5,8 @@ import (
 	"crypto/ed25519"
 	"fmt"
 
-	"matrix/workforce/internal/audit"
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/audit"
+	"centra/workforce/internal/contracts"
 )
 
 // Auditor is the workforced-owned Developer review boundary. It assembles and

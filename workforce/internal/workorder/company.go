@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/mission"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/mission"
 )
 
 const CompanyOrderSchemaVersion = "workforce.company-work-order.v1"

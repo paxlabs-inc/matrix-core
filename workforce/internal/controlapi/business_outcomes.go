@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"matrix/workforce/internal/businessoutcome"
+	"centra/workforce/internal/businessoutcome"
 )
 
 func (service *Service) authorizedBusinessOutcomeStore(

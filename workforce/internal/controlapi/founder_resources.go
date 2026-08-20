@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"matrix/workforce/internal/mission"
+	"centra/workforce/internal/mission"
 )
 
 type authorityProjectionMeta struct {

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sort"
 
-	"matrix/workforce/internal/businessoutcome"
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/businessoutcome"
+	"centra/workforce/internal/contracts"
 )
 
 // Coordinator binds the commercial execution's final measurement phase to the

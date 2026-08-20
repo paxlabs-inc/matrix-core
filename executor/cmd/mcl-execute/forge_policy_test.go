@@ -54,14 +54,14 @@ func TestDefaultForgeFSPolicy_AllowDeny(t *testing.T) {
 		expectedErr error // expected sentinel from CheckRead OR CheckWrite (read-first)
 	}{
 		// Reachable + writable
-		{"/root/matrix/cortex/keys/keys.go", true, true, nil},
+		{"/root/centra/core/cortex/keys/keys.go", true, true, nil},
 		{"/root/matrix/MCL/llm/identity.go", true, true, nil},
 		{"/root/matrix/skills/brainstorming/SKILL.mtx", true, true, nil},
 		{"/root/matrix", true, true, nil},
 
 		// Reachable parent but denied child (the cortex/store DB)
-		{"/root/matrix/cortex/store", false, false, ErrPathDenied},
-		{"/root/matrix/cortex/store/000001.sst", false, false, ErrPathDenied},
+		{"/root/centra/core/cortex/store", false, false, ErrPathDenied},
+		{"/root/centra/core/cortex/store/000001.sst", false, false, ErrPathDenied},
 
 		// Reachable parent but denied (knowledge — kvx + whitepaper)
 		{"/root/matrix/knowledge/matrix.kvx", false, false, ErrPathDenied},
@@ -70,7 +70,7 @@ func TestDefaultForgeFSPolicy_AllowDeny(t *testing.T) {
 		{"/root/matrix/journal/logs/intent-abc/0001.json", false, false, ErrPathDenied},
 
 		// Sibling that shares a textual prefix — must NOT be denied
-		{"/root/matrix/cortex/storefoo", true, true, nil},
+		{"/root/centra/core/cortex/storefoo", true, true, nil},
 
 		// Outside the allowlist entirely
 		{"/etc/passwd", false, false, ErrPathOutsideAllowlist},

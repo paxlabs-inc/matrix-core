@@ -37,9 +37,9 @@ import (
 	"syscall"
 	"time"
 
-	"matrix/cortex"
-	"matrix/executor/runtime"
-	"matrix/mcl/ir"
+	"centra/core/cortex"
+	"centra/executor/runtime"
+	"centra/core/mcl/ir"
 )
 
 // runWalk parses flags + dispatches the walk pipeline. Exits non-zero
@@ -57,7 +57,7 @@ func runWalk(args []string) {
 		cortexActor    = fs.String("cortex-actor", "executor", "cortex actor namespace")
 		journalDir     = fs.String("journal-dir", "/root/matrix/journal/logs", "envelope journal directory")
 		transcriptPath = fs.String("transcript", "", "JSONL transcript path (empty=stderr only)")
-		keyfile        = fs.String("keyfile", "/root/matrix/.matrix/executor.key", "ed25519 seed path (created if absent)")
+		keyfile        = fs.String("keyfile", "/root/matrix/.centra/executor.key", "ed25519 seed path (created if absent)")
 		didLabel       = fs.String("did", "executor", "DID label suffix")
 		compilerModel  = fs.String("compiler-model", "", "override compiler LLM model")
 		executorModel  = fs.String("executor-model", "", "override executor LLM model")

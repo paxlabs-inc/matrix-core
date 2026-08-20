@@ -1,8 +1,8 @@
 package audit
 
 import (
-	"matrix/workforce/internal/auditorworker"
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/auditorworker"
+	"centra/workforce/internal/contracts"
 )
 
 type Decision = auditorworker.Decision

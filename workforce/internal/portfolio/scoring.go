@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/companystate"
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/companystate"
+	"centra/workforce/internal/contracts"
 )
 
 // Candidate binds one opportunity to its current independent assessment.

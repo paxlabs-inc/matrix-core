@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"matrix/executor/tool"
+	"centra/executor/tool"
 )
 
 // ActorIdentity bundles the test actor's keypair + DID URI used as the

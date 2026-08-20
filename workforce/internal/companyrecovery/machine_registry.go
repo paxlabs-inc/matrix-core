@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 // RegisterMachineKey installs one founder-signed machine identity version for

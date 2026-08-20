@@ -9,11 +9,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"matrix/workforce/internal/companylifecycle"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/productcapability"
-	"matrix/workforce/internal/squad"
-	"matrix/workforce/internal/workorder"
+	"centra/workforce/internal/companylifecycle"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/productcapability"
+	"centra/workforce/internal/squad"
+	"centra/workforce/internal/workorder"
 )
 
 func (store *Store) CompleteProduct(ctx context.Context, request ReceiptRequest) (View, error) {

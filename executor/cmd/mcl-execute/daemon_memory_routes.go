@@ -28,9 +28,9 @@ import (
 	"sort"
 	"strings"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
-	"matrix/cortex/query"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
+	"centra/core/cortex/query"
 )
 
 // memorySummaryDTO is the wire-shape returned for a single memory.

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	"matrix/workforce/internal/commercialcapability"
-	"matrix/workforce/internal/provider/customer"
-	"matrix/workforce/internal/provider/external"
+	"centra/workforce/internal/commercialcapability"
+	"centra/workforce/internal/provider/customer"
+	"centra/workforce/internal/provider/external"
 )
 
 func writeOperatingRecordError(writer http.ResponseWriter, err error) {

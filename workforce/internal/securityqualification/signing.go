@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 func SignThreatModel(value *ThreatModel, keyID string, key ed25519.PrivateKey) error {

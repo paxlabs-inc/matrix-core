@@ -13,11 +13,11 @@ Every layer that exists is exercised in production-like configuration.
 | Layer | What gets tested |
 |-------|------------------|
 | `cortex` | Pebble store, deterministic clock + IDs, real `embed.APIEmbedder` against Fireworks `/v1/embeddings`, Snapshot, Attest, EMA weight learning, `Rebuild` byte-identical replay (§13.4) |
-| `MCL/mtx` | parser, validator, canonical AST hash (`mtx_digest`) |
-| `MCL/llm` | real `APIClient` against Fireworks DeepSeek-V4-Flash and Together openai/gpt-oss-120b with grammar-constrained decode |
-| `MCL/mtx/interpreter` | real on-block execution against real LLM via `bridge.Adapter` |
-| `MCL/ir` | Intent + PlanTree typed IR, canonical JSON, content-address hash, `ValidatePlan` 11 invariants |
-| `MCL/envelope` | 15 typed body kinds, ed25519 sign + Verify, on-disk JSON journal, SelfHash |
+| `core/mcl/mtx` | parser, validator, canonical AST hash (`mtx_digest`) |
+| `core/mcl/llm` | real `APIClient` against Fireworks DeepSeek-V4-Flash and Together openai/gpt-oss-120b with grammar-constrained decode |
+| `core/mcl/mtx/interpreter` | real on-block execution against real LLM via `bridge.Adapter` |
+| `core/mcl/ir` | Intent + PlanTree typed IR, canonical JSON, content-address hash, `ValidatePlan` 11 invariants |
+| `core/mcl/envelope` | 15 typed body kinds, ed25519 sign + Verify, on-disk JSON journal, SelfHash |
 | `bridge` | `Adapter` wiring `interpreter.Cortex` to live `*cortex.Cortex` |
 | `executor/lifecycle` | full state-machine surface (drafting → proposed → clarifying → accepted → executing + non-material correct self-loop + material correct rewind → completed) |
 | `executor/mcp` | JSON-RPC 2.0 client over real stdio subprocesses, `Manager.verifyTools` Q21 manifest match |
@@ -41,7 +41,7 @@ runs/20260524-124557/
 ├── A/
 │   ├── workspace/           ← fs-mcp jail (real files written/read here)
 │   ├── repo/                ← git-mcp jail (initialised git repo)
-│   ├── cortex/              ← Pebble store
+│   ├── core/cortex/              ← Pebble store
 │   ├── journal/<intentID>/  ← signed envelope JSON files (one per kind)
 │   ├── agent-manifest.json  ← synthesised tool.AgentManifest
 │   ├── transcript.jsonl     ← per-event JSONL audit log
@@ -55,7 +55,7 @@ runs/20260524-124557/
 
 1. **Setup** — generate ed25519 keypair from fixed seed, build `tool.AgentManifest` with synthesised Q22-compliant `sha256:<64hex>` `package_digest` per server, spawn `fs` + `fetch` + `git` MCP servers via real `npx`/`uvx` subprocesses, `Manager.verifyTools` exact tool-list match.
 2. **Seed cortex** — write Identity + 2 Facts + Goal + Constraint + Pattern under fixed clock + deterministic ID generator → byte-stable post-seed `OverallRoot`. Drain real Fireworks embedder. Snapshot baseline.
-3. **Compile Intent** — parse + validate `skills/writing-plans/SKILL.mtx` (deterministic mtx_digest), real LLM compile via `bridge.Adapter`, decode `FrameJSON` → `ir.Intent`, canonical-JSON hash.
+3. **Compile Intent** — parse + validate `protocol/skills/writing-plans/SKILL.mtx` (deterministic mtx_digest), real LLM compile via `bridge.Adapter`, decode `FrameJSON` → `ir.Intent`, canonical-JSON hash.
 4. **Envelope + lifecycle** — sign `intent.draft` body via ed25519 + persist → drafting → proposed → clarifying → proposed → accepted (4 lifecycle transitions, 4 envelopes).
 5. **PlanTree** — hand-build a 6-node `ir.PlanTree` (Sequential containing Sequential fs roundtrip + Parallel reads + ToolCall fetch + Step kind-coverage). `ir.ValidatePlan` enforces all 11 invariants, plan.proposed envelope → executing.
 6. **Walk plan against real MCP** — DFS through plan, parallel branches concurrent. Each `tool_call` → `Registry.Get` → real subprocess MCP `tools/call`. Result captured as cortex Event memory + signed `plan.step` envelope. Then non-material `intent.correct` (executing → executing self-loop) + material `intent.correct` (executing → accepted) + replanning (accepted → executing).
@@ -97,7 +97,7 @@ export PATH=$HOME/.local/bin:$PATH
 ## How to run
 
 ```bash
-# from /root/matrix/executor
+# from /root/centra/executor
 go build -o /tmp/mcl-e2e ./cmd/mcl-e2e
 
 # full 3-run cycle (~6 min, real API calls)

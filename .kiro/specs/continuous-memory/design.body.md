@@ -5,7 +5,7 @@
 **Continuous Memory** makes **cortex** the *self-managing memory brain* of a Centra AI agent.
 Today the brain is split: cortex is a durable, tamper-evident store, but the agent (Neo) runs its
 own parallel controller on top of it — `neo/internal/memory/pager.go` does selection, ranking and
-recency re-ranking; `a.summary` / `a.compact` (`neo/internal/agent/agent.go`) keep an ephemeral
+recency re-ranking; `a.summary` / `a.compact` (`agents/neo/internal/agent/agent.go`) keep an ephemeral
 "story so far" per process; the transcript lives only in the agent's in-memory `working` slice.
 cortex's own `Context()` composer and `Compact()` primitive have **no Neo consumer**. That is the
 split brain we are closing.
@@ -92,16 +92,16 @@ arXiv 2512.24601) insight applied to *time* rather than a single long prompt. Ex
 
 | Concern | Location | State |
 |---------|----------|-------|
-| Linear event log (time + seq axis) | `cortex/journal/journal.go:471-482` (`Entry{Seq,Kind,CreatedAt,Payload}`, per-actor monotonic gap-free, MMR-anchored) | Exists; low-level write log, not episodic narrative |
-| Rollup primitive (summarize + link) | `cortex/compact.go:241` `Compact()`; item shape `:87-91`; load `:534` | Exists; intent/step-keyed, agent-invoked, no cascade |
-| Derived-not-anchored lane | `cortex/compact.go:429-431` (journal + `chk/` record, **no SMT write**) | The posture the whole feature rides |
-| Tiered assembler + invocation handle | `cortex/context.go:259` `Context()`; `ReachableURIs` `:213` (cap 64); `tierOutcomes` `:612` | Exists; tiers are Pinned/Frame/Outcomes, not coarse/mid/recent temporal |
-| Invocation / recall tool | `neo/internal/tools/tools.go:45`, `RecallFunc:132`, `as_of:843` | Exists; **flat** lookup, bi-temporal works, not recursive |
+| Linear event log (time + seq axis) | `core/cortex/journal/journal.go:471-482` (`Entry{Seq,Kind,CreatedAt,Payload}`, per-actor monotonic gap-free, MMR-anchored) | Exists; low-level write log, not episodic narrative |
+| Rollup primitive (summarize + link) | `core/cortex/compact.go:241` `Compact()`; item shape `:87-91`; load `:534` | Exists; intent/step-keyed, agent-invoked, no cascade |
+| Derived-not-anchored lane | `core/cortex/compact.go:429-431` (journal + `chk/` record, **no SMT write**) | The posture the whole feature rides |
+| Tiered assembler + invocation handle | `core/cortex/context.go:259` `Context()`; `ReachableURIs` `:213` (cap 64); `tierOutcomes` `:612` | Exists; tiers are Pinned/Frame/Outcomes, not coarse/mid/recent temporal |
+| Invocation / recall tool | `agents/neo/internal/tools/tools.go:45`, `RecallFunc:132`, `as_of:843` | Exists; **flat** lookup, bi-temporal works, not recursive |
 | Pager recall backing | `neo/internal/memory/pager.go:707` (`RecallHits`), `:781` (`Recall`) | Exists; to be absorbed into cortex |
-| Neo turn assembly | `neo/internal/agent/agent.go:430` (`Chat`), pinned `:556`, ambient knob `:537`, recall `:1079`, transcript compaction `:562` (`a.summary` + `a.compact`) | `cortex.Compact`/`Context` **not consumed** — the integration gap |
-| Render tail (tier inject point) | `neo/internal/agent/prompt.go:70` (`dynamicTail`) | Attach point for the T0/T1 sections of the activation bundle |
-| Recency ranking substrate | `cortex/salience/salience.go:209-216` (`R=exp(-Δt/90d)`), Neo per-type multiplier `pager.go:519-526` | Substrate for T1 |
-| Event volume type / no Data timestamp | `cortex/memory/data.go:148-159` (`EventData`; `created_at` lives on the Version, not in Data) | Storage-shape input |
+| Neo turn assembly | `agents/neo/internal/agent/agent.go:430` (`Chat`), pinned `:556`, ambient knob `:537`, recall `:1079`, transcript compaction `:562` (`a.summary` + `a.compact`) | `cortex.Compact`/`Context` **not consumed** — the integration gap |
+| Render tail (tier inject point) | `agents/neo/internal/agent/prompt.go:70` (`dynamicTail`) | Attach point for the T0/T1 sections of the activation bundle |
+| Recency ranking substrate | `core/cortex/salience/salience.go:209-216` (`R=exp(-Δt/90d)`), Neo per-type multiplier `pager.go:519-526` | Substrate for T1 |
+| Event volume type / no Data timestamp | `core/cortex/memory/data.go:148-159` (`EventData`; `created_at` lives on the Version, not in Data) | Storage-shape input |
 
 ## What exists vs. the gap
 
@@ -139,7 +139,7 @@ func (c *Cortex) Transcript(ctx, conv string, sinceSeq uint64, limit int) ([]Mes
 ```
 
 - A large `ToolResult` spills to a resolvable ref (the same overflow discipline as
-  `neo/internal/agent/overflow.go`) so the transcript store never bloats with megabyte payloads —
+  `agents/neo/internal/agent/overflow.go`) so the transcript store never bloats with megabyte payloads —
   it stays a page-in target (T3), not resident.
 - `AppendMessage` appends a derived-kind journal entry (durability + rebuild) and a `sess/`
   record; **no SMT write** — identical posture to `Compact`.

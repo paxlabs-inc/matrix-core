@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"matrix/workforce/internal/ledger"
+	"centra/workforce/internal/ledger"
 )
 
 func ApplyMigrations(

@@ -14,14 +14,14 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/approval"
-	"matrix/workforce/internal/circuit"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/lease"
-	"matrix/workforce/internal/policy"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/approval"
+	"centra/workforce/internal/circuit"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/lease"
+	"centra/workforce/internal/policy"
+	"centra/workforce/internal/skills"
 )
 
 // Gateway is the single local writer for external effects.

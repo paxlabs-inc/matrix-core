@@ -31,7 +31,7 @@
  * to it on hover/focus, and no competing accent is introduced.
  */
 import { cn } from '@/lib/utils'
-import { SurfaceRenderer, type SurfaceHandlers } from '@/components/matrix/construct'
+import { SurfaceRenderer, type SurfaceHandlers } from '@/components/centra/packages/construct'
 import { resolveLink, type Linkable } from '@/lib/construct/focus'
 import type { PlacedSurface } from '@/lib/construct/workspace'
 import type { TimelineStep } from '@/lib/construct/types.gen'

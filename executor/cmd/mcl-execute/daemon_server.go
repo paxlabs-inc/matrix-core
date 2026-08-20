@@ -36,7 +36,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	machinechronos "matrix/machine/chronos"
+	machinechronos "centra/packages/machine/chronos"
 )
 
 // newDaemonMux assembles the HTTP routes for the daemon.

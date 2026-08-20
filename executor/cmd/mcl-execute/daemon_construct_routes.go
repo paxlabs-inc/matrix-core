@@ -31,8 +31,8 @@ import (
 	"net/http"
 	"strings"
 
-	"matrix/construct/schema"
-	"matrix/construct/surfacestore"
+	"centra/packages/construct/schema"
+	"centra/packages/construct/surfacestore"
 )
 
 // handleConstructState serves GET /construct/state, the read-only rehydration

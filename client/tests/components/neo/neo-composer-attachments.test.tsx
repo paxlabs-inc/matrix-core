@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { NeoComposer } from '@/components/matrix/neo/neo-composer'
+import { NeoComposer } from '@/components/centra/agents/neo/neo-composer'
 
 function renderComposer(onAddFiles: (files: File[]) => void, attachments: File[] = []) {
   return render(

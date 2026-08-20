@@ -50,7 +50,7 @@ import {
   type TreeEntry,
   type WorkspaceFile,
 } from '@/lib/api/workspace'
-import { NeoIllustration } from '@/components/matrix/neo/neo-illustration'
+import { NeoIllustration } from '@/components/centra/agents/neo/neo-illustration'
 
 type FileKind = 'image' | 'video' | 'audio' | 'file'
 export type WorkspaceViewerKind = 'text' | 'image' | 'video' | 'audio' | 'pdf' | 'binary'

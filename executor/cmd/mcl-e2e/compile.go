@@ -13,14 +13,14 @@ import (
 	"strings"
 	"time"
 
-	"matrix/bridge"
-	"matrix/cortex"
-	"matrix/mcl/ir"
-	"matrix/mcl/llm"
-	"matrix/mcl/mtx/canonical"
-	"matrix/mcl/mtx/interpreter"
-	"matrix/mcl/mtx/parser"
-	"matrix/mcl/mtx/validator"
+	"centra/bridge"
+	"centra/core/cortex"
+	"centra/core/mcl/ir"
+	"centra/core/mcl/llm"
+	"centra/core/mcl/mtx/canonical"
+	"centra/core/mcl/mtx/interpreter"
+	"centra/core/mcl/mtx/parser"
+	"centra/core/mcl/mtx/validator"
 )
 
 // CompileResult bundles everything produced by the MCL compile stage so

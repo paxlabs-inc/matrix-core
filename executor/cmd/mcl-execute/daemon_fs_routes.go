@@ -395,7 +395,7 @@ func resolveAndCheckRead(p *ForgeFSPolicy, path string) (string, error) {
 // resolveAndCheckWrite mirrors resolveAndCheckRead but applies CheckWrite.
 // For non-existent paths the policy check runs against the cleaned textual
 // path AND, additionally, against the parent directory (so writing
-// /root/matrix/cortex/store/new-file is rejected because the parent is
+// /root/centra/core/cortex/store/new-file is rejected because the parent is
 // in DenyPrefixes even though the file itself doesn't yet exist).
 func resolveAndCheckWrite(p *ForgeFSPolicy, path string) (string, error) {
 	resolved, err := filepath.EvalSymlinks(path)

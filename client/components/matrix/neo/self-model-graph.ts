@@ -19,7 +19,7 @@
 /* ------------------------------- types ------------------------------ */
 
 export interface GraphNode {
-  /** full codegraph id, e.g. matrix/neo/internal/agent.Agent#activeGoal */
+  /** full codegraph id, e.g. centra/agents/neo/internal/agent.Agent#activeGoal */
   id: string
   /** short display name */
   n: string

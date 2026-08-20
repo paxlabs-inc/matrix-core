@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 // WorkforcePack returns the exact built-in contract set referenced by the

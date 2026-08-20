@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 type preparedRecord struct {

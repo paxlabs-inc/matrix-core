@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"matrix/workforce/internal/autonomouscompany"
+	"centra/workforce/internal/autonomouscompany"
 )
 
 type AutonomousPropertyResult struct {

@@ -7,7 +7,7 @@
 //
 // Absent profile → clean fallback to daemon defaults (agent_name from
 // config, empty preferred_name/expertise). The prompt wiring that
-// consumes these fields lives in neo/internal/agent/prompt.go (task 2.2).
+// consumes these fields lives in agents/neo/internal/agent/prompt.go (task 2.2).
 
 package main
 
@@ -18,8 +18,8 @@ import (
 	"net/http"
 	"strings"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
 )
 
 // profileTag is the cortex Head tag that marks the onboarding-profile

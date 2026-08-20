@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"matrix/workforce/internal/contracts"
+	"centra/workforce/internal/contracts"
 )
 
 // SignOpportunity signs the complete canonical opportunity with its author key.

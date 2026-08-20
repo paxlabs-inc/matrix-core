@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"matrix/vault"
+	"centra/packages/vault"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/workorder"
-	"matrix/workforce/scheduler"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/workorder"
+	"centra/workforce/scheduler"
 )
 
 type WorkOrderBudget = workorder.Budget

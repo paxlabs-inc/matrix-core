@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseAttachments } from '@/components/matrix/neo/neo-media'
+import { parseAttachments } from '@/components/centra/agents/neo/neo-media'
 
 describe('parseAttachments', () => {
   it('parses media markers without a name', () => {

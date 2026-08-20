@@ -34,8 +34,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/cortex"
-	"matrix/cortex/memory"
+	"centra/core/cortex"
+	"centra/core/cortex/memory"
 )
 
 const (

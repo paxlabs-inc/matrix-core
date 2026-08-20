@@ -29,9 +29,9 @@ import (
 	"time"
 	"unicode"
 
-	cxself "matrix/cortex/self"
-	"matrix/mcl/llm"
-	"matrix/mcl/mtx/interpreter"
+	cxself "centra/core/cortex/self"
+	"centra/core/mcl/llm"
+	"centra/core/mcl/mtx/interpreter"
 )
 
 // liaisonState holds the Liaison's runtime knobs. nil disables the agent
@@ -199,7 +199,7 @@ func isLiaisonOwnEvent(ev sseEvent) bool {
 
 // liaisonIdentity is the agent's first-person identity prose prepended to
 // every Liaison prompt. It is DERIVED from the shared, faculty-neutral
-// self-model (matrix/cortex/self.Persona) rather than hand-written here, so the
+// self-model (centra/core/cortex/self.Persona) rather than hand-written here, so the
 // execution faculty and the conversation faculty speak with one reconciled
 // self-description that cannot disagree with the actual self-model
 // (self-model req.7.1). The persona is the identity facet only — machinery-free

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/productcapability"
+	"centra/workforce/internal/productcapability"
 )
 
 func (service *Service) Handler() http.Handler {

@@ -11,11 +11,11 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"matrix/workforce/internal/circuit"
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/dependency"
-	"matrix/workforce/internal/effect"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/circuit"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/dependency"
+	"centra/workforce/internal/effect"
+	"centra/workforce/internal/skills"
 )
 
 // Event is one durable authoritative reconciliation projection.

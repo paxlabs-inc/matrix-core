@@ -12,16 +12,16 @@ finished result — a pleasant surprise rather than a request fulfilled.
 The feature is mostly **additive wiring over substrate that already exists**:
 
 - **Capture** rides the existing background consolidation pass
-  (`neo/internal/writeback/consolidator.go`), which already sweeps every turn with a cheap model
+  (`agents/neo/internal/writeback/consolidator.go`), which already sweeps every turn with a cheap model
   and writes durable learnings to cortex. Automatrix adds one more extraction class:
   `opportunities`.
 - **Idle wake** rides **Chronos** (`/root/matrix/chronos`), the centralized, durable agent
   alarm-clock that already wakes a scaled-to-zero daemon by injecting a context-rich `/chat`
   turn via the router's `POST /internal/wake`. Automatrix is a sibling of the existing
-  **heartbeat convention** (`chronos/internal/heartbeat` ↔ `neo/internal/agent/heartbeat.go`):
+  **heartbeat convention** (`packages/chronos/internal/heartbeat` ↔ `agents/neo/internal/agent/heartbeat.go`):
   a self-rescheduling alarm carrying an `AUTOMATRIX` marker instead of `HEARTBEAT`.
 - **Execution** rides the existing supervised task engine
-  (`neo/internal/server/session.go` `drive`/`superviseTask`), which is already decoupled from the
+  (`agents/neo/internal/server/session.go` `drive`/`superviseTask`), which is already decoupled from the
   user's connection and durable across restart (the Task Durability Rule).
 - **Notify** is the one genuinely new outbound seam: a small pluggable `Notifier` (default
   **ntfy**, optional **Apprise** fan-out) plus a durable in-app `automatrix.complete` record.
@@ -112,7 +112,7 @@ not pile up duplicates.
 ## Opportunity record + queue (cortex)
 
 A new cortex memory shape (reusing the cortex `Goal`/typed-record machinery; see
-`neo/internal/memory`) with:
+`agents/neo/internal/memory`) with:
 
 | field | meaning |
 |---|---|
@@ -147,7 +147,7 @@ Three independent layers, any one of which is sufficient to keep money out:
 
 ## Idle wake — the AUTOMATRIX Chronos alarm
 
-A sibling of `neo/internal/agent/heartbeat.go`, in a new `automatrix.go` next to it:
+A sibling of `agents/neo/internal/agent/heartbeat.go`, in a new `automatrix.go` next to it:
 
 ```go
 const AutomatrixWakeMarker  = "AUTOMATRIX"
@@ -162,7 +162,7 @@ const AutomatrixIdle = "AUTOMATRIX_IDLE"   // sentinel → suppress the turn (li
   fires on a base cadence and the engine, on each fire, **reschedules the next one with randomized
   jitter** within a configured window (e.g. base `@every 45m` ± jitter), and may **skip** a fire
   probabilistically. (Chronos cron is the durable backbone; the jitter/skip lives in Neo so the DB
-  stays the source of truth.) A mirror of `chronos/internal/heartbeat` — `chronos/internal/automatrix`
+  stays the source of truth.) A mirror of `packages/chronos/internal/heartbeat` — `packages/chronos/internal/automatrix`
   — provides the canonical marker + a `BuildAlarm` helper.
 - **Busy-check.** On wake the engine checks whether a run is already in flight for the user
   (`session.active`). If busy, it **does nothing and reschedules** — Automatrix never competes with
@@ -195,7 +195,7 @@ partial/failure: leave the opportunity `pending` (bounded `attempts`), surface n
 
 ## Notify — pluggable `Notifier`
 
-A small interface in a new `neo/internal/notify` package:
+A small interface in a new `agents/neo/internal/notify` package:
 
 ```go
 type Notification struct { Title, Body, URL string }
@@ -219,7 +219,7 @@ send, but the result itself is never lost).
 ### Durable in-app record
 
 A new `automatrix.complete` broker event + a small durable sidecar (mirroring the trace store at
-`neo/internal/trace`) records `{opportunity_summary, result_summary, conversation_id, created_at,
+`agents/neo/internal/trace`) records `{opportunity_summary, result_summary, conversation_id, created_at,
 read}`. The client renders an **unread Automatrix inbox / badge** and, on open, the completed work
 appears as an assistant turn in the relevant conversation. This obeys the consumer rule: **show the
 result, not the protocol** — no mention of Chronos/alarms/markers in the UI.

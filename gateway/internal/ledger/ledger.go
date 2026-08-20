@@ -35,7 +35,7 @@ import (
 	"sync"
 	"time"
 
-	"matrix/gateway/internal/rates"
+	"centra/gateway/internal/rates"
 )
 
 // Entry is one row in credit_ledger.

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/skills"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/skills"
 )
 
 const maxKnowledgePayloadBytes = 1 << 20

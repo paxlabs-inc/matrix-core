@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"matrix/workforce/internal/contracts"
-	"matrix/workforce/internal/controlapi"
-	"matrix/workforce/internal/dependency"
-	"matrix/workforce/internal/developer"
+	"centra/workforce/internal/contracts"
+	"centra/workforce/internal/controlapi"
+	"centra/workforce/internal/dependency"
+	"centra/workforce/internal/developer"
 )
 
 func TestIntegration_ControlAPIAuthorizationReplayPaginationAndStaleMutation(t *testing.T) {

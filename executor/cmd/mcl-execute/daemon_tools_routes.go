@@ -24,8 +24,8 @@ import (
 	"sort"
 	"strings"
 
-	"matrix/executor/mcp"
-	"matrix/executor/tool"
+	"centra/executor/mcp"
+	"centra/executor/tool"
 )
 
 // toolDTO is the wire shape for one tool.

@@ -87,11 +87,11 @@ import (
 	"syscall"
 	"time"
 
-	"matrix/gateway/internal/auth"
-	"matrix/gateway/internal/ledger"
-	"matrix/gateway/internal/proxy"
-	"matrix/gateway/internal/ratelimit"
-	"matrix/gateway/internal/routing"
+	"centra/gateway/internal/auth"
+	"centra/gateway/internal/ledger"
+	"centra/gateway/internal/proxy"
+	"centra/gateway/internal/ratelimit"
+	"centra/gateway/internal/routing"
 )
 
 func main() {

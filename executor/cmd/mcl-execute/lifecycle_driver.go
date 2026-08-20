@@ -27,8 +27,8 @@ import (
 	"fmt"
 	"time"
 
-	"matrix/executor/lifecycle"
-	"matrix/mcl/envelope"
+	"centra/executor/lifecycle"
+	"centra/core/mcl/envelope"
 )
 
 // lifecycleDriver wraps a lifecycle.Machine and an envelopeStream so

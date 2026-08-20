@@ -15,8 +15,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"matrix/mcl/envelope"
-	"matrix/vault"
+	"centra/core/mcl/envelope"
+	"centra/packages/vault"
 )
 
 const (

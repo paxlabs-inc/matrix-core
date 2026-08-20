@@ -16,7 +16,7 @@ renderer:
 1. A **spatial, persistent shell** (the "OS") that arranges surfaces as durable, addressable,
    re-enterable "apps/windows/panels" instead of a stream-ordered column.
 2. A **surface-state store** that durably persists projected surface state per user (a
-   generalization of the existing F3 `neo/internal/trace` per-run JSONL trace) so the
+   generalization of the existing F3 `agents/neo/internal/trace` per-run JSONL trace) so the
    "computer" rehydrates exactly as the user left it across reload, suspend, redeploy, and
    device switch — with long-running jobs still visible.
 3. **Frame inversion + depth navigation + async Ask**: the environment becomes primary and
@@ -50,7 +50,7 @@ home-screen/app-grid; Desktop Web PC = windowed/spatial) are **adapters** over t
 - **Transport invariant (i7):** surfaces ride the existing chat SSE/WS transport. The shell adds
   no new agent→client wire path; it adds a client-side state model and a server-side persistence
   sidecar plus a rehydration read path.
-- **Types are codegen'd** from the Go `construct/schema` — never hand-edited (`types.gen.ts`).
+- **Types are codegen'd** from the Go `packages/construct/schema` — never hand-edited (`types.gen.ts`).
 - **Frozen ontology:** the 8 primitives + 5 attributes are FROZEN. This feature maps them onto OS
   concepts; it does NOT add primitives.
 - **Dev box:** never `git commit`/`git push`; uncommitted state is expected.
@@ -78,17 +78,17 @@ home-screen/app-grid; Desktop Web PC = windowed/spatial) are **adapters** over t
 
 | Concern | Status | Artifact |
 | --- | --- | --- |
-| 8 primitive wire schema + attributes + envelope | REUSE (built) | `construct/schema/{surface,kind,attributes,builders}.go`, `schema/primitives/*` |
-| Surface transport over SSE (`construct.surface[.patch]`) | REUSE (built) | `construct/transport/{transport,patch}.go` |
-| Progressive patch merge semantics | REUSE (built) | `construct/transport/patch.go` `ApplyPatch` |
-| Projection engine (world-state → primitives) | REUSE (built), assess coverage | `construct/projection/{project,render}.go` |
-| Ask back-channel response contract | REUSE (built) | `construct/backchannel/backchannel.go` |
-| Per-primitive renderers (web) | REUSE untouched | `apps/client/components/matrix/construct/*` |
+| 8 primitive wire schema + attributes + envelope | REUSE (built) | `packages/construct/schema/{surface,kind,attributes,builders}.go`, `schema/primitives/*` |
+| Surface transport over SSE (`construct.surface[.patch]`) | REUSE (built) | `packages/construct/transport/{transport,patch}.go` |
+| Progressive patch merge semantics | REUSE (built) | `packages/construct/transport/patch.go` `ApplyPatch` |
+| Projection engine (world-state → primitives) | REUSE (built), assess coverage | `packages/construct/projection/{project,render}.go` |
+| Ask back-channel response contract | REUSE (built) | `packages/construct/backchannel/backchannel.go` |
+| Per-primitive renderers (web) | REUSE untouched | `apps/client/components/centra/packages/construct/*` |
 | Per-primitive renderers (mobile) | REUSE untouched | `apps/mobile/src/components/neo/construct/*` |
-| Durable per-run JSONL trace sidecar | GENERALIZE | `neo/internal/trace/trace.go` |
+| Durable per-run JSONL trace sidecar | GENERALIZE | `agents/neo/internal/trace/trace.go` |
 | `ConstructSurfaces` flat animated list | REPLACE/AUGMENT | `apps/client/.../construct/surface-renderer.tsx` |
 | `NeoComputer` two-pane "screen" panel beside chat | INVERT/SUBSUME | `apps/client/.../neo/neo-computer.tsx` |
-| Surface-state store (durable, per-user, addressable) | NEW | `construct/surfacestore` (Go) + client store |
+| Surface-state store (durable, per-user, addressable) | NEW | `packages/construct/surfacestore` (Go) + client store |
 | Spatial composition model (shell layout) | NEW | client shell packages |
 | Shell rehydration read endpoint | NEW (thin) | daemon route reusing trace `/data` |
 | Async/environment-level Ask inbox | NEW (shell-level), reuses backchannel | client + daemon park/resume (Phase 5 built) |
@@ -103,10 +103,10 @@ existing surface stream.
 graph TD
     subgraph Server["Per-user Fly machine (source of truth — unchanged)"]
         Neo["Neo agent loop"]
-        Proj["construct/projection<br/>(world-state -> primitives)"]
-        Trans["construct/transport<br/>construct.surface[.patch]"]
+        Proj["packages/construct/projection<br/>(world-state -> primitives)"]
+        Trans["packages/construct/transport<br/>construct.surface[.patch]"]
         Broker["daemon SSE broker<br/>(executor/cmd/mcl-execute)"]
-        Store["surfacestore (NEW)<br/>generalizes neo/internal/trace<br/>durable per-user surface JSONL"]
+        Store["surfacestore (NEW)<br/>generalizes agents/neo/internal/trace<br/>durable per-user surface JSONL"]
         Rehydrate["GET /construct/state (NEW thin read)"]
     end
 
@@ -244,7 +244,7 @@ like any other region. No renderer changes — only what mounts at the root and 
 
 `Ask` is the trust spine. Today an `Ask` renders inline in the surface column and the web
 `surface-renderer.tsx` notes `onRespond` is "wired in Phase 5." The back-channel contract itself is
-built (`construct/backchannel`), and the implementation plan logs Phase 5 as the parking/resume path.
+built (`packages/construct/backchannel`), and the implementation plan logs Phase 5 as the parking/resume path.
 The shell elevates `Ask` so it works when the user is elsewhere or returns later:
 
 - An emitted `Ask` enters the model's **Ask inbox** (`region: inbox`) AND raises an environment-level
@@ -262,7 +262,7 @@ The shell elevates `Ask` so it works when the user is elsewhere or returns later
 
 For the environment to feel like a computer, everything Neo does must project into a surface — an
 empty environment reads as broken. The design requires an explicit coverage audit of
-`construct/projection` against the frozen `[coverage]` map (tool result → Entity/Structure/Metric;
+`packages/construct/projection` against the frozen `[coverage]` map (tool result → Entity/Structure/Metric;
 chain tx → Entity(irreversible)+Ask(sign); browser → Canvas+Stream+Timeline; memory →
 Structure+Entity; plan/swarm → Timeline+Structure; async → Timeline+Metric; cost → Metric). Any
 agent action with no projector is a coverage gap to close so no activity is invisible in the shell.
@@ -320,9 +320,9 @@ core correctness property of "never vanishing."
 
 The shell decomposes into a shared client core, two client adapters, and a server-side
 persistence + rehydration pair. Types below reflect the real codegen'd `Surface` envelope
-(`apps/client/lib/construct/types.gen.ts`) and the Go `construct/schema` it mirrors.
+(`apps/client/lib/construct/types.gen.ts`) and the Go `packages/construct/schema` it mirrors.
 
-### Component 1: `surfacestore` (Go, NEW — generalizes `neo/internal/trace`)
+### Component 1: `surfacestore` (Go, NEW — generalizes `agents/neo/internal/trace`)
 
 **Purpose:** durable, per-user, append-only persistence of the Construct surface event stream, so the
 environment rehydrates across reload/suspend/redeploy/device-switch. It is a generalization of the F3
@@ -484,7 +484,7 @@ interface ShellAdapter {
 
 ### Reused (frozen, unchanged) — `Surface` envelope
 
-The shell never alters this. Shown for grounding (from `construct/schema/surface.go` ↔
+The shell never alters this. Shown for grounding (from `packages/construct/schema/surface.go` ↔
 `types.gen.ts`):
 
 ```typescript
@@ -834,7 +834,7 @@ shells receive the answered patch and settle identically.
 ## Testing Strategy
 
 ### Unit testing
-- `surfacestore`: port the `neo/internal/trace` test suite (async record/flush, atomic rollup at
+- `surfacestore`: port the `agents/neo/internal/trace` test suite (async record/flush, atomic rollup at
   2×retain, crash-truncated-line skip, disabled no-op, path-separator rejection), re-keyed by
   conversation and asserting `construct.surface[.patch]` round-trip.
 - `placeSurface`: table-driven region routing for all 8 kinds + attribute-driven inbox routing +
@@ -894,15 +894,15 @@ existing repo conventions.
 
 ## Dependencies
 
-- **Existing, reused:** `construct/schema`, `construct/transport`, `construct/projection`,
-  `construct/backchannel` (Go); `apps/client/lib/construct/{types.gen,store,adapter}.ts` and the 8
+- **Existing, reused:** `packages/construct/schema`, `packages/construct/transport`, `packages/construct/projection`,
+  `packages/construct/backchannel` (Go); `apps/client/lib/construct/{types.gen,store,adapter}.ts` and the 8
   web renderers; `apps/mobile/.../construct/*` (the 8 mobile renderers); the daemon SSE broker
-  (`executor/cmd/mcl-execute`); `neo/internal/trace` (the persistence pattern to generalize).
-- **New (Go):** `construct/surfacestore` (or `neo`-hosted, mirroring trace placement) + a thin
+  (`executor/cmd/mcl-execute`); `agents/neo/internal/trace` (the persistence pattern to generalize).
+- **New (Go):** `packages/construct/surfacestore` (or `neo`-hosted, mirroring trace placement) + a thin
   `GET /construct/state` daemon route; broker subscription wiring (sibling of the liaison narrator).
 - **New (TypeScript):** `SurfaceWorkspace` shared model + `placeSurface` policy + `SurfaceFeed`
   hydrate path + `DesktopShell`/`MobileShell` adapters + a root-level frame-inversion mount.
-- **Codegen:** any Go-side type that must reach the client extends `construct/internal/codegen` and is
+- **Codegen:** any Go-side type that must reach the client extends `packages/construct/internal/codegen` and is
   regenerated (never hand-edited).
 - **Tooling:** `fast-check` (client PBT), Go `testing/quick` (server PBT) — match existing conventions.
 
