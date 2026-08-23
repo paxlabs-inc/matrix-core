@@ -5,14 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Cross-references in parentheses point to either `knowledge/matrix.kvx` session
-entries (`sess#NN`), research decision IDs (`D1`-`D18`), or — from 0.27.0
-onward — feature specs under `spec/<feature>/` (the kvx is the authoritative
-record of each feature's requirements, design, and task statuses). Versions
-from 0.26.0 onward are feature milestones dated by completion; they are not
-git tags.
+Cross-references in parentheses point to session entries, research decision IDs (`D1`-`D18`), or feature specs under `protocol/spec/<feature>/` (the kvx files are authoritative records of each feature's requirements, design, and task statuses). Versions from 0.26.0 onward are feature milestones dated by completion; they are not git tags.
 
 ## [Unreleased]
+
+### Changed
+
+- **Branding and positioning update**: Keith is now positioned as the primary next-generation agent, with Neo documented as the original proven runtime. Public-facing documentation, README, and changelog now use Sidiora Labs / Centra AI branding exclusively.
+- **Deprecated Matrix Protocol releases**: Historical GitHub releases titled "Matrix Protocol v*" are deprecated in favor of Centra AI branded releases. These older releases remain available for compatibility but should not be used for new deployments.
+
+### Added
+
+- License FAQ in README explaining the Centra AI Protocol License in plain English for quick reference.
 
 ## [1.0.0] - 2026-08-04 — Neo execution ownership and release hardening
 
@@ -810,29 +814,29 @@ git tags.
 
 [Unreleased]: https://github.com/Sidiora-Labs/centra-llm-agents/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v1.0.0
-[0.65.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.65.0
-[0.25.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.25.0
-[0.24.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.24.0
-[0.23.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.23.0
-[0.22.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.22.0
-[0.21.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.21.0
-[0.20.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.20.0
-[0.19.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.19.0
-[0.18.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.18.0
-[0.17.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.17.0
-[0.16.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.16.0
-[0.15.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.15.0
-[0.14.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.14.0
-[0.13.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.13.0
-[0.12.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.12.0
-[0.11.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.11.0
-[0.10.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.10.0
-[0.9.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.9.0
-[0.8.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.8.0
-[0.7.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.7.0
-[0.6.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.6.0
-[0.5.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.5.0
-[0.4.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.4.0
-[0.3.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.3.0
-[0.2.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.2.0
-[0.1.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.1.0
+[0.65.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.65.0
+[0.25.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.25.0
+[0.24.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.24.0
+[0.23.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.23.0
+[0.22.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.22.0
+[0.21.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.21.0
+[0.20.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.20.0
+[0.19.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.19.0
+[0.18.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.18.0
+[0.17.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.17.0
+[0.16.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.16.0
+[0.15.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.15.0
+[0.14.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.14.0
+[0.13.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.13.0
+[0.12.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.12.0
+[0.11.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.11.0
+[0.10.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.10.0
+[0.9.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.9.0
+[0.8.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.8.0
+[0.7.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.7.0
+[0.6.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.6.0
+[0.5.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.5.0
+[0.4.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.4.0
+[0.3.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.3.0
+[0.2.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.2.0
+[0.1.0]: https://github.com/Sidiora-Labs/centra-llm-agents/releases/tag/v0.1.0
