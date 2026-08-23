@@ -18,13 +18,35 @@
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-1.0.0-0A0A0A?style=flat-square" alt="Version 1.0.0" /></a>
 </p>
 
+---
+
+## License FAQ
+
+**Q: Can I use Centra AI for free?**  
+Yes. You can read, use, deploy, and integrate Centra AI at no cost for non-commercial purposes, experimentation, research, and community projects.
+
+**Q: When do I need a commercial license?**  
+A commercial license is required when your use generates **charged fees exceeding $100,000 in any rolling 12-month period** (or other commercial triggers defined in the license). Below that threshold, commercial use is permitted under the base license.
+
+**Q: What if I modify the code?**  
+If you modify and distribute or deploy the modified version, you must release your changes under the same Centra AI Protocol License (same-license copyleft). This ensures improvements stay open.
+
+**Q: What about integration/API use only?**  
+Pure integration (calling APIs/endpoints without distributing modified code) does not trigger copyleft requirements, though commercial triggers may still apply based on your revenue.
+
+**Q: Where is the full license?**  
+See [LICENSE.md](LICENSE.md) for complete legal terms. This FAQ is for convenience only; the license file is authoritative.
+
+---
+
 ## What is Centra AI?
 
 Centra AI is a private, persistent agent platform built by Sidiora Labs. It is designed for work that cannot be completed reliably in a single prompt: building software, investigating complex questions, operating browsers and files, coordinating parallel specialists, producing artifacts, and continuing across sessions without losing the state of the job.
 
-The system is centered on two agents:
+The system is centered on these agents:
 
-- **Neo** is the primary agent. It researches, reasons, operates tools, creates artifacts, manages ongoing work, and stays with a task beyond the life of one model response.
+- **Keith** is the primary agent going forward. Built in Rust for performance and reliability, Keith provides the next-generation execution runtime with enhanced security boundaries and deterministic execution semantics.
+- **Neo** is the original conversational agent. It researches, reasons, operates tools, creates artifacts, manages ongoing work, and stays with a task beyond the life of one model response. Neo continues to be supported as the proven prior-generation runtime.
 - **Ion** is the technical agent and coding environment. It works directly with real projects, shells, files, tests, previews, and development toolchains inside a bounded workspace.
 
 They are supported by **Workforce**, Centra's coordinated execution layer for decomposing larger objectives into governed parallel work, and **Neo Computer**, the unified place for sources, previews, artifacts, changes, and workspace evidence.
@@ -101,7 +123,8 @@ Centra is a monorepo of independently buildable services and clients. The import
 
 | Component | Responsibility |
 | --- | --- |
-| `agents/neo/` | Primary agent runtime, streaming conversation loop, tools, memory integration, automation, swarms, and delivery. |
+| `agents/keith/` | Next-generation agent runtime in Rust with enhanced security boundaries and deterministic execution. |
+| `agents/neo/` | Original primary agent runtime, streaming conversation loop, tools, memory integration, automation, swarms, and delivery. |
 | `ion/` | Technical agent runtime, project intelligence, coding workspace, computer control, security policy, and operator interfaces. |
 | `workforce/` | Governed multi-agent work decomposition, supervision, mission state, and coordinated execution. |
 | `client/` | Next.js product client: chat, coding, Neo Computer, work surfaces, settings, and live state. |
@@ -191,7 +214,8 @@ pnpm build
 ```text
 centra-llm-agents/
 |-- client/          product client and Neo Computer
-|-- agents/neo/             primary agent
+|-- agents/keith/           next-generation agent in Rust
+|-- agents/neo/             original primary agent
 |-- ion/             technical agent and coding environment
 |-- workforce/       coordinated work system
 |-- core/cortex/          durable memory substrate
